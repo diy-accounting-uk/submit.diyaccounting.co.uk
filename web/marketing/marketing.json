@@ -933,10 +933,10 @@
       "products": [
         "submit"
       ],
-      "url": "",
-      "state": "planned",
-      "date": "",
-      "terms": "A free business account. Reviews come from customers. The verification method is read at sign-up.",
+      "url": "https://www.trustpilot.com/review/diyaccounting.co.uk",
+      "state": "live",
+      "date": "2026-11-13",
+      "terms": "Claimed profile on diyaccounting.co.uk; free plan.",
       "priceText": "",
       "utmSource": "trustpilot"
     },
@@ -1003,10 +1003,10 @@
       "products": [
         "spreadsheets"
       ],
-      "url": "",
+      "url": "https://softwarereview.com/s/diy-accounting-spreadsheets",
       "state": "live",
       "date": "",
-      "terms": "Unclaimed page for the spreadsheets with one rating. The page has a Claim this profile button.",
+      "terms": "Page exists, unclaimed. Claiming needs a paid plan, from 8.95 US dollars a month; not bought.",
       "priceText": "",
       "utmSource": "softwarereview"
     },
@@ -1015,7 +1015,7 @@
       "place": "FeaturedCustomers",
       "group": "review",
       "products": [],
-      "url": "",
+      "url": "https://www.featuredcustomers.com/vendor/diy-accounting",
       "state": "live",
       "date": "",
       "terms": "Vendor page exists. The claim form takes an email and a 10-digit phone number; sales answers it.",
@@ -1075,7 +1075,7 @@
       "place": "Serchen",
       "group": "review",
       "products": [],
-      "url": "",
+      "url": "https://www.serchen.com/company/diy-accounting-ltd",
       "state": "planned",
       "date": "",
       "terms": "Vendor claim forms. Some sell placement; the free tier is enough for the page.",
@@ -1325,10 +1325,10 @@
       "place": "LinkedIn company page",
       "group": "launch",
       "products": [],
-      "url": "",
-      "state": "planned",
+      "url": "https://www.linkedin.com/company/3095113/",
+      "state": "live",
       "date": "",
-      "terms": "A person creates the page.",
+      "terms": "The company page exists; the operator is its admin.",
       "priceText": "",
       "utmSource": "linkedin"
     },

@@ -531,7 +531,12 @@ describe("listing register", () => {
     expect(register.groups.map((g) => g.id)).toEqual(["review", "launch", "citation", "professional"]);
     expect(register.listings.length).toBeGreaterThanOrEqual(40);
     for (const listing of register.listings) expect(LISTING_STATES, listing.id).toContain(listing.state);
-    expect(register.listings.filter((l) => l.state === "live").map((l) => l.id)).toEqual(["softwarereview", "featuredcustomers"]);
+    expect(register.listings.filter((l) => l.state === "live").map((l) => l.id)).toEqual([
+      "trustpilot",
+      "softwarereview",
+      "featuredcustomers",
+      "linkedin",
+    ]);
     for (const place of [
       "Capterra",
       "Trustpilot",
@@ -588,10 +593,10 @@ describe("listing register", () => {
   });
 
   it("returns the live listings that carry a URL", () => {
-    const withUrl = structuredClone(register);
-    withUrl.listings.find((l) => l.id === "featuredcustomers").url = "https://example.com/vendor";
-    expect(liveListings(register)).toEqual([]);
-    expect(liveListings(withUrl).map((l) => l.id)).toEqual(["featuredcustomers"]);
+    const withoutUrl = structuredClone(register);
+    withoutUrl.listings.find((l) => l.id === "featuredcustomers").url = "";
+    expect(liveListings(register).map((l) => l.id)).toEqual(["trustpilot", "softwarereview", "featuredcustomers", "linkedin"]);
+    expect(liveListings(withoutUrl).map((l) => l.id)).toEqual(["trustpilot", "softwarereview", "linkedin"]);
   });
 
   it("tags each link with the listing's utm_source and the product", () => {
