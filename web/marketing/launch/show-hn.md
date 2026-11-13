@@ -22,7 +22,7 @@ The new part is a hosted MCP connector. In Claude, add a custom connector with t
 The connector does not reach HMRC and it files nothing. A filing is a legal declaration, so a person makes it.
 
 <!-- handoff-sentence -->
-You check the figures, then file the return yourself in the web app, in your browser.
+The assistant can also give you a link that opens the VAT form with the figures filled in. You check them, declare and file there, in your browser.
 
 How the derivation works: the figures come from a diya-gl book, which is a small set of files behind a spreadsheet workbook. The assistant sees the lines that fed each box, so you can check them against the book.
 

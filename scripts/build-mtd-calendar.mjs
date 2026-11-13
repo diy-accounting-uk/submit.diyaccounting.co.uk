@@ -114,7 +114,7 @@ export const AVAILABILITY = [
       ["production"],
       ["production"],
       NOT_OFFERED,
-      ["production", "local server; the hosted connector derives figures only"],
+      ["production", "local server; the hosted connector derives figures and links to the web form"],
       NOT_OFFERED,
     ],
   },

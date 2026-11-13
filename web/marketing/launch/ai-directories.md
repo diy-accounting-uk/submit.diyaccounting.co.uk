@@ -34,7 +34,7 @@ DIY Accounting Submit sends your VAT return to HMRC under Making Tax Digital. Ty
 The assistant connector: add https://submit.diyaccounting.co.uk/mcp to an assistant such as Claude and sign in. The assistant opens your saved books and works out the nine VAT return boxes for a period. It files nothing.
 
 <!-- handoff-sentence -->
-You check the figures, then file the return yourself in the web app, in your browser.
+The assistant can also give you a link that opens the VAT form with the figures filled in. You check them, declare and file there, in your browser.
 
 ## Pricing
 

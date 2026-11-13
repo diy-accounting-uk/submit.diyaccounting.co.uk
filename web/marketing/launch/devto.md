@@ -27,13 +27,14 @@ Claude opens the sign-in page. You sign in with your Submit account, the same ac
 claude mcp add --transport http diya-submit https://submit.diyaccounting.co.uk/mcp
 ```
 
-The connector has five tools:
+The connector has six tools:
 
 | Tool | What it does |
 | --- | --- |
 | `list_books` | Lists the books saved in your DIYA cloud, newest first. |
 | `open_book` | Opens one book. It reports the product, the period covered and the book's checks. |
 | `derive_vat_return` | Works out the nine VAT return boxes for one period, with the lines that fed them. |
+| `prepare_vat_return` | Works out the same figures and gives a link that opens the VAT form with them filled in. It files nothing. |
 | `list_vat_receipts` | Lists the VAT receipts Submit stored for your account. |
 | `get_vat_receipt` | Reads one stored receipt. |
 
@@ -46,7 +47,7 @@ The connector does not reach HMRC and it files nothing.
 A VAT return ends in a legal declaration that the figures are true and complete. We keep that step in the browser, where a person ticks the declaration box and presses the submit button.
 
 <!-- handoff-sentence -->
-You check the figures, then file the return yourself in the web app, in your browser.
+The assistant can also give you a link that opens the VAT form with the figures filled in. You check them, declare and file there, in your browser.
 
 The web app signs you in to HMRC with HMRC's own permission page. HMRC's own page asks for the permission, and the person gives it there.
 

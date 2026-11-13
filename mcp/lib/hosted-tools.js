@@ -60,10 +60,18 @@ export const HOSTED_TOOL_NAMES = [
   "run_for_clients",
 ];
 
-// Prod offers the books tools, the VAT derivation and the stored receipts. No hosted tool on prod
-// reaches HMRC, because an AI client cannot give the fraud prevention headers a call needs. The
-// HMRC tools, the sandbox filing tools and the practice tools register in every other environment.
-const PROD_HOSTED_TOOL_NAMES = ["list_books", "open_book", "derive_vat_return", "get_vat_receipt", "list_vat_receipts"];
+// Prod offers the books tools, the VAT derivation, the link that opens the VAT form with the figures
+// filled in, and the stored receipts. No hosted tool on prod reaches HMRC, because an AI client cannot
+// give the fraud prevention headers a call needs. The HMRC tools, the sandbox filing tools and the
+// practice tools register in every other environment.
+const PROD_HOSTED_TOOL_NAMES = [
+  "list_books",
+  "open_book",
+  "derive_vat_return",
+  "prepare_vat_return",
+  "get_vat_receipt",
+  "list_vat_receipts",
+];
 
 // The demo user that directory reviewers sign in as belongs to this Cognito group. Its token sees
 // the prod tool set in every environment, so a reviewer on ci sees what a reviewer on prod sees.
