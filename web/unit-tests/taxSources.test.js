@@ -2,7 +2,16 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, test, expect } from "vitest";
-import { MAX_SOURCE_AGE_DAYS, loadSources, sourceQuoteHtml, normaliseText, quoteAppearsIn } from "../../scripts/tax-sources.mjs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import {
+  MAX_SOURCE_AGE_DAYS,
+  loadSources,
+  sourcesOlderThan,
+  sourceQuoteHtml,
+  normaliseText,
+  quoteAppearsIn,
+} from "../../scripts/tax-sources.mjs";
 import { allFactIds } from "../../scripts/build-mtd-calendar.mjs";
 import { RATES_FACT_IDS } from "../../scripts/rates-fact-ids.mjs";
 import { allRatesFactIds } from "../../scripts/build-rates-page.mjs";
@@ -39,6 +48,22 @@ describe("tax sources", () => {
       .filter((s) => now - Date.parse(`${s.retrieved}T00:00:00Z`) > MAX_SOURCE_AGE_DAYS * DAY_MS)
       .map((s) => `${s.name}: retrieved ${s.retrieved}`);
     expect(stale, "run the tax-sources skill to refresh").toEqual([]);
+  });
+
+  test("sourcesOlderThan lists a source only when it is older than the limit", () => {
+    const now = Date.parse("2026-11-30T00:00:00Z");
+    const list = [
+      { name: "new", retrieved: "2026-11-23" },
+      { name: "edge", retrieved: "2026-11-07" },
+      { name: "old", retrieved: "2026-11-06" },
+    ];
+    expect(sourcesOlderThan(list, 23, now).map((s) => s.name)).toEqual(["old"]);
+    expect(sourcesOlderThan(list, 7, now).map((s) => s.name)).toEqual(["edge", "old"]);
+  });
+
+  test("the weekly check warns a week before the limit", () => {
+    const workflow = readFileSync(join(import.meta.dirname, "..", "..", ".github", "workflows", "tax-sources-check.yml"), "utf8");
+    expect(workflow).toContain(`--max-age-days ${MAX_SOURCE_AGE_DAYS - 7}`);
   });
 
   test("the rates fact ids are unique", () => {

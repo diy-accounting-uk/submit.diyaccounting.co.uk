@@ -10,6 +10,12 @@ import { fileURLToPath } from "node:url";
 export const SOURCES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", ".claude", "skills", "tax-sources", "sources");
 export const MAX_SOURCE_AGE_DAYS = 30;
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export function sourcesOlderThan(sources, maxAgeDays, now = Date.now()) {
+  return sources.filter((s) => now - Date.parse(`${s.retrieved}T00:00:00Z`) > maxAgeDays * DAY_MS);
+}
+
 export function loadSources(dir = SOURCES_DIR) {
   return readdirSync(dir)
     .filter((f) => f.endsWith(".json"))

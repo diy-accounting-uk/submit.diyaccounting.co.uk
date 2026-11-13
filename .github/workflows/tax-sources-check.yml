@@ -1,0 +1,79 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability SITE-33 Check the tax sources each week
+# - **Use when:** checking whether a gov.uk page still states a tax fact the site prints, or whether a source file is close to the 30 day limit.
+# - **Does:** tax-sources-check.yml runs scripts/verify-tax-sources.mjs weekly with --max-age-days 23. A quote missing from its page, or a source retrieved more than 23 days ago, fails the run. The run opens or refreshes one issue that names the sources and points at the tax-sources skill.
+# - **Run:** `node scripts/verify-tax-sources.mjs --max-age-days 23`
+# - **Entry:** `.github/workflows/tax-sources-check.yml`
+# - **Files:** .github/workflows/tax-sources-check.yml, scripts/verify-tax-sources.mjs, scripts/tax-sources.mjs, .claude/skills/tax-sources/SKILL.md
+# - **Keywords:** tax sources check, source age, gov.uk quote, weekly check, tax-sources-check.yml
+# - **Related:** SITE-22
+# @end-capability
+
+name: tax-sources-check
+run-name: "tax sources check of ${{ github.ref_name }}"
+
+# The workflow only reports. Refreshing a source needs a session with the tax-sources skill, because an
+# LLM call that commits to the repository does not run in a workflow.
+
+on:
+  schedule:
+    - cron: '31 6 * * 1' # Weekly on Monday, off the top-of-hour queue and clear of every other workflow's minute
+  workflow_dispatch: {}
+
+concurrency:
+  group: tax-sources-check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-tax-sources:
+    name: check the tax sources
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Check the sources against gov.uk and their age
+        id: check
+        continue-on-error: true
+        shell: bash
+        env:
+          ISSUE_BODY_FILE: ${{ runner.temp }}/tax-sources-issue-body.md
+        run: node scripts/verify-tax-sources.mjs --max-age-days 23 --issue-body "$ISSUE_BODY_FILE"
+
+      - name: Open or refresh the tax sources issue
+        if: steps.check.outcome == 'failure'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_BODY_FILE: ${{ runner.temp }}/tax-sources-issue-body.md
+        run: |
+          set -euo pipefail
+          if [ ! -f "$ISSUE_BODY_FILE" ]; then
+            echo "The check failed without a list of problems; no issue to raise."
+            exit 0
+          fi
+          TITLE="Tax sources need a refresh"
+          EXISTING=$(gh issue list --state open --search "\"$TITLE\" in:title" --json number,title \
+            --jq "[.[] | select(.title == \"$TITLE\")][0].number // empty")
+          if [ -n "$EXISTING" ]; then
+            gh issue edit "$EXISTING" --body-file "$ISSUE_BODY_FILE"
+            echo "Refreshed issue $EXISTING"
+          else
+            gh issue create --title "$TITLE" --body-file "$ISSUE_BODY_FILE" --label ops --label origin:machine
+          fi
+
+      - name: Fail the run when a source needs a refresh
+        if: steps.check.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "A tax source needs a refresh. See the check step."
+          exit 1
