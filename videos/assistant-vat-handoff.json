@@ -1,0 +1,255 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "assistant-vat-handoff",
+  "title": "A VAT return from an AI assistant",
+  "description": "An assistant derives the VAT return from a saved book and hands the figures to the browser through a link. The person checks the nine boxes, makes the declaration and files the return in the browser, and the receipt shows.",
+  "auth": "user",
+  "pages": ["web/public/mcp.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/hmrc/vat/submitVat.html"],
+  "hmrcServices": ["mtd-vat", "mtd-income-tax"],
+  "environments": ["ci"],
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+  "pacing": {
+    "perCharMs": 80,
+    "betweenActionsMs": 500,
+    "aroundMotionMs": 500,
+    "minResidualMs": 120,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 16,
+    "minMs": 1200,
+    "fadeMs": 200,
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
+  },
+  "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
+  "finalHoldMs": 2500,
+  "scenes": [
+    {
+      "id": "connector",
+      "chapter": "The assistant",
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/mcp.html",
+          "caption": "An assistant such as Claude connects to Submit with one web address.",
+          "headline": "One connector address",
+          "keyWord": "connector"
+        },
+        {
+          "action": "point",
+          "target": {
+            "role": "heading",
+            "name": "Can an AI assistant file my VAT return?"
+          },
+          "caption": "It opens your saved book and works out the nine VAT boxes. It files nothing.",
+          "headline": "It works out the boxes",
+          "keyWord": "boxes"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        }
+      ]
+    },
+    {
+      "id": "sign-in",
+      "chapter": "Sign in",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "a.login-link",
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
+        },
+        {
+          "action": "login",
+          "caption": "Your account keeps your submissions in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
+        },
+        {
+          "action": "consent"
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        }
+      ]
+    },
+    {
+      "id": "day-pass",
+      "chapter": "Day pass",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          },
+          "caption": "Bundles decide which activities you can run.",
+          "headline": "Open your bundles",
+          "keyWord": "bundles"
+        },
+        {
+          "action": "ensureBundle",
+          "bundle": "Day pass",
+          "testPass": true,
+          "caption": "A day pass opens the VAT activities for a day.",
+          "headline": "Get a day pass",
+          "keyWord": "pass"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        }
+      ]
+    },
+    {
+      "id": "handoff",
+      "chapter": "The hand-off",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/vat/submitVat.html#books=eyJraW5kIjoidmF0Iiwic291cmNlRmlsZU5hbWUiOiJicmlja3dvcmstcHJvLWx0ZC12YXQiLCJwYWNrYWdlVmVyc2lvbiI6IjEuMi43OCIsInBlcmlvZCI6eyJwZXJpb2RTdGFydCI6IjIwMjUtMDctMDEiLCJwZXJpb2RFbmQiOiIyMDI1LTA5LTMwIn0sImZpZ3VyZXMiOnsidmF0RHVlU2FsZXMiOjU1ODAsInZhdER1ZUFjcXVpc2l0aW9ucyI6MCwidmF0UmVjbGFpbWVkQ3VyclBlcmlvZCI6NTM2NCwidG90YWxWYWx1ZVNhbGVzRXhWQVQiOjI3OTAwLCJ0b3RhbFZhbHVlUHVyY2hhc2VzRXhWQVQiOjI2ODIwLCJ0b3RhbFZhbHVlR29vZHNTdXBwbGllZEV4VkFUIjowLCJ0b3RhbEFjcXVpc2l0aW9uc0V4VkFUIjowfX0",
+          "caption": "The assistant gives you a link. It opens the VAT form with the figures filled in.",
+          "headline": "The link fills the form",
+          "keyWord": "fills"
+        },
+        {
+          "action": "await",
+          "until": "#booksImportStatus:has-text('for the period')",
+          "timeoutMs": 30000,
+          "label": "the form to fill",
+          "caption": "The nine boxes come from the book, for the period the assistant chose.",
+          "headline": "The nine boxes are filled",
+          "keyWord": "filled"
+        },
+        {
+          "action": "scroll",
+          "target": "#vatDueSales"
+        },
+        {
+          "action": "point",
+          "target": "#vatDueSales",
+          "caption": "Check every figure. The browser is where you decide.",
+          "headline": "You check the figures",
+          "keyWord": "check"
+        },
+        {
+          "action": "type",
+          "target": "#vatNumber",
+          "text": "{{hmrcVatNumber}}",
+          "caption": "Type your VAT registration number.",
+          "headline": "Enter your VAT number",
+          "keyWord": "number"
+        },
+        {
+          "action": "click",
+          "target": "#declaration",
+          "caption": "Tick the declaration. You file the return, not the assistant.",
+          "headline": "You make the declaration",
+          "keyWord": "declaration"
+        },
+        {
+          "action": "hold",
+          "ms": 800
+        }
+      ]
+    },
+    {
+      "id": "submit",
+      "chapter": "Submit to HMRC",
+      "still": true,
+      "steps": [
+        {
+          "action": "checkHidden",
+          "target": "#allowSyntheticObligations"
+        },
+        {
+          "action": "click",
+          "target": "#submitBtn",
+          "caption": "Submitting sends you to HMRC to grant access.",
+          "headline": "Submit the return",
+          "keyWord": "Submit"
+        },
+        {
+          "action": "hmrcAuthorise",
+          "timeoutMs": 60000,
+          "caption": "Sign in to HMRC and say yes.",
+          "headline": "Grant HMRC access",
+          "keyWord": "HMRC"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        }
+      ]
+    },
+    {
+      "id": "receipt",
+      "chapter": "Submitted",
+      "still": true,
+      "steps": [
+        {
+          "action": "await",
+          "until": "#receiptDisplay",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC confirms the return is filed.",
+          "headline": "HMRC confirms it's filed",
+          "keyWord": "filed"
+        },
+        {
+          "action": "scroll",
+          "target": "#receiptDisplay"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        },
+        {
+          "action": "point",
+          "target": "#receiptDisplay",
+          "dwellMs": 600,
+          "caption": "The receipt is your record that it went through.",
+          "headline": "Keep your receipt",
+          "keyWord": "receipt"
+        },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "still",
+          "name": "vat-from-books-receipt"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        }
+      ]
+    }
+  ]
+}
