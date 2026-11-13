@@ -250,3 +250,18 @@ main ol.calendar {
     padding-bottom: var(--space-1);
   }
 }
+
+/* Company filing deadlines lookup (company-filing-deadlines.html) */
+#companyLookupForm button {
+  margin-top: var(--space-3);
+}
+
+#companyMatches ul {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+}
+
+#companyMatches li + li {
+  margin-top: var(--space-2);
+}
