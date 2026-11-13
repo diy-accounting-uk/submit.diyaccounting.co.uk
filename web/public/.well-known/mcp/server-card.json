@@ -3,6 +3,7 @@
   "title": "DIY Accounting Submit",
   "description": "Open a saved DIYA book, derive the nine boxes of a UK VAT return and read stored VAT receipts. A person checks and files in the browser.",
   "websiteUrl": "https://submit.diyaccounting.co.uk/mcp.html",
+  "icons": [{ "src": "https://submit.diyaccounting.co.uk/images/connector-icon.png", "mimeType": "image/png", "sizes": ["512x512"] }],
   "privacyPolicyUrl": "https://submit.diyaccounting.co.uk/privacy.html",
   "remotes": [
     {
