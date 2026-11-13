@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 30 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 29 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: all 30 tasks are rows on `NEXT.md`, where each row carries its brief. 20 machine-only, 5 machine-ask, 5 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: all 29 tasks are rows on `NEXT.md`, where each row carries its brief. 19 machine-only, 5 machine-ask, 5 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -849,7 +849,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | OOS22 | Send the accounts software finder email | B4, Y3 | A place on the GOV.UK page that sends directors to software for filing accounts. Its micro-entity result page holds 117 entries across three tables. | Submit appears at `https://www.gov.uk/software-company-accounts/y/unaudited/micro-entity`; sessions with a `gov.uk` referrer. | human-driven; on the board |
 | OS24 | Create and claim the profiles | D1, D2, D3, D4, D5, D6, C2, E4, L3 | About 30 listings from one sitting with the copy pack. | Rows marked live in the listing register. | machine-ask; on the board |
 | OOS26 | Send the letters to the editors and the tax bodies | D7, D8, C1, C4, Y3 | The letters go from the operator's own address. | Each send and reply is in the listing register. | human-driven; on the board |
-| OS29 | Prepare the Wikidata statements for the company | K2 | A machine-readable record of the company, referenced to Companies House, in the source that knowledge panels and models read. | The item exists and survives 30 days. | machine-only; on the board |
 | OOS29 | Save the Wikidata item | K2 | The item exists, saved from the operator's own account with his disclosure. | The item's URL answers 200. | human-driven; on the board |
 | OS29b | The Wikidata item in each site's entity record | K2 | Each site's Organization record names the item, so the record and the item point at each other. | The block on each home page holds the URL. | machine-only; on the board |
 | OS30 | A launch pack for the assistant connector | E1, E2, E3, V6 | Text, images and a recording for Product Hunt, Show HN, the AI tool directories and a developer post, ready for the day the connector launches. | Referrer sessions from each place in launch week. | machine-only; on the board |
@@ -907,7 +906,6 @@ flowchart LR
   OS17 --> OOS17
   OS18 --> OOS18
   OS30 --> OOS18
-  OS29 --> OOS29
   OOS29 --> OS29b
   OS42b --> OOS16
   OS47 --> OOS47
