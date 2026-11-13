@@ -450,6 +450,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events: use when a GA4 property's streams, key events, enhanced measurement or BigQuery link must match analytics.toml.
     - [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification) Sync Search Console domain properties and their verification: use when a Search Console domain property must exist and be verified for the service account, or the DNS_CNAME verification tokens must be read.
     - [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection) Report Search Console search analytics and URL inspection: use when a task asks how the sites rank, which queries and pages bring clicks, or whether Google has indexed each sitemap URL.
+    - [DATA-76](#data-76-check-every-sites-live-pages-the-way-the-search-engines-site-audits-do) Check every site's live pages the way the search engines' site audits do: use when a task asks whether the live pages, sitemaps and robots.txt files of the six sites pass the checks that Google Search Console and Bing Webmaster Tools report, with no account and no API key.
+    - [DATA-77](#data-77-report-bing-webmaster-tools-statistics-crawl-data-and-sitemap-feeds) Report Bing Webmaster Tools statistics, crawl data and sitemap feeds: use when a task asks how the sites do in Bing, which queries and pages bring clicks there, what Bingbot reports as crawl issues, or whether Bing holds each sitemap.
     - [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries: use when the ga4_daily BigQuery dataset's scheduled queries must match bigquery.toml.
     - [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs: use when a fresh GA4 project needs its required services enabled with no console click.
     - [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project: use when the GA4 billing account's budget alert thresholds must be checked, or a stray auto-created project verified empty.
@@ -566,6 +568,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session: use when the operator asks Claude to spend a block of time campaigning for a goal, such as paid subscribers from Matthew's family pass.
     - [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill: use when /campaign needs the last seven days of questions from UK Business Forums.
     - [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board: use when the operator asks what is needed from them, or a board render or an iterate cycle reaches its end.
+    - [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks: use when a Search Console or Bing Webmaster Tools email names a site, or the operator asks how the sites do in search, what to fix first, or whether a crawl setting, coverage drop or sitemap error is real.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -4486,7 +4489,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SQL views](#sql-views-data): [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic · [DATA-68](#data-68-sql-view-campaign-results-by-place) SQL view: campaign results by place · [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription · [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance · [DATA-30](#data-30-sql-views-cost) SQL views: cost · [DATA-31](#data-31-sql-views-dora-and-operations) SQL views: DORA and operations
 - [Google Ads administration](#google-ads-administration-data): [DATA-32](#data-32-sync-the-google-ads-account) Sync the Google Ads account · [DATA-33](#data-33-read-the-google-ads-account-inventory) Read the Google Ads account inventory · [DATA-34](#data-34-report-google-ads-campaign-performance) Report Google Ads campaign performance · [DATA-35](#data-35-forecast-google-ads-keyword-performance) Forecast Google Ads keyword performance · [DATA-36](#data-36-answer-google-ads-questions-from-live-data) Answer Google Ads questions from live data
 - [Google Ads data and paid landing tracking](#google-ads-data-and-paid-landing-tracking-data): [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs) Count paid landings from CloudFront access logs · [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake) Pull Google Ads daily cost into the lake
-- [Google Cloud and GA4 administration](#google-cloud-and-ga4-administration-data): [DATA-56](#data-56-upload-paid-conversions-to-google-ads) Upload paid conversions to Google Ads · [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud · [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events · [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification) Sync Search Console domain properties and their verification · [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection) Report Search Console search analytics and URL inspection · [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries · [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs · [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project · [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy) Sync GCP workload identity and org policy · [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory) Read the Google Cloud and GA4 inventory · [DATA-44](#data-44-assert-google-oauth-client-configuration) Assert Google OAuth client configuration · [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings) Apply GA4 and GCP IAM role bindings · [DATA-46](#data-46-configure-the-youtube-channel-as-code) Configure the YouTube channel as code · [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials · [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO
+- [Google Cloud and GA4 administration](#google-cloud-and-ga4-administration-data): [DATA-56](#data-56-upload-paid-conversions-to-google-ads) Upload paid conversions to Google Ads · [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud · [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events · [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification) Sync Search Console domain properties and their verification · [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection) Report Search Console search analytics and URL inspection · [DATA-76](#data-76-check-every-sites-live-pages-the-way-the-search-engines-site-audits-do) Check every site's live pages the way the search engines' site audits do · [DATA-77](#data-77-report-bing-webmaster-tools-statistics-crawl-data-and-sitemap-feeds) Report Bing Webmaster Tools statistics, crawl data and sitemap feeds · [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries · [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs · [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project · [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy) Sync GCP workload identity and org policy · [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory) Read the Google Cloud and GA4 inventory · [DATA-44](#data-44-assert-google-oauth-client-configuration) Assert Google OAuth client configuration · [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings) Apply GA4 and GCP IAM role bindings · [DATA-46](#data-46-configure-the-youtube-channel-as-code) Configure the YouTube channel as code · [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials · [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO
 - [Finance staging and reconciliation](#finance-staging-and-reconciliation-data): [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation) Stage PayPal transactions for reconciliation · [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation) Stage Stripe transactions for reconciliation · [DATA-50](#data-50-resolve-finance-staging-directory-paths) Resolve finance staging directory paths · [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines) Turn staged Stripe activity into diya-gl lines · [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account) Read and forecast the Microsoft Advertising account · [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data) Answer Microsoft Advertising questions from live data · [DATA-64](#data-64-publish-per-pass-figures-nightly) Publish per-pass figures nightly
 <!-- /generated:area DATA -->
 
@@ -5049,6 +5052,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events
 - [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification) Sync Search Console domain properties and their verification
 - [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection) Report Search Console search analytics and URL inspection
+- [DATA-76](#data-76-check-every-sites-live-pages-the-way-the-search-engines-site-audits-do) Check every site's live pages the way the search engines' site audits do
+- [DATA-77](#data-77-report-bing-webmaster-tools-statistics-crawl-data-and-sitemap-feeds) Report Bing Webmaster Tools statistics, crawl data and sitemap feeds
 - [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries
 - [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs
 - [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project
@@ -5110,6 +5115,26 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** infra/google/searchconsole/searchconsole-report.js, infra/google/searchconsole/searchconsole.toml, app/unit-tests/scripts/searchconsoleReport.test.js, app/unit-tests/fixtures/searchconsole/
 - **Keywords:** search console report, search analytics, url inspection, indexing, sitemap urls, clicks, impressions, canonical
 - **Related:** DATA-67, DATA-47, DATA-53
+
+#### DATA-76 Check every site's live pages the way the search engines' site audits do
+
+- **Use when:** a task asks whether the live pages, sitemaps and robots.txt files of the six sites pass the checks that Google Search Console and Bing Webmaster Tools report, with no account and no API key.
+- **Does:** search-health-check.mjs reads the live sitemap of each site, then for each URL checks the status and redirect chain, the canonical, the robots meta tag and X-Robots-Tag header, the title and meta description, one h1, JSON-LD that parses and has a type, the viewport tag, image alternative text and the status of each internal link (each target once per site). It checks the sitemap (XML, host, lastmod, hreflang pairs), robots.txt (Googlebot and Bingbot may fetch every sitemap URL, no Crawl-delay, names the sitemap) and the IndexNow key file. It makes one request at a time per host with a pause, writes target/search-health-check.json and prints counts by check and each failing URL. It exits 0 unless --fail-on-errors is given.
+- **Run:** `npm run search:health`; `npm run search:health -- --site diya-gl.co.uk --out target/one.json`
+- **Entry:** `scripts/search-health-check.mjs:main`
+- **Files:** scripts/search-health-check.mjs, app/unit-tests/scripts/searchHealthCheck.test.js
+- **Keywords:** search health, seo audit, site scan, canonical, noindex, sitemap, robots.txt, hreflang, structured data, broken links, indexnow
+- **Related:** DATA-69, OPS-143
+
+#### DATA-77 Report Bing Webmaster Tools statistics, crawl data and sitemap feeds
+
+- **Use when:** a task asks how the sites do in Bing, which queries and pages bring clicks there, what Bingbot reports as crawl issues, or whether Bing holds each sitemap.
+- **Does:** webmaster-report.js is a read-only report over the sites verified in the Bing Webmaster Tools account that owns BING_WEBMASTER_API_KEY. For each verified site it reads query and page statistics, daily rank and traffic, crawl statistics, crawl issues, the submitted feeds, the crawl settings and the URL information of the top pages, and writes one JSON report shaped like the Search Console report. It calls only Get methods, sends the key in the query string as the API takes it, and never prints the key or a request URL.
+- **Run:** `BING_WEBMASTER_API_KEY=... npm run bing:report -- --out target/bing-webmaster-report.json`
+- **Entry:** `infra/bing/webmaster-report.js:main`
+- **Files:** infra/bing/webmaster-report.js, app/unit-tests/scripts/bingWebmasterReport.test.js, app/unit-tests/fixtures/bing/
+- **Keywords:** bing webmaster, bing report, bing crawl issues, bing sitemap feeds, bing query statistics, bingbot, bing api key
+- **Related:** DATA-69, DATA-76
 
 #### DATA-39 Sync GA4-in-BigQuery scheduled queries
 
@@ -5621,7 +5646,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-60](#dev-60-fetch-the-local-tls-certificate) Fetch the local TLS certificate · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
-- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report · [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard · [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt · [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session · [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill · [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board
+- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report · [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard · [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt · [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session · [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill · [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board · [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks
 <!-- /generated:area DEV -->
 
 ### Simulator server & OAuth mocks (DEV)
@@ -5963,6 +5988,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session
 - [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill
 - [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board
+- [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks
 <!-- /generated:group claude-code-delivery-cycle-skills-dev -->
 
 #### DEV-27 Render the open-work board
@@ -6291,6 +6317,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/unblock/SKILL.md
 - **Keywords:** unblock, stale blocker, operator asks, operator commands, machine-ask, human-driven, decisions, quick wins
 - **Related:** DEV-27, DEV-29, DEV-30
+
+#### DEV-61 Optimise the sites from the two webmaster tools and local checks
+
+- **Use when:** a Search Console or Bing Webmaster Tools email names a site, or the operator asks how the sites do in search, what to fix first, or whether a crawl setting, coverage drop or sitemap error is real.
+- **Does:** search-health runs the Search Console report, the Bing report when BING_WEBMASTER_API_KEY is set, and the local page checks for the six sites. It joins the findings to the impressions and clicks of the pages, ranks the fixes by those impressions, writes one report to the private repository, and proposes one board row per fix without adding it.
+- **Run:** `/search-health`
+- **Entry:** `.claude/skills/search-health/SKILL.md`
+- **Files:** .claude/skills/search-health/SKILL.md, infra/google/searchconsole/searchconsole-report.js, infra/bing/webmaster-report.js, scripts/search-health-check.mjs
+- **Keywords:** search health, search console, bing webmaster, seo fixes, crawl politeness, coverage drop, sitemap error, webmaster email, ranked fixes
+- **Related:** DATA-69, DATA-76, DATA-77, DEV-57
 
 ## Spreadsheets and diya-gl (SS)
 
@@ -7233,10 +7269,17 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - billion laughs: [CH-11](#ch-11-parse-xml-safely)
 - bing ads: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - bing advisor: [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data)
+- bing api key: [DATA-77](#data-77-report-bing-webmaster-tools-statistics-crawl-data-and-sitemap-feeds)
 - bing budget: [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data)
 - bing campaign as code: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
+- bing crawl issues: [DATA-77](#data-77-report-bing-webmaster-tools-statistics-crawl-data-and-sitemap-feeds)
 - bing forecast: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - bing performance: [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data)
+- bing query statistics: [DATA-77](#data-77-report-bing-webmaster-tools-statistics-crawl-data-and-sitemap-feeds)
+- bing report: [DATA-77](#data-77-report-bing-webmaster-tools-statistics-crawl-data-and-sitemap-feeds)
+- bing sitemap feeds: [DATA-77](#data-77-report-bing-webmaster-tools-statistics-crawl-data-and-sitemap-feeds)
+- bing webmaster: [DATA-77](#data-77-report-bing-webmaster-tools-statistics-crawl-data-and-sitemap-feeds), [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks)
+- bingbot: [DATA-77](#data-77-report-bing-webmaster-tools-statistics-crawl-data-and-sitemap-feeds)
 - blast radius: [SS-42](#ss-42-route-tests-by-blast-radius)
 - blind crawl: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - blocked requests: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
@@ -7278,6 +7321,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - break-even: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
 - brief completeness: [SS-48](#ss-48-refine-nextmd-before-a-wave)
 - brief preparation: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
+- broken links: [DATA-76](#data-76-check-every-sites-live-pages-the-way-the-search-engines-site-audits-do)
 - browser mcp: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server)
 - browser test: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
 - browser tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci), [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci)
@@ -7335,7 +7379,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cancel run: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - cancel subscription: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal), [BILL-28](#bill-28-process-stripe-webhook-events)
 - cancel test subscriptions: [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables)
-- canonical: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
+- canonical: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection), [DATA-76](#data-76-check-every-sites-live-pages-the-way-the-search-engines-site-audits-do)
 - canonical form: [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats)
 - cap: [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - capability: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
@@ -7591,10 +7635,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - countactiveallocations: [BILL-05](#bill-05-reconcile-bundle-capacity-counters)
 - country change: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - country code: [HMRC-39](#hmrc-39-submit-and-manage-foreign-property-periodic-updates-and-property-details)
+- coverage drop: [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks)
 - coverage thresholds: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
 - cowork: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - cpc: [DATA-34](#data-34-report-google-ads-campaign-performance)
 - crawl diff: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
+- crawl politeness: [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks)
 - crawler: [SITE-04](#site-04-track-visits-via-session-beacon), [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html), [OPS-213](#ops-213-write-the-videos-the-bundles-and-the-home-activity-list-into-the-deployed-pages-for-the-environment), [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root)
 - create or replace view: [DATA-10](#data-10-create-or-replace-athena-business-views)
 - create secrets: [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager)
@@ -8250,7 +8296,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - hotspots: [DEV-56](#dev-56-audit-the-workspaces-technical-debt)
 - hourly: [BILL-05](#bill-05-reconcile-bundle-capacity-counters)
 - house style: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
-- hreflang: [SITE-30](#site-30-build-the-welsh-pages)
+- hreflang: [SITE-30](#site-30-build-the-welsh-pages), [DATA-76](#data-76-check-every-sites-live-pages-the-way-the-search-engines-site-audits-do)
 - http client: [CH-10](#ch-10-fetch-http-with-a-timeout)
 - http response helper: [SITE-07](#site-07-format-http-responses-and-errors)
 - http simulator: [DEV-01](#dev-01-run-the-http-simulator-server)
@@ -8302,6 +8348,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - index.json: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - indexeddb: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - indexing: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
+- indexnow: [DATA-76](#data-76-check-every-sites-live-pages-the-way-the-search-engines-site-audits-do)
 - infosec runbook: [OPS-64](#ops-64-runbook-information-security-operations)
 - infra-apply: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - infrastructure: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
@@ -8640,7 +8687,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - node version: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - node-qrcode: [SITE-19](#site-19-generate-qr-codes)
 - node_modules reset: [DEV-22](#dev-22-clean-and-update-local-build-state)
-- noindex: [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root)
+- noindex: [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root), [DATA-76](#data-76-check-every-sites-live-pages-the-way-the-search-engines-site-audits-do)
 - non-lambda mocks: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
 - non-main branch: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
 - not implemented: [BILL-27](#bill-27-recover-an-abandoned-checkout)
@@ -8970,6 +9017,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - race condition: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order), [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - raise issue: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
 - random hex: [SITE-17](#site-17-trace-and-secure-client-requests)
+- ranked fixes: [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks)
 - ranked report: [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report)
 - rate counter: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
 - rate limit: [SITE-05](#site-05-submit-support-tickets), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
@@ -9121,6 +9169,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - revival: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
 - revival notes: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch), [SS-55](#ss-55-resume-normal-work-from-cool-down)
 - right to be forgotten: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
+- robots.txt: [DATA-76](#data-76-check-every-sites-live-pages-the-way-the-search-engines-site-audits-do)
 - role chaining: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - role diff apply: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)
 - role pass: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
@@ -9226,9 +9275,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - search: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages), [CH-03](#ch-03-search-the-companies-house-register)
 - search analytics: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
 - search campaign create: [DATA-32](#data-32-sync-the-google-ads-account)
-- search console: [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification)
+- search console: [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification), [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks)
 - search console report: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
 - search console sitemaps: [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily)
+- search health: [DATA-76](#data-76-check-every-sites-live-pages-the-way-the-search-engines-site-audits-do), [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks)
 - searchconsole-sitemaps.yml: [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily)
 - second engine: [SS-01](#ss-01-run-the-diya-gl-calculation-engine), [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
 - second pass: [OPS-18](#ops-18-run-alarm-triage)
@@ -9275,6 +9325,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - sensitive fields: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
 - sensitivepathscan: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
 - seo: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages), [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [SS-25](#ss-25-generate-sitemaps)
+- seo audit: [DATA-76](#data-76-check-every-sites-live-pages-the-way-the-search-engines-site-audits-do)
+- seo fixes: [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks)
 - sequential commits: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
 - server.json: [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry)
 - service worker: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
@@ -9318,10 +9370,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - single stack deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand)
 - single-file json: [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats)
 - site map: [SITE-12](#site-12-map-the-site-structure)
+- site scan: [DATA-76](#data-76-check-every-sites-live-pages-the-way-the-search-engines-site-audits-do)
 - site screenshots: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - site verification: [DATA-67](#data-67-sync-search-console-domain-properties-and-their-verification)
 - site-video-capture: [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy)
-- sitemap: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root), [SS-25](#ss-25-generate-sitemaps)
+- sitemap: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root), [DATA-76](#data-76-check-every-sites-live-pages-the-way-the-search-engines-site-audits-do), [SS-25](#ss-25-generate-sitemaps)
+- sitemap error: [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks)
 - sitemap errors: [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily)
 - sitemap submission: [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily)
 - sitemap urls: [DATA-69](#data-69-report-search-console-search-analytics-and-url-inspection)
@@ -9432,6 +9486,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - stripe test mode: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier)
 - stripe-sync.js: [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue)
 - stripe.toml secret: [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
+- structured data: [DATA-76](#data-76-check-every-sites-live-pages-the-way-the-search-engines-site-audits-do)
 - structured logging: [OPS-83](#ops-83-emit-cloudwatch-emf-metrics), [OPS-86](#ops-86-provide-structured-pii-redacting-logging)
 - style guide: [DEV-38](#dev-38-write-plain-human-prose)
 - sub: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
@@ -9764,6 +9819,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - webhook signing secret: [BILL-32](#bill-32-provision-stripe-secrets)
 - webhook stack: [BILL-38](#bill-38-cdk-billing-webhook-stack)
 - webhooks: [OPS-60](#ops-60-guide-github-repository-configuration)
+- webmaster email: [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks)
 - webp: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - webvtt: [OPS-90](#ops-90-encode-captured-video-frames-and-captions)
 - week on week: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
