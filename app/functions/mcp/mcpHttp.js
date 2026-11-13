@@ -189,8 +189,11 @@ export async function ingestHandler(event) {
   if (!token) return unauthorized(host, Boolean(authorization));
 
   let sub;
+  let groups;
   try {
-    ({ sub } = await getTokenVerifier().verify(token));
+    const payload = await getTokenVerifier().verify(token);
+    sub = payload.sub;
+    groups = Array.isArray(payload["cognito:groups"]) ? payload["cognito:groups"] : [];
   } catch (error) {
     logger.warn({ message: "MCP bearer rejected", reason: error.message });
     return unauthorized(host, true);
@@ -238,7 +241,7 @@ export async function ingestHandler(event) {
 
   const response = await handleMcpRequest(buildRequest(event, host, httpMethod, bodyText), {
     session,
-    toolNames: hostedToolNames(process.env.ENVIRONMENT_NAME),
+    toolNames: hostedToolNames(process.env.ENVIRONMENT_NAME, groups),
   });
   const result = await mapResponse(response, extraHeaders);
 

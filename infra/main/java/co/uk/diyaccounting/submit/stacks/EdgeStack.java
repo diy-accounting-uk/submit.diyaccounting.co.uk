@@ -874,14 +874,14 @@ public class EdgeStack extends Stack {
                 .build();
     }
 
-    private static CfnWebACL.StatementProperty putMethodStatement() {
+    private static CfnWebACL.StatementProperty methodStatement(String method) {
         return CfnWebACL.StatementProperty.builder()
                 .byteMatchStatement(CfnWebACL.ByteMatchStatementProperty.builder()
                         .fieldToMatch(CfnWebACL.FieldToMatchProperty.builder()
                                 .method(Map.of())
                                 .build())
                         .positionalConstraint("EXACTLY")
-                        .searchString("PUT")
+                        .searchString(method)
                         .textTransformations(List.of(CfnWebACL.TextTransformationProperty.builder()
                                 .priority(0)
                                 .type("NONE")
@@ -1225,7 +1225,8 @@ public class EdgeStack extends Stack {
                                                                                                         .statements(
                                                                                                                 List.of(
                                                                                                                         diyaGlRouteUriPrefixStatement(),
-                                                                                                                        putMethodStatement()))
+                                                                                                                        methodStatement(
+                                                                                                                                "PUT")))
                                                                                                         .build())
                                                                                         .build())
                                                                         .build())
@@ -1335,6 +1336,35 @@ public class EdgeStack extends Stack {
                                 .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
                                         .cloudWatchMetricsEnabled(true)
                                         .metricName("McpRateLimitRule")
+                                        .sampledRequestsEnabled(true)
+                                        .build())
+                                .build(),
+                        // The demo reviewer sign-in takes a password, so its POSTs are counted per
+                        // address, a few at a time, apart from the bearer-keyed rule above.
+                        CfnWebACL.RuleProperty.builder()
+                                .name("McpReviewerRateLimitRule")
+                                .priority(8)
+                                .statement(CfnWebACL.StatementProperty.builder()
+                                        .rateBasedStatement(CfnWebACL.RateBasedStatementProperty.builder()
+                                                .limit(10L) // POSTs per 5 minutes per address
+                                                .evaluationWindowSec(300)
+                                                .aggregateKeyType("IP")
+                                                .scopeDownStatement(CfnWebACL.StatementProperty.builder()
+                                                        .andStatement(CfnWebACL.AndStatementProperty.builder()
+                                                                .statements(List.of(
+                                                                        methodStatement("POST"),
+                                                                        exactUriPathStatement("/mcp/oauth/reviewer")))
+                                                                .build())
+                                                        .build())
+                                                .build())
+                                        .build())
+                                .action(CfnWebACL.RuleActionProperty.builder()
+                                        .block(CfnWebACL.BlockActionProperty.builder()
+                                                .build())
+                                        .build())
+                                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                                        .cloudWatchMetricsEnabled(true)
+                                        .metricName("McpReviewerRateLimitRule")
                                         .sampledRequestsEnabled(true)
                                         .build())
                                 .build()))

@@ -5,7 +5,7 @@
 // The MCP OAuth facade: protected resource and authorization server metadata, DCR, a consent
 // step, and a code and refresh relay to Cognito. State travels in signed blobs; nothing is stored.
 
-import { randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { createLogger, context } from "../../lib/logger.js";
 import {
   http200OkResponse,
@@ -20,6 +20,11 @@ import { fetchWithTimeout } from "../../lib/httpFetch.js";
 import { buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { signBlob, verifyBlob } from "../../lib/mcpOauthBlob.js";
 import { loadBlobKeys, blobKeyRegistriesEqual } from "../../lib/mcpBlobKey.js";
+import { readSecret } from "../../lib/cachedSecret.js";
+import { sealFor, openFor } from "../../lib/codesSeal.js";
+import { firstPublicIp, forwardedIpsOf } from "../../lib/hostedClientAddress.js";
+import { signInReviewer } from "../../lib/mcpReviewerSignIn.js";
+import { putReviewerCode, takeReviewerCode, reviewerCodeKey } from "../../data/dynamoDbReviewerCodeRepository.js";
 import {
   DCR_CLIENT_ID,
   acceptClient,
@@ -40,15 +45,21 @@ const MAX_PARAM_LENGTH = 2048;
 const PKCE_VALUE = /^[A-Za-z0-9\-._~]{43,128}$/;
 const OAUTH_ERROR_CODE = /^[a-z_]{1,64}$/;
 const CONSENT_COOKIE = "__Host-mcp_consent";
+const REVIEWER_PATH = "/mcp/oauth/reviewer";
+const REVIEWER_CODE_PURPOSE = "mcp-reviewer-code";
+const REVIEWER_REFUSED = "The user name or password is not right.";
 const METADATA_CACHE_CONTROL = "max-age=300";
 const NO_STORE = { "Cache-Control": "no-store", "Pragma": "no-cache" };
 // Chrome applies form-action to the redirect that answers a form POST, so the consent form's
 // answer, a redirect to the upstream authorize endpoint, needs that origin listed.
-function pageHeaders() {
+// The reviewer form's answer is a redirect to the application's return address, so that origin
+// is listed too.
+function pageHeaders(extraFormOrigin) {
   const upstreamOrigin = new URL(process.env.MCP_UPSTREAM_AUTHORIZE_URL).origin;
+  const formOrigins = [upstreamOrigin, extraFormOrigin].filter(Boolean).join(" ");
   return {
     "Content-Type": "text/html; charset=utf-8",
-    "Content-Security-Policy": `default-src 'none'; style-src 'unsafe-inline'; form-action 'self' ${upstreamOrigin}; frame-ancestors 'none'`,
+    "Content-Security-Policy": `default-src 'none'; style-src 'unsafe-inline'; form-action 'self' ${formOrigins}; frame-ancestors 'none'`,
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "no-referrer",
     "Cache-Control": "no-store",
@@ -205,10 +216,10 @@ const PAGE_STYLE =
   "body{font-family:system-ui,sans-serif;max-width:32rem;margin:3rem auto;padding:0 1rem;color:#1a1a1a}" +
   "button{font-size:1rem;padding:.6rem 1.4rem;border:0;border-radius:.3rem;background:#1a5fb4;color:#fff;cursor:pointer}";
 
-function htmlPage(statusCode, title, bodyHtml, headers = {}) {
+function htmlPage(statusCode, title, bodyHtml, headers = {}, { extraFormOrigin } = {}) {
   return {
     statusCode,
-    headers: { ...pageHeaders(), ...headers },
+    headers: { ...pageHeaders(extraFormOrigin), ...headers },
     body:
       `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">` +
       `<title>${escapeHtml(title)}</title><style>${PAGE_STYLE}</style></head><body>${bodyHtml}</body></html>`,
@@ -223,22 +234,42 @@ function errorPage(description) {
   );
 }
 
-function consentPage({ redirectUri, clientName, consentBlob, cookieNonce }) {
+function reviewerSignInEnabled() {
+  return Boolean(process.env.MCP_REVIEWER_USERNAME);
+}
+
+function reviewerSection(consentBlob, refusal) {
+  return (
+    `<hr><h2>Reviewer sign-in</h2>` +
+    `<p>For a directory reviewer with the demo account.</p>` +
+    (refusal ? `<p role="alert"><strong>${escapeHtml(refusal)}</strong></p>` : "") +
+    `<form method="post" action="${REVIEWER_PATH}">` +
+    `<input type="hidden" name="consent" value="${escapeHtml(consentBlob)}">` +
+    `<p><label>User name<br><input type="text" name="username" autocomplete="username" required style="width:100%;box-sizing:border-box"></label></p>` +
+    `<p><label>Password<br><input type="password" name="password" autocomplete="current-password" required style="width:100%;box-sizing:border-box"></label></p>` +
+    `<button type="submit">Sign in as the reviewer</button></form>`
+  );
+}
+
+function consentPage({ redirectUri, clientName, consentBlob, cookieNonce, statusCode = 200, refusal }) {
   const host = redirectHost(redirectUri);
   const asker = clientName
     ? `${escapeHtml(clientName)} (<strong>${escapeHtml(host)}</strong>)`
     : `An application at <strong>${escapeHtml(host)}</strong>`;
   const loopbackLine = isLoopbackRedirectUri(redirectUri) ? "<p>The answer goes to a program on this computer.</p>" : "";
+  const reviewerEnabled = reviewerSignInEnabled();
   return htmlPage(
-    200,
+    statusCode,
     "Allow access to DIY Accounting Submit",
     `<h1>Allow access</h1>` +
       `<p>${asker} is asking to use DIY Accounting Submit as you.</p>` +
       loopbackLine +
       `<form method="post" action="/mcp/oauth/authorize">` +
       `<input type="hidden" name="consent" value="${escapeHtml(consentBlob)}">` +
-      `<button type="submit">Continue</button></form>`,
+      `<button type="submit">Continue</button></form>` +
+      (reviewerEnabled ? reviewerSection(consentBlob, refusal) : ""),
     { "Set-Cookie": `${CONSENT_COOKIE}=${cookieNonce}; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=${CONSENT_TTL_SECONDS}` },
+    reviewerEnabled ? { extraFormOrigin: new URL(redirectUri).origin } : {},
   );
 }
 
@@ -345,19 +376,27 @@ async function verifyWithKeyRefresh(blob, expectedTyp) {
   return { verified: verifyBlob(blob, refreshedKeys, expectedTyp), keys: refreshedKeys };
 }
 
-async function handleAuthorizePost({ event, host }) {
+// The consent blob and the cookie that the consent page set must both hold, for either form.
+async function checkConsentPost({ event, endpoint, logFields = {} }) {
   const parsed = formParams(event);
-  if (!parsed.ok) return errorPage(parsed.description);
+  if (!parsed.ok) return { refusal: errorPage(parsed.description) };
   const { verified, keys } = await verifyWithKeyRefresh(parsed.params.consent, "consent");
   if (!verified.ok) {
-    logOutcome({ endpoint: "authorize_consent", outcome: `consent_${verified.reason}` });
-    return errorPage("This sign-in request has expired or is not valid.");
+    logOutcome({ endpoint, ...logFields, outcome: `consent_${verified.reason}` });
+    return { refusal: errorPage("This sign-in request has expired or is not valid.") };
   }
   const { nonce, ...fields } = verified.fields;
   if (!constantTimeEqual(readCookie(event, CONSENT_COOKIE), nonce)) {
-    logOutcome({ endpoint: "authorize_consent", clientId: fields.clientId, outcome: "consent_cookie_mismatch" });
-    return errorPage("This sign-in request was not started in this browser.");
+    logOutcome({ endpoint, ...logFields, clientId: fields.clientId, outcome: "consent_cookie_mismatch" });
+    return { refusal: errorPage("This sign-in request was not started in this browser.") };
   }
+  return { params: parsed.params, fields, nonce, keys };
+}
+
+async function handleAuthorizePost({ event, host }) {
+  const checked = await checkConsentPost({ event, endpoint: "authorize_consent" });
+  if (checked.refusal) return checked.refusal;
+  const { fields, keys } = checked;
   const upstreamBlob = signBlob(fields, keys, { typ: "upstream", ttlSeconds: UPSTREAM_TTL_SECONDS });
   const url = new URL(process.env.MCP_UPSTREAM_AUTHORIZE_URL);
   url.searchParams.set("response_type", "code");
@@ -376,6 +415,83 @@ async function handleAuthorizePost({ event, host }) {
   return redirect(url.toString(), {
     "Set-Cookie": `${CONSENT_COOKIE}=; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=0`,
   });
+}
+
+function pkceChallengeOf(verifier) {
+  return createHash("sha256").update(verifier).digest("base64url");
+}
+
+function reviewerViewer(event, host) {
+  return {
+    ipAddress: firstPublicIp(forwardedIpsOf(getHeader(event.headers, "x-forwarded-for"))),
+    serverName: host,
+    serverPath: REVIEWER_PATH,
+    userAgent: getHeader(event.headers, "user-agent"),
+  };
+}
+
+// The typed user name and password are compared here, in constant time, before Cognito is called,
+// so a wrong guess never reaches the demo user's sign-in and cannot lock it. Both comparisons run
+// whatever the first answers.
+async function handleReviewerPost({ event, request, host }) {
+  const endpoint = "reviewer";
+  if (!reviewerSignInEnabled()) return http404NotFoundResponse({ request, headers: {}, message: "Not found" });
+  validateEnv(["MCP_USER_POOL_ID", "MCP_REVIEWER_USERNAME", "MCP_REVIEWER_PASSWORD_SECRET_NAME", "MCP_REVIEWER_TOTP_SECRET_NAME"]);
+  const checked = await checkConsentPost({ event, endpoint });
+  if (checked.refusal) return checked.refusal;
+  const { params, fields, nonce, keys } = checked;
+  const base = { endpoint, clientId: fields.clientId, redirectHost: redirectHost(fields.redirectUri) };
+
+  const storedPassword = await readSecret(process.env.MCP_REVIEWER_PASSWORD_SECRET_NAME);
+  const usernameMatched = constantTimeEqual(params.username, process.env.MCP_REVIEWER_USERNAME);
+  const passwordMatched = constantTimeEqual(params.password, storedPassword);
+  if (!usernameMatched || !passwordMatched) {
+    logOutcome({ ...base, outcome: "credentials_refused", usernameMatched });
+    const accepted = await acceptClient({ clientId: fields.clientId, redirectUri: fields.redirectUri });
+    if (!accepted.ok) return errorPage("This application or its return address is not recognised.");
+    return consentPage({
+      redirectUri: fields.redirectUri,
+      clientName: accepted.clientName,
+      consentBlob: params.consent,
+      cookieNonce: nonce,
+      statusCode: 401,
+      refusal: REVIEWER_REFUSED,
+    });
+  }
+
+  const trace = {};
+  let tokens;
+  try {
+    tokens = await signInReviewer({ viewer: reviewerViewer(event, host), password: storedPassword, trace });
+  } catch (error) {
+    logOutcome({ ...base, outcome: "cognito_refused", usernameMatched, cognitoErrorName: error?.name, ...trace });
+    return errorPage("The demo sign-in could not be completed. Try again in a minute.");
+  }
+
+  const reviewerCodeId = randomUUID();
+  const sealed = await sealFor(
+    REVIEWER_CODE_PURPOSE,
+    { access_token: tokens.AccessToken, refresh_token: tokens.RefreshToken, expires_in: tokens.ExpiresIn },
+    reviewerCodeKey(reviewerCodeId),
+  );
+  await putReviewerCode(reviewerCodeId, sealed);
+  const codeBlob = signBlob(
+    {
+      reviewerCodeId,
+      clientId: fields.clientId,
+      redirectUri: fields.redirectUri,
+      scope: fields.scope,
+      codeChallenge: fields.codeChallenge,
+    },
+    keys,
+    { typ: "code", ttlSeconds: CODE_TTL_SECONDS },
+  );
+  logOutcome({ ...base, outcome: "code_issued", usernameMatched, ...trace });
+  const response = redirectToClient(fields.redirectUri, { code: codeBlob, state: fields.state ?? undefined, iss: `https://${host}` });
+  return {
+    ...response,
+    headers: { ...response.headers, "Set-Cookie": `${CONSENT_COOKIE}=; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=0` },
+  };
 }
 
 async function handleCallback({ event, host }) {
@@ -451,6 +567,30 @@ async function exchangeUpstream({ request, form, scope, logFields }) {
   return tokenSuccess(request, upstream.body, scope);
 }
 
+// A reviewer code names a stored item that holds the sealed tokens. The verifier is checked before
+// the item is taken, so a wrong verifier does not use the code up.
+async function redeemReviewerCode({ request, p, reviewerCodeId, codeChallenge, scope, clientId, redirectUri }) {
+  const logFields = { endpoint: "token", grantType: "authorization_code", clientId, redirectHost: redirectHost(redirectUri) };
+  if (!constantTimeEqual(pkceChallengeOf(p.code_verifier), codeChallenge)) {
+    logOutcome({ ...logFields, outcome: "pkce_mismatch" });
+    return oauthError(request, "invalid_grant", "The code verifier does not match");
+  }
+  const sealed = await takeReviewerCode(reviewerCodeId);
+  if (!sealed) {
+    logOutcome({ ...logFields, outcome: "reviewer_code_missing" });
+    return oauthError(request, "invalid_grant", "The code is invalid or expired");
+  }
+  let tokens;
+  try {
+    tokens = await openFor(REVIEWER_CODE_PURPOSE, sealed, reviewerCodeKey(reviewerCodeId));
+  } catch {
+    logOutcome({ ...logFields, outcome: "reviewer_code_unsealable" });
+    return oauthError(request, "invalid_grant", "The code is invalid or expired");
+  }
+  logOutcome({ ...logFields, outcome: "tokens_issued" });
+  return tokenSuccess(request, tokens, scope);
+}
+
 async function handleToken({ event, request, host }) {
   const parsed = formParams(event);
   if (!parsed.ok) return oauthError(request, "invalid_request", parsed.description);
@@ -469,11 +609,12 @@ async function handleToken({ event, request, host }) {
       logOutcome({ endpoint: "token", clientId: p.client_id, outcome: `code_${verified.reason}` });
       return oauthError(request, "invalid_grant", "The code is invalid or expired");
     }
-    const { code, clientId, redirectUri, scope } = verified.fields;
+    const { code, clientId, redirectUri, scope, reviewerCodeId, codeChallenge } = verified.fields;
     if (!constantTimeEqual(clientId, p.client_id) || !constantTimeEqual(redirectUri, p.redirect_uri)) {
       logOutcome({ endpoint: "token", clientId: p.client_id, outcome: "code_client_mismatch" });
       return oauthError(request, "invalid_grant", "The code was not issued to this client and redirect URI");
     }
+    if (reviewerCodeId) return redeemReviewerCode({ request, p, reviewerCodeId, codeChallenge, scope, clientId, redirectUri });
     return exchangeUpstream({
       request,
       scope,
@@ -528,6 +669,7 @@ const ROUTES = {
   "/.well-known/oauth-authorization-server": { GET: ({ request, host }) => metadataResponse(request, authorizationServerMetadata(host)) },
   "/mcp/oauth/register": { POST: handleRegister },
   "/mcp/oauth/authorize": { GET: handleAuthorizeGet, POST: handleAuthorizePost },
+  [REVIEWER_PATH]: { POST: handleReviewerPost },
   "/mcp/oauth/callback": { GET: handleCallback },
   "/mcp/oauth/token": { POST: handleToken },
   "/mcp/oauth/revoke": { POST: handleRevoke },

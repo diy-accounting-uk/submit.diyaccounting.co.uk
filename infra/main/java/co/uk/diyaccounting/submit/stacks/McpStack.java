@@ -209,7 +209,12 @@ public class McpStack extends Stack {
                 .with("MCP_UPSTREAM_TOKEN_URL", cognitoOauthBase + "/token")
                 .with("MCP_UPSTREAM_REVOKE_URL", cognitoOauthBase + "/revoke")
                 .with("MCP_UPSTREAM_CLIENT_ID", props.mcpUserPoolClientId())
-                .with("MCP_OAUTH_BLOB_KEY_SECRET_ARN", this.oauthBlobKeySecret.getSecretArn());
+                .with("MCP_OAUTH_BLOB_KEY_SECRET_ARN", this.oauthBlobKeySecret.getSecretArn())
+                .with("MCP_USER_POOL_ID", props.cognitoUserPoolId())
+                .with("MCP_REVIEWER_USERNAME", "mcp-reviewer@test.diyaccounting.co.uk")
+                .with("MCP_REVIEWER_PASSWORD_SECRET_NAME", sharedNames.mcp.mcpReviewerPasswordSecretName)
+                .with("MCP_REVIEWER_TOTP_SECRET_NAME", sharedNames.mcp.mcpReviewerTotpSeedSecretName)
+                .with("MCP_SESSIONS_DYNAMODB_TABLE_NAME", mcpSessionsTable.getTableName());
         var mcpOauthApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -244,6 +249,24 @@ public class McpStack extends Stack {
         this.lambdaFunctionProps.add(
                 onPublishedPath(this.mcpOauthLambdaProps, HttpMethod.ANY, sharedNames.mcp.mcpOauthActionUrlPath));
         this.oauthBlobKeySecret.grantRead(this.mcpOauthLambda);
+        // The reviewer sign-in signs one demo user in, reads its password and code seed by name (a
+        // secret ARN ends in a random suffix), and parks the sealed tokens in the sessions table.
+        this.mcpOauthLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("cognito-idp:AdminInitiateAuth", "cognito-idp:AdminRespondToAuthChallenge"))
+                .resources(List.of(
+                        "arn:aws:cognito-idp:%s:%s:userpool/%s".formatted(region, account, props.cognitoUserPoolId())))
+                .build());
+        this.mcpOauthLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("secretsmanager:GetSecretValue"))
+                .resources(List.of(
+                        "arn:aws:secretsmanager:%s:%s:secret:%s-??????"
+                                .formatted(region, account, sharedNames.mcp.mcpReviewerPasswordSecretName),
+                        "arn:aws:secretsmanager:%s:%s:secret:%s-??????"
+                                .formatted(region, account, sharedNames.mcp.mcpReviewerTotpSeedSecretName)))
+                .build());
+        mcpSessionsTable.grant(this.mcpOauthLambda, "dynamodb:PutItem", "dynamodb:DeleteItem");
         infof("Created MCP OAuth Lambda %s", this.mcpOauthLambda.getNode().getId());
 
         // ============================================================================

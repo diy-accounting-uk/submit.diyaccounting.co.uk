@@ -167,7 +167,71 @@ class McpStackTest {
     }
 
     @Test
-    void onlyTheHttpFunctionWritesTheSessionsTable() {
+    void theOauthFunctionHasTheReviewerSignInSettings() {
+        McpStack stack = synthMcpStack();
+        Template template = Template.fromStack(stack);
+        SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
+
+        var variables = environmentVariables(template, stack.mcpOauthLambdaProps.ingestFunctionName());
+        assertEquals(USER_POOL_ID, variables.get("MCP_USER_POOL_ID"));
+        assertEquals("mcp-reviewer@test.diyaccounting.co.uk", variables.get("MCP_REVIEWER_USERNAME"));
+        assertEquals("docs/submit/mcp/reviewer-password", variables.get("MCP_REVIEWER_PASSWORD_SECRET_NAME"));
+        assertEquals("docs/submit/mcp/reviewer-totp-seed", variables.get("MCP_REVIEWER_TOTP_SECRET_NAME"));
+        assertEquals(sharedNames.data.mcpSessionsTableName, variables.get("MCP_SESSIONS_DYNAMODB_TABLE_NAME"));
+    }
+
+    @Test
+    void theOauthFunctionMayOnlyStartAndAnswerTheSignInOnThePool() {
+        McpStack stack = synthMcpStack();
+        Template template = Template.fromStack(stack);
+
+        var cognitoStatements =
+                iamStatementsForFunction(template, stack.mcpOauthLambdaProps.ingestFunctionName()).stream()
+                        .filter(statement -> actionsOf(statement).stream().anyMatch(a -> a.startsWith("cognito-idp:")))
+                        .toList();
+        assertEquals(1, cognitoStatements.size());
+        assertEquals(
+                List.of("cognito-idp:AdminInitiateAuth", "cognito-idp:AdminRespondToAuthChallenge"),
+                actionsOf(cognitoStatements.get(0)));
+        assertEquals(
+                "arn:aws:cognito-idp:eu-west-2:111111111111:userpool/" + USER_POOL_ID,
+                cognitoStatements.get(0).get("Resource"));
+    }
+
+    @Test
+    void theOauthFunctionReadsOnlyTheTwoReviewerSecretsByNameWithTheSuffixPattern() {
+        McpStack stack = synthMcpStack();
+        Template template = Template.fromStack(stack);
+
+        var reviewerStatements =
+                iamStatementsForFunction(template, stack.mcpOauthLambdaProps.ingestFunctionName()).stream()
+                        .filter(statement ->
+                                String.valueOf(statement.get("Resource")).contains("/mcp/reviewer-"))
+                        .toList();
+        assertEquals(1, reviewerStatements.size());
+        assertEquals(List.of("secretsmanager:GetSecretValue"), actionsOf(reviewerStatements.get(0)));
+        assertEquals(
+                List.of(
+                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/mcp/reviewer-password-??????",
+                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/mcp/reviewer-totp-seed-??????"),
+                reviewerStatements.get(0).get("Resource"));
+    }
+
+    @Test
+    void theOauthFunctionMayOnlyPutAndDeleteItemsInTheSessionsTable() {
+        McpStack stack = synthMcpStack();
+        Template template = Template.fromStack(stack);
+
+        var dynamoActions = iamStatementsForFunction(template, stack.mcpOauthLambdaProps.ingestFunctionName()).stream()
+                .flatMap(statement -> actionsOf(statement).stream())
+                .filter(action -> action.startsWith("dynamodb:"))
+                .sorted()
+                .toList();
+        assertEquals(List.of("dynamodb:DeleteItem", "dynamodb:PutItem"), dynamoActions);
+    }
+
+    @Test
+    void onlyTheHttpFunctionReadsTheSessionsTable() {
         McpStack stack = synthMcpStack();
         Template template = Template.fromStack(stack);
 
@@ -178,8 +242,10 @@ class McpStackTest {
                 "expected the http function to read and write the sessions table");
         assertTrue(
                 iamStatementsForFunction(template, stack.mcpOauthLambdaProps.ingestFunctionName()).stream()
-                        .noneMatch(statement -> actionsOf(statement).stream().anyMatch(a -> a.startsWith("dynamodb:"))),
-                "expected the oauth function to have no DynamoDB access");
+                        .noneMatch(statement -> actionsOf(statement).contains("dynamodb:GetItem")
+                                || actionsOf(statement).contains("dynamodb:Scan")
+                                || actionsOf(statement).contains("dynamodb:Query")),
+                "expected the oauth function to have no DynamoDB read access");
     }
 
     @Test
@@ -196,6 +262,8 @@ class McpStackTest {
                         .filter(statement -> actionsOf(statement).contains("secretsmanager:GetSecretValue"))
                         .filter(statement ->
                                 !String.valueOf(statement.get("Resource")).contains("/submit/origin/verify"))
+                        .filter(statement ->
+                                !String.valueOf(statement.get("Resource")).contains("/mcp/reviewer-"))
                         .toList();
         assertEquals(1, oauthSecretStatements.size());
         assertFalse(

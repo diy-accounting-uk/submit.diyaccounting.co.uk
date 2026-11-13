@@ -403,6 +403,43 @@ class IdentityStackTest {
     }
 
     @Test
+    void mcpClientAllowsTheAdminPasswordFlowForTheReviewerSignIn() {
+        IdentityStack stack = synthIdentityStack("ci");
+        Template template = Template.fromStack(stack);
+
+        template.hasResourceProperties(
+                "AWS::Cognito::UserPoolClient",
+                Match.objectLike(Map.of(
+                        "ClientName",
+                        Match.stringLikeRegexp(".*-mcp-client$"),
+                        "ExplicitAuthFlows",
+                        Match.arrayWith(List.of("ALLOW_ADMIN_USER_PASSWORD_AUTH")))));
+    }
+
+    @Test
+    void onlyTheMcpClientAllowsTheAdminPasswordFlow() {
+        IdentityStack stack = synthIdentityStack("ci");
+        Template template = Template.fromStack(stack);
+
+        var clientsWithAdminFlow = template.findResources(
+                "AWS::Cognito::UserPoolClient",
+                Map.of(
+                        "Properties",
+                        Map.of("ExplicitAuthFlows", Match.arrayWith(List.of("ALLOW_ADMIN_USER_PASSWORD_AUTH")))));
+        assertEquals(1, clientsWithAdminFlow.size());
+    }
+
+    @Test
+    void theReviewerGroupExistsOnThePool() {
+        IdentityStack stack = synthIdentityStack("ci");
+        Template template = Template.fromStack(stack);
+
+        template.resourceCountIs("AWS::Cognito::UserPoolGroup", 1);
+        template.hasResourceProperties(
+                "AWS::Cognito::UserPoolGroup", Match.objectLike(Map.of("GroupName", "mcp-reviewer")));
+    }
+
+    @Test
     void mcpClientIdIsPublishedAsAStackOutputAndAnSsmParameter() {
         IdentityStack stack = synthIdentityStack("ci");
         Template template = Template.fromStack(stack);
