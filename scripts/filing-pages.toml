@@ -99,3 +99,106 @@ before = [
 ]
 deadline = { source = "ch-confirmation-statement-12-months", text = "A company files a confirmation statement at least every 12 months." }
 fee_note = "File under your own Companies House presenter and Companies House bills its fee (currently £50) to your credit account, and Submit takes no fee of its own."
+
+# An article page is not one filing, so it is written whatever the status of the filing it names.
+# Each section holds paragraphs (text), a list, a table, the status of a filing (status, from the
+# availability table) and the quotes of source files (sources). A paragraph or list item can hold
+# [label](href) links.
+
+[[article]]
+file = "hmrc-company-tax-return-service-closed.html"
+title = "HMRC Company Tax Return service closed: what a company does now - DIY Accounting Submit"
+heading = "HMRC's Company Tax Return service closed on 31 March 2026: what a small company does now"
+subtitle = "How a small company files its accounts and its Company Tax Return since 1 April 2026"
+description = "HMRC's online service for company accounts and the Company Tax Return closed on 31 March 2026. What a small company does now, and what Submit files for it."
+summary = "HMRC's online service for company accounts and the Company Tax Return closed on 31 March 2026. A company now files with commercial software. Submit files the annual accounts at Companies House."
+action = { label = "File company accounts", href = "micro-entity-accounts.html" }
+
+[[article.section]]
+heading = "What closed"
+text = ["The 'File your accounts and Company Tax Return' service of HMRC closed on 31 March 2026. GOV.UK says what to use instead."]
+sources = ["hmrc-ct-online-service-closed"]
+
+[[article.section]]
+heading = "What a company does now"
+list = [
+  "File the annual accounts with Companies House. Submit does this for [micro-entity accounts](micro-entity-accounts.html), [small company accounts](small-company-accounts.html) and [dormant company accounts](dormant-company-accounts.html).",
+  "File the Company Tax Return (CT600) with HMRC through commercial software.",
+]
+
+[[article.section]]
+heading = "When each is due"
+text = ["The accounts and the Company Tax Return have separate deadlines."]
+sources = ["ch-accounts-9-months", "ct600-12-months"]
+
+[[article.section]]
+heading = "What Submit files"
+status = [
+  { activity = "file-micro-entity-accounts", label = "annual accounts at Companies House" },
+  { activity = "file-company-tax-return", label = "Company Tax Return (CT600)" },
+]
+text = ["Every filing and the channels that offer it are in the [availability table](mtd-calendar.html#availability)."]
+
+[[article]]
+file = "company-accounts-by-software-from-april-2028.html"
+title = "Company accounts by software from April 2028 - DIY Accounting Submit"
+heading = "Company accounts by software from April 2028"
+subtitle = "What changes for a company that files its own accounts at Companies House"
+description = "From April 2028 every company files its accounts at Companies House in iXBRL format using commercial software. What changes, what stays, and what Submit files."
+summary = "From April 2028 every company files its accounts at Companies House in iXBRL format using commercial software. The web and paper services close for accounts. Submit builds the iXBRL accounts and files them."
+action = { label = "File company accounts", href = "micro-entity-accounts.html" }
+
+[[article.section]]
+heading = "What changes"
+text = ["GOV.UK gives the change below. The notice is dated 23 October 2026."]
+sources = ["ch-accounts-software-2028-04", "ch-accounts-web-paper-closed-2028-04"]
+
+[[article.section]]
+heading = "What stays"
+text = ["Companies House keeps its web service for filings that are not accounts."]
+sources = ["ch-web-filing-stays-2028-04"]
+
+[[article.section]]
+heading = "What Submit files"
+status = [{ activity = "file-micro-entity-accounts", label = "annual accounts at Companies House" }]
+text = [
+  "Submit turns the figures you give it into iXBRL accounts. See [micro-entity accounts](micro-entity-accounts.html) and [small company accounts](small-company-accounts.html).",
+  "Every date for a company is on the [MTD calendar](mtd-calendar.html).",
+]
+
+[[article.section]]
+heading = "Which date applies"
+text = ["Earlier plans gave a date in 2027. This page follows the GOV.UK notice above, read on the date shown with its quote. Check that page for the current date."]
+
+[[article]]
+file = "making-tax-digital-income-tax-over-30000.html"
+title = "Making Tax Digital for Income Tax from April 2027 - DIY Accounting Submit"
+heading = "Making Tax Digital for Income Tax from 6 April 2027: incomes over £30,000"
+subtitle = "Who starts in April 2027 and when the quarterly updates are due"
+description = "Making Tax Digital for Income Tax reaches sole traders and landlords with qualifying income over £30,000 from 6 April 2027. Who it covers and the update dates."
+summary = "Sole traders and landlords with qualifying income over £30,000 in the 2025 to 2026 tax year use Making Tax Digital for Income Tax from 6 April 2027. Submit's Income Tax filing awaits HMRC recognition. Submit files VAT returns now."
+action = { label = "File a VAT return", href = "vat-return-from-a-spreadsheet.html" }
+
+[[article.section]]
+heading = "Who starts on 6 April 2027"
+text = ["The rule covers sole traders and landlords who are registered for Self Assessment, when their qualifying income is over £30,000."]
+sources = ["itsa-mtd-over-30k", "itsa-mtd-who-needs-to-use"]
+
+[[article.section]]
+heading = "Quarterly updates"
+text = ["Send an update for each quarter by its deadline. These are the standard update periods."]
+table = "quarterly"
+sources = ["itsa-quarterly-update-deadlines"]
+
+[[article.section]]
+heading = "Final declaration"
+text = ["The tax return for the year follows the quarterly updates."]
+sources = ["itsa-final-declaration-deadline"]
+
+[[article.section]]
+heading = "What Submit files"
+status = [{ activity = "self-employed", label = "Income Tax (MTD)" }]
+text = [
+  "Submit files VAT returns now. See [VAT return from a spreadsheet](vat-return-from-a-spreadsheet.html).",
+  "The dates for other income levels, and for every other filing, are on the [MTD calendar](mtd-calendar.html).",
+]

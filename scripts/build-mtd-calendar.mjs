@@ -26,6 +26,13 @@ export const PAGE_PATH = join(ROOT, "web", "public", "mtd-calendar.html");
 
 export const DATED_FACTS = [
   {
+    id: "hmrc-ct-online-service-closed-2026-03",
+    date: "2026-03-31",
+    title: "HMRC: free online accounts and Company Tax Return service closed",
+    text: "From 1 April 2026 a company uses commercial software to file its annual accounts and its Company Tax Return with HMRC.",
+    page: "hmrc-company-tax-return-service-closed.html",
+  },
+  {
     id: "ch-identity-verification-2025-11",
     date: "2025-11-18",
     title: "Companies House: director and PSC identity verification",
@@ -48,12 +55,20 @@ export const DATED_FACTS = [
     date: "2027-04-06",
     title: "Income Tax: qualifying income over £30,000",
     text: "The rule reaches qualifying income over £30,000 in the 2025 to 2026 tax year.",
+    page: "making-tax-digital-income-tax-over-30000.html",
   },
   {
     id: "itsa-mtd-over-20k-2028-04",
     date: "2028-04-06",
     title: "Income Tax: qualifying income over £20,000",
     text: "The rule reaches qualifying income over £20,000 in the 2026 to 2027 tax year.",
+  },
+  {
+    id: "ch-accounts-software-2028-04",
+    date: "2028-04-01",
+    title: "Companies House: accounts filed by commercial software only",
+    text: "From April 2028 every company files its accounts in iXBRL format using commercial software. The Companies House web and paper services close for accounts. Confirmation statements and other filings stay on the web service.",
+    page: "company-accounts-by-software-from-april-2028.html",
   },
 ];
 
@@ -216,6 +231,8 @@ export const RELEVANT_FOR = {
   "itsa-quarterly-update-deadlines": ["sole-trader", "taxi-private-hire-driver", "landlord", "sole-trader-employees"],
   "itsa-final-declaration-deadline": ["sole-trader", "taxi-private-hire-driver", "landlord", "sole-trader-employees"],
   "itsa-mtd-partnerships-date-unset": ["partnership"],
+  "hmrc-ct-online-service-closed-2026-03": COMPANIES,
+  "ch-accounts-software-2028-04": COMPANIES,
   "ch-identity-verification-2025-11": COMPANIES,
   "ch-confirmation-statement-12-months": COMPANIES,
   "ch-accounts-9-months": COMPANIES,
@@ -369,7 +386,14 @@ function entryHtml(fact, sources, heading, extraHtml = "") {
 export function renderCalendarHtml(sources) {
   const dated = [...DATED_FACTS]
     .sort((a, b) => a.date.localeCompare(b.date))
-    .map((f) => entryHtml(f, sources, `<span class="calendar-date">${formatIsoDate(f.date)}</span>${escapeHtml(f.title)}`))
+    .map((f) =>
+      entryHtml(
+        f,
+        sources,
+        `<span class="calendar-date">${formatIsoDate(f.date)}</span>${escapeHtml(f.title)}`,
+        f.page ? `<p><a href="${f.page}">Read the page for this date</a></p>` : "",
+      ),
+    )
     .join("");
   const deadlineTable =
     `<table class="deadline-table"><caption class="calendar-date">Standard update periods and deadlines</caption>` +

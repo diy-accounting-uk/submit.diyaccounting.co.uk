@@ -87,3 +87,24 @@ test("the home page links to each filing page", async ({ page }) => {
   await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
   for (const [target] of FILING_PAGES) await expect(page.locator(`nav.filing-guides a[href="${target}"]`)).toHaveCount(1);
 });
+
+const ARTICLE_PAGES = [
+  [
+    "hmrc-company-tax-return-service-closed.html",
+    "HMRC's Company Tax Return service closed on 31 March 2026: what a small company does now",
+  ],
+  ["company-accounts-by-software-from-april-2028.html", "Company accounts by software from April 2028"],
+  ["making-tax-digital-income-tax-over-30000.html", "Making Tax Digital for Income Tax from 6 April 2027: incomes over £30,000"],
+];
+
+for (const [file, heading] of ARTICLE_PAGES) {
+  test(`${file} shows its h1, a gov.uk source quote, the calendar link and the action`, async ({ page }) => {
+    await serveRealSite(page);
+    await page.goto(`http://localhost:3000/${file}`, { waitUntil: "load" });
+    await expect(page.locator("h1")).toHaveText(heading);
+    await expect(page.locator("h1")).toHaveCount(1);
+    await expect(page.locator("blockquote.source-quote a[href^='https://www.gov.uk/']").first()).toBeVisible();
+    await expect(page.locator("main a[href='mtd-calendar.html']").first()).toBeVisible();
+    await expect(page.locator("main a.btn").first()).toBeVisible();
+  });
+}

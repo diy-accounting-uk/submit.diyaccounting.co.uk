@@ -15,10 +15,11 @@ import {
 import { allFactIds } from "../../scripts/build-mtd-calendar.mjs";
 import { RATES_FACT_IDS } from "../../scripts/rates-fact-ids.mjs";
 import { allRatesFactIds } from "../../scripts/build-rates-page.mjs";
+import { articleFactIds } from "../../scripts/build-filing-pages.mjs";
 
 const sources = loadSources();
 const DAY_MS = 24 * 60 * 60 * 1000;
-const pageFactIds = () => [...allFactIds(), ...allRatesFactIds()];
+const pageFactIds = () => [...allFactIds(), ...allRatesFactIds(), ...articleFactIds()];
 
 describe("tax sources", () => {
   test("every fact on the MTD calendar has a source file listing its id", () => {
