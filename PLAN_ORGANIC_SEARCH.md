@@ -3,9 +3,9 @@
 
 # PLAN: organic search
 
-Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 30 uplift tasks. Facts checked 2026-11-12.
+Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 28 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: 26 of 30 tasks are rows on `NEXT.md`, where each row carries its brief. 4 follow those rows and stay here until their turn: OOS17, OOS18, OS29, OOS30. 20 machine-only, 4 machine-ask, 6 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: 24 of 28 tasks are rows on `NEXT.md`, where each row carries its brief. 4 follow those rows and stay here until their turn: OOS17, OOS18, OS29, OOS30. 20 machine-only, 2 machine-ask, 6 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -838,7 +838,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | --- | --- | --- | --- | --- | --- |
 | OS13b | llms.txt and Markdown copies for Submit | Z5, Z6 | One Markdown page that states every product fact, and a Markdown copy of each Submit page. | Requests for `/llms.txt` and `.md` URLs by agent, from OS3's view. | machine-only; on the board |
 | OS13c | llms.txt and a feed for the spreadsheets and diya-gl sites | Z5, Z12 | One Markdown page per site, and an Atom feed of the updated articles. | Requests for `/llms.txt` and `/feed.xml` by agent, from OS41's query. | machine-only; on the board |
-| OOS43 | The go for the first prod seed of the demo reviewer | X1, X2 | The demo user and its sample books exist on prod. | The prod seed run is green. | machine-ask; on the board |
 | OOS16 | Operator's go: publish the hosted connector to the MCP Registry | R1, R2 | A registry entry for the hosted connector. Smithery and PulseMCP read the registry. | `https://registry.modelcontextprotocol.io/v0.1/servers?search=diya-submit` returns the entry. | machine-ask; on the board |
 | OOS20 | Prove the connector in each assistant and write the steps that worked | X4 | Steps on `mcp.html` for ChatGPT, Gemini, Perplexity and Copilot, each proved once, and the answer to whether ChatGPT's paid plans run a custom connector's tools. | MCP sign-ins by client name. | machine-ask; on the board |
 | OS42b | `prepare_vat_return` on prod's hosted connector | X1, X2, X4 | Prod's connector offers the hand-off to the browser, which both directory submissions wait for. | `tools/list` for prod holds six tools, and a prod session gets a link that fills the VAT form. | machine-ask; on the board |
@@ -853,7 +852,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | --- | --- | --- | --- | --- | --- |
 | OOS22 | Send the accounts software finder email | B4, Y3 | A place on the GOV.UK page that sends directors to software for filing accounts. Its micro-entity result page holds 117 entries across three tables. | Submit appears at `https://www.gov.uk/software-company-accounts/y/unaudited/micro-entity`; sessions with a `gov.uk` referrer. | human-driven; on the board |
 | OS24 | Create and claim the profiles | D1, D2, D3, D4, D5, D6, C2, E4, L3 | About 30 listings from one sitting with the copy pack. | Rows marked live in the listing register. | machine-ask; on the board |
-| OS26 | Write to the editors and the tax bodies | D7, D8, C1, C4, Y3 | A chance of a place in the four editorial roundups and the tax charities' software pages. | Replies; inclusions; referrer sessions from each publisher. | machine-only; on the board |
 | OOS26 | Send the letters to the editors and the tax bodies | D7, D8, C1, C4, Y3 | The letters go from the operator's own address. | Each send and reply is in the listing register. | human-driven; on the board |
 | OS29 | Operator: one Wikidata entry for the company | K2 | A machine-readable record of the company, referenced to Companies House, in the source that knowledge panels and models read. | The item exists and survives 30 days. | human-driven |
 | OS30 | A launch pack for the assistant connector | E1, E2, E3, V6 | Text, images and a recording for Product Hunt, Show HN, the AI tool directories and a developer post, ready for the day the connector launches. | Referrer sessions from each place in launch week. | machine-only; on the board |
@@ -904,13 +902,11 @@ Waves 1 and 2 need nothing from outside. Within a wave, rows that share a file r
 flowchart LR
   OS6 --> OS45
   OS8 --> OS13c
-  OOS43 --> OOS17
-  OOS43 --> OOS18
   OS42b --> OOS17
   OS42b --> OOS18
   OS17 --> OOS17
   OS18 --> OOS18
-  OS26 --> OOS26
+  OS42b --> OOS16
   OS8 --> OS29
   OS30 --> OOS30
   OOS17 --> OOS30
@@ -939,9 +935,9 @@ The brief of a boarded task is its row on `NEXT.md`.
 
 #### Wave 3: Assistants and agents
 
-- [ ] **OOS17. Operator: submit the connector in Claude's directory portal.** The operator signs in to Claude on a paid plan, opens https://claude.ai/directory/manage, chooses "MCP connector" and pastes the pack from OS17, then submits the plugin from OS19 the same way. An automatic scan lists the connector as a Community connector. The connector is listed with its VAT tool set (operator, 2026-11-12): submit when OOS43's seed has run on prod and OS42b has put `prepare_vat_return` in prod's hosted set. Each filing that goes live later is an update to the listing, under board row MCP1. **Waits on**: OS17, OOS43, OS42b. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
+- [ ] **OOS17. Operator: submit the connector in Claude's directory portal.** The operator signs in to Claude on a paid plan, opens https://claude.ai/directory/manage, chooses "MCP connector" and pastes the pack from OS17, then submits the plugin from OS19 the same way. An automatic scan lists the connector as a Community connector. The connector is listed with its VAT tool set (operator, 2026-11-12): submit when OS42b has put `prepare_vat_return` in prod's hosted set (the reviewer's prod seed ran on 2026-11-13). Each filing that goes live later is an update to the listing, under board row MCP1. **Waits on**: OS17, OS42b. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
-- [ ] **OOS18. Operator: verify the business with OpenAI and submit the plugin.** The operator opens the OpenAI Platform organisation settings, completes business verification, uploads the package from OS18 and submits it for review. The same condition as OOS17: the prod seed and the hand-off tool on prod. No fee is stated by OpenAI for a submission or a listing. **Waits on**: OS18, OOS43, OS42b. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
+- [ ] **OOS18. Operator: verify the business with OpenAI and submit the plugin.** The operator opens the OpenAI Platform organisation settings, completes business verification, uploads the package from OS18 and submits it for review. The same condition as OOS17: the hand-off tool on prod. No fee is stated by OpenAI for a submission or a listing. **Waits on**: OS18, OS42b. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
 #### Wave 4: Listings
 
