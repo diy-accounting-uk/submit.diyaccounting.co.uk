@@ -20,6 +20,13 @@
   frame.style.height = "640px";
   frame.style.border = "0";
 
+  window.addEventListener("message", (event) => {
+    if (event.source !== frame.contentWindow || event.origin !== origin) return;
+    const message = event.data;
+    if (!message || message.type !== "diya-mtd-income-tax-checker-height") return;
+    if (Number.isFinite(message.height) && message.height >= 200 && message.height <= 5000) frame.style.height = message.height + "px";
+  });
+
   const credit = document.createElement("p");
   const link = document.createElement("a");
   link.href = origin + "/mtd-income-tax-checker.html";

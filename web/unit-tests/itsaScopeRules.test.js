@@ -129,9 +129,23 @@ describe("the embed", () => {
         this.children.push(...nodes);
       },
     });
-    new Function("document", script)({ currentScript: fakeScript, createElement: make });
+    const listeners = [];
+    const fakeWindow = { addEventListener: (type, listener) => listeners.push({ type, listener }) };
+    new Function("document", "window", script)({ currentScript: fakeScript, createElement: make }, fakeWindow);
     expect(elements).toHaveLength(1);
     const [frame, credit] = elements[0].element.children;
+    frame.contentWindow = {};
+    const { listener } = listeners.find((entry) => entry.type === "message");
+    const origin = "https://ci.example.test";
+    const type = "diya-mtd-income-tax-checker-height";
+    listener({ source: {}, origin, data: { type, height: 900 } });
+    expect(frame.style.height).toBe("640px");
+    listener({ source: frame.contentWindow, origin: "https://other.example.test", data: { type, height: 900 } });
+    expect(frame.style.height).toBe("640px");
+    listener({ source: frame.contentWindow, origin, data: { type, height: 99999 } });
+    expect(frame.style.height).toBe("640px");
+    listener({ source: frame.contentWindow, origin, data: { type, height: 1400 } });
+    expect(frame.style.height).toBe("1400px");
     expect(frame.src).toBe("https://ci.example.test/embed/mtd-income-tax-checker.html");
     expect(credit.children[0].href).toBe("https://ci.example.test/mtd-income-tax-checker.html");
     expect(credit.children[0].textContent.length).toBeGreaterThan(10);
@@ -140,6 +154,7 @@ describe("the embed", () => {
   test("the framed page loads the same checker module and no analytics or sign-in script", () => {
     const html = read("web/public/embed/mtd-income-tax-checker.html");
     expect(html).toContain('src="/lib/itsa/scope-checker.js"');
+    expect(html).toContain('src="/embed/mtd-income-tax-checker-frame.js"');
     expect(html).not.toMatch(/analytics|auth-status|submit\.js|session-beacon/);
   });
 
