@@ -116,6 +116,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
   - [Company search and profile](#company-search-and-profile-ch)
     - [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register: use when a user types a company name or number and needs matching results to pick from.
     - [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile: use when a filing journey has a company number and needs the company's registered details.
+    - [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in) Look up a company's filing deadlines with no sign-in: use when a director with no account wants to know when a company's accounts and confirmation statement are next due.
   - [Registered office and email](#registered-office-and-email-ch)
     - [CH-05](#ch-05-file-a-change-of-registered-office-address) File a change of registered office address: use when a company needs to change its registered office address on the public register.
     - [CH-06](#ch-06-file-a-change-of-registered-email-address) File a change of registered email address: use when a company needs to register or change its registered email address with Companies House.
@@ -786,7 +787,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** build-filing-pages.mjs reads scripts/filing-pages.toml and writes one static page for each entry whose activity is listed on prod and whose web form is production in AVAILABILITY. A page holds an h1 that is the query, what the reader needs, the steps with the screenshots of the guide, the price from the catalogue, the due date with its source quote, the video and the action. A second entry kind, the article in the same data file, writes a page that is not one filing: sections of text, lists, the status of a filing from AVAILABILITY and the quotes of source files, and a form that a module script fills in (the VAT penalty calculator). A third entry kind, the comparison, writes a table of tools sorted by price from web/public/compare/vendors.toml, with our own row priced from the catalogue. The committed pages are checked against this render.
 - **Run:** `npm run build:filing-pages`; `npx vitest run web/unit-tests/filingPages.test.js`
 - **Entry:** `scripts/build-filing-pages.mjs:renderFilingPage`; `scripts/build-filing-pages.mjs:filingPagesToWrite`; `scripts/build-filing-pages.mjs:renderArticlePage`; `scripts/build-filing-pages.mjs:renderComparisonPage`
-- **Files:** scripts/build-filing-pages.mjs, scripts/filing-pages.toml, web/unit-tests/filingPages.test.js, web/public/vat-return-from-a-spreadsheet.html, web/public/micro-entity-accounts.html, web/public/small-company-accounts.html, web/public/dormant-company-accounts.html, web/public/confirmation-statement.html, web/public/hmrc-company-tax-return-service-closed.html, web/public/company-accounts-by-software-from-april-2028.html, web/public/making-tax-digital-income-tax-over-30000.html, web/public/vat-return-due-date-and-penalty-points.html, web/public/lib/vat/penalty-rules.js, web/public/lib/vat/penalty-calculator.js, web/unit-tests/vatPenaltyRules.test.js, web/public/compare/vendors.toml, web/public/mtd-vat-bridging-software-compared.html, web/public/company-accounts-filing-software-compared.html
+- **Files:** scripts/build-filing-pages.mjs, scripts/filing-pages.toml, web/unit-tests/filingPages.test.js, web/public/vat-return-from-a-spreadsheet.html, web/public/micro-entity-accounts.html, web/public/small-company-accounts.html, web/public/dormant-company-accounts.html, web/public/confirmation-statement.html, web/public/hmrc-company-tax-return-service-closed.html, web/public/company-accounts-by-software-from-april-2028.html, web/public/making-tax-digital-income-tax-over-30000.html, web/public/vat-return-due-date-and-penalty-points.html, web/public/lib/vat/penalty-rules.js, web/public/lib/vat/penalty-calculator.js, web/unit-tests/vatPenaltyRules.test.js, web/public/mtd-income-tax-checker.html, web/public/lib/itsa/scope-rules.js, web/public/lib/itsa/scope-checker.js, web/public/embed/mtd-income-tax-checker.html, web/public/embed/mtd-income-tax-checker.js, web/public/embed/mtd-income-tax-checker-frame.js, web/unit-tests/itsaScopeRules.test.js, web/public/compare/vendors.toml, web/public/mtd-vat-bridging-software-compared.html, web/public/company-accounts-filing-software-compared.html
 - **Keywords:** filing page, landing page, vat return from a spreadsheet, micro-entity accounts, small company accounts, dormant accounts, confirmation statement, search, seo, generated page
 - **Related:** SITE-14, SITE-31
 
@@ -1574,7 +1575,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area CH -->
 - [OAuth and identity](#oauth-and-identity-ch): [CH-01](#ch-01-exchange-a-companies-house-oauth-token) Exchange a Companies House OAuth token · [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration) Verify the Companies House OAuth app configuration
-- [Company search and profile](#company-search-and-profile-ch): [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register · [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile
+- [Company search and profile](#company-search-and-profile-ch): [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register · [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile · [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in) Look up a company's filing deadlines with no sign-in
 - [Registered office and email](#registered-office-and-email-ch): [CH-05](#ch-05-file-a-change-of-registered-office-address) File a change of registered office address · [CH-06](#ch-06-file-a-change-of-registered-email-address) File a change of registered email address
 - [Micro-entity accounts filing](#micro-entity-accounts-filing-ch): [CH-07](#ch-07-render-micro-entity-accounts-for-review) Render micro-entity accounts for review · [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House
 - [Company Tax Return filing](#company-tax-return-filing-ch): [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC · [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets) File a Corporation Tax test scenario to TPVS or ETS
@@ -1614,6 +1615,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:group company-search-and-profile-ch -->
 - [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register
 - [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile
+- [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in) Look up a company's filing deadlines with no sign-in
 <!-- /generated:group company-search-and-profile-ch -->
 
 #### CH-03 Search the Companies House register
@@ -1635,6 +1637,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/companies-house/companiesHouseCompanyGet.js, app/unit-tests/functions/companiesHouseCompanyGet.test.js, app/services/companiesHouseApi.js
 - **Keywords:** companies house, company profile, company number, bundle entitlement, GET /api/v1/companies-house/company
 - **Related:** CH-03
+
+#### CH-20 Look up a company's filing deadlines with no sign-in
+
+- **Use when:** a director with no account wants to know when a company's accounts and confirmation statement are next due.
+- **Does:** companiesHousePublicDeadlinesGet.js answers GET /api/v1/public/company-deadlines with no authorizer. `number` returns one company's name, status, type, accounts due date and period, confirmation statement due date and last accounts type. `q` returns up to five matches by name or number. Every field is copied by name from the Companies House answer. It uses the one Companies House API key, writes the PublicCompanyDeadlines metrics, and sets Cache-Control on a found answer so CloudFront keeps it for ten minutes.
+- **Run:** `curl 'https://submit.diyaccounting.co.uk/api/v1/public/company-deadlines?number=00000006'`
+- **Entry:** `app/functions/companies-house/companiesHousePublicDeadlinesGet.js:ingestHandler`
+- **Files:** app/functions/companies-house/companiesHousePublicDeadlinesGet.js, app/unit-tests/functions/companiesHousePublicDeadlinesGet.test.js, web/public/company-filing-deadlines.html, web/public/lib/company/deadline-rules.js, web/public/lib/company/deadline-lookup.js, web/unit-tests/companyDeadlineRules.test.js, web/browser-tests/filingPages.browser.test.js, scripts/build-filing-pages.mjs, scripts/filing-pages.toml, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java
+- **Keywords:** company filing deadlines, accounts due, confirmation statement due, public lookup, no sign-in, companies house, cache, rate limit
+- **Related:** CH-03, CH-04
 
 ### Registered office and email (CH)
 
@@ -4819,7 +4831,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-22 Orchestrate the nightly ingestion workflow
 
 - **Use when:** a new ingestion job must join the nightly chain, or the chain's failure behaviour must be checked.
-- **Does:** NightlyIngestionWorkflow.java builds a Step Functions state machine; IngestionStack.java owns its EventBridge Scheduler schedule and alarms. A Parallel branch runs the ingestion jobs; the 02:15 UTC run then runs data quality, metrics publish and raw export publish, then outside prod the activity events compaction, whose failure is recorded and does not fail the night; every run ends with the operator snapshot and pass figures publish, then the console capture (once a day in prod, on every run in ci). There is no Catch: any failure stops the chain, not a false zero.
+- **Does:** NightlyIngestionWorkflow.java builds a Step Functions state machine; IngestionStack.java owns its EventBridge Scheduler schedule and alarms. A Parallel branch runs the ingestion jobs; the 02:15 UTC run then runs data quality, metrics publish and raw export publish, then outside prod the activity events compaction, whose failure is recorded and does not fail the night; every run ends with the operator snapshot and pass figures publish, then the console capture (once a day in prod, on every run in ci). Each task is retried twice. A failure of a required job fails the execution, which raises the state machine alarm; a failure of an optional job (the company book, PayPal, Ads, Microsoft Ads, the compaction, the console capture) is caught and raises that job's own errors alarm.
 - **Run:** `scripts/verify-analytics-pipeline.sh`; `scripts/verify-ingestion-jobs.sh`
 - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java:NightlyIngestionWorkflow`; `infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java:IngestionStack`
 - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflowTest.java, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IngestionStackTest.java, scripts/verify-ingestion-jobs.sh, scripts/verify-analytics-pipeline.sh
@@ -7046,6 +7058,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - accounting year-end: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
 - accounts data product: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - accounts document: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
+- accounts due: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in)
 - accounts filing: [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - accounts review: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - accounts staging: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation), [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
@@ -7363,6 +7376,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - business review: [DEV-55](#dev-55-review-the-operator-dashboard)
 - business source adjustable summary: [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary)
 - business views: [DATA-10](#data-10-create-or-replace-athena-business-views)
+- cache: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in)
 - cache scope: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - cached formula results: [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
 - cached status: [BILL-13](#bill-13-check-a-clients-authorisation-status)
@@ -7542,7 +7556,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - commits: [DATA-07](#data-07-pull-github-operator-effort-data)
 - community page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
 - compaction: [DATA-70](#data-70-compact-closed-days-of-activity-events)
-- companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
+- companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - companies house accounts: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - companies house codes: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - companies house deadline: [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events)
@@ -7552,6 +7566,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - company book id: [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
 - company book owner prefix: [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
 - company book pull: [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
+- company filing deadlines: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in)
 - company number: [CH-04](#ch-04-fetch-a-company-profile)
 - company package: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - company profile: [CH-04](#ch-04-fetch-a-company-profile)
@@ -7581,6 +7596,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - configuration set: [OPS-182](#ops-182-provision-the-customer-email-sender)
 - configure-aws-credentials: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - confirmation statement: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages)
+- confirmation statement due: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in)
 - conflict card: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - connector listing: [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry)
 - connector url: [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
@@ -8679,7 +8695,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - no key file: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - no recalculation: [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
 - no service account key: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
-- no sign-in: [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session)
+- no sign-in: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session)
 - no stored key: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud)
 - no webhook: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration)
 - no-op verdict: [DEV-33](#dev-33-preview-what-auto-merge-would-do)
@@ -8982,6 +8998,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - proxy variant: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - pubbalsht: [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - public demo: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
+- public lookup: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in)
 - public site: [OPS-94](#ops-94-play-demo-videos-on-the-public-site), [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
 - public surfaces: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set)
 - public video: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
@@ -9020,7 +9037,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ranked fixes: [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks)
 - ranked report: [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report)
 - rate counter: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
-- rate limit: [SITE-05](#site-05-submit-support-tickets), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
+- rate limit: [SITE-05](#site-05-submit-support-tickets), [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - rate limit agent: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
 - rates: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - rates and allowances: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)

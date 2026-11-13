@@ -60,12 +60,12 @@ class PassFiguresPublishTest {
     }
 
     @Test
-    void oneNamedLambdaOneAlarmAndNoScheduleInProdAndCi() {
+    void oneNamedLambdaNoAlarmAndNoScheduleInProdAndCi() {
         for (var envName : List.of("prod", "ci")) {
             Template template = synthPassFiguresPublish(envName);
             template.resourceCountIs("AWS::Lambda::Function", 2);
             template.resourceCountIs("AWS::Events::Rule", 0);
-            template.resourceCountIs("AWS::CloudWatch::Alarm", 1);
+            template.resourceCountIs("AWS::CloudWatch::Alarm", 0);
             template.hasResourceProperties(
                     "AWS::Lambda::Function",
                     Match.objectLike(Map.of(

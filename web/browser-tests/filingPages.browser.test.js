@@ -155,3 +155,147 @@ for (const [file, heading] of COMPARISON_PAGES) {
     expect(pageOverflows).toBe(false);
   });
 }
+
+const DEADLINES_PAGE = "http://localhost:3000/company-filing-deadlines.html";
+const LOOKUP_PATTERN = "**/api/v1/public/company-deadlines*";
+const ACTIVE_COMPANY = {
+  companyNumber: "00000006",
+  companyName: "EXAMPLE LIMITED",
+  companyStatus: "active",
+  companyType: "ltd",
+  accountsNextDue: "2099-03-31",
+  accountsNextPeriodEnd: "2098-06-30",
+  confirmationStatementNextDue: "2020-04-30",
+  lastAccountsType: "micro-entity",
+};
+
+async function stubLookup(page, status, body, headers = {}) {
+  await page.route(LOOKUP_PATTERN, (route) =>
+    route.fulfill({ status, contentType: "application/json", headers, body: JSON.stringify(body) }),
+  );
+}
+
+test("the company deadlines page reads with JavaScript off and links the Companies House search", async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await serveRealSite(page);
+  await page.goto(DEADLINES_PAGE, { waitUntil: "load" });
+  await expect(page.locator("h1")).toHaveCount(1);
+  await expect(page.locator("main a[href='https://find-and-update.company-information.service.gov.uk/']").first()).toBeVisible();
+  await expect(page.locator("#companyLookup")).toBeHidden();
+  await expect(page.locator("main", { hasText: "Open Government Licence v3.0" })).toBeVisible();
+  await context.close();
+});
+
+test("a company number shows both dates, the days left, the last accounts type and the filing for each", async ({ page }) => {
+  await serveRealSite(page);
+  await stubLookup(page, 200, ACTIVE_COMPANY);
+  await page.goto(DEADLINES_PAGE, { waitUntil: "load" });
+  await page.locator("#companyQuery").fill("00000006");
+  await page.getByRole("button", { name: "Look up" }).click();
+  const result = page.locator("#companyResult");
+  await expect(result).toContainText("EXAMPLE LIMITED (00000006)");
+  await expect(result).toContainText("31 March 2099");
+  await expect(result).toContainText("days left");
+  await expect(result).toContainText("30 April 2020");
+  await expect(result).toContainText("overdue by");
+  await expect(result).toContainText("micro entity");
+  await expect(result.locator("a[href='micro-entity-accounts.html']")).toBeVisible();
+  await expect(result.locator("a[href='confirmation-statement.html']")).toBeVisible();
+});
+
+test("a dissolved company shows its status and no filing action", async ({ page }) => {
+  await serveRealSite(page);
+  await stubLookup(page, 200, { ...ACTIVE_COMPANY, companyStatus: "dissolved" });
+  await page.goto(DEADLINES_PAGE, { waitUntil: "load" });
+  await page.locator("#companyQuery").fill("00000006");
+  await page.getByRole("button", { name: "Look up" }).click();
+  await expect(page.locator("#companyResult")).toContainText("dissolved");
+  await expect(page.locator("#companyResult a")).toHaveCount(0);
+});
+
+test("a name shows matches and choosing one looks the company up", async ({ page }) => {
+  await serveRealSite(page);
+  await page.route(LOOKUP_PATTERN, (route) => {
+    const isNumber = new URL(route.request().url()).searchParams.has("number");
+    const body = isNumber
+      ? ACTIVE_COMPANY
+      : { items: [{ companyNumber: "00000006", companyName: "EXAMPLE LIMITED", companyStatus: "active" }] };
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+  });
+  await page.goto(DEADLINES_PAGE, { waitUntil: "load" });
+  await page.locator("#companyQuery").fill("example");
+  await page.getByRole("button", { name: "Look up" }).click();
+  await page.locator("#companyMatches button").first().click();
+  await expect(page.locator("#companyResult")).toContainText("EXAMPLE LIMITED (00000006)");
+});
+
+test("a 429 from the lookup tells the reader to try again in a few minutes", async ({ page }) => {
+  await serveRealSite(page);
+  await stubLookup(page, 429, { message: "busy" }, { "Retry-After": "120" });
+  await page.goto(DEADLINES_PAGE, { waitUntil: "load" });
+  await page.locator("#companyQuery").fill("00000006");
+  await page.getByRole("button", { name: "Look up" }).click();
+  await expect(page.locator("#companyError")).toContainText("Try again in a few minutes");
+});
+
+test("each accounts landing page links the company deadlines page", async ({ page }) => {
+  await serveRealSite(page);
+  for (const file of ["micro-entity-accounts.html", "small-company-accounts.html", "dormant-company-accounts.html"]) {
+    await page.goto(`http://localhost:3000/${file}`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("main a[href='company-filing-deadlines.html']")).toHaveCount(1);
+  }
+});
+
+const CHECKER_PAGE = "http://localhost:3000/mtd-income-tax-checker.html";
+
+test("the Income Tax checker gives the start date, the first update deadline and the records to keep", async ({ page }) => {
+  await serveRealSite(page);
+  await page.goto(CHECKER_PAGE, { waitUntil: "load" });
+  await page.locator("#itsaSelfEmployment-2025-to-2026").fill("20000");
+  await page.locator("#itsaProperty-2025-to-2026").fill("10,500");
+  await page.getByRole("button", { name: "Check" }).click();
+  const result = page.locator("#itsaCheckerResult");
+  await expect(result).toContainText("In scope from 6 April 2027");
+  await expect(result).toContainText("7 August 2027");
+  await expect(result).toContainText("category");
+});
+
+test("the Income Tax checker says not in scope for income under every threshold", async ({ page }) => {
+  await serveRealSite(page);
+  await page.goto(CHECKER_PAGE, { waitUntil: "load" });
+  await page.locator("#itsaSelfEmployment-2024-to-2025").fill("10000");
+  await page.getByRole("button", { name: "Check" }).click();
+  await expect(page.locator("#itsaCheckerResult")).toContainText("Not in scope");
+});
+
+test("the Income Tax page holds the rules as text and the embed snippet without a script", async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await serveRealSite(page);
+  await page.goto(CHECKER_PAGE, { waitUntil: "load" });
+  await expect(page.locator("#itsaChecker")).toBeHidden();
+  await expect(page.locator("main")).toContainText("6 April 2028");
+  await expect(page.locator("main")).toContainText("awaits HMRC recognition");
+  await expect(page.locator("pre code")).toContainText("/embed/mtd-income-tax-checker.js");
+  await context.close();
+});
+
+test("the embed script puts the framed checker and a link to the full page on another page", async ({ page }) => {
+  await serveRealSite(page);
+  await page.route("http://partner.test/", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: '<!doctype html><title>partner</title><body><script src="http://localhost:3000/embed/mtd-income-tax-checker.js"></script></body>',
+    }),
+  );
+  await page.goto("http://partner.test/", { waitUntil: "load" });
+  const frame = page.locator("iframe[src='http://localhost:3000/embed/mtd-income-tax-checker.html']");
+  await expect(frame).toHaveCount(1);
+  await expect(page.locator("a[href='http://localhost:3000/mtd-income-tax-checker.html']")).toBeVisible();
+  const inner = page.frameLocator("iframe");
+  await inner.locator("#itsaSelfEmployment-2024-to-2025").fill("60000");
+  await inner.getByRole("button", { name: "Check" }).click();
+  await expect(inner.locator("#itsaCheckerResult")).toContainText("6 April 2026");
+});

@@ -12,10 +12,6 @@ import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
-import software.amazon.awscdk.services.cloudwatch.Alarm;
-import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
-import software.amazon.awscdk.services.cloudwatch.MetricOptions;
-import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ecr.RepositoryAttributes;
@@ -42,7 +38,6 @@ import software.constructs.Construct;
 public class PassFiguresPublish extends Construct {
 
     public final Function figuresPublishLambda;
-    public final Alarm errorsAlarm;
 
     @Value.Immutable
     public interface PassFiguresPublishProps {
@@ -179,20 +174,6 @@ public class PassFiguresPublish extends Construct {
                 .resources(
                         List.of("arn:aws:dynamodb:%s:%s:table/%s".formatted(region, account, props.passesTableName())))
                 .build());
-
-        // ============================================================================
-        // Alarm
-        // ============================================================================
-        this.errorsAlarm = Alarm.Builder.create(this, prefix + "-PassFiguresPublish-ErrorsAlarm")
-                .alarmName(functionName + "-errors")
-                .alarmDescription("Pass figures publish errored at least once in an hour")
-                .metric(this.figuresPublishLambda.metricErrors(
-                        MetricOptions.builder().period(Duration.hours(1)).build()))
-                .threshold(1)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .build();
     }
 
     private static String glueCatalogArn(String region, String account) {

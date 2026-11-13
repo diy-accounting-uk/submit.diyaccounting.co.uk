@@ -90,6 +90,9 @@ function isSkipped(element) {
   return SKIPPED_TAGS.has(element.localName) || element.hasAttribute("hidden") || element.getAttribute("aria-hidden") === "true";
 }
 
+// A link is kept only when it opens a page, a mailbox or a dialler; any other scheme leaves its text.
+const LINKED_PROTOCOLS = new Set(["http:", "https:", "mailto:", "tel:"]);
+
 function inlineMarkdown(node, pageUrl) {
   if (node.nodeType === TEXT_NODE) return node.textContent;
   if (node.nodeType !== ELEMENT_NODE || isSkipped(node)) return "";
@@ -100,8 +103,10 @@ function inlineMarkdown(node, pageUrl) {
   if (name === "a") {
     const label = squash(inner);
     const href = node.getAttribute("href") ?? "";
-    if (label === "" || href === "" || href.startsWith("#") || href.startsWith("javascript:")) return label;
-    return `[${label}](${new URL(href, pageUrl).href})`;
+    if (label === "" || href === "" || href.startsWith("#")) return label;
+    const target = new URL(href, pageUrl);
+    if (!LINKED_PROTOCOLS.has(target.protocol)) return label;
+    return `[${label}](${target.href})`;
   }
   if (name === "strong" || name === "b") return `**${inner}**`;
   if (name === "code") return `\`${inner}\``;

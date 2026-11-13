@@ -189,8 +189,8 @@ class DataQualityTest {
     void alarmsCarryNoSnsActionAndOneFailedAlarmPerTargetWatchesTheGlueDataQualityMetric() {
         Template template = synthDataQuality();
 
-        // One errors alarm plus one Glue-published rules-failed alarm per target; no DLQ-depth alarm.
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 7);
+        // One Glue-published rules-failed alarm per target; no Lambda errors alarm, no DLQ-depth alarm.
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 6);
 
         var alarms = template.findResources("AWS::CloudWatch::Alarm");
         for (var resource : alarms.values()) {

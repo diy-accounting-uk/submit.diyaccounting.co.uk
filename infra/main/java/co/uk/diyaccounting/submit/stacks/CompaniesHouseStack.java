@@ -76,6 +76,10 @@ public class CompaniesHouseStack extends Stack {
     public Function companiesHouseCompanyGetLambda;
     public ILogGroup companiesHouseCompanyGetLambdaLogGroup;
 
+    public AbstractApiLambdaProps companiesHousePublicDeadlinesGetLambdaProps;
+    public Function companiesHousePublicDeadlinesGetLambda;
+    public ILogGroup companiesHousePublicDeadlinesGetLambdaLogGroup;
+
     public AbstractApiLambdaProps companiesHouseTokenPostLambdaProps;
     public Function companiesHouseTokenPostLambda;
     public ILogGroup companiesHouseTokenPostLambdaLogGroup;
@@ -396,6 +400,63 @@ public class CompaniesHouseStack extends Stack {
 
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseCompanyGetLambda, bundlesTable, region, account, props, activityBusArn, true);
+
+        // Companies House filing deadlines for a visitor with no sign-in. The route has no
+        // authorizer, so the Lambda reads no bundle, salt or activity bus: it holds the Companies
+        // House key and writes call records, and nothing else.
+        var companiesHousePublicDeadlinesGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
+                .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                companiesHousePublicDeadlinesGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
+        if (StringUtils.isNotBlank(props.companiesHouseApiKeyArn())) {
+            companiesHousePublicDeadlinesGetLambdaEnv.with(
+                    "COMPANIES_HOUSE_API_KEY_ARN", props.companiesHouseApiKeyArn());
+        }
+
+        var companiesHousePublicDeadlinesGetLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePublicDeadlinesGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePublicDeadlinesGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler(
+                                props.sharedNames().companiesHouse.companiesHousePublicDeadlinesGetIngestLambdaHandler)
+                        .ingestLambdaArn(
+                                props.sharedNames().companiesHouse.companiesHousePublicDeadlinesGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePublicDeadlinesGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestMemorySize(256)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHousePublicDeadlinesGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHousePublicDeadlinesGetLambdaUrlPath)
+                        .jwtAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHousePublicDeadlinesGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePublicDeadlinesGetLambdaCustomAuthorizer)
+                        .environment(companiesHousePublicDeadlinesGetLambdaEnv)
+                        .build());
+        this.companiesHousePublicDeadlinesGetLambdaProps = companiesHousePublicDeadlinesGetLambdaUrlOrigin.apiProps;
+        this.companiesHousePublicDeadlinesGetLambda = companiesHousePublicDeadlinesGetLambdaUrlOrigin.ingestLambda;
+        this.companiesHousePublicDeadlinesGetLambdaLogGroup = companiesHousePublicDeadlinesGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.companiesHousePublicDeadlinesGetLambdaProps);
+        infof(
+                "Created Lambda %s for the public company deadlines lookup with ingestHandler %s",
+                this.companiesHousePublicDeadlinesGetLambda.getNode().getId(),
+                props.sharedNames().companiesHouse.companiesHousePublicDeadlinesGetIngestLambdaHandler);
+
+        grantSecretRead(this.companiesHousePublicDeadlinesGetLambda, props.companiesHouseApiKeyArn());
 
         // Companies House OAuth token exchange. The identity base URI, client id and client
         // secret ARN are blank until the operator has registered the developer-hub application
@@ -1652,6 +1713,7 @@ public class CompaniesHouseStack extends Stack {
                 List.of(
                         companiesHouseSearchGetLambdaUrlOrigin,
                         companiesHouseCompanyGetLambdaUrlOrigin,
+                        companiesHousePublicDeadlinesGetLambdaUrlOrigin,
                         companiesHouseTokenPostLambdaUrlOrigin,
                         companiesHouseTransactionPostLambdaUrlOrigin,
                         companiesHouseTransactionGetLambdaUrlOrigin,

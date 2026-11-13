@@ -7,7 +7,7 @@
 // - **Does:** build-filing-pages.mjs reads scripts/filing-pages.toml and writes one static page for each entry whose activity is listed on prod and whose web form is production in AVAILABILITY. A page holds an h1 that is the query, what the reader needs, the steps with the screenshots of the guide, the price from the catalogue, the due date with its source quote, the video and the action. A second entry kind, the article in the same data file, writes a page that is not one filing: sections of text, lists, the status of a filing from AVAILABILITY and the quotes of source files, and a form that a module script fills in (the VAT penalty calculator). A third entry kind, the comparison, writes a table of tools sorted by price from web/public/compare/vendors.toml, with our own row priced from the catalogue. The committed pages are checked against this render.
 // - **Run:** `npm run build:filing-pages`; `npx vitest run web/unit-tests/filingPages.test.js`
 // - **Entry:** `scripts/build-filing-pages.mjs:renderFilingPage`; `scripts/build-filing-pages.mjs:filingPagesToWrite`; `scripts/build-filing-pages.mjs:renderArticlePage`; `scripts/build-filing-pages.mjs:renderComparisonPage`
-// - **Files:** scripts/build-filing-pages.mjs, scripts/filing-pages.toml, web/unit-tests/filingPages.test.js, web/public/vat-return-from-a-spreadsheet.html, web/public/micro-entity-accounts.html, web/public/small-company-accounts.html, web/public/dormant-company-accounts.html, web/public/confirmation-statement.html, web/public/hmrc-company-tax-return-service-closed.html, web/public/company-accounts-by-software-from-april-2028.html, web/public/making-tax-digital-income-tax-over-30000.html, web/public/vat-return-due-date-and-penalty-points.html, web/public/lib/vat/penalty-rules.js, web/public/lib/vat/penalty-calculator.js, web/unit-tests/vatPenaltyRules.test.js, web/public/compare/vendors.toml, web/public/mtd-vat-bridging-software-compared.html, web/public/company-accounts-filing-software-compared.html
+// - **Files:** scripts/build-filing-pages.mjs, scripts/filing-pages.toml, web/unit-tests/filingPages.test.js, web/public/vat-return-from-a-spreadsheet.html, web/public/micro-entity-accounts.html, web/public/small-company-accounts.html, web/public/dormant-company-accounts.html, web/public/confirmation-statement.html, web/public/hmrc-company-tax-return-service-closed.html, web/public/company-accounts-by-software-from-april-2028.html, web/public/making-tax-digital-income-tax-over-30000.html, web/public/vat-return-due-date-and-penalty-points.html, web/public/lib/vat/penalty-rules.js, web/public/lib/vat/penalty-calculator.js, web/unit-tests/vatPenaltyRules.test.js, web/public/mtd-income-tax-checker.html, web/public/lib/itsa/scope-rules.js, web/public/lib/itsa/scope-checker.js, web/public/embed/mtd-income-tax-checker.html, web/public/embed/mtd-income-tax-checker.js, web/public/embed/mtd-income-tax-checker-frame.js, web/unit-tests/itsaScopeRules.test.js, web/public/compare/vendors.toml, web/public/mtd-vat-bridging-software-compared.html, web/public/company-accounts-filing-software-compared.html
 // - **Keywords:** filing page, landing page, vat return from a spreadsheet, micro-entity accounts, small company accounts, dormant accounts, confirmation statement, search, seo, generated page
 // - **Related:** SITE-14, SITE-31
 // @end-capability
@@ -126,12 +126,14 @@ function deadlineHtml(page, sources) {
   return `<p>${escapeHtml(page.deadline.text)}</p>${sourceQuoteHtml(source)}`;
 }
 
-function otherPagesHtml(page, pages, comparisons = []) {
+function otherPagesHtml(page, pages, comparisons = [], articles = []) {
   const links = pages
     .filter((other) => other.file !== page.file)
     .map((other) => `<li><a href="${other.file}">${escapeHtml(other.heading)}</a></li>`);
   const compared = comparisons.find((comparison) => comparison.file === page.compared_in);
   if (compared) links.push(`<li><a href="${compared.file}">${escapeHtml(compared.heading)}</a></li>`);
+  const lookup = articles.find((article) => article.file === page.lookup_in);
+  if (lookup) links.push(`<li><a href="${lookup.file}">${escapeHtml(lookup.heading)}</a></li>`);
   return `<ul>${links.join("")}</ul>`;
 }
 
@@ -218,7 +220,7 @@ ${mainHtml}
  * @param {object} page an entry of filing-pages.toml
  * @param {object[]} pages every entry that gets a page, for the links between them
  */
-export function renderFilingPage(page, pages, catalog, manifest, sources, comparisons = []) {
+export function renderFilingPage(page, pages, catalog, manifest, sources, comparisons = [], articles = []) {
   const video = manifest.videos.find((candidate) => candidate.id === page.video);
   if (!video || !Array.isArray(video.walkthrough)) throw new Error(`${page.file}: no walkthrough for video ${page.video}`);
   const scenes = [...(page.lead_steps ?? []), ...video.walkthrough];
@@ -255,7 +257,7 @@ export function renderFilingPage(page, pages, catalog, manifest, sources, compar
         <h2>Ready to file</h2>
         <p><a class="btn" href="${escapeHtml(page.action.href)}">${escapeHtml(page.action.label)}</a></p>
         <h2>Other filings</h2>
-        ${otherPagesHtml(page, pages, comparisons)}
+        ${otherPagesHtml(page, pages, comparisons, articles)}
         <p>Each filing and the channels that offer it are in the <a href="mtd-calendar.html#availability">availability table</a>.</p>
       </div>
 `;
@@ -301,6 +303,30 @@ function vatPenaltyCalculatorHtml() {
   );
 }
 
+/** The mount point of the Income Tax scope checker. The script builds the form and shows it. */
+function itsaScopeCheckerHtml() {
+  return (
+    `<noscript><p>The checker needs JavaScript. The start dates and thresholds on this page give the same answer.</p></noscript>` +
+    `<div id="itsaChecker" hidden></div>`
+  );
+}
+
+/** The search box of the company deadlines lookup. It stays hidden until its script runs. */
+function companyDeadlinesLookupHtml() {
+  return (
+    `<noscript><p>The lookup needs JavaScript. Search for the company on ` +
+    `<a href="https://find-and-update.company-information.service.gov.uk/">Companies House</a>: its page shows the next accounts and the next confirmation statement.</p></noscript>` +
+    `<div id="companyLookup" hidden>` +
+    `<form id="companyLookupForm" class="form-group">` +
+    `<label for="companyQuery">Company name or number</label>` +
+    `<input type="search" id="companyQuery" name="companyQuery" minlength="2" maxlength="100" autocomplete="off" required />` +
+    `<button type="submit" class="btn">Look up</button></form>` +
+    `<p id="companyError" role="alert" hidden></p>` +
+    `<div id="companyMatches" role="status" aria-live="polite" hidden></div>` +
+    `<div id="companyResult" role="status" aria-live="polite" hidden></div></div>`
+  );
+}
+
 function articleSectionHtml(section, sources) {
   const parts = [`<h2>${escapeHtml(section.heading)}</h2>`];
   for (const text of section.text ?? []) parts.push(`<p>${inlineHtml(text)}</p>`);
@@ -324,6 +350,9 @@ function articleSectionHtml(section, sources) {
     );
   }
   if (section.widget === "vat-penalty-calculator") parts.push(vatPenaltyCalculatorHtml());
+  if (section.widget === "company-deadlines-lookup") parts.push(companyDeadlinesLookupHtml());
+  if (section.widget === "itsa-scope-checker") parts.push(itsaScopeCheckerHtml());
+  if (section.code) parts.push(`<pre><code>${escapeHtml(section.code)}</code></pre>`);
   for (const name of section.status ?? []) {
     parts.push(`<p>${escapeHtml(filingStatusText(name.activity, name.label))}</p>`);
   }
@@ -452,6 +481,7 @@ export async function renderFilingPages(
   manifest = loadManifest(),
   sources = loadSources(),
   comparisons = loadComparisons(),
+  articles = loadArticles(),
 ) {
   const toWrite = filingPagesToWrite(pages, catalog);
   const rendered = new Map();
@@ -460,7 +490,10 @@ export async function renderFilingPages(
     const config = (await prettier.resolveConfig(path)) ?? {};
     rendered.set(
       page.file,
-      await prettier.format(renderFilingPage(page, toWrite, catalog, manifest, sources, comparisons), { ...config, filepath: path }),
+      await prettier.format(renderFilingPage(page, toWrite, catalog, manifest, sources, comparisons, articles), {
+        ...config,
+        filepath: path,
+      }),
     );
   }
   return rendered;
