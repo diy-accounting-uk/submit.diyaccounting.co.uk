@@ -31,6 +31,9 @@ import {
   buildRegistrationResponse,
   isCimdClientId,
   isLoopbackRedirectUri,
+  isGeminiRedirectUri,
+  redirectHostsOf,
+  GEMINI_CLIENT_NAME,
 } from "../../lib/mcpOauthClients.js";
 
 const logger = createLogger({ source: "app/functions/mcp/mcpOauth.js" });
@@ -253,8 +256,9 @@ function reviewerSection(consentBlob, refusal) {
 
 function consentPage({ redirectUri, clientName, consentBlob, cookieNonce, statusCode = 200, refusal }) {
   const host = redirectHost(redirectUri);
-  const asker = clientName
-    ? `${escapeHtml(clientName)} (<strong>${escapeHtml(host)}</strong>)`
+  const shownName = clientName ?? (isGeminiRedirectUri(redirectUri) ? GEMINI_CLIENT_NAME : undefined);
+  const asker = shownName
+    ? `${escapeHtml(shownName)} (<strong>${escapeHtml(host)}</strong>)`
     : `An application at <strong>${escapeHtml(host)}</strong>`;
   const loopbackLine = isLoopbackRedirectUri(redirectUri) ? "<p>The answer goes to a program on this computer.</p>" : "";
   const reviewerEnabled = reviewerSignInEnabled();
@@ -316,7 +320,7 @@ function handleRegister({ event, request }) {
   }
   const result = buildRegistrationResponse(metadata);
   if (!result.ok) {
-    logOutcome({ endpoint: "register", outcome: result.error });
+    logOutcome({ endpoint: "register", outcome: result.error, redirectHosts: redirectHostsOf(metadata) });
     return oauthError(request, result.error, result.description);
   }
   logOutcome({ endpoint: "register", outcome: "registered", redirectHosts: result.body.redirect_uris.map(redirectHost) });
