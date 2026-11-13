@@ -585,7 +585,9 @@ describe("listing register", () => {
     const broken = structuredClone(register);
     broken.listings[0].state = "pending";
     broken.listings[1].utmSource = broken.listings[0].utmSource;
-    broken.listings[2].state = "submitted";
+    const planned = broken.listings.find((l) => l.state === "planned");
+    planned.state = "submitted";
+    planned.date = "";
     const text = listingProblems(broken).join("\n");
     expect(text).toMatch(/state pending/);
     expect(text).toMatch(/utmSource .* is used twice/);

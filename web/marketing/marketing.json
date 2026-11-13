@@ -920,9 +920,9 @@
         "submit"
       ],
       "url": "",
-      "state": "planned",
-      "date": "",
-      "terms": "G2 owns Capterra, GetApp and Software Advice. A real product and a business email. Whether one profile serves all three is not confirmed.",
+      "state": "submitted",
+      "date": "2026-11-13",
+      "terms": "Asked for through the G2 request. G2 owns Capterra, GetApp and Software Advice since 2026 and verifies each listing.",
       "priceText": "",
       "utmSource": "capterra"
     },
@@ -950,9 +950,9 @@
         "diya-gl"
       ],
       "url": "",
-      "state": "planned",
-      "date": "",
-      "terms": "Manual approval with no stated timeline; a paid priority review exists. Its FAQ declines apps for one country only.",
+      "state": "submitted",
+      "date": "2026-11-13",
+      "terms": "Submitted 2026-11-13. The normal queue gives no review date. A paid priority review exists and is not bought. An app limited to one country may be declined; Submit files UK VAT only.",
       "priceText": "",
       "utmSource": "alternativeto"
     },
@@ -966,9 +966,9 @@
         "diya-gl"
       ],
       "url": "",
-      "state": "planned",
-      "date": "",
-      "terms": "Manual approval.",
+      "state": "submitted",
+      "date": "2026-11-13",
+      "terms": "Submitted 2026-11-13 on the Free plan. SaaSHub reviews each submission. Verification by an email on the product's domain comes after approval.",
       "priceText": "",
       "utmSource": "saashub"
     },
@@ -976,11 +976,13 @@
       "id": "g2",
       "place": "G2",
       "group": "review",
-      "products": [],
+      "products": [
+        "submit"
+      ],
       "url": "",
-      "state": "planned",
-      "date": "",
-      "terms": "Self-serve profile; rank needs reviews.",
+      "state": "submitted",
+      "date": "2026-11-13",
+      "terms": "G2 approved the profile on 2026-11-13 and emails its address; the address is not yet known. The one request also asks for Capterra, GetApp and Software Advice, which G2 verifies.",
       "priceText": "",
       "utmSource": "g2"
     },
@@ -1018,7 +1020,7 @@
       "url": "https://www.featuredcustomers.com/vendor/diy-accounting",
       "state": "live",
       "date": "",
-      "terms": "Vendor page exists. The claim form takes an email and a 10-digit phone number; sales answers it.",
+      "terms": "Vendor page exists. A free verify request was sent on 2026-11-13 and their sales team answers it. Paid upgrades are not bought.",
       "priceText": "",
       "utmSource": "featuredcustomers"
     },
@@ -1114,7 +1116,7 @@
       "url": "",
       "state": "planned",
       "date": "",
-      "terms": "A new listing costs $99; claiming an existing page is free.",
+      "terms": "Paid; skipped. A new listing costs 99 US dollars.",
       "priceText": "",
       "utmSource": "softwareworld"
     },
@@ -1436,7 +1438,7 @@
       "url": "",
       "state": "planned",
       "date": "",
-      "terms": "A listing carries a fee.",
+      "terms": "Paid; skipped. Central Index states a fee.",
       "priceText": "",
       "utmSource": "centralindex"
     },
@@ -1460,7 +1462,7 @@
       "url": "",
       "state": "planned",
       "date": "",
-      "terms": "A listing carries a fee.",
+      "terms": "Paid; skipped. 192.com states a fee.",
       "priceText": "",
       "utmSource": "192com"
     },
@@ -1480,11 +1482,13 @@
       "id": "accountingfirms",
       "place": "accountingfirms.co.uk",
       "group": "professional",
-      "products": [],
+      "products": [
+        "submit"
+      ],
       "url": "",
-      "state": "planned",
-      "date": "",
-      "terms": "Free. Reviewed by hand, with a reply within a few working days. The form is List your software.",
+      "state": "submitted",
+      "date": "2026-11-13",
+      "terms": "Free. Reviewed by hand, with a reply within a few working days. Sent through List your software.",
       "priceText": "",
       "utmSource": "accountingfirms"
     },
