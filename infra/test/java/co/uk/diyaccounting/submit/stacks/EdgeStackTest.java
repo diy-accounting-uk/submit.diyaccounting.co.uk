@@ -331,6 +331,31 @@ class EdgeStackTest {
     }
 
     @Test
+    void markdownCopiesAreServedWithNoindexAndTheSecurityHeadersWhileOtherPathsKeepTheirPolicies() {
+        Template template = Template.fromStack(synthEdgeStack());
+        Map<String, Object> noindex = Map.of("Header", "X-Robots-Tag", "Value", "noindex", "Override", true);
+        Map<String, Object> config = Map.of(
+                "Name",
+                Match.stringLikeRegexp("-markdown-headers$"),
+                "CustomHeadersConfig",
+                Match.objectLike(Map.of("Items", Match.arrayWith(List.of(Match.objectLike(noindex))))),
+                "SecurityHeadersConfig",
+                Match.objectLike(Map.of(
+                        "StrictTransportSecurity", Match.anyValue(),
+                        "ContentTypeOptions", Match.anyValue(),
+                        "FrameOptions", Match.anyValue())));
+        template.hasResourceProperties(
+                "AWS::CloudFront::ResponseHeadersPolicy",
+                Match.objectLike(Map.of("ResponseHeadersPolicyConfig", Match.objectLike(config))));
+        Map<String, Object> markdownBehaviour =
+                Map.of("PathPattern", "*.md", "ResponseHeadersPolicyId", Match.anyValue());
+        Map<String, Object> distribution =
+                Map.of("CacheBehaviors", Match.arrayWith(List.of(Match.objectLike(markdownBehaviour))));
+        template.hasResourceProperties(
+                "AWS::CloudFront::Distribution", Match.objectLike(Map.of("DistributionConfig", distribution)));
+    }
+
+    @Test
     void mcpRoutesKeepTheFacadesContentSecurityPolicyWhileApiRoutesTakeCloudFronts() {
         Template template = Template.fromStack(synthEdgeStack());
         for (Map.Entry<String, Boolean> expected :

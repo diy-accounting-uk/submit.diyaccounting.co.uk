@@ -684,6 +684,10 @@ jobs:
         shell: bash
         run: node scripts/publish-content.mjs web/public ${{ inputs.environment-name }}
 
+      - name: Write llms.txt and a Markdown copy of each page this environment lists
+        shell: bash
+        run: node scripts/publish-llms.mjs web/public ${{ inputs.environment-name }}
+
       - name: Bundle the @import list in submit.css into one stylesheet
         shell: bash
         run: node scripts/publish-css-bundle.mjs web/public

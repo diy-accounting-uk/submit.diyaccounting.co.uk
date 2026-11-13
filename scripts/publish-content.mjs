@@ -171,7 +171,7 @@ function formatPounds(pence) {
   return `£${(pence / 100).toFixed(2)}`;
 }
 
-function priceSentence(bundle) {
+export function priceSentence(bundle) {
   const prices = getBundlePrices(bundle);
   if (prices.length === 0) return "Free.";
   const ordered = [...prices.filter((price) => price.default), ...prices.filter((price) => !price.default)];

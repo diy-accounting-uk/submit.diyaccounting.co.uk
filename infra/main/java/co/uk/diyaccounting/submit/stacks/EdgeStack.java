@@ -564,6 +564,51 @@ public class EdgeStack extends Stack {
                         .build())
                 .build();
 
+        // The .md copy of each page repeats the text of its .html page. These headers keep the
+        // security headers and add X-Robots-Tag: noindex, so the copy is served and not indexed.
+        ResponseHeadersPolicy markdownResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(
+                        this, props.resourceNamePrefix() + "-MarkdownWHP")
+                .responseHeadersPolicyName(props.resourceNamePrefix() + "-markdown-headers")
+                .comment("Security headers and noindex for the Markdown copies of the pages")
+                .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
+                        .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
+                                .contentSecurityPolicy("default-src 'none'; frame-ancestors 'none'")
+                                .override(true)
+                                .build())
+                        .strictTransportSecurity(ResponseHeadersStrictTransportSecurity.builder()
+                                .accessControlMaxAge(software.amazon.awscdk.Duration.days(365))
+                                .includeSubdomains(true)
+                                .override(true)
+                                .build())
+                        .contentTypeOptions(ResponseHeadersContentTypeOptions.builder()
+                                .override(true)
+                                .build())
+                        .frameOptions(ResponseHeadersFrameOptions.builder()
+                                .frameOption(HeadersFrameOption.DENY)
+                                .override(true)
+                                .build())
+                        .referrerPolicy(ResponseHeadersReferrerPolicy.builder()
+                                .referrerPolicy(
+                                        software.amazon.awscdk.services.cloudfront.HeadersReferrerPolicy
+                                                .STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+                                .override(true)
+                                .build())
+                        .build())
+                .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
+                        .customHeaders(List.of(
+                                ResponseCustomHeader.builder()
+                                        .header("X-Robots-Tag")
+                                        .value("noindex")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Server")
+                                        .value("DIY-Accounting")
+                                        .override(true)
+                                        .build()))
+                        .build())
+                .build();
+
         // Custom error pages are served as static files via CloudFront error responses
         // This replaces Lambda@Edge which has problematic deletion behavior in CI/CD
         // API routes (/api/*) return JSON errors - CloudFront error responses only apply to S3 origin errors
@@ -663,6 +708,20 @@ public class EdgeStack extends Stack {
                             apiOriginHeaders));
             infof("Added API Gateway behavior for %s pointing to %s", mcpPathPattern, props.apiGatewayUrl());
         }
+
+        // The Markdown copies sit beside the pages in the web origin, so this behaviour is the web
+        // behaviour with the noindex policy. llms.txt and llms-full.txt are .txt and stay indexable.
+        additionalBehaviors.put(
+                "*.md",
+                BehaviorOptions.builder()
+                        .origin(localOrigin)
+                        .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                        .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
+                        .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
+                        .responseHeadersPolicy(markdownResponseHeadersPolicy)
+                        .compress(true)
+                        .build());
+        infof("Added *.md behavior with the noindex response headers policy");
 
         // Add behaviour for /tests/* and /docs/* with short TTL cache policy
         additionalBehaviors.put("/tests/*", testsAndDocsBehaviorOptions);
