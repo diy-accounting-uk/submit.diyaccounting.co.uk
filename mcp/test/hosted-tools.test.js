@@ -89,8 +89,9 @@ describe("the hosted tool set", () => {
     }
   });
 
-  it("offers only the books, derivation and receipt tools in prod, none of which reach HMRC", () => {
+  it("offers only the books, derivation, hand-off link and receipt tools in prod, none of which reach HMRC", () => {
     const prodNames = hostedToolNames("prod");
+    expect(prodNames).toContain("prepare_vat_return");
     for (const hmrcTool of ["submit_vat_return", "list_vat_obligations", "get_vat_return", "request_hmrc_authorisation"]) {
       expect(prodNames).not.toContain(hmrcTool);
     }

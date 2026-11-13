@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// @capability SITE-32 Write a landing page for each filing that is production on prod
+// @capability SITE-32 Write a landing page for each filing that is production on prod, and the article pages
 // - **Use when:** a filing goes to production, its price or its steps change, or a page must answer the search query for that filing.
-// - **Does:** build-filing-pages.mjs reads scripts/filing-pages.toml and writes one static page for each entry whose activity is listed on prod and whose web form is production in AVAILABILITY. A page holds an h1 that is the query, what the reader needs, the steps with the screenshots of the guide, the price from the catalogue, the due date with its source quote, the video and the action. The committed pages are checked against this render.
+// - **Does:** build-filing-pages.mjs reads scripts/filing-pages.toml and writes one static page for each entry whose activity is listed on prod and whose web form is production in AVAILABILITY. A page holds an h1 that is the query, what the reader needs, the steps with the screenshots of the guide, the price from the catalogue, the due date with its source quote, the video and the action. A second entry kind, the article in the same data file, writes a page that is not one filing: sections of text, lists, the status of a filing from AVAILABILITY and the quotes of source files, and a form that a module script fills in (the VAT penalty calculator). The committed pages are checked against this render.
 // - **Run:** `npm run build:filing-pages`; `npx vitest run web/unit-tests/filingPages.test.js`
-// - **Entry:** `scripts/build-filing-pages.mjs:renderFilingPage`; `scripts/build-filing-pages.mjs:filingPagesToWrite`
-// - **Files:** scripts/build-filing-pages.mjs, scripts/filing-pages.toml, web/unit-tests/filingPages.test.js, web/public/vat-return-from-a-spreadsheet.html, web/public/micro-entity-accounts.html, web/public/small-company-accounts.html, web/public/dormant-company-accounts.html, web/public/confirmation-statement.html
+// - **Entry:** `scripts/build-filing-pages.mjs:renderFilingPage`; `scripts/build-filing-pages.mjs:filingPagesToWrite`; `scripts/build-filing-pages.mjs:renderArticlePage`
+// - **Files:** scripts/build-filing-pages.mjs, scripts/filing-pages.toml, web/unit-tests/filingPages.test.js, web/public/vat-return-from-a-spreadsheet.html, web/public/micro-entity-accounts.html, web/public/small-company-accounts.html, web/public/dormant-company-accounts.html, web/public/confirmation-statement.html, web/public/hmrc-company-tax-return-service-closed.html, web/public/company-accounts-by-software-from-april-2028.html, web/public/making-tax-digital-income-tax-over-30000.html, web/public/vat-return-due-date-and-penalty-points.html, web/public/lib/vat/penalty-rules.js, web/public/lib/vat/penalty-calculator.js, web/unit-tests/vatPenaltyRules.test.js
 // - **Keywords:** filing page, landing page, vat return from a spreadsheet, micro-entity accounts, small company accounts, dormant accounts, confirmation statement, search, seo, generated page
 // - **Related:** SITE-14, SITE-31
 // @end-capability
@@ -21,7 +21,8 @@ import prettier from "prettier";
 import TOML from "@iarna/toml";
 import { getActivityPrices, getBundlePrices, isActivityListedInEnvironment, parseCatalog } from "../app/services/productCatalog.js";
 import { AREA_PAGES } from "../web/public/widgets/video-pages.js";
-import { AVAILABILITY } from "./build-mtd-calendar.mjs";
+import { AVAILABILITY, QUARTERLY_FACT, availabilityStatus } from "./build-mtd-calendar.mjs";
+import { FREQUENCIES } from "../web/public/lib/vat/penalty-rules.js";
 import { escapeHtml } from "./page-markers.mjs";
 import { loadSources, sourceQuoteHtml } from "./tax-sources.mjs";
 
@@ -34,6 +35,10 @@ const RESIDENT_BUNDLE_BY_ACTIVITY_AREA = { "vat": "resident-vat", "companies-hou
 
 export function loadPages() {
   return TOML.parse(readFileSync(DATA_PATH, "utf8")).page;
+}
+
+export function loadArticles() {
+  return TOML.parse(readFileSync(DATA_PATH, "utf8")).article;
 }
 
 export function loadCatalog() {
@@ -121,16 +126,13 @@ function otherPagesHtml(page, pages) {
 }
 
 /**
- * The HTML of one filing page, before formatting.
- * @param {object} page an entry of filing-pages.toml
- * @param {object[]} pages every entry that gets a page, for the links between them
+ * The shell every generated page shares: head tags, the header, the footer and the page scripts.
+ * @param {object} page file, title, description, heading, subtitle
+ * @param {string} mainHtml the content of main, after the status container
+ * @param {string} scriptsHtml script tags that follow the shared scripts
  */
-export function renderFilingPage(page, pages, catalog, manifest, sources) {
-  const video = manifest.videos.find((candidate) => candidate.id === page.video);
-  if (!video || !Array.isArray(video.walkthrough)) throw new Error(`${page.file}: no walkthrough for video ${page.video}`);
+function renderPageShell(page, mainHtml, scriptsHtml = "") {
   const url = `${SITE_ORIGIN}/${page.file}`;
-  const scenes = [...(page.lead_steps ?? []), ...video.walkthrough];
-  const steps = scenes.map((scene, index) => stepHtml(scene, `step-${index + 1}`)).join("");
   const breadcrumb = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -182,7 +184,36 @@ export function renderFilingPage(page, pages, catalog, manifest, sources) {
 
     <main id="mainContent" class="filing-page">
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+${mainHtml}
+    </main>
 
+    <footer></footer>
+
+    <script src="widgets/page-chrome.js"></script>
+    <script src="lib/env-loader.js"></script>
+    <script type="module" src="./submit.js"></script>
+    <script src="./developer-mode.js"></script>
+    <script src="./lib/request-cache.js"></script>
+    <script src="./lib/toml-parser.js"></script>
+    <script src="widgets/entitlement-status.js"></script>
+    <script src="widgets/auth-status.js"></script>
+    <script type="module" src="widgets/view-source-link.js"></script>${scriptsHtml}
+  </body>
+</html>
+`;
+}
+
+/**
+ * The HTML of one filing page, before formatting.
+ * @param {object} page an entry of filing-pages.toml
+ * @param {object[]} pages every entry that gets a page, for the links between them
+ */
+export function renderFilingPage(page, pages, catalog, manifest, sources) {
+  const video = manifest.videos.find((candidate) => candidate.id === page.video);
+  if (!video || !Array.isArray(video.walkthrough)) throw new Error(`${page.file}: no walkthrough for video ${page.video}`);
+  const scenes = [...(page.lead_steps ?? []), ...video.walkthrough];
+  const steps = scenes.map((scene, index) => stepHtml(scene, `step-${index + 1}`)).join("");
+  const main = `
       <div class="form-container">
         <p>${escapeHtml(page.summary)}</p>
         <p><a class="btn" href="${escapeHtml(page.action.href)}">${escapeHtml(page.action.label)}</a></p>
@@ -217,22 +248,109 @@ export function renderFilingPage(page, pages, catalog, manifest, sources) {
         ${otherPagesHtml(page, pages)}
         <p>Each filing and the channels that offer it are in the <a href="mtd-calendar.html#availability">availability table</a>.</p>
       </div>
-    </main>
-
-    <footer></footer>
-
-    <script src="widgets/page-chrome.js"></script>
-    <script src="lib/env-loader.js"></script>
-    <script type="module" src="./submit.js"></script>
-    <script src="./developer-mode.js"></script>
-    <script src="./lib/request-cache.js"></script>
-    <script src="./lib/toml-parser.js"></script>
-    <script src="widgets/entitlement-status.js"></script>
-    <script src="widgets/auth-status.js"></script>
-    <script type="module" src="widgets/view-source-link.js"></script>
-  </body>
-</html>
 `;
+  return renderPageShell(page, main);
+}
+
+/** The words that say what Submit offers for a filing, from its state in the availability table. */
+export function filingStatusText(activity, label) {
+  const status = availabilityStatus(activity);
+  if (status === "production") return `Submit files ${label}.`;
+  if (status === "sandbox") {
+    return `Submit's ${label} filing awaits HMRC recognition. Until then it runs against a test service and files nothing real.`;
+  }
+  if (status === "preview") {
+    return `Submit's ${label} filing awaits HMRC recognition. Until then it runs on our simulator only and files nothing.`;
+  }
+  throw new Error(`no availability row for ${activity}`);
+}
+
+/** Escape text, then turn [label](href) into a link. */
+function inlineHtml(text) {
+  return escapeHtml(text).replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
+}
+
+/** The form of the penalty calculator. It stays hidden until its script runs. */
+function vatPenaltyCalculatorHtml() {
+  const options = Object.entries(FREQUENCIES)
+    .map(([id, rule]) => `<option value="${id}">${rule.label}</option>`)
+    .join("");
+  return (
+    `<noscript><p>The calculator needs JavaScript. The rules on this page give the same answer.</p></noscript>` +
+    `<div id="vatCalculator" hidden>` +
+    `<div class="form-group"><label for="vatPeriodEnd">Last day of the accounting period</label>` +
+    `<input type="date" id="vatPeriodEnd" name="vatPeriodEnd" /></div>` +
+    `<div class="form-group"><label for="vatFrequency">How often you send a return</label>` +
+    `<select id="vatFrequency" name="vatFrequency">${options}</select></div>` +
+    `<fieldset class="form-group"><legend>Tick each return that was late</legend><div id="vatReturnTicks"></div></fieldset>` +
+    `<div id="vatResult" role="status" aria-live="polite" hidden>` +
+    `<p><strong>Due date:</strong> <span id="vatDueDate"></span></p>` +
+    `<p><strong>Penalty points:</strong> <span id="vatPoints"></span></p>` +
+    `<p><strong>Threshold:</strong> <span id="vatThreshold"></span></p>` +
+    `<p id="vatPenalties"></p><p id="vatRemoval"></p></div></div>`
+  );
+}
+
+function articleSectionHtml(section, sources) {
+  const parts = [`<h2>${escapeHtml(section.heading)}</h2>`];
+  for (const text of section.text ?? []) parts.push(`<p>${inlineHtml(text)}</p>`);
+  if (section.list) parts.push(`<ul>${section.list.map((item) => `<li>${inlineHtml(item)}</li>`).join("")}</ul>`);
+  if (section.table === "quarterly") {
+    const rows = QUARTERLY_FACT.rows.map(([period, deadline]) => `<tr><td>${period}</td><td>${deadline}</td></tr>`).join("");
+    parts.push(
+      `<div class="table-scroll"><table class="deadline-table"><thead><tr><th scope="col">Update period</th><th scope="col">Deadline</th></tr></thead><tbody>${rows}</tbody></table></div>`,
+    );
+  }
+  if (section.table === "vat-penalty-rules") {
+    const rows = Object.values(FREQUENCIES)
+      .map(
+        (rule) =>
+          `<tr><td>${rule.label}</td><td>${rule.threshold}</td><td>${rule.complianceMonths} months</td><td>${rule.complianceReturns}</td></tr>`,
+      )
+      .join("");
+    parts.push(
+      `<div class="table-scroll"><table class="deadline-table"><thead><tr><th scope="col">Return</th><th scope="col">Points threshold</th>` +
+        `<th scope="col">Compliance period</th><th scope="col">Returns</th></tr></thead><tbody>${rows}</tbody></table></div>`,
+    );
+  }
+  if (section.widget === "vat-penalty-calculator") parts.push(vatPenaltyCalculatorHtml());
+  for (const name of section.status ?? []) {
+    parts.push(`<p>${escapeHtml(filingStatusText(name.activity, name.label))}</p>`);
+  }
+  for (const name of section.sources ?? []) {
+    const source = sources.find((candidate) => candidate.name === name);
+    if (!source) throw new Error(`no source file named ${name}`);
+    parts.push(sourceQuoteHtml(source));
+  }
+  return `<div class="form-container">${parts.join("")}</div>`;
+}
+
+/**
+ * The HTML of one article page, before formatting.
+ * @param {object} article an entry of the article list in filing-pages.toml
+ */
+export function renderArticlePage(article, sources) {
+  const sections = article.section.map((section) => articleSectionHtml(section, sources)).join("\n");
+  const scripts = article.script ? `\n    <script type="module" src="${escapeHtml(article.script)}"></script>` : "";
+  const main = `
+      <div class="form-container">
+        <p>${inlineHtml(article.summary)}</p>
+        <p><a class="btn" href="${escapeHtml(article.action.href)}">${escapeHtml(article.action.label)}</a></p>
+      </div>
+${sections}
+      <div class="form-container">
+        <h2>${escapeHtml(article.closing_heading ?? "Ready to file")}</h2>
+        <p><a class="btn" href="${escapeHtml(article.action.href)}">${escapeHtml(article.action.label)}</a></p>
+        ${article.action.href === "mtd-calendar.html" ? "" : `<p>See every date on the <a href="mtd-calendar.html">MTD calendar</a>.</p>`}
+      </div>
+`;
+  return renderPageShell(article, main, scripts);
+}
+
+/** The fact ids that the quotes on the article pages support. */
+export function articleFactIds(articles = loadArticles(), sources = loadSources()) {
+  const names = new Set(articles.flatMap((article) => article.section.flatMap((section) => section.sources ?? [])));
+  return [...new Set(sources.filter((source) => names.has(source.name)).flatMap((source) => source.facts))];
 }
 
 export function filingPagePath(page) {
@@ -253,8 +371,18 @@ export async function renderFilingPages(pages = loadPages(), catalog = loadCatal
   return rendered;
 }
 
+export async function renderArticlePages(articles = loadArticles(), sources = loadSources()) {
+  const rendered = new Map();
+  for (const article of articles) {
+    const path = filingPagePath(article);
+    const config = (await prettier.resolveConfig(path)) ?? {};
+    rendered.set(article.file, await prettier.format(renderArticlePage(article, sources), { ...config, filepath: path }));
+  }
+  return rendered;
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  for (const [file, html] of await renderFilingPages()) {
+  for (const [file, html] of [...(await renderFilingPages()), ...(await renderArticlePages())]) {
     writeFileSync(join(PUBLIC_DIRECTORY, file), html);
     console.log(`wrote ${file}`);
   }

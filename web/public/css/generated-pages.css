@@ -81,6 +81,15 @@ main ol.calendar {
   border-bottom: 2px solid var(--c-rule);
 }
 
+/* A table of three or four columns keeps every header in view on a phone. */
+@media (max-width: 600px) {
+  .deadline-table:not(.stacked-table) th,
+  .deadline-table:not(.stacked-table) td {
+    padding: var(--space-1);
+    font-size: var(--step--1);
+  }
+}
+
 @media (max-width: 600px) {
   .stacked-table,
   .stacked-table tbody,

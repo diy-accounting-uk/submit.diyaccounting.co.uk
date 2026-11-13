@@ -63,6 +63,7 @@ const PACKAGE_JSON = resolve(dirname(fileURLToPath(import.meta.url)), "..", "pac
 export const SERVER_INFO = {
   name: "diya-submit",
   version: JSON.parse(readFileSync(PACKAGE_JSON, "utf8")).version,
+  icons: [{ src: "https://submit.diyaccounting.co.uk/images/connector-icon.png", mimeType: "image/png", sizes: ["512x512"] }],
 };
 
 const balanceSheetYearSchema = z.object({

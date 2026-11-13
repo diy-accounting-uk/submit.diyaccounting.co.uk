@@ -87,3 +87,51 @@ test("the home page links to each filing page", async ({ page }) => {
   await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
   for (const [target] of FILING_PAGES) await expect(page.locator(`nav.filing-guides a[href="${target}"]`)).toHaveCount(1);
 });
+
+const ARTICLE_PAGES = [
+  [
+    "hmrc-company-tax-return-service-closed.html",
+    "HMRC's Company Tax Return service closed on 31 March 2026: what a small company does now",
+  ],
+  ["company-accounts-by-software-from-april-2028.html", "Company accounts by software from April 2028"],
+  ["making-tax-digital-income-tax-over-30000.html", "Making Tax Digital for Income Tax from 6 April 2027: incomes over £30,000"],
+];
+
+for (const [file, heading] of ARTICLE_PAGES) {
+  test(`${file} shows its h1, a gov.uk source quote, the calendar link and the action`, async ({ page }) => {
+    await serveRealSite(page);
+    await page.goto(`http://localhost:3000/${file}`, { waitUntil: "load" });
+    await expect(page.locator("h1")).toHaveText(heading);
+    await expect(page.locator("h1")).toHaveCount(1);
+    await expect(page.locator("blockquote.source-quote a[href^='https://www.gov.uk/']").first()).toBeVisible();
+    await expect(page.locator("main a[href='mtd-calendar.html']").first()).toBeVisible();
+    await expect(page.locator("main a.btn").first()).toBeVisible();
+  });
+}
+
+test("the VAT penalty calculator shows the due date, the points, the threshold and what removes them", async ({ page }) => {
+  await serveRealSite(page);
+  await page.goto("http://localhost:3000/vat-return-due-date-and-penalty-points.html", { waitUntil: "load" });
+  await expect(page.locator("h1")).toHaveText("VAT return due date and penalty points calculator");
+  await page.locator("#vatFrequency").selectOption("quarterly");
+  await page.locator("#vatPeriodEnd").fill("2026-09-30");
+  await expect(page.locator("#vatDueDate")).toHaveText("7 November 2026");
+  await expect(page.locator("#vatReturnTicks input")).toHaveCount(8);
+  for (let index = 0; index < 4; index += 1) await page.locator("#vatReturnTicks input").nth(index).check();
+  await expect(page.locator("#vatPoints")).toHaveText("4 of 4");
+  await expect(page.locator("#vatThreshold")).toContainText("4 points");
+  await expect(page.locator("#vatPenalties")).toContainText("£200");
+  await expect(page.locator("#vatRemoval")).toContainText("12 months");
+  await expect(page.locator("main a[href='vat-return-from-a-spreadsheet.html']").first()).toBeVisible();
+});
+
+test("the VAT penalty page holds the rules as text without a script", async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await serveRealSite(page);
+  await page.goto("http://localhost:3000/vat-return-due-date-and-penalty-points.html", { waitUntil: "load" });
+  await expect(page.locator("#vatCalculator")).toBeHidden();
+  await expect(page.locator("main")).toContainText("one calendar month and 7 days");
+  await expect(page.locator("table.deadline-table")).toContainText("Quarterly");
+  await context.close();
+});

@@ -96,10 +96,10 @@ describe("prepare_vat_return", () => {
     expect(decodeFragment(link)).toEqual(handoff);
   });
 
-  it("is registered in every environment except prod", () => {
+  it("is registered in every hosted environment, prod included", () => {
     expect(HOSTED_TOOL_NAMES).toContain("prepare_vat_return");
     expect(hostedToolNames("ci")).toContain("prepare_vat_return");
-    expect(hostedToolNames("prod")).not.toContain("prepare_vat_return");
+    expect(hostedToolNames("prod")).toContain("prepare_vat_return");
   });
 
   it("is a read tool that reaches no outside service", () => {

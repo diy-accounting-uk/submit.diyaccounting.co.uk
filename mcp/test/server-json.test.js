@@ -41,7 +41,14 @@ describe("server.json for the MCP registry", () => {
   });
 
   it("describes the prod hosted tool set and no filing tool", () => {
-    expect(hostedToolNames("prod")).toEqual(["list_books", "open_book", "derive_vat_return", "get_vat_receipt", "list_vat_receipts"]);
+    expect(hostedToolNames("prod")).toEqual([
+      "list_books",
+      "open_book",
+      "derive_vat_return",
+      "prepare_vat_return",
+      "get_vat_receipt",
+      "list_vat_receipts",
+    ]);
     expect(serverJson.description).toMatch(/VAT/);
     expect(serverJson.description).toMatch(/Files no return/);
   });

@@ -10,6 +10,12 @@ import { fileURLToPath } from "node:url";
 export const SOURCES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", ".claude", "skills", "tax-sources", "sources");
 export const MAX_SOURCE_AGE_DAYS = 30;
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export function sourcesOlderThan(sources, maxAgeDays, now = Date.now()) {
+  return sources.filter((s) => now - Date.parse(`${s.retrieved}T00:00:00Z`) > maxAgeDays * DAY_MS);
+}
+
 export function loadSources(dir = SOURCES_DIR) {
   return readdirSync(dir)
     .filter((f) => f.endsWith(".json"))
@@ -45,10 +51,16 @@ export function quoteAppearsIn(quote, pageHtml) {
   return normaliseText(pageHtml).includes(normaliseText(quote));
 }
 
-export function sourceQuoteHtml(source) {
+function sourceFooterHtml(source, lead = "") {
   return (
-    `<blockquote class="source-quote"><p>${escapeHtml(source.quote)}</p>` +
-    `<footer><a href="${escapeHtml(source.url)}" rel="noopener">${escapeHtml(source.url.replace("https://www.gov.uk", "gov.uk"))}</a>` +
-    ` <span class="retrieved">Retrieved ${formatIsoDate(source.retrieved)}</span></footer></blockquote>`
+    `<footer>${lead}<a href="${escapeHtml(source.url)}" rel="noopener">${escapeHtml(source.url.replace("https://www.gov.uk", "gov.uk"))}</a>` +
+    ` <span class="retrieved">Retrieved ${formatIsoDate(source.retrieved)}</span></footer>`
   );
+}
+
+/** A source whose words are a table or a list read as noise in a quote, so it prints as a citation line only. */
+export function sourceQuoteHtml(source) {
+  if (source.table)
+    return `<blockquote class="source-quote source-citation">${sourceFooterHtml(source, "Source: the table on ")}</blockquote>`;
+  return `<blockquote class="source-quote"><p>${escapeHtml(source.quote)}</p>${sourceFooterHtml(source)}</blockquote>`;
 }

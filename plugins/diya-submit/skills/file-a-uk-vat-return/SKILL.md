@@ -12,16 +12,16 @@ Use the DIY Accounting Submit connector. It works out the return. The user files
 2. Call `open_book` with that book's `bookId`. Say which business and period the book covers. Stop if the book is not VAT registered.
 3. Call `derive_vat_return` with `periodEnd` set to the last day of the quarter, as `YYYY-MM-DD`. The book must carry that month end. If the tool refuses, give its reason in plain words and ask for another period.
 4. Show the nine boxes in a table: box number, what it holds, amount. Boxes 1 to 5 are in pounds and pence. Boxes 6 to 9 are in whole pounds. Say that the figures come from the user's own book, and name the three or four largest lines behind boxes 1 and 4.
-5. Tell the user to check the figures and to file in the browser:
-   1. Open https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html and sign in.
+5. Call `prepare_vat_return` with the same `periodEnd`. It answers a link to the VAT form with the figures filled in. Give the user the link and tell them to check and file in the browser:
+   1. Open the link and sign in.
    2. Connect to HMRC when the page asks, then choose the obligation for this period.
-   3. Enter the figures from your table. The page works out boxes 3 and 5.
-   4. Read the figures on the page, tick the declaration and submit.
+   3. Read the figures on the page. They must match your table. The page works out boxes 3 and 5.
+   4. Tick the declaration and submit.
 6. When the user comes back, call `list_vat_receipts` to find the receipt, then `get_vat_receipt` with its name. Read out the receipt: the period, the boxes filed and the date and time HMRC received it.
 
 What you never do:
 
-- Never say that a return is filed, or that you filed it. No tool in this connector files a return or pays HMRC. The user files on the Submit page.
+- Never say that a return is filed, or that you filed it. No tool in this connector files a return or pays HMRC. The user files on the Submit page, from the link `prepare_vat_return` gave.
 - Never fill in, change or round a figure that `derive_vat_return` returned. Show it as it is.
 - Never tick or describe the legal declaration for the user. The user reads it and ticks it.
 - Never guess a period, a VAT registration number or a figure. Ask.

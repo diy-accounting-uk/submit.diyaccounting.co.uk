@@ -35,6 +35,7 @@ field, so rates, allowances and any other tax figure use it unchanged.
 | `url` | A gov.uk page. No other host. |
 | `retrieved` | ISO date (`YYYY-MM-DD`) of the day the page was read. Maximum age 30 days. |
 | `quote` | Verbatim page text, one or two sentences. Whitespace differences are ignored; wording is not. Table cells read left to right, row by row, as flat text. |
+| `table` | Optional. `true` when the quote is a table or a list that gov.uk states only that way. The page prints a citation line and not the words. |
 | `facts` | Stable fact ids the quote supports. An id never changes once a page uses it. |
 
 Fact ids are kebab-case and carry the subject and the date or year they apply to

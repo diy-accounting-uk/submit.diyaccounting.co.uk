@@ -83,8 +83,8 @@
           <h2>Can an AI assistant file my VAT return?</h2>
           <p>
             Not through the hosted connector. It lets an assistant such as Claude open your saved books, work out the nine VAT return boxes
-            for a period and read your stored receipts. You check the figures, then file the return yourself in the web app, in your
-            browser.
+            for a period, read your stored receipts and give you a link that opens the VAT form with the figures filled in. You check them,
+            tick the declaration and file the return yourself, in your browser.
           </p>
           <h2>What is MCP?</h2>
           <p>
@@ -121,7 +121,7 @@
           <pre><code>claude mcp add --transport http diya-submit https://submit.diyaccounting.co.uk/mcp</code></pre>
           <p>Then run <code>/mcp</code> in Claude Code and choose the server to sign in.</p>
           <h3>Tools</h3>
-          <p>The connector has five tools. It does not reach HMRC and it files nothing.</p>
+          <p>The connector has six tools. It does not reach HMRC and it files nothing.</p>
           <dl>
             <dt><code>list_books</code></dt>
             <dd>List the books saved in your DIYA cloud, most recently updated first.</dd>
@@ -129,10 +129,18 @@
             <dd>Open a saved cloud book by its id. It reports the product, the period covered and the book's checks.</dd>
             <dt><code>derive_vat_return</code></dt>
             <dd>The nine VAT return boxes for one period of the open book, with the lines that fed them.</dd>
+            <dt><code>prepare_vat_return</code></dt>
+            <dd>
+              The same figures for one period, with a link that opens the VAT form on this site with them filled in. The assistant files
+              nothing.
+            </dd>
             <dt><code>list_vat_receipts</code>, <code>get_vat_receipt</code></dt>
             <dd>List the VAT receipts Submit stored for your account, and read one.</dd>
           </dl>
-          <p>File the return in the web app, where you confirm the figures before anything reaches HMRC.</p>
+          <p>
+            Open the link in your browser, check the figures, tick the declaration and file the return there. Nothing reaches HMRC until you
+            do.
+          </p>
         </div>
 
         <div class="mcp-intro">

@@ -30,10 +30,10 @@ Hello. I make DIY Accounting Submit™, a service that sends VAT returns to HMRC
 
 We added a connector for AI assistants such as Claude. You add one address, https://submit.diyaccounting.co.uk/mcp, in the assistant's connector settings and sign in with your Submit account.
 
-The connector has five tools. They list your saved books, open one, work out the nine VAT return boxes for a period, and read the VAT receipts we stored for you. The connector does not reach HMRC and it files nothing.
+The connector has six tools. They list your saved books, open one, work out the nine VAT return boxes for a period, give you a link that opens the VAT form with the figures filled in, and read the VAT receipts we stored for you. The connector does not reach HMRC and it files nothing.
 
 <!-- handoff-sentence -->
-You check the figures, then file the return yourself in the web app, in your browser.
+The assistant can also give you a link that opens the VAT form with the figures filled in. You check them, declare and file there, in your browser.
 
 Every figure comes from the book's own lines, and the assistant shows the lines that fed each box.
 

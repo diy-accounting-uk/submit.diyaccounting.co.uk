@@ -3,7 +3,7 @@
 
 # Launch pack for the assistant connector
 
-The text, images and recording for the day the connector reaches the first directory. A person posts each item. The text states what prod offers today: the hosted connector's five tools, and no filing through it.
+The text, images and recording for the day the connector reaches the first directory. A person posts each item. The text states what prod offers today: the hosted connector's six tools, and no filing through it.
 
 ## Files
 
@@ -18,26 +18,9 @@ The text, images and recording for the day the connector reaches the first direc
 
 Product name, descriptions and price text come from the register's `submit` product in `web/marketing/marketing.toml`, read through `scripts/listings-register.mjs`. The price text is `£9.99/yr / £0.99/mo`, from `web/public/submit.catalogue.toml`.
 
-## The sentences that change when prepare_vat_return reaches prod
+## Images to retake
 
-Each text has one hand-off sentence, marked `<!-- handoff-sentence -->` on the line above. Today it reads:
-
-> You check the figures, then file the return yourself in the web app, in your browser.
-
-On the day `prepare_vat_return` is in `PROD_HOSTED_TOOL_NAMES`, it reads:
-
-> The assistant can also give you a link that opens the VAT form with the figures filled in. You check them, declare and file there, in your browser.
-
-Where the marked sentence sits:
-
-- `product-hunt.md`, first comment
-- `show-hn.md`, first comment
-- `ai-directories.md`, description
-- `devto.md`, section "What the browser does"
-
-On the same day, change the sentence that gives the tool count. `product-hunt.md` and `devto.md` say "The connector has five tools" and list them. `show-hn.md` and `ai-directories.md` describe what the tools do, with no count. Add `prepare_vat_return` as a sixth tool in all four texts.
-
-Retake `images/gallery-1-connector-page.png` and `images/gallery-3-form-and-receipt.png` on that day. Gallery 1 shows the `mcp.html` sentence "Not through the hosted connector". Gallery 3 shows a sandbox receipt, and a prod filing gives a better one.
+Retake `images/gallery-1-connector-page.png` and `images/gallery-3-form-and-receipt.png`. Gallery 1 shows the `mcp.html` answer that begins "Not through the hosted connector", which now names the link. Gallery 3 shows a sandbox receipt, and a prod filing gives a better one.
 
 ## Limits, read on 2026-11-13
 

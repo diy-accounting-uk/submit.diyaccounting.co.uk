@@ -2,14 +2,24 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, test, expect } from "vitest";
-import { MAX_SOURCE_AGE_DAYS, loadSources, sourceQuoteHtml, normaliseText, quoteAppearsIn } from "../../scripts/tax-sources.mjs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import {
+  MAX_SOURCE_AGE_DAYS,
+  loadSources,
+  sourcesOlderThan,
+  sourceQuoteHtml,
+  normaliseText,
+  quoteAppearsIn,
+} from "../../scripts/tax-sources.mjs";
 import { allFactIds } from "../../scripts/build-mtd-calendar.mjs";
 import { RATES_FACT_IDS } from "../../scripts/rates-fact-ids.mjs";
 import { allRatesFactIds } from "../../scripts/build-rates-page.mjs";
+import { articleFactIds } from "../../scripts/build-filing-pages.mjs";
 
 const sources = loadSources();
 const DAY_MS = 24 * 60 * 60 * 1000;
-const pageFactIds = () => [...allFactIds(), ...allRatesFactIds()];
+const pageFactIds = () => [...allFactIds(), ...allRatesFactIds(), ...articleFactIds()];
 
 describe("tax sources", () => {
   test("every fact on the MTD calendar has a source file listing its id", () => {
@@ -41,6 +51,22 @@ describe("tax sources", () => {
     expect(stale, "run the tax-sources skill to refresh").toEqual([]);
   });
 
+  test("sourcesOlderThan lists a source only when it is older than the limit", () => {
+    const now = Date.parse("2026-11-30T00:00:00Z");
+    const list = [
+      { name: "new", retrieved: "2026-11-23" },
+      { name: "edge", retrieved: "2026-11-07" },
+      { name: "old", retrieved: "2026-11-06" },
+    ];
+    expect(sourcesOlderThan(list, 23, now).map((s) => s.name)).toEqual(["old"]);
+    expect(sourcesOlderThan(list, 7, now).map((s) => s.name)).toEqual(["edge", "old"]);
+  });
+
+  test("the weekly check warns a week before the limit", () => {
+    const workflow = readFileSync(join(import.meta.dirname, "..", "..", ".github", "workflows", "tax-sources-check.yml"), "utf8");
+    expect(workflow).toContain(`--max-age-days ${MAX_SOURCE_AGE_DAYS - 7}`);
+  });
+
   test("the rates fact ids are unique", () => {
     expect(new Set(RATES_FACT_IDS).size).toBe(RATES_FACT_IDS.length);
   });
@@ -65,5 +91,21 @@ describe("tax source helpers", () => {
     expect(html).toContain("<p>a &lt; b</p>");
     expect(html).toContain(">gov.uk/a?b=1&amp;c=2</a>");
     expect(html).toContain("Retrieved 30 September 2026");
+  });
+
+  test("sourceQuoteHtml prints a table source as a citation line without its words", () => {
+    const html = sourceQuoteHtml({ url: "https://www.gov.uk/a", retrieved: "2026-09-30", quote: "Period Rate A 1 B 2", table: true });
+    expect(html).toContain("Source: the table on <a");
+    expect(html).toContain(">gov.uk/a</a>");
+    expect(html).toContain("Retrieved 30 September 2026");
+    expect(html).toContain("<footer>");
+    expect(html).not.toContain("Period Rate");
+    expect(html).not.toContain("<p>");
+  });
+
+  test("a source with no table flag still prints its quote", () => {
+    const html = sourceQuoteHtml({ url: "https://www.gov.uk/a", retrieved: "2026-09-30", quote: "The rate is 20%." });
+    expect(html).toContain("<p>The rate is 20%.</p>");
+    expect(html).not.toContain("Source: the table on");
   });
 });

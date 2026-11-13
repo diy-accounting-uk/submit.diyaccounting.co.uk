@@ -66,6 +66,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability SITE-12 -->
 <!-- capability SITE-22 -->
 <!-- capability SITE-25 -->
+<!-- capability SITE-33 -->
 ### Frontend infrastructure (SITE)
 
 <!-- generated:group frontend-infrastructure-site -->
@@ -466,6 +467,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-46 -->
 <!-- capability OPS-47 -->
 <!-- capability OPS-212 -->
+<!-- capability OPS-214 -->
 <!-- capability OPS-48 -->
 <!-- capability OPS-49 -->
 <!-- capability OPS-50 -->

@@ -11,7 +11,9 @@ import {
   isProductionOnProd,
   loadCatalog,
   loadManifest,
+  loadArticles,
   loadPages,
+  renderArticlePages,
   renderFilingPages,
 } from "../../scripts/build-filing-pages.mjs";
 import { loadSources } from "../../scripts/tax-sources.mjs";
@@ -93,6 +95,66 @@ describe("filing pages", () => {
       expect(home, page.file).toContain(`href="${page.file}"`);
       expect(chrome, page.file).toContain(`target: "${page.file}"`);
       expect(spreadsheets, page.file).toContain(`href="${page.file}"`);
+    }
+  });
+});
+
+describe("article pages", () => {
+  const articles = loadArticles();
+  const sources = loadSources();
+
+  test("each committed article page equals what the build script renders", async () => {
+    const rendered = await renderArticlePages();
+    expect([...rendered.keys()]).toEqual(articles.map((article) => article.file));
+    for (const [file, html] of rendered) expect(read(join("web/public", file))).toBe(html);
+  });
+
+  test("each article has one h1, a canonical link, an og title, the card tag and links the calendar and a filing page", () => {
+    const filingFiles = written.map((page) => page.file);
+    for (const article of articles) {
+      const html = read(join("web/public", article.file));
+      expect(html.match(/<h1>/g), article.file).toHaveLength(1);
+      expect(html).toContain(`<link rel="canonical" href="https://submit.diyaccounting.co.uk/${article.file}" />`);
+      expect(html).toContain('<meta name="twitter:card" content="summary_large_image" />');
+      expect(html).toContain('href="mtd-calendar.html"');
+      expect(
+        filingFiles.some((file) => html.includes(`href="${file}"`)),
+        article.file,
+      ).toBe(true);
+    }
+  });
+
+  test("each source an article names exists, and its page shows the quote and the link", () => {
+    for (const article of articles) {
+      const html = read(join("web/public", article.file)).replace(/\s+/g, " ");
+      for (const name of article.section.flatMap((section) => section.sources ?? [])) {
+        const source = sources.find((candidate) => candidate.name === name);
+        expect(source, name).toBeDefined();
+        expect(html, name).toContain(source.url);
+        if (!source.table) expect(html, name).toContain(source.quote);
+      }
+    }
+  });
+
+  test("an article that names a filing that is not production says its filing awaits HMRC recognition", () => {
+    for (const article of articles) {
+      const html = read(join("web/public", article.file));
+      for (const section of article.section) {
+        for (const { activity } of section.status ?? []) {
+          if (!isProductionOnProd(catalog, activity)) expect(html, activity).toContain("awaits HMRC recognition");
+        }
+      }
+    }
+  });
+
+  test("each article is in the sitemap, in the lighthouse configuration and linked from the calendar", () => {
+    const sitemap = read("web/public/sitemap.xml");
+    const lighthouse = read("lighthouse.config.json");
+    const calendar = read("web/public/mtd-calendar.html");
+    for (const article of articles) {
+      expect(sitemap, article.file).toContain(`<loc>https://submit.diyaccounting.co.uk/${article.file}</loc>`);
+      expect(lighthouse, article.file).toContain(`"path": "/${article.file}"`);
+      expect(calendar, article.file).toContain(`href="${article.file}"`);
     }
   });
 });
