@@ -62,7 +62,7 @@ class RawExportTest {
     }
 
     @Test
-    void createsOneLambdaNoScheduleOrDlqAndOneAlarm() {
+    void createsOneLambdaNoScheduleDlqOrAlarm() {
         Template template = synthRawExport();
 
         template.resourceCountIs("AWS::Events::Rule", 0);
@@ -71,7 +71,7 @@ class RawExportTest {
         // group goes through the idempotent AwsCustomResource path, adding a second Lambda
         // function: the shared create-if-missing/retention singleton provider.
         template.resourceCountIs("AWS::Lambda::Function", 2);
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 1);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 0);
 
         template.hasResourceProperties(
                 "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", "docs-env-raw-export-publish")));
@@ -112,17 +112,5 @@ class RawExportTest {
             }
         }
         assertTrue(foundExportsGrant, "expected an s3:PutObject grant scoped to the exports/ prefix");
-    }
-
-    @Test
-    void alarmCarriesNoSnsAction() {
-        Template template = synthRawExport();
-
-        var alarms = template.findResources("AWS::CloudWatch::Alarm");
-        for (var resource : alarms.values()) {
-            @SuppressWarnings("unchecked")
-            var properties = (Map<String, Object>) resource.get("Properties");
-            assertTrue(properties.get("AlarmActions") == null, "no alarm here should carry an SNS action");
-        }
     }
 }

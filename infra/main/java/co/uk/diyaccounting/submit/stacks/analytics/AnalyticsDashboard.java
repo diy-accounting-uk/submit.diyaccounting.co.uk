@@ -17,7 +17,6 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Metric;
-import software.amazon.awscdk.services.cloudwatch.MetricOptions;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
@@ -39,8 +38,8 @@ import software.constructs.Construct;
  * <p>Not a {@code Stack}: this lives inside {@code AnalyticsStack}, which owns the lake, the
  * Glue database and the Athena workgroup this construct queries. A plain {@code
  * DockerImageFunction} rather than the shared {@code Lambda} construct, matching {@code
- * IngestionStack}'s Stripe reconciliation job: that construct creates its own Errors alarm,
- * which would collide with the one this class adds for the same function name.
+ * IngestionStack}'s Stripe reconciliation job: that construct creates an Errors alarm of its own,
+ * which this function does not want.
  *
  * <p>No schedule, DLQ or DLQ-depth alarm of its own: {@code IngestionStack}'s {@code
  * NightlyIngestionWorkflow} state machine invokes {@link #metricsPublishLambda} directly as the
@@ -59,7 +58,6 @@ public class AnalyticsDashboard extends Construct {
     private static final String METRICS_NAMESPACE = "Submit/Analytics";
 
     public final Function metricsPublishLambda;
-    public final Alarm errorsAlarm;
     public final Alarm chargesWithoutActivationAlarm;
 
     @Value.Immutable
@@ -202,22 +200,6 @@ public class AnalyticsDashboard extends Construct {
                 .resources(List.of("*"))
                 .conditions(Map.of("StringEquals", Map.of("cloudwatch:namespace", METRICS_NAMESPACE)))
                 .build());
-
-        // ============================================================================
-        // Lambda-errors alarm. No schedule, DLQ or DLQ-depth alarm: the nightly state machine
-        // invokes this Lambda directly as the last step, so a failure here (or upstream) ends
-        // the execution rather than retrying in isolation off a DLQ.
-        // ============================================================================
-        this.errorsAlarm = Alarm.Builder.create(this, prefix + "-AnalyticsMetricsPublish-ErrorsAlarm")
-                .alarmName(functionName + "-errors")
-                .alarmDescription("Analytics metrics publish errored at least once in 24 hours")
-                .metric(this.metricsPublishLambda.metricErrors(
-                        MetricOptions.builder().period(Duration.hours(24)).build()))
-                .threshold(1)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .build();
 
         // ============================================================================
         // Charges-without-activation alarm: a paid Stripe charge on the reconciliation day with

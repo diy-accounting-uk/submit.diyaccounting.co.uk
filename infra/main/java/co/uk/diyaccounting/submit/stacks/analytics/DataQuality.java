@@ -17,7 +17,6 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Metric;
-import software.amazon.awscdk.services.cloudwatch.MetricOptions;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
@@ -44,8 +43,9 @@ import software.constructs.IDependable;
  *
  * <p>No schedule, DLQ or rule of its own: {@code IngestionStack}'s {@code
  * NightlyIngestionWorkflow} state machine invokes {@link #runLambda} directly as one step in the
- * nightly chain, after the ingestion jobs and before the metrics publish. Only the Lambda-errors
- * alarm stays here, matching {@code IngestionStack.registerIngestionJob}'s shape.
+ * nightly chain, after the ingestion jobs and before the metrics publish. A failure that the
+ * retries do not recover fails the execution, which the state machine's failed-executions alarm
+ * reports.
  *
  * <p>The runner Lambda passes a scoped IAM role to Glue for the evaluation run itself: Glue reads
  * the table and, because {@code AdditionalRunOptions.CloudWatchMetricsEnabled} is set, publishes
@@ -145,7 +145,6 @@ public class DataQuality extends Construct {
     public final List<CfnDataQualityRuleset> rulesets = new ArrayList<>();
     public final Role evaluationRole;
     public final Function runLambda;
-    public final Alarm errorsAlarm;
     public final List<Alarm> rulesFailedAlarms = new ArrayList<>();
 
     @Value.Immutable
@@ -394,21 +393,6 @@ public class DataQuality extends Construct {
                 .resources(List.of(this.evaluationRole.getRoleArn()))
                 .conditions(Map.of("StringEquals", Map.of("iam:PassedToService", "glue.amazonaws.com")))
                 .build());
-
-        // ============================================================================
-        // Lambda-errors alarm. No schedule, DLQ or DLQ-depth alarm: the nightly state machine
-        // invokes this Lambda directly and a failure here stops the chain.
-        // ============================================================================
-        this.errorsAlarm = Alarm.Builder.create(this, prefix + "-DataQualityRun-ErrorsAlarm")
-                .alarmName(runLambdaFunctionName + "-errors")
-                .alarmDescription("The data quality run Lambda errored at least once in 24 hours")
-                .metric(this.runLambda.metricErrors(
-                        MetricOptions.builder().period(Duration.hours(24)).build()))
-                .threshold(1)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .build();
 
         // ============================================================================
         // Data-quality-failed alarm, one per target: Glue publishes this metric itself once

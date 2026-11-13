@@ -222,13 +222,6 @@
     "why": "One Lambda feeds this composite, the Telegram forwarder; the GitHub issue path is a separate Lambda, so a wrong fix still raises an issue."
   },
   {
-    "family": "prod-env-analytics-metrics-publish-errors",
-    "remedy": "draft-pr",
-    "paths": ["app/functions/analytics/analyticsMetricsPublish.js", "app/unit-tests/analytics/analyticsMetricsPublish.test.js"],
-    "budgetPerDay": 2,
-    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
-  },
-  {
     "family": "prod-env-analytics-nightly-failed",
     "remedy": "draft-pr",
     "paths": [
@@ -249,7 +242,13 @@
       "app/functions/analytics/analyticsMetricsPublish.js",
       "app/unit-tests/analytics/analyticsMetricsPublish.test.js",
       "app/functions/analytics/rawExportPublish.js",
-      "app/unit-tests/analytics/rawExportPublish.test.js"
+      "app/unit-tests/analytics/rawExportPublish.test.js",
+      "app/functions/analytics/fxRatePull.js",
+      "app/unit-tests/analytics/fxRatePull.test.js",
+      "app/functions/analytics/operatorSnapshotPublish.js",
+      "app/unit-tests/analytics/operatorSnapshotPublish.test.js",
+      "app/functions/analytics/passFiguresPublish.js",
+      "app/unit-tests/analytics/passFiguresPublish.test.js"
     ],
     "budgetPerDay": 2,
     "why": "The state machine stops at the first failing job, so the fix is in one of the chain's Lambda files; the chain serves no customer request."
@@ -276,35 +275,9 @@
     "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
   },
   {
-    "family": "prod-env-data-quality-run-errors",
-    "remedy": "draft-pr",
-    "paths": ["app/functions/analytics/dataQualityRun.js", "app/unit-tests/analytics/dataQualityRun.test.js"],
-    "budgetPerDay": 2,
-    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
-  },
-  {
     "family": "prod-env-ga4-daily-pull-errors",
     "remedy": "draft-pr",
     "paths": ["app/functions/analytics/ga4DailyPull.js", "app/unit-tests/analytics/ga4DailyPull.test.js"],
-    "budgetPerDay": 2,
-    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
-  },
-  {
-    "family": "prod-env-ga4-event-export-pull-errors",
-    "remedy": "draft-pr",
-    "paths": ["app/functions/analytics/ga4EventExportPull.js", "app/unit-tests/analytics/ga4EventExportPull.test.js"],
-    "budgetPerDay": 2,
-    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
-  },
-  {
-    "family": "prod-env-ga4-report-pull-errors",
-    "remedy": "draft-pr",
-    "paths": [
-      "app/functions/analytics/ga4ReportPull.js",
-      "app/unit-tests/analytics/ga4ReportPull.test.js",
-      "app/lib/searchConsolePull.js",
-      "app/unit-tests/lib/searchConsolePull.test.js"
-    ],
     "budgetPerDay": 2,
     "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
   },
@@ -323,27 +296,6 @@
     "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
   },
   {
-    "family": "prod-env-operator-effort-pull-errors",
-    "remedy": "draft-pr",
-    "paths": ["app/functions/analytics/operatorEffortPull.js", "app/unit-tests/analytics/operatorEffortPull.test.js"],
-    "budgetPerDay": 2,
-    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
-  },
-  {
-    "family": "prod-env-operator-snapshot-publish-errors",
-    "remedy": "draft-pr",
-    "paths": ["app/functions/analytics/operatorSnapshotPublish.js", "app/unit-tests/analytics/operatorSnapshotPublish.test.js"],
-    "budgetPerDay": 2,
-    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
-  },
-  {
-    "family": "prod-env-raw-export-publish-errors",
-    "remedy": "draft-pr",
-    "paths": ["app/functions/analytics/rawExportPublish.js", "app/unit-tests/analytics/rawExportPublish.test.js"],
-    "budgetPerDay": 2,
-    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
-  },
-  {
     "family": "prod-env-scan-detect-404-errors",
     "remedy": "draft-pr",
     "paths": ["app/functions/security/scanRate404Detect.js", "app/unit-tests/functions/scanRate404Detect.test.js"],
@@ -356,13 +308,6 @@
     "paths": ["app/functions/security/securityLakeNightly.js", "app/unit-tests/functions/security/securityLakeNightly.test.js"],
     "budgetPerDay": 2,
     "why": "One Lambda feeds this composite; it reads findings and writes to the lake, so a wrong fix re-fires this same alarm and nothing else."
-  },
-  {
-    "family": "prod-env-stripe-reconcile-errors",
-    "remedy": "draft-pr",
-    "paths": ["app/functions/analytics/stripeReconcile.js", "app/unit-tests/analytics/stripeReconcile.test.js"],
-    "budgetPerDay": 2,
-    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
   },
   {
     "family": "ci-env-dynamodb-customer-table-scan",

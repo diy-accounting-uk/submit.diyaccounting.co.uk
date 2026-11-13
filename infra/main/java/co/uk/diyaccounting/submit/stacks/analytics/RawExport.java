@@ -12,10 +12,6 @@ import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
-import software.amazon.awscdk.services.cloudwatch.Alarm;
-import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
-import software.amazon.awscdk.services.cloudwatch.MetricOptions;
-import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ecr.RepositoryAttributes;
@@ -47,7 +43,6 @@ import software.constructs.Construct;
 public class RawExport extends Construct {
 
     public final Function publishLambda;
-    public final Alarm errorsAlarm;
 
     @Value.Immutable
     public interface RawExportProps {
@@ -184,22 +179,6 @@ public class RawExport extends Construct {
                 .actions(List.of("s3:PutObject"))
                 .resources(List.of(props.lakeBucket().getBucketArn() + "/exports/*"))
                 .build());
-
-        // ============================================================================
-        // Lambda-errors alarm. No schedule, DLQ or DLQ-depth alarm: the nightly state machine
-        // invokes this Lambda directly as one step in the chain, so a failure here (or upstream)
-        // ends the execution rather than retrying in isolation off a DLQ.
-        // ============================================================================
-        this.errorsAlarm = Alarm.Builder.create(this, prefix + "-RawExportPublish-ErrorsAlarm")
-                .alarmName(functionName + "-errors")
-                .alarmDescription("The raw export publish Lambda errored at least once in 24 hours")
-                .metric(this.publishLambda.metricErrors(
-                        MetricOptions.builder().period(Duration.hours(24)).build()))
-                .threshold(1)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .build();
     }
 
     private static String glueCatalogArn(String region, String account) {

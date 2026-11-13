@@ -378,10 +378,10 @@ class SubmitEnvironmentCdkResourceTest {
         SubmitApplicationCdkSupport.assertStackHealthAlarm(analytics, 3, 0, envRoutedPrefixes);
 
         // 10) Ingestion stack: the Stripe reconciliation, GA4 report pull, GA4 BigQuery event
-        // export pull and GA4 daily aggregate pull jobs, each with an Errors alarm only, invoked
-        // by the NightlyIngestionWorkflow state machine (one Step Functions state machine, one
-        // EventBridge Scheduler schedule,
-        // one ExecutionsFailed alarm - ExecutionsMissed is prod-only, so not here). Importing the
+        // export pull and GA4 daily aggregate pull jobs, invoked by the NightlyIngestionWorkflow
+        // state machine (one Step Functions state machine, one EventBridge Scheduler schedule,
+        // one ExecutionsFailed alarm - ExecutionsMissed is prod-only, so not here). Only the GA4
+        // daily pull has an Errors alarm, since its hourly rule runs it outside the state machine. Importing the
         // lake bucket by name creates no bucket of its own. Every job's name is stable across
         // redeploys, so their log groups go through the idempotent AwsCustomResource path,
         // adding the shared singleton provider.
@@ -390,7 +390,7 @@ class SubmitEnvironmentCdkResourceTest {
         ingestion.resourceCountIs("AWS::Lambda::Function", 7);
         ingestion.resourceCountIs("AWS::Events::Rule", 0);
         ingestion.resourceCountIs("AWS::SQS::Queue", 0);
-        ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 7);
+        ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 2);
         ingestion.resourceCountIs("AWS::StepFunctions::StateMachine", 1);
         ingestion.resourceCountIs("AWS::Scheduler::Schedule", 1);
         assertNoUnscopedIamResources(ingestion);

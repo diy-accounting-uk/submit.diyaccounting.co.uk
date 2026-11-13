@@ -134,7 +134,7 @@ describe("alarmToGithubIssue", () => {
     test("reads namespace, metric name and dimensions out of configuration.metrics[0].metricStat.metric", () => {
       const detail = resolveAlarmDetail({
         detail: {
-          alarmName: "prod-env-stripe-reconcile-errors",
+          alarmName: "prod-env-ga4-daily-pull-errors",
           state: { value: "ALARM" },
           previousState: { value: "OK" },
           configuration: {
@@ -145,7 +145,7 @@ describe("alarmToGithubIssue", () => {
                   metric: {
                     namespace: "AWS/Lambda",
                     name: "Errors",
-                    dimensions: { FunctionName: "prod-env-stripe-reconcile" },
+                    dimensions: { FunctionName: "prod-env-ga4-daily-pull" },
                   },
                 },
               },
@@ -156,7 +156,7 @@ describe("alarmToGithubIssue", () => {
 
       expect(detail.namespace).toBe("AWS/Lambda");
       expect(detail.metricName).toBe("Errors");
-      expect(detail.dimensions).toEqual({ FunctionName: "prod-env-stripe-reconcile" });
+      expect(detail.dimensions).toEqual({ FunctionName: "prod-env-ga4-daily-pull" });
       expect(detail.periodSeconds).toBe(300);
     });
 

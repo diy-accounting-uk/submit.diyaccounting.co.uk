@@ -165,12 +165,12 @@ class IngestionStackTest {
         template.resourceCountIs("AWS::Lambda::Function", 7);
 
         // No per-job schedule, DLQ or DLQ-depth alarm any more: NightlyIngestionWorkflow's one
-        // state machine and one scheduler schedule replace them. Five job Errors alarms plus
-        // the state machine's ExecutionsFailed alarm; the ExecutionsMissed alarm is prod-only,
-        // so a non-prod envName ("docs") gives six alarms, not seven.
+        // state machine and one scheduler schedule replace them. The GA4 daily pull Errors alarm
+        // plus the state machine's ExecutionsFailed alarm; the ExecutionsMissed alarm is
+        // prod-only, so a non-prod envName ("docs") gives two alarms.
         template.resourceCountIs("AWS::Events::Rule", 0);
         template.resourceCountIs("AWS::SQS::Queue", 0);
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 7);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 2);
         template.resourceCountIs("AWS::StepFunctions::StateMachine", 1);
         template.resourceCountIs("AWS::Scheduler::Schedule", 1);
 
@@ -327,9 +327,10 @@ class IngestionStackTest {
         template.resourceCountIs("AWS::SQS::Queue", 0);
         template.resourceCountIs("AWS::Events::Rule", 0);
 
-        // Five pre-existing job alarms plus the state machine's ExecutionsFailed alarm plus
-        // this test's own job alarm.
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 8);
+        // The GA4 daily pull's errors alarm (its hourly rule runs outside the state machine) plus
+        // the state machine's ExecutionsFailed alarm plus this test's own job alarm. The jobs
+        // that only the state machine runs have no errors alarm.
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 3);
         var alarms = template.findResources("AWS::CloudWatch::Alarm");
         for (Map<String, Object> alarm : alarms.values()) {
             @SuppressWarnings("unchecked")
@@ -345,6 +346,30 @@ class IngestionStackTest {
                         "Namespace", "AWS/Lambda",
                         "ComparisonOperator", "GreaterThanOrEqualToThreshold",
                         "Threshold", 1)));
+    }
+
+    @Test
+    void onlyJobsOutsideTheRetriedChainHaveAnErrorsAlarmAndTheStateMachineAlarmsOnFailure() {
+        Template template = Template.fromStack(synthIngestionStack());
+
+        template.hasResourceProperties(
+                "AWS::CloudWatch::Alarm", Match.objectLike(Map.of("AlarmName", "docs-env-analytics-nightly-failed")));
+        template.hasResourceProperties(
+                "AWS::CloudWatch::Alarm", Match.objectLike(Map.of("AlarmName", "docs-env-ga4-daily-pull-errors")));
+
+        var alarmNames = template.findResources("AWS::CloudWatch::Alarm").values().stream()
+                .map(alarm -> ((Map<?, ?>) alarm.get("Properties")).get("AlarmName"))
+                .toList();
+        for (var retriedJob : List.of(
+                "stripe-reconcile",
+                "ga4-report-pull",
+                "ga4-event-export-pull",
+                "operator-effort-pull",
+                "fx-rate-pull")) {
+            assertFalse(
+                    alarmNames.contains("docs-env-" + retriedJob + "-errors"),
+                    retriedJob + " is retried by the state machine and has no errors alarm");
+        }
     }
 
     @Test

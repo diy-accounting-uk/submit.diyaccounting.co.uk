@@ -145,21 +145,21 @@ describe("resolveAlarmEvidence", () => {
     expect(evidence.logGroupNamePrefixes).toContain("/aws/lambda/cwsyn-prod-0f68ed8-api-");
   });
 
-  test("rule 6: prod-env-stripe-reconcile-errors reads FunctionName from the dimensions", () => {
+  test("rule 6: prod-env-ga4-daily-pull-errors reads FunctionName from the dimensions", () => {
     const evidence = resolveAlarmEvidence({
-      alarmName: "prod-env-stripe-reconcile-errors",
-      familyKey: alarmFamilyKey("prod-env-stripe-reconcile-errors"),
+      alarmName: "prod-env-ga4-daily-pull-errors",
+      familyKey: alarmFamilyKey("prod-env-ga4-daily-pull-errors"),
       env: "prod",
       deployment: "prod-0f68ed8",
       namespace: "AWS/Lambda",
       metricName: "Errors",
-      dimensions: { FunctionName: "prod-env-stripe-reconcile" },
+      dimensions: { FunctionName: "prod-env-ga4-daily-pull" },
       compositeChildFunctionNames: [],
     });
 
     expect(evidence.ruleId).toBe(6);
-    expect(evidence.logGroupNamePrefixes).toEqual(["/aws/lambda/prod-env-stripe-reconcile"]);
-    expect(evidence.xrayFilterExpression).toContain('service("prod-env-stripe-reconcile")');
+    expect(evidence.logGroupNamePrefixes).toEqual(["/aws/lambda/prod-env-ga4-daily-pull"]);
+    expect(evidence.xrayFilterExpression).toContain('service("prod-env-ga4-daily-pull")');
   });
 
   test("rule 7: prod-env-analytics-nightly-failed takes the state machine's last ARN segment", () => {

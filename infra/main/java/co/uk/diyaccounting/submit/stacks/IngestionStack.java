@@ -49,12 +49,13 @@ import software.constructs.Construct;
 /**
  * Environment-scoped orchestration for the scheduled jobs that pull third-party usage data into
  * the analytics lake: Stripe reconciliation, GA4 report pulls and CloudFront partition
- * maintenance. This stack owns the scheduling pattern only. Each job lands as one Lambda plus one
- * call to {@link #registerIngestionJob}, so later work adding a job never touches another job's
- * code. Scheduling itself lives in {@link NightlyIngestionWorkflow}, the Step Functions state
- * machine this stack builds at the end of its constructor: {@link #registerIngestionJob} keeps
- * only the Lambda-errors alarm, since a failed job now stops the whole chain rather than retrying
- * in isolation off a DLQ.
+ * maintenance. This stack owns the scheduling pattern only. Each job lands as one Lambda, so later
+ * work adding a job never touches another job's code. Scheduling itself lives in {@link
+ * NightlyIngestionWorkflow}, the Step Functions state machine this stack builds at the end of its
+ * constructor. A job the state machine runs with retries and no {@code Catch} raises no alarm of
+ * its own: the state machine's failed-executions alarm fires when the retries are spent.
+ * {@link #registerIngestionJob} adds a Lambda-errors alarm to a job that something else also
+ * invokes, or whose failure the state machine records and continues past.
  *
  * <p>Env-scoped rather than app-scoped for the same reason as {@link AnalyticsStack}: the jobs
  * write into the lake, which has to outlive any one deployment.
@@ -260,10 +261,9 @@ public class IngestionStack extends Stack {
         // Stripe reconciliation job
         // ============================================================================
         // A plain DockerImageFunction, not the Lambda construct AnalyticsStack's transform
-        // Lambda uses: that construct creates its own Errors alarm, which would collide with
-        // the one registerScheduledJob adds below for the same function name. This job has no
-        // provisioned concurrency and no alias either, since nothing but the nightly schedule
-        // ever invokes it.
+        // Lambda uses: that construct creates an Errors alarm of its own, which this job does not
+        // want. This job has no provisioned concurrency and no alias either, since nothing but
+        // the nightly state machine ever invokes it.
         var stripeReconcileFunctionName = prefix + "-stripe-reconcile";
 
         var stripeReconcileEnv = new PopulatedMap<String, String>()
@@ -344,12 +344,6 @@ public class IngestionStack extends Stack {
         // other hashSub() caller reads.
         SubHashSaltHelper.grantSaltAccess(stripeReconcileLambda, region, account, props.envName());
 
-        registerIngestionJob(
-                "StripeReconcile",
-                stripeReconcileFunctionName,
-                stripeReconcileLambda,
-                "Pull yesterday's Stripe balance transactions, charges and subscription state into the analytics lake");
-
         // ============================================================================
         // GA4 report pull job
         // ============================================================================
@@ -412,12 +406,6 @@ public class IngestionStack extends Stack {
                 .actions(List.of("s3:PutObject"))
                 .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/searchconsole/*"))
                 .build());
-
-        registerIngestionJob(
-                "Ga4ReportPull",
-                ga4ReportPullFunctionName,
-                ga4ReportPullLambda,
-                "Pull yesterday's GA4 reports and the last three days of Search Console data into the analytics lake");
 
         // ============================================================================
         // GA4 BigQuery event export pull job
@@ -485,12 +473,6 @@ public class IngestionStack extends Stack {
                 .actions(List.of("s3:PutObject"))
                 .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/ga4_bq/*"))
                 .build());
-
-        registerIngestionJob(
-                "Ga4EventExportPull",
-                ga4EventExportPullFunctionName,
-                ga4EventExportPullLambda,
-                "Pull two days ago's GA4 BigQuery event export into the analytics lake");
 
         // ============================================================================
         // GA4 daily aggregate pull job: the lake's copy of the four one-stop-dashboard tables
@@ -650,12 +632,6 @@ public class IngestionStack extends Stack {
                             .formatted(this.getRegion(), this.getAccount(), githubAppPrivateKeySecretId)))
                     .build());
         }
-
-        registerIngestionJob(
-                "OperatorEffortPull",
-                operatorEffortPullFunctionName,
-                operatorEffortPullLambda,
-                "Pull yesterday's GitHub Actions runs, issue events and commits into the analytics lake");
 
         // ============================================================================
         // Company book pull job: DIY Accounting Limited's own resident diya-gl book, read
@@ -997,12 +973,6 @@ public class IngestionStack extends Stack {
                 .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/fx/*"))
                 .build());
 
-        registerIngestionJob(
-                "FxRatePull",
-                fxRatePullFunctionName,
-                fxRatePullLambda,
-                "Pull the European Central Bank's euro reference rates into the analytics lake");
-
         // ============================================================================
         // Nightly orchestration: one Step Functions state machine, one EventBridge Scheduler
         // schedule, replacing the five independent rules and DLQs the jobs used before this
@@ -1056,12 +1026,11 @@ public class IngestionStack extends Stack {
     }
 
     /**
-     * Wires one ingestion job's Lambda-errors alarm. No DLQ and no per-job schedule any more:
-     * the nightly state machine ({@link NightlyIngestionWorkflow}) invokes every job directly and
-     * a failure anywhere stops the chain, so replay is one state machine execution with an
-     * explicit date rather than a DLQ redrive. The alarm carries no SNS action: the
-     * alarm-state-change rule in OpsStack routes every alarm in the account to Telegram, which
-     * keeps the app-scoped alert topic out of this env-scoped stack.
+     * Wires the Lambda-errors alarm of a job whose failure the state machine's failed-executions
+     * alarm does not cover: the job has a trigger other than the state machine, or the state
+     * machine catches its failure and ends the execution in success. The alarm carries no SNS
+     * action: the alarm-state-change rule in OpsStack routes every alarm in the account to
+     * Telegram, which keeps the app-scoped alert topic out of this env-scoped stack.
      *
      * @param name construct id prefix, unique within this stack
      * @param functionName the job Lambda's physical name, e.g. from a {@code SubmitSharedNames}

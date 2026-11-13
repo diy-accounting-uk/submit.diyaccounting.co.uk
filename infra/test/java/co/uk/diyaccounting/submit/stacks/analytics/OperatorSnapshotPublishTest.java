@@ -71,7 +71,7 @@ class OperatorSnapshotPublishTest {
     }
 
     @Test
-    void prodAndCiShareOneLambdaOneAlarmAndNoSchedule() {
+    void prodAndCiShareOneLambdaNoAlarmAndNoSchedule() {
         // The function name is stable across every redeploy of this env-scoped stack, so its
         // log group goes through the idempotent AwsCustomResource path, adding a second Lambda
         // function: the shared create-if-missing/retention singleton provider. The ingestion
@@ -80,7 +80,7 @@ class OperatorSnapshotPublishTest {
             Template template = synthOperatorSnapshotPublish(envName);
             template.resourceCountIs("AWS::Lambda::Function", 2);
             template.resourceCountIs("AWS::Events::Rule", 0);
-            template.resourceCountIs("AWS::CloudWatch::Alarm", 1);
+            template.resourceCountIs("AWS::CloudWatch::Alarm", 0);
             template.resourceCountIs("AWS::S3::Bucket", 0);
             template.hasResourceProperties(
                     "AWS::Lambda::Function",
@@ -102,27 +102,6 @@ class OperatorSnapshotPublishTest {
                         "docs-env-operator-snapshot-publish",
                         "Environment",
                         Map.of("Variables", Match.objectLike(Map.of("SECURITY_SERVICES_ENABLED", expected))))));
-    }
-
-    @Test
-    void alarmCarriesNoSnsActionAndMatchesTheErrorsMetric() {
-        Template template = synthOperatorSnapshotPublish("prod");
-
-        var alarms = template.findResources("AWS::CloudWatch::Alarm");
-        assertEquals(1, alarms.size());
-        for (Map<String, Object> alarm : alarms.values()) {
-            @SuppressWarnings("unchecked")
-            var properties = (Map<String, Object>) alarm.get("Properties");
-            assertTrue(!properties.containsKey("AlarmActions"), "alarm should have no SNS action: " + properties);
-        }
-
-        template.hasResourceProperties(
-                "AWS::CloudWatch::Alarm",
-                Match.objectLike(Map.of(
-                        "AlarmName", "docs-env-operator-snapshot-publish-errors",
-                        "MetricName", "Errors",
-                        "Namespace", "AWS/Lambda",
-                        "Period", 3600)));
     }
 
     @Test
