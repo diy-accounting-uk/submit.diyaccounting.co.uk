@@ -20,7 +20,7 @@ Product name, descriptions and price text come from the register's `submit` prod
 
 ## Images to retake
 
-Retake `images/gallery-1-connector-page.png` and `images/gallery-3-form-and-receipt.png`. Gallery 1 shows the `mcp.html` answer that begins "Not through the hosted connector", which now names the link. Gallery 3 shows a sandbox receipt, and a prod filing gives a better one.
+Retake `images/gallery-3-form-and-receipt.png` from the frames of the ci recording of `assistant-vat-handoff`. It now shows a sandbox receipt from the guide screenshots and the page says so.
 
 ## Limits, read on 2026-11-13
 
