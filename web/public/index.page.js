@@ -236,15 +236,11 @@ function activityItem({ buttonClass, label, href, disabled, note, noteClass }) {
   return item;
 }
 
-// The status box and the subtitle say what the catalogue lists for this environment.
+// The status box says what the catalogue lists for this environment.
 function renderFeatureStatus(catalog, environmentName, viewer) {
   const list = document.getElementById("featureStatusList");
-  const subtitle = document.getElementById("homeSubtitle");
-  const { groups, filings } = window.featureStatusSummary(catalog, environmentName, viewer);
+  const { groups } = window.featureStatusSummary(catalog, environmentName, viewer);
   if (list) window.renderFeatureStatusList(list, groups);
-  if (subtitle && filings.length > 0 && document.documentElement.lang === "en-GB") {
-    subtitle.textContent = `Submit ${window.joinWithAnd(filings)} to HMRC and Companies House`;
-  }
 }
 
 async function renderDynamicActivities() {

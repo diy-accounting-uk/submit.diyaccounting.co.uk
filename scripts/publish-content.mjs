@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// @capability OPS-213 Write the videos and the bundles into the deployed pages for the environment
+// @capability OPS-213 Write the videos, the bundles and the home activity list into the deployed pages for the environment
 // - **Use when:** the deployed videos pages and the bundles page must hold, in their HTML, only the videos and bundles that the environment lists, for a crawler or an assistant that runs no JavaScript.
-// - **Does:** publish-content.mjs fills the marked block of videos.html, the five videos-*.html pages and bundles.html in a built web root. A video page block holds each listed video's title, description, thumbnail and one VideoObject JSON-LD block. The bundles block holds each listed bundle's name, price and the activities it files. It adds a video:video entry per listed video to the pages' sitemap.xml entries. The listing rule is the rule of the page scripts: an item that names a catalogue activity shows where the activity lists the environment, a bundle where its listedInEnvironments lists it. The page scripts replace the block when they run. It is a pure function of the web root's files and the environment name. deploy-stacks.yml, deploy-app.yml and deploy-app.js run it after publish-sitemap.mjs.
+// - **Does:** publish-content.mjs fills the marked block of videos.html, the five videos-*.html pages, bundles.html, index.html and cy/index.html in a built web root. The home block holds one link for each activity that a signed-out visitor sees, grouped by area, by the rule of catalog-service.js. A video page block holds each listed video's title, description, thumbnail and one VideoObject JSON-LD block. The bundles block holds each listed bundle's name, price and the activities it files. It adds a video:video entry per listed video to the pages' sitemap.xml entries. The listing rule is the rule of the page scripts: an item that names a catalogue activity shows where the activity lists the environment, a bundle where its listedInEnvironments lists it. The page scripts replace the block when they run. It is a pure function of the web root's files and the environment name. deploy-stacks.yml, deploy-app.yml and deploy-app.js run it after publish-sitemap.mjs.
 // - **Run:** `node scripts/publish-content.mjs <web-root> <environment-name>`
 // - **Entry:** `scripts/publish-content.mjs:renderVideoPageBlock`; `scripts/publish-content.mjs:renderBundlesBlock`
-// - **Files:** scripts/publish-content.mjs, scripts/page-markers.mjs, app/unit-tests/scripts/publishContent.test.js, scripts/deploy-app.js, .github/workflows/deploy-stacks.yml, .github/workflows/deploy-app.yml, web/public/videos.html, web/public/bundles.html
-// - **Keywords:** videos, bundles, prices, video object, video sitemap, json-ld, no javascript, crawler, catalogue environments
+// - **Files:** scripts/publish-content.mjs, scripts/page-markers.mjs, app/unit-tests/scripts/publishContent.test.js, scripts/deploy-app.js, .github/workflows/deploy-stacks.yml, .github/workflows/deploy-app.yml, web/public/videos.html, web/public/bundles.html, web/public/index.html, web/public/cy/index.html
+// - **Keywords:** home page, activities, videos, bundles, prices, video object, video sitemap, json-ld, no javascript, crawler, catalogue environments
 // - **Related:** OPS-143, SITE-31
 // @end-capability
 
@@ -25,6 +25,7 @@ import {
   parseCatalog,
   getBundlePrices,
 } from "../app/services/productCatalog.js";
+import { activityArea, activityPagePath, isActivityShown } from "../web/public/lib/services/catalog-service.js";
 import { AREA_PAGES, FEATURED_IDS } from "../web/public/widgets/video-pages.js";
 import { escapeHtml, replaceBetweenMarkers } from "./page-markers.mjs";
 
@@ -216,6 +217,59 @@ export function renderBundlesBlock(catalog, environmentName) {
   return `<h2>Bundles</h2>${cards.join("")}`;
 }
 
+const HOME_AREA_ORDER = ["VAT", "Income Tax", "Companies House", "Passes", "More"];
+const SIGNED_OUT_VIEWER = { preview: false, operatorFeatures: true, account: {} };
+
+/**
+ * The activities the home page lists to a signed-out visitor in an environment, as the page script
+ * lists them: shown by the catalogue, with a page, and not display "never". A signed-out visitor
+ * holds no bundle, so an activity that shows only on entitlement is left out, a display "always"
+ * activity opens its page and an upsell activity opens the sign-in page.
+ * @returns {{area: string, name: string, href: string}[]} in catalogue order
+ */
+export function homeActivities(catalog, environmentName) {
+  return (catalog.activities ?? [])
+    .filter((activity) => Array.isArray(activity.bundles))
+    .filter((activity) => isActivityShown(activity, environmentName, SIGNED_OUT_VIEWER))
+    .filter((activity) => activity.display === "always" || activity.display === "always-with-upsell")
+    .flatMap((activity) => {
+      const page = activityPagePath(activity);
+      if (!page) return [];
+      const isMetered = activity.metered === true && activity.tokenCost > 0;
+      const tokenLabel =
+        activity.display === "always" && isMetered ? ` (${activity.tokenCost} token${activity.tokenCost !== 1 ? "s" : ""})` : "";
+      return [
+        {
+          area: activityArea(page),
+          name: `${activity.name}${tokenLabel}`,
+          href: activity.display === "always" ? page : "auth/login.html",
+        },
+      ];
+    });
+}
+
+/**
+ * The HTML that fills the marked block of a home page: the activity list a signed-out visitor sees.
+ * @param {string} [rootPrefix] the page's distance from the site root: "" for /index.html, "../" for /cy/index.html
+ */
+export function renderHomeActivitiesBlock(catalog, environmentName, rootPrefix = "") {
+  const entries = homeActivities(catalog, environmentName);
+  let isFirst = true;
+  return HOME_AREA_ORDER.filter((area) => entries.some((entry) => entry.area === area))
+    .map((area) => {
+      const items = entries
+        .filter((entry) => entry.area === area)
+        .map((entry) => {
+          const buttonClass = isFirst ? "btn" : "btn activity-secondary";
+          isFirst = false;
+          return `<div class="activity-item"><a class="${buttonClass}" href="${escapeHtml(rootPrefix + entry.href)}">${escapeHtml(entry.name)}</a></div>`;
+        })
+        .join("");
+      return `<section class="activity-group" aria-label="${escapeHtml(area)}"><h2>${escapeHtml(area)}</h2>${items}</section>`;
+    })
+    .join("");
+}
+
 function videoSitemapEntry(video, description, uploadDate) {
   const lines = [
     `      <video:thumbnail_loc>${escapeHtml(thumbnailUrl(video))}</video:thumbnail_loc>`,
@@ -289,7 +343,7 @@ function fillPage(webRoot, page, markerName, content) {
 }
 
 /**
- * Write the environment's videos and bundles into the pages of a built web root, and the videos into its sitemap.
+ * Write the environment's videos, bundles and home activities into the pages of a built web root, and the videos into its sitemap.
  * @param {string} webRoot directory whose contents are served at the site root
  * @param {string} environmentName
  * @param {(videoId: string) => string|undefined} [uploadDateOf]
@@ -303,6 +357,8 @@ export function publishContent(webRoot, environmentName, uploadDateOf = lazyUplo
     fillPage(webRoot, page, "video-list", renderVideoPageBlock(videosOfPage(page, videos), videosById, uploadDateOf));
   }
   fillPage(webRoot, "bundles.html", "bundle-list", renderBundlesBlock(catalog, environmentName));
+  fillPage(webRoot, "index.html", "home-activities", renderHomeActivitiesBlock(catalog, environmentName));
+  fillPage(webRoot, "cy/index.html", "home-activities", renderHomeActivitiesBlock(catalog, environmentName, "../"));
   const sitemapPath = join(webRoot, "sitemap.xml");
   writeFileSync(sitemapPath, addVideoEntries(readFileSync(sitemapPath, "utf8"), videos, uploadDateOf));
 }
@@ -314,5 +370,5 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     process.exit(1);
   }
   publishContent(webRoot, environmentName);
-  console.log(`Wrote the videos and bundles for ${environmentName} into ${webRoot}`);
+  console.log(`Wrote the videos, bundles and home activities for ${environmentName} into ${webRoot}`);
 }

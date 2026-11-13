@@ -160,11 +160,11 @@ test.describe("Layout shift while data loads on a phone", () => {
     [375, 1000],
     [1280, 900],
   ]) {
-    test(`index.html keeps its header still when the subtitle changes at ${width}x${height} on a slow processor`, async ({ page }) => {
+    test(`index.html keeps its header still when the page script runs at ${width}x${height} on a slow processor`, async ({ page }) => {
       await page.setViewportSize({ width, height });
       await serveRealSiteWithSlowData(page, { cpuSlowdown: 6 });
       await page.goto("http://localhost:3000/index.html", { waitUntil: "load" });
-      await expect(page.locator("#homeSubtitle")).toContainText("to HMRC and Companies House");
+      await expect(page.locator("#homeIntro")).toContainText("Companies House");
       await delay(1000);
 
       const cls = await page.evaluate(() => window.__cumulativeLayoutShift);

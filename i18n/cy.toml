@@ -65,20 +65,20 @@ hash = "c887f134c26e"
 cy = '''Neidio i’r prif gynnwys'''
 
 [strings."index.title"]
-hash = "cb3609b4c4dc"
-cy = '''DIY Accounting Submit - Ffurflenni TAW ar gyfer Troi Treth yn Ddigidol'''
+hash = "73d271c9467a"
+cy = '''Ffeilio Ffurflenni TAW a Chyfrifon Cwmni - DIY Accounting Submit'''
 
 [strings."index.description"]
-hash = "871f948f13b7"
-cy = '''Cyflwynwch Ffurflenni TAW i CThEF drwy’r cynllun Troi Treth yn Ddigidol. Teclyn diogel i gyflwyno TAW i ddefnyddwyr taenlenni DIY Accounting. Mae haen westai am ddim ar gael.'''
+hash = "98e496d9f61d"
+cy = '''Ffeiliwch Ffurflenni TAW Troi Treth yn Ddigidol gyda CThEF a chyfrifon cwmni gyda Thŷ’r Cwmnïau o’ch taenlen. Mae Ffurflenni TAW yn costio £0.99 y mis neu £9.99 y flwyddyn.'''
 
 [strings."index.heading"]
-hash = "4d0076e6b4c7"
-cy = '''Gweithgareddau'''
+hash = "25c70059633b"
+cy = '''Ffeiliwch Ffurflenni TAW a chyfrifon cwmni o’ch taenlen'''
 
-[strings."index.subtitle"]
-hash = "c244775bd79e"
-cy = '''Cyflwyno i CThEF ac i Dŷ’r Cwmnïau'''
+[strings."index.intro"]
+hash = "2979c5f3cde9"
+cy = '''Ffeiliwch Ffurflenni TAW gyda CThEF, a chyfrifon a datganiadau cadarnhau gyda Thŷ’r Cwmnïau, o’ch taenlen eich hun. Mae Ffurflenni TAW yn costio £0.99 y mis neu £9.99 y flwyddyn. Mae dolen tocyn yn rhoi 3 chyflwyniad TAW i chi am ddim am 7 diwrnod yn gyntaf.'''
 
 [strings."index.feedback-label"]
 hash = "6fc1976630fa"
@@ -91,10 +91,6 @@ cy = '''Rwy’n fodlon rhannu adborth'''
 [strings."index.feedback-dismiss"]
 hash = "8f1ff9d42342"
 cy = '''Cau’r neges am adborth'''
-
-[strings."index.price"]
-hash = "3b3c849f3275"
-cy = '''Mae Ffurflenni TAW i CThEF yn costio £0.99 y mis neu £9.99 y flwyddyn. Mae dolen tocyn yn rhoi 3 chyflwyniad TAW i chi am ddim am 7 diwrnod yn gyntaf.'''
 
 [strings."index.get-started"]
 hash = "de0ca0816695"

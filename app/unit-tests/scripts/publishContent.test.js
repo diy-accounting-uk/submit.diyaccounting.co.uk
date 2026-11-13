@@ -13,7 +13,9 @@ import {
   listedBundles,
   listedVideos,
   publishContent,
+  homeActivities,
   renderBundlesBlock,
+  renderHomeActivitiesBlock,
   renderVideoPageBlock,
   resolveDescription,
   videosOfPage,
@@ -145,15 +147,48 @@ describe("publish-content bundles", () => {
   });
 });
 
+describe("publish-content home activities", () => {
+  test("prod lists the VAT activities and no Income Tax or preview activity", () => {
+    const names = homeActivities(CATALOG, "prod").map((entry) => entry.name);
+    expect(names).toContain("Submit VAT (HMRC)");
+    expect(homeActivities(CATALOG, "prod").some((entry) => entry.area === "Income Tax")).toBe(false);
+    expect(names.join(" ")).not.toMatch(/Assist|PSC|Company Tax Return/);
+  });
+
+  test("an activity that shows only on entitlement is left out for a signed-out visitor", () => {
+    expect(homeActivities(CATALOG, "prod").some((entry) => entry.area === "Companies House")).toBe(false);
+  });
+
+  test("ci lists Income Tax and prod does not", () => {
+    expect(homeActivities(CATALOG, "ci").some((entry) => entry.area === "Income Tax")).toBe(true);
+  });
+
+  test("an upsell activity opens the sign-in page and every entry has a page link", () => {
+    const vat = homeActivities(CATALOG, "prod").find((entry) => entry.name === "Submit VAT (HMRC)");
+    expect(vat.href).toBe("auth/login.html");
+    expect(homeActivities(CATALOG, "ci").every((entry) => entry.href.endsWith(".html"))).toBe(true);
+  });
+
+  test("the block groups the links by area and gives only the first link the primary style", () => {
+    const html = renderHomeActivitiesBlock(CATALOG, "prod");
+    expect(html).toContain('<section class="activity-group" aria-label="VAT"><h2>VAT</h2>');
+    expect(html.match(/class="btn"/g)).toHaveLength(1);
+    expect(html).not.toContain("Income Tax");
+  });
+});
+
 describe("publishContent", () => {
   test("fills every marked block in a web root and leaves the sitemap well formed", () => {
     const webRoot = mkdtempSync(join(tmpdir(), "publish-content-"));
     try {
       mkdirSync(join(webRoot, "videos"));
+      mkdirSync(join(webRoot, "cy"));
       for (const file of [
         "submit.catalogue.toml",
         "sitemap.xml",
         "bundles.html",
+        "index.html",
+        "cy/index.html",
         "videos.html",
         "videos-account.html",
         "videos-accounting.html",
@@ -168,6 +203,8 @@ describe("publishContent", () => {
       const bundles = readFileSync(join(webRoot, "bundles.html"), "utf8");
       expect(bundles).toContain('data-bundle-id="resident-pro"');
       expect(bundles).not.toContain('data-bundle-id="resident-tax-agent"');
+      expect(readFileSync(join(webRoot, "index.html"), "utf8")).toContain('<section class="activity-group" aria-label="VAT">');
+      expect(readFileSync(join(webRoot, "cy/index.html"), "utf8")).toContain('href="../auth/login.html"');
       expect(readFileSync(join(webRoot, "videos-ch.html"), "utf8")).toContain("VideoObject");
       expect(readFileSync(join(webRoot, "sitemap.xml"), "utf8")).toContain("<video:video>");
     } finally {

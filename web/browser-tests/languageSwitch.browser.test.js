@@ -54,9 +54,9 @@ test("a page without alternates shows no language switch", async ({ page }) => {
 test("the Welsh home keeps its Welsh subtitle and its activity links reach the site root", async ({ page }) => {
   await serveRealSite(page);
   await page.goto(`${SITE_ORIGIN}/cy/index.html`, { waitUntil: "domcontentloaded" });
-  await expect(page.locator("h1")).toHaveText("Gweithgareddau");
+  await expect(page.locator("h1")).toHaveText("Ffeiliwch Ffurflenni TAW a chyfrifon cwmni o’ch taenlen");
   await expect(page.locator(".activity-item button").first()).toBeVisible();
-  await expect(page.locator("#homeSubtitle")).toHaveText("Cyflwyno i CThEF ac i Dŷ’r Cwmnïau");
+  await expect(page.locator("#homeIntro")).toContainText("£0.99 y mis neu £9.99 y flwyddyn");
   await page.locator(".activity-item button:not([disabled])").first().click();
   await expect(page).not.toHaveURL(/\/cy\/(?!index\.html)/);
 });
