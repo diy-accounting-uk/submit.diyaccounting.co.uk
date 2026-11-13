@@ -237,3 +237,16 @@ main ol.calendar {
 .filing-guides ul {
   padding-left: var(--space-5);
 }
+
+/* A comparison row reads as one unit on a phone: the tool name leads, then its labelled cells. */
+@media (max-width: 600px) {
+  .compare-table td:first-child {
+    font-weight: var(--weight-strong);
+    padding-bottom: 0;
+  }
+
+  .compare-table td {
+    padding-top: var(--space-1);
+    padding-bottom: var(--space-1);
+  }
+}
