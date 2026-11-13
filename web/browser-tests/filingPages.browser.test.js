@@ -108,3 +108,30 @@ for (const [file, heading] of ARTICLE_PAGES) {
     await expect(page.locator("main a.btn").first()).toBeVisible();
   });
 }
+
+test("the VAT penalty calculator shows the due date, the points, the threshold and what removes them", async ({ page }) => {
+  await serveRealSite(page);
+  await page.goto("http://localhost:3000/vat-return-due-date-and-penalty-points.html", { waitUntil: "load" });
+  await expect(page.locator("h1")).toHaveText("VAT return due date and penalty points calculator");
+  await page.locator("#vatFrequency").selectOption("quarterly");
+  await page.locator("#vatPeriodEnd").fill("2026-09-30");
+  await expect(page.locator("#vatDueDate")).toHaveText("7 November 2026");
+  await expect(page.locator("#vatReturnTicks input")).toHaveCount(8);
+  for (let index = 0; index < 4; index += 1) await page.locator("#vatReturnTicks input").nth(index).check();
+  await expect(page.locator("#vatPoints")).toHaveText("4 of 4");
+  await expect(page.locator("#vatThreshold")).toContainText("4 points");
+  await expect(page.locator("#vatPenalties")).toContainText("£200");
+  await expect(page.locator("#vatRemoval")).toContainText("12 months");
+  await expect(page.locator("main a[href='vat-return-from-a-spreadsheet.html']").first()).toBeVisible();
+});
+
+test("the VAT penalty page holds the rules as text without a script", async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await serveRealSite(page);
+  await page.goto("http://localhost:3000/vat-return-due-date-and-penalty-points.html", { waitUntil: "load" });
+  await expect(page.locator("#vatCalculator")).toBeHidden();
+  await expect(page.locator("main")).toContainText("one calendar month and 7 days");
+  await expect(page.locator("table.deadline-table")).toContainText("Quarterly");
+  await context.close();
+});

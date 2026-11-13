@@ -43,6 +43,8 @@ export const DATED_FACTS = [
     date: "2022-04-01",
     title: "VAT: every VAT-registered business",
     text: "All VAT-registered businesses use Making Tax Digital for VAT, whatever their turnover. Your first VAT period starting on or after 1 April 2022 is the first one under the rule.",
+    page: "vat-return-due-date-and-penalty-points.html",
+    pageLabel: "Work out a VAT return due date and your penalty points",
   },
   {
     id: "itsa-mtd-over-50k-2026-04",
@@ -391,7 +393,7 @@ export function renderCalendarHtml(sources) {
         f,
         sources,
         `<span class="calendar-date">${formatIsoDate(f.date)}</span>${escapeHtml(f.title)}`,
-        f.page ? `<p><a href="${f.page}">Read the page for this date</a></p>` : "",
+        f.page ? `<p><a href="${f.page}">${f.pageLabel ?? "Read the page for this date"}</a></p>` : "",
       ),
     )
     .join("");

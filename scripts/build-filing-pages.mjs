@@ -4,10 +4,10 @@
 
 // @capability SITE-32 Write a landing page for each filing that is production on prod, and the article pages
 // - **Use when:** a filing goes to production, its price or its steps change, or a page must answer the search query for that filing.
-// - **Does:** build-filing-pages.mjs reads scripts/filing-pages.toml and writes one static page for each entry whose activity is listed on prod and whose web form is production in AVAILABILITY. A page holds an h1 that is the query, what the reader needs, the steps with the screenshots of the guide, the price from the catalogue, the due date with its source quote, the video and the action. A second entry kind, the article in the same data file, writes a page that is not one filing: sections of text, lists, the status of a filing from AVAILABILITY and the quotes of source files. The committed pages are checked against this render.
+// - **Does:** build-filing-pages.mjs reads scripts/filing-pages.toml and writes one static page for each entry whose activity is listed on prod and whose web form is production in AVAILABILITY. A page holds an h1 that is the query, what the reader needs, the steps with the screenshots of the guide, the price from the catalogue, the due date with its source quote, the video and the action. A second entry kind, the article in the same data file, writes a page that is not one filing: sections of text, lists, the status of a filing from AVAILABILITY and the quotes of source files, and a form that a module script fills in (the VAT penalty calculator). The committed pages are checked against this render.
 // - **Run:** `npm run build:filing-pages`; `npx vitest run web/unit-tests/filingPages.test.js`
 // - **Entry:** `scripts/build-filing-pages.mjs:renderFilingPage`; `scripts/build-filing-pages.mjs:filingPagesToWrite`; `scripts/build-filing-pages.mjs:renderArticlePage`
-// - **Files:** scripts/build-filing-pages.mjs, scripts/filing-pages.toml, web/unit-tests/filingPages.test.js, web/public/vat-return-from-a-spreadsheet.html, web/public/micro-entity-accounts.html, web/public/small-company-accounts.html, web/public/dormant-company-accounts.html, web/public/confirmation-statement.html, web/public/hmrc-company-tax-return-service-closed.html, web/public/company-accounts-by-software-from-april-2028.html, web/public/making-tax-digital-income-tax-over-30000.html
+// - **Files:** scripts/build-filing-pages.mjs, scripts/filing-pages.toml, web/unit-tests/filingPages.test.js, web/public/vat-return-from-a-spreadsheet.html, web/public/micro-entity-accounts.html, web/public/small-company-accounts.html, web/public/dormant-company-accounts.html, web/public/confirmation-statement.html, web/public/hmrc-company-tax-return-service-closed.html, web/public/company-accounts-by-software-from-april-2028.html, web/public/making-tax-digital-income-tax-over-30000.html, web/public/vat-return-due-date-and-penalty-points.html, web/public/lib/vat/penalty-rules.js, web/public/lib/vat/penalty-calculator.js, web/unit-tests/vatPenaltyRules.test.js
 // - **Keywords:** filing page, landing page, vat return from a spreadsheet, micro-entity accounts, small company accounts, dormant accounts, confirmation statement, search, seo, generated page
 // - **Related:** SITE-14, SITE-31
 // @end-capability
@@ -22,6 +22,7 @@ import TOML from "@iarna/toml";
 import { getActivityPrices, getBundlePrices, isActivityListedInEnvironment, parseCatalog } from "../app/services/productCatalog.js";
 import { AREA_PAGES } from "../web/public/widgets/video-pages.js";
 import { AVAILABILITY, QUARTERLY_FACT, availabilityStatus } from "./build-mtd-calendar.mjs";
+import { FREQUENCIES } from "../web/public/lib/vat/penalty-rules.js";
 import { escapeHtml } from "./page-markers.mjs";
 import { loadSources, sourceQuoteHtml } from "./tax-sources.mjs";
 
@@ -269,6 +270,26 @@ function inlineHtml(text) {
   return escapeHtml(text).replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
 }
 
+/** The form of the penalty calculator. It stays hidden until its script runs. */
+function vatPenaltyCalculatorHtml() {
+  const options = Object.entries(FREQUENCIES)
+    .map(([id, rule]) => `<option value="${id}">${rule.label}</option>`)
+    .join("");
+  return (
+    `<div id="vatCalculator" hidden>` +
+    `<div class="form-group"><label for="vatPeriodEnd">Last day of the accounting period</label>` +
+    `<input type="date" id="vatPeriodEnd" name="vatPeriodEnd" /></div>` +
+    `<div class="form-group"><label for="vatFrequency">How often you send a return</label>` +
+    `<select id="vatFrequency" name="vatFrequency">${options}</select></div>` +
+    `<fieldset class="form-group"><legend>Tick each return that was late</legend><div id="vatReturnTicks"></div></fieldset>` +
+    `<div id="vatResult" role="status" aria-live="polite" hidden>` +
+    `<p><strong>Due date:</strong> <span id="vatDueDate"></span></p>` +
+    `<p><strong>Penalty points:</strong> <span id="vatPoints"></span></p>` +
+    `<p><strong>Threshold:</strong> <span id="vatThreshold"></span></p>` +
+    `<p id="vatPenalties"></p><p id="vatRemoval"></p></div></div>`
+  );
+}
+
 function articleSectionHtml(section, sources) {
   const parts = [`<h2>${escapeHtml(section.heading)}</h2>`];
   for (const text of section.text ?? []) parts.push(`<p>${inlineHtml(text)}</p>`);
@@ -279,6 +300,19 @@ function articleSectionHtml(section, sources) {
       `<table class="deadline-table"><thead><tr><th scope="col">Update period</th><th scope="col">Deadline</th></tr></thead><tbody>${rows}</tbody></table>`,
     );
   }
+  if (section.table === "vat-penalty-rules") {
+    const rows = Object.values(FREQUENCIES)
+      .map(
+        (rule) =>
+          `<tr><td>${rule.label}</td><td>${rule.threshold}</td><td>${rule.complianceMonths} months</td><td>${rule.complianceReturns}</td></tr>`,
+      )
+      .join("");
+    parts.push(
+      `<table class="deadline-table"><thead><tr><th scope="col">Return</th><th scope="col">Penalty points threshold</th>` +
+        `<th scope="col">Period of compliance</th><th scope="col">Returns in it</th></tr></thead><tbody>${rows}</tbody></table>`,
+    );
+  }
+  if (section.widget === "vat-penalty-calculator") parts.push(vatPenaltyCalculatorHtml());
   for (const name of section.status ?? []) {
     parts.push(`<p>${escapeHtml(filingStatusText(name.activity, name.label))}</p>`);
   }

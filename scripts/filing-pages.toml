@@ -202,3 +202,45 @@ text = [
   "Submit files VAT returns now. See [VAT return from a spreadsheet](vat-return-from-a-spreadsheet.html).",
   "The dates for other income levels, and for every other filing, are on the [MTD calendar](mtd-calendar.html).",
 ]
+
+[[article]]
+file = "vat-return-due-date-and-penalty-points.html"
+title = "VAT return due date and penalty points calculator - DIY Accounting Submit"
+heading = "VAT return due date and penalty points calculator"
+subtitle = "Work out when a VAT return is due and how many late submission points you hold"
+description = "Work out the due date of a VAT return and your late submission penalty points. The thresholds, the £200 penalty and what removes the points, each with its gov.uk source."
+summary = "A VAT return is due one calendar month and 7 days after the end of the accounting period. Each late return adds a penalty point until you reach the threshold, then a £200 penalty. Pick your period end and how often you file, and tick the late returns."
+action = { label = "File a VAT return", href = "vat-return-from-a-spreadsheet.html" }
+script = "lib/vat/penalty-calculator.js"
+
+[[article.section]]
+heading = "Work it out"
+text = ["The date is a calculation from the rule below. Your VAT online account shows the date HMRC holds for each return."]
+widget = "vat-penalty-calculator"
+
+[[article.section]]
+heading = "When a VAT return is due"
+text = ["A period that ends on the last day of a month is due on the 7th of the month after next. A quarter that ends on 31 March is due on 7 May."]
+sources = ["vat-return-due-date"]
+
+[[article.section]]
+heading = "Penalty points and the threshold"
+text = ["Each late return adds one point until you reach the threshold of your accounting period."]
+table = "vat-penalty-rules"
+sources = ["vat-penalty-points-thresholds", "vat-penalty-200"]
+
+[[article.section]]
+heading = "What removes points"
+text = [
+  "Below the threshold, points expire on their own.",
+  "At the threshold, you remove the points when you meet both conditions: a period of compliance, and every outstanding return of the previous 24 months.",
+]
+sources = ["vat-penalty-points-expire", "vat-penalty-points-removal", "vat-penalty-compliance-period"]
+
+[[article.section]]
+heading = "What Submit files"
+status = [{ activity = "submit-vat", label = "VAT returns" }]
+text = [
+  "See [VAT return from a spreadsheet](vat-return-from-a-spreadsheet.html).",
+  "Every date is on the [MTD calendar](mtd-calendar.html).",
+]
