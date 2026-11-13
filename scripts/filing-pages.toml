@@ -35,6 +35,7 @@ subtitle = "File your company's annual accounts online from your own figures"
 description = "How to file micro-entity accounts at Companies House online: what you need, the steps with screenshots, the price and the due date."
 summary = "Submit turns the figures you give it into micro-entity accounts and files them with Companies House. You choose the accounting period, enter the balance sheet and profit and loss figures, check the answers and file."
 action = { label = "File micro-entity accounts", href = "companies-house/fileMicroEntityAccounts.html" }
+lookup_in = "company-filing-deadlines.html"
 compared_in = "company-accounts-filing-software-compared.html"
 before = [
   "Your company number.",
@@ -54,6 +55,7 @@ subtitle = "File your company's annual accounts online from your own figures"
 description = "How to file small company accounts at Companies House online: what you need, the steps with screenshots, the price and the due date."
 summary = "Submit turns the figures you give it into small company accounts and files them with Companies House. You choose the accounting period, enter the figures, check the answers and file."
 action = { label = "File small company accounts", href = "companies-house/fileSmallCompanyAccounts.html" }
+lookup_in = "company-filing-deadlines.html"
 before = [
   "Your company number.",
   "The accounting period and the figures for the format you choose: full accounts, or filleted accounts.",
@@ -72,6 +74,7 @@ subtitle = "A company with no significant accounting transaction files dormant a
 description = "How to file dormant company accounts at Companies House online: what makes a company dormant, the steps with screenshots, the price and the due date."
 summary = "A company is dormant when it had no significant accounting transaction in the period. Submit files dormant accounts through the micro-entity accounts form: tick that the company was dormant throughout the period, then follow the same steps."
 action = { label = "File dormant company accounts", href = "companies-house/fileMicroEntityAccounts.html" }
+lookup_in = "company-filing-deadlines.html"
 before = [
   "Your company number.",
   "The accounting period. The company must have had no significant accounting transaction in it.",
@@ -246,6 +249,34 @@ status = [{ activity = "submit-vat", label = "VAT returns" }]
 text = [
   "See [VAT return from a spreadsheet](vat-return-from-a-spreadsheet.html).",
   "Every date is on the [MTD calendar](mtd-calendar.html).",
+]
+
+[[article]]
+file = "company-filing-deadlines.html"
+title = "Company filing deadlines lookup - when are your accounts due - DIY Accounting Submit"
+heading = "When are your company's accounts and confirmation statement due?"
+subtitle = "Type a company name or number and see both dates, the days left and what to file"
+description = "Look up any UK company and see when its accounts and confirmation statement are next due, the days left for each and the filing to use. No sign-in."
+summary = "Type a company name or number and this page shows when its accounts and its confirmation statement are next due, from the Companies House register. It counts the days left for each and links the filing that fits. No sign-in is needed. You can also search the register yourself on [Companies House](https://find-and-update.company-information.service.gov.uk/)."
+action = { label = "File company accounts", href = "micro-entity-accounts.html" }
+script = "lib/company/deadline-lookup.js"
+
+[[article.section]]
+heading = "Look up a company"
+widget = "company-deadlines-lookup"
+
+[[article.section]]
+heading = "Where the dates come from"
+text = [
+  "The company name, status, type and dates are public register data from Companies House. The page does not change them.",
+  "Source: Companies House. Contains public sector information licensed under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/).",
+  "The days left are counted in this page from today's date. Your Companies House account shows the date Companies House holds.",
+]
+
+[[article.section]]
+heading = "What Submit files"
+text = [
+  "See [micro-entity accounts](micro-entity-accounts.html), [small company accounts](small-company-accounts.html), [dormant company accounts](dormant-company-accounts.html) and the [confirmation statement](confirmation-statement.html).",
 ]
 
 [[comparison]]

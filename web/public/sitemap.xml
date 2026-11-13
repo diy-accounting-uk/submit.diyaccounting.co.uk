@@ -115,6 +115,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://submit.diyaccounting.co.uk/company-filing-deadlines.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://submit.diyaccounting.co.uk/confirmation-statement.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

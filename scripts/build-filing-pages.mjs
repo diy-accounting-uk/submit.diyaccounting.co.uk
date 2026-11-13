@@ -126,12 +126,14 @@ function deadlineHtml(page, sources) {
   return `<p>${escapeHtml(page.deadline.text)}</p>${sourceQuoteHtml(source)}`;
 }
 
-function otherPagesHtml(page, pages, comparisons = []) {
+function otherPagesHtml(page, pages, comparisons = [], articles = []) {
   const links = pages
     .filter((other) => other.file !== page.file)
     .map((other) => `<li><a href="${other.file}">${escapeHtml(other.heading)}</a></li>`);
   const compared = comparisons.find((comparison) => comparison.file === page.compared_in);
   if (compared) links.push(`<li><a href="${compared.file}">${escapeHtml(compared.heading)}</a></li>`);
+  const lookup = articles.find((article) => article.file === page.lookup_in);
+  if (lookup) links.push(`<li><a href="${lookup.file}">${escapeHtml(lookup.heading)}</a></li>`);
   return `<ul>${links.join("")}</ul>`;
 }
 
@@ -218,7 +220,7 @@ ${mainHtml}
  * @param {object} page an entry of filing-pages.toml
  * @param {object[]} pages every entry that gets a page, for the links between them
  */
-export function renderFilingPage(page, pages, catalog, manifest, sources, comparisons = []) {
+export function renderFilingPage(page, pages, catalog, manifest, sources, comparisons = [], articles = []) {
   const video = manifest.videos.find((candidate) => candidate.id === page.video);
   if (!video || !Array.isArray(video.walkthrough)) throw new Error(`${page.file}: no walkthrough for video ${page.video}`);
   const scenes = [...(page.lead_steps ?? []), ...video.walkthrough];
@@ -255,7 +257,7 @@ export function renderFilingPage(page, pages, catalog, manifest, sources, compar
         <h2>Ready to file</h2>
         <p><a class="btn" href="${escapeHtml(page.action.href)}">${escapeHtml(page.action.label)}</a></p>
         <h2>Other filings</h2>
-        ${otherPagesHtml(page, pages, comparisons)}
+        ${otherPagesHtml(page, pages, comparisons, articles)}
         <p>Each filing and the channels that offer it are in the <a href="mtd-calendar.html#availability">availability table</a>.</p>
       </div>
 `;
@@ -301,6 +303,22 @@ function vatPenaltyCalculatorHtml() {
   );
 }
 
+/** The search box of the company deadlines lookup. It stays hidden until its script runs. */
+function companyDeadlinesLookupHtml() {
+  return (
+    `<noscript><p>The lookup needs JavaScript. Search for the company on ` +
+    `<a href="https://find-and-update.company-information.service.gov.uk/">Companies House</a>: its page shows the next accounts and the next confirmation statement.</p></noscript>` +
+    `<div id="companyLookup" hidden>` +
+    `<form id="companyLookupForm" class="form-group">` +
+    `<label for="companyQuery">Company name or number</label>` +
+    `<input type="search" id="companyQuery" name="companyQuery" minlength="2" maxlength="100" autocomplete="off" required />` +
+    `<button type="submit" class="btn">Look up</button></form>` +
+    `<p id="companyError" role="alert" hidden></p>` +
+    `<div id="companyMatches" role="status" aria-live="polite" hidden></div>` +
+    `<div id="companyResult" role="status" aria-live="polite" hidden></div></div>`
+  );
+}
+
 function articleSectionHtml(section, sources) {
   const parts = [`<h2>${escapeHtml(section.heading)}</h2>`];
   for (const text of section.text ?? []) parts.push(`<p>${inlineHtml(text)}</p>`);
@@ -324,6 +342,7 @@ function articleSectionHtml(section, sources) {
     );
   }
   if (section.widget === "vat-penalty-calculator") parts.push(vatPenaltyCalculatorHtml());
+  if (section.widget === "company-deadlines-lookup") parts.push(companyDeadlinesLookupHtml());
   for (const name of section.status ?? []) {
     parts.push(`<p>${escapeHtml(filingStatusText(name.activity, name.label))}</p>`);
   }
@@ -452,6 +471,7 @@ export async function renderFilingPages(
   manifest = loadManifest(),
   sources = loadSources(),
   comparisons = loadComparisons(),
+  articles = loadArticles(),
 ) {
   const toWrite = filingPagesToWrite(pages, catalog);
   const rendered = new Map();
@@ -460,7 +480,10 @@ export async function renderFilingPages(
     const config = (await prettier.resolveConfig(path)) ?? {};
     rendered.set(
       page.file,
-      await prettier.format(renderFilingPage(page, toWrite, catalog, manifest, sources, comparisons), { ...config, filepath: path }),
+      await prettier.format(renderFilingPage(page, toWrite, catalog, manifest, sources, comparisons, articles), {
+        ...config,
+        filepath: path,
+      }),
     );
   }
   return rendered;

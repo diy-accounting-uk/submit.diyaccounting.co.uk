@@ -6,7 +6,7 @@
 // - **Does:** companiesHousePublicDeadlinesGet.js answers GET /api/v1/public/company-deadlines with no authorizer. `number` returns one company's name, status, type, accounts due date and period, confirmation statement due date and last accounts type. `q` returns up to five matches by name or number. Every field is copied by name from the Companies House answer. It uses the one Companies House API key, writes the PublicCompanyDeadlines metrics, and sets Cache-Control on a found answer so CloudFront keeps it for ten minutes.
 // - **Run:** `curl 'https://submit.diyaccounting.co.uk/api/v1/public/company-deadlines?number=00000006'`
 // - **Entry:** `app/functions/companies-house/companiesHousePublicDeadlinesGet.js:ingestHandler`
-// - **Files:** app/functions/companies-house/companiesHousePublicDeadlinesGet.js, app/unit-tests/functions/companiesHousePublicDeadlinesGet.test.js, web/public/company-filing-deadlines.html, web/public/lib/company-deadlines.js, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java
+// - **Files:** app/functions/companies-house/companiesHousePublicDeadlinesGet.js, app/unit-tests/functions/companiesHousePublicDeadlinesGet.test.js, web/public/company-filing-deadlines.html, web/public/lib/company/deadline-rules.js, web/public/lib/company/deadline-lookup.js, web/unit-tests/companyDeadlineRules.test.js, web/browser-tests/filingPages.browser.test.js, scripts/build-filing-pages.mjs, scripts/filing-pages.toml, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java
 // - **Keywords:** company filing deadlines, accounts due, confirmation statement due, public lookup, no sign-in, companies house, cache, rate limit
 // - **Related:** CH-03, CH-04
 // @end-capability

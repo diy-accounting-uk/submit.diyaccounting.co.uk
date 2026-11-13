@@ -104,6 +104,8 @@ export const COMPANY_YEARLY_FACTS = [
     title: "Companies House annual accounts",
     text: "File the annual accounts with Companies House 9 months after the end of the company's financial year.",
     optional: "You can file the accounts and the Company Tax Return together or separately.",
+    page: "company-filing-deadlines.html",
+    pageLabel: "Look up when a company's accounts and confirmation statement are due",
   },
   {
     id: "ct600-12-months",
@@ -405,7 +407,9 @@ export function renderCalendarHtml(sources) {
   const yearly =
     entryHtml(QUARTERLY_FACT, sources, escapeHtml(QUARTERLY_FACT.title), deadlineTable) +
     entryHtml(FINAL_DECLARATION_FACT, sources, escapeHtml(FINAL_DECLARATION_FACT.title)) +
-    COMPANY_YEARLY_FACTS.map((f) => entryHtml(f, sources, escapeHtml(f.title))).join("");
+    COMPANY_YEARLY_FACTS.map((f) =>
+      entryHtml(f, sources, escapeHtml(f.title), f.page ? `<p><a href="${f.page}">${f.pageLabel}</a></p>` : ""),
+    ).join("");
   const undated = UNDATED_FACTS.map((f) => entryHtml(f, sources, escapeHtml(f.title))).join("");
 
   return `<!doctype html>
