@@ -179,22 +179,21 @@ export function activityArea(pagePath) {
 }
 
 /**
- * The features the home status box and subtitle name, in display order. `activity` is the
- * catalogue activity id that decides whether the feature is listed and with which status;
- * `filing` is the kind of filing the subtitle names, absent for a feature that files nothing.
+ * The features the home status box names, in display order. `activity` is the catalogue
+ * activity id that decides whether the feature is listed and with which status.
  */
 export const STATUS_FEATURES = [
-  { activity: "submit-vat", label: "HMRC VAT", filing: "VAT returns" },
-  { activity: "self-employed", label: "HMRC Income Tax (MTD)", filing: "Income Tax updates" },
+  { activity: "submit-vat", label: "HMRC VAT" },
+  { activity: "self-employed", label: "HMRC Income Tax (MTD)" },
   { activity: "vat-assist-check", label: "HMRC Assist for VAT" },
-  { activity: "file-company-tax-return", label: "HMRC Company Tax Return (CT600)", filing: "Company Tax Returns" },
+  { activity: "file-company-tax-return", label: "HMRC Company Tax Return (CT600)" },
   { activity: "company-lookup", label: "company lookup" },
-  { activity: "change-registered-office", label: "registered office", filing: "Companies House filings" },
-  { activity: "change-registered-email", label: "registered email", filing: "Companies House filings" },
-  { activity: "file-confirmation-statement", label: "Companies House confirmation statement", filing: "Companies House filings" },
-  { activity: "file-psc-verification-statement", label: "PSC verification statement", filing: "Companies House filings" },
-  { activity: "file-micro-entity-accounts", label: "Companies House accounts", filing: "Companies House filings" },
-  { activity: "file-small-company-accounts", label: "Companies House accounts", filing: "Companies House filings" },
+  { activity: "change-registered-office", label: "registered office" },
+  { activity: "change-registered-email", label: "registered email" },
+  { activity: "file-confirmation-statement", label: "Companies House confirmation statement" },
+  { activity: "file-psc-verification-statement", label: "PSC verification statement" },
+  { activity: "file-micro-entity-accounts", label: "Companies House accounts" },
+  { activity: "file-small-company-accounts", label: "Companies House accounts" },
 ];
 
 /**
@@ -212,28 +211,25 @@ export function activityStatus(activity) {
 
 /**
  * What the home page says about the features listed in an environment: the labels under each
- * status, and the kinds of filing for the subtitle. A feature the catalogue does not list in
- * the environment appears in neither.
+ * status. A feature the catalogue does not list in the environment does not appear.
  * @param {object} catalog - The parsed catalog
  * @param {string|null} environmentName - The current environment name
  * @param {object} [viewer] - From viewer-settings.js fetchViewer; preview features list every feature
- * @returns {{groups: {status: string, labels: string[]}[], filings: string[]}}
+ * @returns {{groups: {status: string, labels: string[]}[]}}
  */
 export function featureStatusSummary(catalog, environmentName, viewer) {
   const byStatus = { production: [], sandbox: [], preview: [] };
-  const filings = [];
   for (const feature of STATUS_FEATURES) {
     const activity = (catalog?.activities ?? []).find((candidate) => candidate.id === feature.activity);
     if (!activity || !isActivityShown(activity, environmentName, viewer)) continue;
     const status = activityStatus(activity);
     if (!status) continue;
     if (!byStatus[status].includes(feature.label)) byStatus[status].push(feature.label);
-    if (feature.filing && !filings.includes(feature.filing)) filings.push(feature.filing);
   }
   const groups = Object.entries(byStatus)
     .filter(([, labels]) => labels.length > 0)
     .map(([status, labels]) => ({ status, labels }));
-  return { groups, filings };
+  return { groups };
 }
 
 /**

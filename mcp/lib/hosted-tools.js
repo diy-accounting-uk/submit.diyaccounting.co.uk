@@ -65,13 +65,19 @@ export const HOSTED_TOOL_NAMES = [
 // HMRC tools, the sandbox filing tools and the practice tools register in every other environment.
 const PROD_HOSTED_TOOL_NAMES = ["list_books", "open_book", "derive_vat_return", "get_vat_receipt", "list_vat_receipts"];
 
+// The demo user that directory reviewers sign in as belongs to this Cognito group. Its token sees
+// the prod tool set in every environment, so a reviewer on ci sees what a reviewer on prod sees.
+export const REVIEWER_GROUP = "mcp-reviewer";
+
 /**
- * The tool names the hosted endpoint registers in an environment.
+ * The tool names the hosted endpoint registers in an environment, for a caller in these groups.
  * @param {string|undefined} environmentName
+ * @param {string[]} [groups] - the token's `cognito:groups`
  * @returns {string[]}
  */
-export function hostedToolNames(environmentName) {
-  return (environmentName || "").toLowerCase() === "prod" ? PROD_HOSTED_TOOL_NAMES : HOSTED_TOOL_NAMES;
+export function hostedToolNames(environmentName, groups = []) {
+  const prod = (environmentName || "").toLowerCase() === "prod";
+  return prod || groups.includes(REVIEWER_GROUP) ? PROD_HOSTED_TOOL_NAMES : HOSTED_TOOL_NAMES;
 }
 
 export const HOSTED_OVERRIDES = {

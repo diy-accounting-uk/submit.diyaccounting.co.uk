@@ -80,7 +80,7 @@ test.describe("Home page activities for a Resident account", () => {
     }
   });
 
-  test("the status box and subtitle list only what the catalogue lists for prod", async ({ page }) => {
+  test("the status box and the introduction list only what the catalogue lists for prod", async ({ page }) => {
     await serveHomeForResident(page, "prod");
     await page.goto("http://localhost:3000/", { waitUntil: "domcontentloaded" });
 
@@ -90,8 +90,8 @@ test.describe("Home page activities for a Resident account", () => {
     await expect(box.locator('.status-tag[data-status="sandbox"]')).toHaveCount(0);
     await expect(box.locator('.status-tag[data-status="preview"]')).toHaveCount(0);
     await expect(box).not.toContainText(/Income Tax|Assist|Company Tax Return|PSC/i);
-    await expect(page.locator("#homeSubtitle")).toContainText("VAT returns");
-    await expect(page.locator("#homeSubtitle")).not.toContainText("Income Tax");
+    await expect(page.locator("#homeIntro")).toContainText("VAT returns");
+    await expect(page.locator("#homeIntro")).not.toContainText("Income Tax");
   });
 
   test("the status box lists sandbox and preview features where the catalogue lists them", async ({ page }) => {
@@ -102,6 +102,5 @@ test.describe("Home page activities for a Resident account", () => {
     await expect(box.locator('.status-tag[data-status="sandbox"]')).toBeVisible();
     await expect(box.locator("li", { hasText: "Preview" })).toContainText("HMRC Assist for VAT");
     await expect(box.locator("li", { hasText: "Sandbox" })).toContainText("HMRC Income Tax (MTD)");
-    await expect(page.locator("#homeSubtitle")).toContainText("Income Tax updates");
   });
 });

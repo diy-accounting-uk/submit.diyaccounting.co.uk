@@ -43,7 +43,7 @@ test.describe("Navigation Browser Tests", () => {
       await setContentWithChrome(page, indexHtmlContent);
 
       // Verify page title
-      await expect(page.locator("h1")).toContainText(/Activities/);
+      await expect(page.locator("h1")).toContainText("File VAT returns and company accounts from your spreadsheet");
 
       // Verify main navigation exists with Activities link
       await expect(page.locator("nav.main-nav a:has-text('Activities')")).toBeVisible();

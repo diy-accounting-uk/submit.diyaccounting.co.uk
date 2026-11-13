@@ -21,6 +21,7 @@ import {
   imageHash,
   readMarketingData,
   renderMarketingJson,
+  renderMarketingPage,
   renderSiteTokens,
   siteTokenBlock,
   tokenSourcePath,
@@ -628,5 +629,52 @@ describe("listings page", () => {
     const html = fs.readFileSync(path.join(MARKETING_DIR, "index.html"), "utf-8");
     expect(html).toContain('id="listings"');
     expect(html).toContain('href="#listings"');
+  });
+});
+
+describe("the page with its script off", () => {
+  const pageHtml = fs.readFileSync(path.join(MARKETING_DIR, "index.html"), "utf-8");
+
+  it("equals what the build writes from the data", async () => {
+    expect(pageHtml).toBe(await renderMarketingPage(pageHtml, readMarketingData()));
+  }, 30000);
+
+  it("states the affiliate figures and the disclosure in the text", () => {
+    const section = pageHtml.slice(pageHtml.indexOf('id="affiliates"')).replace(/\s+/g, " ");
+    const figures = readMarketingData().affiliates;
+    expect(section).not.toMatch(/data-aff[^>]*><\/span>/);
+    expect(section).toContain(`${figures.ratePercent}</span>% of what a referred customer pays`);
+    expect(section).toContain(`${figures.cashHoldDays}</span> days`);
+    expect(section).toContain(`${figures.capTaxYearPounds.toLocaleString("en-GB")}</span> a tax year`);
+    expect(section).toContain('starts with <span data-aff="disclosure">#ad</span>');
+    expect(section).toContain(`gets <span data-aff-offer>${readMarketingData().offers.withPass}</span>`);
+  });
+
+  it("writes each product summary into its section", () => {
+    for (const section of readMarketingData().sections) {
+      const start = pageHtml.indexOf(`id="${section.id}"`);
+      const summary = pageHtml.slice(start, pageHtml.indexOf("</p>", pageHtml.indexOf("data-summary>", start)));
+      expect(summary.replace(/\s+/g, " ")).toContain(section.summary.replace(/&/g, "&amp;"));
+    }
+  });
+
+  it("lists every place with its state and marks only a live listing as live", () => {
+    const data = readMarketingData();
+    for (const listing of data.listings) {
+      const state = `<span class="listing-state" data-state="${listing.state}">${listing.state}</span>`;
+      expect(pageHtml.replace(/\s+/g, " ")).toContain(`${listing.place.replace(/&/g, "&amp;")} ${state}`);
+    }
+  });
+
+  it("holds each brand guide hidden until the script shows it", () => {
+    const guides = pageHtml.match(/<details id="[a-z-]+-brand"[^>]*>/g);
+    expect(guides).toHaveLength(4);
+    for (const tag of guides) expect(tag).toContain(" hidden");
+    expect(fs.readFileSync(path.join(MARKETING_DIR, "marketing.js"), "utf-8")).toContain("guide.hidden = false");
+  });
+
+  it("marks the sample pass code and pass link as examples", () => {
+    expect(pageHtml).toContain('placeholder="For example tiger-happy-maple-river"');
+    expect(pageHtml).toContain('placeholder="For example https://submit.diyaccounting.co.uk/pass.html?pass=..."');
   });
 });

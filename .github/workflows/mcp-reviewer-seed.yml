@@ -1,0 +1,79 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# Makes sure the demo reviewer user, its one-time code seed and its two sample books exist, one job
+# per environment (scripts/ensure-mcp-reviewer-user.js; capability MCP-26). The schedule runs both
+# environments weekly, which saves the books again and so keeps them inside their 35 day expiry. A
+# dispatch targets one environment. The deployment role (submit-<env>-deployment-role) holds
+# AdministratorAccess, so no grant is added. The script prints no password, seed or token.
+
+name: mcp reviewer seed
+run-name: "mcp reviewer seed (${{ github.event_name == 'schedule' && 'ci and prod' || inputs.environment }}) from ${{ github.ref_name }}"
+
+concurrency:
+  group: mcp-reviewer-seed
+  cancel-in-progress: false
+
+on:
+  schedule:
+    - cron: '41 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "The one environment this dispatch seeds (a scheduled run covers both)"
+        required: true
+        default: ci
+        type: choice
+        options:
+          - ci
+          - prod
+
+env:
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+  seed:
+    name: ${{ matrix.environment }}
+    runs-on: ubuntu-24.04
+    environment: ${{ matrix.environment }}
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        environment: ${{ fromJSON(github.event_name == 'workflow_dispatch' && format('["{0}"]', inputs.environment) || '["ci","prod"]') }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up the toolchain
+        timeout-minutes: 6
+        uses: ./.github/actions/setup-toolchain
+
+      - name: Assume the AWS actions and deployment roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Seed the reviewer user and its sample books
+        env:
+          ENVIRONMENT_NAME: ${{ matrix.environment }}
+        run: |
+          set -euo pipefail
+          DIYA_SUBMIT_BASE_URL=$(grep -E '^DIY_SUBMIT_BASE_URL=' ".env.${ENVIRONMENT_NAME}" | tail -n1 | cut -d'=' -f2)
+          export DIYA_SUBMIT_BASE_URL
+          node scripts/ensure-mcp-reviewer-user.js "${ENVIRONMENT_NAME}" 2>&1 | tee mcp-reviewer-seed.log
+
+      - name: Generate step summary
+        if: always()
+        run: |
+          {
+            echo "# MCP reviewer seed, ${{ matrix.environment }}"
+            echo '```'
+            cat mcp-reviewer-seed.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

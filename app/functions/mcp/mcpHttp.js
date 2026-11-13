@@ -3,12 +3,12 @@
 
 // @capability MCP-18 Serve the submission MCP over HTTP behind CloudFront
 // - **Use when:** a chat client must reach the submission MCP at `/mcp` with OAuth, or the routes, stack, edge behaviours or rate rules behind that endpoint need tracing.
-// - **Does:** mcpHttp.js answers `/mcp` through handleMcpRequest in mcp/lib/http.js, with sessions in the mcp-sessions DynamoDB table; a session item also keeps the id of the session's HMRC grant (MCP-21). mcpOauth.js serves the OAuth metadata documents under `/.well-known/oauth-*` and the authorization facade under `/mcp/oauth/*` in front of Cognito. McpStack.java creates both Lambdas, the codes entry Lambda (MCP-20) and the HMRC grant Lambda (MCP-21); deploy.yml's deploy-mcp job deploys it before deploy-api. EdgeStack.java sends `/mcp`, `/mcp/*` and `/.well-known/oauth-*` to the API Gateway origin with caching off and every viewer header forwarded, and counts those paths in a WAF rate rule keyed on the Authorization header instead of the per-IP rule.
+// - **Does:** mcpHttp.js answers `/mcp` through handleMcpRequest in mcp/lib/http.js, with sessions in the mcp-sessions DynamoDB table; a session item also keeps the id of the session's HMRC grant (MCP-21). mcpOauth.js serves the OAuth metadata documents under `/.well-known/oauth-*` and the authorization facade under `/mcp/oauth/*` in front of Cognito. McpStack.java creates both Lambdas, the codes entry Lambda (MCP-20) and the HMRC grant Lambda (MCP-21); deploy.yml's deploy-mcp job deploys it before deploy-api. EdgeStack.java sends `/mcp`, `/mcp/*` and `/.well-known/oauth-*` to the API Gateway origin with caching off and every viewer header forwarded, and counts those paths in a WAF rate rule keyed on the Authorization header instead of the per-IP rule. The consent page carries a Reviewer sign-in form for one demo user: POST `/mcp/oauth/reviewer` compares the typed user name and password with the stored secret before it calls Cognito, signs the user in through app/lib/mcpReviewerSignIn.js (admin password flow, then the one-time code from app/lib/totp.js), parks the sealed tokens in the sessions table (app/data/dynamoDbReviewerCodeRepository.js) and answers a code that the token route redeems once. A token in the `mcp-reviewer` group gets prod's tool set in every environment (mcp/lib/hosted-tools.js). EdgeStack.java blocks more than 10 reviewer POSTs in 300 seconds per address. MCP-26 seeds the user.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/mcp/mcpHttp.js`; `app/functions/mcp/mcpOauth.js`; `infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java`
-// - **Files:** app/functions/mcp/mcpHttp.js, app/functions/mcp/mcpOauth.js, mcp/lib/http.js, app/data/dynamoDbMcpSessionRepository.js, infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java, .github/workflows/deploy.yml
-// - **Keywords:** hosted mcp, mcp http, streamable http, oauth facade, well-known, protected resource, mcp session, mcp rate limit, McpStack, deploy-mcp
-// - **Related:** MCP-01, MCP-02
+// - **Files:** app/functions/mcp/mcpHttp.js, app/functions/mcp/mcpOauth.js, mcp/lib/http.js, app/data/dynamoDbMcpSessionRepository.js, app/data/dynamoDbReviewerCodeRepository.js, app/lib/mcpReviewerSignIn.js, app/lib/totp.js, mcp/lib/hosted-tools.js, infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java, .github/workflows/deploy.yml
+// - **Keywords:** hosted mcp, mcp http, streamable http, oauth facade, well-known, protected resource, mcp session, mcp rate limit, McpStack, deploy-mcp, reviewer sign-in, mcp-reviewer group
+// - **Related:** MCP-01, MCP-02, MCP-26
 // @end-capability
 
 // app/functions/mcp/mcpHttp.js
@@ -189,8 +189,11 @@ export async function ingestHandler(event) {
   if (!token) return unauthorized(host, Boolean(authorization));
 
   let sub;
+  let groups;
   try {
-    ({ sub } = await getTokenVerifier().verify(token));
+    const payload = await getTokenVerifier().verify(token);
+    sub = payload.sub;
+    groups = Array.isArray(payload["cognito:groups"]) ? payload["cognito:groups"] : [];
   } catch (error) {
     logger.warn({ message: "MCP bearer rejected", reason: error.message });
     return unauthorized(host, true);
@@ -238,7 +241,7 @@ export async function ingestHandler(event) {
 
   const response = await handleMcpRequest(buildRequest(event, host, httpMethod, bodyText), {
     session,
-    toolNames: hostedToolNames(process.env.ENVIRONMENT_NAME),
+    toolNames: hostedToolNames(process.env.ENVIRONMENT_NAME, groups),
   });
   const result = await mapResponse(response, extraHeaders);
 

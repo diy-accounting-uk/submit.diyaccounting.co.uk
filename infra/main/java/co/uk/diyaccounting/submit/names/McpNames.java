@@ -12,6 +12,8 @@ import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 public class McpNames {
 
     public String mcpOauthBlobKeySecretName;
+    public String mcpReviewerPasswordSecretName;
+    public String mcpReviewerTotpSeedSecretName;
     public String mcpOauthBlobKeySecretArnParameterName;
 
     public String mcpHttpIngestLambdaHandler;
@@ -57,6 +59,8 @@ public class McpNames {
 
     public McpNames(SubmitSharedNames.SubmitSharedNamesProps props, SubmitSharedNames root) {
         this.mcpOauthBlobKeySecretName = "%s/submit/mcp/oauth-blob-key".formatted(props.envName);
+        this.mcpReviewerPasswordSecretName = "%s/submit/mcp/reviewer-password".formatted(props.envName);
+        this.mcpReviewerTotpSeedSecretName = "%s/submit/mcp/reviewer-totp-seed".formatted(props.envName);
         this.mcpOauthBlobKeySecretArnParameterName = "/submit/%s/mcp-oauth-blob-key-arn".formatted(props.envName);
 
         // Hosted MCP endpoint: verifies the bearer itself, so no API Gateway authoriser

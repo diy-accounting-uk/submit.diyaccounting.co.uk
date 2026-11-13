@@ -175,6 +175,27 @@ describe("mcpHttp ingestHandler", () => {
     }
   });
 
+  it("hands a caller in the reviewer group the prod tool list outside prod", async () => {
+    const saved = process.env.ENVIRONMENT_NAME;
+    mockCreateMcpSession.mockResolvedValue({ sessionId: "session-abc" });
+    mockVerify.mockResolvedValue({
+      "sub": USER_SUB,
+      "token_use": "access",
+      "client_id": "mcp-client",
+      "cognito:groups": ["mcp-reviewer"],
+    });
+    try {
+      process.env.ENVIRONMENT_NAME = "ci";
+      await ingestHandler(mcpEvent({ body: INITIALIZE }));
+      const { toolNames } = mockHandleMcpRequest.mock.calls[0][1];
+      expect(toolNames).toContain("open_book");
+      expect(toolNames).not.toContain("submit_itsa_quarterly_update");
+    } finally {
+      if (saved === undefined) delete process.env.ENVIRONMENT_NAME;
+      else process.env.ENVIRONMENT_NAME = saved;
+    }
+  });
+
   it("answers 400 when a non-initialize POST has no Mcp-Session-Id", async () => {
     const result = await ingestHandler(mcpEvent({ body: TOOLS_CALL }));
     expect(result.statusCode).toBe(400);

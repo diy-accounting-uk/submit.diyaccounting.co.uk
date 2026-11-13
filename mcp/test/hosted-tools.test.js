@@ -4,7 +4,8 @@
 import { describe, expect, it } from "vitest";
 
 import { createSession } from "../lib/book-tools.js";
-import { HOSTED_OVERRIDES, HOSTED_TOOL_NAMES, hostedToolNames } from "../lib/hosted-tools.js";
+import { HOSTED_OVERRIDES, HOSTED_TOOL_NAMES, REVIEWER_GROUP, hostedToolNames } from "../lib/hosted-tools.js";
+import { handleMcpRequest } from "../lib/http.js";
 import { ITSA_TOOLS } from "../lib/itsa-tools.js";
 import { createServer, TOOLS } from "../lib/server.js";
 
@@ -99,5 +100,35 @@ describe("the hosted tool set", () => {
     ).toEqual([]);
     const server = createServer(createSession(), { toolNames: prodNames, overrides: HOSTED_OVERRIDES });
     expect(Object.keys(server._registeredTools).sort()).toEqual([...prodNames].sort());
+  });
+
+  it("gives a caller in the reviewer group prod's tool set in every environment", () => {
+    for (const environmentName of ["ci", "simulator", undefined]) {
+      expect(hostedToolNames(environmentName, [REVIEWER_GROUP])).toEqual(hostedToolNames("prod"));
+      expect(hostedToolNames(environmentName, ["another-group"])).toEqual(HOSTED_TOOL_NAMES);
+    }
+  });
+
+  it("lists prod's tools for the reviewer and answers every other tool as not found", async () => {
+    const credentials = { accessToken: async () => "bearer", idToken: async () => null };
+    const toolNames = hostedToolNames("ci", [REVIEWER_GROUP]);
+    const call = (body) =>
+      handleMcpRequest(
+        new Request("https://submit.diyaccounting.co.uk/mcp", {
+          method: "POST",
+          headers: { "content-type": "application/json", "accept": "application/json, text/event-stream" },
+          body: JSON.stringify(body),
+        }),
+        { session: createSession({ credentials }), toolNames },
+      ).then((response) => response.json());
+
+    const listed = await call({ jsonrpc: "2.0", id: 1, method: "tools/list" });
+    expect(listed.result.tools.map((tool) => tool.name).sort()).toEqual([...hostedToolNames("prod")].sort());
+
+    for (const name of HOSTED_TOOL_NAMES.filter((tool) => !toolNames.includes(tool))) {
+      const answer = await call({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name, arguments: {} } });
+      const text = JSON.stringify(answer);
+      expect(text, name).toMatch(/not found/i);
+    }
   });
 });

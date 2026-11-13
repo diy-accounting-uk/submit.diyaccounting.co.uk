@@ -25,6 +25,7 @@ import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cognito.AccountRecovery;
 import software.amazon.awscdk.services.cognito.AttributeMapping;
 import software.amazon.awscdk.services.cognito.AuthFlow;
+import software.amazon.awscdk.services.cognito.CfnUserPoolGroup;
 import software.amazon.awscdk.services.cognito.CustomThreatProtectionMode;
 import software.amazon.awscdk.services.cognito.FeaturePlan;
 import software.amazon.awscdk.services.cognito.Mfa;
@@ -419,12 +420,22 @@ public class IdentityStack extends Stack {
                         .callbackUrls(buildMcpCallbackUrls(props.sharedNames(), props.envName()))
                         .logoutUrls(buildMcpLoopbackUrls())
                         .build())
+                // The hosted MCP's reviewer sign-in calls AdminInitiateAuth for one demo user.
+                .authFlows(AuthFlow.builder().adminUserPassword(true).build())
                 .refreshTokenRotationGracePeriod(Duration.seconds(MCP_REFRESH_TOKEN_ROTATION_GRACE_SECONDS))
                 .supportedIdentityProviders(allProviders)
                 .build();
         this.identityProviders
                 .values()
                 .forEach(idp -> this.mcpUserPoolClient.getNode().addDependency(idp));
+
+        // The demo user for directory reviewers belongs to this group. The hosted MCP gives a token
+        // with this group in cognito:groups the tool set prod offers, in every environment.
+        CfnUserPoolGroup.Builder.create(this, props.resourceNamePrefix() + "-McpReviewerGroup")
+                .userPoolId(userPool.getUserPoolId())
+                .groupName("mcp-reviewer")
+                .description("Demo user for directory reviewers; its token sees prod's tool set")
+                .build();
 
         var mcpUserPoolClientIdParameterName = "/submit/%s/mcp-app-client-id".formatted(props.envName());
         StringParameter.Builder.create(this, props.resourceNamePrefix() + "-McpUserPoolClientIdParameter")

@@ -394,6 +394,52 @@ class EdgeStackTest {
     }
 
     @Test
+    void reviewerSignInPostsAreCountedPerAddressAndBlockedPastTenInFiveMinutes() {
+        Template template = Template.fromStack(synthEdgeStack());
+        Map<String, Object> rateStatement = Map.of(
+                "Limit",
+                10,
+                "EvaluationWindowSec",
+                300,
+                "AggregateKeyType",
+                "IP",
+                "ScopeDownStatement",
+                Match.objectLike(Map.of(
+                        "AndStatement",
+                        Match.objectLike(Map.of(
+                                "Statements",
+                                List.of(
+                                        Match.objectLike(Map.of(
+                                                "ByteMatchStatement",
+                                                Match.objectLike(
+                                                        Map.of(
+                                                                "FieldToMatch",
+                                                                Map.of("Method", Match.anyValue()),
+                                                                "SearchString",
+                                                                "POST")))),
+                                        Match.objectLike(Map.of(
+                                                "ByteMatchStatement",
+                                                Match.objectLike(
+                                                        Map.of(
+                                                                "FieldToMatch",
+                                                                Map.of("UriPath", Match.anyValue()),
+                                                                "PositionalConstraint",
+                                                                "EXACTLY",
+                                                                "SearchString",
+                                                                "/mcp/oauth/reviewer"))))))))));
+        Map<String, Object> rule = Map.of(
+                "Name",
+                "McpReviewerRateLimitRule",
+                "Action",
+                Match.objectLike(Map.of("Block", Match.anyValue())),
+                "Statement",
+                Map.of("RateBasedStatement", Match.objectLike(rateStatement)));
+        template.hasResourceProperties(
+                "AWS::WAFv2::WebACL",
+                Match.objectLike(Map.of("Rules", Match.arrayWith(List.of(Match.objectLike(rule))))));
+    }
+
+    @Test
     void loopbackUriRulesCountInTheCommonRuleSetAndAreBlockedOnEveryPathExceptTheMcpOauthPaths() {
         Template template = Template.fromStack(synthEdgeStack());
         List<Object> countOverrides = Stream.of(

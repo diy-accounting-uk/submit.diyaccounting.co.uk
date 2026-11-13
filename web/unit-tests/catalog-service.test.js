@@ -157,7 +157,6 @@ describe("featureStatusSummary", () => {
   it("lists only the features the catalogue lists for the environment, under their status", () => {
     expect(featureStatusSummary(catalog, "prod")).toEqual({
       groups: [{ status: "production", labels: ["HMRC VAT", "company lookup"] }],
-      filings: ["VAT returns"],
     });
   });
 
@@ -168,7 +167,6 @@ describe("featureStatusSummary", () => {
         { status: "sandbox", labels: ["HMRC Income Tax (MTD)"] },
         { status: "preview", labels: ["HMRC Assist for VAT"] },
       ],
-      filings: ["VAT returns", "Income Tax updates"],
     });
   });
 

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "diya-submit": {
+      "type": "http",
+      "url": "https://submit.diyaccounting.co.uk/mcp"
+    }
+  }
+}

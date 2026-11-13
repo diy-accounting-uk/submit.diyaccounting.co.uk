@@ -74,6 +74,7 @@ export const ROTATABLE_SECRETS = {
     assert: () => "node infra/paypal/paypal-assert.js",
   },
   "github/ops_app_private_key": { githubSecret: "OPS_APP_PRIVATE_KEY", assert: () => null },
+  "mcp/reviewer-password": { githubSecret: "MCP_REVIEWER_PASSWORD", assert: () => null },
 };
 
 function stripeAssert(suffix, environment) {

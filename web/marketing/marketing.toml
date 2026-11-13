@@ -1041,7 +1041,7 @@ products = ["submit"]
 url = ""
 state = "planned"
 date = ""
-terms = "A real product and a business email. Free tier exists. One profile serves all three sites."
+terms = "G2 owns Capterra, GetApp and Software Advice. A real product and a business email. Whether one profile serves all three is not confirmed."
 priceText = ""
 utmSource = "capterra"
 
@@ -1053,7 +1053,7 @@ products = ["submit"]
 url = ""
 state = "planned"
 date = ""
-terms = "Domain verification. Reviews come from customers."
+terms = "A free business account. Reviews come from customers. The verification method is read at sign-up."
 priceText = ""
 utmSource = "trustpilot"
 
@@ -1065,7 +1065,7 @@ products = ["submit", "spreadsheets", "diya-gl"]
 url = ""
 state = "planned"
 date = ""
-terms = "Manual approval; the queue runs to months."
+terms = "Manual approval with no stated timeline; a paid priority review exists. Its FAQ declines apps for one country only."
 priceText = ""
 utmSource = "alternativeto"
 
@@ -1101,7 +1101,7 @@ products = []
 url = ""
 state = "planned"
 date = ""
-terms = "Self-serve profile; rank needs reviews."
+terms = "Self-serve profile; it asks for a LinkedIn company page first. Rank needs reviews."
 priceText = ""
 utmSource = "trustradius"
 
@@ -1113,7 +1113,7 @@ products = ["spreadsheets"]
 url = ""
 state = "live"
 date = ""
-terms = "Unclaimed page for the spreadsheets with one rating. Claiming needs a domain email."
+terms = "Unclaimed page for the spreadsheets with one rating. The page has a Claim this profile button."
 priceText = ""
 utmSource = "softwarereview"
 
@@ -1125,7 +1125,7 @@ products = []
 url = ""
 state = "live"
 date = ""
-terms = "Vendor page exists. Claiming needs a domain email."
+terms = "Vendor page exists. The claim form takes an email and a 10-digit phone number; sales answers it."
 priceText = ""
 utmSource = "featuredcustomers"
 
@@ -1221,7 +1221,7 @@ products = []
 url = ""
 state = "planned"
 date = ""
-terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
+terms = "A new listing costs $99; claiming an existing page is free."
 priceText = ""
 utmSource = "softwareworld"
 
@@ -1533,7 +1533,7 @@ products = []
 url = ""
 state = "planned"
 date = ""
-terms = "Free basic listings."
+terms = "A listing carries a fee."
 priceText = ""
 utmSource = "centralindex"
 
@@ -1557,7 +1557,7 @@ products = []
 url = ""
 state = "planned"
 date = ""
-terms = "Free basic listings."
+terms = "A listing carries a fee."
 priceText = ""
 utmSource = "192com"
 
@@ -1581,7 +1581,7 @@ products = []
 url = ""
 state = "planned"
 date = ""
-terms = "Reviewed by hand; cost not confirmed. The form is List your software."
+terms = "Free. Reviewed by hand, with a reply within a few working days. The form is List your software."
 priceText = ""
 utmSource = "accountingfirms"
 

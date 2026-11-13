@@ -8,7 +8,7 @@ description: Spend a bounded block of time (default one hour) campaigning for on
 
 <!-- @capability DEV-57 Run a time-boxed marketing campaign session
 - **Use when:** the operator asks Claude to spend a block of time campaigning for a goal, such as paid subscribers from Matthew's family pass.
-- **Does:** campaign reads the goal's figures and stop rule, scans newsletters and community threads, shortlists five questions, drafts answers into a review queue for a person to post, makes one improvement to the site as a PR, and reports in three lines. It posts nothing to third-party sites and spends nothing.
+- **Does:** campaign reads the goal's figures and stop rule, in the first session of a month reads search, AI referral, AI fetch, listing and assistant-answer figures for every site into one private table, scans newsletters and community threads, shortlists five questions, drafts answers into a review queue for a person to post, makes one improvement to the site as a PR, and reports in three lines. It posts nothing to third-party sites and spends nothing.
 - **Run:** `/campaign <goal>`
 - **Entry:** `.claude/skills/campaign/SKILL.md`
 - **Files:** .claude/skills/campaign/SKILL.md
@@ -79,6 +79,122 @@ the current step and write the report with what was done.
   this session's step 4 picks MKT1 or MKT2.
 - A count under 3 is shown as "fewer than 3", as the pass figures do. No email, name or hash of a
   customer goes into the queue, the report or a commit.
+
+### Monthly organic read
+
+Run it in the first session of each calendar month, when `../private.diyaccounting.co.uk/strategy/marketing/ORGANIC_<yyyy-mm>.md` for the month just ended does not exist. It reads search and AI traffic for every site. It posts nothing and spends nothing. Its time comes from this step.
+
+The month is the last full calendar month. Name it `<yyyy-mm>`. Run every command from the repository root with the SSO check above done first.
+
+**Two floors to state in the file.** GA4 counts only visitors who accept the cookie banner, about 13% of visits, so every `sessions` figure is a floor. An agent's name in a user agent is not proof of who fetched; `verified` is true only when the address is inside the ranges the vendor publishes (`infra/analytics/ai-vendor-ranges.json`).
+
+**A. Athena queries (prod).** Set the profile, workgroup and database once, run one query at a time, and write each result into the table.
+
+```bash
+P=diya-submit-prod; W=prod-env-analytics; D=prod_env_analytics
+M="day >= date_trunc('month', current_date - interval '1' month) AND day < date_trunc('month', current_date)"
+run() {
+  QID=$(aws --profile $P athena start-query-execution --work-group $W --query-execution-context "Database=$D" --query-string "$1" --query QueryExecutionId --output text)
+  while :; do
+    ST=$(aws --profile $P athena get-query-execution --query-execution-id $QID --query 'QueryExecution.Status.State' --output text)
+    case $ST in SUCCEEDED|FAILED|CANCELLED) break;; esac; sleep 3
+  done
+  echo "$ST"
+  aws --profile $P athena get-query-execution --query-execution-id $QID --query 'QueryExecution.[Status.StateChangeReason,Statistics.DataScannedInBytes]' --output text
+  aws --profile $P athena get-query-results --query-execution-id $QID --query 'ResultSet.Rows[*].Data[*].VarCharValue' --output text
+}
+```
+
+1. Search Console by page family (`v_search_console_pages_daily`). Rows are host and family; `avg_position` weights by impressions.
+
+   ```bash
+   run "SELECT host, family, sum(clicks) AS clicks, sum(impressions) AS impressions, round(sum(position * impressions) / nullif(sum(impressions), 0), 1) AS avg_position FROM v_search_console_pages_daily WHERE $M GROUP BY host, family ORDER BY clicks DESC, impressions DESC"
+   ```
+
+2. Referral sessions from assistants, search engines and gov.uk (`v_ai_referrals_daily`).
+
+   ```bash
+   run "SELECT kind, referrer, host, sum(sessions) AS sessions, sum(engaged_sessions) AS engaged_sessions FROM v_ai_referrals_daily WHERE $M GROUP BY kind, referrer, host ORDER BY kind, sessions DESC"
+   ```
+
+3. Agent fetches of Submit's own pages by agent and verified flag (`v_ai_fetches_daily`).
+
+   ```bash
+   run "SELECT agent, verified, sum(requests) AS requests FROM v_ai_fetches_daily WHERE $M GROUP BY agent, verified ORDER BY requests DESC"
+   ```
+
+4. The 20 paths that verified agents fetched most.
+
+   ```bash
+   run "SELECT agent, path, sum(requests) AS requests FROM v_ai_fetches_daily WHERE $M AND verified GROUP BY agent, path ORDER BY requests DESC LIMIT 20"
+   ```
+
+The function prints the state, then the failure reason (`None` on success) and the bytes scanned, then the result as a header line followed by one tab-separated line per row. State the bytes scanned per query in the file. A `FAILED` state stops the read: report the reason in the file and do not fill that row from memory.
+
+**B. Logs Insights on the other three sites.** Their CloudFront access logs hold the same agent strings as `v_ai_fetches_daily` (the list is in `infra/main/resources/analytics/views/v_ai_fetches_daily.sql`; `claude-code` and `other` are left out). Each site is in its own account, in `us-east-1`:
+
+| Site | Profile | Log group |
+| --- | --- | --- |
+| spreadsheets.diyaccounting.co.uk | `diya-spreadsheets` | `distribution-prod-spreadsheets-logs` |
+| diya-gl.co.uk | `diya-spreadsheets` | `distribution-prod-diya-gl-logs` |
+| www.diyaccounting.co.uk | `diya-gateway` | `distribution-prod-gateway-logs` |
+
+```bash
+START=$(date -v-1m -v1d -v0H -v0M -v0S -u +%s); END=$(date -v1d -v0H -v0M -v0S -u +%s)
+LQ='filter `cs(User-Agent)` like /(?i)(oai-searchbot|chatgpt-user|gptbot|claude-searchbot|claude-user|claudebot|perplexitybot|perplexity-user|bingbot|googlebot)/
+| parse `cs(User-Agent)` /(?i)(?<agent>oai-searchbot|chatgpt-user|gptbot|claude-searchbot|claude-user|claudebot|perplexitybot|perplexity-user|bingbot|googlebot)/
+| stats count(*) as requests by agent, `cs-uri-stem`
+| sort requests desc
+| limit 50'
+logs_query() {  # $1 profile, $2 log group
+  QID=$(aws --profile $1 logs start-query --region us-east-1 --log-group-names $2 --start-time $START --end-time $END --query-string "$LQ" --query queryId --output text)
+  while :; do
+    ST=$(aws --profile $1 logs get-query-results --region us-east-1 --query-id $QID --query status --output text)
+    case $ST in Complete|Failed|Cancelled|Timeout) break;; esac; sleep 3
+  done
+  echo "$ST"
+  aws --profile $1 logs get-query-results --region us-east-1 --query-id $QID --query '[statistics.bytesScanned, results[*][*].value]' --output text
+}
+logs_query diya-spreadsheets distribution-prod-spreadsheets-logs
+logs_query diya-spreadsheets distribution-prod-diya-gl-logs
+logs_query diya-gateway distribution-prod-gateway-logs
+```
+
+The gateway's group is about 8 GB and a month scans about 1.6 GB, so run each query once. The output is the bytes scanned, then one tab-separated line per row: agent, path, requests. These logs hold no `verified` flag, so state that every figure is by name only.
+
+**C. Listings.** Run `node scripts/listings-check.mjs`. Record its last line, or each problem it prints. Then open each `[[listing]]` of `web/marketing/marketing.toml` whose `state` is `live` and whose `url` is not empty, in Chrome (`mcp__claude-in-chrome__*`, read-only), and record: the page loads, the name, price and description match `priceText` and the copy pack, and any new review or rating.
+
+**D. Search engine reports, in Chrome, read-only.**
+
+- Bing Webmaster Tools, https://www.bing.com/webmasters, AI Performance report. Read it for each of the four sites it holds: `www.diyaccounting.co.uk` (the apex is filed under it), `submit.diyaccounting.co.uk`, `spreadsheets.diyaccounting.co.uk` and `diya-gl.co.uk`. Record citations and cited pages for the month.
+- Search Console, https://search.google.com/search-console, generative AI report, for each domain property. Record what it shows for the month. When the report is absent for a property, record "report not shown".
+
+Click nothing that changes a setting, a sitemap or a verification.
+
+**E. The 20 questions.** Ask each question exactly as written, in a new conversation, in each of ChatGPT, Claude, Gemini, Perplexity and Copilot (100 answers). Read-only: sign in as the operator's browser already is, and submit nothing but the question. Record per answer: whether "DIY Accounting" (any of its sites) is named, and every source domain the answer cites. A question and its wording stay fixed from month to month so the months compare.
+
+| Family | Questions |
+| --- | --- |
+| VAT bridging from a spreadsheet | Q1 What is the cheapest way to submit a VAT return to HMRC from a spreadsheet? Q2 Is there free MTD bridging software for VAT? Q3 How do I submit my VAT return from Excel under Making Tax Digital? Q4 Which MTD VAT bridging software costs under 20 pounds a year? |
+| Free bookkeeping spreadsheets | Q5 Is there a free bookkeeping spreadsheet for a taxi driver? Q6 Where can I get an Excel bookkeeping template for a small business? Q7 What accounting spreadsheet works for a sole trader without accounting software? |
+| Confirmation statement | Q8 How do I file a confirmation statement online, and what does it cost? Q9 Can I file a confirmation statement with software other than Companies House's own service? |
+| Micro-entity, small and dormant accounts | Q10 How do I file dormant company accounts myself? Q11 What is the cheapest software to file micro-entity accounts at Companies House? Q12 Can I file small company accounts without an accountant? |
+| MTD Income Tax with spreadsheets | Q13 Is there free MTD Income Tax software for landlords that works with spreadsheets? Q14 Am I affected by MTD for Income Tax in April 2027? Q15 How do I send quarterly updates to HMRC from a spreadsheet? |
+| Low-cost multi-client filing for practices | Q16 What MTD VAT bridging software suits a small accountancy practice with many clients? |
+| CT600 after HMRC's free service | Q17 What software replaces HMRC's free Company Tax Return service? Q18 Can I file a CT600 without an accountant? |
+| Assistant phrasings | Q19 Can ChatGPT or Claude file my VAT return with HMRC? Q20 Is there an HMRC MCP server I can connect to an AI assistant? |
+
+**F. The output file.** Write `../private.diyaccounting.co.uk/strategy/marketing/ORGANIC_<yyyy-mm>.md` (the private repository; never this one). It holds one table, a row per figure and a row per answer, and no customer data. Columns:
+
+| Column | Holds |
+| --- | --- |
+| Group | `search`, `referral`, `fetch`, `logs`, `listing`, `bing`, `gsc-ai` or `answer` |
+| Item | the host and family, the referrer, the agent and path, the listing id, or `Q<n> <assistant>` |
+| This month | the figure; for an answer, `named: yes` or `named: no`, then the cited source domains |
+| Last month | the same cell from the previous `ORGANIC_<yyyy-mm>.md`, or `first read` |
+| Evidence | the query label (`A1`, `B2`), the report name, or the answer's conversation date |
+
+Above the table, write one line each for the two floors, the bytes scanned per query, and any query that failed. Commit the file in the private repository on `main`.
 
 ### 2. Scan for questions (25%)
 

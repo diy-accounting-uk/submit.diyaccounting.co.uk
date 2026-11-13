@@ -224,8 +224,19 @@
     return '<nav class="main-nav" aria-label="Main navigation">' + links.join("") + "</nav>";
   }
 
+  // The landing pages for the filings that are production on prod.
+  const FILING_PAGES = [
+    { label: "VAT return from a spreadsheet", target: "vat-return-from-a-spreadsheet.html" },
+    { label: "Micro-entity accounts", target: "micro-entity-accounts.html" },
+    { label: "Small company accounts", target: "small-company-accounts.html" },
+    { label: "Dormant company accounts", target: "dormant-company-accounts.html" },
+    { label: "Confirmation statement", target: "confirmation-statement.html" },
+  ];
+
   // The developer links stay hidden until developer mode shows them.
   function buildFooterHtml(rootPrefix) {
+    const filingLinks = FILING_PAGES.map((page) => '<a href="' + rootPrefix + page.target + '">' + page.label + "</a>").join("");
+
     const devLinks =
       '<a href="#" id="viewSourceLink" style="display: none">view source</a>' +
       '<a id="latestTestsLink" style="display: none" target="_blank" href="' +
@@ -256,6 +267,7 @@
 
     return (
       '<nav class="footer-links" aria-label="Site information">' +
+      filingLinks +
       siteLinks +
       devLinks +
       "</nav>" +

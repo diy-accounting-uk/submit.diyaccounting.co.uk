@@ -69,6 +69,21 @@
       "path": "/rates.html"
     },
     {
+      "path": "/vat-return-from-a-spreadsheet.html"
+    },
+    {
+      "path": "/micro-entity-accounts.html"
+    },
+    {
+      "path": "/small-company-accounts.html"
+    },
+    {
+      "path": "/dormant-company-accounts.html"
+    },
+    {
+      "path": "/confirmation-statement.html"
+    },
+    {
       "path": "/bundles.html",
       "thresholds": {
         "performance": 51,

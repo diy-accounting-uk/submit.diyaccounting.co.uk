@@ -45,6 +45,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability SITE-29 -->
 <!-- capability SITE-30 -->
 <!-- capability SITE-31 -->
+<!-- capability SITE-32 -->
 ### Server and API plumbing (SITE)
 
 <!-- generated:group server-and-api-plumbing-site -->
@@ -702,6 +703,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability MCP-01 -->
 <!-- capability MCP-02 -->
 <!-- capability MCP-18 -->
+<!-- capability MCP-26 -->
 <!-- capability MCP-19 -->
 ### Book and derivation tools (MCP)
 
@@ -713,6 +715,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability MCP-05 -->
 <!-- capability MCP-06 -->
 <!-- capability MCP-24 -->
+<!-- capability MCP-25 -->
 ### Filing and practice tools (MCP)
 
 <!-- generated:group filing-and-practice-tools-mcp -->

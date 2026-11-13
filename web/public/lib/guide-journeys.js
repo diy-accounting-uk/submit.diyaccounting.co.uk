@@ -101,10 +101,14 @@ export const GROUPS = [
   },
 ];
 
+const CHANNEL_SUFFIX = "| DIY Accounting Submit";
+
 // "DIY Accounting Submit: view your VAT obligations (sandbox example)" becomes the title and a note.
+
 export function splitTitle(raw) {
   const colon = raw.indexOf(":");
   let title = (colon === -1 ? raw : raw.slice(colon + 1)).trim();
+  if (title.endsWith(CHANNEL_SUFFIX)) title = title.slice(0, -CHANNEL_SUFFIX.length).trim();
   let note = "";
   const open = title.lastIndexOf("(");
   if (open !== -1 && title.endsWith(")")) {

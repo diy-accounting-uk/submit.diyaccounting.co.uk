@@ -129,7 +129,7 @@ Your HMRC Government Gateway credentials are never stored by this application. A
 ## npm scripts
 
 <!-- scripts-table:start -->
-390 scripts in package.json. A group is the text before the first colon; a name below follows it.
+391 scripts in package.json. A group is the text before the first colon; a name below follows it.
 
 | Group | Scripts | Names |
 |-------|---------|-------|
@@ -138,8 +138,8 @@ Your HMRC Government Gateway credentials are never stored by this application. A
 | `npm run penetration:` | 21 | `proxy` `ci` `prod` `proxy-report` `ci-report` `prod-report` `eslint` `eslint-report` `audit` `audit-report` `audit-dev` `audit-dev-report` `retire` `retire-report` `zap-proxy` `zap-ci` `zap-prod` `zap-urls-check` `zap-proxy-report` `zap-ci-report` `zap-prod-report` |
 | `npm run compliance:` | 9 | `proxy` `ci` `prod` `proxy-report` `ci-report` `prod-report` `proxy-report-md` `ci-report-md` `prod-report-md` |
 | `npm run video:` | 8 | `mcp-diya-gl` `accounting-diya-gl-profit` `accounting-spreadsheet-profit` `publish` `embed-check` `walkthrough` `stale` `record` |
+| `npm run build:` | 7 | `build` `static-content` `mtd-calendar` `review-links` `rates-page` `filing-pages` `welsh` |
 | `npm run diagram:` | 7 | `app-all` `app-auth-billing` `app-hmrc` `app-account` `app-ops` `app-delivery` `environment` |
-| `npm run build:` | 6 | `build` `static-content` `mtd-calendar` `review-links` `rates-page` `welsh` |
 | `npm run ads:` | 5 | `inventory` `sync` `report` `conversions-upload` `forecast` |
 | `npm run formatting:` | 5 | `formatting` `js` `js-fix` `java` `java-fix` |
 | `npm run msads:` | 5 | `consent` `whoami` `inventory` `forecast` `report` |
