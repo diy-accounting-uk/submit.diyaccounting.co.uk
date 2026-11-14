@@ -13,6 +13,18 @@ Status: the operator chose Option 2 on 2026-11-14, with an anchor year-end check
 
 > For: "PLAN_SPREADSHEETS_ROLLOVER.md", I choose "2. Frozen anchors plus a rolling latest." and the rolling anchor should have a check that the anchor products have a year end in the future and the tests fail if they don't with an advisory that the exact-value checks shoudl roll to a new product when they fail and yes "The rolling latest and the in-scope set are checked by invariants that name no year-end". Please state the changes needed to achieve that.
 
+## Goals
+
+- Spreadsheets keeps itself correct and current as time passes, with nobody touching it.
+- New packages appear for every product as the date brings a new year-end, with no dispatch.
+- Exact figures are proved against fixed anchors that a roll never changes, and the anchors' own year-ends are kept in the future.
+- Whatever year-ends are current is proved by rules that hold for any year-end, so the calendar moving can never turn the build red.
+- Heavy proof (the LibreOffice calculations, the browser suite, byte stability) runs once per push in CI on a clean runner, never repeated on this Mac.
+- Local work only runs quick checks specific to the change, so parallel sessions and agents never fail each other's runs by load.
+- A run with nothing new commits nothing and costs nothing.
+- Red only ever means a real defect in what customers download.
+- The test: could the pipeline run unattended for a year, through every month-end and a new tax year, while other work runs on this Mac, with every red still a real defect?
+
 ## Where it stands
 
 - The `generate-ltd.yml` dispatch of 2026-11-14 (run 43623012544, commit 40afa42af) moved the latest Company year-end from Oct27 to Dec27. Its `commit` job keeps only the latest Company brickwork reports and rewrites `examples/ltd-latest`.
