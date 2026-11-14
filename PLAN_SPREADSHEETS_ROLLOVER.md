@@ -3,7 +3,7 @@
 
 # PLAN: the spreadsheets rest state when the year-end window rolls
 
-Status: the operator chose Option 2 on 2026-11-14, with an anchor year-end check; the changes are SR1 to SR10 in "The changes for Option 2", each a row on `NEXT.md`. Repository: `../spreadsheets.diyaccounting.co.uk`.
+Status: Option 2 chosen on 2026-11-14; an independent review the same day (`../private.diyaccounting.co.uk/engineering/spreadsheets/REVIEW_SR1_SR10_2026-11-14.md`) found the first SR1 to SR10 would fail the goals, and the operator adopted all twelve of its changes. The tasks are SR1 to SR12 and the decisions OSR5 and OSR7 in "The changes for Option 2", each a row on `NEXT.md`. Repository: `../spreadsheets.diyaccounting.co.uk`.
 
 ## Operator assertions (verbatim)
 
@@ -12,6 +12,8 @@ Status: the operator chose Option 2 on 2026-11-14, with an anchor year-end check
 > start a new propsal on what the new stable rest state should be that gives me three options then we'll consider what the fixes are.
 
 > For: "PLAN_SPREADSHEETS_ROLLOVER.md", I choose "2. Frozen anchors plus a rolling latest." and the rolling anchor should have a check that the anchor products have a year end in the future and the tests fail if they don't with an advisory that the exact-value checks shoudl roll to a new product when they fail and yes "The rolling latest and the in-scope set are checked by invariants that name no year-end". Please state the changes needed to achieve that.
+
+> Adopt all 12 and tell me when the plan is updated, sync the board with tasks from the plan and then list those tasks.
 
 ## Goals
 
@@ -29,7 +31,9 @@ Status: the operator chose Option 2 on 2026-11-14, with an anchor year-end check
 
 - The `generate-ltd.yml` dispatch of 2026-11-14 (run 43623012544, commit 40afa42af) moved the latest Company year-end from Oct27 to Dec27. Its `commit` job keeps only the latest Company brickwork reports and rewrites `examples/ltd-latest`.
 - Three checks pin the Oct27 year-end, so spreadsheets `main` fails them: `app/test/judge-reconciliation.test.js` (report file names), the diya-gl parity gate (`diya-gl/parity.sh` against the committed `report.json` and `bookchecks.json`), and `web/browser-tests/diya-gl-ltd-equivalence.browser.test.js` (cells of `examples/ltd-latest`). The bot commit started no workflow, so `main`'s own CI has not shown it; pull request #200 shows it.
-- Each Company roll breaks them again: the window is the last day of the month 13 months ahead (`app/bin/generate.js`, `yearEndCutoff`), one month further from the 16th.
+- A dispatched Company roll breaks them again: a dispatched run commits every generated file. A scheduled run commits only new package folders (SC1's guard), so it adds packages but never refreshes reports, examples, pages or existing packages.
+- The cause of the incident: the generate workflows commit without running what `test.yml` runs, a `GITHUB_TOKEN` push starts no workflow, and `deploy.yml` deploys `main` daily at 07:17 UTC without waiting for `test.yml`, so an unchecked bot commit can reach the site.
+- The tax data runs out: `app/data/ltd-2027.toml` ends on 2028-03-31 and the window reaches Apr28 on 2027-02-16; `app/bin/generate.js` loops only over the toml files that exist, so Company would stop getting new packages with nothing reporting it (Self Employed on 2028-02-16).
 - Only `generate-ltd.yml` runs on a schedule (Mondays 04:00 UTC). `generate-bst.yml`, `generate-taxi.yml` and `generate-se.yml` have their schedules commented out, so a new tax year's packages appear only on a dispatch.
 - The Company reconcile matrix tests a representative set (latest March, June, February and the overall latest) of the last 24 months, not every year-end in scope.
 - Latest today: Basic Sole Trader, Taxi Driver and Self Employed Apr27 (tax year to 2027-04-05); Company Dec27.
@@ -58,7 +62,7 @@ Each product keeps a small set of frozen anchor year-ends (for example Company O
 - A roll adds packages and runs the invariants on the new latest; the anchors catch a generator change that shifts a known figure.
 - An anchor is replaced only by a deliberate change when its year-end leaves the in-scope set.
 - Main stays green through a roll because no exact value follows the latest.
-- Cost: the anchors' packages stay in the repository after they leave the download window.
+- `packages/` already keeps every year-end (93 Company folders, Apr20 to Dec27), so an anchor adds no package that is not there already.
 
 ## Option 3: a release pull request per roll
 
@@ -71,19 +75,25 @@ The scheduled run builds the new packages on a branch and opens a pull request i
 
 ## The changes for Option 2
 
-All in `../spreadsheets.diyaccounting.co.uk`. Today 31 files read `examples/<product>-latest` or a named year-end report: 13 unit tests, 13 browser tests, `diya-gl/parity.sh`, `diya-gl/smoke.sh`, `scripts/leg-test-files.mjs`, and `app/bin/export.js` and `app/bin/report.js`. `app/test/judge-reconciliation.test.js` and `app/test/se-derivations.test.js` name report files.
+All in `../spreadsheets.diyaccounting.co.uk`, as adopted from the review. 44 files read `examples/<product>-latest` or a named year-end report today. An anchor is a year-end, not a frozen file: the generate workflows rebuild it from the current templates on every run and compare it with committed expected values.
 
-| # | Change | Files | Fixes |
+| # | Change | Files | Goal |
 |---|---|---|---|
-| SR1 | The pre-push hook stops running the `calc` and `browser` tiers, which CI runs on every push (`test.yml` jobs `app-test` and `browser-test`); it keeps the gates and the scoped unit tier. | ~2 | the local load |
-| SR2 | One anchor registry: per product (bst, taxi, se, ltd) the anchor year-end, its package folder `examples/<product>-anchor`, its report files and its parity fixture folder. Every exact-value check reads it; none names a year-end itself. | 1 new | the pinning |
-| SR3 | Freeze the anchors: `examples/<product>-latest` becomes `examples/<product>-anchor` with today's content, except Company, which takes the Oct27 content from before the roll (commit b22d451a9). The Oct27 Company brickwork reports come back from b22d451a9 into a folder the prune never touches. Anchors: Company 2027-10-31; Basic Sole Trader, Taxi Driver, Self Employed 2027-04-05. | ~60 moved, 0 edited | the 3 red checks |
-| SR4 | Point the 31 consumers at the registry. A consumer that checks an exact figure reads the anchor; a consumer that needs only "a real package" (the reconciliation pages, `export.js`, `report.js`) reads the latest from `packages/`. | ~31 | the pinning |
-| SR5 | The anchor check: a unit test fails for each anchor whose year-end is today or earlier. Its message: "<product> anchor <date> has passed. Roll the exact-value checks to a new anchor: copy the latest <product> package to examples/<product>-anchor, run npm run parity:refresh, set the year-end in the registry, and commit." | 1 new | the operator's check |
-| SR6 | The generators stop rewriting the anchors: `generate-{bst,taxi,se,ltd}.yml` no longer delete and copy `examples/<product>-latest`. Their report prune keeps the latest year-end and the anchor year-end. | 4 | no roll breaks a check |
-| SR7 | Invariants for the in-scope set, naming no year-end: each generate workflow computes, from the date and `packages/`, the latest and every year-end that ended less than 12 months ago. Each one must pass: the reconciliation report has no anomaly (today's step), the judge passes (today's step), the round trip loses nothing (`verify-roundtrip`), and the CLI and the workbook agree cell for cell on the generated package (the S2/S3 equivalence, pointed at the package rather than an example). A new latest runs the full set for its product. A change to templates, tax data, the engine or the generator runs the in-scope set of every product it reaches. This replaces the Company matrix of representative year-ends (latest March, June, February and the overall latest) with the in-scope set, 25 Company year-ends today. | ~6 | the operator's regression scope |
-| SR8 | Generation on the date: `generate-bst.yml`, `generate-taxi.yml` and `generate-se.yml` get the weekly Monday schedule `generate-ltd.yml` has. A run with no new year-end commits nothing. | 3 | packages appear with no dispatch |
-| SR9 | SC4 (pull request #200) shrinks to what Option 2 still needs: the PDF epoch, `provenance-data.js` and the page date. Its example-workbook keeper goes, because SR6 stops writing the examples. It rebases onto SR1 to SR6. | ~4 | quiet weekly runs |
-| SR10 | A dispatched CI job generates one Company year-end twice with the same epoch and compares the reports and screenshots; each timestamp source found is fixed, then SC1's scheduled-run guard goes. | ~3 | a quiet weekly run |
+| SR1 | The pre-push hook runs only quick, change-specific checks: it drops the `calc`, `browser` and `infra` tiers (CI's `app-test`, `browser-test` and `infra-test` jobs run them); its live-process guard applies only to the tiers that run, and vitest or Playwright only in the same worktree; the gates run the parity gate only when the diff reaches `diya-gl/`, `app/lib/` or `examples/`; `app/test/test-scope-live-guard.test.js` follows. | ~3 | local work is quick; parallel runs never fail each other |
+| SR2 | One registry, `app/lib/fixed-examples.js` (the name `app/lib/anchors/` is taken), per product: the anchor year-end, `examples/<product>-anchor`, the report fixtures and the parity fixtures, and the list of its consumers. First step: Company's anchor takes Oct27 from b22d451a9 so `main` goes green. Report fixtures for all four products (ltd brickwork Oct27; se brickwork and advanced, bst basic, brickwork and sp-sixty, taxi basic and sp-sixty Apr27) move outside `reports/`, in a form the CI hash and the pre-push Markdown fast path do not skip. All 44 consumers read the registry: `web/browser-tests/r-sources.js` `latestYearEnd` and `latestSeYearEnd`, the equivalence test's drift cells from the anchor's month (`monthTabOrder`), `diya-gl/scripts/parity-fixtures.mjs`, `ltd-period-shift.test.js`, the `test.yml` roundtrip year-ends; `export.js` and `report.js` change only in comments; `build-reconciliation-pages.js` takes the leg's populated-latest folder. `scripts/leg-test-files.mjs` goes. A test fails when an anchor year-end is today or earlier, naming the roll workflow of SR6. One Opus agent. | ~50 | exact figures against anchors |
+| SR3 | Each generate workflow runs one leg at the registry's anchor year-end on every run, copies that populated output to `examples/<product>-anchor`, and before it commits checks parity, the unit tests that read the anchor, and the CLI form of S2 against S3. The expected values stay committed; a shifted figure fails the run and nothing is committed. | ~4 | exact figures; red means a defect |
+| SR4 | A gate before each generate commit: the leg runs the full unit tier and the parity gate on the tree it will commit; extra-scenario anomalies block the commit; the job dispatches `test.yml` after its push; the scheduled prod deploy requires a green `test.yml` record for `HEAD`. | ~6 | red means a defect; nothing unchecked reaches the site |
+| SR5 | A tax-data horizon check: a unit test fails eight weeks before `yearEndCutoff` reaches a year-end with no `app/data/<regime>-<year>.toml`. Due before 2027-02-16. What the new file holds is OSR5. | ~1 | packages keep appearing |
+| SR6 | A workflow that rolls the anchor: on dispatch, and on a schedule a set time before each anchor's year-end, it builds the populated anchor at the newest year-end in the window, refreshes the parity and report fixtures and the registry, and opens a pull request for `/auto-merge`. Due before March 2027 (the tax-year anchors expire on 2027-04-05). | ~3 | keeps itself current |
+| SR7 | The in-scope set in the generate workflows: every year-end from today minus 12 months, by day, to the latest, inclusive (26 Company year-ends today, Nov25 to Dec27); S2 is the CLI engine over the export of the populated package; the judge runs only at the latest leg; the Basic Sole Trader, Self Employed and Taxi Driver matrix as OSR7 decides. | ~6 | current year-ends checked by rules that name no year-end |
+| SR8 | A `test.yml` job for pull requests that touch `app/templates`, `app/data`, `app/products` or the generator libraries: generate and reconcile the in-scope year-ends of the products the change reaches, with no commit. | ~2 | a change is regression tested |
+| SR9 | One scheduled `generate-all.yml` in place of the four product schedules (it runs the products one after another, because their commits collide on `provenance-data.js`, the reconciliation index and `spec.html`). Its first job exits before generating when the window adds no year-end and the hash of the inputs equals the one recorded in the last generate commit. | ~5 | no dispatch; nothing new costs nothing |
+| SR10 | Pull request #200 (SC4) keeps the PDF epoch, the provenance writer and the page date, drops the example-workbook keeper, puts the scheduled-run guard back until SR11, and adds the PDF epoch to the Basic Sole Trader, Self Employed and Taxi Driver workflows. | ~6 | nothing new commits nothing |
+| SR11 | A dispatched CI job generates one year-end of each product twice with the same epoch and compares every output (packages, reports, screenshots, pages); each timestamp source found is fixed; then the scheduled-run guard goes. | ~4 | nothing new commits nothing |
+| SR12 | Payslip 05 (seven packages built in `generate-se.yml`) joins the in-scope checks. | ~2 | red means a defect in any download |
 
-Order: SR1 to SR6 in one pull request makes `main` green (SR1, on `NEXT.md`, makes the pre-push hook stop running the `calc` and `browser` tiers CI runs), as a two-agent chain (Opus maps every consumer and writes the registry, Sonnet repoints them). SR7 is a second pull request (Opus, because it changes what each generate workflow runs). SR8 and SR9 follow (Sonnet).
+Decisions: **OSR5**, what a new tax-year file holds when the horizon check fires (a human-written file from HMRC's figures, or the last year carried forward with a flag that blocks publishing until checked). **OSR7**, the Basic Sole Trader, Self Employed and Taxi Driver matrix in SR7 (keep all seven tax years reconciled, or only the in-scope two), and whether "today minus 12 months, by day" is the in-scope rule.
+
+Rules for these rows: an agent runs only the test files its change reaches, with `VITEST_MAX_WORKERS=2`, and no browser or LibreOffice suite; a row that changes browser specs is proved with `gh workflow run test.yml --ref <branch>`, which may run as often as needed.
+
+Order: SR1, SR2, SR3 and SR4 in one pull request make `main` green. SR5 before 2027-02-16. SR6 before March 2027. Then SR7 and SR8, SR9, SR10, SR11 and SR12.
