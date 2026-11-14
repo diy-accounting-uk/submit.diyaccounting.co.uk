@@ -3,7 +3,7 @@
 
 # PLAN: the spreadsheets rest state when the year-end window rolls
 
-Status: Option 2 chosen on 2026-11-14; an independent review the same day (`../private.diyaccounting.co.uk/engineering/spreadsheets/REVIEW_SR1_SR10_2026-11-14.md`) found the first SR1 to SR10 would fail the goals, and the operator adopted all twelve of its changes. The tasks are SR1 to SR12 in "The changes for Option 2", each a row on `NEXT.md`. Repository: `../spreadsheets.diyaccounting.co.uk`.
+Status: the operator replaced the earlier task lists on 2026-11-14 with the twelve tasks below, applied after rolling `main` back to its state at 17:56 UTC on 14 November. Repository: `../spreadsheets.diyaccounting.co.uk`.
 
 ## Operator assertions (verbatim)
 
@@ -73,25 +73,34 @@ The scheduled run builds the new packages on a branch and opens a pull request i
 - A merge needs the same gates as any other change; with no session running, a green roll still needs `/auto-merge` or GitHub auto-merge on that branch.
 - Cost: one pull request per roll (monthly for Company, yearly for the tax-year products).
 
-## The changes for Option 2
+## Tasks
 
-All in `../spreadsheets.diyaccounting.co.uk`, as adopted from the review. 44 files read `examples/<product>-latest` or a named year-end report today. An anchor is a year-end, not a frozen file: the generate workflows rebuild it from the current templates on every run and compare it with committed expected values.
+Applied after rolling back to `main` at 17:56 UTC on 14 November 2026. That point was a direct commit to `main` by the diya-gl publish workflow, not a merge; the last merge was PR #199 at 17:46. At 17:56 `generate-ltd.yml` already runs every Monday at 04:00 UTC (line 17) and a scheduled run commits only new folders in `packages/` (lines 498 to 509).
 
-| # | Change | Files | Goal |
-|---|---|---|---|
-| SR1 | The pre-push hook runs only quick, change-specific checks: it drops the `calc`, `browser` and `infra` tiers (CI's `app-test`, `browser-test` and `infra-test` jobs run them); its live-process guard applies only to the tiers that run, and vitest or Playwright only in the same worktree; the gates run the parity gate only when the diff reaches `diya-gl/`, `app/lib/` or `examples/`; `app/test/test-scope-live-guard.test.js` follows. | ~3 | local work is quick; parallel runs never fail each other |
-| SR2 | One registry, `app/lib/fixed-examples.js` (the name `app/lib/anchors/` is taken), per product: the anchor year-end, `examples/<product>-anchor`, the report fixtures and the parity fixtures, and the list of its consumers. First step: Company's anchor takes Oct27 from b22d451a9 so `main` goes green. Report fixtures for all four products (ltd brickwork Oct27; se brickwork and advanced, bst basic, brickwork and sp-sixty, taxi basic and sp-sixty Apr27) move outside `reports/`, in a form the CI hash and the pre-push Markdown fast path do not skip. All 44 consumers read the registry: `web/browser-tests/r-sources.js` `latestYearEnd` and `latestSeYearEnd`, the equivalence test's drift cells from the anchor's month (`monthTabOrder`), `diya-gl/scripts/parity-fixtures.mjs`, `ltd-period-shift.test.js`, the `test.yml` roundtrip year-ends; `export.js` and `report.js` change only in comments; `build-reconciliation-pages.js` takes the leg's populated-latest folder. `scripts/leg-test-files.mjs` goes. A test fails when an anchor year-end is today or earlier, naming the roll workflow of SR6. One Opus agent. | ~50 | exact figures against anchors |
-| SR3 | Each generate workflow runs one leg at the registry's anchor year-end on every run, copies that populated output to `examples/<product>-anchor`, and before it commits checks parity, the unit tests that read the anchor, and the CLI form of S2 against S3. The expected values stay committed; a shifted figure fails the run and nothing is committed. | ~4 | exact figures; red means a defect |
-| SR4 | A gate before each generate commit: the leg runs the full unit tier and the parity gate on the tree it will commit; extra-scenario anomalies block the commit; the job dispatches `test.yml` after its push; the scheduled prod deploy requires a green `test.yml` record for `HEAD`. | ~6 | red means a defect; nothing unchecked reaches the site |
-| SR5 | A tax-data horizon check: a unit test fails eight weeks before `yearEndCutoff` reaches a year-end with no `app/data/<regime>-<year>.toml`. When it fires, its message says to run `npm run update-tax-data <year>` locally, review the file and open a pull request (operator, 2026-11-14). | ~1 | packages keep appearing |
-| SR6 | A workflow that rolls the anchor: on dispatch, and on a schedule a set time before each anchor's year-end, it builds the populated anchor at the newest year-end in the window, refreshes the parity and report fixtures and the registry, and opens a pull request for `/auto-merge`. | ~3 | keeps itself current |
-| SR7 | The in-scope set in the generate workflows: every year-end from today minus 12 months, by day, to the latest, inclusive (26 Company year-ends today, Nov25 to Dec27); S2 is the CLI engine over the export of the populated package; the judge runs only at the latest leg; the Basic Sole Trader, Self Employed and Taxi Driver matrix shrinks to the two in-scope tax years (operator, 2026-11-14). | ~6 | current year-ends checked by rules that name no year-end |
-| SR8 | A `test.yml` job for pull requests that touch `app/templates`, `app/data`, `app/products` or the generator libraries: generate and reconcile the in-scope year-ends of the products the change reaches, with no commit. | ~2 | a change is regression tested |
-| SR9 | One scheduled `generate-all.yml` in place of the four product schedules (it runs the products one after another, because their commits collide on `provenance-data.js`, the reconciliation index and `spec.html`). Its first job exits before generating when the window adds no year-end and the hash of the inputs equals the one recorded in the last generate commit. | ~5 | no dispatch; nothing new costs nothing |
-| SR10 | Pull request #200 (SC4) keeps the PDF epoch, the provenance writer and the page date, drops the example-workbook keeper, puts the scheduled-run guard back until SR11, and adds the PDF epoch to the Basic Sole Trader, Self Employed and Taxi Driver workflows. | ~6 | nothing new commits nothing |
-| SR11 | A dispatched CI job generates one year-end of each product twice with the same epoch and compares every output (packages, reports, screenshots, pages); each timestamp source found is fixed; then the scheduled-run guard goes. | ~4 | nothing new commits nothing |
-| SR12 | Payslip 05 (seven packages built in `generate-se.yml`) joins the in-scope checks. | ~2 | red means a defect in any download |
+| # | Task | Waits on |
+|---|---|---|
+| SR1 | Revert the 18:22 generate commit (40afa42af) in one pull request, so `main` matches 17:56 and `test.yml` passes again. | — |
+| SR2 | `generate-ltd.yml`: a dispatched run commits only new folders in `packages/`, as a scheduled run already does (replace the `else` branch at lines 510 to 512). | SR1 |
+| SR3 | `generate-bst.yml`, `generate-se.yml`, `generate-taxi.yml`: each run commits only new folders in `packages/`. | SR1 |
+| SR4 | All four generate workflows: delete the steps that replace `examples/<product>-latest` (for example `generate-ltd.yml` lines 326 to 334, `generate-bst.yml` lines 267 to 275) and the uploads and `git add` that carry it. | SR1 |
+| SR5 | Rename `examples/<product>-latest` to `examples/<product>-pinned`, and update every test and script that reads those folders. | SR4 |
+| SR6 | New file `examples/pinned.json`: each product's pinned year-end and the date its package was built. | SR5 |
+| SR7 | New unit test: fails when a pinned package was built more than six months ago; its message says how to replace it. | SR6 |
+| SR8 | Move the pinned products' report files from `reports/` to `app/test/fixtures/pinned-reports/`, and update the tests that read them. | SR1 |
+| SR9 | New unit test: for every folder in `packages/`, the name parses, every expected file is present, and each workbook opens. | SR1 |
+| SR10 | All four generate workflows: when `app/templates`, `app/data` or `app/products` change, start a run that commits every changed package in `packages/`. | SR2, SR3 |
+| SR11 | Package PDFs take the date of the last template commit, so untouched packages regenerate identical and are not committed. | SR10 |
+| SR12 | Close spreadsheets PR #200 without merging. | — |
 
-Rules for these rows: an agent runs only the test files its change reaches, with `VITEST_MAX_WORKERS=2`, and no browser or LibreOffice suite; a row that changes browser specs is proved with `gh workflow run test.yml --ref <branch>`, which may run as often as needed.
+## Goals these tasks do not meet
 
-Order, as soon as each can start: SR1, SR2, SR3, SR4 and SR5 in one pull request make `main` green; SR6, SR7, SR9 and SR10 start when it merges; SR8 and SR12 follow SR7; SR11 follows SR9 and SR10.
+- Keeps itself correct and current with nobody touching it: a person re-pins every six months, and writes each new tax-year file.
+- New packages appear for every product with no dispatch: only Company has a weekly schedule; Basic Sole Trader, Self Employed and Taxi Driver have none.
+- Exact figures against fixed anchors whose year-ends stay in the future: SR7 checks the pinned package's age, not its year-end, and re-pinning is manual.
+- The calendar never turns the build red: SR7 turns every build red when a pinned package reaches six months old.
+- Heavy proof runs once per push in CI, never on this Mac: the pre-push hook still runs the LibreOffice, browser and infra tiers locally.
+- Local work only runs quick checks, so parallel runs never fail by load: the same pre-push hook is unchanged.
+- Red only ever means a real defect: SR7 is a date-driven red, and a bot commit still reaches the site before `test.yml` checks it.
+- The one-year unattended test: it fails on 2027-04-05, when the Company pinned package (built 2026-10-05) turns six months old. The Company tax data also runs out on 2027-02-16, and nothing reports it.
+
+The goal these tasks meet: a run with nothing new commits nothing.
