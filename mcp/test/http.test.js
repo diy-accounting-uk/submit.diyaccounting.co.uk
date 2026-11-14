@@ -67,8 +67,9 @@ describe("the hosted HTTP transport", () => {
     expect(body.result.tools.map((tool) => tool.name).sort()).toEqual([...HOSTED_TOOL_NAMES].sort());
     for (const tool of body.result.tools) {
       expect(tool.title, tool.name).toMatch(/\S/);
-      expect(Object.keys(tool.annotations ?? {}).sort(), tool.name).toEqual(["destructiveHint", "openWorldHint", "readOnlyHint"]);
-      for (const hint of Object.values(tool.annotations)) expect(typeof hint).toBe("boolean");
+      expect(Object.keys(tool.annotations ?? {}).sort(), tool.name).toEqual(["destructiveHint", "openWorldHint", "readOnlyHint", "title"]);
+      expect(tool.annotations.title, tool.name).toBe(tool.title);
+      for (const key of ["destructiveHint", "openWorldHint", "readOnlyHint"]) expect(typeof tool.annotations[key]).toBe("boolean");
     }
   });
 
