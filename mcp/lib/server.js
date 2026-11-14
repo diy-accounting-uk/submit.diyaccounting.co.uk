@@ -434,8 +434,7 @@ export const TOOLS = {
       "derive_vat_return does, and answers a link to the VAT form on the Submit site with the seven figures filled in " +
       "(the form works out boxes 3 and 5 itself). This tool never files anything and reaches no outside service. The " +
       "person opens the link, checks the figures on the page, ticks the declaration and files there; the figures filed " +
-      "are the figures the page shows. Show the person the figures this tool answers, give them the link, and tell " +
-      "them to check, declare and file on the page.",
+      "are the figures the page shows.",
     inputSchema: {
       periodEnd: z.string().describe("The obligation's period end, YYYY-MM-DD; must be a month end the book's VAT interface carries"),
       periodStart: z
@@ -606,8 +605,8 @@ export const TOOLS = {
     title: "Get a VAT receipt",
     annotations: READS,
     description:
-      "A stored HMRC VAT receipt by its file name, over the deployed API: Submit's own copy of what it filed. To read " +
-      "HMRC's copy of a return by period key, use get_vat_return. clientId, when given, narrows the fetch to " +
+      "A stored HMRC VAT receipt by its file name, over the deployed API: Submit's own copy of what it filed. " +
+      "clientId, when given, narrows the fetch to " +
       "one of the practice's clients but does not change which receipt is read.",
     inputSchema: {
       name: z.string().describe("The receipt file name, including .json (submit_vat_return answers receiptId without the suffix)"),
@@ -620,7 +619,7 @@ export const TOOLS = {
     annotations: READS,
     description:
       "The receipts Submit has stored for the signed-in account, the list its receipts page shows: each row carries the " +
-      "name get_vat_receipt takes. Use it to find a receipt this chat did not just file. clientId narrows the list to one of the " +
+      "name get_vat_receipt takes. clientId narrows the list to one of the " +
       "practice's clients.",
     inputSchema: {
       clientId: z.string().optional().describe("A practice client's id, to list that client's receipts"),
