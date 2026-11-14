@@ -268,9 +268,12 @@ describe("mcpOauth register", () => {
     ["the bare r path", "https://oauth-redirect.googleusercontent.com/r/"],
     ["the bare a path", "https://oauth-redirect.googleusercontent.com/a/"],
     ["another path", "https://oauth-redirect.googleusercontent.com/x/abc"],
-    ["the sandbox host", "https://oauth-redirect-sandbox.googleusercontent.com/r/abc"],
-    ["the test host", "https://oauth-redirect-test.googleusercontent.com/r/abc"],
+    ["a port on the sandbox host", "https://oauth-redirect-sandbox.googleusercontent.com:8443/r/abc"],
+    ["a query on the test host", "https://oauth-redirect-test.googleusercontent.com/a/abc?x=1"],
+    ["http on the sandbox host", "http://oauth-redirect-sandbox.googleusercontent.com/r/abc"],
     ["a lookalike host", "https://oauth-redirect.googleusercontent.com.example.org/r/abc"],
+    ["a prefixed host", "https://evil-oauth-redirect.googleusercontent.com/r/abc"],
+    ["another suffixed host", "https://oauth-redirect-other.googleusercontent.com/r/abc"],
   ])("refuses a Gemini-like callback with %s", async (_label, uri) => {
     const result = await register(JSON.stringify({ redirect_uris: [uri] }));
     expect(result.statusCode).toBe(400);
@@ -278,7 +281,15 @@ describe("mcpOauth register", () => {
     expect((await authorize({ redirect_uri: uri })).statusCode).toBe(400);
   });
 
-  it("logs the hosts of a refused registration and no paths or queries", async () => {
+  it("registers the six Gemini callbacks on the three hosts in one request", async () => {
+    const hosts = ["oauth-redirect", "oauth-redirect-sandbox", "oauth-redirect-test"];
+    const uris = hosts.flatMap((h) => [`https://${h}.googleusercontent.com/r/x`, `https://${h}.googleusercontent.com/a/x`]);
+    const result = await register(JSON.stringify({ redirect_uris: uris }));
+    expect(result.statusCode).toBe(201);
+    expect(json(result).redirect_uris).toEqual(uris);
+  });
+
+  it("logs the hosts of a refused registration and no queries", async () => {
     loggedLines.length = 0;
     await register(JSON.stringify({ redirect_uris: ["https://elsewhere.example/secret/path?code=1", GEMINI_REDIRECT] }));
     const line = loggedLines.map((l) => l.args[0]).find((a) => a?.endpoint === "register");
@@ -286,7 +297,16 @@ describe("mcpOauth register", () => {
       outcome: "invalid_redirect_uri",
       redirectHosts: ["elsewhere.example", "oauth-redirect.googleusercontent.com"],
     });
-    expect(JSON.stringify(line)).not.toContain("secret/path");
+    expect(JSON.stringify(line)).not.toContain("code=1");
+  });
+
+  it("logs the refused addresses as host plus path with no query or fragment", async () => {
+    loggedLines.length = 0;
+    await register(JSON.stringify({ redirect_uris: ["https://elsewhere.example/secret/path?code=1#frag", GEMINI_REDIRECT] }));
+    const line = loggedLines.map((l) => l.args[0]).find((a) => a?.endpoint === "register");
+    expect(line.refusedRedirects).toEqual(["elsewhere.example/secret/path", "oauth-redirect.googleusercontent.com/r/abc123"]);
+    expect(JSON.stringify(line)).not.toContain("code=1");
+    expect(JSON.stringify(line)).not.toContain("frag");
   });
 
   it("refuses missing redirect_uris, a non-JSON body and unsupported grant types", async () => {
@@ -336,12 +356,15 @@ describe("mcpOauth authorize GET", () => {
     expect(result.body).toContain("a program on this computer");
   });
 
-  it.each([GEMINI_REDIRECT, GEMINI_APP_REDIRECT])("names Gemini on the consent page for %s", async (uri) => {
+  it.each([
+    GEMINI_REDIRECT,
+    GEMINI_APP_REDIRECT,
+    "https://oauth-redirect-sandbox.googleusercontent.com/r/abc",
+    "https://oauth-redirect-test.googleusercontent.com/a/abc",
+  ])("names Gemini on the consent page for %s", async (uri) => {
     const result = await authorize({ redirect_uri: uri });
     expect(result.statusCode).toBe(200);
-    expect(result.body).toContain(
-      "Gemini (<strong>oauth-redirect.googleusercontent.com</strong>) is asking to use DIY Accounting Submit as you",
-    );
+    expect(result.body).toContain(`Gemini (<strong>${new URL(uri).host}</strong>) is asking to use DIY Accounting Submit as you`);
   });
 
   it("names no application on the consent page for an unknown host", async () => {
