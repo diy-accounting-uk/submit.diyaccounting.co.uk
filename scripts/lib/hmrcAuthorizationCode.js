@@ -21,8 +21,7 @@ import { chromium } from "playwright";
  * token obtained on behalf of a user, not a client-credentials token. There is no headless way to
  * get one: the authorize page is a sign-in journey, so a browser walks it.
  *
- * This lived privately and identically in both `itsa-sandbox-year.js` and `itsa-sandbox-spike.js`.
- * The behaviour suites need it too, so it lives here once.
+ * `itsa-sandbox-year.js` and the behaviour suites both need it, so it lives here once.
  *
  * @param {object} options
  * @param {string} options.authorizeUrl  The full /oauth/authorize URL, query string included.

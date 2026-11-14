@@ -164,7 +164,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability HMRC-32 -->
 <!-- capability HMRC-33 -->
 <!-- capability HMRC-34 -->
-<!-- capability HMRC-35 -->
 <!-- capability HMRC-36 -->
 <!-- capability HMRC-37 -->
 <!-- capability HMRC-38 -->
@@ -298,7 +297,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability BILL-29 -->
 <!-- capability BILL-30 -->
 <!-- capability BILL-31 -->
-<!-- capability BILL-32 -->
 ### Tokens and catalogue (BILL)
 
 <!-- generated:group tokens-and-catalogue-bill -->
@@ -538,10 +536,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:group backup-and-disaster-recovery-ops -->
 <!-- /generated:group backup-and-disaster-recovery-ops -->
 
-<!-- capability OPS-105 -->
-<!-- capability OPS-106 -->
-<!-- capability OPS-107 -->
-<!-- capability OPS-108 -->
 <!-- capability OPS-109 -->
 <!-- capability OPS-110 -->
 ### CDK infrastructure stacks (OPS)
@@ -920,7 +914,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability SS-35 -->
 <!-- capability SS-36 -->
 <!-- capability SS-37 -->
-<!-- capability SS-38 -->
 <!-- capability SS-39 -->
 <!-- capability SS-40 -->
 <!-- capability SS-41 -->

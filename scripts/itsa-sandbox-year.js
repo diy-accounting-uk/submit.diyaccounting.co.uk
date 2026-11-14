@@ -38,8 +38,7 @@
  * sandbox data between runs: the first run wipes everything and saves a clean checkpoint, every
  * later run restores that checkpoint before creating fresh businesses.
  *
- * This drives the sandbox directly, the way scripts/itsa-sandbox-spike.js drove Business
- * Details - it does not call this application's own deployed API. The request-body builders
+ * This drives the sandbox directly. It does not call this application's own deployed API. The request-body builders
  * it imports (buildSelfEmploymentPeriodRequestBody, buildAnnualSubmissionRequestBody,
  * buildBsasTriggerRequestBody, buildBsasAdjustRequestBody) are the same pure functions the
  * production Lambda handlers use, so a body this script sends is a body the shipped code would
@@ -461,8 +460,7 @@ export function buildItsaStatusRequestBody() {
 
 /**
  * Drive the sandbox authorisation pages until the browser is sent to the redirect uri, and
- * return the authorisation code from that redirect. Copied from scripts/itsa-sandbox-spike.js,
- * which proved this flow against the same HMRC sandbox application.
+ * return the authorisation code from that redirect.
  */
 
 /**
@@ -642,7 +640,7 @@ async function main() {
   const nino = testUser.nino;
   if (!nino) throw new Error("Test user file has no nino");
 
-  // Phase 1: authorise and exchange the code for an access token, the way itsa-sandbox-spike.js does.
+  // Phase 1: authorise and exchange the code for an access token.
   const state = randomUUID();
   const authorizeUrl = buildAuthorizeUrl({ sandboxBase, clientId, redirectUri, scope, state });
 

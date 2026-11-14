@@ -7,7 +7,7 @@
 // - **Does:** collabora-sheet-host.js fetches a package zip from the spreadsheets site (or takes `--file`), reads the .xlsx out with zlib, starts the pinned collabora/code container (or uses `--cool-url`, the GitHub Actions service container) and serves a WOPI host whose start page opens a fresh copy of the workbook in the editor on every load. collabora.js drives it: GoToCell for cursor moves, the cursor rectangle as the cell's on-screen box, and typing and keys over Collabora's socket messages, because page.keyboard drops characters there. The scene actions `sheetPrepare` (hard recalculation, hides the welcome panel), `sheetZoom`, `sheetCell`, `sheetPoint` and `sheetType` use it. video-capture.yml starts the Collabora service container only for `accounting-spreadsheet-profit`.
 // - **Run:** `npm run video:accounting-spreadsheet-profit -- --no-narration`; `node scripts/collabora-sheet-host.js --package "<package name>"`
 // - **Entry:** `scripts/collabora-sheet-host.js`; `scripts/lib/video/collabora.js`
-// - **Files:** scripts/collabora-sheet-host.js, scripts/lib/video/collabora.js, scripts/lib/video/actions.js, scripts/collabora-sheet-spike.js, videos/accounting-spreadsheet-profit.json, app/unit-tests/video/collaboraSheet.test.js, .github/workflows/video-capture.yml, _developers/DESIGN_SPREADSHEET_VIDEO.md
+// - **Files:** scripts/collabora-sheet-host.js, scripts/lib/video/collabora.js, scripts/lib/video/actions.js, videos/accounting-spreadsheet-profit.json, app/unit-tests/video/collaboraSheet.test.js, .github/workflows/video-capture.yml, _developers/DESIGN_SPREADSHEET_VIDEO.md
 // - **Keywords:** collabora, libreoffice, xlsx, workbook, spreadsheet video, wopi, sole trader, excel
 // - **Related:** OPS-93, OPS-139
 // @end-capability

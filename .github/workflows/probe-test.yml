@@ -56,6 +56,8 @@ on:
           - 'itsaForeignPropertyPeriodBehaviour'
           - 'itsaForeignPropertyAnnualSubmissionBehaviour'
           - 'itsaLossesAndClaimsBehaviour'
+          - 'itsaAnnualSubmissionBehaviour'
+          - 'itsaFinalDeclarationBehaviour'
           - 'getVatReturnBehaviour'
           - 'postVatReturnFraudPreventionHeadersBehaviour'
           - 'submitVatBehaviour'
@@ -72,7 +74,6 @@ on:
           - 'changeRegisteredEmailBehaviour'
           - 'diyaGlSubscriptionBehaviour'
           - 'diyaGlBehaviour'
-          - 'allBehaviour'
         default: 'submitVatBehaviour'
       generate-test-reports:
         type: boolean
@@ -494,6 +495,16 @@ jobs:
             exit 1
           fi
 
+      - name: Guard the DIYA-GL subscription suite on the ci environment
+        id: diya-gl-subscription-guard
+        if: ${{ !cancelled() && matrix.suite == 'diyaGlSubscriptionBehaviour' }}
+        shell: bash
+        run: |
+          if [ "${{ needs.names.outputs.environment-name }}" != "ci" ]; then
+            echo "::error::${{ matrix.suite }} has a ci script only and runs with environment-name=ci."
+            exit 1
+          fi
+
       # paymentBehaviour's GA4 purchase assertion (behaviour-tests/helpers/ga4PurchaseQuery.js)
       # reads BigQuery over application default credentials, the same federated path
       # google-apply.yml's Google steps use: exchange this job's own OIDC token through the
@@ -530,7 +541,7 @@ jobs:
       # next, so a wait here can only make the gating run take longer to clear.
       - name: Wait for a deploy in progress on main before navigating the apex
         id: wait-before-navigate
-        if: ${{ !cancelled() && steps.companies-house-guard.outcome != 'failure' && steps.commission-guard.outcome != 'failure' && github.event_name == 'schedule' && github.workflow == 'probe-test' }}
+        if: ${{ !cancelled() && steps.companies-house-guard.outcome != 'failure' && steps.commission-guard.outcome != 'failure' && steps.diya-gl-subscription-guard.outcome != 'failure' && github.event_name == 'schedule' && github.workflow == 'probe-test' }}
         uses: './.github/actions/wait-for-main-deploy'
         with:
           github-token: ${{ github.token }}
@@ -549,7 +560,7 @@ jobs:
         timeout-minutes: 20
         id: behaviour-test
         continue-on-error: true
-        if: ${{ !cancelled() && steps.companies-house-guard.outcome != 'failure' && steps.commission-guard.outcome != 'failure' && steps.wait-before-navigate.outputs.deploy-in-progress != 'true' }}
+        if: ${{ !cancelled() && steps.companies-house-guard.outcome != 'failure' && steps.commission-guard.outcome != 'failure' && steps.diya-gl-subscription-guard.outcome != 'failure' && steps.wait-before-navigate.outputs.deploy-in-progress != 'true' }}
         run: |
           npm run 'test:${{ matrix.suite }}-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
           ; RESULT=${exit_code:-0} \

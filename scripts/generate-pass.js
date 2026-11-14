@@ -3,12 +3,14 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 //
-// Generate a pass locally using assumed AWS credentials
+// Generate a pass with assumed AWS credentials, locally or from the generate-pass.yml workflow.
+// With --qr it also writes a QR code PNG and an annotated SVG per pass to qr-codes/ and the pass details to passes-output.json.
 //
 // Usage: node scripts/generate-pass.js [pass-type] [environment] [options]
 // Example: node scripts/generate-pass.js day-guest-test-pass ci
 //          node scripts/generate-pass.js invited-guest ci --email user@example.com
 //          node scripts/generate-pass.js day-guest-pass prod --max-uses 5 --validity-period P30D
+//          node scripts/generate-pass.js day-guest-pass ci --qr --quantity 3
 //          node scripts/generate-pass.js                  (defaults: day-guest-test-pass, ci)
 //
 // Prerequisites: AWS SSO profile must be selected first:
@@ -29,6 +31,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { parse as parseTOML } from "@iarna/toml";
+import { generatePassQrCodeBuffer, generateAnnotatedPassQrCodeSvg, buildPassDetails } from "../app/lib/qrCodeGenerator.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
@@ -43,6 +46,9 @@ function parseArgs(args) {
     validityPeriod: null,
     quantity: 1,
     notes: null,
+    qr: false,
+    host: null,
+    createdBy: null,
   };
 
   let positional = 0;
@@ -57,6 +63,12 @@ function parseArgs(args) {
       result.quantity = parseInt(args[++i], 10);
     } else if (args[i] === "--notes" && args[i + 1]) {
       result.notes = args[++i];
+    } else if (args[i] === "--host" && args[i + 1]) {
+      result.host = args[++i];
+    } else if (args[i] === "--created-by" && args[i + 1]) {
+      result.createdBy = args[++i];
+    } else if (args[i] === "--qr") {
+      result.qr = true;
     } else if (args[i] === "--help" || args[i] === "-h") {
       printUsage();
       process.exit(0);
@@ -75,7 +87,7 @@ function printUsage() {
 
 Positional arguments:
   pass-type         Pass type from submit.passes.toml (default: day-guest-test-pass)
-  environment       Target environment: ci or prod (default: ci)
+  environment       Target environment name: ci, prod or a ci deployment name (default: ci)
 
 Options:
   --email EMAIL           Restrict pass to this email address
@@ -83,6 +95,9 @@ Options:
   --validity-period DUR   Override default validity (ISO 8601, e.g. P7D, P1M)
   --quantity N            Number of passes to generate (default: 1)
   --notes TEXT            Admin notes for this pass
+  --qr                    Write QR codes to qr-codes/ and the pass details to passes-output.json
+  --host HOST             Host in the pass URL (default: submit.diyaccounting.co.uk for prod, <environment>-submit.diyaccounting.co.uk otherwise)
+  --created-by TEXT       Creator recorded on the pass (default: local-script#<user>)
   --help, -h              Show this help
 
 Prerequisites:
@@ -114,16 +129,11 @@ async function main() {
     process.exit(1);
   }
 
-  // Validate environment
-  if (!["ci", "prod"].includes(args.environment)) {
-    console.error(`ERROR: Environment must be 'ci' or 'prod', got: ${args.environment}`);
-    process.exit(1);
-  }
-
   const tableName = `${args.environment}-env-passes`;
   const maxUses = args.maxUses ?? passType.defaultMaxUses ?? 1;
   const validityPeriod = args.validityPeriod ?? passType.defaultValidityPeriod ?? undefined;
-  const host = args.environment === "prod" ? "submit.diyaccounting.co.uk" : `${args.environment}.submit.diyaccounting.co.uk`;
+  const host = args.host ?? (args.environment === "prod" ? "submit.diyaccounting.co.uk" : `${args.environment}-submit.diyaccounting.co.uk`);
+  const qrCodesDir = "qr-codes";
 
   console.log(`=== Generating ${args.quantity} ${args.passType} pass(es) for ${args.environment} ===`);
   console.log(`  Bundle: ${passType.bundleId}`);
@@ -155,6 +165,8 @@ async function main() {
   // Generate passes
   const { createPass } = await import("../app/services/passService.js");
   const results = [];
+  const outputs = [];
+  if (args.qr) fs.mkdirSync(qrCodesDir, { recursive: true });
 
   for (let i = 0; i < args.quantity; i++) {
     const pass = await createPass({
@@ -163,12 +175,40 @@ async function main() {
       validityPeriod: validityPeriod || undefined,
       maxUses,
       restrictedToEmail: args.email || undefined,
-      createdBy: `local-script#${process.env.USER || "unknown"}`,
+      createdBy: args.createdBy ?? `local-script#${process.env.USER || "unknown"}`,
       notes: args.notes || undefined,
       actor: passType.test ? "test-user" : "operator",
       ...(passType.test ? { testPass: true } : {}),
     });
     results.push(pass);
+
+    if (args.qr) {
+      const passUrl = `https://${host}/pass.html?pass=${pass.code}`;
+      const qrBuffer = await generatePassQrCodeBuffer({ code: pass.code, url: passUrl });
+      const qrFileName = `qr-${pass.code}.png`;
+      fs.writeFileSync(path.join(qrCodesDir, qrFileName), qrBuffer);
+      const annotatedSvg = await generateAnnotatedPassQrCodeSvg({
+        code: pass.code,
+        url: passUrl,
+        bundleName: passType.bundleId,
+        maxUses,
+        email: args.email || undefined,
+        validUntil: pass.validUntil || undefined,
+      });
+      const svgFileName = `qr-${pass.code}-annotated.svg`;
+      fs.writeFileSync(path.join(qrCodesDir, svgFileName), annotatedSvg, "utf-8");
+      outputs.push({
+        ...buildPassDetails(pass, passUrl, args.email || undefined),
+        qrCodeFile: qrFileName,
+        qrCodeSvgFile: svgFileName,
+        qrCodeBase64: `data:image/png;base64,${qrBuffer.toString("base64")}`,
+      });
+    }
+  }
+
+  if (args.qr) {
+    fs.writeFileSync("passes-output.json", JSON.stringify(outputs, null, 2));
+    console.log(`QR codes saved to ${qrCodesDir}/ and pass details to passes-output.json`);
   }
 
   // Display results

@@ -102,7 +102,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config) Register and verify HMRC Developer Hub application config: use when the sandbox or production HMRC Developer Hub app's API subscriptions must be checked.
     - [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts) Drive HMRC's sandbox authorisation flow for test scripts: use when a test script needs a user-restricted HMRC sandbox authorisation code with no headless route.
     - [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox) File a full ITSA tax year in sandbox: use when a whole ITSA tax year must be filed end to end against HMRC's sandbox for one test user.
-    - [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow) Spike-test the ITSA sandbox OAuth and business-details flow: use when the sandbox registration, OAuth redirect and fraud-prevention headers need a standalone Business Details proof.
     - [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers) Provide ITSA behaviour-test step helpers: use when an ITSA behaviour-test spec needs a shared init, fill, submit or verify step.
     - [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout) Plan the HMRC MTD VAT and ITSA rollout: use when the path to HMRC production approval or the ITSA phase 2 build needs a plan.
     - [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email) Check readiness for the ITSA recognition email: use when the operator asks whether the Income Tax (MTD) recognition email can go to HMRC, or names a send day.
@@ -180,7 +179,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration) Assert the PayPal donate button configuration: use when the PayPal classic hosted donate button's live configuration must be checked, not a webhook.
     - [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue) Sync the Stripe product/price catalogue: use when a bundle's price changes, or a new on-subscription bundle needs a Stripe product.
     - [BILL-31](#bill-31-configure-stripe-account-policies) Configure Stripe account policies: use when Stripe account-level payout and dispute policies must be set for a customer-first stance.
-    - [BILL-32](#bill-32-provision-stripe-secrets) Provision Stripe secrets: use when Stripe API keys or webhook signing secrets must be created or updated in Secrets Manager.
   - [Tokens and catalogue](#tokens-and-catalogue-bill)
     - [BILL-33](#bill-33-enforce-and-consume-activity-tokens) Enforce and consume activity tokens: use when a token-costed activity must check balance before an HMRC call and charge only on success.
     - [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh) Prefetch and retry a Cognito token refresh: use when a 401 must trigger an automatic Cognito token refresh and retry, or when the exchange must start early.
@@ -222,7 +220,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy: use when a DynamoDB table needs point-in-time recovery turned on idempotently as part of a stack deploy.
     - [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page: use when a visitor lands on the bare diyaccounting.co.uk root domain and needs redirecting to the submit subdomain.
     - [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI: use when main and every open PR's head branch need polling until CI is green, with each red and each PR's readiness reported once.
-    - [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions: use when the live ci-/prod- DNS records under submit need listing, or a CloudFront distribution ID needs finding for an origin.
+    - [OPS-135](#ops-135-look-up-the-cloudfront-distribution-serving-an-origin) Look up the CloudFront distribution serving an origin: use when a CloudFront distribution ID needs finding for an origin domain.
     - [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs: use when a script or test needs a named stack's output values, such as a URL, table name or ARN.
     - [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup: use when every user in a Cognito user pool needs exporting with their attributes to CSV or JSON.
     - [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap: use when a deployed web root must not list pages for activities that the environment does not list, such as preview pages on prod.
@@ -362,10 +360,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-86](#ops-86-provide-structured-pii-redacting-logging) Provide structured PII-redacting logging: use when a Lambda or script needs structured JSON logging to CloudWatch with PII stripped before it is written.
     - [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers) Process SQS message batches in Lambda workers: use when an SQS-triggered Lambda must handle each record's failure independently instead of failing the whole batch.
   - [Backup and disaster recovery](#backup-and-disaster-recovery-ops)
-    - [OPS-105](#ops-105-copy-production-data-to-backup-for-migration) Copy production data to backup for migration: use when production DynamoDB tables need copying into the backup account ahead of an account migration.
-    - [OPS-106](#ops-106-replicate-secrets-across-aws-accounts) Replicate secrets across AWS accounts: use when Secrets Manager entries must be copied from one AWS account to another during a migration.
-    - [OPS-107](#ops-107-list-production-secrets-manager-entries) List production Secrets Manager entries: use when an inventory of an account's Secrets Manager entries and KMS keys is needed before copying secrets.
-    - [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records) Backfill TTL on existing DynamoDB records: use when DynamoDB items created before a table's TTL configuration need a time-to-live value set retroactively.
     - [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account) Disaster-recovery restore into a new prod account: use when a full disaster-recovery drill needs a new prod AWS account restored from the backup account's vault.
     - [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident) Force logout all users during a security incident: use when a security incident requires every user in an environment's Cognito pool signed out immediately.
   - [CDK infrastructure stacks](#cdk-infrastructure-stacks-ops)
@@ -615,7 +609,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SS-35](#ss-35-cdk-spreadsheetsstack) CDK: SpreadsheetsStack: use when tracing or changing the S3 + CloudFront infrastructure behind either site.
     - [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites) Deploy the spreadsheets and diya-gl sites: use when a push or manual dispatch must deploy SpreadsheetsStack, upload package zips, smoke-test the result, or publish diya-gl after a green prod deploy.
     - [SS-37](#ss-37-request-acm-certificates) Request ACM certificates: use when the ACM certificate for diya-gl.co.uk or the holding page's domain needs (re-)requesting in us-east-1.
-    - [SS-38](#ss-38-initialise-or-regenerate-repository-state) Initialise or regenerate repository state: use when a fresh checkout, or a full regeneration, needs packages, reports and tax data rebuilt from scratch.
     - [SS-39](#ss-39-guard-commit-author-identity-on-prs) Guard commit author identity on PRs: use when a pull request's commits must be checked against the allowed commit-identity list before merge.
     - [SS-40](#ss-40-run-codeql-scanning) Run CodeQL scanning: use when static-analysis scanning of the repository's code must run on a push, PR or schedule.
     - [SS-41](#ss-41-run-the-scheduled-dependency-and-tax-data-update-workflow) Run the scheduled dependency and tax-data update workflow: use when dependency or tax-data updates must be checked and applied on a schedule or push.
@@ -1062,7 +1055,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [ITSA year-end processing](#itsa-year-end-processing-hmrc): [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary) Trigger and adjust the Business Source Adjustable Summary · [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims) Manage ITSA losses and claims · [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments) Manage ITSA tax liability adjustments · [HMRC-19](#hmrc-19-calculate-itsa-tax-liability) Calculate ITSA tax liability · [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations) Retrieve ITSA crystallisation obligations · [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration) Submit the ITSA final declaration
 - [Receipts and HMRC authentication](#receipts-and-hmrc-authentication-hmrc): [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts) Store and retrieve HMRC submission receipts · [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token) Exchange an HMRC OAuth code for a token · [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client) Verify HMRC agent authorisation for a client
 - [HMRC API plumbing](#hmrc-api-plumbing-hmrc): [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers) Build HMRC fraud-prevention headers · [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance) Monitor HMRC fraud-prevention header compliance · [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts) Validate HMRC identifiers, dates and amounts · [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations) Format and match HMRC obligations · [HMRC-29](#hmrc-29-call-the-hmrc-api) Call the HMRC API · [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state) Persist async HMRC API request state
-- [HMRC infrastructure and test tooling](#hmrc-infrastructure-and-test-tooling-hmrc): [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks) Wire HMRC Lambda handlers into CDK stacks · [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config) Register and verify HMRC Developer Hub application config · [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts) Drive HMRC's sandbox authorisation flow for test scripts · [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox) File a full ITSA tax year in sandbox · [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow) Spike-test the ITSA sandbox OAuth and business-details flow · [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers) Provide ITSA behaviour-test step helpers · [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout) Plan the HMRC MTD VAT and ITSA rollout · [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email) Check readiness for the ITSA recognition email · [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it) Describe fraud prevention headers as a shape and build a synthetic request from it · [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator) Queue a new fraud prevention header shape for HMRC's validator · [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values) Check a header shape with HMRC's validator using synthetic values
+- [HMRC infrastructure and test tooling](#hmrc-infrastructure-and-test-tooling-hmrc): [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks) Wire HMRC Lambda handlers into CDK stacks · [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config) Register and verify HMRC Developer Hub application config · [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts) Drive HMRC's sandbox authorisation flow for test scripts · [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox) File a full ITSA tax year in sandbox · [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers) Provide ITSA behaviour-test step helpers · [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout) Plan the HMRC MTD VAT and ITSA rollout · [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email) Check readiness for the ITSA recognition email · [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it) Describe fraud prevention headers as a shape and build a synthetic request from it · [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator) Queue a new fraud prevention header shape for HMRC's validator · [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values) Check a header shape with HMRC's validator using synthetic values
 <!-- /generated:area HMRC -->
 
 ### VAT filing (HMRC)
@@ -1454,7 +1447,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config) Register and verify HMRC Developer Hub application config
 - [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts) Drive HMRC's sandbox authorisation flow for test scripts
 - [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox) File a full ITSA tax year in sandbox
-- [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow) Spike-test the ITSA sandbox OAuth and business-details flow
 - [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers) Provide ITSA behaviour-test step helpers
 - [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout) Plan the HMRC MTD VAT and ITSA rollout
 - [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email) Check readiness for the ITSA recognition email
@@ -1502,16 +1494,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/itsa-sandbox-year.js, app/unit-tests/scripts/itsa-sandbox-year.test.js
 - **Keywords:** itsa sandbox, full tax year, bsas, final declaration, checkpoint, test support api, dated quarters, cumulative model
 - **Related:** HMRC-33, HMRC-35, HMRC-16, HMRC-21
-
-#### HMRC-35 Spike-test the ITSA sandbox OAuth and business-details flow
-
-- **Use when:** the sandbox registration, OAuth redirect and fraud-prevention headers need a standalone Business Details proof.
-- **Does:** itsa-sandbox-spike.js drives the authorisation code flow, then calls the sandbox Business Details endpoint with buildFraudHeaders.js's headers. It is a standalone harness, not part of any test suite.
-- **Run:** `scripts/proxy-secrets.sh node scripts/itsa-sandbox-spike.js`
-- **Entry:** `scripts/itsa-sandbox-spike.js:main`
-- **Files:** scripts/itsa-sandbox-spike.js
-- **Keywords:** itsa sandbox spike, business details, oauth redirect, fraud prevention headers, read:self-assessment, standalone harness
-- **Related:** HMRC-33, HMRC-34, HMRC-09
 
 #### HMRC-36 Provide ITSA behaviour-test step helpers
 
@@ -1847,7 +1829,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Passes](#passes-bill): [BILL-06](#bill-06-generate-a-token-charged-pass) Generate a token-charged pass · [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass · [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity · [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes · [BILL-56](#bill-56-delete-generated-passes) Delete generated passes · [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review · [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state · [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state · [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review · [BILL-10](#bill-10-redeem-a-pass) Redeem a pass · [BILL-58](#bill-58-pass-link-landing-page) Pass link landing page · [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
 - [Practice clients and HMRC authorisation](#practice-clients-and-hmrc-authorisation-bill): [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access) Invite a client to authorise agent access · [BILL-13](#bill-13-check-a-clients-authorisation-status) Check a client's authorisation status · [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite) Cancel a pending client authorisation invite · [BILL-15](#bill-15-move-a-book-to-a-client) Move a book to a client · [BILL-16](#bill-16-manage-practice-clients) Manage practice clients
 - [diya-gl ledger books](#diya-gl-ledger-books-bill): [BILL-17](#bill-17-upload-a-diya-gl-book) Upload a diya-gl book · [BILL-18](#bill-18-delete-a-diya-gl-book) Delete a diya-gl book · [BILL-19](#bill-19-list-a-users-diya-gl-books) List a user's diya-gl books · [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book) Fetch a versioned diya-gl book · [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle) Expire lapsed diya-gl books by S3 lifecycle · [BILL-22](#bill-22-check-diya-gl-retention-entitlement) Check diya-gl retention entitlement · [BILL-23](#bill-23-store-diya-gl-books-in-s3) Store diya-gl books in S3
-- [Stripe billing](#stripe-billing-bill): [BILL-24](#bill-24-create-a-stripe-checkout-session) Create a Stripe checkout session · [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status) Retrieve a Stripe checkout session's status · [BILL-26](#bill-26-open-the-stripe-customer-billing-portal) Open the Stripe customer billing portal · [BILL-27](#bill-27-recover-an-abandoned-checkout) Recover an abandoned checkout · [BILL-28](#bill-28-process-stripe-webhook-events) Process Stripe webhook events · [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration) Assert the PayPal donate button configuration · [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue) Sync the Stripe product/price catalogue · [BILL-31](#bill-31-configure-stripe-account-policies) Configure Stripe account policies · [BILL-32](#bill-32-provision-stripe-secrets) Provision Stripe secrets
+- [Stripe billing](#stripe-billing-bill): [BILL-24](#bill-24-create-a-stripe-checkout-session) Create a Stripe checkout session · [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status) Retrieve a Stripe checkout session's status · [BILL-26](#bill-26-open-the-stripe-customer-billing-portal) Open the Stripe customer billing portal · [BILL-27](#bill-27-recover-an-abandoned-checkout) Recover an abandoned checkout · [BILL-28](#bill-28-process-stripe-webhook-events) Process Stripe webhook events · [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration) Assert the PayPal donate button configuration · [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue) Sync the Stripe product/price catalogue · [BILL-31](#bill-31-configure-stripe-account-policies) Configure Stripe account policies
 - [Tokens and catalogue](#tokens-and-catalogue-bill): [BILL-33](#bill-33-enforce-and-consume-activity-tokens) Enforce and consume activity tokens · [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh) Prefetch and retry a Cognito token refresh · [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue) Load and query the product/activity catalogue
 - [CDK infrastructure](#cdk-infrastructure-bill): [BILL-36](#bill-36-cdk-account-stack) CDK: account stack · [BILL-37](#bill-37-cdk-billing-app-stack) CDK: billing app stack · [BILL-38](#bill-38-cdk-billing-webhook-stack) CDK: billing webhook stack · [BILL-39](#bill-39-cdk-diya-gl-stack) CDK: diya-gl stack
 - [Migrations and shared utilities](#migrations-and-shared-utilities-bill): [BILL-40](#bill-40-migrate-the-hashed-sub-salt) Migrate the hashed-sub salt · [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier) Backfill the Stripe test-mode qualifier · [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry) Parse ISO 8601 durations for expiry · [BILL-43](#bill-43-build-the-frontend-test-bundle) Build the frontend test bundle · [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project · [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines · [BILL-47](#bill-47-release-held-commission-lines-daily) Release held commission lines daily · [BILL-57](#bill-57-show-a-referrer-the-callers-own-commission-totals) Show a referrer the caller's own commission totals · [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit) Pay referral commission as Stripe balance credit · [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect) Start an affiliate application through Stripe Connect · [BILL-53](#bill-53-read-the-callers-affiliate-application) Read the caller's affiliate application · [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect) Pay referral commission in cash through Stripe Connect · [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events) Run the commission journeys on ci with Stripe test-mode events
@@ -2043,10 +2025,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### BILL-11 Generate admin passes from CLI or workflow
 
 - **Use when:** an operator needs one or more passes with QR codes, or a scripted equivalent with no QR output.
-- **Does:** The generate-pass.yml workflow reads a pass type's defaults from submit.passes.toml and runs scripts/generate-pass-with-qr.js. That script creates passes with QR codes and can provision an HMRC sandbox or Cognito test user. scripts/generate-pass.js is the local CLI equivalent with no QR output.
-- **Run:** `gh workflow run generate-pass.yml -f pass-type=<type> -f environment=<ci|prod>`; `node scripts/generate-pass.js <pass-type> <environment> [--email E] [--max-uses N] [--validity-period P7D] [--quantity N] [--notes T]`; `node scripts/generate-pass-with-qr.js`
-- **Entry:** `.github/workflows/generate-pass.yml`; `scripts/generate-pass.js`; `scripts/generate-pass-with-qr.js`
-- **Files:** .github/workflows/generate-pass.yml, scripts/generate-pass.js, scripts/generate-pass-with-qr.js
+- **Does:** The generate-pass.yml workflow reads a pass type's defaults from submit.passes.toml and runs scripts/generate-pass.js with --qr. That script creates passes with QR codes. The workflow can also provision an HMRC sandbox or Cognito test user. Run without --qr, scripts/generate-pass.js is the local CLI.
+- **Run:** `gh workflow run generate-pass.yml -f pass-type=<type> -f environment=<ci|prod>`; `node scripts/generate-pass.js <pass-type> <environment> [--email E] [--max-uses N] [--validity-period P7D] [--quantity N] [--notes T] [--qr]`
+- **Entry:** `.github/workflows/generate-pass.yml`; `scripts/generate-pass.js`
+- **Files:** .github/workflows/generate-pass.yml, scripts/generate-pass.js
 - **Keywords:** pass, generate pass, workflow_dispatch, qr code, cli, operator, hmrc sandbox user, cognito test user
 - **Related:** BILL-06, BILL-07
 
@@ -2203,7 +2185,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration) Assert the PayPal donate button configuration
 - [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue) Sync the Stripe product/price catalogue
 - [BILL-31](#bill-31-configure-stripe-account-policies) Configure Stripe account policies
-- [BILL-32](#bill-32-provision-stripe-secrets) Provision Stripe secrets
 <!-- /generated:group stripe-billing-bill -->
 
 #### BILL-24 Create a Stripe checkout session
@@ -2284,16 +2265,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `scripts/stripe-configure-policies.js`
 - **Files:** scripts/stripe-configure-policies.js
 - **Keywords:** stripe, account policies, payout schedule, dispute auto-accept, no-quibble
-- **Related:** BILL-28, BILL-30
-
-#### BILL-32 Provision Stripe secrets
-
-- **Use when:** Stripe API keys or webhook signing secrets must be created or updated in Secrets Manager.
-- **Does:** The stripe-setup-secrets.sh script creates or updates Stripe API keys and webhook signing secrets in AWS Secrets Manager. It covers both the ci and prod environments.
-- **Run:** `./scripts/stripe-setup-secrets.sh <env> <secret_key> <webhook_secret> <price_id>`
-- **Entry:** `scripts/stripe-setup-secrets.sh`
-- **Files:** scripts/stripe-setup-secrets.sh
-- **Keywords:** stripe, secrets manager, api key, webhook signing secret, provision secrets
 - **Related:** BILL-28, BILL-30
 
 ### Tokens and catalogue (BILL)
@@ -2533,7 +2504,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## Operations and CI (OPS)
 
 <!-- generated:area OPS -->
-- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack · [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager) Write an environment's secrets into AWS Secrets Manager · [OPS-182](#ops-182-provision-the-customer-email-sender) Provision the customer email sender · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap · [OPS-213](#ops-213-write-the-videos-the-bundles-and-the-home-activity-list-into-the-deployed-pages-for-the-environment) Write the videos, the bundles and the home activity list into the deployed pages for the environment · [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job · [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role · [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment · [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id) Stop a stack deploy when one resource stalls with no physical id · [OPS-149](#ops-149-finish-a-deployment) Finish a deployment · [OPS-150](#ops-150-build-a-deployment) Build a deployment
+- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack · [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager) Write an environment's secrets into AWS Secrets Manager · [OPS-182](#ops-182-provision-the-customer-email-sender) Provision the customer email sender · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-the-cloudfront-distribution-serving-an-origin) Look up the CloudFront distribution serving an origin · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap · [OPS-213](#ops-213-write-the-videos-the-bundles-and-the-home-activity-list-into-the-deployed-pages-for-the-environment) Write the videos, the bundles and the home activity list into the deployed pages for the environment · [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job · [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role · [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment · [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id) Stop a stack deploy when one resource stalls with no physical id · [OPS-149](#ops-149-finish-a-deployment) Finish a deployment · [OPS-150](#ops-150-build-a-deployment) Build a deployment
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-triage) Run alarm triage · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci) Run the unit, system and browser test tiers in CI · [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci) Synth the CDK app for the ci and prod environments in CI · [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci) Run the simulator, proxy and exploratory crawl behaviour tests in CI · [OPS-162](#ops-162-bundle-submitcss-at-publish-time) Bundle submit.css at publish time · [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily) Submit the declared sitemaps to Search Console daily · [OPS-197](#ops-197-check-the-runners-browser-install-in-one-job) Check the runner's browser install in one job · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events) Open private GitHub issues from trusted AWS and Companies House events · [OPS-186](#ops-186-verify-a-trusted-event-issue-against-its-source-record) Verify a trusted-event issue against its source record · [OPS-187](#ops-187-check-a-trusted-event-issue-against-its-source-and-label-the-result) Check a trusted-event issue against its source and label the result · [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod) Prove the trusted event path on ci and prod · [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session) Render the operator dashboard without a browser session · [OPS-192](#ops-192-judge-the-operator-dashboard-each-night-and-write-the-report) Judge the operator dashboard each night and write the report · [OPS-193](#ops-193-review-the-operator-dashboard-each-night) Review the operator dashboard each night · [OPS-194](#ops-194-run-a-read-only-nova-agent) Run a read-only Nova agent · [OPS-195](#ops-195-replay-the-alarm-triage-prompt-over-invented-alarms) Replay the alarm triage prompt over invented alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc) Renew the local TLS certificate by GitHub OIDC · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
@@ -2542,7 +2513,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Agent workflows](#agent-workflows-ops): [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas · [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup · [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links
 - [Environment and accounts](#environment-and-accounts-ops): [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration · [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex) Design CI branch deploys off the apex · [OPS-62](#ops-62-report-accessibility-penetration-testing) Report accessibility penetration testing · [OPS-64](#ops-64-runbook-information-security-operations) Runbook information-security operations · [OPS-65](#ops-65-document-security-policy-and-disclosure) Document security policy and disclosure · [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user · [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure · [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning · [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials · [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK
 - [Shared runtime libraries](#shared-runtime-libraries-ops): [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs) Mask and redact sensitive data from logs · [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe) Record an outbound call to HMRC, Companies House or Stripe · [OPS-167](#ops-167-read-a-secrets-manager-secret-with-a-five-minute-cache-and-a-forced-refresh) Read a Secrets Manager secret with a five minute cache and a forced refresh · [OPS-82](#ops-82-provide-a-shared-dynamodb-client) Provide a shared DynamoDB client · [OPS-83](#ops-83-emit-cloudwatch-emf-metrics) Emit CloudWatch EMF metrics · [OPS-84](#ops-84-validate-required-environment-variables-at-startup) Validate required environment variables at startup · [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens) Obtain and use GitHub App API tokens · [OPS-86](#ops-86-provide-structured-pii-redacting-logging) Provide structured PII-redacting logging · [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers) Process SQS message batches in Lambda workers
-- [Backup and disaster recovery](#backup-and-disaster-recovery-ops): [OPS-105](#ops-105-copy-production-data-to-backup-for-migration) Copy production data to backup for migration · [OPS-106](#ops-106-replicate-secrets-across-aws-accounts) Replicate secrets across AWS accounts · [OPS-107](#ops-107-list-production-secrets-manager-entries) List production Secrets Manager entries · [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records) Backfill TTL on existing DynamoDB records · [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account) Disaster-recovery restore into a new prod account · [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident) Force logout all users during a security incident
+- [Backup and disaster recovery](#backup-and-disaster-recovery-ops): [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account) Disaster-recovery restore into a new prod account · [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident) Force logout all users during a security incident
 - [CDK infrastructure stacks](#cdk-infrastructure-stacks-ops): [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans) Provision cross-account backup vaults and plans · [OPS-112](#ops-112-provision-the-api-gateway-stack) Provision the API Gateway stack · [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack) Provision the DynamoDB and S3 data stack · [OPS-114](#ops-114-provision-ecr-image-repositories) Provision ECR image repositories · [OPS-115](#ops-115-provision-the-edgecloudfront-stack) Provision the Edge/CloudFront stack · [OPS-116](#ops-116-provision-the-holding-page-stack) Provision the holding-page stack · [OPS-117](#ops-117-provision-the-observability-stack) Provision the Observability stack · [OPS-118](#ops-118-provision-the-observability-stack-in-us-east-1) Provision the Observability stack in us-east-1 · [OPS-119](#ops-119-provision-the-ops-stack) Provision the Ops stack · [OPS-120](#ops-120-provision-the-publish-stack) Provision the Publish stack · [OPS-121](#ops-121-provision-the-security-baseline-stack) Provision the Security Baseline stack · [OPS-122](#ops-122-provision-the-security-detection-stack) Provision the Security Detection stack
 - [CDK shared constructs and naming](#cdk-shared-constructs-and-naming-ops): [OPS-123](#ops-123-wire-cdk-application-entrypoints-per-account) Wire CDK application entrypoints per account · [OPS-124](#ops-124-define-shared-lambda-cdk-constructs) Define shared Lambda CDK constructs · [OPS-125](#ops-125-name-and-tag-cdk-resources-consistently) Name and tag CDK resources consistently · [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code) Provide config-composition helpers for CDK code · [OPS-127](#ops-127-upsert-route53-alias-and-plain-records-via-custom-resource) Upsert Route53 alias and plain records via custom resource · [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering) Generate S3 lifecycle rules for storage tiering · [OPS-129](#ops-129-configure-lambdacdk-application-logging) Configure Lambda/CDK application logging · [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle) Track runtime and dependency lifecycle
 <!-- /generated:area OPS -->
@@ -2566,7 +2537,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy
 - [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page
 - [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI
-- [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions
+- [OPS-135](#ops-135-look-up-the-cloudfront-distribution-serving-an-origin) Look up the CloudFront distribution serving an origin
 - [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs
 - [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup
 - [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap
@@ -2738,14 +2709,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/watch-ci.sh
 - **Keywords:** watch ci, github actions, poll workflow, pr readiness, ci monitoring
 
-#### OPS-135 Look up domains and CloudFront distributions
+#### OPS-135 Look up the CloudFront distribution serving an origin
 
-- **Use when:** the live ci-/prod- DNS records under submit need listing, or a CloudFront distribution ID needs finding for an origin.
-- **Does:** list-domains.sh lists every ci- and prod- DNS record under the submit subdomain from Route53. lookup-cloudfront-distribution.sh prints the live CloudFront distribution ID serving an origin domain, preferring the EdgeStack stack output and falling back to the OriginFor tag, confirming every candidate against get-distribution since the tag index can lag a deletion.
-- **Run:** `./scripts/list-domains.sh`; `./scripts/lookup-cloudfront-distribution.sh <origin-domain> [edge-stack-name]`
-- **Entry:** `scripts/list-domains.sh`; `scripts/lookup-cloudfront-distribution.sh`
-- **Files:** scripts/list-domains.sh, scripts/lookup-cloudfront-distribution.sh
-- **Keywords:** list domains, route53 records, cloudfront distribution id, originfor tag, deployment lookup
+- **Use when:** a CloudFront distribution ID needs finding for an origin domain.
+- **Does:** lookup-cloudfront-distribution.sh prints the live CloudFront distribution ID serving an origin domain, preferring the EdgeStack stack output and falling back to the OriginFor tag, confirming every candidate against get-distribution since the tag index can lag a deletion.
+- **Run:** `./scripts/lookup-cloudfront-distribution.sh <origin-domain> [edge-stack-name]`
+- **Entry:** `scripts/lookup-cloudfront-distribution.sh`
+- **Files:** scripts/lookup-cloudfront-distribution.sh
+- **Keywords:** cloudfront distribution id, originfor tag, deployment lookup
 - **Related:** OPS-115
 
 #### OPS-136 Retrieve CloudFormation stack outputs
@@ -3912,7 +3883,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** collabora-sheet-host.js fetches a package zip from the spreadsheets site (or takes `--file`), reads the .xlsx out with zlib, starts the pinned collabora/code container (or uses `--cool-url`, the GitHub Actions service container) and serves a WOPI host whose start page opens a fresh copy of the workbook in the editor on every load. collabora.js drives it: GoToCell for cursor moves, the cursor rectangle as the cell's on-screen box, and typing and keys over Collabora's socket messages, because page.keyboard drops characters there. The scene actions `sheetPrepare` (hard recalculation, hides the welcome panel), `sheetZoom`, `sheetCell`, `sheetPoint` and `sheetType` use it. video-capture.yml starts the Collabora service container only for `accounting-spreadsheet-profit`.
 - **Run:** `npm run video:accounting-spreadsheet-profit -- --no-narration`; `node scripts/collabora-sheet-host.js --package "<package name>"`
 - **Entry:** `scripts/collabora-sheet-host.js`; `scripts/lib/video/collabora.js`
-- **Files:** scripts/collabora-sheet-host.js, scripts/lib/video/collabora.js, scripts/lib/video/actions.js, scripts/collabora-sheet-spike.js, videos/accounting-spreadsheet-profit.json, app/unit-tests/video/collaboraSheet.test.js, .github/workflows/video-capture.yml, _developers/DESIGN_SPREADSHEET_VIDEO.md
+- **Files:** scripts/collabora-sheet-host.js, scripts/lib/video/collabora.js, scripts/lib/video/actions.js, videos/accounting-spreadsheet-profit.json, app/unit-tests/video/collaboraSheet.test.js, .github/workflows/video-capture.yml, _developers/DESIGN_SPREADSHEET_VIDEO.md
 - **Keywords:** collabora, libreoffice, xlsx, workbook, spreadsheet video, wopi, sole trader, excel
 - **Related:** OPS-93, OPS-139
 
@@ -4201,52 +4172,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ### Backup and disaster recovery (OPS)
 
 <!-- generated:group backup-and-disaster-recovery-ops -->
-- [OPS-105](#ops-105-copy-production-data-to-backup-for-migration) Copy production data to backup for migration
-- [OPS-106](#ops-106-replicate-secrets-across-aws-accounts) Replicate secrets across AWS accounts
-- [OPS-107](#ops-107-list-production-secrets-manager-entries) List production Secrets Manager entries
-- [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records) Backfill TTL on existing DynamoDB records
 - [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account) Disaster-recovery restore into a new prod account
 - [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident) Force logout all users during a security incident
 <!-- /generated:group backup-and-disaster-recovery-ops -->
-
-#### OPS-105 Copy production data to backup for migration
-
-- **Use when:** production DynamoDB tables need copying into the backup account ahead of an account migration.
-- **Does:** backup-prod-for-migration.sh creates on-demand DynamoDB backups and exports salt metadata for account migration, as part of the account-separation plan's preparation step.
-- **Run:** `./scripts/aws-accounts/backup-prod-for-migration.sh --profile <profile> [--env <environment>]`
-- **Entry:** `scripts/aws-accounts/backup-prod-for-migration.sh`
-- **Files:** scripts/aws-accounts/backup-prod-for-migration.sh
-- **Keywords:** backup migration, dynamodb backup, salt metadata, account separation, on-demand backup
-- **Related:** OPS-106, OPS-108
-
-#### OPS-106 Replicate secrets across AWS accounts
-
-- **Use when:** Secrets Manager entries must be copied from one AWS account to another during a migration.
-- **Does:** copy-secrets-to-account.sh copies Secrets Manager secrets from one AWS account to another. It runs as a dry run by default and copies only when given --execute.
-- **Run:** `./scripts/aws-accounts/copy-secrets-to-account.sh --source-profile <profile> --target-profile <profile> [--env <env>] [--execute]`
-- **Entry:** `scripts/aws-accounts/copy-secrets-to-account.sh`
-- **Files:** scripts/aws-accounts/copy-secrets-to-account.sh
-- **Keywords:** copy secrets, secrets manager, account migration, dry run, cross-account secrets
-- **Related:** OPS-107
-
-#### OPS-107 List production Secrets Manager entries
-
-- **Use when:** an inventory of an account's Secrets Manager entries and KMS keys is needed before copying secrets.
-- **Does:** list-prod-secrets.sh lists all Secrets Manager secrets and KMS keys and aliases in the current account. It never prints secret values; its output feeds copy-secrets-to-account.sh.
-- **Run:** `./scripts/aws-accounts/list-prod-secrets.sh --profile <profile> [--env <environment>]`
-- **Entry:** `scripts/aws-accounts/list-prod-secrets.sh`
-- **Files:** scripts/aws-accounts/list-prod-secrets.sh
-- **Keywords:** list secrets, secrets manager inventory, kms keys, account migration
-- **Related:** OPS-106
-
-#### OPS-108 Backfill TTL on existing DynamoDB records
-
-- **Use when:** DynamoDB items created before a table's TTL configuration need a time-to-live value set retroactively.
-- **Does:** set-ttl-on-existing-records.sh sets the time-to-live attribute on DynamoDB items, such as HMRC receipts or old logs, that predate the table's TTL configuration, so they age out automatically.
-- **Run:** `./scripts/aws-accounts/set-ttl-on-existing-records.sh --profile <profile> --table <table> --ttl-days <n> [--dry-run]`
-- **Entry:** `scripts/aws-accounts/set-ttl-on-existing-records.sh`
-- **Files:** scripts/aws-accounts/set-ttl-on-existing-records.sh
-- **Keywords:** ttl backfill, dynamodb ttl, hmrc receipts, old logs, expire records
 
 #### OPS-109 Disaster-recovery restore into a new prod account
 
@@ -6371,7 +6299,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Package pipeline: generate, archive and publish](#package-pipeline-generate-archive-and-publish-ss): [SS-08](#ss-08-generate-spreadsheet-packages-from-product-modules) Generate spreadsheet packages from product modules · [SS-09](#ss-09-build-package-zips-and-the-catalogue) Build package zips and the catalogue · [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books) Extract reconciliation scenarios from master books · [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures) Reconcile generated packages against expected figures · [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm) Judge reconciliation reports with an LLM · [SS-13](#ss-13-cross-check-figures-across-product-packages) Cross-check figures across product packages · [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability) Verify export and report roundtrip and stability · [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages) Extract diya-gl data and financial reports from populated packages · [SS-16](#ss-16-write-workbooks-from-diya-gl-data) Write workbooks from diya-gl data · [SS-17](#ss-17-build-reconciliation-pages-and-record-releases) Build reconciliation pages and record releases · [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive) Archive a cut of packages to diy-accounting-archive · [SS-19](#ss-19-update-annual-hmrc-tax-rate-data) Update annual HMRC tax rate data · [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap) Publish diya-gl to npm, GHCR and the Homebrew tap
 - [Web properties](#web-properties-ss): [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads) Serve the spreadsheets product catalogue and downloads · [SS-22](#ss-22-take-stripe-and-paypal-donations) Take Stripe and PayPal donations · [SS-23](#ss-23-serve-knowledge-base-article-and-community-content) Serve knowledge base, article and community content · [SS-24](#ss-24-compile-the-redirect-engine) Compile the redirect engine · [SS-25](#ss-25-generate-sitemaps) Generate sitemaps · [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell) Serve the DIYA-GL product pages and shell · [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store) Save and load books locally and via Submit's cloud store · [SS-28](#ss-28-store-books-in-google-drive) Store books in Google Drive · [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa) Serve DIYA-GL as an offline PWA · [SS-30](#ss-30-serve-the-holding-page-and-failover) Serve the holding page and failover
 - [Analytics and tracking](#analytics-and-tracking-ss): [SS-31](#ss-31-load-ga4-analytics-with-consent-gating) Load GA4 analytics with consent gating · [SS-32](#ss-32-send-ga4-ecommerce-and-download-events) Send GA4 ecommerce and download events · [SS-33](#ss-33-send-diya-gl-ga4-events) Send DIYA-GL GA4 events · [SS-34](#ss-34-configure-cloudwatch-rum) Configure CloudWatch RUM
-- [Workflows and deploys](#workflows-and-deploys-ss): [SS-35](#ss-35-cdk-spreadsheetsstack) CDK: SpreadsheetsStack · [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites) Deploy the spreadsheets and diya-gl sites · [SS-37](#ss-37-request-acm-certificates) Request ACM certificates · [SS-38](#ss-38-initialise-or-regenerate-repository-state) Initialise or regenerate repository state · [SS-39](#ss-39-guard-commit-author-identity-on-prs) Guard commit author identity on PRs · [SS-40](#ss-40-run-codeql-scanning) Run CodeQL scanning · [SS-41](#ss-41-run-the-scheduled-dependency-and-tax-data-update-workflow) Run the scheduled dependency and tax-data update workflow
+- [Workflows and deploys](#workflows-and-deploys-ss): [SS-35](#ss-35-cdk-spreadsheetsstack) CDK: SpreadsheetsStack · [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites) Deploy the spreadsheets and diya-gl sites · [SS-37](#ss-37-request-acm-certificates) Request ACM certificates · [SS-39](#ss-39-guard-commit-author-identity-on-prs) Guard commit author identity on PRs · [SS-40](#ss-40-run-codeql-scanning) Run CodeQL scanning · [SS-41](#ss-41-run-the-scheduled-dependency-and-tax-data-update-workflow) Run the scheduled dependency and tax-data update workflow
 - [Tests and CI gates](#tests-and-ci-gates-ss): [SS-42](#ss-42-route-tests-by-blast-radius) Route tests by blast radius · [SS-43](#ss-43-run-the-product-generation-and-test-workflows) Run the product generation and test workflows · [SS-44](#ss-44-run-spreadsheets-behaviour-tests) Run spreadsheets behaviour tests · [SS-45](#ss-45-run-compliance-checks) Run compliance checks
 - [Skills](#skills-ss): [SS-46](#ss-46-render-the-spreadsheets-work-board) Render the spreadsheets work board · [SS-47](#ss-47-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [SS-48](#ss-48-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [SS-49](#ss-49-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [SS-50](#ss-50-watch-github-ci-to-green) Watch GitHub CI to green · [SS-51](#ss-51-merge-every-pr-that-is-ready) Merge every PR that is ready · [SS-52](#ss-52-preview-what-auto-merge-would-do) Preview what auto-merge would do · [SS-53](#ss-53-clean-up-stale-branches-and-worktrees) Clean up stale branches and worktrees · [SS-54](#ss-54-cool-down-an-overloaded-batch) Cool down an overloaded batch · [SS-55](#ss-55-resume-normal-work-from-cool-down) Resume normal work from cool-down · [SS-56](#ss-56-write-the-session-report) Write the session report · [SS-57](#ss-57-write-plain-human-prose) Write plain, human prose · [SS-58](#ss-58-excel-xml-manipulation-reference) Excel XML manipulation reference
 <!-- /generated:area SS -->
@@ -6775,7 +6703,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SS-35](#ss-35-cdk-spreadsheetsstack) CDK: SpreadsheetsStack
 - [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites) Deploy the spreadsheets and diya-gl sites
 - [SS-37](#ss-37-request-acm-certificates) Request ACM certificates
-- [SS-38](#ss-38-initialise-or-regenerate-repository-state) Initialise or regenerate repository state
 - [SS-39](#ss-39-guard-commit-author-identity-on-prs) Guard commit author identity on PRs
 - [SS-40](#ss-40-run-codeql-scanning) Run CodeQL scanning
 - [SS-41](#ss-41-run-the-scheduled-dependency-and-tax-data-update-workflow) Run the scheduled dependency and tax-data update workflow
@@ -6810,16 +6737,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** ../spreadsheets.diyaccounting.co.uk/.github/workflows/request-diya-gl-cert.yml, ../spreadsheets.diyaccounting.co.uk/.github/workflows/request-holding-cert.yml
 - **Keywords:** acm certificate, us-east-1, dns validation, diya-gl-cert, holding-cert
 - **Related:** SS-35
-
-#### SS-38 Initialise or regenerate repository state
-
-- **Use when:** a fresh checkout, or a full regeneration, needs packages, reports and tax data rebuilt from scratch.
-- **Does:** init.yml dispatches with options to delete packages/reports before regenerating and to delete and re-source app/data/*.toml tax data from HMRC, then runs the generation pipeline.
-- **Run:** `gh workflow run init.yml`
-- **Entry:** `../spreadsheets.diyaccounting.co.uk/.github/workflows/init.yml`
-- **Files:** ../spreadsheets.diyaccounting.co.uk/.github/workflows/init.yml
-- **Keywords:** init workflow, regenerate, delete packages, delete tax data, fresh checkout
-- **Related:** SS-08, SS-19
 
 #### SS-39 Guard commit author identity on PRs
 
@@ -7074,9 +6991,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - accessibility test: [OPS-62](#ops-62-report-accessibility-penetration-testing)
 - account link: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect)
 - account linking: [SITE-01](#site-01-sign-customers-in-via-cognito)
-- account migration: [OPS-106](#ops-106-replicate-secrets-across-aws-accounts), [OPS-107](#ops-107-list-production-secrets-manager-entries)
 - account policies: [BILL-31](#bill-31-configure-stripe-account-policies)
-- account separation: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
 - account settings: [SITE-24](#site-24-change-an-account-setting)
 - account stack: [BILL-36](#bill-36-cdk-account-stack)
 - accounting year-end: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
@@ -7182,7 +7097,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - api gateway custom domain: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain), [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex)
 - api gateway event shape: [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes)
 - api gateway routes: [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions)
-- api key: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [BILL-32](#bill-32-provision-stripe-secrets)
+- api key: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - api lambda: [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
 - api mapping: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
 - api request log: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
@@ -7259,7 +7174,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - backlog work: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
 - backup account: [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans)
 - backup health: [OPS-48](#ops-48-verify-backup-health-daily)
-- backup migration: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
 - backup plan: [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans)
 - backup salt: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
 - backup vault: [OPS-48](#ops-48-verify-backup-health-daily), [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account), [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans)
@@ -7395,7 +7309,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - burst bucket: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - burst counter: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance), [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
 - business activity: [DATA-27](#data-27-sql-views-activity-and-traffic)
-- business details: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - business event: [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - business metrics: [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch)
 - business picker: [HMRC-09](#hmrc-09-retrieve-itsa-business-details)
@@ -7537,7 +7450,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cloudfront bypass: [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront)
 - cloudfront cutover: [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex)
 - cloudfront distribution: [OPS-116](#ops-116-provision-the-holding-page-stack)
-- cloudfront distribution id: [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions)
+- cloudfront distribution id: [OPS-135](#ops-135-look-up-the-cloudfront-distribution-serving-an-origin)
 - cloudfront edge: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
 - cloudfront event: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
 - cloudfront function: [SS-24](#ss-24-compile-the-redirect-engine)
@@ -7659,7 +7572,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - copilot instructions: [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup)
 - copilot review: [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup)
 - copilot workspace setup: [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup)
-- copy secrets: [OPS-106](#ops-106-replicate-secrets-across-aws-accounts)
 - copyright header: [DEV-20](#dev-20-check-spdx-licence-headers)
 - corporation tax: [SITE-22](#site-22-source-and-publish-sourced-tax-facts), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets), [SS-04](#ss-04-apply-book-edits-and-derivations)
 - corpus cli: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
@@ -7709,7 +7621,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cross-account hold: [OPS-64](#ops-64-runbook-information-security-operations)
 - cross-account read role: [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard)
 - cross-account restore: [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account)
-- cross-account secrets: [OPS-106](#ops-106-replicate-secrets-across-aws-accounts)
 - cross-client move: [BILL-23](#bill-23-store-diya-gl-books-in-s3)
 - cross-domain linker: [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
 - cross-domain session: [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
@@ -7798,10 +7709,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - delete book: [BILL-18](#bill-18-delete-a-diya-gl-book)
 - delete bundle: [BILL-03](#bill-03-delete-a-bundle)
 - delete by key: [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables)
-- delete packages: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - delete pass: [BILL-56](#bill-56-delete-generated-passes)
 - delete stacks: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
-- delete tax data: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - delete user data: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - deletebook: [BILL-18](#bill-18-delete-a-diya-gl-book)
 - delivery cycle: [DEV-30](#dev-30-run-the-delivery-cycle-unattended), [SS-49](#ss-49-run-the-delivery-cycle-unattended)
@@ -7834,7 +7743,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - deploy.yml: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - deployed environment: [OPS-27](#ops-27-run-probe-tests-against-deployed-environments)
 - deployed site audit: [OPS-62](#ops-62-report-accessibility-penetration-testing)
-- deployment lookup: [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions)
+- deployment lookup: [OPS-135](#ops-135-look-up-the-cloudfront-distribution-serving-an-origin)
 - deployment name: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
 - deployment name tag: [DATA-30](#data-30-sql-views-cost)
 - deployment role: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
@@ -7940,7 +7849,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - drift detection: [OPS-32](#ops-32-detect-cloudformation-drift)
 - drive token: [SS-28](#ss-28-store-books-in-google-drive)
 - drive.file scope: [SS-28](#ss-28-store-books-in-google-drive)
-- dry run: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [OPS-16](#ops-16-run-dynamodb-data-migrations), [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure), [OPS-106](#ops-106-replicate-secrets-across-aws-accounts)
+- dry run: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [OPS-16](#ops-16-run-dynamodb-data-migrations), [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - dt partition: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - dt partition projection: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
 - dt prefix: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
@@ -7953,7 +7862,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - duration: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
 - dynalite: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - dynamodb: [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
-- dynamodb backup: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy), [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
+- dynamodb backup: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - dynamodb client: [OPS-82](#ops-82-provide-a-shared-dynamodb-client)
 - dynamodb export: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
 - dynamodb grants: [BILL-36](#bill-36-cdk-account-stack)
@@ -7962,7 +7871,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dynamodb restore: [OPS-50](#ops-50-drill-and-test-pitr-database-restoration)
 - dynamodb streams: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - dynamodb tables: [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack), [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
-- dynamodb ttl: [SITE-09](#site-09-track-and-poll-async-api-requests), [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records)
+- dynamodb ttl: [SITE-09](#site-09-track-and-poll-async-api-requests)
 - earnings: [BILL-57](#bill-57-show-a-referrer-the-callers-own-commission-totals)
 - ecommerce events: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
 - ecr push: [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack)
@@ -8042,7 +7951,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - expected values: [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
 - experiment log: [SITE-21](#site-21-log-growth-experiments)
 - expire pass: [BILL-56](#bill-56-delete-generated-passes)
-- expire records: [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records)
 - expire-sandbox: [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle)
 - expire-sandbox lifecycle: [BILL-39](#bill-39-cdk-diya-gl-stack)
 - expiredtoken: [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id)
@@ -8137,9 +8045,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - fraud prevention compliance: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
 - fraud prevention header: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
 - fraud prevention header violation: [HMRC-29](#hmrc-29-call-the-hmrc-api)
-- fraud prevention headers: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow), [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it), [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator), [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values), [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
+- fraud prevention headers: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [HMRC-41](#hmrc-41-describe-fraud-prevention-headers-as-a-shape-and-build-a-synthetic-request-from-it), [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator), [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values), [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - frc taxonomy: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
-- fresh checkout: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - fresh project bootstrap: [DATA-40](#data-40-enable-required-google-cloud-apis)
 - frontend bundle: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - frs 102: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
@@ -8314,7 +8221,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - hmrc production approval: [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout)
 - hmrc rates: [SS-19](#ss-19-update-annual-hmrc-tax-rate-data)
 - hmrc receipt: [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts)
-- hmrc receipts: [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records)
 - hmrc refresh token: [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp)
 - hmrc sandbox: [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user)
 - hmrc sandbox test user: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
@@ -8405,7 +8311,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - infrastructure: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
 - ingestionstack: [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack)
 - init fill submit verify: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers)
-- init workflow: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - inline css: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - inline xbrl: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - installation token: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens)
@@ -8449,7 +8354,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - itsa readiness: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - itsa receipt: [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts)
 - itsa sandbox: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
-- itsa sandbox spike: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - itsa status: [HMRC-11](#hmrc-11-retrieve-itsa-status)
 - ixbrl: [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - ixbrl style: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
@@ -8487,7 +8391,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - kill switch: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect), [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
 - kind helpers: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
 - kinesis firehose: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
-- kms keys: [OPS-107](#ops-107-list-production-secrets-manager-entries)
 - knowledge base: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
 - kpi review: [DEV-55](#dev-55-review-the-operator-dashboard)
 - kyc: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect)
@@ -8537,9 +8440,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - list books: [BILL-19](#bill-19-list-a-users-diya-gl-books)
 - list bundles: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
 - list clients: [BILL-16](#bill-16-manage-practice-clients)
-- list domains: [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions)
 - list passes: [BILL-09](#bill-09-list-a-users-issued-passes)
-- list secrets: [OPS-107](#ops-107-list-production-secrets-manager-entries)
 - list vat obligations demo: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - list-imports: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - list_clients: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
@@ -8764,7 +8665,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - oauth client check: [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure)
 - oauth client secret roll: [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap)
 - oauth facade: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
-- oauth redirect: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - oauth state: [SITE-17](#site-17-trace-and-secure-client-requests)
 - oauth.toml: [DATA-44](#data-44-assert-google-oauth-client-configuration)
 - object expiration: [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering)
@@ -8783,8 +8683,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - oidc exchange: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - oidc provider: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
 - oidc trust: [OPS-60](#ops-60-guide-github-repository-configuration)
-- old logs: [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records)
-- on-demand backup: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
 - on-pass-on-subscription: [BILL-10](#bill-10-redeem-a-pass)
 - onboarding: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect)
 - onboarding return: [BILL-53](#bill-53-read-the-callers-affiliate-application)
@@ -8827,7 +8725,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - origin label: [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links)
 - origin secret rotation: [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront)
 - origin verify: [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront)
-- originfor tag: [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions), [OPS-116](#ops-116-provision-the-holding-page-stack)
+- originfor tag: [OPS-135](#ops-135-look-up-the-cloudfront-distribution-serving-an-origin), [OPS-116](#ops-116-provision-the-holding-page-stack)
 - outbound call: [CH-10](#ch-10-fetch-http-with-a-timeout)
 - outbound call record: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
 - output value: [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs)
@@ -9025,7 +8923,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - property id: [HMRC-39](#hmrc-39-submit-and-manage-foreign-property-periodic-updates-and-property-details)
 - property income allowance: [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary)
 - protected resource: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
-- provision secrets: [BILL-32](#bill-32-provision-stripe-secrets)
 - provision test user: [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning)
 - provisioned concurrency: [BILL-38](#bill-38-cdk-billing-webhook-stack)
 - proxy behaviour: [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci)
@@ -9088,7 +8985,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - read-only merge check: [DEV-33](#dev-33-preview-what-auto-merge-would-do)
 - read-only snapshot: [DATA-33](#data-33-read-the-google-ads-account-inventory)
 - read-workbook: [SS-05](#ss-05-run-the-diya-gl-cli)
-- read:self-assessment: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - readme: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
 - realistic data: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - recalc: [SS-05](#ss-05-run-the-diya-gl-cli)
@@ -9132,7 +9028,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - refresh_token: [DEV-03](#dev-03-simulate-hmrc-oauth)
 - refund: [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
 - refused: [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets)
-- regenerate: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - register: [CH-03](#ch-03-search-the-companies-house-register)
 - registered email: [CH-06](#ch-06-file-a-change-of-registered-email-address), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - registered office: [CH-05](#ch-05-file-a-change-of-registered-office-address), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
@@ -9243,7 +9138,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - route53: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain), [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc)
 - route53 alias: [OPS-127](#ops-127-upsert-route53-alias-and-plain-records-via-custom-resource)
 - route53 mail records: [OPS-182](#ops-182-provision-the-customer-email-sender)
-- route53 records: [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions)
 - rss: [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - ruleset evaluation: [DATA-11](#data-11-run-glue-data-quality-checks)
 - rum ga4 agreement: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic)
@@ -9276,7 +9170,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - safety gate: [OPS-195](#ops-195-replay-the-alarm-triage-prompt-over-invented-alarms)
 - sales fee split: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - salt canary: [BILL-40](#bill-40-migrate-the-hashed-sub-salt)
-- salt metadata: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
 - salt rotation: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt), [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store)
 - salt secret: [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager), [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags)
 - salt sweep: [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store)
@@ -9344,8 +9237,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - secret scan: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set), [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets), [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
 - secret scanning: [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report)
 - secrets in logs: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
-- secrets manager: [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [BILL-32](#bill-32-provision-stripe-secrets), [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager), [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags), [OPS-106](#ops-106-replicate-secrets-across-aws-accounts), [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets), [DEV-60](#dev-60-fetch-the-local-tls-certificate)
-- secrets manager inventory: [OPS-107](#ops-107-list-production-secrets-manager-entries)
+- secrets manager: [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager), [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags), [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets), [DEV-60](#dev-60-fetch-the-local-tls-certificate)
 - secrets manager oauth: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
 - secrets manager read: [OPS-167](#ops-167-read-a-secrets-manager-secret-with-a-five-minute-cache-and-a-forced-refresh)
 - section 1a: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
@@ -9492,7 +9384,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - stale video: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - stall: [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id)
 - standalone cdk app: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
-- standalone harness: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - start execution: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
 - state: [BILL-49](#bill-49-read-an-affiliates-tier-and-state)
 - state machine execution: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
@@ -9521,7 +9412,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - strategy: [SITE-20](#site-20-document-business-governance-and-positioning)
 - stray project: [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project)
 - streamable http: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
-- stripe: [BILL-24](#bill-24-create-a-stripe-checkout-session), [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status), [BILL-26](#bill-26-open-the-stripe-customer-billing-portal), [BILL-27](#bill-27-recover-an-abandoned-checkout), [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [BILL-31](#bill-31-configure-stripe-account-policies), [BILL-32](#bill-32-provision-stripe-secrets), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
+- stripe: [BILL-24](#bill-24-create-a-stripe-checkout-session), [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status), [BILL-26](#bill-26-open-the-stripe-customer-billing-portal), [BILL-27](#bill-27-recover-an-abandoned-checkout), [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [BILL-31](#bill-31-configure-stripe-account-policies), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - stripe balance transactions: [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
 - stripe connect: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect), [BILL-53](#bill-53-read-the-callers-affiliate-application), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - stripe donor: [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions)
@@ -9711,7 +9602,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - trusted event proof: [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod)
 - trusted event rule: [OPS-117](#ops-117-provision-the-observability-stack)
 - ttl: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
-- ttl backfill: [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records)
 - ttl policy: [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack)
 - twistie: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - typeahead: [CH-03](#ch-03-search-the-companies-house-register)
@@ -9874,7 +9764,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - webhook: [BILL-28](#bill-28-process-stripe-webhook-events)
 - webhook endpoints: [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue)
 - webhook failed: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
-- webhook signing secret: [BILL-32](#bill-32-provision-stripe-secrets)
 - webhook stack: [BILL-38](#bill-38-cdk-billing-webhook-stack)
 - webhooks: [OPS-60](#ops-60-guide-github-repository-configuration)
 - webmaster email: [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks)

@@ -116,7 +116,7 @@ The workflow writes pass codes and URLs to the step summary. It uploads QR code 
 
 ### Operator: command line
 
-`node scripts/generate-pass.js <pass-type> <environment>` creates passes with no QR output. `node scripts/generate-pass-with-qr.js` is the script the workflow runs.
+`node scripts/generate-pass.js <pass-type> <environment>` creates passes. Add `--qr` to write the QR codes and `passes-output.json`. The workflow runs the script with `--qr`.
 
 ### Operator: API
 
@@ -362,8 +362,7 @@ PASS_CODE=$(curl -s -X POST "$BASE_URL/api/v1/pass/admin" \
 | `app/lib/emailHash.js`                                | Deterministic HMAC-SHA256 email hashing                     |
 | `app/lib/operators.js`                                | The operator email list                                     |
 | `app/lib/qrCodeGenerator.js`                          | QR code generation (PNG, SVG, annotated)                    |
-| `scripts/generate-pass.js`                            | Local command line pass generation                          |
-| `scripts/generate-pass-with-qr.js`                    | Pass generation with QR codes                               |
+| `scripts/generate-pass.js`                            | Pass generation, with QR codes under `--qr`                 |
 | `web/public/passes/generate-digital.html`             | Generate page for the digital pass                          |
 | `web/public/passes/generate-physical.html`            | Generate page for the physical pass                         |
 | `web/public/bundles.page.js`                          | Bundles page: pass entry, my passes, figures, affiliate sections |

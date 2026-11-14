@@ -23,8 +23,8 @@ served to a browser. The existing pipeline records it like any other page:
 
 ### The proof
 
-`scripts/collabora-sheet-spike.js` runs against `scripts/collabora-sheet-host.js` on this
-machine (Docker Desktop, amd64). It opened the downloaded workbook, entered all five
+A spike run against `scripts/collabora-sheet-host.js` on a machine with Docker Desktop (amd64)
+opened the downloaded workbook, entered all five
 transactions and read the Profit & Loss sheet back:
 
 | Cell | Line | Read |
@@ -214,14 +214,3 @@ The capture step sets `COLLABORA_URL: http://collabora:9980` for this script. Lo
    service reaches the host at `hostname -i`.
 6. Add the entry to `videos/publish.json` and the video to `web/public/videos-accounting.html`,
    as for `accounting-diya-gl-profit`.
-7. When the scene actions land, `scripts/collabora-sheet-spike.js` can go: the scene script
-   replaces it as the proof.
-
-To rerun the proof locally:
-
-```bash
-node scripts/collabora-sheet-host.js --package "GB Accounts Basic Sole Trader 2027-04-05 (Apr27) Excel 2007" &
-node scripts/collabora-sheet-spike.js --out target/collabora-spike --scale 2
-```
-
-The spike exits non-zero unless the P&L reads a net profit of 1,200.

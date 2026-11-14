@@ -2,6 +2,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-135 Look up the CloudFront distribution serving an origin
+# - **Use when:** a CloudFront distribution ID needs finding for an origin domain.
+# - **Does:** lookup-cloudfront-distribution.sh prints the live CloudFront distribution ID serving an origin domain, preferring the EdgeStack stack output and falling back to the OriginFor tag, confirming every candidate against get-distribution since the tag index can lag a deletion.
+# - **Run:** `./scripts/lookup-cloudfront-distribution.sh <origin-domain> [edge-stack-name]`
+# - **Entry:** `scripts/lookup-cloudfront-distribution.sh`
+# - **Files:** scripts/lookup-cloudfront-distribution.sh
+# - **Keywords:** cloudfront distribution id, originfor tag, deployment lookup
+# - **Related:** OPS-115
+# @end-capability
+
 # Print the ID of the live CloudFront distribution serving an origin domain.
 #
 # Usage: scripts/lookup-cloudfront-distribution.sh <origin-domain> [edge-stack-name]

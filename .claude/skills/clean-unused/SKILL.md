@@ -187,6 +187,7 @@ Expand each hit by hand from its source list. In submit:
 | `test:submitVatBehaviour-${env}` in `deploy-app.yml` | env = ci or prod |
 | `accessibility:*-${env}`, `penetration:zap-${env}`, `compliance:${env}-report-md` in `compliance.yml` | env = ci or prod |
 | `test:authBehaviour-${env}`, `test:submitVatBehaviour-${env}` | printed by `scripts/enable-cognito-native-test.js` |
+| `test:${suite}-${lane}` from `npm run test:behaviour -- <suite> <lane>` | `scripts/run-behaviour.mjs` line 58; suite and lane come from the caller's arguments |
 
 In `www`, `deploy.yml` runs `test:gatewayBehaviour-${env}`.
 
@@ -281,8 +282,6 @@ edits its `@capability` header and its slot line in `_developers/capabilities/sk
   `.claude/skills/**` in submit and spreadsheets, and the workspace-root `.claude/skills/`.
 - **Composed npm names.** About 205 of submit's 395 npm scripts fall in 58 families of
   `<name>-<env>`. Most `test:<suite>-ci` and `-prod` names have no literal reference and are in use.
-- **Operator tools named only in their own header.** `scripts/list-domains.sh` (OPS-135) has no
-  other reference.
 - **Generators of committed data.** `scripts/write-video-books.js` (writes `videos/books/`),
   spreadsheets `scripts/generate-frc-taxonomy-concepts.mjs` (writes `app/data/frc-taxonomy/`).
 - **Same text, other meaning.** A step id `set-origins` or `get-names` in a sibling workflow is not
@@ -302,9 +301,7 @@ CDK and the `infra/<vendor>/` sync scripts), `behaviour-tests/`, `mcp/`, `.githo
 `.claude/skills/`, `_developers/`, `README.md`, `REPORT_CAPABILITIES.md`, and the private
 repository's runbooks. Eight workflows are `workflow_call` only (`deploy-build`,
 `deploy-env-image-stack`, `deploy-env-secrets`, `deploy-finish`, `deploy-stacks`, `test-behaviour`,
-`test-cdk`, `test-unit`) and show no runs. Candidate duplicate pairs to judge: `start` and
-`start:simulator`; `cloudfront:set-origins` and `set-apex-origins`; `lighthouse:multi` as an alias;
-`seo:structured-data-<env>` aliases; `hmrc-ets-ct600.yml` and `hmrc-ets-ct600-page.yml` (script
+`test-cdk`, `test-unit`) and show no runs. Candidate duplicate pairs to judge: `hmrc-ets-ct600.yml` and `hmrc-ets-ct600-page.yml` (script
 against page channel); `delete-user-data.yml` and `delete-user-data-by-email.yml`.
 
 **spreadsheets.** Search `.github/`, `scripts/` (with `test-scope.mjs` routing), `package.json`,
@@ -329,7 +326,7 @@ repos/diy-accounting-uk/homebrew-diya-gl/contents/<path>` or `git show origin/ma
 **Copied across repositories.** `.githooks/secret-scan.sh` and `pre-commit` (five copies, equal),
 `scripts/check-action-pins.mjs`, `scripts/check-commit-identities.sh`, `identity-guard.yml`,
 `scripts/validate-workflows.sh`, `scripts/update-java.sh`, `scripts/generate-compliance-report.js`,
-`scripts/text-spacing-test.js`, `scripts/clean-drawio.cjs`, `scripts/indexnow-submit.mjs`,
+`scripts/text-spacing-test.js`, `scripts/indexnow-submit.mjs`,
 `scripts/watch-ci.sh`, `scripts/worktree-add.sh`.
 
 ## 7. Proposal shape
@@ -338,7 +335,7 @@ One section per repository. One table per class, at most six columns:
 
 | Item | Class | Evidence | Action | Risk |
 |---|---|---|---|---|
-| `test:allBehaviour-prod` | A | no reference; not in any suite list | remove | low |
+| `test:example-prod` | A | no reference; not in any suite list | remove | low |
 | `init.yml` | B | repeats `generate-all.yml` plus clean | add a `clean` input to `generate-all.yml`, remove `init.yml` | medium |
 
 - **Evidence** names the commands that showed it: the index result, last run, created date,
