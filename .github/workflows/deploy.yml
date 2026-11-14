@@ -121,6 +121,10 @@ on:
       - 'app/functions/**'
       - 'app/lib/**'
       - 'app/services/**'
+      - 'mcp/lib/**'
+      - 'mcp/bin/**'
+      - 'mcp/package.json'
+      - 'mcp/package-lock.json'
       - 'infra/main/**'
       - 'web/public/**'
       - 'experiments.toml'
@@ -133,6 +137,14 @@ on:
       - 'package-lock.json'
       - 'pom.xml'
       - 'web/public/submit.catalogue.toml'
+      - 'submit.passes.toml'
+      - 'lifecycle.toml'
+      - 'referrals.toml'
+      - 'running-costs.toml'
+      - 'secrets-rotation.toml'
+      - 'infra/stripe/stripe.toml'
+      - 'infra/google/ads/ads.toml'
+      - 'infra/microsoft/ads/msads.toml'
       - '.github/actions/**'
       - '.github/workflows/deploy.yml'
       - '.github/workflows/deploy-cdk-stack.yml'
@@ -377,9 +389,12 @@ jobs:
       # keep the two lists in step.
       DEPLOY_PATHSPECS: >-
         :(glob)app/data/** :(glob)app/functions/** :(glob)app/lib/** :(glob)app/services/**
+        :(glob)mcp/lib/** :(glob)mcp/bin/** mcp/package.json mcp/package-lock.json
         :(glob)infra/main/** :(glob)web/public/** experiments.toml .env.ci .env.prod :(glob)**/cdk.json
         Dockerfile LICENSE package.json package-lock.json pom.xml
-        web/public/submit.catalogue.toml :(glob).github/actions/** .github/workflows/deploy.yml
+        web/public/submit.catalogue.toml submit.passes.toml lifecycle.toml referrals.toml running-costs.toml
+        secrets-rotation.toml infra/stripe/stripe.toml infra/google/ads/ads.toml infra/microsoft/ads/msads.toml
+        :(glob).github/actions/** .github/workflows/deploy.yml
         .github/workflows/deploy-cdk-stack.yml .github/workflows/deploy-stacks.yml .github/workflows/deploy-finish.yml
         .github/workflows/deploy-build.yml .github/workflows/destroy-prod.yml
         .github/workflows/generate-pass.yml .github/workflows/probe-test.yml .github/workflows/test.yml

@@ -147,7 +147,7 @@ This repository uses a **four-tier testing pyramid**:
 
 4. **Behaviour Tests** (Playwright): End-to-end user journey tests
    - Location: `behaviour-tests/`
-   - Run: `npm run test:allBehaviour` (with environment variants: `-proxy`, `-ci`, `-prod`)
+   - Run: `npm run test:allBehaviour` (with the environment variant `-proxy`)
    - Focus: Complete flows (auth, VAT submission, bundles, receipts)
 
 **Default test command**: `npm test` runs unit + system tests (~4 seconds, 108 tests)

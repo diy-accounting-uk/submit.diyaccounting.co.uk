@@ -92,15 +92,16 @@ jobs:
         id: hash
         env:
           ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+          USER_SUB: ${{ steps.lookup.outputs.user-sub }}
         run: |
-          # Use Node.js to compute hashed sub with salt from Secrets Manager
-          HASHED_SUB=$(node -e "
+          # The salt fetch logs to stdout, so the script writes the hash to GITHUB_OUTPUT itself.
+          node -e "
+            import { appendFileSync } from 'node:fs';
             import { initializeSalt, hashSub } from './app/services/subHasher.js';
             await initializeSalt();
-            console.log(hashSub('${{ steps.lookup.outputs.user-sub }}'));
-          ")
-          echo "hashed-sub=${HASHED_SUB}" >> "$GITHUB_OUTPUT"
-          echo "Hashed sub: ${HASHED_SUB}"
+            appendFileSync(process.env.GITHUB_OUTPUT, 'hashed-sub=' + hashSub(process.env.USER_SUB) + '\n');
+          "
+          grep '^hashed-sub=' "$GITHUB_OUTPUT"
 
       - name: Export user data (dry run)
         if: ${{ inputs.confirm != true }}

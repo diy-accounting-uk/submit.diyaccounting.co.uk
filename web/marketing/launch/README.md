@@ -14,7 +14,7 @@ The text, images and recording for the day the connector reaches the first direc
 | `ai-directories.md` | There's An AI For That, Futurepedia, Toolify |
 | `devto.md` | dev.to post, with front matter |
 | `images/` | gallery and cover images |
-| `videos/assistant-vat-handoff.json` (repository root) | scene script of the 74-second recording |
+| `videos/assistant-vat-handoff.json` (repository root) | scene script of the 77-second recording |
 
 Product name, descriptions and price text come from the register's `submit` product in `web/marketing/marketing.toml`, read through `scripts/listings-register.mjs`. The price text is `£9.99/yr / £0.99/mo`, from `web/public/submit.catalogue.toml`.
 
@@ -58,12 +58,12 @@ All are Playwright screenshots (Chromium, light scheme) at the stated size, made
 | --- | --- | --- |
 | `images/gallery-1-connector-page.png` | 1270x760 | https://submit.diyaccounting.co.uk/mcp.html on prod, 2026-11-13 |
 | `images/gallery-2-home.png` | 1270x760 | https://submit.diyaccounting.co.uk/ on prod, 2026-11-13 |
-| `images/gallery-3-form-and-receipt.png` | 1270x760 | frames of the ci recording of `assistant-vat-handoff` (capture run 43539969800), each cropped to 635x760 and placed side by side: the VAT form with the VAT number typed in and boxes 1 to 3 filled, and the receipt; the receipt is from HMRC's test service and the page says so |
+| `images/gallery-3-form-and-receipt.png` | 1270x760 | frames of the ci recording of `assistant-vat-handoff` (capture run 43556372373), each cropped to 635x760 and placed side by side: the form with the declaration ticked and the lower boxes filled, and the receipt; the receipt is from HMRC's test service and the page says so |
 | `images/devto-cover.png` | 1000x420 | https://submit.diyaccounting.co.uk/mcp.html on prod, 2026-11-13 |
 
 The directories state no image size, so they use the three gallery images.
 
-## The 74-second recording
+## The 77-second recording
 
 `videos/assistant-vat-handoff.json` follows the walk in `behaviour-tests/mcpPrepareVatReturn.behaviour.test.js`. Sign-in, the day pass and the HMRC grant run off camera. The recording shows the connector page, the hand-off link that fills the VAT form, the declaration, the submit and the receipt from HMRC's test service. The link in the `handoff` scene carries the figures of the fixture book `mcp/test/fixtures/brickwork-pro-ltd-vat` for the quarter ending 2025-09-30. Record it on a ci deployment:
 
@@ -71,4 +71,4 @@ The directories state no image size, so they use the three gallery images.
 npm run video:record -- assistant-vat-handoff ci
 ```
 
-The length is 73.6 seconds, measured on capture run 43539969800. Publish the video after `prepare_vat_return` is on prod, because it shows the hand-off.
+The length is 77.4 seconds, measured on capture run 43556372373. Publish the video after `prepare_vat_return` is on prod, because it shows the hand-off.

@@ -4,6 +4,10 @@
 name: Delete User Data by Email (GDPR Erasure)
 run-name: "GDPR erasure for ${{ inputs.email }} in ${{ inputs.environment-name }}"
 
+# Three jobs: find the Cognito user and export its data, delete the data by hashed sub through
+# delete-user-data.yml, then delete the Cognito user. delete-user-data.yml also runs on its own
+# for an account that has no Cognito user.
+
 on:
   workflow_dispatch:
     inputs:
@@ -32,9 +36,13 @@ env:
   AWS_REGION: 'eu-west-2'
 
 jobs:
-  delete-by-email:
+  resolve-and-export:
     runs-on: ubuntu-24.04
     environment: ${{ inputs.environment-name }}
+    outputs:
+      user-pool-id: ${{ steps.resolve.outputs.user-pool-id }}
+      username: ${{ steps.lookup.outputs.username }}
+      hashed-sub: ${{ steps.hash.outputs.hashed-sub }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -51,9 +59,9 @@ jobs:
 
       - name: Resolve user pool
         id: resolve
+        env:
+          STACK_NAME: ${{ inputs.environment-name }}-env-IdentityStack
         run: |
-          # Get User Pool ID from CloudFormation
-          STACK_NAME="${{ inputs.environment-name }}-env-IdentityStack"
           USER_POOL_ID=$(aws cloudformation describe-stacks \
             --stack-name "${STACK_NAME}" \
             --query "Stacks[0].Outputs[?OutputKey=='UserPoolId'].OutputValue" \
@@ -64,24 +72,21 @@ jobs:
       - name: Look up user in Cognito
         id: lookup
         env:
-          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+          USER_POOL_ID: ${{ steps.resolve.outputs.user-pool-id }}
+          EMAIL: ${{ inputs.email }}
         run: |
-          USER_POOL_ID="${{ steps.resolve.outputs.user-pool-id }}"
-          EMAIL="${{ inputs.email }}"
-
-          # Search for user by email (works for all providers: Google, Apple, Microsoft, native)
+          # The email filter finds the user for every provider: Google, Apple, Microsoft and native.
           USER_JSON=$(aws cognito-idp list-users \
             --user-pool-id "${USER_POOL_ID}" \
             --filter "email = \"${EMAIL}\"" \
             --output json)
 
           USER_COUNT=$(echo "${USER_JSON}" | jq '.Users | length')
-          if [ "${USER_COUNT}" = "0" ]; then
-            echo "ERROR: No user found with email: ${EMAIL}"
+          if [ "${USER_COUNT}" != "1" ]; then
+            echo "ERROR: expected one user with email ${EMAIL}, found ${USER_COUNT}"
             exit 1
           fi
 
-          # Extract sub and username from first matching user
           USER_SUB=$(echo "${USER_JSON}" | jq -r '.Users[0].Attributes[] | select(.Name == "sub") | .Value')
           USERNAME=$(echo "${USER_JSON}" | jq -r '.Users[0].Username')
           echo "user-sub=${USER_SUB}" >> "$GITHUB_OUTPUT"
@@ -92,79 +97,77 @@ jobs:
         id: hash
         env:
           ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+          USER_SUB: ${{ steps.lookup.outputs.user-sub }}
         run: |
-          # Use Node.js to compute hashed sub with salt from Secrets Manager
-          HASHED_SUB=$(node -e "
+          # The salt fetch logs to stdout, so the script writes the hash to GITHUB_OUTPUT itself.
+          node -e "
+            import { appendFileSync } from 'node:fs';
             import { initializeSalt, hashSub } from './app/services/subHasher.js';
             await initializeSalt();
-            console.log(hashSub('${{ steps.lookup.outputs.user-sub }}'));
-          ")
-          echo "hashed-sub=${HASHED_SUB}" >> "$GITHUB_OUTPUT"
-          echo "Hashed sub: ${HASHED_SUB}"
+            appendFileSync(process.env.GITHUB_OUTPUT, 'hashed-sub=' + hashSub(process.env.USER_SUB) + '\n');
+          "
+          grep '^hashed-sub=' "$GITHUB_OUTPUT"
 
       - name: Export user data (GDPR requires data provision before deletion)
         env:
           ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+          HASHED_SUB: ${{ steps.hash.outputs.hashed-sub }}
         run: |
-          node scripts/export-user-data.js \
-            "${{ inputs.environment-name }}" \
-            --hashed-sub "${{ steps.hash.outputs.hashed-sub }}"
+          node scripts/export-user-data.js "${ENVIRONMENT_NAME}" --hashed-sub "${HASHED_SUB}"
 
       - name: Upload user data export
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: user-data-export-${{ github.run_id }}
           path: user-data-export-*.json
+          if-no-files-found: error
           retention-days: 90
 
-      - name: Delete user data (dry run)
-        if: ${{ inputs.confirm != true }}
-        env:
-          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
-        run: |
-          set -o pipefail
-          node scripts/delete-user-data.js \
-            "${{ inputs.environment-name }}" \
-            --hashed-sub "${{ steps.hash.outputs.hashed-sub }}" \
-            --json | tee deletion-summary.json
-
-      - name: Delete user data (confirmed)
-        if: ${{ inputs.confirm == true }}
-        env:
-          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
-        run: |
-          set -o pipefail
-          node scripts/delete-user-data.js \
-            "${{ inputs.environment-name }}" \
-            --hashed-sub "${{ steps.hash.outputs.hashed-sub }}" \
-            --confirm --json | tee deletion-summary.json
-
-      - name: Delete Cognito user (confirmed)
-        if: ${{ inputs.confirm == true }}
-        run: |
-          aws cognito-idp admin-delete-user \
-            --user-pool-id "${{ steps.resolve.outputs.user-pool-id }}" \
-            --username "${{ steps.lookup.outputs.username }}"
-          echo "Cognito user deleted: ${{ steps.lookup.outputs.username }}"
-
-      - name: Upload deletion summary
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        with:
-          name: deletion-summary-${{ github.run_id }}
-          path: deletion-summary.json
-          retention-days: 2555  # ~7 years for GDPR audit trail
-
       - name: Generate step summary
+        env:
+          EMAIL: ${{ inputs.email }}
+          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+          USERNAME: ${{ steps.lookup.outputs.username }}
+          CONFIRM: ${{ inputs.confirm }}
         run: |
-          echo "# GDPR Erasure Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Email**: ${{ inputs.email }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Environment**: ${{ inputs.environment-name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Cognito Username**: ${{ steps.lookup.outputs.username }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Confirmed**: ${{ inputs.confirm }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -f deletion-summary.json ]; then
-            echo '```json' >> $GITHUB_STEP_SUMMARY
-            cat deletion-summary.json >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-          fi
+          {
+            echo "# GDPR Erasure Summary"
+            echo ""
+            echo "**Email**: ${EMAIL}"
+            echo "**Environment**: ${ENVIRONMENT_NAME}"
+            echo "**Cognito Username**: ${USERNAME}"
+            echo "**Confirmed**: ${CONFIRM}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  delete-data:
+    needs: resolve-and-export
+    uses: ./.github/workflows/delete-user-data.yml
+    with:
+      hashed-sub: ${{ needs.resolve-and-export.outputs.hashed-sub }}
+      environment-name: ${{ inputs.environment-name }}
+      confirm: ${{ inputs.confirm && 'true' || 'false' }}
+    secrets: inherit
+
+  delete-cognito-user:
+    needs: [resolve-and-export, delete-data]
+    if: ${{ inputs.confirm }}
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment-name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Assume the AWS actions and deployment roles
+        uses: ./.github/actions/aws-role
+        with:
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Delete Cognito user
+        env:
+          USER_POOL_ID: ${{ needs.resolve-and-export.outputs.user-pool-id }}
+          USERNAME: ${{ needs.resolve-and-export.outputs.username }}
+        run: |
+          aws cognito-idp admin-delete-user --user-pool-id "${USER_POOL_ID}" --username "${USERNAME}"
+          echo "Cognito user deleted: ${USERNAME}"

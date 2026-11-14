@@ -15,7 +15,7 @@ application registration.
 Route (b), a standalone harness, because Docker was not running on the machine and the proxy
 variant needs it for the OAuth2 container and dynalite.
 
-`scripts/itsa-sandbox-spike.js` drives the same authorisation code flow the proxy variant drives:
+The harness drove the same authorisation code flow the proxy variant drives. `scripts/itsa-sandbox-year.js` and `scripts/lib/hmrcAuthorizationCode.js` now carry that flow:
 
 - Playwright opens `{HMRC_SANDBOX_BASE_URI}/oauth/authorize` with our sandbox client id, our
   registered redirect uri and `scope=read:self-assessment`.
@@ -27,8 +27,7 @@ variant needs it for the OAuth2 container and dynalite.
 - The API call builds its headers with `buildFraudHeaders` from `app/lib/buildFraudHeaders.js` and
   `buildHmrcHeaders` from `app/services/hmrcApi.js`.
 
-Run it with `scripts/proxy-secrets.sh node scripts/itsa-sandbox-spike.js`. The client secret comes
-from Secrets Manager, never from the repo.
+The client secret comes from Secrets Manager, never from the repo.
 
 The authorisation pages, in order:
 

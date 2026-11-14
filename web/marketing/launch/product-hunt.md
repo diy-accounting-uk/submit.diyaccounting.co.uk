@@ -22,7 +22,7 @@ DIY Accounting Submit sends your VAT return to HMRC under Making Tax Digital. Ty
 - Website: https://submit.diyaccounting.co.uk/
 - Logo: `web/marketing/images/submit-all/square.png` (the register's `logo`)
 - Gallery, in this order: `images/gallery-1-connector-page.png`, `images/gallery-2-home.png`, `images/gallery-3-form-and-receipt.png`
-- Video: the 74-second recording from `videos/assistant-vat-handoff.json`, after the operator has watched it.
+- Video: the 77-second recording from `videos/assistant-vat-handoff.json`, after the operator has watched it.
 
 ## First comment (the maker's)
 

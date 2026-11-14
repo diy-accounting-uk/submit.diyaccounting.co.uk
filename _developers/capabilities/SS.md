@@ -370,16 +370,6 @@
 - **Related:** SS-35
 @end-capability -->
 
-<!-- @capability SS-38 Initialise or regenerate repository state
-- **Use when:** a fresh checkout, or a full regeneration, needs packages, reports and tax data rebuilt from scratch.
-- **Does:** init.yml dispatches with options to delete packages/reports before regenerating and to delete and re-source app/data/*.toml tax data from HMRC, then runs the generation pipeline.
-- **Run:** `gh workflow run init.yml`
-- **Entry:** `../spreadsheets.diyaccounting.co.uk/.github/workflows/init.yml`
-- **Files:** ../spreadsheets.diyaccounting.co.uk/.github/workflows/init.yml
-- **Keywords:** init workflow, regenerate, delete packages, delete tax data, fresh checkout
-- **Related:** SS-08, SS-19
-@end-capability -->
-
 <!-- @capability SS-39 Guard commit author identity on PRs
 - **Use when:** a pull request's commits must be checked against the allowed commit-identity list before merge.
 - **Does:** identity-guard.yml reads every commit a PR adds and fails the run if any author email is not on .github/allowed-commit-identities.yml's allow-list, guarding against an inline git identity slipping through unnoticed.

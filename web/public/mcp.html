@@ -17,7 +17,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Connect Claude to DIY Accounting Submit with one connector URL, or run the diya-gl and submission MCP servers from npm or Docker."
+      content="Connect Claude or Gemini to DIY Accounting Submit with one connector URL, or run the diya-gl and submission MCP servers from npm or Docker."
     />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/mcp.html" />
     <!-- Open Graph / Social -->
@@ -25,7 +25,7 @@
     <meta property="og:title" content="MCP Server - DIY Accounting Submit" />
     <meta
       property="og:description"
-      content="Connect Claude to DIY Accounting Submit with one connector URL, or run the diya-gl and submission MCP servers from npm or Docker."
+      content="Connect Claude or Gemini to DIY Accounting Submit with one connector URL, or run the diya-gl and submission MCP servers from npm or Docker."
     />
     <meta property="og:url" content="https://submit.diyaccounting.co.uk/mcp.html" />
     <meta property="og:site_name" content="DIY Accounting" />
@@ -113,13 +113,48 @@
           <p>The connector URL is:</p>
           <pre><code>https://submit.diyaccounting.co.uk/mcp</code></pre>
           <h3>Add it in Claude</h3>
+          <p>This works in Claude on the web, in Claude Desktop, on mobile and in Cowork.</p>
+          <ol>
+            <li>Open Settings, then Connectors. On the web the page is <code>claude.ai/customize/connectors</code>.</li>
+            <li>Choose Add, then Add custom connector.</li>
+            <li>
+              Enter the name <code>DIY Accounting Submit</code> and the connector URL above, then choose Continue. Claude checks the server
+              and the sign-in settings.
+            </li>
+            <li>Keep the sign-in options Claude has chosen, then choose Add.</li>
+            <li>Choose Connect. Claude opens the page &ldquo;Allow access to DIY Accounting Submit&rdquo;. Choose Continue.</li>
+            <li>Sign in to your account. Claude returns to the connector page, which now shows Disconnect.</li>
+          </ol>
           <p>
-            In Claude on the web, in Claude Desktop, on mobile and in Cowork, open Settings, then Connectors, and add a custom connector
-            with that URL. Claude opens the sign-in page; choose Continue, then sign in to your account.
+            In a new chat, open the + menu, choose Connectors and check that DIY Accounting Submit is on. Then ask, for example, &ldquo;List
+            my books with the DIY Accounting Submit connector.&rdquo; Claude asks before it uses each tool. Choose Allow once, or Always
+            allow for a tool you trust. Claude shows the nine boxes of a VAT return as a card, with a link to open the VAT form with the
+            figures filled in.
           </p>
           <p>In Claude Code, run:</p>
           <pre><code>claude mcp add --transport http diya-submit https://submit.diyaccounting.co.uk/mcp</code></pre>
           <p>Then run <code>/mcp</code> in Claude Code and choose the server to sign in.</p>
+          <h3>Add it in Gemini</h3>
+          <p>This works in Gemini on the web with a personal Google account.</p>
+          <ol>
+            <li>
+              Open Gemini, choose the settings gear at the foot of the sidebar, then Connected apps. The page is
+              <code>gemini.google.com/customize/connectors</code>.
+            </li>
+            <li>Choose + Custom. The dialog &ldquo;Connect to an MCP server&rdquo; opens.</li>
+            <li>Paste the connector URL above into MCP server URL, then choose Next.</li>
+            <li>Read the consent text in &ldquo;Connect this MCP server&rdquo; to its end, then choose Connect.</li>
+            <li>Google asks you to link your Google Account and the Diyaccounting account. Choose Continue.</li>
+            <li>Sign in to your account on the DIY Accounting Submit page.</li>
+            <li>
+              In &ldquo;Save your custom app&rdquo;, keep the name <code>DIY Accounting Submit</code>. It lists the six tools under
+              Available actions. Choose Connect.
+            </li>
+          </ol>
+          <p>
+            The connector now shows under Custom apps. In a new chat, ask &ldquo;List my books with DIY Accounting Submit.&rdquo; Gemini
+            answers with a table of your books.
+          </p>
           <h3>Tools</h3>
           <p>The connector has six tools. It does not reach HMRC and it files nothing.</p>
           <dl>

@@ -3,10 +3,10 @@
 
 # @capability BILL-11 Generate admin passes from CLI or workflow
 # - **Use when:** an operator needs one or more passes with QR codes, or a scripted equivalent with no QR output.
-# - **Does:** The generate-pass.yml workflow reads a pass type's defaults from submit.passes.toml and runs scripts/generate-pass-with-qr.js. That script creates passes with QR codes and can provision an HMRC sandbox or Cognito test user. scripts/generate-pass.js is the local CLI equivalent with no QR output.
-# - **Run:** `gh workflow run generate-pass.yml -f pass-type=<type> -f environment=<ci|prod>`; `node scripts/generate-pass.js <pass-type> <environment> [--email E] [--max-uses N] [--validity-period P7D] [--quantity N] [--notes T]`; `node scripts/generate-pass-with-qr.js`
-# - **Entry:** `.github/workflows/generate-pass.yml`; `scripts/generate-pass.js`; `scripts/generate-pass-with-qr.js`
-# - **Files:** .github/workflows/generate-pass.yml, scripts/generate-pass.js, scripts/generate-pass-with-qr.js
+# - **Does:** The generate-pass.yml workflow reads a pass type's defaults from submit.passes.toml and runs scripts/generate-pass.js with --qr. That script creates passes with QR codes. The workflow can also provision an HMRC sandbox or Cognito test user. Run without --qr, scripts/generate-pass.js is the local CLI.
+# - **Run:** `gh workflow run generate-pass.yml -f pass-type=<type> -f environment=<ci|prod>`; `node scripts/generate-pass.js <pass-type> <environment> [--email E] [--max-uses N] [--validity-period P7D] [--quantity N] [--notes T] [--qr]`
+# - **Entry:** `.github/workflows/generate-pass.yml`; `scripts/generate-pass.js`
+# - **Files:** .github/workflows/generate-pass.yml, scripts/generate-pass.js
 # - **Keywords:** pass, generate pass, workflow_dispatch, qr code, cli, operator, hmrc sandbox user, cognito test user
 # - **Related:** BILL-06, BILL-07
 # @end-capability
@@ -310,33 +310,13 @@ jobs:
           echo "  Validity: ${VALIDITY_PERIOD}"
           echo "  Table: ${TABLE_NAME}"
 
-          # Fetch email hash secret from Secrets Manager
-          EMAIL_HASH_SECRET=""
-          if [[ -n "${EMAIL}" ]]; then
-            EMAIL_HASH_SECRET=$(aws secretsmanager get-secret-value \
-              --secret-id "${ENV_NAME}/submit/email-hash-secret" \
-              --query SecretString --output text 2>/dev/null || echo "")
-            if [[ -z "${EMAIL_HASH_SECRET}" ]]; then
-              echo "::warning::Email hash secret not found, creating pass without email restriction"
-              EMAIL=""
-            fi
-          fi
+          # The script reads the bundle and the test flag from submit.passes.toml and fetches the email hash secret itself
+          ARGS=(--qr --max-uses "${MAX_USES}" --quantity "${QUANTITY}" --created-by "${CREATED_BY}" --host "${{ needs.names.outputs.pass-url-host }}")
+          if [[ -n "${VALIDITY_PERIOD}" ]]; then ARGS+=(--validity-period "${VALIDITY_PERIOD}"); fi
+          if [[ -n "${EMAIL}" ]]; then ARGS+=(--email "${EMAIL}"); fi
+          if [[ -n "${NOTES}" ]]; then ARGS+=(--notes "${NOTES}"); fi
 
-          # Generate passes with QR codes using dedicated script
-          export PASSES_DYNAMODB_TABLE_NAME="${TABLE_NAME}"
-          export EMAIL_HASH_SECRET="${EMAIL_HASH_SECRET}"
-          export PASS_TYPE="${{ needs.params.outputs.pass-type }}"
-          export BUNDLE_ID="${BUNDLE_ID}"
-          export MAX_USES="${MAX_USES}"
-          export VALIDITY_PERIOD="${VALIDITY_PERIOD}"
-          export QUANTITY="${QUANTITY}"
-          export EMAIL="${EMAIL}"
-          export NOTES="${NOTES}"
-          export CREATED_BY="${CREATED_BY}"
-          export PASS_URL_HOST="${{ needs.names.outputs.pass-url-host }}"
-          export TEST_PASS="${{ steps.pass-type.outputs.TEST_PASS }}"
-
-          node scripts/generate-pass-with-qr.js
+          node scripts/generate-pass.js "${{ needs.params.outputs.pass-type }}" "${ENV_NAME}" "${ARGS[@]}"
 
       - name: Create HMRC sandbox test user
         id: hmrc-user

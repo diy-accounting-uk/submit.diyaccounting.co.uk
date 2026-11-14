@@ -14,9 +14,9 @@
 // @capability BILL-28 Process Stripe webhook events
 // - **Use when:** Stripe delivers a checkout, invoice, subscription, refund or dispute event to grant, sync or flag a subscription.
 // - **Does:** The billingWebhookPost.js ingestHandler verifies the Stripe signature with test and live secrets, then handles checkout, invoice, subscription and dispute events. It grants bundles, resets tokens, syncs status, marks past-due or cancelled, and auto-accepts disputes. Every other event type is logged and ignored.
-// - **Run:** `POST /api/v1/billing/webhook`; `gh workflow run stripe-cancel-subscription.yml -f subscription-id=<sub_xxx> -f mode=<at-period-end|immediate> -f environment-name=<ci|prod>`; `STRIPE_SECRET_KEY=sk_... node scripts/stripe-cancel-subscription.js <subscription_id> [options]`; `node scripts/stripe-trigger-lifecycle.sh`
+// - **Run:** `POST /api/v1/billing/webhook`; `STRIPE_SECRET_KEY=sk_... node scripts/stripe-cancel-subscription.js <subscription_id> [options]`; `node scripts/stripe-trigger-lifecycle.sh`
 // - **Entry:** `app/functions/billing/billingWebhookPost.js:ingestHandler`
-// - **Files:** app/functions/billing/billingWebhookPost.js, app/unit-tests/functions/billingWebhookPost.test.js, app/data/dynamoDbSubscriptionRepository.js, app/system-tests/billingInfrastructure.system.test.js, .github/workflows/stripe-cancel-subscription.yml, scripts/stripe-cancel-subscription.js, scripts/stripe-trigger-lifecycle.sh
+// - **Files:** app/functions/billing/billingWebhookPost.js, app/unit-tests/functions/billingWebhookPost.test.js, app/data/dynamoDbSubscriptionRepository.js, app/system-tests/billingInfrastructure.system.test.js, scripts/stripe-cancel-subscription.js, scripts/stripe-trigger-lifecycle.sh
 // - **Keywords:** stripe, webhook, checkout.session.completed, invoice.paid, subscription updated, dispute, refund, cancel subscription
 // - **Related:** BILL-01, BILL-24, BILL-30
 // @end-capability

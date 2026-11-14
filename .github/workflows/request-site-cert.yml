@@ -1,6 +1,16 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
+# @capability OPS-49 Request a site or holding-page certificate
+# - **Use when:** the developer site, the marketing site or the holding page needs a new or renewed ACM certificate.
+# - **Does:** request-site-cert.yml requests a DNS-validated ACM certificate in us-east-1 for one site and environment, writes the validation records into the management zone and waits for validation. The holding certificate also covers the live submit names, because failover adds them as aliases to the holding distribution.
+# - **Run:** `gh workflow run request-site-cert.yml -f site=<developer|marketing|holding> -f environment-name=<ci|prod>`
+# - **Entry:** `.github/workflows/request-site-cert.yml`
+# - **Files:** .github/workflows/request-site-cert.yml
+# - **Keywords:** holding page certificate, site certificate, acm certificate, certificate renewal, request-site-cert.yml, holding page domain, developer site, marketing site
+# - **Related:** OPS-30
+# @end-capability
+
 name: request site cert
 run-name: "request ${{ inputs.site }} site cert for ${{ inputs.environment-name }}"
 
@@ -9,11 +19,12 @@ on:
     inputs:
       site:
         type: choice
-        description: 'Static site to issue the certificate for'
+        description: 'Site to issue the certificate for'
         required: true
         options:
           - 'developer'
           - 'marketing'
+          - 'holding'
         default: 'developer'
       environment-name:
         type: choice
@@ -57,8 +68,16 @@ jobs:
         run: |
           set -euo pipefail
           # ci serves <env>-<site>; prod serves prod-<site> and the plain <site> name, so both are
-          # on the certificate.
-          if [ "${ENVIRONMENT_NAME?}" = "prod" ]; then
+          # on the certificate. The holding page lives under submit, and failover adds the live
+          # names as aliases to the holding distribution. CloudFront rejects an alias that the
+          # certificate does not cover, so the live names are SANs on the holding certificate.
+          if [ "${SITE?}" = "holding" ] && [ "${ENVIRONMENT_NAME?}" = "prod" ]; then
+            DOMAIN_NAME="holding.submit.diyaccounting.co.uk"
+            SUBJECT_ALTERNATIVE_NAMES="submit.diyaccounting.co.uk prod-submit.diyaccounting.co.uk"
+          elif [ "${SITE?}" = "holding" ]; then
+            DOMAIN_NAME="${ENVIRONMENT_NAME?}-holding.submit.diyaccounting.co.uk"
+            SUBJECT_ALTERNATIVE_NAMES="${ENVIRONMENT_NAME?}-submit.diyaccounting.co.uk"
+          elif [ "${ENVIRONMENT_NAME?}" = "prod" ]; then
             DOMAIN_NAME="prod-${SITE?}.diyaccounting.co.uk"
             SUBJECT_ALTERNATIVE_NAMES="${SITE?}.diyaccounting.co.uk"
           else

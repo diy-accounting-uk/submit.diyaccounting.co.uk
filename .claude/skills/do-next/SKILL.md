@@ -313,8 +313,8 @@ deploy of the same head in its first minute (before any stack job): two deploys 
 pure cost and contention. A local sync with `main` costs nothing and can happen any time; only the
 push waits.
 
-Before any push, check **every** deploy workflow for that branch — this repo has `deploy`,
-`deploy environment` and `deploy-app`, and checking only the one you were watching is how you push
+Before any push, check **every** deploy workflow for that branch — this repo has `deploy` and
+`deploy environment`, and checking only the one you were watching is how you push
 into a running deploy. Confirm they are finished by reading the runs, not by assuming elapsed time.
 
 Before the first push of a batch, run `scripts/batch-check.sh <batch-branch>` once, in one background

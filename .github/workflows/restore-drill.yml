@@ -2,10 +2,14 @@
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
 name: restore drill
-run-name: "Restore drill: prod tables into ci from the cross-account vault"
+run-name: "Restore drill: ${{ inputs.table-name || 'prod-env-receipts' }} from the prod vault; prod tables into ci"
 
-# Proves the cross-account vault does more than receive copies: it can rebuild a working
-# replica of prod's data in a different AWS account. For each critical prod DynamoDB table:
+# Two jobs. The first restores the newest recovery point of one critical table from the local
+# vault in the prod account (prod-env-primary-vault) into a throwaway table, counts the items,
+# and deletes it again.
+#
+# The second proves the cross-account vault does more than receive copies: it can rebuild a
+# working replica of prod's data in a different AWS account. For each critical prod DynamoDB table:
 # finds its newest recovery point in submit-cross-account-vault, copies that recovery point
 # into ci's own vault, restores the copy into ci as ci-restore-<table>, checks the restored
 # bundles table for the salt's own DynamoDB backup item so the salt is proven to come back
@@ -18,11 +22,17 @@ run-name: "Restore drill: prod tables into ci from the cross-account vault"
 # (914216784828) - so the copy has to be started from there, under backup-copy-role
 # (BackupAccountAccessStack), not from ci. Once the copy lands in ci's own vault
 # (ci-env-primary-vault), the restore is an ordinary same-account restore under
-# ci-env-backup-role, exactly like restore-test.yml's proven local restore in the backup
-# account. See ../private.diyaccounting.co.uk/engineering/submit/archive/_developers/RESTORE_DRILL.md.
+# ci-env-backup-role, like the first job's restore in the prod account. See
+# ../private.diyaccounting.co.uk/engineering/submit/archive/_developers/RESTORE_DRILL.md.
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      table-name:
+        description: 'Table to restore from the prod account vault'
+        type: string
+        required: false
+        default: 'prod-env-receipts'
   schedule:
     - cron: '41 7 2 * *'
 
@@ -35,6 +45,188 @@ env:
   CI_PRIMARY_VAULT_NAME: 'ci-env-primary-vault'
 
 jobs:
+  restore-from-primary-vault:
+    name: 'Restore from the prod account vault'
+    runs-on: ubuntu-24.04
+    environment: prod
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Set restore parameters
+        env:
+          TABLE_NAME_INPUT: ${{ inputs.table-name }}
+        run: |
+          set -euo pipefail
+          # A scheduled run has no inputs.
+          TABLE_NAME="${TABLE_NAME_INPUT:-prod-env-receipts}"
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          {
+            echo "ACCOUNT_ID=$ACCOUNT_ID"
+            echo "SOURCE_TABLE=$TABLE_NAME"
+            echo "SOURCE_TABLE_ARN=arn:aws:dynamodb:${{ env.AWS_REGION }}:$ACCOUNT_ID:table/$TABLE_NAME"
+            echo "VAULT_NAME=prod-env-primary-vault"
+            echo "RESTORE_ROLE_ARN=arn:aws:iam::$ACCOUNT_ID:role/prod-env-backup-role"
+            echo "TARGET_TABLE=$TABLE_NAME-restoretest-${{ github.run_id }}"
+          } >> "$GITHUB_ENV"
+
+      - name: Find the newest recovery point
+        id: recovery-point
+        run: |
+          set -euo pipefail
+          RP=$(aws backup list-recovery-points-by-backup-vault \
+            --backup-vault-name "$VAULT_NAME" \
+            --by-resource-arn "$SOURCE_TABLE_ARN" \
+            --region "${{ env.AWS_REGION }}" \
+            --query 'sort_by(RecoveryPoints[?Status==`COMPLETED`], &CompletionDate)[-1].RecoveryPointArn' \
+            --output json | jq -r '. // "None"')
+
+          if [ -z "$RP" ] || [ "$RP" = "None" ]; then
+            echo "FAIL: no completed recovery point for $SOURCE_TABLE in $VAULT_NAME."
+            echo "The backup plan has not produced a restorable point. Nothing to test."
+            exit 1
+          fi
+
+          echo "Recovery point: $RP"
+          echo "recovery_point_arn=$RP" >> "$GITHUB_OUTPUT"
+
+      - name: Start the restore job
+        id: restore
+        run: |
+          set -euo pipefail
+          META=$(aws backup get-recovery-point-restore-metadata \
+            --backup-vault-name "$VAULT_NAME" \
+            --recovery-point-arn "${{ steps.recovery-point.outputs.recovery_point_arn }}" \
+            --region "${{ env.AWS_REGION }}" \
+            --query RestoreMetadata --output json)
+
+          META=$(echo "$META" | jq --arg t "$TARGET_TABLE" '.targetTableName = $t')
+          echo "Restoring into $TARGET_TABLE"
+
+          JOB_ID=$(aws backup start-restore-job \
+            --recovery-point-arn "${{ steps.recovery-point.outputs.recovery_point_arn }}" \
+            --iam-role-arn "$RESTORE_ROLE_ARN" \
+            --resource-type DynamoDB \
+            --metadata "$META" \
+            --region "${{ env.AWS_REGION }}" \
+            --query RestoreJobId --output text)
+
+          echo "Restore job: $JOB_ID"
+          echo "restore_job_id=$JOB_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for the restore to finish
+        run: |
+          set -euo pipefail
+          JOB_ID="${{ steps.restore.outputs.restore_job_id }}"
+          for _ in $(seq 1 120); do
+            STATUS=$(aws backup describe-restore-job --restore-job-id "$JOB_ID" \
+              --region "${{ env.AWS_REGION }}" --query Status --output text)
+            echo "$(date -u +%H:%M:%S) restore job $JOB_ID: $STATUS"
+            case "$STATUS" in
+              COMPLETED) exit 0 ;;
+              FAILED|ABORTED)
+                aws backup describe-restore-job --restore-job-id "$JOB_ID" \
+                  --region "${{ env.AWS_REGION }}" --output json
+                echo "FAIL: restore job ended $STATUS."
+                exit 1 ;;
+            esac
+            sleep 30
+          done
+          echo "FAIL: restore job $JOB_ID did not finish within 60 minutes."
+          exit 1
+
+      - name: Verify the restored table
+        id: verify
+        run: |
+          set -euo pipefail
+          STATE=$(aws dynamodb describe-table --table-name "$TARGET_TABLE" \
+            --region "${{ env.AWS_REGION }}" --query 'Table.TableStatus' --output text)
+          if [ "$STATE" != "ACTIVE" ]; then
+            echo "FAIL: restored table $TARGET_TABLE is $STATE, not ACTIVE."
+            exit 1
+          fi
+
+          RESTORED_ITEMS=$(aws dynamodb scan --table-name "$TARGET_TABLE" --select COUNT \
+            --region "${{ env.AWS_REGION }}" --query Count --output text | awk '{ total += $1 } END { print total + 0 }')
+          # ItemCount is DynamoDB's own approximate count, refreshed about every six hours, not a
+          # live scan. Reading it here instead of scanning $SOURCE_TABLE keeps this check off the
+          # customer-table-scan security detector. The tolerance is a floor of 5: staleness only
+          # ever lags the true count, so a source that has held meaningfully more than 5 items at
+          # any point in the last six hours still reads above the floor, while noise near zero
+          # (a table that only just started filling) does not produce a spurious failure.
+          SOURCE_ITEMS=$(aws dynamodb describe-table --table-name "$SOURCE_TABLE" \
+            --region "${{ env.AWS_REGION }}" --query 'Table.ItemCount' --output text)
+          SOURCE_ITEMS_FLOOR=5
+
+          echo "Restored $TARGET_TABLE: $RESTORED_ITEMS items"
+          echo "Source   $SOURCE_TABLE: $SOURCE_ITEMS items (approximate)"
+          echo "restored_items=$RESTORED_ITEMS" >> "$GITHUB_OUTPUT"
+          echo "source_items=$SOURCE_ITEMS" >> "$GITHUB_OUTPUT"
+
+          # The source has moved on since the recovery point, so the counts differ by design.
+          # An empty restore of a source holding more than the floor is the failure worth catching.
+          if [ "$RESTORED_ITEMS" -eq 0 ] && [ "$SOURCE_ITEMS" -gt "$SOURCE_ITEMS_FLOOR" ]; then
+            echo "FAIL: restored table is empty but $SOURCE_TABLE holds approximately $SOURCE_ITEMS items."
+            exit 1
+          fi
+
+          echo "result=pass" >> "$GITHUB_OUTPUT"
+
+      - name: Delete the temporary table
+        if: always() && env.TARGET_TABLE != ''
+        run: |
+          set -euo pipefail
+          if aws dynamodb describe-table --table-name "$TARGET_TABLE" \
+               --region "${{ env.AWS_REGION }}" >/dev/null 2>&1; then
+            aws dynamodb delete-table --table-name "$TARGET_TABLE" --region "${{ env.AWS_REGION }}" >/dev/null
+            echo "Deleted $TARGET_TABLE"
+          else
+            echo "No table $TARGET_TABLE to delete"
+          fi
+
+      - name: Publish the result
+        if: always()
+        env:
+          RESULT: ${{ steps.verify.outputs.result }}
+          RESTORED_ITEMS: ${{ steps.verify.outputs.restored_items }}
+          SOURCE_ITEMS: ${{ steps.verify.outputs.source_items }}
+        run: |
+          set -euo pipefail
+          [ "${RESULT}" = "pass" ] && VALUE=1 || VALUE=0
+          aws cloudwatch put-metric-data \
+            --namespace DIYAccounting/Backups \
+            --region "${{ env.AWS_REGION }}" \
+            --metric-data "MetricName=RestoreTestPassed,Dimensions=[{Name=Vault,Value=prod-env-primary-vault}],Value=$VALUE,Unit=Count"
+          {
+            echo "## Restore from the prod account vault: ${SOURCE_TABLE:-prod-env-receipts}"
+            echo ""
+            echo "| Vault | Result | Items |"
+            echo "|---|---|---|"
+            echo "| prod-env-primary-vault | ${RESULT:-fail} | restored ${RESTORED_ITEMS:--} of ${SOURCE_ITEMS:--} live |"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
   restore-drill:
     name: 'Copy prod recovery points into ci and restore them there'
     runs-on: ubuntu-24.04
