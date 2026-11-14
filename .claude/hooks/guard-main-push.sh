@@ -43,9 +43,9 @@ if [ -z "$files" ]; then
   allow "No commits ahead of origin/main; push is a no-op."
 fi
 
-nonmd=$(printf '%s\n' "$files" | grep -v -E '\.md$' || true)
+nonmd=$(printf '%s\n' "$files" | grep -v -E '(\.md$|^\.claude/|^cc$)' || true)
 if [ -z "$nonmd" ]; then
-  allow "Docs-only push to main: every changed file is .md."
+  allow "Docs and Claude configuration push to main: every changed file is .md, under .claude/ or the cc launcher."
 else
-  deny "Push to main blocked, non-markdown files in the commits: $(printf '%s' "$nonmd" | head -5 | tr '\n' ' '). Open a PR so CI deploys and tests the change."
+  deny "Push to main blocked, files that are not docs or Claude configuration in the commits: $(printf '%s' "$nonmd" | head -5 | tr '\n' ' '). Open a PR so CI deploys and tests the change."
 fi
