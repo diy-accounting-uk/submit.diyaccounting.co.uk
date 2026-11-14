@@ -825,6 +825,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability DEV-32 -->
 <!-- capability DEV-33 -->
 <!-- capability DEV-34 -->
+<!-- capability DEV-63 -->
 <!-- capability DEV-35 -->
 <!-- capability DEV-36 -->
 <!-- capability DEV-37 -->

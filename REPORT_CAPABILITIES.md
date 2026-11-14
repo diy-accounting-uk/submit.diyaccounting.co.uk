@@ -544,6 +544,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready: use when the operator says auto-merge, merge what's ready, or asks for the repository's merge state.
     - [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do: use when the operator wants to see what would merge before anything does.
     - [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches: use when the operator says clean, clean up, or tidy the repo.
+    - [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts) Find unused and duplicated workflows, scripts and npm scripts: use when the operator asks which workflows, scripts or npm scripts are unused or duplicated, in any workspace repository.
     - [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch: use when the operator says cool down, or a batch is stacking problems faster than it lands them.
     - [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down: use when the operator lifts cool-down in their own words, such as carry on or resume.
     - [DEV-37](#dev-37-write-the-session-report) Write the session report: use when the operator asks for a session report, an account of the session, or how did this session do.
@@ -5659,7 +5660,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-60](#dev-60-fetch-the-local-tls-certificate) Fetch the local TLS certificate · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
-- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report · [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard · [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt · [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session · [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill · [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board · [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks · [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now) Say whether a /clear or a restart is safe now
+- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts) Find unused and duplicated workflows, scripts and npm scripts · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report · [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard · [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt · [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session · [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill · [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board · [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks · [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now) Say whether a /clear or a restart is safe now
 <!-- /generated:area DEV -->
 
 ### Simulator server & OAuth mocks (DEV)
@@ -5976,6 +5977,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready
 - [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do
 - [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches
+- [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts) Find unused and duplicated workflows, scripts and npm scripts
 - [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch
 - [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down
 - [DEV-37](#dev-37-write-the-session-report) Write the session report
@@ -6084,6 +6086,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/clean/SKILL.md
 - **Keywords:** clean, stale deployment sweep, merged branch cleanup, worktree removal, build output cleanup, tidy repo, sibling repositories, inbox, dependabot, code scanning, failing workflows, unpushed commits
 - **Related:** DEV-22, DEV-27
+
+#### DEV-63 Find unused and duplicated workflows, scripts and npm scripts
+
+- **Use when:** the operator asks which workflows, scripts or npm scripts are unused or duplicated, in any workspace repository.
+- **Does:** clean-unused searches every reference path for each workflow, composite action, scripts/ file and npm script. It reads the last run, the rulesets and the git history. It proposes one table per repository of items to remove or combine, each with its evidence. Removal waits for the operator and lands as one PR per repository.
+- **Run:** `/clean-unused`, or `/clean-unused <repository>`
+- **Entry:** `.claude/skills/clean-unused/SKILL.md`
+- **Files:** .claude/skills/clean-unused/SKILL.md
+- **Keywords:** unused workflow, dead script, unused npm script, duplicate workflow, duplicate script, alias, consolidate, remove tooling, dead code
+- **Related:** DEV-34, DEV-43
 
 #### DEV-35 Cool down an overloaded batch
 
@@ -7144,6 +7156,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - alert thresholds: [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project)
 - alert topic: [OPS-119](#ops-119-provision-the-ops-stack)
 - alerts: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram), [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report)
+- alias: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
 - alias move: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
 - alias txt record: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
 - all-clients: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools), [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client)
@@ -7627,6 +7640,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - console image api: [DATA-66](#data-66-serve-a-captured-aws-console-image-to-operators)
 - console image review: [DEV-55](#dev-55-review-the-operator-dashboard)
 - console links: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation), [OPS-80](#ops-80-build-aws-console-deep-links-for-operators)
+- consolidate: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
 - consume token: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
 - contact sheet: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday), [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
 - context: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
@@ -7766,7 +7780,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - date range match: [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations)
 - date utils: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - dated quarters: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates), [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
+- dead code: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
 - dead letter queue: [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values)
+- dead script: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
 - deadline read: [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod)
 - deadlines: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - debugger client: [DEV-02](#dev-02-simulate-local-app-oauth)
@@ -7931,6 +7947,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dt relayout: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - due dates: [HMRC-03](#hmrc-03-retrieve-vat-obligations), [HMRC-10](#hmrc-10-retrieve-itsa-obligations)
 - duplicate mechanism: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
+- duplicate script: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
+- duplicate workflow: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
 - durable user: [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - duration: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
 - dynalite: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
@@ -9134,6 +9152,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - remedy row: [OPS-21](#ops-21-auto-close-resolved-alarm-issues), [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope)
 - remove bundle: [BILL-03](#bill-03-delete-a-bundle)
 - remove pass: [BILL-56](#bill-56-delete-generated-passes)
+- remove tooling: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
 - removeline: [SS-04](#ss-04-apply-book-edits-and-derivations)
 - render: [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check), [CH-07](#ch-07-render-micro-entity-accounts-for-review)
 - render dashboard: [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session)
@@ -9728,6 +9747,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - unset iam session: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - unsigned commit: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
 - unsigned jwt: [DEV-02](#dev-02-simulate-local-app-oauth)
+- unused npm script: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
+- unused workflow: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
 - unverified issue: [SITE-05](#site-05-submit-support-tickets)
 - update workflow: [SS-41](#ss-41-run-the-scheduled-dependency-and-tax-data-update-workflow)
 - updateuserbundles: [BILL-03](#bill-03-delete-a-bundle)
