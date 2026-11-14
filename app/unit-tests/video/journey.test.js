@@ -3,7 +3,7 @@
 
 // app/unit-tests/video/journey.test.js
 
-import { describe, test, expect, vi, afterEach } from "vitest";
+import { describe, test, expect, vi, afterEach, beforeEach } from "vitest";
 import {
   resolveHmrcTestUser,
   credentialFieldMaskInitScript,
@@ -50,6 +50,11 @@ describe("credentialFieldMaskInitScript", () => {
     delete globalThis.document;
     delete globalThis.MutationObserver;
     delete globalThis.requestAnimationFrame;
+    delete globalThis.location;
+  });
+
+  beforeEach(() => {
+    globalThis.location = { origin: "https://auth.example.test" };
   });
 
   function fakeDocument(documentElement) {
@@ -77,7 +82,7 @@ describe("credentialFieldMaskInitScript", () => {
     };
     globalThis.requestAnimationFrame = vi.fn();
 
-    credentialFieldMaskInitScript({ selectors: "input" });
+    credentialFieldMaskInitScript({ selectors: "input", appOrigin: "https://app.example.test" });
 
     expect(observe).toHaveBeenCalledWith(globalThis.document.documentElement, { childList: true, subtree: true });
     expect(globalThis.requestAnimationFrame).not.toHaveBeenCalled();
@@ -95,7 +100,7 @@ describe("credentialFieldMaskInitScript", () => {
     const frames = [];
     globalThis.requestAnimationFrame = vi.fn((cb) => frames.push(cb));
 
-    expect(() => credentialFieldMaskInitScript({ selectors: "input" })).not.toThrow();
+    expect(() => credentialFieldMaskInitScript({ selectors: "input", appOrigin: "https://app.example.test" })).not.toThrow();
     expect(observe).not.toHaveBeenCalled();
     expect(frames).toHaveLength(1);
 

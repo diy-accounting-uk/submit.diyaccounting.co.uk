@@ -4,4 +4,4 @@
 // Generated from the listing register by scripts/build-review-links.mjs, do not edit. Run
 // npm run build:review-links.
 
-export const reviewLinks = [];
+export const reviewLinks = [{ site: "Trustpilot", url: "https://www.trustpilot.com/review/diyaccounting.co.uk" }];

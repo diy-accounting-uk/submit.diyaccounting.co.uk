@@ -78,6 +78,6 @@ describe("the review line", () => {
   });
 
   test("the customer copy shows no line while the generated list is empty", () => {
-    expect(copy({ kind: "accepted", text: "Accepted by HMRC" }, undefined)).not.toContain("customer-copy-review");
+    expect(copy({ kind: "accepted", text: "Accepted by HMRC" }, [])).not.toContain("customer-copy-review");
   });
 });

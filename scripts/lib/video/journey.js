@@ -140,7 +140,10 @@ export async function provisionSceneCompany(env) {
 // The browser-side body of installCredentialFieldMask's addInitScript, exported on its own so
 // it can run against a fake document in a unit test with no browser at all — the same reason
 // headlinePlacement.js's pure math sits outside overlay-runtime.js.
-export function credentialFieldMaskInitScript({ selectors }) {
+export function credentialFieldMaskInitScript({ selectors, appOrigin }) {
+  // The app's own pages hold numeric text inputs (the VAT form's whole-number boxes) that match
+  // the code input's selector, so the mask applies only on the identity provider's origin.
+  if (location.origin === appOrigin) return;
   const apply = () => {
     for (const field of document.querySelectorAll(selectors)) {
       field.style.setProperty("-webkit-text-security", "disc");
@@ -166,6 +169,6 @@ export function credentialFieldMaskInitScript({ selectors }) {
   observeRoot();
 }
 
-export async function installCredentialFieldMask(page) {
-  await page.addInitScript(credentialFieldMaskInitScript, { selectors: ONE_TIME_CODE_FIELDS });
+export async function installCredentialFieldMask(page, baseUrl) {
+  await page.addInitScript(credentialFieldMaskInitScript, { selectors: ONE_TIME_CODE_FIELDS, appOrigin: new URL(baseUrl).origin });
 }
