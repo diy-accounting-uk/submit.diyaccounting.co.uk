@@ -470,6 +470,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito: use when the MCP's own tools (cloud book open/save) need a signed-in DIY Accounting Submit session.
     - [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront: use when a chat client must reach the submission MCP at `/mcp` with OAuth, or the routes, stack, edge behaviours or rate rules behind that endpoint need tracing.
     - [MCP-26](#mcp-26-seed-the-demo-reviewer-user-and-its-two-sample-books) Seed the demo reviewer user and its two sample books: use when a directory reviewer's sign-in on the MCP consent page needs its user, its one-time code seed or its sample books to exist, or the weekly seed run needs tracing.
+    - [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository) Sync the plugin folder to the public plugin repository: use when plugins/diya-submit/ changes and the public diya-submit-plugin repository must match it.
     - [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness) Demonstrate the submission MCP in a scripted chat harness: use when a demonstration or recording needs a chat that makes real submission MCP tool calls without a model, on the local server or the ci lane.
   - [Book and derivation tools](#book-and-derivation-tools-mcp)
     - [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp) Load and save diya-gl books via MCP: use when an MCP session needs to open or save a diya-gl book, locally or in the cloud.
@@ -5251,7 +5252,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## MCP and tools (MCP)
 
 <!-- generated:area MCP -->
-- [Server and CLI](#server-and-cli-mcp): [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools · [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito · [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront · [MCP-26](#mcp-26-seed-the-demo-reviewer-user-and-its-two-sample-books) Seed the demo reviewer user and its two sample books · [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness) Demonstrate the submission MCP in a scripted chat harness
+- [Server and CLI](#server-and-cli-mcp): [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools · [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito · [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront · [MCP-26](#mcp-26-seed-the-demo-reviewer-user-and-its-two-sample-books) Seed the demo reviewer user and its two sample books · [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository) Sync the plugin folder to the public plugin repository · [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness) Demonstrate the submission MCP in a scripted chat harness
 - [Book and derivation tools](#book-and-derivation-tools-mcp): [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp) Load and save diya-gl books via MCP · [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing · [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools) Derive VAT figures via MCP tools · [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures) Derive ITSA quarterly and annual submission figures · [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file) Hand the VAT figures to the browser to file · [MCP-25](#mcp-25-show-a-vat-return-as-a-card-inside-the-assistant) Show a VAT return as a card inside the assistant
 - [Filing and practice tools](#filing-and-practice-tools-mcp): [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api) File VAT returns and accounts via API · [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation) Manage practice clients and HMRC agent authorisation · [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client) Run a client-scoped tool across every practice client · [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat) Take Companies House codes on a page instead of in the chat · [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp) Start an HMRC grant from the MCP
 - [Finance data import](#finance-data-import-mcp): [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines) Import a NatWest bank statement into diya-gl lines · [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set) Seed a book from a workbook set · [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index) Read invoices from the local mail index · [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines) Import Stripe transaction and payout lines · [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines) Parse PayPal statements into diya-gl lines · [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book) Build and hand over the company's own book
@@ -5265,6 +5266,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito
 - [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront
 - [MCP-26](#mcp-26-seed-the-demo-reviewer-user-and-its-two-sample-books) Seed the demo reviewer user and its two sample books
+- [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository) Sync the plugin folder to the public plugin repository
 - [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness) Demonstrate the submission MCP in a scripted chat harness
 <!-- /generated:group server-and-cli-mcp -->
 
@@ -5307,6 +5309,15 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/ensure-mcp-reviewer-user.js, .github/workflows/mcp-reviewer-seed.yml, app/lib/mcpReviewerSignIn.js, app/lib/totp.js, app/unit-tests/scripts/ensure-mcp-reviewer-user.test.js
 - **Keywords:** mcp reviewer, demo user, directory reviewer, reviewer sign-in, sample books, totp seed, mcp-reviewer-seed
 - **Related:** MCP-18, DEV-16
+
+#### MCP-27 Sync the plugin folder to the public plugin repository
+
+- **Use when:** plugins/diya-submit/ changes and the public diya-submit-plugin repository must match it.
+- **Does:** sync-plugin-repo.yml copies plugins/diya-submit/ to the root of diy-accounting-uk/diya-submit-plugin on every change on main, with a deploy key, and pushes one commit when the content differs.
+- **Run:** `gh workflow run sync-plugin-repo.yml --ref main`
+- **Entry:** `.github/workflows/sync-plugin-repo.yml`
+- **Files:** .github/workflows/sync-plugin-repo.yml, plugins/diya-submit/
+- **Keywords:** plugin repository, diya-submit-plugin, plugin sync, deploy key, PLUGIN_REPO_DEPLOY_KEY, connector directory
 
 #### MCP-19 Demonstrate the submission MCP in a scripted chat harness
 
@@ -7526,6 +7537,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - confirmation statement: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages)
 - confirmation statement due: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in)
 - conflict card: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
+- connector directory: [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository)
 - connector listing: [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry)
 - connector url: [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
 - consent: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
@@ -7714,7 +7726,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - deploy destroy run: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
 - deploy environment: [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets)
 - deploy finish: [OPS-149](#ops-149-finish-a-deployment)
-- deploy key: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm)
+- deploy key: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository)
 - deploy metrics row: [OPS-25](#ops-25-record-dora-and-probe-metrics)
 - deploy phase: [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment), [OPS-149](#ops-149-finish-a-deployment), [OPS-150](#ops-150-build-a-deployment)
 - deploy pipeline: [OPS-06](#ops-06-run-the-full-deployment-pipeline)
@@ -7790,6 +7802,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - diya-gl-mcp: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - diya-management: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - diya-submit-mcp: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
+- diya-submit-plugin: [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository)
 - diya_gl_base_url: [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
 - diya_gl_snapshot: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - diyaccounting.co.uk: [OPS-133](#ops-133-serve-the-root-domain-holding-page)
@@ -8824,6 +8837,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - playwright mcp: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server)
 - playwright recording: [DEV-40](#dev-40-record-a-product-demo-video)
 - playwright steps: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers)
+- plugin repository: [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository)
+- plugin sync: [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository)
+- plugin_repo_deploy_key: [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository)
 - pna: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
 - png response: [DATA-66](#data-66-serve-a-captured-aws-console-image-to-operators)
 - point in time recovery: [OPS-50](#ops-50-drill-and-test-pitr-database-restoration)
