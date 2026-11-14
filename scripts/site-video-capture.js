@@ -465,7 +465,7 @@ async function main() {
   page.setDefaultTimeout(60000);
   if (addOnPageLogging) addOnPageLogging(page);
   await installOverlay(page);
-  if (installCredentialFieldMask) await installCredentialFieldMask(page);
+  if (installCredentialFieldMask) await installCredentialFieldMask(page, args.baseUrl);
 
   const captureEnabled = !args.stillsOnly;
   const encodeEnabled = !args.stillsOnly && !args.noEncode;
