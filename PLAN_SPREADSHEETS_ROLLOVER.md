@@ -18,6 +18,12 @@ Status: the operator replaced the earlier task lists on 2026-11-14 with the twel
 ## Goals
 
 - A run with nothing new commits nothing and costs nothing.
+- Spreadsheets `main` is green again, at its 17:56 state, with PR #200 closed (SR1, SR12).
+- Generate runs commit only new year-end folders, for all four products, scheduled or dispatched (SR2, SR3).
+- Pinned packages that no workflow overwrites, for the exact-value checks, with their report fixtures out of the prune's reach (SR4, SR5, SR8).
+- A test that fails when a pinned package is more than six months old (SR6, SR7).
+- A test over every package that names no date (SR9).
+- A template, tax-data or product change reaches the existing packages, committing only the packages whose content changed (SR10, SR11).
 
 ## Where it stands
 
