@@ -3,7 +3,7 @@
 
 # PLAN: the spreadsheets rest state when the year-end window rolls
 
-Status: Option 2 chosen on 2026-11-14; an independent review the same day (`../private.diyaccounting.co.uk/engineering/spreadsheets/REVIEW_SR1_SR10_2026-11-14.md`) found the first SR1 to SR10 would fail the goals, and the operator adopted all twelve of its changes. The tasks are SR1 to SR12 and the decisions OSR5 and OSR7 in "The changes for Option 2", each a row on `NEXT.md`. Repository: `../spreadsheets.diyaccounting.co.uk`.
+Status: Option 2 chosen on 2026-11-14; an independent review the same day (`../private.diyaccounting.co.uk/engineering/spreadsheets/REVIEW_SR1_SR10_2026-11-14.md`) found the first SR1 to SR10 would fail the goals, and the operator adopted all twelve of its changes. The tasks are SR1 to SR12 and the decision OSR5 in "The changes for Option 2", each a row on `NEXT.md`. Repository: `../spreadsheets.diyaccounting.co.uk`.
 
 ## Operator assertions (verbatim)
 
@@ -85,15 +85,15 @@ All in `../spreadsheets.diyaccounting.co.uk`, as adopted from the review. 44 fil
 | SR4 | A gate before each generate commit: the leg runs the full unit tier and the parity gate on the tree it will commit; extra-scenario anomalies block the commit; the job dispatches `test.yml` after its push; the scheduled prod deploy requires a green `test.yml` record for `HEAD`. | ~6 | red means a defect; nothing unchecked reaches the site |
 | SR5 | A tax-data horizon check: a unit test fails eight weeks before `yearEndCutoff` reaches a year-end with no `app/data/<regime>-<year>.toml`. What the new file holds is OSR5. | ~1 | packages keep appearing |
 | SR6 | A workflow that rolls the anchor: on dispatch, and on a schedule a set time before each anchor's year-end, it builds the populated anchor at the newest year-end in the window, refreshes the parity and report fixtures and the registry, and opens a pull request for `/auto-merge`. | ~3 | keeps itself current |
-| SR7 | The in-scope set in the generate workflows: every year-end from today minus 12 months, by day, to the latest, inclusive (26 Company year-ends today, Nov25 to Dec27); S2 is the CLI engine over the export of the populated package; the judge runs only at the latest leg; the Basic Sole Trader, Self Employed and Taxi Driver matrix as OSR7 decides. | ~6 | current year-ends checked by rules that name no year-end |
+| SR7 | The in-scope set in the generate workflows: every year-end from today minus 12 months, by day, to the latest, inclusive (26 Company year-ends today, Nov25 to Dec27); S2 is the CLI engine over the export of the populated package; the judge runs only at the latest leg; the Basic Sole Trader, Self Employed and Taxi Driver matrix shrinks to the two in-scope tax years (operator, 2026-11-14). | ~6 | current year-ends checked by rules that name no year-end |
 | SR8 | A `test.yml` job for pull requests that touch `app/templates`, `app/data`, `app/products` or the generator libraries: generate and reconcile the in-scope year-ends of the products the change reaches, with no commit. | ~2 | a change is regression tested |
 | SR9 | One scheduled `generate-all.yml` in place of the four product schedules (it runs the products one after another, because their commits collide on `provenance-data.js`, the reconciliation index and `spec.html`). Its first job exits before generating when the window adds no year-end and the hash of the inputs equals the one recorded in the last generate commit. | ~5 | no dispatch; nothing new costs nothing |
 | SR10 | Pull request #200 (SC4) keeps the PDF epoch, the provenance writer and the page date, drops the example-workbook keeper, puts the scheduled-run guard back until SR11, and adds the PDF epoch to the Basic Sole Trader, Self Employed and Taxi Driver workflows. | ~6 | nothing new commits nothing |
 | SR11 | A dispatched CI job generates one year-end of each product twice with the same epoch and compares every output (packages, reports, screenshots, pages); each timestamp source found is fixed; then the scheduled-run guard goes. | ~4 | nothing new commits nothing |
 | SR12 | Payslip 05 (seven packages built in `generate-se.yml`) joins the in-scope checks. | ~2 | red means a defect in any download |
 
-Decisions: **OSR5**, what a new tax-year file holds when the horizon check fires (a human-written file from HMRC's figures, or the last year carried forward with a flag that blocks publishing until checked). **OSR7**, the Basic Sole Trader, Self Employed and Taxi Driver matrix in SR7 (keep all seven tax years reconciled, or only the in-scope two), and whether "today minus 12 months, by day" is the in-scope rule.
+Decisions: **OSR5**, what a new tax-year file holds when the horizon check fires (a human-written file from HMRC's figures, or the last year carried forward with a flag that blocks publishing until checked).
 
 Rules for these rows: an agent runs only the test files its change reaches, with `VITEST_MAX_WORKERS=2`, and no browser or LibreOffice suite; a row that changes browser specs is proved with `gh workflow run test.yml --ref <branch>`, which may run as often as needed.
 
-Order, as soon as each can start: SR1, SR2, SR3, SR4 and SR5 in one pull request make `main` green; SR6, SR7 (after OSR7), SR9 and SR10 start when it merges; SR8 and SR12 follow SR7; SR11 follows SR9 and SR10.
+Order, as soon as each can start: SR1, SR2, SR3, SR4 and SR5 in one pull request make `main` green; SR6, SR7, SR9 and SR10 start when it merges; SR8 and SR12 follow SR7; SR11 follows SR9 and SR10.
