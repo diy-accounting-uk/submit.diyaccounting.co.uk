@@ -7,7 +7,7 @@
 // - **Does:** publish-css-bundle.mjs replaces the @import list in a web root's submit.css with the imported files, in order, and rewrites relative url() references to resolve from submit.css's directory. The source files stay as they are, so local development and the tests serve the @import form.
 // - **Run:** `node scripts/publish-css-bundle.mjs <web-root>`
 // - **Entry:** `scripts/publish-css-bundle.mjs`
-// - **Files:** scripts/publish-css-bundle.mjs, app/unit-tests/scripts/publishCssBundle.test.js, scripts/deploy-app.js, .github/workflows/deploy-app.yml, .github/workflows/deploy-stacks.yml
+// - **Files:** scripts/publish-css-bundle.mjs, app/unit-tests/scripts/publishCssBundle.test.js, scripts/deploy-app.js, .github/workflows/deploy-stacks.yml
 // - **Keywords:** css bundle, submit.css, import chain, first paint, publish step
 // - **Related:** OPS-143
 // @end-capability

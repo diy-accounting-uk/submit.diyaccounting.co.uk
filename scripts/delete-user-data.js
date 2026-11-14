@@ -4,11 +4,11 @@
 
 // @capability OPS-40 Delete a customer's data for GDPR erasure
 // - **Use when:** a customer has exercised their GDPR right to erasure.
-// - **Does:** delete-user-data.js deletes a customer's DynamoDB records, OAuth tokens and audit logs, via the DynamoDB API and Secrets Manager. It reads the ids of the customer's subscription rows from the analytics lake, because the subscriptions table has no hashed-sub key. delete-user-data-by-email.yml resolves an email to its hashed subject through an Athena lookup first; delete-user-data.yml deletes directly by hashed subject. confirm=false runs a dry run.
+// - **Does:** delete-user-data.js deletes a customer's DynamoDB records, OAuth tokens and audit logs, via the DynamoDB API and Secrets Manager. It reads the ids of the customer's subscription rows from the analytics lake, because the subscriptions table has no hashed-sub key. delete-user-data-by-email.yml finds the Cognito user by email with list-users, hashes its sub, exports the data, calls delete-user-data.yml with the hashed sub, then deletes the Cognito user. delete-user-data.yml deletes by hashed sub alone, for an account with no Cognito user. confirm=false runs a dry run.
 // - **Run:** `gh workflow run delete-user-data-by-email.yml -f email=<email> -f environment-name=<ci|prod> -f confirm=<true|false>`; `gh workflow run delete-user-data.yml -f hashed-sub=<hash> -f environment-name=<ci|prod> -f confirm=<true|false>`
 // - **Entry:** `scripts/delete-user-data.js:main`
 // - **Files:** .github/workflows/delete-user-data-by-email.yml, .github/workflows/delete-user-data.yml, scripts/delete-user-data.js, app/unit-tests/scripts/deleteUserData.test.js
-// - **Keywords:** gdpr erasure, delete user data, right to be forgotten, hashed sub, athena lookup, dry run
+// - **Keywords:** gdpr erasure, delete user data, right to be forgotten, hashed sub, cognito list-users, email lookup, dry run
 // - **Related:** OPS-41, OPS-49
 // @end-capability
 

@@ -71,7 +71,7 @@ Most workflows take the environment from an input or a computed `github-environm
 |---|---|
 | `ROOT_ACTIONS_ROLE_ARN` | `deploy.yml`, `destroy-ci.yml`, `destroy-prod.yml`, `promote-ci-apex.yml`, `set-origins.yml` |
 | `ROOT_DEPLOY_ROLE_ARN` | same five workflows |
-| `ROOT_HOSTED_ZONE_ID` | `deploy.yml`, `promote-ci-apex.yml`, `request-holding-cert.yml` |
+| `ROOT_HOSTED_ZONE_ID` | `deploy.yml`, `promote-ci-apex.yml`, `request-site-cert.yml` |
 
 Recreate: role ARNs with `aws --profile diya-management iam get-role --role-name root-github-actions-role --query Role.Arn --output text` (and `root-deployment-role`); zone id with `aws --profile diya-management route53 list-hosted-zones-by-name --dns-name diyaccounting.co.uk --query 'HostedZones[0].Id' --output text` with `/hostedzone/` removed. The org also holds `GATEWAY_*` and `SPREADSHEETS_*` role ARNs for the sibling repositories.
 
@@ -100,13 +100,13 @@ App and installation ids come from the GitHub App settings pages (the agent App 
 | `SUBMIT_CERTIFICATE_ARN` | `deploy-environment.yml` |
 | `SUBMIT_REGIONAL_CERTIFICATE_ARN` | `deploy-environment.yml`, `deploy.yml`, `promote-ci-apex.yml` |
 | `SUBMIT_HOLDING_CERTIFICATE_ARN` | `deploy-environment.yml`, `deploy-cdk-stack.yml` |
-| `COMPANIES_HOUSE_CLIENT_ID` | `deploy.yml`, `deploy-app.yml` |
+| `COMPANIES_HOUSE_CLIENT_ID` | `deploy.yml` |
 
 Recreate: role ARNs with `aws --profile <profile> iam get-role --role-name <account-name>-github-actions-role --query Role.Arn --output text` (and `-deployment-role`, and the alarm-triage role); certificate ARNs with `aws --profile <profile> acm list-certificates --region us-east-1` (`--region eu-west-2` for the regional one) and the matching domain.
 
 Also set:
 
-- `ci` only: `SUBMIT_GA4_MEASUREMENT_ID` (`deploy.yml`, `deploy-app.yml`).
+- `ci` only: `SUBMIT_GA4_MEASUREMENT_ID` (`deploy.yml`).
 - `prod` only: `PAYPAL_CLIENT_ID` (`deploy-environment.yml`), `SUBMIT_GOOGLE_AUTH_MODE`.
 - Read by `deploy-environment.yml`, environment level not yet set: `SUBMIT_COMPANY_BOOK_ID` (a v4 UUID) and `SUBMIT_COMPANY_BOOK_OWNER_PREFIX` (64 lowercase hex characters). `IngestionStack` builds the company-book resources only when both are present.
 - Read by `probe-test.yml` and `video-capture.yml` on `ci`, not yet set: `TEST_COMPANIES_HOUSE_USER_ID`.
@@ -143,7 +143,7 @@ Values never leave GitHub. `deploy-environment.yml` copies the environment secre
 | `TELEGRAM_BOT_TOKEN` | `{env}/submit/telegram/bot_token` | ci, prod |
 | `PAYPAL_CLIENT_SECRET` | `{env}/submit/paypal/client_secret` | prod |
 
-Other consumers: `HMRC_SANDBOX_CLIENT_SECRET` is also read by `test.yml`, `probe-test.yml`, `generate-pass.yml`, `create-hmrc-test-user.yml`, `video-capture.yml` and `deploy-app.yml`.
+Other consumers: `HMRC_SANDBOX_CLIENT_SECRET` is also read by `test.yml`, `probe-test.yml`, `generate-pass.yml`, `create-hmrc-test-user.yml` and `video-capture.yml`.
 
 Read on `ci`: `COMPANIES_HOUSE_SANDBOX_API_KEY` (also written by `deploy-environment.yml` to `ci/submit/companies-house/sandbox_api_key` for the registered office read), `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET` (`deploy.yml`, `probe-test.yml`, `video-capture.yml`, for the Companies House sandbox filing suites).
 

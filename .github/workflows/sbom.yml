@@ -71,7 +71,7 @@ jobs:
       - name: Container base image is not covered
         run: |
           echo "This workflow generates SBOMs from source manifests (npm, Maven). It does not"
-          echo "scan the container image that deploy-app.yml builds from Dockerfile and pushes"
+          echo "scan the container image that deploy-build.yml builds from Dockerfile and pushes"
           echo "to ECR. The base image's OS packages come from upstream, not from a manifest in"
           echo "this repo, so neither the npm nor the Maven generator can see them. Covering that"
           echo "needs an image scanner (e.g. Syft or Trivy) run against the built image, which is"

@@ -4,9 +4,9 @@
 name: 'Wait for ci deploys'
 description: >
   Waits for other workflow runs that could race this one, polling the GitHub API instead of a
-  concurrency group. Default mode: every deploy.yml, deploy-app.yml, destroy-ci.yml and
-  video-capture.yml run on a non-main branch that was created before this run, so ci runs queue
-  in creation order instead of overlapping or having an older one dropped by a concurrency group.
+  concurrency group. Default mode: every deploy.yml, destroy-ci.yml and video-capture.yml run
+  on a non-main branch that was created before this run, so ci runs queue in creation order
+  instead of overlapping or having an older one dropped by a concurrency group.
   Set match-mode to 'environment' to instead wait for any unfinished run of the named workflow(s)
   resolved to the same environment as target-environment, regardless of creation order.
 inputs:
@@ -16,7 +16,7 @@ inputs:
   workflows:
     description: >-
       Comma-separated workflow filenames to watch. Defaults to the ci branch set
-      (deploy.yml, deploy-app.yml, destroy-ci.yml, video-capture.yml).
+      (deploy.yml, destroy-ci.yml, video-capture.yml).
     required: false
     default: ''
   match-mode:

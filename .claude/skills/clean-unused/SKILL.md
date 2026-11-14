@@ -184,7 +184,6 @@ Expand each hit by hand from its source list. In submit:
 |---|---|
 | `test:${suite}-${env}` in `probe-test.yml` | `.github/behaviour-probe-suites.json` (from `deploy.yml`, with `ciOnly` dropping prod); the `behaviour-test-suite` choice list of `probe-test.yml`; the scheduled prod matrix `submitVatBehaviour`, `tokenRefreshBehaviour`; env = ci or prod |
 | `npm run ${{ matrix.script }}` in `test-behaviour.yml` | `.github/behaviour-simulator-suites.json` (`script` field) |
-| `test:submitVatBehaviour-${env}` in `deploy-app.yml` | env = ci or prod |
 | `accessibility:*-${env}`, `penetration:zap-${env}`, `compliance:${env}-report-md` in `compliance.yml` | env = ci or prod |
 | `test:authBehaviour-${env}`, `test:submitVatBehaviour-${env}` | printed by `scripts/enable-cognito-native-test.js` |
 | `test:${suite}-${lane}` from `npm run test:behaviour -- <suite> <lane>` | `scripts/run-behaviour.mjs` line 58; suite and lane come from the caller's arguments |
@@ -274,8 +273,8 @@ edits its `@capability` header and its slot line in `_developers/capabilities/sk
   (`setup-backup-account.yml`, `scripts/aws-accounts/*`), HMRC and Companies House approval runs
   (`hmrc-ets-ct600*.yml`). An old last run is expected.
 - **Scheduled monthly or quarterly.** `ai-vendor-ranges.yml`, `compare-prices-check.yml`,
-  `listings-check.yml`, `email-hash-rotate.yml`, `mcp-blob-key-rotate.yml`, `restore-test.yml`. New
-  ones show no run yet.
+  `listings-check.yml`, `email-hash-rotate.yml`, `mcp-blob-key-rotate.yml`, `restore-drill.yml`.
+  New ones show no run yet.
 - **Required checks with no code reference.** `merge-gate.yml` and `content-scan.yml` in submit.
 - **Skill-dispatched.** `/watch` dispatches `runner-install-check.yml`; `/fast-deploy` names
   `deploy-cdk-stack.yml`; `/key-rotation` names `rotate-secret.yml` and `rotation-check.yml`. Grep

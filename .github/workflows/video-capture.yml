@@ -13,7 +13,7 @@ concurrency:
   # This workflow toggles Cognito native auth during recording, so same-environment runs must not
   # overlap. They queue instead of cancelling: a cancelled capture is a lost recording, and the
   # hold-native-auth action (see its own enable/disable steps below) keeps this workflow's toggle
-  # from racing deploy.yml, deploy-app.yml or probe-test.yml over the same Cognito setting.
+  # from racing deploy.yml or probe-test.yml over the same Cognito setting.
   # GitHub keeps one pending run per group and drops an older pending one, so a caller that
   # dispatches several captures waits for each to finish before dispatching the next
   # (video-capture-on-deploy.yml does). Key the group on the environment being recorded, not the

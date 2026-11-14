@@ -124,7 +124,6 @@ to the ignore list in `eslint.config.js` (beside `web/public/lib/qrcode.min.js`)
 | `.pa11yci.ci.json`, `.pa11yci.prod.json`, `.pa11yci.proxy.json` | Add the page URL beside `spreadsheets.html` |
 | `infra/main/java/co/uk/diyaccounting/submit/stacks/PublishStack.java` | Add `"/rates.html"` (and `"/mtd-calendar.html"` if absent) to `distributionPaths` |
 | `scripts/deploy-app.js` | Same two paths in its invalidation list |
-| `.github/workflows/deploy-app.yml` | Same two paths in the `create-invalidation --paths` list (line ~663) |
 | `package.json` | `"build:rates-page": "node scripts/build-rates-page.mjs"` beside `build:mtd-calendar` |
 | `app/unit-tests/licenceHeaders.test.js`, `eslint.config.js`, `.prettierignore`, `LICENSING.md` | The exclusions and bullet in section 2 |
 | `.claude/skills/tax-sources/SKILL.md` | Name `rates.html` and `npm run build:rates-page` wherever it names the calendar build |

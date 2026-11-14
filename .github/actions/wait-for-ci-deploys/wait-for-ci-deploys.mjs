@@ -3,7 +3,7 @@
 
 // @capability OPS-11 Queue CI branch deploys in creation order
 // - **Use when:** a CI branch deploy must not race another deploy, destroy or video-capture run for the same slot.
-// - **Does:** wait-for-ci-deploys.mjs polls the GitHub API for older, still-running deploy.yml, deploy-app.yml, destroy-ci.yml or video-capture.yml runs on non-main branches. It blocks until they finish, or, in its alternative mode, waits for any unfinished run resolved to the same environment.
+// - **Does:** wait-for-ci-deploys.mjs polls the GitHub API for older, still-running deploy.yml, destroy-ci.yml or video-capture.yml runs on non-main branches. It blocks until they finish, or, in its alternative mode, waits for any unfinished run resolved to the same environment.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `.github/actions/wait-for-ci-deploys/wait-for-ci-deploys.mjs:main`
 // - **Files:** .github/actions/wait-for-ci-deploys/action.yml, .github/actions/wait-for-ci-deploys/wait-for-ci-deploys.mjs
@@ -19,8 +19,8 @@
 //
 // Two callers, two matching rules, chosen by WAIT_FOR_CI_DEPLOYS_MATCH_MODE:
 //
-//  - 'older' (the default): waits for older runs of deploy.yml/deploy-app.yml/destroy-ci.yml/
-//    video-capture.yml on a non-main branch, so concurrent ci branches queue in creation order
+//  - 'older' (the default): waits for older runs of deploy.yml/destroy-ci.yml/video-capture.yml
+//    on a non-main branch, so concurrent ci branches queue in creation order
 //    instead of overlapping on the same CloudFormation stack names. Main is excluded: a prod
 //    deploy doesn't share stack names with another branch the way ci ones do.
 //  - 'environment': waits for ANY unfinished run of the workflow(s) in
@@ -45,7 +45,7 @@
 // is about to do either - it hasn't started, and can't until the group lets it - so waiting for
 // it serves no purpose and only risks this deadlock.
 
-const DEFAULT_WORKFLOWS = ["deploy.yml", "deploy-app.yml", "destroy-ci.yml", "video-capture.yml"];
+const DEFAULT_WORKFLOWS = ["deploy.yml", "destroy-ci.yml", "video-capture.yml"];
 const UNFINISHED = new Set(["in_progress", "queued", "pending", "waiting", "requested"]);
 
 // Job names whose entire remaining work is a `uses:` call into destroy-ci.yml. Keep in step with

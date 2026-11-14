@@ -594,7 +594,7 @@ public class SubmitEnvironment {
                             .build());
         } else {
             warnf(
-                    "Skipping HoldingStack synthesis: HOLDING_CERTIFICATE_ARN not set (issue it with request-holding-cert.yml)");
+                    "Skipping HoldingStack synthesis: HOLDING_CERTIFICATE_ARN not set (issue it with request-site-cert.yml, site holding)");
             this.holdingStack = null;
         }
 

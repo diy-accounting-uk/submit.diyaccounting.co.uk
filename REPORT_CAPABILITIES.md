@@ -315,7 +315,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly) Check the listing register against the bundle catalogue monthly: use when checking whether a directory listing still states the price in the catalogue.
     - [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root) Write llms.txt, llms-full.txt and a Markdown copy of each page into the deployed web root: use when an assistant or a crawler that reads Markdown must find the site's pages, what Submit files and what it costs, in the pages that the environment lists.
     - [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily: use when checking whether daily backups and their cross-account copy completed.
-    - [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate: use when the holding-page domain needs a new or renewed ACM certificate.
+    - [OPS-49](#ops-49-request-a-site-or-holding-page-certificate) Request a site or holding-page certificate: use when the developer site, the marketing site or the holding page needs a new or renewed ACM certificate.
     - [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration: use when a PITR restore procedure must be drilled or tested against a real table.
   - [Video, publishing and accessibility](#video-publishing-and-accessibility-ops)
     - [OPS-51](#ops-51-publish-build-artifacts-and-documentation) Publish build artifacts and documentation: use when checking where build artifacts or generated documentation get published.
@@ -400,7 +400,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
   - [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data)
     - [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views: use when a new or changed Athena view under infra/main/resources/analytics/views must deploy with the stack.
     - [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks: use when new lake partitions must be registered and a Glue Data Quality ruleset run must be started.
-    - [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes: use when a curated table's Firehose prefix moves from year=/month=/day= to dt=, and the old S3 objects and registered partitions must be copied and cleared for the days already written.
     - [DATA-70](#data-70-compact-closed-days-of-activity-events) Compact closed days of activity events: use when Athena reads too many small activity_events objects, or a day's compacted copy must be checked or written again.
     - [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month) Refresh the AI vendors' published address ranges each month: use when `v_ai_fetches_daily` must mark a fetch as verified against the ranges that OpenAI, Perplexity and Anthropic publish, or those ranges changed.
     - [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup: use when a new analytics construct needs the shared lake bucket, Glue database or Athena workgroup.
@@ -2231,9 +2230,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** Stripe delivers a checkout, invoice, subscription, refund or dispute event to grant, sync or flag a subscription.
 - **Does:** The billingWebhookPost.js ingestHandler verifies the Stripe signature with test and live secrets, then handles checkout, invoice, subscription and dispute events. It grants bundles, resets tokens, syncs status, marks past-due or cancelled, and auto-accepts disputes. Every other event type is logged and ignored.
-- **Run:** `POST /api/v1/billing/webhook`; `gh workflow run stripe-cancel-subscription.yml -f subscription-id=<sub_xxx> -f mode=<at-period-end|immediate> -f environment-name=<ci|prod>`; `STRIPE_SECRET_KEY=sk_... node scripts/stripe-cancel-subscription.js <subscription_id> [options]`; `node scripts/stripe-trigger-lifecycle.sh`
+- **Run:** `POST /api/v1/billing/webhook`; `STRIPE_SECRET_KEY=sk_... node scripts/stripe-cancel-subscription.js <subscription_id> [options]`; `node scripts/stripe-trigger-lifecycle.sh`
 - **Entry:** `app/functions/billing/billingWebhookPost.js:ingestHandler`
-- **Files:** app/functions/billing/billingWebhookPost.js, app/unit-tests/functions/billingWebhookPost.test.js, app/data/dynamoDbSubscriptionRepository.js, app/system-tests/billingInfrastructure.system.test.js, .github/workflows/stripe-cancel-subscription.yml, scripts/stripe-cancel-subscription.js, scripts/stripe-trigger-lifecycle.sh
+- **Files:** app/functions/billing/billingWebhookPost.js, app/unit-tests/functions/billingWebhookPost.test.js, app/data/dynamoDbSubscriptionRepository.js, app/system-tests/billingInfrastructure.system.test.js, scripts/stripe-cancel-subscription.js, scripts/stripe-trigger-lifecycle.sh
 - **Keywords:** stripe, webhook, checkout.session.completed, invoice.paid, subscription updated, dispute, refund, cancel subscription
 - **Related:** BILL-01, BILL-24, BILL-30
 
@@ -2508,7 +2507,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-triage) Run alarm triage · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci) Run the unit, system and browser test tiers in CI · [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci) Synth the CDK app for the ci and prod environments in CI · [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci) Run the simulator, proxy and exploratory crawl behaviour tests in CI · [OPS-162](#ops-162-bundle-submitcss-at-publish-time) Bundle submit.css at publish time · [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily) Submit the declared sitemaps to Search Console daily · [OPS-197](#ops-197-check-the-runners-browser-install-in-one-job) Check the runner's browser install in one job · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events) Open private GitHub issues from trusted AWS and Companies House events · [OPS-186](#ops-186-verify-a-trusted-event-issue-against-its-source-record) Verify a trusted-event issue against its source record · [OPS-187](#ops-187-check-a-trusted-event-issue-against-its-source-and-label-the-result) Check a trusted-event issue against its source and label the result · [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod) Prove the trusted event path on ci and prod · [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session) Render the operator dashboard without a browser session · [OPS-192](#ops-192-judge-the-operator-dashboard-each-night-and-write-the-report) Judge the operator dashboard each night and write the report · [OPS-193](#ops-193-review-the-operator-dashboard-each-night) Review the operator dashboard each night · [OPS-194](#ops-194-run-a-read-only-nova-agent) Run a read-only Nova agent · [OPS-195](#ops-195-replay-the-alarm-triage-prompt-over-invented-alarms) Replay the alarm triage prompt over invented alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc) Renew the local TLS certificate by GitHub OIDC · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
-- [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data · [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap) Replace a Google refresh token or OAuth client without a gap · [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator) Run a full key rotation with the operator · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy) Roll one secret without an environment deploy · [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store · [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables) Clear test records out of the customer tables · [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set) Check public surfaces for keys in the rotation set · [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets) Scan every repository and branch for secrets · [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report) Report the security state of every repository in one ranked report · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly) Check the listing register against the bundle catalogue monthly · [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root) Write llms.txt, llms-full.txt and a Markdown copy of each page into the deployed web root · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
+- [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data · [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap) Replace a Google refresh token or OAuth client without a gap · [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator) Run a full key rotation with the operator · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy) Roll one secret without an environment deploy · [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store · [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables) Clear test records out of the customer tables · [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set) Check public surfaces for keys in the rotation set · [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets) Scan every repository and branch for secrets · [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report) Report the security state of every repository in one ranked report · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly) Check the listing register against the bundle catalogue monthly · [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root) Write llms.txt, llms-full.txt and a Markdown copy of each page into the deployed web root · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-a-site-or-holding-page-certificate) Request a site or holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
 - [Video, publishing and accessibility](#video-publishing-and-accessibility-ops): [OPS-51](#ops-51-publish-build-artifacts-and-documentation) Publish build artifacts and documentation · [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy) Auto-record demo videos on prod deploy · [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly) Verify YouTube channel consistency weekly · [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys) Orchestrate demo-video recording journeys · [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video) Overlay pointer and caption cues on video · [OPS-90](#ops-90-encode-captured-video-frames-and-captions) Encode captured video frames and captions · [OPS-91](#ops-91-validate-video-scene-scripts-and-timing) Validate video scene scripts and timing · [OPS-92](#ops-92-redact-secrets-from-video-artefacts) Redact secrets from video artefacts · [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube · [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site · [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site) Check every public video is embedded on the site · [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video) Build the walkthrough panel under each video · [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online) Record a real spreadsheet workbook in Collabora Online · [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows · [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations · [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report
 - [Agent workflows](#agent-workflows-ops): [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas · [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup · [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links
 - [Environment and accounts](#environment-and-accounts-ops): [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration · [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex) Design CI branch deploys off the apex · [OPS-62](#ops-62-report-accessibility-penetration-testing) Report accessibility penetration testing · [OPS-64](#ops-64-runbook-information-security-operations) Runbook information-security operations · [OPS-65](#ops-65-document-security-policy-and-disclosure) Document security policy and disclosure · [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user · [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure · [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning · [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials · [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK
@@ -2614,9 +2613,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** a fast iteration deploy of app or web code is needed, without a full CDK deploy.
 - **Does:** deploy-app.js builds the ARM64 Docker image and pushes it to ECR. It updates every Lambda function's code, publishes a version and moves the pc alias. It syncs web assets to S3 with RUM injection and invalidates CloudFront, leaving CloudFormation drift the next full deploy reconciles.
-- **Run:** `gh workflow run deploy-app.yml -f environment-name=<ci|prod> -f deployment-name=<name>`; `npm run deploy:app-ci`; `npm run deploy:app-prod`; `node scripts/deploy-app.js`
+- **Run:** `npm run deploy:app-ci`; `npm run deploy:app-prod`; `node scripts/deploy-app.js`
 - **Entry:** `scripts/deploy-app.js:resolveDeployment`; `scripts/deploy-app.js:dockerBuildAndPush`
-- **Files:** .github/workflows/deploy-app.yml, scripts/deploy-app.js
+- **Files:** scripts/deploy-app.js
 - **Keywords:** lean deploy, deploy-app, lambda update, s3 sync, cloudfront invalidation, rum injection, cloudformation drift
 - **Related:** OPS-06
 
@@ -2741,20 +2740,20 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-143 Remove unlisted pages from the published sitemap
 
 - **Use when:** a deployed web root must not list pages for activities that the environment does not list, such as preview pages on prod.
-- **Does:** publish-sitemap.mjs reads submit.catalogue.toml and videos/publish.json. filterSitemap removes the url entries for pages of unlisted activities and for videos pages whose videos are all unlisted. It adds a lastmod to each entry from the last commit that changed the page's file, and leaves it out when the checkout is shallow. It rewrites sitemap.xml in the built web root. web/public/sitemap.xml keeps the full list and no lastmod. deploy.yml, deploy-app.yml and deploy-app.js run it.
+- **Does:** publish-sitemap.mjs reads submit.catalogue.toml and videos/publish.json. filterSitemap removes the url entries for pages of unlisted activities and for videos pages whose videos are all unlisted. It adds a lastmod to each entry from the last commit that changed the page's file, and leaves it out when the checkout is shallow. It rewrites sitemap.xml in the built web root. web/public/sitemap.xml keeps the full list and no lastmod. deploy.yml and deploy-app.js run it.
 - **Run:** `node scripts/publish-sitemap.mjs <web-root> <environment-name>`
 - **Entry:** `scripts/publish-sitemap.mjs:filterSitemap`
-- **Files:** scripts/publish-sitemap.mjs, app/unit-tests/scripts/publishSitemap.test.js, scripts/deploy-app.js, .github/workflows/deploy.yml, .github/workflows/deploy-app.yml
+- **Files:** scripts/publish-sitemap.mjs, app/unit-tests/scripts/publishSitemap.test.js, scripts/deploy-app.js, .github/workflows/deploy.yml
 - **Keywords:** sitemap, publish sitemap, unlisted pages, preview pages, seo, catalogue environments
 - **Related:** OPS-01
 
 #### OPS-213 Write the videos, the bundles and the home activity list into the deployed pages for the environment
 
 - **Use when:** the deployed videos pages and the bundles page must hold, in their HTML, only the videos and bundles that the environment lists, for a crawler or an assistant that runs no JavaScript.
-- **Does:** publish-content.mjs fills the marked block of videos.html, the five videos-*.html pages, bundles.html, index.html and cy/index.html in a built web root. The home block holds one link for each activity that a signed-out visitor sees, grouped by area, by the rule of catalog-service.js. A video page block holds each listed video's title, description, thumbnail and one VideoObject JSON-LD block. The bundles block holds each listed bundle's name, price and the activities it files. It adds a video:video entry per listed video to the pages' sitemap.xml entries. The listing rule is the rule of the page scripts: an item that names a catalogue activity shows where the activity lists the environment, a bundle where its listedInEnvironments lists it. The page scripts replace the block when they run. It is a pure function of the web root's files and the environment name. deploy-stacks.yml, deploy-app.yml and deploy-app.js run it after publish-sitemap.mjs.
+- **Does:** publish-content.mjs fills the marked block of videos.html, the five videos-*.html pages, bundles.html, index.html and cy/index.html in a built web root. The home block holds one link for each activity that a signed-out visitor sees, grouped by area, by the rule of catalog-service.js. A video page block holds each listed video's title, description, thumbnail and one VideoObject JSON-LD block. The bundles block holds each listed bundle's name, price and the activities it files. It adds a video:video entry per listed video to the pages' sitemap.xml entries. The listing rule is the rule of the page scripts: an item that names a catalogue activity shows where the activity lists the environment, a bundle where its listedInEnvironments lists it. The page scripts replace the block when they run. It is a pure function of the web root's files and the environment name. deploy-stacks.yml and deploy-app.js run it after publish-sitemap.mjs.
 - **Run:** `node scripts/publish-content.mjs <web-root> <environment-name>`
 - **Entry:** `scripts/publish-content.mjs:renderVideoPageBlock`; `scripts/publish-content.mjs:renderBundlesBlock`
-- **Files:** scripts/publish-content.mjs, scripts/page-markers.mjs, app/unit-tests/scripts/publishContent.test.js, scripts/deploy-app.js, .github/workflows/deploy-stacks.yml, .github/workflows/deploy-app.yml, web/public/videos.html, web/public/bundles.html, web/public/index.html, web/public/cy/index.html
+- **Files:** scripts/publish-content.mjs, scripts/page-markers.mjs, app/unit-tests/scripts/publishContent.test.js, scripts/deploy-app.js, .github/workflows/deploy-stacks.yml, web/public/videos.html, web/public/bundles.html, web/public/index.html, web/public/cy/index.html
 - **Keywords:** home page, activities, videos, bundles, prices, video object, video sitemap, json-ld, no javascript, crawler, catalogue environments
 - **Related:** OPS-143, SITE-31
 
@@ -2845,7 +2844,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-11 Queue CI branch deploys in creation order
 
 - **Use when:** a CI branch deploy must not race another deploy, destroy or video-capture run for the same slot.
-- **Does:** wait-for-ci-deploys.mjs polls the GitHub API for older, still-running deploy.yml, deploy-app.yml, destroy-ci.yml or video-capture.yml runs on non-main branches. It blocks until they finish, or, in its alternative mode, waits for any unfinished run resolved to the same environment.
+- **Does:** wait-for-ci-deploys.mjs polls the GitHub API for older, still-running deploy.yml, destroy-ci.yml or video-capture.yml runs on non-main branches. It blocks until they finish, or, in its alternative mode, waits for any unfinished run resolved to the same environment.
 - **Run:** no command; see Does and Entry
 - **Entry:** `.github/actions/wait-for-ci-deploys/wait-for-ci-deploys.mjs:main`
 - **Files:** .github/actions/wait-for-ci-deploys/action.yml, .github/actions/wait-for-ci-deploys/wait-for-ci-deploys.mjs
@@ -3101,7 +3100,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** publish-css-bundle.mjs replaces the @import list in a web root's submit.css with the imported files, in order, and rewrites relative url() references to resolve from submit.css's directory. The source files stay as they are, so local development and the tests serve the @import form.
 - **Run:** `node scripts/publish-css-bundle.mjs <web-root>`
 - **Entry:** `scripts/publish-css-bundle.mjs`
-- **Files:** scripts/publish-css-bundle.mjs, app/unit-tests/scripts/publishCssBundle.test.js, scripts/deploy-app.js, .github/workflows/deploy-app.yml, .github/workflows/deploy-stacks.yml
+- **Files:** scripts/publish-css-bundle.mjs, app/unit-tests/scripts/publishCssBundle.test.js, scripts/deploy-app.js, .github/workflows/deploy-stacks.yml
 - **Keywords:** css bundle, submit.css, import chain, first paint, publish step
 - **Related:** OPS-143
 
@@ -3505,18 +3504,18 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly) Check the listing register against the bundle catalogue monthly
 - [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root) Write llms.txt, llms-full.txt and a Markdown copy of each page into the deployed web root
 - [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily
-- [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate
+- [OPS-49](#ops-49-request-a-site-or-holding-page-certificate) Request a site or holding-page certificate
 - [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
 <!-- /generated:group data-protection-and-privacy-ops -->
 
 #### OPS-40 Delete a customer's data for GDPR erasure
 
 - **Use when:** a customer has exercised their GDPR right to erasure.
-- **Does:** delete-user-data.js deletes a customer's DynamoDB records, OAuth tokens and audit logs, via the DynamoDB API and Secrets Manager. It reads the ids of the customer's subscription rows from the analytics lake, because the subscriptions table has no hashed-sub key. delete-user-data-by-email.yml resolves an email to its hashed subject through an Athena lookup first; delete-user-data.yml deletes directly by hashed subject. confirm=false runs a dry run.
+- **Does:** delete-user-data.js deletes a customer's DynamoDB records, OAuth tokens and audit logs, via the DynamoDB API and Secrets Manager. It reads the ids of the customer's subscription rows from the analytics lake, because the subscriptions table has no hashed-sub key. delete-user-data-by-email.yml finds the Cognito user by email with list-users, hashes its sub, exports the data, calls delete-user-data.yml with the hashed sub, then deletes the Cognito user. delete-user-data.yml deletes by hashed sub alone, for an account with no Cognito user. confirm=false runs a dry run.
 - **Run:** `gh workflow run delete-user-data-by-email.yml -f email=<email> -f environment-name=<ci|prod> -f confirm=<true|false>`; `gh workflow run delete-user-data.yml -f hashed-sub=<hash> -f environment-name=<ci|prod> -f confirm=<true|false>`
 - **Entry:** `scripts/delete-user-data.js:main`
 - **Files:** .github/workflows/delete-user-data-by-email.yml, .github/workflows/delete-user-data.yml, scripts/delete-user-data.js, app/unit-tests/scripts/deleteUserData.test.js
-- **Keywords:** gdpr erasure, delete user data, right to be forgotten, hashed sub, athena lookup, dry run
+- **Keywords:** gdpr erasure, delete user data, right to be forgotten, hashed sub, cognito list-users, email lookup, dry run
 - **Related:** OPS-41, OPS-49
 
 #### OPS-41 Export a customer's GDPR subject-access data
@@ -3702,10 +3701,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-214 Write llms.txt, llms-full.txt and a Markdown copy of each page into the deployed web root
 
 - **Use when:** an assistant or a crawler that reads Markdown must find the site's pages, what Submit files and what it costs, in the pages that the environment lists.
-- **Does:** publish-llms.mjs reads the sitemap.xml of a built web root, so it covers the pages that the environment lists and any page that a later change adds. For each page it writes `<page>.md` beside the page (the page's main content as Markdown, read from the parsed page) and adds `<link rel="alternate" type="text/markdown">` to the page's head, once. It writes llms.txt (the site name, one paragraph from the catalogue for the environment, one linked line per page) and llms-full.txt (the Markdown of every page, then the FAQ entries that the environment lists). The page files in web/public do not change. EdgeStack serves `*.md` with X-Robots-Tag: noindex. deploy-stacks.yml, deploy-app.yml and deploy-app.js run it after publish-content.mjs.
+- **Does:** publish-llms.mjs reads the sitemap.xml of a built web root, so it covers the pages that the environment lists and any page that a later change adds. For each page it writes `<page>.md` beside the page (the page's main content as Markdown, read from the parsed page) and adds `<link rel="alternate" type="text/markdown">` to the page's head, once. It writes llms.txt (the site name, one paragraph from the catalogue for the environment, one linked line per page) and llms-full.txt (the Markdown of every page, then the FAQ entries that the environment lists). The page files in web/public do not change. EdgeStack serves `*.md` with X-Robots-Tag: noindex. deploy-stacks.yml and deploy-app.js run it after publish-content.mjs.
 - **Run:** `node scripts/publish-llms.mjs <web-root> <environment-name>`
 - **Entry:** `scripts/publish-llms.mjs:publishLlms`; `scripts/publish-llms.mjs:pageMarkdown`
-- **Files:** scripts/publish-llms.mjs, app/unit-tests/scripts/publishLlms.test.js, scripts/deploy-app.js, .github/workflows/deploy-stacks.yml, .github/workflows/deploy-app.yml, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java
+- **Files:** scripts/publish-llms.mjs, app/unit-tests/scripts/publishLlms.test.js, scripts/deploy-app.js, .github/workflows/deploy-stacks.yml, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java
 - **Keywords:** llms.txt, llms-full.txt, markdown, alternate link, assistant, crawler, noindex, sitemap, catalogue environments
 - **Related:** OPS-143, OPS-213
 
@@ -3719,23 +3718,23 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** backup health, pitr status, backup vault, cross-account copy, daily check
 - **Related:** OPS-50
 
-#### OPS-49 Request and renew the holding-page certificate
+#### OPS-49 Request a site or holding-page certificate
 
-- **Use when:** the holding-page domain needs a new or renewed ACM certificate.
-- **Does:** request-holding-cert.yml requests an ACM certificate for the holding-page domain, or renews the existing one.
-- **Run:** no command; see Does and Entry
-- **Entry:** `.github/workflows/request-holding-cert.yml`
-- **Files:** .github/workflows/request-holding-cert.yml
-- **Keywords:** holding page certificate, acm certificate, certificate renewal, request-holding-cert.yml, holding page domain
+- **Use when:** the developer site, the marketing site or the holding page needs a new or renewed ACM certificate.
+- **Does:** request-site-cert.yml requests a DNS-validated ACM certificate in us-east-1 for one site and environment, writes the validation records into the management zone and waits for validation. The holding certificate also covers the live submit names, because failover adds them as aliases to the holding distribution.
+- **Run:** `gh workflow run request-site-cert.yml -f site=<developer|marketing|holding> -f environment-name=<ci|prod>`
+- **Entry:** `.github/workflows/request-site-cert.yml`
+- **Files:** .github/workflows/request-site-cert.yml
+- **Keywords:** holding page certificate, site certificate, acm certificate, certificate renewal, request-site-cert.yml, holding page domain, developer site, marketing site
 - **Related:** OPS-30
 
 #### OPS-50 Drill and test PITR database restoration
 
 - **Use when:** a PITR restore procedure must be drilled or tested against a real table.
-- **Does:** restore-dynamodb-pitr.sh restores a DynamoDB table to a point in time, or to a target table. restore-drill.yml runs the drill on a schedule to prove the procedure still works. restore-test.yml runs a restore from PITR or the cross-account backup on demand.
-- **Run:** `gh workflow run restore-drill.yml`; `gh workflow run restore-test.yml -f table-name=<table>`; `./scripts/restore-dynamodb-pitr.sh <table-name> <restore-datetime> [target-table-name]`
+- **Does:** restore-dynamodb-pitr.sh restores a DynamoDB table to a point in time, or to a target table. restore-drill.yml runs monthly or on demand: it restores one table from the prod account vault in prod, and restores the critical prod tables into ci from the cross-account vault.
+- **Run:** `gh workflow run restore-drill.yml -f table-name=<table>`; `./scripts/restore-dynamodb-pitr.sh <table-name> <restore-datetime> [target-table-name]`
 - **Entry:** `scripts/restore-dynamodb-pitr.sh`
-- **Files:** .github/workflows/restore-drill.yml, .github/workflows/restore-test.yml, scripts/restore-dynamodb-pitr.sh, ../private.diyaccounting.co.uk/engineering/submit/archive/_developers/RESTORE_DRILL.md
+- **Files:** .github/workflows/restore-drill.yml, scripts/restore-dynamodb-pitr.sh, ../private.diyaccounting.co.uk/engineering/submit/archive/_developers/RESTORE_DRILL.md
 - **Keywords:** pitr restore, restore drill, point in time recovery, dynamodb restore, cross-account backup
 - **Related:** OPS-49
 
@@ -4425,7 +4424,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area DATA -->
 - [Lake ingestion](#lake-ingestion-data): [DATA-01](#data-01-publish-activity-events-to-the-bus) Publish activity events to the bus · [DATA-02](#data-02-transform-activity-events-into-lake-rows) Transform activity events into lake rows · [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows) Transform alarm state changes into lake rows · [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake) Stream DynamoDB table changes into the lake · [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables) Pull GA4 daily BigQuery aggregate tables · [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export) Pull GA4 reports and BigQuery event export · [DATA-07](#data-07-pull-github-operator-effort-data) Pull GitHub operator-effort data · [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export · [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake · [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake · [DATA-55](#data-55-pull-paypal-receipts-into-the-lake) Pull PayPal receipts into the lake
-- [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data): [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views · [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks · [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes · [DATA-70](#data-70-compact-closed-days-of-activity-events) Compact closed days of activity events · [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month) Refresh the AI vendors' published address ranges each month · [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup · [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena · [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard · [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data) Catalogue workflow, probe and agent run data · [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds) Alert on cost budget and anomaly thresholds · [DATA-17](#data-17-export-aws-billing-data-in-focus-format) Export AWS billing data in FOCUS format
+- [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data): [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views · [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks · [DATA-70](#data-70-compact-closed-days-of-activity-events) Compact closed days of activity events · [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month) Refresh the AI vendors' published address ranges each month · [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup · [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena · [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard · [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data) Catalogue workflow, probe and agent run data · [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds) Alert on cost budget and anomaly thresholds · [DATA-17](#data-17-export-aws-billing-data-in-focus-format) Export AWS billing data in FOCUS format
 - [Nightly publish and orchestration](#nightly-publish-and-orchestration-data): [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot) Publish the nightly operator dashboard snapshot · [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api) Serve the operator dashboard snapshot via the API · [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard) Capture AWS console figures as images for the operator dashboard · [DATA-66](#data-66-serve-a-captured-aws-console-image-to-operators) Serve a captured AWS console image to operators · [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing · [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch · [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow · [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch) Replay one analytics nightly by dispatch
 - [Site-side analytics and RUM](#site-side-analytics-and-rum-data): [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic · [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages · [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM · [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
 - [SQL views](#sql-views-data): [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic · [DATA-68](#data-68-sql-view-campaign-results-by-place) SQL view: campaign results by place · [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription · [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance · [DATA-30](#data-30-sql-views-cost) SQL views: cost · [DATA-31](#data-31-sql-views-dora-and-operations) SQL views: DORA and operations
@@ -4565,7 +4564,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:group lake-infrastructure-quality-and-cost-data -->
 - [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views
 - [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks
-- [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes
 - [DATA-70](#data-70-compact-closed-days-of-activity-events) Compact closed days of activity events
 - [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month) Refresh the AI vendors' published address ranges each month
 - [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup
@@ -4595,16 +4593,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/analytics/dataQualityRun.js, app/unit-tests/analytics/dataQualityRun.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/DataQuality.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/DataQualityTest.java
 - **Keywords:** glue data quality, ruleset evaluation, partition registration, failed rules metric, activity_events, alarm_state_changes, dora_runs
 - **Related:** DATA-14
-
-#### DATA-54 Relayout the lake's year/month/day objects into dt= prefixes
-
-- **Use when:** a curated table's Firehose prefix moves from year=/month=/day= to dt=, and the old S3 objects and registered partitions must be copied and cleared for the days already written.
-- **Does:** analytics-dt-relayout.sh lists each curated/<dataset>/year=Y/month=M/day=D/ object under activity-events, alarm-state-changes and the four dynamo_* tables, copies it with aws s3api copy-object (metadata and content type preserved, idempotent on rerun) to the matching dt=Y-M-D/ key, then removes the registered activity_events and alarm_state_changes partitions whose day was copied with glue batch-delete-partition. --dry-run prints the mapping and counts only; --before <date> limits which days are relayouted. The old year/month/day objects are left for the lifecycle rule.
-- **Run:** `scripts/analytics-dt-relayout.sh --env ci|prod [--dry-run] [--before YYYY-MM-DD]`; `gh workflow run analytics-dt-relayout.yml -f environment=ci -f dry-run=true`
-- **Entry:** `scripts/analytics-dt-relayout.sh:build_mapping`; `scripts/analytics-dt-relayout.sh:delete_relayouted_partitions`
-- **Files:** scripts/analytics-dt-relayout.sh, .github/workflows/analytics-dt-relayout.yml
-- **Keywords:** dt relayout, year month day, dt prefix, partition projection, batch-delete-partition, curated prefix, lake relayout
-- **Related:** DATA-11, DATA-12, DATA-15
 
 #### DATA-70 Compact closed days of activity events
 
@@ -5012,9 +5000,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** paid subscription conversions with a stored gclid must reach Google Ads through the Data Manager API.
 - **Does:** ads-conversions-upload.js reads paid Stripe charges with a stored gclid from the lake. It sends each with the invoice id as transactionId and adUserData granted. Without a send flag it prints the events and calls no Google API.
-- **Run:** `npm run ads:conversions-upload`; `npm run ads:conversions-upload -- --since 2026-09-28 --validate-only`; `npm run ads:conversions-upload -- --apply`; daily at 05:00 UTC by `.github/workflows/ads-conversions-upload.yml`, or `gh workflow run ads-conversions-upload.yml -f mode=validate-only -f since=2026-09-28`
+- **Run:** `npm run ads:conversions-upload`; `npm run ads:conversions-upload -- --since 2026-09-28 --validate-only`; `npm run ads:conversions-upload -- --apply`; daily at 05:00 UTC by `.github/workflows/conversions-upload.yml`, or `gh workflow run conversions-upload.yml -f vendor=google -f mode=validate-only -f since=2026-09-28`
 - **Entry:** `infra/google/ads/ads-conversions-upload.js:main`; `infra/google/ads/ads-conversions-upload.js:shapeConversionEvents`
-- **Files:** infra/google/ads/ads-conversions-upload.js, .github/workflows/ads-conversions-upload.yml, app/unit-tests/scripts/adsConversionsUpload.test.js, infra/google/ads/ads.toml
+- **Files:** infra/google/ads/ads-conversions-upload.js, .github/workflows/conversions-upload.yml, app/unit-tests/scripts/adsConversionsUpload.test.js, infra/google/ads/ads.toml
 - **Keywords:** google ads conversion upload, offline conversions, data manager api, gclid, transactionId, consent, import from clicks
 - **Related:** DATA-33, DATA-34
 
@@ -5234,9 +5222,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** a task asks what the Microsoft Advertising (Bing) account holds, what it has spent or what its keywords and budget would buy.
 - **Does:** msads.js is a client for the Bing Ads API v13 REST endpoints, signed in with Google OAuth and the IdentityProvider header. It reads the user, customer and account, the full campaign inventory with spend to date, a campaign report by date range, and Ad Insight traffic estimates. Its export, plan and apply modes (msads-sync.js) keep the account equal to infra/microsoft/ads/ads.toml: the UET tag, conversion goals, the Search campaign with its ad groups, keywords, negatives and ads, and the MSCLKIDAutoTaggingEnabled account property; apply deletes only a keyword replaced by another match type. msads-apply.yml applies on a push to main that touches infra/microsoft/** and plans on a dispatch. msads-conversions-upload.js sends paid Stripe charges with a stored msclkid to the offline goal, and prints them without --apply. The consent mode stores the Google refresh token in Secrets Manager.
-- **Run:** `npm run msads:consent`; `npm run msads:whoami`; `npm run msads:inventory`; `npm run msads:forecast`; `npm run msads:report -- --from 2026-10-29 --to 2026-11-12`; `node infra/microsoft/ads/msads.js --plan` (or `--export`, `--apply`); `gh workflow run msads-apply.yml`; `node infra/microsoft/ads/msads-conversions-upload.js [--apply]`; `gh workflow run msads-conversions-upload.yml` (daily at 05:20 UTC)
+- **Run:** `npm run msads:consent`; `npm run msads:whoami`; `npm run msads:inventory`; `npm run msads:forecast`; `npm run msads:report -- --from 2026-10-29 --to 2026-11-12`; `node infra/microsoft/ads/msads.js --plan` (or `--export`, `--apply`); `gh workflow run msads-apply.yml`; `node infra/microsoft/ads/msads-conversions-upload.js [--apply]`; `gh workflow run conversions-upload.yml -f vendor=microsoft` (daily at 05:20 UTC)
 - **Entry:** `infra/microsoft/ads/msads.js:main`
-- **Files:** infra/microsoft/ads/msads.js, infra/microsoft/ads/msads.toml, infra/microsoft/ads/ads.toml, infra/microsoft/ads/msads-sync.js, infra/microsoft/ads/msads-conversions-upload.js, .github/workflows/msads-apply.yml, .github/workflows/msads-conversions-upload.yml, app/lib/microsoftAdsReporting.js, app/unit-tests/scripts/msads.test.js, app/unit-tests/scripts/msadsSync.test.js, app/unit-tests/scripts/msadsConversionsUpload.test.js
+- **Files:** infra/microsoft/ads/msads.js, infra/microsoft/ads/msads.toml, infra/microsoft/ads/ads.toml, infra/microsoft/ads/msads-sync.js, infra/microsoft/ads/msads-conversions-upload.js, .github/workflows/msads-apply.yml, .github/workflows/conversions-upload.yml, app/lib/microsoftAdsReporting.js, app/unit-tests/scripts/msads.test.js, app/unit-tests/scripts/msadsSync.test.js, app/unit-tests/scripts/msadsConversionsUpload.test.js
 - **Keywords:** microsoft advertising, bing ads, msads, bing forecast, ad insight, traffic estimates, identityprovider google, developer token, bing campaign as code, uet tag, msclkid, offline conversion
 - **Related:** DATA-33, DATA-34, DATA-35, DATA-63
 
@@ -7002,7 +6990,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - accounts review: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - accounts staging: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation), [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
 - acm: [OPS-37](#ops-37-check-https-certificate-expiry)
-- acm certificate: [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate), [SS-37](#ss-37-request-acm-certificates)
+- acm certificate: [OPS-49](#ops-49-request-a-site-or-holding-page-certificate), [SS-37](#ss-37-request-acm-certificates)
 - acm certificate expiry: [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events)
 - acm fixture: [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod)
 - actionlint gap: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
@@ -7126,7 +7114,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - async request state: [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state)
 - athena: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm)
 - athena link: [OPS-80](#ops-80-build-aws-console-deep-links-for-operators)
-- athena lookup: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - athena query: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
 - athena view: [DATA-10](#data-10-create-or-replace-athena-business-views)
 - athena workgroup: [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
@@ -7190,7 +7177,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - batch processing: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
 - batch scan update: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
 - batch tools: [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client)
-- batch-delete-partition: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - batchitemfailure: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - bcmdataexports: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - bedrock: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing), [OPS-18](#ops-18-run-alarm-triage), [OPS-192](#ops-192-judge-the-operator-dashboard-each-night-and-write-the-report), [OPS-72](#ops-72-forward-bedrock-budget-alerts)
@@ -7371,7 +7357,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - certbot: [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc)
 - certificate: [DEV-60](#dev-60-fetch-the-local-tls-certificate)
 - certificate expiry: [OPS-37](#ops-37-check-https-certificate-expiry), [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle)
-- certificate renewal: [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc), [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate)
+- certificate renewal: [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc), [OPS-49](#ops-49-request-a-site-or-holding-page-certificate)
 - cfnnamedquery: [DATA-10](#data-10-create-or-replace-athena-business-views)
 - change of address: [CH-05](#ch-05-file-a-change-of-registered-office-address)
 - change of email: [CH-06](#ch-06-file-a-change-of-registered-email-address)
@@ -7480,6 +7466,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cognito: [SITE-01](#site-01-sign-customers-in-via-cognito), [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh), [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident), [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle), [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - cognito client id: [DATA-44](#data-44-assert-google-oauth-client-configuration)
 - cognito export: [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup)
+- cognito list-users: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - cognito native sign-in: [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server)
 - cognito refresh: [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy)
 - cognito test user: [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow), [OPS-12](#ops-12-clean-up-expired-test-users), [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs), [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning)
@@ -7641,7 +7628,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - curated cost: [DATA-08](#data-08-copy-the-aws-focus-cost-export)
 - curated finance: [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
 - curated paypal: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
-- curated prefix: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - curated stripe: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
 - currency conversion: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - custom amount: [SS-22](#ss-22-take-stripe-and-paypal-donations)
@@ -7770,6 +7756,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - developer hub: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - developer mode: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - developer onboarding: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
+- developer site: [OPS-49](#ops-49-request-a-site-or-holding-page-certificate)
 - developer token: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - developer_token_not_approved: [DATA-35](#data-35-forecast-google-ads-keyword-performance)
 - device id: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers)
@@ -7852,8 +7839,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dry run: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [OPS-16](#ops-16-run-dynamodb-data-migrations), [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - dt partition: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - dt partition projection: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
-- dt prefix: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
-- dt relayout: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - due dates: [HMRC-03](#hmrc-03-retrieve-vat-obligations), [HMRC-10](#hmrc-10-retrieve-itsa-obligations)
 - duplicate mechanism: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - duplicate script: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
@@ -7885,6 +7870,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - email hash rotation: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
 - email hash secret: [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager)
 - email identity: [OPS-182](#ops-182-provision-the-customer-email-sender)
+- email lookup: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - email restricted: [BILL-08](#bill-08-check-a-passs-validity)
 - email-hash-rotate.js: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
 - emailhashsecrethelper: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
@@ -8238,8 +8224,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - hmrc-service: [HMRC-29](#hmrc-29-call-the-hmrc-api)
 - hmrc.toml: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config)
 - holding page: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain), [OPS-133](#ops-133-serve-the-root-domain-holding-page), [SS-30](#ss-30-serve-the-holding-page-and-failover)
-- holding page certificate: [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate)
-- holding page domain: [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate)
+- holding page certificate: [OPS-49](#ops-49-request-a-site-or-holding-page-certificate)
+- holding page domain: [OPS-49](#ops-49-request-a-site-or-holding-page-certificate)
 - holding page stack: [OPS-116](#ops-116-provision-the-holding-page-stack)
 - holding-cert: [SS-37](#ss-37-request-acm-certificates)
 - holdingstack: [SS-30](#ss-30-serve-the-holding-page-and-failover)
@@ -8395,7 +8381,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - kpi review: [DEV-55](#dev-55-review-the-operator-dashboard)
 - kyc: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect)
 - lake bucket: [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
-- lake relayout: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - lambda: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
 - lambda errors alarm: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - lambda event: [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes)
@@ -8512,6 +8497,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - marketing assets: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - marketing guidance: [SITE-20](#site-20-document-business-governance-and-positioning)
 - marketing session: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
+- marketing site: [OPS-49](#ops-49-request-a-site-or-holding-page-certificate)
 - mask ip: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
 - master books: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
 - maven package: [OPS-150](#ops-150-build-a-deployment)
@@ -8760,7 +8746,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - parquet: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - parseisodurationtodate: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - partial batch failure: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
-- partition projection: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - partition registration: [DATA-11](#data-11-run-glue-data-quality-checks)
 - pass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass), [BILL-08](#bill-08-check-a-passs-validity), [BILL-09](#bill-09-list-a-users-issued-passes), [BILL-56](#bill-56-delete-generated-passes), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-10](#bill-10-redeem-a-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - pass email: [SITE-27](#site-27-email-the-customer-after-a-key-event), [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check)
@@ -9064,7 +9049,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - repository hygiene: [DEV-56](#dev-56-audit-the-workspaces-technical-debt)
 - repository structure check: [DEV-21](#dev-21-verify-module-wiring-and-repository-shape)
 - request cache: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
-- request-holding-cert.yml: [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate)
+- request-site-cert.yml: [OPS-49](#ops-49-request-a-site-or-holding-page-certificate)
 - request_companies_house_codes: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - request_hmrc_authorisation: [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp)
 - requestidprefix: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic)
@@ -9317,6 +9302,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - single secret: [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy)
 - single stack deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand)
 - single-file json: [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats)
+- site certificate: [OPS-49](#ops-49-request-a-site-or-holding-page-certificate)
 - site map: [SITE-12](#site-12-map-the-site-structure)
 - site scan: [DATA-76](#data-76-check-every-sites-live-pages-the-way-the-search-engines-site-audits-do)
 - site screenshots: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
@@ -9817,7 +9803,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - xmldom: [CH-11](#ch-11-parse-xml-safely)
 - xxe: [CH-11](#ch-11-parse-xml-safely)
 - yaml syntax: [OPS-34](#ops-34-validate-github-actions-workflow-files)
-- year month day: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - year-end: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary)
 - year-end calculation: [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary)
 - year-end sequence: [SS-08](#ss-08-generate-spreadsheet-packages-from-product-modules)

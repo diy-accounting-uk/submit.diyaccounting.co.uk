@@ -47,7 +47,7 @@ describe("writeGithubOutputCredentials", () => {
   });
 
   // GitHub does not mask a step's outputs by default: a caller that reads these values back
-  // into an env: block (video-capture.yml, probe-test.yml, deploy-app.yml) prints them
+  // into an env: block (video-capture.yml, probe-test.yml) prints them
   // unmasked wherever the block's values reach the log, unless the runner has already been
   // told to mask them.
   test("masks the password and TOTP secret before writing them to GITHUB_OUTPUT", () => {
