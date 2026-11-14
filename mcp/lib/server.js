@@ -883,7 +883,7 @@ export function createServer(session = createSession(), { toolNames, overrides =
         title: tool.title,
         description: tool.description,
         inputSchema: tool.inputSchema,
-        annotations: tool.annotations,
+        annotations: { title: tool.title, ...tool.annotations },
         _meta: tool._meta,
       },
       async (params) => {
