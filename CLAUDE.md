@@ -99,10 +99,19 @@ Skills live at `.claude/skills/<name>/SKILL.md`.
 - `.claude/skills/exposure-check/SKILL.md` — check everything we expose publicly for keys in the rotation set, by key format and by an in-memory comparison with each live value, across repository history, variables, GitHub records, Actions logs and artifacts, the sites, npm, container images and the MCP; findings go only to `../private.diyaccounting.co.uk/security/`; invoke as `/exposure-check`
 - `.claude/skills/key-rotation/SKILL.md` — run a full key rotation with the operator present: every key in `secrets-rotation.toml` in the runbook's order, ci before prod, the machine steps run after the operator's go, each console step given one action at a time with its URL, a proof and a retire per key, then `rotation-check.yml`, a PR for the register and a record under `../private.diyaccounting.co.uk/security/`; invoke as `/key-rotation`
 - `.claude/skills/search-health/SKILL.md` — run the Search Console report, the Bing Webmaster report when `BING_WEBMASTER_API_KEY` is set and the local page checks for the six sites; rank the fixes by the impressions of the pages they touch; write `../private.diyaccounting.co.uk/strategy/marketing/SEARCH_HEALTH_<date>.md` and propose a board row per fix; read what a webmaster tool's email means from the reports; invoke as `/search-health`
+- `.claude/skills/orient-spreadsheets/SKILL.md` — read before working in `../spreadsheets.diyaccounting.co.uk`: the package pipeline, the reconciliation method, the `npm test` router and the pre-push hook, the `CONTEXT_*.md` product docs; invoke as `/orient-spreadsheets`
+- `.claude/skills/orient-www/SKILL.md` — read before working in `../www.diyaccounting.co.uk`: the gateway static site and its deploy; invoke as `/orient-www`
+- `.claude/skills/orient-root/SKILL.md` — read before working in `../root.diyaccounting.co.uk`: Route53 DNS, the holding page and the failover runbook; invoke as `/orient-root`
+- `.claude/skills/orient-archive/SKILL.md` — read before working in `../diy-accounting-archive`: the archived repository, which is history and not a place to develop; invoke as `/orient-archive`
+- `.claude/skills/orient-private/SKILL.md` — read before working in `../private.diyaccounting.co.uk`: the private documents repository, which has no CLAUDE.md of its own; invoke as `/orient-private`
 
 ## Permission Handling
 
 See the shared conventions section at the end of this file for full rules. Common permissions for submit work: git operations, GitHub CLI (`gh`), shell commands (`npm`, `mvnw`, `aws`), external API calls.
+
+## Working in a sibling repository
+
+A session started here that works in another repository of this workspace invokes that repository's `orient-*` skill first, then follows the sibling's own `CLAUDE.md` and skills where they differ from this file. The skills are `orient-spreadsheets`, `orient-www`, `orient-root`, `orient-archive`, `orient-private`.
 
 ## Git Workflow
 
@@ -624,11 +633,7 @@ device per run instead of creating and deleting a user each time.
 
 ## Multi-Site Deployments
 
-The spreadsheets site is managed by the sibling repository `diy-accounting-uk/spreadsheets.diyaccounting.co.uk`. Gateway (diyaccounting.co.uk) is managed by `diy-accounting-uk/www.diyaccounting.co.uk`. Root DNS and holding page are managed by `diy-accounting-uk/root.diyaccounting.co.uk`.
-
-Behaviour tests exist for spreadsheets (`test:spreadsheetsBehaviour-*`).
-
-**Stripe Payment Links** are live on the spreadsheets site for donations (see `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_STRIPE_1.md` — completed). Submit site subscription payments are in `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_PAYMENT_INTEGRATION.md`.
+The spreadsheets, gateway and root sites are sibling repositories; their documentation is behind `orient-spreadsheets`, `orient-www` and `orient-root`. Submit's own payment plans are in `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_PAYMENT_INTEGRATION.md`.
 
 ## Security Checklist
 
