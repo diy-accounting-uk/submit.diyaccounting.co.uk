@@ -33,6 +33,7 @@ import {
   isLoopbackRedirectUri,
   isGeminiRedirectUri,
   redirectHostsOf,
+  redirectsOf,
   GEMINI_CLIENT_NAME,
 } from "../../lib/mcpOauthClients.js";
 
@@ -320,7 +321,12 @@ function handleRegister({ event, request }) {
   }
   const result = buildRegistrationResponse(metadata);
   if (!result.ok) {
-    logOutcome({ endpoint: "register", outcome: result.error, redirectHosts: redirectHostsOf(metadata) });
+    logOutcome({
+      endpoint: "register",
+      outcome: result.error,
+      redirectHosts: redirectHostsOf(metadata),
+      refusedRedirects: redirectsOf(metadata),
+    });
     return oauthError(request, result.error, result.description);
   }
   logOutcome({ endpoint: "register", outcome: "registered", redirectHosts: result.body.redirect_uris.map(redirectHost) });

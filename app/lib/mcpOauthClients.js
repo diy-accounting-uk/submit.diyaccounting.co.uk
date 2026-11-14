@@ -10,7 +10,11 @@ export const DCR_CLIENT_ID = "diya-submit-dcr";
 const CLAUDE_CALLBACKS = new Set(["https://claude.ai/api/mcp/auth_callback", "https://claude.com/api/mcp/auth_callback"]);
 const CIMD_HOSTS = new Set(["claude.ai", "claude.com"]);
 // Gemini's callback hosts and paths: https://developers.google.com/connected-apps/mcp/oauth
-export const GEMINI_CALLBACK_HOST = "oauth-redirect.googleusercontent.com";
+const GEMINI_CALLBACK_HOSTS = new Set([
+  "oauth-redirect.googleusercontent.com",
+  "oauth-redirect-sandbox.googleusercontent.com",
+  "oauth-redirect-test.googleusercontent.com",
+]);
 export const GEMINI_CLIENT_NAME = "Gemini";
 const GEMINI_CALLBACK_PATH = /^\/[ra]\/[^/].*$/;
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1"]);
@@ -44,7 +48,7 @@ export function isGeminiRedirectUri(redirectUri) {
   if (!url) return false;
   return (
     url.protocol === "https:" &&
-    url.hostname === GEMINI_CALLBACK_HOST &&
+    GEMINI_CALLBACK_HOSTS.has(url.hostname) &&
     url.port === "" &&
     !url.username &&
     !url.password &&
@@ -71,6 +75,17 @@ function isAllowedRedirectUri(redirectUri) {
 export function redirectHostsOf(metadata) {
   const uris = Array.isArray(metadata?.redirect_uris) ? metadata.redirect_uris.slice(0, MAX_REDIRECT_URIS) : [];
   return uris.map((uri) => parseUrl(uri)?.host).filter(Boolean);
+}
+
+/**
+ * The redirect URIs a registration listed as host plus path, for the log. Queries and fragments are dropped.
+ */
+export function redirectsOf(metadata) {
+  const uris = Array.isArray(metadata?.redirect_uris) ? metadata.redirect_uris.slice(0, MAX_REDIRECT_URIS) : [];
+  return uris
+    .map((uri) => parseUrl(uri))
+    .filter(Boolean)
+    .map((url) => `${url.host}${url.pathname}`);
 }
 
 /**
