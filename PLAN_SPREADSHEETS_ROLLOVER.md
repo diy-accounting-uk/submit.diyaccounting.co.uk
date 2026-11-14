@@ -3,13 +3,15 @@
 
 # PLAN: the spreadsheets rest state when the year-end window rolls
 
-Status: proposal, three options for the rest state; the fixes follow the operator's choice. Repository: `../spreadsheets.diyaccounting.co.uk`.
+Status: the operator chose Option 2 on 2026-11-14, with an anchor year-end check; the changes are in "The changes for Option 2". Repository: `../spreadsheets.diyaccounting.co.uk`.
 
 ## Operator assertions (verbatim)
 
 > When we roll to add a new latest of any of the products, that product becomes tested and also all the products that cover a current accounting period or a recent one not filed yet (e.g. year end < 1 year) are regression tested when there are changes. The new packages should automatically be generated as the date rolls over.
 
 > start a new propsal on what the new stable rest state should be that gives me three options then we'll consider what the fixes are.
+
+> For: "PLAN_SPREADSHEETS_ROLLOVER.md", I choose "2. Frozen anchors plus a rolling latest." and the rolling anchor should have a check that the anchor products have a year end in the future and the tests fail if they don't with an advisory that the exact-value checks shoudl roll to a new product when they fail and yes "The rolling latest and the in-scope set are checked by invariants that name no year-end". Please state the changes needed to achieve that.
 
 ## Where it stands
 
@@ -55,6 +57,19 @@ The scheduled run builds the new packages on a branch and opens a pull request i
 - A merge needs the same gates as any other change; with no session running, a green roll still needs `/auto-merge` or GitHub auto-merge on that branch.
 - Cost: one pull request per roll (monthly for Company, yearly for the tax-year products).
 
-## The decision
+## The changes for Option 2
 
-The operator chooses one option, or a mix (for example Option 3's release pull request carrying Option 2's anchors). The fixes are then written as rows against the chosen option, starting with the three checks that fail on `main` today.
+All in `../spreadsheets.diyaccounting.co.uk`. Today 31 files read `examples/<product>-latest` or a named year-end report: 13 unit tests, 13 browser tests, `diya-gl/parity.sh`, `diya-gl/smoke.sh`, `scripts/leg-test-files.mjs`, and `app/bin/export.js` and `app/bin/report.js`. `app/test/judge-reconciliation.test.js` and `app/test/se-derivations.test.js` name report files.
+
+| # | Change | Files | Fixes |
+|---|---|---|---|
+| R1 | One anchor registry: per product (bst, taxi, se, ltd) the anchor year-end, its package folder `examples/<product>-anchor`, its report files and its parity fixture folder. Every exact-value check reads it; none names a year-end itself. | 1 new | the pinning |
+| R2 | Freeze the anchors: `examples/<product>-latest` becomes `examples/<product>-anchor` with today's content, except Company, which takes the Oct27 content from before the roll (commit b22d451a9). The Oct27 Company brickwork reports come back from b22d451a9 into a folder the prune never touches. Anchors: Company 2027-10-31; Basic Sole Trader, Taxi Driver, Self Employed 2027-04-05. | ~60 moved, 0 edited | the 3 red checks |
+| R3 | Point the 31 consumers at the registry. A consumer that checks an exact figure reads the anchor; a consumer that needs only "a real package" (the reconciliation pages, `export.js`, `report.js`) reads the latest from `packages/`. | ~31 | the pinning |
+| R4 | The anchor check: a unit test fails for each anchor whose year-end is today or earlier. Its message: "<product> anchor <date> has passed. Roll the exact-value checks to a new anchor: copy the latest <product> package to examples/<product>-anchor, run npm run parity:refresh, set the year-end in the registry, and commit." | 1 new | the operator's check |
+| R5 | The generators stop rewriting the anchors: `generate-{bst,taxi,se,ltd}.yml` no longer delete and copy `examples/<product>-latest`. Their report prune keeps the latest year-end and the anchor year-end. | 4 | no roll breaks a check |
+| R6 | Invariants for the in-scope set, naming no year-end: each generate workflow computes, from the date and `packages/`, the latest and every year-end that ended less than 12 months ago. Each one must pass: the reconciliation report has no anomaly (today's step), the judge passes (today's step), the round trip loses nothing (`verify-roundtrip`), and the CLI and the workbook agree cell for cell on the generated package (the S2/S3 equivalence, pointed at the package rather than an example). A new latest runs the full set for its product. A change to templates, tax data, the engine or the generator runs the in-scope set of every product it reaches. This replaces the Company matrix of representative year-ends (latest March, June, February and the overall latest) with the in-scope set, 25 Company year-ends today. | ~6 | the operator's regression scope |
+| R7 | Generation on the date: `generate-bst.yml`, `generate-taxi.yml` and `generate-se.yml` get the weekly Monday schedule `generate-ltd.yml` has. A run with no new year-end commits nothing. | 3 | packages appear with no dispatch |
+| R8 | SC4 (pull request #200) shrinks to what Option 2 still needs: the PDF epoch, `provenance-data.js` and the page date. Its example-workbook keeper goes, because R5 stops writing the examples. It rebases onto R1 to R5. | ~4 | quiet weekly runs |
+
+Order: R1 to R5 in one pull request makes `main` green, as a two-agent chain (Opus maps every consumer and writes the registry, Sonnet repoints them). R6 is a second pull request (Opus, because it changes what each generate workflow runs). R7 and R8 follow (Sonnet).
