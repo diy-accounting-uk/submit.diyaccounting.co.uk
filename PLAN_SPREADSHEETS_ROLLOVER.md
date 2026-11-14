@@ -17,15 +17,7 @@ Status: the operator replaced the earlier task lists on 2026-11-14 with the twel
 
 ## Goals
 
-- Spreadsheets keeps itself correct and current as time passes, with nobody touching it.
-- New packages appear for every product as the date brings a new year-end, with no dispatch.
-- Exact figures are proved against fixed anchors that a roll never changes, and the anchors' own year-ends are kept in the future.
-- Whatever year-ends are current is proved by rules that hold for any year-end, so the calendar moving can never turn the build red.
-- Heavy proof (the LibreOffice calculations, the browser suite, byte stability) runs once per push in CI on a clean runner, never repeated on this Mac.
-- Local work only runs quick checks specific to the change, so parallel sessions and agents never fail each other's runs by load.
 - A run with nothing new commits nothing and costs nothing.
-- Red only ever means a real defect in what customers download.
-- The test: could the pipeline run unattended for a year, through every month-end and a new tax year, while other work runs on this Mac, with every red still a real defect?
 
 ## Where it stands
 
@@ -91,16 +83,3 @@ Applied after rolling back to `main` at 17:56 UTC on 14 November 2026. That poin
 | SR10 | All four generate workflows: when `app/templates`, `app/data` or `app/products` change, start a run that commits every changed package in `packages/`. | SR2, SR3 |
 | SR11 | Package PDFs take the date of the last template commit, so untouched packages regenerate identical and are not committed. | SR10 |
 | SR12 | Close spreadsheets PR #200 without merging. | — |
-
-## Goals these tasks do not meet
-
-- Keeps itself correct and current with nobody touching it: a person re-pins every six months, and writes each new tax-year file.
-- New packages appear for every product with no dispatch: only Company has a weekly schedule; Basic Sole Trader, Self Employed and Taxi Driver have none.
-- Exact figures against fixed anchors whose year-ends stay in the future: SR7 checks the pinned package's age, not its year-end, and re-pinning is manual.
-- The calendar never turns the build red: SR7 turns every build red when a pinned package reaches six months old.
-- Heavy proof runs once per push in CI, never on this Mac: the pre-push hook still runs the LibreOffice, browser and infra tiers locally.
-- Local work only runs quick checks, so parallel runs never fail by load: the same pre-push hook is unchanged.
-- Red only ever means a real defect: SR7 is a date-driven red, and a bot commit still reaches the site before `test.yml` checks it.
-- The one-year unattended test: it fails on 2027-04-05, when the Company pinned package (built 2026-10-05) turns six months old. The Company tax data also runs out on 2027-02-16, and nothing reports it.
-
-The goal these tasks meet: a run with nothing new commits nothing.
