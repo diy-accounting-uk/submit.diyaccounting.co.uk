@@ -1,0 +1,63 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# @capability MCP-27 Sync the plugin folder to the public plugin repository
+# - **Use when:** plugins/diya-submit/ changes and the public diya-submit-plugin repository must match it.
+# - **Does:** sync-plugin-repo.yml copies plugins/diya-submit/ to the root of diy-accounting-uk/diya-submit-plugin on every change on main, with a deploy key, and pushes one commit when the content differs.
+# - **Run:** `gh workflow run sync-plugin-repo.yml --ref main`
+# - **Entry:** `.github/workflows/sync-plugin-repo.yml`
+# - **Files:** .github/workflows/sync-plugin-repo.yml, plugins/diya-submit/
+# - **Keywords:** plugin repository, diya-submit-plugin, plugin sync, deploy key, PLUGIN_REPO_DEPLOY_KEY, connector directory
+# @end-capability
+
+name: sync-plugin-repo
+run-name: 'sync-plugin-repo [${{ github.ref_name }}]'
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'plugins/diya-submit/**'
+      - '.github/workflows/sync-plugin-repo.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: sync-plugin-repo
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Check out the plugin repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: diy-accounting-uk/diya-submit-plugin
+          ref: main
+          path: plugin-repo
+          ssh-key: ${{ secrets.PLUGIN_REPO_DEPLOY_KEY }}
+
+      - name: Copy the plugin folder over the plugin repository
+        run: rsync -a --delete --exclude .git plugins/diya-submit/ plugin-repo/
+
+      - name: Commit and publish when the content differs
+        working-directory: plugin-repo
+        env:
+          SUBMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "no change"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Sync from submit.diyaccounting.co.uk ${SUBMIT_SHA}"
+          git push origin main

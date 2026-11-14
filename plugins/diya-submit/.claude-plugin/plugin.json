@@ -3,7 +3,15 @@
   "displayName": "DIY Accounting Submit",
   "version": "0.1.0",
   "description": "Work out a UK VAT return from your saved books, check the nine boxes, then open the link Claude gives you and file it yourself on the Submit page, and read the receipt back afterwards.",
-  "author": { "name": "DIY Accounting Limited", "url": "https://submit.diyaccounting.co.uk" },
+  "author": {
+    "name": "DIY Accounting Limited",
+    "url": "https://submit.diyaccounting.co.uk"
+  },
   "homepage": "https://submit.diyaccounting.co.uk/mcp.html",
+  "repository": "https://github.com/diy-accounting-uk/diya-submit-plugin",
+  "documentationUrl": "https://submit.diyaccounting.co.uk/mcp.html",
+  "supportUrl": "https://submit.diyaccounting.co.uk/help.html",
+  "privacyPolicyUrl": "https://submit.diyaccounting.co.uk/privacy.html",
+  "termsOfServiceUrl": "https://submit.diyaccounting.co.uk/terms.html",
   "license": "LicenseRef-PolyForm-Internal-Use-1.0.0"
 }
