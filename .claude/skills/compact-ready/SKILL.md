@@ -1,3 +1,8 @@
+---
+name: compact-ready
+description: Say whether now is a good time for a compaction and make it true. Land or commit every agent's and worktree's work, write NEXT.md and chat decisions to files, keep monitors, then answer yes or not yet (ready now, never conditional) and print the /compact line with what the summary must keep. Runs after every verified merge and at the end of every /board render. Invoke when the operator asks "can I compact", "compact ready", or whether the session is ready for a compaction.
+---
+
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
@@ -6,7 +11,8 @@
 Answer "is now a good time for compaction?" and make it true. A compaction keeps a summary and
 drops the rest, so everything a later turn needs must sit in a commit, `NEXT.md`, a plan file or
 the summary text before `/compact` runs. Invoke as `/compact-ready`; `/auto-merge` runs it after
-every verified merge, and `/board` at the end of every render.
+every verified merge, and `/board` at the end of every render. `/clear-ready` answers the same
+question for `/clear` and for a restart of Claude Code.
 
 ## 1. Gather
 

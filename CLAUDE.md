@@ -11,6 +11,7 @@
 1. Read all `PLAN_*.md` files in the project root — these are the active goals
 2. Run `TaskList` to see tracked tasks with status
 3. Do NOT start new work without checking these first
+4. If `../private.diyaccounting.co.uk/sessions/HANDOVER_SUBMIT.md` exists, read it, do its first actions, and delete each part you take over in a commit there
 
 **During work:**
 - When the user gives a new requirement, add it to the relevant `PLAN_*.md` or create a new one
@@ -81,6 +82,7 @@ Skills live at `.claude/skills/<name>/SKILL.md`.
 - `.claude/skills/capabilities/SKILL.md` — find the tooling the repository already has before building any, and keep `REPORT_CAPABILITIES.md` current; invoke as `/capabilities`
 - `.claude/skills/itsa-readiness/SKILL.md` — say whether the Income Tax (MTD) recognition email can go to HMRC, check by check with the evidence; invoke as `/itsa-readiness`
 - `.claude/skills/fast-deploy/SKILL.md` — put a candidate fix live on a ci set in minutes from the local tree (`npm run deploy:app-ci`, or a single-stack `deploy-cdk-stack.yml` dispatch) when a ci `test.yml` or `deploy.yml` failed and confidence in the fix is short of high; prod only on the operator's direct instruction; invoke as `/fast-deploy`
+- `.claude/skills/clear-ready/SKILL.md` — before a `/clear` or a restart of Claude Code: commit every agent's and worktree's work, write `NEXT.md` and chat decisions to files, write the running work into `../private.diyaccounting.co.uk/sessions/HANDOVER_SUBMIT.md`, then say yes or not yet for each (ready now, never conditional); runs at the end of every `/board` before `/compact-ready`; invoke as `/clear-ready`
 - `.claude/skills/compact-ready/SKILL.md` — before a compaction: land or commit every agent's and worktree's work, write `NEXT.md` and chat decisions to files, keep monitors, then say yes or not yet (ready now, never conditional) and list what the summary must keep; invoke as `/compact-ready`
 - `.claude/skills/company-book/SKILL.md` — build, verify and hand over DIY Accounting Limited's own diya-gl book from its bank, Stripe, PayPal and supplier sources, and tell Cowork how to read it with the spreadsheets MCP; invoke as `/company-book`
 - `.claude/skills/campaign/SKILL.md` — spend a time box (default an hour) campaigning for one goal: figures against the stop rule, a scan of newsletters and threads, five drafted answers in a review queue for a person to post, one site improvement as a PR, a three-line report; posts nothing to third-party sites and spends nothing; invoke as `/campaign <goal>`

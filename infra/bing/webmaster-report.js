@@ -5,9 +5,9 @@
 // @capability DATA-77 Report Bing Webmaster Tools statistics, crawl data and sitemap feeds
 // - **Use when:** a task asks how the sites do in Bing, which queries and pages bring clicks there, what Bingbot reports as crawl issues, or whether Bing holds each sitemap.
 // - **Does:** webmaster-report.js is a read-only report over the sites verified in the Bing Webmaster Tools account that owns BING_WEBMASTER_API_KEY. For each verified site it reads query and page statistics, daily rank and traffic, crawl statistics, crawl issues, the submitted feeds, the crawl settings and the URL information of the top pages, and writes one JSON report shaped like the Search Console report. It calls only Get methods, sends the key in the query string as the API takes it, and never prints the key or a request URL.
-// - **Run:** `BING_WEBMASTER_API_KEY=... npm run bing:report -- --out target/bing-webmaster-report.json`
+// - **Run:** `npm run bing:report-prod -- --out target/bing-webmaster-report.json` (reads prod/submit/bing/webmaster_api_key with the diya-submit-prod SSO profile); `BING_WEBMASTER_API_KEY=... npm run bing:report -- --out target/bing-webmaster-report.json`
 // - **Entry:** `infra/bing/webmaster-report.js:main`
-// - **Files:** infra/bing/webmaster-report.js, app/unit-tests/scripts/bingWebmasterReport.test.js, app/unit-tests/fixtures/bing/
+// - **Files:** infra/bing/webmaster-report.js, scripts/bing-report-secret.sh, app/unit-tests/scripts/bingWebmasterReport.test.js, app/unit-tests/fixtures/bing/
 // - **Keywords:** bing webmaster, bing report, bing crawl issues, bing sitemap feeds, bing query statistics, bingbot, bing api key
 // - **Related:** DATA-69, DATA-76
 // @end-capability

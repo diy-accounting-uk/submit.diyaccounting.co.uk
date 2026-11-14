@@ -75,6 +75,7 @@ export const ROTATABLE_SECRETS = {
   },
   "github/ops_app_private_key": { githubSecret: "OPS_APP_PRIVATE_KEY", assert: () => null },
   "mcp/reviewer-password": { githubSecret: "MCP_REVIEWER_PASSWORD", assert: () => null },
+  "bing/webmaster_api_key": { githubSecret: "BING_WEBMASTER_API_KEY", assert: () => null },
 };
 
 function stripeAssert(suffix, environment) {

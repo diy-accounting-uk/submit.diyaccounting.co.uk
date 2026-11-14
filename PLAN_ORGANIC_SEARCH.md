@@ -5,7 +5,7 @@
 
 Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 13 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: all 10 tasks are rows on `NEXT.md`, where each row carries its brief. 3 machine-only, 4 machine-ask, 3 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: all 11 tasks are rows on `NEXT.md`, where each row carries its brief. 3 machine-only, 5 machine-ask, 3 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -836,6 +836,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
 | OS24 | Create and claim the profiles | D1, D2, D3, D4, D5, D6, C2, E4, L3 | About 30 listings from one sitting with the copy pack. | Rows marked live in the listing register. | machine-ask; on the board |
+| OS24b | Create and claim the profiles, batch 2 (the long tail) | D1, D2, D3, D4, D5, D6, C2, E4, L3 | About 30 listings from one sitting with the copy pack. | Rows marked live in the listing register. | machine-ask; on the board |
 | OOS26 | Send the letters to the editors and the tax bodies | D7, D8, C1, C4, Y3 | The letters go from the operator's own address. | Each send and reply is in the listing register. | human-driven; on the board |
 | OS29b | The Wikidata item in each site's entity record | K2 | Each site's Organization record names the item, so the record and the item point at each other. | The block on each home page holds the URL. | machine-only; on the board |
 | OS30 | A launch pack for the assistant connector | E1, E2, E3, V6 | Text, images and a recording for Product Hunt, Show HN, the AI tool directories and a developer post, ready for the day the connector launches. | Referrer sessions from each place in launch week. | machine-only; on the board |
