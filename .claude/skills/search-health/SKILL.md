@@ -8,7 +8,7 @@ description: Check the health of every site in Google Search Console, Bing Webma
 
 <!-- @capability DEV-61 Optimise the sites from the two webmaster tools and local checks
 - **Use when:** a Search Console or Bing Webmaster Tools email names a site, or the operator asks how the sites do in search, what to fix first, or whether a crawl setting, coverage drop or sitemap error is real.
-- **Does:** search-health runs the Search Console report, the Bing report when BING_WEBMASTER_API_KEY is set, and the local page checks for the six sites. It joins the findings to the impressions and clicks of the pages, ranks the fixes by those impressions, writes one report to the private repository, and proposes one board row per fix without adding it.
+- **Does:** search-health runs the Search Console report, the Bing report, and the local page checks for the six sites. It joins the findings to the impressions and clicks of the pages, ranks the fixes by those impressions, writes one report to the private repository, and proposes one board row per fix without adding it.
 - **Run:** `/search-health`
 - **Entry:** `.claude/skills/search-health/SKILL.md`
 - **Files:** .claude/skills/search-health/SKILL.md, infra/google/searchconsole/searchconsole-report.js, infra/bing/webmaster-report.js, scripts/search-health-check.mjs
@@ -27,14 +27,14 @@ writes nothing to Google or Bing.
 | Source | Command | Output | Needs |
 |--------|---------|--------|-------|
 | Search Console | `GOOGLE_CLOUD_PROJECT=diyaccounting-ga4 scripts/gcp-as-sso.sh node infra/google/searchconsole/searchconsole-report.js --out target/searchconsole-report.json` | 90 days of queries and pages, and the URL Inspection answer for each sitemap URL | AWS SSO login |
-| Bing Webmaster Tools | `npm run bing:report -- --out target/bing-webmaster-report.json` | queries, pages, traffic, crawl statistics, crawl issues, feeds, crawl settings, URL information | `BING_WEBMASTER_API_KEY` |
+| Bing Webmaster Tools | `npm run bing:report-prod -- --out target/bing-webmaster-report.json` | queries, pages, traffic, crawl statistics, crawl issues, feeds, crawl settings, URL information | AWS SSO login (or `BING_WEBMASTER_API_KEY` set) |
 | Local checks | `npm run search:health` | the checks of both tools that need no account, for every sitemap URL of the six sites | the network |
 
 ## Steps
 
 1. Run the SSO check from the `campaign` skill. Ask for `aws sso login --sso-session diyaccounting` only when a check fails.
 2. Run the Search Console report from the table. It takes some minutes, because it inspects each sitemap URL.
-3. Check the variable: `test -n "$BING_WEBMASTER_API_KEY" && echo set || echo unset`. When it is set, run the Bing report. When it is unset, write "Bing report not run: BING_WEBMASTER_API_KEY is not set" at the top of the report and use the Bing console for the questions in "What a webmaster email means". The variable is the operator's row OOS47; a session never creates the key.
+3. Run `npm run bing:report-prod -- --out target/bing-webmaster-report.json` after the SSO check of step 1. When it cannot run, write "Bing report not run" with the reason at the top of the report and use the Bing console for the questions in "What a webmaster email means". The wrapper reads the key from AWS Secrets Manager when the variable is unset. A session never creates the key.
 4. Run `npm run search:health`. It makes one request at a time per host and takes about three minutes. Read the summary it prints. The full findings are in `target/search-health-check.json`.
 5. Join the findings to the impressions. This command reads the three files, and works when the Search Console or Bing file is missing:
 

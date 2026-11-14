@@ -380,6 +380,7 @@
     "searchconsole:report": "node infra/google/searchconsole/searchconsole-report.js",
     "search:health": "node scripts/search-health-check.mjs",
     "bing:report": "node infra/bing/webmaster-report.js",
+    "bing:report-prod": "scripts/bing-report-secret.sh node infra/bing/webmaster-report.js",
     "ga4:bigquery-sync": "node infra/google/ga4/ga4-bigquery-sync.js",
     "google:inventory": "node infra/google/gcp/google-inventory.js",
     "ads:inventory": "node infra/google/ads/ads-inventory.js",

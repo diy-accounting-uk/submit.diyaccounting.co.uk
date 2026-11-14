@@ -119,6 +119,8 @@ class McpStackTest {
                                         sharedNames.baseUrl)))))));
         var variables = environmentVariables(template, stack.mcpHttpLambdaProps.ingestFunctionName());
         assertTrue(variables.get("MCP_PUBLIC_HOSTS").toString().contains(sharedNames.deploymentDomainName));
+        assertEquals(sharedNames.baseUrl, variables.get("DIYA_SUBMIT_BASE_URL"));
+        assertEquals(sharedNames.publicBaseUrl, variables.get("DIY_SUBMIT_BASE_URL"));
         assertTrue(variables.get("MCP_ALLOWED_ORIGINS").toString().contains("https://claude.ai"));
         assertTrue(variables.get("MCP_ALLOWED_ORIGINS").toString().contains("https://claude.com"));
         assertTrue(variables.get("MCP_ALLOWED_ORIGINS").toString().contains("https://chatgpt.com"));
@@ -370,7 +372,7 @@ class McpStackTest {
 
         var variables = environmentVariables(template, stack.mcpCodesEntryLambdaProps.ingestFunctionName());
         assertEquals("docs-env-mcp-sessions", variables.get("MCP_SESSIONS_DYNAMODB_TABLE_NAME"));
-        assertEquals(sharedNames.baseUrl, variables.get("DIY_SUBMIT_BASE_URL"));
+        assertEquals(sharedNames.publicBaseUrl, variables.get("DIY_SUBMIT_BASE_URL"));
         assertTrue(variables.containsKey("MCP_OAUTH_BLOB_KEY_SECRET_ARN"));
         assertEquals(sharedNames.data.practiceClientsTableName, variables.get("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME"));
         var statements = iamStatementsForFunction(template, stack.mcpCodesEntryLambdaProps.ingestFunctionName());

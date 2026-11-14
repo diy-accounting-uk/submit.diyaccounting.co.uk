@@ -49,6 +49,7 @@ async function sessionFor(httpRequest) {
   // The server's own listening port, never the Host header: the tool calls go back to this process.
   const origin = `http://127.0.0.1:${httpRequest.socket.localPort}`;
   if (!process.env.DIYA_SUBMIT_BASE_URL) process.env.DIYA_SUBMIT_BASE_URL = origin;
+  if (!process.env.DIY_SUBMIT_BASE_URL) process.env.DIY_SUBMIT_BASE_URL = origin;
   const forwarded = httpRequest.get("authorization");
   const callerBearer = forwarded?.startsWith("Bearer ") ? forwarded.slice("Bearer ".length).trim() : null;
   const cacheKey = `${key}:${callerBearer ?? "simulator"}`;

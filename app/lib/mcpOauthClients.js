@@ -9,6 +9,10 @@ export const DCR_CLIENT_ID = "diya-submit-dcr";
 
 const CLAUDE_CALLBACKS = new Set(["https://claude.ai/api/mcp/auth_callback", "https://claude.com/api/mcp/auth_callback"]);
 const CIMD_HOSTS = new Set(["claude.ai", "claude.com"]);
+// Gemini's callback hosts and paths: https://developers.google.com/connected-apps/mcp/oauth
+export const GEMINI_CALLBACK_HOST = "oauth-redirect.googleusercontent.com";
+export const GEMINI_CLIENT_NAME = "Gemini";
+const GEMINI_CALLBACK_PATH = /^\/[ra]\/[^/].*$/;
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1"]);
 const MAX_URI_LENGTH = 2048;
 const MAX_REDIRECT_URIS = 10;
@@ -35,13 +39,38 @@ export function isLoopbackRedirectUri(redirectUri) {
   return url.protocol === "http:" && LOOPBACK_HOSTS.has(url.hostname) && !url.username && !url.password && !url.hash;
 }
 
+export function isGeminiRedirectUri(redirectUri) {
+  const url = parseUrl(redirectUri);
+  if (!url) return false;
+  return (
+    url.protocol === "https:" &&
+    url.hostname === GEMINI_CALLBACK_HOST &&
+    url.port === "" &&
+    !url.username &&
+    !url.password &&
+    !url.search &&
+    !url.hash &&
+    GEMINI_CALLBACK_PATH.test(url.pathname)
+  );
+}
+
 /**
- * Exactly one of Claude's two callbacks, or a loopback http URI on localhost or 127.0.0.1 with any port.
+ * Exactly one of Claude's two callbacks, a Gemini callback, or a loopback http URI on localhost or
+ * 127.0.0.1 with any port.
  */
 function isAllowedRedirectUri(redirectUri) {
   if (typeof redirectUri !== "string") return false;
   if (CLAUDE_CALLBACKS.has(redirectUri)) return true;
+  if (isGeminiRedirectUri(redirectUri)) return true;
   return isLoopbackRedirectUri(redirectUri);
+}
+
+/**
+ * The hosts of the redirect URIs a registration listed, for the log. Paths and queries are dropped.
+ */
+export function redirectHostsOf(metadata) {
+  const uris = Array.isArray(metadata?.redirect_uris) ? metadata.redirect_uris.slice(0, MAX_REDIRECT_URIS) : [];
+  return uris.map((uri) => parseUrl(uri)?.host).filter(Boolean);
 }
 
 /**

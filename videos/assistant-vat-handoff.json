@@ -158,11 +158,14 @@
           "target": "#allowSyntheticObligations"
         },
         {
-          "action": "click",
-          "target": "#submitBtn",
-          "caption": "Submitting sends you to HMRC, where you grant access.",
+          "action": "caption",
           "headline": "Submit the return",
-          "keyWord": "Submit"
+          "keyWord": "Submit",
+          "text": "Submitting sends you to HMRC, where you grant access."
+        },
+        {
+          "action": "click",
+          "target": "#submitBtn"
         }
       ]
     },
@@ -182,18 +185,32 @@
       ]
     },
     {
-      "id": "receipt",
-      "chapter": "Submitted",
-      "still": true,
+      "id": "hmrc-answer",
+      "chapter": "HMRC answers",
+      "offCamera": true,
       "steps": [
         {
           "action": "await",
           "until": "#receiptDisplay",
           "label": "Waiting for HMRC",
-          "timeoutMs": 60000,
-          "caption": "HMRC confirms the return is filed.",
+          "timeoutMs": 60000
+        }
+      ]
+    },
+    {
+      "id": "receipt",
+      "chapter": "Submitted",
+      "still": true,
+      "steps": [
+        {
+          "action": "caption",
           "headline": "HMRC confirms it's filed",
-          "keyWord": "filed"
+          "keyWord": "filed",
+          "text": "HMRC confirms the return is filed."
+        },
+        {
+          "action": "hold",
+          "ms": 1000
         },
         {
           "action": "scroll",
