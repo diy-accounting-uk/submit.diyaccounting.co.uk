@@ -5,7 +5,7 @@
 
 Every path that brings a customer to the DIY Accounting sites with no payment for placement: search engines, public registers, directories, app stores, AI assistants and the standards they read. 93 paths, each scored on build effort, gatekeeping and relevance, and 13 uplift tasks. Facts checked 2026-11-12.
 
-**Status**: all 10 tasks are rows on `NEXT.md`, where each row carries its brief. 3 machine-only, 4 machine-ask, 3 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
+**Status**: all 9 tasks are rows on `NEXT.md`, where each row carries its brief. 2 machine-only, 4 machine-ask, 3 human-driven. The presentation is https://claude.ai/artifact/SVx54fas133F623xLWem9L (private to the operator).
 
 ## Operator assertions (verbatim, 2026-11-12)
 
@@ -846,7 +846,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
-| OOS47 | The API key for Bing Webmaster Tools | A15 | Bing's figures and crawl issues are read through its API, not in Chrome. | The Bing report runs with the key. | machine-ask; on the board |
 
 ### 8.2 Groups, ranked by the visits each is expected to add
 
