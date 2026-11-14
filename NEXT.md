@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-0b9bf78** (PR #820's merge 0b9bf7832, deploy run 43534730638, 2026-11-14 01:15 UTC: the connector's public link address, Gemini's sign-in return address, the Bing key path). The set prod-3df33e9 is spare.
+**Prod runs deployment prod-0b9bf78** (PR #820's merge 0b9bf7832, deploy run 43534730638, 2026-11-14 01:15 UTC: the connector's public link address, Gemini's sign-in return address, the Bing key path). It is the only prod set.
 **ci**: ci-set1 stands and is `/submit/ci/last-known-good-deployment`.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run

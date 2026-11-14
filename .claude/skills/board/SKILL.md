@@ -203,9 +203,13 @@ for the one that is live (the apex and the probes point at it). One row per depl
   `cdk.json` value applies only to a local synth), and
   `destroy-ci.yml` sweeps leftovers on its cron (`34 2,4,6,8,10,12 * * *` UTC). `Goes when` is
   creation plus the delay, or the next sweep if that has passed.
-- prod sets never go on their own: only `destroy-prod.yml` with the deployment name removes
-  one. A spare prod set costs $35.28 a month (`../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COST_OPTIMISATION.md`). `Goes when` for a
-  spare prod set is "on destroy-prod", and `Follow-up` names the dispatch:
+- A prod deploy removes the set it replaced: `deploy-finish.yml` dispatches `destroy-prod.yml`
+  for the previous set when the new one is live. List only the sets the `list-stacks` read of
+  this render returns, and read `gh run list --workflow destroy-prod.yml --limit 3` before a
+  set is called spare: a set with a destroy run in progress gets no command. A set that still
+  stands when that run has ended, or that no run named, is spare and costs $35.28 a month
+  (`../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COST_OPTIMISATION.md`). Its
+  `Goes when` is "on destroy-prod", and `Follow-up` names the dispatch:
   `gh workflow run destroy-prod.yml -f deployment-name=<name>`, which is the operator's to run,
   printed in full in a fenced block with the `!` prefix.
 - A destroy or removal command is printed only when its target can go now. A prod set is
