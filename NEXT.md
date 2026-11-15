@@ -44,10 +44,10 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Machine-ask
 
-- [ ] **RW1. Replace commits on `main` with cleaned copies.** The replacement commits are built and signed, and their tip holds the same files as `main`. The record, the two commands and the GitHub Support step are in `../private.diyaccounting.co.uk/security/REWRITE_SUBMIT_MAIN_2026-11-15.md`. The force push is the operator's, and no run is in flight that it would disturb. After the push the operator moves local `main` with the second command, a session checks the result and deletes the local ref `refs/rewrite/main-2026-11-15`, and the operator asks GitHub Support to remove the old commits. A push to `main` before the rewrite means that the replacement tip is built again and the record updated. **Source**: operator, 2026-11-15. **Owner**: Operator (the push, the support request), Claude Code (the commits, the commands, the checks). **Model**: Sonnet. **Size**: 0 files.
-
 
 ## Human-driven
+
+- [ ] **RW1. Ask GitHub Support to remove the replaced commits.** `main` was rewritten on 2026-11-15, and the replaced commits are on no branch, tag or pull request. GitHub serves them by hash until Support runs its garbage collection. The operator sends the request at https://support.github.com; its text and the commit list are in `../private.diyaccounting.co.uk/security/REWRITE_SUBMIT_MAIN_2026-11-15.md`. Support removes only data that it judges sensitive, so it can decline. **Source**: operator, 2026-11-15. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 
 ## Blocked
