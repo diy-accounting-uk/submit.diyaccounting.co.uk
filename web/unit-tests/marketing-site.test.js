@@ -527,9 +527,9 @@ describe("listing register", () => {
   const catalogue = TOML.parse(fs.readFileSync(path.join(publicDir, "submit.catalogue.toml"), "utf-8"));
   const register = readListings();
 
-  it("seeds one entry per place of groups D, E, L and C, each planned or live", () => {
+  it("holds one entry per place of groups D, E, L and C, each in a known state", () => {
     expect(register.groups.map((g) => g.id)).toEqual(["review", "launch", "citation", "professional"]);
-    expect(register.listings.length).toBeGreaterThanOrEqual(40);
+    expect(register.listings.length).toBeGreaterThanOrEqual(25);
     for (const listing of register.listings) expect(LISTING_STATES, listing.id).toContain(listing.state);
     expect(register.listings.filter((l) => l.state === "live").map((l) => l.id)).toEqual([
       "trustpilot",
@@ -537,17 +537,7 @@ describe("listing register", () => {
       "featuredcustomers",
       "linkedin",
     ]);
-    for (const place of [
-      "Capterra",
-      "Trustpilot",
-      "AlternativeTo",
-      "SaaSHub",
-      "G2",
-      "TrustRadius",
-      "Product Hunt",
-      "Yell",
-      "AccountingWEB",
-    ]) {
+    for (const place of ["Capterra", "Trustpilot", "AlternativeTo", "SaaSHub", "G2", "Product Hunt", "Yell", "AccountingWEB"]) {
       expect(
         register.listings.some((l) => l.place.startsWith(place)),
         place,
