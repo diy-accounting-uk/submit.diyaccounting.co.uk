@@ -46,7 +46,7 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Machine-ask
 
-- [ ] **OS24b. Batch 2 listings go live.** Submitted on 2026-11-15 with `antony@diyaccounting.co.uk`: Crozdesk; FreeIndex (Settings says "Your business is enabled and is advertised on the site", the public page https://www.freeindex.co.uk/profile(diy-accounting-limited)_871225.htm still shows "Page removed"); Yell (business 11067852, which Yell says goes live "in the next few days" after it verifies the details). PR #831 (https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/pull/831) sets the three to `submitted` and removes the 20 dropped places; it merges through `/auto-merge`. When a public page loads, a session sets that entry of `web/marketing/marketing.toml` to `live` with its address and runs `npm run marketing:build`. **Source**: `PLAN_ORGANIC_SEARCH.md` OS24b (group 8, listing register and reviews). **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files. **Repository**: submit.
+- [ ] **OS24b. Batch 2 listings go live.** Submitted on 2026-11-15 with `antony@diyaccounting.co.uk`: Crozdesk; FreeIndex (Settings says "Your business is enabled and is advertised on the site", the public page https://www.freeindex.co.uk/profile(diy-accounting-limited)_871225.htm still shows "Page removed"); Yell (business 11067852, which Yell says goes live "in the next few days" after it verifies the details). When a public page loads, a session sets that entry of `web/marketing/marketing.toml` to `live` with its address and runs `npm run marketing:build`. **Source**: `PLAN_ORGANIC_SEARCH.md` OS24b (group 8, listing register and reviews). **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files. **Repository**: submit.
 
 ## Human-driven
 
