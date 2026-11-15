@@ -16,7 +16,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-c1d794e** (`deploy.yml` run 43619856161 of `main` at c1d794eaa, PR #824, 2026-11-14).
-**ci**: ci-set1 and ci-set2 stand for the deploys of PRs #827, #828 and #829 (created 2026-11-15 00:52 to 01:12 UTC); `/submit/ci/last-known-good-deployment` reads `ci-set1`.
+**ci**: ci-set1 is being destroyed (`destroy-ci.yml` run 43664994453, operator 2026-11-15); ci-set2 carries PR #829's deploy and is destroyed after #829 merges (operator, 2026-11-15).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
