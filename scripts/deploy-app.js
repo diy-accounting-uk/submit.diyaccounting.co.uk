@@ -239,9 +239,9 @@ async function updateLambdas(config) {
 
   const imageUri = `${config.ecrUriEuw2}:${config.gitSha}`;
 
-  // List all Lambda functions with the deployment prefix
+  // List the image Lambda functions with the deployment prefix; CDK helper functions are Zip packages
   const functionsJson = runCapture(
-    `aws lambda list-functions --region ${AWS_REGION} --query "Functions[?starts_with(FunctionName, '${config.appPrefix}-')].FunctionName" --output json`,
+    `aws lambda list-functions --region ${AWS_REGION} --query "Functions[?starts_with(FunctionName, '${config.appPrefix}-') && PackageType=='Image'].FunctionName" --output json`,
   );
   const functions = JSON.parse(functionsJson);
 

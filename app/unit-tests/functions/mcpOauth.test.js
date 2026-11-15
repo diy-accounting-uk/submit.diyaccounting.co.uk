@@ -51,6 +51,8 @@ const LOOPBACK_REDIRECT = "http://localhost:53682/callback";
 const GEMINI_REDIRECT = "https://oauth-redirect.googleusercontent.com/r/abc123";
 const GEMINI_APP_REDIRECT = "https://oauth-redirect.googleusercontent.com/a/abc123/def";
 const CIMD_ID = "https://claude.ai/oauth/mcp-oauth-client-metadata";
+const CHATGPT_CIMD_ID = "https://chatgpt.com/oauth/PMkWzEPQf9Fr/client.json";
+const CHATGPT_REDIRECT = "https://chatgpt.com/connector/oauth/PMkWzEPQf9Fr";
 const RESOURCE = `https://${HOST}/mcp`;
 
 const ENV_KEYS = [
@@ -281,6 +283,31 @@ describe("mcpOauth register", () => {
     expect((await authorize({ redirect_uri: uri })).statusCode).toBe(400);
   });
 
+  it.each([
+    ["a connector path", CHATGPT_REDIRECT],
+    ["the connector platform callback", "https://chatgpt.com/connector_platform_oauth_redirect"],
+  ])("registers a ChatGPT callback with %s", async (_label, uri) => {
+    const result = await register(JSON.stringify({ redirect_uris: [uri] }));
+    expect(result.statusCode).toBe(201);
+    expect(json(result).redirect_uris).toEqual([uri]);
+  });
+
+  it.each([
+    ["a query", `${CHATGPT_REDIRECT}?x=1`],
+    ["a fragment", `${CHATGPT_REDIRECT}#x`],
+    ["a port", "https://chatgpt.com:8443/connector/oauth/abc"],
+    ["http", "http://chatgpt.com/connector/oauth/abc"],
+    ["the bare connector path", "https://chatgpt.com/connector/oauth/"],
+    ["a nested path", "https://chatgpt.com/connector/oauth/abc/def"],
+    ["another path", "https://chatgpt.com/other"],
+    ["a lookalike host", "https://chatgpt.com.example.org/connector/oauth/abc"],
+    ["a subdomain", "https://evil.chatgpt.com/connector/oauth/abc"],
+  ])("refuses a ChatGPT-like callback with %s", async (_label, uri) => {
+    const result = await register(JSON.stringify({ redirect_uris: [uri] }));
+    expect(result.statusCode).toBe(400);
+    expect(json(result).error).toBe("invalid_redirect_uri");
+  });
+
   it("registers the six Gemini callbacks on the three hosts in one request", async () => {
     const hosts = ["oauth-redirect", "oauth-redirect-sandbox", "oauth-redirect-test"];
     const uris = hosts.flatMap((h) => [`https://${h}.googleusercontent.com/r/x`, `https://${h}.googleusercontent.com/a/x`]);
@@ -414,7 +441,7 @@ describe("mcpOauth authorize GET", () => {
     expect(url.searchParams.get("code")).toBeNull();
   });
 
-  it("refuses a CIMD client id outside claude.ai and claude.com before any fetch", async () => {
+  it("refuses a CIMD client id outside claude.ai, claude.com and chatgpt.com before any fetch", async () => {
     const result = await authorize({ client_id: "https://evil.example/client.json" });
     expect(result.statusCode).toBe(400);
     expect(fetchMock).not.toHaveBeenCalled();
@@ -432,6 +459,25 @@ describe("mcpOauth authorize GET", () => {
     expect(fetchMock.mock.calls[0][1].redirect).toBe("manual");
     await authorize({ client_id: CIMD_ID });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("accepts ChatGPT's CIMD client with its connector callback and names it on the consent page", async () => {
+    fetchMock.mockResolvedValue(
+      respond(
+        200,
+        {
+          client_id: CHATGPT_CIMD_ID,
+          client_name: "ChatGPT",
+          redirect_uris: [CHATGPT_REDIRECT],
+          token_endpoint_auth_methods_supported: ["none", "private_key_jwt"],
+        },
+        { "cache-control": "public, max-age=300" },
+      ),
+    );
+    const result = await authorize({ client_id: CHATGPT_CIMD_ID, redirect_uri: CHATGPT_REDIRECT });
+    expect(result.statusCode).toBe(200);
+    expect(fetchMock.mock.calls[0][0]).toBe(CHATGPT_CIMD_ID);
+    expect(result.body).toContain("ChatGPT (<strong>chatgpt.com</strong>) is asking to use DIY Accounting Submit as you");
   });
 
   it("names the client from its metadata document on the consent page, escaped", async () => {
