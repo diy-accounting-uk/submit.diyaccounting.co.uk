@@ -12,8 +12,8 @@ source file in `sources/`. A source file records a gov.uk page, the day it was r
 the page that state the fact. A page is built from these files, and a unit test fails when a fact has
 no source or its source is older than 30 days.
 
-Run this skill in a session. Never run it in a workflow: an LLM call that commits to the repository
-trips GitHub's abuse heuristics.
+Run this skill in a session. The spreadsheets tax-data job (`PLAN_SPREADSHEETS_UPDATES.md` TU1) reads
+the same source files from a workflow.
 
 ## Source file format
 
