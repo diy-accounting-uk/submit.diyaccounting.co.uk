@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "diya-submit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Work out a UK VAT return from your saved books, check the nine boxes, then open the link the assistant gives you and file it yourself on the Submit page. Read your stored VAT receipts afterwards.",
   "author": {
     "name": "DIY Accounting Limited",
@@ -35,10 +35,63 @@
         "brandColor": "#1F4E79",
         "composerIcon": "./assets/logo.png",
         "logo": "./assets/logo.png"
+      },
+      "publication": {
+        "countries": ["GB"],
+        "release_notes": "First release. Six read tools. The person files in the browser."
+      },
+      "review": {
+        "demo_recording_url": "https://youtu.be/0tBQzkjmNgM",
+        "commerce": false,
+        "test_cases": {
+          "positive": [
+            {
+              "description": "List the saved books",
+              "prompt": "List my books.",
+              "tools_triggered": "list_books",
+              "expected_behavior": "The assistant lists the saved books by name, including BrickWork Pro Ltd (the VAT book) and Precision Code Ltd."
+            },
+            {
+              "description": "Open the VAT book",
+              "prompt": "Open the VAT book.",
+              "tools_triggered": "list_books, open_book",
+              "expected_behavior": "The assistant opens BrickWork Pro Ltd and says the business, the period covered, the line count and the book checks."
+            },
+            {
+              "description": "Derive a VAT return",
+              "prompt": "Derive the VAT return for the quarter ended 30 June 2025.",
+              "tools_triggered": "open_book, derive_vat_return",
+              "expected_behavior": "The assistant shows the nine VAT boxes with their amounts and the largest lines behind boxes 1 and 4."
+            },
+            {
+              "description": "Get the link to file",
+              "prompt": "Give me the link to file it.",
+              "tools_triggered": "prepare_vat_return",
+              "expected_behavior": "The assistant gives a link to the VAT form on the Submit site with the figures filled in, and says the person checks and files in the browser."
+            },
+            {
+              "description": "Read stored receipts",
+              "prompt": "Show my stored VAT receipts.",
+              "tools_triggered": "list_vat_receipts, get_vat_receipt",
+              "expected_behavior": "The assistant lists the stored receipts, or says the account has none, and reads one out when asked."
+            }
+          ],
+          "negative": [
+            {
+              "description": "No tool in the plugin files a return. The assistant says it cannot file a return. It offers the link from prepare_vat_return and says the person ticks the declaration and files in the browser.",
+              "prompt": "File my VAT return for me."
+            },
+            {
+              "description": "No tool in the plugin pays HMRC or anyone else. The assistant says it cannot pay. It says the person pays HMRC through their own bank or HMRC's service.",
+              "prompt": "Pay my VAT bill."
+            },
+            {
+              "description": "The plugin offers VAT tools only. The assistant says it cannot file company accounts. It says the person files accounts in the browser on the Submit site.",
+              "prompt": "File my company accounts."
+            }
+          ]
+        }
       }
     }
-  },
-  "publication": {
-    "countries": ["GB"]
   }
 }
