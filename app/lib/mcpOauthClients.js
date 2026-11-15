@@ -3,12 +3,15 @@
 
 // app/lib/mcpOauthClients.js
 // Client acceptance for the MCP OAuth facade: the redirect URI allowlist, the one DCR client id,
-// and Client ID Metadata Documents (CIMD) fetched only from claude.ai and claude.com.
+// and Client ID Metadata Documents (CIMD) fetched only from claude.ai, claude.com and chatgpt.com.
 
 export const DCR_CLIENT_ID = "diya-submit-dcr";
 
 const CLAUDE_CALLBACKS = new Set(["https://claude.ai/api/mcp/auth_callback", "https://claude.com/api/mcp/auth_callback"]);
-const CIMD_HOSTS = new Set(["claude.ai", "claude.com"]);
+const CIMD_HOSTS = new Set(["claude.ai", "claude.com", "chatgpt.com"]);
+// ChatGPT's callbacks: one path per connector, and the fixed connector platform callback.
+const CHATGPT_HOST = "chatgpt.com";
+const CHATGPT_CALLBACK_PATH = /^\/connector\/oauth\/[A-Za-z0-9_-]{1,64}$|^\/connector_platform_oauth_redirect$/;
 // Gemini's callback hosts and paths: https://developers.google.com/connected-apps/mcp/oauth
 const GEMINI_CALLBACK_HOSTS = new Set([
   "oauth-redirect.googleusercontent.com",
@@ -43,6 +46,21 @@ export function isLoopbackRedirectUri(redirectUri) {
   return url.protocol === "http:" && LOOPBACK_HOSTS.has(url.hostname) && !url.username && !url.password && !url.hash;
 }
 
+export function isChatGptRedirectUri(redirectUri) {
+  const url = parseUrl(redirectUri);
+  if (!url) return false;
+  return (
+    url.protocol === "https:" &&
+    url.hostname === CHATGPT_HOST &&
+    url.port === "" &&
+    !url.username &&
+    !url.password &&
+    !url.search &&
+    !url.hash &&
+    CHATGPT_CALLBACK_PATH.test(url.pathname)
+  );
+}
+
 export function isGeminiRedirectUri(redirectUri) {
   const url = parseUrl(redirectUri);
   if (!url) return false;
@@ -59,12 +77,13 @@ export function isGeminiRedirectUri(redirectUri) {
 }
 
 /**
- * Exactly one of Claude's two callbacks, a Gemini callback, or a loopback http URI on localhost or
- * 127.0.0.1 with any port.
+ * Exactly one of Claude's two callbacks, a ChatGPT callback, a Gemini callback, or a loopback http
+ * URI on localhost or 127.0.0.1 with any port.
  */
 function isAllowedRedirectUri(redirectUri) {
   if (typeof redirectUri !== "string") return false;
   if (CLAUDE_CALLBACKS.has(redirectUri)) return true;
+  if (isChatGptRedirectUri(redirectUri)) return true;
   if (isGeminiRedirectUri(redirectUri)) return true;
   return isLoopbackRedirectUri(redirectUri);
 }
@@ -89,7 +108,7 @@ export function redirectsOf(metadata) {
 }
 
 /**
- * An HTTPS URL with a path on claude.ai or claude.com, with no port, credentials or fragment.
+ * An HTTPS URL with a path on claude.ai, claude.com or chatgpt.com, with no port, credentials or fragment.
  */
 export function isCimdClientId(clientId) {
   const url = parseUrl(clientId);
@@ -181,7 +200,7 @@ async function readCappedText(response, maxBytes) {
 }
 
 /**
- * Fetch and check a Client ID Metadata Document. Refuses any URL outside claude.ai and claude.com
+ * Fetch and check a Client ID Metadata Document. Refuses any URL outside claude.ai, claude.com and chatgpt.com
  * before a request is made.
  *
  * @returns {Promise<{ok: true, document: object} | {ok: false, reason: string}>}
