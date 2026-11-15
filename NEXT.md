@@ -40,6 +40,8 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## In flight
 
+- [ ] **JD1. The judge's digest states the corporation tax bridge.** Spreadsheets `generate-ltd.yml` run 43696649182 (push, 14bd570d9) failed at "Judge the reconciliation reports": fail, pass, fail on the Dec27 `ltd-scenario-full` report, blocking on "171,288.24 - 64,000.00 ≠ 123,819.90". The report is right: its Corporation Tax working sheet adds back 16,531.67 (goodwill, depreciation, entertainment) and 339.51 of bank interest. The digest line in `app/lib/report-indicators.js` (around line 412) names only the capital allowances and the profit chargeable, so the judge at temperature 0 reads a gap the old sampling passed by chance. The line states the whole bridge from operating profit, and a test checks it adds up for every committed ltd report. bst, se and taxi rebuilt byte-identical packages on 14bd570d9; ltd committed nothing because its judge failed. In flight: an agent builds it in worktree `.claude/worktrees/xenon` (branch `claude/xenon-judge`) in spreadsheets; its merge starts the four generate push runs again (`app/lib/**`), and ltd's must pass. **Source**: spreadsheets run 43696649182. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files. **Repository**: spreadsheets.
+
 ## Machine-only
 
 ## Machine-ask
