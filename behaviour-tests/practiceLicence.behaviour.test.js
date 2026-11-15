@@ -24,6 +24,7 @@ import { test } from "./helpers/playwrightTestWithout.js";
 import { cancelLaneTestSubscriptions } from "./helpers/stripeTestTeardown.js";
 import { expect } from "@playwright/test";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { getCatalogBundleById, isBundleListedInEnvironment, loadCatalogFromRoot } from "@app/services/productCatalog.js";
 import {
   acceptHmrcAgentInvitation,
   addOnPageLogging,
@@ -52,6 +53,7 @@ const screenshotPath = "target/behaviour-test-results/screenshots/practice-licen
 
 const originalEnv = { ...process.env };
 
+const envName = getEnvVarAndLog("envName", "ENVIRONMENT_NAME", "local");
 const envFilePath = getEnvVarAndLog("envFilePath", "DIY_SUBMIT_ENV_FILEPATH", null);
 const httpServerPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3000);
 const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null);
@@ -125,6 +127,10 @@ test.afterAll(async () => {
 });
 
 test("A practice adds two clients and submits a VAT return for each through run_for_clients", async ({ page }) => {
+  test.skip(
+    !isBundleListedInEnvironment(getCatalogBundleById(loadCatalogFromRoot(), "resident-tax-agent"), envName),
+    `the catalogue does not list resident-tax-agent in ${envName}`,
+  );
   addOnPageLogging(page);
 
   /* ************************************************* */
