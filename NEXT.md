@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-81edca4** (`deploy.yml` run 43751056369 of `main`, 2026-11-15).
+**Prod runs deployment prod-dc522bf** (`deploy.yml` run 43763915929 of `main` at dc522bf6b, 2026-11-15); `destroy-prod.yml` run 43767492256 is removing prod-81edca4.
 **ci**: no set stands.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
