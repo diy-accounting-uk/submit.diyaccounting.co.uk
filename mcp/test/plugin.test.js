@@ -69,7 +69,7 @@ describe("the diya-submit ChatGPT plugin package", () => {
   });
 
   it("publishes to GB only and shows no price, plan or checkout", () => {
-    expect(manifest.publication.countries).toEqual(["GB"]);
+    expect(manifest.extensions["com.openai"].publication.countries).toEqual(["GB"]);
     const text = JSON.stringify(manifest).toLowerCase();
     for (const word of ["checkout", "subscribe", "free trial", "discount", "£"]) expect(text, word).not.toContain(word);
   });
@@ -93,19 +93,20 @@ describe("the diya-submit ChatGPT plugin package", () => {
     expect([...called].sort()).toEqual([...hostedToolNames("prod")].sort());
   });
 
-  it("holds five positive and three negative review test cases", () => {
-    const cases = JSON.parse(chatgptRead("review/test-cases.json"));
-    expect(cases.positive).toHaveLength(5);
-    expect(cases.negative).toHaveLength(3);
+  it("holds five positive and three negative review test cases and the walk-through in the manifest", () => {
+    const { review } = manifest.extensions["com.openai"];
+    expect(review.demo_recording_url).toMatch(/^https:\/\//);
+    expect(review.test_cases.positive).toHaveLength(5);
+    expect(review.test_cases.negative).toHaveLength(3);
     const prod = hostedToolNames("prod");
-    for (const positive of cases.positive) {
-      for (const field of ["scenario", "prompt", "expectedResult"]) expect(positive[field]).toBeTruthy();
-      for (const tool of positive.expectedTools) expect(prod, tool).toContain(tool);
+    for (const positive of review.test_cases.positive) {
+      for (const field of ["description", "prompt", "tools_triggered", "expected_behavior"]) expect(positive[field]).toBeTruthy();
+      for (const tool of positive.tools_triggered.split(", ")) expect(prod, tool).toContain(tool);
     }
-    for (const negative of cases.negative) for (const field of ["prompt", "reason", "expectedResult"]) expect(negative[field]).toBeTruthy();
+    for (const negative of review.test_cases.negative) for (const field of ["description", "prompt"]) expect(negative[field]).toBeTruthy();
   });
 
-  it("builds the same ZIP twice and leaves out the README and the review folder", () => {
+  it("builds the same ZIP twice and leaves out the README", () => {
     expect(packageEntries()).toEqual(["LICENSE", "assets/logo.png", "mcp.json", "plugin.json", "skills/file-a-uk-vat-return/SKILL.md"]);
     expect(buildPluginZip().equals(buildPluginZip())).toBe(true);
   });

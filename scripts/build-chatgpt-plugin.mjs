@@ -16,8 +16,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const PLUGIN_DIR = join(ROOT, "plugins", "diya-submit-chatgpt");
 export const OUT_DIR = join(ROOT, "target", "chatgpt-plugin");
 
-// The README and the review test cases are for people; the platform reads the rest.
-const LEFT_OUT = new Set(["README.md", "review"]);
+// The README is for people; the platform reads the rest.
+const LEFT_OUT = new Set(["README.md"]);
 // MS-DOS date and time for 2026-01-01 00:00:00, so the bytes do not depend on file times.
 const DOS_DATE = ((2026 - 1980) << 9) | (1 << 5) | 1;
 const DOS_TIME = 0;

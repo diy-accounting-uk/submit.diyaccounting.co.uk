@@ -11,11 +11,11 @@ The package source for the OpenAI plugin directory. It names one MCP server, `ht
 npm run build:chatgpt-plugin
 ```
 
-This writes `target/chatgpt-plugin/diya-submit.zip`. The ZIP holds `plugin.json`, `mcp.json`, `LICENSE`, `assets/` and `skills/`. It leaves out this README and `review/`.
+This writes `target/chatgpt-plugin/diya-submit.zip`. The ZIP holds `plugin.json`, `mcp.json`, `LICENSE`, `assets/` and `skills/`. It leaves out this README.
 
 ## Review test cases
 
-`review/test-cases.json` holds the five positive and three negative cases that the submission form asks for. They stay outside the ZIP.
+`plugin.json` holds the review data under `extensions.com.openai.review`: the five positive and three negative cases and the walk-through URL. The platform imports them from the ZIP and shows them read-only. Reviewer credentials go in the portal form, never in the package.
 
 ## What the plugin offers
 
