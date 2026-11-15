@@ -279,8 +279,8 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | D4 G2 and TrustRadius | not listed | 1 | 2 | 2 | OS24 |
 | D5 Long tail of software directories | not listed | 2 | 2 | 2 | OS21, OS24 |
 | D6 Claim the profiles that exist | listed, unclaimed | 1 | 2 | 2 | OS24 |
-| D7 Editorial roundups | not included | 1 | 5 | 5 | OS26 |
-| D8 Consumer and bank editorial | not included | 1 | 5 | 4 | OS26 |
+| D7 Editorial roundups | not included | 1 | 5 | 5 | none |
+| D8 Consumer and bank editorial | not included | 1 | 5 | 4 | none |
 
 - **D1.** One free vendor profile shows on three sites. Rank inside a category follows review count.
 - **D2.** A claimed business profile on the review site UK buyers check.
@@ -295,10 +295,10 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 
 | Path | State today | Effort | Gate | Relevance | Uplift |
 | --- | --- | ---: | ---: | ---: | --- |
-| C1 Tax charity and institute guidance pages | not included | 1 | 5 | 4 | OS26 |
+| C1 Tax charity and institute guidance pages | not included | 1 | 5 | 4 | none |
 | C2 Accountant software directories | not listed | 1 | 3 | 3 | OS24 |
 | C3 ICAEW Technology Accreditation | not accredited | 3 | 4 | 3 | none |
-| C4 Small-business bodies | not included | 1 | 4 | 3 | OS26 |
+| C4 Small-business bodies | not included | 1 | 4 | 3 | none |
 
 - **C1.** LITRG's software page for low-income filers, ATT and CIOT technical news, ICAEW's MTD software page.
 - **C2.** AccountingWEB product pages, accountingfirms.co.uk "List your software", Insightful Accountant apps directory.
@@ -431,7 +431,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | --- | --- | ---: | ---: | ---: | --- |
 | Y1 Crawler access for AI search and user fetches | allowed and working; not stated | 1 | 1 | 4 | OS3, OS12 |
 | Y2 Facts in the page text that assistants quote | partial (the price and the filings are in JavaScript-rendered blocks) | 3 | 1 | 5 | OS7, OS9 |
-| Y3 Presence in the sources assistants cite | weak (the HMRC VAT finder only) | 1 | 4 | 5 | OS40, OS24, OS26 |
+| Y3 Presence in the sources assistants cite | weak (the HMRC VAT finder only) | 1 | 4 | 5 | OS40, OS24 |
 
 - **Y1.** Each assistant documents its agents: OAI-SearchBot and ChatGPT-User, Claude-SearchBot and Claude-User, PerplexityBot and Perplexity-User, Googlebot, Bingbot. No robots.txt names them. A request with each agent's string returned 200 from three sites on 2026-11-12, and the web ACL's limit is 2,000 requests in five minutes per IP.
 - **Y2.** Price, what it files, who it is for and the status of each filing, as dated sentences in the HTML. Google states that AI Overviews and AI Mode need no special file or markup.
@@ -837,7 +837,6 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | --- | --- | --- | --- | --- | --- |
 | OS24 | Create and claim the profiles | D1, D2, D3, D4, D5, D6, C2, E4, L3 | About 30 listings from one sitting with the copy pack. | Rows marked live in the listing register. | machine-ask; on the board |
 | OS24b | Create and claim the profiles, batch 2 (the long tail) | D1, D2, D3, D4, D5, D6, C2, E4, L3 | About 30 listings from one sitting with the copy pack. | Rows marked live in the listing register. | machine-ask; on the board |
-| OOS26 | Send the letters to the editors and the tax bodies | D7, D8, C1, C4, Y3 | The letters go from the operator's own address. | Each send and reply is in the listing register. | human-driven; on the board |
 | OS30 | A launch pack for the assistant connector | E1, E2, E3, V6 | Text, images and a recording for Product Hunt, Show HN, the AI tool directories and a developer post, ready for the day the connector launches. | Referrer sessions from each place in launch week. | machine-only; on the board |
 | OOS30 | A person posts the launch | E1, E2, E3, V6 | The launch itself. | Referrer sessions from each place in launch week. | human-driven; on the board |
 

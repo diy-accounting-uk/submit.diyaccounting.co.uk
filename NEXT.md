@@ -48,7 +48,6 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Human-driven
 
-- [ ] **OOS26. Send the letters to the editors and the tax bodies.** Nine drafts are in `../private.diyaccounting.co.uk/strategy/marketing/EDITOR_LETTERS.md`, each under 120 words, with the recipient's page, the route, the subject and the facts to check. The operator reads each and sends it from his own address; LITRG takes its letter only through the form at https://www.litrg.org.uk/contact-us. The operator decided on 2026-11-13 to send all nine, the four whose route is published for another purpose among them: money.co.uk (a corrections address), Finder UK (the author's address on the guide), Simply Business (press enquiries) and Startups.co.uk (press releases). Finder's guide now covers Income Tax software only, so its letter asks whether Finder covers VAT software. A session records each send, reply and inclusion in the listing register. **Source**: `PLAN_ORGANIC_SEARCH.md` OOS26 (group 8, listing register and reviews). **Owner**: Operator. **Model**: none. **Size**: 0 files. **Repository**: none.
 
 ## Blocked
 
