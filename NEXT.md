@@ -47,8 +47,6 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Human-driven
 
-- [ ] **RW1. Ask GitHub Support to remove the replaced commits.** `main` was rewritten on 2026-11-15, and the replaced commits are on no branch, tag or pull request. GitHub serves them by hash until Support runs its garbage collection. The operator sends the request at https://support.github.com; its text and the commit list are in `../private.diyaccounting.co.uk/security/REWRITE_SUBMIT_MAIN_2026-11-15.md`. Support removes only data that it judges sensitive, so it can decline. **Source**: operator, 2026-11-15. **Owner**: Operator. **Model**: none. **Size**: 0 files.
-
 
 ## Blocked
 
