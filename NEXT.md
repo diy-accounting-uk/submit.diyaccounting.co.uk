@@ -40,6 +40,8 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## In flight
 
+- [ ] **SL1. Link the spreadsheets site to Submit.** Today the spreadsheets site reaches Submit through the nav link "Submit VAT MTD", the footer links and the product-page link (`app/lib/product-pages.js` line 179), and sent 4 human sessions to Submit in the 30 days to 2026-11-15 (`v_submit_referrals_daily`). Add: a "File this return with HMRC" step on the download page and on the donate thank-you page; the same line at the foot of each knowledge-base article; a "File this VAT return" action on the book's VAT view; and a few more placements where a reader is about to file (VAT, MTD and Companies House articles, the Company product, the community page). Every link carries `utm_source=spreadsheets`, a `utm_medium` that names the placement and a `utm_campaign`; `decorateSubmitLink` in `web/spreadsheets.diyaccounting.co.uk/public/lib/analytics.js` keeps any parameter a link already has. The copy states only what prod offers (`AVAILABILITY` in `scripts/build-mtd-calendar.mjs`: VAT, Companies House accounts and confirmation statement), never Income Tax. Branch `claude/yarrow-links` in spreadsheets, one PR. **Source**: `../private.diyaccounting.co.uk/strategy/PLAN_MARKETING_STRATEGY.md` §3.1; operator, 2026-11-15. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~10 files. **Repository**: spreadsheets.
+
 ## Machine-only
 
 ## Machine-ask
