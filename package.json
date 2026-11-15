@@ -371,6 +371,7 @@
     "capabilities:generate": "node scripts/capabilities-generate.mjs",
     "capabilities:check": "node scripts/capabilities-generate.mjs --check",
     "scripts:table": "node scripts/scripts-table.mjs",
+    "secrets:table": "node scripts/build-secrets-table.mjs",
     "video:record": "node scripts/run-video.mjs"
   },
   "keywords": [],

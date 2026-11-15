@@ -4,7 +4,7 @@
 
 // @capability OPS-35 Verify third-party console configuration against declared state
 // - **Use when:** a third-party console's live configuration must be checked against the declared infra/** state.
-// - **Does:** infra-apply.yml runs one read-only check per provider: Companies House, HMRC, Stripe, PayPal and Telegram. Each check asserts live state against the file that provider's infra/** directory declares. Its github-sync step plans this repository's own GitHub settings from infra/github/github.toml, applied only by a person holding ADMIN_TOKEN.
+// - **Does:** infra-apply.yml runs one read-only check per provider: Companies House, HMRC, Stripe, PayPal and Telegram. Each check asserts live state against the file that provider's infra/** directory declares. Its github-sync step plans this repository's own GitHub settings from infra/github/github.toml, applied only by a person running it with --apply, using an ops App installation token or their own gh login.
 // - **Run:** `gh workflow run infra-apply.yml`
 // - **Entry:** `infra/github/github-sync.js:parseConfig`; `infra/telegram/telegram-assert.js:assertBot`
 // - **Files:** .github/workflows/infra-apply.yml, infra/github/github-sync.js, infra/github/github.toml, infra/telegram/telegram-assert.js, infra/telegram/telegram.toml, app/unit-tests/scripts/telegramAssert.test.js, app/unit-tests/scripts/githubSync.test.js

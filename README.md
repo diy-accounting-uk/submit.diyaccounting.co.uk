@@ -129,7 +129,7 @@ Your HMRC Government Gateway credentials are never stored by this application. A
 ## npm scripts
 
 <!-- scripts-table:start -->
-364 scripts in package.json. A group is the text before the first colon; a name below follows it.
+365 scripts in package.json. A group is the text before the first colon; a name below follows it.
 
 | Group | Scripts | Names |
 |-------|---------|-------|
@@ -175,6 +175,7 @@ Your HMRC Government Gateway credentials are never stored by this application. A
 | `npm run pretest:` | 1 | `pretest` |
 | `npm run scripts:` | 1 | `table` |
 | `npm run search:` | 1 | `health` |
+| `npm run secrets:` | 1 | `table` |
 | `npm run simulator:` | 1 | `simulator` |
 | `npm run site:` | 1 | `screenshots` |
 | `npm run test-report:` | 1 | `test-report` |
@@ -186,6 +187,91 @@ Your HMRC Government Gateway credentials are never stored by this application. A
 | `npm run verify:` | 1 | `waf-false-positives` |
 | `npm run videos:` | 1 | `manifest` |
 <!-- scripts-table:end -->
+
+## Secrets and variables
+
+<!-- secrets-table:start -->
+Values live only in GitHub secrets and AWS Secrets Manager. `secrets-rotation.toml` is the rotation schedule.
+`rotation-check.yml` raises an issue 30 days before a key is due. A new fork needs every item below set before its pipelines run.
+
+**Organisation** (3)
+
+| Name | Kind | Purpose | Read by |
+|------|------|---------|---------|
+| `ROOT_ACTIONS_ROLE_ARN` | variable | AWS role that workflows assume in the root account. | 5 workflows |
+| `ROOT_DEPLOY_ROLE_ARN` | variable | AWS role that deploys changes in the root account. | 5 workflows |
+| `ROOT_HOSTED_ZONE_ID` | variable | Route53 hosted zone id of the root domain. | `deploy.yml` `promote-ci-apex.yml` `request-site-cert.yml` |
+
+**Repository** (9)
+
+| Name | Kind | Purpose | Read by |
+|------|------|---------|---------|
+| `AGENT_APP_ID` | variable | Id of the agent GitHub App. | 8 workflows |
+| `AGENT_APP_PRIVATE_KEY` | secret | Private key of the GitHub App that runs agent workflows. | 8 workflows |
+| `FAMILY_AFFILIATE_EMAILS` | secret | Family affiliate email addresses for the deployed environment. | `deploy-env-secrets.yml` |
+| `GOOGLE_DRIVE_PICKER_API_KEY` | variable | Public browser key for the Google Drive file picker. | `deploy-stacks.yml` |
+| `OPERATOR_EMAILS` | secret | Operator email addresses for the deployed environment. | `deploy-env-secrets.yml` |
+| `OPS_APP_ID` | variable | Id of the ops GitHub App. | 5 workflows |
+| `OPS_APP_INSTALLATION_ID` | variable | Installation id of the ops GitHub App. | `deploy-cdk-stack.yml` `deploy-env-image-stack.yml` `deploy-stacks.yml` |
+| `OPS_APP_PRIVATE_KEY` | secret | Private key of the GitHub App that raises alarm issues. | `alarm-triage.yml` `deploy-env-secrets.yml` `infra-apply.yml` |
+| `PLUGIN_REPO_DEPLOY_KEY` | secret | SSH deploy key that pushes the plugin repository. | `sync-plugin-repo.yml` |
+
+**Environment ci and prod** (27)
+
+| Name | Kind | Purpose | Read by |
+|------|------|---------|---------|
+| `BING_WEBMASTER_API_KEY` | secret | Bing Webmaster Tools API key. | `deploy-env-secrets.yml` |
+| `COMPANIES_HOUSE_API_KEY` | secret | Companies House API key for company lookup. | `deploy-env-secrets.yml` |
+| `COMPANIES_HOUSE_CLIENT_SECRET` | secret | Companies House OAuth client secret for filing. | `deploy-env-secrets.yml` |
+| `COMPANIES_HOUSE_PRESENTER_CODE` | secret | Companies House presenter authentication code. | `deploy-env-secrets.yml` |
+| `COMPANIES_HOUSE_PRESENTER_ID` | secret | Companies House presenter id. | `deploy-env-secrets.yml` |
+| `GOOGLE_CLIENT_SECRET` | secret | Google sign-in OAuth client secret. | `deploy-env-secrets.yml` |
+| `HMRC_CLIENT_SECRET` | secret | HMRC OAuth client secret for this environment. | `deploy-env-secrets.yml` |
+| `HMRC_SANDBOX_CLIENT_SECRET` | secret | HMRC sandbox OAuth client secret. | 8 workflows |
+| `MCP_REVIEWER_PASSWORD` | secret | Password of the MCP reviewer account. | `deploy-env-secrets.yml` |
+| `MICROSOFT_CLIENT_SECRET` | secret | Microsoft sign-in OAuth client secret. | `deploy-env-secrets.yml` |
+| `ORIGIN_VERIFY_SECRET` | secret | Shared value that CloudFront sends to the API origin. | `deploy-env-secrets.yml` |
+| `ORIGIN_VERIFY_SECRET_PREVIOUS` | secret | Earlier origin-verify value, when one is set. | `deploy-env-secrets.yml` |
+| `STRIPE_SECRET_KEY` | secret | Stripe live-mode secret API key. | `deploy-env-secrets.yml` |
+| `STRIPE_TEST_SECRET_KEY` | secret | Stripe test-mode secret API key. | `deploy-env-secrets.yml` |
+| `STRIPE_TEST_WEBHOOK_SECRET` | secret | Stripe test-mode webhook signing secret. | `deploy-env-secrets.yml` |
+| `STRIPE_WEBHOOK_SECRET` | secret | Stripe live-mode webhook signing secret. | `deploy-env-secrets.yml` |
+| `SUBMIT_ACCOUNT_ID` | variable | AWS account id of the environment. | 15 workflows |
+| `SUBMIT_ACTIONS_ROLE_ARN` | variable | AWS role that workflows assume for read and run tasks. | 53 workflows |
+| `SUBMIT_ALARM_TRIAGE_ROLE_ARN` | variable | AWS role for alarm triage reads. | `alarm-remedy-close.yml` `alarm-replay.yml` `alarm-triage.yml` `dashboard-review-nightly.yml` |
+| `SUBMIT_CERTIFICATE_ARN` | variable | ACM certificate for the site. | `deploy-environment.yml` |
+| `SUBMIT_DEPLOY_ROLE_ARN` | variable | AWS role that deploys stacks. | 50 workflows |
+| `SUBMIT_DEVELOPER_CERTIFICATE_ARN` | variable | ACM certificate for the developer site. | `deploy-cdk-stack.yml` `deploy-environment.yml` |
+| `SUBMIT_HOLDING_CERTIFICATE_ARN` | variable | ACM certificate for the holding page. | `deploy-cdk-stack.yml` `deploy-environment.yml` |
+| `SUBMIT_MARKETING_CERTIFICATE_ARN` | variable | ACM certificate for the marketing site. | `deploy-cdk-stack.yml` `deploy-environment.yml` |
+| `SUBMIT_OPERATOR_NOTIFY_EMAIL` | variable | Address that receives operator notifications. | `deploy-env-image-stack.yml` |
+| `SUBMIT_REGIONAL_CERTIFICATE_ARN` | variable | ACM certificate for the API. | `deploy-env-image-stack.yml` `deploy.yml` `promote-ci-apex.yml` `set-origins.yml` |
+| `TELEGRAM_BOT_TOKEN` | secret | Telegram bot token for operator alerts. | `alarm-triage.yml` `deploy-env-secrets.yml` |
+
+**Environment ci** (10)
+
+| Name | Kind | Purpose | Read by |
+|------|------|---------|---------|
+| `COMPANIES_HOUSE_SANDBOX_API_KEY` | secret | Companies House sandbox API key. | `deploy-env-secrets.yml` `deploy.yml` `probe-test.yml` `video-capture.yml` |
+| `HMRC_CT_ETS_PASSWORD` | secret | HMRC Corporation Tax gateway password for test filings. | `hmrc-ets-ct600-page.yml` `hmrc-ets-ct600.yml` |
+| `HMRC_CT_ETS_SENDER_ID` | secret | HMRC Corporation Tax gateway sender id for test filings. | `hmrc-ets-ct600-page.yml` `hmrc-ets-ct600.yml` |
+| `HMRC_CT_ETS_UTR` | secret | Company UTR used in HMRC Corporation Tax test filings. | `hmrc-ets-ct600-page.yml` `hmrc-ets-ct600.yml` |
+| `SUBMIT_GA4_MEASUREMENT_ID` | variable | Google Analytics 4 measurement id. | `deploy-stacks.yml` |
+| `SYNTHETIC_FAMILY_AFFILIATE_EMAILS` | variable | Test family affiliate addresses for synthetic runs. | `deploy-env-secrets.yml` |
+| `SYNTHETIC_OPERATOR_EMAILS` | variable | Test operator addresses for synthetic runs. | `deploy-env-secrets.yml` |
+| `TEST_COMPANIES_HOUSE_PASSWORD` | secret | Password of the Companies House test sign-in. | `deploy.yml` `probe-test.yml` `video-capture.yml` |
+| `TEST_COMPANIES_HOUSE_TOTP_SECRET` | secret | One-time-password seed of the Companies House test sign-in. | `deploy.yml` `probe-test.yml` `video-capture.yml` |
+| `TEST_COMPANIES_HOUSE_USER_ID` | variable | User id of the Companies House test sign-in. | `probe-test.yml` `video-capture.yml` |
+
+**Environment prod** (4)
+
+| Name | Kind | Purpose | Read by |
+|------|------|---------|---------|
+| `PAYPAL_CLIENT_ID` | variable | PayPal client id. | `deploy-env-image-stack.yml` `deploy-env-secrets.yml` |
+| `PAYPAL_CLIENT_SECRET` | secret | PayPal client secret for the donations pull. | `deploy-env-image-stack.yml` `deploy-env-secrets.yml` |
+| `SUBMIT_COMPANY_BOOK_ID` | variable | Id of the company's own book. | `deploy-env-image-stack.yml` |
+| `SUBMIT_COMPANY_BOOK_OWNER_PREFIX` | variable | Owner key prefix of the company's own book. | `deploy-env-image-stack.yml` |
+<!-- secrets-table:end -->
 
 ---
 

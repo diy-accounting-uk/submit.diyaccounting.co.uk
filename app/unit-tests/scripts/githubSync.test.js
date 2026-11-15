@@ -31,7 +31,7 @@ can_approve_pull_request_reviews = false
 github_owned_allowed = true
 verified_allowed = true
 patterns_allowed = ["aws-actions/configure-aws-credentials@*"]
-repository_secrets = ["ADMIN_TOKEN"]
+repository_secrets = ["SAMPLE_SECRET"]
 repository_variables = ["AGENT_APP_ID"]
 
 [security]
@@ -117,7 +117,7 @@ describe("parseConfig", () => {
     const config = parsedSample();
     expect(config.repository.allowAutoMerge).toBe(true);
     expect(config.actions.patternsAllowed).toEqual(["aws-actions/configure-aws-credentials@*"]);
-    expect(config.actions.repositorySecrets).toEqual(["ADMIN_TOKEN"]);
+    expect(config.actions.repositorySecrets).toEqual(["SAMPLE_SECRET"]);
     expect(config.security.automatedSecurityFixes).toBe(false);
     expect(config.rulesets).toHaveLength(1);
     expect(config.rulesets[0].name).toBe("main");
