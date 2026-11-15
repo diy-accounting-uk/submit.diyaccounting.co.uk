@@ -3,7 +3,7 @@
 
 # PLAN: the spreadsheets rest state when the year-end window rolls
 
-Status: one plan in place of the versions v1 to v8 (archived in `../private.diyaccounting.co.uk/engineering/submit/archive/`). STC1, the stable cut, is on spreadsheets `main` (PR #201, f17057cb5): every generate run commits only new package folders. RO1 and RO2 are on spreadsheets `main` (PR #203, 8c7c585f8). RO3 and RO5 are on `main` (PR #204, 898530f30). RO4 is PR #205 and RO6 is in flight. Repository: `../spreadsheets.diyaccounting.co.uk`.
+Status: one plan in place of the versions v1 to v8 (archived in `../private.diyaccounting.co.uk/engineering/submit/archive/`). STC1, the stable cut, is on spreadsheets `main` (PR #201, f17057cb5): every generate run commits only new package folders. RO1 and RO2 are on spreadsheets `main` (PR #203, 8c7c585f8). RO3 and RO5 are on `main` (PR #204, 898530f30). RO4 is on `main` (PR #205, 5b54c2cf0). RO6 is PR #206. Repository: `../spreadsheets.diyaccounting.co.uk`.
 
 ## Operator assertions (verbatim)
 
