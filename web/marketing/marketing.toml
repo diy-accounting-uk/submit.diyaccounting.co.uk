@@ -1094,18 +1094,6 @@ priceText = ""
 utmSource = "g2"
 
 [[listing]]
-id = "trustradius"
-place = "TrustRadius"
-group = "review"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "Self-serve profile; it asks for a LinkedIn company page first. Rank needs reviews."
-priceText = ""
-utmSource = "trustradius"
-
-[[listing]]
 id = "softwarereview"
 place = "SoftwareReview"
 group = "review"
@@ -1135,131 +1123,11 @@ place = "Crozdesk"
 group = "review"
 products = []
 url = ""
-state = "planned"
-date = ""
+state = "submitted"
+date = "2026-11-15"
 terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
 priceText = ""
 utmSource = "crozdesk"
-
-[[listing]]
-id = "saasworthy"
-place = "SaaSworthy"
-group = "review"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
-priceText = ""
-utmSource = "saasworthy"
-
-[[listing]]
-id = "softwaresuggest"
-place = "SoftwareSuggest"
-group = "review"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
-priceText = ""
-utmSource = "softwaresuggest"
-
-[[listing]]
-id = "goodfirms"
-place = "GoodFirms"
-group = "review"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
-priceText = ""
-utmSource = "goodfirms"
-
-[[listing]]
-id = "serchen"
-place = "Serchen"
-group = "review"
-products = []
-url = "https://www.serchen.com/company/diy-accounting-ltd"
-state = "planned"
-date = ""
-terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
-priceText = ""
-utmSource = "serchen"
-
-[[listing]]
-id = "cuspera"
-place = "Cuspera"
-group = "review"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
-priceText = ""
-utmSource = "cuspera"
-
-[[listing]]
-id = "tekpon"
-place = "Tekpon"
-group = "review"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
-priceText = ""
-utmSource = "tekpon"
-
-[[listing]]
-id = "softwareworld"
-place = "SoftwareWorld"
-group = "review"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "Paid; skipped. A new listing costs 99 US dollars."
-priceText = ""
-utmSource = "softwareworld"
-
-[[listing]]
-id = "peerpush"
-place = "PeerPush"
-group = "review"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
-priceText = ""
-utmSource = "peerpush"
-
-[[listing]]
-id = "sourceforge"
-place = "SourceForge and Slashdot"
-group = "review"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
-priceText = ""
-utmSource = "sourceforge"
-
-[[listing]]
-id = "financesonline"
-place = "FinancesOnline"
-group = "review"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "Vendor claim forms. Some sell placement; the free tier is enough for the page."
-priceText = ""
-utmSource = "financesonline"
 
 [[listing]]
 id = "producthunt"
@@ -1430,25 +1298,13 @@ priceText = ""
 utmSource = "linkedin"
 
 [[listing]]
-id = "crunchbase"
-place = "Crunchbase"
-group = "launch"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "A person creates the page."
-priceText = ""
-utmSource = "crunchbase"
-
-[[listing]]
 id = "yell"
 place = "Yell"
 group = "citation"
 products = []
 url = ""
-state = "planned"
-date = ""
+state = "submitted"
+date = "2026-11-15"
 terms = "Free basic listings."
 priceText = ""
 utmSource = "yell"
@@ -1459,107 +1315,11 @@ place = "FreeIndex"
 group = "citation"
 products = []
 url = ""
-state = "planned"
-date = ""
+state = "submitted"
+date = "2026-11-15"
 terms = "Free basic listings."
 priceText = ""
 utmSource = "freeindex"
-
-[[listing]]
-id = "cylex"
-place = "Cylex"
-group = "citation"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "Free basic listings."
-priceText = ""
-utmSource = "cylex"
-
-[[listing]]
-id = "brownbook"
-place = "Brownbook"
-group = "citation"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "Free basic listings."
-priceText = ""
-utmSource = "brownbook"
-
-[[listing]]
-id = "hotfrog"
-place = "Hotfrog"
-group = "citation"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "Free basic listings."
-priceText = ""
-utmSource = "hotfrog"
-
-[[listing]]
-id = "thomsonlocal"
-place = "Thomson Local"
-group = "citation"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "Free basic listings."
-priceText = ""
-utmSource = "thomsonlocal"
-
-[[listing]]
-id = "scoot"
-place = "Scoot"
-group = "citation"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "Free basic listings."
-priceText = ""
-utmSource = "scoot"
-
-[[listing]]
-id = "centralindex"
-place = "Central Index"
-group = "citation"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "Paid; skipped. Central Index states a fee."
-priceText = ""
-utmSource = "centralindex"
-
-[[listing]]
-id = "yelp"
-place = "Yelp"
-group = "citation"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "Free basic listings."
-priceText = ""
-utmSource = "yelp"
-
-[[listing]]
-id = "192com"
-place = "192.com"
-group = "citation"
-products = []
-url = ""
-state = "planned"
-date = ""
-terms = "Paid; skipped. 192.com states a fee."
-priceText = ""
-utmSource = "192com"
 
 [[listing]]
 id = "accountingweb"
