@@ -836,7 +836,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | Id | Uplift | Paths it moves | What it brings | How we will know | Class |
 | --- | --- | --- | --- | --- | --- |
 | OS24 | Create and claim the profiles | D1, D2, D3, D4, D5, D6, C2, E4, L3 | About 30 listings from one sitting with the copy pack. | Rows marked live in the listing register. | machine-ask; on the board |
-| OS24b | Create and claim the profiles, batch 2 (the long tail) | D1, D2, D3, D4, D5, D6, C2, E4, L3 | About 30 listings from one sitting with the copy pack. | Rows marked live in the listing register. | machine-ask; on the board |
+| OS24c | The Yell and FreeIndex listings go live | D1, D2, D3, D4, D5, D6, C2, E4, L3 | Two listings submitted on 2026-11-15. | Both rows marked live in the listing register. | blocked; on the board |
 | OS30 | A launch pack for the assistant connector | E1, E2, E3, V6 | Text, images and a recording for Product Hunt, Show HN, the AI tool directories and a developer post, ready for the day the connector launches. | Referrer sessions from each place in launch week. | machine-only; on the board |
 | OOS30 | A person posts the launch | E1, E2, E3, V6 | The launch itself. | Referrer sessions from each place in launch week. | human-driven; on the board |
 
