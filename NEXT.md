@@ -44,8 +44,6 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Machine-only
 
-- [ ] **AL30. Find the 5xx behind issue #830 (`prod-app-api-5xx`).** `prod-49643ce-app-api-5xx` crossed its threshold of 1 at 14:03 UTC on 2026-11-15 and was back to OK by 14:16. The window matches the prod probes of `deploy.yml` run 43721960925 (started 14:00), whose `practiceLicenceBehaviour-prod` job got `bundle-not-listed` from the checkout session call. Read the API's Lambda and access logs for 13:58 to 14:14 UTC on prod-49643ce (Logs Insights, `aws --profile diya-submit-prod`) and name the route and status of each 5xx. If it is the checkout handler answering an unlisted bundle with a 5xx, make it answer with a 4xx JSON error through `httpResponseHelper.js`, with a unit test. If it was a probe-only 5xx that PL1's skip now prevents, say so on issue #830 and on private issue #101. **Source**: GitHub issue #830, mirrored as https://github.com/diy-accounting-uk/private.diyaccounting.co.uk/issues/101 (operator, 2026-11-15). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files. **Repository**: submit.
-
 ## Machine-ask
 
 
