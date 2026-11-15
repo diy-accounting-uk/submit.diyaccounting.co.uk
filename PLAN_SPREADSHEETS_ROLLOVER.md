@@ -3,7 +3,7 @@
 
 # PLAN: the spreadsheets rest state when the year-end window rolls
 
-Status: one plan in place of the versions v1 to v8 (archived in `../private.diyaccounting.co.uk/engineering/submit/archive/`). STC1, the stable cut, is on spreadsheets `main` (PR #201, f17057cb5): every generate run commits only new package folders. RO1 and RO2 are on spreadsheets `main` (PR #203, 8c7c585f8). RO3 and RO5 are on `main` (PR #204, 898530f30). RO4 is on `main` (PR #205, 5b54c2cf0). RO6 is on `main` (PR #206, a1ded6f4d) and ES1 too (PR #207, 593967e9c). Open: RO5's proof, that the push runs of 593967e9c commit nothing, and RO7 to RO10 (operator, 2026-11-15). Repository: `../spreadsheets.diyaccounting.co.uk`.
+Status: one plan in place of the versions v1 to v8 (archived in `../private.diyaccounting.co.uk/engineering/submit/archive/`). STC1, the stable cut, is on spreadsheets `main` (PR #201, f17057cb5): every generate run commits only new package folders. RO1 and RO2 are on spreadsheets `main` (PR #203, 8c7c585f8). RO3 and RO5 are on `main` (PR #204, 898530f30). RO4 is on `main` (PR #205, 5b54c2cf0). RO6 is on `main` (PR #206, a1ded6f4d) and ES1 too (PR #207, 593967e9c). The push runs of 593967e9c committed nothing for all four products, which proves RO5. Open: RO7 to RO10 on spreadsheets PR #208 (operator, 2026-11-15). Repository: `../spreadsheets.diyaccounting.co.uk`.
 
 ## Operator assertions (verbatim)
 
