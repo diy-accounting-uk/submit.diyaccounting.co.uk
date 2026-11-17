@@ -22,7 +22,7 @@ the set, with no deployment of its own.
 
 ## Status
 
-approved 2026-11-17 (the operator's `/iterate`). Waves 1 to 3 gated; wave 4 gating (batch-check on cloud worker anvil, the simulator suites locally); wave 5 building.
+approved 2026-11-17 (the operator's `/iterate`). Waves 1 to 4 gated; wave 5 building.
 
 ## The goal
 
@@ -96,7 +96,7 @@ State: gated 4b52926ec (batch-check: every gate PASS; 7 simulator suites pass af
 | --- | --- | --- | --- |
 | articles-c | WEB21, WEB22, WEB25, WEB27 | Sonnet, 2 agents | generators, calendar, page titles, the merged spreadsheets page |
 
-State: landed on `claude/ridge-w04` (97200d0b9); gate running.
+State: gated 705cc9fd9. batch-check ran on the cloud worker anvil (submit-cloud-anvil, `.collab/w04-gate.md`): every gate PASS but one browser test that still expected the VAT form's title before WEB27, fixed in 705cc9fd9; Maven verify 346 s there against 776 s here; the docker gate passed on the laptop (the cloud VM's proxy certificate breaks `npm ci` inside the image). 6 simulator suites pass locally.
 
 ### Wave 5: Welsh, after every English string is final
 
