@@ -62,7 +62,7 @@ const readPassLandingAttribution = () => {
 
 // One sentence and one next step for each refusal. The key is the reason the API answers.
 const ERROR_SENTENCES = {
-  not_found: "We cannot find this pass. Check that the link is complete, or ask the sender for a new one.",
+  not_found: "We cannot find this pass. Check the four words, or the link, or ask the sender for a new one.",
   expired: "This pass has ended. Ask the sender for a new one.",
   exhausted: "This pass has been used. Ask the sender for a new one.",
   revoked: "This pass has been cancelled. Ask the sender for a new one.",
@@ -161,6 +161,7 @@ function render({
   bundles = false,
   after = "",
   form = false,
+  typed = "",
 }) {
   el("passHeading").textContent = heading;
   el("passMessage").textContent = message;
@@ -174,6 +175,7 @@ function render({
   bundleBox.hidden = !card;
 
   el("passForm").hidden = !form;
+  if (form) el("passInput").value = typed;
 
   const redeemBtn = el("passRedeemBtn");
   redeemBtn.hidden = !redeem;
@@ -194,7 +196,9 @@ function render({
     firstRender = false;
     return;
   }
-  el("passHeading").focus();
+  // A pass that was not found leaves nothing to read next, so the focus goes to the box to type again.
+  if (form && error) el("passInput").focus();
+  else el("passHeading").focus();
 }
 
 function bundleCardEl(info, noteParts) {
@@ -236,6 +240,10 @@ function showError(reason, { email = getSignedInEmail() } = {}) {
       error: sentence,
       redeem: { label: "Try again", leaves: true, onClick: () => start() },
     });
+    return;
+  }
+  if (reason === "not_found") {
+    render({ heading: "This pass did not work", error: sentence, form: true, typed: currentCode, home: true });
     return;
   }
   render({ heading: "This pass did not work", error: sentence, home: true });

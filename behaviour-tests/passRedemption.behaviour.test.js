@@ -306,6 +306,7 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   await page.getByRole("button", { name: "Redeem pass" }).click();
   await expect(page.locator("#passHeading")).toHaveText("This pass did not work", { timeout: 15000 });
   await expect(page.getByRole("alert")).toContainText(/cannot find this pass/i);
+  await expect(page.locator("#passInput")).toHaveValue("invalid-fake-pass-code");
   await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-08-invalid-rejected.png`, readerView: true });
 
   /* ****************** */
