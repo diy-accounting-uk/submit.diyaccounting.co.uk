@@ -134,7 +134,7 @@ To add a work repository (a session runs 1 to 3, the operator 4 and 5):
 | Next task | The worker ends its turn after the push. The next `SendMessage` starts its next turn. |
 | Fallback | If a message does not wake an idle worker, the worker runs `/loop` with the skill and reads `.collab/<worker>.md` on a `collab` branch of its work repository each tick. The coordinator pushes that file. |
 
-A cloud session can send a short message back with the `send_message` tool of the Claude Code Remote MCP server (the anvil worker did on 2026-11-17 at 22:43 UTC). The result of record stays git: the report in the last commit's body, which the coordinator lands.
+A cloud session can send a message back with the `send_message` tool of the Claude Code Remote MCP server, but each message needs the operator's approval (2026-11-17), so workers reply only through git: the report in the last commit's body, which the coordinator lands.
 
 Rejected for now:
 - An S3 bucket. It needs static IAM keys in an environment variable that every user of the
