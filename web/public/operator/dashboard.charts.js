@@ -45,6 +45,17 @@ function isHourly(state) {
   return state.range === "hourly" && Boolean(state.chart.modes[state.modeIndex].hourly);
 }
 
+// The 14 days range of a mode whose source reports by day: its last 14 daily points.
+const DAILY_SOURCE_DAYS = 14;
+
+function isDailySourceRange(state) {
+  return state.range === "hourly" && !state.chart.modes[state.modeIndex].hourly;
+}
+
+function lastDays(series) {
+  return series.map((line) => ({ ...line, values: line.values.slice(-DAILY_SOURCE_DAYS) }));
+}
+
 // Lines that start hidden, by chart id and mode id; the legend still shows them.
 const INITIALLY_HIDDEN_SERIES = {
   "visitors": { sessions: ["synthetic", "bot", "system"] },
@@ -83,7 +94,9 @@ function initiallyHidden(chart, modeIndex) {
 
 function activeSeries(state) {
   const mode = state.chart.modes[state.modeIndex];
-  return isHourly(state) ? mode.hourly.series : mode.series;
+  if (isHourly(state)) return mode.hourly.series;
+  if (isDailySourceRange(state)) return lastDays(mode.series);
+  return mode.series;
 }
 
 // A duration at or above 1,000 ms reads in seconds.
@@ -157,7 +170,8 @@ function drawChart(state) {
   const { chart, svg, readout } = state;
   const mode = chart.modes[state.modeIndex];
   const hourly = isHourly(state);
-  const days = hourly ? state.hours : state.days;
+  let days = hourly ? state.hours : state.days;
+  if (isDailySourceRange(state)) days = state.days.slice(-DAILY_SOURCE_DAYS);
   const formatPoint = hourly ? formatHour : formatDay;
   const seriesList = activeSeries(state);
   const unit = mode.unit || chart.unit;
@@ -337,12 +351,13 @@ function legendControls(state) {
     });
     controls.appendChild(button);
   });
-  controls.appendChild(rangeSwitch(state));
+  if (!state.chart.standalone) controls.appendChild(rangeSwitch(state));
   return controls;
 }
 
-// The switch between 90 days by day and 14 days by hour. It shows only while the chart's current
-// mode has an hourly series.
+// The switch between 90 days by day and 14 days. Every graph has it and it keeps its place and its
+// state when the reader changes tab. A tab with an hourly series draws the 14 days by hour; a tab
+// whose source reports whole days draws its last 14 daily points and says so.
 function rangeSwitch(state) {
   const group = document.createElement("span");
   group.className = "chart-range";
@@ -368,10 +383,12 @@ function rangeSwitch(state) {
 }
 
 function syncRangeSwitch(state) {
-  state.rangeSwitch.hidden = !state.chart.modes[state.modeIndex].hourly;
+  if (!state.rangeSwitch) return;
   state.rangeSwitch.querySelectorAll("button").forEach((button) => {
-    button.setAttribute("aria-pressed", String(button.dataset.range === (isHourly(state) ? "hourly" : "daily")));
+    button.setAttribute("aria-pressed", String(button.dataset.range === state.range));
   });
+  const shortRange = state.rangeSwitch.querySelector('[data-range="hourly"]');
+  shortRange.textContent = state.chart.modes[state.modeIndex].hourly ? "14 days, by hour" : "14 days, by day";
 }
 
 const DEFAULT_REFRESH_MINUTES = 15;

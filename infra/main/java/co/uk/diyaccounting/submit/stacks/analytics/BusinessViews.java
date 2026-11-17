@@ -396,7 +396,28 @@ public class BusinessViews extends Construct {
                     "v_integration_calls_hourly",
                     "Outbound calls and their total duration each UTC hour, by organisation, target, api, outcome"
                             + " and HTTP status, for the last 15 days",
-                    List.of("dynamo_calls")));
+                    List.of("dynamo_calls")),
+            new ViewDefinition(
+                    "v_hmrc_failures_by_class_hourly",
+                    "HMRC failures each hour by class and HMRC status, for the last 15 days",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
+                    "v_submission_failure_rate_hourly",
+                    "VAT returns each hour, how many failed and the share that failed, for the last 15 days",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
+                    "v_active_customers_hourly",
+                    "Distinct signed-in customers each hour, by app client and for all clients, for the last 15 days",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
+                    "v_sign_ins_hourly",
+                    "Sign-ins and refreshes each hour, by app client, event, actor and sign-in provider, for the last"
+                            + " 15 days",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
+                    "v_traffic_by_country_hourly",
+                    "Sessions each hour by country, with AI agents apart, for the last 15 days",
+                    List.of("activity_events_all")));
 
     public final List<CfnNamedQuery> namedQueries = new ArrayList<>();
     public final List<CustomResource> viewResources = new ArrayList<>();

@@ -1332,7 +1332,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "uptime",
       title: "HMRC submission failures",
       unit: "count",
-      note: "VAT returns that failed on their way to HMRC, from the activity events. Days are UTC. Failure rate is a percentage of that day's submissions.",
+      note: "VAT returns that failed on their way to HMRC, from the activity events. Days are UTC. Failure rate is a percentage of that day's or hour's submissions.",
       modes: [
         {
           id: "class",
@@ -1348,6 +1348,11 @@ export function buildDailyChartDefinitions() {
             valueExpression: "failures",
             view: "v_hmrc_failures_by_class",
             dayColumn: "day",
+          }),
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "failure_class",
+            valueExpression: "failures",
+            view: "v_hmrc_failures_by_class_hourly",
           }),
         },
         {
@@ -1366,6 +1371,11 @@ export function buildDailyChartDefinitions() {
             view: "v_hmrc_failures_by_class",
             dayColumn: "day",
           }),
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "hmrc_status",
+            valueExpression: "failures",
+            view: "v_hmrc_failures_by_class_hourly",
+          }),
         },
         {
           id: "rate",
@@ -1379,6 +1389,12 @@ export function buildDailyChartDefinitions() {
             valueExpression: "failure_rate * 100",
             view: "v_submission_failure_rate_daily",
             dayColumn: "day",
+            where: "failure_rate IS NOT NULL",
+          }),
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "'failure-rate'",
+            valueExpression: "failure_rate * 100",
+            view: "v_submission_failure_rate_hourly",
             where: "failure_rate IS NOT NULL",
           }),
         },
@@ -1408,7 +1424,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "conversion-to-submission",
       title: "Conversion to submission",
       unit: "count",
-      note: "Steps, left to right: spreadsheet downloads, human Submit sessions with the ones that came from the spreadsheets site, the gateway site and other sources as parts of it, customers active that day, those who submitted within 7 days. Google Analytics reports whole days two days late. The last few days have not had their 7 days yet. Active customers shows each app client's customers per day and over 7 days.",
+      note: "Steps, left to right: spreadsheet downloads, human Submit sessions with the ones that came from the spreadsheets site, the gateway site and other sources as parts of it, customers active that day, those who submitted within 7 days. Google Analytics reports whole days two days late. The last few days have not had their 7 days yet. Active customers shows each app client's customers per day and over 7 days; by hour it counts the customers active in each hour.",
       modes: [
         {
           id: "funnel",
@@ -1481,6 +1497,15 @@ export function buildDailyChartDefinitions() {
           sql:
             `SELECT cast(day AS varchar) AS day, app_client AS component, cast(sum(active_users_1d) AS double) AS value\n` +
             `FROM   v_active_customers_7d_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+          hourlyDescriptionOf: (id) =>
+            id === "all"
+              ? "Distinct signed-in customers who made a call in the hour, all app clients together."
+              : `Distinct signed-in customers who made a call in the hour through the ${id} app client.`,
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "app_client",
+            valueExpression: "active_users",
+            view: "v_active_customers_hourly",
+          }),
         },
         {
           id: "active-customers-7d",
@@ -1967,6 +1992,12 @@ export function buildDailyChartDefinitions() {
             dayColumn: "day",
             where: "event = 'login'",
           }),
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "coalesce(provider, 'Native')",
+            valueExpression: "sign_ins",
+            view: "v_sign_ins_hourly",
+            where: "event = 'login'",
+          }),
         },
         {
           id: "country",
@@ -1983,6 +2014,11 @@ export function buildDailyChartDefinitions() {
             view: "v_traffic_by_country_daily",
             dayColumn: "day",
           }),
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "country",
+            valueExpression: "human_sessions",
+            view: "v_traffic_by_country_hourly",
+          }),
         },
         {
           id: "ai-agent-country",
@@ -1998,6 +2034,11 @@ export function buildDailyChartDefinitions() {
             valueExpression: "ai_agent_sessions",
             view: "v_traffic_by_country_daily",
             dayColumn: "day",
+          }),
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "country",
+            valueExpression: "ai_agent_sessions",
+            view: "v_traffic_by_country_hourly",
           }),
         },
       ],
@@ -2175,7 +2216,11 @@ export async function buildDailyCharts({
               series: buildChartSeries({
                 days: hours,
                 rows: hourlyRows,
-                mode: { ...mode, componentOrder: mode.hourlyComponentOrder ?? mode.componentOrder },
+                mode: {
+                  ...mode,
+                  componentOrder: mode.hourlyComponentOrder ?? mode.componentOrder,
+                  descriptionOf: mode.hourlyDescriptionOf ?? mode.descriptionOf,
+                },
               }),
             };
           } catch (error) {

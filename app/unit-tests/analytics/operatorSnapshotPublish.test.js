@@ -1427,12 +1427,19 @@ describe("operatorSnapshotPublish", () => {
         "activity-started-and-completed/started",
         "activity-started-and-completed/completed",
         "activity-started-and-completed/api-calls",
+        "hmrc-failures/class",
+        "hmrc-failures/status",
+        "hmrc-failures/rate",
         "integration-requests/all",
         "integration-requests/hmrc",
         "integration-requests/companies-house",
         "integration-requests/stripe",
         "integration-duration/organisation",
+        "conversion-to-submission/active-customers",
         "visitors/sessions",
+        "visitors/sign-in-provider",
+        "visitors/country",
+        "visitors/ai-agent-country",
       ]);
       for (const definition of buildDailyChartDefinitions()) {
         for (const mode of definition.modes.filter((candidate) => candidate.hourlySql)) {
@@ -1464,7 +1471,7 @@ describe("operatorSnapshotPublish", () => {
 
       expect(failedChartIds).toEqual([]);
       expect(dailyCharts.hours).toHaveLength(336);
-      expect(queries.filter((sql) => /_hourly/.test(sql))).toHaveLength(9);
+      expect(queries.filter((sql) => /_hourly/.test(sql))).toHaveLength(16);
       const hourlyModes = dailyCharts.charts.flatMap((chart) =>
         chart.modes.filter((mode) => mode.hourly).map((mode) => `${chart.id}/${mode.id}`),
       );
@@ -1472,12 +1479,19 @@ describe("operatorSnapshotPublish", () => {
         "activity-started-and-completed/started",
         "activity-started-and-completed/completed",
         "activity-started-and-completed/api-calls",
+        "hmrc-failures/class",
+        "hmrc-failures/status",
+        "hmrc-failures/rate",
         "integration-requests/all",
         "integration-requests/hmrc",
         "integration-requests/companies-house",
         "integration-requests/stripe",
         "integration-duration/organisation",
+        "conversion-to-submission/active-customers",
         "visitors/sessions",
+        "visitors/sign-in-provider",
+        "visitors/country",
+        "visitors/ai-agent-country",
       ]);
       const visitors = dailyCharts.charts.find((chart) => chart.id === "visitors").modes[0];
       expect(visitors.hourly.series.map((line) => line.id)).toEqual(["operator", "human"]);
@@ -1521,8 +1535,8 @@ describe("operatorSnapshotPublish", () => {
         previous: first.dailyCharts,
       });
 
-      expect(firstRunQueryCount).toBe(49);
-      expect(queries).toHaveLength(9);
+      expect(firstRunQueryCount).toBe(56);
+      expect(queries).toHaveLength(16);
       expect(queries.every((sql) => /_hourly/.test(sql))).toBe(true);
       expect(second.failedChartIds).toEqual([]);
       expect(second.dailyCharts.dailySeriesQueriedAt).toBe(firstRunAt.toISOString());

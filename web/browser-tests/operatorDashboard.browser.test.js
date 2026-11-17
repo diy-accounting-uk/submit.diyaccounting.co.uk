@@ -1529,24 +1529,32 @@ test.describe("Operator Dashboard", () => {
       await expect(visitors.locator(".chart-readout")).toContainText("8 Sept");
     });
 
-    test("shows the range switch only on a mode with an hourly source", async ({ page }) => {
+    test("shows the range switch on every graph and keeps its state when the tab changes", async ({ page }) => {
       await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
       await loadDashboard(page);
 
       const activities = page.locator('.chart-card[data-chart-id="activity-started-and-completed"]');
       await expect(activities.locator(".chart-range")).toBeVisible();
+      await expect(activities.locator('.chart-range-option[data-range="hourly"]')).toHaveText("14 days, by hour");
       await activities.locator('.chart-range-option[data-range="hourly"]').click();
       await expect(activities.locator("polyline.chart-line")).toHaveCount(1);
       await activities.locator('.chart-mode[data-mode-id="completed"]').click();
-      await expect(activities.locator(".chart-range")).toBeHidden();
+      await expect(activities.locator(".chart-range")).toBeVisible();
+      await expect(activities.locator('.chart-range-option[data-range="hourly"]')).toHaveAttribute("aria-pressed", "true");
+      await expect(activities.locator('.chart-range-option[data-range="hourly"]')).toHaveText("14 days, by day");
       await expect(activities.locator("polyline.chart-line")).toHaveCount(1);
       const points = await activities.locator("polyline.chart-line").first().getAttribute("points");
-      expect(points.trim().split(" ")).toHaveLength(90);
+      expect(points.trim().split(" ")).toHaveLength(14);
+      await expect(activities.locator("svg")).toHaveAttribute("aria-label", /daily over the last 14 days/);
+      await activities.locator('.chart-range-option[data-range="daily"]').click();
+      const dailyPoints = await activities.locator("polyline.chart-line").first().getAttribute("points");
+      expect(dailyPoints.trim().split(" ")).toHaveLength(90);
 
       for (const id of ["retention", "low-running-cost", "conversion-to-paid", "conversion-to-submission"]) {
-        await expect(page.locator(`.chart-card[data-chart-id="${id}"] .chart-range`)).toBeHidden();
+        await expect(page.locator(`.chart-card[data-chart-id="${id}"] .chart-range`)).toBeVisible();
         await expect(page.locator(`.chart-card[data-chart-id="${id}"] .chart-range-option`)).toHaveCount(2);
       }
+      await page.screenshot({ path: "target/screenshots/operator-dashboard-range-switch.png", fullPage: false });
     });
 
     test("reads a ratio mode as a percentage", async ({ page }) => {
