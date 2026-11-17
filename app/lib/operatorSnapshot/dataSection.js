@@ -13,33 +13,70 @@
 // history come from the CloudWatch S3 NumberOfObjects metric. The actor split comes from one
 // Athena query a day, kept in that day's history file for the hourly runs that follow. The same
 // query gives each diya-gl book owner's class, so the store's objects, books and book versions
-// split the same way.
+// split the same way. A table's items that the lake has no change record of (written before the
+// lake began, or items the lake leaves out) are the table's count less the lake's items, so the
+// classes and that remainder add up to the count.
 
 const DATA_HISTORY_OFFSETS = [90, 30, 7, 1];
 
-// The tables whose change records the lake holds, by table-name suffix, with the columns that
-// form an item's key. Together with the `actor` column they give the split of the items now.
+// The tables whose change records the lake holds, by table-name suffix: the source to read, the
+// columns that form an item's key, the column that names the item's owner account, a condition
+// that proves a test row, and, for a table whose deletes the lake does not keep, the condition for
+// an item that still exists. A source with no hash alias view is read through hash_aliases here,
+// so one item keeps one key across a salt rotation.
 const DATA_LAKE_TABLES = {
-  receipts: { glueTable: "dynamo_receipts", keys: ["hashed_sub", "receipt_id"] },
-  bundles: { glueTable: "dynamo_bundles", keys: ["hashed_sub", "bundle_id"] },
-  subscriptions: { glueTable: "dynamo_subscriptions", keys: ["hashed_sub", "subscription_id"] },
-  passes: { glueTable: "dynamo_passes", keys: ["pass_id"] },
+  "receipts": { source: "aliased_dynamo_receipts", keys: ["hashed_sub", "receipt_id"], owner: "hashed_sub" },
+  "bundles": { source: "aliased_dynamo_bundles", keys: ["hashed_sub", "bundle_id"], owner: "hashed_sub" },
+  "subscriptions": { source: "aliased_dynamo_subscriptions", keys: ["subscription_id"], owner: "hashed_sub" },
+  "passes": { source: "aliased_dynamo_passes", keys: ["pass_id"], owner: "issued_by", testRow: "pass_type_id LIKE '%-test-pass'" },
+  "commissions": {
+    source: "aliased_dynamo_commissions",
+    keys: ["referrer_hash", "line_id"],
+    owner: "redeemer_hash",
+    actor: "CAST(NULL AS varchar)",
+    testRow: "livemode = false",
+  },
+  // The lake keeps a call record after its ttl deletes it, so an item exists until its ttl, or
+  // 90 days after it started for a record from before the ttl reached the lake.
+  "integration-calls": {
+    source: "dynamo_calls",
+    keys: ["call_id"],
+    owner: null,
+    testRow: "target = 'test'",
+    exists: "coalesce(from_unixtime(ttl), started_at + INTERVAL '90' DAY) > current_timestamp",
+  },
+  "hmrc-api-requests": { source: "dynamo_hmrc_api_requests", alias: true, keys: ["hashed_sub", "request_record_id"], owner: "hashed_sub" },
+  "practice-clients": { source: "dynamo_practice_clients", alias: true, keys: ["hashed_sub", "client_id"], owner: "hashed_sub" },
+  "activity-charges": { source: "dynamo_activity_charges", alias: true, keys: ["hashed_sub", "charge_hash"], owner: "hashed_sub" },
+  "mcp-sessions": {
+    source: "dynamo_mcp_sessions",
+    alias: true,
+    keys: ["session_hash"],
+    owner: "hashed_sub",
+    actor: "CAST(NULL AS varchar)",
+    exists: "from_unixtime(ttl) > current_timestamp",
+  },
 };
 
 const DATA_ACTOR_CLASSES = ["customer", "test", "synthetic", "other", "unknown"];
+
+const emptySplit = () => Object.fromEntries(DATA_ACTOR_CLASSES.map((name) => [name, 0]));
 
 // A diya-gl owner is the hash of a subject, so it holds letters, digits, "_" and "-" only; the
 // pattern keeps anything else out of the query text. The query names at most this many owners.
 const OWNER_PATTERN = /^[A-Za-z0-9_-]+$/;
 const OWNER_QUERY_LIMIT = 2000;
 
-// When an owner's events show more than one class, the first in this order wins: an account with
-// any test, synthetic or operator event is not a customer.
-const OWNER_CLASS_PRECEDENCE = ["test", "synthetic", "other", "customer"];
-
 // The activity actor classes folded into the three the dashboard shows. An operator or the
 // system is `other`; an empty actor is `unknown` and is never counted as a customer.
-const ACTOR_CLASS_BY_ACTOR = { "customer": "customer", "test-user": "test", "probe": "synthetic", "operator": "other", "system": "other" };
+const ACTOR_CLASS_BY_ACTOR = {
+  "customer": "customer",
+  "test-user": "test",
+  "probe": "synthetic",
+  "synthetic": "synthetic",
+  "operator": "other",
+  "system": "other",
+};
 
 export function actorClassOf(actor) {
   if (actor === null || actor === undefined || actor === "") return "unknown";
@@ -58,71 +95,106 @@ export function actorClassSql(column) {
 }
 
 /**
- * One query: for each lake table, the items that exist now (the newest change of each key is not
- * a REMOVE), counted by actor.
+ * The class of one item from its own actor, its owner account's class (v_account_class) and the
+ * proof of a test row. Any evidence of a test user, then a probe, then an operator wins over a
+ * customer, the order v_account_class uses for an account. An item written by the system or another writer
+ * with no owner class reads other; an item with no evidence at all reads unknown.
  *
+ * @param {{actor: string, accountClass: string, testRow: string}} columns
+ * @returns {string}
+ */
+export function itemClassSql({ actor, accountClass, testRow }) {
+  return (
+    `CASE WHEN ${testRow} THEN 'test'\n` +
+    `     WHEN ${actor} = 'test-user' OR ${accountClass} = 'test' THEN 'test'\n` +
+    `     WHEN ${actor} IN ('probe', 'synthetic') OR ${accountClass} = 'synthetic' THEN 'synthetic'\n` +
+    `     WHEN ${actor} = 'operator' OR ${accountClass} = 'other' THEN 'other'\n` +
+    `     WHEN ${actor} = 'customer' OR ${accountClass} = 'customer' THEN 'customer'\n` +
+    `     WHEN ${actor} <> '' THEN 'other'\n` +
+    `     ELSE 'unknown' END`
+  );
+}
+
+// The newest change of an item. change_ts is in whole seconds, so the stream's sequence number
+// breaks a tie; a record from before the sequence number reached the lake falls back to the order
+// a tie can only have when one change is a delete: a delete comes after a modify.
+const NEWEST_ORDER = `change_ts DESC, lpad(coalesce(change_seq, ''), 40, '0') DESC, CASE change_type WHEN 'REMOVE' THEN 0 WHEN 'MODIFY' THEN 1 ELSE 2 END`;
+
+function itemsSql(kind, { source, alias, keys, owner, actor = "actor", testRow = "false", exists = "true" }) {
+  const from = alias
+    ? `(SELECT t.*, coalesce(a.current_hash, t.hashed_sub) AS owner_hash FROM ${source} t LEFT JOIN hash_aliases a ON a.old_hash = t.hashed_sub)`
+    : source;
+  const ownerColumn = alias ? "owner_hash" : owner || "CAST(NULL AS varchar)";
+  const partition = keys.map((key) => (alias && key === "hashed_sub" ? "owner_hash" : key)).join(", ");
+  return (
+    `  SELECT '${kind}' AS kind, ${ownerColumn} AS owner, ${actor} AS actor, coalesce(${testRow}, false) AS test_row, change_type,\n` +
+    `         coalesce(${exists}, false) AS item_exists,\n` +
+    `         row_number() OVER (PARTITION BY ${partition} ORDER BY ${NEWEST_ORDER}) AS newest\n` +
+    `  FROM   ${from}`
+  );
+}
+
+/**
+ * One query: for each lake table, the items that exist now (the newest change of each key is not
+ * a REMOVE), counted by the class of each item. With diya-gl owners, the same query gives each
+ * owner's class.
+ *
+ * @param {string[]} [owners]
  * @returns {string}
  */
 export function buildActorSplitSql(owners = []) {
-  const parts = Object.entries(DATA_LAKE_TABLES).map(
-    ([kind, { glueTable, keys }]) =>
-      `  SELECT '${kind}' AS kind, actor, change_type,\n` +
-      `         row_number() OVER (PARTITION BY ${keys.join(", ")} ORDER BY change_ts DESC) AS newest\n` +
-      `  FROM   ${glueTable}`,
-  );
+  const parts = Object.entries(DATA_LAKE_TABLES).map(([kind, table]) => itemsSql(kind, table));
+  const classSql = itemClassSql({ actor: "i.actor", accountClass: "c.actor_class", testRow: "i.test_row" });
   const tableSql =
-    `SELECT kind, actor, cast(count(*) AS double) AS items\nFROM (\n${parts.join("\n  UNION ALL\n")}\n)\n` +
-    `WHERE newest = 1 AND change_type <> 'REMOVE'\nGROUP BY 1, 2`;
+    `SELECT i.kind, ${classSql} AS actor_class, cast(count(*) AS double) AS items\n` +
+    `FROM (\n${parts.join("\n  UNION ALL\n")}\n) i\n` +
+    `LEFT JOIN v_account_class c ON c.hashed_sub = i.owner\n` +
+    `WHERE i.newest = 1 AND i.change_type <> 'REMOVE' AND i.item_exists\nGROUP BY 1, 2`;
   const safeOwners = owners.filter((owner) => OWNER_PATTERN.test(owner)).slice(0, OWNER_QUERY_LIMIT);
   if (safeOwners.length === 0) return `${tableSql}\nORDER BY 1, 2`;
   // An owner's hash may be from an earlier salt; hash_aliases maps it to the account's current hash.
   const ownerValues = safeOwners.map((owner) => "('" + owner + "')").join(", ");
   const ownerSql =
-    `SELECT 'owner:' || o.owner AS kind, e.actor AS actor, cast(count(*) AS double) AS items\n` +
+    `SELECT 'owner:' || o.owner AS kind, coalesce(c.actor_class, 'unknown') AS actor_class, cast(1 AS double) AS items\n` +
     `FROM   (VALUES ${ownerValues}) AS o(owner)\n` +
     `LEFT JOIN hash_aliases al ON al.old_hash = o.owner\n` +
-    `JOIN   activity_events_all e ON e.hashed_sub = coalesce(al.current_hash, o.owner)\n` +
-    `GROUP BY 1, 2`;
-  return `SELECT kind, actor, items\nFROM (\n${tableSql}\nUNION ALL\n${ownerSql}\n)\nORDER BY 1, 2`;
+    `LEFT JOIN v_account_class c ON c.hashed_sub = coalesce(al.current_hash, o.owner)`;
+  return `SELECT kind, actor_class, items\nFROM (\n${tableSql}\nUNION ALL\n${ownerSql}\n)\nORDER BY 1, 2`;
 }
 
+const classOrUnknown = (name) => (DATA_ACTOR_CLASSES.includes(name) ? name : "unknown");
+
 /**
- * The split of each kind's rows into customer, test, synthetic, other and unknown.
+ * The split of each kind's rows into customer, test, synthetic, other and unknown. Every lake
+ * table has a split, all zero when the lake holds none of its items.
  *
- * @param {Array<{kind: string, actor: string, items: string|number}>} rows
+ * @param {Array<{kind: string, actor_class: string, items: string|number}>} rows
  * @returns {Record<string, Record<string, number>>}
  */
 export function shapeActorSplit(rows) {
-  const split = {};
+  const split = Object.fromEntries(Object.keys(DATA_LAKE_TABLES).map((kind) => [kind, emptySplit()]));
   rows.forEach((row) => {
     if (!DATA_LAKE_TABLES[row.kind]) return;
-    split[row.kind] ||= Object.fromEntries(DATA_ACTOR_CLASSES.map((name) => [name, 0]));
-    split[row.kind][actorClassOf(row.actor)] += Number(row.items);
+    split[row.kind][classOrUnknown(row.actor_class)] += Number(row.items);
   });
   return split;
 }
 
 /**
  * The class of each diya-gl owner from the owner rows of the split query. An owner with no
- * activity event has no entry and reads unknown.
+ * record that names its class reads unknown.
  *
- * @param {Array<{kind: string, actor: string, items: string|number}>} rows
+ * @param {Array<{kind: string, actor_class: string, items: string|number}>} rows
  * @returns {Record<string, string>}
  */
 export function shapeOwnerClasses(rows) {
-  const seen = {};
+  const classes = {};
   rows.forEach((row) => {
     if (typeof row.kind !== "string" || !row.kind.startsWith("owner:")) return;
-    const owner = row.kind.slice("owner:".length);
-    seen[owner] ||= new Set();
-    seen[owner].add(actorClassOf(row.actor));
+    classes[row.kind.slice("owner:".length)] = classOrUnknown(row.actor_class);
   });
-  return Object.fromEntries(
-    Object.entries(seen).map(([owner, classes]) => [owner, OWNER_CLASS_PRECEDENCE.find((name) => classes.has(name)) || "unknown"]),
-  );
+  return classes;
 }
-
-const emptySplit = () => Object.fromEntries(DATA_ACTOR_CLASSES.map((name) => [name, 0]));
 
 /**
  * The diya-gl store's objects, books and book versions by the class of each owner. An owner with
@@ -168,6 +240,13 @@ function splitToFigure(split, objectsToday) {
   return { ...split, unknown: split.unknown + missing };
 }
 
+// The table's items that the lake holds no change record of: the count less the lake's items, or
+// 0 when the count lags behind the lake.
+function withNotInLake(split, itemsToday) {
+  const inLake = DATA_ACTOR_CLASSES.reduce((total, name) => total + split[name], 0);
+  return { ...split, notInLake: itemsToday !== null && itemsToday > inLake ? itemsToday - inLake : 0 };
+}
+
 const kindOfTable = (label) => Object.keys(DATA_LAKE_TABLES).find((kind) => label === kind) || null;
 
 // { today, d1, d7, d30, d90 } of one figure, each a number or null.
@@ -207,11 +286,12 @@ export function shapeDataSection({
   const tableRows = tables.map((table) => {
     const label = tableLabel(table.name, envName);
     const kind = kindOfTable(label);
+    const items = figuresAcross(table.items, histories, (day) => day.tables?.[label]);
     return {
       name: label,
-      items: figuresAcross(table.items, histories, (day) => day.tables?.[label]),
+      items,
       ttl: table.ttl,
-      split: kind && actorSplit && actorSplit[kind] ? actorSplit[kind] : null,
+      split: kind && actorSplit && actorSplit[kind] ? withNotInLake(actorSplit[kind], items.today) : null,
     };
   });
 

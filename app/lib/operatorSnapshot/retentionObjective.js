@@ -6,6 +6,44 @@
 // The retention objective's observations for the operator snapshot.
 
 import { buildAthenaSavedQueryLink } from "../consoleLinks.js";
+import { CUSTOMER_ROWS, nonCustomerObservations } from "./actorClassObservations.js";
+
+const newAccounts = {
+  id: "retention-new-accounts",
+  label: "New accounts",
+  description: "Accounts opened, added over the days.",
+  unit: "count",
+  view: "v_signup_to_first_submission",
+  dayColumn: "signup_day",
+  valueExpr: "new_accounts",
+  aggregation: "sum",
+  where: CUSTOMER_ROWS,
+  deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+};
+
+const renewals = {
+  id: "subscription-renewals",
+  label: "Subscription renewals",
+  unit: "count",
+  view: "v_subscription_renewals_daily",
+  dayColumn: "day",
+  valueExpr: "renewals",
+  aggregation: "sum",
+  where: CUSTOMER_ROWS,
+  deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+};
+
+const cancellations = {
+  id: "subscription-cancellations",
+  label: "Subscription cancellations",
+  unit: "count",
+  view: "v_subscription_cancellations_daily",
+  dayColumn: "day",
+  valueExpr: "cancellations",
+  aggregation: "sum",
+  where: CUSTOMER_ROWS,
+  deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+};
 
 export const retentionObjective = {
   id: "retention",
@@ -44,17 +82,8 @@ export const retentionObjective = {
       where: "app_client = 'all'",
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
-    {
-      id: "retention-new-accounts",
-      label: "New accounts",
-      description: "Accounts opened, added over the days.",
-      unit: "count",
-      view: "v_signup_to_first_submission",
-      dayColumn: "signup_day",
-      valueExpr: "new_accounts",
-      aggregation: "sum",
-      deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
-    },
+    newAccounts,
+    ...nonCustomerObservations(newAccounts),
     {
       id: "retention-new-accounts-submitted-share",
       label: "New accounts that submitted, share",
@@ -66,6 +95,7 @@ export const retentionObjective = {
       valueExpr: "submitted",
       aggregation: "ratio",
       denominatorExpr: "new_accounts",
+      where: CUSTOMER_ROWS,
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
@@ -78,25 +108,9 @@ export const retentionObjective = {
       aggregation: "sum",
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
-    {
-      id: "subscription-renewals",
-      label: "Subscription renewals",
-      unit: "count",
-      view: "v_subscription_renewals_daily",
-      dayColumn: "day",
-      valueExpr: "renewals",
-      aggregation: "sum",
-      deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
-    },
-    {
-      id: "subscription-cancellations",
-      label: "Subscription cancellations",
-      unit: "count",
-      view: "v_subscription_cancellations_daily",
-      dayColumn: "day",
-      valueExpr: "cancellations",
-      aggregation: "sum",
-      deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
-    },
+    renewals,
+    ...nonCustomerObservations(renewals),
+    cancellations,
+    ...nonCustomerObservations(cancellations),
   ],
 };

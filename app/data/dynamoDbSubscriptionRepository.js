@@ -43,7 +43,16 @@ export async function getSubscription(pk) {
   return result.Item || null;
 }
 
-export async function updateSubscription(pk, updates) {
+/**
+ * Updates fields on a subscription row. A test-mode Stripe event fills the actor of a row written
+ * before rows carried one with "test-user", and never changes an actor the row already has; a
+ * live-mode event proves no class, so it leaves a missing actor missing.
+ *
+ * @param {string} pk
+ * @param {Record<string, unknown>} updates
+ * @param {{test?: boolean}} [mode] - test is true only when the Stripe event has livemode false
+ */
+export async function updateSubscription(pk, updates, { test = false } = {}) {
   logger.info({ message: `updateSubscription [table: ${getResourceName("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME")}]`, pk });
 
   const tableName = getResourceName("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME");
@@ -63,6 +72,12 @@ export async function updateSubscription(pk, updates) {
   expressions.push("#updatedAt = :updatedAt");
   names["#updatedAt"] = "updatedAt";
   values[":updatedAt"] = new Date().toISOString();
+
+  if (test === true) {
+    expressions.push("#actor = if_not_exists(#actor, :testActor)");
+    names["#actor"] = "actor";
+    values[":testActor"] = "test-user";
+  }
 
   await executeDynamoDbCommand(
     (module) =>

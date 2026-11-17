@@ -80,7 +80,8 @@ export async function putHmrcApiRequest(userSub, { url, httpRequest, httpRespons
     };
 
     // 28 days, or 2 days when a test or synthetic caller made the request
-    const { ttl, ttl_datestamp } = hmrcApiRequestRetention(resolveActorClass(undefined, hashedSub), now);
+    item.actor = resolveActorClass(undefined, hashedSub);
+    const { ttl, ttl_datestamp } = hmrcApiRequestRetention(item.actor, now);
     item.ttl = ttl;
     item.ttl_datestamp = ttl_datestamp;
 

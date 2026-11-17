@@ -819,6 +819,28 @@ test.describe("Operator Dashboard", () => {
     await expect(row.locator("td").nth(0)).toHaveAttribute("title", "Cost for the month.");
   });
 
+  test("hides the rows for test, synthetic, operator and unknown accounts until the reader asks for them", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+    await openTab(page, "adoption");
+
+    const section = page.locator('.objective[data-objective-id="retention"]');
+    await expect(section.locator('tr.observation[data-observation-id="retention-new-accounts"]')).toBeVisible();
+    const others = section.locator("tr.observation-not-customer");
+    await expect(others).toHaveCount(2);
+    await expect(others.first()).toBeHidden();
+    const toggle = section.locator("button.observation-class-toggle");
+    await expect(toggle).toHaveText("Show the 2 rows for test, synthetic, operator and unknown accounts");
+    await toggle.click();
+    await expect(others.first()).toBeVisible();
+    await expect(section.locator('tr.observation[data-actor-class="unknown"]')).toContainText("New accounts, unknown accounts");
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await section.screenshot({ path: "target/screenshots/operator-dashboard-retention-classes.png" });
+    await toggle.click();
+    await expect(others.first()).toBeHidden();
+    await expect(page.locator('.objective[data-objective-id="uptime"] button.observation-class-toggle')).toHaveCount(0);
+  });
+
   test("shows a placeholder for an objective with no observations yet", async ({ page }) => {
     await setupRoutes(page);
     await loadDashboard(page);
@@ -1022,7 +1044,7 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     const tables = page.locator("table.observations:has(tr.last-updated)");
-    await expect(tables).toHaveCount(5);
+    await expect(tables).toHaveCount(6);
     const uptime = page.locator('section[data-objective-id="uptime"] tr.last-updated');
     await expect(uptime.locator('[data-reading="hourly"]')).toHaveText("Last updated 03:15 UTC");
     await expect(uptime.locator('[data-reading="hourly"]')).toHaveAttribute("colspan", "2");

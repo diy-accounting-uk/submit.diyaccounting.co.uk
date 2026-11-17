@@ -32,6 +32,10 @@ body.page-dashboard {
   font-style: italic;
 }
 
+.observation-class-toggle {
+  margin-top: 0.5rem;
+}
+
 table.observations {
   margin: 0;
 }

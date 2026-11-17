@@ -3,7 +3,7 @@
 
 // app/data/dynamoDbBundleRepository.js
 
-import { createLogger } from "../lib/logger.js";
+import { createLogger, context } from "../lib/logger.js";
 import { hashSub, getSaltVersion, subHashCandidates } from "../services/subHasher.js";
 import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
 import { bundleRetention, isTestActor } from "../lib/recordRetention.js";
@@ -47,6 +47,26 @@ function stampBundleRetention(item, now) {
   item.ttl_datestamp = ttl_datestamp;
 }
 
+// The class of the signed-in caller, when the request carries the caller's email; null when it
+// carries none, so a write made with no caller never names a class it cannot prove.
+function signedInActorClass(hashedSub) {
+  const email = context.get("userEmail");
+  return email ? resolveActorClass(undefined, hashedSub, email) : null;
+}
+
+// Every new bundle item names its actor: the one the caller gave, else the signed-in caller's
+// class, else "system" for a write that no signed-in caller made (a script or a scheduled job).
+function stampBundleActor(item) {
+  if (!item.actor) item.actor = signedInActorClass(item.hashedSub) || "system";
+}
+
+// An update fills the actor of an item written before items carried one, from the signed-in
+// caller's class, and never changes an actor the item already has.
+function actorFill(hashedSub) {
+  const actor = signedInActorClass(hashedSub);
+  return actor ? { expression: ", actor = if_not_exists(actor, :actor)", values: { ":actor": actor } } : { expression: "", values: {} };
+}
+
 export async function putBundle(userId, bundle) {
   logger.info({ message: `putBundle [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
 
@@ -75,6 +95,7 @@ export async function putBundle(userId, bundle) {
       delete item.expiry;
     }
 
+    stampBundleActor(item);
     stampBundleRetention(item, now);
 
     logger.info({
@@ -130,6 +151,7 @@ export async function putBundleByHashedSub(hashedSub, bundle) {
       delete item.expiry;
     }
 
+    stampBundleActor(item);
     stampBundleRetention(item, now);
 
     logger.info({ message: "Storing bundle in DynamoDB by hashedSub", hashedSub, item });
@@ -256,6 +278,7 @@ export async function resetTokens(userId, bundleId, tokensGranted, nextResetAt) 
   try {
     const { hashedSub, version } = await locateBundleOwner(userId, bundleId);
     const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
+    const fill = actorFill(hashedSub);
 
     await executeDynamoDbCommand(
       (module) =>
@@ -263,12 +286,14 @@ export async function resetTokens(userId, bundleId, tokensGranted, nextResetAt) 
           TableName: tableName,
           Key: { hashedSub, bundleId },
           ConditionExpression: "attribute_exists(hashedSub)",
-          UpdateExpression: "SET tokensConsumed = :zero, tokensGranted = :granted, tokenResetAt = :resetAt, saltVersion = :saltVersion",
+          UpdateExpression:
+            "SET tokensConsumed = :zero, tokensGranted = :granted, tokenResetAt = :resetAt, saltVersion = :saltVersion" + fill.expression,
           ExpressionAttributeValues: {
             ":zero": 0,
             ":granted": tokensGranted,
             ":resetAt": nextResetAt,
             ":saltVersion": version,
+            ...fill.values,
           },
         }),
     );
@@ -329,18 +354,21 @@ export async function consumeToken(userId, bundleId, count = 1) {
   try {
     const { hashedSub, version } = await locateBundleOwner(userId, bundleId);
     const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
+    const fill = actorFill(hashedSub);
 
     const result = await executeDynamoDbCommand(
       (module) =>
         new module.UpdateCommand({
           TableName: tableName,
           Key: { hashedSub, bundleId },
-          UpdateExpression: "SET tokensConsumed = if_not_exists(tokensConsumed, :zero) + :inc, saltVersion = :saltVersion",
+          UpdateExpression:
+            "SET tokensConsumed = if_not_exists(tokensConsumed, :zero) + :inc, saltVersion = :saltVersion" + fill.expression,
           ConditionExpression: "attribute_exists(hashedSub) AND (attribute_not_exists(tokensConsumed) OR tokensConsumed < tokensGranted)",
           ExpressionAttributeValues: {
             ":zero": 0,
             ":inc": count,
             ":saltVersion": version,
+            ...fill.values,
           },
           ReturnValues: "ALL_NEW",
         }),
@@ -385,6 +413,7 @@ export async function recordTokenEvent(userId, bundleId, event) {
       ...event,
       timestamp: new Date().toISOString(),
     };
+    const fill = actorFill(hashedSub);
 
     await executeDynamoDbCommand(
       (module) =>
@@ -392,11 +421,13 @@ export async function recordTokenEvent(userId, bundleId, event) {
           TableName: tableName,
           Key: { hashedSub, bundleId },
           ConditionExpression: "attribute_exists(hashedSub)",
-          UpdateExpression: "SET tokenEvents = list_append(if_not_exists(tokenEvents, :empty), :event), saltVersion = :saltVersion",
+          UpdateExpression:
+            "SET tokenEvents = list_append(if_not_exists(tokenEvents, :empty), :event), saltVersion = :saltVersion" + fill.expression,
           ExpressionAttributeValues: {
             ":empty": [],
             ":event": [tokenEvent],
             ":saltVersion": version,
+            ...fill.values,
           },
         }),
     );

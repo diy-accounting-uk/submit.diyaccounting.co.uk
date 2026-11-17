@@ -6,6 +6,7 @@
 CREATE OR REPLACE VIEW aliased_dynamo_commissions AS
 SELECT t.change_ts,
        t.change_type,
+       t.change_seq,
        t.source_table,
        t.env,
        coalesce(a_referrer_hash.current_hash, t.referrer_hash) AS referrer_hash,

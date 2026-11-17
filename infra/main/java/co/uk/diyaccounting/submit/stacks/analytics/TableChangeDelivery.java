@@ -39,13 +39,14 @@ import software.constructs.IDependable;
 
 /**
  * DynamoDB table changes into the lake: one consumer Lambda on the receipts, bundles,
- * subscriptions, passes, commissions and calls streams, one delivery stream and one Glue table per table.
+ * subscriptions, passes, commissions, calls, HMRC API requests, practice clients, activity charges
+ * and MCP sessions streams, one delivery stream and one Glue table per table.
  *
  * <p>The consumer Lambda does the redaction: only a per-table whitelist of fields ever leaves
  * DynamoDB (see {@code app/functions/analytics/dynamoStreamToFirehose.js}), so Firehose here
  * needs no processing Lambda of its own, unlike the activity-events stream.
  *
- * <p>Streams already exist on all six tables (enabled by {@code DataStack} via {@code
+ * <p>Streams already exist on all ten tables (enabled by {@code DataStack} via {@code
  * KindCdk.ensureStream}). This construct resolves each stream's ARN at deploy time with its own
  * read-only {@code dynamodb:DescribeTable} call, because the ARN carries a timestamp suffix that
  * cannot be built from the table name alone and the event source mapping needs it as a synth-time
@@ -53,8 +54,17 @@ import software.constructs.IDependable;
  */
 public class TableChangeDelivery extends Construct {
 
-    private static final List<String> STREAMED_TABLE_KINDS =
-            List.of("receipts", "bundles", "subscriptions", "passes", "commissions", "calls");
+    private static final List<String> STREAMED_TABLE_KINDS = List.of(
+            "receipts",
+            "bundles",
+            "subscriptions",
+            "passes",
+            "commissions",
+            "calls",
+            "hmrc_api_requests",
+            "practice_clients",
+            "activity_charges",
+            "mcp_sessions");
 
     public final Function consumerLambda;
     /** The Lambda construct behind {@link #consumerLambda}, so the owning stack can fan in its checks. */
@@ -112,6 +122,10 @@ public class TableChangeDelivery extends Construct {
         tableNameByKind.put("passes", sharedNames.data.passesTableName);
         tableNameByKind.put("commissions", sharedNames.data.commissionsTableName);
         tableNameByKind.put("calls", sharedNames.data.integrationCallsTableName);
+        tableNameByKind.put("hmrc_api_requests", sharedNames.data.hmrcApiRequestsTableName);
+        tableNameByKind.put("practice_clients", sharedNames.data.practiceClientsTableName);
+        tableNameByKind.put("activity_charges", sharedNames.data.activityChargesTableName);
+        tableNameByKind.put("mcp_sessions", sharedNames.data.mcpSessionsTableName);
 
         Map<String, String> deliveryStreamNameByTable = new LinkedHashMap<>();
         for (String kind : STREAMED_TABLE_KINDS) {
@@ -120,7 +134,7 @@ public class TableChangeDelivery extends Construct {
         }
 
         // ============================================================================
-        // Consumer Lambda: one function, six event source mappings
+        // Consumer Lambda: one function, one event source mapping per table
         // ============================================================================
         this.consumerLambdaConstruct = new Lambda(
                 this,
@@ -281,7 +295,8 @@ public class TableChangeDelivery extends Construct {
 
     /**
      * Columns match {@code dynamoStreamToFirehose.js}'s per-table projector output exactly, plus
-     * the four columns every table shares: change_ts, change_type, source_table, env.
+     * the five columns every table shares: change_ts, change_type, source_table, env and change_seq
+     * (the stream record's sequence number, which orders two changes of one item in one second).
      */
     private static List<CfnTable.ColumnProperty> buildColumns(String kind) {
         var columns = new ArrayList<CfnTable.ColumnProperty>();
@@ -289,6 +304,12 @@ public class TableChangeDelivery extends Construct {
         columns.add(column("change_type", "string"));
         columns.add(column("source_table", "string"));
         columns.add(column("env", "string"));
+        addKindColumns(columns, kind);
+        columns.add(column("change_seq", "string"));
+        return columns;
+    }
+
+    private static void addKindColumns(List<CfnTable.ColumnProperty> columns, String kind) {
 
         switch (kind) {
             case "receipts" -> {
@@ -391,10 +412,38 @@ public class TableChangeDelivery extends Construct {
                 columns.add(column("fph_rules", "string"));
                 columns.add(column("fph_rules_failed", "string"));
                 columns.add(column("fph_shape_hash", "string"));
+                columns.add(column("ttl", "bigint"));
+            }
+            case "hmrc_api_requests" -> {
+                columns.add(column("hashed_sub", "string"));
+                columns.add(column("request_record_id", "string"));
+                columns.add(column("method", "string"));
+                columns.add(column("created_at", "string"));
+                columns.add(column("actor", "string"));
+                columns.add(column("ttl", "bigint"));
+            }
+            case "practice_clients" -> {
+                columns.add(column("hashed_sub", "string"));
+                columns.add(column("client_id", "string"));
+                columns.add(column("created_at", "string"));
+                columns.add(column("archived_at", "string"));
+                columns.add(column("actor", "string"));
+            }
+            case "activity_charges" -> {
+                columns.add(column("hashed_sub", "string"));
+                columns.add(column("charge_hash", "string"));
+                columns.add(column("activity_id", "string"));
+                columns.add(column("status", "string"));
+                columns.add(column("created_at", "string"));
+                columns.add(column("actor", "string"));
+            }
+            case "mcp_sessions" -> {
+                columns.add(column("hashed_sub", "string"));
+                columns.add(column("session_hash", "string"));
+                columns.add(column("ttl", "bigint"));
             }
             default -> throw new IllegalArgumentException("No Glue columns declared for table kind: " + kind);
         }
-        return columns;
     }
 
     private static CfnTable.ColumnProperty column(String name, String type) {

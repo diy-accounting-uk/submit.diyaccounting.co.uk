@@ -521,10 +521,14 @@ async function handleInvoicePaid(invoice, { test = false } = {}) {
   }
 
   // Update subscription record
-  await updateSubscription(`stripe#${subscriptionId}`, {
-    currentPeriodEnd,
-    status: "active",
-  });
+  await updateSubscription(
+    `stripe#${subscriptionId}`,
+    {
+      currentPeriodEnd,
+      status: "active",
+    },
+    { test },
+  );
 
   logger.info({ message: "Tokens refreshed on invoice.paid", hashedSub, bundleId, tokensGranted });
 
@@ -580,10 +584,14 @@ async function handleSubscriptionUpdated(subscription, { test = false } = {}) {
   );
 
   // Update subscription record
-  await updateSubscription(`stripe#${subscription.id}`, {
-    status: subscription.status,
-    cancelAtPeriodEnd: cancelsAtPeriodEnd(subscription),
-  });
+  await updateSubscription(
+    `stripe#${subscription.id}`,
+    {
+      status: subscription.status,
+      cancelAtPeriodEnd: cancelsAtPeriodEnd(subscription),
+    },
+    { test },
+  );
 
   logger.info({ message: "Subscription status updated", hashedSub, bundleId, status: subscription.status });
 
@@ -603,7 +611,7 @@ async function handleSubscriptionUpdated(subscription, { test = false } = {}) {
           handler: "subscription.updated expiry",
         },
       );
-      await updateSubscription(`stripe#${subscription.id}`, { currentPeriodEnd: newPeriodEnd });
+      await updateSubscription(`stripe#${subscription.id}`, { currentPeriodEnd: newPeriodEnd }, { test });
       logger.info({ message: "Bundle expiry extended on subscription.updated", hashedSub, bundleId, currentPeriodEnd: newPeriodEnd });
     }
   }
@@ -647,12 +655,16 @@ async function handleSubscriptionDeleted(subscription, { test = false } = {}) {
   // Update subscription record
   const endedAt = new Date(subscription.ended_at * 1000);
   const retention = endedSubscriptionRetention({ test }, endedAt, new Date());
-  await updateSubscription(`stripe#${subscription.id}`, {
-    status: "canceled",
-    canceledAt: endedAt.toISOString(),
-    ttl: retention.ttl,
-    ttl_datestamp: retention.ttl_datestamp,
-  });
+  await updateSubscription(
+    `stripe#${subscription.id}`,
+    {
+      status: "canceled",
+      canceledAt: endedAt.toISOString(),
+      ttl: retention.ttl,
+      ttl_datestamp: retention.ttl_datestamp,
+    },
+    { test },
+  );
 
   if (diyaGlPersonalBundleIds().includes(bundleId)) {
     await lapseResidentBooks(hashedSub);
@@ -700,9 +712,13 @@ async function handlePaymentFailed(invoice, { test = false } = {}) {
   });
 
   // Update subscription record
-  await updateSubscription(`stripe#${subscriptionId}`, {
-    status: "past_due",
-  });
+  await updateSubscription(
+    `stripe#${subscriptionId}`,
+    {
+      status: "past_due",
+    },
+    { test },
+  );
 
   logger.info({ message: "Subscription marked as past_due after payment failure", hashedSub, bundleId });
 
@@ -838,10 +854,14 @@ export async function ingestHandler(event) {
           const disputeSubRecord = await getSubscription(`stripe#${disputeSubscriptionId}`);
           if (disputeSubRecord) {
             disputeHashedSub = disputeSubRecord.hashedSub;
-            await updateSubscription(`stripe#${disputeSubscriptionId}`, {
-              disputed: true,
-              disputeId: dispute.id,
-            });
+            await updateSubscription(
+              `stripe#${disputeSubscriptionId}`,
+              {
+                disputed: true,
+                disputeId: dispute.id,
+              },
+              { test },
+            );
             warnWhenBundleMissing(
               await updateBundleSubscriptionFields(disputeSubRecord.hashedSub, disputeSubRecord.bundleId, {
                 disputed: true,

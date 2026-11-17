@@ -6,6 +6,19 @@
 // The conversion-to-submission objective's observations for the operator snapshot.
 
 import { buildAthenaSavedQueryLink, buildGa4ReportsLink } from "../consoleLinks.js";
+import { CUSTOMER_ROWS, nonCustomerObservations } from "./actorClassObservations.js";
+
+const newAccounts = {
+  id: "new-accounts",
+  label: "New accounts",
+  unit: "count",
+  view: "v_signup_to_first_submission",
+  dayColumn: "signup_day",
+  valueExpr: "new_accounts",
+  aggregation: "sum",
+  where: CUSTOMER_ROWS,
+  deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+};
 
 export const conversionToSubmissionObjective = {
   id: "conversion-to-submission",
@@ -31,16 +44,8 @@ export const conversionToSubmissionObjective = {
       aggregation: "sum",
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
-    {
-      id: "new-accounts",
-      label: "New accounts",
-      unit: "count",
-      view: "v_signup_to_first_submission",
-      dayColumn: "signup_day",
-      valueExpr: "new_accounts",
-      aggregation: "sum",
-      deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
-    },
+    newAccounts,
+    ...nonCustomerObservations(newAccounts),
     {
       id: "spreadsheets-downloads",
       label: "Spreadsheet downloads",
@@ -114,6 +119,7 @@ export const conversionToSubmissionObjective = {
       dayColumn: "signup_day",
       valueExpr: "submitted",
       aggregation: "sum",
+      where: CUSTOMER_ROWS,
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
@@ -127,6 +133,7 @@ export const conversionToSubmissionObjective = {
       valueExpr: "submitted",
       aggregation: "ratio",
       denominatorExpr: "new_accounts",
+      where: CUSTOMER_ROWS,
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
@@ -139,6 +146,7 @@ export const conversionToSubmissionObjective = {
       dayColumn: "signup_day",
       valueExpr: "median_hours_to_first_submission",
       aggregation: "avg",
+      where: CUSTOMER_ROWS,
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {

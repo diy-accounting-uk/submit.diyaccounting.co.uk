@@ -452,6 +452,7 @@ async function writeCanary(context, registry) {
       Item: {
         hashedSub: "system#canary",
         bundleId: "salt-health-check",
+        actor: "system",
         expectedHash: hashValue(registry.versions[registry.current], CANARY_INPUT),
         canaryInput: CANARY_INPUT,
         saltVersion: registry.current,

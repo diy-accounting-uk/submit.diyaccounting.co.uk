@@ -4497,11 +4497,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-04 Stream DynamoDB table changes into the lake
 
 - **Use when:** a DynamoDB table's inserts/updates/deletes must be redacted and streamed into the lake.
-- **Does:** dynamoStreamToFirehose.js serves six DynamoDB Streams event source mappings for receipts, bundles, subscriptions, passes, commissions and integration calls. Its handler redacts each record through a per-table field whitelist and forwards it by Firehose PutRecordBatch. A record that fails to project or deliver returns a batchItemFailure by sequence number.
+- **Does:** dynamoStreamToFirehose.js serves ten DynamoDB Streams event source mappings for receipts, bundles, subscriptions, passes, commissions, integration calls, HMRC API requests, practice clients, activity charges and MCP sessions. Its handler redacts each record through a per-table field whitelist and forwards it by Firehose PutRecordBatch. A record that fails to project or deliver returns a batchItemFailure by sequence number.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/analytics/dynamoStreamToFirehose.js:handler`
 - **Files:** app/functions/analytics/dynamoStreamToFirehose.js, app/unit-tests/analytics/dynamoStreamToFirehose.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/TableChangeDelivery.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/TableChangeDeliveryTest.java
-- **Keywords:** dynamodb streams, table change, firehose putrecordbatch, redaction, field whitelist, batchitemfailure, receipts, bundles, subscriptions, passes, commissions, integration calls, calls projector
+- **Keywords:** dynamodb streams, table change, firehose putrecordbatch, redaction, field whitelist, batchitemfailure, receipts, bundles, subscriptions, passes, commissions, integration calls, calls projector, hmrc api requests, practice clients, activity charges, mcp sessions, change sequence
 
 #### DATA-05 Pull GA4 daily BigQuery aggregate tables
 
@@ -7034,6 +7034,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - activities: [OPS-213](#ops-213-write-the-videos-the-bundles-and-the-home-activity-list-into-the-deployed-pages-for-the-environment)
 - activity: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
 - activity bus: [DATA-01](#data-01-publish-activity-events-to-the-bus)
+- activity charges: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - activity event: [SITE-04](#site-04-track-visits-via-session-beacon), [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - activity events: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram), [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - activity list: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
@@ -7397,6 +7398,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cfnnamedquery: [DATA-10](#data-10-create-or-replace-athena-business-views)
 - change of address: [CH-05](#ch-05-file-a-change-of-registered-office-address)
 - change of email: [CH-06](#ch-06-file-a-change-of-registered-email-address)
+- change sequence: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - changed files: [OPS-91](#ops-91-validate-video-scene-scripts-and-timing)
 - changelineamount: [SS-04](#ss-04-apply-book-edits-and-derivations)
 - channel: [DATA-68](#data-68-sql-view-campaign-results-by-place), [DEV-41](#dev-41-publish-videos-to-the-youtube-channel)
@@ -8230,6 +8232,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - hmrc: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [BILL-13](#bill-13-check-a-clients-authorisation-status), [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - hmrc access token: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - hmrc api request: [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state)
+- hmrc api requests: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - hmrc compliance record: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
 - hmrc developer hub: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config)
 - hmrc endpoints: [OPS-112](#ops-112-provision-the-api-gateway-stack)
@@ -8560,6 +8563,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mcp reviewer: [MCP-26](#mcp-26-seed-the-demo-reviewer-user-and-its-two-sample-books)
 - mcp server: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
 - mcp session: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
+- mcp sessions: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - mcp state: [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp)
 - mcp tests: [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci)
 - mcp tools: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools), [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
@@ -8896,7 +8900,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - practice: [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [BILL-13](#bill-13-check-a-clients-authorisation-status), [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite), [BILL-15](#bill-15-move-a-book-to-a-client), [BILL-16](#bill-16-manage-practice-clients)
 - practice batch run: [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client)
 - practice client: [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client)
-- practice clients: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
+- practice clients: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake), [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - practice.html: [BILL-16](#bill-16-manage-practice-clients)
 - pre sign-up: [SITE-01](#site-01-sign-customers-in-via-cognito)
 - pre-deploy: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [OPS-16](#ops-16-run-dynamodb-data-migrations)

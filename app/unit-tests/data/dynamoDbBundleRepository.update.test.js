@@ -28,6 +28,7 @@ const {
   BUNDLE_MISSING,
 } = await import("@app/data/dynamoDbBundleRepository.js");
 const { calculateOneMonthTtl } = await import("@app/lib/dateUtils.js");
+const { context } = await import("@app/lib/logger.js");
 
 const module = {
   UpdateCommand: class UpdateCommand {
@@ -193,5 +194,43 @@ describe("dynamoDbBundleRepository updates", () => {
     mockExecute.mockRejectedValueOnce(missingItemError()).mockResolvedValueOnce({ Item: { bundleId: "resident-pro" } });
 
     expect(await consumeToken("user1", "resident-pro")).toEqual({ consumed: false, reason: "tokens_exhausted", tokensRemaining: 0 });
+  });
+
+  test("a token use by a signed-in caller fills a missing actor and keeps an actor the item has", async () => {
+    let command;
+    mockExecute.mockImplementationOnce(async (build) => {
+      command = build(module);
+      return { Attributes: { tokensGranted: 3, tokensConsumed: 1 } };
+    });
+
+    await context.run(new Map([["userEmail", "someone@example.com"]]), () => consumeToken("user-1", "resident-vat"));
+
+    expect(command.input.UpdateExpression).toContain("actor = if_not_exists(actor, :actor)");
+    expect(command.input.ExpressionAttributeValues[":actor"]).toBe("customer");
+  });
+
+  test("an update with no signed-in caller leaves a missing actor missing", async () => {
+    let command;
+    mockExecute.mockImplementationOnce(async (build) => {
+      command = build(module);
+      return {};
+    });
+
+    await recordTokenEvent("user-1", "resident-vat", { kind: "consumed" });
+
+    expect(command.input.UpdateExpression).not.toContain("actor");
+    expect(command.input.ExpressionAttributeValues[":actor"]).toBeUndefined();
+  });
+
+  test("a new bundle with no actor and no signed-in caller is the system's", async () => {
+    let command;
+    mockExecute.mockImplementationOnce(async (build) => {
+      command = build(module);
+      return {};
+    });
+
+    await putBundleByHashedSub("hash1", { bundleId: "resident-vat", expiry: "2026-12-09T10:00:00.000Z" });
+
+    expect(command.input.Item.actor).toBe("system");
   });
 });

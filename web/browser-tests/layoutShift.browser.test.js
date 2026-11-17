@@ -353,8 +353,19 @@ test.describe("Layout shift while data loads on a phone", () => {
     await serveRealSiteWithSlowData(page, { apiAnswers: operatorAnswers(), storage: { operatorDashboardTab: "data" } });
     await page.goto("http://localhost:3000/operator/dashboard.html", { waitUntil: "load" });
     const bundles = page.locator('#dataTablesBody tr[data-table="bundles"] td');
-    await expect(bundles).toHaveText(["bundles", "1,296", "1,290", "1,250", "900", "no figure", "On, ttl"]);
-    await expect(page.locator('#dataSplitBody tr[data-table="bundles"] td')).toHaveText(["bundles", "410", "724", "96", "6", "60"]);
+    await expect(bundles).toHaveText(["bundles", "1,296", "410", "1,290", "1,250", "900", "no figure", "On, ttl"]);
+    await expect(page.locator('#dataTablesBody tr[data-table="security-state"] td').nth(2)).toHaveText("n/a");
+    await expect(page.locator('#dataSplitBody tr[data-table="bundles"] td')).toHaveText(["bundles", "410", "724", "96", "6", "60", "0"]);
+    await expect(page.locator('#dataSplitBody tr[data-table="integration-calls"] td')).toHaveText([
+      "integration-calls",
+      "6,100",
+      "11,900",
+      "300",
+      "20",
+      "0",
+      "100",
+    ]);
+    await expect(page.locator('#dataSplitBody tr[data-table="security-state"]')).toHaveCount(0);
     await expect(page.locator("#dataBucketsBody .data-bucket-row")).toHaveCount(3);
     await expect(page.locator("#dataAnalyticsBody .data-bucket-row")).toHaveCount(2);
     await expect(page.locator('#dataBucketsSplitBody tr[data-name="diya-gl books"] td')).toHaveText([
@@ -375,6 +386,8 @@ test.describe("Layout shift while data loads on a phone", () => {
       return second.top - first.bottom;
     });
     expect(tablesGap).toBeGreaterThanOrEqual(8);
+    await page.locator("#dataTablesPanel").screenshot({ path: "target/screenshots/operator-dashboard-data-tables.png" });
+    await page.locator("#dataSplitPanel").screenshot({ path: "target/screenshots/operator-dashboard-data-split.png" });
     await page.locator("#dataBucketsPanel").screenshot({ path: "target/screenshots/operator-dashboard-data-buckets.png" });
     await page.locator("#dataAnalyticsPanel").screenshot({ path: "target/screenshots/operator-dashboard-data-analytics.png" });
     await expect(page.locator("#chart-data-totals")).toBeHidden();

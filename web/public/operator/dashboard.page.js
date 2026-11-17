@@ -163,10 +163,19 @@ function linkLabel(observation) {
   return "Source console";
 }
 
+// A row for accounts that are not customers (test, synthetic, operator or unknown) starts hidden;
+// the button under its table shows it.
+const isNotCustomerRow = (observation) => Boolean(observation.actorClass) && observation.actorClass !== "customer";
+
 function renderObservationRow(observation) {
   const row = document.createElement("tr");
   row.className = "observation";
   row.dataset.observationId = observation.id;
+  if (isNotCustomerRow(observation)) {
+    row.classList.add("observation-not-customer");
+    row.dataset.actorClass = observation.actorClass;
+    row.hidden = true;
+  }
 
   const label = document.createElement("td");
   label.textContent = observation.label;
@@ -260,7 +269,27 @@ function renderObjective(objective, generatedAt) {
   table.appendChild(tbody);
 
   section.appendChild(table);
+  const notCustomerRows = objective.observations.filter(isNotCustomerRow).length;
+  if (notCustomerRows > 0) section.appendChild(notCustomerToggle(tbody, notCustomerRows));
   return section;
+}
+
+function notCustomerToggle(tbody, count) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "chart-mode observation-class-toggle";
+  button.setAttribute("aria-expanded", "false");
+  const label = (shown) => (shown ? "Hide" : "Show") + " the " + count + " rows for test, synthetic, operator and unknown accounts";
+  button.textContent = label(false);
+  button.addEventListener("click", () => {
+    const shown = button.getAttribute("aria-expanded") !== "true";
+    tbody.querySelectorAll("tr.observation-not-customer").forEach((row) => {
+      row.hidden = !shown;
+    });
+    button.setAttribute("aria-expanded", String(shown));
+    button.textContent = label(shown);
+  });
+  return button;
 }
 
 // Operator, authenticated user and human come from GA4 sessions; synthetic and bot from the
@@ -824,6 +853,14 @@ function dataTtlText(ttl) {
   return ttl.enabled ? "On, " + ttl.attribute : "Off";
 }
 
+// The customer items of a table the lake holds; n/a for a table that holds no customer items.
+function dataCustomerCell(table) {
+  if (table.split) return dataCountCell(table.split.customer);
+  const cell = dataTextCell(NOT_APPLICABLE);
+  cell.title = "The lake holds no change records of this table: it holds no customer items.";
+  return cell;
+}
+
 function renderDataTables(data) {
   const body = document.getElementById("dataTablesBody");
   body.innerHTML = "";
@@ -836,7 +873,9 @@ function renderDataTables(data) {
     row.className = "data-table-row";
     row.dataset.table = table.name;
     row.appendChild(dataTextCell(table.name));
-    DATA_WINDOW_KEYS.forEach((key) => row.appendChild(dataCountCell(table.items[key])));
+    row.appendChild(dataCountCell(table.items.today));
+    row.appendChild(dataCustomerCell(table));
+    DATA_WINDOW_KEYS.filter((key) => key !== "today").forEach((key) => row.appendChild(dataCountCell(table.items[key])));
     row.appendChild(dataTextCell(dataTtlText(table.ttl)));
     body.appendChild(row);
   });
@@ -854,12 +893,13 @@ function renderDataSplit(data) {
     row.className = "data-split-row";
     row.dataset.table = table.name;
     row.appendChild(dataTextCell(table.name));
-    DATA_SPLIT_KEYS.forEach((key) => row.appendChild(dataCountCell(table.split[key])));
+    DATA_TABLE_SPLIT_KEYS.forEach((key) => row.appendChild(dataCountCell(table.split[key])));
     body.appendChild(row);
   });
 }
 
 const DATA_SPLIT_KEYS = ["customer", "test", "synthetic", "other", "unknown"];
+const DATA_TABLE_SPLIT_KEYS = [...DATA_SPLIT_KEYS, "notInLake"];
 
 function renderDataBuckets(data) {
   const body = document.getElementById("dataBucketsBody");

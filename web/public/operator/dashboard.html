@@ -307,7 +307,8 @@
           <h2>DynamoDB tables</h2>
           <p class="subtitle">
             Items in each table now and on earlier days, from the table's own count, which lags about six hours. Each snapshot writes the
-            day's counts to the lake, so a day before the first file shows no figure.
+            day's counts to the lake, so a day before the first file shows no figure. Customers is the items of customer accounts now, from
+            the split below; n/a is a table that holds no customer items.
           </p>
           <div class="data-scroll">
             <table class="observations data-table" id="dataTablesTable">
@@ -315,6 +316,7 @@
                 <tr>
                   <th>Table</th>
                   <th>Today</th>
+                  <th title="Items of customer accounts now, from Who the items belong to">Customers</th>
                   <th>1 day ago</th>
                   <th>7 days ago</th>
                   <th>30 days ago</th>
@@ -330,9 +332,10 @@
         <section id="dataSplitPanel" class="objective" hidden data-tab="data">
           <h2>Who the items belong to</h2>
           <p class="subtitle">
-            Items that exist now, by the actor recorded on them, for the tables the lake holds. Unknown is an item with no actor recorded;
-            it is never counted as a customer. Other is an operator or the system. The lake holds the changes since it began, so an item
-            last changed before then is not in these counts. Refreshed once a day.
+            Items that exist now, for the tables the lake holds, by the class of the item's actor and its owner account. Any test, probe or
+            operator record of the account makes it test, synthetic or other; other is also an item the system wrote. Unknown is an item
+            that no record names a class for; it is never counted as a customer. Not in the lake is the table's count less these: items last
+            changed before the lake began, and items the lake leaves out. The row adds up to the table's count. Refreshed once a day.
           </p>
           <div class="data-scroll">
             <table class="observations data-table" id="dataSplitTable">
@@ -344,6 +347,7 @@
                   <th>Synthetic</th>
                   <th>Other</th>
                   <th>Unknown</th>
+                  <th title="The table's count less the items the lake holds">Not in the lake</th>
                 </tr>
               </thead>
               <tbody id="dataSplitBody"></tbody>

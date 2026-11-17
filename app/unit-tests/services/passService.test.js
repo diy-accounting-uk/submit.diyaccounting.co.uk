@@ -240,15 +240,23 @@ describe("passService", () => {
       expect(pass.actor).toBe("customer");
     });
 
-    it("should omit actor when not supplied", () => {
+    it("should name the system as actor when none is supplied, and a test user for a test pass", () => {
       const pass = buildPassRecord({
-        passTypeId: "day-guest-test-pass",
+        passTypeId: "day-guest",
         bundleId: "day-guest",
         validityPeriod: "P7D",
         createdBy: "admin",
       });
+      const testPass = buildPassRecord({
+        passTypeId: "day-guest-test-pass",
+        bundleId: "day-guest",
+        validityPeriod: "P7D",
+        createdBy: "admin",
+        testPass: true,
+      });
 
-      expect(pass.actor).toBeUndefined();
+      expect(pass.actor).toBe("system");
+      expect(testPass.actor).toBe("test-user");
     });
   });
 

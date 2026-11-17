@@ -6,6 +6,7 @@
 CREATE OR REPLACE VIEW aliased_dynamo_passes AS
 SELECT t.change_ts,
        t.change_type,
+       t.change_seq,
        t.source_table,
        t.env,
        coalesce(a_pass_id.current_hash, t.pass_id) AS pass_id,

@@ -108,6 +108,16 @@ public class BusinessViews extends Construct {
                     "stripe_charges with each hash read through hash_aliases, stable across a salt rotation",
                     List.of("stripe_charges", "hash_aliases")),
             new ViewDefinition(
+                    "v_account_class",
+                    "The class of each account (customer, test, synthetic, other or unknown) from every record"
+                            + " that names an actor for it",
+                    List.of(
+                            "activity_events_all",
+                            "aliased_dynamo_receipts",
+                            "aliased_dynamo_bundles",
+                            "aliased_dynamo_subscriptions",
+                            "aliased_dynamo_passes")),
+            new ViewDefinition(
                     "v_active_users_daily", "Distinct customers active each day", List.of("activity_events_all")),
             new ViewDefinition(
                     "v_submissions_daily",
@@ -135,8 +145,8 @@ public class BusinessViews extends Construct {
                     List.of("activity_events_all")),
             new ViewDefinition(
                     "v_signup_to_first_submission",
-                    "Time from a new account's first bundle grant to its first submission",
-                    List.of("aliased_dynamo_bundles", "aliased_dynamo_receipts", "activity_events_all")),
+                    "Time from a new account's first bundle grant to its first submission, by account class",
+                    List.of("aliased_dynamo_bundles", "aliased_dynamo_receipts", "v_account_class")),
             new ViewDefinition(
                     "v_traffic_by_country_daily", "Sessions each day, by country", List.of("activity_events_all")),
             new ViewDefinition(
@@ -240,12 +250,12 @@ public class BusinessViews extends Construct {
                     List.of("cloudfront_requests")),
             new ViewDefinition(
                     "v_subscription_renewals_daily",
-                    "Subscriptions that renewed each day, by bundle",
-                    List.of("activity_events_all")),
+                    "Subscriptions that renewed each day, by bundle and account class",
+                    List.of("activity_events_all", "v_account_class")),
             new ViewDefinition(
                     "v_subscription_cancellations_daily",
-                    "Subscriptions cancelled each day, by bundle",
-                    List.of("aliased_dynamo_subscriptions", "activity_events_all")),
+                    "Subscriptions cancelled each day, by bundle and account class",
+                    List.of("aliased_dynamo_subscriptions", "activity_events_all", "v_account_class")),
             new ViewDefinition(
                     "v_operator_interventions_daily",
                     "Operator interventions each day, by kind: dispatches, issue comments and commits",

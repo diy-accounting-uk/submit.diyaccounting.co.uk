@@ -137,10 +137,11 @@ class SubmitEnvironmentCdkResourceTest {
         // hmrcItsaBusinessDetailsGetAsyncRequests
         // PITR: every table (Custom::EnsurePitr, not Custom::AWS - see KindCdk.ensurePitrProvider)
         // GSIs: passes issuedBy-index, bundles bundleId-expiry-index
-        // Streams: receipts, bundles, passes, subscriptions, commissions, integration calls
+        // Streams: receipts, bundles, passes, subscriptions, commissions, integration calls, HMRC
+        //      API requests, practice clients, activity charges, MCP sessions
         //      (one UpdateTable to enable, one DescribeTable to read the stream ARN)
         // TTL: passes and subscriptions join the tables that already had it
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 144);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 152);
         Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 67);
 
         // 8) Observability stack should enable CloudTrail (Trail present), covering every region
@@ -350,14 +351,14 @@ class SubmitEnvironmentCdkResourceTest {
 
         // 9) Analytics stack: one delivery stream into the lake, catalogued once and queryable
         Template analytics = Template.fromStack(env.analyticsStack);
-        analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 8);
-        analytics.resourceCountIs("AWS::Lambda::EventSourceMapping", 6);
+        analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 12);
+        analytics.resourceCountIs("AWS::Lambda::EventSourceMapping", 10);
         analytics.resourceCountIs("AWS::Glue::Database", 1);
         analytics.resourceCountIs("AWS::Glue::DataQualityRuleset", 6);
         analytics.resourceCountIs("AWS::CloudWatch::Dashboard", 0);
-        analytics.resourceCountIs("AWS::Glue::Table", 39);
+        analytics.resourceCountIs("AWS::Glue::Table", 43);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
-        analytics.resourceCountIs("AWS::Athena::NamedQuery", 75);
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 76);
         // The lake and the Athena results bucket
         analytics.resourceCountIs("AWS::S3::Bucket", 2);
 

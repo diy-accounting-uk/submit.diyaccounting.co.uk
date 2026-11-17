@@ -122,7 +122,41 @@ export const FIXTURE_SNAPSHOT = {
     { id: "conversion-to-paid", name: "Conversion to paid", observations: [] },
     { id: "low-running-cost", name: "AWS costs", observations: [] },
     { id: "security", name: "Security", observations: [] },
-    { id: "retention", name: "Retention", observations: [] },
+    {
+      id: "retention",
+      name: "Retention",
+      observations: [
+        {
+          id: "retention-new-accounts",
+          label: "New accounts",
+          unit: "count",
+          last30: { value: 9, trend: 0.1 },
+          last90: { value: 27, trend: 0 },
+          deepLink:
+            "https://eu-west-2.console.aws.amazon.com/athena/home?region=eu-west-2#/query-editor/saved-queries?workgroup=prod-env-analytics",
+        },
+        {
+          id: "retention-new-accounts-not-customers",
+          label: "New accounts, test, synthetic and operator accounts",
+          actorClass: "not-customer",
+          unit: "count",
+          last30: { value: 120, trend: 0.2 },
+          last90: { value: 342, trend: 0 },
+          deepLink:
+            "https://eu-west-2.console.aws.amazon.com/athena/home?region=eu-west-2#/query-editor/saved-queries?workgroup=prod-env-analytics",
+        },
+        {
+          id: "retention-new-accounts-unknown",
+          label: "New accounts, unknown accounts",
+          actorClass: "unknown",
+          unit: "count",
+          last30: { value: 0, trend: 0 },
+          last90: { value: 9, trend: 0 },
+          deepLink:
+            "https://eu-west-2.console.aws.amazon.com/athena/home?region=eu-west-2#/query-editor/saved-queries?workgroup=prod-env-analytics",
+        },
+      ],
+    },
     { id: "operator-effort", name: "Operator effort", observations: [] },
     { id: "compliance", name: "Compliance", observations: [] },
     {
@@ -605,12 +639,15 @@ export const FIXTURE_DATA = shapeDataSection({
     { name: "prod-env-passes", items: 2431, ttl: { enabled: false, attribute: null } },
     { name: "prod-env-integration-calls", items: 18420, ttl: { enabled: true, attribute: "ttl" } },
     { name: "prod-env-mcp-sessions", items: 7, ttl: { enabled: true, attribute: "expiresAt" } },
+    { name: "prod-env-security-state", items: 46, ttl: { enabled: true, attribute: "ttl" } },
   ],
   actorSplit: {
-    receipts: { customer: 59, test: 330, synthetic: 12, other: 3, unknown: 8 },
-    bundles: { customer: 410, test: 724, synthetic: 96, other: 6, unknown: 60 },
-    subscriptions: { customer: 31, test: 120, synthetic: 30, other: 0, unknown: 7 },
-    passes: { customer: 140, test: 2131, synthetic: 0, other: 0, unknown: 160 },
+    "receipts": { customer: 59, test: 330, synthetic: 12, other: 3, unknown: 8 },
+    "bundles": { customer: 410, test: 724, synthetic: 96, other: 6, unknown: 60 },
+    "subscriptions": { customer: 31, test: 120, synthetic: 30, other: 0, unknown: 7 },
+    "passes": { customer: 140, test: 2131, synthetic: 0, other: 0, unknown: 160 },
+    "integration-calls": { customer: 6100, test: 11900, synthetic: 300, other: 20, unknown: 0 },
+    "mcp-sessions": { customer: 3, test: 2, synthetic: 0, other: 0, unknown: 0 },
   },
   buckets: [
     { name: "prod-env-analytics-lake-972912397388", objects: 48210, history: { 90: null, 30: 31200, 7: 46100, 1: 47900 } },

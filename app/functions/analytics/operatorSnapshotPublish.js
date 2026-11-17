@@ -996,6 +996,7 @@ export async function buildSnapshot({ workGroup, database, context }) {
         id: observation.id,
         label: observation.label,
         ...(observation.description ? { description: observation.description } : {}),
+        ...(observation.actorClass ? { actorClass: observation.actorClass } : {}),
         unit: observation.unit,
         today: windows.today,
         previousDay: windows.previousDay,
@@ -1837,11 +1838,11 @@ export function buildDailyChartDefinitions() {
             ({
               "submitters-90d": "Distinct customers with a VAT submission in the 90 days up to the day.",
               "returning-submitters-90d": "Of those, the customers who also submitted in the 90 days before that.",
-              "renewals": "Subscriptions renewed on the day.",
-              "cancellations": "Subscriptions cancelled on the day.",
+              "renewals": "Customer subscriptions renewed on the day.",
+              "cancellations": "Customer subscriptions cancelled on the day.",
               "passes-issued": "Passes issued on the day, of every pass type.",
               "active-customers-7d": "Distinct signed-in customers who made a call in the 7 days to the day.",
-              "new-accounts": "Accounts opened on the day, test and operator accounts apart.",
+              "new-accounts": "Customer accounts opened on the day; test, synthetic, operator and unknown accounts apart.",
             })[id],
           componentOrder: [
             "active-customers-7d",
@@ -1867,7 +1868,7 @@ export function buildDailyChartDefinitions() {
             `FROM   v_active_customers_7d_daily\nWHERE  ${dailyWindowFilter("day")} AND app_client = 'all'\nGROUP  BY 1\n` +
             `UNION ALL\n` +
             `SELECT cast(signup_day AS varchar), 'new-accounts', cast(sum(new_accounts) AS double)\n` +
-            `FROM   v_signup_to_first_submission\nWHERE  ${dailyWindowFilter("signup_day")}\nGROUP  BY 1\n` +
+            `FROM   v_signup_to_first_submission\nWHERE  ${dailyWindowFilter("signup_day")} AND actor_class = 'customer'\nGROUP  BY 1\n` +
             `UNION ALL\n` +
             `SELECT cast(day AS varchar) AS day, 'submitters-90d' AS component, cast(sum(submitters_90d) AS double) AS value\n` +
             `FROM   v_returning_submitters_rolling_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
@@ -1876,10 +1877,10 @@ export function buildDailyChartDefinitions() {
             `FROM   v_returning_submitters_rolling_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
             `UNION ALL\n` +
             `SELECT cast(day AS varchar), 'renewals', cast(sum(renewals) AS double)\n` +
-            `FROM   v_subscription_renewals_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `FROM   v_subscription_renewals_daily\nWHERE  ${dailyWindowFilter("day")} AND actor_class = 'customer'\nGROUP  BY 1\n` +
             `UNION ALL\n` +
             `SELECT cast(day AS varchar), 'cancellations', cast(sum(cancellations) AS double)\n` +
-            `FROM   v_subscription_cancellations_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `FROM   v_subscription_cancellations_daily\nWHERE  ${dailyWindowFilter("day")} AND actor_class = 'customer'\nGROUP  BY 1\n` +
             `UNION ALL\n` +
             `SELECT cast(day AS varchar), 'passes-issued', cast(sum(passes_issued) AS double)\n` +
             `FROM   v_pass_redemptions_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1`,

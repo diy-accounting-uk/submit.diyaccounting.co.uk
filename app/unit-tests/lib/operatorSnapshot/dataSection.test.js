@@ -26,9 +26,9 @@ function makeIo(overrides = {}) {
     readHistory: vi.fn(async (key) => files.get(key) ?? null),
     writeHistory: vi.fn(async (key, value) => void files.set(key, value)),
     runAthena: vi.fn(async () => [
-      { kind: "bundles", actor: "customer", items: "90" },
-      { kind: "bundles", actor: "test-user", items: "20" },
-      { kind: "bundles", actor: "", items: "10" },
+      { kind: "bundles", actor_class: "customer", items: "90" },
+      { kind: "bundles", actor_class: "test", items: "20" },
+      { kind: "bundles", actor_class: "unknown", items: "10" },
     ]),
     bucketObjectCounts: vi.fn(async () => ({ "prod-env-analytics-lake-972912397388": { "2026-11-06": 5000, "2026-10-08": 4000 } })),
     countBooks: vi.fn(async () => ({ books: 3, versions: 5, truncated: false })),
@@ -52,45 +52,79 @@ describe("dataSection", () => {
     expect(actorClassOf("customer")).toBe("customer");
     expect(actorClassOf("test-user")).toBe("test");
     expect(actorClassOf("probe")).toBe("synthetic");
+    expect(actorClassOf("synthetic")).toBe("synthetic");
     expect(actorClassOf("operator")).toBe("other");
   });
 
   test("the split query counts the newest change of each key unless it is a removal", () => {
     const sql = buildActorSplitSql();
-    expect(sql).toContain("FROM   dynamo_bundles");
-    expect(sql).toContain("PARTITION BY hashed_sub, bundle_id ORDER BY change_ts DESC");
-    expect(sql).toContain("newest = 1 AND change_type <> 'REMOVE'");
-    expect(sql).not.toMatch(/dynamo_calls|dynamo_commissions/);
+    expect(sql).toContain("FROM   aliased_dynamo_bundles");
+    expect(sql).toContain("PARTITION BY hashed_sub, bundle_id ORDER BY change_ts DESC, lpad(coalesce(change_seq, ''), 40, '0') DESC");
+    expect(sql).toContain("CASE change_type WHEN 'REMOVE' THEN 0 WHEN 'MODIFY' THEN 1 ELSE 2 END");
+    expect(sql).toContain("i.newest = 1 AND i.change_type <> 'REMOVE' AND i.item_exists");
   });
 
-  test("the split adds each actor into its class and keeps the unknown count apart", () => {
+  test("the split query reads every lake table, aliases each hash and classes an item by its owner", () => {
+    const sql = buildActorSplitSql();
+    [
+      "aliased_dynamo_receipts",
+      "aliased_dynamo_subscriptions",
+      "aliased_dynamo_passes",
+      "aliased_dynamo_commissions",
+      "dynamo_calls",
+    ].forEach((source) => expect(sql).toContain(`FROM   ${source}`));
+    ["dynamo_hmrc_api_requests", "dynamo_practice_clients", "dynamo_activity_charges", "dynamo_mcp_sessions"].forEach((source) =>
+      expect(sql).toContain(`FROM ${source} t LEFT JOIN hash_aliases a ON a.old_hash = t.hashed_sub`),
+    );
+    expect(sql).toContain("LEFT JOIN v_account_class c ON c.hashed_sub = i.owner");
+    expect(sql).toContain("pass_type_id LIKE '%-test-pass'");
+    expect(sql).toContain("coalesce(target = 'test', false) AS test_row");
+    expect(sql).toContain("coalesce(from_unixtime(ttl), started_at + INTERVAL '90' DAY) > current_timestamp");
+    expect(sql).not.toContain("dynamo_bundle_capacity");
+  });
+
+  test("the split adds each row into its class and gives every lake table a split", () => {
     const split = shapeActorSplit([
-      { kind: "bundles", actor: "customer", items: "5" },
-      { kind: "bundles", actor: "", items: "2" },
-      { kind: "bundles", actor: "probe", items: "1" },
-      { kind: "elsewhere", actor: "customer", items: "9" },
+      { kind: "bundles", actor_class: "customer", items: "5" },
+      { kind: "bundles", actor_class: "unknown", items: "2" },
+      { kind: "bundles", actor_class: "synthetic", items: "1" },
+      { kind: "bundles", actor_class: "odd", items: "1" },
+      { kind: "elsewhere", actor_class: "customer", items: "9" },
     ]);
-    expect(split).toEqual({ bundles: { customer: 5, test: 0, synthetic: 1, other: 0, unknown: 2 } });
+    expect(split.bundles).toEqual({ customer: 5, test: 0, synthetic: 1, other: 0, unknown: 3 });
+    expect(split["integration-calls"]).toEqual({ customer: 0, test: 0, synthetic: 0, other: 0, unknown: 0 });
+    expect(Object.keys(split)).toEqual([
+      "receipts",
+      "bundles",
+      "subscriptions",
+      "passes",
+      "commissions",
+      "integration-calls",
+      "hmrc-api-requests",
+      "practice-clients",
+      "activity-charges",
+      "mcp-sessions",
+    ]);
+    expect(split.elsewhere).toBeUndefined();
   });
 
-  test("the split query names each owner and reads its class from the activity events", () => {
+  test("the split query names each owner and reads its class from the account classes", () => {
     const sql = buildActorSplitSql(["ownerA", "owner-B", "bad'owner"]);
     expect(sql).toContain("(VALUES ('ownerA'), ('owner-B')) AS o(owner)");
     expect(sql).not.toContain("bad'owner");
-    expect(sql).toContain("activity_events_all e ON e.hashed_sub = coalesce(al.current_hash, o.owner)");
+    expect(sql).toContain("LEFT JOIN v_account_class c ON c.hashed_sub = coalesce(al.current_hash, o.owner)");
     expect(buildActorSplitSql([])).toBe(buildActorSplitSql());
   });
 
-  test("an owner with a test or operator event is not a customer, and one with no event is unknown", () => {
+  test("an owner reads the class the account classes give it, and one with none is unknown", () => {
     const classes = shapeOwnerClasses([
-      { kind: "owner:a", actor: "customer", items: "4" },
-      { kind: "owner:b", actor: "customer", items: "4" },
-      { kind: "owner:b", actor: "test-user", items: "1" },
-      { kind: "owner:c", actor: "customer", items: "1" },
-      { kind: "owner:c", actor: "operator", items: "1" },
-      { kind: "bundles", actor: "customer", items: "9" },
+      { kind: "owner:a", actor_class: "customer", items: "1" },
+      { kind: "owner:b", actor_class: "test", items: "1" },
+      { kind: "owner:c", actor_class: "other", items: "1" },
+      { kind: "owner:d", actor_class: "unknown", items: "1" },
+      { kind: "bundles", actor_class: "customer", items: "9" },
     ]);
-    expect(classes).toEqual({ a: "customer", b: "test", c: "other" });
+    expect(classes).toEqual({ a: "customer", b: "test", c: "other", d: "unknown" });
     const split = shapeDiyaGlSplit(
       {
         a: { books: 1, versions: 2, objects: 3 },
@@ -106,8 +140,8 @@ describe("dataSection", () => {
   test("diya-gl objects, books and versions split by owner class and add up to their figures", async () => {
     const io = makeIo({
       runAthena: vi.fn(async () => [
-        { kind: "owner:a", actor: "customer", items: "4" },
-        { kind: "owner:b", actor: "test-user", items: "9" },
+        { kind: "owner:a", actor_class: "customer", items: "1" },
+        { kind: "owner:b", actor_class: "test", items: "1" },
       ]),
       bucketObjectCounts: vi.fn(async () => ({ "prod-env-diya-gl-972912397388": { "2026-11-07": 9 } })),
       countBooks: vi.fn(async () => ({
@@ -155,17 +189,31 @@ describe("dataSection", () => {
     expect(section.books[0].count).toEqual({ today: 3, d1: null, d7: 2, d30: null, d90: null });
   });
 
-  test("a table with a lake split carries it, and one without carries none", async () => {
-    const section = await run(makeIo());
-    expect(section.tables.find((table) => table.name === "bundles").split).toEqual({
-      customer: 90,
-      test: 20,
-      synthetic: 0,
-      other: 0,
-      unknown: 10,
+  test("a lake table's classes and the items not in the lake add up to the table's count", async () => {
+    const section = await run(
+      makeIo({
+        describeItemCount: vi.fn(
+          async (name) => ({ "prod-env-bundles": 125, "prod-env-receipts": 40, "prod-env-security-state": 6 })[name],
+        ),
+      }),
+    );
+    const bundles = section.tables.find((table) => table.name === "bundles");
+    expect(bundles.split).toEqual({ customer: 90, test: 20, synthetic: 0, other: 0, unknown: 10, notInLake: 5 });
+    const receipts = section.tables.find((table) => table.name === "receipts");
+    expect(receipts.split).toEqual({ customer: 0, test: 0, synthetic: 0, other: 0, unknown: 0, notInLake: 40 });
+    expect(bundles.ttl).toEqual({ enabled: true, attribute: "ttl" });
+  });
+
+  test("a table the lake does not hold carries no split, and a count behind the lake leaves nothing outside it", async () => {
+    const section = await buildDataSection({
+      envName: "prod",
+      now,
+      tableNames: ["prod-env-bundles", "prod-env-security-state"],
+      bucketNames: [],
+      io: makeIo({ describeItemCount: vi.fn(async (name) => ({ "prod-env-bundles": 100, "prod-env-security-state": 6 })[name]) }),
     });
-    expect(section.tables.find((table) => table.name === "receipts").split).toBeNull();
-    expect(section.tables.find((table) => table.name === "bundles").ttl).toEqual({ enabled: true, attribute: "ttl" });
+    expect(section.tables.find((table) => table.name === "security-state").split).toBeNull();
+    expect(section.tables.find((table) => table.name === "bundles").split.notInLake).toBe(0);
   });
 
   test("a run writes today's counts and the split, and a later run that day does not query Athena again", async () => {

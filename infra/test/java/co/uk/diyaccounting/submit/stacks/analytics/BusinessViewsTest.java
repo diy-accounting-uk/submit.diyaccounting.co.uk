@@ -33,7 +33,7 @@ import software.amazon.awscdk.services.s3.Bucket;
  */
 class BusinessViewsTest {
 
-    private static final int VIEW_COUNT = 74;
+    private static final int VIEW_COUNT = 75;
 
     private Template synthBusinessViews() {
         var sharedNames = SubmitSharedNames.forDocs();
@@ -113,6 +113,7 @@ class BusinessViewsTest {
                 "v_hmrc_failures_by_class",
                 "v_business_activity_daily",
                 "v_signup_to_first_submission",
+                "v_account_class",
                 "v_traffic_by_country_daily",
                 "v_ga4_funnel_daily",
                 "v_purchase_reconciliation_daily",
@@ -220,14 +221,51 @@ class BusinessViewsTest {
                 bySubmitter.contains("WHEN actor = 'operator' THEN 'operator'"),
                 "expected the submissions view to group operators apart from customers and test accounts: "
                         + bySubmitter);
-        for (var view : java.util.List.of(
-                "v_subscription_renewals_daily",
-                "v_subscription_cancellations_daily",
-                "v_signup_to_first_submission",
-                "v_pass_redemptions_daily")) {
+        for (var view : java.util.List.of("v_account_class", "v_pass_redemptions_daily")) {
             assertTrue(
                     sqlForView(template, view).contains("'operator'"),
                     "expected " + view + " to leave operator accounts out of customer figures");
+        }
+    }
+
+    @Test
+    void accountClassLetsTestProbeAndOperatorEvidenceWinOverACustomerAndCountsNoneAsUnknown() {
+        Template template = synthBusinessViews();
+
+        var sql = sqlForView(template, "v_account_class");
+        int test = sql.indexOf("actor = 'test-user'");
+        int synthetic = sql.indexOf("actor IN ('probe', 'synthetic')");
+        int other = sql.indexOf("actor = 'operator'");
+        int customer = sql.indexOf("actor = 'customer'");
+        assertTrue(
+                test > 0 && test < synthetic && synthetic < other && other < customer,
+                "expected test, then synthetic, then operator evidence to win over a customer record: " + sql);
+        assertTrue(sql.contains("ELSE 'unknown'"), "expected an account with no evidence to read unknown: " + sql);
+        for (var source : java.util.List.of(
+                "activity_events_all",
+                "aliased_dynamo_receipts",
+                "aliased_dynamo_bundles",
+                "aliased_dynamo_subscriptions",
+                "aliased_dynamo_passes")) {
+            assertTrue(sql.contains(source), "expected the account class to read " + source + ": " + sql);
+        }
+    }
+
+    @Test
+    void customerFigureViewsCarryTheAccountClassAndNeverCountUnknownAsACustomer() {
+        Template template = synthBusinessViews();
+
+        for (var view : java.util.List.of(
+                "v_signup_to_first_submission",
+                "v_subscription_renewals_daily",
+                "v_subscription_cancellations_daily")) {
+            var sql = sqlForView(template, view);
+            assertTrue(
+                    sql.contains("v_account_class") && sql.contains("AS actor_class"),
+                    "expected " + view + " to give each row the account's class: " + sql);
+            assertTrue(
+                    !sql.contains("coalesce(actor, 'customer')") && !sql.contains("'customer') NOT IN"),
+                    "expected " + view + " never to read a missing actor as a customer: " + sql);
         }
     }
 
@@ -262,26 +300,6 @@ class BusinessViewsTest {
         assertTrue(
                 sql.contains("activity_events_all"),
                 "expected the renewals view to resolve actor from activity_events_all: " + sql);
-    }
-
-    @Test
-    void signupToFirstSubmissionViewExcludesTestProbeAndSyntheticActors() {
-        Template template = synthBusinessViews();
-
-        var sql = sqlForView(template, "v_signup_to_first_submission");
-        assertTrue(
-                sql.contains("actor")
-                        && sql.contains("'test-user'")
-                        && sql.contains("'probe'")
-                        && sql.contains("'synthetic'"),
-                "expected the signup view to filter out test-user, probe and synthetic actors: " + sql);
-        assertTrue(
-                sql.contains("min_by(actor"),
-                "expected the signup view to prefer dynamo_bundles' own actor column: " + sql);
-        assertTrue(
-                sql.contains("'bundle-granted'") && sql.contains("'subscription-activated'"),
-                "expected the signup view to fall back to the bundle-granted or subscription-activated"
-                        + " activity event for a bundle item with no actor of its own: " + sql);
     }
 
     @Test

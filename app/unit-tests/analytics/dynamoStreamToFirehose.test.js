@@ -61,10 +61,15 @@ describe("resolveTableKind", () => {
     expect(resolveTableKind("ci-env-passes")).toBe("passes");
     expect(resolveTableKind("ci-env-commissions")).toBe("commissions");
     expect(resolveTableKind("ci-env-integration-calls")).toBe("calls");
+    expect(resolveTableKind("prod-env-hmrc-api-requests")).toBe("hmrc_api_requests");
+    expect(resolveTableKind("prod-env-practice-clients")).toBe("practice_clients");
+    expect(resolveTableKind("prod-env-activity-charges")).toBe("activity_charges");
+    expect(resolveTableKind("prod-env-mcp-sessions")).toBe("mcp_sessions");
   });
 
   test("throws rather than passing an unrecognised table through", () => {
-    expect(() => resolveTableKind("ci-env-hmrc-api-requests")).toThrow(/no redaction whitelist/i);
+    expect(() => resolveTableKind("ci-env-security-state")).toThrow(/no redaction whitelist/i);
+    expect(() => resolveTableKind("ci-env-hmrc-vat-return-post-async-requests")).toThrow(/no redaction whitelist/i);
   });
 });
 
@@ -392,6 +397,7 @@ describe("buildRow", () => {
       expect(row.env).toBe("ci");
       expect(row.change_ts).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$/);
       expect(row.bundle_id).toBe("resident-pro");
+      expect(row.change_seq).toBe("1");
     } finally {
       if (originalEnv === undefined) delete process.env.ENVIRONMENT_NAME;
       else process.env.ENVIRONMENT_NAME = originalEnv;
@@ -486,12 +492,73 @@ describe("calls projector", () => {
     expect(row).toMatchObject({ status: null, app_code: null, fph_rules: null, fph_rules_failed: null, status_label: "timeout" });
   });
 
+  test("carries the ttl, so the lake can tell when DynamoDB deletes the call", () => {
+    expect(projectFields("calls", callImage, null, "INSERT").ttl).toBe(1800000000);
+  });
+
   test("returns null for a TTL expiry so the lake keeps the row", () => {
     expect(projectFields("calls", null, callImage, "REMOVE")).toBeNull();
   });
 
   test("returns null for an item that is not a call", () => {
     expect(projectFields("calls", { pk: "fph#2026-11-04", sk: "shape" }, null, "INSERT")).toBeNull();
+  });
+});
+
+describe("projectors of the customer tables new to the lake", () => {
+  test("an HMRC API request leaves the URL and both bodies in the table", () => {
+    const row = projectFields(
+      "hmrc_api_requests",
+      {
+        hashedSub: "h1",
+        id: "hmrcreq-1",
+        method: "POST",
+        url: "https://api.service.hmrc.gov.uk/organisations/vat/123456789/returns",
+        httpRequest: { body: { vatDueSales: 100 } },
+        httpResponse: { body: { formBundleNumber: "1" } },
+        createdAt: "2026-11-17T10:00:00.000Z",
+        actor: "customer",
+        ttl: 1800000000,
+      },
+      null,
+      "INSERT",
+    );
+    expect(row).toEqual({
+      hashed_sub: "h1",
+      request_record_id: "hmrcreq-1",
+      method: "POST",
+      created_at: "2026-11-17T10:00:00.000Z",
+      actor: "customer",
+      ttl: 1800000000,
+    });
+  });
+
+  test("a practice client leaves its name and identifiers in the table", () => {
+    const row = projectFields(
+      "practice_clients",
+      { hashedSub: "p1", clientId: "01J", displayName: "Client Ltd", identifiers: { vrn: "123456789" }, createdAt: "t", archivedAt: null },
+      null,
+      "INSERT",
+    );
+    expect(row).toEqual({ hashed_sub: "p1", client_id: "01J", created_at: "t", archived_at: null, actor: null });
+  });
+
+  test("an activity charge key and an MCP session id leave the table only as hashes", () => {
+    const charge = projectFields(
+      "activity_charges",
+      { hashedSub: "h1", chargeKey: "ct-return#12345678", activityId: "ct-return", status: "paid", createdAt: "t" },
+      null,
+      "INSERT",
+    );
+    expect(charge.charge_hash).toBe(hashSub("ct-return#12345678"));
+    expect(Object.values(charge)).not.toContain("ct-return#12345678");
+    const session = projectFields(
+      "mcp_sessions",
+      null,
+      { sessionId: "session-1", hashedSub: "h1", cloud: { bookId: "b" }, ttl: 5 },
+      "REMOVE",
+    );
+    expect(session).toEqual({ hashed_sub: "h1", session_hash: hashSub("session-1"), ttl: 5 });
   });
 });
 

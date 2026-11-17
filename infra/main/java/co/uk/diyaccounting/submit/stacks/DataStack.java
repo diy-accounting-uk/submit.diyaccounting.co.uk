@@ -1079,6 +1079,8 @@ public class DataStack extends Stack {
                 props.resourceNamePrefix() + "-HmrcApiRequestsTTL",
                 props.sharedNames().data.hmrcApiRequestsTableName,
                 "ttl");
+        ensureTableStream(
+                props.resourceNamePrefix() + "-HmrcApiRequests", props.sharedNames().data.hmrcApiRequestsTableName);
         infof(
                 "Ensured HMRC API Requests DynamoDB table with name %s",
                 props.sharedNames().data.hmrcApiRequestsTableName);
@@ -1157,6 +1159,8 @@ public class DataStack extends Stack {
                 props.sharedNames().data.activityChargesTableName,
                 "hashedSub",
                 "chargeKey");
+        ensureTableStream(
+                props.resourceNamePrefix() + "-ActivityCharges", props.sharedNames().data.activityChargesTableName);
         infof(
                 "Ensured activity charges DynamoDB table with name %s",
                 props.sharedNames().data.activityChargesTableName);
@@ -1172,6 +1176,8 @@ public class DataStack extends Stack {
                 props.sharedNames().data.practiceClientsTableName,
                 "hashedSub",
                 "clientId");
+        ensureTableStream(
+                props.resourceNamePrefix() + "-PracticeClients", props.sharedNames().data.practiceClientsTableName);
         infof(
                 "Ensured practice clients DynamoDB table with name %s",
                 props.sharedNames().data.practiceClientsTableName);
@@ -1262,6 +1268,7 @@ public class DataStack extends Stack {
                 props.resourceNamePrefix() + "-McpSessionsTTL",
                 props.sharedNames().data.mcpSessionsTableName,
                 "ttl");
+        ensureTableStream(props.resourceNamePrefix() + "-McpSessions", props.sharedNames().data.mcpSessionsTableName);
         infof("Ensured MCP sessions DynamoDB table with name %s", props.sharedNames().data.mcpSessionsTableName);
 
         // Outbound call records: one item per attempt to reach HMRC, Companies House or Stripe,
