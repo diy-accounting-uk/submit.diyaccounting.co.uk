@@ -181,7 +181,7 @@ async function authorizedFetchOnce(input, init) {
       if (typeof window !== "undefined" && window.showStatus) {
         window.showStatus("Your session has expired. Please sign in again.", "warning");
         setTimeout(() => {
-          window.location.href = "/auth/login.html";
+          window.location.href = window.signInHref("/auth/login.html");
         }, 2000);
       }
       return first;
@@ -279,7 +279,7 @@ export async function fetchWithIdToken(input, init = {}) {
       if (typeof window !== "undefined" && window.showStatus) {
         window.showStatus("Your session has expired. Please sign in again.", "warning");
         setTimeout(() => {
-          window.location.href = "/auth/login.html";
+          window.location.href = window.signInHref("/auth/login.html");
         }, 2000);
       }
       return response;

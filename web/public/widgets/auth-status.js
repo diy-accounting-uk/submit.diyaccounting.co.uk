@@ -218,7 +218,7 @@
       } else {
         loginLinkElement.style.display = "";
         loginLinkElement.textContent = "Sign in";
-        loginLinkElement.href = "/auth/login.html";
+        loginLinkElement.href = window.signInHref("/auth/login.html");
       }
       loginLinkElement.onclick = null;
     }

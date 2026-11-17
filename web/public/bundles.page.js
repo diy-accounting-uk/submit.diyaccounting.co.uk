@@ -164,7 +164,7 @@ async function requestBundle(bundleId, bundleName, qualifiers = {}) {
   const idToken = getIdToken();
   if (!idToken) {
     showStatus("Please sign in first to request bundles.", "warning");
-    window.location.href = "auth/login.html";
+    window.location.href = window.signInHref("auth/login.html");
     return false;
   }
 
@@ -438,7 +438,7 @@ document.addEventListener("click", async (e) => {
   const idToken = getIdToken();
   if (!idToken) {
     showStatus("Please sign in first to subscribe.", "warning");
-    window.location.href = "auth/login.html";
+    window.location.href = window.signInHref("auth/login.html");
     return;
   }
 
@@ -844,7 +844,7 @@ async function removeBundle(bundleId, fireAndForget = true) {
   const idToken = getIdToken();
   if (!idToken) {
     showStatus("Please sign in first to remove bundles.", "warning");
-    window.location.href = "auth/login.html";
+    window.location.href = window.signInHref("auth/login.html");
     return;
   }
 

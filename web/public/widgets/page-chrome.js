@@ -41,6 +41,15 @@
 (function () {
   "use strict";
 
+  // The sign-in address that returns to a page: loginPath?next=<the page's path from the site root>.
+  // The page defaults to the current one; a page under /auth/ and the home page need no target.
+  function signInHref(loginPath, returnTo) {
+    const target = returnTo === undefined ? window.location.pathname + window.location.search : returnTo;
+    if (!target.startsWith("/") || target === "/" || /^\/(cy\/)?auth\//.test(target)) return loginPath;
+    return loginPath + "?next=" + encodeURIComponent(target);
+  }
+  window.signInHref = signInHref;
+
   const HOME_ICON_PATH = "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z";
   const INFO_ICON_PATH = "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z";
 
@@ -208,8 +217,8 @@
       '<span class="entitlement-status">Activity: unrestricted</span>' +
       '<span class="login-status">Not signed in</span>' +
       '<a href="' +
-      rootPrefix +
-      'auth/login.html" class="login-link">Sign in</a>' +
+      signInHref(rootPrefix + "auth/login.html") +
+      '" class="login-link">Sign in</a>' +
       "</div>" +
       "</div>"
     );

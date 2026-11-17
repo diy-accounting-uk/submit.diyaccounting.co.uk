@@ -69,6 +69,31 @@ try {
   if (sessionStorage.getItem("passAddOnReturn")) document.getElementById("pendingPassNote").hidden = false;
 } catch {}
 
+// A page that sent the visitor here names itself in ?next=. The callback returns to it, and the
+// page names the activity the visitor chose.
+async function noteDestination() {
+  const next = new URLSearchParams(window.location.search).get("next");
+  if (!next) return;
+  const target = window.postLoginRedirectTarget(next);
+  if (target === "/") return;
+  try {
+    sessionStorage.setItem("postLoginRedirect", target);
+  } catch {}
+  try {
+    const catalogService = await import("/lib/services/catalog-service.js");
+    const catalog = catalogService.parseCatalogueText(await catalogService.fetchCatalogText());
+    const page = new URL(target, window.location.origin).pathname.replace(/^\//, "");
+    const activity = (catalog.activities || []).find((candidate) => catalogService.activityPagePath(candidate) === page);
+    if (!activity) return;
+    const note = document.getElementById("signInDestination");
+    note.textContent = `Sign in to continue to ${catalogService.activityName(activity)}.`;
+    note.hidden = false;
+  } catch (err) {
+    console.warn("Could not name the page the sign-in returns to:", err);
+  }
+}
+noteDestination();
+
 sessionStorage.removeItem("currentActivity");
 console.log("Current activity cleared");
 

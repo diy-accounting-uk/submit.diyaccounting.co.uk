@@ -45,7 +45,7 @@ export function checkTokenExpiry(accessToken, idToken) {
             if (typeof window !== "undefined" && window.showStatus) {
               window.showStatus("Session expired. Please sign in again.", "warning");
               setTimeout(() => {
-                window.location.href = "/auth/login.html";
+                window.location.href = window.signInHref("/auth/login.html");
               }, 3000);
             }
           }
@@ -56,7 +56,7 @@ export function checkTokenExpiry(accessToken, idToken) {
           if (typeof window !== "undefined" && window.showStatus) {
             window.showStatus("Session expired. Please sign in again.", "warning");
             setTimeout(() => {
-              window.location.href = "/auth/login.html";
+              window.location.href = window.signInHref("/auth/login.html");
             }, 3000);
           }
         });

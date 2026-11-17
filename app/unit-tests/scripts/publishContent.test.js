@@ -189,18 +189,32 @@ describe("publish-content home activities", () => {
     expect(names.join(" ")).not.toMatch(/Assist|PSC|Company Tax Return/);
   });
 
+  test("prod lists each production Companies House filing to a signed-out visitor, and not a lookup or a preview filing", () => {
+    const entries = homeActivities(CATALOG, "prod").filter((entry) => entry.area === "Companies House");
+    expect(entries.map((entry) => entry.name)).toEqual([
+      "Change Registered Office Address (Companies House)",
+      "Change Registered Email Address (Companies House)",
+      "File Micro-entity Accounts (Companies House)",
+      "File Small Company Accounts (Companies House)",
+      "File Confirmation Statement (Companies House)",
+    ]);
+    expect(homeActivities(CATALOG, "prod").some((entry) => /Company Tax Return/.test(entry.name))).toBe(false);
+  });
+
   test("an activity that shows only on entitlement is left out for a signed-out visitor", () => {
-    expect(homeActivities(CATALOG, "prod").some((entry) => entry.area === "Companies House")).toBe(false);
+    expect(homeActivities(CATALOG, "prod").some((entry) => /Lookup|Receipts/.test(entry.name))).toBe(false);
   });
 
   test("ci lists Income Tax and prod does not", () => {
     expect(homeActivities(CATALOG, "ci").some((entry) => entry.area === "Income Tax")).toBe(true);
   });
 
-  test("an upsell activity opens the sign-in page and every entry has a page link", () => {
+  test("an upsell activity opens the sign-in page, which returns to the activity's page", () => {
     const vat = homeActivities(CATALOG, "prod").find((entry) => entry.name === "Submit VAT (HMRC)");
-    expect(vat.href).toBe("auth/login.html");
-    expect(homeActivities(CATALOG, "ci").every((entry) => entry.href.endsWith(".html"))).toBe(true);
+    expect(vat.href).toBe("auth/login.html?next=%2Fhmrc%2Fvat%2FsubmitVat.html");
+    const filing = homeActivities(CATALOG, "prod").find((entry) => entry.name.startsWith("File Micro-entity"));
+    expect(filing.href).toBe("auth/login.html?next=%2Fcompanies-house%2FfileMicroEntityAccounts.html");
+    expect(homeActivities(CATALOG, "ci").every((entry) => /\.html(\?next=.+)?$/.test(entry.href))).toBe(true);
   });
 
   test("the Welsh block holds the Welsh area heading and activity names", () => {
@@ -246,7 +260,7 @@ describe("publishContent", () => {
       expect(bundles).toContain('data-bundle-id="resident-pro"');
       expect(bundles).not.toContain('data-bundle-id="resident-tax-agent"');
       expect(readFileSync(join(webRoot, "index.html"), "utf8")).toContain('<section class="activity-group" aria-label="VAT">');
-      expect(readFileSync(join(webRoot, "cy/index.html"), "utf8")).toContain('href="../auth/login.html"');
+      expect(readFileSync(join(webRoot, "cy/index.html"), "utf8")).toContain('href="../auth/login.html?next=');
       expect(readFileSync(join(webRoot, "videos-ch.html"), "utf8")).toContain("VideoObject");
       expect(readFileSync(join(webRoot, "sitemap.xml"), "utf8")).toContain("<video:video>");
     } finally {

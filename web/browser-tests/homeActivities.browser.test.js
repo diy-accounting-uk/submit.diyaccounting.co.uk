@@ -104,6 +104,22 @@ test.describe("Home page activities for a Resident account", () => {
     await expect(box.locator("li", { hasText: "Sandbox" })).toContainText("HMRC Income Tax (MTD)");
   });
 
+  test("a signed-out visitor sees the Companies House filings, and each button names the page that sign-in returns to", async ({
+    page,
+  }) => {
+    await serveHomeForResident(page, "prod");
+    await page.addInitScript(() => localStorage.removeItem("cognitoIdToken"));
+    await page.goto("http://localhost:3000/", { waitUntil: "domcontentloaded" });
+
+    const activities = page.locator("#dynamicActivities");
+    await expect(activities.locator("h2", { hasText: "Companies House" })).toBeVisible();
+    await expect(activities).toContainText("File Micro-entity Accounts (Companies House)");
+    await expect(activities).not.toContainText("Company Tax Return");
+    await activities.locator("button", { hasText: "Submit VAT" }).click();
+    await page.waitForURL("**/auth/login.html?next=*");
+    expect(new URL(page.url()).searchParams.get("next")).toBe("/hmrc/vat/submitVat.html");
+  });
+
   test("the Welsh home page lists the activities and the status in Welsh", async ({ page }) => {
     await page.addInitScript(() => localStorage.removeItem("cognitoIdToken"));
     await page.route("**/*", async (route) => {

@@ -34,7 +34,7 @@
     text.textContent = marked.dataset.signInText || "Sign in to use this page.";
     const link = document.createElement("a");
     link.className = "btn";
-    link.href = loginHref;
+    link.href = window.signInHref(loginHref);
     link.textContent = "Sign in";
     panel.append(heading, text, link);
     return panel;

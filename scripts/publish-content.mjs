@@ -195,7 +195,7 @@ const SIGNED_OUT_VIEWER = { preview: false, operatorFeatures: true, account: {} 
  * The activities the home page lists to a signed-out visitor in an environment, as the page script
  * lists them: shown by the catalogue, with a page, and not display "never". A signed-out visitor
  * holds no bundle, so an activity that shows only on entitlement is left out, a display "always"
- * activity opens its page and an upsell activity opens the sign-in page.
+ * activity opens its page and an upsell activity opens the sign-in page, which returns to the page.
  * @param {string} [language] "cy" gives the Welsh names; the area stays the English key
  * @returns {{area: string, name: string, href: string}[]} in catalogue order
  */
@@ -213,7 +213,7 @@ export function homeActivities(catalog, environmentName, language) {
         {
           area: activityArea(page),
           name: `${activityName(activity, language)}${tokenLabel}`,
-          href: activity.display === "always" ? page : "auth/login.html",
+          href: activity.display === "always" ? page : `auth/login.html?next=${encodeURIComponent(`/${page}`)}`,
         },
       ];
     });
