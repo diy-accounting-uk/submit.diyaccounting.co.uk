@@ -68,10 +68,29 @@ describe("the diya-submit ChatGPT plugin package", () => {
     }
   });
 
-  it("publishes to GB only and shows no price, plan or checkout", () => {
-    expect(manifest.extensions["com.openai"].publication.countries).toEqual(["GB"]);
-    const text = JSON.stringify(manifest).toLowerCase();
-    for (const word of ["checkout", "subscribe", "free trial", "discount", "£"]) expect(text, word).not.toContain(word);
+  it("publishes to GB only, declares no commerce and names no offer in any file of the package", () => {
+    const { publication, review } = manifest.extensions["com.openai"];
+    expect(publication.countries).toEqual(["GB"]);
+    expect(review.commerce).toBe(false);
+    expect(review.commerce_description).toMatch(/does not sell products or process payments/);
+    const OFFER_WORDS = ["bundle", "bundles", "pass", "passes", "token", "tokens", "price", "prices", "pricing", "plan", "plans"];
+    OFFER_WORDS.push("subscribe", "subscription", "subscriptions", "free", "trial", "discount", "promotion", "checkout", "upgrade");
+    const texts = { "plugin.json": JSON.stringify(manifest), "mcp.json": chatgptRead("mcp.json") };
+    texts["SKILL.md"] = chatgptRead("skills/file-a-uk-vat-return/SKILL.md");
+    for (const [name, text] of Object.entries(texts)) {
+      // HMRC calls its receipt reference a form bundle number, which offers nothing.
+      const words = text
+        .replaceAll(/form bundle number/gi, "")
+        .toLowerCase()
+        .split(/[^a-z£]+/);
+      expect(
+        words.filter((word) => OFFER_WORDS.includes(word)),
+        name,
+      ).toEqual([]);
+      expect(text, name).not.toContain("£");
+    }
+    const links = JSON.stringify(manifest).match(/https:\/\/submit\.diyaccounting\.co\.uk[^"]*/g);
+    for (const link of links) expect(link, link).toMatch(/\/(mcp|privacy|terms)\.html(#[a-z]+)?$/);
   });
 
   it("points its logo and composer icon at a file in the package", () => {

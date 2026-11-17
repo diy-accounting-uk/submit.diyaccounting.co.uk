@@ -21,4 +21,4 @@ This writes `target/chatgpt-plugin/diya-submit.zip`. The ZIP holds `plugin.json`
 
 Six read tools: `list_books`, `open_book`, `derive_vat_return`, `prepare_vat_return`, `get_vat_receipt` and `list_vat_receipts`. No tool files a return or pays. A person files in the browser from the link `prepare_vat_return` gives.
 
-The plugin shows no plan, starts no subscription and links to no checkout. `https://submit.diyaccounting.co.uk/bundles.html` is an information page.
+The plugin sells nothing. No text in the package names a plan, a price or an offer, and its links go to the connector page `mcp.html`, the privacy policy, the terms, the walk-through video and the source repository. None of them goes to the Bundles page, where an account can subscribe, or to the home page, which states prices. `review.commerce` is `false`, and `review.commerce_description` says that a person signs in to an existing account and uses what it already has.

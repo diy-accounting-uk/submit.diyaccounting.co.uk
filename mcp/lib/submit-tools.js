@@ -326,34 +326,52 @@ export async function submitVatReturn(session, params = {}) {
   });
 }
 
+// The four fields HMRC answers when it accepts a VAT return, which Submit stores as the receipt.
+const VAT_RECEIPT_FIELDS = ["processingDate", "formBundleNumber", "paymentIndicator", "chargeRefNumber"];
+
+// A VAT return receipt's stored name: the time Submit stored it, then HMRC's form bundle number.
+const VAT_RECEIPT_NAME = /^(\d{4}-\d{2}-\d{2})T[^/]*Z-(\d+)\.json$/;
+
 /**
- * get_vat_receipt: a stored receipt by its file name. clientId narrows the fetch to one of the
- * practice's clients (hmrcReceiptGet.js checks the client belongs to this practice before
- * reading; a client that is not this practice's own answers 403 client-not-found) — it does not
- * change which receipt is read, since a receipt's key is the signed-in user's own regardless.
+ * get_vat_receipt: a stored VAT return receipt by its file name, as the four fields HMRC answered
+ * when it accepted the return. clientId narrows the fetch to one of the practice's clients
+ * (hmrcReceiptGet.js checks the client belongs to this practice before reading; a client that is
+ * not this practice's own answers 403 client-not-found) — it does not change which receipt is
+ * read, since a receipt's key is the signed-in user's own regardless.
  * @param {Object} session
  * @param {{name: string, clientId?: string}} params
+ * @returns {Promise<{processingDate: string, formBundleNumber: string, paymentIndicator?: string, chargeRefNumber?: string}>}
  */
 export async function getVatReceipt(session, params = {}) {
   const name = requireField("get_vat_receipt", params, "name");
   const { clientId } = params;
   const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
-  return callSubmitApi(session, `/api/v1/hmrc/receipt/${encodeURIComponent(name)}${query}`);
+  const stored = await callSubmitApi(session, `/api/v1/hmrc/receipt/${encodeURIComponent(name)}${query}`);
+  if (!stored?.formBundleNumber || !stored?.processingDate) throw new Error(`${name} is not the receipt of a VAT return`);
+  return Object.fromEntries(VAT_RECEIPT_FIELDS.filter((field) => stored[field] !== undefined).map((field) => [field, stored[field]]));
 }
 
 /**
- * list_vat_receipts: the stored receipts the account page lists, newest first as the route
- * answers them, each with the name get_vat_receipt takes. clientId narrows the list to one of the
- * practice's clients (hmrcReceiptGet.js answers 403 client-not-found for a client that is not this
- * practice's own).
+ * list_vat_receipts: the stored VAT return receipts, newest first as the route answers them, each
+ * as the name get_vat_receipt takes, HMRC's form bundle number and the day Submit stored it. The
+ * route's other receipts (accounts, confirmation statements, Income Tax updates) and its other
+ * fields are left out. clientId narrows the list to one of the practice's clients
+ * (hmrcReceiptGet.js answers 403 client-not-found for a client that is not this practice's own).
  * @param {Object} session
  * @param {{clientId?: string}} params
- * @returns {Promise<{receipts: Object[]}>}
+ * @returns {Promise<{receipts: Array<{name: string, formBundleNumber: string, filedOn: string}>}>}
  */
 export async function listVatReceipts(session, params = {}) {
   const { clientId } = params;
   const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
-  return callSubmitApi(session, `/api/v1/hmrc/receipt${query}`);
+  const { receipts = [] } = await callSubmitApi(session, `/api/v1/hmrc/receipt${query}`);
+  return {
+    receipts: receipts
+      .filter((row) => !row.kind)
+      .map((row) => ({ name: row.name, match: VAT_RECEIPT_NAME.exec(row.name ?? "") }))
+      .filter(({ match }) => match)
+      .map(({ name, match }) => ({ name, formBundleNumber: match[2], filedOn: match[1] })),
+  };
 }
 
 const ACCOUNTS_STATEMENT_FIELDS = ["section477Exemption", "membersNotRequiredAudit", "directorsResponsibilities", "microEntityProvisions"];

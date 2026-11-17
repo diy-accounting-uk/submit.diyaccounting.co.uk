@@ -9,12 +9,15 @@ import { load } from "js-yaml";
 import { Secret } from "otpauth";
 
 import {
+  REVIEWER_BUNDLE_ID,
   REVIEWER_GROUP,
   REVIEWER_USERNAME,
   SAMPLE_BOOKS,
+  ensureReviewerBundle,
   ensureUser,
   saveSampleBooks,
   secretNames,
+  subOfAccessToken,
 } from "../../../scripts/ensure-mcp-reviewer-user.js";
 
 const PASSWORD = "Reviewer-Password-Value-7";
@@ -190,7 +193,7 @@ describe("saveSampleBooks", () => {
           stored.set(bookId, { bookId, latestETag: etag });
           return { ok: true, status: 200, json: async () => ({ metadata: { latestETag: etag } }) };
         }
-        return { ok: true, status: 200, json: async () => ({ entitlement: {}, books: [...stored.values()] }) };
+        return { ok: true, status: 200, json: async () => ({ books: [...stored.values()] }) };
       }),
     );
   });
@@ -211,6 +214,44 @@ describe("saveSampleBooks", () => {
     expect(stored.size).toBe(2);
     expect(puts.every((put) => put.authorization === "Bearer tok")).toBe(true);
   }, 60000);
+});
+
+describe("ensureReviewerBundle", () => {
+  const catalog = { bundles: [{ id: "resident-guest", tokensGranted: 3 }] };
+
+  test("gives a user with no bundle the resident-guest bundle with no expiry", async () => {
+    const putBundle = vi.fn(async () => {});
+    const granted = await ensureReviewerBundle({ sub: "sub-1", catalog, getUserBundles: async () => [], putBundle, log: () => {} });
+    expect(granted).toBe(true);
+    expect(REVIEWER_BUNDLE_ID).toBe("resident-guest");
+    expect(putBundle).toHaveBeenCalledWith("sub-1", {
+      bundleId: "resident-guest",
+      expiry: "",
+      actor: "test-user",
+      tokensGranted: 3,
+      tokensConsumed: 0,
+      tokenResetAt: null,
+    });
+  });
+
+  test("leaves a user that holds the bundle as it is", async () => {
+    const putBundle = vi.fn(async () => {});
+    const getUserBundles = async () => [{ bundleId: "resident-guest" }];
+    expect(await ensureReviewerBundle({ sub: "sub-1", catalog, getUserBundles, putBundle, log: () => {} })).toBe(false);
+    expect(putBundle).not.toHaveBeenCalled();
+  });
+
+  test("names a bundle that the catalogue lists and that the VAT form accepts", () => {
+    const toml = readFileSync("./web/public/submit.catalogue.toml", "utf8");
+    expect(toml).toMatch(/id = "resident-guest"[\s\S]*?hidden = true/);
+    const submitVat = toml.slice(toml.indexOf('id = "submit-vat"'));
+    expect(submitVat.slice(0, submitVat.indexOf("paths"))).toContain('"resident-guest"');
+  });
+
+  test("reads the sub claim of an access token", () => {
+    const token = ["h", Buffer.from(JSON.stringify({ sub: "abc-123" })).toString("base64url"), "s"].join(".");
+    expect(subOfAccessToken(token)).toBe("abc-123");
+  });
 });
 
 describe("mcp-reviewer-seed workflow", () => {

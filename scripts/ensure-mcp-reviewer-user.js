@@ -4,7 +4,7 @@
 
 // @capability MCP-26 Seed the demo reviewer user and its two sample books
 // - **Use when:** a directory reviewer's sign-in on the MCP consent page needs its user, its one-time code seed or its sample books to exist, or the weekly seed run needs tracing.
-// - **Does:** ensure-mcp-reviewer-user.js creates the user mcp-reviewer@test.diyaccounting.co.uk with no email, sets the password from the secret `<env>/submit/mcp/reviewer-password`, adds the user to the `mcp-reviewer` group and enrols one one-time code device whose seed it stores in `<env>/submit/mcp/reviewer-totp-seed`. It then signs the user in through app/lib/mcpReviewerSignIn.js and saves two sample books through mcp/lib/book-tools.js, which refreshes their 35 day expiry. A second run changes nothing but the books' versions. The user holds no bundle and no HMRC or Companies House grant. mcp-reviewer-seed.yml runs it weekly for ci and prod and on dispatch. It prints no password, seed or token.
+// - **Does:** ensure-mcp-reviewer-user.js creates the user mcp-reviewer@test.diyaccounting.co.uk with no email, sets the password from the secret `<env>/submit/mcp/reviewer-password`, adds the user to the `mcp-reviewer` group and enrols one one-time code device whose seed it stores in `<env>/submit/mcp/reviewer-totp-seed`. It then signs the user in through app/lib/mcpReviewerSignIn.js, gives it the hidden `resident-guest` bundle when it holds none, and saves two sample books through mcp/lib/book-tools.js, which refreshes their 35 day expiry. The bundle lets the VAT form that `prepare_vat_return` links to open for the user without a prompt to add a bundle. A second run changes nothing but the books' versions. The user holds no HMRC or Companies House grant. mcp-reviewer-seed.yml runs it weekly for ci and prod and on dispatch. It prints no password, seed or token.
 // - **Run:** `gh workflow run mcp-reviewer-seed.yml -f environment=<ci|prod>`; `DIYA_SUBMIT_BASE_URL=<base url> node scripts/ensure-mcp-reviewer-user.js <ci|prod>`
 // - **Entry:** `scripts/ensure-mcp-reviewer-user.js`; `.github/workflows/mcp-reviewer-seed.yml`
 // - **Files:** scripts/ensure-mcp-reviewer-user.js, .github/workflows/mcp-reviewer-seed.yml, app/lib/mcpReviewerSignIn.js, app/lib/totp.js, app/unit-tests/scripts/ensure-mcp-reviewer-user.test.js
@@ -20,7 +20,8 @@
 // The sign-in on the MCP consent page (app/functions/mcp/mcpOauth.js) signs this one user in with
 // the admin password flow and answers the one-time code challenge from the stored seed. This script
 // makes that possible: the user, the group that gives its token prod's tool set, a device whose
-// seed only the secret holds, and two saved books so "List my books" has an answer.
+// seed only the secret holds, a bundle so the VAT form opens with no prompt to add one, and two
+// saved books so "List my books" has an answer.
 //
 // A user that has a device but no stored seed cannot be answered or repaired, so it is deleted and
 // created again. Its books go with it and the run saves them again.
@@ -44,7 +45,10 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { totpCode } from "../app/lib/totp.js";
 import { signInReviewer } from "../app/lib/mcpReviewerSignIn.js";
-import { createSession, listBooks, openBook, saveBook } from "../mcp/lib/book-tools.js";
+import { createSession, listBookMetadata, openBook, saveBook } from "../mcp/lib/book-tools.js";
+import { getUserBundles, putBundle } from "../app/data/dynamoDbBundleRepository.js";
+import { initializeSalt } from "../app/services/subHasher.js";
+import { loadCatalogFromRoot } from "../app/services/productCatalog.js";
 
 export const REVIEWER_USERNAME = "mcp-reviewer@test.diyaccounting.co.uk";
 export const REVIEWER_GROUP = "mcp-reviewer";
@@ -208,7 +212,7 @@ export async function ensureUser({
  */
 export async function saveSampleBooks({ accessToken, books = SAMPLE_BOOKS, log = console.log }) {
   const session = createSession({ credentials: { accessToken: async () => accessToken, idToken: async () => null } });
-  const existing = new Map((await listBooks(session)).books.map((book) => [book.bookId, book]));
+  const existing = new Map((await listBookMetadata(session)).map((book) => [book.bookId, book]));
   const saved = [];
   for (const { bookId, path } of books) {
     await openBook(session, { path });
@@ -218,6 +222,43 @@ export async function saveSampleBooks({ accessToken, books = SAMPLE_BOOKS, log =
     saved.push(bookId);
   }
   return saved;
+}
+
+// The hidden bundle that the VAT form accepts with no payment and no time limit. Without a bundle
+// the form answers "Your account has no bundle that allows this" with a link to the Bundles page.
+export const REVIEWER_BUNDLE_ID = "resident-guest";
+
+// The subject claim of a Cognito access token.
+export function subOfAccessToken(accessToken) {
+  const payload = JSON.parse(Buffer.from(accessToken.split(".")[1], "base64url").toString("utf8"));
+  if (!payload.sub) throw new Error("The reviewer's access token carries no sub claim");
+  return payload.sub;
+}
+
+/**
+ * Gives the user the reviewer bundle when it holds none. The bundle has no expiry, so one grant
+ * lasts until the user is deleted and created again.
+ * @param {{sub: string, catalog: Object, getUserBundles: Function, putBundle: Function, log?: Function}} params
+ * @returns {Promise<boolean>} true when this call granted the bundle
+ */
+export async function ensureReviewerBundle({ sub, catalog, getUserBundles, putBundle, log = console.log }) {
+  const held = await getUserBundles(sub);
+  if (held.some((bundle) => bundle.bundleId === REVIEWER_BUNDLE_ID)) {
+    log(`The reviewer user holds the ${REVIEWER_BUNDLE_ID} bundle`);
+    return false;
+  }
+  const catalogBundle = catalog.bundles.find((bundle) => bundle.id === REVIEWER_BUNDLE_ID);
+  if (!catalogBundle) throw new Error(`The catalogue has no ${REVIEWER_BUNDLE_ID} bundle`);
+  await putBundle(sub, {
+    bundleId: REVIEWER_BUNDLE_ID,
+    expiry: "",
+    actor: "test-user",
+    tokensGranted: catalogBundle.tokensGranted,
+    tokensConsumed: 0,
+    tokenResetAt: null,
+  });
+  log(`Gave the reviewer user the ${REVIEWER_BUNDLE_ID} bundle`);
+  return true;
 }
 
 async function stackOutputs(environmentName) {
@@ -257,6 +298,10 @@ export async function main(environmentName = process.argv[2]) {
         trace: {},
       }),
   });
+  process.env.ENVIRONMENT_NAME = environmentName;
+  process.env.BUNDLE_DYNAMODB_TABLE_NAME = `${environmentName}-env-bundles`;
+  await initializeSalt();
+  await ensureReviewerBundle({ sub: subOfAccessToken(result.accessToken), catalog: loadCatalogFromRoot(), getUserBundles, putBundle });
   await saveSampleBooks({ accessToken: result.accessToken });
   console.log(`Reviewer user ready in ${environmentName}: created=${result.userCreated} deviceEnrolled=${result.deviceEnrolled}`);
 }

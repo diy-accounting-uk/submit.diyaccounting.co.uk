@@ -381,6 +381,51 @@
           them. An AI client can connect from its supplier's servers, so this address can be the supplier's address.
         </p>
 
+        <h3 id="hosted-mcp-answers">What the hosted MCP endpoint sends to your AI client</h3>
+        <p>
+          You can connect an AI client, such as ChatGPT, Claude or Gemini, to the hosted MCP endpoint. You sign in with your Submit account.
+          The client can then call six tools. Each tool answers with data from your own account only:
+        </p>
+        <ul>
+          <li><strong>Your saved books</strong>: the id, title and product of each book, and the period that it covers.</li>
+          <li>
+            <strong>An open book</strong>: the name of the business, the product, the period, the number of journal lines and the results of
+            the book checks.
+          </li>
+          <li>
+            <strong>A VAT return worked out from a book</strong>: the VAT registration number that the book holds, the nine VAT boxes, the
+            figures for each month, the due date and the journal lines behind boxes 1, 4, 6 and 7. For each journal line, the tool sends the
+            date, the account, the reference, the counterparty and the amounts. A counterparty is the name of a customer or a supplier in
+            your book.
+          </li>
+          <li>
+            <strong>A link to the VAT form</strong>: the address of the VAT form on this site. The part of the link after the "#" holds the
+            period, the seven figures that the form takes, the name of the book and the version of our calculation engine. Your browser
+            reads that part. It does not reach our servers.
+          </li>
+          <li>
+            <strong>Your VAT receipts</strong>: for each VAT return that you filed through Submit, the name of the receipt, HMRC's form
+            bundle number and the day that you filed. For one receipt, the date and time that HMRC processed the return, the form bundle
+            number, the payment indicator and the charge reference.
+          </li>
+        </ul>
+        <p>The tools send no internal identifier of your account, no session or request identifier and no log data.</p>
+        <p>
+          <strong>Purpose</strong>: the AI client uses the data to show you your books and to work out a VAT return. You then check the
+          return and file it yourself in your browser. We use the data for no other purpose.
+        </p>
+        <p>
+          <strong>Recipient</strong>: the supplier of the AI client that you connect. This is OpenAI for ChatGPT, Anthropic for Claude and
+          Google for Gemini. The supplier receives each answer and uses it under its own privacy policy and the settings of your account
+          with it. The supplier can process the data outside the UK.
+        </p>
+        <p>
+          <strong>Retention</strong>: we keep no copy of an answer. While you are connected, we keep a record of the connection that holds
+          the id of the open book. We delete that record 24 hours after its last use. We delete a saved book 35 days after its last save,
+          unless your account keeps books with no time limit. We keep VAT receipts for 7 years. The supplier of the AI client decides how
+          long it keeps the answers, under the settings of your account with it.
+        </p>
+
         <h3>HMRC Consent</h3>
         <p>
           When you authorize this application to submit VAT returns on your behalf, you do so through HMRC's own OAuth authorization flow.

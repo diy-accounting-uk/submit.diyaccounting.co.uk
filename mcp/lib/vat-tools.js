@@ -13,9 +13,19 @@
 
 // vat-tools.js -- derive_vat_return: the nine VAT boxes for one obligation
 // period from the session's loaded book. The derivation is the diya-gl
-// package's own; this module adds only the session's "no book loaded" check.
+// package's own; this module adds the session's "no book loaded" check and
+// keeps of each journal line only what a person checks a box against.
 
 import { deriveVatReturn as deriveVatReturnFromBook } from "@diy-accounting-uk/diya-gl";
+
+// The fields of a journal line behind a box. The engine also answers the line's entry and line
+// numbers, which are the book's own keys (a bank or Stripe transaction id among them), so the
+// tool leaves them out: the date, reference, counterparty and amount find the line in the book.
+const LINE_FIELDS = ["date", "account", "reference", "counterparty", "gross", "contributes"];
+
+function lineForPerson(line) {
+  return Object.fromEntries(LINE_FIELDS.map((field) => [field, line[field] ?? null]));
+}
 
 /**
  * derive_vat_return: the nine boxes for the quarter ending on periodEnd,
@@ -27,5 +37,7 @@ export async function deriveVatReturn(session, params = {}) {
   if (!session.book || !session.lines) {
     throw new Error("No book is loaded. Call open_book first.");
   }
-  return deriveVatReturnFromBook(session.book, session.lines, params);
+  const derived = await deriveVatReturnFromBook(session.book, session.lines, params);
+  const lines = Object.fromEntries(Object.entries(derived.lines).map(([box, boxLines]) => [box, boxLines.map(lineForPerson)]));
+  return { ...derived, lines };
 }

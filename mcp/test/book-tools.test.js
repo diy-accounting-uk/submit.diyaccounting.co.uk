@@ -27,6 +27,26 @@ const EXAMPLES = [
   { name: "Precision Code Ltd", dir: "precision-code-ltd-full", lineCount: 736 },
 ];
 
+// Every field diyaGlPut.js stores in a book's metadata.json, as the list route answers it.
+const STORED_METADATA = {
+  formatVersion: 1,
+  bookId: "book-1",
+  product: "ltd",
+  title: "BrickWork Pro Ltd",
+  latestVersion: 3,
+  latestETag: "etag-3",
+  latestSize: 41234,
+  versions: [{ version: 3, etag: "etag-3", size: 41234, createdAt: "2026-11-01T10:00:00.000Z" }],
+  retention: "resident",
+  expiresAt: null,
+  createdAt: "2026-10-01T10:00:00.000Z",
+  updatedAt: "2026-11-01T10:00:00.000Z",
+  periodCoveredStart: "2025-04-01",
+  periodCoveredEnd: "2026-03-31",
+  provenance: { source: "spreadsheet" },
+  entitlementAtPut: { retention: "resident", reason: "active-subscription", bundleId: "resident-pro" },
+};
+
 function figures(book, lines) {
   const product = productOf(book);
   return buildFileReportDocument(book, lines, product, productModule(product)).values;
@@ -198,14 +218,16 @@ describe("cloud books over the session's credentials", () => {
     const mockFetch = vi.fn(async () => ({
       ok: true,
       status: 200,
-      json: async () => ({ entitlement: { reason: "resident" }, books: [{ bookId: "book-1" }] }),
+      json: async () => ({ entitlement: { reason: "active-subscription" }, books: [STORED_METADATA] }),
     }));
     vi.stubGlobal("fetch", mockFetch);
 
     const own = await listBooks(session, {});
     await listBooks(session, { clientId: "client 1" });
 
-    expect(own).toEqual({ entitlement: { reason: "resident" }, books: [{ bookId: "book-1" }] });
+    expect(own).toEqual({
+      books: [{ bookId: "book-1", title: "BrickWork Pro Ltd", product: "ltd", period: { start: "2025-04-01", end: "2026-03-31" } }],
+    });
     expect(mockFetch.mock.calls.map(([url]) => url)).toEqual([
       "https://submit.diyaccounting.co.uk/api/v1/books",
       "https://submit.diyaccounting.co.uk/api/v1/books?clientId=client%201",

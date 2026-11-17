@@ -111,7 +111,10 @@ describe("derive_vat_return", () => {
         // 20, which only the straddling lines feed.
         const answer = await deriveVatReturn(session, { periodEnd: "2026-06-30" });
         const afterYear = straddling.filter((l) => l.sourceJournalID === "sales" && l["diya-gl:vatPeriodEnd"] > "2026-03-31");
-        expect(answer.lines.box1.map((l) => l.entryNumber).sort()).toEqual(afterYear.map((l) => l.entryNumber).sort());
+        const key = (date, reference) => `${date} ${reference}`;
+        expect(answer.lines.box1.map((l) => key(l.date, l.reference)).sort()).toEqual(
+          afterYear.map((l) => key(l.postingDate, l.documentReference ?? null)).sort(),
+        );
       });
 
       it("refuses a period end the book does not carry, and a start that does not open the quarter", async () => {

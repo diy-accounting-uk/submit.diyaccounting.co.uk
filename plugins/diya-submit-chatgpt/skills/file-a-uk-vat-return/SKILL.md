@@ -17,7 +17,7 @@ Use the DIY Accounting Submit plugin. It works out the return. The user files it
    2. Connect to HMRC when the page asks, then choose the obligation for this period.
    3. Read the figures on the page. They must match your table. The page works out boxes 3 and 5.
    4. Tick the declaration and submit.
-6. When the user comes back, call `list_vat_receipts` to find the receipt, then `get_vat_receipt` with its name. Read out the receipt: the period, the boxes filed and the date and time HMRC received it.
+6. When the user comes back, call `list_vat_receipts` to find the receipt, then `get_vat_receipt` with its name. Read out the receipt: the date and time HMRC processed the return, HMRC's form bundle number and, when the receipt has them, the charge reference and the payment indicator.
 
 What you never do:
 

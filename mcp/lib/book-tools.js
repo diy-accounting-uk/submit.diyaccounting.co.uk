@@ -107,13 +107,11 @@ async function bookChecksFor(book, lines) {
  * The summary open_book answers: what the book is, whose it is, which period
  * it covers, how many lines it holds, and the check and warning counts.
  */
-function summarise(session, kind, bookChecks) {
-  const { book, lines, product, sourcePath } = session;
+function summarise(session, bookChecks) {
+  const { book, lines, product } = session;
   const info = book.documentInfo ?? {};
   const entity = book.entityInformation ?? {};
   return {
-    kind,
-    sourcePath,
     product,
     entity: entity.organizationIdentifier ?? null,
     period: { start: isoDate(info.periodCoveredStart), end: isoDate(info.periodCoveredEnd) },
@@ -124,14 +122,15 @@ function summarise(session, kind, bookChecks) {
 }
 
 /**
- * list_books: the books saved in the DIYA cloud, most recently updated first, over the route the
- * spreadsheets site's DIYA-GL pages list (GET /api/v1/books). Each row is a book's metadata, whose
- * bookId open_book takes. clientId lists a practice client's book set instead of the practice's own.
+ * The metadata of each book saved in the DIYA cloud, most recently updated first, over the route
+ * the spreadsheets site's DIYA-GL pages list (GET /api/v1/books): every field the route stores,
+ * the etag a replacing save sends among them. clientId lists a practice client's book set instead
+ * of the practice's own.
  * @param {Object} session
  * @param {{clientId?: string}} params
- * @returns {Promise<{entitlement: Object, books: Object[]}>}
+ * @returns {Promise<Object[]>}
  */
-export async function listBooks(session, { clientId } = {}) {
+export async function listBookMetadata(session, { clientId } = {}) {
   const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
   const response = await fetch(`${baseUrl()}/api/v1/books${query}`, {
     headers: { Authorization: `Bearer ${await session.credentials.accessToken()}` },
@@ -140,7 +139,29 @@ export async function listBooks(session, { clientId } = {}) {
   if (!response.ok) {
     throw new Error(body?.message || `list_books failed with HTTP ${response.status}`);
   }
-  return { entitlement: body.entitlement, books: body.books ?? [] };
+  return body.books ?? [];
+}
+
+/**
+ * list_books: the saved books, most recently updated first, each as the bookId open_book takes,
+ * the title, the product and the period the book covers. The route's other fields (its versions,
+ * etags, sizes, times, retention and the account's entitlement) answer no question a person asks
+ * about their books, so the tool leaves them out.
+ * @param {Object} session
+ * @param {{clientId?: string}} params
+ * @returns {Promise<{books: Array<{bookId: string, title: string|null, product: string|null,
+ *   period: {start: string|null, end: string|null}}>}>}
+ */
+export async function listBooks(session, { clientId } = {}) {
+  const books = await listBookMetadata(session, { clientId });
+  return {
+    books: books.map((book) => ({
+      bookId: book.bookId,
+      title: book.title ?? null,
+      product: book.product ?? null,
+      period: { start: isoDate(book.periodCoveredStart), end: isoDate(book.periodCoveredEnd) },
+    })),
+  };
 }
 
 /**
@@ -169,7 +190,7 @@ async function openCloudBook(session, { bookId, clientId } = {}) {
   session.sourcePath = null;
   session.cloud = { bookId, clientId: clientId ?? null, etag: body.metadata.latestETag };
 
-  return summarise(session, "cloud", await bookChecksFor(book, lines));
+  return summarise(session, await bookChecksFor(book, lines));
 }
 
 /**
@@ -220,7 +241,7 @@ export async function openBook(session, { path, cloud, bookId, clientId } = {}) 
   session.product = product;
   session.sourcePath = resolved;
 
-  return summarise(session, kind, await bookChecksFor(book, lines));
+  return { kind, sourcePath: resolved, ...summarise(session, await bookChecksFor(book, lines)) };
 }
 
 function refuseUnlessValid(book, lines) {
