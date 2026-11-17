@@ -241,7 +241,7 @@ export function renderFilingPage(page, pages, catalog, manifest, sources, compar
       </div>
 
       <div class="form-container">
-        <h2>The steps</h2>
+        <h2>The steps</h2>${page.pictures_note ? `<p>${escapeHtml(page.pictures_note)}</p>` : ""}
         <ol class="guide-steps-list">${steps}</ol>
         ${videoLinkHtml(video)}
       </div>

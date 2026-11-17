@@ -6,7 +6,7 @@
 // without frames lists text steps. A frame opens full size in the lightbox.
 
 import { fetchActivityListing } from "./lib/services/content-listing.js";
-import { GROUPS, splitTitle } from "./lib/guide-journeys.js";
+import { GROUPS, splitTitle, TEST_PERIODS_NOTE, TEST_PERIODS_GROUP_TITLE } from "./lib/guide-journeys.js";
 
 const MANIFEST_URL = "videos/publish.json";
 
@@ -74,14 +74,16 @@ function textStep([headline, caption], stepId) {
   return item;
 }
 
-function journeyElement(id, title, note, steps) {
+function journeyElement(id, title, note, steps, leadText = "") {
   const details = el("details", "guide-journey");
   details.id = id;
   const summary = el("summary", "", title);
   if (note) summary.append(el("span", "guide-journey-note", note));
   const list = el("ol", "guide-steps-list");
   list.append(...steps);
-  details.append(summary, list);
+  details.append(summary);
+  if (leadText) details.append(el("p", "guide-test-note", leadText));
+  details.append(list);
   return details;
 }
 
@@ -115,6 +117,7 @@ function render(container, videos, isListed) {
             title,
             note,
             video.walkthrough.map((scene, index) => frameStep(scene, `${video.id}-step-${index + 1}`)),
+            group.title === TEST_PERIODS_GROUP_TITLE ? TEST_PERIODS_NOTE : "",
           ),
         );
         addJump(jumpList, video.id, title);

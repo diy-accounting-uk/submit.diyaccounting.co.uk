@@ -4,6 +4,13 @@
 // The guide's journeys and the wording of their titles. The guide page script renders them in the
 // browser and the build script that writes the committed guide page reads the same list.
 
+/** The line above the steps of a VAT journey: HMRC's test service returns fixed periods, so its pictures show them. */
+export const TEST_PERIODS_NOTE =
+  "These pictures come from HMRC's test service, which uses periods from 2017. Your screen shows your own periods.";
+
+/** The title of the group whose journeys show HMRC's test periods. */
+export const TEST_PERIODS_GROUP_TITLE = "VAT";
+
 export const GROUPS = [
   {
     title: "VAT",

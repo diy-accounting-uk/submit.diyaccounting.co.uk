@@ -69,6 +69,14 @@ describe("the guide page", () => {
     expect(html).not.toContain("| DIY Accounting Submit</a>");
   });
 
+  test("each VAT journey carries the line about HMRC's test periods and no other group does", () => {
+    const html = renderGuideJourneys(loadManifest(), catalog);
+    const vatGroup = html.slice(0, html.indexOf("<h2>Companies House</h2>"));
+    const rest = html.slice(vatGroup.length);
+    expect(vatGroup.match(/class="guide-test-note"/g)?.length).toBe(vatGroup.match(/<details/g).length);
+    expect(rest).not.toContain("guide-test-note");
+  });
+
   test("a journey whose video names an activity that prod does not list is left out", () => {
     const manifest = loadManifest();
     const unlisted = manifest.videos.find((video) => video.catalogueActivity === "file-company-tax-return");

@@ -32,8 +32,14 @@ const HEADLINE_CONTROL_SELECTOR = "input, select, textarea, button, a[href]";
 const HEADLINE_TEXT_SELECTOR = "label, legend, h1, h2, h3, h4, th, td, p, li";
 const HEADLINE_GROUP_SELECTOR = ".form-group, fieldset";
 
-export async function installOverlay(page) {
-  await page.addInitScript({ content: runtimeSource });
+/**
+ * Installs the overlay on every document of the page.
+ * @param {object} page - The Playwright page
+ * @param {{suppress?: string[], replaceText?: {from: string, to: string}}} [config] - What each document hides and rewrites from its first paint
+ */
+export async function installOverlay(page, config) {
+  const prefix = config ? `window.__svcConfig = ${JSON.stringify(config)};\n` : "";
+  await page.addInitScript({ content: prefix + runtimeSource });
 }
 
 function isExecutionContextDestroyed(err) {

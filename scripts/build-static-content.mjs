@@ -22,7 +22,7 @@ import TOML from "@iarna/toml";
 import { isActivityListedInEnvironment } from "../app/services/productCatalog.js";
 import { escapeHtml, replaceBetweenMarkers } from "./page-markers.mjs";
 import { renderFaqItem } from "../web/public/lib/faq-markdown.js";
-import { GROUPS, splitTitle } from "../web/public/lib/guide-journeys.js";
+import { GROUPS, splitTitle, TEST_PERIODS_NOTE, TEST_PERIODS_GROUP_TITLE } from "../web/public/lib/guide-journeys.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PUBLIC_DIRECTORY = join(ROOT, "web", "public");
@@ -77,9 +77,10 @@ function guideTextStepHtml([headline, caption], stepId) {
   return guideStepHtml({ headline, caption }, stepId);
 }
 
-function guideJourneyHtml(id, title, note, stepsHtml) {
+function guideJourneyHtml(id, title, note, stepsHtml, leadText = "") {
   const noteHtml = note ? `<span class="guide-journey-note">${escapeHtml(note)}</span>` : "";
-  return `<details class="guide-journey" id="${escapeHtml(id)}"><summary>${escapeHtml(title)}${noteHtml}</summary><ol class="guide-steps-list">${stepsHtml.join("")}</ol></details>`;
+  const leadHtml = leadText ? `<p class="guide-test-note">${escapeHtml(leadText)}</p>` : "";
+  return `<details class="guide-journey" id="${escapeHtml(id)}"><summary>${escapeHtml(title)}${noteHtml}</summary>${leadHtml}<ol class="guide-steps-list">${stepsHtml.join("")}</ol></details>`;
 }
 
 export function renderGuideJourneys(manifest, catalog) {
@@ -93,7 +94,11 @@ export function renderGuideJourneys(manifest, catalog) {
         if (!Array.isArray(video.walkthrough) || video.walkthrough.length === 0) continue;
         const { title, note } = splitTitle(video.title);
         const steps = video.walkthrough.map((scene, index) => guideStepHtml(scene, `${video.id}-step-${index + 1}`));
-        journeys.push({ id: video.id, title, html: guideJourneyHtml(video.id, title, note, steps) });
+        journeys.push({
+          id: video.id,
+          title,
+          html: guideJourneyHtml(video.id, title, note, steps, group.title === TEST_PERIODS_GROUP_TITLE ? TEST_PERIODS_NOTE : ""),
+        });
       } else {
         if (!isListedEverywhere(catalog, journey.catalogueActivity)) continue;
         const steps = journey.steps.map((step, index) => guideTextStepHtml(step, `${journey.id}-step-${index + 1}`));

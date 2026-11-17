@@ -75,6 +75,12 @@ describe("filing pages", () => {
     expect(read("web/public/confirmation-statement.html")).toContain("£61.35");
   });
 
+  test("the VAT page says its pictures use HMRC's test periods and the other pages do not", () => {
+    const note = "These pictures come from HMRC's test service, which uses periods from 2017. Your screen shows your own periods.";
+    expect(read("web/public/vat-return-from-a-spreadsheet.html")).toContain(note);
+    expect(read("web/public/micro-entity-accounts.html")).not.toContain("test service");
+  });
+
   test("the VAT page offers the free day pass and the accounts pages do not", () => {
     expect(read("web/public/vat-return-from-a-spreadsheet.html")).toContain("gives you 3 submissions");
     expect(read("web/public/micro-entity-accounts.html")).not.toContain("gives you 3 submissions");

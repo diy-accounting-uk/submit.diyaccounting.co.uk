@@ -134,16 +134,21 @@ function fakeDocument() {
 
 describe("overlay-runtime.js", () => {
   let scheduledDomContentLoaded;
+  let scheduledCallbacks;
 
   beforeEach(() => {
     scheduledDomContentLoaded = null;
+    scheduledCallbacks = [];
     globalThis.document = fakeDocument();
     // A capture under --scene fast-forward can call an overlay method microseconds after a
     // navigation, before this document's own DOMContentLoaded has fired. Never invoking the
     // scheduled callback in these tests keeps that the case throughout: every assertion below
     // proves the element got built by the method call itself, not by ready()'s own listener.
     globalThis.document.addEventListener = (type, fn) => {
-      if (type === "DOMContentLoaded") scheduledDomContentLoaded = fn;
+      if (type === "DOMContentLoaded") {
+        scheduledDomContentLoaded = fn;
+        scheduledCallbacks.push(fn);
+      }
     };
     globalThis.window = { innerWidth: 1920, innerHeight: 1080, devicePixelRatio: 1, addEventListener() {} };
     globalThis.performance = { now: () => 0 };
@@ -220,5 +225,24 @@ describe("overlay-runtime.js", () => {
     const svc = loadRuntime();
 
     expect(() => svc.chapter("Sign in to HMRC")).not.toThrow();
+  });
+
+  test("hides the configured selectors from the first paint of a document, with no suppress() call", () => {
+    globalThis.window.__svcConfig = { suppress: ["#syntheticIndicator", '.main-nav a[data-activity="practice"]'] };
+    loadRuntime();
+
+    scheduledCallbacks.forEach((callback) => callback());
+
+    const sheet = globalThis.document.head.children.find((node) => node.id === "__svc-suppress");
+    expect(sheet.textContent).toContain("#syntheticIndicator{display:none !important}");
+    expect(sheet.textContent).toContain('.main-nav a[data-activity="practice"]{display:none !important}');
+  });
+
+  test("a document with no configuration gets no suppress sheet", () => {
+    loadRuntime();
+
+    scheduledCallbacks.forEach((callback) => callback());
+
+    expect(globalThis.document.head.children.find((node) => node.id === "__svc-suppress")).toBeUndefined();
   });
 });

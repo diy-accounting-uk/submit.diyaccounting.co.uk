@@ -59,6 +59,8 @@ import { substituteValues } from "./lib/video/values.js";
 import { buildCaptureManifest, writeCaptureManifest } from "./lib/video/pipelineVersion.js";
 import { collectSecrets, assertNoSecrets } from "./lib/video/secrets.js";
 import { writeCardFreeStill } from "./lib/video/stepStill.js";
+import { captureOverlayConfig } from "./lib/video/captureOverlayConfig.js";
+import TOML from "@iarna/toml";
 import { synthesizeSpeech, audioDurationMs } from "./lib/video/narration.js";
 
 const ANALYTICS_URL_FRAGMENTS = ["google-analytics", "googletagmanager", "analytics.js", "gtag/js", "client.rum"];
@@ -464,7 +466,8 @@ async function main() {
   // verifyLoggedInStatus on the ci itsa-year capture.
   page.setDefaultTimeout(60000);
   if (addOnPageLogging) addOnPageLogging(page);
-  await installOverlay(page);
+  const catalogue = TOML.parse(fs.readFileSync(path.resolve("web/public/submit.catalogue.toml"), "utf8"));
+  await installOverlay(page, captureOverlayConfig(script, catalogue, journey?.authUsername || null));
   if (installCredentialFieldMask) await installCredentialFieldMask(page, args.baseUrl);
 
   const captureEnabled = !args.stillsOnly;

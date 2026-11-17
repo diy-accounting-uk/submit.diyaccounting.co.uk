@@ -56,6 +56,12 @@
   margin-left: var(--space-2);
 }
 
+.guide-test-note {
+  margin: 0;
+  padding: var(--space-3) var(--space-4) 0;
+  color: var(--c-ink-muted);
+}
+
 .guide-steps-list {
   list-style: none;
   counter-reset: guide-step;
