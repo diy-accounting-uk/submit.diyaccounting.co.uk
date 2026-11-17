@@ -53,4 +53,24 @@ class OpenApiGeneratorTest {
         }
         assertTrue(html.contains("<script src=\"index.page.js\"></script>"));
     }
+
+    @Test
+    void buildReproducesTheCommittedSpecFiles(@TempDir Path outputDir) throws IOException {
+        String pomText = Files.readString(Path.of("pom.xml"));
+        Matcher projectVersion = Pattern.compile("<artifactId>web</artifactId>\\s*<version>([^<]+)</version>")
+                .matcher(pomText);
+        assertTrue(projectVersion.find(), "pom.xml project version not found");
+        Matcher baseUrl = Pattern.compile("<baseUrl>([^<]+)</baseUrl>").matcher(pomText);
+        assertTrue(baseUrl.find(), "pom.xml baseUrl property not found");
+
+        OpenApiGenerator.main(new String[] {baseUrl.group(1), projectVersion.group(1), outputDir.toString()});
+
+        Path committed = Path.of("web/public/docs/api");
+        for (String file : new String[] {"openapi.json", "openapi.yaml"}) {
+            assertEquals(
+                    Files.readString(committed.resolve(file)),
+                    Files.readString(outputDir.resolve(file)),
+                    committed.resolve(file) + " differs from what the build writes; run ./mvnw package and commit it");
+        }
+    }
 }

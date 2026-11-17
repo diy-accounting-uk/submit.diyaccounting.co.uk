@@ -480,7 +480,6 @@ public class AccountNames {
                         new ApiParameter("service", "body", true, "MTD-VAT or MTD-IT"),
                         new ApiParameter(
                                 "knownFact", "body", true, "The VAT registration date, or the client's postcode"),
-                        new ApiParameter("accessToken", "body", true, "The practice's HMRC access token"),
                         new ApiParameter(
                                 "arn",
                                 "body",
