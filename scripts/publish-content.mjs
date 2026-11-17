@@ -34,6 +34,7 @@ import {
   tokenCostLabel,
 } from "../web/public/lib/services/catalog-service.js";
 import { AREA_PAGES, FEATURED_IDS } from "../web/public/widgets/video-pages.js";
+import { videoHeading } from "../web/public/lib/guide-journeys.js";
 import { escapeHtml, replaceBetweenMarkers } from "./page-markers.mjs";
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -75,10 +76,6 @@ function areaPageOf(video) {
   return AREA_PAGES[video.group] ?? INDEX_PAGE;
 }
 
-function shortTitle(video) {
-  return video.title.replace(/ \| DIY Accounting Submit$/, "");
-}
-
 function trimTrailingPunctuation(url) {
   const trailing = /[.,;:!?)]+$/.exec(url)?.[0] ?? "";
   return { url: url.slice(0, url.length - trailing.length), trailing };
@@ -105,7 +102,9 @@ export function resolveDescription(description, videosById) {
     last = match.index + match[0].length;
     if (match[1]) {
       const target = videosById.get(match[1]);
-      pieces.push(target ? { text: shortTitle(target), href: `${areaPageOf(target)}#${target.id}` } : { text: "the related video" });
+      pieces.push(
+        target ? { text: videoHeading(target.title), href: `${areaPageOf(target)}#${target.id}` } : { text: "the related video" },
+      );
     } else {
       const { url, trailing } = trimTrailingPunctuation(match[0]);
       const shown = withoutQueryOnOwnSite(url);
@@ -169,7 +168,7 @@ export function renderVideoPageBlock(pageVideos, videosById, uploadDateOf) {
       const paragraphs = paragraphsOf(description.html)
         .map((paragraph) => `<p>${paragraph}</p>`)
         .join("");
-      return `<section class="video-section" id="${escapeHtml(video.id)}" data-video-id="${escapeHtml(video.videoId)}"><h2>${escapeHtml(video.title)}</h2>${paragraphs}<p><a href="${WATCH_BASE}${encodeURIComponent(video.videoId)}"><img src="${thumbnailUrl(video)}" alt="Thumbnail of the video: ${escapeHtml(shortTitle(video))}" width="480" height="360" loading="lazy" /></a></p>${jsonLd}</section>`;
+      return `<section class="video-section" id="${escapeHtml(video.id)}" data-video-id="${escapeHtml(video.videoId)}"><h2>${escapeHtml(videoHeading(video.title))}</h2>${paragraphs}<p><a href="${WATCH_BASE}${encodeURIComponent(video.videoId)}"><img src="${thumbnailUrl(video)}" alt="Thumbnail of the video: ${escapeHtml(videoHeading(video.title))}" width="480" height="360" loading="lazy" /></a></p>${jsonLd}</section>`;
     })
     .join("");
 }

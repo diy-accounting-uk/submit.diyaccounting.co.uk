@@ -62,6 +62,23 @@ describe("publish-content videos", () => {
     expect(html).not.toContain("VideoObject");
   });
 
+  test("a page heading drops the channel prefix and suffix and starts with a capital", () => {
+    const videos = [
+      {
+        id: "a",
+        videoId: "AAAAAAAAAAA",
+        group: "vat",
+        title: "How to submit a VAT return under MTD | DIY Accounting Submit",
+        description: "x",
+      },
+      { id: "b", videoId: "BBBBBBBBBBB", group: "vat", title: "DIY Accounting Submit: sign in and take out a day pass", description: "x" },
+    ];
+    const html = renderVideoPageBlock(videos, new Map(), () => undefined);
+    expect(html).toContain("<h2>How to submit a VAT return under MTD</h2>");
+    expect(html).toContain("<h2>Sign in and take out a day pass</h2>");
+    expect(html).not.toContain(" | ");
+  });
+
   test("a link to one of our own sites loses its query string and a video link names the video", () => {
     const videos = new Map([["other", { id: "other", group: "vat", title: "How to do it | DIY Accounting Submit" }]]);
     const { text, html } = resolveDescription(

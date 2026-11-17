@@ -8,12 +8,13 @@
 // videos-accounting.html) carries every video of its own group, plus the same full contents, or
 // says none is published yet when its group has nothing uploaded. A hash on the index naming a
 // video that is published but not featured there redirects to that video's area page. And
-// about.html carries the button that leads to the index.
+// about.html carries the link that leads to the index.
 
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { AREA_PAGES, FEATURED_IDS } from "../public/widgets/video-pages.js";
+import { videoHeading } from "../public/lib/guide-journeys.js";
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const MANIFEST = JSON.parse(fs.readFileSync(path.join(process.cwd(), "videos/publish.json"), "utf8"));
@@ -73,9 +74,9 @@ async function assertSections(page, videos) {
   for (const video of videos) {
     const section = page.locator(`section.video-section#${video.id}`);
     await expect(section).toHaveCount(1);
-    await expect(section.locator("h2")).toHaveText(video.title);
+    await expect(section.locator("h2")).toHaveText(videoHeading(video.title));
     await expect(section.locator("iframe")).toHaveCount(0);
-    await expect(section.locator("button.video-facade")).toHaveAttribute("aria-label", `Play video: ${video.title}`);
+    await expect(section.locator("button.video-facade")).toHaveAttribute("aria-label", `Play video: ${videoHeading(video.title)}`);
     await section.locator("button.video-facade").click();
     await expect(section.locator("iframe")).toHaveAttribute("src", `https://www.youtube-nocookie.com/embed/${video.videoId}?autoplay=1`);
     await expect(section.locator("button.video-facade")).toHaveCount(0);
@@ -186,7 +187,7 @@ test.describe("videos-hmrc-itsa.html", () => {
     await assertSections(page, itsaVideos);
     for (const video of itsaVideos) {
       expect(video.captionFile).toMatch(/\.vtt$/);
-      await expect(page.locator(`section.video-section#${video.id} iframe`)).toHaveAttribute("title", video.title);
+      await expect(page.locator(`section.video-section#${video.id} iframe`)).toHaveAttribute("title", videoHeading(video.title));
     }
   });
 });
@@ -194,7 +195,7 @@ test.describe("videos-hmrc-itsa.html", () => {
 test.describe("relabelled and stripped titles", () => {
   const relabelled = EMBEDDED.find((v) => v.id === "itsa-quarterly-update");
   const stripped = EMBEDDED.find((v) => v.id === "change-registered-email");
-  const contentsText = (video) => video.title.replace("DIY Accounting Submit: ", "");
+  const contentsText = (video) => videoHeading(video.title);
 
   test("a video of a feature not yet on prod carries its sandbox label in its heading, iframe title and Contents link", async ({
     page,
@@ -203,9 +204,9 @@ test.describe("relabelled and stripped titles", () => {
     await serveRealSite(page);
     await page.goto("http://localhost:3000/videos-hmrc-itsa.html", { waitUntil: "domcontentloaded" });
     const section = page.locator(`section.video-section#${relabelled.id}`);
-    await expect(section.locator("h2")).toHaveText(relabelled.title);
+    await expect(section.locator("h2")).toHaveText(videoHeading(relabelled.title));
     await section.locator("button.video-facade").click();
-    await expect(section.locator("iframe")).toHaveAttribute("title", relabelled.title);
+    await expect(section.locator("iframe")).toHaveAttribute("title", videoHeading(relabelled.title));
     await expect(page.locator(`nav a[href$="#${relabelled.id}"]`).first()).toHaveText(contentsText(relabelled));
   });
 
@@ -214,9 +215,9 @@ test.describe("relabelled and stripped titles", () => {
     await serveRealSite(page);
     await page.goto("http://localhost:3000/videos-ch.html", { waitUntil: "domcontentloaded" });
     const section = page.locator(`section.video-section#${stripped.id}`);
-    await expect(section.locator("h2")).toHaveText(stripped.title);
+    await expect(section.locator("h2")).toHaveText(videoHeading(stripped.title));
     await section.locator("button.video-facade").click();
-    await expect(section.locator("iframe")).toHaveAttribute("title", stripped.title);
+    await expect(section.locator("iframe")).toHaveAttribute("title", videoHeading(stripped.title));
     await expect(page.locator(`nav a[href$="#${stripped.id}"]`).first()).toHaveText(contentsText(stripped));
   });
 });
@@ -261,7 +262,7 @@ test.describe("videos-accounting.html", () => {
     await page.goto("http://localhost:3000/videos.html", { waitUntil: "domcontentloaded" });
     await expect(page.locator("#videoContents h3", { hasText: "How to do your accounts" })).toHaveCount(1);
     const link = page.locator(`#videoContents a[href="${AREA_PAGES.accounting}#${uploaded.id}"]`);
-    await expect(link).toHaveText(uploaded.title.replace("DIY Accounting: ", ""));
+    await expect(link).toHaveText(videoHeading(uploaded.title));
   });
 
   test("a hash on the index naming an accounting video redirects to the accounting page", async ({ page }) => {
@@ -426,11 +427,11 @@ test.describe("walkthrough under a video", () => {
 });
 
 test.describe("about.html", () => {
-  test("carries the Watch the walkthroughs button linking to videos.html", async ({ page }) => {
+  test("carries the Walkthrough videos link to videos.html", async ({ page }) => {
     await serveRealSite(page);
     await page.goto("http://localhost:3000/about.html", { waitUntil: "domcontentloaded" });
 
-    const button = page.locator("a.btn", { hasText: "Watch the walkthroughs" });
+    const button = page.locator("a.about-nav-link", { hasText: "Walkthrough videos" });
     await expect(button).toBeVisible();
     await expect(button).toHaveAttribute("href", "videos.html");
   });

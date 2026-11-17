@@ -118,3 +118,10 @@ export function splitTitle(raw) {
   const startsWithProductName = title.startsWith("diya-gl");
   return { title: startsWithProductName ? title : title.charAt(0).toUpperCase() + title.slice(1), note };
 }
+
+// The title a video page shows: the manifest title without its channel prefix or suffix, with a
+// capital letter first, and its note (sandbox, preview) kept in brackets.
+export function videoHeading(raw) {
+  const { title, note } = splitTitle(raw);
+  return note ? `${title} (${note})` : title;
+}

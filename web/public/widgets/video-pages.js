@@ -8,11 +8,11 @@
 
 import { walkthroughElement, wireWalkthrough, openSceneFromHash, sceneForHash, sceneAnchor } from "./video-walkthrough.js";
 import { fetchActivityListing } from "../lib/services/content-listing.js";
+import { videoHeading } from "../lib/guide-journeys.js";
 
 const MANIFEST_URL = "videos/publish.json";
 const EMBED_BASE = "https://www.youtube-nocookie.com/embed/";
 const THUMBNAIL_BASE = "https://i.ytimg.com/vi/";
-const TITLE_PREFIXES = ["DIY Accounting Submit: ", "DIY Accounting: "];
 
 const GROUP_LABELS = {
   "vat": "VAT",
@@ -36,14 +36,6 @@ export const FEATURED_IDS = ["submit-return", "itsa-quarterly-update", "sign-in"
 
 function areaPageForGroup(group) {
   return AREA_PAGES[group] ?? "videos.html";
-}
-
-// The section heading keeps the full title; only a Contents link drops the prefix every title
-// repeats, since the page's own heading already says whose product this is.
-function contentsLinkText(title) {
-  const text = String(title ?? "");
-  const prefix = TITLE_PREFIXES.find((p) => text.startsWith(p));
-  return prefix ? text.slice(prefix.length) : text;
 }
 
 // Buckets videos by their publish.json "group", one bucket per group in the order the group
@@ -72,7 +64,7 @@ function contentsGroupElements(group) {
     ...group.videos.map((video) => {
       const link = document.createElement("a");
       link.href = areaLinkHref(video);
-      link.textContent = contentsLinkText(video.title);
+      link.textContent = videoHeading(video.title);
       const item = document.createElement("li");
       item.append(link);
       return item;
@@ -108,7 +100,7 @@ function shareLink(video) {
 function embedElement(video) {
   const iframe = document.createElement("iframe");
   iframe.src = `${EMBED_BASE}${encodeURIComponent(video.videoId)}?autoplay=1`;
-  iframe.title = video.title;
+  iframe.title = videoHeading(video.title);
   iframe.allow = "autoplay; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
   iframe.referrerPolicy = "strict-origin-when-cross-origin";
   iframe.allowFullscreen = true;
@@ -122,7 +114,7 @@ function sectionElement(video) {
   section.dataset.videoId = video.videoId;
 
   const heading = document.createElement("h2");
-  heading.textContent = video.title;
+  heading.textContent = videoHeading(video.title);
   const summary = document.createElement("p");
   summary.textContent = firstTwoSentences(video.description);
 
@@ -131,7 +123,7 @@ function sectionElement(video) {
   const facade = document.createElement("button");
   facade.type = "button";
   facade.className = "video-facade";
-  facade.setAttribute("aria-label", `Play video: ${video.title}`);
+  facade.setAttribute("aria-label", `Play video: ${videoHeading(video.title)}`);
   const poster = document.createElement("img");
   poster.src = `${THUMBNAIL_BASE}${encodeURIComponent(video.videoId)}/hqdefault.jpg`;
   poster.alt = "";
@@ -155,13 +147,13 @@ function sectionElement(video) {
   link.className = "video-link";
   link.href = areaLinkHref(video);
   link.textContent = "Link to this video";
-  link.setAttribute("aria-label", `Link to this video: ${video.title}`);
+  link.setAttribute("aria-label", `Link to this video: ${videoHeading(video.title)}`);
   const button = document.createElement("button");
   button.type = "button";
   button.className = "btn btn-small copy-link";
   button.dataset.target = video.id;
   button.textContent = "Copy link";
-  button.setAttribute("aria-label", `Copy link: ${video.title}`);
+  button.setAttribute("aria-label", `Copy link: ${videoHeading(video.title)}`);
   const copied = document.createElement("span");
   copied.className = "copied";
   copied.hidden = true;
