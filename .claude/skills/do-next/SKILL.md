@@ -216,6 +216,10 @@ A fresh agent carries none of your context, so the brief stands alone. Every bri
 - **Its worktree path and branch**, and that it works only there. It may `git add` its own files
   and commit. Never `git stash`, `git reset`, `git checkout --` or `git clean`. Never push, never
   open a PR, never edit `NEXT.md`.
+- **Its pre-commit checks.** Before each commit the agent runs every generator that its changed
+  files feed (the coordinator names them in the brief), `npx prettier --check` on its changed
+  files, and each test file that names a string, a selector or an address it changed. It finds
+  those files with `grep -rn` over `web/browser-tests`, `behaviour-tests` and `app/unit-tests`.
 - **It must not call the `Agent` tool or fork.** Only the coordinator fans out. A brief whose work
   needs splitting is split by the coordinator before dispatch, not handed to the worker to split
   itself — a worker that forked itself recursively once ran to 0.78M reported tokens with
