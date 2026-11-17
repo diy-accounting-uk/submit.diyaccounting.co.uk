@@ -248,12 +248,12 @@ test.describe("HMRC Assist check on the VAT return, in English and Welsh", () =>
     expect(acknowledgeRequests[0].presentedLanguage).toBe("en");
   });
 
-  test("remembers the chosen language for the session and records it in the acknowledgement", async ({ page }) => {
+  test("stores the chosen language as the site's one language choice and records it in the acknowledgement", async ({ page }) => {
     const { acknowledgeRequests } = await openForm(page, { report: bilingualReport });
     await fillBoxes(page);
     await page.locator("#hmrcAssistCheckBtn").click();
     await page.locator("#hmrcAssistLanguage-cy").click();
-    await expect.poll(() => page.evaluate(() => sessionStorage.getItem("hmrcAssistLanguage"))).toBe("cy");
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("siteLanguage"))).toBe("cy");
 
     await page.locator("#vatDueSales").fill("101.00");
     await page.locator("#vatDueSales").blur();
@@ -431,7 +431,7 @@ test.describe("HMRC Assist check on the VAT return", () => {
 
   test("shows the stop label in Welsh when the Welsh switch is on", async ({ page }) => {
     await page.clock.install();
-    await page.addInitScript(() => sessionStorage.setItem("hmrcAssistLanguage", "cy"));
+    await page.addInitScript(() => localStorage.setItem("siteLanguage", "cy"));
     await openForm(page);
     await fillBoxes(page);
     await page.locator("#hmrcAssistCheckBtn").click();

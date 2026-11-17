@@ -12,7 +12,6 @@
 
   const MAX_MESSAGES = 5;
   const UNACKNOWLEDGED_KEY = "hmrcAssistUnacknowledged";
-  const LANGUAGE_KEY = "hmrcAssistLanguage";
   const LANGUAGES = [
     { code: "en", label: "English" },
     { code: "cy", label: "Cymraeg" },
@@ -48,20 +47,13 @@
     }
   }
 
+  // The reader's one language choice, which page-chrome.js keeps; without it the feedback opens in English.
   function readLanguage() {
-    try {
-      return sessionStorage.getItem(LANGUAGE_KEY) === "cy" ? "cy" : "en";
-    } catch {
-      return "en";
-    }
+    return window.siteLanguage?.current() === "cy" ? "cy" : "en";
   }
 
   function writeLanguage(language) {
-    try {
-      sessionStorage.setItem(LANGUAGE_KEY, language);
-    } catch {
-      // Session storage unavailable: the choice is lost on the next page.
-    }
+    window.siteLanguage?.store(language);
   }
 
   function markUnacknowledged(kind, key, reportId) {
