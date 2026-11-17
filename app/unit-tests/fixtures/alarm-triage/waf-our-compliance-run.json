@@ -18,10 +18,7 @@
     "alarmFound": true,
     "deploymentLive": true,
     "liveDeployment": "zz9fig",
-    "logGroupNamePrefixes": [
-      "aws-waf-logs-prod-zz9fig-app",
-      "/aws/lambda/prod-zz9fig-app-waf-scan-detect"
-    ],
+    "logGroupNamePrefixes": ["aws-waf-logs-prod-zz9fig-app", "/aws/lambda/prod-zz9fig-app-waf-scan-detect"],
     "triggeringLogGroupNamePrefixes": [],
     "credentialProof": {
       "identity": {
@@ -105,25 +102,8 @@
   ],
   "expect": {
     "stillBroken": false,
-    "whatBroke": [
-      [
-        "compliance"
-      ],
-      [
-        "RateLimitRule",
-        "rate limit",
-        "rate-limit"
-      ]
-    ],
-    "nextAction": [
-      [
-        "close",
-        "no action",
-        "no further action",
-        "watch",
-        "monitor"
-      ]
-    ],
+    "whatBroke": [["compliance"], ["RateLimitRule", "rate limit", "rate-limit"]],
+    "nextAction": [["close", "no action", "no further action", "watch", "monitor"]],
     "remedy": "close-when-gone"
   }
 }

@@ -18,10 +18,7 @@
     "alarmFound": true,
     "deploymentLive": true,
     "liveDeployment": "zz8quince",
-    "logGroupNamePrefixes": [
-      "aws-waf-logs-prod-zz8quince-app",
-      "/aws/lambda/prod-zz8quince-app-waf-scan-detect"
-    ],
+    "logGroupNamePrefixes": ["aws-waf-logs-prod-zz8quince-app", "/aws/lambda/prod-zz8quince-app-waf-scan-detect"],
     "triggeringLogGroupNamePrefixes": [],
     "credentialProof": {
       "identity": {
@@ -102,25 +99,8 @@
   ],
   "expect": {
     "stillBroken": false,
-    "whatBroke": [
-      [
-        "203.0.113.7"
-      ],
-      [
-        "SensitivePathScan",
-        "scanner",
-        "scan"
-      ]
-    ],
-    "nextAction": [
-      [
-        "close",
-        "no action",
-        "no further action",
-        "watch",
-        "monitor"
-      ]
-    ],
+    "whatBroke": [["203.0.113.7"], ["SensitivePathScan", "scanner", "scan"]],
+    "nextAction": [["close", "no action", "no further action", "watch", "monitor"]],
     "remedy": "close-when-gone"
   }
 }
