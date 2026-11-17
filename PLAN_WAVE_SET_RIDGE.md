@@ -22,7 +22,7 @@ the set, with no deployment of its own.
 
 ## Status
 
-approved 2026-11-17 (the operator's `/iterate`). Wave 1 building.
+approved 2026-11-17 (the operator's `/iterate`). Wave 1 gated; wave 2 building.
 
 ## The goal
 
@@ -60,7 +60,7 @@ Wave branches are `claude/ridge-w01` to `claude/ridge-w10`; a batch branch is
 | ops | WEB4, SD1, OS24e | Sonnet | `submit.js` consent, `stack-drift.yml`, register |
 | mcp | MCP2 | Opus | `mcpHttp.js`, `mcp/server.json` |
 
-State: building.
+State: gated 0d8730ca8 (batch-check: every gate PASS after two fixes; 9 simulator suites pass). Extra commits on the wave: the OpenAPI generator reproduces the committed spec; HMRC SQS payloads carry the caller's email (DASH39); the header reserves the wrapped navigation's height (WEB5).
 
 ### Wave 2: the home page, the articles' template, the 404 page
 
@@ -75,7 +75,7 @@ State: building.
 `articles-a` also makes WEB11's one-line change in `scripts/build-filing-pages.mjs` (the literal
 "3 submissions", line 98) as its own commit, because that file is its own in this wave.
 
-State: pending.
+State: building.
 
 ### Wave 3: help, the guide, the sources
 
@@ -133,7 +133,7 @@ State: pending.
 | 1 | links | SL2 | Sonnet | the "Submit VAT MTD" links and their three writers |
 
 It builds beside submit's wave 1, in `../spreadsheets.diyaccounting.co.uk`, by that repository's
-rules (`orient-spreadsheets` first). State: building.
+rules (`orient-spreadsheets` first). State: gated 4727bd7eb (npm test: unit and gates pass; the browser files SL2 reaches pass 66 of 66, the other 532 pass).
 
 ## Gates
 
