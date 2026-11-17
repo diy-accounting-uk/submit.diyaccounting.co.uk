@@ -211,10 +211,15 @@ closing comment.
 ## Blocked commands
 
 `git worktree remove`, `git branch -D`, `git push --delete`, a ruleset or Actions-settings write,
-an AWS write outside a workflow, and a Cognito or Step Functions invocation are the operator's.
+an AWS write that the session's permissions deny, an AWS write that needs the operator's own
+identity, and a Cognito or Step Functions invocation are the operator's.
 Print each as one fenced block with the `!` prefix at the moment it arises, collect them again in
 the next board's Part 5, and carry on; nothing waits on them. Never ask another session to run
 one.
+
+An AWS write that the session's permissions allow is not blocked. Present it with what it
+changes. On the operator's yes, run it, read the result back and report it. The approval rule of
+`CLAUDE.md` stays: no AWS write runs before the operator says yes.
 
 When a denied command must fire inside a window (e.g., a `destroy-ci.yml` dispatch with forced
 sweep options during a branch deploy), hand the operator a wait-then-run script rather than the

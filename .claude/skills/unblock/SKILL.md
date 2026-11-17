@@ -67,6 +67,10 @@ An SSO login is never an ask on recall. Run `aws --profile diya-submit-ci sts ge
 and the same for `diya-submit-prod` first, and print the login only when one fails, naming the
 profile and the error.
 
+An AWS write that the session's permissions allow gets no `!` block. Present it with what it
+changes. On the operator's yes, run it, read the result back and report it. Print the `!` block
+only for a command that the session's policy denies or that needs the operator's own identity.
+
 ## 3. Sort what the operator can move
 
 From the rows that stay open, make two lists, ordered by how many rows each item unblocks:
