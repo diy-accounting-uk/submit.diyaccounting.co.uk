@@ -169,7 +169,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     console.log(" Help link is visible on About page");
 
     // Check for User Guide link
-    const guideLink = page.locator("a.about-nav-link:has-text('User Guide')");
+    const guideLink = page.locator("a.about-nav-link:has-text('User guide')");
     await expect(guideLink).toBeVisible({ timeout: 10000 });
     console.log(" User Guide link is visible on About page");
 
@@ -306,7 +306,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     console.log("STEP 8: Navigate to User Guide from About");
     console.log("=".repeat(60));
 
-    const guideLinkAgain = page.locator("a.about-nav-link:has-text('User Guide')");
+    const guideLinkAgain = page.locator("a.about-nav-link:has-text('User guide')");
     await expect(guideLinkAgain).toBeVisible({ timeout: 10000 });
     console.log(" Clicking User Guide link...");
 
