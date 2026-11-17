@@ -25,7 +25,7 @@ submitHosts = ["submit.diyaccounting.co.uk"]
 applyUrl = "https://submit.diyaccounting.co.uk/bundles.html#affiliateApplySection"
 
 [offers]
-withPass = "7 days of free VAT submissions"
+withPass = "3 tokens for 7 days, enough for 3 VAT returns"
 withoutPass = "a free day pass"
 
 [[lengths]]

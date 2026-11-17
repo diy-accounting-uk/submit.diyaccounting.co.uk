@@ -23,9 +23,10 @@ describe("bundles.html share preview", () => {
     expect(metaContent("property", "og:url")).toBe("https://submit.diyaccounting.co.uk/bundles.html");
   });
 
-  test("states the free week and the price after it, and matches the meta description", () => {
+  test("says what is true of every pass and the price after it, and matches the meta description", () => {
     const description = metaContent("property", "og:description");
-    expect(description).toContain("7 days");
+    expect(description).toContain("what your pass gives");
+    expect(description).not.toMatch(/\d+ days/);
     expect(description).toContain("£0.99 a month or £9.99 a year");
     expect(metaContent("name", "description")).toBe(description);
   });

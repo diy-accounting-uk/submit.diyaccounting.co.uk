@@ -77,8 +77,8 @@ hash = "25c70059633b"
 cy = '''Ffeiliwch Ffurflenni TAW a chyfrifon cwmni o’ch taenlen'''
 
 [strings."index.intro"]
-hash = "2979c5f3cde9"
-cy = '''Ffeiliwch Ffurflenni TAW gyda CThEF, a chyfrifon a datganiadau cadarnhau gyda Thŷ’r Cwmnïau, o’ch taenlen eich hun. Mae Ffurflenni TAW yn costio £0.99 y mis neu £9.99 y flwyddyn. Mae dolen tocyn yn rhoi 3 chyflwyniad TAW i chi am ddim am 7 diwrnod yn gyntaf.'''
+hash = "6db134265b32"
+cy = '''Ffeiliwch Ffurflenni TAW gyda CThEF, a chyfrifon a datganiadau cadarnhau gyda Thŷ’r Cwmnïau, o’ch taenlen eich hun. Mae Ffurflenni TAW yn costio £0.99 y mis neu £9.99 y flwyddyn. Rhowch gynnig arni am ddim: mewngofnodwch a gofynnwch am docyn diwrnod ar y dudalen <a href="bundles.html">Bundles</a>. Mae’n rhoi 3 chredyd (tokens) i chi am 24 awr, digon ar gyfer 3 Ffurflen TAW. Mae pob ffeilio yn defnyddio 1 credyd.'''
 
 [strings."index.feedback-label"]
 hash = "6fc1976630fa"
@@ -101,16 +101,16 @@ hash = "4506e5b3700f"
 cy = '''<strong>Statws pob nodwedd.</strong> Nid yw nodweddion prawf (sandbox) a rhagolwg (preview) yn cyflwyno dim byd go iawn. <a href="mtd-calendar.html#availability">Gweld y tabl argaeledd</a> (yn Saesneg).'''
 
 [strings."index.reviews-label"]
-hash = "b24146719e20"
-cy = '''Adolygiadau a rhestriad'''
+hash = "9d9e7a6d6c12"
+cy = '''DIY Accounting, y cwmni y tu ôl i Submit, wedi’i raddio’n 5.0 o 9 adolygiad Google'''
 
 [strings."index.reviews"]
-hash = "21d3eb53dde7"
-cy = '''<span class="proof-stars" role="img" aria-label="5 allan o 5 seren">&#9733;&#9733;&#9733;&#9733;&#9733;</span> <strong>5.0</strong> <a href="https://maps.app.goo.gl/a9vQaci6xLU6v2Gr7" target="_blank" rel="noopener">9 adolygiad ar Google</a>'''
+hash = "c1ab47452e05"
+cy = '''<span class="proof-stars" role="img" aria-label="5 allan o 5 seren">&#9733;&#9733;&#9733;&#9733;&#9733;</span> <strong>5.0</strong> <a href="https://maps.app.goo.gl/a9vQaci6xLU6v2Gr7" target="_blank" rel="noopener">9 adolygiad o DIY Accounting ar Google</a>'''
 
 [strings."index.reviews-featuredcustomers"]
-hash = "e031c6ffd247"
-cy = '''<a href="https://www.featuredcustomers.com/vendor/diy-accounting" target="_blank" rel="noopener">4.8 allan o 5 ar FeaturedCustomers</a>'''
+hash = "2f206a102856"
+cy = '''<a href="https://www.featuredcustomers.com/vendor/diy-accounting" target="_blank" rel="noopener">4.8 allan o 5 i DIY Accounting ar FeaturedCustomers</a>'''
 
 [strings."index.finder-label"]
 hash = "167fba46f9c4"
@@ -245,12 +245,12 @@ hash = "e0e5828b7087"
 cy = '''Y tocyn diwrnod am ddim'''
 
 [strings."get-started.pass-1"]
-hash = "ba3d61570026"
-cy = '''Gallwch roi cynnig ar Submit am ddim yn gyntaf. Ar y dudalen <a href="bundles.html">Bundles</a> (yn Saesneg), gofynnwch am docyn diwrnod. Mae’n rhoi 3 chredyd (tokens) i chi am 24 awr, ac mae pob cyflwyniad TAW yn defnyddio 1 credyd. Gall hyd at 100 o westeion ddal tocyn diwrnod ar yr un pryd. Os yw’r tocynnau i gyd yn cael eu defnyddio, rhowch gynnig eto y diwrnod wedyn.'''
+hash = "718c0ec00cf9"
+cy = '''Rhowch gynnig arni am ddim: mewngofnodwch a gofynnwch am docyn diwrnod ar y dudalen <a href="bundles.html">Bundles</a>. Mae’n rhoi 3 chredyd (tokens) i chi am 24 awr, digon ar gyfer 3 Ffurflen TAW. Mae pob ffeilio yn defnyddio 1 credyd. Gall hyd at 100 o westeion ddal tocyn diwrnod ar yr un pryd. Os yw’r tocynnau i gyd yn cael eu defnyddio, rhowch gynnig eto y diwrnod wedyn.'''
 
 [strings."get-started.pass-2"]
-hash = "58a69ec5f922"
-cy = '''Os bydd rhywun yn anfon dolen tocyn atoch, mae’n rhoi 3 chyflwyniad TAW i chi am ddim am 7 diwrnod.'''
+hash = "18ebbd18fb4d"
+cy = '''Wedi cael tocyn? Rhowch ef ar y dudalen <a href="bundles.html">Bundles</a>.'''
 
 [strings."get-started.vat-heading"]
 hash = "3b104c83c820"
@@ -261,8 +261,8 @@ hash = "9421da8f03f5"
 cy = '''Mewngofnodwch gyda’ch cyfrif Google neu Microsoft.'''
 
 [strings."get-started.vat-2"]
-hash = "3b2e45310271"
-cy = '''Gofynnwch am docyn diwrnod, neu tanysgrifiwch ar y dudalen Bundles.'''
+hash = "ca6a130a88ac"
+cy = '''Ar y dudalen Bundles, gofynnwch am docyn diwrnod, rhowch docyn a gawsoch, neu tanysgrifiwch.'''
 
 [strings."get-started.vat-3"]
 hash = "6e41c0fcee4a"

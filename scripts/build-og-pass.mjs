@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // scripts/build-og-pass.mjs
-// Renders two 1200x630 preview images in web/public/images/social/: og-pass.png (the week offer card of
+// Renders two 1200x630 preview images in web/public/images/social/: og-pass.png (the card of
 // bundles.html) and og-pass-link.png (the neutral card of pass.html, true for every pass).
 // Run: node scripts/build-og-pass.mjs
 
@@ -38,7 +38,7 @@ const cards = [
     <h1>VAT returns to HMRC<br>for 99p a month</h1>
   </div>
   <div>
-    <span class="offer">Try 3 VAT returns free for 7 days</span>
+    <span class="offer">Open your pass to see what it gives</span>
     <p class="terms">Then £0.99 a month or £9.99 a year. Cancel any time.</p>
   </div>`),
   },
