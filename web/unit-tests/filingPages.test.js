@@ -160,12 +160,12 @@ describe("article pages", () => {
     }
   });
 
-  test("an article that names a filing that is not production says its filing awaits HMRC recognition", () => {
+  test("an article that names a filing that is not production says what the reader cannot yet file", () => {
     for (const article of articles) {
       const html = read(join("web/public", article.file));
       for (const section of article.section) {
         for (const { activity } of section.status ?? []) {
-          if (!isProductionOnProd(catalog, activity)) expect(html, activity).toContain("awaits HMRC recognition");
+          if (!isProductionOnProd(catalog, activity)) expect(html, activity).toContain("with Submit yet. This page will say when you can.");
         }
       }
     }

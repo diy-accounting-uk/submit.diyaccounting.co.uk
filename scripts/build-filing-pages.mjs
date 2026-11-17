@@ -301,23 +301,28 @@ export function renderFilingPage(page, pages, catalog, manifest, sources, compar
         <p><a class="btn" href="${escapeHtml(page.action.href)}">${escapeHtml(page.action.label)}</a></p>
         <h2 id="other-filings">Other filings</h2>
         ${otherPagesHtml(page, pages, comparisons, articles)}
-        <p>Each filing and the channels that offer it are in the <a href="mtd-calendar.html#availability">availability table</a>.</p>
+        <p>Each filing and the ways to file it are in the <a href="mtd-calendar.html#availability">availability table</a>.</p>
       </div>
 `;
   return renderPageShell(page, main);
 }
 
+const HMRC_SOFTWARE_LISTS = {
+  "submit-vat": "https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-vat",
+  "self-employed": "https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-income-tax",
+  "file-company-tax-return": "https://www.gov.uk/company-tax-returns",
+};
+
 /** The words that say what Submit offers for a filing, from its state in the availability table. */
 export function filingStatusText(activity, label) {
   const status = availabilityStatus(activity);
   if (status === "production") return `Submit files ${label}.`;
-  if (status === "sandbox") {
-    return `Submit's ${label} filing awaits HMRC recognition. Until then it runs against a test service and files nothing real.`;
-  }
-  if (status === "preview") {
-    return `Submit's ${label} filing awaits HMRC recognition. Until then it runs on our simulator only and files nothing.`;
-  }
-  throw new Error(`no availability row for ${activity}`);
+  if (status !== "sandbox" && status !== "preview") throw new Error(`no availability row for ${activity}`);
+  const cannot = `You cannot file ${label} with Submit yet. This page will say when you can.`;
+  const list = HMRC_SOFTWARE_LISTS[activity];
+  const until = list ? ` Until then, use [software from HMRC's list](${list}).` : "";
+  if (status === "preview") return `You can try the screens for ${label} on Submit, and nothing is sent. ${cannot}${until}`;
+  return `${cannot}${until}`;
 }
 
 /** Escape text, then turn [label](href) into a link. */
@@ -397,7 +402,7 @@ function articleSectionHtml(section, sources, id, closingHtml = "") {
   if (section.widget === "itsa-scope-checker") parts.push(itsaScopeCheckerHtml());
   if (section.code) parts.push(`<pre><code>${escapeHtml(section.code)}</code></pre>`);
   for (const name of section.status ?? []) {
-    parts.push(`<p>${escapeHtml(filingStatusText(name.activity, name.label))}</p>`);
+    parts.push(`<p>${inlineHtml(filingStatusText(name.activity, name.label))}</p>`);
   }
   if (section.sources?.length) {
     const cited = section.sources.map((name) => {

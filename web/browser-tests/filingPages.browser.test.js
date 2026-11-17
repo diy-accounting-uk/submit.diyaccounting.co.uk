@@ -276,7 +276,7 @@ test("the Income Tax page holds the rules as text and the embed snippet without 
   await page.goto(CHECKER_PAGE, { waitUntil: "load" });
   await expect(page.locator("#itsaChecker")).toBeHidden();
   await expect(page.locator("main")).toContainText("6 April 2028");
-  await expect(page.locator("main")).toContainText("awaits HMRC recognition");
+  await expect(page.locator("main")).toContainText("You cannot file Income Tax with Submit yet");
   await expect(page.locator("pre code")).toContainText("/embed/mtd-income-tax-checker.js");
   await context.close();
 });

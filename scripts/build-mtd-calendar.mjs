@@ -362,9 +362,9 @@ function availabilityHtml() {
   }).join("");
   return (
     `<div class="form-container" id="availability"><h2>What you can file, and how</h2>` +
-    `<p>Production means you can use it for real. Sandbox means it runs against a test service and files nothing real. Preview means it runs on our simulator only.</p>` +
-    `<!-- A change to what a business can file, or through which channel, or whether a feature is production, sandbox or preview, updates this table in the same change. -->` +
-    `<div class="table-scroll"><table class="deadline-table stacked-table availability-table"><caption class="calendar-date">Availability by filing and channel</caption>` +
+    `<p>Each filing can be made in the ways listed below: on this website, or through an AI assistant. Production means you can use it for real. Sandbox means it runs against a test service and files nothing real. Preview means you can try the screens, and nothing is sent.</p>` +
+    `<!-- A change to what a business can file, or in which way to file, or whether a feature is production, sandbox or preview, updates this table in the same change. -->` +
+    `<div class="table-scroll"><table class="deadline-table stacked-table availability-table"><caption class="calendar-date">Availability by filing and way to file</caption>` +
     `<thead><tr><th scope="col">Filing</th>${CHANNELS.map((c) => `<th scope="col">${c}</th>`).join("")}<th scope="col">Docs and video</th></tr></thead>` +
     `<tbody>${rows}</tbody></table></div></div>`
   );
@@ -461,7 +461,7 @@ export function renderCalendarHtml(sources) {
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
       <h1>MTD calendar</h1>
-      <p class="subtitle">MTD calendar: when Making Tax Digital applies to you</p>
+      <p class="subtitle">When Making Tax Digital applies to you</p>
     </header>
 
     <main id="mainContent">
