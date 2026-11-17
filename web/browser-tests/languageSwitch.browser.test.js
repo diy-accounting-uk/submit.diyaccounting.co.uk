@@ -291,3 +291,19 @@ test("the Welsh home reads its cookie banner, its cookie dialog and its How to f
   await expect(guides.locator("h2")).toHaveText("Sut i ffeilio");
   await expect(guides.locator("li").first()).toHaveText("Ffurflen TAW o daenlen (yn Saesneg)");
 });
+
+for (const width of [320, 390]) {
+  test(`the Welsh signed-out line is whole beside the option at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await serveRealSite(page);
+    await page.goto(`${SITE_ORIGIN}/cy/index.html`, { waitUntil: "domcontentloaded" });
+    const status = page.locator(".login-status");
+    await expect(status).toHaveText("Heb fewngofnodi");
+    const clipped = await status.evaluate(
+      (element) => element.scrollWidth > element.clientWidth || element.scrollHeight > element.clientHeight + 1,
+    );
+    expect(clipped, ".login-status is clipped").toBe(false);
+    await expect(page.locator(".login-link")).toBeInViewport({ ratio: 1 });
+    await expect(page.locator(".language-switch a")).toBeInViewport({ ratio: 1 });
+  });
+}

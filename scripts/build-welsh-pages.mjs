@@ -52,6 +52,11 @@ export const WELSH_PAGES = [
   { id: "spreadsheets", en: "spreadsheets.html", cy: "cy/spreadsheets.html", enUrl: `${SITE_ORIGIN}/spreadsheets.html`, marks: "build" },
   { id: "mtd-calendar", en: "mtd-calendar.html", cy: "cy/mtd-calendar.html", enUrl: `${SITE_ORIGIN}/mtd-calendar.html`, marks: "build" },
   { id: "rates", en: "rates.html", cy: "cy/rates.html", enUrl: `${SITE_ORIGIN}/rates.html`, marks: "build" },
+  // LANG10a: the HMRC VAT pages and the receipts page, ids vat-* and receipt-*.
+
+  // LANG10b: the Income Tax pages, ids itsa-*.
+
+  // LANG11a, LANG11b: the Companies House pages, ids ch-*.
 ];
 
 export function welshUrl(page) {

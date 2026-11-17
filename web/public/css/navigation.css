@@ -196,6 +196,12 @@ dd {
     text-align: left;
   }
 
+  /* The signed-out line may take two lines ("Heb fewngofnodi" on the narrowest phones); a signed-in
+     name keeps one line and its ellipsis. */
+  .login-status:not([role="group"]) {
+    white-space: normal;
+  }
+
   .auth-section {
     justify-content: space-between;
   }

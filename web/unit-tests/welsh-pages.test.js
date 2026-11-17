@@ -112,8 +112,12 @@ describe.each(WELSH_PAGES)("Welsh page $cy", (page) => {
     }
   });
 
-  it("is listed in sitemap.xml with the same alternates", () => {
+  it("is listed in sitemap.xml with the same alternates when its English page is, and is left out when it is not", () => {
     const sitemap = read("sitemap.xml");
+    if (!sitemap.includes(`<loc>${page.enUrl}</loc>`)) {
+      expect(sitemap).not.toContain(`<loc>${welshUrl(page)}</loc>`);
+      return;
+    }
     for (const loc of [page.enUrl, welshUrl(page)]) {
       const entry = sitemap.match(new RegExp(`<url>\\s*<loc>${loc.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}</loc>([\\s\\S]*?)</url>`));
       expect(entry, loc).not.toBeNull();
