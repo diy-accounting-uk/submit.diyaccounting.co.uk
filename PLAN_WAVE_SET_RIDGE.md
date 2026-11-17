@@ -75,6 +75,8 @@ State: gated 0d8730ca8 (batch-check: every gate PASS after two fixes; 9 simulato
 `articles-a` also makes WEB11's one-line change in `scripts/build-filing-pages.mjs` (the literal
 "3 submissions", line 98) as its own commit, because that file is its own in this wave.
 
+`AUTH` rides in wave 2 by the operator's answer (2026-11-17): a customer's expired sign-in with no refresh token showed her as signed in while every call returned 401; the fix (64fe014c4) clears such a session before any page script runs and sends a user action to sign in with `next=`. Its ci proof: an expired id token with no refresh token in localStorage, then `bundles.html` shows "Not signed in" and Subscribe opens `auth/login.html?next=%2Fbundles.html`.
+
 State: building.
 
 ### Wave 3: help, the guide, the sources
