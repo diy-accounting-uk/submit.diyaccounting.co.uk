@@ -196,13 +196,13 @@ footer a:focus-visible,
    the overflow; a generated block is real content and extends the page.
    flex-shrink: 0 stops the flex layout shrinking it away. */
 html:has(#consent-banner) {
-  scroll-padding-bottom: 180px;
+  scroll-padding-bottom: var(--consent-banner-height, 180px);
 }
 
 body:has(#consent-banner)::after {
   content: "";
   display: block;
-  height: 180px;
+  height: var(--consent-banner-height, 180px);
   flex-shrink: 0;
 }
 

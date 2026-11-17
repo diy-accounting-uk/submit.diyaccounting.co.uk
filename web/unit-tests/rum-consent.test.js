@@ -34,6 +34,8 @@ describe("RUM Consent", () => {
 
     // Mock document with element tracking
     const mockElement = () => ({
+      querySelector: vi.fn(() => mockElement()),
+      remove: vi.fn(),
       appendChild: vi.fn(),
       removeChild: vi.fn(),
       setAttribute: vi.fn(),
@@ -57,11 +59,19 @@ describe("RUM Consent", () => {
       getElementById: vi.fn((id) => domElements[id] || (id === "consent-accept" || id === "consent-decline" ? mockElement() : null)),
       createElement: vi.fn(() => mockElement()),
       addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      documentElement: { style: { setProperty: vi.fn(), removeProperty: vi.fn() } },
       dispatchEvent: vi.fn((event) => {
         // For event testing, we need to actually call handlers
         return true;
       }),
       body: {
+        firstChild: null,
+        insertBefore: vi.fn((el) => {
+          if (el.id) {
+            domElements[el.id] = el;
+          }
+        }),
         appendChild: vi.fn((el) => {
           if (el.id) {
             domElements[el.id] = el;
