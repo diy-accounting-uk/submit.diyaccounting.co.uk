@@ -22,7 +22,7 @@ the set, with no deployment of its own.
 
 ## Status
 
-approved 2026-11-17 (the operator's `/iterate`). Waves 1 and 2 gated; wave 3 building.
+approved 2026-11-17 (the operator's `/iterate`). Waves 1 and 2 gated; wave 3 gating; wave 4 building.
 
 ## The goal
 
@@ -46,7 +46,7 @@ each repository. More local waves are cheap. A second push is expensive.
 ## Waves: submit
 
 Wave 1 branches from `origin/main`; each later wave branches from the tip of the wave before it.
-Wave branches are `claude/ridge-w01` to `claude/ridge-w10`; a batch branch is
+Wave branches are `claude/ridge-w01` to `claude/ridge-w06`; a batch branch is
 `claude/ridge-w<nn>-<batch>`. No wave or batch branch is pushed.
 
 ### Wave 1: the heads
@@ -96,25 +96,32 @@ State: building.
 | --- | --- | --- | --- |
 | articles-c | WEB21, WEB22, WEB25, WEB27 | Sonnet, 2 agents | generators, calendar, page titles, the merged spreadsheets page |
 
+State: building.
+
+### Wave 5: Welsh, after every English string is final
+
+One wave, one gate (operator, 2026-11-17: waves 5 to 9 collapsed into one). The batches start in
+this order:
+
+1. `welsh-chrome` builds LANG9 alone and lands on the wave branch first: the Welsh header, the
+   language choice that persists, and the base of `i18n/cy.toml`.
+2. From that tip, three batches run at once:
+
+| Batch | Rows, in order | Model | Owns |
+| --- | --- | --- | --- |
+| welsh-vat-itsa | LANG10a, then LANG10b | Opus, 3 agents | VAT, receipts and HMRC Assist pages, then the 26 Income Tax pages |
+| welsh-ch | LANG11a, then LANG11b | Opus, 2 agents | the Companies House pages, then the Welsh accounts filing |
+| marketing | MKT8 | Opus | `web/marketing/` only |
+
+LANG10b follows the rules LANG10a sets, and LANG11b follows LANG11a's research file, so each pair is
+a chain on one worktree. MKT8 follows LANG9 because LANG9 puts the language option in the header of
+every page that MKT8 photographs. Each batch adds its keys to `i18n/cy.toml` in its own section; a
+conflict there is resolved by keeping both sides' keys, and `npm run build:welsh` writes the `cy/`
+pages after the last batch lands.
+
 State: pending.
 
-### Waves 5 to 9: Welsh, after every English string is final
-
-| Wave | Batch | Rows | Model |
-| --- | --- | --- | --- |
-| 5 | welsh-chrome | LANG9 | Opus |
-| 6 | welsh-vat | LANG10a | Opus |
-| 6 | marketing | MKT8 | Opus |
-| 7 | welsh-itsa | LANG10b | Opus, 2 agents |
-| 8 | welsh-ch | LANG11a | Opus |
-| 9 | welsh-accounts | LANG11b | Opus |
-
-MKT8 owns `web/marketing/` only. It follows LANG9 because LANG9 puts the language option in the
-header of every page that MKT8 photographs.
-
-State: wave 5 pending; wave 6 pending; wave 7 pending; wave 8 pending; wave 9 pending.
-
-### Wave 10: the look wave
+### Wave 6: the look wave
 
 No row of its own: it is the retake that the definition of done asks of every row that changes
 what a person sees, done once.
@@ -209,5 +216,5 @@ one pull request, `/watch`, `/auto-merge`, and SL2's proof on prod.
 
 The waves are a chain, so a smaller push is a prefix of it. Push the tip of the last wave whose
 gates passed and whose rows need nothing from a later wave: wave 4 carries every English row; wave
-9 adds the Welsh rows; wave 10 adds the retake. The waves after the pushed one start the next set,
+5 adds the Welsh rows; wave 6 adds the retake. The waves after the pushed one start the next set,
 rebased on the new `main`.
