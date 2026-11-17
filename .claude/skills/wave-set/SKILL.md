@@ -191,6 +191,12 @@ This section is the one source for `/iterate` and `/do-next`; they point here.
 6. Park the wave: write `gated <tip sha>` in the plan and commit the plan on `main`. The wave
    branch and its worktree stay until the set is on `main`.
 
+**Write the restart state at each wave boundary.** At dispatch, each batch landed, gate start and
+`gated`, the coordinator writes into the wave's state line in `PLAN_WAVE_SET_<NAME>.md`: the
+batches dispatched, the agent on each batch and the row it is on, the batches landed with their
+commit, and the gate running with its log path. It commits the plan on `main`. A fresh session
+restarts from that line and the worktrees' `git log`.
+
 **Never push a wave branch or a batch branch.** A push of a branch that touches `app/`,
 `web/public/`, `infra/` or `package.json` starts `deploy.yml`, which is a ci set. `NEXT.md` never
 travels on these branches.
