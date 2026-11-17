@@ -351,9 +351,17 @@ main ol.calendar {
 }
 
 /* The box around a wide table scrolls and takes focus, so the table inside it does not scroll again. */
-.table-scroll > table:not(.stacked-table),
-.rates-table-scroll > table {
+.table-scroll > table:not(.stacked-table) {
   display: table;
   overflow: visible;
   background: none;
+}
+
+/* Under 40rem the rates tables stack (operator-dashboard.css); wider, they keep their table layout. */
+@media (min-width: 40.01rem) {
+  .rates-table-scroll > table {
+    display: table;
+    overflow: visible;
+    background: none;
+  }
 }
