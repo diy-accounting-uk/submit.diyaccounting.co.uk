@@ -2,33 +2,26 @@
 /* Copyright (C) 2006-2026 DIY Accounting Limited */
 
 /* ============================================
-   Main navigation: text links in one row under the band. The current page
-   carries an underline in the brand colour and aria-current="page". When
-   the row is wider than the screen it scrolls sideways, and a fade on the
-   right edge shows that more links follow.
+   Main navigation: text links under the band. The current page carries an
+   underline in the brand colour and aria-current="page". When the links
+   are wider than the screen they wrap onto further rows, so each one shows.
    ============================================ */
 
 .main-nav {
   display: flex;
-  flex-wrap: nowrap;
-  gap: var(--space-5);
-  height: var(--nav-height);
+  flex-wrap: wrap;
+  column-gap: var(--space-5);
+  min-height: var(--nav-height);
   margin-top: var(--space-1);
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
   border-bottom: 1px solid var(--c-rule-subtle);
-}
-
-.main-nav::-webkit-scrollbar {
-  display: none;
 }
 
 .main-nav a {
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
-  height: 100%;
+  min-height: var(--nav-height);
+  box-sizing: border-box;
   color: var(--c-ink);
   text-decoration: none;
   font-size: var(--step-0);
@@ -187,26 +180,6 @@ dd {
   }
 
   .main-nav {
-    --nav-fade: var(--space-7);
-    gap: var(--space-3);
-    --fade-before: #000;
-    --fade-after: #000;
-    padding-right: var(--nav-fade);
-    mask-image: linear-gradient(to right, var(--fade-before), #000 var(--nav-fade), #000 calc(100% - var(--nav-fade)), var(--fade-after));
-    -webkit-mask-image: linear-gradient(
-      to right,
-      var(--fade-before),
-      #000 var(--nav-fade),
-      #000 calc(100% - var(--nav-fade)),
-      var(--fade-after)
-    );
-  }
-
-  .main-nav.has-more-before {
-    --fade-before: transparent;
-  }
-
-  .main-nav.has-more-after {
-    --fade-after: transparent;
+    column-gap: var(--space-3);
   }
 }

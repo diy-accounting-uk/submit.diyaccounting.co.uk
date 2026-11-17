@@ -376,3 +376,28 @@ test.describe("Wide tables read at 390px and 1280px without sideways scroll", ()
     for (const display of captionDisplays) expect(display).toBe("block");
   });
 });
+
+test.describe("Main navigation shows every item on a phone", () => {
+  for (const width of [320, 390]) {
+    test(`each navigation item is inside the viewport at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await serveRealSite(page);
+      await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
+      await expect(page.locator("nav.main-nav a:visible")).not.toHaveCount(0);
+      const boxes = await page.locator("nav.main-nav a:visible").evaluateAll((links) =>
+        links.map((link) => {
+          const box = link.getBoundingClientRect();
+          return { text: link.textContent, left: box.left, right: box.right, top: box.top };
+        }),
+      );
+      for (const box of boxes) {
+        expect(box.left, `${box.text} starts inside the viewport`).toBeGreaterThanOrEqual(0);
+        expect(box.right, `${box.text} ends inside the viewport`).toBeLessThanOrEqual(width);
+      }
+      const header = await page.locator("header").evaluate((el) => el.getBoundingClientRect().bottom);
+      const nav = await page.locator("nav.main-nav").evaluate((el) => el.getBoundingClientRect().bottom);
+      expect(nav).toBeLessThanOrEqual(header + 1);
+      expect(await hasRealHorizontalScroll(page)).toBe(false);
+    });
+  }
+});

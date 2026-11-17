@@ -196,7 +196,7 @@
       "</a>" +
       '<a href="' +
       rootPrefix +
-      'about.html" title="About & Help" class="info-link">' +
+      'about.html" title="About" aria-label="About" class="info-link">' +
       '<svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="' +
       INFO_ICON_PATH +
       '" /></svg>' +
@@ -263,6 +263,9 @@
       '<a href="#" data-cookie-choices>Cookie choices</a>' +
       '<a href="' +
       rootPrefix +
+      'about.html">About</a>' +
+      '<a href="' +
+      rootPrefix +
       'help.html">Help</a>' +
       '<a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" target="_blank" rel="noopener">Source</a>';
 
@@ -294,22 +297,6 @@
     const languageSwitch = buildLanguageSwitch(rootPrefix);
     const bandLeft = header.querySelector(".header-left");
     if (languageSwitch && bandLeft) bandLeft.append(languageSwitch);
-
-    // On a narrow screen the row scrolls sideways; bring the current page's link into view.
-    const nav = header.querySelector(".main-nav");
-    const active = nav && nav.querySelector("a.active");
-    if (nav && active && nav.scrollWidth > nav.clientWidth) {
-      nav.scrollLeft = Math.max(0, active.offsetLeft - nav.clientWidth / 2 + active.offsetWidth / 2);
-    }
-    if (nav) {
-      const markScrollEdges = () => {
-        nav.classList.toggle("has-more-before", nav.scrollLeft > 1);
-        nav.classList.toggle("has-more-after", nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 1);
-      };
-      nav.addEventListener("scroll", markScrollEdges, { passive: true });
-      window.addEventListener("resize", markScrollEdges);
-      markScrollEdges();
-    }
   }
 
   function loadTomlParser(rootPrefix) {
