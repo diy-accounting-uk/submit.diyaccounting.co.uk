@@ -9,6 +9,8 @@ import {
   dayBefore,
   historyKey,
   shapeActorSplit,
+  shapeDiyaGlSplit,
+  shapeOwnerClasses,
 } from "@app/lib/operatorSnapshot/dataSection.js";
 
 const now = new Date("2026-11-07T10:00:00Z");
@@ -69,6 +71,79 @@ describe("dataSection", () => {
       { kind: "elsewhere", actor: "customer", items: "9" },
     ]);
     expect(split).toEqual({ bundles: { customer: 5, test: 0, synthetic: 1, other: 0, unknown: 2 } });
+  });
+
+  test("the split query names each owner and reads its class from the activity events", () => {
+    const sql = buildActorSplitSql(["ownerA", "owner-B", "bad'owner"]);
+    expect(sql).toContain("(VALUES ('ownerA'), ('owner-B')) AS o(owner)");
+    expect(sql).not.toContain("bad'owner");
+    expect(sql).toContain("activity_events_all e ON e.hashed_sub = coalesce(al.current_hash, o.owner)");
+    expect(buildActorSplitSql([])).toBe(buildActorSplitSql());
+  });
+
+  test("an owner with a test or operator event is not a customer, and one with no event is unknown", () => {
+    const classes = shapeOwnerClasses([
+      { kind: "owner:a", actor: "customer", items: "4" },
+      { kind: "owner:b", actor: "customer", items: "4" },
+      { kind: "owner:b", actor: "test-user", items: "1" },
+      { kind: "owner:c", actor: "customer", items: "1" },
+      { kind: "owner:c", actor: "operator", items: "1" },
+      { kind: "bundles", actor: "customer", items: "9" },
+    ]);
+    expect(classes).toEqual({ a: "customer", b: "test", c: "other" });
+    const split = shapeDiyaGlSplit(
+      {
+        a: { books: 1, versions: 2, objects: 3 },
+        b: { books: 1, versions: 1, objects: 2 },
+        z: { books: 1, versions: 0, objects: 1 },
+      },
+      classes,
+    );
+    expect(split.books).toEqual({ customer: 1, test: 1, synthetic: 0, other: 0, unknown: 1 });
+    expect(split.objects).toEqual({ customer: 3, test: 2, synthetic: 0, other: 0, unknown: 1 });
+  });
+
+  test("diya-gl objects, books and versions split by owner class and add up to their figures", async () => {
+    const io = makeIo({
+      runAthena: vi.fn(async () => [
+        { kind: "owner:a", actor: "customer", items: "4" },
+        { kind: "owner:b", actor: "test-user", items: "9" },
+      ]),
+      bucketObjectCounts: vi.fn(async () => ({ "prod-env-diya-gl-972912397388": { "2026-11-07": 9 } })),
+      countBooks: vi.fn(async () => ({
+        books: 2,
+        versions: 3,
+        truncated: false,
+        owners: {
+          a: { books: 1, versions: 1, objects: 2 },
+          b: { books: 1, versions: 2, objects: 3 },
+          z: { books: 0, versions: 0, objects: 1 },
+        },
+      })),
+    });
+    const section = await buildDataSection({
+      envName: "prod",
+      now,
+      tableNames: [],
+      bucketNames: ["prod-env-diya-gl-972912397388", "prod-env-analytics-lake-972912397388"],
+      diyaGlBucketName: "prod-env-diya-gl-972912397388",
+      io,
+    });
+    const sum = (split) => Object.values(split).reduce((a, b) => a + b, 0);
+    const [diyaGl, lake] = section.buckets;
+    expect(diyaGl.group).toBe("customer");
+    expect(lake.group).toBe("analytics");
+    expect(lake.split).toBeNull();
+    // The listing holds 6 objects and the metric 9: the 3 the listing did not reach read unknown.
+    expect(diyaGl.split).toEqual({ customer: 2, test: 3, synthetic: 0, other: 0, unknown: 4 });
+    expect(sum(diyaGl.split)).toBe(diyaGl.objects.today);
+    expect(section.books[0].split).toEqual({ customer: 1, test: 1, synthetic: 0, other: 0, unknown: 0 });
+    expect(sum(section.books[1].split)).toBe(section.books[1].count.today);
+    const written = io.files.get(historyKey("prod", "2026-11-07"));
+    expect(written.ownerClasses).toEqual({ a: "customer", b: "test" });
+    expect(written.diyaGlSplit.versions.test).toBe(2);
+    expect(io.runAthena).toHaveBeenCalledTimes(1);
+    expect(io.runAthena.mock.calls[0][0]).toContain("VALUES ('a'), ('b'), ('z')");
   });
 
   test("a day with no history file shows no figure, never 0", async () => {

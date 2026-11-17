@@ -852,31 +852,59 @@ function renderDataSplit(data) {
     row.className = "data-split-row";
     row.dataset.table = table.name;
     row.appendChild(dataTextCell(table.name));
-    ["customer", "test", "synthetic", "other", "unknown"].forEach((key) => row.appendChild(dataCountCell(table.split[key])));
+    DATA_SPLIT_KEYS.forEach((key) => row.appendChild(dataCountCell(table.split[key])));
     body.appendChild(row);
   });
 }
 
+const DATA_SPLIT_KEYS = ["customer", "test", "synthetic", "other", "unknown"];
+
 function renderDataBuckets(data) {
   const body = document.getElementById("dataBucketsBody");
-  body.innerHTML = "";
-  const rows = data
+  const splitBody = document.getElementById("dataBucketsSplitBody");
+  const analyticsBody = document.getElementById("dataAnalyticsBody");
+  [body, splitBody, analyticsBody].forEach((element) => {
+    element.innerHTML = "";
+  });
+  const customerRows = data
     ? [
-        ...data.buckets.map((bucket) => [bucket.name, bucket.objects]),
-        ...data.books.map((entry) => ["diya-gl " + entry.type.toLowerCase(), entry.count]),
+        ...data.buckets.filter((bucket) => bucket.group !== "analytics").map((bucket) => [bucket.name, bucket.objects, bucket.split]),
+        ...data.books.map((entry) => ["diya-gl " + entry.type.toLowerCase(), entry.count, entry.split]),
       ]
     : [];
+  const analyticsRows = data ? data.buckets.filter((bucket) => bucket.group === "analytics") : [];
+  const splitRows = customerRows.filter(([, , split]) => split);
   document.getElementById("dataBucketsPanel").hidden = false;
-  document.getElementById("dataBucketsEmpty").hidden = rows.length > 0;
-  document.getElementById("dataBucketsTable").hidden = rows.length === 0;
+  document.getElementById("dataBucketsEmpty").hidden = customerRows.length > 0;
+  document.getElementById("dataBucketsTable").hidden = customerRows.length === 0;
+  document.getElementById("dataBucketsSplitTable").hidden = splitRows.length === 0;
   document.getElementById("dataBooksNote").hidden = !(data && data.booksTruncated);
-  rows.forEach(([name, figures]) => {
+  customerRows.forEach(([name, figures]) => {
     const row = document.createElement("tr");
     row.className = "data-bucket-row";
     row.dataset.name = name;
     row.appendChild(dataTextCell(name));
     DATA_WINDOW_KEYS.forEach((key) => row.appendChild(dataCountCell(figures[key])));
     body.appendChild(row);
+  });
+  splitRows.forEach(([name, , split]) => {
+    const row = document.createElement("tr");
+    row.className = "data-bucket-split-row";
+    row.dataset.name = name;
+    row.appendChild(dataTextCell(name));
+    DATA_SPLIT_KEYS.forEach((key) => row.appendChild(dataCountCell(split[key])));
+    splitBody.appendChild(row);
+  });
+  document.getElementById("dataAnalyticsPanel").hidden = false;
+  document.getElementById("dataAnalyticsEmpty").hidden = analyticsRows.length > 0;
+  document.getElementById("dataAnalyticsTable").hidden = analyticsRows.length === 0;
+  analyticsRows.forEach((bucket) => {
+    const row = document.createElement("tr");
+    row.className = "data-bucket-row";
+    row.dataset.name = bucket.name;
+    row.appendChild(dataTextCell(bucket.name));
+    DATA_WINDOW_KEYS.forEach((key) => row.appendChild(dataCountCell(bucket.objects[key])));
+    analyticsBody.appendChild(row);
   });
 }
 

@@ -2324,6 +2324,7 @@ export async function buildData({ workGroup, database, envName, lakeBucket }) {
     envName,
     tableNames,
     bucketNames,
+    diyaGlBucketName: diyaGlBucketName || null,
     io: {
       describeItemCount: async (TableName) => {
         const { Table } = await dynamo.send(new DescribeTableCommand({ TableName }));
@@ -2389,24 +2390,35 @@ export async function buildData({ workGroup, database, envName, lakeBucket }) {
 
 const splitList = (value) => (value ? value.split(",").filter(Boolean) : []);
 
-// A book is a metadata.json under users/<user>/books/<id>/; each version is a zip beside it. The
-// listing stops after DIYA_GL_LIST_PAGE_LIMIT pages of 1,000 keys and says so.
+// A book is a metadata.json under users/<owner>/books/<id>/; each version is a zip beside it. The
+// owner is the hash of the subject (`resolveOwnerPrefix`), the key's second segment. The listing
+// stops after DIYA_GL_LIST_PAGE_LIMIT pages of 1,000 keys and says so. `owners` counts each
+// owner's objects, books and versions, so the section can split them by the owner's class.
 const DIYA_GL_LIST_PAGE_LIMIT = 50;
 
 export async function countDiyaGlBooks(s3Client, Bucket) {
   let books = 0;
   let versions = 0;
+  const owners = {};
   let ContinuationToken;
   for (let page = 0; page < DIYA_GL_LIST_PAGE_LIMIT; page += 1) {
     const response = await s3Client.send(new ListObjectsV2Command({ Bucket, Prefix: "users/", ContinuationToken }));
     (response.Contents || []).forEach(({ Key }) => {
-      if (Key.endsWith("/metadata.json")) books += 1;
-      else if (Key.endsWith(".zip")) versions += 1;
+      const owner = Key.split("/")[1] || "";
+      owners[owner] ||= { books: 0, versions: 0, objects: 0 };
+      owners[owner].objects += 1;
+      if (Key.endsWith("/metadata.json")) {
+        books += 1;
+        owners[owner].books += 1;
+      } else if (Key.endsWith(".zip")) {
+        versions += 1;
+        owners[owner].versions += 1;
+      }
     });
-    if (!response.IsTruncated) return { books, versions, truncated: false };
+    if (!response.IsTruncated) return { books, versions, truncated: false, owners };
     ContinuationToken = response.NextContinuationToken;
   }
-  return { books, versions, truncated: true };
+  return { books, versions, truncated: true, owners };
 }
 
 /**

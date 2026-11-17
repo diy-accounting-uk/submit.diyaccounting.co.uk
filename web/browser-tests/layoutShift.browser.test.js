@@ -331,7 +331,8 @@ test.describe("Layout shift while data loads on a phone", () => {
     const bundles = page.locator('#dataTablesBody tr[data-table="bundles"] td');
     await expect(bundles).toHaveText(["bundles", "1,296", "1,290", "1,250", "900", "no figure", "On, ttl"]);
     await expect(page.locator('#dataSplitBody tr[data-table="bundles"] td')).toHaveText(["bundles", "410", "724", "96", "6", "60"]);
-    await expect(page.locator("#dataBucketsBody .data-bucket-row")).toHaveCount(5);
+    await expect(page.locator("#dataBucketsBody .data-bucket-row")).toHaveCount(3);
+    await expect(page.locator("#dataAnalyticsBody .data-bucket-row")).toHaveCount(2);
     await expect(page.locator("#chart-data-totals")).toBeHidden();
     await page.locator('.dashboard-tab[data-tab-id="main"]').click();
     await expect(page.locator("#chart-data-totals .chart-line")).toHaveCount(3);

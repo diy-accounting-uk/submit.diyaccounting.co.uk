@@ -601,6 +601,12 @@ export const FIXTURE_DATA = shapeDataSection({
     { name: "prod-env-analytics-results-972912397388", objects: 9120, history: { 90: null, 30: 6400, 7: 8800, 1: 9050 } },
     { name: "prod-env-diya-gl-972912397388", objects: 22, history: { 90: null, 30: 14, 7: 20, 1: 22 } },
   ],
+  diyaGlBucketName: "prod-env-diya-gl-972912397388",
+  diyaGlSplit: {
+    objects: { customer: 4, test: 14, synthetic: 2, other: 0, unknown: 2 },
+    books: { customer: 2, test: 7, synthetic: 1, other: 0, unknown: 1 },
+    versions: { customer: 2, test: 7, synthetic: 1, other: 0, unknown: 1 },
+  },
   books: { books: 11, versions: 11, truncated: false },
   histories: {
     90: null,

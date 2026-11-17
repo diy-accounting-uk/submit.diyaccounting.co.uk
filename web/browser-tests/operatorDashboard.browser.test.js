@@ -472,7 +472,7 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     await expect(page.locator("#objectivesContainer > .objective, #objectivesContainer > [data-objective-slot] > .objective")).toHaveCount(
-      25,
+      26,
     );
     const ids = await page.evaluate(() => [...document.querySelectorAll("#objectivesContainer .objective")].map((section) => section.id));
     expect(ids).toEqual([
@@ -490,6 +490,7 @@ test.describe("Operator Dashboard", () => {
       "dataTablesPanel",
       "dataSplitPanel",
       "dataBucketsPanel",
+      "dataAnalyticsPanel",
       "table-low-running-cost",
       "table-uptime",
       "table-compliance",
@@ -523,7 +524,7 @@ test.describe("Operator Dashboard", () => {
         refresh: section.querySelector(".refresh-link")?.getAttribute("href"),
       })),
     );
-    expect(sections).toHaveLength(25);
+    expect(sections).toHaveLength(26);
     for (const section of sections) {
       expect(section.anchor).toBe("#" + section.id);
       expect(section.refresh).toBe("?refresh=15#" + section.id);

@@ -11,7 +11,9 @@
 // and DynamoDB keeps no history, so each run writes one small JSON per day to the lake and reads
 // the earlier days back. A day with no file shows no figure, never 0. Bucket totals and their
 // history come from the CloudWatch S3 NumberOfObjects metric. The actor split comes from one
-// Athena query a day, kept in that day's history file for the hourly runs that follow.
+// Athena query a day, kept in that day's history file for the hourly runs that follow. The same
+// query gives each diya-gl book owner's class, so the store's objects, books and book versions
+// split the same way.
 
 const DATA_HISTORY_OFFSETS = [90, 30, 7, 1];
 
@@ -25,6 +27,15 @@ const DATA_LAKE_TABLES = {
 };
 
 const DATA_ACTOR_CLASSES = ["customer", "test", "synthetic", "other", "unknown"];
+
+// A diya-gl owner is the hash of a subject, so it holds letters, digits, "_" and "-" only; the
+// pattern keeps anything else out of the query text. The query names at most this many owners.
+const OWNER_PATTERN = /^[A-Za-z0-9_-]+$/;
+const OWNER_QUERY_LIMIT = 2000;
+
+// When an owner's events show more than one class, the first in this order wins: an account with
+// any test, synthetic or operator event is not a customer.
+const OWNER_CLASS_PRECEDENCE = ["test", "synthetic", "other", "customer"];
 
 // The activity actor classes folded into the three the dashboard shows. An operator or the
 // system is `other`; an empty actor is `unknown` and is never counted as a customer.
@@ -41,17 +52,27 @@ export function actorClassOf(actor) {
  *
  * @returns {string}
  */
-export function buildActorSplitSql() {
+export function buildActorSplitSql(owners = []) {
   const parts = Object.entries(DATA_LAKE_TABLES).map(
     ([kind, { glueTable, keys }]) =>
       `  SELECT '${kind}' AS kind, actor, change_type,\n` +
       `         row_number() OVER (PARTITION BY ${keys.join(", ")} ORDER BY change_ts DESC) AS newest\n` +
       `  FROM   ${glueTable}`,
   );
-  return (
+  const tableSql =
     `SELECT kind, actor, cast(count(*) AS double) AS items\nFROM (\n${parts.join("\n  UNION ALL\n")}\n)\n` +
-    `WHERE newest = 1 AND change_type <> 'REMOVE'\nGROUP BY 1, 2\nORDER BY 1, 2`
-  );
+    `WHERE newest = 1 AND change_type <> 'REMOVE'\nGROUP BY 1, 2`;
+  const safeOwners = owners.filter((owner) => OWNER_PATTERN.test(owner)).slice(0, OWNER_QUERY_LIMIT);
+  if (safeOwners.length === 0) return `${tableSql}\nORDER BY 1, 2`;
+  // An owner's hash may be from an earlier salt; hash_aliases maps it to the account's current hash.
+  const ownerValues = safeOwners.map((owner) => "('" + owner + "')").join(", ");
+  const ownerSql =
+    `SELECT 'owner:' || o.owner AS kind, e.actor AS actor, cast(count(*) AS double) AS items\n` +
+    `FROM   (VALUES ${ownerValues}) AS o(owner)\n` +
+    `LEFT JOIN hash_aliases al ON al.old_hash = o.owner\n` +
+    `JOIN   activity_events_all e ON e.hashed_sub = coalesce(al.current_hash, o.owner)\n` +
+    `GROUP BY 1, 2`;
+  return `SELECT kind, actor, items\nFROM (\n${tableSql}\nUNION ALL\n${ownerSql}\n)\nORDER BY 1, 2`;
 }
 
 /**
@@ -66,6 +87,47 @@ export function shapeActorSplit(rows) {
     if (!DATA_LAKE_TABLES[row.kind]) return;
     split[row.kind] ||= Object.fromEntries(DATA_ACTOR_CLASSES.map((name) => [name, 0]));
     split[row.kind][actorClassOf(row.actor)] += Number(row.items);
+  });
+  return split;
+}
+
+/**
+ * The class of each diya-gl owner from the owner rows of the split query. An owner with no
+ * activity event has no entry and reads unknown.
+ *
+ * @param {Array<{kind: string, actor: string, items: string|number}>} rows
+ * @returns {Record<string, string>}
+ */
+export function shapeOwnerClasses(rows) {
+  const seen = {};
+  rows.forEach((row) => {
+    if (typeof row.kind !== "string" || !row.kind.startsWith("owner:")) return;
+    const owner = row.kind.slice("owner:".length);
+    seen[owner] ||= new Set();
+    seen[owner].add(actorClassOf(row.actor));
+  });
+  return Object.fromEntries(
+    Object.entries(seen).map(([owner, classes]) => [owner, OWNER_CLASS_PRECEDENCE.find((name) => classes.has(name)) || "unknown"]),
+  );
+}
+
+const emptySplit = () => Object.fromEntries(DATA_ACTOR_CLASSES.map((name) => [name, 0]));
+
+/**
+ * The diya-gl store's objects, books and book versions by the class of each owner. An owner with
+ * no class counts as unknown.
+ *
+ * @param {Record<string, {books: number, versions: number, objects: number}>} owners
+ * @param {Record<string, string>} ownerClasses
+ * @returns {{objects: Record<string, number>, books: Record<string, number>, versions: Record<string, number>}}
+ */
+export function shapeDiyaGlSplit(owners, ownerClasses) {
+  const split = { objects: emptySplit(), books: emptySplit(), versions: emptySplit() };
+  Object.entries(owners).forEach(([owner, counts]) => {
+    const name = DATA_ACTOR_CLASSES.includes(ownerClasses[owner]) ? ownerClasses[owner] : "unknown";
+    Object.keys(split).forEach((field) => {
+      split[field][name] += counts[field];
+    });
   });
   return split;
 }
@@ -85,6 +147,14 @@ const tableLabel = (tableName, envName) => tableName.replace(new RegExp(`^${envN
 
 function bucketLabel(bucketName, envName) {
   return bucketName.replace(new RegExp(`^${envName}-env-`), "").replace(/-\d{12}$/, "");
+}
+
+// The listing and the daily S3 metric can differ (the metric lags, and the listing may stop at its
+// limit), so an object the metric counts and the listing did not reach reads unknown.
+function splitToFigure(split, objectsToday) {
+  const listed = DATA_ACTOR_CLASSES.reduce((total, name) => total + split[name], 0);
+  const missing = objectsToday !== null && objectsToday > listed ? objectsToday - listed : 0;
+  return { ...split, unknown: split.unknown + missing };
 }
 
 const kindOfTable = (label) => Object.keys(DATA_LAKE_TABLES).find((kind) => label === kind) || null;
@@ -112,7 +182,17 @@ function figuresAcross(todayValue, histories, read) {
  * @param {Record<number, object|null>} params.histories - the history file of each offset, or null
  * @returns {object}
  */
-export function shapeDataSection({ envName, now, tables, actorSplit, buckets, books, histories }) {
+export function shapeDataSection({
+  envName,
+  now,
+  tables,
+  actorSplit,
+  diyaGlSplit = null,
+  diyaGlBucketName = null,
+  buckets,
+  books,
+  histories,
+}) {
   const tableRows = tables.map((table) => {
     const label = tableLabel(table.name, envName);
     const kind = kindOfTable(label);
@@ -124,18 +204,33 @@ export function shapeDataSection({ envName, now, tables, actorSplit, buckets, bo
     };
   });
 
-  const bucketRows = buckets.map((bucket) => ({
-    name: bucketLabel(bucket.name, envName),
-    objects: {
+  const bucketRows = buckets.map((bucket) => {
+    const name = bucketLabel(bucket.name, envName);
+    const objects = {
       today: numberOrNull(bucket.objects),
       ...Object.fromEntries(DATA_HISTORY_OFFSETS.map((days) => [`d${days}`, numberOrNull(bucket.history[days])])),
-    },
-  }));
+    };
+    const isDiyaGl = diyaGlSplit !== null && bucket.name === diyaGlBucketName;
+    return {
+      name,
+      group: name.startsWith("analytics-") ? "analytics" : "customer",
+      objects,
+      split: isDiyaGl ? splitToFigure(diyaGlSplit.objects, objects.today) : null,
+    };
+  });
 
   const bookRows = books
     ? [
-        { type: "Books", count: figuresAcross(books.books, histories, (day) => day.books?.books), split: null },
-        { type: "Book versions", count: figuresAcross(books.versions, histories, (day) => day.books?.versions), split: null },
+        {
+          type: "Books",
+          count: figuresAcross(books.books, histories, (day) => day.books?.books),
+          split: diyaGlSplit ? diyaGlSplit.books : null,
+        },
+        {
+          type: "Book versions",
+          count: figuresAcross(books.versions, histories, (day) => day.books?.versions),
+          split: diyaGlSplit ? diyaGlSplit.versions : null,
+        },
       ]
     : [];
 
@@ -179,6 +274,7 @@ export function shapeDataSection({ envName, now, tables, actorSplit, buckets, bo
  * @param {Date} [params.now]
  * @param {string[]} params.tableNames
  * @param {string[]} params.bucketNames
+ * @param {string|null} [params.diyaGlBucketName] - the one bucket of customer content, split by owner
  * @param {object} params.io
  * @param {(tableName: string) => Promise<number|null>} params.io.describeItemCount
  * @param {(tableName: string) => Promise<{enabled: boolean, attribute: string|null}|null>} params.io.describeTtl
@@ -186,9 +282,9 @@ export function shapeDataSection({ envName, now, tables, actorSplit, buckets, bo
  * @param {(key: string, value: object) => Promise<void>} params.io.writeHistory
  * @param {(sql: string) => Promise<Array<object>>} params.io.runAthena
  * @param {(bucketNames: string[], days: number) => Promise<Record<string, Record<string, number>>>} params.io.bucketObjectCounts - per bucket, object count by ISO day
- * @param {() => Promise<{books: number, versions: number, truncated: boolean}|null>} params.io.countBooks
+ * @param {() => Promise<{books: number, versions: number, truncated: boolean, owners?: Record<string, {books: number, versions: number, objects: number}>}|null>} params.io.countBooks
  */
-export async function buildDataSection({ envName, now = new Date(), tableNames, bucketNames, io }) {
+export async function buildDataSection({ envName, now = new Date(), tableNames, bucketNames, diyaGlBucketName = null, io }) {
   const today = isoDay(now);
   const todayFile = await io.readHistory(historyKey(envName, today));
 
@@ -196,11 +292,19 @@ export async function buildDataSection({ envName, now = new Date(), tableNames, 
     tableNames.map(async (name) => ({ name, items: await io.describeItemCount(name), ttl: await io.describeTtl(name) })),
   );
 
-  // The Athena query runs for the first snapshot of the day only; later runs reuse its result.
-  let actorSplit = todayFile?.actorSplit ?? null;
-  if (!actorSplit) actorSplit = shapeActorSplit(await io.runAthena(buildActorSplitSql()));
-
   const books = await io.countBooks();
+  const owners = books?.owners ?? {};
+
+  // The Athena query runs for the first snapshot of the day only; later runs reuse its result. An
+  // owner that first appears later in the day reads unknown until the next day's query.
+  let actorSplit = todayFile?.actorSplit ?? null;
+  let ownerClasses = todayFile?.ownerClasses ?? null;
+  if (!actorSplit || (books && !ownerClasses)) {
+    const rows = await io.runAthena(buildActorSplitSql(Object.keys(owners)));
+    actorSplit = shapeActorSplit(rows);
+    ownerClasses = books ? shapeOwnerClasses(rows) : null;
+  }
+  const diyaGlSplit = books ? shapeDiyaGlSplit(owners, ownerClasses || {}) : null;
 
   const counts = bucketNames.length > 0 ? await io.bucketObjectCounts(bucketNames, DATA_HISTORY_OFFSETS[0] + 1) : {};
   const buckets = bucketNames.map((name) => {
@@ -227,9 +331,11 @@ export async function buildDataSection({ envName, now = new Date(), tableNames, 
     ),
     books: books ? { books: books.books, versions: books.versions } : null,
     actorSplit,
+    ownerClasses,
+    diyaGlSplit,
   });
 
-  return shapeDataSection({ envName, now, tables, actorSplit, buckets, books, histories });
+  return shapeDataSection({ envName, now, tables, actorSplit, diyaGlSplit, diyaGlBucketName, buckets, books, histories });
 }
 
 // The newest day's count when today's has not been written yet; null when there is none.

@@ -348,8 +348,8 @@
         <section id="dataBucketsPanel" class="objective" hidden data-tab="data">
           <h2>Buckets and books</h2>
           <p class="subtitle">
-            Objects in each bucket, from the daily S3 object count, and the books in the diya-gl store, counted from its listing. A bucket's
-            split by who owns the objects is not recorded.
+            Customer content: the objects in the diya-gl bucket and its books and book versions, counted from its listing. The second table
+            gives each row's count now by the class of the account that owns it; an owner with no activity event reads unknown.
           </p>
           <div class="data-scroll">
             <table class="observations data-table" id="dataBucketsTable">
@@ -366,8 +366,46 @@
               <tbody id="dataBucketsBody"></tbody>
             </table>
           </div>
+          <div class="data-scroll">
+            <table class="observations data-table" id="dataBucketsSplitTable">
+              <thead>
+                <tr>
+                  <th>Bucket or type, by owner</th>
+                  <th>Customer</th>
+                  <th>Test</th>
+                  <th>Synthetic</th>
+                  <th>Other</th>
+                  <th>Unknown</th>
+                </tr>
+              </thead>
+              <tbody id="dataBucketsSplitBody"></tbody>
+            </table>
+          </div>
           <p class="objective-empty" id="dataBucketsEmpty" hidden>No bucket counts yet. They arrive with the next snapshot.</p>
           <p class="subtitle" id="dataBooksNote" hidden>The book count stopped at the listing limit, so it is a lower bound.</p>
+        </section>
+        <section id="dataAnalyticsPanel" class="objective" hidden data-tab="data">
+          <h2>Analytics buckets</h2>
+          <p class="subtitle">
+            Objects in the analytics lake and its query results, from the daily S3 object count. They hold no customer content, so they sit
+            apart from the table above.
+          </p>
+          <div class="data-scroll">
+            <table class="observations data-table" id="dataAnalyticsTable">
+              <thead>
+                <tr>
+                  <th>Bucket</th>
+                  <th>Today</th>
+                  <th>1 day ago</th>
+                  <th>7 days ago</th>
+                  <th>30 days ago</th>
+                  <th>90 days ago</th>
+                </tr>
+              </thead>
+              <tbody id="dataAnalyticsBody"></tbody>
+            </table>
+          </div>
+          <p class="objective-empty" id="dataAnalyticsEmpty" hidden>No analytics bucket counts yet. They arrive with the next snapshot.</p>
         </section>
         <div data-objective-slot="low-running-cost" data-tab="main"></div>
         <div data-objective-slot="uptime" data-tab="ops"></div>
