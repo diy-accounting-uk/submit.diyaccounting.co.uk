@@ -463,7 +463,8 @@ function caseFilter(where) {
  *
  * A view in LATEST_READING_VIEWS reports whole days, so its `o<i>_today` is the value on the
  * newest day up to today and `o<i>_today_as_of` is that day. A view with one row per month or
- * quarter has no Today or Previous day, so those columns are left out.
+ * quarter has no Today or Previous day, so those columns are left out. Its `o<i>_prev_1` reads
+ * the day before the day Today read, with the same aggregation.
  *
  * An observation with aggregation "ratio" divides the window's total of `valueExpr` by its total
  * of `denominatorExpr`, so a share is weighted by the days' sizes rather than averaged.
@@ -492,15 +493,32 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
     // sum, average or highest-day figure would misstate; a whole-day source's Today reads its
     // newest day up to today the same way. "latest-total" does the same for a view with several
     // rows a day, summing the rows of the newest day.
+    const newestDayName = `${prefix}today_newest_day`;
+    if (latestReading && !periodic) {
+      // The newest day up to today that has a row for this observation: Today reads it and
+      // Previous day reads the day before it, so the two columns never show one day.
+      newestDayColumns.push(`max(CASE WHEN ${dayColumn} <= ${UK_TODAY}${filter} THEN ${dayColumn} END) OVER () AS ${newestDayName}`);
+    }
     const windowColumns = WINDOWED_COLUMNS.filter(([alias]) => !(periodic && (alias === "today" || alias === "prev_1"))).map(
       ([alias, condition]) => {
         const newestDay = latestReading && alias === "today";
+        const dayBeforeNewest = latestReading && alias === "prev_1";
+        if (dayBeforeNewest) {
+          const dayBefore = `${dayColumn} = date_add('day', -1, ${newestDayName})`;
+          if (aggregation === "latest-total" || aggregation === "sum") {
+            return `sum(${valueExpr}) FILTER (WHERE ${dayBefore}${filter}) AS ${prefix}${alias}`;
+          }
+          return `max_by(${valueExpr}, ${dayColumn}) FILTER (WHERE ${dayBefore}${filter}) AS ${prefix}${alias}`;
+        }
         if (aggregation === "latest-total" || (newestDay && aggregation === "sum")) {
           // The open items counted on the newest day that has a row in the window: a count of
           // open items is a reading, so summing it over the days would count each item once a day.
-          const window = newestDay ? `${dayColumn} <= ${UK_TODAY}` : condition(dayColumn);
-          const newestDayName = `${prefix}${alias}_newest_day`;
-          newestDayColumns.push(`max(CASE WHEN ${window}${filter} THEN ${dayColumn} END) OVER () AS ${newestDayName}`);
+          if (!newestDay) {
+            const window = condition(dayColumn);
+            const windowNewestDayName = `${prefix}${alias}_newest_day`;
+            newestDayColumns.push(`max(CASE WHEN ${window}${filter} THEN ${dayColumn} END) OVER () AS ${windowNewestDayName}`);
+            return `sum(${valueExpr}) FILTER (WHERE ${dayColumn} = ${windowNewestDayName}${filter}) AS ${prefix}${alias}`;
+          }
           return `sum(${valueExpr}) FILTER (WHERE ${dayColumn} = ${newestDayName}${filter}) AS ${prefix}${alias}`;
         }
         if (aggregation === "latest" || newestDay) {
@@ -528,7 +546,7 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
     }
     return windowColumns;
   });
-  const source = newestDayColumns.length > 0 ? `(SELECT *,\n       ${newestDayColumns.join(",\n       ")}\n       FROM ${view})` : view;
+  const source = newestDayColumns.length > 0 ? `(SELECT *,\n       ${newestDayColumns.join(",\n       ")}\n       FROM   ${view})` : view;
   return `SELECT ${columns.join(",\n       ")}\nFROM   ${source}`;
 }
 

@@ -363,8 +363,26 @@ describe("operatorSnapshotPublish", () => {
       expect(sql).toContain(`max(CASE WHEN day <= ${ukToday} AND (sub_account_id = '1') THEN day END) OVER () AS o0_today_newest_day`);
       expect(sql).toContain(`cast(max(day) FILTER (WHERE day <= ${ukToday} AND (sub_account_id = '1')) AS varchar) AS o0_today_as_of`);
       expect(sql).toContain(
-        `sum(CASE WHEN day = date_add('day', -1, ${ukToday}) AND (sub_account_id = '1') THEN cost_usd END) AS o0_prev_1`,
+        `sum(cost_usd) FILTER (WHERE day = date_add('day', -1, o0_today_newest_day) AND (sub_account_id = '1')) AS o0_prev_1`,
       );
+    });
+
+    test("a whole-day source's Previous day is the day before the day Today read, for every aggregation", () => {
+      const sql = buildWindowedBatchSql({
+        view: "v_cost_daily",
+        dayColumn: "day",
+        observations: [
+          { valueExpr: "cost_usd", aggregation: "sum" },
+          { valueExpr: "balance", aggregation: "latest" },
+          { valueExpr: "open_items", aggregation: "latest-total", where: "kind = 'x'" },
+        ],
+      });
+      expect(sql).toContain("sum(cost_usd) FILTER (WHERE day = date_add('day', -1, o0_today_newest_day)) AS o0_prev_1");
+      expect(sql).toContain("max_by(balance, day) FILTER (WHERE day = date_add('day', -1, o1_today_newest_day)) AS o1_prev_1");
+      expect(sql).toContain("sum(open_items) FILTER (WHERE day = date_add('day', -1, o2_today_newest_day) AND (kind = 'x')) AS o2_prev_1");
+      expect(sql.match(/AS o1_today_newest_day/g)).toHaveLength(1);
+      expect(sql.match(/AS o2_today_newest_day/g)).toHaveLength(1);
+      expect(sql).not.toContain("date_add('day', -1, CAST(");
     });
 
     test("a live source's Today counts the rows since UK midnight and carries no reading day", () => {
