@@ -222,5 +222,9 @@ it start the next set, rebased on the new `main`.
   The check of files batch against batch found them; the `Follows` lines alone did not.
 - Photographs of pages are derived work too: the marketing row went after the row that puts the
   language option in every page's header.
+- A row that reaches the board after the set is defined joins only by the operator's answer. OS18b
+  (a vendor's rejection) was asked as one question with three options and the cost of each: in the
+  set, alone with its own ci set and prod deploy, or split so the part with no deployment goes now.
+  The operator chose the set. On a yes, check the new row's files against its wave like any other.
 - The questions that finalised `ridge` were the scope and the depth of the final gates. Branch
   names, the order of the waves and where the recordings run needed no question.

@@ -15,8 +15,10 @@ skill (`.claude/skills/wave-set/SKILL.md`), section "How a set is delivered".
 
 > I only want /wave-set to consider tasks already on the board.
 
-Answers of 2026-11-17: the set carries all 53 rows that can ride in it; the set branch passes every
-local gate, the proxy lane among them, before the push.
+Answers of 2026-11-17: the set carries every row that can ride in it (53 when it was defined); the
+set branch passes every local gate, the proxy lane among them, before the push. OS18b (the fix for
+OpenAI's rejection of the ChatGPT plugin) joined the same day by the operator's answer: it rides in
+the set, with no deployment of its own.
 
 ## Status
 
@@ -33,7 +35,7 @@ each repository. More local waves are cheap. A second push is expensive.
 
 | Repository | Rows | Pull requests | Branch pushed |
 | --- | ---: | ---: | --- |
-| submit | 52 | 1 | `claude/ridge-set` |
+| submit | 53 | 1 | `claude/ridge-set` |
 | spreadsheets | 1 | 1 | `claude/ridge-set` |
 
 - Left out, for the next set: **DASH45**. Its review reads prod's dashboard after DASH36 to DASH44
@@ -68,6 +70,7 @@ State: pending.
 | articles-a | WEB1, WEB17, WEB18 | Sonnet | capture scripts, `build-filing-pages.mjs`, four scene files |
 | edge | WEB3 | Opus | `EdgeStack.java` default behaviour, the edge function |
 | dash-b | DASH40, DASH41, DASH42 | Sonnet, Opus, Sonnet | retention, actor classes, hourly views |
+| mcp-b | OS18b | Opus | the tools' answers, the plugin package, the MCP part of `privacy.html` |
 
 `articles-a` also makes WEB11's one-line change in `scripts/build-filing-pages.mjs` (the literal
 "3 submissions", line 98) as its own commit, because that file is its own in this wave.
@@ -175,7 +178,8 @@ suite at the push.
    what each turned out to be. `/watch`.
 4. The ci proof list, against the one ci set: WEB2 (a day pass's expiry), WEB3 (the 404 page, the
    redirect, the API's JSON), WEB8 (sign-in returns to the chosen activity), WEB14 (the support
-   issue), MCP2 (Claude's and ChatGPT's connectors sign in), DASH40 (an item's TTL), LANG10a and
+   issue), MCP2 (Claude's and ChatGPT's connectors sign in), OS18b (each tool's field list as the
+   demo user), DASH40 (an item's TTL), LANG10a and
    LANG10b (a Welsh VAT return and a Welsh quarterly update to the sandbox), LANG11a (a Welsh
    journey on the test gateway). Branch dispatches: `stack-drift.yml` for SD1, `alarm-replay.yml`
    for WAF2, `compliance.yml` against prod for WAF1.
