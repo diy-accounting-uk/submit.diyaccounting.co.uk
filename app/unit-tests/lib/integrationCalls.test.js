@@ -105,6 +105,14 @@ describe("lib/integrationCalls", () => {
       expect(item.ttl).toBe(Math.floor(Date.parse("2026-11-04T10:15:30.123Z") / 1000) + 90 * 86400);
     });
 
+    it.each(["test-user", "probe"])("sets the record of a %s call to expire 2 days after the call", async (actor) => {
+      vi.useFakeTimers({ now: new Date("2026-11-04T10:15:30.123Z"), toFake: ["Date"] });
+
+      await recordedFetch(URL_WITH_VRN, INIT, { ...CALL, actor, fetchImplementation: async () => new Response("{}") });
+
+      expect(recordedItem().ttl).toBe(Math.floor(Date.parse("2026-11-04T10:15:30.123Z") / 1000) + 2 * 86400);
+    });
+
     it("uses global fetch when no implementation is given", async () => {
       const mockFetch = vi.fn().mockResolvedValue(new Response("{}"));
       vi.stubGlobal("fetch", mockFetch);

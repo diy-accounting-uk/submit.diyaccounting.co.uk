@@ -16,7 +16,7 @@
 import { randomBytes } from "node:crypto";
 import { createLogger, context } from "./logger.js";
 import { emitMetric } from "./emfMetrics.js";
-import { calculateTtl, TTL_PRESETS } from "./dateUtils.js";
+import { callRecordRetention } from "./recordRetention.js";
 import { govTalkSummary, integrationPathTemplate, maskIntegrationRaw } from "./dataMasking.js";
 import { normalizeHeaders } from "./httpFetch.js";
 import { resolveActorClass } from "./activityAlert.js";
@@ -103,7 +103,7 @@ function buildItem({ org, target, api, actor, url, method, startedAt, durationMs
     deployment: process.env.DEPLOYMENT_NAME,
     fph,
     raw,
-    ttl: calculateTtl(startedAt, TTL_PRESETS.NINETY_DAYS).ttl,
+    ttl: callRecordRetention(actor, startedAt).ttl,
   };
 }
 

@@ -42,7 +42,7 @@ async function call(params, requestContext) {
 
   if (!hmrcResponse.ok) return { hmrcResponse, hmrcResponseBody, data: null };
 
-  await acknowledgeReceipt(requestContext.userSub, receiptId, requestContext.hmrcAccount === "synthetic", presentedLanguage);
+  await acknowledgeReceipt(requestContext.userSub, receiptId, presentedLanguage);
   await publishActivityEvent({
     event: "vat-assist-report-acknowledged",
     summary: "VAT Assist report acknowledged",

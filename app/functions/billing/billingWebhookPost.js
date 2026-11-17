@@ -486,6 +486,7 @@ async function handleInvoicePaid(invoice, { test = false } = {}) {
   const renewal = await updateBundleSubscriptionFields(hashedSub, bundleId, {
     currentPeriodEnd,
     expiry: currentPeriodEnd,
+    actor,
     stripeSubscriptionId: subscriptionId,
     stripeCustomerId: customerId || null,
     subscriptionStatus: subscription.status,

@@ -6,7 +6,8 @@
 import { createLogger } from "../lib/logger.js";
 import { hashSub, getSaltVersion, subHashCandidates } from "../services/subHasher.js";
 import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
-import { calculateOneMonthTtl } from "../lib/dateUtils.js";
+import { bundleRetention, isTestActor } from "../lib/recordRetention.js";
+import { resolveActorClass } from "../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbBundleRepository.js" });
 
@@ -32,6 +33,20 @@ async function locateBundleOwner(userId, bundleId) {
 // The sort key is not a bundle id, so a read of the user's bundles leaves the item out.
 export const ACCOUNT_SETTINGS_ITEM_ID = "#account-settings";
 
+/**
+ * Set ttl on a new bundle item: two days for a test or synthetic owner, one month after the expiry
+ * for any other owner, and none for another owner's bundle with no expiry.
+ * The owner's class is the bundle's own actor, else the class of the current request.
+ */
+function stampBundleRetention(item, now) {
+  const actor = item.actor || resolveActorClass(undefined, item.hashedSub);
+  if (!item.expiry && !isTestActor(actor)) return;
+  const expiry = item.expiry ? new Date(item.expiry) : now;
+  const { ttl, ttl_datestamp } = bundleRetention({ actor }, expiry, now);
+  item.ttl = ttl;
+  item.ttl_datestamp = ttl_datestamp;
+}
+
 export async function putBundle(userId, bundle) {
   logger.info({ message: `putBundle [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
 
@@ -53,17 +68,14 @@ export async function putBundle(userId, bundle) {
     if (bundle.expiry) {
       const expiryDate = new Date(bundle.expiry);
       item.expiry = expiryDate.toISOString();
-
-      // Calculate TTL as 1 month after expiry
-      const { ttl, ttl_datestamp } = calculateOneMonthTtl(expiryDate);
-      item.ttl = ttl;
-      item.ttl_datestamp = ttl_datestamp;
     } else {
       // A bundle with no expiry carries no expiry attribute at all: expiry is a key of the
       // bundleId-expiry-index and DynamoDB rejects an empty string in an index key, and a
       // missing key simply leaves the item out of that sparse index.
       delete item.expiry;
     }
+
+    stampBundleRetention(item, now);
 
     logger.info({
       message: "Storing bundle in DynamoDB as item",
@@ -111,15 +123,14 @@ export async function putBundleByHashedSub(hashedSub, bundle) {
     if (bundle.expiry) {
       const expiryDate = new Date(bundle.expiry);
       item.expiry = expiryDate.toISOString();
-      const { ttl, ttl_datestamp } = calculateOneMonthTtl(expiryDate);
-      item.ttl = ttl;
-      item.ttl_datestamp = ttl_datestamp;
     } else {
       // A bundle with no expiry carries no expiry attribute at all: expiry is a key of the
       // bundleId-expiry-index and DynamoDB rejects an empty string in an index key, and a
       // missing key simply leaves the item out of that sparse index.
       delete item.expiry;
     }
+
+    stampBundleRetention(item, now);
 
     logger.info({ message: "Storing bundle in DynamoDB by hashedSub", hashedSub, item });
     await executeDynamoDbCommand(
@@ -419,7 +430,7 @@ export async function updateBundleSubscriptionFields(hashedSub, bundleId, fields
 
     const written = { ...fields };
     if (fields.expiry) {
-      const { ttl, ttl_datestamp } = calculateOneMonthTtl(new Date(fields.expiry));
+      const { ttl, ttl_datestamp } = bundleRetention({ actor: fields.actor }, new Date(fields.expiry), new Date());
       written.ttl = ttl;
       written.ttl_datestamp = ttl_datestamp;
     }

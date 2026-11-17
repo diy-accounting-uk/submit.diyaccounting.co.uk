@@ -62,6 +62,31 @@ describe("data/dynamoDbBundleRepository - putBundle", () => {
     expect(typeof item.ttl).toBe("number");
   });
 
+  test.each(["test-user", "probe"])("a %s bundle with no expiry gets a ttl 2 days from now", async (actor) => {
+    const before = Math.floor(Date.now() / 1000);
+    await putBundle("user-1", { bundleId: "resident-vat", expiry: "", actor });
+
+    const item = mockPutCommand.mock.calls[0][0].Item;
+    expect("expiry" in item).toBe(false);
+    expect(item.ttl).toBeGreaterThanOrEqual(before + 2 * 86400);
+    expect(item.ttl).toBeLessThanOrEqual(before + 2 * 86400 + 60);
+  });
+
+  test("a test-user bundle with a far expiry still gets a ttl 2 days from now", async () => {
+    const before = Math.floor(Date.now() / 1000);
+    await putBundleByHashedSub("hashed-sub", { bundleId: "day-guest", expiry: "2099-01-01", actor: "test-user" });
+
+    const item = mockPutCommand.mock.calls[0][0].Item;
+    expect(item.expiry).toBe("2099-01-01T00:00:00.000Z");
+    expect(item.ttl).toBeLessThanOrEqual(before + 2 * 86400 + 60);
+  });
+
+  test("a customer bundle with an expiry keeps a ttl one month past it", async () => {
+    await putBundleByHashedSub("hashed-sub", { bundleId: "day-guest", expiry: "2099-01-01", actor: "customer" });
+
+    expect(mockPutCommand.mock.calls[0][0].Item.ttl_datestamp.slice(0, 10)).toBe("2099-02-01");
+  });
+
   test("a null expiry is dropped the same way as an empty one", async () => {
     await putBundleByHashedSub("hashed-sub", { bundleId: "resident-vat", expiry: null });
 

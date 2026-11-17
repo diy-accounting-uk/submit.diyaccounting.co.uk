@@ -77,7 +77,6 @@ async function call(params, requestContext) {
     },
     resolveActorClass(),
     undefined,
-    requestContext.hmrcAccount === "synthetic",
   );
   await publishActivityEvent({
     event: "vat-assist-report-requested",

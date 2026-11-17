@@ -185,7 +185,7 @@ public class AnalyticsStack extends Stack {
                 .autoDeleteObjects(true)
                 .lifecycleRules(List.of(LifecycleRule.builder()
                         .id("expire-query-results")
-                        .expiration(Duration.days(14))
+                        .expiration(Duration.days(1))
                         .build()))
                 .build();
 

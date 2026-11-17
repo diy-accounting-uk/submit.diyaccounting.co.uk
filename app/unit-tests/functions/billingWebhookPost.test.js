@@ -1355,6 +1355,7 @@ describe("billingWebhookPost", () => {
       expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", {
         currentPeriodEnd: new Date(periodEnd * 1000).toISOString(),
         expiry: new Date(periodEnd * 1000).toISOString(),
+        actor: "customer",
         stripeSubscriptionId: "sub_test_456",
         stripeCustomerId: "cus_test_1",
         subscriptionStatus: "active",
