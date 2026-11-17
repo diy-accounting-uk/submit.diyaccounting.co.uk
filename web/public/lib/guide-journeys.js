@@ -8,8 +8,7 @@
 export const TEST_PERIODS_NOTE =
   "These pictures come from HMRC's test service, which uses periods from 2017. Your screen shows your own periods.";
 
-/** The title of the group whose journeys show HMRC's test periods. */
-export const TEST_PERIODS_GROUP_TITLE = "VAT";
+// A journey whose frames show a VAT period has `showsPeriods: true` and gets TEST_PERIODS_NOTE above its steps.
 
 export const GROUPS = [
   {
@@ -17,14 +16,14 @@ export const GROUPS = [
     intro: "Check what is due, file the return and look up what HMRC holds.",
     journeys: [
       { video: "hmrc-authorise" },
-      { video: "view-obligations" },
-      { video: "submit-return" },
-      { video: "vat-from-books" },
-      { video: "vat-hmrc-assist" },
-      { video: "view-return" },
-      { video: "view-liabilities" },
-      { video: "view-payments" },
-      { video: "view-penalties" },
+      { video: "view-obligations", showsPeriods: true },
+      { video: "submit-return", showsPeriods: true },
+      { video: "vat-from-books", showsPeriods: true },
+      { video: "vat-hmrc-assist", showsPeriods: true },
+      { video: "view-return", showsPeriods: true },
+      { video: "view-liabilities", showsPeriods: true },
+      { video: "view-payments", showsPeriods: true },
+      { video: "view-penalties", showsPeriods: true },
     ],
   },
   {

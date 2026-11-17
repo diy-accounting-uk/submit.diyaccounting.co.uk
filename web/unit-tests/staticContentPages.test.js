@@ -69,12 +69,13 @@ describe("the guide page", () => {
     expect(html).not.toContain("| DIY Accounting Submit</a>");
   });
 
-  test("each VAT journey carries the line about HMRC's test periods and no other group does", () => {
+  test("a journey whose frames show periods carries the line about HMRC's test periods, and hmrc-authorise does not", () => {
     const html = renderGuideJourneys(loadManifest(), catalog);
-    const vatGroup = html.slice(0, html.indexOf("<h2>Companies House</h2>"));
-    const rest = html.slice(vatGroup.length);
-    expect(vatGroup.match(/class="guide-test-note"/g)?.length).toBe(vatGroup.match(/<details/g).length);
-    expect(rest).not.toContain("guide-test-note");
+    const journey = (id) => html.slice(html.indexOf(`<details class="guide-journey" id="${id}"`)).split("</details>")[0];
+    expect(journey("hmrc-authorise")).not.toContain("guide-test-note");
+    expect(journey("view-obligations")).toContain("guide-test-note");
+    expect(journey("submit-return")).toContain("guide-test-note");
+    expect(html.indexOf("guide-test-note")).toBeGreaterThan(html.indexOf('id="hmrc-authorise"'));
   });
 
   test("a journey whose video names an activity that prod does not list is left out", () => {

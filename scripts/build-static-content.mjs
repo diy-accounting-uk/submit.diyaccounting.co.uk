@@ -22,7 +22,7 @@ import TOML from "@iarna/toml";
 import { isActivityListedInEnvironment } from "../app/services/productCatalog.js";
 import { escapeHtml, replaceBetweenMarkers } from "./page-markers.mjs";
 import { renderFaqItem } from "../web/public/lib/faq-markdown.js";
-import { GROUPS, splitTitle, TEST_PERIODS_NOTE, TEST_PERIODS_GROUP_TITLE } from "../web/public/lib/guide-journeys.js";
+import { GROUPS, splitTitle, TEST_PERIODS_NOTE } from "../web/public/lib/guide-journeys.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PUBLIC_DIRECTORY = join(ROOT, "web", "public");
@@ -97,7 +97,7 @@ export function renderGuideJourneys(manifest, catalog) {
         journeys.push({
           id: video.id,
           title,
-          html: guideJourneyHtml(video.id, title, note, steps, group.title === TEST_PERIODS_GROUP_TITLE ? TEST_PERIODS_NOTE : ""),
+          html: guideJourneyHtml(video.id, title, note, steps, journey.showsPeriods ? TEST_PERIODS_NOTE : ""),
         });
       } else {
         if (!isListedEverywhere(catalog, journey.catalogueActivity)) continue;

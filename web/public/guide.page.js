@@ -6,7 +6,7 @@
 // without frames lists text steps. A frame opens full size in the lightbox.
 
 import { fetchActivityListing } from "./lib/services/content-listing.js";
-import { GROUPS, splitTitle, TEST_PERIODS_NOTE, TEST_PERIODS_GROUP_TITLE } from "./lib/guide-journeys.js";
+import { GROUPS, splitTitle, TEST_PERIODS_NOTE } from "./lib/guide-journeys.js";
 
 const MANIFEST_URL = "videos/publish.json";
 
@@ -117,7 +117,7 @@ function render(container, videos, isListed) {
             title,
             note,
             video.walkthrough.map((scene, index) => frameStep(scene, `${video.id}-step-${index + 1}`)),
-            group.title === TEST_PERIODS_GROUP_TITLE ? TEST_PERIODS_NOTE : "",
+            journey.showsPeriods ? TEST_PERIODS_NOTE : "",
           ),
         );
         addJump(jumpList, video.id, title);
