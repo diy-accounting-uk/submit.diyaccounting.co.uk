@@ -189,7 +189,7 @@ header::after {
 
 .brand-name {
   color: var(--c-brand);
-  font-family: Arial, sans-serif;
+  font-family: var(--font-text);
   font-weight: 700;
   font-size: var(--step-1);
   white-space: nowrap;

@@ -217,7 +217,7 @@ function escapeHtml(value) {
 }
 
 const PAGE_STYLE =
-  "body{font-family:system-ui,sans-serif;max-width:32rem;margin:3rem auto;padding:0 1rem;color:#1a1a1a}" +
+  "body{font-family:Arial,Arimo,sans-serif;max-width:32rem;margin:3rem auto;padding:0 1rem;color:#1a1a1a}" +
   "button{font-size:1rem;padding:.6rem 1.4rem;border:0;border-radius:.3rem;background:#1a5fb4;color:#fff;cursor:pointer}";
 
 function htmlPage(statusCode, title, bodyHtml, headers = {}, { extraFormOrigin } = {}) {

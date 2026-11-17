@@ -53,10 +53,11 @@ export const FONT_FILES = [
   "atkinson-hyperlegible-latin-400-italic.woff2",
   "atkinson-hyperlegible-latin-400-normal.woff2",
   "atkinson-hyperlegible-latin-700-normal.woff2",
-  "plain-zero-400-italic.woff2",
-  "plain-zero-400-normal.woff2",
-  "plain-zero-700-normal.woff2",
+  "arimo-latin-400-italic.woff2",
+  "arimo-latin-400-normal.woff2",
+  "arimo-latin-700-normal.woff2",
   "OFL.txt",
+  "OFL-Arimo.txt",
 ];
 
 const LIVE_BASES = {

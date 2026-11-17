@@ -15,7 +15,7 @@ const socialDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "../we
 const baseStyle = `
   html, body { margin: 0; width: 1200px; height: 630px; }
   body { box-sizing: border-box; padding: 56px 64px; background: #2a59a0; color: #fff;
-    font-family: "Helvetica Neue", Arial, sans-serif; display: flex; flex-direction: column; justify-content: space-between; }
+    font-family: Arial, Arimo, sans-serif; display: flex; flex-direction: column; justify-content: space-between; }
   .brand { font-size: 30px; font-weight: 700; }
   h1 { font-size: 84px; line-height: 1.05; margin: 0; font-weight: 800; }
   .offer { display: inline-block; background: #fff; color: #1d3f73; font-size: 40px; font-weight: 800;

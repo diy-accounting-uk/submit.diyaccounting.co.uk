@@ -12,7 +12,7 @@ const SUPPORT_ADDRESS = "support@diyaccounting.co.uk";
 const COMPANY_NAME = "DIY Accounting Limited";
 const TEXT_COLOUR = "#0b0c0c";
 const SECONDARY_COLOUR = "#45505e";
-const FONT_STACK = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+const FONT_STACK = "Arial,Helvetica,sans-serif";
 
 export const PASS_QR_CONTENT_ID = "pass-qr";
 const PHYSICAL_PASS_TYPE_ID = "physical-pass";

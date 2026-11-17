@@ -72,7 +72,7 @@ export function generateErrorHtml(statusCode) {
     @media (prefers-color-scheme: dark) {
       :root { --c-canvas: #10161f; --c-paper: #17202b; --c-ink: #e6ebf2; --c-ink-muted: #a9b4c4; --c-rule: #6b778a; --c-brand: #8fb4ec; --c-on-brand: #10161f; }
     }
-    body { margin: 0; background: var(--c-canvas); color: var(--c-ink); font-family: system-ui, sans-serif; line-height: 1.5; }
+    body { margin: 0; background: var(--c-canvas); color: var(--c-ink); font-family: Arial, Arimo, sans-serif; line-height: 1.5; }
     header, main, footer { max-width: 40rem; margin: 0 auto; padding: 0 1rem; }
     .brand { margin: 0; padding: 0.75rem 0; border-bottom: 3px double var(--c-ink); font-weight: 700; }
     a { color: var(--c-brand); }
