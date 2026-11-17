@@ -51,6 +51,7 @@ const invalidate = (prefix) => {
 let __userBundles = [];
 let __fullBundleData = []; // Full bundle objects from API (with token info, allocated flag, etc.)
 let __fetchBundlesController = null;
+let __bundleListing = null; // lib/bundle-listing.js, loaded with the catalogue
 let __catalogueData = null; // Catalogue TOML data (stored for re-renders)
 let __userBundlesLoaded = false; // True once the first answer about held bundles has arrived
 let __catalogueSettled = false; // True once the catalogue has loaded or failed to load
@@ -232,6 +233,12 @@ function domEl(tag, attrs, ...children) {
 
 const noteEl = (kind, text) => domEl("p", { class: `bundle-note bundle-note--${kind}` }, text);
 
+// The bundle's token allowance from the catalogue, as a card note; nothing when the catalogue names none.
+const tokenNoteEl = (b) => {
+  const sentence = __bundleListing?.tokenSentence(b);
+  return sentence ? noteEl("plain", sentence) : null;
+};
+
 const serviceItemEl = (...children) => domEl("div", { class: "service-item" }, ...children);
 
 // --- render one catalog card
@@ -348,6 +355,7 @@ const cardEl = (b) => {
             )
           : null,
         noteEl("plain", b.description || "Subscription via Stripe"),
+        tokenNoteEl(b),
       );
     }
 
@@ -356,6 +364,7 @@ const cardEl = (b) => {
     return serviceItemEl(
       bundleButton("btn service-btn", { "data-subscribe": "true" }, `Subscribe${singlePriceLabel} — ${name}`),
       noteEl("plain", b.description || "Monthly subscription via Stripe"),
+      tokenNoteEl(b),
     );
   }
 
@@ -376,7 +385,8 @@ const cardEl = (b) => {
   if (!capacityAvailable && !passCode) {
     return serviceItemEl(
       bundleButton("btn service-btn", { "data-disabled-reason": "capacity", "disabled": "" }, `Limit reached — ${name}`, true),
-      noteEl("warn", "Global user limit reached, please try again tomorrow"),
+      noteEl("warn", "All day passes are in use. Try again tomorrow, or choose a bundle."),
+      tokenNoteEl(b),
     );
   }
 
@@ -384,6 +394,7 @@ const cardEl = (b) => {
   const isFree = allocation === "on-request" && !(Array.isArray(b.prices) && b.prices.length > 0);
   return serviceItemEl(
     bundleButton("btn service-btn", isFree ? { "data-free": "true" } : {}, `Request ${name}${requestLabelSuffix(isFree, tg)}`, true),
+    tokenNoteEl(b),
     isFree ? noteEl("plain", "One day, no card. To keep filing after today, choose a plan above.") : null,
   );
 };
@@ -592,6 +603,7 @@ const __catalogueReady = (async function () {
     __currentEnv = await readEnvironment();
     __viewer = await (await import("/lib/services/viewer-settings.js")).fetchViewer();
     __catalogService = await import("/lib/services/catalog-service.js");
+    __bundleListing = await import("/lib/bundle-listing.js");
     __aggregates = await import("/lib/services/catalogue-aggregates.js");
     renderCatalogueBundles();
     __catalogueSettled = true;

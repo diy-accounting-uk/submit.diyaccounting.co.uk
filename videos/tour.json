@@ -181,7 +181,7 @@
           "keyWord": "bundle"
         },
         { "action": "await", "until": "#passEntryForm", "label": "Loading bundles" },
-        { "action": "point", "target": { "text": "Log in to add bundles" } },
+        { "action": "point", "target": { "text": "Choose a bundle" } },
         { "action": "hold", "ms": 800 },
         {
           "action": "point",

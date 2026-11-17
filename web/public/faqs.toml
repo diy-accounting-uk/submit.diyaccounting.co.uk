@@ -665,13 +665,9 @@ id = "bundle-prices"
 category = "bundles"
 question = "What do the bundles cost?"
 answer = """
-- **Day pass:** free. Three tokens, valid for one day.
-- **Resident VAT:** £9.99 a year, or £0.99 a month. Submit VAT returns.
-- **Resident Ltd:** £9.99 a year, or £0.99 a month. File accounts and confirmation statements to Companies House.
-- **Resident Pro:** £39.99 a year, or £3.99 a month. Everything in Resident VAT and Resident Ltd, plus Income Tax Self Assessment and saving diya-gl books.
-- **Resident Tax Agent:** £199.99 a year, or £19.99 a month. Everything in Resident Pro with no token limit, for accountants and bookkeepers filing for clients.
+{{bundle-prices}}
 
-Cancel any time. See the [Bundles](bundles.html) page to subscribe.
+Each filing uses one token. Cancel any time. See the [Bundles](bundles.html) page to subscribe.
 """
 keywords = ["price", "cost", "how much", "subscription", "resident vat", "resident ltd", "resident pro", "resident tax agent", "day pass", "cancel", "pay"]
 priority = 34

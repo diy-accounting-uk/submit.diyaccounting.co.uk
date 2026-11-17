@@ -8,9 +8,9 @@ import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseCatalog } from "../../services/productCatalog.js";
+import { bundlePriceList, listedBundles } from "../../../web/public/lib/bundle-listing.js";
 import {
   addVideoEntries,
-  listedBundles,
   listedVideos,
   publishContent,
   homeActivities,
@@ -161,6 +161,23 @@ describe("publish-content bundles", () => {
 
   test("ci shows the tax agent price", () => {
     expect(renderBundlesBlock(CATALOG, "ci")).toContain("£199.99 a year or £19.99 a month.");
+  });
+
+  test("each card gives the bundle's tokens from the catalogue", () => {
+    const html = renderBundlesBlock(CATALOG, "prod");
+    expect(html).toContain("3 tokens for 24 hours.");
+    expect(html).toContain("100 tokens each month.");
+    expect(renderBundlesBlock(CATALOG, "ci")).toContain("No limit on tokens.");
+  });
+
+  test("the help answer on prices lists the bundles the environment lists, with price and tokens", () => {
+    const prod = bundlePriceList(CATALOG, "prod");
+    expect(prod).toContain("- **Day pass** is free and gives 3 tokens for 24 hours.");
+    expect(prod).toContain("- **Resident Pro** costs £39.99 a year or £3.99 a month and gives 100 tokens each month.");
+    expect(prod).not.toContain("Tax Agent");
+    expect(bundlePriceList(CATALOG, "ci")).toContain(
+      "- **Resident Tax Agent** costs £199.99 a year or £19.99 a month and has no limit on tokens.",
+    );
   });
 });
 

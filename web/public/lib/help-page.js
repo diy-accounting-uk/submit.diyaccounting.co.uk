@@ -10,7 +10,9 @@
 import { FAQSearch, debounce } from "./faq-search.js";
 import { submitSupportTicket } from "./support-api.js";
 import { fetchActivityListing } from "./services/content-listing.js";
+import { fetchCatalogText, fetchCurrentEnvironmentName } from "./services/catalog-service.js";
 import { renderFaqItem } from "./faq-markdown.js";
+import { bundlePriceList, fillBundlePrices } from "./bundle-listing.js";
 
 /**
  * Help Page class managing the FAQ display and support form
@@ -39,7 +41,10 @@ class HelpPage {
       }
       const tomlText = await response.text();
       const isListed = await fetchActivityListing();
-      const faqs = window.TOML.parse(tomlText).faq.filter((faq) => isListed(faq.activity));
+      const priceList = bundlePriceList(window.TOML.parse(await fetchCatalogText()), await fetchCurrentEnvironmentName());
+      const faqs = window.TOML.parse(tomlText)
+        .faq.filter((faq) => isListed(faq.activity))
+        .map((faq) => fillBundlePrices(faq, priceList));
       this.faqSearch = new FAQSearch(faqs);
 
       // Initial render; a #<faq-id> link shows that entry first and opens it

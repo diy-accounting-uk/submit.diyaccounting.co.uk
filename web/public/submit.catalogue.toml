@@ -54,8 +54,8 @@ cap = 100
 # cap (GLOBAL capacity limit)
 # ===========================
 # Maximum number of active (non-expired) allocations of this bundle across ALL users.
-# When all cap slots are taken, the bundle shows "global user limit reached, please try
-# again tomorrow" in the UI. As allocations expire (per timeout), slots return to the pool.
+# When all cap slots are taken, the bundle shows "All day passes are in use. Try again
+# tomorrow, or choose a bundle." in the UI. As allocations expire (per timeout), slots return to the pool.
 # Each user can hold at most one of each bundle type (hard-wired rule, not configurable).
 # Renewal refreshes the existing allocation's expiry rather than creating a duplicate.
 # The GET /api/v1/bundle response includes bundleCapacityAvailable: true/false for each

@@ -22,6 +22,7 @@ import TOML from "@iarna/toml";
 import { isActivityListedInEnvironment } from "../app/services/productCatalog.js";
 import { escapeHtml, replaceBetweenMarkers } from "./page-markers.mjs";
 import { renderFaqItem } from "../web/public/lib/faq-markdown.js";
+import { bundlePriceList, fillBundlePrices } from "../web/public/lib/bundle-listing.js";
 import { GROUPS, splitTitle, TEST_PERIODS_NOTE } from "../web/public/lib/guide-journeys.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -56,9 +57,10 @@ export function loadManifest() {
 }
 
 export function renderFaqEntries(faqs, catalog) {
+  const priceList = bundlePriceList(catalog, PUBLIC_ENVIRONMENT);
   return faqs
     .filter((faq) => isListedEverywhere(catalog, faq.activity))
-    .map(renderFaqItem)
+    .map((faq) => renderFaqItem(fillBundlePrices(faq, priceList)))
     .join("");
 }
 

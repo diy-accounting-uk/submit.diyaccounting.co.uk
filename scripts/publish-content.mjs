@@ -19,12 +19,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  isActivityListedInEnvironment,
-  isBundleListedInEnvironment,
-  parseCatalog,
-  getBundlePrices,
-} from "../app/services/productCatalog.js";
+import { isActivityListedInEnvironment, parseCatalog } from "../app/services/productCatalog.js";
 import {
   activityArea,
   activityName,
@@ -36,6 +31,7 @@ import {
 import { AREA_PAGES, FEATURED_IDS } from "../web/public/widgets/video-pages.js";
 import { videoHeading } from "../web/public/lib/guide-journeys.js";
 import { escapeHtml, replaceBetweenMarkers } from "./page-markers.mjs";
+import { bundleSummary, listedBundles, priceSentence, tokenSentence } from "../web/public/lib/bundle-listing.js";
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SITE_ORIGIN = "https://submit.diyaccounting.co.uk";
@@ -173,37 +169,6 @@ export function renderVideoPageBlock(pageVideos, videosById, uploadDateOf) {
     .join("");
 }
 
-function formatPounds(pence) {
-  return `£${(pence / 100).toFixed(2)}`;
-}
-
-export function priceSentence(bundle) {
-  const prices = getBundlePrices(bundle);
-  if (prices.length === 0) return "Free.";
-  const ordered = [...prices.filter((price) => price.default), ...prices.filter((price) => !price.default)];
-  const words = { year: "a year", month: "a month" };
-  return `${ordered.map((price) => `${formatPounds(price.amount)} ${words[price.interval] ?? `each ${price.interval}`}`).join(" or ")}.`;
-}
-
-/** The bundles the bundles page script lists to a visitor with no pass and no preview setting in an environment. */
-export function listedBundles(catalog, environmentName) {
-  return (catalog.bundles ?? [])
-    .filter((bundle) => bundle.allocation && bundle.allocation !== "automatic")
-    .filter((bundle) => bundle.enable !== "never")
-    .filter((bundle) => !bundle.hidden)
-    .filter((bundle) => isBundleListedInEnvironment(bundle, environmentName))
-    .sort((a, b) => (a.allocation === "on-request") - (b.allocation === "on-request"));
-}
-
-function bundleSummary(bundle) {
-  const summary = typeof bundle.passSummary === "string" ? bundle.passSummary.trim() : "";
-  if (summary) return `You can ${summary}.`;
-  // The catalogue description can end with the price; the card shows the price on its own line.
-  const description = bundle.description ?? "";
-  const priceStart = description.indexOf(". £");
-  return priceStart === -1 ? description : description.slice(0, priceStart + 1);
-}
-
 /** The HTML that fills the marked block of the bundles page. */
 export function renderBundlesBlock(catalog, environmentName) {
   const bundles = listedBundles(catalog, environmentName);
@@ -218,9 +183,9 @@ export function renderBundlesBlock(catalog, environmentName) {
     ];
     const activities =
       activityNames.length > 0 ? `<p>It covers:</p><ul>${activityNames.map((name) => `<li>${escapeHtml(name)}</li>`).join("")}</ul>` : "";
-    return `<div class="service-item" data-bundle-id="${escapeHtml(bundle.id)}"><h3>${escapeHtml(bundle.name)}</h3><p><strong>${priceSentence(bundle)}</strong></p><p>${escapeHtml(bundleSummary(bundle))}</p>${activities}</div>`;
+    return `<div class="service-item" data-bundle-id="${escapeHtml(bundle.id)}"><h3>${escapeHtml(bundle.name)}</h3><p><strong>${priceSentence(bundle)}</strong></p><p>${escapeHtml(tokenSentence(bundle))}</p><p>${escapeHtml(bundleSummary(bundle))}</p>${activities}</div>`;
   });
-  return `<h2>Bundles</h2>${cards.join("")}`;
+  return cards.join("");
 }
 
 const HOME_AREA_ORDER = ["VAT", "Income Tax", "Companies House", "Passes", "More"];
