@@ -18,6 +18,8 @@ only when the operator boards it.
 
 > Please create it as submit-cloud-<something from a codename file> we we will have 1 fork per cloude session.
 
+> AWS credentials - cloud session generates a public-private key pair and pushes the public key into the fork repo, a job in that repo is trusted by aws to accept a key, somehow we hove the holder of the private key access to temporary aws session credentials.
+
 ## Status
 
 Researched 2026-11-17. The first work repository, `diy-accounting-uk/submit-cloud-anvil`, exists with Actions off. The `/new-cloud-session` and `/collaborate` skills are written; steps 3 to 5, 7 to 9 and the first trial are not started.
@@ -130,7 +132,8 @@ A cloud session can send a short message back with the `send_message` tool of th
 
 Rejected for now:
 - An S3 bucket. It needs static IAM keys in an environment variable that every user of the
-  environment can read, and a new IAM user and secret. Git on the work repositories does the same job.
+  environment can read, and a new IAM user and secret. Git on the work repositories does the same
+  job, and AWS credentials go by the encrypted handoff below.
 - A claude.ai artifact with a shared database. This session has the tool; a cloud session's access
   to it is not verified.
 
@@ -146,6 +149,40 @@ Rejected for now:
    start with `claude/`. Never delete a branch.
 4. Commit before a long gate. A reclaimed VM loses uncommitted work.
 5. The fallback loop of the channel table, used only when a message does not arrive.
+
+## AWS credentials for a worker (design, not built)
+
+A worker gets short-lived AWS credentials that only it can read, with no secret stored in the
+environment and nothing readable in a public repository.
+
+1. The worker makes a key pair on its VM: `ssh-keygen -t ed25519 -N '' -f ~/.ssh/aws-handoff`. The
+   private key never leaves the VM. It pushes the public key to `.collab/<codename>.pub` on the
+   `collab` branch of its work repository.
+2. The coordinator asks for credentials by dispatching a new workflow in this repository,
+   `cloud-credentials.yml`, with the work repository's code name as input. A dispatch, not a push,
+   starts it, so each grant is the coordinator's choice and appears in the Actions record.
+3. The workflow assumes a new role, `submit-ci-cloud-worker-role`, through the OIDC trust that the
+   submit roles already use. The role's trust names this repository, the `main` ref and this
+   workflow file only. Its permissions are the least the worker's task needs, in the ci account
+   only, never prod; its maximum session is one hour.
+4. The workflow reads the public key from the work repository (public, so it needs no token),
+   gets the STS credentials, and encrypts them to that key with `age -R <pubkey>` (age accepts
+   ssh-ed25519 public keys). It publishes only the ciphertext, as a workflow artifact. The
+   plaintext exists only in the job's memory; the job log prints nothing of it.
+5. The coordinator downloads the artifact and pushes the ciphertext to `.collab/<codename>.aws.age`
+   on the work repository's `collab` branch. The coordinator never holds the plaintext.
+6. The worker decrypts it straight into `~/.aws/credentials` (`age -d -i ~/.ssh/aws-handoff`) and
+   never prints it, so the credentials stay out of its transcript. They expire within the hour.
+
+Why it is safe to publish the ciphertext: only the holder of the private key can decrypt it, and
+the key pair is made new on each VM. What stays exposed: a worker that prints the decrypted file
+puts the credentials into its transcript; the brief forbids it, and the one-hour expiry bounds the
+damage.
+
+To build it (a pull request, by the operator's decision): the role and its trust in CDK, the
+workflow, and a `/collaborate` step for the key pair and the decryption. The role's permissions
+come from the first task that needs AWS (for example the `-ci` behaviour tests, which also need the
+Cognito test user script).
 
 ## Steps
 
