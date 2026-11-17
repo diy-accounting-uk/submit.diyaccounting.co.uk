@@ -127,6 +127,13 @@ public class EdgeStack extends Stack {
      */
     static final long PUBLIC_DEADLINES_RATE_LIMIT_PER_FIVE_MINUTES = 60L;
 
+    /**
+     * Requests in five minutes from one address to the MCP paths with no Authorization header: the
+     * tool list, the discovery documents and the OAuth facade before a token exists. Every Claude
+     * user reaches these from the same address block, so the allowance equals the site-wide rule.
+     */
+    static final long MCP_ANONYMOUS_RATE_LIMIT_PER_FIVE_MINUTES = 2000L;
+
     /** The longest CloudFront keeps a public lookup answer, whatever the origin's Cache-Control asks. */
     static final int PUBLIC_DEADLINES_CACHE_MAX_TTL_SECONDS = 600;
 
@@ -1028,6 +1035,58 @@ public class EdgeStack extends Stack {
                 .build();
     }
 
+    /**
+     * Counts the requests to the MCP paths that carry no Authorization header, per address. The
+     * bearer-keyed McpRateLimitRule cannot count a request without its key, and the per-IP
+     * RateLimitRule leaves the MCP paths out, so without this rule the tool list, the discovery
+     * documents and the OAuth facade answer an anonymous caller with no limit.
+     */
+    private static CfnWebACL.RuleProperty mcpAnonymousRateLimitRule() {
+        CfnWebACL.StatementProperty hasAuthorizationHeader = CfnWebACL.StatementProperty.builder()
+                .sizeConstraintStatement(CfnWebACL.SizeConstraintStatementProperty.builder()
+                        .fieldToMatch(CfnWebACL.FieldToMatchProperty.builder()
+                                .singleHeader(Map.of("Name", "authorization"))
+                                .build())
+                        .comparisonOperator("GT")
+                        .size(0)
+                        .textTransformations(List.of(CfnWebACL.TextTransformationProperty.builder()
+                                .priority(0)
+                                .type("NONE")
+                                .build()))
+                        .build())
+                .build();
+        return CfnWebACL.RuleProperty.builder()
+                .name("McpAnonymousRateLimitRule")
+                .priority(10)
+                .statement(CfnWebACL.StatementProperty.builder()
+                        .rateBasedStatement(CfnWebACL.RateBasedStatementProperty.builder()
+                                .limit(MCP_ANONYMOUS_RATE_LIMIT_PER_FIVE_MINUTES)
+                                .evaluationWindowSec(300)
+                                .aggregateKeyType("IP")
+                                .scopeDownStatement(CfnWebACL.StatementProperty.builder()
+                                        .andStatement(CfnWebACL.AndStatementProperty.builder()
+                                                .statements(List.of(
+                                                        mcpRouteUriPrefixStatement(),
+                                                        CfnWebACL.StatementProperty.builder()
+                                                                .notStatement(CfnWebACL.NotStatementProperty.builder()
+                                                                        .statement(hasAuthorizationHeader)
+                                                                        .build())
+                                                                .build()))
+                                                .build())
+                                        .build())
+                                .build())
+                        .build())
+                .action(CfnWebACL.RuleActionProperty.builder()
+                        .block(CfnWebACL.BlockActionProperty.builder().build())
+                        .build())
+                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                        .cloudWatchMetricsEnabled(true)
+                        .metricName("McpAnonymousRateLimitRule")
+                        .sampledRequestsEnabled(true)
+                        .build())
+                .build();
+    }
+
     /** Matches a request the common rule set labelled with the named rule's label. */
     private static CfnWebACL.StatementProperty coreRuleSetLabelStatement(String ruleName) {
         return CfnWebACL.StatementProperty.builder()
@@ -1599,7 +1658,8 @@ public class EdgeStack extends Stack {
                                         .metricName("PublicDeadlinesRateLimitRule")
                                         .sampledRequestsEnabled(true)
                                         .build())
-                                .build()))
+                                .build(),
+                        mcpAnonymousRateLimitRule()))
                 .description(
                         "WAF WebACL for OIDC provider CloudFront distribution - provides rate limiting and protection against common attacks")
                 .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()

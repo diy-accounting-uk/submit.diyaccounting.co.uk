@@ -8,6 +8,7 @@ import addFormats from "ajv-formats";
 import { describe, expect, it } from "vitest";
 
 import { hostedToolNames } from "../lib/hosted-tools.js";
+import { SERVER_INFO } from "../lib/server.js";
 
 const readJson = (relativePath) => JSON.parse(readFileSync(new URL(relativePath, import.meta.url), "utf8"));
 
@@ -33,6 +34,12 @@ describe("server.json for the MCP registry", () => {
     expect(npmPackage.registryType).toBe("npm");
     expect(npmPackage.identifier).toBe(packageJson.name);
     expect(npmPackage.version).toBe(packageJson.version);
+  });
+
+  it("names the same icon as the server info and the server card", () => {
+    const serverCard = readJson("../../web/public/.well-known/mcp/server-card.json");
+    expect(serverJson.icons).toEqual(SERVER_INFO.icons);
+    expect(serverCard.icons).toEqual(SERVER_INFO.icons);
   });
 
   it("offers the hosted endpoint over streamable HTTP and the package over stdio", () => {

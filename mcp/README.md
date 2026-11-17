@@ -40,7 +40,9 @@ Cowork), or in Claude Code:
 claude mcp add --transport http diya-submit https://submit.diyaccounting.co.uk/mcp
 ```
 
-The client finds the sign-in through `/.well-known/oauth-protected-resource/mcp`, registers itself, and
+The endpoint answers `initialize`, `ping` and `tools/list` without a token, so a client or a catalogue
+can read the tools first. The first tool call without a token gets 401 with a `WWW-Authenticate`
+challenge. The client finds the sign-in through `/.well-known/oauth-protected-resource/mcp`, registers itself, and
 the user signs in with their Submit account. The ci form of the URL is
 `https://ci-submit.diyaccounting.co.uk/mcp`. The hosted tool set is `HOSTED_TOOL_NAMES` in
 `lib/hosted-tools.js`: `open_book` reads the DIYA cloud only. The sign-in pair, the filesystem tools,

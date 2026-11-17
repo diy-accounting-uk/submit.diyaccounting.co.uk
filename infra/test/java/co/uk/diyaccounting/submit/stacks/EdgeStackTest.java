@@ -547,6 +547,60 @@ class EdgeStackTest {
     }
 
     @Test
+    void mcpRequestsWithNoAuthorizationHeaderAreCountedPerAddress() {
+        Template template = Template.fromStack(synthEdgeStack());
+        Map<String, Object> noAuthorizationHeader = Map.of(
+                "NotStatement",
+                Map.of(
+                        "Statement",
+                        Map.of(
+                                "SizeConstraintStatement",
+                                Match.objectLike(Map.of(
+                                        "FieldToMatch",
+                                        Map.of("SingleHeader", Map.of("Name", "authorization")),
+                                        "ComparisonOperator",
+                                        "GT",
+                                        "Size",
+                                        0)))));
+        Map<String, Object> rateStatement = Map.of(
+                "Limit",
+                (int) EdgeStack.MCP_ANONYMOUS_RATE_LIMIT_PER_FIVE_MINUTES,
+                "EvaluationWindowSec",
+                300,
+                "AggregateKeyType",
+                "IP",
+                "ScopeDownStatement",
+                Map.of(
+                        "AndStatement",
+                        Map.of(
+                                "Statements",
+                                List.of(
+                                        Match.objectLike(Map.of("OrStatement", Match.anyValue())),
+                                        Match.objectLike(noAuthorizationHeader)))));
+        Map<String, Object> rule = Map.of(
+                "Name",
+                "McpAnonymousRateLimitRule",
+                "Action",
+                Match.objectLike(Map.of("Block", Match.anyValue())),
+                "Statement",
+                Map.of("RateBasedStatement", Match.objectLike(rateStatement)));
+        template.hasResourceProperties(
+                "AWS::WAFv2::WebACL",
+                Match.objectLike(Map.of("Rules", Match.arrayWith(List.of(Match.objectLike(rule))))));
+    }
+
+    @Test
+    void everyWebAclRuleHasItsOwnPriority() {
+        Template template = Template.fromStack(synthEdgeStack());
+        template.findResources("AWS::WAFv2::WebACL").values().forEach(webAcl -> {
+            @SuppressWarnings("unchecked")
+            var rules = (List<Map<String, Object>>) ((Map<String, Object>) webAcl.get("Properties")).get("Rules");
+            var priorities = rules.stream().map(rule -> rule.get("Priority")).toList();
+            assertEquals(priorities.size(), new java.util.HashSet<>(priorities).size(), "priorities " + priorities);
+        });
+    }
+
+    @Test
     void reviewerSignInPostsAreCountedPerAddressAndBlockedPastTenInFiveMinutes() {
         Template template = Template.fromStack(synthEdgeStack());
         Map<String, Object> rateStatement = Map.of(

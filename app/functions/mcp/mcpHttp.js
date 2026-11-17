@@ -3,18 +3,19 @@
 
 // @capability MCP-18 Serve the submission MCP over HTTP behind CloudFront
 // - **Use when:** a chat client must reach the submission MCP at `/mcp` with OAuth, or the routes, stack, edge behaviours or rate rules behind that endpoint need tracing.
-// - **Does:** mcpHttp.js answers `/mcp` through handleMcpRequest in mcp/lib/http.js, with sessions in the mcp-sessions DynamoDB table; a session item also keeps the id of the session's HMRC grant (MCP-21). mcpOauth.js serves the OAuth metadata documents under `/.well-known/oauth-*` and the authorization facade under `/mcp/oauth/*` in front of Cognito. McpStack.java creates both Lambdas, the codes entry Lambda (MCP-20) and the HMRC grant Lambda (MCP-21); deploy.yml's deploy-mcp job deploys it before deploy-api. EdgeStack.java sends `/mcp`, `/mcp/*` and `/.well-known/oauth-*` to the API Gateway origin with caching off and every viewer header forwarded, and counts those paths in a WAF rate rule keyed on the Authorization header instead of the per-IP rule. The consent page carries a Reviewer sign-in form for one demo user: POST `/mcp/oauth/reviewer` compares the typed user name and password with the stored secret before it calls Cognito, signs the user in through app/lib/mcpReviewerSignIn.js (admin password flow, then the one-time code from app/lib/totp.js), parks the sealed tokens in the sessions table (app/data/dynamoDbReviewerCodeRepository.js) and answers a code that the token route redeems once. A token in the `mcp-reviewer` group gets prod's tool set in every environment (mcp/lib/hosted-tools.js). EdgeStack.java blocks more than 10 reviewer POSTs in 300 seconds per address. MCP-26 seeds the user.
+// - **Does:** mcpHttp.js answers `/mcp` through handleMcpRequest in mcp/lib/http.js, with sessions in the mcp-sessions DynamoDB table; a session item also keeps the id of the session's HMRC grant (MCP-21). A POST with no Authorization header gets an answer to `initialize`, `notifications/initialized`, `ping` and `tools/list` from the environment's hosted tool list and stores no session; every other request without a valid token gets 401 with the `WWW-Authenticate` challenge, and a signed-in request with no `Mcp-Session-Id` starts the session. mcpOauth.js serves the OAuth metadata documents under `/.well-known/oauth-*` and the authorization facade under `/mcp/oauth/*` in front of Cognito. McpStack.java creates both Lambdas, the codes entry Lambda (MCP-20) and the HMRC grant Lambda (MCP-21); deploy.yml's deploy-mcp job deploys it before deploy-api. EdgeStack.java sends `/mcp`, `/mcp/*` and `/.well-known/oauth-*` to the API Gateway origin with caching off and every viewer header forwarded, and counts those paths in a WAF rate rule keyed on the Authorization header instead of the per-IP rule; a request to them with no Authorization header is counted per address (McpAnonymousRateLimitRule). The consent page carries a Reviewer sign-in form for one demo user: POST `/mcp/oauth/reviewer` compares the typed user name and password with the stored secret before it calls Cognito, signs the user in through app/lib/mcpReviewerSignIn.js (admin password flow, then the one-time code from app/lib/totp.js), parks the sealed tokens in the sessions table (app/data/dynamoDbReviewerCodeRepository.js) and answers a code that the token route redeems once. A token in the `mcp-reviewer` group gets prod's tool set in every environment (mcp/lib/hosted-tools.js). EdgeStack.java blocks more than 10 reviewer POSTs in 300 seconds per address. MCP-26 seeds the user.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/mcp/mcpHttp.js`; `app/functions/mcp/mcpOauth.js`; `infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java`
 // - **Files:** app/functions/mcp/mcpHttp.js, app/functions/mcp/mcpOauth.js, mcp/lib/http.js, app/data/dynamoDbMcpSessionRepository.js, app/data/dynamoDbReviewerCodeRepository.js, app/lib/mcpReviewerSignIn.js, app/lib/totp.js, mcp/lib/hosted-tools.js, infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java, .github/workflows/deploy.yml
-// - **Keywords:** hosted mcp, mcp http, streamable http, oauth facade, well-known, protected resource, mcp session, mcp rate limit, McpStack, deploy-mcp, reviewer sign-in, mcp-reviewer group
+// - **Keywords:** hosted mcp, mcp http, streamable http, oauth facade, well-known, protected resource, mcp session, mcp rate limit, anonymous tools/list, lazy sign-in, McpStack, deploy-mcp, reviewer sign-in, mcp-reviewer group
 // - **Related:** MCP-01, MCP-02, MCP-26
 // @end-capability
 
 // app/functions/mcp/mcpHttp.js
-// The hosted MCP endpoint. Verifies the Cognito access token, keeps the MCP session in DynamoDB
-// because Lambda keeps no process state between containers, and hands each request to the
-// stateless streamable-HTTP transport in mcp/lib/http.js.
+// The hosted MCP endpoint. Answers initialize, ping and tools/list without a token; verifies the
+// Cognito access token on every other request, keeps the MCP session in DynamoDB because Lambda
+// keeps no process state between containers, and hands each request to the stateless
+// streamable-HTTP transport in mcp/lib/http.js.
 
 import { JwtVerifier } from "aws-jwt-verify";
 import { createLogger } from "../../lib/logger.js";
@@ -46,6 +47,23 @@ const HOSTED_POLL_BUDGET_MS = 20000;
 const RESTORED_BOOK_CACHE_LIMIT = 8;
 const SESSION_HEADER = "Mcp-Session-Id";
 const BEARER_SCOPE = "openid email profile";
+
+// The methods a caller with no Authorization header may send: the handshake, a ping and the tool
+// list. A catalogue reads the tools before any sign-in, and a client starts sign-in at the 401 of
+// its first tool call. The answer is the environment's tool list and holds nothing of an account.
+const ANONYMOUS_METHODS = new Set(["initialize", "notifications/initialized", "ping", "tools/list"]);
+
+// An anonymous request never reaches a tool, because ANONYMOUS_METHODS holds no tools/call. These
+// refuse anyway, so a tool that ran on that path would fail before it called any API.
+const NO_CREDENTIALS = {
+  accessToken: async () => {
+    throw new Error("No token: sign in first");
+  },
+  idToken: async () => null,
+};
+async function noClientHeaders() {
+  throw new Error("No token: sign in first");
+}
 
 let tokenVerifier = null;
 const restoredBooks = new Map();
@@ -101,12 +119,15 @@ function decodedBody(event) {
   return event.isBase64Encoded ? Buffer.from(event.body, "base64").toString("utf8") : String(event.body);
 }
 
-function isInitialize(bodyText) {
+// The JSON-RPC method of a single message. A batch or a body that does not parse has none, so it
+// never counts as an anonymous method.
+function jsonRpcMethod(bodyText) {
   try {
     const message = JSON.parse(bodyText);
-    return !Array.isArray(message) && message?.method === "initialize";
+    if (Array.isArray(message) || typeof message?.method !== "string") return null;
+    return message.method;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -184,9 +205,16 @@ export async function ingestHandler(event) {
     return jsonRpcError(405, "Method not allowed", { Allow: "POST, DELETE" });
   }
 
+  const bodyText = decodedBody(event);
+  const rpcMethod = httpMethod === "POST" ? jsonRpcMethod(bodyText) : null;
+
   const authorization = getHeader(event.headers, "authorization");
-  const token = authorization?.startsWith("Bearer ") ? authorization.slice("Bearer ".length).trim() : null;
-  if (!token) return unauthorized(host, Boolean(authorization));
+  if (!authorization) {
+    if (ANONYMOUS_METHODS.has(rpcMethod)) return answerAnonymously(event, host, bodyText, rpcMethod);
+    return unauthorized(host, false);
+  }
+  const token = authorization.startsWith("Bearer ") ? authorization.slice("Bearer ".length).trim() : null;
+  if (!token) return unauthorized(host, true);
 
   let sub;
   let groups;
@@ -202,15 +230,20 @@ export async function ingestHandler(event) {
   await initializeSalt();
   const hashedSub = hashSub(sub);
 
-  const bodyText = decodedBody(event);
-  const startsSession = httpMethod === "POST" && isInitialize(bodyText);
+  const startsSession = rpcMethod === "initialize";
 
+  // A client that listed the tools without a token holds no session, so its first signed-in
+  // request after the 401 can come without one; that request starts the session.
   let stored = null;
+  let sessionCreated = false;
   if (!startsSession) {
     const sessionId = getHeader(event.headers, SESSION_HEADER);
-    if (!sessionId) return jsonRpcError(400, `${SESSION_HEADER} header is required`);
-    stored = await getMcpSession(sessionId);
-    if (!stored || stored.hashedSub !== hashedSub) return jsonRpcError(404, "Session not found");
+    if (sessionId) {
+      stored = await getMcpSession(sessionId);
+      if (!stored || stored.hashedSub !== hashedSub) return jsonRpcError(404, "Session not found");
+    } else if (httpMethod === "DELETE") {
+      return jsonRpcError(400, `${SESSION_HEADER} header is required`);
+    }
   }
 
   if (httpMethod === "DELETE") {
@@ -230,7 +263,11 @@ export async function ingestHandler(event) {
   if (startsSession) {
     const created = await createMcpSession(hashedSub);
     extraHeaders = { [SESSION_HEADER]: created.sessionId };
-  } else if (stored.cloud && isToolCall(bodyText)) {
+  } else if (!stored) {
+    stored = await createMcpSession(hashedSub);
+    sessionCreated = true;
+    extraHeaders = { [SESSION_HEADER]: stored.sessionId };
+  } else if (stored.cloud && rpcMethod === "tools/call") {
     try {
       await loadStoredBook(session, hashedSub, stored.cloud);
     } catch (error) {
@@ -252,16 +289,20 @@ export async function ingestHandler(event) {
   if (stored && (session.hmrcGrant?.grantId ?? null) !== (stored.hmrcGrant?.grantId ?? null)) {
     await updateMcpSessionHmrcGrant(stored.sessionId, session.hmrcGrant);
   }
+  if (sessionCreated) logger.info({ message: "MCP session started by a signed-in request", method: rpcMethod });
   return result;
 }
 
-function isToolCall(bodyText) {
-  try {
-    const message = JSON.parse(bodyText);
-    return !Array.isArray(message) && message?.method === "tools/call";
-  } catch {
-    return false;
-  }
+// Answers an anonymous method from the environment's hosted tool list. It reads no account and
+// stores no session, so a caller without a token cannot fill the sessions table.
+async function answerAnonymously(event, host, bodyText, rpcMethod) {
+  logger.info({ message: "MCP request without a token", method: rpcMethod });
+  const session = createSession({ credentials: NO_CREDENTIALS, pollBudgetMs: HOSTED_POLL_BUDGET_MS, clientHeaders: noClientHeaders });
+  const response = await handleMcpRequest(buildRequest(event, host, "POST", bodyText), {
+    session,
+    toolNames: hostedToolNames(process.env.ENVIRONMENT_NAME),
+  });
+  return mapResponse(response, {});
 }
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request. The

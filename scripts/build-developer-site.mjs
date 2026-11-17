@@ -114,7 +114,10 @@ export async function renderMcpApiPage() {
       <section class="panel">
         <h2>Server</h2>
         <p>Server name <code>${escapeHtml(SERVER_INFO.name)}</code>, version <code>${escapeHtml(SERVER_INFO.version)}</code>.</p>
-        <p>The hosted endpoint speaks streamable HTTP and signs in with OAuth:</p>
+        <p>
+          The hosted endpoint speaks streamable HTTP. It answers <code>initialize</code>, <code>ping</code> and <code>tools/list</code>
+          without sign-in; a tool call needs an OAuth sign-in:
+        </p>
         <pre><code>${escapeHtml(HOSTED_ENDPOINT)}</code></pre>
         <p>
           The same tools run locally over stdio from the npm package

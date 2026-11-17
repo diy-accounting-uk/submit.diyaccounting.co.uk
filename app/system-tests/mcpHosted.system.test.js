@@ -162,12 +162,44 @@ describe("System: hosted MCP endpoint through Express", () => {
     expect(afterDelete.status).toBe(404);
   });
 
-  it("answers 401 with the resource metadata challenge when no token is sent", async () => {
-    const response = await rawPost({ jsonrpc: "2.0", id: 1, method: "tools/list" });
+  it("lets a client with no token initialize and list the hosted tools, and stores no session for it", async () => {
+    const { HOSTED_TOOL_NAMES } = await import("../../mcp/lib/hosted-tools.js");
+    const transport = new StreamableHTTPClientTransport(new URL(mcpUrl), { fetch: realFetch });
+    const client = new Client({ name: "mcp-hosted-system-test-anonymous", version: "1.0.0" });
+    await client.connect(transport);
+    expect(transport.sessionId).toBeUndefined();
+    const { tools } = await client.listTools();
+    expect(tools.map((tool) => tool.name).sort()).toEqual([...HOSTED_TOOL_NAMES].sort());
+    await client.close();
+  });
+
+  it("answers 401 with the resource metadata challenge to a tools/call with no token", async () => {
+    const response = await rawPost({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "list_books", arguments: {} } });
     expect(response.status).toBe(401);
     expect(response.headers.get("www-authenticate")).toContain(
       `resource_metadata="https://${new URL(mcpUrl).host}/.well-known/oauth-protected-resource/mcp"`,
     );
+  });
+
+  it("starts the session on the signed-in tools/call that follows a 401, and keeps its book for the next call", async () => {
+    const token = signedAccessToken({ sub: "lazy-sign-in-user" });
+    const opened = await rawPost(
+      { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "open_book", arguments: { bookId: BOOK_ID } } },
+      { Authorization: `Bearer ${token}` },
+    );
+    expect(opened.status).toBe(200);
+    const sessionId = opened.headers.get("mcp-session-id");
+    expect(sessionId).toBeTruthy();
+    expect((await opened.json()).result.isError).toBeFalsy();
+
+    const derived = await rawPost(
+      { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "derive_vat_return", arguments: { periodEnd: "2025-06-30" } } },
+      { "Authorization": `Bearer ${token}`, "Mcp-Session-Id": sessionId },
+    );
+    expect(derived.status).toBe(200);
+    const { result } = await derived.json();
+    expect(result.isError).toBeFalsy();
+    expect(result.structuredContent).toBeDefined();
   });
 
   it("answers 401 for a token issued to another client", async () => {
