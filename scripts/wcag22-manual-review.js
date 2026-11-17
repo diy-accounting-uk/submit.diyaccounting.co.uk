@@ -65,8 +65,6 @@ const PAGES = [
   "/diy-accounting-spreadsheets.html",
   "/diy-accounting-limited.html",
   "/spreadsheets.html",
-  "/errors/404-error-distribution.html",
-  "/errors/404-error-origin.html",
   "/errors/403.html",
   "/errors/404.html",
   "/errors/500.html",

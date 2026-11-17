@@ -503,4 +503,21 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     console.log("   Support modal opens and closes correctly");
     console.log("   Main navigation returns to home page\n");
   });
+
+  test("An unknown address shows the Page not found page with status 404, and an unknown API path answers JSON", async ({ page }) => {
+    addOnPageLogging(page);
+
+    const pageResponse = await page.goto(`${baseUrl}/nonexistent-page.html`, { waitUntil: "domcontentloaded" });
+    expect(pageResponse.status()).toBe(404);
+    expect(pageResponse.headers()["content-type"]).toMatch(/^text\/html/);
+    await expect(page.locator("h1")).toHaveText("Page not found");
+    await expect(page.locator("main a[href='/']")).toBeVisible();
+    await expect(page.locator("main a[href='/help.html']")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-19-page-not-found.png`, readerView: true });
+
+    const apiResponse = await page.request.get(`${baseUrl}/api/v1/nonexistent`);
+    expect(apiResponse.status()).toBe(404);
+    expect(apiResponse.headers()["content-type"]).toMatch(/^application\/json/);
+    expect(await apiResponse.json()).toBeTruthy();
+  });
 });

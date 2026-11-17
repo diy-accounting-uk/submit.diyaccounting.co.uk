@@ -8,6 +8,7 @@ package co.uk.diyaccounting.submit;
 import static co.uk.diyaccounting.submit.SubmitApplicationCdkSupport.*;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.constructs.Lambda;
@@ -570,6 +571,10 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         infof("Created stack:", submitApplication.edgeStack.getStackName());
         Template edgeStackTemplate = Template.fromStack(submitApplication.edgeStack);
         edgeStackTemplate.resourceCountIs("AWS::CloudFront::Distribution", 1);
+        // The page router is a CloudFront Function, which has no regional replicas to delay a
+        // set's deletion; the stack holds no Lambda@Edge function.
+        edgeStackTemplate.resourceCountIs("AWS::CloudFront::Function", 1);
+        assertFalse(edgeStackTemplate.toJSON().toString().contains("LambdaFunctionAssociations"));
         // The WAF scan-detect Lambda is this stack's only Lambda construct.
         assertGroupedStackHealthAlarm(edgeStackTemplate, List.of("waf-scan-detect"), List.of(), routedPrefixes);
 

@@ -216,7 +216,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack: use when reading or changing how an environment stack that runs from the env image (Activity, Email, Analytics, SecurityLake, ScanDetection, Ingestion, BillingWebhook, Observability) builds and deploys.
     - [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager) Write an environment's secrets into AWS Secrets Manager: use when reading or changing which GitHub Environment secrets reach AWS Secrets Manager for an environment, or how the salt and hash secrets are created.
     - [OPS-182](#ops-182-provision-the-customer-email-sender) Provision the customer email sender: use when the SES identity, the DNS records for mail, the customer email queue or its workers need a change.
-    - [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages: use when CloudFront returns an HTTP error and the visitor needs the right static error page instead of a raw status.
+    - [OPS-131](#ops-131-serve-the-404-page-and-extensionless-paths-at-the-edge) Serve the 404 page and extensionless paths at the edge: use when a web address has no page, has no .html, or ends in a slash, and CloudFront must answer it without touching the API's JSON errors.
     - [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy: use when a DynamoDB table needs point-in-time recovery turned on idempotently as part of a stack deploy.
     - [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page: use when a visitor lands on the bare diyaccounting.co.uk root domain and needs redirecting to the submit subdomain.
     - [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI: use when main and every open PR's head branch need polling until CI is green, with each red and each PR's readiness reported once.
@@ -368,7 +368,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-112](#ops-112-provision-the-api-gateway-stack) Provision the API Gateway stack: use when the account's API Gateway with its Lambda integrations needs synthesizing or redeploying.
     - [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack) Provision the DynamoDB and S3 data stack: use when the application's DynamoDB tables and S3 buckets need synthesizing with encryption, PITR and TTL policies.
     - [OPS-114](#ops-114-provision-ecr-image-repositories) Provision ECR image repositories: use when the ECR repositories the Lambda Docker images push to need creating with lifecycle policies.
-    - [OPS-115](#ops-115-provision-the-edgecloudfront-stack) Provision the Edge/CloudFront stack: use when CloudFront distributions, edge Lambdas or caching behaviours for the web app and API need synthesizing.
+    - [OPS-115](#ops-115-provision-the-edgecloudfront-stack) Provision the Edge/CloudFront stack: use when CloudFront distributions, edge functions or caching behaviours for the web app and API need synthesizing.
     - [OPS-116](#ops-116-provision-the-holding-page-stack) Provision the holding-page stack: use when the submit service's own holding page needs its own CloudFront distribution for a failover retarget.
     - [OPS-117](#ops-117-provision-the-observability-stack) Provision the Observability stack: use when an account's CloudTrail, GuardDuty, Security Hub, security SNS topic or shared dashboards need synthesizing.
     - [OPS-118](#ops-118-provision-the-observability-stack-in-us-east-1) Provision the Observability stack in us-east-1: use when a CloudWatch resource must live in us-east-1 for a global service such as CloudFront metrics or alarms.
@@ -2506,7 +2506,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## Operations and CI (OPS)
 
 <!-- generated:area OPS -->
-- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack · [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager) Write an environment's secrets into AWS Secrets Manager · [OPS-182](#ops-182-provision-the-customer-email-sender) Provision the customer email sender · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-the-cloudfront-distribution-serving-an-origin) Look up the CloudFront distribution serving an origin · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap · [OPS-213](#ops-213-write-the-videos-the-bundles-and-the-home-activity-list-into-the-deployed-pages-for-the-environment) Write the videos, the bundles and the home activity list into the deployed pages for the environment · [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job · [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role · [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment · [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id) Stop a stack deploy when one resource stalls with no physical id · [OPS-149](#ops-149-finish-a-deployment) Finish a deployment · [OPS-150](#ops-150-build-a-deployment) Build a deployment
+- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack · [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager) Write an environment's secrets into AWS Secrets Manager · [OPS-182](#ops-182-provision-the-customer-email-sender) Provision the customer email sender · [OPS-131](#ops-131-serve-the-404-page-and-extensionless-paths-at-the-edge) Serve the 404 page and extensionless paths at the edge · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-the-cloudfront-distribution-serving-an-origin) Look up the CloudFront distribution serving an origin · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap · [OPS-213](#ops-213-write-the-videos-the-bundles-and-the-home-activity-list-into-the-deployed-pages-for-the-environment) Write the videos, the bundles and the home activity list into the deployed pages for the environment · [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job) Set up Node, npm dependencies and optionally Java for a job · [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role) Assume an AWS role by OIDC, with an optional chained deploy role · [OPS-147](#ops-147-deploy-the-application-stacks-of-a-deployment) Deploy the application stacks of a deployment · [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id) Stop a stack deploy when one resource stalls with no physical id · [OPS-149](#ops-149-finish-a-deployment) Finish a deployment · [OPS-150](#ops-150-build-a-deployment) Build a deployment
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves) Delete a deployment's app stacks in parallel waves · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-triage) Run alarm triage · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci) Run the unit, system and browser test tiers in CI · [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci) Synth the CDK app for the ci and prod environments in CI · [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci) Run the simulator, proxy and exploratory crawl behaviour tests in CI · [OPS-162](#ops-162-bundle-submitcss-at-publish-time) Bundle submit.css at publish time · [OPS-163](#ops-163-submit-the-declared-sitemaps-to-search-console-daily) Submit the declared sitemaps to Search Console daily · [OPS-197](#ops-197-check-the-runners-browser-install-in-one-job) Check the runner's browser install in one job · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events) Open private GitHub issues from trusted AWS and Companies House events · [OPS-186](#ops-186-verify-a-trusted-event-issue-against-its-source-record) Verify a trusted-event issue against its source record · [OPS-187](#ops-187-check-a-trusted-event-issue-against-its-source-and-label-the-result) Check a trusted-event issue against its source and label the result · [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod) Prove the trusted event path on ci and prod · [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session) Render the operator dashboard without a browser session · [OPS-192](#ops-192-judge-the-operator-dashboard-each-night-and-write-the-report) Judge the operator dashboard each night and write the report · [OPS-193](#ops-193-review-the-operator-dashboard-each-night) Review the operator dashboard each night · [OPS-194](#ops-194-run-a-read-only-nova-agent) Run a read-only Nova agent · [OPS-195](#ops-195-replay-the-alarm-triage-prompt-over-invented-alarms) Replay the alarm triage prompt over invented alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc) Renew the local TLS certificate by GitHub OIDC · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
@@ -2535,7 +2535,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack
 - [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager) Write an environment's secrets into AWS Secrets Manager
 - [OPS-182](#ops-182-provision-the-customer-email-sender) Provision the customer email sender
-- [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages
+- [OPS-131](#ops-131-serve-the-404-page-and-extensionless-paths-at-the-edge) Serve the 404 page and extensionless paths at the edge
 - [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy
 - [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page
 - [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI
@@ -2615,7 +2615,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-07 Lean-deploy app code to Lambda and S3
 
 - **Use when:** a fast iteration deploy of app or web code is needed, without a full CDK deploy.
-- **Does:** deploy-app.js builds the ARM64 Docker image and pushes it to ECR. It updates every Lambda function's code, publishes a version and moves the pc alias. It syncs web assets to S3 with RUM injection and invalidates CloudFront, leaving CloudFormation drift the next full deploy reconciles.
+- **Does:** deploy-app.js builds the ARM64 Docker image and pushes it to ECR. It updates every Lambda function's code, publishes a version and moves the pc alias. It syncs web assets to S3 with RUM injection, updates and publishes the page router CloudFront Function from the same pages, and invalidates CloudFront, leaving CloudFormation drift the next full deploy reconciles.
 - **Run:** `npm run deploy:app-ci`; `npm run deploy:app-prod`; `node scripts/deploy-app.js`
 - **Entry:** `scripts/deploy-app.js:resolveDeployment`; `scripts/deploy-app.js:dockerBuildAndPush`
 - **Files:** scripts/deploy-app.js
@@ -2672,14 +2672,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** ses, email identity, dkim, mail from, configuration set, customer email queue, route53 mail records
 - **Related:** SITE-27, OPS-127
 
-#### OPS-131 Serve CloudFront custom error pages
+#### OPS-131 Serve the 404 page and extensionless paths at the edge
 
-- **Use when:** CloudFront returns an HTTP error and the visitor needs the right static error page instead of a raw status.
-- **Does:** errorPageHandler.js is the CloudFront@Edge viewer-request handler that renders the right static page for each HTTP error status, via errorPageHtml.js. The web/public/errors/*.html pages are the served output, and error-page.js is the web component that displays error-page detail in the app shell.
-- **Run:** no command; see Does and Entry
-- **Entry:** `app/functions/edge/errorPageHandler.js:handler`
-- **Files:** app/functions/edge/errorPageHandler.js, app/functions/edge/errorPageHtml.js, app/unit-tests/edge/errorPageHandler.test.js, web/public/errors/403.html, web/public/errors/404.html, web/public/errors/404-error-distribution.html, web/public/errors/404-error-origin.html, web/public/errors/500.html, web/public/errors/502.html, web/public/errors/503.html, web/public/errors/504.html, web/public/widgets/error-page.js
-- **Keywords:** cloudfront edge, custom error page, 403, 404, 500, error handler, viewer request
+- **Use when:** a web address has no page, has no .html, or ends in a slash, and CloudFront must answer it without touching the API's JSON errors.
+- **Does:** pageRouter.js is the CloudFront Function on the viewer request of the default behaviour. It answers 301 from /about to /about.html, serves /cy/ from /cy/index.html, and answers an address with no page with status 404 and web/public/errors/404.html. pageRouterCode.js writes the function's page list and 404 body from the published files for scripts/deploy-app.js; EdgeStack writes the same code through PageRouterFunctionCode.java.
+- **Run:** `npm run deploy:app-ci` (updates and publishes the function); `./mvnw clean verify` (synthesizes it)
+- **Entry:** `app/functions/edge/pageRouter.js:handler`; `app/functions/edge/pageRouterCode.js:pageRouterCodeFromDisk`
+- **Files:** app/functions/edge/pageRouter.js, app/functions/edge/pageRouterCode.js, app/unit-tests/edge/pageRouter.test.js, infra/main/java/co/uk/diyaccounting/submit/utils/PageRouterFunctionCode.java, web/public/errors/404.html
+- **Keywords:** cloudfront function, 404 page, page not found, extensionless path, redirect, viewer request
 - **Related:** OPS-115
 
 #### OPS-132 Enable DynamoDB PITR on deploy
@@ -4266,12 +4266,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### OPS-115 Provision the Edge/CloudFront stack
 
-- **Use when:** CloudFront distributions, edge Lambdas or caching behaviours for the web app and API need synthesizing.
-- **Does:** EdgeStack creates the CloudFront distributions, edge Lambdas, including the wafScanDetect subscription to the WAF log group, caching policies and custom behaviors for the web app and API.
+- **Use when:** CloudFront distributions, edge functions or caching behaviours for the web app and API need synthesizing.
+- **Does:** EdgeStack creates the CloudFront distribution, the page router CloudFront Function on the default behaviour, the wafScanDetect subscription to the WAF log group, caching policies and custom behaviors for the web app and API.
 - **Run:** `npm run cdk:synth-environment`
 - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java`
 - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java
-- **Keywords:** cloudfront, edge lambda, caching policy, waf log subscription, edge stack
+- **Keywords:** cloudfront, cloudfront function, caching policy, waf log subscription, edge stack
 - **Related:** OPS-74, OPS-131
 
 #### OPS-116 Provision the holding-page stack
@@ -4369,11 +4369,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-124 Define shared Lambda CDK constructs
 
 - **Use when:** a new Lambda-backed stack needs the common function, alias and health-alarm wiring instead of rebuilding it.
-- **Does:** Lambda and LambdaProps, with their AbstractLambdaProps and AbstractApiLambdaProps base, wrap the common CDK wiring every Lambda-backed stack reuses: function, alias and health alarm. ApiLambda and AsyncApiLambda specialize it for synchronous and async API integrations, and EdgeLambdaConstruct specializes it for CloudFront@Edge functions.
+- **Does:** Lambda and LambdaProps, with their AbstractLambdaProps and AbstractApiLambdaProps base, wrap the common CDK wiring every Lambda-backed stack reuses: function, alias and health alarm. ApiLambda and AsyncApiLambda specialize it for synchronous and async API integrations.
 - **Run:** no command; see Does and Entry
-- **Entry:** `infra/main/java/co/uk/diyaccounting/submit/constructs/Lambda.java`; `infra/main/java/co/uk/diyaccounting/submit/constructs/ApiLambda.java`; `infra/main/java/co/uk/diyaccounting/submit/constructs/EdgeLambdaConstruct.java`
-- **Files:** infra/main/java/co/uk/diyaccounting/submit/constructs/AbstractApiLambdaProps.java, infra/main/java/co/uk/diyaccounting/submit/constructs/AbstractLambdaProps.java, infra/main/java/co/uk/diyaccounting/submit/constructs/ApiLambda.java, infra/main/java/co/uk/diyaccounting/submit/constructs/ApiLambdaProps.java, infra/main/java/co/uk/diyaccounting/submit/constructs/AsyncApiLambda.java, infra/main/java/co/uk/diyaccounting/submit/constructs/AsyncApiLambdaProps.java, infra/main/java/co/uk/diyaccounting/submit/constructs/EdgeLambdaConstruct.java, infra/main/java/co/uk/diyaccounting/submit/constructs/EdgeLambdaProps.java, infra/main/java/co/uk/diyaccounting/submit/constructs/Lambda.java, infra/main/java/co/uk/diyaccounting/submit/constructs/LambdaProps.java
-- **Keywords:** cdk lambda construct, health alarm, api lambda, edge lambda, shared construct
+- **Entry:** `infra/main/java/co/uk/diyaccounting/submit/constructs/Lambda.java`; `infra/main/java/co/uk/diyaccounting/submit/constructs/ApiLambda.java`
+- **Files:** infra/main/java/co/uk/diyaccounting/submit/constructs/AbstractApiLambdaProps.java, infra/main/java/co/uk/diyaccounting/submit/constructs/AbstractLambdaProps.java, infra/main/java/co/uk/diyaccounting/submit/constructs/ApiLambda.java, infra/main/java/co/uk/diyaccounting/submit/constructs/ApiLambdaProps.java, infra/main/java/co/uk/diyaccounting/submit/constructs/AsyncApiLambda.java, infra/main/java/co/uk/diyaccounting/submit/constructs/AsyncApiLambdaProps.java, infra/main/java/co/uk/diyaccounting/submit/constructs/Lambda.java, infra/main/java/co/uk/diyaccounting/submit/constructs/LambdaProps.java
+- **Keywords:** cdk lambda construct, health alarm, api lambda, shared construct
 - **Related:** OPS-123
 
 #### OPS-125 Name and tag CDK resources consistently
@@ -6994,12 +6994,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - 202 accepted: [SITE-09](#site-09-track-and-poll-async-api-requests)
 - 202 poll: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - 401 retry: [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh)
-- 403: [HMRC-03](#hmrc-03-retrieve-vat-obligations), [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
+- 403: [HMRC-03](#hmrc-03-retrieve-vat-obligations)
 - 403 bundle message: [SITE-09](#site-09-track-and-poll-async-api-requests)
-- 404: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
 - 404 not run: [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api)
+- 404 page: [OPS-131](#ops-131-serve-the-404-page-and-extensionless-paths-at-the-edge)
 - 404 scan: [OPS-73](#ops-73-detect-404-scan-rate-attacks)
-- 500: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
 - 501: [BILL-27](#bill-27-recover-an-abandoned-checkout)
 - 9-box: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data), [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file), [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - [alarm]: [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms)
@@ -7475,9 +7474,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cloudfront cutover: [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex)
 - cloudfront distribution: [OPS-116](#ops-116-provision-the-holding-page-stack)
 - cloudfront distribution id: [OPS-135](#ops-135-look-up-the-cloudfront-distribution-serving-an-origin)
-- cloudfront edge: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
 - cloudfront event: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
-- cloudfront function: [SS-24](#ss-24-compile-the-redirect-engine)
+- cloudfront function: [OPS-131](#ops-131-serve-the-404-page-and-extensionless-paths-at-the-edge), [OPS-115](#ops-115-provision-the-edgecloudfront-stack), [SS-24](#ss-24-compile-the-redirect-engine)
 - cloudfront invalidation: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3), [OPS-120](#ops-120-provision-the-publish-stack)
 - cloudfront logs: [OPS-73](#ops-73-detect-404-scan-rate-attacks)
 - cloudfront metrics: [OPS-118](#ops-118-provision-the-observability-stack-in-us-east-1)
@@ -7670,7 +7668,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - curated stripe: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
 - currency conversion: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - custom amount: [SS-22](#ss-22-take-stripe-and-paypal-donations)
-- custom error page: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
 - custom resource: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - customer balance: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
 - customer copy: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
@@ -7901,7 +7898,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ecommerce events: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
 - ecr push: [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack)
 - ecr repository: [OPS-114](#ops-114-provision-ecr-image-repositories)
-- edge lambda: [OPS-115](#ops-115-provision-the-edgecloudfront-stack), [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
 - edge stack: [OPS-115](#ops-115-provision-the-edgecloudfront-stack)
 - edgestack: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
 - edit_lines: [SS-06](#ss-06-serve-the-diya-gl-mcp-server)
@@ -7950,7 +7946,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - error budget: [DATA-31](#data-31-sql-views-dora-and-operations)
 - error classification: [HMRC-29](#hmrc-29-call-the-hmrc-api)
 - error code mapping: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
-- error handler: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
 - error middleware: [SITE-07](#site-07-format-http-responses-and-errors)
 - eslint config: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
 - eslint ratchet: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
@@ -7996,6 +7991,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - express: [DEV-01](#dev-01-run-the-http-simulator-server)
 - express adaptor: [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes)
 - express server: [SITE-08](#site-08-bootstrap-the-app-server)
+- extensionless path: [OPS-131](#ops-131-serve-the-404-page-and-extensionless-paths-at-the-edge)
 - external id: [DATA-65](#data-65-capture-aws-console-figures-as-images-for-the-operator-dashboard)
 - external link cache: [SS-58](#ss-58-excel-xml-manipulation-reference)
 - extract scenarios: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
@@ -8779,6 +8775,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - packages-published: [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive)
 - page chrome: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - page layout: [SITE-12](#site-12-map-the-site-structure)
+- page not found: [OPS-131](#ops-131-serve-the-404-page-and-extensionless-paths-at-the-edge)
 - page requests: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - page screenshots: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - pages by kind: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
@@ -9042,7 +9039,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - redaction: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - redeem pass: [BILL-10](#bill-10-redeem-a-pass), [BILL-58](#bill-58-pass-link-landing-page)
 - redeempass: [BILL-10](#bill-10-redeem-a-pass)
-- redirect: [OPS-133](#ops-133-serve-the-root-domain-holding-page)
+- redirect: [OPS-131](#ops-131-serve-the-404-page-and-extensionless-paths-at-the-edge), [OPS-133](#ops-133-serve-the-root-domain-holding-page)
 - redirect engine: [SS-24](#ss-24-compile-the-redirect-engine)
 - redirect uri: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - redirect-function.js: [SS-24](#ss-24-compile-the-redirect-engine)
@@ -9763,7 +9760,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - videos.html: [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site)
 - view vat return: [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return)
 - view_item_list: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
-- viewer request: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
+- viewer request: [OPS-131](#ops-131-serve-the-404-page-and-extensionless-paths-at-the-edge)
 - viewer settings: [SITE-24](#site-24-change-an-account-setting)
 - visibility: [BILL-23](#bill-23-store-diya-gl-books-in-s3)
 - visitor classification: [SITE-04](#site-04-track-visits-via-session-beacon)

@@ -106,6 +106,7 @@ public class SubmitApplication {
         public String hostedZoneId;
         public String certificateArn;
         public String docRootPath;
+        public String edgeFunctionAssetPath;
         public String httpApiUrl;
         public String regionalCertificateArn;
         public String feedbackEngagementEnabled;
@@ -403,6 +404,8 @@ public class SubmitApplication {
         var websiteHash = envOr("WEBSITE_HASH", "local");
         var buildNumber = envOr("BUILD_NUMBER", "local");
         var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
+        var edgeFunctionAssetPath = envOr(
+                "EDGE_FUNCTION_ASSET_PATH", appProps.edgeFunctionAssetPath, "(from edgeFunctionAssetPath in cdk.json)");
 
         // Create the AuthStack with resources used in authentication and authorisation
         infof(
@@ -833,6 +836,8 @@ public class SubmitApplication {
                         .hostedZoneId(appProps.hostedZoneId)
                         .certificateArn(certificateArn)
                         .apiGatewayUrl(httpApiUrl)
+                        .docRootPath(docRootPath)
+                        .edgeFunctionAssetPath(edgeFunctionAssetPath)
                         .originVerifySecretVersionId(envOr("ORIGIN_VERIFY_SECRET_VERSION_ID", ""))
                         .baseImageTag(baseImageTag)
                         .wafManualBlockIps(appProps.wafManualBlockIps != null ? appProps.wafManualBlockIps : "")

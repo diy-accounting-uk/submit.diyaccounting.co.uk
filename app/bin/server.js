@@ -464,6 +464,11 @@ billingPortalGetApiEndpoint(app);
 billingRecoverPostApiEndpoint(app);
 billingWebhookPostApiEndpoint(app);
 
+// An API path with no route answers JSON with status 404, as API Gateway does on the deployed site.
+app.all(/^\/api\//, (req, res) => {
+  res.status(404).json({ message: "Not Found" });
+});
+
 // A path with no file answers with the site's 404 page and status 404, as the deployed site does.
 const notFoundPage = fs.readFileSync(path.join(__dirname, "../../web/public/errors/404.html"), "utf8");
 app.get(/.*/, (req, res) => {

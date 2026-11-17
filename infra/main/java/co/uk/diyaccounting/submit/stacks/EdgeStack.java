@@ -5,12 +5,12 @@
 
 // spotless:off
 // @capability OPS-115 Provision the Edge/CloudFront stack
-// - **Use when:** CloudFront distributions, edge Lambdas or caching behaviours for the web app and API need synthesizing.
-// - **Does:** EdgeStack creates the CloudFront distributions, edge Lambdas, including the wafScanDetect subscription to the WAF log group, caching policies and custom behaviors for the web app and API.
+// - **Use when:** CloudFront distributions, edge functions or caching behaviours for the web app and API need synthesizing.
+// - **Does:** EdgeStack creates the CloudFront distribution, the page router CloudFront Function on the default behaviour, the wafScanDetect subscription to the WAF log group, caching policies and custom behaviors for the web app and API.
 // - **Run:** `npm run cdk:synth-environment`
 // - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java`
 // - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java
-// - **Keywords:** cloudfront, edge lambda, caching policy, waf log subscription, edge stack
+// - **Keywords:** cloudfront, cloudfront function, caching policy, waf log subscription, edge stack
 // - **Related:** OPS-74, OPS-131
 // @end-capability
 // spotless:on
@@ -24,7 +24,9 @@ import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.utils.OriginVerifyHelper;
+import co.uk.diyaccounting.submit.utils.PageRouterFunctionCode;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -44,6 +46,10 @@ import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.Distribution;
+import software.amazon.awscdk.services.cloudfront.FunctionAssociation;
+import software.amazon.awscdk.services.cloudfront.FunctionCode;
+import software.amazon.awscdk.services.cloudfront.FunctionEventType;
+import software.amazon.awscdk.services.cloudfront.FunctionRuntime;
 import software.amazon.awscdk.services.cloudfront.HeadersFrameOption;
 import software.amazon.awscdk.services.cloudfront.IOrigin;
 import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
@@ -174,6 +180,12 @@ public class EdgeStack extends Stack {
         String certificateArn();
 
         String apiGatewayUrl();
+
+        // The web pages that the publish step deploys; the page router lists their .html files.
+        String docRootPath();
+
+        // The directory that holds the page router CloudFront Function, pageRouter.js.
+        String edgeFunctionAssetPath();
 
         // The AWSCURRENT version of the origin verify secret in us-east-1, from the deploy
         // workflow. Blank until the secret exists, and then no origin header is sent.
@@ -692,15 +704,36 @@ public class EdgeStack extends Stack {
                         .build())
                 .build();
 
-        // Custom error pages are served as static files via CloudFront error responses
-        // This replaces Lambda@Edge which has problematic deletion behavior in CI/CD
-        // API routes (/api/*) return JSON errors - CloudFront error responses only apply to S3 origin errors
+        // The page router answers /about with 301 to /about.html, serves /cy/ from /cy/index.html,
+        // and answers an address with no page with status 404 and the site's 404 page. It runs on
+        // the viewer request of the default behaviour only: the API, MCP and OAuth behaviours
+        // never reach it, and the distribution has no error responses, so their JSON errors pass
+        // unchanged. A CloudFront Function has no regional replicas, so a set's stack deletes at
+        // once. scripts/deploy-app.js updates the same function name on a lean deploy.
+        software.amazon.awscdk.services.cloudfront.Function pageRouterFunction =
+                software.amazon.awscdk.services.cloudfront.Function.Builder.create(
+                                this, props.resourceNamePrefix() + "-PageRouter")
+                        .functionName(props.resourceNamePrefix() + "-page-router")
+                        .comment("Redirects extensionless page paths and answers a miss with the 404 page")
+                        .runtime(FunctionRuntime.JS_2_0)
+                        .code(FunctionCode.fromInline(PageRouterFunctionCode.fromDisk(
+                                Paths.get(props.docRootPath()).toAbsolutePath().normalize(),
+                                Paths.get(props.edgeFunctionAssetPath())
+                                        .toAbsolutePath()
+                                        .normalize())))
+                        .autoPublish(true)
+                        .build();
+
         BehaviorOptions localBehaviorOptions = BehaviorOptions.builder()
                 .origin(localOrigin)
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                 .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
                 .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
                 .responseHeadersPolicy(webResponseHeadersPolicy)
+                .functionAssociations(List.of(FunctionAssociation.builder()
+                        .function(pageRouterFunction)
+                        .eventType(FunctionEventType.VIEWER_REQUEST)
+                        .build()))
                 .compress(true)
                 .build();
 
@@ -871,7 +904,7 @@ public class EdgeStack extends Stack {
                 // IMPORTANT: Do NOT configure errorResponses here!
                 // CloudFront error responses apply GLOBALLY to ALL origins (S3 AND API Gateway).
                 // This breaks API routes which must return JSON errors, not HTML error pages.
-                // For static content (S3), accept default CloudFront error behavior.
+                // The page router on the default behaviour answers a web page miss with the 404 page.
                 // For API routes (/api/*), Lambda functions return proper JSON error responses.
                 .build();
         Tags.of(this.distribution).add("OriginFor", props.sharedNames().deploymentDomainName);

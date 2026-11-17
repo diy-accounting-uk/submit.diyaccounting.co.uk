@@ -4,7 +4,7 @@
 
 // @capability OPS-07 Lean-deploy app code to Lambda and S3
 // - **Use when:** a fast iteration deploy of app or web code is needed, without a full CDK deploy.
-// - **Does:** deploy-app.js builds the ARM64 Docker image and pushes it to ECR. It updates every Lambda function's code, publishes a version and moves the pc alias. It syncs web assets to S3 with RUM injection and invalidates CloudFront, leaving CloudFormation drift the next full deploy reconciles.
+// - **Does:** deploy-app.js builds the ARM64 Docker image and pushes it to ECR. It updates every Lambda function's code, publishes a version and moves the pc alias. It syncs web assets to S3 with RUM injection, updates and publishes the page router CloudFront Function from the same pages, and invalidates CloudFront, leaving CloudFormation drift the next full deploy reconciles.
 // - **Run:** `npm run deploy:app-ci`; `npm run deploy:app-prod`; `node scripts/deploy-app.js`
 // - **Entry:** `scripts/deploy-app.js:resolveDeployment`; `scripts/deploy-app.js:dockerBuildAndPush`
 // - **Files:** scripts/deploy-app.js
@@ -38,6 +38,7 @@ import { publishSitemap } from "./publish-sitemap.mjs";
 import { publishContent } from "./publish-content.mjs";
 import { publishLlms } from "./publish-llms.mjs";
 import { publishCssBundle } from "./publish-css-bundle.mjs";
+import { pageRouterCodeFromDisk, PAGE_ROUTER_COMMENT } from "../app/functions/edge/pageRouterCode.js";
 
 const AWS_REGION = "eu-west-2";
 const AWS_REGION_UE1 = "us-east-1";
@@ -392,10 +393,31 @@ function syncWebAssets(config) {
     run(`aws s3 sync ${tmpWebDir} s3://${config.originBucket}/ --region ${AWS_REGION_UE1}`);
 
     console.log("\nWeb asset sync complete.\n");
+
+    updatePageRouter(config, tmpDir);
   } finally {
     // Cleanup temp dir
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
+}
+
+// The page router lists the published pages, so a page that this deploy adds answers 404 until
+// the function is updated. EdgeStack creates the function with this name.
+function updatePageRouter(config, tmpDir) {
+  const functionName = `${config.deploymentName}-app-page-router`;
+  console.log(`Updating CloudFront Function ${functionName}...`);
+  const codeFile = path.join(tmpDir, "page-router.js");
+  fs.writeFileSync(codeFile, pageRouterCodeFromDisk(path.resolve("web/public"), path.resolve("app/functions/edge")));
+  const developmentEtag = runCapture(
+    `aws cloudfront describe-function --name ${functionName} --stage DEVELOPMENT --query ETag --output text --region ${AWS_REGION_UE1}`,
+  );
+  const updatedEtag = runCapture(
+    `aws cloudfront update-function --name ${functionName} --if-match ${developmentEtag} --function-config '${JSON.stringify({ Comment: PAGE_ROUTER_COMMENT, Runtime: "cloudfront-js-2.0" })}' --function-code fileb://${codeFile} --query ETag --output text --region ${AWS_REGION_UE1}`,
+  );
+  run(`aws cloudfront publish-function --name ${functionName} --if-match ${updatedEtag} --region ${AWS_REGION_UE1} --output json`, {
+    silent: true,
+  });
+  console.log("  Page router published.\n");
 }
 
 // The sign-in page builds its Cognito authorize URL from submit.env's COGNITO_CLIENT_ID, and the

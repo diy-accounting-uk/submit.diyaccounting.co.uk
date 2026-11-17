@@ -6,11 +6,11 @@
 // spotless:off
 // @capability OPS-124 Define shared Lambda CDK constructs
 // - **Use when:** a new Lambda-backed stack needs the common function, alias and health-alarm wiring instead of rebuilding it.
-// - **Does:** Lambda and LambdaProps, with their AbstractLambdaProps and AbstractApiLambdaProps base, wrap the common CDK wiring every Lambda-backed stack reuses: function, alias and health alarm. ApiLambda and AsyncApiLambda specialize it for synchronous and async API integrations, and EdgeLambdaConstruct specializes it for CloudFront@Edge functions.
+// - **Does:** Lambda and LambdaProps, with their AbstractLambdaProps and AbstractApiLambdaProps base, wrap the common CDK wiring every Lambda-backed stack reuses: function, alias and health alarm. ApiLambda and AsyncApiLambda specialize it for synchronous and async API integrations.
 // - **Run:** no command; see Does and Entry
-// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/constructs/Lambda.java`; `infra/main/java/co/uk/diyaccounting/submit/constructs/ApiLambda.java`; `infra/main/java/co/uk/diyaccounting/submit/constructs/EdgeLambdaConstruct.java`
-// - **Files:** infra/main/java/co/uk/diyaccounting/submit/constructs/AbstractApiLambdaProps.java, infra/main/java/co/uk/diyaccounting/submit/constructs/AbstractLambdaProps.java, infra/main/java/co/uk/diyaccounting/submit/constructs/ApiLambda.java, infra/main/java/co/uk/diyaccounting/submit/constructs/ApiLambdaProps.java, infra/main/java/co/uk/diyaccounting/submit/constructs/AsyncApiLambda.java, infra/main/java/co/uk/diyaccounting/submit/constructs/AsyncApiLambdaProps.java, infra/main/java/co/uk/diyaccounting/submit/constructs/EdgeLambdaConstruct.java, infra/main/java/co/uk/diyaccounting/submit/constructs/EdgeLambdaProps.java, infra/main/java/co/uk/diyaccounting/submit/constructs/Lambda.java, infra/main/java/co/uk/diyaccounting/submit/constructs/LambdaProps.java
-// - **Keywords:** cdk lambda construct, health alarm, api lambda, edge lambda, shared construct
+// - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/constructs/Lambda.java`; `infra/main/java/co/uk/diyaccounting/submit/constructs/ApiLambda.java`
+// - **Files:** infra/main/java/co/uk/diyaccounting/submit/constructs/AbstractApiLambdaProps.java, infra/main/java/co/uk/diyaccounting/submit/constructs/AbstractLambdaProps.java, infra/main/java/co/uk/diyaccounting/submit/constructs/ApiLambda.java, infra/main/java/co/uk/diyaccounting/submit/constructs/ApiLambdaProps.java, infra/main/java/co/uk/diyaccounting/submit/constructs/AsyncApiLambda.java, infra/main/java/co/uk/diyaccounting/submit/constructs/AsyncApiLambdaProps.java, infra/main/java/co/uk/diyaccounting/submit/constructs/Lambda.java, infra/main/java/co/uk/diyaccounting/submit/constructs/LambdaProps.java
+// - **Keywords:** cdk lambda construct, health alarm, api lambda, shared construct
 // - **Related:** OPS-123
 // @end-capability
 // spotless:on
