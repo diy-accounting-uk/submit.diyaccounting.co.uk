@@ -39,7 +39,7 @@ each repository. More local waves are cheap. A second push is expensive.
 - Left out, for the next set: **DASH45**. Its review reads prod's dashboard after DASH36 to DASH44
   are live.
 - Beside the set, with no pull request: **OS16d** (a note in the private repository).
-- Not machine-only, so not candidates: OS24d, OOS44, OMKT8 and the 11 blocked rows.
+- Not machine-only, so not candidates: OS24d, OOS44 and the 12 blocked rows.
 
 ## Waves: submit
 
