@@ -38,4 +38,29 @@ describe("Pa11y configuration against the edge rate limit", () => {
     expect(workflow.match(/pa11y-ci/g) || []).toHaveLength(0);
     expect(workflow.match(/npm run accessibility:pa11y-/g)).toHaveLength(1);
   });
+
+  it("the compliance report job reads the tool jobs' artifacts and does not scan the site again", () => {
+    const workflow = readFileSync(".github/workflows/compliance.yml", "utf8");
+    expect(workflow).not.toMatch(/npm run compliance:/);
+    const reportJob = workflow.slice(workflow.indexOf("  compliance-report:"));
+    for (const toolJob of [
+      "accessibility-pa11y",
+      "accessibility-axe",
+      "accessibility-axe-wcag22",
+      "accessibility-lighthouse",
+      "penetration-zap",
+    ]) {
+      expect(reportJob).toContain(`- ${toolJob}\n`);
+    }
+  });
+
+  it("the live-site axe, Lighthouse and ZAP runs are paced", () => {
+    const scripts = readJson("package.json").scripts;
+    for (const environment of ["ci", "prod"]) {
+      expect(scripts[`accessibility:axe-${environment}`]).toContain("--load-delay 12000");
+      expect(scripts[`accessibility:axe-wcag22-${environment}`]).toContain("--load-delay 12000");
+      expect(scripts[`accessibility:lighthouse-multi-${environment}`]).toContain("--pause-ms 30000");
+      expect(scripts[`penetration:zap-${environment}`]).toContain("-config ajaxSpider.numberOfBrowsers=1");
+    }
+  });
 });

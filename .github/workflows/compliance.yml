@@ -144,12 +144,19 @@ jobs:
         with:
           npm-install: scripts
       - name: Run accessibility:pa11y-${{ needs.names.outputs.environment-name }}
-        run: npm run accessibility:pa11y-${{ needs.names.outputs.environment-name }}
+        run: |
+          # The console report the compliance report reads comes from this run, so the site is
+          # scanned once.
+          set -o pipefail
+          mkdir -p web/public/tests/accessibility
+          npm run accessibility:pa11y-${{ needs.names.outputs.environment-name }} 2>&1 | tee web/public/tests/accessibility/pa11y-report.txt
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: pa11y-results
-          path: web/public/tests/accessibility/pa11y-results.json
+          path: |
+            web/public/tests/accessibility/pa11y-results.json
+            web/public/tests/accessibility/pa11y-report.txt
           retention-days: 7
           if-no-files-found: ignore
 
@@ -420,10 +427,21 @@ jobs:
           key: "curated/compliance/fraud-headers/dt=${{ steps.config.outputs.dt }}/${{ github.run_id }}.json"
           row: ${{ steps.build-fraud-header-rows.outputs.rows }}
 
-  # Final compliance report (runs after all checks complete)
+  # Final compliance report (runs after all checks complete). It reads the tool jobs' artifacts
+  # and sends no traffic to the site itself apart from two one-page tools, so the site sees each
+  # tool's requests once.
   compliance-report:
     name: Generate Compliance Report
-    needs: [names]
+    needs:
+      - names
+      - accessibility-pa11y
+      - accessibility-axe
+      - accessibility-axe-wcag22
+      - accessibility-lighthouse
+      - penetration-eslint
+      - penetration-audit
+      - penetration-retire
+      - penetration-zap
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -435,8 +453,34 @@ jobs:
         with:
           npm-install: scripts
 
-      - name: Run compliance:${{ needs.names.outputs.environment-name }}-report-md
-        run: npm run compliance:${{ needs.names.outputs.environment-name }}-report-md
+      - name: Download accessibility results
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          path: web/public/tests/accessibility
+          pattern: '*-results'
+          merge-multiple: true
+
+      - name: Download the ZAP scan
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          path: web/public/tests/penetration
+          name: zap-scan
+
+      - name: Run the tools that send nothing to the site
+        run: |
+          npm run penetration:eslint-report
+          npm run penetration:audit-report
+          npm run penetration:retire-report
+        continue-on-error: true
+
+      - name: Run the one-page tools
+        run: |
+          npm run accessibility:lighthouse-${{ needs.names.outputs.environment-name }}-report
+          npm run accessibility:text-spacing-${{ needs.names.outputs.environment-name }}-report
+        continue-on-error: true
+
+      - name: Generate the compliance report
+        run: node scripts/generate-compliance-report.js --target ${{ needs.names.outputs.apex-url }}
         continue-on-error: true
 
       - name: List generated reports

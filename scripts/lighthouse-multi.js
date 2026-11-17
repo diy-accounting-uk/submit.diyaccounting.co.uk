@@ -26,6 +26,9 @@
  *   --results-file FILE      Aggregate JSON summary
  *                            (default: web/public/tests/accessibility/lighthouse-multi-results.json)
  *   --concurrency N          `lighthouse` processes to run at a time (default: 3)
+ *   --pause-ms N             Wait this long after each audit before the same worker starts the next
+ *                            (default: 0). An audit sends about 65 requests, so on a live site the
+ *                            pause keeps the run below the edge's per-address rate limit.
  *
  * CHROME_PATH picks the Chrome binary when no system Chrome is on PATH (chrome-launcher's own
  * lookup), e.g. Playwright's bundled Chromium for a local run.
@@ -131,6 +134,7 @@ function parseArgs(argv) {
     outputDir: join(projectRoot, "web/public/tests/accessibility/lighthouse"),
     resultsFile: join(projectRoot, "web/public/tests/accessibility/lighthouse-multi-results.json"),
     concurrency: 3,
+    pauseMs: 0,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -140,6 +144,7 @@ function parseArgs(argv) {
     else if (arg === "--output-dir") options.outputDir = argv[++i];
     else if (arg === "--results-file") options.resultsFile = argv[++i];
     else if (arg === "--concurrency") options.concurrency = Number(argv[++i]);
+    else if (arg === "--pause-ms") options.pauseMs = Number(argv[++i]);
   }
   return options;
 }
@@ -150,8 +155,9 @@ function parseArgs(argv) {
  *
  * @param {(() => Promise<*>)[]} tasks
  * @param {number} concurrency
+ * @param {number} pauseMs wait after each task before the same worker takes the next
  */
-async function runPool(tasks, concurrency) {
+async function runPool(tasks, concurrency, pauseMs = 0) {
   const results = new Array(tasks.length);
   let next = 0;
   async function worker() {
@@ -159,6 +165,7 @@ async function runPool(tasks, concurrency) {
       const index = next;
       next += 1;
       results[index] = await tasks[index]();
+      if (pauseMs > 0 && next < tasks.length) await new Promise((resolve) => setTimeout(resolve, pauseMs));
     }
   }
   const workers = Array.from({ length: Math.min(concurrency, tasks.length) }, () => worker());
@@ -268,7 +275,7 @@ async function main() {
     return { path: urlConfig.path, url: targetUrl, scores, thresholds, pass: failures.length === 0, failures };
   });
 
-  const results = await runPool(tasks, options.concurrency);
+  const results = await runPool(tasks, options.concurrency, options.pauseMs);
 
   mkdirSync(dirname(options.resultsFile), { recursive: true });
   writeFileSync(options.resultsFile, JSON.stringify({ generatedAt: new Date().toISOString(), baseUrl: options.baseUrl, results }, null, 2));
