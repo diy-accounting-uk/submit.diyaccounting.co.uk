@@ -241,3 +241,25 @@ for (const { path, otherName } of [
     }
   }
 }
+
+test("the Welsh home reads its cookie banner, its cookie dialog and its How to file block in Welsh", async ({ page }) => {
+  await serveRealSite(page);
+  await page.goto(`${SITE_ORIGIN}/cy/index.html`, { waitUntil: "domcontentloaded" });
+  const banner = page.locator("#consent-banner");
+  await expect(banner).toHaveAttribute("aria-label", "Caniatâd cwcis");
+  await expect(banner).toContainText("Rydym yn defnyddio cwcis");
+  await expect(banner).toContainText("polisi preifatrwydd (yn Saesneg).");
+  await banner.getByRole("button", { name: "Gwrthod" }).click();
+  await expect(banner).toHaveCount(0);
+
+  await page.locator("footer").getByRole("link", { name: "Dewisiadau cwcis" }).click();
+  const dialog = page.locator("#consent-dialog");
+  await expect(dialog.locator("h2")).toHaveText("Eich dewis cwcis");
+  await expect(dialog.locator("#consent-current-choice")).toHaveText("Eich dewis: gwrthod");
+  await expect(dialog.getByRole("button", { name: "Derbyn" })).toBeVisible();
+
+  const guides = page.locator("nav.filing-guides");
+  await expect(guides).toHaveAttribute("aria-label", "Sut i ffeilio");
+  await expect(guides.locator("h2")).toHaveText("Sut i ffeilio");
+  await expect(guides.locator("li").first()).toHaveText("Ffurflen TAW o daenlen (yn Saesneg)");
+});

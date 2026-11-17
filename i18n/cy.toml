@@ -161,6 +161,37 @@ cy = '''Angen'''
 [strings."index.rt-or"]
 hash = "7175517a370b"
 cy = '''neu'''
+[strings."index.how-label"]
+hash = "fc2351a8776e"
+cy = '''Sut i ffeilio'''
+
+[strings."index.how-heading"]
+hash = "fc2351a8776e"
+cy = '''Sut i ffeilio'''
+
+[strings."index.how-vat"]
+hash = "4c435530339c"
+cy = '''<a href="vat-return-from-a-spreadsheet.html">Ffurflen TAW o daenlen</a> (yn Saesneg)'''
+
+[strings."index.how-micro"]
+hash = "b109e0db58c6"
+cy = '''<a href="micro-entity-accounts.html">Cyfrifon micro-endid</a> (yn Saesneg)'''
+
+[strings."index.how-small"]
+hash = "c670679ed27e"
+cy = '''<a href="small-company-accounts.html">Cyfrifon cwmni bach</a> (yn Saesneg)'''
+
+[strings."index.how-dormant"]
+hash = "a6bee558e8fd"
+cy = '''<a href="dormant-company-accounts.html">Cyfrifon cwmni segur</a> (yn Saesneg)'''
+
+[strings."index.how-confirmation"]
+hash = "66bf7c9b9ae0"
+cy = '''<a href="confirmation-statement.html">Datganiad cadarnhau</a> (yn Saesneg)'''
+
+[strings."index.how-tools"]
+hash = "7191909f2276"
+cy = '''Mae gwirwyr, cyfrifianellau a thablau ar y dudalen <a href="tools.html">Offer</a>.'''
 
 [strings."index.rt-sending"]
 hash = "286a3af7348e"
@@ -495,6 +526,48 @@ cy = '''Cod ffynhonnell'''
 [strings."chrome.footer-legal"]
 hash = "7703ee854fb1"
 cy = '''Am ddim i’w ddefnyddio o dan y {licence}.'''
+
+# == Cookie banner and dialog (LANG9) ==
+# ids consent.*: submit.js, through siteText; add entries below this line.
+[strings."consent.region"]
+hash = "8d5e02d16834"
+cy = '''Caniatâd cwcis'''
+
+[strings."consent.shared"]
+hash = "8dd6144ccd35"
+cy = '''Rydym yn defnyddio cwcis i fesur sut mae’r wefan hon yn perfformio ac yn cael ei defnyddio, dim ond os byddwch yn derbyn. Gweler ein'''
+
+[strings."consent.privacy-link"]
+hash = "2b72811d5f06"
+cy = '''polisi preifatrwydd'''
+
+[strings."consent.accept"]
+hash = "89713b9c9c1b"
+cy = '''Derbyn'''
+
+[strings."consent.reject"]
+hash = "ab604a360777"
+cy = '''Gwrthod'''
+
+[strings."consent.dialog-title"]
+hash = "f41edbb72565"
+cy = '''Eich dewis cwcis'''
+
+[strings."consent.chose-accept"]
+hash = "a5a1c03f1b8c"
+cy = '''Eich dewis: derbyn'''
+
+[strings."consent.chose-reject"]
+hash = "3913990e0cc3"
+cy = '''Eich dewis: gwrthod'''
+
+[strings."consent.advert"]
+hash = "16771b4041af"
+cy = '''Daethoch yma o hysbyseb. Os byddwch yn derbyn, rydym yn cadw pa hysbyseb a ddaeth â chi yma ac yn defnyddio Google Ads a Google Analytics i fesur a arweiniodd at bryniant. Os byddwch yn gwrthod, nid ydym yn cadw dim ac mae’r wefan yn gweithio yn yr un ffordd.'''
+
+[strings."consent.link"]
+hash = "9f06cfabe133"
+cy = '''Daeth dolen â chi yma. Os byddwch yn derbyn, rydym yn cadw pa ddolen am 90 diwrnod, i weld pa dudalennau sy’n arwain at gofrestriadau. Os byddwch yn gwrthod, nid ydym yn cadw dim ac mae’r wefan yn gweithio yn yr un ffordd.'''
 
 # == HMRC VAT and receipts (LANG10a) ==
 # ids vat.* and receipt.*; add entries below this line.

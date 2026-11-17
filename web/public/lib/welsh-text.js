@@ -53,6 +53,19 @@ window.WELSH_TEXT = {
   "chrome.tokens-one": "1 credyd",
   "chrome.tokens-unlimited": "Credyd diderfyn",
   "common.skip-link": "Neidio i’r prif gynnwys",
+  "consent.accept": "Derbyn",
+  "consent.advert":
+    "Daethoch yma o hysbyseb. Os byddwch yn derbyn, rydym yn cadw pa hysbyseb a ddaeth â chi yma ac yn defnyddio Google Ads a Google Analytics i fesur a arweiniodd at bryniant. Os byddwch yn gwrthod, nid ydym yn cadw dim ac mae’r wefan yn gweithio yn yr un ffordd.",
+  "consent.chose-accept": "Eich dewis: derbyn",
+  "consent.chose-reject": "Eich dewis: gwrthod",
+  "consent.dialog-title": "Eich dewis cwcis",
+  "consent.link":
+    "Daeth dolen â chi yma. Os byddwch yn derbyn, rydym yn cadw pa ddolen am 90 diwrnod, i weld pa dudalennau sy’n arwain at gofrestriadau. Os byddwch yn gwrthod, nid ydym yn cadw dim ac mae’r wefan yn gweithio yn yr un ffordd.",
+  "consent.privacy-link": "polisi preifatrwydd",
+  "consent.region": "Caniatâd cwcis",
+  "consent.reject": "Gwrthod",
+  "consent.shared":
+    "Rydym yn defnyddio cwcis i fesur sut mae’r wefan hon yn perfformio ac yn cael ei defnyddio, dim ond os byddwch yn derbyn. Gweler ein",
 };
 
 window.WELSH_COPIES = ["index.html", "get-started.html"];
