@@ -158,11 +158,7 @@ Steps 3 to 5 are the operator's. Steps 1, 2 and 6 to 9 are a session's.
    with "Only select repositories" set to the `submit-cloud-*` repositories only. Do not run
    `/web-setup`, because it sends the local `gh` token, which can push to the org repository.
 4. Add each work repository's remote: `git remote add cloud-<codename> git@github.com:diy-accounting-uk/submit-cloud-<codename>.git`
-5. At https://claude.ai/code, create one environment for the work repositories: network Limited
-   plus the Playwright download domain; environment variables `BASH_DEFAULT_TIMEOUT_MS=3600000` and
-   `BASH_MAX_TIMEOUT_MS=3600000`; a setup script that installs Node 24 and JDK 25 and runs `npm ci`.
-   Make it the CLI default with `/remote-env`, or put its `env_` id in
-   `.claude/skills/new-cloud-session/environment.txt` (`--environment` takes only self-hosted ids).
+5. Done 2026-11-17: the claude.ai/code environment "DIY Accounting Submit" holds `submit-cloud-anvil`, with network Full, the environment variables `BASH_DEFAULT_TIMEOUT_MS=3600000`, `BASH_MAX_TIMEOUT_MS=3600000` and `JAVA_HOME=/opt/jdk25`, and the setup script recorded in `.claude/skills/new-cloud-session/environment-setup.sh`. Each new work repository is added to its Repositories list.
 6. Done 2026-11-17: `.claude/skills/collaborate/SKILL.md` (the worker) and
    `.claude/skills/new-cloud-session/SKILL.md` (lease, re-sync, start, watch, release).
 7. Before each dispatch: `/new-cloud-session [codename] --base <wave branch>` leases a pool repository, pushes
