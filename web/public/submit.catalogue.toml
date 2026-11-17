@@ -78,9 +78,9 @@ tokensGranted = 3
 #  "bundles": [{
 #    "createdAt": "2026-01-31T20:52:50.772Z",
 #    "hashedSub": "a530dcdd1c77138dfd052736fc0790499abec9ae0ccbe63bcacb9cbc050471f7",
-#    "ttl": 1772323200,
-#    "expiry": "2026-02-01T00:00:00.000Z",
-#    "ttl_datestamp": "2026-03-01T00:00:00.000Z",
+#    "ttl": 1772398370,
+#    "expiry": "2026-02-01T20:52:50.772Z",
+#    "ttl_datestamp": "2026-03-01T20:52:50.772Z",
 #    "bundleId": "test"
 #  }],
 #  "tokensRemaining": 1

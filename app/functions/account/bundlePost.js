@@ -427,7 +427,7 @@ export async function grantBundle(
         onUnsupported: (iso) => logger.warn({ message: "Unsupported ISO duration format, cannot parse:", iso }),
       })
     : null;
-  const expiryStr = expiry ? expiry.toISOString().slice(0, 10) : "";
+  const expiryStr = expiry ? expiry.toISOString() : "";
   // decodedToken flows here unchanged from both the synchronous ingestHandler and the SQS
   // workerHandler (see the same classification below, on the activity event), so the item
   // itself carries the same actor as whichever path granted it.

@@ -320,10 +320,11 @@ describe("bundlePost ingestHandler", () => {
     const body = parseResponseBody(response);
     expect(body.status).toBe("granted");
     expect(body.granted).toBe(true);
-    // Test bundle should have timeout producing non-null expiry
-    if (body.expiry) {
-      expect(/\d{4}-\d{2}-\d{2}/.test(body.expiry)).toBe(true);
-    }
+    // A day pass ends 24 hours after the request, stored as the instant and not as a date
+    expect(body.expiry).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    const hoursAhead = (Date.parse(body.expiry) - Date.now()) / 3_600_000;
+    expect(hoursAhead).toBeGreaterThan(23.9);
+    expect(hoursAhead).toBeLessThanOrEqual(24);
   });
 
   test("returns 201 with granted status when re-granting existing bundle", async () => {

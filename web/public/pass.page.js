@@ -89,6 +89,17 @@ const formatDate = (iso) => {
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 };
 
+// A bundle that lasts under two days is shown with its time, because the date alone hides when a day pass ends.
+const formatEnd = (iso, timeout) => {
+  const date = new Date(iso);
+  if (isNaN(date.getTime())) return null;
+  const days = /^P(\d+)D$/.exec(timeout || "");
+  if (!days || Number(days[1]) >= 2) return formatDate(iso);
+  const day = date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  const time = date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZoneName: "short" });
+  return `${day} at ${time}`;
+};
+
 const tokensWords = (tokensGranted) => {
   if (tokensGranted === "unlimited") return "unlimited tokens";
   if (typeof tokensGranted !== "number") return null;
@@ -203,7 +214,7 @@ function bundleCardEl(info, noteParts) {
 }
 
 function endDateWords(expiry, timeout) {
-  if (expiry) return formatDate(expiry) ? `ends on ${formatDate(expiry)}` : null;
+  if (expiry) return formatEnd(expiry, timeout) ? `ends on ${formatEnd(expiry, timeout)}` : null;
   const lasts = durationWords(timeout);
   return lasts ? `lasts ${lasts}` : "no end date";
 }
@@ -239,7 +250,7 @@ function showRedeemed(result) {
   const sentences = [`Your pass added ${info.name}.`];
   if (info.summary) sentences.push(`You can now ${info.summary}.`);
   if (tokens) sentences.push(typeof info.tokensGranted === "number" ? `You have ${tokens}.` : "There is no limit on tokens.");
-  if (result.expiry && formatDate(result.expiry)) sentences.push(`It ends on ${formatDate(result.expiry)}.`);
+  if (result.expiry && formatEnd(result.expiry, info.timeout)) sentences.push(`It ends on ${formatEnd(result.expiry, info.timeout)}.`);
   else if (endsWords === "no end date") sentences.push("There is no end date.");
   render({
     heading: "Pass redeemed",

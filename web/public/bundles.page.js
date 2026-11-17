@@ -666,7 +666,10 @@ function renderCurrentBundles() {
     if (expiryStr) {
       const expiryDate = new Date(expiryStr);
       if (!isNaN(expiryDate.getTime())) {
-        fragments.push(`expires ${expiryDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`);
+        const shortLived = /^P[01]D$/.test(catBundle?.timeout || "");
+        const day = expiryDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+        const time = expiryDate.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZoneName: "short" });
+        fragments.push(shortLived ? `expires ${day} at ${time}` : `expires ${day}`);
       }
     }
 

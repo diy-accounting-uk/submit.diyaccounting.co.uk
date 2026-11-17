@@ -241,6 +241,16 @@ for (const width of WIDTHS) {
       await shot(page, "redeemed-dated", width);
     });
 
+    test("a day pass says the time it ends as well as the date", async ({ page }) => {
+      await serveRealSite(page, {
+        check: { valid: true, bundleId: "day-guest" },
+        redeem: { redeemed: true, bundleId: "day-guest", expiry: "2026-11-12T20:52:50.772Z" },
+      });
+      await open(page, width);
+      await page.getByRole("button", { name: "Redeem pass" }).click();
+      await expect(page.locator("#passMessage")).toContainText(/It ends on 12 November 2026 at \d{2}:\d{2}/);
+    });
+
     test("Go to your activities leads to the home page", async ({ page }) => {
       await serveRealSite(page);
       await open(page, width);
