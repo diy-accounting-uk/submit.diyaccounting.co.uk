@@ -342,6 +342,15 @@ test.describe("Layout shift while data loads on a phone", () => {
       "1",
     ]);
     await expect(page.locator('#dataBucketsSplitBody tr[data-name="diya-gl"] td')).toHaveText(["diya-gl", "4", "14", "2", "0", "2"]);
+    for (const table of ["dataBucketsTable", "dataBucketsSplitTable", "dataAnalyticsTable"]) {
+      await expect(page.locator(`#${table} tbody tr:first-child td:nth-child(2)`)).toHaveCSS("text-align", "right");
+    }
+    const tablesGap = await page.evaluate(() => {
+      const first = document.getElementById("dataBucketsTable").getBoundingClientRect();
+      const second = document.getElementById("dataBucketsSplitTable").getBoundingClientRect();
+      return second.top - first.bottom;
+    });
+    expect(tablesGap).toBeGreaterThanOrEqual(8);
     await page.locator("#dataBucketsPanel").screenshot({ path: "target/screenshots/operator-dashboard-data-buckets.png" });
     await page.locator("#dataAnalyticsPanel").screenshot({ path: "target/screenshots/operator-dashboard-data-analytics.png" });
     await expect(page.locator("#chart-data-totals")).toBeHidden();

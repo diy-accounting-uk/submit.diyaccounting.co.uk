@@ -213,12 +213,20 @@ table.observations thead tr.last-updated th.last-updated-cell,
   overflow-x: auto;
 }
 
+.data-scroll + .data-scroll {
+  margin-top: var(--space-4);
+}
+
 #dataTablesTable th:nth-child(n + 2):not(:last-child),
 #dataTablesTable td:nth-child(n + 2):not(:last-child),
 #dataSplitTable th:nth-child(n + 2),
 #dataSplitTable td:nth-child(n + 2),
 #dataBucketsTable th:nth-child(n + 2),
-#dataBucketsTable td:nth-child(n + 2) {
+#dataBucketsTable td:nth-child(n + 2),
+#dataBucketsSplitTable th:nth-child(n + 2),
+#dataBucketsSplitTable td:nth-child(n + 2),
+#dataAnalyticsTable th:nth-child(n + 2),
+#dataAnalyticsTable td:nth-child(n + 2) {
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
