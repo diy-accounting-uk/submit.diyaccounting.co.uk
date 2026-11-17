@@ -392,7 +392,12 @@ test.describe("Layout shift while data loads on a phone", () => {
     await page.locator("#dataAnalyticsPanel").screenshot({ path: "target/screenshots/operator-dashboard-data-analytics.png" });
     await expect(page.locator("#chart-data-totals")).toBeHidden();
     await page.locator('.dashboard-tab[data-tab-id="main"]').click();
-    await expect(page.locator("#chart-data-totals .chart-line")).toHaveCount(3);
+    await expect(page.locator("#chart-data-totals .chart-legend-item")).toHaveText([
+      "All",
+      "DynamoDB items",
+      "S3 objects",
+      "diya-gl objects",
+    ]);
   });
 
   test("operator/dashboard.html draws no block over the line above it at 375 wide", async ({ page }) => {

@@ -201,6 +201,35 @@ class OperatorSnapshotPublishTest {
         assertTrue(!describedTables.get(0).contains("*"), "a wildcard on the described tables: " + describedTables);
     }
 
+    @Test
+    void lambdaDescribesTheLogGroupsOfItsOwnAccountInBothRegionsAndListsTheBuckets() {
+        Template template = synthOperatorSnapshotPublish("prod");
+
+        var logGroupResources = new java.util.ArrayList<String>();
+        var listsBuckets = false;
+        for (Map<String, Object> policy :
+                template.findResources("AWS::IAM::Policy").values()) {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) policy.get("Properties");
+            @SuppressWarnings("unchecked")
+            var document = (Map<String, Object>) properties.get("PolicyDocument");
+            @SuppressWarnings("unchecked")
+            var statements = (java.util.List<Map<String, Object>>) document.get("Statement");
+            for (Map<String, Object> statement : statements) {
+                if ("logs:DescribeLogGroups".equals(statement.get("Action"))) {
+                    logGroupResources.add(String.valueOf(statement.get("Resource")));
+                }
+                if ("s3:ListAllMyBuckets".equals(statement.get("Action"))) {
+                    listsBuckets = true;
+                }
+            }
+        }
+        assertEquals(1, logGroupResources.size(), "log group grants: " + logGroupResources);
+        assertTrue(logGroupResources.get(0).contains("eu-west-2"), logGroupResources.get(0));
+        assertTrue(logGroupResources.get(0).contains("us-east-1"), logGroupResources.get(0));
+        assertTrue(listsBuckets, "the bucket list is not granted");
+    }
+
     /**
      * The bucket ARN is an imported-by-name {@code Bucket.fromBucketName} reference, so
      * CloudFormation resolves it as an {@code Fn::Join} of the partition ref and the literal

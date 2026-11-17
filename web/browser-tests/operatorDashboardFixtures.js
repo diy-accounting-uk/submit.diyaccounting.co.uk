@@ -627,53 +627,152 @@ export const integrationCall = (id, api, ms, status, rules = null, rulesFailed =
   rulesFailed,
 });
 
-// The Data tab's section as the publisher shapes it: a history of 30 and 7 days for some tables,
-// none yet for 90 days, and a split for the tables the lake holds.
+// The Data tab's section as the publisher shapes it: history files for the last 30 days but two,
+// none before, the actor split from 20 days ago, and a split today for the tables the lake holds.
+const DATA_NOW = new Date("2026-11-07T10:00:00Z");
+const DATA_DAY_MS = 24 * 60 * 60 * 1000;
+const dataDay = (daysAgo) => new Date(DATA_NOW.getTime() - daysAgo * DATA_DAY_MS).toISOString().slice(0, 10);
+
+// The figure on a day from the figures on given days ago, joined by straight lines.
+function figureBetween(anchors, daysAgo) {
+  const points = Object.entries(anchors)
+    .map(([ago, value]) => [Number(ago), value])
+    .sort((a, b) => b[0] - a[0]);
+  if (daysAgo > points[0][0]) return null;
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const [olderAgo, older] = points[index];
+    const [newerAgo, newer] = points[index + 1];
+    if (daysAgo <= olderAgo && daysAgo >= newerAgo) {
+      return Math.round(older + ((newer - older) * (olderAgo - daysAgo)) / (olderAgo - newerAgo));
+    }
+  }
+  return points.at(-1)[1];
+}
+
+const DATA_TABLE_ANCHORS = {
+  "receipts": { 30: 300, 7: 400, 1: 410, 0: 412 },
+  "bundles": { 30: 900, 7: 1250, 1: 1290, 0: 1296 },
+  "subscriptions": { 30: 120, 7: 180, 1: 187, 0: 188 },
+  "passes": { 30: 1800, 7: 2380, 1: 2425, 0: 2431 },
+  "integration-calls": { 30: 9100, 7: 17800, 1: 18300, 0: 18420 },
+  "mcp-sessions": { 30: 4, 7: 6, 1: 7, 0: 7 },
+  "security-state": { 30: 38, 7: 44, 1: 46, 0: 46 },
+};
+const DATA_BOOK_ANCHORS = { 30: 7, 7: 10, 1: 11, 0: 11 };
+const DATA_ACTOR_SPLIT = {
+  "receipts": { customer: 59, test: 330, synthetic: 12, other: 3, unknown: 8 },
+  "bundles": { customer: 410, test: 724, synthetic: 96, other: 6, unknown: 60 },
+  "subscriptions": { customer: 31, test: 120, synthetic: 30, other: 0, unknown: 7 },
+  "passes": { customer: 140, test: 2131, synthetic: 0, other: 0, unknown: 160 },
+  "integration-calls": { customer: 6100, test: 11900, synthetic: 300, other: 20, unknown: 0 },
+  "mcp-sessions": { customer: 3, test: 2, synthetic: 0, other: 0, unknown: 0 },
+};
+const DATA_DIYA_GL_SPLIT = {
+  objects: { customer: 4, test: 14, synthetic: 2, other: 0, unknown: 2 },
+  books: { customer: 2, test: 7, synthetic: 1, other: 0, unknown: 1 },
+  versions: { customer: 2, test: 7, synthetic: 1, other: 0, unknown: 1 },
+};
+const scaledSplit = (split, ratio) => Object.fromEntries(Object.entries(split).map(([name, value]) => [name, Math.round(value * ratio)]));
+
+const DATA_HISTORIES = Object.fromEntries(
+  Array.from({ length: 90 }, (_, index) => index + 1).map((ago) => {
+    if (ago > 30 || ago === 12 || ago === 13) return [dataDay(ago), null];
+    const tables = Object.fromEntries(Object.entries(DATA_TABLE_ANCHORS).map(([label, anchors]) => [label, figureBetween(anchors, ago)]));
+    const books = figureBetween(DATA_BOOK_ANCHORS, ago);
+    const ratio = 1 - ago / 60;
+    return [
+      dataDay(ago),
+      {
+        tables,
+        tableBytes: Object.fromEntries(Object.entries(tables).map(([label, items]) => [label, items * 900])),
+        books: { books, versions: books },
+        logGroupBytes: ago <= 10 ? Math.round(16e9 * (1 - ago / 100)) : null,
+        actorSplit:
+          ago <= 20 ? Object.fromEntries(Object.entries(DATA_ACTOR_SPLIT).map(([kind, split]) => [kind, scaledSplit(split, ratio)])) : null,
+        diyaGlSplit:
+          ago <= 20
+            ? { objects: scaledSplit(DATA_DIYA_GL_SPLIT.objects, ratio), books: scaledSplit(DATA_DIYA_GL_SPLIT.books, ratio) }
+            : null,
+      },
+    ];
+  }),
+);
+
+// A bucket's daily metric for the last 60 days, the newest two days not yet published.
+function metricByDay(anchors, { from = 60, lag = 0 } = {}) {
+  return Object.fromEntries(
+    Array.from({ length: from + 1 }, (_, ago) => ago)
+      .filter((ago) => ago >= lag)
+      .map((ago) => [dataDay(ago), figureBetween(anchors, ago)])
+      .filter(([, value]) => value !== null),
+  );
+}
+
+const DATA_CAPACITY_HOURS = Array.from(
+  { length: 336 },
+  (_, index) => new Date(Date.UTC(2026, 10, 7, 10) - (335 - index) * 3600000).toISOString().slice(0, 13) + ":00:00Z",
+);
+const capacityByDay = (scale) =>
+  Object.fromEntries(Array.from({ length: 90 }, (_, ago) => [dataDay(ago), Math.round(scale * (2 + Math.sin(ago / 4)))]));
+const capacityByHour = (scale) =>
+  Object.fromEntries(DATA_CAPACITY_HOURS.map((hour, index) => [hour, Math.round(scale * (1 + Math.sin(index / 6)))]));
+
 export const FIXTURE_DATA = shapeDataSection({
   envName: "prod",
-  now: new Date("2026-11-07T10:00:00Z"),
+  now: DATA_NOW,
   tables: [
-    { name: "prod-env-receipts", items: 412, ttl: { enabled: false, attribute: null } },
-    { name: "prod-env-bundles", items: 1296, ttl: { enabled: true, attribute: "ttl" } },
-    { name: "prod-env-subscriptions", items: 188, ttl: { enabled: false, attribute: null } },
-    { name: "prod-env-passes", items: 2431, ttl: { enabled: false, attribute: null } },
-    { name: "prod-env-integration-calls", items: 18420, ttl: { enabled: true, attribute: "ttl" } },
-    { name: "prod-env-mcp-sessions", items: 7, ttl: { enabled: true, attribute: "expiresAt" } },
-    { name: "prod-env-security-state", items: 46, ttl: { enabled: true, attribute: "ttl" } },
+    { name: "prod-env-receipts", items: 412, bytes: 412 * 900, ttl: { enabled: false, attribute: null } },
+    { name: "prod-env-bundles", items: 1296, bytes: 1296 * 900, ttl: { enabled: true, attribute: "ttl" } },
+    { name: "prod-env-subscriptions", items: 188, bytes: 188 * 900, ttl: { enabled: false, attribute: null } },
+    { name: "prod-env-passes", items: 2431, bytes: 2431 * 900, ttl: { enabled: false, attribute: null } },
+    { name: "prod-env-integration-calls", items: 18420, bytes: 18420 * 900, ttl: { enabled: true, attribute: "ttl" } },
+    { name: "prod-env-mcp-sessions", items: 7, bytes: 7 * 900, ttl: { enabled: true, attribute: "expiresAt" } },
+    { name: "prod-env-security-state", items: 46, bytes: 46 * 900, ttl: { enabled: true, attribute: "ttl" } },
   ],
-  actorSplit: {
-    "receipts": { customer: 59, test: 330, synthetic: 12, other: 3, unknown: 8 },
-    "bundles": { customer: 410, test: 724, synthetic: 96, other: 6, unknown: 60 },
-    "subscriptions": { customer: 31, test: 120, synthetic: 30, other: 0, unknown: 7 },
-    "passes": { customer: 140, test: 2131, synthetic: 0, other: 0, unknown: 160 },
-    "integration-calls": { customer: 6100, test: 11900, synthetic: 300, other: 20, unknown: 0 },
-    "mcp-sessions": { customer: 3, test: 2, synthetic: 0, other: 0, unknown: 0 },
-  },
+  actorSplit: DATA_ACTOR_SPLIT,
   buckets: [
-    { name: "prod-env-analytics-lake-972912397388", objects: 48210, history: { 90: null, 30: 31200, 7: 46100, 1: 47900 } },
-    { name: "prod-env-analytics-results-972912397388", objects: 9120, history: { 90: null, 30: 6400, 7: 8800, 1: 9050 } },
-    { name: "prod-env-diya-gl-972912397388", objects: 22, history: { 90: null, 30: 14, 7: 20, 1: 22 } },
+    {
+      name: "prod-env-analytics-lake-972912397388",
+      objectsByDay: metricByDay({ 60: 20000, 30: 31200, 7: 46100, 1: 47900, 0: 48210 }),
+      bytesByDay: metricByDay({ 60: 9e9, 30: 12e9, 7: 15e9, 0: 15.4e9 }, { lag: 2 }),
+    },
+    {
+      name: "prod-env-analytics-results-972912397388",
+      objectsByDay: metricByDay({ 60: 3000, 30: 6400, 7: 8800, 1: 9050, 0: 9120 }),
+      bytesByDay: metricByDay({ 60: 2e9, 30: 3e9, 7: 3.8e9, 0: 3.9e9 }, { lag: 2 }),
+    },
+    { name: "prod-env-diya-gl-972912397388", objectsByDay: metricByDay({ 30: 14, 7: 20, 1: 22, 0: 22 }) },
+  ],
+  artefactBuckets: [
+    {
+      name: "cdk-hnb659fds-assets-972912397388-eu-west-2",
+      kind: "deployment",
+      objectsByDay: metricByDay({ 90: 400, 0: 1300 }, { from: 90 }),
+    },
+    {
+      name: "prod-0e924d9-app-edgestac-prod0e924d9apporiginbuck-q9xjts2nywoe",
+      kind: "deployment",
+      objectsByDay: metricByDay({ 20: 300, 0: 320 }, { from: 20 }),
+    },
+    {
+      name: "prod-3ae340a-app-opsstack-canaryartifacts16b34762-fj08ayjlefkg",
+      kind: "test-reports",
+      objectsByDay: metricByDay({ 90: 2000, 0: 5200 }, { from: 90 }),
+    },
   ],
   diyaGlBucketName: "prod-env-diya-gl-972912397388",
-  diyaGlSplit: {
-    objects: { customer: 4, test: 14, synthetic: 2, other: 0, unknown: 2 },
-    books: { customer: 2, test: 7, synthetic: 1, other: 0, unknown: 1 },
-    versions: { customer: 2, test: 7, synthetic: 1, other: 0, unknown: 1 },
-  },
+  diyaGlSplit: DATA_DIYA_GL_SPLIT,
   books: { books: 11, versions: 11, truncated: false },
-  histories: {
-    90: null,
-    30: {
-      tables: { "receipts": 300, "bundles": 900, "subscriptions": 120, "passes": 1800, "integration-calls": 9100, "mcp-sessions": 4 },
-      books: { books: 7, versions: 7 },
+  histories: DATA_HISTORIES,
+  logGroupBytes: 16e9,
+  capacity: {
+    daily: {
+      "prod-env-bundles": { read: capacityByDay(900), write: capacityByDay(120) },
+      "prod-env-receipts": { read: capacityByDay(400), write: capacityByDay(60) },
     },
-    7: {
-      tables: { "receipts": 400, "bundles": 1250, "subscriptions": 180, "passes": 2380, "integration-calls": 17800, "mcp-sessions": 6 },
-      books: { books: 10, versions: 10 },
-    },
-    1: {
-      tables: { "receipts": 410, "bundles": 1290, "subscriptions": 187, "passes": 2425, "integration-calls": 18300, "mcp-sessions": 7 },
-      books: { books: 11, versions: 11 },
+    hourly: {
+      "prod-env-bundles": { read: capacityByHour(40), write: capacityByHour(6) },
+      "prod-env-receipts": { read: capacityByHour(15), write: capacityByHour(3) },
     },
   },
 });

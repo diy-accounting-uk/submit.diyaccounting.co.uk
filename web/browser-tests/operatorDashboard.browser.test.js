@@ -21,6 +21,7 @@ import {
   FIXTURE_PAID_SUBSCRIBERS,
   FIXTURE_PAGE_VISITORS,
   FIXTURE_SNAPSHOT_WITH_CHARTS,
+  FIXTURE_DATA,
   FIXTURE_AFFILIATE_SECTIONS,
   fullShapeSnapshot,
   PIXEL_PNG,
@@ -1555,6 +1556,63 @@ test.describe("Operator Dashboard", () => {
         await expect(page.locator(`.chart-card[data-chart-id="${id}"] .chart-range-option`)).toHaveCount(2);
       }
       await page.screenshot({ path: "target/screenshots/operator-dashboard-range-switch.png", fullPage: false });
+    });
+
+    test("draws the stored-data graph in six tabs, each with an All line, to scale and with the range switch", async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT_WITH_CHARTS, data: FIXTURE_DATA } });
+      await loadDashboard(page);
+
+      const stored = page.locator("#chart-data-totals");
+      await expect(stored.locator("h3")).toHaveText("Stored data");
+      await expect(stored.locator(".chart-mode[data-mode-id]")).toHaveText([
+        "By platform",
+        "By application",
+        "Reads and writes",
+        "Transactional",
+        "Observability",
+        "CI/CD",
+      ]);
+      await expect(stored.locator(".chart-legend-item")).toHaveText(["All", "DynamoDB items", "S3 objects", "diya-gl objects"]);
+      await expect(stored.locator(".chart-readout")).toHaveText(
+        "7 Nov: All 80,152, DynamoDB items 22,800, S3 objects 57,330, diya-gl objects 22",
+      );
+      await expect(stored.locator("svg")).toHaveAttribute("aria-label", /daily over the last 90 days/);
+      // A day with no history file breaks the DynamoDB line, so it and the All line draw two runs each.
+      await expect(stored.locator("polyline.chart-line")).toHaveCount(6);
+      await stored.scrollIntoViewIfNeeded();
+      await stored.screenshot({ path: "target/screenshots/operator-dashboard-stored-data-platform.png" });
+
+      const shortRange = stored.locator('.chart-range-option[data-range="hourly"]');
+      await expect(shortRange).toHaveText("14 days, by day");
+      await shortRange.click();
+      await expect(stored.locator("svg")).toHaveAttribute("aria-label", /daily over the last 14 days/);
+
+      await stored.locator('.chart-mode[data-mode-id="reads-and-writes"]').click();
+      await expect(shortRange).toHaveText("14 days, by hour");
+      await expect(stored.locator("svg")).toHaveAttribute("aria-label", /hourly over the last 336 hours/);
+      const hourlyPoints = await stored.locator("polyline.chart-line").first().getAttribute("points");
+      expect(hourlyPoints.trim().split(" ")).toHaveLength(336);
+      await stored.screenshot({ path: "target/screenshots/operator-dashboard-stored-data-reads-and-writes.png" });
+      await stored.locator('.chart-range-option[data-range="daily"]').click();
+
+      await stored.locator('.chart-mode[data-mode-id="transactional"]').click();
+      const synthetic = stored.locator('.chart-legend-item[data-series-id$="@synthetic"]');
+      await expect(synthetic).toHaveCount(5);
+      for (const button of await synthetic.all()) await expect(button).toHaveAttribute("aria-pressed", "false");
+      await expect(stored.locator('.chart-legend-item[data-series-id="bundles@customer"]')).toHaveAttribute("aria-pressed", "true");
+      await expect(stored.locator('.chart-legend-item[data-series-id="bundles@synthetic"]')).toHaveText("Bundles, test and synthetic");
+      await stored.screenshot({ path: "target/screenshots/operator-dashboard-stored-data-transactional.png" });
+
+      await stored.locator('.chart-mode[data-mode-id="observability"]').click();
+      await expect(stored.locator(".chart-readout")).toContainText("All 35.17 GB");
+      await expect(stored.locator("svg .chart-axis").first()).toHaveText("0 B");
+
+      for (const mode of ["application", "observability", "cicd"]) {
+        await stored.locator(`.chart-mode[data-mode-id="${mode}"]`).click();
+        await expect(stored.locator(".chart-legend-item").first()).toHaveText("All");
+        await stored.screenshot({ path: `target/screenshots/operator-dashboard-stored-data-${mode}.png` });
+      }
     });
 
     test("reads a ratio mode as a percentage", async ({ page }) => {

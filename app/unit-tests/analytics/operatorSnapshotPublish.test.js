@@ -112,6 +112,9 @@ import {
   parseResultSet,
   runAthenaQuery,
   OBJECTIVE_DEFINITIONS,
+  metricPoints,
+  consumedCapacity,
+  logGroupStoredBytes,
 } from "@app/functions/analytics/operatorSnapshotPublish.js";
 
 const WINDOWED_QUERY_COUNT = new Set(
@@ -2748,6 +2751,65 @@ describe("operatorSnapshotPublish", () => {
 
       await expect(handler()).rejects.toThrow(/1 observation/);
       expect(mockS3Send.mock.calls.filter(([command]) => command.constructor.name === "PutObjectCommand")).toHaveLength(2);
+    });
+  });
+
+  describe("the stored-data graph's reads", () => {
+    test("metric points are read through every page and keyed by day or by hour", async () => {
+      const send = vi
+        .fn()
+        .mockResolvedValueOnce({
+          MetricDataResults: [{ Id: "a", Timestamps: [new Date("2026-11-06T00:00:00Z")], Values: [4] }],
+          NextToken: "next",
+        })
+        .mockResolvedValueOnce({ MetricDataResults: [{ Id: "a", Timestamps: [new Date("2026-11-07T00:00:00Z")], Values: [5] }] });
+      const points = await metricPoints({ send }, [{ id: "a", metric: {}, stat: "Sum" }], {
+        period: 86400,
+        start: new Date("2026-11-01T00:00:00Z"),
+        end: new Date("2026-11-07T10:00:00Z"),
+      });
+      expect(points).toEqual({ a: { "2026-11-06": 4, "2026-11-07": 5 } });
+      expect(send.mock.calls[1][0].input.NextToken).toBe("next");
+      const hourly = vi.fn(async () => ({ MetricDataResults: [{ Id: "a", Timestamps: [new Date("2026-11-07T09:00:00Z")], Values: [2] }] }));
+      const hours = await metricPoints({ send: hourly }, [{ id: "a", metric: {}, stat: "Sum" }], {
+        period: 3600,
+        start: new Date("2026-11-07T00:00:00Z"),
+        end: new Date("2026-11-07T10:00:00Z"),
+      });
+      expect(hours).toEqual({ a: { "2026-11-07T09:00:00Z": 2 } });
+    });
+
+    test("consumed capacity starts on a whole day or hour and reads both directions of each table", async () => {
+      const send = vi.fn(async () => ({
+        MetricDataResults: [
+          { Id: "t0r", Timestamps: [new Date("2026-11-07T00:00:00Z")], Values: [12] },
+          { Id: "t0w", Timestamps: [new Date("2026-11-07T00:00:00Z")], Values: [3] },
+        ],
+      }));
+      const now = new Date("2026-11-07T10:17:00Z");
+      const capacity = await consumedCapacity({ send }, ["prod-env-bundles"], "daily", 90, now);
+      expect(capacity).toEqual({ "prod-env-bundles": { read: { "2026-11-07": 12 }, write: { "2026-11-07": 3 } } });
+      const input = send.mock.calls[0][0].input;
+      expect(input.StartTime.toISOString()).toBe("2026-08-10T00:00:00.000Z");
+      expect(input.MetricDataQueries.map((query) => query.MetricStat.Metric.MetricName)).toEqual([
+        "ConsumedReadCapacityUnits",
+        "ConsumedWriteCapacityUnits",
+      ]);
+      await consumedCapacity({ send }, ["prod-env-bundles"], "hourly", 336, now);
+      expect(send.mock.calls[1][0].input.StartTime.toISOString()).toBe("2026-10-24T11:00:00.000Z");
+      expect(send.mock.calls[1][0].input.MetricDataQueries[0].MetricStat.Period).toBe(3600);
+    });
+
+    test("the log groups' stored bytes add up over every page and region", async () => {
+      const first = {
+        send: vi
+          .fn()
+          .mockResolvedValueOnce({ logGroups: [{ storedBytes: 10 }, { storedBytes: 5 }], nextToken: "more" })
+          .mockResolvedValueOnce({ logGroups: [{}] }),
+      };
+      const second = { send: vi.fn(async () => ({ logGroups: [{ storedBytes: 7 }] })) };
+      expect(await logGroupStoredBytes([first, second])).toBe(22);
+      expect(first.send.mock.calls[1][0].input.nextToken).toBe("more");
     });
   });
 });

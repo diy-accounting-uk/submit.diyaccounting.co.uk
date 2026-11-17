@@ -41,6 +41,9 @@ import software.constructs.Construct;
  */
 public class OperatorSnapshotPublish extends Construct {
 
+    /** The region of the edge resources, whose log groups the stored-data graph also reads. */
+    private static final String EDGE_REGION = "us-east-1";
+
     public final Function snapshotPublishLambda;
 
     @Value.Immutable
@@ -221,9 +224,10 @@ public class OperatorSnapshotPublish extends Construct {
                         .formatted(region, account, props.integrationCallsTableName())))
                 .build());
 
-        // The Data tab: item counts and TTL state of the named tables from DescribeTable, never a
-        // Scan; book counts by listing the diya-gl bucket; object counts per bucket from the
-        // CloudWatch metric, whose read actions take no resource-level scope.
+        // The Data tab: item counts, sizes and TTL state of the named tables from DescribeTable,
+        // never a Scan; book counts by listing the diya-gl bucket; object counts and sizes per
+        // bucket and consumed capacity per table from CloudWatch metrics, whose read actions take
+        // no resource-level scope.
         this.snapshotPublishLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("dynamodb:DescribeTable", "dynamodb:DescribeTimeToLive"))
@@ -239,6 +243,22 @@ public class OperatorSnapshotPublish extends Construct {
         this.snapshotPublishLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("cloudwatch:GetMetricData"))
+                .resources(List.of("*"))
+                .build());
+
+        // The stored-data graph: the log groups' stored bytes in this region and the edge region,
+        // and the bucket list, from which it counts the deployment artefacts and test reports.
+        // ListAllMyBuckets takes no resource-level scope.
+        this.snapshotPublishLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("logs:DescribeLogGroups"))
+                .resources(List.of(
+                        "arn:aws:logs:%s:%s:log-group:*".formatted(region, account),
+                        "arn:aws:logs:%s:%s:log-group:*".formatted(EDGE_REGION, account)))
+                .build());
+        this.snapshotPublishLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:ListAllMyBuckets"))
                 .resources(List.of("*"))
                 .build());
     }

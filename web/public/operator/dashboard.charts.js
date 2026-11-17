@@ -11,6 +11,8 @@ const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 const CHART_HEIGHT = 220;
 const MARGIN = { top: 10, right: 10, bottom: 24, left: 46 };
 const COLOUR_COUNT = 8;
+// The width of one character of an axis label, in pixels, for sizing the left margin.
+const AXIS_CHARACTER_WIDTH = 6.5;
 const DASH_BY_CYCLE = ["", "6 3", "2 3"];
 
 const dayFormat = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
@@ -72,15 +74,21 @@ const INITIALLY_HIDDEN_SERIES = {
   },
   "integration-duration": { organisation: { showOnlySuffix: "@customer" } },
   "conversion-to-submission": { funnel: ["sessions-from-spreadsheets", "sessions-from-www", "sessions-from-elsewhere"] },
+  "data-totals": { transactional: { hideSuffix: "@synthetic" } },
 };
 
 // An entry is a list of hidden line ids, or { showOnly: [ids] } for a mode whose lines are not
 // known in advance: every other line, daily or hourly, starts hidden. { showOnlySuffix } hides
-// every line whose id does not end with the suffix, as the lines of a caller class do.
+// every line whose id does not end with the suffix, as the lines of a caller class do, and
+// { hideSuffix } hides every line whose id ends with it.
 function initiallyHidden(chart, modeIndex) {
   const byMode = INITIALLY_HIDDEN_SERIES[chart.id];
   const mode = chart.modes[modeIndex];
   const entry = byMode && byMode[mode.id];
+  if (entry && entry.hideSuffix) {
+    const lines = [...mode.series, ...(mode.hourly ? mode.hourly.series : [])];
+    return new Set(lines.map((series) => series.id).filter((id) => id.endsWith(entry.hideSuffix)));
+  }
   if (entry && entry.showOnlySuffix) {
     const lines = [...mode.series, ...(mode.hourly ? mode.hourly.series : [])];
     return new Set(lines.map((series) => series.id).filter((id) => !id.endsWith(entry.showOnlySuffix)));
@@ -104,14 +112,29 @@ function formatDuration(value) {
   return value >= 1000 ? readoutNumberFormat.format(value / 1000) + " s" : readoutNumberFormat.format(value) + " ms";
 }
 
+// Bytes read in the largest unit of 1,000 that keeps the figure at 1 or more.
+const BYTE_UNITS = ["B", "kB", "MB", "GB", "TB"];
+
+function formatBytes(value, numberFormat) {
+  let scaled = value;
+  let index = 0;
+  while (Math.abs(scaled) >= 1000 && index < BYTE_UNITS.length - 1) {
+    scaled /= 1000;
+    index += 1;
+  }
+  return numberFormat.format(scaled) + " " + BYTE_UNITS[index];
+}
+
 function formatAxisValue(unit, value) {
   if (unit === "ms") return formatDuration(value);
+  if (unit === "bytes") return formatBytes(value, axisNumberFormat);
   if (unit === "ratio") return axisNumberFormat.format(value * 100) + "%";
   return (UNIT_PREFIX[unit] || "") + axisNumberFormat.format(value);
 }
 
 function formatReadoutValue(unit, value) {
   if (unit === "ms") return formatDuration(value);
+  if (unit === "bytes") return formatBytes(value, readoutNumberFormat);
   if (unit === "ratio") return readoutNumberFormat.format(value * 100) + "%";
   return (UNIT_PREFIX[unit] || "") + readoutNumberFormat.format(value);
 }
@@ -166,6 +189,12 @@ function lineRuns(values) {
   return runs.filter(Boolean);
 }
 
+// The left margin that holds the widest value label, at least MARGIN.left.
+function leftMarginFor(unit, maxValue) {
+  const widest = Math.max(...[0, 1, 2, 3, 4].map((tick) => formatAxisValue(unit, (maxValue / 4) * tick).length));
+  return Math.max(MARGIN.left, 12 + widest * AXIS_CHARACTER_WIDTH);
+}
+
 function drawChart(state) {
   const { chart, svg, readout } = state;
   const mode = chart.modes[state.modeIndex];
@@ -179,21 +208,22 @@ function drawChart(state) {
   const styles = lineStylesFor(seriesList);
 
   const width = Math.max(state.card.clientWidth - 2, 240);
-  const plotWidth = width - MARGIN.left - MARGIN.right;
+  const maxValue = niceCeiling(Math.max(0, ...visible.flatMap((series) => series.values.filter((value) => value !== null))));
+  const left = leftMarginFor(unit, maxValue);
+  const plotWidth = width - left - MARGIN.right;
   const plotHeight = CHART_HEIGHT - MARGIN.top - MARGIN.bottom;
   svg.setAttribute("viewBox", "0 0 " + width + " " + CHART_HEIGHT);
   svg.setAttribute("width", width);
   svg.setAttribute("height", CHART_HEIGHT);
   svg.replaceChildren();
 
-  const maxValue = niceCeiling(Math.max(0, ...visible.flatMap((series) => series.values.filter((value) => value !== null))));
-  const xAt = (index) => MARGIN.left + (days.length === 1 ? 0 : (index / (days.length - 1)) * plotWidth);
+  const xAt = (index) => left + (days.length === 1 ? 0 : (index / (days.length - 1)) * plotWidth);
   const yAt = (value) => MARGIN.top + plotHeight - (value / maxValue) * plotHeight;
 
   for (let tick = 0; tick <= 4; tick += 1) {
     const value = (maxValue / 4) * tick;
-    svg.appendChild(svgElement("line", { x1: MARGIN.left, x2: width - MARGIN.right, y1: yAt(value), y2: yAt(value), class: "chart-grid" }));
-    const label = svgElement("text", { "x": MARGIN.left - 6, "y": yAt(value) + 4, "text-anchor": "end", "class": "chart-axis" });
+    svg.appendChild(svgElement("line", { x1: left, x2: width - MARGIN.right, y1: yAt(value), y2: yAt(value), class: "chart-grid" }));
+    const label = svgElement("text", { "x": left - 6, "y": yAt(value) + 4, "text-anchor": "end", "class": "chart-axis" });
     label.textContent = formatAxisValue(unit, value);
     svg.appendChild(label);
   }
@@ -237,7 +267,7 @@ function drawChart(state) {
   const guide = svgElement("line", { y1: MARGIN.top, y2: MARGIN.top + plotHeight, class: "chart-guide", visibility: "hidden" });
   svg.appendChild(guide);
   const overlay = svgElement("rect", {
-    x: MARGIN.left,
+    x: left,
     y: MARGIN.top,
     width: plotWidth,
     height: plotHeight,
@@ -351,7 +381,7 @@ function legendControls(state) {
     });
     controls.appendChild(button);
   });
-  if (!state.chart.standalone) controls.appendChild(rangeSwitch(state));
+  if (!state.chart.standalone || state.chart.rangeSwitch) controls.appendChild(rangeSwitch(state));
   return controls;
 }
 
@@ -574,9 +604,9 @@ function renderDailyCharts(snapshot) {
     grid.appendChild(state.card);
     renderedCharts.push(state);
   });
-  // The stored-data chart holds its own days, so it is drawn beside the daily charts.
+  // The stored-data chart holds its own days and hours, so it is drawn beside the daily charts.
   if (snapshot.data && snapshot.data.chart) {
-    const state = renderChartCard(snapshot.data.chart, snapshot.data.chart.days, []);
+    const state = renderChartCard(snapshot.data.chart, snapshot.data.chart.days, snapshot.data.chart.hours || []);
     grid.appendChild(state.card);
     renderedCharts.push(state);
   }

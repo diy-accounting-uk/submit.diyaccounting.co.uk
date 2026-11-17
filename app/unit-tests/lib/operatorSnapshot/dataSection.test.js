@@ -4,8 +4,11 @@
 import { describe, test, expect, vi } from "vitest";
 import {
   actorClassOf,
+  artefactKindOf,
   buildActorSplitSql,
   buildDataSection,
+  dataChartDays,
+  dataChartHours,
   dayBefore,
   historyKey,
   shapeActorSplit,
@@ -19,7 +22,10 @@ function makeIo(overrides = {}) {
   const files = new Map();
   return {
     files,
-    describeItemCount: vi.fn(async (name) => ({ "prod-env-bundles": 120, "prod-env-receipts": 40 })[name] ?? null),
+    describeTable: vi.fn(async (name) => ({
+      items: { "prod-env-bundles": 120, "prod-env-receipts": 40 }[name] ?? null,
+      bytes: { "prod-env-bundles": 9000, "prod-env-receipts": 4000 }[name] ?? null,
+    })),
     describeTtl: vi.fn(async (name) =>
       name === "prod-env-bundles" ? { enabled: true, attribute: "ttl" } : { enabled: false, attribute: null },
     ),
@@ -31,6 +37,10 @@ function makeIo(overrides = {}) {
       { kind: "bundles", actor_class: "unknown", items: "10" },
     ]),
     bucketObjectCounts: vi.fn(async () => ({ "prod-env-analytics-lake-972912397388": { "2026-11-06": 5000, "2026-10-08": 4000 } })),
+    bucketBytes: vi.fn(async () => ({ "prod-env-analytics-lake-972912397388": { "2026-11-06": 7e9 } })),
+    listBucketNames: vi.fn(async () => []),
+    consumedCapacity: vi.fn(async () => null),
+    logGroupBytes: vi.fn(async () => null),
     countBooks: vi.fn(async () => ({ books: 3, versions: 5, truncated: false })),
     ...overrides,
   };
@@ -192,9 +202,10 @@ describe("dataSection", () => {
   test("a lake table's classes and the items not in the lake add up to the table's count", async () => {
     const section = await run(
       makeIo({
-        describeItemCount: vi.fn(
-          async (name) => ({ "prod-env-bundles": 125, "prod-env-receipts": 40, "prod-env-security-state": 6 })[name],
-        ),
+        describeTable: vi.fn(async (name) => ({
+          items: { "prod-env-bundles": 125, "prod-env-receipts": 40, "prod-env-security-state": 6 }[name],
+          bytes: null,
+        })),
       }),
     );
     const bundles = section.tables.find((table) => table.name === "bundles");
@@ -210,7 +221,9 @@ describe("dataSection", () => {
       now,
       tableNames: ["prod-env-bundles", "prod-env-security-state"],
       bucketNames: [],
-      io: makeIo({ describeItemCount: vi.fn(async (name) => ({ "prod-env-bundles": 100, "prod-env-security-state": 6 })[name]) }),
+      io: makeIo({
+        describeTable: vi.fn(async (name) => ({ items: { "prod-env-bundles": 100, "prod-env-security-state": 6 }[name], bytes: null })),
+      }),
     });
     expect(section.tables.find((table) => table.name === "security-state").split).toBeNull();
     expect(section.tables.find((table) => table.name === "bundles").split.notInLake).toBe(0);
@@ -221,6 +234,7 @@ describe("dataSection", () => {
     await run(io);
     const written = io.files.get(historyKey("prod", "2026-11-07"));
     expect(written.tables).toEqual({ bundles: 120, receipts: 40 });
+    expect(written.tableBytes).toEqual({ bundles: 9000, receipts: 4000 });
     expect(written.actorSplit.bundles.customer).toBe(90);
     expect(io.runAthena).toHaveBeenCalledTimes(1);
     await run(io);
@@ -233,13 +247,148 @@ describe("dataSection", () => {
     expect(section.buckets[0].objects).toEqual({ today: 5000, d90: null, d30: 4000, d7: null, d1: 5000 });
   });
 
-  test("the chart draws one total line for each repository type and null where a total is not known", async () => {
+  test("the graph has one point for each of 90 days ending today, and 336 hours for reads and writes", async () => {
     const section = await run(makeIo());
-    const [series] = section.chart.modes.map((mode) => Object.fromEntries(mode.series.map((line) => [line.id, line.values])));
-    expect(section.chart.days).toEqual(["2026-08-09", "2026-10-08", "2026-10-31", "2026-11-06", "2026-11-07"]);
-    expect(series.dynamodb).toEqual([null, null, null, null, 160]);
-    expect(series.s3).toEqual([null, 4000, null, 5000, 5000]);
-    expect(series.books).toEqual([null, null, null, null, 3]);
+    expect(section.chart.days).toEqual(dataChartDays(now));
+    expect(section.chart.days).toHaveLength(90);
+    expect(section.chart.days.at(-1)).toBe("2026-11-07");
+    expect(section.chart.days[0]).toBe("2026-08-10");
+    expect(dataChartHours(now)).toHaveLength(336);
+    expect(dataChartHours(now).at(-1)).toBe("2026-11-07T10:00:00Z");
+    expect(section.chart.rangeSwitch).toBe(true);
+  });
+
+  test("by platform reads every day's history file and leaves a gap for a day with none", async () => {
+    const io = makeIo();
+    io.files.set(historyKey("prod", "2026-11-01"), { tables: { bundles: 100, receipts: 30 } });
+    io.files.set(historyKey("prod", "2026-11-03"), { tables: { bundles: 110, receipts: 35 } });
+    const section = await run(io);
+    const days = section.chart.days;
+    const platform = section.chart.modes.find((mode) => mode.id === "platform");
+    const line = (id) => platform.series.find((series) => series.id === id).values;
+    expect(line("dynamodb")[days.indexOf("2026-11-01")]).toBe(130);
+    expect(line("dynamodb")[days.indexOf("2026-11-02")]).toBeNull();
+    expect(line("dynamodb")[days.indexOf("2026-11-03")]).toBe(145);
+    expect(line("dynamodb").at(-1)).toBe(160);
+    // The S3 metric's newest figure stands for the days after it.
+    expect(line("s3")[days.indexOf("2026-10-08")]).toBe(4000);
+    expect(line("s3")[days.indexOf("2026-10-09")]).toBeNull();
+    expect(line("s3").at(-1)).toBe(5000);
+    expect(line("all").at(-1)).toBe(5160);
+    expect(line("all")[days.indexOf("2026-11-02")]).toBeNull();
+    expect(io.readHistory).toHaveBeenCalledTimes(91);
+  });
+
+  test("every tab's All line adds its lines on the latest day, and by platform adds the Data tab's tables", async () => {
+    const io = makeIo({
+      bucketObjectCounts: vi.fn(async (names) =>
+        Object.fromEntries(names.map((name, index) => [name, { "2026-11-06": 100 * (index + 1) }])),
+      ),
+      listBucketNames: vi.fn(async () => [
+        "cdk-hnb659fds-assets-972912397388-eu-west-2",
+        "prod-0e924d9-app-edgestac-prod0e924d9apporiginbuck-q9xjts2nywoe",
+        "prod-3ae340a-app-opsstack-canaryartifacts16b34762-fj08ayjlefkg",
+        "prod-env-observabilitysta-prodenvtrailbucketf7f3f4-mkfmutqth57c",
+      ]),
+      consumedCapacity: vi.fn(async (names, grain) =>
+        grain === "daily"
+          ? { "prod-env-bundles": { read: { "2026-11-07": 50 }, write: { "2026-11-07": 5 } } }
+          : { "prod-env-bundles": { read: { "2026-11-07T10:00:00Z": 3 }, write: {} } },
+      ),
+      logGroupBytes: vi.fn(async () => 2e9),
+    });
+    const section = await buildDataSection({
+      envName: "prod",
+      now,
+      tableNames: ["prod-env-bundles", "prod-env-receipts"],
+      bucketNames: ["prod-env-analytics-lake-972912397388", "prod-env-diya-gl-972912397388"],
+      diyaGlBucketName: "prod-env-diya-gl-972912397388",
+      io,
+    });
+    expect(section.chart.modes.map((mode) => mode.id)).toEqual([
+      "platform",
+      "application",
+      "reads-and-writes",
+      "transactional",
+      "observability",
+      "cicd",
+    ]);
+    section.chart.modes.forEach((mode) => {
+      const [all, ...lines] = mode.series;
+      expect(all.id).toBe("all");
+      expect(all.values.at(-1)).toBe(lines.map((line) => line.values.at(-1) ?? 0).reduce((a, b) => a + b, 0));
+    });
+    const platform = section.chart.modes[0].series;
+    const dataTabTotal =
+      section.tables.map((table) => table.items.today).reduce((a, b) => a + b, 0) +
+      section.buckets.map((bucket) => bucket.objects.today).reduce((a, b) => a + b, 0);
+    expect(platform[0].values.at(-1)).toBe(dataTabTotal);
+    const cicd = section.chart.modes.find((mode) => mode.id === "cicd");
+    expect(cicd.series.find((line) => line.id === "deployment-artefacts").values.at(-1)).toBe(100 + 200);
+    expect(cicd.series.find((line) => line.id === "test-reports").values.at(-1)).toBe(300);
+    const readsAndWrites = section.chart.modes.find((mode) => mode.id === "reads-and-writes");
+    expect(readsAndWrites.series.find((line) => line.id === "all").values.at(-1)).toBe(55);
+    expect(readsAndWrites.hourly.series.find((line) => line.id === "all").values.at(-1)).toBe(3);
+    const observability = section.chart.modes.find((mode) => mode.id === "observability");
+    expect(observability.unit).toBe("bytes");
+    expect(observability.series.find((line) => line.id === "log-groups").values.at(-1)).toBe(2e9);
+  });
+
+  test("a transactional table with a split draws customer, test and synthetic, and the rest, which add up to its count", async () => {
+    const section = await run(makeIo());
+    const transactional = section.chart.modes.find((mode) => mode.id === "transactional");
+    const value = (id) => transactional.series.find((line) => line.id === id)?.values.at(-1);
+    expect(value("bundles@customer")).toBe(90);
+    expect(value("bundles@synthetic")).toBe(20);
+    expect(value("bundles@rest")).toBe(10);
+    expect(transactional.series.find((line) => line.id === "bundles")).toBeUndefined();
+    // Receipts have a split of all zero: every item is in the rest.
+    expect(value("receipts@rest")).toBe(40);
+    expect(value("receipts@customer")).toBeUndefined();
+  });
+
+  test("a class never counts more items than the table holds", async () => {
+    const section = await run(
+      makeIo({
+        runAthena: vi.fn(async () => [
+          { kind: "bundles", actor_class: "customer", items: "30" },
+          { kind: "bundles", actor_class: "test", items: "500" },
+        ]),
+      }),
+    );
+    const transactional = section.chart.modes.find((mode) => mode.id === "transactional");
+    const value = (id) => transactional.series.find((line) => line.id === id)?.values.at(-1);
+    expect(value("bundles@customer")).toBe(30);
+    expect(value("bundles@synthetic")).toBe(90);
+    expect(value("bundles@rest")).toBeUndefined();
+  });
+
+  test("a day whose file holds no split has no class figures, and the All line still counts it", async () => {
+    const io = makeIo();
+    io.files.set(historyKey("prod", "2026-11-06"), { tables: { bundles: 118, receipts: 40 }, books: { books: 3, versions: 5 } });
+    const section = await run(io);
+    const transactional = section.chart.modes.find((mode) => mode.id === "transactional");
+    const line = (id) => transactional.series.find((series) => series.id === id).values;
+    expect(line("bundles@customer").at(-2)).toBeNull();
+    expect(line("bundles@rest").at(-2)).toBeNull();
+    expect(line("all").at(-2)).toBe(161);
+  });
+
+  test("a bucket is a deployment artefact, a test report or neither by its name", () => {
+    expect(artefactKindOf("cdk-hnb659fds-assets-972912397388-us-east-1", "prod")).toBe("deployment");
+    expect(artefactKindOf("prod-0e924d9-app-edgestac-prod0e924d9apporiginbuck-q9xjts2nywoe", "prod")).toBe("deployment");
+    expect(artefactKindOf("ci-clauderes-app-opsstack-canaryartifacts16b34762-bj7w3un7cx6e", "ci")).toBe("test-reports");
+    expect(artefactKindOf("prod-env-observabilitysta-prodenvtrailbucketf7f3f4-mkfmutqth57c", "prod")).toBeNull();
+    expect(artefactKindOf("prod-env-analytics-lake-972912397388", "prod")).toBeNull();
+  });
+
+  test("a graph read that fails leaves its tab out and the rest published", async () => {
+    const section = await run(makeIo());
+    const ids = section.chart.modes.map((mode) => mode.id);
+    expect(ids).not.toContain("reads-and-writes");
+    expect(ids).toContain("platform");
+    const observability = section.chart.modes.find((mode) => mode.id === "observability");
+    expect(observability.series.map((line) => line.id)).toEqual(["all", "analytics-lake"]);
   });
 
   test("a failed book count leaves the book rows out and the rest published", async () => {

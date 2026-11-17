@@ -22,9 +22,10 @@
 // itself, so the dashboard stays fast even while a query here is slow.
 
 import { AthenaClient, StartQueryExecutionCommand, GetQueryExecutionCommand, GetQueryResultsCommand } from "@aws-sdk/client-athena";
-import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, ListBucketsCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { DynamoDBClient, DescribeTableCommand, DescribeTimeToLiveCommand } from "@aws-sdk/client-dynamodb";
 import { CloudWatchClient, GetMetricDataCommand } from "@aws-sdk/client-cloudwatch";
+import { CloudWatchLogsClient, DescribeLogGroupsCommand } from "@aws-sdk/client-cloudwatch-logs";
 import { createLogger } from "../../lib/logger.js";
 import { loadCatalogFromRoot } from "../../services/productCatalog.js";
 import { AWS_ACCOUNT_NAMES_BY_ID } from "../../lib/operatorSnapshot/awsAccounts.js";
@@ -2400,16 +2401,152 @@ export async function buildIntegrations({ workGroup, database, envName, region, 
   });
 }
 
+// GetMetricData's limit on the queries of one request.
+const METRIC_QUERIES_PER_REQUEST = 500;
+const PERIOD_SECONDS = { daily: 86400, hourly: 3600 };
+
+// The region of the edge resources. A bucket's S3 metrics and a log group live in its own region,
+// so the Data tab reads this region beside the function's own.
+const EDGE_REGION = "us-east-1";
+
+// The key of a metric point: its ISO day for a daily period, its ISO hour for a shorter one.
+const metricPointKey = (timestamp, period) =>
+  period === PERIOD_SECONDS.daily ? timestamp.toISOString().slice(0, 10) : timestamp.toISOString().slice(0, 13) + ":00:00Z";
+
+/**
+ * Each query's points by day or hour, read through every page of GetMetricData.
+ *
+ * @param {CloudWatchClient} cloudWatch
+ * @param {Array<{id: string, metric: object, stat: string}>} queries
+ * @param {{period: number, start: Date, end: Date}} window
+ * @returns {Promise<Record<string, Record<string, number>>>}
+ */
+export async function metricPoints(cloudWatch, queries, { period, start, end }) {
+  const points = Object.fromEntries(queries.map((query) => [query.id, {}]));
+  for (let offset = 0; offset < queries.length; offset += METRIC_QUERIES_PER_REQUEST) {
+    const batch = queries.slice(offset, offset + METRIC_QUERIES_PER_REQUEST);
+    let NextToken;
+    do {
+      const response = await cloudWatch.send(
+        new GetMetricDataCommand({
+          StartTime: start,
+          EndTime: end,
+          NextToken,
+          MetricDataQueries: batch.map(({ id, metric, stat }) => ({ Id: id, MetricStat: { Metric: metric, Period: period, Stat: stat } })),
+        }),
+      );
+      (response.MetricDataResults || []).forEach((result) => {
+        (result.Timestamps || []).forEach((timestamp, position) => {
+          points[result.Id][metricPointKey(new Date(timestamp), period)] = result.Values[position];
+        });
+      });
+      NextToken = response.NextToken;
+    } while (NextToken);
+  }
+  return points;
+}
+
+// The daily S3 storage metric of each bucket by ISO day, added over the storage types given and
+// over the regions, since a bucket's metric exists only in its own region.
+async function bucketDailyMetric(cloudWatchClients, names, days, metricName, storageTypes) {
+  const end = new Date();
+  const start = new Date(end.getTime() - days * PERIOD_SECONDS.daily * 1000);
+  const queries = names.flatMap((name, bucketIndex) =>
+    storageTypes.map((storageType, typeIndex) => ({
+      id: `b${bucketIndex}s${typeIndex}`,
+      metric: {
+        Namespace: "AWS/S3",
+        MetricName: metricName,
+        Dimensions: [
+          { Name: "BucketName", Value: name },
+          { Name: "StorageType", Value: storageType },
+        ],
+      },
+      stat: "Average",
+    })),
+  );
+  const results = await Promise.all(
+    cloudWatchClients.map((client) => metricPoints(client, queries, { period: PERIOD_SECONDS.daily, start, end })),
+  );
+  return Object.fromEntries(
+    names.map((name, bucketIndex) => {
+      const byDay = {};
+      results.forEach((points) =>
+        storageTypes.forEach((_, typeIndex) =>
+          Object.entries(points[`b${bucketIndex}s${typeIndex}`]).forEach(([day, value]) => {
+            byDay[day] = (byDay[day] || 0) + Math.round(value);
+          }),
+        ),
+      );
+      return [name, byDay];
+    }),
+  );
+}
+
+// The storage types whose bytes add up to a bucket's size; a type a bucket does not use returns no points.
+const BUCKET_STORAGE_TYPES = ["StandardStorage", "StandardIAStorage", "OneZoneIAStorage", "GlacierInstantRetrievalStorage"];
+
+/**
+ * The read and write capacity units each table consumed, by day or by hour, over the last `count`
+ * days or hours. The window starts on a whole day or hour, so each point is one day or one hour.
+ */
+export async function consumedCapacity(cloudWatch, tableNames, grain, count, now = new Date()) {
+  const period = PERIOD_SECONDS[grain];
+  const periodMs = period * 1000;
+  const start = new Date(Math.floor(now.getTime() / periodMs) * periodMs - (count - 1) * periodMs);
+  const metric = (tableName, metricName) => ({
+    Namespace: "AWS/DynamoDB",
+    MetricName: metricName,
+    Dimensions: [{ Name: "TableName", Value: tableName }],
+  });
+  const queries = tableNames.flatMap((tableName, index) => [
+    { id: `t${index}r`, metric: metric(tableName, "ConsumedReadCapacityUnits"), stat: "Sum" },
+    { id: `t${index}w`, metric: metric(tableName, "ConsumedWriteCapacityUnits"), stat: "Sum" },
+  ]);
+  const points = await metricPoints(cloudWatch, queries, { period, start, end: now });
+  return Object.fromEntries(tableNames.map((tableName, index) => [tableName, { read: points[`t${index}r`], write: points[`t${index}w`] }]));
+}
+
+/** The bytes stored in every log group of the account, in each region given. */
+export async function logGroupStoredBytes(logsClients) {
+  let total = 0;
+  for (const client of logsClients) {
+    let nextToken;
+    do {
+      const response = await client.send(new DescribeLogGroupsCommand({ limit: 50, nextToken }));
+      (response.logGroups || []).forEach((group) => {
+        total += group.storedBytes || 0;
+      });
+      nextToken = response.nextToken;
+    } while (nextToken);
+  }
+  return total;
+}
+
+// A figure the graph can do without: a failed read leaves its lines out and the section published.
+async function readOrFallback(what, read, fallback) {
+  try {
+    return await read();
+  } catch (error) {
+    logger.warn({ message: "Data figure not read, publishing the section without it", figure: what, error: error.message });
+    return fallback;
+  }
+}
+
 /**
  * The Data tab's section: item counts, TTL, actor split and object counts, with the daily
- * history files in the lake. See dataSection.js for where each figure comes from.
+ * history files in the lake, and the stored-data graph. See dataSection.js for where each
+ * figure comes from.
  */
 export async function buildData({ workGroup, database, envName, lakeBucket }) {
   const tableNames = splitList(process.env.DATA_TABLE_NAMES);
   const bucketNames = splitList(process.env.DATA_BUCKET_NAMES);
   const diyaGlBucketName = process.env.DIYA_GL_BUCKET_NAME;
-  const dynamo = new DynamoDBClient({ region: process.env.AWS_REGION || "eu-west-2" });
-  const cloudWatch = new CloudWatchClient({ region: process.env.AWS_REGION || "eu-west-2" });
+  const region = process.env.AWS_REGION || "eu-west-2";
+  const dynamo = new DynamoDBClient({ region });
+  const cloudWatch = new CloudWatchClient({ region });
+  const cloudWatchClients = [cloudWatch, new CloudWatchClient({ region: EDGE_REGION })];
+  const logsClients = [new CloudWatchLogsClient({ region }), new CloudWatchLogsClient({ region: EDGE_REGION })];
   const s3Client = getS3Client();
   return buildDataSection({
     envName,
@@ -2417,9 +2554,9 @@ export async function buildData({ workGroup, database, envName, lakeBucket }) {
     bucketNames,
     diyaGlBucketName: diyaGlBucketName || null,
     io: {
-      describeItemCount: async (TableName) => {
+      describeTable: async (TableName) => {
         const { Table } = await dynamo.send(new DescribeTableCommand({ TableName }));
-        return Table?.ItemCount ?? null;
+        return { items: Table?.ItemCount ?? null, bytes: Table?.TableSizeBytes ?? null };
       },
       describeTtl: async (TableName) => {
         const { TimeToLiveDescription: ttl } = await dynamo.send(new DescribeTimeToLiveCommand({ TableName }));
@@ -2440,40 +2577,31 @@ export async function buildData({ workGroup, database, envName, lakeBucket }) {
         );
       },
       runAthena: (sql) => runAthenaQuery({ workGroup, database, sql }),
-      bucketObjectCounts: async (names, days) => {
-        const end = new Date();
-        const response = await cloudWatch.send(
-          new GetMetricDataCommand({
-            StartTime: new Date(end.getTime() - days * 24 * 60 * 60 * 1000),
-            EndTime: end,
-            MetricDataQueries: names.map((name, index) => ({
-              Id: `b${index}`,
-              MetricStat: {
-                Metric: {
-                  Namespace: "AWS/S3",
-                  MetricName: "NumberOfObjects",
-                  Dimensions: [
-                    { Name: "BucketName", Value: name },
-                    { Name: "StorageType", Value: "AllStorageTypes" },
-                  ],
-                },
-                Period: 86400,
-                Stat: "Average",
-              },
-            })),
-          }),
-        );
-        return Object.fromEntries(
-          names.map((name, index) => {
-            const result = (response.MetricDataResults || []).find((entry) => entry.Id === `b${index}`);
-            const byDay = {};
-            (result?.Timestamps || []).forEach((timestamp, position) => {
-              byDay[timestamp.toISOString().slice(0, 10)] = Math.round(result.Values[position]);
-            });
-            return [name, byDay];
-          }),
-        );
-      },
+      bucketObjectCounts: (names, days) => bucketDailyMetric(cloudWatchClients, names, days, "NumberOfObjects", ["AllStorageTypes"]),
+      bucketBytes: (names, days) =>
+        readOrFallback(
+          "bucket bytes",
+          () => bucketDailyMetric(cloudWatchClients, names, days, "BucketSizeBytes", BUCKET_STORAGE_TYPES),
+          {},
+        ),
+      listBucketNames: () =>
+        readOrFallback(
+          "bucket list",
+          async () => {
+            const names = [];
+            let ContinuationToken;
+            do {
+              const response = await s3Client.send(new ListBucketsCommand({ ContinuationToken }));
+              (response.Buckets || []).forEach((bucket) => names.push(bucket.Name));
+              ContinuationToken = response.ContinuationToken;
+            } while (ContinuationToken);
+            return names;
+          },
+          [],
+        ),
+      consumedCapacity: (names, grain, count) =>
+        readOrFallback(`${grain} consumed capacity`, () => consumedCapacity(cloudWatch, names, grain, count), null),
+      logGroupBytes: () => readOrFallback("log group bytes", () => logGroupStoredBytes(logsClients), null),
       countBooks: async () => (diyaGlBucketName ? countDiyaGlBooks(s3Client, diyaGlBucketName) : null),
     },
   });

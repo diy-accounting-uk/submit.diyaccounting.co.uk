@@ -898,6 +898,7 @@ class SubmitEnvironmentCdkResourceTest {
      * permissions at all, so a wildcard there is the narrowest grant that exists. The CloudWatch
      * Logs delivery actions below are the same story for a state machine with {@code logs()}
      * execution logging enabled: CDK grants them itself, and none of them accepts a resource ARN.
+     * {@code s3:ListAllMyBuckets} also accepts no resource ARN.
      */
     private static void assertNoUnscopedIamResources(Template template) {
         var offenders = new ArrayList<String>();
@@ -939,6 +940,7 @@ class SubmitEnvironmentCdkResourceTest {
                                 || "cloudwatch:PutMetricData".equals(String.valueOf(a))
                                 || "cloudwatch:GetMetricWidgetImage".equals(String.valueOf(a))
                                 || "cloudwatch:GetMetricData".equals(String.valueOf(a))
+                                || "s3:ListAllMyBuckets".equals(String.valueOf(a))
                                 || "logs:GetQueryResults".equals(String.valueOf(a))
                                 || "logs:StopQuery".equals(String.valueOf(a))
                                 || LOG_DELIVERY_ACTIONS.contains(String.valueOf(a)));
