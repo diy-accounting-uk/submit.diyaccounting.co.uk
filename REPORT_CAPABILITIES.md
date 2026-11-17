@@ -567,6 +567,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board: use when the operator asks what is needed from them, or a board render or an iterate cycle reaches its end.
     - [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks: use when a Search Console or Bing Webmaster Tools email names a site, or the operator asks how the sites do in search, what to fix first, or whether a crawl setting, coverage drop or sitemap error is real.
     - [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now) Say whether a /clear or a restart is safe now: use when the operator asks whether a /clear or a restart of Claude Code is safe, and at the end of every /board render.
+    - [DEV-64](#dev-64-define-a-wave-set-for-local-delivery) Define a wave set for local delivery: use when the operator wants the board delivered as one pull request per repository, built and tested locally first.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -5599,7 +5600,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-60](#dev-60-fetch-the-local-tls-certificate) Fetch the local TLS certificate · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
-- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts) Find unused and duplicated workflows, scripts and npm scripts · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report · [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard · [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt · [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session · [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill · [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board · [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks · [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now) Say whether a /clear or a restart is safe now
+- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts) Find unused and duplicated workflows, scripts and npm scripts · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report · [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard · [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt · [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session · [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill · [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board · [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks · [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now) Say whether a /clear or a restart is safe now · [DEV-64](#dev-64-define-a-wave-set-for-local-delivery) Define a wave set for local delivery
 <!-- /generated:area DEV -->
 
 ### Simulator server & OAuth mocks (DEV)
@@ -5944,6 +5945,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board
 - [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks
 - [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now) Say whether a /clear or a restart is safe now
+- [DEV-64](#dev-64-define-a-wave-set-for-local-delivery) Define a wave set for local delivery
 <!-- /generated:group claude-code-delivery-cycle-skills-dev -->
 
 #### DEV-27 Render the open-work board
@@ -6302,6 +6304,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/clear-ready/SKILL.md, .claude/skills/compact-ready/SKILL.md, .claude/skills/board/SKILL.md
 - **Keywords:** clear, restart, session handover, compaction alternative, break, resume, continue, handover file
 - **Related:** DEV-27
+
+#### DEV-64 Define a wave set for local delivery
+
+- **Use when:** the operator wants the board delivered as one pull request per repository, built and tested locally first.
+- **Does:** wave-set reads the open rows of NEXT.md and chooses the largest set one pull request per repository can carry. It orders the rows into waves of batches, writes PLAN_WAVE_SET_<NAME>.md, asks the questions that finalise it, and labels the rows on NEXT.md. It then runs refine and board. iterate and do-next deliver the set from the plan.
+- **Run:** `/wave-set`
+- **Entry:** `.claude/skills/wave-set/SKILL.md`
+- **Files:** .claude/skills/wave-set/SKILL.md
+- **Keywords:** wave set, waves, batches, local delivery, one pull request, wave branch, set branch, ci cost, local gates
+- **Related:** DEV-27, DEV-28, DEV-29, DEV-30
 
 ## Spreadsheets and diya-gl (SS)
 
@@ -7200,6 +7212,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - batch processing: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
 - batch scan update: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
 - batch tools: [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client)
+- batches: [DEV-64](#dev-64-define-a-wave-set-for-local-delivery)
 - batchitemfailure: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - bcmdataexports: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - bedrock: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing), [OPS-18](#ops-18-run-alarm-triage), [OPS-192](#ops-192-judge-the-operator-dashboard-each-night-and-write-the-report), [OPS-72](#ops-72-forward-bedrock-budget-alerts)
@@ -7409,6 +7422,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ci: [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod)
 - ci apex: [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex)
 - ci branch deploys: [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex)
+- ci cost: [DEV-64](#dev-64-define-a-wave-set-for-local-delivery)
 - ci deployments: [DEV-27](#dev-27-render-the-open-work-board)
 - ci failure react: [DEV-31](#dev-31-watch-github-ci-to-green)
 - ci gates locally: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
@@ -8470,8 +8484,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - loading spinner: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - local app: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys)
 - local aws credentials: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
+- local delivery: [DEV-64](#dev-64-define-a-wave-set-for-local-delivery)
 - local dev: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - local dev server: [SITE-08](#site-08-bootstrap-the-app-server)
+- local gates: [DEV-64](#dev-64-define-a-wave-set-for-local-delivery)
 - local ips: [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers)
 - local login: [DEV-02](#dev-02-simulate-local-app-oauth)
 - local server: [DEV-01](#dev-01-run-the-http-simulator-server)
@@ -8700,6 +8716,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - onboarding: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect)
 - onboarding return: [BILL-53](#bill-53-read-the-callers-affiliate-application)
 - one job check: [OPS-197](#ops-197-check-the-runners-browser-install-in-one-job)
+- one pull request: [DEV-64](#dev-64-define-a-wave-set-for-local-delivery)
 - one-stop dashboard: [OPS-25](#ops-25-record-dora-and-probe-metrics), [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - one-stop objectives: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot), [DATA-26](#data-26-render-the-operator-objectives-dashboard)
 - open work: [DEV-27](#dev-27-render-the-open-work-board), [SS-46](#ss-46-render-the-spreadsheets-work-board)
@@ -9303,6 +9320,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - session storage: [CH-01](#ch-01-exchange-a-companies-house-oauth-token)
 - session-report skill: [SS-56](#ss-56-write-the-session-report)
 - sessions by host source: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
+- set branch: [DEV-64](#dev-64-define-a-wave-set-for-local-delivery)
 - set origins: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
 - setownerbooksretention: [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle)
 - settings cog: [SITE-24](#site-24-change-an-account-setting)
@@ -9773,7 +9791,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - watch skill: [SS-50](#ss-50-watch-github-ci-to-green)
 - watchdog: [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id)
 - wave: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
+- wave branch: [DEV-64](#dev-64-define-a-wave-set-for-local-delivery)
 - wave dispatch: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
+- wave set: [DEV-64](#dev-64-define-a-wave-set-for-local-delivery)
+- waves: [DEV-64](#dev-64-define-a-wave-set-for-local-delivery)
 - wcag: [OPS-97](#ops-97-compile-the-compliance-audit-report), [OPS-62](#ops-62-report-accessibility-penetration-testing)
 - wcag 1.4.12: [OPS-96](#ops-96-scan-pages-for-accessibility-violations)
 - wcag 2.2: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)

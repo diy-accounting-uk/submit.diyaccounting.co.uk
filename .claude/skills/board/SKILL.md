@@ -137,6 +137,12 @@ by it says so in its `Status` (`unblocks CS-9`).
   in-flight items name the current step only (their branch and PR are in `Where`). The full
   narrative lives in `NEXT.md`, never in this column.
 - `GH issue`: only when the row cites one (`Issue #18` → `#18`), else `—`.
+- **Wave sets.** A row that ends with `**Wave set**: <name> W<n> <batch>.` starts its `Status` with
+  `<name> W<n>` (or `<name> beside`), and a row of a wave in progress is `in-flight` with the wave
+  branch in `Where`. A `PLAN_WAVE_SET_<NAME>.md` is a tracking plan with no task of its own: Part
+  2b gives it one line with its Status and its count of rows by wave state
+  (`PLAN_WAVE_SET_RIDGE.md: defined; 53 rows, 0 of 11 waves gated`), and Part 5 lists its wave and
+  batch branches as `open` while the set is not on `main`; none of them goes in the removal block.
 
 **Part 2 — the plans.** Every `PLAN_*.md` at the repo root appears once, in exactly one of
 the two sub-parts, so a plan missing from both reads as unread. A task is open when the plan's

@@ -33,6 +33,40 @@ until `/board` shows no machine-only row in state `ready`. This skill names the 
 order, and carries the rules the session reports paid for. The parts are the existing skills;
 this one is the conductor.
 
+## When a wave set is defined
+
+A `PLAN_WAVE_SET_<NAME>.md` at the repository root whose Status is not `on main` changes the cycle.
+The operator's `/iterate` on a set whose Status is `defined` is its approval: write `approved
+<date>` into the plan first. The goal of a set is in the `wave-set` skill: do every piece of work
+that can be done locally before anything is pushed, then pay for one ci deployment and one prod
+deployment in each repository. The cycle is then:
+
+```
+/board → wave 1 (/do-next in wave-set mode, no push) → gate → park → wave 2 → … → last wave
+       → set branch → every local gate → one push → /watch → ci proofs → /auto-merge → /watch → prod proofs → /board
+```
+
+- Follow "How a set is delivered" in `.claude/skills/wave-set/SKILL.md` and the plan's own Gates
+  and Push sections. The plan's wave tables fix which rows each batch builds and in what order;
+  do not re-plan them from the board.
+- **No push, no pull request and no `/watch` until the set branch has passed every local gate.**
+  A wave ends with its gates and a `gated <sha>` line in the plan, never with a push. The rules
+  below that size a wave to the SSO window and to a ci deploy apply to the one push at the end;
+  a wave needs an SSO session only for the read-only AWS proofs its rows name.
+- Only rows with the set's `**Wave set**` label are dispatched while the set is open. A row
+  labelled `beside` runs at any time. A machine-only row with no label waits for the next set,
+  unless it is an alarm or a pipeline failure, which rides as a fix on the wave in progress.
+- Write the plan's state lines as each wave moves (`building`, `landed`, `gated <sha>`) and its
+  Status line as the set moves, in docs commits on `main`. Rows leave `NEXT.md` when the set is
+  on `main`, not when a wave lands.
+- The local waves use the laptop while it is otherwise idle: keep the gates serial, run the
+  machine probe of `CLAUDE.md` before a timing is trusted, and carry on from one wave to the next
+  with no question to the operator.
+- When the set branch cannot be made to pass, push a prefix of the waves as the plan's last
+  section says, and say which waves stay local.
+
+With no wave set defined, the cycle is the one below.
+
 ## The name
 
 It is a **Plan–Do–Check–Act cycle** (the Deming cycle, from Shewhart) in the

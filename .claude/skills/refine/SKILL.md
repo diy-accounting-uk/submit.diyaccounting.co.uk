@@ -61,6 +61,12 @@ fact it names:
   has cleared (an OAM link now attached, an alarm now OK) moves the row up a section in the
   write-back.
 - **The prod line and the ci line** match the live sets (`/submit/<env>/last-known-good-deployment`).
+- **Wave set labels match their plan.** A row that ends with `**Wave set**: <name> W<n> <batch>.`
+  belongs to the set of `PLAN_WAVE_SET_<NAME>.md` (the `wave-set` skill). Each labelled row is in
+  that plan's wave table under the same wave and batch, and each row in the table is on `NEXT.md`
+  with the label. A row that joined the board after the set was defined has no label and is in no
+  set: leave it so, and never add a row or a plan task to a set here; `/wave-set` and the operator
+  do that. A plan whose rows have all left the board is a candidate for the archive.
 
 Write each correction into the row as you go; do not keep a separate list.
 
@@ -188,6 +194,11 @@ present. Test each one:
   what it stood for.
 - **Where a plan keeps the graph** (a `## Dependency graph` section, as `PLAN_HMRC_CT_APPROVAL.md`
   does), update it in the same commit so the plan and the board say the same thing.
+- **Wave order.** In a wave set, a row's wave is later than the wave of every row it follows, or
+  the two are in one batch in that order; and no two batches of one wave own the same source file.
+  A `Follows` line that points at a later wave is a defect: move the row in the plan and its label
+  in the same commit. A row of the set that gained a blocker leaves the set: remove its label,
+  take it out of the plan's table, and say so in the commit.
 
 Record each change in the commit message: the stale blockers removed, the cycles broken, the
 splits made.

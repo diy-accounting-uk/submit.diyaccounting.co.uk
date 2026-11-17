@@ -139,6 +139,33 @@ docs exception. A second copy on the branch guarantees a conflict at merge time,
 editing it guarantees a lost row. If a merge drags `NEXT.md` onto the batch, restore it to the
 branch point in the same commit.
 
+## Wave-set mode
+
+When `/iterate` runs a wave of a wave set (`PLAN_WAVE_SET_<NAME>.md`; the `wave-set` skill), this
+skill builds that one wave and stops. The differences from the rest of this file:
+
+- **The plan fixes the wave.** Take the batches and the row order from the wave's table in the
+  plan, and each brief from the row on `NEXT.md`. Rows are found by their `**Wave set**: <name>
+  W<n> <batch>.` label; a row with another wave's label or with none is not dispatched.
+- **The batch branch of this file is the wave branch** `claude/<name>-w<nn>`, in its own worktree
+  `.claude/worktrees/<name>-w<nn>`. Wave 1 starts from `origin/main`; each later wave starts from
+  the tip of the wave before it. A plan batch is one agent, or a chain of agents on one worktree
+  `claude/<name>-w<nn>-<batch>` when the plan names more than one; it lands on the wave branch by
+  `git merge --squash`, one commit per row.
+- **Nothing is pushed and no pull request is opened.** "Pushing" and "Merging the PR" below do not
+  apply to a wave. A push of a wave or batch branch starts a ci deployment, which the set exists
+  to avoid.
+- **A generated file is never merged by hand.** On a conflict in one, take either side and run its
+  generator; after the last batch lands, run every generator the wave touched and commit.
+- **The behaviour tier does run, on the wave branch**, after `scripts/batch-check.sh
+  claude/<name>-w<nn>`: the simulator suites that the wave's rows reach, one at a time under the
+  simulator lock. An agent in a batch worktree still runs its blast radius only.
+- **Park the wave**: write `gated <tip sha>` on the wave's state line in the plan (a docs commit on
+  `main`). The wave's worktrees and branches stay until the set is on `main`; print no removal
+  block for them before then.
+- Sibling-repository rows of the set build in that repository's checkout with its own
+  `scripts/worktree-add.sh` and its own gates, under the same branch names.
+
 ## Waves
 
 A wave is a set of concurrent workstreams grouped by area of the repository, sized so that no two
