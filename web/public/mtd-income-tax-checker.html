@@ -147,8 +147,11 @@
       <div class="form-container">
         <h2 id="your-first-quarterly-update">Your first quarterly update</h2>
         <p>The first update covers 6 April to 5 July of your start year. It is due on 7 August of that year.</p>
-        <div class="table-scroll">
+        <div class="table-scroll" role="region" tabindex="0" aria-labelledby="quarterly-caption">
           <table class="deadline-table">
+            <caption id="quarterly-caption" class="calendar-date">
+              Update periods and deadlines
+            </caption>
             <thead>
               <tr>
                 <th scope="col">Update period</th>
@@ -219,7 +222,11 @@
           Add this line to a page of your site. It shows the checker in a frame, with a link to this page under it. The frame holds no
           sign-in and sets no cookie.
         </p>
-        <pre><code>&lt;script src=&quot;https://submit.diyaccounting.co.uk/embed/mtd-income-tax-checker.js&quot;&gt;&lt;/script&gt;</code></pre>
+        <pre
+          role="region"
+          tabindex="0"
+          aria-label="Put the checker on your site: code to copy"
+        ><code>&lt;script src=&quot;https://submit.diyaccounting.co.uk/embed/mtd-income-tax-checker.js&quot;&gt;&lt;/script&gt;</code></pre>
       </div>
       <p class="tools-link">More free tools are on the <a href="tools.html">Tools</a> page.</p>
     </main>

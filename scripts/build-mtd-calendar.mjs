@@ -313,7 +313,9 @@ function relevantHtml(factId) {
 }
 
 function businessTypesHtml() {
-  const cell = (items) => items.map((i) => (i.href ? `<a href="${i.href}">${escapeHtml(i.text)}</a>` : escapeHtml(i.text))).join("<br />");
+  const link = (i) => (i.href ? `<a href="${i.href}">${escapeHtml(i.text)}</a>` : escapeHtml(i.text));
+  const cell = (items) =>
+    items.length > 1 ? `<ul class="cell-links">${items.map((i) => `<li>${link(i)}</li>`).join("")}</ul>` : link(items[0]);
   const groups = [...new Set(BUSINESS_TYPES.map((t) => t.group))];
   const body = groups
     .map(
@@ -331,7 +333,7 @@ function businessTypesHtml() {
   return (
     `<div class="form-container" id="business-types"><h2>Which dates apply to your business</h2>` +
     `<p>Find your business type, then follow the link in each column to its dates. Making Tax Digital for Income Tax covers sole traders and landlords registered for Self Assessment, so a limited company is outside it. Partnerships have no date yet. A taxi or private hire driver, and a sole trader with employees, follow the sole trader rules.</p>` +
-    `<div class="table-scroll"><table class="deadline-table stacked-table"><caption class="calendar-date">Business type against what applies</caption>` +
+    `<div class="table-scroll" role="region" tabindex="0" aria-labelledby="business-types-caption"><table class="deadline-table stacked-table"><caption id="business-types-caption" class="calendar-date">Business type against what applies</caption>` +
     `<thead><tr><th scope="col">Business type</th>${BUSINESS_COLUMNS.map((c) => `<th scope="col">${c}</th>`).join("")}</tr></thead>${body}</table></div></div>`
   );
 }
@@ -364,7 +366,7 @@ function availabilityHtml() {
     `<div class="form-container" id="availability"><h2>What you can file, and how</h2>` +
     `<p>Each filing can be made in the ways listed below: on this website, or through an AI assistant. Production means you can use it for real. Sandbox means it runs against a test service and files nothing real. Preview means you can try the screens, and nothing is sent.</p>` +
     `<!-- A change to what a business can file, or in which way to file, or whether a feature is production, sandbox or preview, updates this table in the same change. -->` +
-    `<div class="table-scroll"><table class="deadline-table stacked-table availability-table"><caption class="calendar-date">Availability by filing and way to file</caption>` +
+    `<div class="table-scroll" role="region" tabindex="0" aria-labelledby="availability-caption"><table class="deadline-table stacked-table availability-table"><caption id="availability-caption" class="calendar-date">Availability by filing and way to file</caption>` +
     `<thead><tr><th scope="col">Filing</th>${CHANNELS.map((c) => `<th scope="col">${c}</th>`).join("")}<th scope="col">Docs and video</th></tr></thead>` +
     `<tbody>${rows}</tbody></table></div></div>`
   );

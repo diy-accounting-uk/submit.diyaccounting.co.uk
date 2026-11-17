@@ -382,7 +382,7 @@ function articleSectionHtml(section, sources, id, closingHtml = "") {
   if (section.table === "quarterly") {
     const rows = QUARTERLY_FACT.rows.map(([period, deadline]) => `<tr><td>${period}</td><td>${deadline}</td></tr>`).join("");
     parts.push(
-      `<div class="table-scroll"><table class="deadline-table"><thead><tr><th scope="col">Update period</th><th scope="col">Deadline</th></tr></thead><tbody>${rows}</tbody></table></div>`,
+      `<div class="table-scroll" role="region" tabindex="0" aria-labelledby="quarterly-caption"><table class="deadline-table"><caption id="quarterly-caption" class="calendar-date">Update periods and deadlines</caption><thead><tr><th scope="col">Update period</th><th scope="col">Deadline</th></tr></thead><tbody>${rows}</tbody></table></div>`,
     );
   }
   if (section.table === "vat-penalty-rules") {
@@ -393,14 +393,17 @@ function articleSectionHtml(section, sources, id, closingHtml = "") {
       )
       .join("");
     parts.push(
-      `<div class="table-scroll"><table class="deadline-table"><thead><tr><th scope="col">Return</th><th scope="col">Points threshold</th>` +
+      `<div class="table-scroll" role="region" tabindex="0" aria-labelledby="penalty-rules-caption"><table class="deadline-table"><caption id="penalty-rules-caption" class="calendar-date">Penalty points by return frequency</caption><thead><tr><th scope="col">Return</th><th scope="col">Points threshold</th>` +
         `<th scope="col">Compliance period</th><th scope="col">Returns</th></tr></thead><tbody>${rows}</tbody></table></div>`,
     );
   }
   if (section.widget === "vat-penalty-calculator") parts.push(vatPenaltyCalculatorHtml());
   if (section.widget === "company-deadlines-lookup") parts.push(companyDeadlinesLookupHtml());
   if (section.widget === "itsa-scope-checker") parts.push(itsaScopeCheckerHtml());
-  if (section.code) parts.push(`<pre><code>${escapeHtml(section.code)}</code></pre>`);
+  if (section.code)
+    parts.push(
+      `<pre role="region" tabindex="0" aria-label="${escapeHtml(section.heading)}: code to copy"><code>${escapeHtml(section.code)}</code></pre>`,
+    );
   for (const name of section.status ?? []) {
     parts.push(`<p>${inlineHtml(filingStatusText(name.activity, name.label))}</p>`);
   }
@@ -517,7 +520,7 @@ export function renderComparisonPage(comparison, tools, catalog) {
         <p>${escapeHtml(summary)}</p>
         <p>${escapeHtml(comparison.list_sentence)} <a href="${escapeHtml(comparison.list_url)}" rel="noopener">${escapeHtml(comparison.list_name)}</a>.</p>
         <p>The rows run from the lowest price for one year to the highest: ${escapeHtml(sortRule)}.</p>
-        <div class="table-scroll"><table class="deadline-table stacked-table compare-table"><thead><tr><th scope="col">Tool</th><th scope="col">What it files</th><th scope="col">Price, in the vendor's words</th><th scope="col">Source</th></tr></thead><tbody>${body}</tbody></table></div>
+        <div class="table-scroll" role="region" tabindex="0" aria-labelledby="compare-caption"><table class="deadline-table stacked-table compare-table"><caption id="compare-caption" class="calendar-date">${escapeHtml(comparison.heading)}</caption><thead><tr><th scope="col">Tool</th><th scope="col">What it files</th><th scope="col">Price, in the vendor's words</th><th scope="col">Source</th></tr></thead><tbody>${body}</tbody></table></div>
         <p>${escapeHtml(comparison.note)}</p>
         <p>Prices change. The vendor's own page is the authority, so check it before you buy.</p>
         <p><a class="btn" href="${escapeHtml(comparison.action.href)}">${escapeHtml(comparison.action.label)}</a></p>

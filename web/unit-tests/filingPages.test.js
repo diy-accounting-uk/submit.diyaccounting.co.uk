@@ -243,7 +243,7 @@ describe("comparison pages", () => {
       expect(html.match(/<h1>/g), comparison.file).toHaveLength(1);
       expect(html).toContain(comparison.list_url);
       expect(html).toContain("<strong>(our own product)</strong>");
-      expect(html).toContain('<div class="table-scroll">');
+      expect(html).toContain('<div class="table-scroll" role="region" tabindex="0" aria-labelledby="compare-caption">');
       expect(html).toContain("The vendor's own page is the authority");
       for (const tool of tools.filter((candidate) => candidate.compares === comparison.compares && !candidate.ours)) {
         expect(html, tool.name).toContain(`href="${tool.price_url}"`);

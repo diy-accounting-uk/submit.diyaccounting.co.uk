@@ -334,3 +334,26 @@ main ol.calendar {
   flex-wrap: wrap;
   gap: var(--space-1) var(--space-3);
 }
+
+/* The links of one calendar cell are a list; on a phone each link has a press area 44px tall. */
+.cell-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (max-width: 600px) {
+  .cell-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+}
+
+/* The box around a wide table scrolls and takes focus, so the table inside it does not scroll again. */
+.table-scroll > table:not(.stacked-table),
+.rates-table-scroll > table {
+  display: table;
+  overflow: visible;
+  background: none;
+}

@@ -413,8 +413,8 @@ function tableHtml(table, sources, listedSources) {
     })
     .join("");
   return (
-    `<div class="rates-table-scroll"><table class="rates-table" id="rates-${table.id}">` +
-    `<caption>${escapeHtml(table.caption)}</caption>` +
+    `<div class="rates-table-scroll" role="region" tabindex="0" aria-labelledby="rates-${table.id}-caption"><table class="rates-table" id="rates-${table.id}">` +
+    `<caption id="rates-${table.id}-caption">${escapeHtml(table.caption)}</caption>` +
     `<thead><tr><th scope="col">Rate or allowance</th>${columns.map((c) => `<th scope="col">${columnHeading(c)}</th>`).join("")}<th scope="col">Source</th></tr></thead>` +
     `<tbody>${rows}</tbody></table></div>`
   );
@@ -511,7 +511,7 @@ function calculatorHtml() {
       `<div class="rates-result"${showFor ? ` data-show="${showFor}"` : ""}><dt id="${id}Label">${label}</dt><dd id="${id}"></dd></div>`,
   ).join("");
   const companyRows =
-    `<div data-show="limited-company" class="rates-table-scroll"><table class="rates-table" id="ratesOutCtRows"><caption>Corporation Tax by financial year</caption>` +
+    `<div data-show="limited-company" class="rates-table-scroll" role="region" tabindex="0" aria-labelledby="ratesOutCtRows-caption"><table class="rates-table" id="ratesOutCtRows"><caption id="ratesOutCtRows-caption">Corporation Tax by financial year</caption>` +
     `<thead><tr><th scope="col">Financial year</th><th scope="col">Days</th><th scope="col">Profit share</th><th scope="col">Rate</th><th scope="col">Tax before relief</th><th scope="col">Marginal relief</th><th scope="col">Tax</th></tr></thead><tbody></tbody></table></div>`;
   return (
     `<noscript><p>The calculator needs JavaScript. The rate tables below work without it.</p></noscript>` +
