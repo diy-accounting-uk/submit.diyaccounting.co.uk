@@ -48,6 +48,16 @@
   border-bottom-color: var(--c-brand);
 }
 
+/* Between phone and desktop widths the links take two rows. Four equal columns
+   keep that count fixed, so header.css can reserve the height. */
+@media (min-width: 601px) and (max-width: 760px) {
+  .main-nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: var(--space-3);
+  }
+}
+
 /* About page navigation links (Help / User Guide) */
 .about-nav-links {
   display: flex;
@@ -179,7 +189,16 @@ dd {
     font-size: var(--step--1);
   }
 
+  /* Three equal columns give the same number of rows at every phone width, so
+     header.css can reserve the nav's height before page-chrome.js builds it. */
   .main-nav {
-    column-gap: var(--space-3);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: var(--space-2);
+  }
+
+  .main-nav a {
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 }

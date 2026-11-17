@@ -24,6 +24,20 @@ header:has(> .chrome-fallback) {
   padding-top: calc(var(--nav-height) + var(--space-1));
 }
 
+/* Below 761px the nav is a grid with a fixed row count (navigation.css). */
+@media (min-width: 601px) and (max-width: 760px) {
+  header:has(> .chrome-fallback) {
+    padding-top: calc(2 * var(--nav-height) + var(--space-1));
+  }
+}
+
+@media (max-width: 600px) {
+  header:has(> .chrome-fallback) {
+    --phone-nav-rows: 3;
+    padding-top: calc(var(--phone-nav-rows) * var(--nav-height) + var(--space-1));
+  }
+}
+
 /* A spreadsheet grid receding behind the header into the horizon: ruled rows
    and columns, a tinted top row like a sheet's column header, and two shaded
    cells, tilted back and faded out. It sits behind the band and the nav. */

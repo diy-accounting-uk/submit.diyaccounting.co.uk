@@ -150,11 +150,12 @@
     { label: "Activities", target: "" },
     { label: "Receipts", target: "hmrc/receipt/receipts.html" },
     { label: "Bundles", target: "bundles.html" },
-    { label: "Practice", target: "practice.html", activity: "practice" },
     { label: "Spreadsheets", target: "spreadsheets.html" },
     { label: "MTD calendar", target: "mtd-calendar.html" },
     { label: "Tax rates", target: "rates.html" },
     { label: "Tools", target: "tools.html" },
+    // Last, so the link that appears when the catalogue loads moves no other link.
+    { label: "Practice", target: "practice.html", activity: "practice" },
   ];
 
   function findOwnScript() {
