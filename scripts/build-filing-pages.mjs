@@ -111,6 +111,35 @@ function priceHtml(page, catalog, video) {
   return sentences.join("");
 }
 
+/** The id of a section's heading: its words in lower case joined by hyphens, with a number after a repeat. */
+function sectionId(heading, used) {
+  const base = heading
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  let id = base;
+  for (let count = 2; used.has(id); count += 1) id = `${base}-${count}`;
+  used.add(id);
+  return id;
+}
+
+/** "On this page": one link to each section. */
+function tocHtml(sections) {
+  const links = sections.map(({ id, heading }) => `<li><a href="#${id}">${escapeHtml(heading)}</a></li>`).join("");
+  return `<nav class="page-toc" aria-label="On this page"><p class="page-toc-title">On this page</p><ul>${links}</ul></nav>`;
+}
+
+/** The price and the due date of a how-to page in two lines, with a link to what the reader needs. */
+function summaryFactsHtml(page, catalog, video) {
+  const activity = catalog.activities.find((candidate) => candidate.id === page.activity);
+  const bundle = catalog.bundles.find((candidate) => candidate.id === RESIDENT_BUNDLE_BY_ACTIVITY_AREA[video.group]);
+  const filingPrice = getActivityPrices(activity).find((price) => price.default);
+  const withoutPresenter = filingPrice
+    ? `, or ${formatPounds(filingPrice.amount)} for one filing without your own Companies House presenter`
+    : "";
+  return `<ul class="page-facts"><li><strong>Price:</strong> ${bundlePriceText(bundle)} for the ${escapeHtml(bundle.name)} bundle${withoutPresenter}.</li><li><strong>Due:</strong> ${escapeHtml(page.deadline.text)}</li><li><a href="#what-you-need-before-you-start">What you need before you start</a></li></ul>`;
+}
+
 function stepHtml(scene, id) {
   const image = scene.thumb
     ? `<img src="${escapeHtml(scene.thumb)}" srcset="${escapeHtml(scene.thumb)} ${scene.thumbWidth}w, ${escapeHtml(scene.full)} ${scene.fullWidth}w" sizes="(min-width: 700px) 45vw, 92vw" width="${scene.thumbWidth}" height="${scene.thumbHeight}" alt="Screenshot: ${escapeHtml(scene.headline)}" loading="lazy" />`
@@ -229,38 +258,46 @@ export function renderFilingPage(page, pages, catalog, manifest, sources, compar
   if (!video || !Array.isArray(video.walkthrough)) throw new Error(`${page.file}: no walkthrough for video ${page.video}`);
   const scenes = [...(page.lead_steps ?? []), ...video.walkthrough];
   const steps = scenes.map((scene, index) => stepHtml(scene, `step-${index + 1}`)).join("");
+  const sections = [
+    { id: "what-you-need-before-you-start", heading: "What you need before you start" },
+    { id: "the-steps", heading: "The steps" },
+    { id: "price", heading: "Price" },
+    { id: "when-it-is-due", heading: "When it is due" },
+    { id: "other-filings", heading: "Other filings" },
+  ];
   const main = `
       <div class="form-container">
         <p>${escapeHtml(page.summary)}</p>
         <p><a class="btn" href="${escapeHtml(page.action.href)}">${escapeHtml(page.action.label)}</a></p>
+        ${summaryFactsHtml(page, catalog, video)}
+        ${tocHtml(sections)}
       </div>
 
       <div class="form-container">
-        <h2>What you need before you start</h2>
+        <h2 id="what-you-need-before-you-start">What you need before you start</h2>
         <ul>${page.before.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
       </div>
 
       <div class="form-container">
-        <h2>The steps</h2>${page.pictures_note ? `<p>${escapeHtml(page.pictures_note)}</p>` : ""}
+        <h2 id="the-steps">The steps</h2>${page.pictures_note ? `<p>${escapeHtml(page.pictures_note)}</p>` : ""}
         <ol class="guide-steps-list">${steps}</ol>
         ${videoLinkHtml(video)}
       </div>
 
       <div class="form-container">
-        <h2>Price</h2>
+        <h2 id="price">Price</h2>
         ${priceHtml(page, catalog, video)}
       </div>
 
       <div class="form-container">
-        <h2>When it is due</h2>
+        <h2 id="when-it-is-due">When it is due</h2>
         ${deadlineHtml(page, sources)}
         <p>See every date on the <a href="mtd-calendar.html">MTD calendar</a>.</p>
       </div>
 
       <div class="form-container">
-        <h2>Ready to file</h2>
         <p><a class="btn" href="${escapeHtml(page.action.href)}">${escapeHtml(page.action.label)}</a></p>
-        <h2>Other filings</h2>
+        <h2 id="other-filings">Other filings</h2>
         ${otherPagesHtml(page, pages, comparisons, articles)}
         <p>Each filing and the channels that offer it are in the <a href="mtd-calendar.html#availability">availability table</a>.</p>
       </div>
@@ -331,8 +368,8 @@ function companyDeadlinesLookupHtml() {
   );
 }
 
-function articleSectionHtml(section, sources) {
-  const parts = [`<h2>${escapeHtml(section.heading)}</h2>`];
+function articleSectionHtml(section, sources, id, closingHtml = "") {
+  const parts = [`<h2 id="${id}">${escapeHtml(section.heading)}</h2>`];
   for (const text of section.text ?? []) parts.push(`<p>${inlineHtml(text)}</p>`);
   if (section.list) parts.push(`<ul>${section.list.map((item) => `<li>${inlineHtml(item)}</li>`).join("")}</ul>`);
   if (section.table === "quarterly") {
@@ -365,6 +402,7 @@ function articleSectionHtml(section, sources) {
     if (!source) throw new Error(`no source file named ${name}`);
     parts.push(sourceQuoteHtml(source));
   }
+  if (closingHtml) parts.push(closingHtml);
   return `<div class="form-container">${parts.join("")}</div>`;
 }
 
@@ -373,20 +411,29 @@ function articleSectionHtml(section, sources) {
  * @param {object} article an entry of the article list in filing-pages.toml
  */
 export function renderArticlePage(article, sources) {
-  const sections = article.section.map((section) => articleSectionHtml(section, sources)).join("\n");
+  const used = new Set();
+  const listed = article.section.map((section) => ({ id: sectionId(section.heading, used), heading: section.heading }));
+  const submitIndex = article.section.findIndex((section) => section.heading === "What Submit files");
+  const button = `<p><a class="btn" href="${escapeHtml(article.action.href)}">${escapeHtml(article.action.label)}</a></p>`;
+  const linksCalendar = (text) => text.includes("](mtd-calendar.html)");
+  const bodyText = JSON.stringify([article.summary, article.section]);
+  const calendarSentence =
+    article.action.href === "mtd-calendar.html" || linksCalendar(bodyText)
+      ? ""
+      : `<p>See every date on the <a href="mtd-calendar.html">MTD calendar</a>.</p>`;
+  const ending = `${button}${calendarSentence}`;
+  const sections = article.section
+    .map((section, index) => articleSectionHtml(section, sources, listed[index].id, index === submitIndex ? ending : ""))
+    .join("\n");
+  const closing = submitIndex === -1 ? `\n      <div class="form-container">${ending}</div>\n` : "";
   const scripts = article.script ? `\n    <script type="module" src="${escapeHtml(article.script)}"></script>` : "";
   const main = `
       <div class="form-container">
         <p>${inlineHtml(article.summary)}</p>
-        <p><a class="btn" href="${escapeHtml(article.action.href)}">${escapeHtml(article.action.label)}</a></p>
+        ${button}
+        ${tocHtml(listed)}
       </div>
-${sections}
-      <div class="form-container">
-        <h2>${escapeHtml(article.closing_heading ?? "Ready to file")}</h2>
-        <p><a class="btn" href="${escapeHtml(article.action.href)}">${escapeHtml(article.action.label)}</a></p>
-        ${article.action.href === "mtd-calendar.html" ? "" : `<p>See every date on the <a href="mtd-calendar.html">MTD calendar</a>.</p>`}
-      </div>
-`;
+${sections}${closing}`;
   return renderPageShell(article, main, scripts);
 }
 

@@ -304,3 +304,33 @@ main ol.calendar {
 .tool-cards p {
   margin: 0;
 }
+
+/* The price and due date at the top of a how-to page, and the links to its sections */
+.page-facts {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-3) 0 0;
+}
+
+.page-facts li {
+  margin: 0 0 var(--space-1);
+}
+
+.page-toc {
+  margin-top: var(--space-3);
+  font-size: var(--step--1);
+}
+
+.page-toc-title {
+  margin: 0 0 var(--space-1);
+  font-weight: var(--weight-strong);
+}
+
+.page-toc ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+}

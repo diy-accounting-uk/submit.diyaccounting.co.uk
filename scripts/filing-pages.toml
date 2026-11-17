@@ -185,7 +185,6 @@ subtitle = "Who starts in April 2027 and when the quarterly updates are due"
 description = "Making Tax Digital for Income Tax reaches sole traders and landlords with qualifying income over £30,000 from 6 April 2027. Who it covers and the update dates."
 summary = "Sole traders and landlords with qualifying income over £30,000 in the 2025 to 2026 tax year use Making Tax Digital for Income Tax from 6 April 2027. Submit's Income Tax filing awaits HMRC recognition. VAT returns are filed today: see [VAT return from a spreadsheet](vat-return-from-a-spreadsheet.html)."
 action = { label = "See the Making Tax Digital dates", href = "mtd-calendar.html" }
-closing_heading = "Every date"
 
 [[article.section]]
 heading = "Who starts on 6 April 2027"
@@ -293,7 +292,6 @@ description = "Check whether Making Tax Digital for Income Tax applies to you fr
 summary = "Making Tax Digital for Income Tax starts on 6 April 2026, 6 April 2027 or 6 April 2028, by how much self-employment and property income you had. Give your income for each tax year below. The page shows your start date, your first quarterly update deadline and the records to keep. Submit's Income Tax filing awaits HMRC recognition. VAT returns are filed today: see [VAT return from a spreadsheet](vat-return-from-a-spreadsheet.html)."
 action = { label = "See the Making Tax Digital dates", href = "mtd-calendar.html" }
 script = "lib/itsa/scope-checker.js"
-closing_heading = "Every date"
 
 [[article.section]]
 heading = "Check your income"
