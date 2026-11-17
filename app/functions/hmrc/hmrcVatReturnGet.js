@@ -13,7 +13,7 @@
 
 // app/functions/hmrc/hmrcVatReturnGet.js
 
-import { createLogger } from "../../lib/logger.js";
+import { createLogger, context } from "../../lib/logger.js";
 import {
   extractRequest,
   http200OkResponse,
@@ -367,6 +367,7 @@ export async function ingestHandler(event) {
     testScenario: govTestScenarioHeader,
     hmrcAccount,
     userSub,
+    userEmail: context.get("userEmail") || null,
     runFraudPreventionHeaderValidation,
     requestId,
     traceparent,

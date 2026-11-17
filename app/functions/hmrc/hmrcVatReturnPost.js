@@ -839,11 +839,6 @@ export async function workerHandler(event) {
     logger,
     errorPolicy: "classify",
     processRecord: async (payload, { userId: userSub, requestId }) => {
-      // The SQS worker context carries requestId and userSub (set by processSqsRecords)
-      // but not email, since that came from the ingest Lambda's own authorizer context.
-      // Restore it here so resolveActorClass() inside submitVat classifies this the same
-      // way the ingest Lambda would have.
-      if (payload.userEmail) context.set("userEmail", payload.userEmail);
       const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(
         payload.periodKey,
         payload.vatReturnData,

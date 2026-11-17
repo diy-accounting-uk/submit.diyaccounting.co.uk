@@ -113,6 +113,10 @@ export async function processSqsRecords(
       context.set("traceparent", traceparent);
       context.set("correlationId", correlationId);
       if (userId) context.set(userContextKey, userId);
+      // The caller's email travels in the payload because a worker invocation has an empty context;
+      // resolveActorClass() reads it to class the worker's recorded calls as customer, test or synthetic.
+      // It is set for every record, so a record without one does not inherit the previous record's.
+      context.set("userEmail", body.payload?.userEmail || null);
 
       logger.info({ message: "Processing SQS message", [userContextKey]: userId, requestId, messageId: record.messageId });
 

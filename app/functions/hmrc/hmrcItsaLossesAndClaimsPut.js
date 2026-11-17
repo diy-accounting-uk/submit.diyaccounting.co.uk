@@ -3,7 +3,7 @@
 
 // app/functions/hmrc/hmrcItsaLossesAndClaimsPut.js
 
-import { createLogger } from "../../lib/logger.js";
+import { createLogger, context } from "../../lib/logger.js";
 import {
   extractRequest,
   parseRequestBody,
@@ -348,6 +348,7 @@ export async function ingestHandler(event) {
     testScenario: govTestScenarioHeader,
     hmrcAccount,
     userSub,
+    userEmail: context.get("userEmail") || null,
     runFraudPreventionHeaderValidation,
     requestId,
     traceparent,
