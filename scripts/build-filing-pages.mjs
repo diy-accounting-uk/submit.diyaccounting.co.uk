@@ -99,7 +99,9 @@ function priceHtml(page, catalog, video) {
   ];
   const freePass = catalog.bundles.find((candidate) => candidate.id === "day-guest");
   if (activity.bundles.includes(freePass.id)) {
-    sentences.push(`<p>The ${escapeHtml(freePass.name.toLowerCase())} is free and gives you 3 submissions to try it first.</p>`);
+    sentences.push(
+      `<p>The ${escapeHtml(freePass.name.toLowerCase())} is free and gives you ${freePass.tokensGranted} submissions to try it first.</p>`,
+    );
   }
   const filingPrice = getActivityPrices(activity).find((price) => price.default);
   if (filingPrice) {
