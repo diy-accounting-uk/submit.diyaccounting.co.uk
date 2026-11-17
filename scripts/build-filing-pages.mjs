@@ -310,7 +310,8 @@ export function renderFilingPage(page, pages, catalog, manifest, sources, compar
 const HMRC_SOFTWARE_LISTS = {
   "submit-vat": "https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-vat",
   "self-employed": "https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-income-tax",
-  "file-company-tax-return": "https://www.gov.uk/company-tax-returns",
+  "file-company-tax-return":
+    "https://www.gov.uk/government/publications/corporation-tax-commercial-software-suppliers/corporation-tax-commercial-software-suppliers",
 };
 
 /** The words that say what Submit offers for a filing, from its state in the availability table. */
