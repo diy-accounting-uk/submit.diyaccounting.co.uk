@@ -182,6 +182,12 @@ This section is the one source for `/iterate` and `/do-next`; they point here.
 5. Gate the wave branch: `scripts/batch-check.sh claude/<name>-w<nn>` in one background command,
    then the simulator behaviour suites that the wave's rows reach, in series under the simulator
    lock. Fix every failure on the wave branch.
+
+   **A long gate reports every 15 minutes.** When a gate starts (`scripts/batch-check.sh` or the
+   simulator suites), arm a background Monitor on its logs that wakes the coordinator every 15
+   minutes. Each wake gives the operator one line: the gates passed, the browser test count (the
+   last `✓ <n>` of `<logdir>/browser-tests.log` against its `Running <n> tests` line), the failures
+   so far and the expected end time. The Monitor stops when the gate ends.
 6. Park the wave: write `gated <tip sha>` in the plan and commit the plan on `main`. The wave
    branch and its worktree stay until the set is on `main`.
 

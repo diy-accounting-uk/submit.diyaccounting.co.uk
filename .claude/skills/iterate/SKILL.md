@@ -161,6 +161,12 @@ every slot is held; `main` deploys to prod and takes no ci slot.
   Then one push, one PR whose body says what each row turned out
   to be, and `/watch`.
 
+  **A long gate reports every 15 minutes.** When a gate starts (`scripts/batch-check.sh` or the
+  simulator suites), arm a background Monitor on its logs that wakes the coordinator every 15
+  minutes. Each wake gives the operator one line: the gates passed, the browser test count (the
+  last `✓ <n>` of `<logdir>/browser-tests.log` against its `Running <n> tests` line), the failures
+  so far and the expected end time. The Monitor stops when the gate ends.
+
 ### 3. Watch
 
 `/watch` arms `scripts/watch-ci.sh` as a Monitor for 30 minutes; re-arm on every expiry notice
