@@ -16,15 +16,17 @@ only when the operator boards it.
 
 > Put all this in a PLAN_*.md doc we might do stuff we don't board or try let.
 
+> Please create it as submit-cloud-<something from a codename file> we we will have 1 fork per cloude session.
+
 ## Status
 
-Researched 2026-11-17. The work repository `diy-accounting-uk/submit-cloud` exists (step 1 and 2 done); steps 3 to 9 and the first trial are not started.
+Researched 2026-11-17. The first work repository, `diy-accounting-uk/submit-cloud-anvil`, exists with Actions off; steps 3 to 9 and the first trial are not started.
 
 ## The goal
 
 The laptop is the coordinator. It runs out of CPU when many local agents and a one-hour gate run
 at once (load average up to 200 on 16 cores, `CPU_Speed_Limit` 20, on 2026-11-17). Cloud sessions
-add compute that the plan already pays for. They work in a separate repository, `submit-cloud`, so a push never starts the org's
+add compute that the plan already pays for. Each works in its own repository, `submit-cloud-<codename>`, so a push never starts the org's
 paid ci deployment. The coordinator lands their commits locally and makes the set's one push, as
 it does with local worktrees.
 
@@ -81,70 +83,87 @@ The operator's plan is Ultra (operator, 2026-11-17): about 10 workers at today's
 One VM is slower than the laptop for one gate. The gain is several gates and batches in parallel
 off the laptop.
 
-## The work repository
+## The work repositories
 
-`diy-accounting-uk/submit-cloud` is a plain public repository in the org, made the way
-`diya-submit-plugin` was (not a GitHub fork, which GitHub does not allow in the same owner). It holds `main` as pushed from this repository. Its
+One repository for each cloud session (operator, 2026-11-17): `diy-accounting-uk/submit-cloud-<codename>`.
+The code name comes from `CODENAMES.txt` by the rule of `/do-next` ("Naming the batch"), with its
+own sequence: the first repository takes a name from the `a` line, the next from the `b` line, and
+so on. The local remote for each is `cloud-<codename>`, and the session's worker name is the same
+code name.
+
+Each is a plain public repository in the org, made the way `diya-submit-plugin` was. GitHub does
+not allow a fork in the same owner. Each holds `main` as pushed from this repository, and its
 Actions are off, so a push to it starts nothing.
 
+| Repository | Created | Actions | Remote |
+| --- | --- | --- | --- |
+| `diy-accounting-uk/submit-cloud-anvil` | 2026-11-17 | off | `cloud-anvil` (not yet added) |
+
 - The submit OIDC roles trust only `repo:diy-accounting-uk/submit.diyaccounting.co.uk` (and
-  `root.diyaccounting.co.uk`), read on 2026-11-17, so a workflow in `submit-cloud` cannot assume
-  them.
+  `root.diyaccounting.co.uk`), read on 2026-11-17, so a workflow in a work repository cannot
+  assume them.
 - The org's Actions variables (`ROOT_*`, `GATEWAY_*`, `SPREADSHEETS_*` role ARNs) are visible to
   all org repositories. The trust of those roles in the management, gateway and spreadsheets
-  accounts is not yet read. Read it before Actions is ever turned on in `submit-cloud`.
-- A pull request from `submit-cloud` is not needed. Results come back by `git fetch`.
+  accounts is not yet read. Read it before Actions is ever turned on in a work repository.
+- A pull request from a work repository is not needed. Results come back by `git fetch`.
+
+To add a work repository (a session runs 1 to 3, the operator 4 and 5):
+
+1. `gh repo create diy-accounting-uk/submit-cloud-<codename> --public --disable-wiki`
+2. `gh api -X PUT repos/diy-accounting-uk/submit-cloud-<codename>/actions/permissions -F enabled=false`,
+   before the first push.
+3. `git push git@github.com:diy-accounting-uk/submit-cloud-<codename>.git origin/main:refs/heads/main`
+4. Add the repository to the Claude app's selected repositories on the org.
+5. `git remote add cloud-<codename> git@github.com:diy-accounting-uk/submit-cloud-<codename>.git`
 
 ## The channel between the coordinator and a worker
 
 | Direction | Mechanism |
 | --- | --- |
 | Task down | `SendMessage` from the coordinator to the worker by its session name. `ListAgents` here already lists cloud sessions as peers (2026-11-17). |
-| Result up | The worker pushes `claude/<worker>-<row>` to `submit-cloud`. The last commit's body holds the report: what changed, the commands run with counts, what it did not do. |
-| Detect a result | A Monitor here polls `git ls-remote cloud 'refs/heads/claude/*'` every 2 minutes and wakes the coordinator on a new tip. |
+| Result up | The worker pushes `claude/<codename>-<row>` to its work repository. The last commit's body holds the report: what changed, the commands run with counts, what it did not do. |
+| Detect a result | A Monitor here polls `git ls-remote cloud-<codename> 'refs/heads/claude/*'` for each worker every 2 minutes and wakes the coordinator on a new tip. |
 | Next task | The worker ends its turn after the push. The next `SendMessage` starts its next turn. |
-| Fallback | If a message does not wake an idle worker, the worker runs `/loop` with the skill and reads `.collab/<worker>.md` on a `collab` branch of `submit-cloud` each tick. The coordinator pushes that file. |
+| Fallback | If a message does not wake an idle worker, the worker runs `/loop` with the skill and reads `.collab/<worker>.md` on a `collab` branch of its work repository each tick. The coordinator pushes that file. |
 
 A cloud session cannot message another session back yet, so the result channel is git.
 
 Rejected for now:
 - An S3 bucket. It needs static IAM keys in an environment variable that every user of the
-  environment can read, and a new IAM user and secret. Git on `submit-cloud` does the same job.
+  environment can read, and a new IAM user and secret. Git on the work repositories does the same job.
 - A claude.ai artifact with a shared database. This session has the tool; a cloud session's access
   to it is not verified.
 
 ## The `/collaborate` skill
 
-`.claude/skills/collaborate/SKILL.md` in this repository, synced to `submit-cloud`. It holds:
+`.claude/skills/collaborate/SKILL.md` in this repository, pushed to each work repository with `main`. It holds:
 
-1. The worker's name, from the skill's argument (`/collaborate worker-1`).
-2. On a task message: fetch the base branch the message names from `submit-cloud`, make
-   `claude/<worker>-<row>`, build the row by its brief, run the gates the brief names, commit with
-   the report in the body, push to `submit-cloud`, end the turn.
-3. Never push to `origin` or any repository other than `submit-cloud`. Never push a branch that does not
+1. The worker's name, the code name of its work repository (`/collaborate anvil`).
+2. On a task message: fetch the base branch the message names from its work repository, make
+   `claude/<codename>-<row>`, build the row by its brief, run the gates the brief names, commit with
+   the report in the body, push to its work repository, end the turn.
+3. Never push to `origin` or any repository other than its own work repository. Never push a branch that does not
    start with `claude/`. Never delete a branch.
 4. Commit before a long gate. A reclaimed VM loses uncommitted work.
 5. The fallback loop of the channel table, used only when a message does not arrive.
 
 ## Steps
 
-Steps 3 to 5 are the operator's. Steps 6 to 9 are a session's.
+Steps 3 to 5 are the operator's. Steps 1, 2 and 6 to 9 are a session's.
 
-1. Done 2026-11-17: `gh repo create diy-accounting-uk/submit-cloud --public`, then `main` pushed.
-2. Done 2026-11-17: Actions off (`gh api -X PUT repos/diy-accounting-uk/submit-cloud/actions/permissions -F enabled=false`).
+1. Done 2026-11-17: `submit-cloud-anvil` created by steps 1 to 3 of "To add a work repository".
+2. For each further worker: steps 1 to 3 of "To add a work repository" (a session).
 3. Install the Claude GitHub app (https://github.com/apps/claude) on the `diy-accounting-uk` org,
-   with "Only select repositories" set to `submit-cloud` only. Do not run
+   with "Only select repositories" set to the `submit-cloud-*` repositories only. Do not run
    `/web-setup`, because it sends the local `gh` token, which can push to the org repository.
-4. Add the remote in the local checkout:
-   `git remote add cloud git@github.com:diy-accounting-uk/submit-cloud.git`
-5. At https://claude.ai/code, create an environment: network Limited plus the Playwright download
-   domain; environment variables `BASH_DEFAULT_TIMEOUT_MS=3600000` and
-   `BASH_MAX_TIMEOUT_MS=3600000`; a setup script that installs Node 24 and JDK 25 and runs
-   `npm ci`.
+4. Add each work repository's remote: `git remote add cloud-<codename> git@github.com:diy-accounting-uk/submit-cloud-<codename>.git`
+5. At https://claude.ai/code, create one environment for the work repositories: network Limited
+   plus the Playwright download domain; environment variables `BASH_DEFAULT_TIMEOUT_MS=3600000` and
+   `BASH_MAX_TIMEOUT_MS=3600000`; a setup script that installs Node 24 and JDK 25 and runs `npm ci`.
 6. Write `.claude/skills/collaborate/SKILL.md` (a docs commit to `main`).
-7. Before each dispatch: `git push cloud origin/main:refs/heads/main` , then push the wave's base branch to
-   `cloud`. Start the Monitor on `submit-cloud`'s `claude/*` branches.
-8. Land a result: `git fetch cloud claude/<worker>-<row>`, then `git merge --squash` onto the local
+7. Before each dispatch: `git push cloud-<codename> origin/main:refs/heads/main`, then push the wave's base branch to
+   `cloud-<codename>`. Start the Monitor on each work repository's `claude/*` branches.
+8. Land a result: `git fetch cloud-<codename> claude/<codename>-<row>`, then `git merge --squash` onto the local
    wave branch, one commit per row. The local commit carries the operator's signature, which the
    signature check on `main` needs.
 9. The set's one push to `origin` still goes from the local checkout.
@@ -163,8 +182,8 @@ One tab, one small row. It proves:
 
 ## Open unknowns
 
-- Which remote `claude --cloud` clones when `origin` and `cloud` both exist. Until it is known,
-  workers start from claude.ai/code on `submit-cloud`, not from `claude --cloud` here.
+- Which remote `claude --cloud` clones when `origin` and a `cloud-<codename>` remote both exist. Until it is known,
+  workers start from claude.ai/code on their work repository, not from `claude --cloud` here.
 - A source for JDK 25 that the Limited network allows.
 - The Agent tool's `isolation: "remote"` runs locally without saying so
   (anthropics/claude-code issue #101834, open since 2026-10-13). Do not use it for this.
