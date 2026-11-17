@@ -1117,9 +1117,9 @@ public class EdgeStack extends Stack {
         // ============================================================================
         // Sensitive-path scan detection (issue #9 phase 9.1) - regex pattern set
         // ============================================================================
-        // Anchored patterns only: "^/\.env" must never match "/submit.env", which the publish
-        // step writes as a real asset (see the SubmitApplicationCdkResourceTest verification of
-        // this and scripts/verify-waf-false-positives.sh for the deployed check).
+        // A pattern must never match "/submit.env", which the publish step writes as a real
+        // asset, nor a served page or API path: SubmitApplicationCdkResourceTest applies every
+        // pattern to those, and scripts/verify-waf-false-positives.sh is the deployed check.
         CfnRegexPatternSet sensitivePathsRegexSet = CfnRegexPatternSet.Builder.create(
                         this, props.resourceNamePrefix() + "-SensitivePathsRegexSet")
                 .name(props.resourceNamePrefix() + "-sensitive-paths")
@@ -1129,12 +1129,17 @@ public class EdgeStack extends Stack {
                 // Consolidated via alternation, not one entry per path: WAFv2 caps a
                 // RegexPatternSet at 10 patterns (NUM_PATTERNS_IN_REGEX_PATTERN_SET), and the
                 // original one-entry-per-path list of 13 exceeded it, failing CREATE for this
-                // resource on every deploy. Four entries here, matching the same paths, with
-                // headroom for more.
+                // resource on every deploy. Seven entries here, with headroom for more. A secrets
+                // file is blocked at any depth: scanners request "/app/.env.local" and
+                // "/api/config.json" as often as the root forms. The rule lower-cases the path
+                // before it matches, so every pattern is lower case.
                 .regularExpressionList(List.of(
-                        "^/\\.(env|git/|aws/|ssh/)",
+                        "/\\.(env|git/|aws/|ssh/)",
                         "^/(wp-admin|wp-login|xmlrpc\\.php|phpmyadmin|vendor/|actuator|server-status)",
-                        "^/config\\.(json|php|yml|yaml)$",
+                        "/(config|credentials)(\\.(json|js|php|ya?ml))?$",
+                        "/(settings|secrets?|parameters|appsettings[^/]*)\\.(json|ya?ml)$",
+                        "/(terraform\\.(tfstate|tfvars)|docker-compose\\.ya?ml|backup\\.sql)$",
+                        "/\\.(npmrc|boto|netrc|pypirc|git-credentials)$",
                         "\\.php$"))
                 .build();
 
