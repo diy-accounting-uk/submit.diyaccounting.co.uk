@@ -1809,7 +1809,7 @@ test.describe("Operator Dashboard", () => {
 
       await expect(page.locator(".login-status")).toHaveText("Not signed in");
       await expect(page.locator(".login-link")).toHaveText("Sign in");
-      await expect(page.locator(".login-link")).toHaveAttribute("href", "/auth/login.html");
+      await expect(page.locator(".login-link")).toHaveAttribute("href", "/auth/login.html?next=%2Foperator%2Fdashboard.html");
     });
 
     test("carries a return-to the dashboard when a signed-out visitor logs in", async ({ page }) => {
