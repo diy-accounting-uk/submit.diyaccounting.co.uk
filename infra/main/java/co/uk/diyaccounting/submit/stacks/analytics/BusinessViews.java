@@ -385,7 +385,7 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_integration_calls_hourly",
                     "Outbound calls and their total duration each UTC hour, by organisation, target, api, outcome"
-                            + " and HTTP status, for the last 9 days",
+                            + " and HTTP status, for the last 15 days",
                     List.of("dynamo_calls")));
 
     public final List<CfnNamedQuery> namedQueries = new ArrayList<>();

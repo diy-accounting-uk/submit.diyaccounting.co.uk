@@ -296,8 +296,8 @@ export const CHART_DAYS = Array.from({ length: 90 }, (_, index) => {
 });
 
 export const CHART_HOURS = Array.from(
-  { length: 168 },
-  (_, index) => new Date(Date.UTC(2026, 8, 8, 3) - (167 - index) * 3600000).toISOString().slice(0, 13) + ":00:00Z",
+  { length: 336 },
+  (_, index) => new Date(Date.UTC(2026, 8, 8, 3) - (335 - index) * 3600000).toISOString().slice(0, 13) + ":00:00Z",
 );
 
 export function hourlySeries(id, label, scale, extra = {}) {

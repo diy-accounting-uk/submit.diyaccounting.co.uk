@@ -1453,7 +1453,7 @@ test.describe("Operator Dashboard", () => {
       await expect(funnel.locator("polyline.chart-line")).toHaveCount(3);
     });
 
-    test("switches a chart with hourly data between 90 days by day and 7 days by hour", async ({ page }) => {
+    test("switches a chart with hourly data between 90 days by day and 14 days by hour", async ({ page }) => {
       await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
       await loadDashboard(page);
 
@@ -1461,7 +1461,7 @@ test.describe("Operator Dashboard", () => {
       const daily = visitors.locator('.chart-range-option[data-range="daily"]');
       const hourly = visitors.locator('.chart-range-option[data-range="hourly"]');
       await expect(daily).toHaveText("90 days, by day");
-      await expect(hourly).toHaveText("7 days, by hour");
+      await expect(hourly).toHaveText("14 days, by hour");
       await expect(daily).toHaveAttribute("aria-pressed", "true");
       await expect(visitors.locator("polyline.chart-line")).toHaveCount(4);
 
@@ -1469,10 +1469,10 @@ test.describe("Operator Dashboard", () => {
       await expect(hourly).toHaveAttribute("aria-pressed", "true");
       await expect(visitors.locator("polyline.chart-line")).toHaveCount(3);
       const points = await visitors.locator("polyline.chart-line").first().getAttribute("points");
-      expect(points.trim().split(" ")).toHaveLength(168);
+      expect(points.trim().split(" ")).toHaveLength(336);
       await expect(visitors.locator(".chart-readout")).toContainText("8 Sept 03:00");
       await expect(visitors.locator(".chart-legend-item")).toHaveText(["Operator", "Authenticated user", "Human"]);
-      await expect(visitors.locator("svg")).toHaveAttribute("aria-label", /hourly over the last 168 hours/);
+      await expect(visitors.locator("svg")).toHaveAttribute("aria-label", /hourly over the last 336 hours/);
 
       await visitors.locator('.chart-legend-control[data-action="hide-all"]').click();
       await expect(visitors.locator("polyline.chart-line")).toHaveCount(0);

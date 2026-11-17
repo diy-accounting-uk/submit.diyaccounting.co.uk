@@ -5,7 +5,7 @@
 // one chart per objective, one point per day, a line per component and a total line where the
 // parts add up. A legend button hides or shows a line, a double-click on it shows only that line (again, all lines), Show all and Hide all set every line at once, and a legend button's tooltip says what the line is; moving over the chart reads one point.
 // A chart mode whose source has an hourly grain carries mode.hourly, and a switch beside Show all
-// and Hide all moves it between 90 days by day and 7 days by hour (snapshot.dailyCharts.hours).
+// and Hide all moves it between 90 days by day and 14 days by hour (snapshot.dailyCharts.hours).
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 const CHART_HEIGHT = 220;
@@ -36,10 +36,10 @@ function formatHour(isoHour) {
 
 const RANGES = [
   ["daily", "90 days, by day"],
-  ["hourly", "7 days, by hour"],
+  ["hourly", "14 days, by hour"],
 ];
 
-// The series the chart draws now: the mode's hourly series when the switch is on 7 days and the
+// The series the chart draws now: the mode's hourly series when the switch is on 14 days and the
 // mode has them, otherwise its daily series.
 function isHourly(state) {
   return state.range === "hourly" && Boolean(state.chart.modes[state.modeIndex].hourly);
@@ -329,7 +329,7 @@ function legendControls(state) {
   return controls;
 }
 
-// The switch between 90 days by day and 7 days by hour. It shows only while the chart's current
+// The switch between 90 days by day and 14 days by hour. It shows only while the chart's current
 // mode has an hourly series.
 function rangeSwitch(state) {
   const group = document.createElement("span");

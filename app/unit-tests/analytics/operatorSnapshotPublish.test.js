@@ -1372,14 +1372,14 @@ describe("operatorSnapshotPublish", () => {
       expect(activities.modes.map((mode) => mode.id)).toEqual(["started", "completed", "api-calls"]);
     });
 
-    test("hourlyChartHours lists 168 UTC hours ending on the hour of now, oldest first", () => {
+    test("hourlyChartHours lists 336 UTC hours ending on the hour of now, oldest first", () => {
       const hours = hourlyChartHours(new Date("2026-10-29T14:37:12.000Z"));
-      expect(hours).toHaveLength(168);
-      expect(hours[0]).toBe("2026-10-22T15:00:00Z");
+      expect(hours).toHaveLength(336);
+      expect(hours[0]).toBe("2026-10-15T15:00:00Z");
       expect(hours.at(-1)).toBe("2026-10-29T14:00:00Z");
     });
 
-    test("only the modes read from an hourly view carry an hourly query, one over each view for 168 hours", () => {
+    test("only the modes read from an hourly view carry an hourly query, one over each view for 336 hours", () => {
       const withHourly = buildDailyChartDefinitions().flatMap((definition) =>
         definition.modes.filter((mode) => mode.hourlySql).map((mode) => `${definition.id}/${mode.id}`),
       );
@@ -1396,14 +1396,14 @@ describe("operatorSnapshotPublish", () => {
       ]);
       for (const definition of buildDailyChartDefinitions()) {
         for (const mode of definition.modes.filter((candidate) => candidate.hourlySql)) {
-          expect(mode.hourlySql).toContain("date_add('hour', -168,");
+          expect(mode.hourlySql).toContain("date_add('hour', -336,");
           expect(mode.hourlySql).toMatch(/FROM\s+v_[a-z_]+_hourly/);
           expect(mode.hourlySql).toMatch(/AS day/);
         }
       }
     });
 
-    test("buildDailyCharts publishes 168 hourly points on the hourly modes and none elsewhere, with three extra queries", async () => {
+    test("buildDailyCharts publishes 336 hourly points on the hourly modes and none elsewhere, with three extra queries", async () => {
       const queries = [];
       mockAthenaSend.mockImplementation((command) => {
         switch (command.constructor.name) {
@@ -1423,7 +1423,7 @@ describe("operatorSnapshotPublish", () => {
       const { dailyCharts, failedChartIds } = await buildDailyCharts({ workGroup: "wg", database: "db", endDay: END_DAY, now });
 
       expect(failedChartIds).toEqual([]);
-      expect(dailyCharts.hours).toHaveLength(168);
+      expect(dailyCharts.hours).toHaveLength(336);
       expect(queries.filter((sql) => /_hourly/.test(sql))).toHaveLength(9);
       const hourlyModes = dailyCharts.charts.flatMap((chart) =>
         chart.modes.filter((mode) => mode.hourly).map((mode) => `${chart.id}/${mode.id}`),
@@ -1441,7 +1441,7 @@ describe("operatorSnapshotPublish", () => {
       ]);
       const visitors = dailyCharts.charts.find((chart) => chart.id === "visitors").modes[0];
       expect(visitors.hourly.series.map((line) => line.id)).toEqual(["operator", "human"]);
-      for (const line of visitors.hourly.series) expect(line.values).toHaveLength(168);
+      for (const line of visitors.hourly.series) expect(line.values).toHaveLength(336);
       expect(visitors.hourly.series[1].values.at(-1)).toBe(3);
     });
 

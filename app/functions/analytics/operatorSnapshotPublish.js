@@ -1037,7 +1037,7 @@ export async function buildSnapshot({ workGroup, database, context }) {
 
 export const DAILY_CHART_DAYS = 90;
 
-export const HOURLY_CHART_HOURS = 168;
+export const HOURLY_CHART_HOURS = 336;
 
 const dailyWindowFilter = (dayColumn) => `${dayColumn} > date_add('day', -${DAILY_CHART_DAYS}, current_date)`;
 const hourlyWindowFilter = (hourColumn) =>
@@ -1082,7 +1082,7 @@ function longFormSql({ dayExpression, componentExpression, valueExpression, view
   );
 }
 
-// One query over an hourly view for the 168 hours to now. The hour comes back as an ISO key in the
+// One query over an hourly view for the 336 hours to now. The hour comes back as an ISO key in the
 // "day" column so buildChartSeries reads it like a daily row.
 function hourlyLongFormSql({ componentExpression, valueExpression, view, where }) {
   const conditions = [hourlyWindowFilter("hour"), ...(where ? [where] : [])].join(" AND ");
@@ -2004,7 +2004,7 @@ export function dailyChartDays(endDay, count = DAILY_CHART_DAYS) {
 
 /**
  * The last `count` UTC hours ending on the hour that contains `now`, oldest first, as ISO keys
- * like `2026-09-08T14:00:00Z`: the hours the hourly charts' `hour > now_hour - 168 hours` filter returns.
+ * like `2026-09-08T14:00:00Z`: the hours the hourly charts' `hour > now_hour - 336 hours` filter returns.
  */
 export function hourlyChartHours(now, count = HOURLY_CHART_HOURS) {
   const end = new Date(now);
@@ -2094,7 +2094,7 @@ function reusableDailyCharts(previous, endDay, now) {
  * Each 90-day daily query reads every object of its view's tables, and the series changes only in
  * its last point during a day. So when `previous` (the last snapshot's dailyCharts) ends on the
  * same day and its daily series were queried less than DAILY_SERIES_REFRESH_HOURS ago, each mode
- * and reconciliation line it holds is reused. The 168-hour series are queried on every run.
+ * and reconciliation line it holds is reused. The 336-hour series are queried on every run.
  *
  * @returns {Promise<{dailyCharts: {days: string[], hours: string[], dailySeriesQueriedAt: string, charts: object[]}, failedChartIds: string[]}>}
  */

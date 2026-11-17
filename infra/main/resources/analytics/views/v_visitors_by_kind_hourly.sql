@@ -7,7 +7,7 @@
 -- v_visitors_by_kind_daily reads GA4's daily aggregates, which land two days late, so the
 -- operator dashboard's Today, Previous day and Last 7 days visitor columns read this view instead.
 -- A property without streaming export (ci) writes empty objects, so those columns read null.
--- The partition predicate keeps it to the last 8 days: the dashboard reads at most 7, and
+-- The partition predicate keeps it to the last 15 days: the dashboard's graphs read at most 14, and
 -- without it every query lists every projected dt prefix the table carries.
 CREATE OR REPLACE VIEW v_visitors_by_kind_hourly AS
 SELECT CAST(from_iso8601_timestamp(hour) AS timestamp) AS hour,
@@ -15,5 +15,5 @@ SELECT CAST(from_iso8601_timestamp(hour) AS timestamp) AS hour,
        sum(sessions) AS sessions,
        sum(users)    AS users
 FROM   sessions_by_hour_kind
-WHERE  dt >= current_date - interval '8' day
+WHERE  dt >= current_date - interval '15' day
 GROUP  BY 1, 2
