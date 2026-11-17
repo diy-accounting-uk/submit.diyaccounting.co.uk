@@ -163,9 +163,14 @@ suite at the push.
 
 1. Check both SSO profiles, then read the ci slots (`aws --profile diya-submit-ci ssm
    get-parameters-by-path --path /submit/ci/slots`).
-2. Read the `selfDestructDelayHours` input of `.github/workflows/deploy.yml` (default 4) and
-   `.github/actions/claim-ci-slot/` before the push. The ci proofs below must finish inside the
-   delay; have each proof's command ready before the push.
+2. Set the life of the ci set before the push. `.github/workflows/deploy.yml` has two defaults for
+   `selfDestructDelayHours` (4 at line 176, 2 at line 238), so a push-triggered set lasts 2 to 4
+   hours, and its slot claim lasts the delay plus one hour (`claim-ci-slot.mjs`, line 179). The
+   deploy takes about 45 minutes and the proof list below about 2 hours. Start the set with
+   `gh workflow run deploy.yml --ref claude/ridge-set -f selfDestructDelayHours=6` straight after
+   the push, with no `deployment-name` so the run claims `ci-set1` or `ci-set2` (a named set
+   cannot sign in), and cancel the push-triggered `deploy.yml` run in its first minute: one deploy
+   per head. Confirm the slot in the run's `names` job. Have each proof's command ready first.
 3. Push `claude/ridge-set` once. Open one pull request; its body lists the rows by wave and says
    what each turned out to be. `/watch`.
 4. The ci proof list, against the one ci set: WEB2 (a day pass's expiry), WEB3 (the 404 page, the
