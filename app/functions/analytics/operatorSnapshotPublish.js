@@ -45,6 +45,13 @@ import {
   headerCheckPartitionKeys,
   shapeIntegrationsSection,
 } from "../../lib/operatorSnapshot/integrationsSection.js";
+import {
+  BEDROCK_MODELS,
+  BEDROCK_MODEL_IDS,
+  BEDROCK_OTHER_ID,
+  bedrockComponentExpression,
+  bedrockModelObservationId,
+} from "../../lib/bedrockModels.js";
 import { buildDataSection } from "../../lib/operatorSnapshot/dataSection.js";
 import { loadFixedRunningCosts } from "../../lib/runningCosts.js";
 import { loadOperators } from "../../lib/operators.js";
@@ -165,6 +172,8 @@ const BETTER_DOWN_IDS = [
   "cost-submit-ci-usd",
   "cost-other-accounts-usd",
   "cost-bedrock-usd",
+  ...BEDROCK_MODELS.map(bedrockModelObservationId),
+  "cost-bedrock-other-usd",
   "cost-cloudwatch-usd",
   "cost-cloudfront-usd",
   "ads-cost-gbp",
@@ -1751,6 +1760,26 @@ export function buildDailyChartDefinitions() {
           }),
         },
         {
+          id: "bedrock-model",
+          label: "Bedrock by model",
+          total: "All Bedrock",
+          totalDescription: "Every Bedrock charge added together, in dollars.",
+          componentOrder: [...BEDROCK_MODEL_IDS, BEDROCK_OTHER_ID],
+          labelOf: (id) => BEDROCK_MODELS.find((model) => model.modelId === id)?.label ?? "Other",
+          descriptionOf: (id) =>
+            id === BEDROCK_OTHER_ID
+              ? "Dollars billed for every Bedrock charge that is not a model in use: the Claude models, other Amazon models, guardrail units and tax."
+              : `Dollars billed for the ${BEDROCK_MODELS.find((model) => model.modelId === id)?.label ?? id} model (${id}).`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: bedrockComponentExpression(),
+            valueExpression: "billed_cost_usd",
+            view: "v_cost_by_resource_daily",
+            dayColumn: "day",
+            where: "service_name LIKE '%Bedrock%'",
+          }),
+        },
+        {
           id: "agent",
           label: "Bedrock per agent result",
           total: null,
@@ -1759,8 +1788,8 @@ export function buildDailyChartDefinitions() {
             ({ "cost-per-posted-run": "Per run that posted", "cost-per-accepted-pr": "Per accepted pull request" })[id] ?? id,
           descriptionOf: (id) =>
             ({
-              "cost-per-posted-run": "The day's Claude on Bedrock cost divided by the agent runs that posted a result that day.",
-              "cost-per-accepted-pr": "The day's Claude on Bedrock cost divided by the agent pull requests a person merged that day.",
+              "cost-per-posted-run": "The day's Bedrock cost divided by the agent runs that posted a result that day.",
+              "cost-per-accepted-pr": "The day's Bedrock cost divided by the agent pull requests a person merged that day.",
             })[id],
           sql:
             `SELECT cast(day AS varchar) AS day, 'cost-per-posted-run' AS component, cast(sum(cost_per_posted_run_usd) AS double) AS value\n` +

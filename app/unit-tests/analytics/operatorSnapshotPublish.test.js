@@ -565,12 +565,26 @@ describe("operatorSnapshotPublish", () => {
       const chart = buildDailyChartDefinitions().find((definition) => definition.id === "low-running-cost");
 
       expect(chart.title).toBe("AWS costs");
-      expect(chart.modes.map((mode) => mode.id)).toEqual(["cost", "account", "deployment", "charge", "agent"]);
+      expect(chart.modes.map((mode) => mode.id)).toEqual(["cost", "account", "deployment", "charge", "bedrock-model", "agent"]);
       expect(chart.modes[0].maxComponents).toBe(12);
       const account = chart.modes.find((mode) => mode.id === "account");
       expect(account.labelOf("972912397388")).toBe("submit-prod");
       expect(account.labelOf("887764105431")).toBe("management");
       expect(chart.modes.find((mode) => mode.id === "deployment").sql).toContain("deployment AS component");
+    });
+
+    test("the Bedrock by model tab draws All Bedrock, each model in use and Other", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "low-running-cost");
+      const mode = chart.modes.find((m) => m.id === "bedrock-model");
+
+      expect(mode.label).toBe("Bedrock by model");
+      expect(mode.total).toBe("All Bedrock");
+      expect(mode.componentOrder).toEqual(["amazon.nova-pro-v1:0", "global.amazon.nova-2-lite-v1:0", "other"]);
+      expect(mode.labelOf("amazon.nova-pro-v1:0")).toBe("Nova Pro");
+      expect(mode.labelOf("other")).toBe("Other");
+      expect(mode.sql).toContain("FROM   v_cost_by_resource_daily");
+      expect(mode.sql).toContain("service_name LIKE '%Bedrock%'");
+      expect(mode.sql).toContain("ELSE 'other' END AS component");
     });
 
     test("the AWS costs chart offers CloudWatch by charge and Bedrock cost per agent result", () => {
@@ -1141,6 +1155,9 @@ describe("operatorSnapshotPublish", () => {
           "cost-submit-ci-usd",
           "cost-other-accounts-usd",
           "cost-bedrock-usd",
+          "cost-bedrock-nova-pro-usd",
+          "cost-bedrock-nova-2-lite-usd",
+          "cost-bedrock-other-usd",
           "cost-cloudwatch-usd",
           "cost-cloudfront-usd",
         ]),
@@ -1464,7 +1481,7 @@ describe("operatorSnapshotPublish", () => {
         previous: first.dailyCharts,
       });
 
-      expect(firstRunQueryCount).toBe(48);
+      expect(firstRunQueryCount).toBe(49);
       expect(queries).toHaveLength(9);
       expect(queries.every((sql) => /_hourly/.test(sql))).toBe(true);
       expect(second.failedChartIds).toEqual([]);
@@ -1866,7 +1883,7 @@ describe("operatorSnapshotPublish", () => {
 
       const startCalls = mockAthenaSend.mock.calls.filter(([command]) => command.constructor.name === "StartQueryExecutionCommand");
       expect(startCalls).toHaveLength(WINDOWED_QUERY_COUNT + FAST_WINDOW_VIEW_COUNT);
-      expect(startCalls).toHaveLength(43);
+      expect(startCalls).toHaveLength(44);
 
       expect(snapshot.environment).toBe("test");
       expect(snapshot.objectives).toHaveLength(10);
@@ -2645,7 +2662,7 @@ describe("operatorSnapshotPublish", () => {
       await handler();
 
       expect(mockS3Send.mock.calls.at(-3)[0].input).toEqual({ Bucket: "test-env-analytics-lake", Key: "snapshots/test/latest.json" });
-      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 39);
+      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 40);
     });
 
     test("a failing cost drivers query publishes the snapshot without them and counts as one failure", async () => {
