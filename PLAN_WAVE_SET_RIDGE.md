@@ -22,7 +22,7 @@ the set, with no deployment of its own.
 
 ## Status
 
-approved 2026-11-17 (the operator's `/iterate`). Waves 1 and 2 gated; wave 3 gating; wave 4 building.
+approved 2026-11-17 (the operator's `/iterate`). Waves 1 to 3 gated; wave 4 gating (batch-check on cloud worker anvil, the simulator suites locally); wave 5 building.
 
 ## The goal
 
@@ -88,7 +88,7 @@ State: gated 9a3d9d872 (batch-check: every gate PASS after the fixes below, dock
 | sources | WEB20 | Sonnet | `tax-sources.mjs`, the 50 source files |
 | dash-c | DASH43, DASH44 | Opus | stored data graph, retention graph |
 
-State: building.
+State: gated 4b52926ec (batch-check: every gate PASS; 7 simulator suites pass after the compliance test took WEB24's sentence-case headings). Fixes on the wave: the filing pages ask for the 480px picture (WEB26); terms, accessibility and privacy name support@ for a person's requests (WEB24).
 
 ### Wave 4: the last English copy
 
@@ -96,7 +96,7 @@ State: building.
 | --- | --- | --- | --- |
 | articles-c | WEB21, WEB22, WEB25, WEB27 | Sonnet, 2 agents | generators, calendar, page titles, the merged spreadsheets page |
 
-State: building.
+State: landed on `claude/ridge-w04` (97200d0b9); gate running.
 
 ### Wave 5: Welsh, after every English string is final
 
@@ -119,7 +119,7 @@ every page that MKT8 photographs. Each batch adds its keys to `i18n/cy.toml` in 
 conflict there is resolved by keeping both sides' keys, and `npm run build:welsh` writes the `cy/`
 pages after the last batch lands.
 
-State: pending.
+State: building. LANG9 committed (19447bda4, built from the wave 4 batch tip); welsh-vat-itsa (LANG10a), welsh-ch (LANG11a) and marketing (MKT8) running from it.
 
 ### Wave 6: the look wave
 
