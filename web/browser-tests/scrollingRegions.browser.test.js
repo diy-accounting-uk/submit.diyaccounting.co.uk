@@ -70,3 +70,15 @@ for (const width of [320, 640]) {
     });
   }
 }
+
+test("the calendar's update periods table sits in a focusable, named scroll box", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 320, height: 800 } });
+  const page = await context.newPage();
+  await serveRealSite(page);
+  await page.goto("http://localhost:3000/mtd-calendar.html", { waitUntil: "load" });
+  const box = page.locator(".table-scroll", { has: page.locator("#update-periods-caption") });
+  await expect(box).toHaveAttribute("tabindex", "0");
+  await expect(box).toHaveAttribute("role", "region");
+  await expect(box).toHaveAttribute("aria-labelledby", "update-periods-caption");
+  await context.close();
+});

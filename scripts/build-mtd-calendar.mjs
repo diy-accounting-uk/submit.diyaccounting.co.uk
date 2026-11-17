@@ -404,10 +404,10 @@ export function renderCalendarHtml(sources) {
     )
     .join("");
   const deadlineTable =
-    `<table class="deadline-table"><caption class="calendar-date">Standard update periods and deadlines</caption>` +
+    `<div class="table-scroll" role="region" tabindex="0" aria-labelledby="update-periods-caption"><table class="deadline-table"><caption id="update-periods-caption" class="calendar-date">Standard update periods and deadlines</caption>` +
     `<thead><tr><th scope="col">Update period</th><th scope="col">Deadline</th></tr></thead><tbody>` +
     QUARTERLY_FACT.rows.map(([period, deadline]) => `<tr><td>${period}</td><td>${deadline}</td></tr>`).join("") +
-    `</tbody></table>`;
+    `</tbody></table></div>`;
   const yearly =
     entryHtml(
       QUARTERLY_FACT,
