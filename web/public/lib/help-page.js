@@ -146,7 +146,7 @@ class HelpPage {
         <div class="no-results">
           <p>No questions match your search.</p>
           <p>Try different keywords, or <button type="button" class="link-button" id="clear-search">list every question</button>.</p>
-          <p><button type="button" class="support-button primary" id="no-results-support">Submit a Support Request</button></p>
+          <p><button type="button" class="support-button primary" id="no-results-support">Submit a support request</button></p>
         </div>
       `;
       document.getElementById("clear-search").addEventListener("click", () => {

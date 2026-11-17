@@ -9,7 +9,7 @@ const CATEGORY_LABELS = {
   "submission": "Submission",
   "bundles": "Bundles",
   "receipts": "Receipts",
-  "vat-basics": "VAT Basics",
+  "vat-basics": "VAT basics",
   "errors": "Errors",
 };
 
