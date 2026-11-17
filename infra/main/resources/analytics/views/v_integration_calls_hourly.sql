@@ -9,6 +9,9 @@ CREATE OR REPLACE VIEW v_integration_calls_hourly AS
 SELECT date_trunc('hour', started_at) AS hour,
        org,
        target,
+       coalesce(actor,
+                CASE WHEN regexp_like(function_name, '-env-(stripe-reconcile|trusted-event-to-github-issue)$')
+                     THEN 'system' ELSE 'unknown' END) AS actor,
        api,
        outcome,
        status,
@@ -18,4 +21,4 @@ SELECT date_trunc('hour', started_at) AS hour,
 FROM   dynamo_calls
 WHERE  change_type = 'INSERT' AND record_type = 'call' AND started_at IS NOT NULL
        AND dt >= current_date - interval '15' day
-GROUP  BY 1, 2, 3, 4, 5, 6, 7
+GROUP  BY 1, 2, 3, 4, 5, 6, 7, 8

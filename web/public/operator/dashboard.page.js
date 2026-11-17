@@ -652,6 +652,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const SUMMARY_COLUMN_LABELS = [
   "Organisation",
   "Status",
+  "Caller",
   "Today",
   "Previous day",
   "Last 7 days",
@@ -710,7 +711,8 @@ function renderIntegrationsSummary(integrations) {
     row.className = "integrations-summary-row";
     row.dataset.org = observation.org;
     row.dataset.status = observation.status;
-    [INTEGRATION_ORG_NAMES[observation.org] || observation.org, observation.status].forEach((text) => {
+    row.dataset.caller = observation.caller;
+    [INTEGRATION_ORG_NAMES[observation.org] || observation.org, observation.status, observation.caller].forEach((text) => {
       const cell = document.createElement("td");
       cell.textContent = text;
       row.appendChild(cell);

@@ -10,6 +10,7 @@ import { putIntegrationCall } from "@app/data/dynamoDbIntegrationCallRepository.
 import {
   recordedFetch,
   recordIntegrationCall,
+  callActorClass,
   integrationApi,
   integrationApiForGovTalk,
   INTEGRATION_CALL_RECORD_FAILED_METRIC,
@@ -184,6 +185,31 @@ describe("lib/integrationCalls", () => {
 
       await expect(sent).resolves.toBe(response);
       expect(failedMetricCount(consoleSpy)).toBe(1);
+    });
+  });
+
+  describe("actor of the caller", () => {
+    it("writes the actor the caller passes on the record", async () => {
+      await recordedFetch(URL_WITH_VRN, INIT, { ...CALL, actor: "test-user", fetchImplementation: async () => new Response("{}") });
+
+      expect(recordedItem().actor).toBe("test-user");
+    });
+
+    it("leaves a call with no actor without one, so the lake reads it unknown", async () => {
+      await recordedFetch(URL_WITH_VRN, INIT, { ...CALL, fetchImplementation: async () => new Response("{}") });
+
+      expect(recordedItem().actor).toBeUndefined();
+    });
+
+    it("reads a call with no request id as system, and a request as the class of its user", () => {
+      expect(callActorClass()).toBe("system");
+      const request = new Map([
+        ["requestId", "req-1"],
+        ["userEmail", "synthetic-local@test.diyaccounting.co.uk"],
+      ]);
+      expect(context.run(request, () => callActorClass())).toBe("test-user");
+      expect(context.run(new Map([["requestId", "test_req-2"]]), () => callActorClass())).toBe("test-user");
+      expect(context.run(new Map([["requestId", "req-3"]]), () => callActorClass())).toBe("customer");
     });
   });
 

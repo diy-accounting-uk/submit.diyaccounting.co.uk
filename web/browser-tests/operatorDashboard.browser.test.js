@@ -1131,9 +1131,11 @@ test.describe("Operator Dashboard", () => {
     await openTab(page, "integrations");
 
     const summary = page.locator("#integrationsSummaryPanel tr.integrations-summary-row");
-    await expect(summary).toHaveCount(7);
-    await expect(summary.nth(0).locator("td")).toHaveText(["HMRC", "200", "212", "215", "1,272", "5,512", "↑ 12.0%", "14,840"]);
+    await expect(summary).toHaveCount(8);
+    await expect(summary.nth(0).locator("td")).toHaveText(["HMRC", "200", "customer", "212", "215", "1,272", "5,512", "↑ 12.0%", "14,840"]);
     await expect(summary.nth(3).locator("td").nth(1)).toHaveText("timeout");
+    await expect(summary.nth(7).locator("td").nth(2)).toHaveText("other");
+    await expect(summary.nth(7).locator("td").nth(3)).toHaveText("192");
     await expect(page.locator("#integrationsAccountNote")).toContainText("Sign in to submit-prod 972912397388");
 
     const hmrc = page.locator("#integrationsHmrcPanel tr.integrations-call-row");
@@ -1227,7 +1229,28 @@ test.describe("Operator Dashboard", () => {
     await expect(requests.getByRole("button", { name: "HMRC", exact: true })).toBeVisible();
     const duration = page.locator('.chart-card[data-chart-id="integration-duration"]');
     await expect(duration.locator("h3")).toContainText("Average API request duration");
-    await expect(duration.locator(".chart-legend-item")).toHaveText(["HMRC", "Stripe", "Companies House"]);
+    await expect(duration.locator(".chart-legend-item")).toHaveText([
+      "HMRC, customer",
+      "Stripe, customer",
+      "Companies House, customer",
+      "Stripe, other",
+    ]);
+    await expect(duration.locator(".chart-legend-item[aria-pressed='true']")).toHaveCount(3);
+    await expect(requests.locator(".chart-legend-item[aria-pressed='true']")).toHaveText([
+      "All requests, customer",
+      "HMRC 2xx, customer",
+      "HMRC 4xx, customer",
+      "HMRC failed, customer",
+      "Stripe 2xx, customer",
+      "Stripe 4xx, customer",
+      "Companies House 2xx, customer",
+    ]);
+    await expect(requests.locator(".chart-legend-item[aria-pressed='false']")).toHaveText([
+      "All requests, test",
+      "HMRC 2xx, test",
+      "All requests, other",
+      "Stripe 2xx, other",
+    ]);
     await duration.locator("svg.chart-svg").hover({ position: { x: 300, y: 80 } });
     await expect(duration).toContainText(/\d(\.\d+)? (ms|s)/);
     await page.locator("#chartsPanel").screenshot({ path: "target/int3-screens/main-charts-1280.png" });

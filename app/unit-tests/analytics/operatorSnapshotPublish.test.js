@@ -47,7 +47,8 @@ vi.mock("@aws-sdk/client-s3", () => ({
 }));
 
 const mockBuildDataSection = vi.fn();
-vi.mock("@app/lib/operatorSnapshot/dataSection.js", () => ({
+vi.mock("@app/lib/operatorSnapshot/dataSection.js", async (importOriginal) => ({
+  ...(await importOriginal()),
   buildDataSection: (...args) => mockBuildDataSection(...args),
 }));
 
@@ -628,7 +629,7 @@ describe("operatorSnapshotPublish", () => {
       expect(all.hourlySql).toContain("FROM   v_integration_calls_hourly");
       expect(all.maxComponents).toBe(8);
       expect(all.labelOf("companies-house 4xx")).toBe("Companies House 4xx");
-      expect(chart.modes[1].sql).toContain("status_label AS component");
+      expect(chart.modes[1].sql).toContain("status_label || '@' || CASE WHEN actor IS NULL");
       expect(chart.modes[1].sql).toContain("org = 'hmrc'");
       expect(chart.modes[1].maxComponents).toBeUndefined();
     });
@@ -639,7 +640,7 @@ describe("operatorSnapshotPublish", () => {
       expect(chart.unit).toBe("ms");
       expect(chart.modes[0].total).toBeNull();
       expect(chart.modes[0].sql).toContain("sum(total_ms) / nullif(sum(calls), 0)");
-      expect(chart.modes[0].sql).toContain("org AS component");
+      expect(chart.modes[0].sql).toContain("org || '@' || CASE WHEN actor IS NULL");
       expect(chart.modes[0].labelOf("stripe")).toBe("Stripe");
       expect(chart.modes.map((mode) => mode.id)).toEqual(["organisation"]);
     });
@@ -649,33 +650,72 @@ describe("operatorSnapshotPublish", () => {
       const days = dailyChartDays(END_DAY);
       const hours = hourlyChartHours(new Date(`${END_DAY}T10:30:00Z`));
       const dailyRows = [
-        { day: END_DAY, component: "hmrc", value: "300" },
-        { day: END_DAY, component: "stripe", value: "100" },
+        { day: END_DAY, component: "hmrc@customer", value: "300" },
+        { day: END_DAY, component: "stripe@customer", value: "100" },
       ];
       const hourlyRows = [
-        { day: hours.at(-1), component: "stripe", value: "500" },
-        { day: hours.at(-1), component: "hmrc", value: "50" },
+        { day: hours.at(-1), component: "stripe@customer", value: "500" },
+        { day: hours.at(-1), component: "hmrc@customer", value: "50" },
       ];
 
       const daily = buildChartSeries({ days, rows: dailyRows, mode });
       const hourly = buildChartSeries({ days: hours, rows: hourlyRows, mode });
 
-      expect(daily.map((line) => line.id)).toEqual(["hmrc", "companies-house", "stripe"]);
-      expect(hourly.map((line) => line.id)).toEqual(["hmrc", "companies-house", "stripe"]);
+      expect(daily.map((line) => line.id)).toEqual(["hmrc@customer", "companies-house@customer", "stripe@customer"]);
+      expect(hourly.map((line) => line.id)).toEqual(["hmrc@customer", "companies-house@customer", "stripe@customer"]);
     });
 
     test("the requests graph orders its lines by organisation and status in every range", () => {
       const mode = buildDailyChartDefinitions().find((definition) => definition.id === "integration-requests").modes[0];
       const days = dailyChartDays(END_DAY);
       const hours = hourlyChartHours(new Date(`${END_DAY}T10:30:00Z`));
-      const lines = (day, values) => Object.entries(values).map(([component, value]) => ({ day, component, value: String(value) }));
+      const lines = (day, values) =>
+        Object.entries(values).map(([component, value]) => ({ day, component: `${component}@customer`, value: String(value) }));
 
       const daily = buildChartSeries({ days, rows: lines(END_DAY, { "stripe 2xx": 90, "hmrc 4xx": 5, "hmrc 2xx": 40 }), mode });
       const hourly = buildChartSeries({ days: hours, rows: lines(hours.at(-1), { "hmrc 2xx": 1, "stripe 2xx": 9, "hmrc 4xx": 4 }), mode });
 
-      const order = ["total", "hmrc 2xx", "hmrc 4xx", "stripe 2xx"];
+      const order = ["total@customer", "hmrc 2xx@customer", "hmrc 4xx@customer", "stripe 2xx@customer"];
       expect(daily.map((line) => line.id)).toEqual(order);
       expect(hourly.map((line) => line.id)).toEqual(order);
+    });
+
+    test("the requests graph draws each class of caller as its own lines and total, customer first", () => {
+      const mode = buildDailyChartDefinitions().find((definition) => definition.id === "integration-requests").modes[0];
+      const days = dailyChartDays(END_DAY);
+      const row = (component, value) => ({ day: END_DAY, component, value: String(value) });
+      const series = buildChartSeries({
+        days,
+        rows: [row("stripe 2xx@other", 8), row("hmrc 2xx@customer", 3), row("hmrc 2xx@test", 40), row("stripe 2xx@customer", 1)],
+        mode,
+      });
+
+      expect(series.map((line) => line.id)).toEqual([
+        "total@customer",
+        "hmrc 2xx@customer",
+        "stripe 2xx@customer",
+        "total@test",
+        "hmrc 2xx@test",
+        "total@other",
+        "stripe 2xx@other",
+      ]);
+      const byId = Object.fromEntries(series.map((line) => [line.id, line]));
+      expect(byId["total@customer"].label).toBe("All requests, customer");
+      expect(byId["hmrc 2xx@test"].label).toBe("HMRC 2xx, test");
+      expect(byId["total@customer"].values.at(-1)).toBe(4);
+      expect(byId["total@other"].values.at(-1)).toBe(8);
+      expect(byId["stripe 2xx@other"].description).toContain("Only calls made by an operator or a scheduled job.");
+    });
+
+    test("the duration graph keeps a zero line for each organisation in the customer class only", () => {
+      const mode = buildDailyChartDefinitions().find((definition) => definition.id === "integration-duration").modes[0];
+      const series = buildChartSeries({
+        days: dailyChartDays(END_DAY),
+        rows: [{ day: END_DAY, component: "stripe@other", value: "120" }],
+        mode,
+      });
+      expect(series.map((line) => line.id)).toEqual(["hmrc@customer", "companies-house@customer", "stripe@customer", "stripe@other"]);
+      expect(series.at(-1).label).toBe("Stripe, other");
     });
 
     test("the duration graph note holds for the daily and the hourly range", () => {

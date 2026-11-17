@@ -374,6 +374,7 @@ public class TableChangeDelivery extends Construct {
                 columns.add(column("record_type", "string"));
                 columns.add(column("org", "string"));
                 columns.add(column("target", "string"));
+                columns.add(column("actor", "string"));
                 columns.add(column("api", "string"));
                 columns.add(column("method", "string"));
                 columns.add(column("started_at", "timestamp"));

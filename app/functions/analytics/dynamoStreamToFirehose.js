@@ -196,6 +196,7 @@ function projectCall(image, eventName) {
     record_type: image.recordType ?? null,
     org: image.org ?? null,
     target: image.target ?? null,
+    actor: image.actor ?? null,
     api: image.api ?? null,
     method: image.method ?? null,
     started_at: typeof image.startedAt === "string" ? toParquetTimestamp(image.startedAt) : null,

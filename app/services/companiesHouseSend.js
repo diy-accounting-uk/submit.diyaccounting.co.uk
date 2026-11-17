@@ -6,7 +6,7 @@
 // service and the XML Gateway leaves through here, and each attempt writes one outbound call record.
 
 import { fetchWithTimeout, normalizeHeaders } from "../lib/httpFetch.js";
-import { integrationApi, integrationApiForGovTalk, recordedFetch } from "../lib/integrationCalls.js";
+import { callActorClass, integrationApi, integrationApiForGovTalk, recordedFetch } from "../lib/integrationCalls.js";
 
 const GATEWAY_TEST_FLAG = /<GatewayTest>\s*1\s*<\/GatewayTest>/;
 
@@ -36,6 +36,7 @@ async function sendRecorded(url, init, timeoutMs, { api, target }) {
     org: "companies-house",
     target,
     api,
+    actor: callActorClass(),
     fetchImplementation: async (sendUrl, sendInit) => (await fetchWithTimeout(sendUrl, sendInit, timeoutMs)).response,
   });
   return { response, duration: Date.now() - startedAt };

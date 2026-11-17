@@ -52,7 +52,7 @@ import {
   bedrockComponentExpression,
   bedrockModelObservationId,
 } from "../../lib/bedrockModels.js";
-import { buildDataSection } from "../../lib/operatorSnapshot/dataSection.js";
+import { actorClassSql, buildDataSection } from "../../lib/operatorSnapshot/dataSection.js";
 import { loadFixedRunningCosts } from "../../lib/runningCosts.js";
 import { loadOperators } from "../../lib/operators.js";
 import { loadFamilyAffiliateEmails } from "../../lib/familyAffiliates.js";
@@ -1107,6 +1107,18 @@ function integrationLongFormSql({ hourly, componentExpression, valueExpression, 
   );
 }
 
+// A call's actor class rides on its component after "@", so each line is one line of one class.
+// buildChartSeries splits the classes apart; customer lines come first and show at the start.
+const CALL_CLASSES = ["customer", "test", "synthetic", "other", "unknown"];
+const CALL_CLASS_PHRASES = {
+  customer: "made for a signed-in customer",
+  test: "made for a test user",
+  synthetic: "made by a probe",
+  other: "made by an operator or a scheduled job",
+  unknown: "recorded with no actor",
+};
+const CALL_CLASS_COMPONENT = `'@' || ${actorClassSql("actor")}`;
+
 const INTEGRATION_ORG_LABELS = { "hmrc": "HMRC", "companies-house": "Companies House", "stripe": "Stripe" };
 
 // The status class of a call: its first digit and "xx", or "failed" for a call with no response.
@@ -1115,7 +1127,7 @@ const INTEGRATION_STATUS_CLASS = "CASE WHEN status IS NULL THEN 'failed' ELSE ca
 const integrationRequestsMode = ({ id, label, org }) => {
   const orgFilter = org ? " AND org = '" + org + "'" : "";
   const query = {
-    componentExpression: org ? "status_label" : "org || ' ' || " + INTEGRATION_STATUS_CLASS,
+    componentExpression: (org ? "status_label" : "org || ' ' || " + INTEGRATION_STATUS_CLASS) + " || " + CALL_CLASS_COMPONENT,
     valueExpression: "sum(calls)",
     where: "target = 'live'" + orgFilter,
   };
@@ -1134,6 +1146,8 @@ const integrationRequestsMode = ({ id, label, org }) => {
     totalDescription: org
       ? `Live calls to ${INTEGRATION_ORG_LABELS[org]} of every status added together.`
       : "Live calls to every organisation added together.",
+    classes: CALL_CLASSES,
+    classPhrases: CALL_CLASS_PHRASES,
     ...(org ? {} : { maxComponents: 8 }),
     orderOf: org ? (component) => component : orderOf,
     labelOf: (component) => (org ? component : `${orgName(component)} ${component.split(" ").slice(1).join(" ")}`),
@@ -1155,11 +1169,13 @@ const integrationDurationMode = ({ id, label }) => {
     unit: "ms",
     total: null,
     componentOrder: Object.keys(INTEGRATION_ORG_LABELS),
+    classes: CALL_CLASSES,
+    classPhrases: CALL_CLASS_PHRASES,
     labelOf: (component) => INTEGRATION_ORG_LABELS[component] ?? component,
     descriptionOf: (component) =>
       `Average time until ${INTEGRATION_ORG_LABELS[component] ?? component} answered a live call, or until it failed.`,
-    sql: integrationLongFormSql({ hourly: false, componentExpression: "org", valueExpression, where }),
-    hourlySql: integrationLongFormSql({ hourly: true, componentExpression: "org", valueExpression, where }),
+    sql: integrationLongFormSql({ hourly: false, componentExpression: "org || " + CALL_CLASS_COMPONENT, valueExpression, where }),
+    hourlySql: integrationLongFormSql({ hourly: true, componentExpression: "org || " + CALL_CLASS_COMPONENT, valueExpression, where }),
   };
 };
 
@@ -1372,7 +1388,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "integrations",
       title: "API requests by organisation and status",
       unit: "count",
-      note: "Live calls to HMRC, Companies House and Stripe, so sandbox probes do not hide customer traffic. A call with no response reads failed. Days are UTC.",
+      note: "Live calls to HMRC, Companies House and Stripe, by the class of the caller. The customer lines show at the start; the lines for test users, probes, operators with scheduled jobs, and calls recorded before the caller was recorded start hidden and stay in the legend. A call with no response reads failed. Days are UTC.",
       modes: [
         integrationRequestsMode({ id: "all", label: "All" }),
         ...Object.entries(INTEGRATION_ORG_LABELS).map(([org, label]) => integrationRequestsMode({ id: org, label, org })),
@@ -1383,7 +1399,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "integrations",
       title: "Average API request duration",
       unit: "ms",
-      note: "Live calls only. The time until the response arrived, or until the call failed, averaged over the calls of each day or hour. Days are UTC.",
+      note: "Live calls only, by the class of the caller; the customer lines show at the start. The time until the response arrived, or until the call failed, averaged over the calls of each day or hour. Days are UTC.",
       modes: [integrationDurationMode({ id: "organisation", label: "By organisation" })],
     },
     {
@@ -2022,6 +2038,35 @@ export function hourlyChartHours(now, count = HOURLY_CHART_HOURS) {
  * line when the mode names one.
  */
 export function buildChartSeries({ days, rows, mode }) {
+  return mode.classes ? buildClassedChartSeries({ days, rows, mode }) : buildChartSeriesOfOneKind({ days, rows, mode });
+}
+
+// A mode with `classes` carries each row's class after "@" in its component. Each class is built
+// as a chart of its own (its total, its fold into Other, its order), then its lines are named
+// "<line>, <class>" with ids "<id>@<class>". Customer lines come first. A class with no rows has
+// no lines, except customer, which keeps the lines of a `componentOrder` at zero.
+function buildClassedChartSeries({ days, rows, mode }) {
+  const { classes, classPhrases, ...rest } = mode;
+  return classes.flatMap((name) => {
+    const classRows = rows
+      .filter((row) => typeof row.component === "string" && row.component.endsWith(`@${name}`))
+      .map((row) => ({ ...row, component: row.component.slice(0, -`@${name}`.length) }));
+    if (classRows.length === 0 && name !== classes[0]) return [];
+    const classMode = {
+      ...rest,
+      total: mode.total ? `${mode.total}, ${name}` : mode.total,
+      componentOrder: name === classes[0] ? mode.componentOrder : undefined,
+    };
+    return buildChartSeriesOfOneKind({ days, rows: classRows, mode: classMode }).map((line) => ({
+      ...line,
+      id: `${line.id}@${name}`,
+      label: line.isTotal ? line.label : `${line.label}, ${name}`,
+      ...(line.description ? { description: `${line.description} Only calls ${classPhrases[name]}.` } : {}),
+    }));
+  });
+}
+
+function buildChartSeriesOfOneKind({ days, rows, mode }) {
   const dayIndex = new Map(days.map((day, index) => [day, index]));
   const valuesByComponent = new Map();
   for (const row of rows) {

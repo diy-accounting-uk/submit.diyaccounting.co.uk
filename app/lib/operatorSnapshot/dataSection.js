@@ -47,6 +47,17 @@ export function actorClassOf(actor) {
 }
 
 /**
+ * The SQL expression that folds an actor column into the same classes as `actorClassOf`.
+ *
+ * @param {string} column
+ * @returns {string}
+ */
+export function actorClassSql(column) {
+  const branches = Object.entries(ACTOR_CLASS_BY_ACTOR).map(([actor, name]) => `WHEN ${column} = '${actor}' THEN '${name}'`);
+  return `CASE WHEN ${column} IS NULL OR ${column} = '' THEN 'unknown' ${branches.join(" ")} ELSE 'other' END`;
+}
+
+/**
  * One query: for each lake table, the items that exist now (the newest change of each key is not
  * a REMOVE), counted by actor.
  *

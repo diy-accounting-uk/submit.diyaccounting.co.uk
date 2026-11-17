@@ -11,7 +11,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { createLogger } from "../lib/logger.js";
 import { fetchWithTimeout, normalizeHeaders, DEFAULT_TIMEOUTS } from "../lib/httpFetch.js";
-import { integrationApiForGovTalk, recordedFetch } from "../lib/integrationCalls.js";
+import { callActorClass, integrationApiForGovTalk, recordedFetch } from "../lib/integrationCalls.js";
 import { parseXmlDocument, firstElementText, firstElement, allElements, escapeXmlText } from "../lib/xmlDom.js";
 import { parseXmlTree, canonicaliseElement, childElement, localName } from "../lib/xmlCanonical.js";
 
@@ -369,6 +369,7 @@ export async function postToTransactionEngine(url, xml, extraHeaders = {}) {
       org: "hmrc",
       target: process.env.HMRC_TRANSACTION_ENGINE_URL || xml.includes("<GatewayTest>1</GatewayTest>") ? "test" : "live",
       api: integrationApiForGovTalk("TE", xml),
+      actor: callActorClass(),
       fetchImplementation: async (requestUrl, init) => {
         const sent = await fetchWithTimeout(requestUrl, init, DEFAULT_TIMEOUTS.LONG);
         duration = sent.duration;

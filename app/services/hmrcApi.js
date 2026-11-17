@@ -29,7 +29,7 @@ import { checkFraudPreventionHeaderRules } from "../lib/fraudPreventionHeaderRul
 import { emitMetric } from "../lib/emfMetrics.js";
 import { integrationPathTemplate } from "../lib/dataMasking.js";
 import { HMRC_PRODUCTION_HOST, HMRC_SANDBOX_HOST, hmrcCallTarget } from "../lib/hmrcHosts.js";
-import { integrationApi, recordedFetch, recordIntegrationCall } from "../lib/integrationCalls.js";
+import { callActorClass, integrationApi, recordedFetch, recordIntegrationCall } from "../lib/integrationCalls.js";
 import { enqueueFraudPreventionHeaderCheck } from "../lib/fraudPreventionHeaderCheckQueue.js";
 
 /**
@@ -173,7 +173,7 @@ function classifyHmrcTarget(url) {
 export async function sendToHmrc(url, init = {}) {
   const target = classifyHmrcTarget(url);
   const method = init.method || "GET";
-  const call = { org: "hmrc", target: hmrcCallTarget(url), api: integrationApi(method, url) };
+  const call = { org: "hmrc", target: hmrcCallTarget(url), api: integrationApi(method, url), actor: callActorClass() };
   if (target.kind === "production" || target.kind === "sandbox") {
     const { refused, fph } = checkFraudPreventionHeaders(target, init);
     call.fph = fph;
@@ -377,7 +377,7 @@ export async function validateFraudPreventionHeaders(
     const response = await recordedFetch(
       validationUrl,
       { method: "GET", headers, signal: controller.signal },
-      { org: "hmrc", target: "test", api: integrationApi("GET", validationUrl) },
+      { org: "hmrc", target: "test", api: integrationApi("GET", validationUrl), actor: callActorClass() },
     );
     duration = Date.now() - startTime;
 

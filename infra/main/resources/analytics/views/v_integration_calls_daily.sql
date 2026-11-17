@@ -4,11 +4,13 @@
 -- Calls to HMRC, Companies House and Stripe each UK day, by organisation, target, api and
 -- outcome. total_ms is the sum of durations, so an average is total_ms / calls. The operator
 -- dashboard's Integrations table and graphs read this view; the target column keeps sandbox
--- and test traffic apart from live traffic.
+-- and test traffic apart from live traffic, and the actor column keeps customers apart from
+-- test users, probes and scheduled jobs.
 CREATE OR REPLACE VIEW v_integration_calls_daily AS
 SELECT day,
        org,
        target,
+       actor,
        api,
        outcome,
        status,
@@ -16,4 +18,4 @@ SELECT day,
        count(*)         AS calls,
        sum(duration_ms) AS total_ms
 FROM   v_integration_calls
-GROUP  BY 1, 2, 3, 4, 5, 6, 7
+GROUP  BY 1, 2, 3, 4, 5, 6, 7, 8

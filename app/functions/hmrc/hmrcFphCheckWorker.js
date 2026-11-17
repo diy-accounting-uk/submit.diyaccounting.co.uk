@@ -62,7 +62,7 @@ async function requestToken(clientSecret) {
       body,
       signal: AbortSignal.timeout(REQUEST_LIMIT_MS),
     },
-    { org: "hmrc", target: "test", api: "POST /oauth/token" },
+    { org: "hmrc", target: "test", api: "POST /oauth/token", actor: "system" },
   );
   const responseBody = await response.json().catch(() => ({}));
   return { response, responseBody };
@@ -186,7 +186,7 @@ export async function checkShape({ shapeHash, api, shape }, now = new Date()) {
         headers: { Accept: "application/vnd.hmrc.1.0+json", Authorization: `Bearer ${accessToken}`, ...synthetic },
         signal: controller.signal,
       },
-      { org: "hmrc", target: "test", api: VALIDATE_API },
+      { org: "hmrc", target: "test", api: VALIDATE_API, actor: "system" },
     );
     body = await response.json().catch(() => ({}));
   } finally {
