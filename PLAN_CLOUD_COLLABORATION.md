@@ -100,6 +100,10 @@ Actions are off, so a push to it starts nothing.
 | Repository | Created | Actions | Remote |
 | --- | --- | --- | --- |
 | `diy-accounting-uk/submit-cloud-anvil` | 2026-11-17 | off | `cloud-anvil` (not yet added) |
+| `diy-accounting-uk/submit-cloud-bugle` | 2026-11-17 | off | none (the script works by URL) |
+| `diy-accounting-uk/submit-cloud-cyclone` | 2026-11-17 | off | none (the script works by URL) |
+| `diy-accounting-uk/submit-cloud-dusk` | 2026-11-17 | off | none (the script works by URL) |
+| `diy-accounting-uk/submit-cloud-epoch` | 2026-11-17 | off | none (the script works by URL) |
 
 - The submit OIDC roles trust only `repo:diy-accounting-uk/submit.diyaccounting.co.uk` (and
   `root.diyaccounting.co.uk`), read on 2026-11-17, so a workflow in a work repository cannot
