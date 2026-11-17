@@ -168,7 +168,8 @@
           "target": "#companyLookupBtn",
           "caption": "Look up the company with Companies House.",
           "headline": "Look up the company",
-          "keyWord": "company"
+          "keyWord": "company",
+          "instruction": "Enter your company number, then choose Look up company."
         },
         {
           "action": "await",
@@ -197,7 +198,8 @@
           "target": "#authSubmitBtn",
           "caption": "Read the company's register data.",
           "headline": "Read the register",
-          "keyWord": "register"
+          "keyWord": "register",
+          "instruction": "Enter the Company authentication code, then choose Read register data."
         },
         {
           "action": "await",
@@ -260,7 +262,8 @@
           "target": "#previewBtn",
           "caption": "Preview the statement before anything is filed.",
           "headline": "Preview the statement",
-          "keyWord": "Preview"
+          "keyWord": "Preview",
+          "instruction": "Enter each director's other forenames and personal code, then choose Preview confirmation statement."
         },
         {
           "action": "await",
@@ -300,7 +303,8 @@
           "waitFor": "#authView",
           "caption": "Back from checkout, enter the authentication code again.",
           "headline": "Payment received",
-          "keyWord": "Payment"
+          "keyWord": "Payment",
+          "instruction": "Choose Submit to Companies House, pay at checkout, then enter the company authentication code again."
         },
         {
           "action": "type",
@@ -387,7 +391,8 @@
           "timeoutMs": 180000,
           "caption": "Companies House accepts the statement.",
           "headline": "The statement is accepted",
-          "keyWord": "accepts"
+          "keyWord": "accepts",
+          "instruction": "Choose Submit to Companies House, then read the result that says Companies House accepted the statement."
         },
         {
           "action": "hold",
@@ -410,7 +415,8 @@
           "scrollTo": "#pscFollowUp",
           "caption": "Two directors are also people with significant control.",
           "headline": "Directors who are PSCs",
-          "keyWord": "PSCs"
+          "keyWord": "PSCs",
+          "instruction": "Read the PSC follow-up: it lists the directors who are also people with significant control."
         },
         {
           "action": "hold",
@@ -423,7 +429,8 @@
           "secret": true,
           "caption": "Each PSC verifies with their own personal code, then files their statement.",
           "headline": "Enter the personal code",
-          "keyWord": "code"
+          "keyWord": "code",
+          "instruction": "Enter the first person's personal code, then choose their verify button."
         },
         {
           "action": "click",
@@ -437,7 +444,8 @@
           "timeoutMs": 180000,
           "caption": "Companies House accepts it.",
           "headline": "Accepted",
-          "keyWord": "Accepted"
+          "keyWord": "Accepted",
+          "instruction": "Read the result to check that Companies House accepted the verification statement."
         },
         {
           "action": "type",
@@ -446,7 +454,8 @@
           "secret": true,
           "caption": "Then the second person, with their own code.",
           "headline": "The second person",
-          "keyWord": "second"
+          "keyWord": "second",
+          "instruction": "Enter the second person's personal code, then choose their verify button."
         },
         {
           "action": "click",
@@ -464,7 +473,8 @@
           "caption": "Both people with significant control are verified.",
           "headline": "Both PSCs verified",
           "keyWord": "verified",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read the result to check that both people with significant control are verified."
         },
         {
           "action": "hold",
@@ -490,7 +500,8 @@
           "scrollTo": "#filingRecord",
           "caption": "Your copy of the confirmation statement shows the submission number, status and date.",
           "headline": "Your copy of the filing",
-          "keyWord": "copy"
+          "keyWord": "copy",
+          "instruction": "Read your copy with its submission number, status and date."
         },
         {
           "action": "hold",

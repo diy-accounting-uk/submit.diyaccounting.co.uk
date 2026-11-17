@@ -71,7 +71,8 @@
           "label": "the connection to come up",
           "caption": "Connected. The server just listed the tools it offers.",
           "headline": "Now connected",
-          "keyWord": "connected"
+          "keyWord": "connected",
+          "instruction": "Switch on the connection to run the npm package and wait for it to connect."
         }
       ]
     },
@@ -97,7 +98,8 @@
           },
           "caption": "open_book loads a set of accounts from a file.",
           "headline": "Open open_book",
-          "keyWord": "open_book"
+          "keyWord": "open_book",
+          "instruction": "Choose Tools, then choose open_book to read what it does."
         }
       ]
     },
@@ -131,7 +133,8 @@
           "label": "the book summary to come back",
           "caption": "The book is open. It has 171 lines and no failed checks.",
           "headline": "The book is open",
-          "keyWord": "open"
+          "keyWord": "open",
+          "instruction": "Enter the path of a book in Path to the book, then choose Execute Tool."
         }
       ]
     },
@@ -148,7 +151,8 @@
           },
           "caption": "derive_vat_return works out the nine VAT boxes for one quarter.",
           "headline": "Open derive_vat_return",
-          "keyWord": "derive_vat_return"
+          "keyWord": "derive_vat_return",
+          "instruction": "Choose derive_vat_return to read what it does."
         },
         {
           "action": "fill",
@@ -156,7 +160,8 @@
           "value": "2025-06-30",
           "caption": "The quarter ends on 30 June 2025.",
           "headline": "Pick the quarter",
-          "keyWord": "quarter"
+          "keyWord": "quarter",
+          "instruction": "Enter the quarter's last day in period end."
         },
         {
           "action": "click",
@@ -166,7 +171,8 @@
           },
           "caption": "Nothing is sent to HMRC. This tool only reads the book.",
           "headline": "Work out the boxes",
-          "keyWord": "boxes"
+          "keyWord": "boxes",
+          "instruction": "Choose Execute Tool; it only reads the book and sends nothing to HMRC."
         },
         {
           "action": "await",
@@ -174,7 +180,8 @@
           "label": "the VAT boxes to come back",
           "caption": "The nine boxes come back, each worked out from the book's own lines.",
           "headline": "The boxes come back",
-          "keyWord": "boxes"
+          "keyWord": "boxes",
+          "instruction": "Wait for the nine boxes to come back."
         },
         {
           "action": "scroll",
@@ -190,7 +197,8 @@
           "caption": "Net VAT due for the quarter, ready to check before anything is filed.",
           "headline": "Net VAT due",
           "keyWord": "VAT",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read netVatDue and check it before you file anything."
         },
         {
           "action": "hold",

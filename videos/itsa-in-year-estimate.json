@@ -7,10 +7,12 @@
   "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/hmrc/itsa/taxCalculation.html"],
   "hmrcServices": ["mtd-vat", "mtd-income-tax"],
   "environments": ["ci"],
-  "viewport": { "width": 1920, "height": 1080 },
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
   "deviceScaleFactor": 2,
   "fps": 30,
-
   "pacing": {
     "perCharMs": 80,
     "betweenActionsMs": 500,
@@ -21,7 +23,6 @@
     "waitCompressionAfterMs": 6000,
     "waitCompressionFactor": 8
   },
-
   "captions": {
     "fontPx": 40,
     "lineHeightPx": 56,
@@ -30,13 +31,14 @@
     "charsPerSecond": 16,
     "minMs": 1200,
     "fadeMs": 200,
-    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
   },
-
   "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
-
   "finalHoldMs": 4000,
-
   "scenes": [
     {
       "id": "home",
@@ -52,8 +54,18 @@
           "headline": "A sandbox preview",
           "keyWord": "sandbox"
         },
-        { "action": "point", "target": { "role": "heading", "name": "Activities" }, "dwellMs": 300 },
-        { "action": "hold", "ms": 400 }
+        {
+          "action": "point",
+          "target": {
+            "role": "heading",
+            "name": "Activities"
+          },
+          "dwellMs": 300
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        }
       ]
     },
     {
@@ -75,8 +87,13 @@
           "headline": "Confirm your identity",
           "keyWord": "identity"
         },
-        { "action": "consent" },
-        { "action": "hold", "ms": 400 }
+        {
+          "action": "consent"
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        }
       ]
     },
     {
@@ -87,7 +104,10 @@
       "steps": [
         {
           "action": "click",
-          "target": { "role": "link", "name": "Bundles" },
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          },
           "caption": "Bundles decide which activities you can run.",
           "headline": "Open your bundles",
           "keyWord": "bundles"
@@ -100,7 +120,10 @@
           "headline": "Unlock Self Assessment",
           "keyWord": "Self"
         },
-        { "action": "hold", "ms": 500 }
+        {
+          "action": "hold",
+          "ms": 500
+        }
       ]
     },
     {
@@ -114,7 +137,8 @@
           "waitFor": "#itsaCalculationTriggerForm",
           "caption": "Check what the year owes at any point, not just at the end.",
           "headline": "Check anytime",
-          "keyWord": "anytime"
+          "keyWord": "anytime",
+          "instruction": "Choose Go to tax calculation on the Self Assessment dashboard."
         },
         {
           "action": "type",
@@ -124,23 +148,30 @@
           "secret": true,
           "caption": "Your National Insurance number.",
           "headline": "Your NI number",
-          "keyWord": "NI"
+          "keyWord": "NI",
+          "instruction": "Enter your National Insurance number."
         },
-        { "action": "select", "target": "#taxYear", "value": "2026-27" },
+        {
+          "action": "select",
+          "target": "#taxYear",
+          "value": "2026-27"
+        },
         {
           "action": "select",
           "target": "#calculationType",
           "value": "in-year",
           "caption": "An in-year estimate, not the calculation a final declaration confirms.",
           "headline": "An in-year estimate",
-          "keyWord": "estimate"
+          "keyWord": "estimate",
+          "instruction": "Choose In-year estimate in the Calculation type list."
         },
         {
           "action": "testScenario",
           "value": "UK_SE_GIFTAID_EXAMPLE",
           "caption": "Ask HMRC to calculate now.",
           "headline": "Calculate now",
-          "keyWord": "Calculate"
+          "keyWord": "Calculate",
+          "instruction": "Choose Calculate to ask HMRC to work out the figure now."
         },
         {
           "action": "click",
@@ -158,14 +189,16 @@
           "timeoutMs": 60000,
           "caption": "HMRC shows this disclaimer before any figure.",
           "headline": "HMRC's disclaimer first",
-          "keyWord": "disclaimer"
+          "keyWord": "disclaimer",
+          "instruction": "Read the disclaimer that HMRC shows before the figures."
         },
         {
           "action": "caption",
           "text": "See the full HMRC access walkthrough in our HMRC authorisation video.",
           "holdMs": 1200,
           "headline": "Grant access, faster",
-          "keyWord": "faster"
+          "keyWord": "faster",
+          "instruction": "Give HMRC permission when it asks; the HMRC authorisation video shows this in full."
         },
         {
           "action": "point",
@@ -173,7 +206,8 @@
           "caption": "It is an estimate, and it can still change.",
           "headline": "Still an estimate",
           "keyWord": "estimate",
-          "dwellMs": 700
+          "dwellMs": 700,
+          "instruction": "Read the disclaimer: the figure is an estimate and can still change."
         },
         {
           "action": "point",
@@ -181,7 +215,8 @@
           "caption": "What the year owes so far, based on what's been submitted.",
           "headline": "What it owes so far",
           "keyWord": "owes",
-          "dwellMs": 700
+          "dwellMs": 700,
+          "instruction": "Read Total Income Tax and National Insurance due so far."
         },
         {
           "action": "point",
@@ -190,7 +225,8 @@
           "caption": "This is the estimate as HMRC made it: the calculation ID, its status and the date.",
           "headline": "The estimate as made",
           "keyWord": "estimate",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read the record for the calculation ID, its status and the date."
         },
         {
           "action": "hold",
@@ -203,9 +239,13 @@
           "caption": "What is due and how it is made up, as calculated so far.",
           "headline": "What is due so far",
           "keyWord": "due",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read the amounts due and how they are made up in the record."
         },
-        { "action": "hold", "ms": 2500 },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
         {
           "action": "hold",
           "ms": 800

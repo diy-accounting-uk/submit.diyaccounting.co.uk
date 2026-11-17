@@ -15,10 +15,12 @@
   ],
   "hmrcServices": ["mtd-vat", "mtd-income-tax"],
   "environments": ["ci"],
-  "viewport": { "width": 1920, "height": 1080 },
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
   "deviceScaleFactor": 2,
   "fps": 30,
-
   "pacing": {
     "perCharMs": 80,
     "betweenActionsMs": 500,
@@ -29,7 +31,6 @@
     "waitCompressionAfterMs": 6000,
     "waitCompressionFactor": 8
   },
-
   "captions": {
     "fontPx": 40,
     "lineHeightPx": 56,
@@ -38,13 +39,14 @@
     "charsPerSecond": 16,
     "minMs": 1200,
     "fadeMs": 200,
-    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
   },
-
   "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
-
   "finalHoldMs": 2500,
-
   "scenes": [
     {
       "id": "home",
@@ -60,8 +62,18 @@
           "headline": "A sandbox preview",
           "keyWord": "sandbox"
         },
-        { "action": "point", "target": { "role": "heading", "name": "Activities" }, "dwellMs": 300 },
-        { "action": "hold", "ms": 400 }
+        {
+          "action": "point",
+          "target": {
+            "role": "heading",
+            "name": "Activities"
+          },
+          "dwellMs": 300
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        }
       ]
     },
     {
@@ -83,8 +95,13 @@
           "headline": "Confirm your identity",
           "keyWord": "identity"
         },
-        { "action": "consent" },
-        { "action": "hold", "ms": 400 }
+        {
+          "action": "consent"
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        }
       ]
     },
     {
@@ -95,7 +112,10 @@
       "steps": [
         {
           "action": "click",
-          "target": { "role": "link", "name": "Bundles" },
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          },
           "caption": "Bundles decide which activities you can run.",
           "headline": "Open your bundles",
           "keyWord": "bundles"
@@ -108,7 +128,10 @@
           "headline": "Unlock Self Assessment",
           "keyWord": "Self"
         },
-        { "action": "hold", "ms": 500 }
+        {
+          "action": "hold",
+          "ms": 500
+        }
       ]
     },
     {
@@ -116,17 +139,62 @@
       "chapter": "File a quarter",
       "offCamera": true,
       "steps": [
-        { "action": "goto", "url": "/hmrc/itsa/selfEmploymentPeriod.html", "waitFor": "#itsaSelfEmploymentPeriodForm" },
-        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
-        { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "select", "target": "#taxYear", "value": "2024-25" },
-        { "action": "fill", "target": "#periodStartDate", "value": "2024-04-06" },
-        { "action": "fill", "target": "#periodEndDate", "value": "2024-07-05" },
-        { "action": "fill", "target": "#turnover", "value": "1000" },
-        { "action": "fill", "target": "#costOfGoods", "value": "150" },
-        { "action": "click", "target": "#submitBtn" },
-        { "action": "hmrcAuthorise", "timeoutMs": 60000 },
-        { "action": "await", "until": "#selfEmploymentPeriodResults", "label": "Filing the quarter", "timeoutMs": 60000 }
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/selfEmploymentPeriod.html",
+          "waitFor": "#itsaSelfEmploymentPeriodForm"
+        },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true
+        },
+        {
+          "action": "fill",
+          "target": "#businessId",
+          "value": "XBIS00000000001"
+        },
+        {
+          "action": "select",
+          "target": "#taxYear",
+          "value": "2024-25"
+        },
+        {
+          "action": "fill",
+          "target": "#periodStartDate",
+          "value": "2024-04-06"
+        },
+        {
+          "action": "fill",
+          "target": "#periodEndDate",
+          "value": "2024-07-05"
+        },
+        {
+          "action": "fill",
+          "target": "#turnover",
+          "value": "1000"
+        },
+        {
+          "action": "fill",
+          "target": "#costOfGoods",
+          "value": "150"
+        },
+        {
+          "action": "click",
+          "target": "#submitBtn"
+        },
+        {
+          "action": "hmrcAuthorise",
+          "timeoutMs": 60000
+        },
+        {
+          "action": "await",
+          "until": "#selfEmploymentPeriodResults",
+          "label": "Filing the quarter",
+          "timeoutMs": 60000
+        }
       ]
     },
     {
@@ -140,7 +208,8 @@
           "waitFor": "#itsaSelfEmploymentPeriodsForm",
           "caption": "Check what you've already told HMRC for this business.",
           "headline": "What's filed so far",
-          "keyWord": "filed"
+          "keyWord": "filed",
+          "instruction": "Choose Go to period summaries to list the quarters filed for a business."
         },
         {
           "action": "type",
@@ -150,7 +219,8 @@
           "secret": true,
           "caption": "Your National Insurance number.",
           "headline": "Your NI number",
-          "keyWord": "NI"
+          "keyWord": "NI",
+          "instruction": "Enter your National Insurance number."
         },
         {
           "action": "fill",
@@ -158,7 +228,8 @@
           "value": "XBIS00000000001",
           "caption": "The self-employment business's ID.",
           "headline": "The business ID",
-          "keyWord": "ID"
+          "keyWord": "ID",
+          "instruction": "Enter the self-employment business ID in Business ID."
         },
         {
           "action": "select",
@@ -166,15 +237,20 @@
           "value": "2024-25",
           "caption": "The tax year this business filed quarters in.",
           "headline": "Choose the tax year",
-          "keyWord": "year"
+          "keyWord": "year",
+          "instruction": "Choose the Tax year to list."
         },
-        { "action": "hold", "ms": 400 },
+        {
+          "action": "hold",
+          "ms": 400
+        },
         {
           "action": "click",
           "target": "#retrieveBtn",
           "caption": "Ask HMRC for the quarters on file.",
           "headline": "Ask HMRC for the list",
-          "keyWord": "list"
+          "keyWord": "list",
+          "instruction": "Choose List period summaries to ask HMRC for the quarters it holds."
         },
         {
           "scrollTo": "#periodsResults",
@@ -184,11 +260,22 @@
           "timeoutMs": 60000,
           "caption": "HMRC answers with each quarter and its period ID.",
           "headline": "Each quarter and its ID",
-          "keyWord": "ID"
+          "keyWord": "ID",
+          "instruction": "Read each quarter and its period ID in the results table."
         },
-        { "action": "point", "target": "#periodsTable", "dwellMs": 500 },
-        { "action": "still", "name": "self-employment-periods" },
-        { "action": "hold", "ms": 500 }
+        {
+          "action": "point",
+          "target": "#periodsTable",
+          "dwellMs": 500
+        },
+        {
+          "action": "still",
+          "name": "self-employment-periods"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        }
       ]
     },
     {
@@ -204,11 +291,32 @@
           "headline": "Open one quarter",
           "keyWord": "Open"
         },
-        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
-        { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "select", "target": "#taxYear", "value": "2024-25" },
-        { "action": "fill", "target": "#periodId", "value": "2017-04-06_2017-07-04" },
-        { "action": "hold", "ms": 400 },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true
+        },
+        {
+          "action": "fill",
+          "target": "#businessId",
+          "value": "XBIS00000000001"
+        },
+        {
+          "action": "select",
+          "target": "#taxYear",
+          "value": "2024-25"
+        },
+        {
+          "action": "fill",
+          "target": "#periodId",
+          "value": "2017-04-06_2017-07-04"
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        },
         {
           "action": "click",
           "target": "#retrieveBtn",
@@ -223,11 +331,22 @@
           "timeoutMs": 60000,
           "caption": "Turnover, other income and cost of goods for that quarter.",
           "headline": "Turnover and expenses",
-          "keyWord": "Turnover"
+          "keyWord": "Turnover",
+          "instruction": "Choose Retrieve period summary, then read the turnover, other income and cost of goods for the quarter."
         },
-        { "action": "point", "target": "#periodDetails", "dwellMs": 500 },
-        { "action": "still", "name": "self-employment-period-view" },
-        { "action": "hold", "ms": 500 }
+        {
+          "action": "point",
+          "target": "#periodDetails",
+          "dwellMs": 500
+        },
+        {
+          "action": "still",
+          "name": "self-employment-period-view"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        }
       ]
     },
     {
@@ -241,38 +360,74 @@
           "waitFor": "#itsaSelfEmploymentPeriodAmendForm",
           "caption": "Filed the wrong figure? Correct it here.",
           "headline": "Correct a filed figure",
-          "keyWord": "Correct"
+          "keyWord": "Correct",
+          "instruction": "Choose Go to amend a period summary to correct a quarter you have filed."
         },
-        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
-        { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true
+        },
+        {
+          "action": "fill",
+          "target": "#businessId",
+          "value": "XBIS00000000001"
+        },
         {
           "action": "select",
           "target": "#taxYear",
           "value": "2024-25",
           "caption": "The tax year the quarter was filed in.",
           "headline": "The tax year",
-          "keyWord": "year"
+          "keyWord": "year",
+          "instruction": "Choose the Tax year in which you filed the quarter."
         },
-        { "action": "fill", "target": "#periodId", "value": "2017-04-06_2017-07-04" },
-        { "action": "hold", "ms": 400 },
+        {
+          "action": "fill",
+          "target": "#periodId",
+          "value": "2017-04-06_2017-07-04"
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        },
         {
           "action": "fill",
           "target": "#turnover",
           "value": "1200",
           "caption": "Enter the corrected figures for that quarter.",
           "headline": "Enter the new figures",
-          "keyWord": "figures"
+          "keyWord": "figures",
+          "instruction": "Enter the corrected Turnover, Other income, Cost of goods and Other expenses."
         },
-        { "action": "fill", "target": "#otherIncome", "value": "50" },
-        { "action": "fill", "target": "#costOfGoods", "value": "180" },
-        { "action": "fill", "target": "#otherExpenses", "value": "40" },
-        { "action": "hold", "ms": 500 },
+        {
+          "action": "fill",
+          "target": "#otherIncome",
+          "value": "50"
+        },
+        {
+          "action": "fill",
+          "target": "#costOfGoods",
+          "value": "180"
+        },
+        {
+          "action": "fill",
+          "target": "#otherExpenses",
+          "value": "40"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        },
         {
           "action": "click",
           "target": "#submitBtn",
           "caption": "Send the correction to HMRC.",
           "headline": "Send the correction",
-          "keyWord": "correction"
+          "keyWord": "correction",
+          "instruction": "Choose Amend period summary."
         },
         {
           "action": "await",
@@ -281,21 +436,38 @@
           "timeoutMs": 60000,
           "caption": "HMRC accepts the amendment.",
           "headline": "HMRC accepts it",
-          "keyWord": "accepts"
+          "keyWord": "accepts",
+          "instruction": "Read the result to check that HMRC accepted the amendment."
         },
-        { "action": "scroll", "target": "#periodAmendResults" },
-        { "action": "hold", "ms": 600 },
+        {
+          "action": "scroll",
+          "target": "#periodAmendResults"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        },
         {
           "action": "point",
           "target": "#periodAmendResults h3",
           "caption": "Amended. HMRC now holds the corrected total.",
           "headline": "Amendment accepted",
           "keyWord": "accepted",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read the result to check that HMRC accepted the amendment and holds the corrected figures."
         },
-        { "action": "hold", "ms": 2500 },
-        { "action": "still", "name": "self-employment-period-amend" },
-        { "action": "hold", "ms": 1200 }
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "still",
+          "name": "self-employment-period-amend"
+        },
+        {
+          "action": "hold",
+          "ms": 1200
+        }
       ]
     },
     {
@@ -309,7 +481,8 @@
           "waitFor": "#itsaSelfEmploymentPeriodViewForm",
           "caption": "Open the quarter again to read the amended record.",
           "headline": "Read the amended record",
-          "keyWord": "amended"
+          "keyWord": "amended",
+          "instruction": "Choose Go to view a period summary, then look up the quarter you amended."
         },
         {
           "action": "type",
@@ -342,7 +515,8 @@
           "target": "#retrieveBtn",
           "caption": "Retrieve the quarter from HMRC.",
           "headline": "Retrieve the record",
-          "keyWord": "Retrieve"
+          "keyWord": "Retrieve",
+          "instruction": "Choose Retrieve period summary."
         },
         {
           "action": "await",
@@ -357,7 +531,8 @@
           "caption": "The record shows its period ID, its status and the date it was retrieved.",
           "headline": "Number, status and date",
           "keyWord": "status",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read the period ID, status and date retrieved at the top of the record."
         },
         {
           "action": "hold",
@@ -370,9 +545,13 @@
           "caption": "Below it, the corrected income and expenses HMRC now holds.",
           "headline": "The corrected totals",
           "keyWord": "corrected",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Check the corrected income and expenses in the record below its heading."
         },
-        { "action": "hold", "ms": 2500 },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
         {
           "action": "hold",
           "ms": 800

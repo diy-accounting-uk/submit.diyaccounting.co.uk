@@ -160,7 +160,8 @@
           "value": "2025-09-30",
           "caption": "Choose the period the return covers.",
           "headline": "Choose the period",
-          "keyWord": "period"
+          "keyWord": "period",
+          "instruction": "Enter your VAT registration number, then enter the Period end date of the return."
         },
         {
           "action": "hold",
@@ -179,7 +180,8 @@
           "file": "videos/books/brickwork-pro-ltd-vat.json",
           "caption": "Drop your diya-gl book on the form.",
           "headline": "Drop your book",
-          "keyWord": "book"
+          "keyWord": "book",
+          "instruction": "Drop your diya-gl book on the box that says Drop a book here."
         },
         {
           "action": "await",
@@ -188,7 +190,8 @@
           "timeoutMs": 30000,
           "caption": "The nine boxes fill from the book's own figures.",
           "headline": "The boxes fill",
-          "keyWord": "fill"
+          "keyWord": "fill",
+          "instruction": "Read the status line that says the nine boxes are filled from the book."
         },
         {
           "action": "scroll",
@@ -204,7 +207,8 @@
           "dwellMs": 500,
           "caption": "Box 1 is the VAT due on the period's sales.",
           "headline": "Box 1 from the book",
-          "keyWord": "sales"
+          "keyWord": "sales",
+          "instruction": "Check box 1, the VAT due on sales, against your book."
         },
         {
           "action": "point",
@@ -212,7 +216,8 @@
           "dwellMs": 500,
           "caption": "Box 4 is the VAT reclaimed on purchases.",
           "headline": "Box 4 from the book",
-          "keyWord": "reclaimed"
+          "keyWord": "reclaimed",
+          "instruction": "Check box 4, the VAT you reclaim on purchases, against your book."
         },
         {
           "action": "point",
@@ -220,7 +225,8 @@
           "dwellMs": 500,
           "caption": "Boxes 6 and 7 total sales and purchases.",
           "headline": "Boxes 6 and 7",
-          "keyWord": "purchases"
+          "keyWord": "purchases",
+          "instruction": "Check box 6, total sales, and box 7, total purchases, both excluding VAT."
         },
         {
           "action": "point",
@@ -228,7 +234,8 @@
           "dwellMs": 500,
           "caption": "Check every figure before you submit.",
           "headline": "Check the figures",
-          "keyWord": "Check"
+          "keyWord": "Check",
+          "instruction": "Check every figure against your records before you submit."
         },
         {
           "action": "hold",
@@ -243,7 +250,8 @@
           "target": "#declaration",
           "caption": "Tick the declaration to confirm the return is accurate.",
           "headline": "Confirm the declaration",
-          "keyWord": "declaration"
+          "keyWord": "declaration",
+          "instruction": "Tick the declaration that the information is true and complete."
         },
         {
           "action": "hold",
@@ -272,7 +280,8 @@
           "timeoutMs": 60000,
           "caption": "Sign in to HMRC and say yes.",
           "headline": "Grant HMRC access",
-          "keyWord": "HMRC"
+          "keyWord": "HMRC",
+          "instruction": "Choose Submit VAT return, then sign in to HMRC and give permission."
         },
         {
           "action": "hold",
@@ -308,7 +317,8 @@
           "dwellMs": 600,
           "caption": "The receipt is your record that it went through.",
           "headline": "Keep your receipt",
-          "keyWord": "receipt"
+          "keyWord": "receipt",
+          "instruction": "Read the receipt that HMRC returns, with its Form Bundle Number, and keep it as your record."
         },
         {
           "action": "hold",
@@ -329,7 +339,9 @@
       "chapter": "Your record",
       "still": true,
       "steps": [
-        { "action": "notePeriod" },
+        {
+          "action": "notePeriod"
+        },
         {
           "action": "click",
           "target": {
@@ -338,7 +350,8 @@
           },
           "caption": "Back to the activities, to read the return you filed.",
           "headline": "Read back what you filed",
-          "keyWord": "filed"
+          "keyWord": "filed",
+          "instruction": "Choose Activities to go back to the list of what you can do."
         },
         {
           "action": "hold",
@@ -349,7 +362,8 @@
           "target": "button:has-text('View VAT Return (HMRC)')",
           "caption": "Open the return you have just sent.",
           "headline": "Open View VAT Return",
-          "keyWord": "View"
+          "keyWord": "View",
+          "instruction": "Choose View VAT Return (HMRC)."
         },
         {
           "action": "await",
@@ -362,16 +376,25 @@
           "value": "{{submittedPeriodStart}}",
           "caption": "Then the period you filed.",
           "headline": "Choose the period",
-          "keyWord": "period"
+          "keyWord": "period",
+          "instruction": "Enter the Period start and Period end of the period you filed."
         },
-        { "action": "fill", "target": "#periodEnd", "value": "{{submittedPeriodEnd}}" },
-        { "action": "hold", "ms": 700 },
+        {
+          "action": "fill",
+          "target": "#periodEnd",
+          "value": "{{submittedPeriodEnd}}"
+        },
+        {
+          "action": "hold",
+          "ms": 700
+        },
         {
           "action": "click",
           "target": "#retrieveBtn",
           "caption": "Ask HMRC for the return on file.",
           "headline": "Ask HMRC for the record",
-          "keyWord": "record"
+          "keyWord": "record",
+          "instruction": "Choose View return to ask HMRC for the return on file."
         },
         {
           "action": "await",
@@ -380,7 +403,8 @@
           "timeoutMs": 450000,
           "caption": "HMRC sends back the return as it holds it.",
           "headline": "HMRC sends the record",
-          "keyWord": "record"
+          "keyWord": "record",
+          "instruction": "Wait for HMRC to send back the return it holds."
         },
         {
           "action": "scroll",
@@ -397,13 +421,17 @@
           "caption": "This is your record: the totals and the declaration, as submitted.",
           "headline": "Your record, as submitted",
           "keyWord": "record",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Check the totals and the declaration in your copy against what you submitted."
         },
         {
           "action": "still",
           "name": "submission-record"
         },
-        { "action": "hold", "ms": 4000 },
+        {
+          "action": "hold",
+          "ms": 4000
+        },
         {
           "action": "hold",
           "ms": 1500

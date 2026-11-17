@@ -171,7 +171,8 @@
           "expectsNavigation": true,
           "caption": "Open File Company Tax Return to find the company.",
           "headline": "Find the company",
-          "keyWord": "company"
+          "keyWord": "company",
+          "instruction": "Choose File Company Tax Return (HMRC, preview) on the activities page."
         },
         {
           "action": "await",
@@ -185,14 +186,16 @@
           "clear": true,
           "caption": "Type the company number.",
           "headline": "Enter the company number",
-          "keyWord": "number"
+          "keyWord": "number",
+          "instruction": "Enter your company number."
         },
         {
           "action": "click",
           "target": "#companyLookupBtn",
           "caption": "Look up the company with Companies House.",
           "headline": "Look up the company",
-          "keyWord": "company"
+          "keyWord": "company",
+          "instruction": "Choose Look up company."
         },
         {
           "action": "await",
@@ -205,7 +208,8 @@
           "caption": "Companies House confirms the company name.",
           "headline": "Confirm the company name",
           "keyWord": "name",
-          "dwellMs": 400
+          "dwellMs": 400,
+          "instruction": "Check that the company name Companies House shows is the company you mean."
         },
         {
           "action": "hold",
@@ -225,7 +229,8 @@
           "clear": true,
           "caption": "Type the Unique Taxpayer Reference.",
           "headline": "Enter the UTR",
-          "keyWord": "UTR"
+          "keyWord": "UTR",
+          "instruction": "Enter the Tax reference (Unique Taxpayer Reference)."
         },
         {
           "action": "fill",
@@ -242,7 +247,8 @@
           "value": "2026-03-31",
           "caption": "This period of account runs for 15 months, from 1 January 2025 to 31 March 2026.",
           "headline": "A 15 month period",
-          "keyWord": "15"
+          "keyWord": "15",
+          "instruction": "Enter the Period start and Period end of the 15-month period of account."
         },
         {
           "action": "await",
@@ -256,7 +262,8 @@
           "dwellMs": 700,
           "caption": "A Company Tax Return covers at most 12 months, so HMRC takes this period as two returns.",
           "headline": "Two returns, not one",
-          "keyWord": "two"
+          "keyWord": "two",
+          "instruction": "Read the notice under the period that says HMRC takes it as two returns."
         },
         {
           "action": "point",
@@ -265,7 +272,8 @@
           "dwellMs": 700,
           "caption": "Return 1 covers the first 12 months. Return 2 covers the last three.",
           "headline": "12 months, then three",
-          "keyWord": "three"
+          "keyWord": "three",
+          "instruction": "Read the list under the notice: return 1 covers the first 12 months and return 2 the rest."
         },
         {
           "action": "point",
@@ -274,7 +282,8 @@
           "dwellMs": 700,
           "caption": "You send return 1 first. The two returns cost one token.",
           "headline": "Two returns, one token",
-          "keyWord": "token"
+          "keyWord": "token",
+          "instruction": "Read the note: return 1 is sent first and both returns use one token."
         },
         {
           "action": "hold",
@@ -298,7 +307,8 @@
           "clear": true,
           "caption": "Type the profit and loss for the whole 15 months, then the balance sheet.",
           "headline": "Type the 15 month figures",
-          "keyWord": "figures"
+          "keyWord": "figures",
+          "instruction": "Enter the profit and loss for all 15 months, then each balance sheet line."
         },
         {
           "action": "type",
@@ -446,7 +456,8 @@
           "dwellMs": 600,
           "caption": "Where an answer can differ between the returns, the form has a column for each.",
           "headline": "A column for each return",
-          "keyWord": "column"
+          "keyWord": "column",
+          "instruction": "Check that the form has a column for each return where an answer can differ."
         },
         {
           "action": "fill",
@@ -460,7 +471,8 @@
           "value": "363",
           "caption": "Type the allowances for return 1, then for return 2.",
           "headline": "Allowances for each return",
-          "keyWord": "Allowances"
+          "keyWord": "Allowances",
+          "instruction": "Enter the allowances for return 1, then for return 2."
         },
         {
           "action": "fill",
@@ -474,7 +486,8 @@
           "value": "0",
           "caption": "Donations paid are also typed for each return.",
           "headline": "Donations for each return",
-          "keyWord": "Donations"
+          "keyWord": "Donations",
+          "instruction": "Enter the donations paid for return 1, then for return 2."
         },
         {
           "action": "click",
@@ -485,7 +498,8 @@
           },
           "caption": "Only return 2 has a loan to a director.",
           "headline": "A loan in return 2",
-          "keyWord": "loan"
+          "keyWord": "loan",
+          "instruction": "Choose Yes for the loan to a director in the return 2 column."
         },
         {
           "action": "fill",
@@ -540,7 +554,8 @@
           },
           "caption": "Tick the declaration to confirm both returns are accurate.",
           "headline": "Confirm the declaration",
-          "keyWord": "declaration"
+          "keyWord": "declaration",
+          "instruction": "Tick each of the four statements, then tick the declaration for both returns."
         },
         {
           "action": "hold",
@@ -558,7 +573,8 @@
           "target": "#previewBtn",
           "caption": "Preview both returns before anything is sent.",
           "headline": "Preview both returns",
-          "keyWord": "Preview"
+          "keyWord": "Preview",
+          "instruction": "Choose Preview the return, then read both returns before anything is sent."
         },
         {
           "action": "await",
@@ -573,7 +589,8 @@
           "dwellMs": 700,
           "caption": "The review shows return 1 first, with its own boxes and due date.",
           "headline": "Review return 1",
-          "keyWord": "1"
+          "keyWord": "1",
+          "instruction": "Read return 1 with its boxes and due date."
         },
         {
           "action": "point",
@@ -582,7 +599,8 @@
           "dwellMs": 700,
           "caption": "Then return 2, for the last three months.",
           "headline": "Review return 2",
-          "keyWord": "2"
+          "keyWord": "2",
+          "instruction": "Read return 2 with its boxes and due date."
         },
         {
           "action": "point",
@@ -591,7 +609,8 @@
           "dwellMs": 700,
           "caption": "One step sends both returns, in order.",
           "headline": "One send step",
-          "keyWord": "send"
+          "keyWord": "send",
+          "instruction": "Read the Send heading: one step sends both returns, in order."
         },
         {
           "action": "hold",
@@ -613,7 +632,8 @@
           "secret": true,
           "caption": "Type the company's Government Gateway user ID.",
           "headline": "Enter the Gateway user ID",
-          "keyWord": "Gateway"
+          "keyWord": "Gateway",
+          "instruction": "Enter the Government Gateway user ID."
         },
         {
           "action": "type",
@@ -623,7 +643,8 @@
           "secret": true,
           "caption": "Type the Government Gateway password.",
           "headline": "Enter the password",
-          "keyWord": "password"
+          "keyWord": "password",
+          "instruction": "Enter the Government Gateway password."
         },
         {
           "action": "point",
@@ -632,7 +653,8 @@
           "dwellMs": 700,
           "caption": "The two returns cost one token.",
           "headline": "Two returns, one token",
-          "keyWord": "token"
+          "keyWord": "token",
+          "instruction": "Check the cost under Submit to HMRC: both returns cost one token."
         },
         {
           "action": "click",
@@ -640,7 +662,8 @@
           "scrollTo": "#sendStepHeading",
           "caption": "Send return 1 and then return 2 to HMRC's test service.",
           "headline": "Send two returns",
-          "keyWord": "two"
+          "keyWord": "two",
+          "instruction": "Choose Submit to HMRC to send return 1 and then return 2."
         },
         {
           "action": "await",
@@ -666,7 +689,8 @@
           "scrollTo": "#hmrcHeading",
           "caption": "HMRC accepts return 1.",
           "headline": "HMRC accepts return 1",
-          "keyWord": "1"
+          "keyWord": "1",
+          "instruction": "Read the result to check that HMRC accepted return 1."
         },
         {
           "action": "await",
@@ -676,7 +700,8 @@
           "scrollTo": "#hmrcHeading",
           "caption": "Then HMRC accepts return 2.",
           "headline": "HMRC accepts return 2",
-          "keyWord": "2"
+          "keyWord": "2",
+          "instruction": "Read the result to check that HMRC accepted return 2."
         },
         {
           "action": "point",
@@ -685,7 +710,8 @@
           "dwellMs": 600,
           "caption": "Each return has its own IRmark.",
           "headline": "An IRmark for each",
-          "keyWord": "IRmark"
+          "keyWord": "IRmark",
+          "instruction": "Read the IRmark of each return in the result."
         },
         {
           "action": "hold",
@@ -698,7 +724,8 @@
           "scrollTo": "#receiptsTable",
           "caption": "Your receipts page lists both returns as one filing.",
           "headline": "One filing, two receipts",
-          "keyWord": "two"
+          "keyWord": "two",
+          "instruction": "Choose Receipts to find both returns listed as one filing."
         },
         {
           "action": "hold",

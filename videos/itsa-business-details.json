@@ -132,14 +132,16 @@
           "text": "HMRC keeps a list of the businesses behind your Self Assessment.",
           "holdMs": 1200,
           "headline": "See your businesses",
-          "keyWord": "businesses"
+          "keyWord": "businesses",
+          "instruction": "Read what this page does: it lists the businesses HMRC holds for your Self Assessment."
         },
         {
           "action": "caption",
           "text": "You are already signed in. See the full sign-in walkthrough in our sign-in video.",
           "holdMs": 1200,
           "headline": "Already signed in",
-          "keyWord": "signed"
+          "keyWord": "signed",
+          "instruction": "Check that the header shows you signed in; if it does not, choose Sign in first."
         },
         {
           "action": "click",
@@ -150,7 +152,8 @@
           "expectsNavigation": true,
           "caption": "Making Tax Digital for Income Tax starts from one dashboard.",
           "headline": "One dashboard for MTD",
-          "keyWord": "dashboard"
+          "keyWord": "dashboard",
+          "instruction": "Choose Self Assessment (HMRC, sandbox) on the Activities page."
         },
         {
           "action": "await",
@@ -165,7 +168,8 @@
           },
           "caption": "Business Details is the first step: which businesses does HMRC know about?",
           "headline": "Start with Business Details",
-          "keyWord": "Business"
+          "keyWord": "Business",
+          "instruction": "Choose Go to business details to see the businesses HMRC holds for you."
         },
         {
           "action": "await",
@@ -180,7 +184,8 @@
           "secret": true,
           "caption": "Type the National Insurance number HMRC asks for.",
           "headline": "Enter your NI number",
-          "keyWord": "NI"
+          "keyWord": "NI",
+          "instruction": "Enter your National Insurance number."
         },
         {
           "action": "hold",
@@ -191,7 +196,8 @@
           "target": "#retrieveBtn",
           "caption": "The first request sends you to HMRC to grant access.",
           "headline": "Ask HMRC for access",
-          "keyWord": "access"
+          "keyWord": "access",
+          "instruction": "Choose the retrieve button; the first request sends you to HMRC to give permission."
         }
       ]
     },
@@ -241,7 +247,8 @@
           "caption": "Each row carries a business ID. Every later Self Assessment filing needs it.",
           "headline": "Note each business ID",
           "keyWord": "ID",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read the business ID in each row of the results table; every later filing needs it."
         },
         {
           "action": "hold",

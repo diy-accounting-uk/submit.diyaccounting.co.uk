@@ -124,21 +124,24 @@
           "text": "HMRC can charge a penalty for a late VAT return or payment.",
           "holdMs": 1200,
           "headline": "Check for penalty points",
-          "keyWord": "penalty"
+          "keyWord": "penalty",
+          "instruction": "Read what this page does: it shows late-submission and late-payment penalties."
         },
         {
           "action": "caption",
           "text": "You are already signed in. See the full sign-in walkthrough in our sign-in video.",
           "holdMs": 1200,
           "headline": "Already signed in",
-          "keyWord": "signed"
+          "keyWord": "signed",
+          "instruction": "Check that the header shows you signed in; if it does not, choose Sign in first."
         },
         {
           "action": "click",
           "target": "button:has-text('VAT Penalties (HMRC)')",
           "caption": "Open VAT Penalties to check for penalty points.",
           "headline": "Open VAT Penalties",
-          "keyWord": "Penalties"
+          "keyWord": "Penalties",
+          "instruction": "Choose VAT Penalties (HMRC) on the Activities page."
         },
         {
           "action": "await",
@@ -152,7 +155,8 @@
           "clear": true,
           "caption": "Type the VAT registration number. There is no date range to set.",
           "headline": "Enter your VAT number",
-          "keyWord": "number"
+          "keyWord": "number",
+          "instruction": "Enter your VAT registration number; this page has no dates to set."
         },
         {
           "action": "testScenario",
@@ -167,7 +171,8 @@
           "target": "#retrieveBtn",
           "caption": "The first request sends you to HMRC to grant access.",
           "headline": "Ask HMRC for access",
-          "keyWord": "access"
+          "keyWord": "access",
+          "instruction": "Choose Retrieve penalties; the first request sends you to HMRC to give permission."
         }
       ]
     },
@@ -217,7 +222,8 @@
           "caption": "Any penalty points or charges show here.",
           "headline": "Read any penalty points",
           "keyWord": "penalty",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read the penalty points and charges that HMRC holds for the last 24 months."
         },
         {
           "action": "hold",

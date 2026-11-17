@@ -14,10 +14,12 @@
   ],
   "hmrcServices": ["mtd-vat", "mtd-income-tax"],
   "environments": ["ci"],
-  "viewport": { "width": 1920, "height": 1080 },
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
   "deviceScaleFactor": 2,
   "fps": 30,
-
   "pacing": {
     "perCharMs": 80,
     "betweenActionsMs": 500,
@@ -28,7 +30,6 @@
     "waitCompressionAfterMs": 6000,
     "waitCompressionFactor": 8
   },
-
   "captions": {
     "fontPx": 40,
     "lineHeightPx": 56,
@@ -37,9 +38,12 @@
     "charsPerSecond": 16,
     "minMs": 1200,
     "fadeMs": 200,
-    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
   },
-
   "suppress": [
     "#syntheticIndicator",
     "#feedbackEngagementBanner",
@@ -52,9 +56,7 @@
     ".entitlement-status",
     "#developerSection"
   ],
-
   "finalHoldMs": 2500,
-
   "scenes": [
     {
       "id": "home",
@@ -77,8 +79,18 @@
           "headline": "Sign in, faster",
           "keyWord": "faster"
         },
-        { "action": "point", "target": { "role": "heading", "name": "Activities" }, "dwellMs": 300 },
-        { "action": "hold", "ms": 400 }
+        {
+          "action": "point",
+          "target": {
+            "role": "heading",
+            "name": "Activities"
+          },
+          "dwellMs": 300
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        }
       ]
     },
     {
@@ -100,8 +112,13 @@
           "headline": "Confirm your identity",
           "keyWord": "identity"
         },
-        { "action": "consent" },
-        { "action": "hold", "ms": 400 }
+        {
+          "action": "consent"
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        }
       ]
     },
     {
@@ -112,7 +129,10 @@
       "steps": [
         {
           "action": "click",
-          "target": { "role": "link", "name": "Bundles" },
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          },
           "caption": "Bundles decide which activities you can run.",
           "headline": "Open your bundles",
           "keyWord": "bundles"
@@ -125,15 +145,25 @@
           "headline": "Unlock Self Assessment",
           "keyWord": "Self"
         },
-        { "action": "hold", "ms": 500 },
+        {
+          "action": "hold",
+          "ms": 500
+        },
         {
           "action": "click",
-          "target": { "role": "link", "name": "Activities" },
+          "target": {
+            "role": "link",
+            "name": "Activities"
+          },
           "caption": "Every activity starts from the home page.",
           "headline": "Go to activities",
           "keyWord": "activities"
         },
-        { "action": "await", "until": ".developer-mode-toggle", "label": "Waiting for the developer mode toggle" },
+        {
+          "action": "await",
+          "until": ".developer-mode-toggle",
+          "label": "Waiting for the developer mode toggle"
+        },
         {
           "action": "click",
           "target": ".developer-mode-toggle",
@@ -141,7 +171,10 @@
           "headline": "Ask for a business",
           "keyWord": "business"
         },
-        { "action": "hold", "ms": 400 }
+        {
+          "action": "hold",
+          "ms": 400
+        }
       ]
     },
     {
@@ -152,13 +185,20 @@
       "steps": [
         {
           "action": "click",
-          "target": { "role": "button", "name": "Self Assessment (HMRC, sandbox)" },
+          "target": {
+            "role": "button",
+            "name": "Self Assessment (HMRC, sandbox)"
+          },
           "expectsNavigation": true,
           "caption": "Making Tax Digital for Income Tax starts from one dashboard.",
           "headline": "One dashboard for MTD",
           "keyWord": "dashboard"
         },
-        { "action": "await", "until": "#businessPickerForm", "label": "Opening the ITSA dashboard" },
+        {
+          "action": "await",
+          "until": "#businessPickerForm",
+          "label": "Opening the ITSA dashboard"
+        },
         {
           "action": "type",
           "target": "#nino",
@@ -192,7 +232,10 @@
           "headline": "HMRC lists your businesses",
           "keyWord": "businesses"
         },
-        { "action": "hold", "ms": 400 }
+        {
+          "action": "hold",
+          "ms": 400
+        }
       ]
     },
     {
@@ -200,16 +243,56 @@
       "chapter": "Make the carry-back claim",
       "offCamera": true,
       "steps": [
-        { "action": "goto", "url": "/hmrc/itsa/lossesAndClaims.html", "waitFor": "#itsaLossesLoadForm" },
-        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
-        { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "select", "target": "#taxYear", "value": "2027-28" },
-        { "action": "checkHidden", "target": "#suspendTemporalValidations" },
-        { "action": "click", "target": "#loadBtn" },
-        { "action": "await", "until": "#lossesEditForm", "label": "Loading losses and claims" },
-        { "action": "fill", "target": "#previousYearGeneralIncome", "value": "150" },
-        { "action": "click", "target": "#saveBtn" },
-        { "action": "await", "until": "#lossesResults", "label": "Waiting for HMRC", "timeoutMs": 60000 }
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/lossesAndClaims.html",
+          "waitFor": "#itsaLossesLoadForm"
+        },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true
+        },
+        {
+          "action": "fill",
+          "target": "#businessId",
+          "value": "XBIS00000000001"
+        },
+        {
+          "action": "select",
+          "target": "#taxYear",
+          "value": "2027-28"
+        },
+        {
+          "action": "checkHidden",
+          "target": "#suspendTemporalValidations"
+        },
+        {
+          "action": "click",
+          "target": "#loadBtn"
+        },
+        {
+          "action": "await",
+          "until": "#lossesEditForm",
+          "label": "Loading losses and claims"
+        },
+        {
+          "action": "fill",
+          "target": "#previousYearGeneralIncome",
+          "value": "150"
+        },
+        {
+          "action": "click",
+          "target": "#saveBtn"
+        },
+        {
+          "action": "await",
+          "until": "#lossesResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000
+        }
       ]
     },
     {
@@ -223,33 +306,54 @@
           "waitFor": "#itsaAdjustmentsLoadForm",
           "caption": "This is the second half of a carry-back claim.",
           "headline": "The second half",
-          "keyWord": "second"
+          "keyWord": "second",
+          "instruction": "Choose Go to tax liability adjustments on the Self Assessment dashboard."
         },
-        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true
+        },
         {
           "action": "select",
           "target": "#taxYear",
           "value": "2026-27",
           "caption": "The earlier tax year the claim decreases.",
           "headline": "The earlier tax year",
-          "keyWord": "earlier"
+          "keyWord": "earlier",
+          "instruction": "Choose the earlier tax year in the Tax year the claim decreases list."
         },
-        { "action": "checkHidden", "target": "#suspendTemporalValidations" },
+        {
+          "action": "checkHidden",
+          "target": "#suspendTemporalValidations"
+        },
         {
           "action": "click",
           "target": "#loadBtn",
           "caption": "Load what HMRC already holds for that year.",
           "headline": "Load the earlier year",
-          "keyWord": "Load"
+          "keyWord": "Load",
+          "instruction": "Choose Load tax liability adjustments."
         },
-        { "action": "await", "until": "#adjustmentsEditForm", "label": "Loading tax liability adjustments" },
-        { "action": "testScenario", "target": "#calculationTestScenario", "value": "UK_SE_GIFTAID_EXAMPLE" },
+        {
+          "action": "await",
+          "until": "#adjustmentsEditForm",
+          "label": "Loading tax liability adjustments"
+        },
+        {
+          "action": "testScenario",
+          "target": "#calculationTestScenario",
+          "value": "UK_SE_GIFTAID_EXAMPLE"
+        },
         {
           "action": "click",
           "target": "#showEarlierYearBtn",
           "caption": "Retrieve HMRC's own calculation for that year.",
           "headline": "HMRC's own figure",
-          "keyWord": "figure"
+          "keyWord": "figure",
+          "instruction": "Choose Show that year's calculated liability."
         },
         {
           "action": "await",
@@ -258,26 +362,44 @@
           "timeoutMs": 60000,
           "caption": "The total Income Tax and National Insurance due, before this claim.",
           "headline": "Before this claim",
-          "keyWord": "Before"
+          "keyWord": "Before",
+          "instruction": "Read the total Income Tax and National Insurance due before this claim."
         },
-        { "action": "point", "target": "#earlierYearFigure", "dwellMs": 600 },
+        {
+          "action": "point",
+          "target": "#earlierYearFigure",
+          "dwellMs": 600
+        },
         {
           "action": "fill",
           "target": "#incomeTax",
           "value": "150",
           "caption": "Enter what the carry-back claim saves in Income Tax.",
           "headline": "What the claim saves",
-          "keyWord": "saves"
+          "keyWord": "saves",
+          "instruction": "Enter the Income Tax that the claim saves in Income Tax decrease."
         },
-        { "action": "fill", "target": "#class4", "value": "40" },
-        { "action": "fill", "target": "#capitalGainsTax", "value": "0" },
-        { "action": "hold", "ms": 400 },
+        {
+          "action": "fill",
+          "target": "#class4",
+          "value": "40"
+        },
+        {
+          "action": "fill",
+          "target": "#capitalGainsTax",
+          "value": "0"
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        },
         {
           "action": "click",
           "target": "#saveBtn",
           "caption": "Save the adjustment.",
           "headline": "Save the adjustment",
-          "keyWord": "Save"
+          "keyWord": "Save",
+          "instruction": "Choose Save tax liability adjustments."
         },
         {
           "action": "await",
@@ -286,7 +408,8 @@
           "timeoutMs": 60000,
           "caption": "HMRC accepts the adjustment. This year's liability is credited.",
           "headline": "Liability now credited",
-          "keyWord": "credited"
+          "keyWord": "credited",
+          "instruction": "Read the result to check that HMRC accepted the adjustment and credited the year."
         },
         {
           "action": "point",
@@ -295,9 +418,13 @@
           "caption": "Saved. This is the record as submitted: its reference, its status and the date.",
           "headline": "The record as submitted",
           "keyWord": "record",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read the record for its reference, its status and the date."
         },
-        { "action": "hold", "ms": 2500 },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
         {
           "action": "point",
           "scrollTo": "h1",
@@ -305,11 +432,21 @@
           "caption": "Each decrease you claimed is on the record, ready to keep.",
           "headline": "Keep this copy",
           "keyWord": "keep",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Check each decrease in the record and keep your copy."
         },
-        { "action": "hold", "ms": 2500 },
-        { "action": "still", "name": "itsa-carry-back-adjustments-final" },
-        { "action": "hold", "ms": 1200 }
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "still",
+          "name": "itsa-carry-back-adjustments-final"
+        },
+        {
+          "action": "hold",
+          "ms": 1200
+        }
       ]
     }
   ]

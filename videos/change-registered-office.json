@@ -108,7 +108,8 @@
           "expectsNavigation": true,
           "caption": "Open Change Registered Office Address to find the company.",
           "headline": "Open the activity",
-          "keyWord": "office"
+          "keyWord": "office",
+          "instruction": "Choose Change Registered Office Address (Companies House) on the activities page."
         },
         {
           "action": "await",
@@ -122,14 +123,16 @@
           "clear": true,
           "caption": "Type the company number.",
           "headline": "Enter the company number",
-          "keyWord": "number"
+          "keyWord": "number",
+          "instruction": "Enter your company number."
         },
         {
           "action": "click",
           "target": "#companyLookupBtn",
           "caption": "This looks up the current address at Companies House.",
           "headline": "Look up the address",
-          "keyWord": "address"
+          "keyWord": "address",
+          "instruction": "Choose Look up current address."
         },
         {
           "action": "await",
@@ -142,7 +145,8 @@
           "caption": "This is the address on file today.",
           "headline": "The address on file",
           "keyWord": "address",
-          "dwellMs": 400
+          "dwellMs": 400,
+          "instruction": "Check the current registered office address on file."
         },
         {
           "action": "hold",
@@ -200,7 +204,8 @@
           "target": "#continueBtn",
           "caption": "Review before anything is filed.",
           "headline": "Review before filing",
-          "keyWord": "Review"
+          "keyWord": "Review",
+          "instruction": "Tick the statement that the company can be reached at the address, then choose Continue."
         },
         {
           "action": "hold",
@@ -238,7 +243,8 @@
           "caption": "Sign in to Companies House and say yes once.",
           "headline": "Grant Companies House access",
           "keyWord": "Grant",
-          "timeoutMs": 60000
+          "timeoutMs": 60000,
+          "instruction": "Choose File with Companies House, then sign in to Companies House and give permission."
         },
         {
           "action": "hold",
@@ -286,7 +292,8 @@
           "ms": 6500,
           "caption": "The record shows the submission number, the status, the date and the change as submitted.",
           "headline": "The filing record",
-          "keyWord": "record"
+          "keyWord": "record",
+          "instruction": "Wait for the outcome, then read your copy with its submission number, status, date and the change you filed."
         }
       ]
     }

@@ -5,10 +5,12 @@
   "description": "A signed-in walk through subscription bundles: what Subscribe starts, where an active subscription shows, and how it ends.",
   "auth": "user",
   "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html"],
-  "viewport": { "width": 1920, "height": 1080 },
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
   "deviceScaleFactor": 2,
   "fps": 30,
-
   "pacing": {
     "perCharMs": 90,
     "betweenActionsMs": 700,
@@ -19,7 +21,6 @@
     "waitCompressionAfterMs": 6000,
     "waitCompressionFactor": 8
   },
-
   "captions": {
     "fontPx": 40,
     "lineHeightPx": 56,
@@ -28,13 +29,14 @@
     "charsPerSecond": 15,
     "minMs": 1500,
     "fadeMs": 250,
-    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
   },
-
   "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
-
   "finalHoldMs": 3000,
-
   "scenes": [
     {
       "id": "home",
@@ -49,14 +51,28 @@
           "headline": "Sign in and day pass, faster",
           "keyWord": "faster"
         },
-        { "action": "hold", "ms": 300 }
+        {
+          "action": "hold",
+          "ms": 300
+        }
       ]
     },
     {
       "id": "sign-in",
       "chapter": "Sign in",
       "fastForward": true,
-      "steps": [{ "action": "click", "target": "a.login-link" }, { "action": "login" }, { "action": "consent" }]
+      "steps": [
+        {
+          "action": "click",
+          "target": "a.login-link"
+        },
+        {
+          "action": "login"
+        },
+        {
+          "action": "consent"
+        }
+      ]
     },
     {
       "id": "subscribe",
@@ -65,21 +81,36 @@
       "steps": [
         {
           "action": "click",
-          "target": { "role": "link", "name": "Bundles" },
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          },
           "caption": "A subscription bundle runs every month until you cancel it.",
           "headline": "Subscription bundles",
           "keyWord": "Subscription"
         },
-        { "action": "await", "until": "#catalogBundles .service-item", "label": "Loading the bundle catalogue" },
+        {
+          "action": "await",
+          "until": "#catalogBundles .service-item",
+          "label": "Loading the bundle catalogue"
+        },
         {
           "action": "scroll",
           "target": "button[data-bundle-id='resident-vat']",
           "caption": "Subscribe opens Stripe's own checkout, where a live site takes a card.",
           "headline": "Subscribe via Stripe",
-          "keyWord": "Stripe"
+          "keyWord": "Stripe",
+          "instruction": "Choose Bundles, find a subscription bundle and choose Subscribe to go to Stripe's checkout."
         },
-        { "action": "point", "target": "button[data-subscribe][data-bundle-id='resident-vat']", "dwellMs": 500 },
-        { "action": "hold", "ms": 1200 }
+        {
+          "action": "point",
+          "target": "button[data-subscribe][data-bundle-id='resident-vat']",
+          "dwellMs": 500
+        },
+        {
+          "action": "hold",
+          "ms": 1200
+        }
       ]
     },
     {
@@ -93,13 +124,31 @@
           "testPass": true,
           "caption": "Once active, it shows in your current bundles.",
           "headline": "See it as a current bundle",
-          "keyWord": "current"
+          "keyWord": "current",
+          "instruction": "Read your current bundles to check that the subscription is active."
         },
-        { "action": "await", "until": "#currentBundlesSection", "label": "Loading current bundles" },
-        { "action": "scroll", "target": "#currentBundlesSection" },
-        { "action": "point", "target": "#currentBundles", "dwellMs": 500 },
-        { "action": "hold", "ms": 1200 },
-        { "action": "still", "name": "subscription-active" }
+        {
+          "action": "await",
+          "until": "#currentBundlesSection",
+          "label": "Loading current bundles"
+        },
+        {
+          "action": "scroll",
+          "target": "#currentBundlesSection"
+        },
+        {
+          "action": "point",
+          "target": "#currentBundles",
+          "dwellMs": 500
+        },
+        {
+          "action": "hold",
+          "ms": 1200
+        },
+        {
+          "action": "still",
+          "name": "subscription-active"
+        }
       ]
     },
     {
@@ -119,9 +168,13 @@
           "text": "It opens Stripe's own billing portal — Cancel plan ends it.",
           "holdMs": 2500,
           "headline": "Cancel plan ends it",
-          "keyWord": "Cancel"
+          "keyWord": "Cancel",
+          "instruction": "Choose Manage Subscription, then Cancel plan in Stripe's billing portal, to end it."
         },
-        { "action": "hold", "ms": 600 }
+        {
+          "action": "hold",
+          "ms": 600
+        }
       ]
     }
   ]

@@ -5,17 +5,18 @@
   "description": "A sole trader starts a new Basic Sole Trader book in diya-gl, enters three sales and two purchases over April and May, and reads the profit from the year table and the P&L.",
   "auth": "none",
   "pages": ["videos/accounting-diya-gl-profit.json"],
-  "viewport": { "width": 1280, "height": 720 },
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
   "deviceScaleFactor": 2,
   "fps": 30,
-
   "localApp": {
     "command": "curl -fsS -o /dev/null -w 'diya-gl.co.uk answered %{http_code}\\n' https://diya-gl.co.uk/bst.html",
     "url": "https://diya-gl.co.uk",
     "readyPattern": "diya-gl.co.uk answered 200",
     "readyTimeoutMs": 30000
   },
-
   "pacing": {
     "perCharMs": 90,
     "betweenActionsMs": 700,
@@ -26,7 +27,6 @@
     "waitCompressionAfterMs": 6000,
     "waitCompressionFactor": 8
   },
-
   "captions": {
     "fontPx": 40,
     "lineHeightPx": 56,
@@ -35,11 +35,13 @@
     "charsPerSecond": 15,
     "minMs": 1500,
     "fadeMs": 250,
-    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
   },
-
   "finalHoldMs": 6000,
-
   "scenes": [
     {
       "id": "setup",
@@ -52,7 +54,10 @@
           "waitFor": "#donation-prompt-figures",
           "note": "diya-gl shows a donation card once per browser, the first time the year view holds figures, and a cookie banner until the visitor answers it. Opening an example book off camera uses up the card, and declining the banner answers it, so neither covers the recording. The example is opened by deep link, which the page never autosaves, so the next page load starts empty."
         },
-        { "action": "click", "target": "#consent-decline" }
+        {
+          "action": "click",
+          "target": "#consent-decline"
+        }
       ]
     },
     {
@@ -66,14 +71,16 @@
           "waitFor": "#new-book-btn",
           "caption": "This is diya-gl's Basic Sole Trader book. It's free and runs in your browser.",
           "headline": "A sole trader's books",
-          "keyWord": "books"
+          "keyWord": "books",
+          "instruction": "Open the Basic Sole Trader book in diya-gl."
         },
         {
           "action": "click",
           "target": "#new-book-btn",
           "caption": "Start a new book for your business.",
           "headline": "Start a new book",
-          "keyWord": "new"
+          "keyWord": "new",
+          "instruction": "Choose Start a new book."
         },
         {
           "action": "type",
@@ -81,7 +88,8 @@
           "text": "Sam Green Gardening",
           "caption": "Type your business name.",
           "headline": "Your business name",
-          "keyWord": "name"
+          "keyWord": "name",
+          "instruction": "Enter your business name."
         },
         {
           "action": "fill",
@@ -89,14 +97,19 @@
           "value": "2027-03-31",
           "caption": "Then the year end. 31 March 2027 covers the 2026 to 2027 tax year.",
           "headline": "Set the year end",
-          "keyWord": "year"
+          "keyWord": "year",
+          "instruction": "Enter the year end of the book."
         },
         {
           "action": "click",
-          "target": { "role": "button", "name": "Create book" },
+          "target": {
+            "role": "button",
+            "name": "Create book"
+          },
           "caption": "Create it. The book starts empty, with a row for every month.",
           "headline": "Create the book",
-          "keyWord": "Create"
+          "keyWord": "Create",
+          "instruction": "Choose Create book."
         },
         {
           "action": "await",
@@ -104,7 +117,8 @@
           "label": "the new book to open",
           "caption": "April is open. Sales go on the left, purchases on the right.",
           "headline": "Sales left, purchases right",
-          "keyWord": "Sales"
+          "keyWord": "Sales",
+          "instruction": "Find the add row for sales on the left and the one for purchases on the right."
         }
       ]
     },
@@ -119,30 +133,40 @@
           "value": "2026-04-10",
           "caption": "A sale. First, the date the customer paid you.",
           "headline": "Date of the sale",
-          "keyWord": "Date"
+          "keyWord": "Date",
+          "instruction": "Enter the date the customer paid you in the new sales entry."
         },
         {
           "action": "type",
-          "target": { "role": "textbox", "name": "Detail for the new sales entry" },
+          "target": {
+            "role": "textbox",
+            "name": "Detail for the new sales entry"
+          },
           "text": "Lawn and hedges, 12 Oak Road",
           "caption": "Then what the job was.",
           "headline": "What the job was",
-          "keyWord": "job"
+          "keyWord": "job",
+          "instruction": "Enter what the job was in Detail."
         },
         {
           "action": "type",
-          "target": { "role": "textbox", "name": "Amount for the new sales entry" },
+          "target": {
+            "role": "textbox",
+            "name": "Amount for the new sales entry"
+          },
           "text": "500",
           "caption": "And how much they paid: £500.",
           "headline": "Amount: £500",
-          "keyWord": "500"
+          "keyWord": "500",
+          "instruction": "Enter the amount the customer paid."
         },
         {
           "action": "click",
           "target": "[data-add-entry=\"sales\"]",
           "caption": "Add it. The book works out every total again.",
           "headline": "Add the sale",
-          "keyWord": "Add"
+          "keyWord": "Add",
+          "instruction": "Choose Add to save the sale."
         },
         {
           "action": "fill",
@@ -150,42 +174,77 @@
           "value": "2026-04-24",
           "caption": "A second job in April: a garden tidy for £300.",
           "headline": "A second sale",
-          "keyWord": "second"
+          "keyWord": "second",
+          "instruction": "Enter the date, detail and amount of a second sale, then choose Add."
         },
-        { "action": "type", "target": { "role": "textbox", "name": "Detail for the new sales entry" }, "text": "Garden tidy, 3 Mill Lane" },
-        { "action": "type", "target": { "role": "textbox", "name": "Amount for the new sales entry" }, "text": "300" },
-        { "action": "click", "target": "[data-add-entry=\"sales\"]" },
+        {
+          "action": "type",
+          "target": {
+            "role": "textbox",
+            "name": "Detail for the new sales entry"
+          },
+          "text": "Garden tidy, 3 Mill Lane"
+        },
+        {
+          "action": "type",
+          "target": {
+            "role": "textbox",
+            "name": "Amount for the new sales entry"
+          },
+          "text": "300"
+        },
+        {
+          "action": "click",
+          "target": "[data-add-entry=\"sales\"]"
+        },
         {
           "action": "fill",
           "target": "input[aria-label=\"Date for the new purchases entry\"]",
           "value": "2026-04-15",
           "caption": "Now a purchase: plants and compost for a job.",
           "headline": "A purchase",
-          "keyWord": "purchase"
+          "keyWord": "purchase",
+          "instruction": "Enter the date of a purchase in the new purchases entry."
         },
         {
           "action": "select",
-          "target": { "role": "combobox", "name": "Account for the new purchases entry" },
+          "target": {
+            "role": "combobox",
+            "name": "Account for the new purchases entry"
+          },
           "value": "5000",
           "caption": "Materials for your jobs go under cost of sales.",
           "headline": "Cost of sales",
-          "keyWord": "Cost"
+          "keyWord": "Cost",
+          "instruction": "Choose the Account for the purchase, such as Materials under cost of sales."
         },
-        { "action": "type", "target": { "role": "textbox", "name": "Detail for the new purchases entry" }, "text": "Plants and compost" },
         {
           "action": "type",
-          "target": { "role": "textbox", "name": "Amount for the new purchases entry" },
+          "target": {
+            "role": "textbox",
+            "name": "Detail for the new purchases entry"
+          },
+          "text": "Plants and compost"
+        },
+        {
+          "action": "type",
+          "target": {
+            "role": "textbox",
+            "name": "Amount for the new purchases entry"
+          },
           "text": "200",
           "caption": "They cost £200.",
           "headline": "Amount: £200",
-          "keyWord": "200"
+          "keyWord": "200",
+          "instruction": "Enter the amount you paid."
         },
         {
           "action": "click",
           "target": "[data-add-entry=\"purchases\"]",
           "caption": "Add it.",
           "headline": "Add the plants purchase",
-          "keyWord": "Add"
+          "keyWord": "Add",
+          "instruction": "Choose Add to save the purchase."
         },
         {
           "action": "point",
@@ -193,7 +252,8 @@
           "caption": "April so far: £800 of sales, £200 of costs, £600 profit.",
           "headline": "April's profit: £600",
           "keyWord": "profit",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read April's row for its sales, costs and profit."
         }
       ]
     },
@@ -207,14 +267,16 @@
           "target": "tr.year-row[data-month=\"2026-05\"]",
           "caption": "Open May by clicking its row.",
           "headline": "Open May",
-          "keyWord": "May"
+          "keyWord": "May",
+          "instruction": "Choose May's row in the year table to open the month."
         },
         {
           "action": "click",
           "target": "#entries-toggle",
           "caption": "Then show its entries.",
           "headline": "Show the entries",
-          "keyWord": "entries"
+          "keyWord": "entries",
+          "instruction": "Choose Show entries to list the month's entries."
         },
         {
           "action": "fill",
@@ -222,42 +284,77 @@
           "value": "2026-05-08",
           "caption": "A bigger job in May: a new border for £700.",
           "headline": "A sale in May",
-          "keyWord": "May"
+          "keyWord": "May",
+          "instruction": "Enter the date, detail and amount of a sale in May, then choose Add."
         },
-        { "action": "type", "target": { "role": "textbox", "name": "Detail for the new sales entry" }, "text": "New border, 7 Elm Close" },
-        { "action": "type", "target": { "role": "textbox", "name": "Amount for the new sales entry" }, "text": "700" },
-        { "action": "click", "target": "[data-add-entry=\"sales\"]" },
+        {
+          "action": "type",
+          "target": {
+            "role": "textbox",
+            "name": "Detail for the new sales entry"
+          },
+          "text": "New border, 7 Elm Close"
+        },
+        {
+          "action": "type",
+          "target": {
+            "role": "textbox",
+            "name": "Amount for the new sales entry"
+          },
+          "text": "700"
+        },
+        {
+          "action": "click",
+          "target": "[data-add-entry=\"sales\"]"
+        },
         {
           "action": "fill",
           "target": "input[aria-label=\"Date for the new purchases entry\"]",
           "value": "2026-05-12",
           "caption": "And leaflets to find new customers.",
           "headline": "A purchase in May",
-          "keyWord": "purchase"
+          "keyWord": "purchase",
+          "instruction": "Enter the date of a purchase in May."
         },
         {
           "action": "select",
-          "target": { "role": "combobox", "name": "Account for the new purchases entry" },
+          "target": {
+            "role": "combobox",
+            "name": "Account for the new purchases entry"
+          },
           "value": "5500",
           "caption": "Leaflets go under advertising.",
           "headline": "Advertising",
-          "keyWord": "Advertising"
+          "keyWord": "Advertising",
+          "instruction": "Choose Advertising as the Account."
         },
-        { "action": "type", "target": { "role": "textbox", "name": "Detail for the new purchases entry" }, "text": "Leaflets" },
         {
           "action": "type",
-          "target": { "role": "textbox", "name": "Amount for the new purchases entry" },
+          "target": {
+            "role": "textbox",
+            "name": "Detail for the new purchases entry"
+          },
+          "text": "Leaflets"
+        },
+        {
+          "action": "type",
+          "target": {
+            "role": "textbox",
+            "name": "Amount for the new purchases entry"
+          },
           "text": "100",
           "caption": "They cost £100.",
           "headline": "Amount: £100",
-          "keyWord": "100"
+          "keyWord": "100",
+          "instruction": "Enter the amount you paid."
         },
         {
           "action": "click",
           "target": "[data-add-entry=\"purchases\"]",
           "caption": "Add it.",
           "headline": "Add the leaflets purchase",
-          "keyWord": "Add"
+          "keyWord": "Add",
+          "instruction": "Choose Add to save the purchase."
         }
       ]
     },
@@ -276,7 +373,10 @@
         },
         {
           "action": "click",
-          "target": { "role": "tab", "name": "P&L" },
+          "target": {
+            "role": "tab",
+            "name": "P&L"
+          },
           "caption": "The P&L tab sets the same figures out as a profit and loss account.",
           "headline": "Open the P&L",
           "keyWord": "P&L"
@@ -286,17 +386,27 @@
           "until": "h2:text-is(\"Profit & Loss Account\")",
           "label": "the profit and loss account to show"
         },
-        { "action": "scroll", "target": ".panel-card [data-r-key^=\"cell/Profit & Loss Acc!C24 \"]" },
-        { "action": "hold", "ms": 600 },
+        {
+          "action": "scroll",
+          "target": ".panel-card [data-r-key^=\"cell/Profit & Loss Acc!C24 \"]"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        },
         {
           "action": "point",
           "target": ".panel-card [data-r-key^=\"cell/Profit & Loss Acc!C24 \"]",
           "caption": "Net profit: £1,200. That's your sales less what you spent to earn them.",
           "headline": "Net profit: £1,200",
           "keyWord": "1,200",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Choose the P&L tab, then read Net profit on the profit and loss account."
         },
-        { "action": "hold", "ms": 2500 }
+        {
+          "action": "hold",
+          "ms": 2500
+        }
       ]
     }
   ]

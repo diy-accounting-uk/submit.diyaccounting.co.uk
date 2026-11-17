@@ -5,10 +5,12 @@
   "description": "A signed-in walk through looking up a company: search by name or number, then read back its Companies House profile.",
   "auth": "user",
   "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/companies-house/companySearch.html"],
-  "viewport": { "width": 1920, "height": 1080 },
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
   "deviceScaleFactor": 2,
   "fps": 30,
-
   "pacing": {
     "perCharMs": 90,
     "betweenActionsMs": 700,
@@ -19,7 +21,6 @@
     "waitCompressionAfterMs": 6000,
     "waitCompressionFactor": 8
   },
-
   "captions": {
     "fontPx": 40,
     "lineHeightPx": 56,
@@ -28,13 +29,14 @@
     "charsPerSecond": 15,
     "minMs": 1500,
     "fadeMs": 250,
-    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
   },
-
   "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
-
   "finalHoldMs": 3000,
-
   "scenes": [
     {
       "id": "home",
@@ -57,7 +59,10 @@
           "headline": "Sign in, faster",
           "keyWord": "faster"
         },
-        { "action": "hold", "ms": 300 }
+        {
+          "action": "hold",
+          "ms": 300
+        }
       ]
     },
     {
@@ -79,13 +84,18 @@
           "headline": "Confirm your identity",
           "keyWord": "identity"
         },
-        { "action": "consent" },
+        {
+          "action": "consent"
+        },
         {
           "action": "await",
           "until": "button:has-text('Company Lookup (Companies House)')",
           "label": "Waiting for the activity to appear"
         },
-        { "action": "hold", "ms": 500 }
+        {
+          "action": "hold",
+          "ms": 500
+        }
       ]
     },
     {
@@ -95,12 +105,19 @@
       "steps": [
         {
           "action": "click",
-          "target": { "role": "button", "name": "Company Lookup (Companies House)" },
+          "target": {
+            "role": "button",
+            "name": "Company Lookup (Companies House)"
+          },
           "caption": "Open Company Lookup to search Companies House.",
           "headline": "Open Company Lookup",
           "keyWord": "Lookup"
         },
-        { "action": "await", "until": "#companySearchForm", "label": "Opening the company search form" },
+        {
+          "action": "await",
+          "until": "#companySearchForm",
+          "label": "Opening the company search form"
+        },
         {
           "action": "type",
           "target": "#companyQuery",
@@ -115,9 +132,13 @@
           "target": "#searchBtn",
           "caption": "Companies House answers with a profile.",
           "headline": "Companies House answers",
-          "keyWord": "answers"
+          "keyWord": "answers",
+          "instruction": "Enter a company name or number in Company name or number, then choose Search."
         },
-        { "action": "hold", "ms": 700 }
+        {
+          "action": "hold",
+          "ms": 700
+        }
       ]
     },
     {
@@ -147,19 +168,35 @@
           "headline": "Read the company profile",
           "keyWord": "profile"
         },
-        { "action": "scroll", "target": "#profileView" },
-        { "action": "hold", "ms": 600 },
+        {
+          "action": "scroll",
+          "target": "#profileView"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        },
         {
           "action": "point",
           "target": "#profileView h3",
           "caption": "Status, address and officers, straight from the register.",
           "headline": "Profile from the register",
           "keyWord": "register",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Choose the company in the results, then read its status, address and officers."
         },
-        { "action": "hold", "ms": 2500 },
-        { "action": "still", "name": "company-lookup-profile" },
-        { "action": "hold", "ms": 1500 }
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "still",
+          "name": "company-lookup-profile"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        }
       ]
     }
   ]

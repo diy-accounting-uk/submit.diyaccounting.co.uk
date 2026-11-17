@@ -5,10 +5,12 @@
   "description": "A signed-in walk through submission receipts: submit a VAT return off camera, then find and open its receipt.",
   "auth": "user",
   "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/hmrc/receipt/receipts.html"],
-  "viewport": { "width": 1920, "height": 1080 },
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
   "deviceScaleFactor": 2,
   "fps": 30,
-
   "pacing": {
     "perCharMs": 90,
     "betweenActionsMs": 700,
@@ -19,7 +21,6 @@
     "waitCompressionAfterMs": 6000,
     "waitCompressionFactor": 8
   },
-
   "captions": {
     "fontPx": 40,
     "lineHeightPx": 56,
@@ -28,13 +29,14 @@
     "charsPerSecond": 15,
     "minMs": 1500,
     "fadeMs": 250,
-    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
   },
-
   "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
-
   "finalHoldMs": 3000,
-
   "scenes": [
     {
       "id": "home",
@@ -57,7 +59,10 @@
           "headline": "Sign in and day pass, faster",
           "keyWord": "faster"
         },
-        { "action": "hold", "ms": 300 }
+        {
+          "action": "hold",
+          "ms": 300
+        }
       ]
     },
     {
@@ -66,10 +71,20 @@
       "still": true,
       "fastForward": true,
       "steps": [
-        { "action": "click", "target": "a.login-link" },
-        { "action": "login" },
-        { "action": "consent" },
-        { "action": "hold", "ms": 600 }
+        {
+          "action": "click",
+          "target": "a.login-link"
+        },
+        {
+          "action": "login"
+        },
+        {
+          "action": "consent"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        }
       ]
     },
     {
@@ -78,16 +93,33 @@
       "still": true,
       "fastForward": true,
       "steps": [
-        { "action": "click", "target": { "role": "link", "name": "Bundles" } },
-        { "action": "ensureBundle", "bundle": "Day pass", "testPass": true },
-        { "action": "hold", "ms": 700 }
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          }
+        },
+        {
+          "action": "ensureBundle",
+          "bundle": "Day pass",
+          "testPass": true
+        },
+        {
+          "action": "hold",
+          "ms": 700
+        }
       ]
     },
     {
       "id": "submit-a-return",
       "chapter": "Submit a return",
       "offCamera": true,
-      "steps": [{ "action": "submitReturn" }]
+      "steps": [
+        {
+          "action": "submitReturn"
+        }
+      ]
     },
     {
       "id": "receipts",
@@ -100,36 +132,56 @@
           "waitFor": "#receiptsTable",
           "caption": "Every past submission is listed here, newest first.",
           "headline": "See every receipt",
-          "keyWord": "receipts"
+          "keyWord": "receipts",
+          "instruction": "Open Receipts to see every past submission, newest first."
         },
         {
           "action": "click",
           "target": ".receipt-label",
           "caption": "Open one to see the full HMRC response.",
           "headline": "Open a receipt",
-          "keyWord": "Open"
+          "keyWord": "Open",
+          "instruction": "Choose the receipt you want to open."
         },
-        { "action": "await", "until": "#receiptDisplay", "label": "Opening the receipt" },
+        {
+          "action": "await",
+          "until": "#receiptDisplay",
+          "label": "Opening the receipt"
+        },
         {
           "action": "point",
           "target": "#receiptContent",
           "caption": "It carries HMRC's own confirmation, kept for your records.",
           "headline": "HMRC's own confirmation",
           "keyWord": "confirmation",
-          "dwellMs": 500
+          "dwellMs": 500,
+          "instruction": "Read HMRC's own confirmation in the receipt."
         },
-        { "action": "hold", "ms": 1500 },
+        {
+          "action": "hold",
+          "ms": 1500
+        },
         {
           "action": "point",
           "target": "#receiptContent .customer-copy-links",
           "caption": "This is your record of the submission: its number, its status and its date.",
           "headline": "Your record, as submitted",
           "keyWord": "record",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read the submission number, status and date at the end of the record."
         },
-        { "action": "hold", "ms": 4000 },
-        { "action": "still", "name": "my-receipts-detail" },
-        { "action": "hold", "ms": 1500 }
+        {
+          "action": "hold",
+          "ms": 4000
+        },
+        {
+          "action": "still",
+          "name": "my-receipts-detail"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        }
       ]
     }
   ]

@@ -5,10 +5,12 @@
   "description": "A signed-in walk through the part every other activity starts with: sign in, then take out a day pass so activities unlock.",
   "auth": "user",
   "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html"],
-  "viewport": { "width": 1920, "height": 1080 },
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
   "deviceScaleFactor": 2,
   "fps": 30,
-
   "pacing": {
     "perCharMs": 90,
     "betweenActionsMs": 700,
@@ -19,7 +21,6 @@
     "waitCompressionAfterMs": 6000,
     "waitCompressionFactor": 8
   },
-
   "captions": {
     "fontPx": 40,
     "lineHeightPx": 56,
@@ -28,14 +29,15 @@
     "charsPerSecond": 15,
     "minMs": 1500,
     "fadeMs": 250,
-    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
   },
-
   "consentAnswer": "declined",
   "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
-
   "finalHoldMs": 3500,
-
   "scenes": [
     {
       "id": "home",
@@ -48,10 +50,21 @@
           "waitFor": "#mainContent",
           "caption": "Every activity needs an account signed in first.",
           "headline": "Sign in first",
-          "keyWord": "Sign"
+          "keyWord": "Sign",
+          "instruction": "Check the header: it says Not signed in until you sign in."
         },
-        { "action": "point", "target": { "role": "heading", "name": "Activities" }, "dwellMs": 300 },
-        { "action": "hold", "ms": 600 }
+        {
+          "action": "point",
+          "target": {
+            "role": "heading",
+            "name": "Activities"
+          },
+          "dwellMs": 300
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        }
       ]
     },
     {
@@ -77,10 +90,16 @@
           "text": "Google sign-in follows this same page. Its consent screen is Google's own.",
           "holdMs": 3500,
           "headline": "Google follows the same path",
-          "keyWord": "Google"
+          "keyWord": "Google",
+          "instruction": "Choose Sign in, then sign in with your account and agree on the consent screen if one appears."
         },
-        { "action": "consent" },
-        { "action": "hold", "ms": 600 }
+        {
+          "action": "consent"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        }
       ]
     },
     {
@@ -90,7 +109,10 @@
       "steps": [
         {
           "action": "click",
-          "target": { "role": "link", "name": "Bundles" },
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          },
           "caption": "Bundles decide which activities you can run.",
           "headline": "Open your bundles",
           "keyWord": "bundles"
@@ -101,9 +123,13 @@
           "testPass": true,
           "caption": "A day pass opens the VAT activities for a day, no subscription needed.",
           "headline": "Get a day pass",
-          "keyWord": "pass"
+          "keyWord": "pass",
+          "instruction": "Choose Bundles, then request a day pass on the Bundles page."
         },
-        { "action": "hold", "ms": 700 }
+        {
+          "action": "hold",
+          "ms": 700
+        }
       ]
     },
     {
@@ -113,14 +139,28 @@
       "steps": [
         {
           "action": "click",
-          "target": { "role": "link", "name": "Activities" },
+          "target": {
+            "role": "link",
+            "name": "Activities"
+          },
           "caption": "Every activity starts from the home page, once you're signed in.",
           "headline": "Every activity starts here",
-          "keyWord": "activities"
+          "keyWord": "activities",
+          "instruction": "Choose Activities to see what your bundles let you do."
         },
-        { "action": "scroll", "target": "#dynamicActivities" },
-        { "action": "point", "target": "#dynamicActivities button:first-of-type", "dwellMs": 400 },
-        { "action": "hold", "ms": 1200 }
+        {
+          "action": "scroll",
+          "target": "#dynamicActivities"
+        },
+        {
+          "action": "point",
+          "target": "#dynamicActivities button:first-of-type",
+          "dwellMs": 400
+        },
+        {
+          "action": "hold",
+          "ms": 1200
+        }
       ]
     }
   ]

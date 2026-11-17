@@ -151,14 +151,16 @@
           "text": "This is a sandbox preview against HMRC's test service, not a live filing.",
           "holdMs": 1200,
           "headline": "A sandbox preview",
-          "keyWord": "sandbox"
+          "keyWord": "sandbox",
+          "instruction": "Read the sandbox notice: this page talks to HMRC's test service and files nothing live."
         },
         {
           "action": "caption",
           "text": "You are already signed in. See the full sign-in walkthrough in our sign-in video.",
           "holdMs": 1200,
           "headline": "Already signed in",
-          "keyWord": "signed"
+          "keyWord": "signed",
+          "instruction": "Check that the header shows you signed in; if it does not, choose Sign in first."
         },
         {
           "action": "click",
@@ -169,7 +171,8 @@
           "expectsNavigation": true,
           "caption": "Making Tax Digital for Income Tax starts from one dashboard.",
           "headline": "One dashboard for MTD",
-          "keyWord": "dashboard"
+          "keyWord": "dashboard",
+          "instruction": "Choose Self Assessment (HMRC, sandbox) on the Activities page."
         },
         {
           "action": "await",
@@ -184,7 +187,8 @@
           "secret": true,
           "caption": "Type the National Insurance number HMRC asks for.",
           "headline": "Enter your NI number",
-          "keyWord": "NI"
+          "keyWord": "NI",
+          "instruction": "Enter your National Insurance number."
         },
         {
           "action": "click",
@@ -205,7 +209,8 @@
           "timeoutMs": 60000,
           "caption": "HMRC answers with the businesses behind this Self Assessment.",
           "headline": "HMRC lists your businesses",
-          "keyWord": "businesses"
+          "keyWord": "businesses",
+          "instruction": "Read the businesses that HMRC lists."
         },
         {
           "action": "point",
@@ -213,7 +218,8 @@
           "caption": "Each business carries an ID.",
           "headline": "Note each business ID",
           "keyWord": "ID",
-          "dwellMs": 500
+          "dwellMs": 500,
+          "instruction": "Note the business ID beside each business."
         },
         {
           "action": "hold",
@@ -233,7 +239,8 @@
           "waitFor": "#businessPickerForm",
           "caption": "This year has a self-employment and a UK property business.",
           "headline": "Two businesses this year",
-          "keyWord": "Two"
+          "keyWord": "Two",
+          "instruction": "Choose Go to business details to list both businesses."
         },
         {
           "action": "click",
@@ -243,7 +250,8 @@
           },
           "caption": "Business Details lists every business by type.",
           "headline": "List businesses by type",
-          "keyWord": "type"
+          "keyWord": "type",
+          "instruction": "Choose Go to business details."
         },
         {
           "action": "await",
@@ -256,7 +264,8 @@
           "value": "BUSINESS_AND_PROPERTY",
           "caption": "This sandbox account holds a self-employment and a property business.",
           "headline": "Self-employment and property",
-          "keyWord": "property"
+          "keyWord": "property",
+          "instruction": "Choose the BUSINESS_AND_PROPERTY test scenario in the Test scenario list."
         },
         {
           "action": "type",
@@ -266,14 +275,16 @@
           "secret": true,
           "caption": "The same National Insurance number, every business.",
           "headline": "Same NI number",
-          "keyWord": "NI"
+          "keyWord": "NI",
+          "instruction": "Enter the same National Insurance number."
         },
         {
           "action": "click",
           "target": "#retrieveBtn",
           "caption": "The scope granted a moment ago still covers this.",
           "headline": "Same scope covers this",
-          "keyWord": "scope"
+          "keyWord": "scope",
+          "instruction": "Choose Retrieve business details; the permission you gave already covers it."
         },
         {
           "action": "await",
@@ -282,7 +293,8 @@
           "timeoutMs": 60000,
           "caption": "HMRC answers with both businesses and their IDs.",
           "headline": "Both businesses, two IDs",
-          "keyWord": "IDs"
+          "keyWord": "IDs",
+          "instruction": "Read both businesses and their business IDs in the results table."
         },
         {
           "action": "scroll",
@@ -295,7 +307,8 @@
           "caption": "One quarterly update form per business type, all year.",
           "headline": "One form per business",
           "keyWord": "business",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Note the business type of each row; each type has its own quarterly update form."
         },
         {
           "action": "still",
@@ -318,7 +331,8 @@
           "waitFor": "#itsaSelfEmploymentPeriodForm",
           "caption": "First quarter, the self-employment business.",
           "headline": "First quarter, self-employment",
-          "keyWord": "self-employment"
+          "keyWord": "self-employment",
+          "instruction": "Choose Go to file a quarterly update on the Self Assessment dashboard."
         },
         {
           "action": "type",
@@ -333,7 +347,8 @@
           "value": "XBIS00000000001",
           "caption": "This business's ID, from Business Details.",
           "headline": "The self-employment ID",
-          "keyWord": "ID"
+          "keyWord": "ID",
+          "instruction": "Enter the Business ID that Business Details listed."
         },
         {
           "action": "select",
@@ -341,7 +356,8 @@
           "value": "2024-25",
           "caption": "The tax year this quarter falls in.",
           "headline": "Choose the tax year",
-          "keyWord": "year"
+          "keyWord": "year",
+          "instruction": "Choose the Tax year of the quarter."
         },
         {
           "action": "fill",
@@ -359,7 +375,8 @@
           "value": "1000",
           "caption": "Then the quarter's income and expenses.",
           "headline": "Income and expenses",
-          "keyWord": "expenses"
+          "keyWord": "expenses",
+          "instruction": "Enter the quarter's Turnover and the expenses beside it."
         },
         {
           "action": "fill",
@@ -375,7 +392,8 @@
           "target": "#submitBtn",
           "caption": "File it with HMRC.",
           "headline": "File with HMRC",
-          "keyWord": "File"
+          "keyWord": "File",
+          "instruction": "Choose File quarterly update."
         },
         {
           "action": "await",
@@ -384,7 +402,8 @@
           "timeoutMs": 60000,
           "caption": "HMRC accepts the period summary.",
           "headline": "HMRC accepts the quarter",
-          "keyWord": "accepts"
+          "keyWord": "accepts",
+          "instruction": "Read the result to check that HMRC accepted the period summary."
         },
         {
           "action": "still",
@@ -407,7 +426,8 @@
           "waitFor": "#itsaUkPropertyPeriodForm",
           "caption": "Same quarter, the UK property business - its own form.",
           "headline": "Same quarter, property business",
-          "keyWord": "property"
+          "keyWord": "property",
+          "instruction": "Choose Go to file a quarterly update again, this time for the UK property business."
         },
         {
           "action": "type",
@@ -422,7 +442,8 @@
           "value": "XPIS00000000002",
           "caption": "The property business's own ID.",
           "headline": "The property ID",
-          "keyWord": "property"
+          "keyWord": "property",
+          "instruction": "Enter the property business ID in Business ID."
         },
         {
           "action": "select",
@@ -445,7 +466,8 @@
           "value": "800",
           "caption": "Rent received, and the expenses against it.",
           "headline": "Rent and expenses",
-          "keyWord": "Rent"
+          "keyWord": "Rent",
+          "instruction": "Enter the Rental income and the Repairs and maintenance for the quarter."
         },
         {
           "action": "fill",
@@ -461,7 +483,8 @@
           "target": "#submitBtn",
           "caption": "File it with HMRC.",
           "headline": "File with HMRC",
-          "keyWord": "File"
+          "keyWord": "File",
+          "instruction": "Choose File quarterly update."
         },
         {
           "action": "await",
@@ -470,7 +493,8 @@
           "timeoutMs": 60000,
           "caption": "Both businesses now have this quarter on file.",
           "headline": "Both businesses now filed",
-          "keyWord": "filed"
+          "keyWord": "filed",
+          "instruction": "Read the result to check that HMRC accepted the property update as well."
         },
         {
           "action": "still",
@@ -493,7 +517,8 @@
           "waitFor": "#itsaBsasTriggerForm",
           "caption": "HMRC works out a business source adjustable summary from the quarters filed.",
           "headline": "HMRC works out a summary",
-          "keyWord": "summary"
+          "keyWord": "summary",
+          "instruction": "Choose Go to year-end adjustments on the dashboard, then ask HMRC for a year-end summary of the quarters you filed."
         },
         {
           "action": "type",
@@ -527,7 +552,8 @@
           "target": "#triggerBtn",
           "caption": "Trigger the summary and read what HMRC calculated.",
           "headline": "Trigger HMRC's summary",
-          "keyWord": "summary"
+          "keyWord": "summary",
+          "instruction": "Choose Request year-end summary, then read what HMRC calculated."
         },
         {
           "action": "await",
@@ -536,7 +562,8 @@
           "timeoutMs": 60000,
           "caption": "Turnover, expenses and the net profit HMRC worked out.",
           "headline": "Turnover, expenses, net profit",
-          "keyWord": "profit"
+          "keyWord": "profit",
+          "instruction": "Read the turnover, expenses and net profit in HMRC's summary."
         },
         {
           "action": "point",
@@ -549,7 +576,8 @@
           "value": "1100",
           "caption": "Change a figure if HMRC's version is wrong, then submit.",
           "headline": "Correct a figure",
-          "keyWord": "Correct"
+          "keyWord": "Correct",
+          "instruction": "Edit any figure that HMRC's summary gets wrong, then choose Submit adjustment."
         },
         {
           "action": "fill",
@@ -599,7 +627,8 @@
           "waitFor": "#itsaAnnualLoadForm",
           "caption": "The last year-end step saves the annual submission.",
           "headline": "The annual submission",
-          "keyWord": "annual"
+          "keyWord": "annual",
+          "instruction": "Choose Go to annual submission on the Self Assessment dashboard."
         },
         {
           "action": "type",
@@ -623,7 +652,8 @@
           "target": "#loadBtn",
           "caption": "Load what HMRC already holds for the year.",
           "headline": "Load the year so far",
-          "keyWord": "Load"
+          "keyWord": "Load",
+          "instruction": "Choose Load annual submission."
         },
         {
           "action": "await",
@@ -635,7 +665,8 @@
           "target": "#allowanceTypeTrading",
           "caption": "Claim the trading income allowance instead of itemised ones.",
           "headline": "Claim the trading allowance",
-          "keyWord": "allowance"
+          "keyWord": "allowance",
+          "instruction": "Choose Trading income allowance, then enter the amount you claim."
         },
         {
           "action": "fill",
@@ -647,7 +678,8 @@
           "target": "#saveBtn",
           "caption": "Save the year's allowances and adjustments.",
           "headline": "Save allowances and adjustments",
-          "keyWord": "adjustments"
+          "keyWord": "adjustments",
+          "instruction": "Choose Save annual submission."
         },
         {
           "action": "await",
@@ -656,7 +688,8 @@
           "timeoutMs": 60000,
           "caption": "HMRC accepts the annual submission.",
           "headline": "HMRC accepts the year",
-          "keyWord": "accepts"
+          "keyWord": "accepts",
+          "instruction": "Read the result to check that HMRC accepted the annual submission."
         },
         {
           "action": "point",
@@ -665,7 +698,8 @@
           "caption": "Saved. This is the record as submitted: its reference, its status and the date.",
           "headline": "The record as submitted",
           "keyWord": "record",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read the record for its reference, its status and the date."
         },
         {
           "action": "hold",
@@ -678,9 +712,13 @@
           "caption": "Every figure you claimed is on the record, ready to keep.",
           "headline": "Keep this copy",
           "keyWord": "keep",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Check every figure you claimed in the record and keep your copy."
         },
-        { "action": "hold", "ms": 2500 },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
         {
           "action": "hold",
           "ms": 800

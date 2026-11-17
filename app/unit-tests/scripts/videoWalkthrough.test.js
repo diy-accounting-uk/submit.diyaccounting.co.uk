@@ -15,6 +15,7 @@ import {
   walkthroughWithScriptText,
   SETTLE_BACK_MS,
 } from "../../../scripts/video-walkthrough.js";
+import { GROUPS } from "../../../web/public/lib/guide-journeys.js";
 
 function step(sceneId, stepIndex, startMs, endMs) {
   return { sceneId, stepIndex, startMs, endMs };
@@ -327,8 +328,8 @@ describe("a step's instruction", () => {
   });
 });
 
-describe("the instructions of the four scene files that the how-to pages read", () => {
-  const ids = ["submit-return", "file-micro-entity-accounts", "file-small-company-accounts", "file-confirmation-statement"];
+describe("the instructions of every scene file that the guide shows", () => {
+  const ids = GROUPS.flatMap((group) => group.journeys.map((journey) => journey.video)).filter(Boolean);
   const words = (text) =>
     text
       .toLowerCase()
