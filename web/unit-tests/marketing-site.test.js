@@ -536,6 +536,7 @@ describe("listing register", () => {
       "softwarereview",
       "featuredcustomers",
       "linkedin",
+      "freeindex",
     ]);
     for (const place of ["Capterra", "Trustpilot", "AlternativeTo", "SaaSHub", "G2", "Product Hunt", "Yell", "AccountingWEB"]) {
       expect(
@@ -587,8 +588,8 @@ describe("listing register", () => {
   it("returns the live listings that carry a URL", () => {
     const withoutUrl = structuredClone(register);
     withoutUrl.listings.find((l) => l.id === "featuredcustomers").url = "";
-    expect(liveListings(register).map((l) => l.id)).toEqual(["trustpilot", "softwarereview", "featuredcustomers", "linkedin"]);
-    expect(liveListings(withoutUrl).map((l) => l.id)).toEqual(["trustpilot", "softwarereview", "linkedin"]);
+    expect(liveListings(register).map((l) => l.id)).toEqual(["trustpilot", "softwarereview", "featuredcustomers", "linkedin", "freeindex"]);
+    expect(liveListings(withoutUrl).map((l) => l.id)).toEqual(["trustpilot", "softwarereview", "linkedin", "freeindex"]);
   });
 
   it("tags each link with the listing's utm_source and the product", () => {
