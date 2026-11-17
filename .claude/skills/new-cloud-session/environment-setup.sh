@@ -10,11 +10,12 @@
 #   JAVA_HOME=/opt/jdk25
 # Network access: Full.
 set -euo pipefail
-# Node 24 (package.json engines)
-if ! node --version 2>/dev/null | grep -q '^v24'; then
+# Node 24 (package.json engines); /opt/node22/bin precedes /usr/local/bin on PATH
+if ! /usr/local/bin/node --version 2>/dev/null | grep -q '^v24'; then
 f=$(curl -fsSL https://nodejs.org/dist/latest-v24.x/SHASUMS256.txt | grep -o 'node-v24[^ ]*-linux-x64.tar.xz' | head -1)
 curl -fsSL "https://nodejs.org/dist/latest-v24.x/$f" | tar -xJ -C /usr/local --strip-components=1
 fi
+if [ -d /opt/node22/bin ]; then ln -sf /usr/local/bin/node /usr/local/bin/npm /usr/local/bin/npx /opt/node22/bin/; fi
 # JDK 25 (pom.xml target); JAVA_HOME=/opt/jdk25 is set in the environment variables
 if [ ! -x /opt/jdk25/bin/java ]; then
 mkdir -p /opt/jdk25
@@ -23,7 +24,10 @@ ln -sf /opt/jdk25/bin/* /usr/local/bin/
 fi
 node --version
 java -version
-# Dependencies and the Playwright browser, from the repository the session starts in
-npm ci
-(cd mcp && npm ci)
-npx playwright install --with-deps chromium
+# Dependencies and the Playwright browser, in each work repository checkout (the script starts in
+# /home/user, one level above the checkout)
+for d in submit-cloud-*/; do
+if [ -f "$d/package-lock.json" ]; then
+(cd "$d" && npm ci && (cd mcp && npm ci) && npx playwright install --with-deps chromium)
+fi
+done
