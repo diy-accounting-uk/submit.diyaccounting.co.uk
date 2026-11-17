@@ -542,12 +542,12 @@ export function renderRatesHtml(sources) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="UK tax rates and allowances for the self-employed and limited companies, 2025-26 and 2026-27, each linked to its gov.uk source, with a calculator that works out tax, National Insurance and corporation tax."
+      content="UK tax rates and allowances for the self-employed and limited companies, 2025-26 and 2026-27, each with its gov.uk source, and a tax calculator."
     />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/rates.html" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Rates and allowances - DIY Accounting Submit" />
-    <meta property="og:description" content="UK tax rates and allowances for the self-employed and limited companies, 2025-26 and 2026-27, each linked to its gov.uk source, with a calculator that works out tax, National Insurance and corporation tax." />
+    <meta property="og:description" content="UK tax rates and allowances for the self-employed and limited companies, 2025-26 and 2026-27, each with its gov.uk source, and a tax calculator." />
     <meta property="og:url" content="https://submit.diyaccounting.co.uk/rates.html" />
     <meta property="og:site_name" content="DIY Accounting" />
     <meta property="og:image" content="https://submit.diyaccounting.co.uk/images/social/og-submit.png" />

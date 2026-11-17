@@ -70,7 +70,7 @@ cy = '''Ffeilio Ffurflenni TAW a Chyfrifon Cwmni - DIY Accounting Submit'''
 
 [strings."index.description"]
 hash = "98e496d9f61d"
-cy = '''Ffeiliwch Ffurflenni TAW Troi Treth yn Ddigidol gyda CThEF a chyfrifon cwmni gyda Thŷ’r Cwmnïau o’ch taenlen. Mae Ffurflenni TAW yn costio £0.99 y mis neu £9.99 y flwyddyn.'''
+cy = '''Ffeiliwch Ffurflenni TAW gyda CThEF a chyfrifon cwmni gyda Thŷ’r Cwmnïau o’ch taenlen. Mae Ffurflenni TAW yn costio £0.99 y mis neu £9.99 y flwyddyn.'''
 
 [strings."index.heading"]
 hash = "25c70059633b"

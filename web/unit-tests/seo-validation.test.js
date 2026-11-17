@@ -334,3 +334,40 @@ describe("Structured data validation", () => {
     ]);
   });
 });
+
+describe("submit site page titles and descriptions", () => {
+  const sitemapXml = readFile(path.join(sites.submit.dir, "sitemap.xml"));
+  const sitemapFiles = extractSitemapUrls(sitemapXml).map((url) => {
+    const urlPath = new URL(url).pathname;
+    return urlPath === "/" ? "index.html" : urlPath.replace(/^\//, "");
+  });
+  const signedInPages = ["pass.html", "settings.html", "usage.html", "companies-house/filings.html", "hmrc/vat/submitVat.html"];
+  const SITE_NAME = "DIY Accounting Submit";
+
+  for (const fileName of [...sitemapFiles, ...signedInPages]) {
+    const filePath = path.join(sites.submit.dir, fileName);
+    if (!fs.existsSync(filePath)) continue;
+    const html = readFile(filePath);
+
+    it(`${fileName} title is "<Page> - ${SITE_NAME}" with a hyphen`, () => {
+      const title = html.match(/<title>(.+?)<\/title>/s)[1].trim();
+      expect(title.endsWith(` - ${SITE_NAME}`), `title "${title}" should end with " - ${SITE_NAME}"`).toBe(true);
+      expect(title.startsWith(SITE_NAME), `title "${title}" should not start with the site name`).toBe(false);
+      expect(title).not.toMatch(/[\u2013\u2014]/);
+    });
+  }
+
+  for (const fileName of sitemapFiles) {
+    const filePath = path.join(sites.submit.dir, fileName);
+    if (!fs.existsSync(filePath)) continue;
+    const html = readFile(filePath);
+
+    it(`${fileName} description is at most 160 characters and og:description is the same text`, () => {
+      const description = html.match(/name\s*=\s*"description"\s+content\s*=\s*"([^"]*)"/s)?.[1];
+      expect(description, `${fileName} should have a description`).toBeTruthy();
+      expect(description.length, `description is ${description.length} characters`).toBeLessThanOrEqual(160);
+      const og = html.match(/property\s*=\s*"og:description"\s+content\s*=\s*"([^"]*)"/s)?.[1];
+      if (og !== undefined) expect(og).toBe(description);
+    });
+  }
+});
