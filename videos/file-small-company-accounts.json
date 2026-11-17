@@ -169,6 +169,7 @@
           },
           "expectsNavigation": true,
           "caption": "Open File Small Company Accounts to find the company.",
+          "instruction": "Choose File Small Company Accounts (Companies House) on the activities page.",
           "headline": "Find the company",
           "keyWord": "company"
         },
@@ -183,6 +184,7 @@
           "text": "06846849",
           "clear": true,
           "caption": "Type the company number.",
+          "instruction": "Enter your company number.",
           "headline": "Enter the company number",
           "keyWord": "number"
         },
@@ -190,6 +192,7 @@
           "action": "click",
           "target": "#companyLookupBtn",
           "caption": "Look up the company with Companies House.",
+          "instruction": "Choose Look up company.",
           "headline": "Look up the company",
           "keyWord": "company"
         },
@@ -202,6 +205,7 @@
           "action": "point",
           "target": "#formCompanyName",
           "caption": "Companies House confirms the company name.",
+          "instruction": "Check that the company name Companies House shows is yours.",
           "headline": "Confirm the company name",
           "keyWord": "name",
           "dwellMs": 400
@@ -222,6 +226,7 @@
           "target": "#periodStart",
           "value": "{{yearsAgo:1}}",
           "caption": "Set the accounting period.",
+          "instruction": "Enter the first and last day of the accounting period as Period start and Period end.",
           "headline": "Set the accounting period",
           "keyWord": "period"
         },
@@ -235,6 +240,7 @@
           "target": "#currentTurnover",
           "value": "20000",
           "caption": "Start with the profit and loss for this year.",
+          "instruction": "Enter the profit and loss figures for this year, starting with turnover.",
           "headline": "This year's profit and loss",
           "keyWord": "profit"
         },
@@ -262,6 +268,7 @@
           "action": "point",
           "target": "#currentProfitAndLossTotals",
           "caption": "The form works out gross profit, operating profit and profit for the year.",
+          "instruction": "Check the gross profit, operating profit and profit for the year that Submit works out.",
           "headline": "Profit worked out",
           "keyWord": "Profit",
           "dwellMs": 500
@@ -271,6 +278,7 @@
           "target": "#currentFixedAssets",
           "value": "1000",
           "caption": "Then the balance sheet: assets, then what the company owes.",
+          "instruction": "Enter this year's balance sheet, starting with fixed assets and going on to what the company owes.",
           "headline": "The balance sheet",
           "keyWord": "balance"
         },
@@ -323,6 +331,7 @@
           "action": "point",
           "target": "#currentBalanceSheetTotals",
           "caption": "This checks net assets against capital and reserves.",
+          "instruction": "Check that the net assets shown equal your capital and reserves.",
           "headline": "Net assets must balance",
           "keyWord": "balance",
           "dwellMs": 500
@@ -331,6 +340,7 @@
           "action": "click",
           "target": "#includeComparatives",
           "caption": "Add last year's figures for comparison.",
+          "instruction": "Tick Include prior-year comparatives to add last year's figures.",
           "headline": "Add last year",
           "keyWord": "last"
         },
@@ -414,6 +424,7 @@
           "target": "#principalActivity",
           "text": "Software consultancy",
           "caption": "Say what the company does and how it states its figures.",
+          "instruction": "Enter the principal activity, the accounting policies and the average number of employees.",
           "headline": "Describe the company",
           "keyWord": "company"
         },
@@ -432,6 +443,7 @@
           "target": "#directors",
           "text": "Joanna Hale",
           "caption": "Name the directors.",
+          "instruction": "Enter the directors who held office during the period, one name on each line.",
           "headline": "Name the directors",
           "keyWord": "directors"
         },
@@ -440,6 +452,7 @@
           "target": "#directorName",
           "text": "Joanna Hale",
           "caption": "Name the director approving the accounts.",
+          "instruction": "Enter the name of the director approving the accounts and the date of approval.",
           "headline": "Name the approving director",
           "keyWord": "approving"
         },
@@ -452,6 +465,7 @@
           "action": "click",
           "target": "#statementSection477Exemption",
           "caption": "Accept the statutory statements.",
+          "instruction": "Tick each statutory statement that applies to your company, starting with the audit exemption under section 477.",
           "headline": "Accept the statements",
           "keyWord": "statements"
         },
@@ -495,6 +509,7 @@
           "action": "point",
           "target": "#previewRendered",
           "caption": "These are the accounts as they will be filed. Nothing has gone to Companies House yet.",
+          "instruction": "Choose Preview accounts, then read the accounts as they will be filed. Nothing is sent to Companies House yet.",
           "headline": "Nothing filed yet",
           "keyWord": "yet",
           "dwellMs": 600
@@ -526,6 +541,7 @@
           "scrollTo": "#submissionCost",
           "dwellMs": 700,
           "caption": "Filing costs one token. Submit the filing to Companies House.",
+          "instruction": "Enter the company's authentication code and check the cost, one token, then choose Submit to Companies House.",
           "headline": "Submit for one token",
           "keyWord": "token"
         },
@@ -552,6 +568,7 @@
           "label": "Waiting for Companies House",
           "timeoutMs": 180000,
           "caption": "The filing goes to Companies House.",
+          "instruction": "Wait while Companies House checks the filing.",
           "headline": "Companies House checks it",
           "keyWord": "checks"
         },
@@ -559,6 +576,7 @@
           "action": "point",
           "target": "#filingResult",
           "caption": "Companies House has the filing and reports the outcome here.",
+          "instruction": "Read the status that Companies House reports for the filing.",
           "headline": "Companies House has the filing",
           "keyWord": "filing",
           "dwellMs": 600
@@ -572,6 +590,7 @@
           "target": "#filingCopyLink",
           "expectsNavigation": true,
           "caption": "Open your copy of the filing.",
+          "instruction": "Choose See your copy of this filing.",
           "headline": "Open your copy",
           "keyWord": "copy"
         },
@@ -588,6 +607,7 @@
           "action": "scroll",
           "to": "bottom",
           "caption": "Your copy shows the filed accounts, the submission number and the status.",
+          "instruction": "Read your copy: the filed accounts, the submission number and the status.",
           "headline": "The filed accounts",
           "keyWord": "filed"
         },
@@ -603,6 +623,7 @@
           "action": "hold",
           "ms": 2500,
           "caption": "Your copy stays on your receipts page.",
+          "instruction": "Find your copy of the filing on the Receipts page whenever you need it.",
           "headline": "Kept on your receipts",
           "keyWord": "receipts"
         }

@@ -155,6 +155,7 @@
           "target": "#fromDate",
           "value": "{{monthsAgo:11}}",
           "caption": "Then the stretch of time to look at.",
+          "instruction": "Enter your VAT registration number and the dates to search between, then choose Retrieve obligations.",
           "headline": "Choose the start date",
           "keyWord": "start"
         },
@@ -205,6 +206,7 @@
           "action": "point",
           "target": "#obligationsTable",
           "caption": "An open period is still waiting for a return.",
+          "instruction": "Read the periods HMRC holds for you: a Fulfilled period already has its return, and an Open period is waiting for one.",
           "headline": "Find the open period",
           "keyWord": "open",
           "dwellMs": 600
@@ -221,6 +223,7 @@
           "action": "click",
           "target": { "role": "button", "name": "Submit return" },
           "caption": "Start a return for that open period.",
+          "instruction": "Choose Submit return beside the open period.",
           "headline": "Start the return",
           "keyWord": "Start"
         },
@@ -231,6 +234,7 @@
           "text": "1000.00",
           "clear": true,
           "caption": "Box 1 is the VAT due on your sales.",
+          "instruction": "Enter box 1, the VAT due in the period on sales and other outputs.",
           "headline": "Box 1, VAT on sales",
           "keyWord": "sales"
         },
@@ -240,6 +244,7 @@
           "text": "0.00",
           "clear": true,
           "caption": "Box 2 is VAT on EU acquisitions, usually zero now.",
+          "instruction": "Enter box 2, the VAT due on acquisitions of goods made in Northern Ireland from EU member states. Enter 0 if you have none.",
           "headline": "Box 2, usually zero",
           "keyWord": "zero"
         },
@@ -247,6 +252,7 @@
           "action": "point",
           "target": "#totalVatDue",
           "caption": "Box 3 adds boxes 1 and 2 for you.",
+          "instruction": "Check box 3, the total VAT due. Submit adds boxes 1 and 2 for you.",
           "headline": "Box 3 adds it up",
           "keyWord": "adds",
           "dwellMs": 500
@@ -257,6 +263,7 @@
           "text": "200.00",
           "clear": true,
           "caption": "Box 4 is VAT you can reclaim on purchases.",
+          "instruction": "Enter box 4, the VAT you reclaim in the period on purchases and other inputs.",
           "headline": "Box 4, VAT reclaimed",
           "keyWord": "reclaimed"
         },
@@ -264,6 +271,7 @@
           "action": "point",
           "target": "#netVatDue",
           "caption": "Box 5 works out what you owe overall.",
+          "instruction": "Check box 5, the net VAT to pay to HMRC or reclaim. Submit works it out from boxes 3 and 4.",
           "headline": "Box 5, the net total",
           "keyWord": "net",
           "dwellMs": 500
@@ -274,6 +282,7 @@
           "text": "5000",
           "clear": true,
           "caption": "Box 6 is your total sales, without VAT.",
+          "instruction": "Enter box 6, the total value of your sales and other outputs, excluding VAT.",
           "headline": "Box 6, total sales",
           "keyWord": "sales"
         },
@@ -283,6 +292,7 @@
           "text": "1000",
           "clear": true,
           "caption": "Box 7 is your total purchases, without VAT.",
+          "instruction": "Enter box 7, the total value of your purchases and other inputs, excluding VAT.",
           "headline": "Box 7, total purchases",
           "keyWord": "purchases"
         },
@@ -293,6 +303,7 @@
           "text": "0",
           "clear": true,
           "caption": "Boxes 8 and 9 cover EU trade, usually zero now.",
+          "instruction": "Enter boxes 8 and 9, the value of goods supplied to and acquired from EU member states, excluding VAT. Enter 0 if you have none.",
           "headline": "Boxes 8 and 9, EU trade",
           "keyWord": "EU"
         },
@@ -307,6 +318,7 @@
           "action": "click",
           "target": "#declaration",
           "caption": "Tick the declaration to confirm the return is accurate.",
+          "instruction": "Tick the declaration that the information is true and complete.",
           "headline": "Confirm the declaration",
           "keyWord": "declaration"
         },
@@ -328,6 +340,7 @@
         {
           "action": "hmrcAuthorise",
           "caption": "Sign in to HMRC and say yes again.",
+          "instruction": "Choose Submit VAT return, then sign in to HMRC and give permission again, because sending a return needs a wider grant than reading obligations.",
           "headline": "Grant HMRC access again",
           "keyWord": "again",
           "timeoutMs": 60000
@@ -355,6 +368,7 @@
           "action": "point",
           "target": "#receiptDisplay",
           "caption": "The receipt is your record that it went through.",
+          "instruction": "Read the receipt that HMRC returns, with its Form Bundle Number, and keep it as your record.",
           "headline": "Keep your receipt",
           "keyWord": "receipt",
           "dwellMs": 600
@@ -377,6 +391,7 @@
             "name": "Activities"
           },
           "caption": "Back to the activities, to read the return you filed.",
+          "instruction": "Choose Activities to go back to the list of what you can do.",
           "headline": "Read back what you filed",
           "keyWord": "filed"
         },
@@ -388,6 +403,7 @@
           "action": "click",
           "target": "button:has-text('View VAT Return (HMRC)')",
           "caption": "Open the return you have just sent.",
+          "instruction": "Choose View VAT Return (HMRC).",
           "headline": "Open View VAT Return",
           "keyWord": "View"
         },
@@ -401,6 +417,7 @@
           "target": "#periodStart",
           "value": "{{submittedPeriodStart}}",
           "caption": "Then the period you filed.",
+          "instruction": "Enter the start and end dates of the period you filed.",
           "headline": "Choose the period",
           "keyWord": "period"
         },
@@ -410,6 +427,7 @@
           "action": "click",
           "target": "#retrieveBtn",
           "caption": "Ask HMRC for the return on file.",
+          "instruction": "Choose View return to ask HMRC for the return on file.",
           "headline": "Ask HMRC for the record",
           "keyWord": "record"
         },
@@ -419,6 +437,7 @@
           "label": "Waiting for HMRC",
           "timeoutMs": 450000,
           "caption": "HMRC sends back the return as it holds it.",
+          "instruction": "Wait for HMRC to send back the return it holds.",
           "headline": "HMRC sends the record",
           "keyWord": "record"
         },
@@ -435,6 +454,7 @@
           "action": "point",
           "target": ".customer-copy-section:last-of-type .approval",
           "caption": "This is your record: the totals and the declaration, as submitted.",
+          "instruction": "Check the totals and the declaration in your copy against what you submitted.",
           "headline": "Your record, as submitted",
           "keyWord": "record",
           "dwellMs": 600

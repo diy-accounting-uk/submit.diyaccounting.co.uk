@@ -137,6 +137,7 @@
           "target": { "role": "button", "name": "File Micro-entity Accounts (Companies House)" },
           "expectsNavigation": true,
           "caption": "Open File Micro-entity Accounts to find the company.",
+          "instruction": "Choose File Micro-entity Accounts (Companies House) on the activities page.",
           "headline": "Find the company",
           "keyWord": "company"
         },
@@ -147,6 +148,7 @@
           "text": "06846849",
           "clear": true,
           "caption": "Type the company number.",
+          "instruction": "Enter your company number.",
           "headline": "Enter the company number",
           "keyWord": "number"
         },
@@ -154,6 +156,7 @@
           "action": "click",
           "target": "#companyLookupBtn",
           "caption": "Look up the company with Companies House.",
+          "instruction": "Choose Look up company.",
           "headline": "Look up the company",
           "keyWord": "company"
         },
@@ -162,6 +165,7 @@
           "action": "point",
           "target": "#formCompanyName",
           "caption": "Companies House confirms the company name.",
+          "instruction": "Check that the company name Companies House shows is yours.",
           "headline": "Confirm the company name",
           "keyWord": "name",
           "dwellMs": 400
@@ -179,6 +183,7 @@
           "target": "#periodStart",
           "value": "{{yearsAgo:1}}",
           "caption": "Set the accounting period.",
+          "instruction": "Enter the first and last day of the accounting period as Period start and Period end.",
           "headline": "Set the accounting period",
           "keyWord": "period"
         },
@@ -188,6 +193,7 @@
           "target": "#currentFixedAssets",
           "value": "1000",
           "caption": "Enter this year's balance sheet, then last year's for comparison.",
+          "instruction": "Enter each balance sheet line for this year and then for last year: fixed assets, current assets, creditors due within one year, called up share capital, profit and loss account, and capital and reserves.",
           "headline": "This year, then last year",
           "keyWord": "year"
         },
@@ -200,6 +206,7 @@
           "action": "point",
           "target": "#yearTotals",
           "caption": "This checks net assets against capital and reserves.",
+          "instruction": "Check that the net assets shown equal your capital and reserves.",
           "headline": "Net assets must balance",
           "keyWord": "balance",
           "dwellMs": 500
@@ -222,6 +229,7 @@
           "target": "#directorDateApproved",
           "value": "{{today}}",
           "caption": "Name the director approving the accounts.",
+          "instruction": "Enter the name of the director who approves the balance sheet and the date of approval.",
           "headline": "Name the approving director",
           "keyWord": "director"
         },
@@ -236,6 +244,7 @@
           "action": "click",
           "target": "#statementMicroEntityProvisions",
           "caption": "Accept the four statutory statements.",
+          "instruction": "Tick the four statements under Statements to accept each one.",
           "headline": "Accept the statements",
           "keyWord": "statements"
         },
@@ -260,6 +269,7 @@
           "target": "#previewRendered",
           "scrollTo": "#previewRendered",
           "caption": "These are the accounts as they will be filed. Nothing has gone to Companies House yet.",
+          "instruction": "Choose Preview accounts, then read the accounts as they will be filed. Nothing is sent to Companies House yet.",
           "headline": "Nothing filed yet",
           "keyWord": "yet",
           "dwellMs": 600
@@ -288,6 +298,7 @@
           "scrollTo": "#submissionCost",
           "dwellMs": 700,
           "caption": "Filing costs one token. Submit the filing to Companies House.",
+          "instruction": "Enter the company's authentication code and check the cost, one token, then choose Submit to Companies House.",
           "headline": "Submit for one token",
           "keyWord": "token"
         },
@@ -307,6 +318,7 @@
           "label": "Waiting for Companies House",
           "timeoutMs": 180000,
           "caption": "The filing goes to Companies House.",
+          "instruction": "Wait while Companies House checks the filing.",
           "headline": "Companies House checks it",
           "keyWord": "checks"
         },
@@ -314,6 +326,7 @@
           "action": "point",
           "target": "#filingResult",
           "caption": "Companies House has the filing and reports the outcome here.",
+          "instruction": "Read the status that Companies House reports for the filing.",
           "headline": "Companies House has the filing",
           "keyWord": "filing",
           "dwellMs": 600
@@ -324,6 +337,7 @@
           "target": "#filingCopyLink",
           "expectsNavigation": true,
           "caption": "Open your copy of the filing.",
+          "instruction": "Choose See your copy of this filing.",
           "headline": "Open your copy",
           "keyWord": "copy"
         },
@@ -333,6 +347,7 @@
           "action": "scroll",
           "scrollTo": { "role": "heading", "name": "Your copy of the accounts filed at Companies House" },
           "caption": "Your copy shows the filed accounts, the submission number and the status.",
+          "instruction": "Read your copy: the filed accounts, the submission number and the status.",
           "headline": "The filed accounts",
           "keyWord": "filed"
         },
@@ -344,6 +359,7 @@
           "action": "hold",
           "ms": 2500,
           "caption": "Your copy stays on your receipts page.",
+          "instruction": "Find your copy of the filing on the Receipts page whenever you need it.",
           "headline": "Kept on your receipts",
           "keyWord": "receipts"
         }

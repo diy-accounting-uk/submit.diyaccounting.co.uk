@@ -17,7 +17,11 @@
 // recording, a thumbnail and a full-size WebP of it, and the scene's text and start time,
 // written into the "walkthrough" array of the video's entry in videos/publish.json.
 //
-// Usage: node scripts/video-walkthrough.js [--id <video id>]... [--sizes]
+// Usage: node scripts/video-walkthrough.js [--id <video id>]... [--sizes | --text]
+//
+// --text writes only the text of each existing entry (headline, caption, instruction) from the scene
+// scripts. It downloads nothing, cuts no frames and needs no ffmpeg; a script whose frames differ from
+// the entry's (another scene or step) fails with its id, because that needs a new recording.
 //
 // --sizes writes only the pixel size of each existing thumbnail and full image into the
 // entries (thumbWidth, thumbHeight, fullWidth, fullHeight); it cuts no frames and needs no ffmpeg.
@@ -71,9 +75,12 @@ export const MAX_CAPTIONS_PER_SCENE_FRAME = 3;
 export function parseArgs(argv) {
   const ids = [];
   let sizesOnly = false;
+  let textOnly = false;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--sizes") {
       sizesOnly = true;
+    } else if (argv[i] === "--text") {
+      textOnly = true;
     } else if (argv[i] === "--id") {
       const value = argv[++i];
       if (!value) throw new Error("--id needs a video id");
@@ -82,7 +89,8 @@ export function parseArgs(argv) {
       throw new Error(`Unknown argument: ${argv[i]}`);
     }
   }
-  return { ids, sizesOnly };
+  if (sizesOnly && textOnly) throw new Error("--sizes and --text cannot be used together");
+  return { ids, sizesOnly, textOnly };
 }
 
 function sentence(text) {
@@ -96,7 +104,7 @@ function sentence(text) {
  * @param {{scenes: Array}} script the scene script (videos/<id>.json)
  * @param {{steps: Array}} timeline the recording's timeline
  * @param {number} [videoDurationMs] the recording's length; frame times stay inside it
- * @returns {Array<{scene: string, headline: string, caption: string, startSeconds: number, frameMs: number}>}
+ * @returns {Array<{scene: string, headline: string, caption: string, instruction?: string, startSeconds: number, frameMs: number}>}
  */
 export function planWalkthrough({ script, timeline, videoDurationMs = Infinity }) {
   const frameAt = (startMs, endMs) => {
@@ -130,6 +138,7 @@ export function planWalkthrough({ script, timeline, videoDurationMs = Infinity }
           step: index,
           headline: step.headline || scene.chapter || caption,
           caption,
+          ...(step.instruction ? { instruction: step.instruction } : {}),
           startSeconds: Math.floor(timing.startMs / 1000),
           frameMs: frameAt(timing.startMs, (awaited ?? timing).endMs),
         };
@@ -146,7 +155,20 @@ export function planWalkthrough({ script, timeline, videoDurationMs = Infinity }
       .slice(-MAX_CAPTIONS_PER_SCENE)
       .map(({ step }) => sentence(captionTextForStep(step)))
       .join(" ");
-    plan.push({ scene: scene.id, headline, caption, startSeconds: Math.floor(startMs / 1000), frameMs: frameAt(startMs, endMs) });
+    // One instruction stands for the captions the entry joins: the last one a joined step carries.
+    const instruction = captioned
+      .slice(-MAX_CAPTIONS_PER_SCENE)
+      .map(({ step }) => step.instruction)
+      .filter(Boolean)
+      .pop();
+    plan.push({
+      scene: scene.id,
+      headline,
+      caption,
+      ...(instruction ? { instruction } : {}),
+      startSeconds: Math.floor(startMs / 1000),
+      frameMs: frameAt(startMs, endMs),
+    });
   }
   return plan;
 }
@@ -165,10 +187,43 @@ export function buildWalkthroughEntries(videoId, plan) {
       ...entry,
       headline: item.headline,
       caption: item.caption,
+      ...(item.instruction ? { instruction: item.instruction } : {}),
       startSeconds: item.startSeconds,
       thumb: `videos/${videoId}/${frameKey(item)}-thumb.webp`,
       full: `videos/${videoId}/${frameKey(item)}.webp`,
     };
+  });
+}
+
+/** A timeline with every step at time zero, enough to plan the text of a walkthrough that needs no frames. */
+export function untimedTimeline(script) {
+  return {
+    steps: script.scenes.flatMap((scene) => scene.steps.map((_, stepIndex) => ({ sceneId: scene.id, stepIndex, startMs: 0, endMs: 0 }))),
+  };
+}
+
+/**
+ * The entry's walkthrough with its text (headline, caption, instruction) taken from the scene script again.
+ * Its times, images and sizes stay. A script that now plans other scenes or steps than the entry holds needs a new recording.
+ */
+export function walkthroughWithScriptText(entry, script) {
+  const plan = planWalkthrough({ script, timeline: untimedTimeline(script) });
+  const planned = plan.map(frameKey);
+  const held = entry.walkthrough.map((item) => frameKey(item));
+  if (planned.join() !== held.join()) {
+    throw new Error(
+      `${entry.id}: the scene script plans frames [${planned.join(", ")}] but the entry holds [${held.join(", ")}]; record it again`,
+    );
+  }
+  return entry.walkthrough.map((item, index) => {
+    const { instruction: _dropped, ...rest } = item;
+    const { headline, caption, instruction } = plan[index];
+    const updated = {};
+    for (const [key, value] of Object.entries({ ...rest, headline, caption })) {
+      updated[key] = value;
+      if (key === "caption" && instruction) updated.instruction = instruction;
+    }
+    return updated;
   });
 }
 
@@ -381,7 +436,7 @@ export function buildForEntry(entry, { ffmpeg = resolveFfmpegBinary(), outRoot =
 }
 
 export function main(argv = process.argv.slice(2)) {
-  const { ids, sizesOnly } = parseArgs(argv);
+  const { ids, sizesOnly, textOnly } = parseArgs(argv);
   const list = loadPublishList();
   const entries = list.videos.filter((entry) => entry.videoId && (ids.length === 0 || ids.includes(entry.id)));
   for (const id of ids) {
@@ -390,7 +445,16 @@ export function main(argv = process.argv.slice(2)) {
   const failures = [];
   for (const entry of entries) {
     try {
-      const { walkthrough, bytes } = sizesOnly ? { walkthrough: withFrameSizes(entry.walkthrough), bytes: 0 } : buildForEntry(entry);
+      let built;
+      if (sizesOnly) {
+        built = { walkthrough: withFrameSizes(entry.walkthrough), bytes: 0 };
+      } else if (textOnly) {
+        const script = JSON.parse(fs.readFileSync(path.resolve("videos", `${entry.id}.json`), "utf8"));
+        built = { walkthrough: walkthroughWithScriptText(entry, script), bytes: 0 };
+      } else {
+        built = buildForEntry(entry);
+      }
+      const { walkthrough, bytes } = built;
       entry.walkthrough = walkthrough;
       savePublishList(list);
       copyVideosManifest();

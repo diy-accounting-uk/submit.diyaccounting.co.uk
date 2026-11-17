@@ -18,6 +18,11 @@ describe("captionTextForStep", () => {
     expect(captionTextForStep({ action: "caption", text: "See the full walkthrough." })).toBe("See the full walkthrough.");
   });
 
+  test("does not read a step's instruction, which the recording never shows", () => {
+    expect(captionTextForStep({ action: "click", instruction: "Choose Go." })).toBeNull();
+    expect(captionTextForStep({ action: "click", caption: "Go.", instruction: "Choose Go." })).toBe("Go.");
+  });
+
   test("reads any other action's caption from step.caption", () => {
     expect(captionTextForStep({ action: "click", caption: "Sign in first." })).toBe("Sign in first.");
   });

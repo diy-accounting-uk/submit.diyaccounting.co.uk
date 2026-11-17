@@ -62,7 +62,7 @@ function frameStep(scene, stepId) {
   image.alt = `Screenshot: ${scene.headline}`;
   image.loading = "lazy";
   open.append(image);
-  item.append(open, el("p", "guide-caption", scene.caption));
+  item.append(open, el("p", "guide-caption", scene.instruction ?? scene.caption));
   return item;
 }
 
