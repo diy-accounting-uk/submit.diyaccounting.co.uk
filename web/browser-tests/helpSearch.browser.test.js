@@ -62,7 +62,7 @@ test.describe("Help search", () => {
         await expect(result).toBeVisible();
         await result.locator(".faq-question").click();
         await expect(result.locator(".faq-answer")).toBeVisible();
-        await expect(result.locator(".faq-answer")).toContainText(query === "Self Assessment" ? "sandbox" : "Companies House");
+        await expect(result.locator(".faq-answer")).toContainText(query === "Self Assessment" ? "Sandbox" : "Companies House");
       });
     }
   }
