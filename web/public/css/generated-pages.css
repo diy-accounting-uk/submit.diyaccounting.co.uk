@@ -278,3 +278,29 @@ main ol.calendar {
 .filing-page pre {
   white-space: pre;
 }
+
+/* The tools page: one card for each tool */
+.tool-cards {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  list-style: none;
+  margin: var(--space-4) 0;
+  padding: 0;
+}
+
+.tool-cards li {
+  border: 1px solid var(--c-rule);
+  border-radius: var(--radius-cell);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+}
+
+.tool-cards h3 {
+  font-size: var(--step-1);
+  margin: 0 0 var(--space-2);
+}
+
+.tool-cards p {
+  margin: 0;
+}

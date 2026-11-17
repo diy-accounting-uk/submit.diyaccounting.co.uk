@@ -606,6 +606,7 @@ export function renderRatesHtml(sources) {
         <p>Each entry shows the words from the gov.uk page it comes from and the day we read that page.</p>
         <ol class="rate-sources">${sourceItems}</ol>
       </div>
+      <p class="tools-link">More free tools are on the <a href="tools.html">Tools</a> page.</p>
     </main>
 
     <footer></footer>

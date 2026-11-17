@@ -177,6 +177,7 @@ text = ["Earlier plans gave a date in 2027. This page follows the GOV.UK notice 
 
 [[article]]
 file = "making-tax-digital-income-tax-over-30000.html"
+tools_card = { rank = 9, title = "MTD Income Tax over £30,000", line = "What changes from 6 April 2027 for a sole trader or landlord with income over £30,000." }
 title = "Making Tax Digital for Income Tax from April 2027 - DIY Accounting Submit"
 heading = "Making Tax Digital for Income Tax from 6 April 2027: incomes over £30,000"
 subtitle = "Who starts in April 2027 and when the quarterly updates are due"
@@ -211,6 +212,7 @@ text = [
 
 [[article]]
 file = "vat-return-due-date-and-penalty-points.html"
+tools_card = { rank = 2, title = "VAT return due date and penalty points calculator", line = "Enter a VAT period end and see the due date, and count the late-submission points a return would add." }
 title = "VAT return due date and penalty points calculator - DIY Accounting Submit"
 heading = "VAT return due date and penalty points calculator"
 subtitle = "Work out when a VAT return is due and how many late submission points you hold"
@@ -253,6 +255,7 @@ text = [
 
 [[article]]
 file = "company-filing-deadlines.html"
+tools_card = { rank = 3, title = "Company filing deadlines", line = "Type a company name or number and see when its accounts and confirmation statement are due." }
 title = "Company filing deadlines lookup - when are your accounts due - DIY Accounting Submit"
 heading = "When are your company's accounts and confirmation statement due?"
 subtitle = "Type a company name or number and see both dates, the days left and what to file"
@@ -281,6 +284,7 @@ text = [
 
 [[article]]
 file = "mtd-income-tax-checker.html"
+tools_card = { rank = 1, title = "MTD Income Tax checker", line = "Answer a few questions to learn whether Making Tax Digital for Income Tax applies to you, and the date you start." }
 title = "Making Tax Digital for Income Tax checker - do you need it and when - DIY Accounting Submit"
 heading = "Do you need Making Tax Digital for Income Tax, and when do you start?"
 subtitle = "Give your income for three tax years and see your start date, your first update deadline and the records to keep"
@@ -335,6 +339,7 @@ code = '<script src="https://submit.diyaccounting.co.uk/embed/mtd-income-tax-che
 
 [[comparison]]
 file = "mtd-vat-bridging-software-compared.html"
+tools_card = { rank = 7, title = "MTD VAT bridging software compared", line = "MTD VAT bridging tools sorted by price, each price read on the vendor's own page." }
 compares = "vat"
 filings_per_year = 4
 title = "MTD VAT bridging software compared by price - DIY Accounting Submit"
@@ -351,6 +356,7 @@ action = { label = "File a VAT return", href = "vat-return-from-a-spreadsheet.ht
 
 [[comparison]]
 file = "company-accounts-filing-software-compared.html"
+tools_card = { rank = 8, title = "Company accounts filing software compared", line = "Tools that file micro-entity or small company accounts, sorted by price." }
 compares = "accounts"
 filings_per_year = 1
 title = "Company accounts filing software compared by price - DIY Accounting Submit"
@@ -364,3 +370,53 @@ list_name = "Find software for filing company accounts"
 list_url = "https://www.gov.uk/software-company-accounts"
 note = "DIY Accounting Submit is on this page for comparison and is not on the Companies House list. Several tools also file the Company Tax Return, and their price covers both."
 action = { label = "File company accounts", href = "micro-entity-accounts.html" }
+
+# The tools page lists every article or comparison that has a tools_card, and each [[tools_page.extra]]
+# entry for a page that no script writes. The cards run in rank order.
+
+[tools_page]
+file = "tools.html"
+title = "Free tools for UK tax deadlines and filing - DIY Accounting Submit"
+heading = "Free tools"
+subtitle = "Checkers, calculators and tables for Making Tax Digital, VAT and company filing. Each one works without signing in."
+description = "Free tools from DIY Accounting: an MTD Income Tax checker, a VAT due date and penalty points calculator, company filing deadlines, tax rates, price comparisons and spreadsheets."
+summary = "Each tool on this page opens without signing in. Filing a return or company accounts needs an account."
+action = { label = "See what Submit files", href = "get-started.html" }
+
+[[tools_page.extra]]
+rank = 4
+href = "mtd-calendar.html"
+title = "MTD calendar"
+line = "Every Making Tax Digital date for VAT, Income Tax and company filing, and which filings Submit offers."
+
+[[tools_page.extra]]
+rank = 5
+href = "rates.html"
+title = "Tax rates and allowances"
+line = "The current rates and allowances for VAT, income tax and company tax, each with its source."
+
+[[tools_page.extra]]
+rank = 6
+href = "embed/mtd-income-tax-checker.html"
+title = "MTD Income Tax checker for your own site"
+line = "The checker in a frame, with the one line of script that puts it on another site."
+
+[[tools_page.extra]]
+rank = 10
+href = "mcp.html"
+title = "Connector for AI assistants"
+line = "Use Submit from an AI assistant that supports MCP: read a book, derive and prepare a VAT return."
+
+[[tools_page.extra]]
+rank = 11
+href = "spreadsheets.html"
+title = "Spreadsheets"
+line = "Accounting spreadsheets for a sole trader, a landlord or a limited company, in Excel."
+
+[[tools_page.extra]]
+rank = 12
+href = "https://diya-gl.co.uk/"
+title = "diya-gl"
+line = "A plain-text ledger that reads your bank statements and prints your accounts; also on npm as diya-gl."
+second_href = "https://www.npmjs.com/package/diya-gl"
+second_label = "diya-gl on npm"

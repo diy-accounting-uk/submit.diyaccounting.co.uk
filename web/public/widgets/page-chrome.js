@@ -154,6 +154,7 @@
     { label: "Spreadsheets", target: "spreadsheets.html" },
     { label: "MTD calendar", target: "mtd-calendar.html" },
     { label: "Tax rates", target: "rates.html" },
+    { label: "Tools", target: "tools.html" },
   ];
 
   function findOwnScript() {

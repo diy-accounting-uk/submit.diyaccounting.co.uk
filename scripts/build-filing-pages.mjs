@@ -46,6 +46,10 @@ export function loadComparisons() {
   return TOML.parse(readFileSync(DATA_PATH, "utf8")).comparison;
 }
 
+export function loadToolsPage() {
+  return TOML.parse(readFileSync(DATA_PATH, "utf8")).tools_page;
+}
+
 export function loadTools() {
   return TOML.parse(readFileSync(VENDORS_PATH, "utf8")).tool;
 }
@@ -196,7 +200,7 @@ function renderPageShell(page, mainHtml, scriptsHtml = "") {
 
     <main id="mainContent" class="filing-page">
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
-${mainHtml}
+${mainHtml}${page.file === "tools.html" ? "" : `\n      <p class="tools-link">More free tools are on the <a href="tools.html">Tools</a> page.</p>`}
     </main>
 
     <footer></footer>
@@ -465,6 +469,44 @@ export function renderComparisonPage(comparison, tools, catalog) {
   return renderPageShell(comparison, main);
 }
 
+/** The cards of the tools page: each article or comparison with a tools_card, then each extra entry, in rank order. */
+export function toolCards(toolsPage = loadToolsPage(), articles = loadArticles(), comparisons = loadComparisons()) {
+  const cards = [...articles, ...comparisons]
+    .filter((entry) => entry.tools_card)
+    .map((entry) => ({ rank: entry.tools_card.rank, title: entry.tools_card.title, line: entry.tools_card.line, href: entry.file }));
+  for (const extra of toolsPage.extra ?? []) cards.push(extra);
+  return cards.sort((a, b) => a.rank - b.rank);
+}
+
+function toolCardHtml(card) {
+  const external = /^https?:/.test(card.href);
+  const rel = external ? ' rel="noopener"' : "";
+  const second = card.second_href ? ` <a href="${escapeHtml(card.second_href)}" rel="noopener">${escapeHtml(card.second_label)}</a>` : "";
+  return `<li><h3><a href="${escapeHtml(card.href)}"${rel}>${escapeHtml(card.title)}</a></h3><p>${escapeHtml(card.line)}${second}</p></li>`;
+}
+
+/**
+ * The HTML of the tools page, before formatting.
+ * @param {object} toolsPage the tools_page entry of filing-pages.toml
+ */
+export function renderToolsPage(toolsPage, cards) {
+  const main = `
+      <div class="form-container">
+        <p>${escapeHtml(toolsPage.summary)}</p>
+        <ul class="tool-cards">${cards.map(toolCardHtml).join("")}</ul>
+        <p><a class="btn" href="${escapeHtml(toolsPage.action.href)}">${escapeHtml(toolsPage.action.label)}</a></p>
+      </div>
+`;
+  return renderPageShell(toolsPage, main);
+}
+
+export async function renderToolsPageFile(toolsPage = loadToolsPage(), articles = loadArticles(), comparisons = loadComparisons()) {
+  const path = filingPagePath(toolsPage);
+  const config = (await prettier.resolveConfig(path)) ?? {};
+  const html = renderToolsPage(toolsPage, toolCards(toolsPage, articles, comparisons));
+  return new Map([[toolsPage.file, await prettier.format(html, { ...config, filepath: path })]]);
+}
+
 /** The fact ids that the quotes on the article pages support. */
 export function articleFactIds(articles = loadArticles(), sources = loadSources()) {
   const names = new Set(articles.flatMap((article) => article.section.flatMap((section) => section.sources ?? [])));
@@ -520,7 +562,12 @@ export async function renderComparisonPages(comparisons = loadComparisons(), too
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  for (const [file, html] of [...(await renderFilingPages()), ...(await renderArticlePages()), ...(await renderComparisonPages())]) {
+  for (const [file, html] of [
+    ...(await renderFilingPages()),
+    ...(await renderArticlePages()),
+    ...(await renderComparisonPages()),
+    ...(await renderToolsPageFile()),
+  ]) {
     writeFileSync(join(PUBLIC_DIRECTORY, file), html);
     console.log(`wrote ${file}`);
   }

@@ -17,6 +17,9 @@ import {
   loadPages,
   renderArticlePages,
   renderComparisonPages,
+  renderToolsPageFile,
+  loadToolsPage,
+  toolCards,
   comparisonTools,
   yearPence,
   renderFilingPages,
@@ -243,5 +246,40 @@ describe("comparison pages", () => {
       expect(linkedFrom.length, comparison.file).toBeGreaterThan(0);
       for (const page of linkedFrom) expect(read(join("web/public", page.file)), page.file).toContain(`href="${comparison.file}"`);
     }
+  });
+});
+
+describe("tools page", () => {
+  const toolsPage = loadToolsPage();
+  const cards = toolCards();
+
+  test("the committed page equals what the build script renders", async () => {
+    const rendered = await renderToolsPageFile();
+    for (const [file, html] of rendered) expect(read(join("web/public", file))).toBe(html);
+  });
+
+  test("each card is a page of this site that exists, or an external link", () => {
+    for (const card of cards) {
+      if (/^https?:/.test(card.href)) continue;
+      expect(existsSync(join("web/public", card.href)), card.href).toBe(true);
+    }
+  });
+
+  test("each article or comparison with a tools card is on the page", () => {
+    const html = read(join("web/public", toolsPage.file));
+    const tagged = [...loadArticles(), ...loadComparisons()].filter((entry) => entry.tools_card);
+    expect(tagged.length).toBeGreaterThan(0);
+    for (const entry of tagged) expect(html).toContain(`href="${entry.file}"`);
+  });
+
+  test("each generated page links back to the tools page", () => {
+    for (const entry of [...loadArticles(), ...loadComparisons()]) {
+      expect(read(join("web/public", entry.file)), entry.file).toContain('href="tools.html"');
+    }
+  });
+
+  test("the sitemap lists the tools page and the navigation links to it", () => {
+    expect(read("web/public/sitemap.xml")).toContain("https://submit.diyaccounting.co.uk/tools.html");
+    expect(read("web/public/widgets/page-chrome.js")).toContain('{ label: "Tools", target: "tools.html" }');
   });
 });

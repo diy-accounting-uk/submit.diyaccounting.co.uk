@@ -486,6 +486,7 @@ export function renderCalendarHtml(sources) {
         <h2>No date yet</h2>
         <ol class="calendar">${undated}</ol>
       </div>
+      <p class="tools-link">More free tools are on the <a href="tools.html">Tools</a> page.</p>
     </main>
 
     <footer></footer>
