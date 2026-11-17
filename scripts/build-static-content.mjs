@@ -67,7 +67,7 @@ export async function renderHelpPage(html = readFileSync(HELP_PAGE_PATH, "utf8")
 
 function guideStepHtml(scene, stepId) {
   const image = scene.thumb
-    ? `<img src="${escapeHtml(scene.thumb)}" srcset="${escapeHtml(scene.thumb)} ${scene.thumbWidth}w, ${escapeHtml(scene.full)} ${scene.fullWidth}w" sizes="(min-width: 700px) 45vw, 92vw" width="${scene.thumbWidth}" height="${scene.thumbHeight}" alt="Screenshot: ${escapeHtml(scene.headline)}" loading="lazy" />`
+    ? `<img src="${escapeHtml(scene.thumb)}" srcset="${escapeHtml(scene.thumb)} ${scene.thumbWidth}w, ${escapeHtml(scene.full)} ${scene.fullWidth}w" sizes="(min-width: 700px) 480px, 92vw" width="${scene.thumbWidth}" height="${scene.thumbHeight}" alt="Screenshot: ${escapeHtml(scene.headline)}" loading="lazy" />`
     : "";
   return `<li class="guide-step" id="${escapeHtml(stepId)}"><div class="guide-step-header"><h3 class="guide-step-title">${escapeHtml(scene.headline)}</h3></div>${image}<p class="guide-caption">${escapeHtml(scene.instruction ?? scene.caption)}</p></li>`;
 }
