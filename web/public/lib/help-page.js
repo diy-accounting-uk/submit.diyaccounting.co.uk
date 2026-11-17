@@ -11,7 +11,7 @@ import { FAQSearch, debounce } from "./faq-search.js";
 import { submitSupportTicket } from "./support-api.js";
 import { fetchActivityListing } from "./services/content-listing.js";
 import { fetchCatalogText, fetchCurrentEnvironmentName } from "./services/catalog-service.js";
-import { renderFaqItem } from "./faq-markdown.js";
+import { renderFaqItem, renderFaqGroups } from "./faq-markdown.js";
 import { bundlePriceList, fillBundlePrices } from "./bundle-listing.js";
 
 /**
@@ -47,11 +47,10 @@ class HelpPage {
         .map((faq) => fillBundlePrices(faq, priceList));
       this.faqSearch = new FAQSearch(faqs);
 
-      // Initial render; a #<faq-id> link shows that entry first and opens it
-      const initial = this.faqSearch.search("");
+      // Initial render lists every question by category; a #<faq-id> link opens that entry
       const linkedId = decodeURIComponent(window.location.hash.slice(1));
       const linked = faqs.find((faq) => faq.id === linkedId);
-      this.render(linked ? [linked, ...initial.filter((faq) => faq.id !== linkedId)] : initial);
+      this.render(this.faqSearch.search(""), "");
       if (linked) {
         const item = this.faqList.querySelector(`[data-id="${linked.id}"]`);
         if (item) {
@@ -69,7 +68,7 @@ class HelpPage {
     const handleSearch = debounce((e) => {
       const query = e.target.value;
       const results = this.faqSearch.search(query);
-      this.render(results);
+      this.render(results, query);
       this.updateHint(query, results.length);
     }, 150);
 
@@ -116,9 +115,9 @@ class HelpPage {
    */
   updateHint(query, count) {
     if (!query.trim()) {
-      this.searchHint.textContent = "Showing top FAQs";
+      this.searchHint.textContent = "Showing every question";
     } else if (count === 0) {
-      this.searchHint.textContent = "No matching FAQs - try different keywords";
+      this.searchHint.textContent = "No questions match your search";
     } else {
       this.searchHint.textContent = `${count} result${count === 1 ? "" : "s"}`;
     }
@@ -127,28 +126,29 @@ class HelpPage {
   /**
    * Render FAQ list
    * @param {Array} faqs - Array of FAQ objects to display
+   * @param {string} query - The search text; with none, the questions are grouped by category
    */
-  render(faqs) {
+  render(faqs, query) {
     if (faqs.length === 0) {
       this.faqList.innerHTML = `
         <div class="no-results">
-          <p>No FAQs match your search.</p>
-          <p>Try different keywords, or <button class="link-button" id="clear-search">view all FAQs</button></p>
+          <p>No questions match your search.</p>
+          <p>Try different keywords, or <button type="button" class="link-button" id="clear-search">list every question</button>.</p>
+          <p><button type="button" class="support-button primary" id="no-results-support">Submit a Support Request</button></p>
         </div>
       `;
-      const clearBtn = document.getElementById("clear-search");
-      if (clearBtn) {
-        clearBtn.addEventListener("click", () => {
-          this.searchInput.value = "";
-          this.render(this.faqSearch.search(""));
-          this.updateHint("", this.faqSearch.search("").length);
-        });
-      }
+      document.getElementById("clear-search").addEventListener("click", () => {
+        this.searchInput.value = "";
+        const all = this.faqSearch.search("");
+        this.render(all, "");
+        this.updateHint("", all.length);
+      });
+      document.getElementById("no-results-support").addEventListener("click", () => this.openModal());
       return;
     }
 
     // eslint-disable-next-line no-unsanitized/property -- each FAQ's text goes through escapeFaqHtml; the id comes from the site's own faqs.toml
-    this.faqList.innerHTML = faqs.map(renderFaqItem).join("");
+    this.faqList.innerHTML = query.trim() ? faqs.map((faq) => renderFaqItem(faq)).join("") : renderFaqGroups(faqs);
 
     // Accordion click handlers
     this.faqList.querySelectorAll(".faq-question").forEach((btn) => {

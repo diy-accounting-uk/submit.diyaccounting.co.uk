@@ -245,3 +245,18 @@
     width: 100%;
   }
 }
+
+.faq-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.faq-group + .faq-group {
+  margin-top: var(--space-4);
+}
+
+.faq-group-title {
+  margin: 0;
+  font-size: var(--step-1);
+}

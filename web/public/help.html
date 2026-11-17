@@ -67,910 +67,934 @@
         <!-- Search box -->
         <div class="faq-search-container">
           <input type="text" id="faq-search" placeholder="Search the questions" autocomplete="off" aria-label="Search FAQs" />
-          <span class="search-hint" id="search-hint">Showing top FAQs</span>
+          <span class="search-hint" id="search-hint" aria-live="polite">Showing every question</span>
         </div>
 
         <!-- FAQ list -->
         <div class="faq-list" id="faq-list">
           <!-- generated:faq-entries:start -->
 
-          <div class="faq-item" data-id="how-to-submit-vat-return">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Submission</span>
-                <span class="faq-question-text">How do I submit my VAT return?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <ol>
-                <li>Sign in with your Google or Microsoft account.</li>
-                <li>Open <strong>Check VAT obligations</strong> to see which periods need a return.</li>
-                <li>Click <strong>Submit VAT Return</strong> on the home page.</li>
-                <li>Enter your figures in Boxes 1 to 9. Boxes 3 and 5 calculate for you.</li>
-                <li>Tick the declaration that the information is true and complete.</li>
-                <li>Click <strong>Submit</strong>. HMRC asks you to authorise the submission.</li>
-                <li>Save your receipt. It shows the HMRC Form Bundle Number.</li>
-              </ol>
+          <section class="faq-group" aria-labelledby="faq-group-submission">
+            <h2 class="faq-group-title" id="faq-group-submission">Submission</h2>
+            <div class="faq-item" data-id="how-to-submit-vat-return">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Submission</span>
+                  <span class="faq-question-text">How do I submit my VAT return?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <ol>
+                  <li>Sign in with your Google or Microsoft account.</li>
+                  <li>Open <strong>Check VAT obligations</strong> to see which periods need a return.</li>
+                  <li>Click <strong>Submit VAT Return</strong> on the home page.</li>
+                  <li>Enter your figures in Boxes 1 to 9. Boxes 3 and 5 calculate for you.</li>
+                  <li>Tick the declaration that the information is true and complete.</li>
+                  <li>Click <strong>Submit</strong>. HMRC asks you to authorise the submission.</li>
+                  <li>Save your receipt. It shows the HMRC Form Bundle Number.</li>
+                </ol>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="what-are-vat-obligations">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Submission</span>
-                <span class="faq-question-text">What are VAT obligations?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>An obligation is a period for which HMRC expects a VAT return. Each one shows three things.</p>
-              <ul>
-                <li><strong>VAT period</strong> is the range of dates the return covers, for example 1 January to 31 March 2026.</li>
-                <li><strong>Due date</strong> is the day the return must reach HMRC.</li>
-                <li><strong>Status</strong> is Open until you submit the return, and Fulfilled after.</li>
-              </ul>
-              <p>You can submit a return only for an Open obligation. Use <strong>Check VAT obligations</strong> to see yours.</p>
+            <div class="faq-item" data-id="what-are-vat-obligations">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Submission</span>
+                  <span class="faq-question-text">What are VAT obligations?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>An obligation is a period for which HMRC expects a VAT return. Each one shows three things.</p>
+                <ul>
+                  <li><strong>VAT period</strong> is the range of dates the return covers, for example 1 January to 31 March 2026.</li>
+                  <li><strong>Due date</strong> is the day the return must reach HMRC.</li>
+                  <li><strong>Status</strong> is Open until you submit the return, and Fulfilled after.</li>
+                </ul>
+                <p>You can submit a return only for an Open obligation. Use <strong>Check VAT obligations</strong> to see yours.</p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="box-numbers">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">VAT Basics</span>
-                <span class="faq-question-text">What goes in each VAT return box (1-9)?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <table class="faq-table">
-                <thead>
-                  <tr>
-                    <th>Box</th>
-                    <th>Description</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>1</td>
-                    <td>VAT due on sales and other outputs</td>
-                  </tr>
-                  <tr>
-                    <td>2</td>
-                    <td>VAT due on acquisitions from EU (usually £0 post-Brexit)</td>
-                  </tr>
-                  <tr>
-                    <td>3</td>
-                    <td>Total VAT due (Box 1 plus Box 2), calculated automatically</td>
-                  </tr>
-                  <tr>
-                    <td>4</td>
-                    <td>VAT reclaimed on purchases and other inputs</td>
-                  </tr>
-                  <tr>
-                    <td>5</td>
-                    <td>Net VAT to pay or reclaim (Box 3 minus Box 4), calculated automatically</td>
-                  </tr>
-                  <tr>
-                    <td>6</td>
-                    <td>Total value of sales excluding VAT (whole pounds)</td>
-                  </tr>
-                  <tr>
-                    <td>7</td>
-                    <td>Total value of purchases excluding VAT (whole pounds)</td>
-                  </tr>
-                  <tr>
-                    <td>8</td>
-                    <td>Total value of supplies to EU excluding VAT (usually £0 post-Brexit)</td>
-                  </tr>
-                  <tr>
-                    <td>9</td>
-                    <td>Total value of acquisitions from EU excluding VAT (usually £0 post-Brexit)</td>
-                  </tr>
-                </tbody>
-              </table>
-              <p>You enter Boxes 1, 2, 4, 6, 7, 8 and 9. Boxes 3 and 5 are calculated for you.</p>
+            <div class="faq-item" data-id="submitted-wrong-figures">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Submission</span>
+                  <span class="faq-question-text">I submitted the wrong figures. What do I do?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>You cannot amend a submitted VAT return in Submit. How you correct it depends on the size of the error.</p>
+                <ul>
+                  <li>
+                    A small error goes on your next VAT return. It is small when its net value is £10,000 or less, or up to £50,000 if it is
+                    no more than 1% of your Box 6 figure for the return period in which you find it. It must be inside the 4-year time limit
+                    and not deliberate.
+                  </li>
+                  <li>Any other error goes to HMRC on form VAT652, or in a letter.</li>
+                </ul>
+                <p>
+                  See
+                  <a href="https://www.gov.uk/vat-corrections" target="_blank" rel="noopener">HMRC guidance on correcting VAT errors</a>.
+                  Keep your Submit receipt as a record of what you first submitted.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="hmrc-connect-fail">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Connection</span>
-                <span class="faq-question-text">Why can't I connect to HMRC?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>Submit sends you to HMRC's page in the same tab and brings you back after you authorise. If that fails:</p>
-              <ol>
-                <li>Refresh the page and try again. Your sign-in may have expired while the page was open.</li>
-                <li>
-                  Check
-                  <a
-                    href="https://www.gov.uk/government/collections/hm-revenue-and-customs-service-availability-and-issues"
-                    target="_blank"
-                    rel="noopener"
-                    >HMRC service availability</a
-                  >
-                  for a fault.
-                </li>
-                <li>Try a different browser, or clear the cookies for this site.</li>
-              </ol>
+            <div class="faq-item" data-id="obligations-not-showing">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Submission</span>
+                  <span class="faq-question-text">My VAT obligations aren't showing</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>If no obligations appear:</p>
+                <ol>
+                  <li>Widen the date range. Obligations show only for periods in which HMRC expects a return.</li>
+                  <li>Check the status filter. It shows only Open obligations until you choose "All statuses".</li>
+                  <li>
+                    Wait after a new registration. HMRC can take 24 to 48 hours to create your first obligation after you register for
+                    Making Tax Digital.
+                  </li>
+                  <li>Check that the 9-digit VAT registration number is correct.</li>
+                </ol>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="where-is-receipt">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Receipts</span>
-                <span class="faq-question-text">Where can I find my submission receipt?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <ol>
-                <li>
-                  A receipt appears when the submission succeeds. It shows your <strong>Form Bundle Number</strong>. Save or print it.
-                </li>
-                <li>Click <strong>Receipts</strong> in the navigation bar to see all your submissions.</li>
-                <li>Each receipt shows the date, the VAT registration number, the period and the HMRC reference.</li>
-              </ol>
-              <p>Receipts are stored in your account. You can open them from any device when you are signed in.</p>
+            <div class="faq-item" data-id="figures-dont-match">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Submission</span>
+                  <span class="faq-question-text">My figures don't match my spreadsheet</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>These causes explain most mismatches:</p>
+                <ol>
+                  <li>
+                    Rounding can differ. HMRC accepts figures to 2 decimal places for Boxes 1 to 5. Check that your spreadsheet rounds the
+                    same way.
+                  </li>
+                  <li>
+                    Boxes 3 and 5 calculate for you. Box 3 is Box 1 plus Box 2. Box 5 is the difference between Box 3 and Box 4, shown as a
+                    positive number. Do not calculate them yourself.
+                  </li>
+                  <li>Boxes 1 to 5 hold VAT amounts. Boxes 6 to 9 hold net values that exclude VAT.</li>
+                  <li>Boxes 6 to 9 are whole pounds with no pence.</li>
+                  <li>The period dates must match the obligation exactly. Check that your spreadsheet covers the same dates.</li>
+                </ol>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="submitted-wrong-figures">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Submission</span>
-                <span class="faq-question-text">I submitted the wrong figures. What do I do?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>You cannot amend a submitted VAT return in Submit. How you correct it depends on the size of the error.</p>
-              <ul>
-                <li>
-                  A small error goes on your next VAT return. It is small when its net value is £10,000 or less, or up to £50,000 if it is
-                  no more than 1% of your Box 6 figure for the return period in which you find it. It must be inside the 4-year time limit
-                  and not deliberate.
-                </li>
-                <li>Any other error goes to HMRC on form VAT652, or in a letter.</li>
-              </ul>
-              <p>
-                See <a href="https://www.gov.uk/vat-corrections" target="_blank" rel="noopener">HMRC guidance on correcting VAT errors</a>.
-                Keep your Submit receipt as a record of what you first submitted.
-              </p>
+            <div class="faq-item" data-id="multiple-businesses">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Submission</span>
+                  <span class="faq-question-text">Can I submit VAT for multiple businesses?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>Yes. A bundle holds no VAT registration number, so one bundle covers every business you submit for.</p>
+                <ol>
+                  <li>Open the VAT form.</li>
+                  <li>Enter the VAT registration number of the business.</li>
+                  <li>Submit your figures. HMRC asks you to authorise with that business's Government Gateway user ID and password.</li>
+                </ol>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="first-time-mtd">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Connection</span>
-                <span class="faq-question-text">I've never submitted digitally before. Where do I start?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <ol>
-                <li>
-                  Sign up for Making Tax Digital for VAT at
-                  <a href="https://www.gov.uk/vat-record-keeping/sign-up-for-making-tax-digital-for-vat" target="_blank" rel="noopener"
-                    >gov.uk/vat-record-keeping</a
-                  >, if you have not already.
-                </li>
-                <li>Wait 24 to 48 hours. HMRC needs time to start your Making Tax Digital access.</li>
-                <li>Sign in to DIY Accounting Submit with your Google or Microsoft account.</li>
-                <li>
-                  Request a day pass or choose a bundle on the <a href="bundles.html" target="_blank" rel="noopener">Bundles</a> page.
-                </li>
-                <li>Check your obligations to see which VAT periods HMRC expects returns for.</li>
-                <li>Enter your 9-digit VAT registration number and your figures on the VAT form.</li>
-                <li>Submit your return.</li>
-              </ol>
-              <p>Keep your Government Gateway user ID and password ready. HMRC asks for them when you authorise.</p>
+            <div class="faq-item" data-id="wrong-vat-registration-number">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Submission</span>
+                  <span class="faq-question-text">I entered the wrong VAT registration number. How do I fix it?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>
+                  A bundle holds no VAT registration number, so there is nothing to remove or edit. Enter the correct 9-digit number on the
+                  VAT form before you submit. Nothing goes to HMRC until you submit.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="vat-registration-number-format">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">VAT Basics</span>
-                <span class="faq-question-text">What format should my VAT registration number be in?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>
-                Your VAT registration number is 9 digits, with no spaces, letters or GB prefix. It is on your VAT registration certificate
-                from HMRC.
-              </p>
-              <p>If your certificate shows "GB 123 456 789", enter 123456789.</p>
-              <p>Submit rejects these forms:</p>
-              <ul>
-                <li>GB123456789, which has a GB prefix.</li>
-                <li>123 456 789, which has spaces.</li>
-                <li>12345678, which has 8 digits.</li>
-              </ul>
+            <div class="faq-item" data-id="vat-refund">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Submission</span>
+                  <span class="faq-question-text">What if Box 5 shows a negative amount (refund)?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>
+                  A negative Box 5 means HMRC owes you a refund. It happens when Box 4 (VAT reclaimed) is more than Box 3 (VAT due). Submit
+                  shows Box 5 as a positive amount, the difference between Box 3 and Box 4, and HMRC knows from the figures whether it is a
+                  payment or a refund.
+                </p>
+                <p>
+                  HMRC then processes the refund by its normal procedure. Refunds usually reach your bank account within 10 working days.
+                  Your HMRC online account shows the status.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="obligations-not-showing">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Submission</span>
-                <span class="faq-question-text">My VAT obligations aren't showing</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>If no obligations appear:</p>
-              <ol>
-                <li>Widen the date range. Obligations show only for periods in which HMRC expects a return.</li>
-                <li>Check the status filter. It shows only Open obligations until you choose "All statuses".</li>
-                <li>
-                  Wait after a new registration. HMRC can take 24 to 48 hours to create your first obligation after you register for Making
-                  Tax Digital.
-                </li>
-                <li>Check that the 9-digit VAT registration number is correct.</li>
-              </ol>
+            <div class="faq-item" data-id="payment-to-hmrc">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Submission</span>
+                  <span class="faq-question-text">How do I pay HMRC after submitting my return?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>Submit sends your VAT return. It does not take payment. If you owe VAT, pay HMRC separately:</p>
+                <ol>
+                  <li>Open <a href="https://www.gov.uk/pay-vat" target="_blank" rel="noopener">HMRC's page for paying VAT</a>.</li>
+                  <li>
+                    Choose a payment method: Direct Debit, bank transfer (use your VAT registration number as the reference), or debit or
+                    credit card.
+                  </li>
+                </ol>
+                <p>
+                  The payment deadline is usually the same as the return deadline, and your obligations show it. A late payment and a late
+                  submission carry different penalties.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="what-is-bundle">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Bundles</span>
-                <span class="faq-question-text">What is a bundle?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>
-                A bundle is what your account can file and how many tokens it gets. It holds no VAT registration number and no HMRC
-                connection. You enter the number on the VAT form, and HMRC asks you to authorise each submission.
-              </p>
-              <p>
-                To get a bundle, request a day pass or choose one on the
-                <a href="bundles.html" target="_blank" rel="noopener">Bundles</a> page.
-              </p>
+            <div class="faq-item" data-id="period-key-format">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Submission</span>
+                  <span class="faq-question-text">What do the period codes like '26AF' mean?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>Period codes such as 26AF and 26AG are HMRC's own references for VAT periods. You do not need to read them.</p>
+                <p>
+                  The first two digits are the year (26 is 2026). The letters show the quarter or month, and they change with the scheme.
+                  Choose a period by its dates and its due date, and ignore the code.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="figures-dont-match">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Submission</span>
-                <span class="faq-question-text">My figures don't match my spreadsheet</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>These causes explain most mismatches:</p>
-              <ol>
-                <li>
-                  Rounding can differ. HMRC accepts figures to 2 decimal places for Boxes 1 to 5. Check that your spreadsheet rounds the
-                  same way.
-                </li>
-                <li>
-                  Boxes 3 and 5 calculate for you. Box 3 is Box 1 plus Box 2. Box 5 is the difference between Box 3 and Box 4, shown as a
-                  positive number. Do not calculate them yourself.
-                </li>
-                <li>Boxes 1 to 5 hold VAT amounts. Boxes 6 to 9 hold net values that exclude VAT.</li>
-                <li>Boxes 6 to 9 are whole pounds with no pence.</li>
-                <li>The period dates must match the obligation exactly. Check that your spreadsheet covers the same dates.</li>
-              </ol>
+            <div class="faq-item" data-id="companies-house-filings">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Submission</span>
+                  <span class="faq-question-text">Can I file with Companies House?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>
+                  Yes. These Companies House services are in <strong>Production</strong>: company lookup, change of registered office
+                  address, change of registered email address, micro-entity accounts, small company accounts and confirmation statement.
+                </p>
+                <p>
+                  See the <a href="mtd-calendar.html#availability" target="_blank" rel="noopener">availability table</a> for the current
+                  status.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="flat-rate-scheme">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">VAT Basics</span>
-                <span class="faq-question-text">I'm on the Flat Rate Scheme. Can I use this app?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>Yes. The Flat Rate Scheme changes how you work out your VAT, not how you submit it. Enter these figures:</p>
-              <ul>
-                <li><strong>Box 1</strong> is your flat rate VAT: your gross turnover multiplied by your flat rate percentage.</li>
-                <li><strong>Box 6</strong> is your gross turnover including VAT.</li>
-                <li><strong>Boxes 2, 4, 7, 8 and 9</strong> are usually £0. Check HMRC guidance for exceptions.</li>
-              </ul>
+            <div class="faq-item" data-id="companies-house-accounts-filings">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Submission</span>
+                  <span class="faq-question-text">Can I file accounts or a confirmation statement with Companies House?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>
+                  Yes. Micro-entity accounts, small company accounts and the confirmation statement are in <strong>Production</strong>. A
+                  filing goes to Companies House.
+                </p>
+                <p>
+                  Each filing needs the <strong>Resident Ltd</strong>, <strong>Resident Pro</strong> or
+                  <strong>Resident Tax Agent</strong> bundle. An accounts filing costs one token. A confirmation statement costs no token
+                  and carries a £61.35 charge for each filing.
+                </p>
+                <p>
+                  The PSC verification statement is in <strong>Sandbox</strong>: it goes to the Companies House test service and files
+                  nothing real.
+                </p>
+                <p>
+                  See the <a href="mtd-calendar.html#availability" target="_blank" rel="noopener">availability table</a> for the current
+                  status.
+                </p>
+              </div>
             </div>
-          </div>
+          </section>
 
-          <div class="faq-item" data-id="annual-accounting">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">VAT Basics</span>
-                <span class="faq-question-text">I'm on Annual Accounting. How does this work?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>
-                Annual Accounting means you submit one VAT return a year instead of one a quarter. You see one obligation for the year, and
-                you submit it in the same way as a quarterly return. Your interim payments to HMRC during the year are separate from the
-                return.
-              </p>
+          <section class="faq-group" aria-labelledby="faq-group-vat-basics">
+            <h2 class="faq-group-title" id="faq-group-vat-basics">VAT Basics</h2>
+            <div class="faq-item" data-id="box-numbers">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">VAT Basics</span>
+                  <span class="faq-question-text">What goes in each VAT return box (1-9)?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <table class="faq-table">
+                  <thead>
+                    <tr>
+                      <th>Box</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>1</td>
+                      <td>VAT due on sales and other outputs</td>
+                    </tr>
+                    <tr>
+                      <td>2</td>
+                      <td>VAT due on acquisitions from EU (usually £0 post-Brexit)</td>
+                    </tr>
+                    <tr>
+                      <td>3</td>
+                      <td>Total VAT due (Box 1 plus Box 2), calculated automatically</td>
+                    </tr>
+                    <tr>
+                      <td>4</td>
+                      <td>VAT reclaimed on purchases and other inputs</td>
+                    </tr>
+                    <tr>
+                      <td>5</td>
+                      <td>Net VAT to pay or reclaim (Box 3 minus Box 4), calculated automatically</td>
+                    </tr>
+                    <tr>
+                      <td>6</td>
+                      <td>Total value of sales excluding VAT (whole pounds)</td>
+                    </tr>
+                    <tr>
+                      <td>7</td>
+                      <td>Total value of purchases excluding VAT (whole pounds)</td>
+                    </tr>
+                    <tr>
+                      <td>8</td>
+                      <td>Total value of supplies to EU excluding VAT (usually £0 post-Brexit)</td>
+                    </tr>
+                    <tr>
+                      <td>9</td>
+                      <td>Total value of acquisitions from EU excluding VAT (usually £0 post-Brexit)</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p>You enter Boxes 1, 2, 4, 6, 7, 8 and 9. Boxes 3 and 5 are calculated for you.</p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="authorisation-expired">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Connection</span>
-                <span class="faq-question-text">My HMRC authorisation has expired</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>An HMRC authorisation lasts 18 months, or ends when you remove the software's authority.</p>
-              <p>To authorise again:</p>
-              <ol>
-                <li>Start a submission. Submit sends you to HMRC.</li>
-                <li>Enter your <strong>Government Gateway</strong> user ID and password on HMRC's page.</li>
-                <li>Give DIY Accounting Submit permission to act for you.</li>
-              </ol>
-              <p>
-                A business checks or removes the software's authority at
-                <a href="https://www.tax.service.gov.uk/applications-manage-authority" target="_blank" rel="noopener"
-                  >tax.service.gov.uk/applications-manage-authority</a
-                >. An agent uses the
-                <a href="https://www.tax.service.gov.uk/agent-services-account" target="_blank" rel="noopener">agent services account</a>.
-              </p>
+            <div class="faq-item" data-id="vat-registration-number-format">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">VAT Basics</span>
+                  <span class="faq-question-text">What format should my VAT registration number be in?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>
+                  Your VAT registration number is 9 digits, with no spaces, letters or GB prefix. It is on your VAT registration certificate
+                  from HMRC.
+                </p>
+                <p>If your certificate shows "GB 123 456 789", enter 123456789.</p>
+                <p>Submit rejects these forms:</p>
+                <ul>
+                  <li>GB123456789, which has a GB prefix.</li>
+                  <li>123 456 789, which has spaces.</li>
+                  <li>12345678, which has 8 digits.</li>
+                </ul>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="hmrc-not-received">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Receipts</span>
-                <span class="faq-question-text">HMRC says they haven't received my return but I got a success message</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>
-                If Submit showed a success message with a Form Bundle Number, HMRC received the return. A difference between the two usually
-                has one of these causes:
-              </p>
-              <ol>
-                <li>HMRC's systems can take a few hours to show a new return. Check again later.</li>
-                <li>You may be checking a different period from the one you submitted.</li>
-                <li>You may be checking a different VAT registration number. Check that you look at the same business in HMRC's portal.</li>
-              </ol>
-              <p>
-                Your receipt shows the <strong>Form Bundle Number</strong>, for example 425379263134. Quote it to HMRC to prove the
-                submission.
-              </p>
+            <div class="faq-item" data-id="flat-rate-scheme">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">VAT Basics</span>
+                  <span class="faq-question-text">I'm on the Flat Rate Scheme. Can I use this app?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>Yes. The Flat Rate Scheme changes how you work out your VAT, not how you submit it. Enter these figures:</p>
+                <ul>
+                  <li><strong>Box 1</strong> is your flat rate VAT: your gross turnover multiplied by your flat rate percentage.</li>
+                  <li><strong>Box 6</strong> is your gross turnover including VAT.</li>
+                  <li><strong>Boxes 2, 4, 7, 8 and 9</strong> are usually £0. Check HMRC guidance for exceptions.</li>
+                </ul>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="error-invalid-vat-registration-number">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Errors</span>
-                <span class="faq-question-text">Error: Invalid VAT registration number</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>
-                This error means the VAT registration number has the wrong form. It must be 9 digits with no spaces, letters or GB prefix:
-                123456789, not GB123456789 or 123 456 789.
-              </p>
-              <p>If your number is correct and Submit still rejects it:</p>
-              <ul>
-                <li>Check that the business is registered for <strong>Making Tax Digital for VAT</strong>, not only for VAT.</li>
-                <li>Wait 24 to 48 hours after a new registration.</li>
-              </ul>
+            <div class="faq-item" data-id="annual-accounting">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">VAT Basics</span>
+                  <span class="faq-question-text">I'm on Annual Accounting. How does this work?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>
+                  Annual Accounting means you submit one VAT return a year instead of one a quarter. You see one obligation for the year,
+                  and you submit it in the same way as a quarterly return. Your interim payments to HMRC during the year are separate from
+                  the return.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="error-duplicate-submission">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Errors</span>
-                <span class="faq-question-text">Error: Duplicate submission</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>
-                HMRC rejected the submission because a return for this period already exists. This happens when you already submitted for
-                the period, or when someone else, such as an accountant, submitted for the same VAT registration number. Check your
-                receipts. In <strong>VAT obligations</strong> the period shows as <strong>Fulfilled</strong> with a received date.
-              </p>
+            <div class="faq-item" data-id="accessibility-features">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">VAT Basics</span>
+                  <span class="faq-question-text">What accessibility features does this app have?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>DIY Accounting Submit is designed to meet WCAG 2.2 Level AA accessibility standards:</p>
+                <p><strong>Keyboard navigation</strong></p>
+                <ul>
+                  <li>All functions accessible via keyboard</li>
+                  <li>Tab order follows logical reading order</li>
+                  <li>Skip link to main content on every page</li>
+                </ul>
+                <p><strong>Screen reader support</strong></p>
+                <ul>
+                  <li>All form fields have accessible labels</li>
+                  <li>Error messages announced immediately</li>
+                  <li>Status updates use ARIA live regions</li>
+                </ul>
+                <p><strong>Visual design</strong></p>
+                <ul>
+                  <li>Colour contrast meets 4.5:1 ratio minimum</li>
+                  <li>Text resizable to 200% without loss</li>
+                  <li>Focus states clearly visible</li>
+                </ul>
+                <p>
+                  For issues or suggestions, see our
+                  <a href="https://submit.diyaccounting.co.uk/accessibility.html" target="_blank" rel="noopener">accessibility statement</a
+                  >.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="error-obligation-not-found">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Errors</span>
-                <span class="faq-question-text">Error: Obligation not found for this period</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>
-                You are submitting for a period that HMRC does not expect a return for. Use <strong>Check VAT obligations</strong> to see
-                which periods are open. Then:
-              </p>
-              <ol>
-                <li>Match the VAT period to an <strong>Open</strong> obligation exactly.</li>
-                <li>Check that you have not already submitted for this period. It would show as Fulfilled.</li>
-                <li>Check that the VAT registration number is correct.</li>
-              </ol>
+            <div class="faq-item" data-id="data-security">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">VAT Basics</span>
+                  <span class="faq-question-text">Where is my data stored? Is it secure?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>
+                  Submit stores your data in the AWS eu-west-2 (London) region. See
+                  <a href="security.html" target="_blank" rel="noopener">Security</a> for the hosting and the protections.
+                </p>
+                <p>We store:</p>
+                <ul>
+                  <li>Your bundles and token balances.</li>
+                  <li>Your submission receipts, in your account.</li>
+                </ul>
+                <p>We do not store:</p>
+                <ul>
+                  <li>Your VAT figures. They go directly to HMRC and are not kept on our servers.</li>
+                  <li>Your Government Gateway credentials. You enter them on HMRC's own website.</li>
+                </ul>
+                <p>Protections:</p>
+                <ul>
+                  <li>Every connection uses HTTPS encryption.</li>
+                  <li>HMRC authorisation uses OAuth 2.0.</li>
+                  <li>Your HMRC access tokens are stored securely and are never exposed to JavaScript.</li>
+                </ul>
+                <p>
+                  See our <a href="https://submit.diyaccounting.co.uk/privacy.html" target="_blank" rel="noopener">privacy policy</a> for
+                  full details.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="sandbox-vs-production">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Connection</span>
-                <span class="faq-question-text">What is the difference between Sandbox, Preview and Production?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>
-                Production sends your filing to HMRC for real. Sandbox sends it to HMRC's test service, and nothing real is filed. Preview
-                lets you try the screens, and nothing is sent.
-              </p>
-              <ul>
-                <li>
-                  <strong>Production</strong> needs your Government Gateway user ID and password. A submission is a legally binding VAT
-                  return.
-                </li>
-                <li>
-                  <strong>Sandbox</strong> uses test credentials, and any VAT registration number works. A submission does not affect real
-                  tax records.
-                </li>
-                <li>
-                  <strong>Preview</strong> shows the screens of a filing that is not yet available. Nothing goes to HMRC or Companies House.
-                </li>
-              </ul>
-              <p>
-                The <a href="mtd-calendar.html#availability" target="_blank" rel="noopener">availability table</a> gives the status of each
-                filing.
-              </p>
+            <div class="faq-item" data-id="mobile-compatibility">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">VAT Basics</span>
+                  <span class="faq-question-text">Can I use this on my phone or tablet?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>
+                  Yes. DIY Accounting Submit works in a browser on a desktop, a tablet or a phone. Use Chrome, Firefox, Safari or Edge. The
+                  page adapts to your screen size, and a larger screen is easier for entering VAT figures.
+                </p>
+                <p>HMRC's authorisation page opens in the same tab and brings you back to Submit.</p>
+              </div>
             </div>
-          </div>
+          </section>
 
-          <div class="faq-item" data-id="clear-browser-data">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Errors</span>
-                <span class="faq-question-text">Something's not working. Should I clear my browser data?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>
-                Clearing browser data signs you out and removes the settings this site keeps in your browser. Your receipts stay in your
-                account. Try these first:
-              </p>
-              <ul>
-                <li>Open a private or incognito window.</li>
-                <li>Try a different browser.</li>
-                <li>Clear the cookies for submit.diyaccounting.co.uk only.</li>
-              </ul>
-              <p>
-                If the problem stays, <a href="/help.html" target="_blank" rel="noopener">send us a support request</a> or email
-                support@diyaccounting.co.uk.
-              </p>
+          <section class="faq-group" aria-labelledby="faq-group-bundles">
+            <h2 class="faq-group-title" id="faq-group-bundles">Bundles</h2>
+            <div class="faq-item" data-id="what-is-bundle">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Bundles</span>
+                  <span class="faq-question-text">What is a bundle?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>
+                  A bundle is what your account can file and how many tokens it gets. It holds no VAT registration number and no HMRC
+                  connection. You enter the number on the VAT form, and HMRC asks you to authorise each submission.
+                </p>
+                <p>
+                  To get a bundle, request a day pass or choose one on the
+                  <a href="bundles.html" target="_blank" rel="noopener">Bundles</a> page.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="accessibility-features">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">VAT Basics</span>
-                <span class="faq-question-text">What accessibility features does this app have?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>DIY Accounting Submit is designed to meet WCAG 2.2 Level AA accessibility standards:</p>
-              <p><strong>Keyboard navigation</strong></p>
-              <ul>
-                <li>All functions accessible via keyboard</li>
-                <li>Tab order follows logical reading order</li>
-                <li>Skip link to main content on every page</li>
-              </ul>
-              <p><strong>Screen reader support</strong></p>
-              <ul>
-                <li>All form fields have accessible labels</li>
-                <li>Error messages announced immediately</li>
-                <li>Status updates use ARIA live regions</li>
-              </ul>
-              <p><strong>Visual design</strong></p>
-              <ul>
-                <li>Colour contrast meets 4.5:1 ratio minimum</li>
-                <li>Text resizable to 200% without loss</li>
-                <li>Focus states clearly visible</li>
-              </ul>
-              <p>
-                For issues or suggestions, see our
-                <a href="https://submit.diyaccounting.co.uk/accessibility.html" target="_blank" rel="noopener">accessibility statement</a>.
-              </p>
+            <div class="faq-item" data-id="bundle-prices">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Bundles</span>
+                  <span class="faq-question-text">What do the bundles cost?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <ul>
+                  <li>
+                    <strong>Resident VAT</strong> costs £9.99 a year or £0.99 a month and gives 100 tokens each month. You can submit VAT
+                    returns to HMRC and make pass links for other people.
+                  </li>
+                  <li>
+                    <strong>Resident Ltd</strong> costs £9.99 a year or £0.99 a month and gives 100 tokens each month. File accounts and
+                    confirmation statements to Companies House.
+                  </li>
+                  <li>
+                    <strong>Resident Pro</strong> costs £39.99 a year or £3.99 a month and gives 100 tokens each month. You can submit VAT
+                    returns to HMRC, file accounts with Companies House, and make pass links for other people.
+                  </li>
+                  <li><strong>Day pass</strong> is free and gives 3 tokens for 24 hours. You can submit VAT returns to HMRC.</li>
+                </ul>
+                <p>
+                  Each filing uses one token. Cancel any time. See the
+                  <a href="bundles.html" target="_blank" rel="noopener">Bundles</a> page to subscribe.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="multiple-businesses">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Submission</span>
-                <span class="faq-question-text">Can I submit VAT for multiple businesses?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>Yes. A bundle holds no VAT registration number, so one bundle covers every business you submit for.</p>
-              <ol>
-                <li>Open the VAT form.</li>
-                <li>Enter the VAT registration number of the business.</li>
-                <li>Submit your figures. HMRC asks you to authorise with that business's Government Gateway user ID and password.</li>
-              </ol>
+            <div class="faq-item" data-id="cancel-subscription">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Bundles</span>
+                  <span class="faq-question-text">How do I cancel my subscription?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <ol>
+                  <li>Sign in and open the <a href="bundles.html" target="_blank" rel="noopener">Bundles</a> page.</li>
+                  <li>Click <strong>Manage Subscription</strong> on the bundle. This opens Stripe's billing portal.</li>
+                  <li>Cancel the subscription in the portal.</li>
+                </ol>
+                <p>
+                  <strong>Remove</strong> takes a bundle off your account. It does not cancel the subscription, and the Manage Subscription
+                  button is on the bundle's row. Cancel in the portal before you remove the bundle.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="wrong-vat-registration-number">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Submission</span>
-                <span class="faq-question-text">I entered the wrong VAT registration number. How do I fix it?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>
-                A bundle holds no VAT registration number, so there is nothing to remove or edit. Enter the correct 9-digit number on the
-                VAT form before you submit. Nothing goes to HMRC until you submit.
-              </p>
+            <div class="faq-item" data-id="delete-account">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Bundles</span>
+                  <span class="faq-question-text">How do I delete my account?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>
+                  No page deletes an account. Write to support@diyaccounting.co.uk from the email address of your account and ask for it to
+                  be deleted. Cancel any subscription first.
+                </p>
+                <p>
+                  We delete your bundles, sign-in data and audit logs within 30 days. The law makes us keep HMRC submission receipts for 7
+                  years, and we anonymise them where we can. See the
+                  <a href="https://submit.diyaccounting.co.uk/privacy.html" target="_blank" rel="noopener">privacy policy</a> for what is
+                  kept.
+                </p>
+              </div>
             </div>
-          </div>
+          </section>
 
-          <div class="faq-item" data-id="data-security">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">VAT Basics</span>
-                <span class="faq-question-text">Where is my data stored? Is it secure?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>
-                Submit stores your data in the AWS eu-west-2 (London) region. See
-                <a href="security.html" target="_blank" rel="noopener">Security</a> for the hosting and the protections.
-              </p>
-              <p>We store:</p>
-              <ul>
-                <li>Your bundles and token balances.</li>
-                <li>Your submission receipts, in your account.</li>
-              </ul>
-              <p>We do not store:</p>
-              <ul>
-                <li>Your VAT figures. They go directly to HMRC and are not kept on our servers.</li>
-                <li>Your Government Gateway credentials. You enter them on HMRC's own website.</li>
-              </ul>
-              <p>Protections:</p>
-              <ul>
-                <li>Every connection uses HTTPS encryption.</li>
-                <li>HMRC authorisation uses OAuth 2.0.</li>
-                <li>Your HMRC access tokens are stored securely and are never exposed to JavaScript.</li>
-              </ul>
-              <p>
-                See our <a href="https://submit.diyaccounting.co.uk/privacy.html" target="_blank" rel="noopener">privacy policy</a> for full
-                details.
-              </p>
+          <section class="faq-group" aria-labelledby="faq-group-connection">
+            <h2 class="faq-group-title" id="faq-group-connection">Connection</h2>
+            <div class="faq-item" data-id="hmrc-connect-fail">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Connection</span>
+                  <span class="faq-question-text">Why can't I connect to HMRC?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>Submit sends you to HMRC's page in the same tab and brings you back after you authorise. If that fails:</p>
+                <ol>
+                  <li>Refresh the page and try again. Your sign-in may have expired while the page was open.</li>
+                  <li>
+                    Check
+                    <a
+                      href="https://www.gov.uk/government/collections/hm-revenue-and-customs-service-availability-and-issues"
+                      target="_blank"
+                      rel="noopener"
+                      >HMRC service availability</a
+                    >
+                    for a fault.
+                  </li>
+                  <li>Try a different browser, or clear the cookies for this site.</li>
+                </ol>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="mobile-compatibility">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">VAT Basics</span>
-                <span class="faq-question-text">Can I use this on my phone or tablet?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>
-                Yes. DIY Accounting Submit works in a browser on a desktop, a tablet or a phone. Use Chrome, Firefox, Safari or Edge. The
-                page adapts to your screen size, and a larger screen is easier for entering VAT figures.
-              </p>
-              <p>HMRC's authorisation page opens in the same tab and brings you back to Submit.</p>
+            <div class="faq-item" data-id="first-time-mtd">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Connection</span>
+                  <span class="faq-question-text">I've never submitted digitally before. Where do I start?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <ol>
+                  <li>
+                    Sign up for Making Tax Digital for VAT at
+                    <a href="https://www.gov.uk/vat-record-keeping/sign-up-for-making-tax-digital-for-vat" target="_blank" rel="noopener"
+                      >gov.uk/vat-record-keeping</a
+                    >, if you have not already.
+                  </li>
+                  <li>Wait 24 to 48 hours. HMRC needs time to start your Making Tax Digital access.</li>
+                  <li>Sign in to DIY Accounting Submit with your Google or Microsoft account.</li>
+                  <li>
+                    Request a day pass or choose a bundle on the <a href="bundles.html" target="_blank" rel="noopener">Bundles</a> page.
+                  </li>
+                  <li>Check your obligations to see which VAT periods HMRC expects returns for.</li>
+                  <li>Enter your 9-digit VAT registration number and your figures on the VAT form.</li>
+                  <li>Submit your return.</li>
+                </ol>
+                <p>Keep your Government Gateway user ID and password ready. HMRC asks for them when you authorise.</p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="vat-refund">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Submission</span>
-                <span class="faq-question-text">What if Box 5 shows a negative amount (refund)?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>
-                A negative Box 5 means HMRC owes you a refund. It happens when Box 4 (VAT reclaimed) is more than Box 3 (VAT due). Submit
-                shows Box 5 as a positive amount, the difference between Box 3 and Box 4, and HMRC knows from the figures whether it is a
-                payment or a refund.
-              </p>
-              <p>
-                HMRC then processes the refund by its normal procedure. Refunds usually reach your bank account within 10 working days. Your
-                HMRC online account shows the status.
-              </p>
+            <div class="faq-item" data-id="authorisation-expired">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Connection</span>
+                  <span class="faq-question-text">My HMRC authorisation has expired</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>An HMRC authorisation lasts 18 months, or ends when you remove the software's authority.</p>
+                <p>To authorise again:</p>
+                <ol>
+                  <li>Start a submission. Submit sends you to HMRC.</li>
+                  <li>Enter your <strong>Government Gateway</strong> user ID and password on HMRC's page.</li>
+                  <li>Give DIY Accounting Submit permission to act for you.</li>
+                </ol>
+                <p>
+                  A business checks or removes the software's authority at
+                  <a href="https://www.tax.service.gov.uk/applications-manage-authority" target="_blank" rel="noopener"
+                    >tax.service.gov.uk/applications-manage-authority</a
+                  >. An agent uses the
+                  <a href="https://www.tax.service.gov.uk/agent-services-account" target="_blank" rel="noopener">agent services account</a>.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="payment-to-hmrc">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Submission</span>
-                <span class="faq-question-text">How do I pay HMRC after submitting my return?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>Submit sends your VAT return. It does not take payment. If you owe VAT, pay HMRC separately:</p>
-              <ol>
-                <li>Open <a href="https://www.gov.uk/pay-vat" target="_blank" rel="noopener">HMRC's page for paying VAT</a>.</li>
-                <li>
-                  Choose a payment method: Direct Debit, bank transfer (use your VAT registration number as the reference), or debit or
-                  credit card.
-                </li>
-              </ol>
-              <p>
-                The payment deadline is usually the same as the return deadline, and your obligations show it. A late payment and a late
-                submission carry different penalties.
-              </p>
+            <div class="faq-item" data-id="sandbox-vs-production">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Connection</span>
+                  <span class="faq-question-text">What is the difference between Sandbox, Preview and Production?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>
+                  Production sends your filing to HMRC for real. Sandbox sends it to HMRC's test service, and nothing real is filed. Preview
+                  lets you try the screens, and nothing is sent.
+                </p>
+                <ul>
+                  <li>
+                    <strong>Production</strong> needs your Government Gateway user ID and password. A submission is a legally binding VAT
+                    return.
+                  </li>
+                  <li>
+                    <strong>Sandbox</strong> uses test credentials, and any VAT registration number works. A submission does not affect real
+                    tax records.
+                  </li>
+                  <li>
+                    <strong>Preview</strong> shows the screens of a filing that is not yet available. Nothing goes to HMRC or Companies
+                    House.
+                  </li>
+                </ul>
+                <p>
+                  The <a href="mtd-calendar.html#availability" target="_blank" rel="noopener">availability table</a> gives the status of
+                  each filing.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="period-key-format">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Submission</span>
-                <span class="faq-question-text">What do the period codes like '26AF' mean?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>Period codes such as 26AF and 26AG are HMRC's own references for VAT periods. You do not need to read them.</p>
-              <p>
-                The first two digits are the year (26 is 2026). The letters show the quarter or month, and they change with the scheme.
-                Choose a period by its dates and its due date, and ignore the code.
-              </p>
+            <div class="faq-item" data-id="lost-sign-in-account">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Connection</span>
+                  <span class="faq-question-text">What if I can't access my Google or Microsoft account?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>
+                  If you lose access to the account you sign in with, nothing is lost at HMRC. Your HMRC authorisation belongs to your
+                  Government Gateway, not to your sign-in provider, and HMRC keeps its record of every VAT return you submitted.
+                </p>
+                <p>To carry on:</p>
+                <ol>
+                  <li>
+                    Recover the account with its provider: Google's account recovery process for a Google account, or Microsoft's account
+                    recovery process for a Microsoft account.
+                  </li>
+                  <li>Or sign in with a new Google or Microsoft account.</li>
+                  <li>Request a day pass or choose a bundle on the Bundles page.</li>
+                  <li>Authorise with HMRC again the next time you submit.</li>
+                </ol>
+                <p>
+                  Receipts stay with the account you signed in with. If you cannot recover that account, write to
+                  support@diyaccounting.co.uk.
+                </p>
+              </div>
             </div>
-          </div>
+          </section>
 
-          <div class="faq-item" data-id="lost-sign-in-account">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Connection</span>
-                <span class="faq-question-text">What if I can't access my Google or Microsoft account?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>
-                If you lose access to the account you sign in with, nothing is lost at HMRC. Your HMRC authorisation belongs to your
-                Government Gateway, not to your sign-in provider, and HMRC keeps its record of every VAT return you submitted.
-              </p>
-              <p>To carry on:</p>
-              <ol>
-                <li>
-                  Recover the account with its provider: Google's account recovery process for a Google account, or Microsoft's account
-                  recovery process for a Microsoft account.
-                </li>
-                <li>Or sign in with a new Google or Microsoft account.</li>
-                <li>Request a day pass or choose a bundle on the Bundles page.</li>
-                <li>Authorise with HMRC again the next time you submit.</li>
-              </ol>
-              <p>
-                Receipts stay with the account you signed in with. If you cannot recover that account, write to support@diyaccounting.co.uk.
-              </p>
+          <section class="faq-group" aria-labelledby="faq-group-errors">
+            <h2 class="faq-group-title" id="faq-group-errors">Errors</h2>
+            <div class="faq-item" data-id="error-invalid-vat-registration-number">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Errors</span>
+                  <span class="faq-question-text">Error: Invalid VAT registration number</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>
+                  This error means the VAT registration number has the wrong form. It must be 9 digits with no spaces, letters or GB prefix:
+                  123456789, not GB123456789 or 123 456 789.
+                </p>
+                <p>If your number is correct and Submit still rejects it:</p>
+                <ul>
+                  <li>Check that the business is registered for <strong>Making Tax Digital for VAT</strong>, not only for VAT.</li>
+                  <li>Wait 24 to 48 hours after a new registration.</li>
+                </ul>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="companies-house-filings">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Submission</span>
-                <span class="faq-question-text">Can I file with Companies House?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>
-                Yes. These Companies House services are in <strong>Production</strong>: company lookup, change of registered office address,
-                change of registered email address, micro-entity accounts, small company accounts and confirmation statement.
-              </p>
-              <p>
-                See the <a href="mtd-calendar.html#availability" target="_blank" rel="noopener">availability table</a> for the current
-                status.
-              </p>
+            <div class="faq-item" data-id="error-duplicate-submission">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Errors</span>
+                  <span class="faq-question-text">Error: Duplicate submission</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>
+                  HMRC rejected the submission because a return for this period already exists. This happens when you already submitted for
+                  the period, or when someone else, such as an accountant, submitted for the same VAT registration number. Check your
+                  receipts. In <strong>VAT obligations</strong> the period shows as <strong>Fulfilled</strong> with a received date.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="companies-house-accounts-filings">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Submission</span>
-                <span class="faq-question-text">Can I file accounts or a confirmation statement with Companies House?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>
-                Yes. Micro-entity accounts, small company accounts and the confirmation statement are in <strong>Production</strong>. A
-                filing goes to Companies House.
-              </p>
-              <p>
-                Each filing needs the <strong>Resident Ltd</strong>, <strong>Resident Pro</strong> or
-                <strong>Resident Tax Agent</strong> bundle. An accounts filing costs one token. A confirmation statement costs no token and
-                carries a £61.35 charge for each filing.
-              </p>
-              <p>
-                The PSC verification statement is in <strong>Sandbox</strong>: it goes to the Companies House test service and files nothing
-                real.
-              </p>
-              <p>
-                See the <a href="mtd-calendar.html#availability" target="_blank" rel="noopener">availability table</a> for the current
-                status.
-              </p>
+            <div class="faq-item" data-id="error-obligation-not-found">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Errors</span>
+                  <span class="faq-question-text">Error: Obligation not found for this period</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>
+                  You are submitting for a period that HMRC does not expect a return for. Use <strong>Check VAT obligations</strong> to see
+                  which periods are open. Then:
+                </p>
+                <ol>
+                  <li>Match the VAT period to an <strong>Open</strong> obligation exactly.</li>
+                  <li>Check that you have not already submitted for this period. It would show as Fulfilled.</li>
+                  <li>Check that the VAT registration number is correct.</li>
+                </ol>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="bundle-prices">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Bundles</span>
-                <span class="faq-question-text">What do the bundles cost?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <ul>
-                <li>
-                  <strong>Resident VAT</strong> costs £9.99 a year or £0.99 a month and gives 100 tokens each month. You can submit VAT
-                  returns to HMRC and make pass links for other people.
-                </li>
-                <li>
-                  <strong>Resident Ltd</strong> costs £9.99 a year or £0.99 a month and gives 100 tokens each month. File accounts and
-                  confirmation statements to Companies House.
-                </li>
-                <li>
-                  <strong>Resident Pro</strong> costs £39.99 a year or £3.99 a month and gives 100 tokens each month. You can submit VAT
-                  returns to HMRC, file accounts with Companies House, and make pass links for other people.
-                </li>
-                <li><strong>Day pass</strong> is free and gives 3 tokens for 24 hours. You can submit VAT returns to HMRC.</li>
-              </ul>
-              <p>
-                Each filing uses one token. Cancel any time. See the <a href="bundles.html" target="_blank" rel="noopener">Bundles</a> page
-                to subscribe.
-              </p>
+            <div class="faq-item" data-id="clear-browser-data">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Errors</span>
+                  <span class="faq-question-text">Something's not working. Should I clear my browser data?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>
+                  Clearing browser data signs you out and removes the settings this site keeps in your browser. Your receipts stay in your
+                  account. Try these first:
+                </p>
+                <ul>
+                  <li>Open a private or incognito window.</li>
+                  <li>Try a different browser.</li>
+                  <li>Clear the cookies for submit.diyaccounting.co.uk only.</li>
+                </ul>
+                <p>
+                  If the problem stays, <a href="/help.html" target="_blank" rel="noopener">send us a support request</a> or email
+                  support@diyaccounting.co.uk.
+                </p>
+              </div>
             </div>
-          </div>
+          </section>
 
-          <div class="faq-item" data-id="cancel-subscription">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Bundles</span>
-                <span class="faq-question-text">How do I cancel my subscription?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <ol>
-                <li>Sign in and open the <a href="bundles.html" target="_blank" rel="noopener">Bundles</a> page.</li>
-                <li>Click <strong>Manage Subscription</strong> on the bundle. This opens Stripe's billing portal.</li>
-                <li>Cancel the subscription in the portal.</li>
-              </ol>
-              <p>
-                <strong>Remove</strong> takes a bundle off your account. It does not cancel the subscription, and the Manage Subscription
-                button is on the bundle's row. Cancel in the portal before you remove the bundle.
-              </p>
+          <section class="faq-group" aria-labelledby="faq-group-receipts">
+            <h2 class="faq-group-title" id="faq-group-receipts">Receipts</h2>
+            <div class="faq-item" data-id="where-is-receipt">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Receipts</span>
+                  <span class="faq-question-text">Where can I find my submission receipt?</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <ol>
+                  <li>
+                    A receipt appears when the submission succeeds. It shows your <strong>Form Bundle Number</strong>. Save or print it.
+                  </li>
+                  <li>Click <strong>Receipts</strong> in the navigation bar to see all your submissions.</li>
+                  <li>Each receipt shows the date, the VAT registration number, the period and the HMRC reference.</li>
+                </ol>
+                <p>Receipts are stored in your account. You can open them from any device when you are signed in.</p>
+              </div>
             </div>
-          </div>
 
-          <div class="faq-item" data-id="delete-account">
-            <h2 class="faq-heading">
-              <button class="faq-question" aria-expanded="false">
-                <span class="faq-category-badge">Bundles</span>
-                <span class="faq-question-text">How do I delete my account?</span>
-                <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </h2>
-            <div class="faq-answer" hidden>
-              <p>
-                No page deletes an account. Write to support@diyaccounting.co.uk from the email address of your account and ask for it to be
-                deleted. Cancel any subscription first.
-              </p>
-              <p>
-                We delete your bundles, sign-in data and audit logs within 30 days. The law makes us keep HMRC submission receipts for 7
-                years, and we anonymise them where we can. See the
-                <a href="https://submit.diyaccounting.co.uk/privacy.html" target="_blank" rel="noopener">privacy policy</a> for what is
-                kept.
-              </p>
+            <div class="faq-item" data-id="hmrc-not-received">
+              <h3 class="faq-heading">
+                <button class="faq-question" aria-expanded="false">
+                  <span class="faq-category-badge">Receipts</span>
+                  <span class="faq-question-text">HMRC says they haven't received my return but I got a success message</span>
+                  <svg class="faq-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </h3>
+              <div class="faq-answer" hidden>
+                <p>
+                  If Submit showed a success message with a Form Bundle Number, HMRC received the return. A difference between the two
+                  usually has one of these causes:
+                </p>
+                <ol>
+                  <li>HMRC's systems can take a few hours to show a new return. Check again later.</li>
+                  <li>You may be checking a different period from the one you submitted.</li>
+                  <li>
+                    You may be checking a different VAT registration number. Check that you look at the same business in HMRC's portal.
+                  </li>
+                </ol>
+                <p>
+                  Your receipt shows the <strong>Form Bundle Number</strong>, for example 425379263134. Quote it to HMRC to prove the
+                  submission.
+                </p>
+              </div>
             </div>
-          </div>
+          </section>
 
           <!-- generated:faq-entries:end -->
         </div>

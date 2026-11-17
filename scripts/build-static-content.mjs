@@ -21,7 +21,7 @@ import prettier from "prettier";
 import TOML from "@iarna/toml";
 import { isActivityListedInEnvironment } from "../app/services/productCatalog.js";
 import { escapeHtml, replaceBetweenMarkers } from "./page-markers.mjs";
-import { renderFaqItem } from "../web/public/lib/faq-markdown.js";
+import { renderFaqGroups } from "../web/public/lib/faq-markdown.js";
 import { bundlePriceList, fillBundlePrices } from "../web/public/lib/bundle-listing.js";
 import { GROUPS, splitTitle, TEST_PERIODS_NOTE } from "../web/public/lib/guide-journeys.js";
 
@@ -58,10 +58,7 @@ export function loadManifest() {
 
 export function renderFaqEntries(faqs, catalog) {
   const priceList = bundlePriceList(catalog, PUBLIC_ENVIRONMENT);
-  return faqs
-    .filter((faq) => isListedEverywhere(catalog, faq.activity))
-    .map((faq) => renderFaqItem(fillBundlePrices(faq, priceList)))
-    .join("");
+  return renderFaqGroups(faqs.filter((faq) => isListedEverywhere(catalog, faq.activity)).map((faq) => fillBundlePrices(faq, priceList)));
 }
 
 export async function renderHelpPage(html = readFileSync(HELP_PAGE_PATH, "utf8"), faqs = loadFaqs(), catalog = loadCatalog()) {
