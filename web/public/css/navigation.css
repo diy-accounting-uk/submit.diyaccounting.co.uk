@@ -58,6 +58,30 @@
   }
 }
 
+/* The Welsh labels are wider than the 48rem content column takes in one row, so from 601px wide
+   the Welsh nav keeps the two-row grid. The selector matches before page-chrome.js runs on a Welsh
+   page and, once it has run, wherever the chrome reads in Welsh; header.css reserves the same rows. */
+@media (min-width: 761px) {
+  :root:is([data-chrome-language="cy"], [lang="cy"]:not([data-chrome-language])) .main-nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: var(--space-3);
+  }
+}
+
+/* A tab to a page with no Welsh copy carries its "(yn Saesneg)" mark on a second line, inside the
+   tab's height, so the mark adds no width and no row. */
+.main-nav a:has(.lang-mark) {
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  line-height: 1.15;
+}
+
+.main-nav .lang-mark {
+  font-size: 0.75em;
+}
+
 /* About page navigation links (Help / User Guide) */
 .about-nav-links {
   display: flex;
@@ -197,8 +221,10 @@ dd {
     column-gap: var(--space-2);
   }
 
+  /* A label that wraps takes two lines inside the cell's height. */
   .main-nav a {
     white-space: normal;
     overflow-wrap: anywhere;
+    line-height: 1.15;
   }
 }

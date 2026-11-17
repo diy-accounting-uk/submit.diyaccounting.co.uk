@@ -2,6 +2,12 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 (function () {
+  // page-chrome.js gives the text in the chosen language; without it the English stands.
+  function siteText(id, english, values) {
+    if (window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
+
   const PERSON_ICON_PATH = "M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z";
 
   function pickDisplayName(user) {
@@ -36,8 +42,9 @@
 
     const refreshBtn = document.createElement("button");
     refreshBtn.className = "token-refresh-btn";
-    refreshBtn.setAttribute("aria-label", "Refresh token balance");
-    refreshBtn.setAttribute("title", "Refresh token balance");
+    const refreshLabel = siteText("chrome.refresh-tokens", "Refresh token balance");
+    refreshBtn.setAttribute("aria-label", refreshLabel);
+    refreshBtn.setAttribute("title", refreshLabel);
     refreshBtn.type = "button";
     refreshBtn.innerHTML =
       '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">' +
@@ -59,8 +66,9 @@
     const cog = document.createElement("a");
     cog.className = "settings-cog";
     cog.href = "/settings.html";
-    cog.setAttribute("aria-label", "Settings");
-    cog.setAttribute("title", "Settings");
+    const settingsLabel = siteText("chrome.settings", "Settings");
+    cog.setAttribute("aria-label", settingsLabel);
+    cog.setAttribute("title", settingsLabel);
     cog.innerHTML =
       '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">' +
       '<path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.31-.07.63-.07.94s.02.63.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>' +
@@ -116,23 +124,28 @@
           return b.allocated && b.tokensGranted === "unlimited";
         });
         if (hasUnlimitedTokenBundle) {
-          tokenCountEl.textContent = "Unlimited tokens";
+          tokenCountEl.textContent = siteText("chrome.tokens-unlimited", "Unlimited tokens");
         } else if (hasTokenBundles && typeof data.tokensRemaining === "number") {
-          tokenCountEl.textContent = data.tokensRemaining + " token" + (data.tokensRemaining !== 1 ? "s" : "");
+          tokenCountEl.textContent = tokenCountText(data.tokensRemaining);
         } else {
           // No token bundle held (an operator, for one): there is no balance to show.
           tokenBalanceEl.style.display = "none";
           return;
         }
       } else {
-        tokenCountEl.textContent = "0 tokens";
+        tokenCountEl.textContent = tokenCountText(0);
       }
       tokenBalanceEl.style.display = "inline-flex";
     } catch (err) {
       console.warn("Failed to fetch token balance:", err);
-      tokenCountEl.textContent = "0 tokens";
+      tokenCountEl.textContent = tokenCountText(0);
       tokenBalanceEl.style.display = "inline-flex";
     }
+  }
+
+  function tokenCountText(count) {
+    if (count === 1) return siteText("chrome.tokens-one", "1 token");
+    return siteText("chrome.tokens-count", "{count} tokens", { count });
   }
 
   // Refresh button handler: clear all caches and re-fetch
@@ -197,7 +210,7 @@
       const userLabel = pickDisplayName(user);
       console.log("User info:", user);
       console.log("User label:", userLabel);
-      const signedInAs = (document.documentElement.getAttribute("lang") === "cy" ? "Wedi mewngofnodi fel " : "Signed in as ") + userLabel;
+      const signedInAs = siteText("chrome.signed-in-as", "Signed in as {name}", { name: userLabel });
       const person = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       person.setAttribute("class", "login-person");
       person.setAttribute("viewBox", "0 0 24 24");
@@ -210,13 +223,13 @@
       loginStatusElement.setAttribute("role", "group");
       loginStatusElement.setAttribute("aria-label", signedInAs);
       ensureSettingsCog(loginLinkElement);
-      loginLinkElement.textContent = "Sign out";
+      loginLinkElement.textContent = siteText("chrome.sign-out", "Sign out");
       loginLinkElement.href = "#";
       loginLinkElement.onclick = logout;
       // Fetch token balance after login status is set
       fetchAndDisplayTokens();
     } else {
-      loginStatusElement.textContent = "Not signed in";
+      loginStatusElement.textContent = siteText("chrome.not-signed-in", "Not signed in");
       loginStatusElement.removeAttribute("title");
       loginStatusElement.removeAttribute("role");
       loginStatusElement.removeAttribute("aria-label");
@@ -230,7 +243,7 @@
         loginLinkElement.style.display = "none";
       } else {
         loginLinkElement.style.display = "";
-        loginLinkElement.textContent = "Sign in";
+        loginLinkElement.textContent = siteText("chrome.sign-in", "Sign in");
         loginLinkElement.href = window.signInHref("/auth/login.html");
       }
       loginLinkElement.onclick = null;

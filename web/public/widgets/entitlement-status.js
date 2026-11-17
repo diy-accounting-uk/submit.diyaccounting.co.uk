@@ -7,6 +7,12 @@
 (function () {
   "use strict";
 
+  // page-chrome.js gives the text in the chosen language; without it the English stands.
+  function siteText(id, english, values) {
+    if (window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
+
   // Cache for catalog and bundles to avoid multiple API calls on same page
   let catalogCache = null;
   let bundlesCache = null;
@@ -203,7 +209,7 @@
     const [catalog, userBundles] = await Promise.all([fetchCatalog(), fetchUserBundles()]);
 
     if (!catalog) {
-      return { text: "Activity: unrestricted", style: "unrestricted" };
+      return { text: siteText("chrome.activity-unrestricted", "Activity: unrestricted"), style: "unrestricted" };
     }
 
     // Find matching activity
@@ -211,7 +217,7 @@
 
     // If no matching activity, page is unrestricted (doesn't require any bundle)
     if (!matchingActivity) {
-      return { text: "Activity: unrestricted", style: "unrestricted" };
+      return { text: siteText("chrome.activity-unrestricted", "Activity: unrestricted"), style: "unrestricted" };
     }
 
     // Get all bundles user has access to (automatic + granted)
@@ -223,14 +229,17 @@
     const hasAccess = requiredBundles.some((bundleId) => allUserBundles.includes(bundleId));
 
     if (hasAccess) {
-      return { text: "Activity: access granted", style: "granted" };
+      return { text: siteText("chrome.activity-granted", "Activity: access granted"), style: "granted" };
     }
 
     // User doesn't have access - show which activities are required
     const bundleNames = getBundleNames(catalog, requiredBundles);
     const activityList = bundleNames.length > 0 ? bundleNames.join(", ") : requiredBundles.join(", ");
 
-    return { text: `Activity: requires ${activityList}`, style: "requires" };
+    return {
+      text: siteText("chrome.activity-requires", "Activity: requires {activities}", { activities: activityList }),
+      style: "requires",
+    };
   }
 
   function unavailablePanel(heading, text, linkHref, linkText) {

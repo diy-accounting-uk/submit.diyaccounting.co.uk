@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
-# The Welsh text of the pages under web/public/cy/, built by scripts/build-welsh-pages.mjs.
-# [strings."<id>"] holds the Welsh for the English element marked data-i18n="<id>" (or data-i18n-<attr>="<id>").
+# The Welsh text of the pages under web/public/cy/ and of web/public/lib/welsh-text.js, built by scripts/build-welsh-pages.mjs.
+# [strings."<id>"] holds the Welsh for the English element marked data-i18n="<id>" (or data-i18n-<attr>="<id>"),
+# or for the English of a siteText("<id>", "<English>") call in a script.
+# Page entries come first, a page's ids under its page id; each later section names the ids it holds.
 # hash is the hash of that English text. When the English changes, the build and npm test list the entry as stale
 # with the new hash: translate the new English, then put the new hash here.
 # [shared."<id>"] holds Welsh-only text that every Welsh page carries.
@@ -303,3 +305,205 @@ cy = '''Darllenwch y <a href="help.html">cymorth a’r cwestiynau cyffredin</a>,
 [strings."get-started.help-2"]
 hash = "e8493e1fc280"
 cy = '''Am gwestiynau am eich treth eich hun, cysylltwch â CThEF.'''
+
+# == Site chrome (LANG9) ==
+# ids chrome.*: the header, the nav, the footer and the header widgets, through siteText; add entries below this line.
+[strings."chrome.language"]
+hash = "a4fe65264ef7"
+cy = '''Iaith'''
+
+[strings."chrome.in-english"]
+hash = "4c1a4a26996d"
+cy = '''(yn Saesneg)'''
+
+[strings."chrome.notice-in-english"]
+hash = "0abb98a37975"
+cy = '''Mae’r dudalen hon yn Saesneg.'''
+
+[strings."chrome.notice-welsh-copy"]
+hash = "eb7d1a530c2f"
+cy = '''Mae’r dudalen hon ar gael yn Gymraeg.'''
+
+[strings."chrome.read-in-welsh"]
+hash = "81fa2ec78bd8"
+cy = '''Darllenwch hi yn Gymraeg'''
+
+[strings."chrome.notice-english-copy"]
+hash = "08f1da1c4df8"
+cy = '''Mae’r dudalen hon yn Gymraeg.'''
+
+[strings."chrome.read-in-english"]
+hash = "a9d0b8e36c0d"
+cy = '''Darllenwch hi yn Saesneg'''
+
+[strings."chrome.home"]
+hash = "3a78695388b3"
+cy = '''Hafan'''
+
+[strings."chrome.about"]
+hash = "4efca0d10c5f"
+cy = '''Amdanom ni'''
+
+[strings."chrome.main-navigation"]
+hash = "eb355944b92d"
+cy = '''Prif lywio'''
+
+[strings."chrome.nav-activities"]
+hash = "4d0076e6b4c7"
+cy = '''Gweithga­reddau'''
+
+[strings."chrome.nav-receipts"]
+hash = "60a627df404a"
+cy = '''Derbynebau'''
+
+[strings."chrome.nav-bundles"]
+hash = "ff042b6ded4e"
+cy = '''Bundles'''
+
+[strings."chrome.nav-spreadsheets"]
+hash = "fdae6602c2be"
+cy = '''Taenlenni'''
+
+[strings."chrome.nav-mtd-calendar"]
+hash = "4b7b1227de08"
+cy = '''Calendr MTD'''
+
+[strings."chrome.nav-tax-rates"]
+hash = "e15f5606be6f"
+cy = '''Cyfraddau treth'''
+
+[strings."chrome.nav-tools"]
+hash = "ea93d6a262ec"
+cy = '''Offer'''
+
+[strings."chrome.nav-practice"]
+hash = "d3857b12b4ce"
+cy = '''Practis'''
+
+[strings."chrome.theme-device"]
+hash = "1a9af97a1be1"
+cy = '''Cynllun lliw: gosodiad y ddyfais. Newid i olau.'''
+
+[strings."chrome.theme-light"]
+hash = "776c9f4d41ef"
+cy = '''Cynllun lliw: golau. Newid i dywyll.'''
+
+[strings."chrome.theme-dark"]
+hash = "9531bc22d985"
+cy = '''Cynllun lliw: tywyll. Newid i osodiad y ddyfais.'''
+
+[strings."chrome.activity-unrestricted"]
+hash = "de622d01972e"
+cy = '''Gweithgaredd: heb gyfyngiad'''
+
+[strings."chrome.activity-granted"]
+hash = "0dc0f9439a89"
+cy = '''Gweithgaredd: mynediad wedi’i roi'''
+
+[strings."chrome.activity-requires"]
+hash = "c1c048811163"
+cy = '''Gweithgaredd: angen {activities}'''
+
+[strings."chrome.not-signed-in"]
+hash = "491fc91cd76e"
+cy = '''Heb fewngofnodi'''
+
+[strings."chrome.sign-in"]
+hash = "bfd402b2f6f3"
+cy = '''Mewngofnodi'''
+
+[strings."chrome.sign-out"]
+hash = "48f0d3d397d4"
+cy = '''Allgofnodi'''
+
+[strings."chrome.signed-in-as"]
+hash = "599a82d98089"
+cy = '''Wedi mewngofnodi fel {name}'''
+
+[strings."chrome.settings"]
+hash = "74a883a037bc"
+cy = '''Gosodiadau'''
+
+[strings."chrome.refresh-tokens"]
+hash = "edade81ed7dd"
+cy = '''Adnewyddu nifer y credydau'''
+
+[strings."chrome.tokens-unlimited"]
+hash = "82d8bc4ff937"
+cy = '''Credyd diderfyn'''
+
+[strings."chrome.tokens-one"]
+hash = "6254d8ee6bcb"
+cy = '''1 credyd'''
+
+[strings."chrome.tokens-count"]
+hash = "bc17ff48c052"
+cy = '''{count} credyd'''
+
+[strings."chrome.footer-site-information"]
+hash = "ed2d8fa9ab6f"
+cy = '''Gwybodaeth am y wefan'''
+
+[strings."chrome.footer-vat-return"]
+hash = "45b0bc62c823"
+cy = '''Ffurflen TAW o daenlen'''
+
+[strings."chrome.footer-micro-entity"]
+hash = "b8156d93e1d2"
+cy = '''Cyfrifon micro-endid'''
+
+[strings."chrome.footer-small-company"]
+hash = "77ba8c1168e2"
+cy = '''Cyfrifon cwmni bach'''
+
+[strings."chrome.footer-dormant-company"]
+hash = "216dd85cf112"
+cy = '''Cyfrifon cwmni segur'''
+
+[strings."chrome.footer-confirmation-statement"]
+hash = "9e84a7fe6e03"
+cy = '''Datganiad cadarnhau'''
+
+[strings."chrome.footer-privacy"]
+hash = "54a57c3147c4"
+cy = '''Preifatrwydd'''
+
+[strings."chrome.footer-security"]
+hash = "8f6fb4eb7f42"
+cy = '''Diogelwch'''
+
+[strings."chrome.footer-terms"]
+hash = "ede548996483"
+cy = '''Telerau'''
+
+[strings."chrome.footer-accessibility"]
+hash = "d3368cbffe23"
+cy = '''Hygyrchedd'''
+
+[strings."chrome.footer-cookie-choices"]
+hash = "aa7302dc8a68"
+cy = '''Dewisiadau cwcis'''
+
+[strings."chrome.footer-help"]
+hash = "b79cac926e0b"
+cy = '''Cymorth'''
+
+[strings."chrome.footer-source"]
+hash = "0e570ca6fabe"
+cy = '''Cod ffynhonnell'''
+
+[strings."chrome.footer-legal"]
+hash = "7703ee854fb1"
+cy = '''Am ddim i’w ddefnyddio o dan y {licence}.'''
+
+# == HMRC VAT and receipts (LANG10a) ==
+# ids vat.* and receipt.*; add entries below this line.
+
+# == Income Tax (LANG10b) ==
+# ids itsa.*; add entries below this line.
+
+# == Companies House (LANG11a, LANG11b) ==
+# ids ch.*; add entries below this line.
+
+# == Marketing site (MKT8) ==
+# ids marketing.*; add entries below this line.

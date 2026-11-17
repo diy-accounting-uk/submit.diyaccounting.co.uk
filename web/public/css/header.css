@@ -31,6 +31,13 @@ header:has(> .chrome-fallback) {
   }
 }
 
+/* The Welsh nav keeps the two-row grid from 601px wide (navigation.css). */
+@media (min-width: 761px) {
+  :root:is([data-chrome-language="cy"], [lang="cy"]:not([data-chrome-language])) header:has(> .chrome-fallback) {
+    padding-top: calc(2 * var(--nav-height) + var(--space-1));
+  }
+}
+
 @media (max-width: 600px) {
   header:has(> .chrome-fallback) {
     --phone-nav-rows: 3;
@@ -284,6 +291,20 @@ header::after {
   display: inline-flex;
   align-items: center;
   min-height: 2.75rem;
+}
+
+/* A link to a page that has no copy in the chrome's language carries the mark "(yn Saesneg)". */
+.lang-mark {
+  font-size: 0.85em;
+  color: var(--c-ink-muted);
+  white-space: nowrap;
+}
+
+/* Under the nav when the page body and the chrome are in different languages. */
+.language-notice {
+  margin: var(--space-2) 0 0;
+  font-size: var(--step--1);
+  color: var(--c-ink-muted);
 }
 
 .entitlement-status {

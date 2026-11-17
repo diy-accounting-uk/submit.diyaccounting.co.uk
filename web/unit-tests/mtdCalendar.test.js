@@ -32,7 +32,7 @@ describe("MTD calendar page", () => {
 
   test("the main nav links to the page", () => {
     const chrome = readFileSync("web/public/widgets/page-chrome.js", "utf8");
-    expect(chrome).toContain('{ label: "MTD calendar", target: "mtd-calendar.html" }');
+    expect(chrome).toContain('{ label: siteText("chrome.nav-mtd-calendar", "MTD calendar"), target: "mtd-calendar.html" }');
   });
 
   test("both wide tables stack their rows on a phone and label every cell", () => {

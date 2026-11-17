@@ -296,6 +296,6 @@ describe("tools page", () => {
 
   test("the sitemap lists the tools page and the navigation links to it", () => {
     expect(read("web/public/sitemap.xml")).toContain("https://submit.diyaccounting.co.uk/tools.html");
-    expect(read("web/public/widgets/page-chrome.js")).toContain('{ label: "Tools", target: "tools.html" }');
+    expect(read("web/public/widgets/page-chrome.js")).toContain('{ label: siteText("chrome.nav-tools", "Tools"), target: "tools.html" }');
   });
 });

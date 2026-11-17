@@ -133,7 +133,9 @@ describe("rates page", () => {
   });
 
   test("the navigation lists the page", () => {
-    expect(readFileSync("web/public/widgets/page-chrome.js", "utf8")).toContain('{ label: "Tax rates", target: "rates.html" }');
+    expect(readFileSync("web/public/widgets/page-chrome.js", "utf8")).toContain(
+      '{ label: siteText("chrome.nav-tax-rates", "Tax rates"), target: "rates.html" }',
+    );
   });
 
   test("each year maps to its engine file", () => {

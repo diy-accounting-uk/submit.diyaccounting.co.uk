@@ -7,10 +7,13 @@ import path from "node:path";
 import {
   PUBLIC_DIR,
   WELSH_PAGES,
+  WELSH_TEXT_PATH,
   catalogueProblems,
   expectedAlternates,
   loadCatalogue,
   renderWelshPage,
+  renderWelshText,
+  scriptStrings,
   welshUrl,
 } from "../../scripts/build-welsh-pages.mjs";
 
@@ -39,6 +42,30 @@ describe("Welsh catalogue", () => {
   });
 });
 
+describe("Welsh text of the site's scripts", () => {
+  it("finds the chrome's strings in page-chrome.js", () => {
+    const found = scriptStrings(["widgets/page-chrome.js"]);
+    expect(found).toContainEqual({ id: "chrome.nav-tools", source: "Tools", file: "widgets/page-chrome.js" });
+    expect(found).toContainEqual({ id: "chrome.sign-in", source: "Sign in", file: "widgets/page-chrome.js" });
+  });
+
+  it("reports a script string whose English changed as stale, and a new one as missing", () => {
+    const scripts = [
+      { id: "chrome.nav-tools", source: "Tools and guides", file: "x.js" },
+      { id: "chrome.no-such-string", source: "Nothing", file: "x.js" },
+    ];
+    const problems = catalogueProblems(loadCatalogue(), WELSH_PAGES, [...scriptStrings(), ...scripts]);
+    expect(problems).toContainEqual(expect.stringMatching(/^chrome\.nav-tools: used twice with different English text/));
+    expect(problems).toContainEqual(expect.stringMatching(/^chrome\.no-such-string: missing/));
+  });
+
+  it("lib/welsh-text.js is the current build of the catalogue and lists every Welsh copy", async () => {
+    const committed = fs.readFileSync(WELSH_TEXT_PATH, "utf-8");
+    expect(committed).toBe(await renderWelshText());
+    for (const page of WELSH_PAGES) expect(committed).toContain(`"${page.en}"`);
+  });
+});
+
 describe.each(WELSH_PAGES)("Welsh page $cy", (page) => {
   const welsh = read(page.cy);
   const english = read(page.en);
@@ -56,6 +83,12 @@ describe.each(WELSH_PAGES)("Welsh page $cy", (page) => {
       expect(welsh).toContain(alternateLink(alternate));
       expect(english).toContain(alternateLink(alternate));
     }
+  });
+
+  it("loads the Welsh text before page-chrome.js", () => {
+    expect(welsh).toMatch(
+      /<script src="(\.\.\/)+lib\/welsh-text\.js"><\/script>\s*<script src="(\.\.\/)+widgets\/page-chrome\.js"><\/script>/,
+    );
   });
 
   it("names itself as canonical", () => {

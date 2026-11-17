@@ -3,18 +3,28 @@
 
 // @capability SITE-30 Build the Welsh pages
 // - **Use when:** a page needs a Welsh copy at /cy/, an English string on a Welsh page changed, or a Welsh string needs a fix.
-// - **Does:** Reads each English page in WELSH_PAGES, replaces every element marked data-i18n (and every attribute marked data-i18n-<attr>) with its Welsh text from i18n/cy.toml, sets lang="cy", the canonical and og:url and the paths of links and assets, adds HMRC's Welsh services block, and writes web/public/cy/<page>. Each catalogue entry holds a hash of its English source; the unit test fails on a missing, stale or unused entry and on a committed Welsh page that differs from the render.
+// - **Does:** Reads each English page in WELSH_PAGES, replaces every element marked data-i18n (and every attribute marked data-i18n-<attr>) with its Welsh text from i18n/cy.toml, sets lang="cy", the canonical and og:url and the paths of links and assets, adds HMRC's Welsh services block, and writes web/public/cy/<page>. It also finds every siteText("<id>", "<English>") call in the site's scripts and writes their Welsh text, and the list of pages with a Welsh copy, to web/public/lib/welsh-text.js, which page-chrome.js loads when the reader's language choice is Welsh. Each catalogue entry holds a hash of its English source; the unit test fails on a missing, stale or unused entry and on a committed Welsh page or text file that differs from the render.
 // - **Run:** `npm run build:welsh`; `npx vitest run web/unit-tests/welsh-pages.test.js`
 // - **Entry:** `scripts/build-welsh-pages.mjs:renderWelshPage`; `scripts/build-welsh-pages.mjs:catalogueProblems`
-// - **Files:** scripts/build-welsh-pages.mjs, i18n/cy.toml, web/public/cy/, web/public/get-started.html, web/public/widgets/page-chrome.js, web/unit-tests/welsh-pages.test.js
+// - **Files:** scripts/build-welsh-pages.mjs, i18n/cy.toml, web/public/cy/, web/public/lib/welsh-text.js, web/public/get-started.html, web/public/widgets/page-chrome.js, web/unit-tests/welsh-pages.test.js
 // - **Keywords:** welsh, cymraeg, cy, i18n, translation, hreflang, language switch, catalogue, stale translation
 // - **Related:** SITE-14
 // @end-capability
 
 // Usage: node scripts/build-welsh-pages.mjs   (npm run build:welsh)
 // A changed English string makes its catalogue entry stale: translate the new English, then put the hash this script prints in the entry.
+//
+// How a string gets its Welsh:
+// - Static text on a page in WELSH_PAGES: mark the element data-i18n="<page id>.<name>" (an attribute:
+//   data-i18n-<attr>="<id>"). The Welsh copy under cy/ carries the Welsh text in its place.
+// - Text a page script writes on a page in WELSH_PAGES: a <span data-i18n="<page id>.rt-<name>"> in the
+//   page's <template id="pageText">, read by the script (index.page.js does this), so it follows the page.
+// - Text any other script writes (page-chrome.js, the shared widgets, submit.js): siteText("<id>",
+//   "<English>") with both arguments as double-quoted literals, and {name} for a value passed as
+//   siteText(id, english, { name }). It follows the reader's language choice on every page.
+// Each id has one [strings."<id>"] entry in i18n/cy.toml, under the section that names its prefix.
 
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
@@ -25,6 +35,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const PUBLIC_DIR = join(ROOT, "web", "public");
 export const CATALOGUE_PATH = join(ROOT, "i18n", "cy.toml");
 export const SITE_ORIGIN = "https://submit.diyaccounting.co.uk";
+export const WELSH_TEXT_PATH = join(PUBLIC_DIR, "lib", "welsh-text.js");
 
 export const WELSH_PAGES = [
   { id: "index", en: "index.html", cy: "cy/index.html", enUrl: `${SITE_ORIGIN}/` },
@@ -92,17 +103,44 @@ export function englishStrings(html, page) {
   return found;
 }
 
+// The site's own scripts: everything under web/public but the generated and the third-party files.
+const SCRIPT_SKIP = [/^cy\//, /^docs\//, /^tests\//, /^lib\/welsh-text\.js$/, /\.bundle\.js$/, /\.min\.js$/];
+
+export function siteScriptPaths(dir = PUBLIC_DIR, prefix = "") {
+  const paths = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const relative = prefix + entry.name;
+    if (entry.isDirectory()) paths.push(...siteScriptPaths(join(dir, entry.name), `${relative}/`));
+    else if (/\.m?js$/.test(entry.name) && !SCRIPT_SKIP.some((pattern) => pattern.test(relative))) paths.push(relative);
+  }
+  return paths.sort();
+}
+
+const SITE_TEXT_PATTERN = /\bsiteText\(\s*"([a-z0-9][a-z0-9.-]*)"\s*,\s*"((?:[^"\\\n]|\\.)*)"/g;
+
+// Every siteText("<id>", "<English>") call in the site's scripts, as { id, source, file }.
+export function scriptStrings(paths = siteScriptPaths()) {
+  const found = [];
+  for (const file of paths) {
+    const text = readFileSync(join(PUBLIC_DIR, file), "utf-8");
+    for (const [, id, raw] of text.matchAll(SITE_TEXT_PATTERN)) found.push({ id, source: JSON.parse(`"${raw}"`), file });
+  }
+  return found;
+}
+
 // Missing, stale, untranslated and unused entries, one message each.
-export function catalogueProblems(catalogue = loadCatalogue(), pages = WELSH_PAGES) {
+export function catalogueProblems(catalogue = loadCatalogue(), pages = WELSH_PAGES, scripts = scriptStrings()) {
   const problems = [];
   const sources = new Map();
+  const remember = (id, source) => {
+    const hash = sourceHash(source);
+    if (sources.has(id) && sources.get(id) !== hash) problems.push(`${id}: used twice with different English text`);
+    sources.set(id, hash);
+  };
   for (const page of pages) {
-    for (const { id, source } of englishStrings(readEnglishPage(page), page)) {
-      const hash = sourceHash(source);
-      if (sources.has(id) && sources.get(id) !== hash) problems.push(`${id}: used twice with different English text`);
-      sources.set(id, hash);
-    }
+    for (const { id, source } of englishStrings(readEnglishPage(page), page)) remember(id, source);
   }
+  for (const { id, source } of scripts) remember(id, source);
   for (const [id, hash] of sources) {
     const entry = catalogue.strings[id];
     if (!entry) problems.push(`${id}: missing from i18n/cy.toml (hash ${hash})`);
@@ -178,6 +216,12 @@ export async function renderWelshPage(page, catalogue = loadCatalogue(), pages =
   html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${welshUrl(page)}$2`);
   html = replaceOnce(html, /<\/main>/, `${welshServicesBlock(catalogue)}</main>`, `</main> in ${page.en}`);
   html = html.replace(/(\s(?:href|src)=")([^"]*)(")/g, (whole, start, url, end) => `${start}${relocate(url, pages)}${end}`);
+  html = replaceOnce(
+    html,
+    /(<script src="([^"]*)widgets\/page-chrome\.js"><\/script>)/,
+    (tag, whole, prefix) => `<script src="${prefix}lib/welsh-text.js"></script>\n${tag}`,
+    `page-chrome.js script in ${page.en}`,
+  );
   html = html.replace(`<!-- ${page.en} -->`, `<!-- ${page.cy} -->`);
   html = html.replace(
     /(<!-- Copyright \(C\) [^>]*-->)/,
@@ -185,6 +229,26 @@ export async function renderWelshPage(page, catalogue = loadCatalogue(), pages =
   );
   const options = await prettier.resolveConfig(join(PUBLIC_DIR, page.cy));
   return prettier.format(html, { ...options, parser: "html" });
+}
+
+// The Welsh text of every siteText call and the pages that have a Welsh copy, for page-chrome.js.
+export async function renderWelshText(catalogue = loadCatalogue(), scripts = scriptStrings(), pages = WELSH_PAGES) {
+  const ids = [...new Set(scripts.map(({ id }) => id))].sort();
+  const text = Object.fromEntries(ids.map((id) => [id, welshText(catalogue, id)]));
+  const source = [
+    "// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0",
+    "// Copyright (C) 2006-2026 DIY Accounting Limited",
+    "",
+    "// Built by scripts/build-welsh-pages.mjs from i18n/cy.toml and the siteText calls in the site's scripts:",
+    "// edit those and run npm run build:welsh. page-chrome.js loads this file when the language choice is Welsh.",
+    "",
+    `window.WELSH_TEXT = ${JSON.stringify(text, null, 2)};`,
+    "",
+    `window.WELSH_COPIES = ${JSON.stringify(pages.map((page) => page.en))};`,
+    "",
+  ].join("\n");
+  const options = await prettier.resolveConfig(WELSH_TEXT_PATH);
+  return prettier.format(source, { ...options, parser: "babel" });
 }
 
 export async function buildWelshPages() {
@@ -197,6 +261,8 @@ export async function buildWelshPages() {
     writeFileSync(outputPath, await renderWelshPage(page, catalogue));
     console.log(`wrote ${page.cy}`);
   }
+  writeFileSync(WELSH_TEXT_PATH, await renderWelshText(catalogue));
+  console.log("wrote lib/welsh-text.js");
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

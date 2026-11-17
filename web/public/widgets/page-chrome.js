@@ -42,9 +42,10 @@
   "use strict";
 
   // The sign-in address that returns to a page: loginPath?next=<the page's path from the site root>.
-  // The page defaults to the current one; a page under /auth/ and the home page need no target.
+  // The page defaults to the current one, or its copy in the chosen language; a page under /auth/
+  // and the home page need no target.
   function signInHref(loginPath, returnTo) {
-    const target = returnTo === undefined ? window.location.pathname + window.location.search : returnTo;
+    const target = returnTo === undefined ? copyInChromeLanguage() + window.location.search : returnTo;
     if (!target.startsWith("/") || target === "/" || /^\/(cy\/)?auth\//.test(target)) return loginPath;
     return loginPath + "?next=" + encodeURIComponent(target);
   }
@@ -88,7 +89,6 @@
       "M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2v-2H2v2zm18 0h2v-2h-2v2zM11 2v2h2V2h-2zm0 18v2h2v-2h-2zM5.99 4.58L4.58 5.99l1.41 1.41 1.41-1.41-1.41-1.41zm12.37 12.37l-1.41 1.41 1.41 1.41 1.41-1.41-1.41-1.41zm1.41-11.31l-1.41-1.41-1.41 1.41 1.41 1.41 1.41-1.41zM7.4 18.36l-1.41-1.41-1.41 1.41 1.41 1.41 1.41-1.41z",
     dark: "M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z",
   };
-  const THEME_LABELS = { device: "device setting", light: "light", dark: "dark" };
 
   const themePinnedLight = document.documentElement.getAttribute("data-theme") === "light";
 
@@ -118,9 +118,11 @@
   // Runs as the script loads, before the header is built, so a stored dark choice paints dark.
   if (!themePinnedLight) applyTheme(readStoredTheme());
 
+  // One whole sentence for each mode, because the Welsh name of the next mode mutates after "i".
   function themeButtonLabel(mode) {
-    const next = THEME_MODES[(THEME_MODES.indexOf(mode) + 1) % THEME_MODES.length];
-    return "Colour scheme: " + THEME_LABELS[mode] + ". Switch to " + THEME_LABELS[next] + ".";
+    if (mode === "light") return siteText("chrome.theme-light", "Colour scheme: light. Switch to dark.");
+    if (mode === "dark") return siteText("chrome.theme-dark", "Colour scheme: dark. Switch to device setting.");
+    return siteText("chrome.theme-device", "Colour scheme: device setting. Switch to light.");
   }
 
   function renderThemeButton(button, mode) {
@@ -151,46 +153,172 @@
     });
   }
 
-  // A page with hreflang alternates gets a link to the same page in the other language; the
-  // current language is the page itself.
-  const LANGUAGE_NAMES = { "en-GB": "English", "cy": "Cymraeg" };
-  const LANGUAGE_SWITCH_LABELS = { "en-GB": "Language", "cy": "Iaith" };
+  // The language choice: "en" or "cy". The language option stores it and nothing else does. With no
+  // stored choice the chrome takes the language of the page. The Welsh text of the chrome and of
+  // every script that calls siteText comes from lib/welsh-text.js, which scripts/build-welsh-pages.mjs
+  // writes from i18n/cy.toml.
+  const LANGUAGE_STORAGE_KEY = "siteLanguage";
+  const LANGUAGES = ["en", "cy"];
+  const LANGUAGE_NAMES = { en: "English", cy: "Cymraeg" };
+  const HREFLANG = { en: "en-GB", cy: "cy" };
 
-  function buildLanguageSwitch(rootPrefix) {
-    const alternates = Array.from(document.querySelectorAll('head link[rel="alternate"][hreflang]')).filter(function (link) {
-      return Object.prototype.hasOwnProperty.call(LANGUAGE_NAMES, link.getAttribute("hreflang"));
+  function readStoredLanguage() {
+    try {
+      const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+      return LANGUAGES.indexOf(stored) === -1 ? null : stored;
+    } catch {
+      return null;
+    }
+  }
+
+  function storeLanguage(language) {
+    try {
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  const pageLanguage = document.documentElement.getAttribute("lang") === "cy" ? "cy" : "en";
+  const chosenLanguage = readStoredLanguage() || pageLanguage;
+
+  // A parser-blocking script written here runs before the scripts that follow page-chrome.js, so
+  // every widget and page script finds the Welsh text. A Welsh page carries the tag itself.
+  if (chosenLanguage === "cy" && !window.WELSH_TEXT && document.readyState === "loading") {
+    // eslint-disable-next-line no-unsanitized/method -- a fixed script tag; the prefix comes from this script's own src
+    document.write('<script src="' + computeRootPrefix() + 'lib/welsh-text.js"></script>');
+  }
+
+  // The language the chrome reads in: the choice, when its text has loaded.
+  function chromeLanguage() {
+    return chosenLanguage === "cy" && window.WELSH_TEXT ? "cy" : "en";
+  }
+
+  // siteText("<id>", "<English>", { name: value }) gives the text in the chrome's language. The id
+  // and the English are literals, so the Welsh build finds each call and checks its entry in
+  // i18n/cy.toml; "{name}" in either text takes values.name.
+  function siteText(id, english, values) {
+    const welsh = chromeLanguage() === "cy" ? window.WELSH_TEXT[id] : undefined;
+    const text = welsh === undefined ? english : welsh;
+    if (!values) return text;
+    return text.replace(/\{([a-z]+)\}/g, function (whole, name) {
+      return Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : whole;
     });
-    if (alternates.length < 2) return null;
-    const currentLang = document.documentElement.getAttribute("lang");
+  }
+
+  window.siteText = siteText;
+  window.siteLanguage = {
+    current: function () {
+      return readStoredLanguage() || pageLanguage;
+    },
+    chrome: chromeLanguage,
+    store: storeLanguage,
+  };
+  document.documentElement.setAttribute("data-chrome-language", chosenLanguage);
+
+  function escapeHtml(text) {
+    return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  // The page's alternate in a language, as a path from the site root, or null.
+  function alternatePath(language) {
+    const link = document.querySelector('head link[rel="alternate"][hreflang="' + HREFLANG[language] + '"]');
+    if (!link) return null;
+    try {
+      return new URL(link.getAttribute("href")).pathname;
+    } catch {
+      return null;
+    }
+  }
+
+  // This page's path, or the path of its copy in the chrome's language when it has one.
+  function copyInChromeLanguage() {
+    const language = chromeLanguage();
+    const copy = language === pageLanguage ? null : alternatePath(language);
+    return copy || window.location.pathname;
+  }
+
+  // A site path (no leading slash, "" for the home page) in the chrome's language: its Welsh copy
+  // when the chrome is Welsh and the page has one. inEnglish is true for a Welsh reader sent to an
+  // English page.
+  function chromeTarget(target) {
+    if (chromeLanguage() !== "cy") return { target: target, inEnglish: false };
+    const path = target === "" ? "index.html" : target;
+    if ((window.WELSH_COPIES || []).indexOf(path) !== -1) return { target: "cy/" + path, inEnglish: false };
+    return { target: target, inEnglish: true };
+  }
+
+  function inEnglishMarkHtml(inEnglish) {
+    return inEnglish ? ' <span class="lang-mark">' + escapeHtml(siteText("chrome.in-english", "(in English)")) + "</span>" : "";
+  }
+
+  // The option names the other language. It goes to this page's copy in that language when there
+  // is one, and to this page again when there is not, so the chrome changes and the body stays.
+  function buildLanguageSwitch(rootPrefix) {
+    const language = chromeLanguage();
+    const other = language === "cy" ? "en" : "cy";
+    const copy = pageLanguage === other ? null : alternatePath(other);
     const nav = document.createElement("div");
     nav.className = "language-switch";
     nav.setAttribute("role", "group");
-    nav.setAttribute("aria-label", LANGUAGE_SWITCH_LABELS[currentLang] || LANGUAGE_SWITCH_LABELS["en-GB"]);
-    alternates.forEach(function (link) {
-      const lang = link.getAttribute("hreflang");
-      if (lang === currentLang) return;
-      const item = document.createElement("a");
-      const sitePath = new URL(link.getAttribute("href")).pathname.replace(/^\//, "");
-      item.setAttribute("href", rootPrefix + sitePath || "./");
-      item.setAttribute("hreflang", lang);
-      item.setAttribute("lang", lang);
-      item.textContent = LANGUAGE_NAMES[lang];
-      nav.append(item);
+    nav.setAttribute("aria-label", siteText("chrome.language", "Language"));
+    const item = document.createElement("a");
+    if (copy) {
+      item.setAttribute("href", rootPrefix + copy.replace(/^\//, "") || "./");
+      item.setAttribute("hreflang", HREFLANG[other]);
+    } else {
+      item.setAttribute("href", window.location.href.split("#")[0]);
+    }
+    item.setAttribute("lang", HREFLANG[other]);
+    item.textContent = LANGUAGE_NAMES[other];
+    item.addEventListener("click", function () {
+      storeLanguage(other);
     });
+    nav.append(item);
     return nav;
   }
 
-  const NAV_LINKS = [
-    { label: "Activities", target: "" },
-    { label: "Receipts", target: "hmrc/receipt/receipts.html" },
-    { label: "Bundles", target: "bundles.html" },
-    { label: "Spreadsheets", target: "spreadsheets.html" },
-    { label: "MTD calendar", target: "mtd-calendar.html" },
-    { label: "Tax rates", target: "rates.html" },
-    { label: "Tools", target: "tools.html" },
-    // Last, so the link that appears when the catalogue loads moves no other link.
-    { label: "Practice", target: "practice.html", activity: "practice" },
-  ];
+  // A line under the nav when the body is in one language and the chrome in the other.
+  function buildLanguageNotice(rootPrefix) {
+    const language = chromeLanguage();
+    if (language === pageLanguage) return null;
+    const copy = alternatePath(language);
+    const notice = document.createElement("p");
+    notice.className = "language-notice";
+    notice.setAttribute("lang", HREFLANG[language]);
+    if (!copy) {
+      notice.textContent = siteText("chrome.notice-in-english", "This page is in English.");
+      return notice;
+    }
+    const link = document.createElement("a");
+    link.setAttribute("href", rootPrefix + copy.replace(/^\//, "") || "./");
+    link.setAttribute("hreflang", HREFLANG[language]);
+    if (language === "cy") {
+      notice.append(siteText("chrome.notice-welsh-copy", "This page is also in Welsh.") + " ");
+      link.textContent = siteText("chrome.read-in-welsh", "Read it in Welsh");
+    } else {
+      notice.append(siteText("chrome.notice-english-copy", "This page is in Welsh.") + " ");
+      link.textContent = siteText("chrome.read-in-english", "Read it in English");
+    }
+    notice.append(link);
+    return notice;
+  }
+
+  // A function, so each label is read in the chrome's language when the nav is built.
+  function navLinks() {
+    return [
+      { label: siteText("chrome.nav-activities", "Activities"), target: "" },
+      { label: siteText("chrome.nav-receipts", "Receipts"), target: "hmrc/receipt/receipts.html" },
+      { label: siteText("chrome.nav-bundles", "Bundles"), target: "bundles.html" },
+      { label: siteText("chrome.nav-spreadsheets", "Spreadsheets"), target: "spreadsheets.html" },
+      { label: siteText("chrome.nav-mtd-calendar", "MTD calendar"), target: "mtd-calendar.html" },
+      { label: siteText("chrome.nav-tax-rates", "Tax rates"), target: "rates.html" },
+      { label: siteText("chrome.nav-tools", "Tools"), target: "tools.html" },
+      // Last, so the link that appears when the catalogue loads moves no other link.
+      { label: siteText("chrome.nav-practice", "Practice"), target: "practice.html", activity: "practice" },
+    ];
+  }
 
   function findOwnScript() {
     return document.currentScript || document.querySelector('script[src$="widgets/page-chrome.js"]');
@@ -216,22 +344,36 @@
     return pathname.indexOf("/" + target) !== -1;
   }
 
+  function hrefOf(rootPrefix, target) {
+    return rootPrefix + target || "./";
+  }
+
   function buildHeaderNavHtml(rootPrefix) {
-    const homeHref = rootPrefix === "" ? "./" : rootPrefix;
+    const home = chromeTarget("");
+    const about = chromeTarget("about.html");
+    const aboutLabel = siteText("chrome.about", "About") + (about.inEnglish ? " " + siteText("chrome.in-english", "(in English)") : "");
     return (
-      '<div class="header-nav">' +
+      '<div class="header-nav"' +
+      chromeLangAttribute() +
+      ">" +
       '<div class="header-left">' +
       '<a href="' +
-      homeHref +
-      '" title="Home" class="home-link">' +
+      hrefOf(rootPrefix, home.target) +
+      '" title="' +
+      escapeHtml(siteText("chrome.home", "Home")) +
+      '" class="home-link">' +
       '<svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="' +
       HOME_ICON_PATH +
       '" /></svg>' +
       '<span class="brand-name">DIY Accounting Submit</span>' +
       "</a>" +
       '<a href="' +
-      rootPrefix +
-      'about.html" title="About" aria-label="About" class="info-link">' +
+      hrefOf(rootPrefix, about.target) +
+      '" title="' +
+      escapeHtml(aboutLabel) +
+      '" aria-label="' +
+      escapeHtml(aboutLabel) +
+      '" class="info-link">' +
       '<svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="' +
       INFO_ICON_PATH +
       '" /></svg>' +
@@ -239,39 +381,92 @@
       (themePinnedLight ? "" : buildThemeButtonHtml()) +
       "</div>" +
       '<div class="auth-section">' +
-      '<span class="entitlement-status">Activity: unrestricted</span>' +
-      '<span class="login-status">Not signed in</span>' +
+      '<span class="entitlement-status">' +
+      escapeHtml(siteText("chrome.activity-unrestricted", "Activity: unrestricted")) +
+      "</span>" +
+      '<span class="login-status">' +
+      escapeHtml(siteText("chrome.not-signed-in", "Not signed in")) +
+      "</span>" +
       '<a href="' +
-      signInHref(rootPrefix + "auth/login.html") +
-      '" class="login-link">Sign in</a>' +
+      escapeHtml(signInHref(rootPrefix + "auth/login.html")) +
+      '" class="login-link">' +
+      escapeHtml(siteText("chrome.sign-in", "Sign in")) +
+      "</a>" +
       "</div>" +
       "</div>"
     );
   }
 
+  // The lang attribute for chrome that reads in a language other than the page's.
+  function chromeLangAttribute() {
+    const language = chromeLanguage();
+    return language === pageLanguage ? "" : ' lang="' + HREFLANG[language] + '"';
+  }
+
   function buildNavHtml(rootPrefix, pathname) {
-    const homeHref = rootPrefix === "" ? "./" : rootPrefix;
-    const links = NAV_LINKS.map(function (link) {
-      const href = link.target === "" ? homeHref : rootPrefix + link.target;
+    const links = navLinks().map(function (link) {
+      const resolved = chromeTarget(link.target);
       const active = isActiveTarget(link.target, pathname) ? ' class="active" aria-current="page"' : "";
       const gated = link.activity ? ' data-activity="' + link.activity + '" hidden' : "";
-      return '<a href="' + href + '"' + active + gated + ">" + link.label + "</a>";
+      return (
+        '<a href="' +
+        hrefOf(rootPrefix, resolved.target) +
+        '"' +
+        active +
+        gated +
+        ">" +
+        escapeHtml(link.label) +
+        inEnglishMarkHtml(resolved.inEnglish) +
+        "</a>"
+      );
     });
-    return '<nav class="main-nav" aria-label="Main navigation">' + links.join("") + "</nav>";
+    return (
+      '<nav class="main-nav" aria-label="' +
+      escapeHtml(siteText("chrome.main-navigation", "Main navigation")) +
+      '"' +
+      chromeLangAttribute() +
+      ">" +
+      links.join("") +
+      "</nav>"
+    );
   }
 
   // The landing pages for the filings that are production on prod.
-  const FILING_PAGES = [
-    { label: "VAT return from a spreadsheet", target: "vat-return-from-a-spreadsheet.html" },
-    { label: "Micro-entity accounts", target: "micro-entity-accounts.html" },
-    { label: "Small company accounts", target: "small-company-accounts.html" },
-    { label: "Dormant company accounts", target: "dormant-company-accounts.html" },
-    { label: "Confirmation statement", target: "confirmation-statement.html" },
-  ];
+  function filingPages() {
+    return [
+      { label: siteText("chrome.footer-vat-return", "VAT return from a spreadsheet"), target: "vat-return-from-a-spreadsheet.html" },
+      { label: siteText("chrome.footer-micro-entity", "Micro-entity accounts"), target: "micro-entity-accounts.html" },
+      { label: siteText("chrome.footer-small-company", "Small company accounts"), target: "small-company-accounts.html" },
+      { label: siteText("chrome.footer-dormant-company", "Dormant company accounts"), target: "dormant-company-accounts.html" },
+      { label: siteText("chrome.footer-confirmation-statement", "Confirmation statement"), target: "confirmation-statement.html" },
+    ];
+  }
+
+  function siteLinks() {
+    return [
+      { label: siteText("chrome.footer-privacy", "Privacy"), target: "privacy.html" },
+      { label: siteText("chrome.footer-security", "Security"), target: "security.html" },
+      { label: siteText("chrome.footer-terms", "Terms"), target: "terms.html" },
+      { label: siteText("chrome.footer-accessibility", "Accessibility"), target: "accessibility.html" },
+      { label: siteText("chrome.footer-cookie-choices", "Cookie choices"), cookieChoices: true },
+      { label: siteText("chrome.about", "About"), target: "about.html" },
+      { label: siteText("chrome.footer-help", "Help"), target: "help.html" },
+    ];
+  }
+
+  function footerLinkHtml(rootPrefix, link) {
+    if (link.cookieChoices) return '<a href="#" data-cookie-choices>' + escapeHtml(link.label) + "</a>";
+    const resolved = chromeTarget(link.target);
+    return (
+      '<a href="' + hrefOf(rootPrefix, resolved.target) + '">' + escapeHtml(link.label) + inEnglishMarkHtml(resolved.inEnglish) + "</a>"
+    );
+  }
 
   // The developer links stay hidden until developer mode shows them.
   function buildFooterHtml(rootPrefix) {
-    const filingLinks = FILING_PAGES.map((page) => '<a href="' + rootPrefix + page.target + '">' + page.label + "</a>").join("");
+    const filingLinks = filingPages()
+      .map((link) => footerLinkHtml(rootPrefix, link))
+      .join("");
 
     const devLinks =
       '<a href="#" id="viewSourceLink" style="display: none">view source</a>' +
@@ -282,36 +477,29 @@
       rootPrefix +
       'docs/api/index.html">api</a>';
 
-    const siteLinks =
-      '<a href="' +
-      rootPrefix +
-      'privacy.html">Privacy</a>' +
-      '<a href="' +
-      rootPrefix +
-      'security.html">Security</a>' +
-      '<a href="' +
-      rootPrefix +
-      'terms.html">Terms</a>' +
-      '<a href="' +
-      rootPrefix +
-      'accessibility.html">Accessibility</a>' +
-      '<a href="#" data-cookie-choices>Cookie choices</a>' +
-      '<a href="' +
-      rootPrefix +
-      'about.html">About</a>' +
-      '<a href="' +
-      rootPrefix +
-      'help.html">Help</a>' +
-      '<a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" target="_blank" rel="noopener">Source</a>';
+    const sourceLink =
+      '<a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" target="_blank" rel="noopener">' +
+      escapeHtml(siteText("chrome.footer-source", "Source")) +
+      "</a>";
+
+    const licenceLink =
+      '<a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/blob/main/LICENSE" target="_blank" rel="noopener">PolyForm Internal Use License</a>' +
+      inEnglishMarkHtml(chromeLanguage() === "cy");
+    const legal = escapeHtml(siteText("chrome.footer-legal", "Free to use under the {licence}.")).replace("{licence}", licenceLink);
 
     return (
-      '<nav class="footer-links" aria-label="Site information">' +
+      '<nav class="footer-links" aria-label="' +
+      escapeHtml(siteText("chrome.footer-site-information", "Site information")) +
+      '">' +
       filingLinks +
-      siteLinks +
+      siteLinks()
+        .map((link) => footerLinkHtml(rootPrefix, link))
+        .join("") +
+      sourceLink +
       devLinks +
       "</nav>" +
-      '<p class="footer-legal">&copy; 2006-2026 DIY Accounting Limited. Free to use under the ' +
-      '<a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/blob/main/LICENSE" target="_blank" rel="noopener">PolyForm Internal Use License</a>.' +
+      '<p class="footer-legal">&copy; 2006-2026 DIY Accounting Limited. ' +
+      legal +
       "</p>"
     );
   }
@@ -326,12 +514,20 @@
     const fallback = header.querySelector(".chrome-fallback");
     if (fallback) fallback.remove();
 
-    // eslint-disable-next-line no-unsanitized/method -- both strings are built from the fixed NAV_LINKS table and the page-relative root prefix
+    // eslint-disable-next-line no-unsanitized/method -- both strings are built from the fixed link tables, the escaped catalogue text and the page-relative root prefix
     header.insertAdjacentHTML("afterbegin", headerNavHtml + navHtml);
     wireThemeButton(header);
-    const languageSwitch = buildLanguageSwitch(rootPrefix);
-    const bandLeft = header.querySelector(".header-left");
-    if (languageSwitch && bandLeft) bandLeft.append(languageSwitch);
+    header.querySelector(".header-left").append(buildLanguageSwitch(rootPrefix));
+    const notice = buildLanguageNotice(rootPrefix);
+    if (notice) header.querySelector(".main-nav").after(notice);
+  }
+
+  // The skip link is each page's own markup; it reads in the chrome's language too.
+  function renderSkipLink() {
+    const skipLink = document.querySelector("body > .skip-link");
+    if (!skipLink || chromeLanguage() === pageLanguage) return;
+    skipLink.textContent = siteText("common.skip-link", "Skip to main content");
+    skipLink.setAttribute("lang", HREFLANG[chromeLanguage()]);
   }
 
   function loadTomlParser(rootPrefix) {
@@ -373,14 +569,17 @@
   }
 
   function renderFooter(footer, rootPrefix) {
-    // eslint-disable-next-line no-unsanitized/property -- the footer markup is fixed text plus the page-relative root prefix
+    // eslint-disable-next-line no-unsanitized/property -- the footer markup is fixed text, the escaped catalogue text and the page-relative root prefix
     footer.innerHTML = buildFooterHtml(rootPrefix);
+    const language = chromeLanguage();
+    if (language !== pageLanguage) footer.setAttribute("lang", HREFLANG[language]);
   }
 
   function renderPageChrome() {
     const header = document.querySelector("header");
     const footer = document.querySelector("body > footer");
     const rootPrefix = computeRootPrefix();
+    renderSkipLink();
 
     // Each render is independent: a mistake building one must not cost the
     // other, and either failing must leave that element's existing static

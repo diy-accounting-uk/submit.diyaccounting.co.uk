@@ -1,0 +1,58 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
+// Built by scripts/build-welsh-pages.mjs from i18n/cy.toml and the siteText calls in the site's scripts:
+// edit those and run npm run build:welsh. page-chrome.js loads this file when the language choice is Welsh.
+
+window.WELSH_TEXT = {
+  "chrome.about": "Amdanom ni",
+  "chrome.activity-granted": "Gweithgaredd: mynediad wedi’i roi",
+  "chrome.activity-requires": "Gweithgaredd: angen {activities}",
+  "chrome.activity-unrestricted": "Gweithgaredd: heb gyfyngiad",
+  "chrome.footer-accessibility": "Hygyrchedd",
+  "chrome.footer-confirmation-statement": "Datganiad cadarnhau",
+  "chrome.footer-cookie-choices": "Dewisiadau cwcis",
+  "chrome.footer-dormant-company": "Cyfrifon cwmni segur",
+  "chrome.footer-help": "Cymorth",
+  "chrome.footer-legal": "Am ddim i’w ddefnyddio o dan y {licence}.",
+  "chrome.footer-micro-entity": "Cyfrifon micro-endid",
+  "chrome.footer-privacy": "Preifatrwydd",
+  "chrome.footer-security": "Diogelwch",
+  "chrome.footer-site-information": "Gwybodaeth am y wefan",
+  "chrome.footer-small-company": "Cyfrifon cwmni bach",
+  "chrome.footer-source": "Cod ffynhonnell",
+  "chrome.footer-terms": "Telerau",
+  "chrome.footer-vat-return": "Ffurflen TAW o daenlen",
+  "chrome.home": "Hafan",
+  "chrome.in-english": "(yn Saesneg)",
+  "chrome.language": "Iaith",
+  "chrome.main-navigation": "Prif lywio",
+  "chrome.nav-activities": "Gweithga­reddau",
+  "chrome.nav-bundles": "Bundles",
+  "chrome.nav-mtd-calendar": "Calendr MTD",
+  "chrome.nav-practice": "Practis",
+  "chrome.nav-receipts": "Derbynebau",
+  "chrome.nav-spreadsheets": "Taenlenni",
+  "chrome.nav-tax-rates": "Cyfraddau treth",
+  "chrome.nav-tools": "Offer",
+  "chrome.not-signed-in": "Heb fewngofnodi",
+  "chrome.notice-english-copy": "Mae’r dudalen hon yn Gymraeg.",
+  "chrome.notice-in-english": "Mae’r dudalen hon yn Saesneg.",
+  "chrome.notice-welsh-copy": "Mae’r dudalen hon ar gael yn Gymraeg.",
+  "chrome.read-in-english": "Darllenwch hi yn Saesneg",
+  "chrome.read-in-welsh": "Darllenwch hi yn Gymraeg",
+  "chrome.refresh-tokens": "Adnewyddu nifer y credydau",
+  "chrome.settings": "Gosodiadau",
+  "chrome.sign-in": "Mewngofnodi",
+  "chrome.sign-out": "Allgofnodi",
+  "chrome.signed-in-as": "Wedi mewngofnodi fel {name}",
+  "chrome.theme-dark": "Cynllun lliw: tywyll. Newid i osodiad y ddyfais.",
+  "chrome.theme-device": "Cynllun lliw: gosodiad y ddyfais. Newid i olau.",
+  "chrome.theme-light": "Cynllun lliw: golau. Newid i dywyll.",
+  "chrome.tokens-count": "{count} credyd",
+  "chrome.tokens-one": "1 credyd",
+  "chrome.tokens-unlimited": "Credyd diderfyn",
+  "common.skip-link": "Neidio i’r prif gynnwys",
+};
+
+window.WELSH_COPIES = ["index.html", "get-started.html"];
