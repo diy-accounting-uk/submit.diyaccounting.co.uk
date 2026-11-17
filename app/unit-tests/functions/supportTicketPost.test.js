@@ -82,6 +82,7 @@ describe("supportTicketPost", () => {
       subject: "Can't connect to HMRC",
       description: "It keeps failing at step 2",
       category: "connection",
+      email: "pat@example.com",
       requestId: "req-123",
       timestamp: "2026-09-10T12:00:00.000Z",
     });
@@ -93,7 +94,8 @@ describe("supportTicketPost", () => {
 
     test("states plainly that the ticket came through the public form with no verified sender", () => {
       expect(body).toMatch(/public support form/i);
-      expect(body).toContain("**Claims to be from:** not given");
+      expect(body).toContain("**Reply address (typed, not verified):**");
+      expect(body).toContain("```\npat@example.com\n```");
     });
 
     test("carries the category, request id and timestamp", () => {
@@ -194,11 +196,24 @@ describe("supportTicketPost", () => {
       global.fetch = vi.fn();
 
       const response = await ingestHandler(
-        requestEvent({ subject: "s", description: "d", category: "other" }, { "x-forwarded-for": "203.0.113.5" }),
+        requestEvent({ email: "pat@example.com", subject: "s", description: "d", category: "other" }, { "x-forwarded-for": "203.0.113.5" }),
       );
 
       expect(response.statusCode).toBe(429);
       expect(response.headers["Retry-After"]).toBe("60");
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    test.each([
+      ["missing", undefined],
+      ["without an at sign", "pat.example.com"],
+      ["with a space", "pat @example.com"],
+      ["without a domain dot", "pat@example"],
+      ["too long", `${"a".repeat(250)}@example.com`],
+    ])("returns 400 without calling GitHub when the reply address is %s", async (_label, email) => {
+      global.fetch = vi.fn();
+      const response = await ingestHandler(requestEvent({ email, subject: "s", description: "d", category: "other" }));
+      expect(response.statusCode).toBe(400);
       expect(global.fetch).not.toHaveBeenCalled();
     });
 
@@ -210,7 +225,7 @@ describe("supportTicketPost", () => {
 
       const response = await ingestHandler(
         requestEvent(
-          { subject: "Can't log in", description: "It just spins", category: "connection" },
+          { email: "pat@example.com", subject: "Can't log in", description: "It just spins", category: "connection" },
           { "x-forwarded-for": "203.0.113.5" },
         ),
       );
@@ -221,7 +236,7 @@ describe("supportTicketPost", () => {
       expect(sentBody.title).toBe("[Support] Can't log in");
       expect(sentBody.body).toContain("```\nCan't log in\n```");
       expect(sentBody.body).toContain("```\nIt just spins\n```");
-      expect(sentBody.body).toContain("not given");
+      expect(sentBody.body).toContain("pat@example.com");
     });
 
     test("publishes support-ticket as a customer event, with no account detail", async () => {
@@ -233,7 +248,10 @@ describe("supportTicketPost", () => {
       });
 
       await ingestHandler(
-        requestEvent({ subject: "Can't log in", description: "It just spins", category: "other" }, { "x-forwarded-for": "203.0.113.5" }),
+        requestEvent(
+          { email: "pat@example.com", subject: "Can't log in", description: "It just spins", category: "other" },
+          { "x-forwarded-for": "203.0.113.5" },
+        ),
       );
 
       const detail = JSON.parse(mockEventBridgeSend.mock.calls[0][0].input.Entries[0].Detail);
@@ -249,7 +267,10 @@ describe("supportTicketPost", () => {
       });
 
       const response = await ingestHandler(
-        requestEvent({ subject: "Can't log in", description: "It just spins", category: "receipts" }, { "x-forwarded-for": "203.0.113.5" }),
+        requestEvent(
+          { email: "pat@example.com", subject: "Can't log in", description: "It just spins", category: "receipts" },
+          { "x-forwarded-for": "203.0.113.5" },
+        ),
       );
 
       expect(response.statusCode).toBe(200);
@@ -273,7 +294,7 @@ describe("supportTicketPost", () => {
 
       await ingestHandler(
         requestEvent(
-          { subject: "Can't log in", description: "It just spins", category: "connection" },
+          { email: "pat@example.com", subject: "Can't log in", description: "It just spins", category: "connection" },
           { "x-forwarded-for": "203.0.113.5" },
         ),
       );
@@ -291,7 +312,7 @@ describe("supportTicketPost", () => {
 
       const response = await ingestHandler(
         requestEvent(
-          { subject: "Can't log in", description: "It just spins", category: "connection" },
+          { email: "pat@example.com", subject: "Can't log in", description: "It just spins", category: "connection" },
           { "x-forwarded-for": "203.0.113.5" },
         ),
       );
@@ -304,7 +325,10 @@ describe("supportTicketPost", () => {
       global.fetch = vi.fn();
 
       const response = await ingestHandler(
-        requestEvent({ subject: "s".repeat(101), description: "d", category: "other" }, { "x-forwarded-for": "203.0.113.5" }),
+        requestEvent(
+          { email: "pat@example.com", subject: "s".repeat(101), description: "d", category: "other" },
+          { "x-forwarded-for": "203.0.113.5" },
+        ),
       );
 
       expect(response.statusCode).toBe(400);

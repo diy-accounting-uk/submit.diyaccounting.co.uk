@@ -1014,6 +1014,10 @@
           <div class="modal-content">
             <h3>Submit a Support Request</h3>
             <form id="support-form">
+              <label for="support-email">Your email address</label>
+              <p id="support-email-hint" class="hint">We reply by email to this address.</p>
+              <input type="email" id="support-email" required maxlength="254" autocomplete="email" aria-describedby="support-email-hint" />
+
               <label for="support-subject">Subject</label>
               <input type="text" id="support-subject" required maxlength="100" />
 
@@ -1024,9 +1028,9 @@
               <label for="support-category">Category</label>
               <select id="support-category" required>
                 <option value="">Select a category</option>
-                <option value="connection">Connection / HMRC Login</option>
-                <option value="submission">VAT Submission</option>
-                <option value="bundles">Bundles</option>
+                <option value="connection">Connecting to HMRC</option>
+                <option value="submission">VAT submission</option>
+                <option value="bundles">Bundles and subscriptions</option>
                 <option value="receipts">Receipts</option>
                 <option value="other">Other</option>
               </select>

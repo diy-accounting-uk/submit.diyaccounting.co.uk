@@ -431,12 +431,14 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     console.log(" Support modal is now visible");
 
     // Verify form elements are present
+    const emailInput = page.locator("#support-email");
     const subjectInput = page.locator("#support-subject");
     const descriptionTextarea = page.locator("#support-description");
     const categorySelect = page.locator("#support-category");
     const submitBtn = page.locator('#support-form button[type="submit"]');
     const cancelBtn = page.locator("#cancel-support");
 
+    await expect(emailInput).toBeVisible();
     await expect(subjectInput).toBeVisible();
     await expect(descriptionTextarea).toBeVisible();
     await expect(categorySelect).toBeVisible();
@@ -446,6 +448,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
 
     // Fill form fields
     console.log(" Filling form fields...");
+    await emailInput.fill("test@example.com");
     await subjectInput.fill("Cannot see my VAT obligations");
     await descriptionTextarea.fill(
       "My quarterly VAT obligations list is empty after I connected to HMRC. The page shows no error message.",

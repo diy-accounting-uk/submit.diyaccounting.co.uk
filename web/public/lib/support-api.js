@@ -33,9 +33,10 @@ function getApiBaseUrl() {
  * @param {string} params.subject - Issue subject/title
  * @param {string} params.description - Issue description
  * @param {string} params.category - Issue category
+ * @param {string} params.email - Address the reply goes to, as typed (not verified)
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-export async function submitSupportTicket({ subject, description, category }) {
+export async function submitSupportTicket({ subject, description, category, email }) {
   const apiBaseUrl = getApiBaseUrl();
 
   if (!apiBaseUrl) {
@@ -51,7 +52,7 @@ export async function submitSupportTicket({ subject, description, category }) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ subject, description, category }),
+      body: JSON.stringify({ subject, description, category, email }),
     });
 
     if (!response.ok) {

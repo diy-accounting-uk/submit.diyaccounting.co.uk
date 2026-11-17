@@ -60,6 +60,17 @@ export const SUPPORT_TICKET_RATE_LIMIT_PER_MINUTE = 3;
 // The five categories a support ticket can carry. web/public/help.html's support form dropdown
 // lists these same five values, so a category added here without updating it would silently stop
 // matching the form.
+export const SUPPORT_TICKET_EMAIL_MAX_LENGTH = 254;
+
+// Shape check only: one "@", no spaces, a dot inside the domain. Nobody confirms the address.
+export function isReplyAddress(value) {
+  if (typeof value !== "string" || value.length > SUPPORT_TICKET_EMAIL_MAX_LENGTH || /\s/.test(value)) return false;
+  const parts = value.split("@");
+  if (parts.length !== 2 || !parts[0]) return false;
+  const labels = parts[1].split(".");
+  return labels.length >= 2 && labels.every((label) => label.length > 0);
+}
+
 export const SUPPORT_TICKET_CATEGORIES = ["connection", "submission", "bundles", "receipts", "other"];
 
 const isGitHubUnauthorized = (error) => error.status === 401;
@@ -186,8 +197,8 @@ export function fenceText(text) {
 /**
  * Builds the GitHub issue body for a support ticket. The submitter's subject and message are
  * fenced verbatim, never folded into this function's own prose, and the body says plainly that
- * the ticket arrived through the public form with no verified sender - the form collects no
- * name or email, so "claims to be from" is always "not given" today.
+ * the ticket arrived through the public form with no verified sender - the reply address is
+ * what the submitter typed, marked as not verified.
  *
  * The disclosure footer is not written here. appendAutomationDisclosure() adds it at the call
  * site, so every automated issue and comment in this repository carries the same one line.
@@ -196,11 +207,12 @@ export function fenceText(text) {
  * @param {string} params.subject
  * @param {string} params.description
  * @param {string} params.category
+ * @param {string} params.email - reply address as typed
  * @param {string} params.requestId
  * @param {string} params.timestamp - ISO 8601
  * @returns {string}
  */
-export function buildIssueBody({ subject, description, category, requestId, timestamp }) {
+export function buildIssueBody({ subject, description, category, email, requestId, timestamp }) {
   return `## Support request
 
 **Category:** ${category}
@@ -210,7 +222,7 @@ export function buildIssueBody({ subject, description, category, requestId, time
 This ticket was filed through the public support form, which needs no sign-in. Nobody has
 verified who sent it.
 
-**Claims to be from:** not given - the form collects no name or email.
+**Reply address (typed, not verified):** ${fenceText(email)}
 
 The subject and message below are exactly what the submitter typed, quoted rather than written
 in this issue's own voice.
@@ -273,17 +285,25 @@ export async function ingestHandler(event) {
     });
   }
 
-  const { subject, description, category } = requestBody || {};
+  const { subject, description, category, email } = requestBody || {};
 
-  if (!subject || !description || !category) {
+  if (!email || !subject || !description || !category) {
     return http400BadRequestResponse({
       request,
       headers: { ...responseHeaders },
-      message: "Missing required fields: subject, description, category",
+      message: "Missing required fields: email, subject, description, category",
     });
   }
 
   // Validate field lengths
+  if (!isReplyAddress(email)) {
+    return http400BadRequestResponse({
+      request,
+      headers: { ...responseHeaders },
+      message: "Enter an email address we can reply to, such as name@example.com",
+    });
+  }
+
   if (subject.length > 100) {
     return http400BadRequestResponse({
       request,
@@ -323,6 +343,7 @@ export async function ingestHandler(event) {
       subject,
       description,
       category,
+      email,
       requestId,
       timestamp: new Date().toISOString(),
     }),

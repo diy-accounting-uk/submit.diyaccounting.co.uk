@@ -724,7 +724,7 @@ public class AccountNames {
                 this.supportTicketPostLambdaHttpMethod,
                 this.supportTicketPostLambdaUrlPath,
                 "Submit a support ticket",
-                "Creates a GitHub issue for the authenticated user's support request",
+                "Creates a GitHub issue for a support request. Needs no sign-in. The request carries the address to reply to, which nobody verifies",
                 "submitSupportTicket"));
 
         // Interest POST Lambda (JWT auth - feedback engagement)

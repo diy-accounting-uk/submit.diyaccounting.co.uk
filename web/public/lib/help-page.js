@@ -15,6 +15,18 @@ import { renderFaqItem, renderFaqGroups } from "./faq-markdown.js";
 import { bundlePriceList, fillBundlePrices } from "./bundle-listing.js";
 
 /**
+ * The address of the signed-in visitor, or an empty string when nobody is signed in.
+ * @returns {string}
+ */
+function signedInEmail() {
+  try {
+    return JSON.parse(localStorage.getItem("userInfo") || "{}").email || "";
+  } catch {
+    return "";
+  }
+}
+
+/**
  * Help Page class managing the FAQ display and support form
  */
 class HelpPage {
@@ -186,6 +198,8 @@ class HelpPage {
    */
   openModal() {
     if (this.supportModal) {
+      const emailInput = document.getElementById("support-email");
+      if (emailInput && !emailInput.value) emailInput.value = signedInEmail();
       this.supportModal.hidden = false;
       document.body.style.overflow = "hidden";
       const firstInput = this.supportForm.querySelector("input");
@@ -211,6 +225,7 @@ class HelpPage {
   async handleSupportSubmit(e) {
     e.preventDefault();
 
+    const email = document.getElementById("support-email").value.trim();
     const subject = document.getElementById("support-subject").value;
     const description = document.getElementById("support-description").value;
     const category = document.getElementById("support-category").value;
@@ -220,15 +235,19 @@ class HelpPage {
     submitBtn.textContent = "Submitting...";
 
     try {
-      await submitSupportTicket({ subject, description, category });
+      const result = await submitSupportTicket({ subject, description, category, email });
+      if (!result.success) {
+        if (window.StatusMessages) {
+          window.StatusMessages.showError(`${result.error} You can also email support@diyaccounting.co.uk.`);
+        }
+        return;
+      }
       this.closeModal();
-      // Use existing status messages widget
       if (window.StatusMessages) {
-        window.StatusMessages.showSuccess("Support request submitted successfully");
+        window.StatusMessages.showSuccess(`We have your request. We reply by email to ${email}.`);
       }
     } catch (err) {
       console.error("Support submission error:", err);
-      // Use existing status messages widget
       if (window.StatusMessages) {
         window.StatusMessages.showError("Failed to submit request. Please email support@diyaccounting.co.uk instead.");
       }

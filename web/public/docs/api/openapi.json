@@ -4455,7 +4455,7 @@
     "/support/ticket" : {
       "post" : {
         "summary" : "Submit a support ticket",
-        "description" : "Creates a GitHub issue for the authenticated user's support request",
+        "description" : "Creates a GitHub issue for a support request. Needs no sign-in. The request carries the address to reply to, which nobody verifies",
         "operationId" : "submitSupportTicket"
       }
     }
