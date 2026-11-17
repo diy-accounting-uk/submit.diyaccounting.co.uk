@@ -162,7 +162,7 @@ function readStoredLandingAttribution() {
 async function requestBundle(bundleId, bundleName, qualifiers = {}) {
   const idToken = getIdToken();
   if (!idToken) {
-    showStatus("Please log in first to request bundles.", "warning");
+    showStatus("Please sign in first to request bundles.", "warning");
     window.location.href = "auth/login.html";
     return false;
   }
@@ -426,7 +426,7 @@ document.addEventListener("click", async (e) => {
 
   const idToken = getIdToken();
   if (!idToken) {
-    showStatus("Please log in first to subscribe.", "warning");
+    showStatus("Please sign in first to subscribe.", "warning");
     window.location.href = "auth/login.html";
     return;
   }
@@ -476,7 +476,7 @@ document.addEventListener("click", async (e) => {
 
   const idToken = getIdToken();
   if (!idToken) {
-    showStatus("Please log in first.", "warning");
+    showStatus("Please sign in first.", "warning");
     return;
   }
 
@@ -828,7 +828,7 @@ async function removeBundle(bundleId, fireAndForget = true) {
   const bundleName = __catalogueData?.bundles?.find((cb) => cb.id === bundleId)?.name || bundleId;
   const idToken = getIdToken();
   if (!idToken) {
-    showStatus("Please log in first to remove bundles.", "warning");
+    showStatus("Please sign in first to remove bundles.", "warning");
     window.location.href = "auth/login.html";
     return;
   }

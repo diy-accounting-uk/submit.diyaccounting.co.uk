@@ -99,7 +99,7 @@ async function initPage() {
 
   const idToken = getIdToken();
   if (!idToken) {
-    showStatus("Please log in to generate passes.", "warning");
+    showStatus("Please sign in to generate passes.", "warning");
     document.getElementById("generatePassBtn").disabled = true;
     return;
   }
@@ -148,7 +148,7 @@ document.getElementById("generatePassBtn").addEventListener("click", async () =>
   const btn = document.getElementById("generatePassBtn");
   const idToken = getIdToken();
   if (!idToken) {
-    showStatus("Please log in first.", "warning");
+    showStatus("Please sign in first.", "warning");
     return;
   }
 

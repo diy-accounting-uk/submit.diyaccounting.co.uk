@@ -133,7 +133,7 @@ test.describe("Mobile layout - spreadsheet pages at 390px", () => {
 });
 
 test.describe("Mobile layout - specific findings", () => {
-  test("header auth section wraps instead of clipping the Logout link at 375px", async ({ page }) => {
+  test("header auth section wraps instead of clipping the Sign out link at 375px", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await serveRealSite(page);
     await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
@@ -210,7 +210,7 @@ test.describe("Header account line truncates, the brand stays whole", () => {
         await openHeader(page, width, signedIn);
 
         const status = page.locator(".login-status");
-        await expect(status).toHaveText(signedIn ? LONG_ADDRESS : "Not logged in");
+        await expect(status).toHaveText(signedIn ? LONG_ADDRESS : "Not signed in");
         const measured = await page.evaluate(() => {
           const brand = document.querySelector(".brand-name");
           const login = document.querySelector(".login-status");

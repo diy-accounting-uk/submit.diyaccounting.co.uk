@@ -1753,8 +1753,8 @@ test.describe("Operator Dashboard", () => {
       await setupRoutes(page, { snapshotStatus: 403, snapshotBody: FORBIDDEN_BODY });
       await loadDashboard(page);
 
-      await expect(page.locator(".login-status")).toHaveText("Not logged in");
-      await expect(page.locator(".login-link")).toHaveText("Log in");
+      await expect(page.locator(".login-status")).toHaveText("Not signed in");
+      await expect(page.locator(".login-link")).toHaveText("Sign in");
       await expect(page.locator(".login-link")).toHaveAttribute("href", "/auth/login.html");
     });
 
@@ -1774,7 +1774,7 @@ test.describe("Operator Dashboard", () => {
 
       await expect(page.locator(".login-status")).toHaveText("Operator");
       await expect(page.locator(".login-status")).toHaveAttribute("aria-label", "Signed in as Operator");
-      await expect(page.locator(".login-link")).toHaveText("Logout");
+      await expect(page.locator(".login-link")).toHaveText("Sign out");
       await expect(page.locator(".objective[data-objective-id]")).toHaveCount(8);
     });
   });

@@ -13,8 +13,8 @@
     if (!(idToken && userInfo && loginStatus && loginLink)) return;
     try {
       const user = JSON.parse(userInfo);
-      loginStatus.textContent = user.email || "Logged in";
-      loginLink.textContent = "Log out";
+      loginStatus.textContent = user.email || "Signed in";
+      loginLink.textContent = "Sign out";
       loginLink.href = "#";
       loginLink.onclick = function (e) {
         e.preventDefault();

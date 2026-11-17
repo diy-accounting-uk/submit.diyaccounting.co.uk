@@ -3,7 +3,7 @@
 
 // web/public/widgets/signed-out-panel.js
 // Puts the signed-out panel in place of a form for a visitor who is not logged in. An element
-// marked data-requires-sign-in is hidden, and a panel with a Log in button goes in front of it.
+// marked data-requires-sign-in is hidden, and a panel with a Sign in button goes in front of it.
 // data-sign-in-title and data-sign-in-text say what the page does and what logging in gives.
 
 (function () {
@@ -29,13 +29,13 @@
     panel.className = "signed-out-panel";
     panel.id = "signedOutPanel";
     const heading = document.createElement("h2");
-    heading.textContent = marked.dataset.signInTitle || "Log in to continue";
+    heading.textContent = marked.dataset.signInTitle || "Sign in to continue";
     const text = document.createElement("p");
-    text.textContent = marked.dataset.signInText || "Log in to use this page.";
+    text.textContent = marked.dataset.signInText || "Sign in to use this page.";
     const link = document.createElement("a");
     link.className = "btn";
     link.href = loginHref;
-    link.textContent = "Log in";
+    link.textContent = "Sign in";
     panel.append(heading, text, link);
     return panel;
   }

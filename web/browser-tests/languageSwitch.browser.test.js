@@ -88,7 +88,7 @@ for (const { path, otherName } of [
           await expect(page.locator(".token-refresh-btn")).toBeVisible();
           await expect(page.locator(".login-status")).toHaveAttribute("aria-label", /^(Signed in as|Wedi mewngofnodi fel) /);
         } else {
-          await expect(page.locator(".login-status")).toHaveText("Not logged in");
+          await expect(page.locator(".login-status")).toHaveText("Not signed in");
         }
         const other = bandSwitch.getByRole("link", { name: otherName });
         await expect(other).toBeInViewport({ ratio: 1 });

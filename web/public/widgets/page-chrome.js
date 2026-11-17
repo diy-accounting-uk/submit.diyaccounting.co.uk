@@ -205,10 +205,10 @@
       "</div>" +
       '<div class="auth-section">' +
       '<span class="entitlement-status">Activity: unrestricted</span>' +
-      '<span class="login-status">Not logged in</span>' +
+      '<span class="login-status">Not signed in</span>' +
       '<a href="' +
       rootPrefix +
-      'auth/login.html" class="login-link">Log in</a>' +
+      'auth/login.html" class="login-link">Sign in</a>' +
       "</div>" +
       "</div>"
     );

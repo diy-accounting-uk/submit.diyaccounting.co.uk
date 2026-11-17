@@ -43,7 +43,7 @@ export function checkTokenExpiry(accessToken, idToken) {
           } else {
             console.warn("Token refresh failed on page load");
             if (typeof window !== "undefined" && window.showStatus) {
-              window.showStatus("Session expired. Please log in again.", "warning");
+              window.showStatus("Session expired. Please sign in again.", "warning");
               setTimeout(() => {
                 window.location.href = "/auth/login.html";
               }, 3000);
@@ -54,7 +54,7 @@ export function checkTokenExpiry(accessToken, idToken) {
         .catch((err) => {
           console.error("Token refresh error on page load:", err);
           if (typeof window !== "undefined" && window.showStatus) {
-            window.showStatus("Session expired. Please log in again.", "warning");
+            window.showStatus("Session expired. Please sign in again.", "warning");
             setTimeout(() => {
               window.location.href = "/auth/login.html";
             }, 3000);

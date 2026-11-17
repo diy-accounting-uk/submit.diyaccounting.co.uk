@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // web/browser-tests/signInLink.browser.test.js
-// A signed-out visitor on a page two directories deep follows the header's Log in link and lands
+// A signed-out visitor on a page two directories deep follows the header's Sign in link and lands
 // on /auth/login.html, not on a path nested under the page's own directory.
 
 import { test, expect } from "@playwright/test";
@@ -43,7 +43,7 @@ async function serveRealSite(page) {
 }
 
 for (const pagePath of ["hmrc/vat/vatObligations.html", "hmrc/itsa/dashboard.html"]) {
-  test(`${pagePath} Log in link leads to /auth/login.html with nothing missing and no console error`, async ({ page }) => {
+  test(`${pagePath} Sign in link leads to /auth/login.html with nothing missing and no console error`, async ({ page }) => {
     const failedRequests = [];
     const consoleErrors = [];
     page.on("response", (response) => {

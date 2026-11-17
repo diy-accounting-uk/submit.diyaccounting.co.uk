@@ -13,7 +13,7 @@ const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behavio
 export async function clickLogIn(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user chooses to log in from the home page and arrives at the sign-in options", async () => {
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-login.png`, readerView: true });
-    await loggedClick(page, "a:has-text('Log in')", "Clicking login link", { screenshotPath });
+    await loggedClick(page, "a.login-link:has-text('Sign in')", "Clicking login link", { screenshotPath });
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-login-clicked.png`, readerView: true });
 
     // Login
@@ -78,19 +78,19 @@ export async function logOutAndExpectToBeLoggedOut(page, screenshotPath = defaul
   await test.step("The user logs out and sees the public home page with the log in link", async () => {
     console.log("Logging out from home page");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-home-before-waiting.png`, readerView: true });
-    await expect(page.locator("a:has-text('Logout')")).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("a.login-link:has-text('Sign out')")).toBeVisible({ timeout: 5000 });
 
     await Promise.all([
       // some implementations may redirect; we tolerate no URL change by catching
       page.waitForURL(/index\.html$|\/$/, { waitUntil: "domcontentloaded", timeout: 5000 }).catch(() => {}),
-      loggedClick(page, "a:has-text('Logout')", "Logout", { screenshotPath }),
+      loggedClick(page, "a.login-link:has-text('Sign out')", "Logout", { screenshotPath }),
     ]);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-home.png`, readerView: true });
-    //await expect(page.getByText("Not logged in")).toBeVisible({ timeout: 5000 });
-    const notLoggedInVisible = await page.getByText("Not logged in").isVisible();
+    //await expect(page.getByText("Not signed in")).toBeVisible({ timeout: 5000 });
+    const notLoggedInVisible = await page.getByText("Not signed in").isVisible();
     if (!notLoggedInVisible) {
       // eslint-disable-next-line no-console
-      console.error("❌❌❌ WARNING: 'Not logged in' text is NOT visible after logout! This may indicate a logout failure or UI issue.");
+      console.error("❌❌❌ WARNING: 'Not signed in' text is NOT visible after logout! This may indicate a logout failure or UI issue.");
     }
   });
 }

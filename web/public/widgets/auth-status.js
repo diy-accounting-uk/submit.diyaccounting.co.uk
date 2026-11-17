@@ -197,13 +197,13 @@
       loginStatusElement.setAttribute("role", "group");
       loginStatusElement.setAttribute("aria-label", signedInAs);
       ensureSettingsCog(loginLinkElement);
-      loginLinkElement.textContent = "Logout";
+      loginLinkElement.textContent = "Sign out";
       loginLinkElement.href = "#";
       loginLinkElement.onclick = logout;
       // Fetch token balance after login status is set
       fetchAndDisplayTokens();
     } else {
-      loginStatusElement.textContent = "Not logged in";
+      loginStatusElement.textContent = "Not signed in";
       loginStatusElement.removeAttribute("title");
       loginStatusElement.removeAttribute("role");
       loginStatusElement.removeAttribute("aria-label");
@@ -217,7 +217,7 @@
         loginLinkElement.style.display = "none";
       } else {
         loginLinkElement.style.display = "";
-        loginLinkElement.textContent = "Log in";
+        loginLinkElement.textContent = "Sign in";
         loginLinkElement.href = "/auth/login.html";
       }
       loginLinkElement.onclick = null;

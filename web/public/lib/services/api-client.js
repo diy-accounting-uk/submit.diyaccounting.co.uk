@@ -179,7 +179,7 @@ async function authorizedFetchOnce(input, init) {
     if (!refreshed) {
       console.warn("Token refresh failed, user needs to re-authenticate");
       if (typeof window !== "undefined" && window.showStatus) {
-        window.showStatus("Your session has expired. Please log in again.", "warning");
+        window.showStatus("Your session has expired. Please sign in again.", "warning");
         setTimeout(() => {
           window.location.href = "/auth/login.html";
         }, 2000);
@@ -277,7 +277,7 @@ export async function fetchWithIdToken(input, init = {}) {
     if (!refreshed) {
       console.warn("Token refresh failed, user needs to re-authenticate");
       if (typeof window !== "undefined" && window.showStatus) {
-        window.showStatus("Your session has expired. Please log in again.", "warning");
+        window.showStatus("Your session has expired. Please sign in again.", "warning");
         setTimeout(() => {
           window.location.href = "/auth/login.html";
         }, 2000);
