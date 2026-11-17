@@ -11,6 +11,7 @@
 #   VITEST_MAX_WORKERS=4        (CP1: vitest.config.js reads it; default 50%)
 #   PW_BROWSER_WORKERS=2        (CP1: the browser-tests project reads it; default 1)
 #   PW_VIDEO=off and PW_TRACE=off (CP1: the browser-tests project drops video and trace)
+#   MAVEN_ARGS=-Dmaven.resolver.transport=wagon (Maven's native transport does not trust the VM's proxy certificate)
 # Network access: Full.
 set -euo pipefail
 # Node 24 (package.json engines); /opt/node22/bin precedes /usr/local/bin on PATH
