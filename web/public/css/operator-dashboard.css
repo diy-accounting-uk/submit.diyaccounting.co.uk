@@ -463,6 +463,30 @@ body.page-dashboard #mainContent {
 }
 
 .chart-empty,
+/* The cohort table under the Retention graph scrolls inside its card when its months are wider. */
+.chart-cohort {
+  margin: var(--space-2) 0;
+  overflow-x: auto;
+}
+
+.chart-cohort-table caption {
+  text-align: left;
+  font-size: var(--step--1);
+  color: var(--c-ink-muted);
+}
+
+.chart-cohort-table td,
+.chart-cohort-table th[scope="col"] {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.chart-cohort-table th[scope="col"]:first-child,
+.chart-cohort-table th[scope="row"] {
+  text-align: left;
+  white-space: nowrap;
+}
+
 .chart-note {
   margin: var(--space-2) 0;
   color: var(--c-ink-muted);

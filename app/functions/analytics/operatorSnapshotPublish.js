@@ -154,6 +154,19 @@ const BETTER_UP_IDS = [
   "retention-active-customers-7d",
   "retention-new-accounts",
   "retention-new-accounts-submitted-share",
+  "retention-accounts-total",
+  "retention-active-customers-90d",
+  "retention-submitters-7d",
+  "retention-returning-share-of-due",
+  "retention-new-submitters-90d",
+  "retention-resurrected-submitters-90d",
+  "retention-submitter-quick-ratio",
+  "retention-active-subscriptions",
+  "retention-active-passes",
+  "retention-first-submissions",
+  "retention-subscriptions-started",
+  "retention-subscriptions-net-change",
+  "retention-passes-redeemed",
 ];
 const BETTER_DOWN_IDS = [
   "alarms-fired",
@@ -200,6 +213,9 @@ const BETTER_DOWN_IDS = [
   "ms-ads-cost-per-paid-landing-gbp",
   "charges-without-activation",
   "median-hours-to-first-submission",
+  "retention-dormant-submitters-90d",
+  "retention-subscription-churn-30d",
+  "retention-subscriptions-ended",
 ];
 
 export function betterDirection(observationId) {
@@ -1261,6 +1277,177 @@ export function vatSubmissionReconciliationText({ rows, series, days }) {
   );
 }
 
+// The classes an account line of the Retention graph is split into, beside the customer line, and
+// the words each class's line ends with.
+const RETENTION_OTHER_CLASSES = {
+  test: "test accounts",
+  synthetic: "synthetic accounts",
+  other: "operator accounts",
+  unknown: "unknown accounts",
+};
+
+// The component of a row of a view with an actor_class column: the line id for a customer row, the
+// line id and the class for any other row.
+const classedComponent = (id) => `CASE actor_class WHEN 'customer' THEN '${id}' ELSE '${id}-' || actor_class END`;
+
+const classedLines = (id, label, description) =>
+  Object.fromEntries([
+    [id, { label, description: `${description} Customer accounts only.` }],
+    ...Object.entries(RETENTION_OTHER_CLASSES).map(([name, words]) => [
+      `${id}-${name}`,
+      { label: `${label}, ${words}`, description: `${description} Only ${words}; the customer line leaves them out.` },
+    ]),
+  ]);
+
+const RETENTION_LINES = {
+  ...classedLines("accounts-total", "Accounts in total", "Accounts with a record on or before the day."),
+  "active-customers-90d": {
+    label: "Active customers, 90 days to this day",
+    description: "Distinct signed-in customers who made a call in the 90 days to the day.",
+  },
+  "active-customers-7d": {
+    label: "Active customers, 7 days to this day",
+    description: "Distinct signed-in customers who made a call in the 7 days to the day.",
+  },
+  "submitters-90d": {
+    label: "Submitters, 90 days to this day",
+    description: "Distinct customers with a VAT submission in the 90 days to the day.",
+  },
+  "submitters-7d": {
+    label: "Submitters, 7 days to this day",
+    description: "Distinct customers with a VAT submission in the 7 days to the day.",
+  },
+  "returning-submitters-90d": {
+    label: "Returning submitters, 90 days to this day",
+    description: "Of the submitters due, the customers who submitted in the 90 days to the day too.",
+  },
+  "returning-submitters-7d": {
+    label: "Returning submitters, 7 days to this day",
+    description: "Of the submitters in the 7 days to the day, the customers who had also submitted before them.",
+  },
+  "due-submitters-90d": {
+    label: "Submitters due, 90 days to this day",
+    description: "Customers who submitted in the 90 days before the window. A quarterly VAT filer is due again in the window.",
+  },
+  "active-subscriptions": {
+    label: "Active subscriptions",
+    description: "Customer subscriptions active at the end of the day.",
+  },
+  "active-passes": {
+    label: "Active passes",
+    description: "Passes issued by customers that are open to redeem at the end of the day.",
+  },
+  ...classedLines("new-accounts", "New accounts", "Accounts opened on the day, by their first bundle grant."),
+  "first-submissions": { label: "First submissions", description: "Customers who made their first VAT submission on the day." },
+  "subscriptions-started": { label: "Subscriptions started", description: "Customer subscriptions that became active on the day." },
+  "renewals": { label: "Subscription renewals", description: "Customer subscriptions renewed on the day." },
+  "cancellations": {
+    label: "Subscription cancellations",
+    description: "Customer subscriptions cancelled on the day, now or at the period end.",
+  },
+  "subscriptions-ended": { label: "Subscriptions ended", description: "Customer subscriptions that stopped being active on the day." },
+  "subscriptions-net-change": {
+    label: "Net change in subscriptions",
+    description: "Subscriptions started less subscriptions ended on the day.",
+  },
+  "passes-issued": { label: "Passes issued", description: "Passes issued on the day, of every pass type." },
+  "passes-redeemed": { label: "Passes redeemed", description: "Redemptions on the day of passes that customers issued." },
+  "new-submitters-90d": {
+    label: "New submitters, 90 days to this day",
+    description: "Customers whose first VAT submission is in the 90 days to the day.",
+  },
+  "resurrected-submitters-90d": {
+    label: "Resurrected submitters, 90 days to this day",
+    description: "Customers who submitted in the 90 days to the day and before the 90 days before them, but not in those 90 days.",
+  },
+};
+
+const RETENTION_TOTALS_ORDER = [
+  "accounts-total",
+  "active-customers-90d",
+  "active-customers-7d",
+  "submitters-90d",
+  "submitters-7d",
+  "due-submitters-90d",
+  "returning-submitters-90d",
+  "returning-submitters-7d",
+  "active-subscriptions",
+  "active-passes",
+  ...Object.keys(RETENTION_OTHER_CLASSES).map((name) => `accounts-total-${name}`),
+];
+
+const RETENTION_EVENTS_ORDER = [
+  "new-accounts",
+  "first-submissions",
+  "subscriptions-started",
+  "renewals",
+  "cancellations",
+  "subscriptions-ended",
+  "subscriptions-net-change",
+  "passes-issued",
+  "passes-redeemed",
+  ...Object.keys(RETENTION_OTHER_CLASSES).map((name) => `new-accounts-${name}`),
+];
+
+// The v_returning_submitters_rolling_daily column behind each rolling line.
+const RETENTION_ROLLING_COLUMNS = {
+  "submitters-90d": "submitters_90d",
+  "submitters-7d": "submitters_7d",
+  "returning-submitters-90d": "returning_submitters_90d",
+  "returning-submitters-7d": "returning_submitters_7d",
+  "due-submitters-90d": "due_submitters_90d",
+  "new-submitters-90d": "new_submitters_90d",
+  "resurrected-submitters-90d": "resurrected_submitters_90d",
+};
+
+// The v_account_lifecycle_daily column behind each daily event line.
+const RETENTION_LIFECYCLE_COLUMNS = {
+  "first-submissions": "first_submissions",
+  "subscriptions-started": "subscriptions_started",
+  "subscriptions-ended": "subscriptions_ended",
+  "subscriptions-net-change": "subscriptions_net_change",
+};
+
+const RETENTION_NOTE = [
+  "Days are UTC.",
+  "Totals reads a figure on each day; Daily events counts the events of each day.",
+  "The 90 and 7 day windows roll, so a line falls when a submission leaves its window.",
+  "Submitters due are the customers who submitted in the 90 days before the window.",
+  "A quarterly VAT filer submits once in 90 days, so returning submitters over submitters due is the return rate.",
+  "Submitters by kind splits the 90 day submitters into new, returning and resurrected, and the three add up to the total line.",
+  "A resurrected submitter came back after more than 90 days without a submission.",
+  "Accounts in total counts an account from its first record; New accounts counts it on its first bundle grant.",
+  "Net change in subscriptions is subscriptions started less subscriptions ended, so it can fall below zero.",
+  "Test, synthetic, operator and unknown accounts have their own lines, hidden at the start.",
+  "The cohort table counts, for each signup month, the accounts that submitted in each month since.",
+  "A quarterly filer submits in months 0, 3 and 6.",
+  "The table above reads the same lines on its latest day.",
+].join(" ");
+
+// The signup months the cohort table under the Retention graph holds.
+export const RETENTION_COHORT_MONTHS = 12;
+
+/**
+ * The cohort table under the Retention graph, from the rows of v_retention_cohorts_monthly: one
+ * row per signup month, oldest first, with the cohort's accounts and its submitters in each month
+ * since signup (month 0 is the signup month).
+ *
+ * @param {{rows: Array<{signup_month: string, months_since_signup: string, accounts: string, submitters: string}>}} params
+ * @returns {{months: number, rows: Array<{signupMonth: string, accounts: number, submitters: number[]}>}}
+ */
+export function retentionCohortTable({ rows }) {
+  const byMonth = new Map();
+  for (const row of rows) {
+    if (!row.signup_month || row.months_since_signup === undefined) continue;
+    const month = row.signup_month.slice(0, 7);
+    if (!byMonth.has(month)) byMonth.set(month, { signupMonth: month, accounts: Number(row.accounts ?? 0), submitters: [] });
+    byMonth.get(month).submitters[Number(row.months_since_signup)] = Number(row.submitters ?? 0);
+  }
+  const cohorts = [...byMonth.values()].sort((a, b) => a.signupMonth.localeCompare(b.signupMonth));
+  for (const cohort of cohorts) cohort.submitters = Array.from(cohort.submitters, (value) => value ?? 0);
+  return { months: Math.max(0, ...cohorts.map((cohort) => cohort.submitters.length)), rows: cohorts };
+}
+
 /**
  * The charts the dashboard draws. A mode is one set of lines; a chart with two modes (activities:
  * started and completed) shows one at a time. `total` names the sum-of-components line, or is
@@ -1848,59 +2035,72 @@ export function buildDailyChartDefinitions() {
       objectiveId: "retention",
       title: "Retention",
       unit: "count",
-      note: "The 90-day windows roll: each day counts the customers who submitted in the 90 days up to it, so a figure falls when a submission leaves the window. A returning submitter also submitted in the 90 days before that; the table above reads the same line on its latest day. Active customers over 7 days and New accounts are the bases the submitters come from. Passes issued are a count per day.",
+      note: RETENTION_NOTE,
       reconciliation: {
         sql:
           `SELECT actor_group, cast(sum(submissions) AS varchar) AS submissions, cast(count(DISTINCT hashed_sub) AS varchar) AS submitters\n` +
           `FROM   v_vat_submissions_by_actor_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1`,
         text: vatSubmissionReconciliationText,
       },
+      cohort: {
+        sql:
+          `SELECT cast(signup_month AS varchar) AS signup_month, cast(months_since_signup AS varchar) AS months_since_signup,\n` +
+          `       cast(accounts AS varchar) AS accounts, cast(submitters AS varchar) AS submitters\n` +
+          `FROM   v_retention_cohorts_monthly\n` +
+          `WHERE  actor_class = 'customer' AND signup_month > date_add('month', -${RETENTION_COHORT_MONTHS}, current_date)\n` +
+          `ORDER  BY 1, 2`,
+        build: retentionCohortTable,
+      },
       modes: [
         {
-          id: "retention",
-          label: "Retention",
+          id: "totals",
+          label: "Totals",
           total: null,
-          descriptionOf: (id) =>
-            ({
-              "submitters-90d": "Distinct customers with a VAT submission in the 90 days up to the day.",
-              "returning-submitters-90d": "Of those, the customers who also submitted in the 90 days before that.",
-              "renewals": "Customer subscriptions renewed on the day.",
-              "cancellations": "Customer subscriptions cancelled on the day.",
-              "passes-issued": "Passes issued on the day, of every pass type.",
-              "active-customers-7d": "Distinct signed-in customers who made a call in the 7 days to the day.",
-              "new-accounts": "Customer accounts opened on the day; test, synthetic, operator and unknown accounts apart.",
-            })[id],
-          componentOrder: [
-            "active-customers-7d",
-            "new-accounts",
-            "submitters-90d",
-            "returning-submitters-90d",
-            "renewals",
-            "cancellations",
-            "passes-issued",
-          ],
-          labelOf: (id) =>
-            ({
-              "passes-issued": "Passes issued",
-              "submitters-90d": "Submitters, 90 days to this day",
-              "returning-submitters-90d": "Returning submitters, 90 days to this day",
-              "renewals": "Subscription renewals",
-              "cancellations": "Subscription cancellations",
-              "active-customers-7d": "Active customers, 7 days to this day",
-              "new-accounts": "New accounts",
-            })[id] ?? id,
+          componentOrder: RETENTION_TOTALS_ORDER,
+          labelOf: (id) => RETENTION_LINES[id]?.label ?? id,
+          descriptionOf: (id) => RETENTION_LINES[id]?.description,
           sql:
-            `SELECT cast(day AS varchar) AS day, 'active-customers-7d' AS component, cast(sum(active_users_7d) AS double) AS value\n` +
+            `SELECT cast(day AS varchar) AS day, ${classedComponent("accounts-total")} AS component, cast(sum(accounts_total) AS double) AS value\n` +
+            `FROM   v_account_lifecycle_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'active-customers-90d', cast(sum(active_users_90d) AS double)\n` +
             `FROM   v_active_customers_7d_daily\nWHERE  ${dailyWindowFilter("day")} AND app_client = 'all'\nGROUP  BY 1\n` +
             `UNION ALL\n` +
-            `SELECT cast(signup_day AS varchar), 'new-accounts', cast(sum(new_accounts) AS double)\n` +
-            `FROM   v_signup_to_first_submission\nWHERE  ${dailyWindowFilter("signup_day")} AND actor_class = 'customer'\nGROUP  BY 1\n` +
+            `SELECT cast(day AS varchar), 'active-customers-7d', cast(sum(active_users_7d) AS double)\n` +
+            `FROM   v_active_customers_7d_daily\nWHERE  ${dailyWindowFilter("day")} AND app_client = 'all'\nGROUP  BY 1\n` +
+            ["submitters-90d", "submitters-7d", "returning-submitters-90d", "returning-submitters-7d", "due-submitters-90d"]
+              .map(
+                (id) =>
+                  `UNION ALL\n` +
+                  `SELECT cast(day AS varchar), '${id}', cast(sum(${RETENTION_ROLLING_COLUMNS[id]}) AS double)\n` +
+                  `FROM   v_returning_submitters_rolling_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n`,
+              )
+              .join("") +
             `UNION ALL\n` +
-            `SELECT cast(day AS varchar) AS day, 'submitters-90d' AS component, cast(sum(submitters_90d) AS double) AS value\n` +
-            `FROM   v_returning_submitters_rolling_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `SELECT cast(day AS varchar), 'active-subscriptions', cast(sum(active_subscriptions) AS double)\n` +
+            `FROM   v_account_lifecycle_daily\nWHERE  ${dailyWindowFilter("day")} AND actor_class = 'customer'\nGROUP  BY 1\n` +
             `UNION ALL\n` +
-            `SELECT cast(day AS varchar), 'returning-submitters-90d', cast(sum(returning_submitters_90d) AS double)\n` +
-            `FROM   v_returning_submitters_rolling_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `SELECT cast(day AS varchar), 'active-passes', cast(sum(active_passes) AS double)\n` +
+            `FROM   v_account_lifecycle_daily\nWHERE  ${dailyWindowFilter("day")} AND actor_class = 'customer'\nGROUP  BY 1`,
+        },
+        {
+          id: "events",
+          label: "Daily events",
+          total: null,
+          componentOrder: RETENTION_EVENTS_ORDER,
+          labelOf: (id) => RETENTION_LINES[id]?.label ?? id,
+          descriptionOf: (id) => RETENTION_LINES[id]?.description,
+          sql:
+            `SELECT cast(signup_day AS varchar) AS day, ${classedComponent("new-accounts")} AS component, cast(sum(new_accounts) AS double) AS value\n` +
+            `FROM   v_signup_to_first_submission\nWHERE  ${dailyWindowFilter("signup_day")}\nGROUP  BY 1, 2\n` +
+            ["first-submissions", "subscriptions-started", "subscriptions-ended", "subscriptions-net-change"]
+              .map(
+                (id) =>
+                  `UNION ALL\n` +
+                  `SELECT cast(day AS varchar), '${id}', cast(sum(${RETENTION_LIFECYCLE_COLUMNS[id]}) AS double)\n` +
+                  `FROM   v_account_lifecycle_daily\nWHERE  ${dailyWindowFilter("day")} AND actor_class = 'customer'\nGROUP  BY 1\n`,
+              )
+              .join("") +
             `UNION ALL\n` +
             `SELECT cast(day AS varchar), 'renewals', cast(sum(renewals) AS double)\n` +
             `FROM   v_subscription_renewals_daily\nWHERE  ${dailyWindowFilter("day")} AND actor_class = 'customer'\nGROUP  BY 1\n` +
@@ -1909,7 +2109,27 @@ export function buildDailyChartDefinitions() {
             `FROM   v_subscription_cancellations_daily\nWHERE  ${dailyWindowFilter("day")} AND actor_class = 'customer'\nGROUP  BY 1\n` +
             `UNION ALL\n` +
             `SELECT cast(day AS varchar), 'passes-issued', cast(sum(passes_issued) AS double)\n` +
+            `FROM   v_pass_redemptions_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'passes-redeemed', cast(sum(passes_redeemed) AS double)\n` +
             `FROM   v_pass_redemptions_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1`,
+        },
+        {
+          id: "submitters",
+          label: "Submitters by kind",
+          total: "All submitters, 90 days to this day",
+          totalDescription: "Distinct customers with a VAT submission in the 90 days to the day: new, returning and resurrected together.",
+          componentOrder: ["new-submitters-90d", "returning-submitters-90d", "resurrected-submitters-90d"],
+          labelOf: (id) => RETENTION_LINES[id]?.label ?? id,
+          descriptionOf: (id) => RETENTION_LINES[id]?.description,
+          sql: ["new-submitters-90d", "returning-submitters-90d", "resurrected-submitters-90d"]
+            .map(
+              (id, index) =>
+                `SELECT cast(day AS varchar)${index === 0 ? " AS day" : ""}, '${id}'${index === 0 ? " AS component" : ""}, ` +
+                `cast(sum(${RETENTION_ROLLING_COLUMNS[id]}) AS double)${index === 0 ? " AS value" : ""}\n` +
+                `FROM   v_returning_submitters_rolling_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1`,
+            )
+            .join("\nUNION ALL\n"),
         },
       ],
     },
@@ -2288,6 +2508,22 @@ export async function buildDailyCharts({
         chartId: chart.id,
         error: error.message,
       });
+    }
+  }
+  // A cohort query that fails leaves its chart without the table and still counts as a failure.
+  for (const chart of charts) {
+    const { cohort } = definitions.find((definition) => definition.id === chart.id);
+    if (!cohort) continue;
+    const previousCohort = previousChart(chart.id)?.cohort;
+    if (previousCohort) {
+      chart.cohort = previousCohort;
+      continue;
+    }
+    try {
+      chart.cohort = cohort.build({ rows: await runAthenaQuery({ workGroup, database, sql: cohort.sql }) });
+    } catch (error) {
+      failedChartIds.add(`${chart.id}-cohort`);
+      logger.warn({ message: "Chart cohort query failed, publishing no cohort table", chartId: chart.id, error: error.message });
     }
   }
   const dailySeriesQueriedAt = reusable ? reusable.dailySeriesQueriedAt : now.toISOString();

@@ -355,6 +355,8 @@ public class TableChangeDelivery extends Construct {
                 columns.add(column("created_at", "string"));
                 columns.add(column("updated_at", "string"));
                 columns.add(column("use_count", "bigint"));
+                columns.add(column("max_uses", "bigint"));
+                columns.add(column("valid_until", "string"));
                 columns.add(column("revoked_at", "string"));
                 columns.add(column("actor", "string"));
                 columns.add(column("redeemed_by", "string"));

@@ -148,6 +148,21 @@ public class BusinessViews extends Construct {
                     "Time from a new account's first bundle grant to its first submission, by account class",
                     List.of("aliased_dynamo_bundles", "aliased_dynamo_receipts", "v_account_class")),
             new ViewDefinition(
+                    "v_account_lifecycle_daily",
+                    "Each day and account class: accounts in total, first and second submissions, subscriptions"
+                            + " started, ended and active, and passes open to redeem",
+                    List.of(
+                            "activity_events_all",
+                            "aliased_dynamo_bundles",
+                            "aliased_dynamo_receipts",
+                            "aliased_dynamo_subscriptions",
+                            "aliased_dynamo_passes",
+                            "v_account_class")),
+            new ViewDefinition(
+                    "v_retention_cohorts_monthly",
+                    "Of the accounts opened in a month, how many submitted in each month since, by account class",
+                    List.of("aliased_dynamo_bundles", "aliased_dynamo_receipts", "v_account_class")),
+            new ViewDefinition(
                     "v_traffic_by_country_daily", "Sessions each day, by country", List.of("activity_events_all")),
             new ViewDefinition(
                     "v_ga4_funnel_daily",
@@ -238,8 +253,9 @@ public class BusinessViews extends Construct {
                     List.of("aliased_dynamo_receipts")),
             new ViewDefinition(
                     "v_returning_submitters_rolling_daily",
-                    "Each day, the customers who submitted in the last 90 days and how many also submitted in the 90 days before",
-                    List.of("aliased_dynamo_receipts")),
+                    "Each day, the customers who submitted in the last 90 and 7 days: new, returning, resurrected,"
+                            + " due and dormant",
+                    List.of("aliased_dynamo_receipts", "v_account_class")),
             new ViewDefinition(
                     "v_vat_submissions_by_actor_daily",
                     "VAT submissions each day and account, customers apart from test accounts",
@@ -367,7 +383,8 @@ public class BusinessViews extends Construct {
                     List.of("sessions_by_host_source_daily")),
             new ViewDefinition(
                     "v_active_customers_7d_daily",
-                    "Distinct customers active each day and over the 7 days to it, by app client and for all clients",
+                    "Distinct customers active each day and over the 7 and 90 days to it, by app client and for all"
+                            + " clients",
                     List.of("activity_events_all")),
             new ViewDefinition(
                     "v_ga4_landing_pages_daily",

@@ -355,6 +355,187 @@ export function chartWithSeries(id, objectiveId, title, unit, seriesLabels, extr
   return { id, objectiveId, title, unit, modes: [{ id: "main", label: "Main", series: [total, ...components] }], ...extra };
 }
 
+// A line that rises from `from` to `to` over the days, so a total reads as a total and an event
+// line as a count of a few a day.
+function rampSeries(id, label, from, to, description) {
+  const last = CHART_DAYS.length - 1;
+  return { id, label, description, values: CHART_DAYS.map((_, index) => Math.round(from + ((to - from) * index) / last)) };
+}
+
+// A line of a few events a day, 0 on most days.
+function eventSeries(id, label, every, size, description, offset = 0) {
+  return { id, label, description, values: CHART_DAYS.map((_, index) => ((index + offset) % every === 0 ? size : 0)) };
+}
+
+const OTHER_CLASS_WORDS = [
+  ["test", "test accounts"],
+  ["synthetic", "synthetic accounts"],
+  ["other", "operator accounts"],
+  ["unknown", "unknown accounts"],
+];
+
+// The Retention graph as the publisher writes it: a Totals tab, a Daily events tab and a
+// Submitters by kind tab, the other classes' lines last, and the cohort table.
+export function retentionChart() {
+  const net = CHART_DAYS.map((_, index) => (index % 17 === 0 ? 1 : index % 29 === 0 ? -1 : 0));
+  const newSubmitters = rampSeries(
+    "new-submitters-90d",
+    "New submitters, 90 days to this day",
+    0,
+    9,
+    "Customers whose first VAT submission is in the 90 days to the day.",
+  );
+  const returning = rampSeries(
+    "returning-submitters-90d",
+    "Returning submitters, 90 days to this day",
+    0,
+    3,
+    "Of the submitters due, the customers who submitted in the 90 days to the day too.",
+  );
+  const resurrected = rampSeries(
+    "resurrected-submitters-90d",
+    "Resurrected submitters, 90 days to this day",
+    0,
+    1,
+    "Customers who came back after more than 90 days.",
+  );
+  return {
+    id: "retention",
+    objectiveId: "retention",
+    title: "Retention",
+    unit: "count",
+    note: "Days are UTC. Totals reads a figure on each day; Daily events counts the events of each day. The 90 and 7 day windows roll.",
+    reconciliation: "Last 90 days, customers: 12 distinct submitters made 90 completions.",
+    cohort: {
+      months: 3,
+      rows: [
+        { signupMonth: "2026-09", accounts: 9, submitters: [0, 1, 0] },
+        { signupMonth: "2026-10", accounts: 11, submitters: [7, 0] },
+        { signupMonth: "2026-11", accounts: 7, submitters: [4] },
+      ],
+    },
+    modes: [
+      {
+        id: "totals",
+        label: "Totals",
+        series: [
+          rampSeries("accounts-total", "Accounts in total", 3, 41, "Accounts with a record on or before the day. Customer accounts only."),
+          rampSeries(
+            "active-customers-90d",
+            "Active customers, 90 days to this day",
+            2,
+            36,
+            "Distinct signed-in customers who made a call in the 90 days to the day.",
+          ),
+          chartSeries("active-customers-7d", "Active customers, 7 days to this day", 4, {
+            description: "Distinct signed-in customers who made a call in the 7 days to the day.",
+          }),
+          rampSeries(
+            "submitters-90d",
+            "Submitters, 90 days to this day",
+            0,
+            13,
+            "Distinct customers with a VAT submission in the 90 days to the day.",
+          ),
+          chartSeries("submitters-7d", "Submitters, 7 days to this day", 1, {
+            description: "Distinct customers with a VAT submission in the 7 days to the day.",
+          }),
+          rampSeries(
+            "due-submitters-90d",
+            "Submitters due, 90 days to this day",
+            0,
+            4,
+            "Customers who submitted in the 90 days before the window.",
+          ),
+          rampSeries(
+            "returning-submitters-90d",
+            "Returning submitters, 90 days to this day",
+            0,
+            3,
+            "Of the submitters due, the customers who submitted in the 90 days to the day too.",
+          ),
+          rampSeries(
+            "returning-submitters-7d",
+            "Returning submitters, 7 days to this day",
+            0,
+            1,
+            "Of the submitters in the 7 days to the day, the customers who had also submitted before them.",
+          ),
+          rampSeries("active-subscriptions", "Active subscriptions", 0, 8, "Customer subscriptions active at the end of the day."),
+          rampSeries("active-passes", "Active passes", 0, 2, "Passes issued by customers that are open to redeem at the end of the day."),
+          ...OTHER_CLASS_WORDS.map(([name, words], index) =>
+            rampSeries(
+              `accounts-total-${name}`,
+              `Accounts in total, ${words}`,
+              index === 0 ? 200 : 0,
+              index === 0 ? 350 : 1,
+              `Accounts with a record on or before the day. Only ${words}.`,
+            ),
+          ),
+        ],
+      },
+      {
+        id: "events",
+        label: "Daily events",
+        series: [
+          eventSeries(
+            "new-accounts",
+            "New accounts",
+            3,
+            1,
+            "Accounts opened on the day, by their first bundle grant. Customer accounts only.",
+          ),
+          eventSeries("first-submissions", "First submissions", 7, 1, "Customers who made their first VAT submission on the day.", 2),
+          eventSeries("subscriptions-started", "Subscriptions started", 11, 1, "Customer subscriptions that became active on the day.", 4),
+          eventSeries("renewals", "Subscription renewals", 30, 2, "Customer subscriptions renewed on the day.", 5),
+          eventSeries(
+            "cancellations",
+            "Subscription cancellations",
+            29,
+            1,
+            "Customer subscriptions cancelled on the day, now or at the period end.",
+            6,
+          ),
+          eventSeries("subscriptions-ended", "Subscriptions ended", 29, 1, "Customer subscriptions that stopped being active on the day."),
+          {
+            id: "subscriptions-net-change",
+            label: "Net change in subscriptions",
+            description: "Subscriptions started less subscriptions ended on the day.",
+            values: net,
+          },
+          eventSeries("passes-issued", "Passes issued", 5, 2, "Passes issued on the day, of every pass type.", 1),
+          eventSeries("passes-redeemed", "Passes redeemed", 9, 1, "Redemptions on the day of passes that customers issued.", 3),
+          ...OTHER_CLASS_WORDS.map(([name, words], index) =>
+            eventSeries(
+              `new-accounts-${name}`,
+              `New accounts, ${words}`,
+              index === 0 ? 2 : 45,
+              index === 0 ? 40 : 1,
+              `Accounts opened on the day. Only ${words}.`,
+            ),
+          ),
+        ],
+      },
+      {
+        id: "submitters",
+        label: "Submitters by kind",
+        series: [
+          {
+            id: "total",
+            label: "All submitters, 90 days to this day",
+            isTotal: true,
+            description: "Distinct customers with a VAT submission in the 90 days to the day: new, returning and resurrected together.",
+            values: CHART_DAYS.map((_, day) => newSubmitters.values[day] + returning.values[day] + resurrected.values[day]),
+          },
+          newSubmitters,
+          returning,
+          resurrected,
+        ],
+      },
+    ],
+  };
+}
+
 export const FIXTURE_DAILY_CHARTS = {
   days: CHART_DAYS,
   hours: CHART_HOURS,
@@ -539,14 +720,7 @@ export const FIXTURE_DAILY_CHARTS = {
       "Amazon DynamoDB",
       "Other services",
     ]),
-    chartWithSeries(
-      "retention",
-      "retention",
-      "Retention",
-      "count",
-      ["Submitters", "Returning submitters", "Renewals", "Cancellations", "Passes issued"],
-      { note: "The 90-day windows roll.", reconciliation: "Last 90 days, customers: 12 distinct submitters made 90 completions." },
-    ),
+    retentionChart(),
     (() => {
       const visitors = chartWithSeries("visitors", "conversion-to-submission", "Visitors", "count", [
         "Operator",

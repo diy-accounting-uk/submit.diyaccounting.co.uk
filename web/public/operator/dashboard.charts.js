@@ -75,6 +75,10 @@ const INITIALLY_HIDDEN_SERIES = {
   "integration-duration": { organisation: { showOnlySuffix: "@customer" } },
   "conversion-to-submission": { funnel: ["sessions-from-spreadsheets", "sessions-from-www", "sessions-from-elsewhere"] },
   "data-totals": { transactional: { hideSuffix: "@synthetic" } },
+  "retention": {
+    totals: ["accounts-total-test", "accounts-total-synthetic", "accounts-total-other", "accounts-total-unknown"],
+    events: ["new-accounts-test", "new-accounts-synthetic", "new-accounts-other", "new-accounts-unknown"],
+  },
 };
 
 // An entry is a list of hidden line ids, or { showOnly: [ids] } for a mode whose lines are not
@@ -189,9 +193,29 @@ function lineRuns(values) {
   return runs.filter(Boolean);
 }
 
+// The value axis: from 0, or below 0 when a line falls below it, to a nice ceiling, in four
+// steps. Below 0 the step is a nice number and the lowest value a whole number of steps, so 0 is
+// a grid line.
+function valueAxis(values) {
+  const highest = Math.max(0, ...values);
+  const lowest = Math.min(0, ...values);
+  if (lowest >= 0) return { minValue: 0, maxValue: niceCeiling(highest) };
+  let step = niceCeiling((highest - lowest) / 4);
+  let minValue = Math.floor(lowest / step) * step;
+  while (minValue + 4 * step < highest) {
+    step = niceCeiling(step * 1.01);
+    minValue = Math.floor(lowest / step) * step;
+  }
+  return { minValue, maxValue: minValue + 4 * step };
+}
+
+function axisTicks({ minValue, maxValue }) {
+  return [0, 1, 2, 3, 4].map((tick) => minValue + ((maxValue - minValue) / 4) * tick);
+}
+
 // The left margin that holds the widest value label, at least MARGIN.left.
-function leftMarginFor(unit, maxValue) {
-  const widest = Math.max(...[0, 1, 2, 3, 4].map((tick) => formatAxisValue(unit, (maxValue / 4) * tick).length));
+function leftMarginFor(unit, axis) {
+  const widest = Math.max(...axisTicks(axis).map((value) => formatAxisValue(unit, value).length));
   return Math.max(MARGIN.left, 12 + widest * AXIS_CHARACTER_WIDTH);
 }
 
@@ -208,8 +232,8 @@ function drawChart(state) {
   const styles = lineStylesFor(seriesList);
 
   const width = Math.max(state.card.clientWidth - 2, 240);
-  const maxValue = niceCeiling(Math.max(0, ...visible.flatMap((series) => series.values.filter((value) => value !== null))));
-  const left = leftMarginFor(unit, maxValue);
+  const axis = valueAxis(visible.flatMap((series) => series.values.filter((value) => value !== null)));
+  const left = leftMarginFor(unit, axis);
   const plotWidth = width - left - MARGIN.right;
   const plotHeight = CHART_HEIGHT - MARGIN.top - MARGIN.bottom;
   svg.setAttribute("viewBox", "0 0 " + width + " " + CHART_HEIGHT);
@@ -218,10 +242,9 @@ function drawChart(state) {
   svg.replaceChildren();
 
   const xAt = (index) => left + (days.length === 1 ? 0 : (index / (days.length - 1)) * plotWidth);
-  const yAt = (value) => MARGIN.top + plotHeight - (value / maxValue) * plotHeight;
+  const yAt = (value) => MARGIN.top + plotHeight - ((value - axis.minValue) / (axis.maxValue - axis.minValue)) * plotHeight;
 
-  for (let tick = 0; tick <= 4; tick += 1) {
-    const value = (maxValue / 4) * tick;
+  for (const value of axisTicks(axis)) {
     svg.appendChild(svgElement("line", { x1: left, x2: width - MARGIN.right, y1: yAt(value), y2: yAt(value), class: "chart-grid" }));
     const label = svgElement("text", { "x": left - 6, "y": yAt(value) + 4, "text-anchor": "end", "class": "chart-axis" });
     label.textContent = formatAxisValue(unit, value);
@@ -563,6 +586,8 @@ function renderChartCard(chart, days, hours) {
     card.appendChild(reconciliation);
   }
 
+  if (chart.cohort) card.appendChild(renderCohortTable(chart.cohort));
+
   if (chart.note) {
     const note = document.createElement("p");
     note.className = "chart-note";
@@ -573,6 +598,66 @@ function renderChartCard(chart, days, hours) {
   state.draw = () => drawChart(state);
   drawLegend(state);
   return state;
+}
+
+const cohortMonthFormat = new Intl.DateTimeFormat("en-GB", { month: "short", year: "numeric", timeZone: "UTC" });
+const cohortShareFormat = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 0 });
+
+// The cohort table under a graph: a row per signup month, the cohort's accounts, then for each
+// month since signup the accounts that submitted in it and their share of the cohort. A month the
+// cohort has not reached yet is empty.
+function renderCohortTable(cohort) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "chart-cohort";
+  const table = document.createElement("table");
+  table.className = "observations data-table chart-cohort-table";
+  const caption = document.createElement("caption");
+  caption.textContent = "Accounts that submitted, by signup month and month since signup";
+  table.appendChild(caption);
+  const head = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  ["Signup month", "Accounts", ...Array.from({ length: cohort.months }, (_, month) => "Month " + month)].forEach((text) => {
+    const cell = document.createElement("th");
+    cell.scope = "col";
+    cell.textContent = text;
+    headRow.appendChild(cell);
+  });
+  head.appendChild(headRow);
+  table.appendChild(head);
+  const body = document.createElement("tbody");
+  cohort.rows.forEach((row) => {
+    const tableRow = document.createElement("tr");
+    tableRow.className = "chart-cohort-row";
+    tableRow.dataset.signupMonth = row.signupMonth;
+    const month = document.createElement("th");
+    month.scope = "row";
+    month.textContent = cohortMonthFormat.format(new Date(row.signupMonth + "-01T00:00:00Z"));
+    tableRow.appendChild(month);
+    const accounts = document.createElement("td");
+    accounts.textContent = String(row.accounts);
+    tableRow.appendChild(accounts);
+    for (let index = 0; index < cohort.months; index += 1) {
+      const cell = document.createElement("td");
+      const submitters = row.submitters[index];
+      if (submitters !== undefined) {
+        const share = row.accounts > 0 ? " (" + cohortShareFormat.format((submitters / row.accounts) * 100) + "%)" : "";
+        cell.textContent = submitters + share;
+      }
+      tableRow.appendChild(cell);
+    }
+    body.appendChild(tableRow);
+  });
+  if (cohort.rows.length === 0) {
+    const empty = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = cohort.months + 2;
+    cell.textContent = "No accounts opened in the months the table covers.";
+    empty.appendChild(cell);
+    body.appendChild(empty);
+  }
+  table.appendChild(body);
+  wrapper.appendChild(table);
+  return wrapper;
 }
 
 let renderedCharts = [];

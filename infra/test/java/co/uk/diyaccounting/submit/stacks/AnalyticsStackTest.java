@@ -142,7 +142,7 @@ class AnalyticsStackTest {
         // (the custom resource below is what actually creates the view). One more named query
         // per BusinessViews view, including v_activity_started_daily and its hourly
         // counterpart, v_activity_started_hourly.
-        analytics.resourceCountIs("AWS::Athena::NamedQuery", 81);
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 83);
 
         // The union view is created by the shared Athena view Provider, which polls the query to
         // a terminal state, so a failed CREATE OR REPLACE VIEW fails the stack update.

@@ -54,6 +54,8 @@ export const VIEW_NAMES = [
   "v_operator_interventions_daily",
   "v_compliance_status",
   "v_sign_ins_daily",
+  "v_account_lifecycle_daily",
+  "v_retention_cohorts_monthly",
 ];
 
 // One entry per one-stop-dashboard objective, in the order its table lists them. `views`
@@ -129,6 +131,8 @@ export const OBJECTIVES = [
       "v_vat_submissions_by_actor_daily",
       "v_subscription_renewals_daily",
       "v_subscription_cancellations_daily",
+      "v_account_lifecycle_daily",
+      "v_retention_cohorts_monthly",
     ],
     levers: [
       "Reminder emails before a period end",

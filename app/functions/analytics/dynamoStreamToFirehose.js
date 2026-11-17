@@ -126,6 +126,8 @@ function projectPass(image) {
     created_at: image.createdAt ?? null,
     updated_at: image.updatedAt ?? null,
     use_count: image.useCount ?? null,
+    max_uses: image.maxUses ?? null,
+    valid_until: image.validUntil ?? null,
     revoked_at: image.revokedAt ?? null,
     actor: image.actor ?? null,
     redeemed_by: isRedemption ? (image.redeemedBy ?? null) : null,

@@ -1444,11 +1444,11 @@ test.describe("Operator Dashboard", () => {
       await loadDashboard(page);
 
       const retention = page.locator('.chart-card[data-chart-id="retention"]');
-      await retention.locator('.chart-legend-item[data-series-id="retention-0"]').click();
-      await expect(retention.locator("polyline.chart-line")).toHaveCount(5);
-      await expect(retention.locator('.chart-legend-item[data-series-id="retention-0"]')).toHaveAttribute("aria-pressed", "false");
-      await retention.locator('.chart-legend-item[data-series-id="retention-0"]').click();
-      await expect(retention.locator("polyline.chart-line")).toHaveCount(6);
+      await retention.locator('.chart-legend-item[data-series-id="submitters-90d"]').click();
+      await expect(retention.locator("polyline.chart-line")).toHaveCount(9);
+      await expect(retention.locator('.chart-legend-item[data-series-id="submitters-90d"]')).toHaveAttribute("aria-pressed", "false");
+      await retention.locator('.chart-legend-item[data-series-id="submitters-90d"]').click();
+      await expect(retention.locator("polyline.chart-line")).toHaveCount(10);
     });
 
     test("switches the activities chart between started and completed", async ({ page }) => {
@@ -1615,6 +1615,43 @@ test.describe("Operator Dashboard", () => {
       }
     });
 
+    test("draws the Retention graph in three tabs, other classes hidden, net change below zero and the cohort table", async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const retention = page.locator("#chart-retention");
+      await expect(retention.locator(".chart-mode[data-mode-id]")).toHaveText(["Totals", "Daily events", "Submitters by kind"]);
+      await expect(retention.locator(".chart-range-option")).toHaveText(["90 days, by day", "14 days, by day"]);
+      for (const name of ["test", "synthetic", "other", "unknown"]) {
+        await expect(retention.locator(`.chart-legend-item[data-series-id="accounts-total-${name}"]`)).toHaveAttribute(
+          "aria-pressed",
+          "false",
+        );
+      }
+      await expect(retention.locator('.chart-legend-item[data-series-id="accounts-total"]')).toHaveAttribute("aria-pressed", "true");
+      await expect(retention.locator(".chart-readout")).toContainText("Accounts in total 41");
+      await retention.scrollIntoViewIfNeeded();
+      await retention.screenshot({ path: "target/screenshots/operator-dashboard-retention-totals.png" });
+
+      await retention.locator('.chart-mode[data-mode-id="events"]').click();
+      await expect(retention.locator('.chart-legend-item[data-series-id="new-accounts-test"]')).toHaveText("New accounts, test accounts");
+      await expect(retention.locator('.chart-legend-item[data-series-id="new-accounts-test"]')).toHaveAttribute("aria-pressed", "false");
+      await expect(retention.locator("svg .chart-axis").first()).toHaveText("-1");
+      await retention.screenshot({ path: "target/screenshots/operator-dashboard-retention-events.png" });
+
+      await retention.locator('.chart-mode[data-mode-id="submitters"]').click();
+      await expect(retention.locator(".chart-legend-item").first()).toHaveText("All submitters, 90 days to this day");
+      await expect(retention.locator(".chart-readout")).toContainText("All submitters, 90 days to this day 13");
+      await retention.screenshot({ path: "target/screenshots/operator-dashboard-retention-submitters.png" });
+
+      const cohort = retention.locator(".chart-cohort-table");
+      await expect(cohort.locator("thead th")).toHaveText(["Signup month", "Accounts", "Month 0", "Month 1", "Month 2"]);
+      await expect(cohort.locator('tr[data-signup-month="2026-10"] td')).toHaveText(["11", "7 (64%)", "0 (0%)", ""]);
+      await expect(cohort.locator('tr[data-signup-month="2026-09"] th')).toHaveText("Sept 2026");
+      await cohort.screenshot({ path: "target/screenshots/operator-dashboard-retention-cohorts.png" });
+    });
+
     test("reads a ratio mode as a percentage", async ({ page }) => {
       await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
       await loadDashboard(page);
@@ -1635,23 +1672,23 @@ test.describe("Operator Dashboard", () => {
 
       const card = page.locator('.chart-card[data-chart-id="retention"]');
       const lines = card.locator("polyline.chart-line");
-      await expect(lines).toHaveCount(6);
+      await expect(lines).toHaveCount(10);
 
       await card.locator('[data-action="hide-all"]').click();
       await expect(lines).toHaveCount(0);
       await card.locator('[data-action="show-all"]').click();
-      await expect(lines).toHaveCount(6);
+      await expect(lines).toHaveCount(14);
 
-      await card.locator(".chart-legend-item", { hasText: "Renewals" }).click();
-      await expect(lines).toHaveCount(5);
-      await card.locator(".chart-legend-item", { hasText: "Renewals" }).click();
-      await expect(lines).toHaveCount(6);
+      await card.locator(".chart-legend-item", { hasText: "Active subscriptions" }).click();
+      await expect(lines).toHaveCount(13);
+      await card.locator(".chart-legend-item", { hasText: "Active subscriptions" }).click();
+      await expect(lines).toHaveCount(14);
 
-      await card.locator(".chart-legend-item", { hasText: "Cancellations" }).dblclick();
+      await card.locator(".chart-legend-item", { hasText: "Active passes" }).dblclick();
       await expect(lines).toHaveCount(1);
       await expect(card.locator('.chart-legend-item[aria-pressed="true"]')).toHaveCount(1);
-      await card.locator(".chart-legend-item", { hasText: "Cancellations" }).dblclick();
-      await expect(lines).toHaveCount(6);
+      await card.locator(".chart-legend-item", { hasText: "Active passes" }).dblclick();
+      await expect(lines).toHaveCount(14);
     });
 
     test("shows the retention reconciliation line and counts Passes issued without a pound sign", async ({ page }) => {
@@ -1660,6 +1697,7 @@ test.describe("Operator Dashboard", () => {
 
       const retention = page.locator('.chart-card[data-chart-id="retention"]');
       await expect(retention.locator(".chart-reconciliation")).toContainText("12 distinct submitters");
+      await retention.locator('.chart-mode[data-mode-id="events"]').click();
       await expect(retention.locator(".chart-legend-item", { hasText: "Passes issued" })).toBeVisible();
 
       const paid = page.locator('.chart-card[data-chart-id="conversion-to-paid"]');
@@ -1674,7 +1712,10 @@ test.describe("Operator Dashboard", () => {
       await loadDashboard(page);
 
       const card = page.locator('.chart-card[data-chart-id="retention"]');
-      await expect(card.locator(".chart-legend-item", { hasText: "Renewals" })).toHaveAttribute("title", "What Renewals measures.");
+      await expect(card.locator(".chart-legend-item", { hasText: "Active subscriptions" })).toHaveAttribute(
+        "title",
+        "Customer subscriptions active at the end of the day.",
+      );
     });
 
     test("reads one day under the chart as the pointer moves over it", async ({ page }) => {

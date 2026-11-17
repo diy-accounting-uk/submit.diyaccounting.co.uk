@@ -77,6 +77,7 @@ function formatValue(unit, value) {
   if (unit === "gbp") return gbpFormat.format(value);
   if (unit === "usd") return usdFormat.format(value);
   if (unit === "hours") return numberFormat.format(value) + " h";
+  if (unit === "days") return numberFormat.format(value) + (value === 1 ? " day" : " days");
   if (unit === "months") return numberFormat.format(value) + (value === 1 ? " month" : " months");
   if (unit === "runs") return numberFormat.format(value) + (value === 1 ? " run" : " runs");
   if (unit === "count" && value === 0) return NONE;

@@ -4,18 +4,29 @@
 -- The class of each account: customer, test, synthetic, other or unknown, the classes of
 -- actorClassOf in app/lib/operatorSnapshot/dataSection.js.
 --
--- Every record that names an actor for the account is evidence: its activity events, and the
--- receipts, bundles, subscriptions and passes it owns or issued. A test user, a probe or an
--- operator record wins over a customer record, in that order, because an event or an item
--- written with no email reads 'customer'. A 'system' record (a webhook or a scheduled job acting
+-- Every record that names an actor for the account is evidence: its activity events, the
+-- activity events of the subscriptions it owns, and the receipts, bundles, subscriptions and
+-- passes it owns or issued. A subscription's lifecycle events name the subscription, not always
+-- the account, so they reach the account through the subscription's owner. A test user, a
+-- probe or an operator record wins over a customer record, in that order, because an event or
+-- an item written with no email reads 'customer'. A 'system' record (a webhook or a scheduled job acting
 -- for the account) says nothing about who owns the account, so it is not evidence. An account
 -- with no evidence reads unknown, and unknown is never counted as a customer.
 --
 -- Each hash is read through hash_aliases (activity_events_all and the aliased_* views), so one
 -- account has one row across a salt rotation.
 CREATE OR REPLACE VIEW v_account_class AS
-WITH evidence AS (
+WITH subscription_owner AS (
+  SELECT DISTINCT subscription_id, hashed_sub
+  FROM   aliased_dynamo_subscriptions
+  WHERE  subscription_id IS NOT NULL AND hashed_sub IS NOT NULL),
+evidence AS (
   SELECT hashed_sub, actor FROM activity_events_all WHERE hashed_sub IS NOT NULL AND actor IS NOT NULL
+  UNION ALL
+  SELECT o.hashed_sub, e.actor
+  FROM   activity_events_all e
+  JOIN   subscription_owner o ON o.subscription_id = e.subscription_id
+  WHERE  e.actor IS NOT NULL
   UNION ALL
   SELECT hashed_sub, actor FROM aliased_dynamo_receipts WHERE hashed_sub IS NOT NULL AND actor IS NOT NULL
   UNION ALL
