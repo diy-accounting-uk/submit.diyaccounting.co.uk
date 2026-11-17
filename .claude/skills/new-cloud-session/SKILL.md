@@ -68,7 +68,7 @@ coordinators that lease at the same time, one push is rejected. The coordinator 
 
 The script creates the next one by steps 1 to 3 of "To add a work repository" in the plan:
 
-1. `gh repo create diy-accounting-uk/submit-cloud-<codename> --public --disable-wiki`.
+1. `gh repo create diy-accounting-uk/submit-cloud-<codename> --private --disable-wiki`.
 2. `gh api -X PUT repos/…/actions/permissions -F enabled=false`, then a read that Actions is
    off. It stops before any push when Actions is on.
 3. The push of `origin/main` to `main` (the re-sync below).

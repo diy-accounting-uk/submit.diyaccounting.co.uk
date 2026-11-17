@@ -178,7 +178,7 @@ create_repository() {
   local cn=$1 repo
   repo=$(repo_of "$cn")
   echo "creating $repo (Actions off before the first push)"
-  run gh repo create "$repo" --public --disable-wiki --description "Work repository for one Claude Code cloud session on submit.diyaccounting.co.uk"
+  run gh repo create "$repo" --private --disable-wiki --description "Work repository for one Claude Code cloud session on submit.diyaccounting.co.uk"
   run gh api -X PUT "repos/$repo/actions/permissions" -F enabled=false
   if [ "$DRY" = 0 ]; then
     [ "$(gh api "repos/$repo/actions/permissions" --jq .enabled)" = false ] || die "Actions is still on in $repo; nothing pushed"

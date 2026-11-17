@@ -20,6 +20,8 @@ only when the operator boards it.
 
 > AWS credentials - cloud session generates a public-private key pair and pushes the public key into the fork repo, a job in that repo is trusted by aws to accept a key, somehow we hove the holder of the private key access to temporary aws session credentials.
 
+> Make them private, we don't need to share the and it's work that hasn't had a lot of scrutiny.
+
 ## Status
 
 Researched 2026-11-17. The first work repository, `diy-accounting-uk/submit-cloud-anvil`, exists with Actions off. The `/new-cloud-session` and `/collaborate` skills are written; steps 3 to 5, 7 to 9 and the first trial are not started.
@@ -93,17 +95,17 @@ own sequence: the first repository takes a name from the `a` line, the next from
 so on. The local remote for each is `cloud-<codename>`, and the session's worker name is the same
 code name.
 
-Each is a plain public repository in the org, made the way `diya-submit-plugin` was. GitHub does
+Each is a plain private repository in the org (operator, 2026-11-17; made private the same day), made the way `diya-submit-plugin` was. GitHub does
 not allow a fork in the same owner. Each holds `main` as pushed from this repository, and its
 Actions are off, so a push to it starts nothing.
 
 | Repository | Created | Actions | Remote |
 | --- | --- | --- | --- |
-| `diy-accounting-uk/submit-cloud-anvil` | 2026-11-17 | off | `cloud-anvil` (not yet added) |
-| `diy-accounting-uk/submit-cloud-bugle` | 2026-11-17 | off | none (the script works by URL) |
-| `diy-accounting-uk/submit-cloud-cyclone` | 2026-11-17 | off | none (the script works by URL) |
-| `diy-accounting-uk/submit-cloud-dusk` | 2026-11-17 | off | none (the script works by URL) |
-| `diy-accounting-uk/submit-cloud-epoch` | 2026-11-17 | off | none (the script works by URL) |
+| `diy-accounting-uk/submit-cloud-anvil` | 2026-11-17 | off, private | `cloud-anvil` (not yet added) |
+| `diy-accounting-uk/submit-cloud-bugle` | 2026-11-17 | off, private | none (the script works by URL) |
+| `diy-accounting-uk/submit-cloud-cyclone` | 2026-11-17 | off, private | none (the script works by URL) |
+| `diy-accounting-uk/submit-cloud-dusk` | 2026-11-17 | off, private | none (the script works by URL) |
+| `diy-accounting-uk/submit-cloud-epoch` | 2026-11-17 | off, private | none (the script works by URL) |
 
 - The submit OIDC roles trust only `repo:diy-accounting-uk/submit.diyaccounting.co.uk` (and
   `root.diyaccounting.co.uk`), read on 2026-11-17, so a workflow in a work repository cannot
@@ -115,7 +117,7 @@ Actions are off, so a push to it starts nothing.
 
 To add a work repository (a session runs 1 to 3, the operator 4 and 5):
 
-1. `gh repo create diy-accounting-uk/submit-cloud-<codename> --public --disable-wiki`
+1. `gh repo create diy-accounting-uk/submit-cloud-<codename> --private --disable-wiki`
 2. `gh api -X PUT repos/diy-accounting-uk/submit-cloud-<codename>/actions/permissions -F enabled=false`,
    before the first push.
 3. `git push git@github.com:diy-accounting-uk/submit-cloud-<codename>.git origin/main:refs/heads/main`
