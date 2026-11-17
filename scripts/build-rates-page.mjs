@@ -12,6 +12,7 @@ import toml from "@iarna/toml";
 import prettier from "prettier";
 import { loadSources, escapeHtml, sourceQuoteHtml } from "./tax-sources.mjs";
 import { RATES_FACT_IDS, TAX_YEAR_COLUMNS, FINANCIAL_YEAR_COLUMNS } from "./rates-fact-ids.mjs";
+import { alternateLinksHtml } from "./build-welsh-pages.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const ENGINE_PACKAGE_DIR = join(ROOT, "node_modules", "@diy-accounting-uk", "diya-gl");
@@ -544,7 +545,7 @@ export function renderRatesHtml(sources) {
       name="description"
       content="UK tax rates and allowances for the self-employed and limited companies, 2025-26 and 2026-27, each with its gov.uk source, and a tax calculator."
     />
-    <link rel="canonical" href="https://submit.diyaccounting.co.uk/rates.html" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/rates.html" />${alternateLinksHtml("rates.html")}
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Rates and allowances - DIY Accounting Submit" />
     <meta property="og:description" content="UK tax rates and allowances for the self-employed and limited companies, 2025-26 and 2026-27, each with its gov.uk source, and a tax calculator." />

@@ -51,16 +51,49 @@
   </url>
   <url>
     <loc>https://submit.diyaccounting.co.uk/spreadsheets.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/spreadsheets.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/spreadsheets.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/spreadsheets.html" />
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://submit.diyaccounting.co.uk/cy/spreadsheets.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/spreadsheets.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/spreadsheets.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/spreadsheets.html" />
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://submit.diyaccounting.co.uk/mtd-calendar.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/mtd-calendar.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/mtd-calendar.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/mtd-calendar.html" />
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://submit.diyaccounting.co.uk/cy/mtd-calendar.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/mtd-calendar.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/mtd-calendar.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/mtd-calendar.html" />
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://submit.diyaccounting.co.uk/rates.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/rates.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/rates.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/rates.html" />
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://submit.diyaccounting.co.uk/cy/rates.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/rates.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/rates.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/rates.html" />
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -116,6 +149,17 @@
   </url>
   <url>
     <loc>https://submit.diyaccounting.co.uk/tools.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/tools.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/tools.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/tools.html" />
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://submit.diyaccounting.co.uk/cy/tools.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/tools.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/tools.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/tools.html" />
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -136,6 +180,17 @@
   </url>
   <url>
     <loc>https://submit.diyaccounting.co.uk/bundles.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/bundles.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/bundles.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/bundles.html" />
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://submit.diyaccounting.co.uk/cy/bundles.html</loc>
+    <xhtml:link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/bundles.html" />
+    <xhtml:link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/bundles.html" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/bundles.html" />
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>

@@ -24,6 +24,7 @@ import { AREA_PAGES } from "../web/public/widgets/video-pages.js";
 import { AVAILABILITY, QUARTERLY_FACT, availabilityStatus } from "./build-mtd-calendar.mjs";
 import { FREQUENCIES } from "../web/public/lib/vat/penalty-rules.js";
 import { escapeHtml } from "./page-markers.mjs";
+import { alternateLinksHtml } from "./build-welsh-pages.mjs";
 import { formatIsoDate, loadSources, sourceQuoteHtml, sourcesQuoteHtml } from "./tax-sources.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -199,7 +200,7 @@ function renderPageShell(page, mainHtml, scriptsHtml = "") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="${escapeHtml(page.description)}" />
     <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="${url}" />
+    <link rel="canonical" href="${url}" />${alternateLinksHtml(page.file)}
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="DIY Accounting" />
     <meta property="og:url" content="${url}" />

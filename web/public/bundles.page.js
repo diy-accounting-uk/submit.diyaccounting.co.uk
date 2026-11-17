@@ -560,7 +560,7 @@ function renderCatalogueBundles() {
 
 // Read current environment from submit.environment-name.txt
 async function readEnvironment() {
-  return (await import("/lib/services/catalog-service.js")).fetchCurrentEnvironmentName("submit.environment-name.txt");
+  return (await import("/lib/services/catalog-service.js")).fetchCurrentEnvironmentName();
 }
 
 // The block holds room for the cards while they load; once both lists have arrived it hands the room back.

@@ -100,7 +100,7 @@ cy = '''<a href="get-started.html">Newydd i Submit? Darllenwch sut i ddechrau ar
 
 [strings."index.status"]
 hash = "4506e5b3700f"
-cy = '''<strong>Statws pob nodwedd.</strong> Nid yw nodweddion prawf (sandbox) a rhagolwg (preview) yn cyflwyno dim byd go iawn. <a href="mtd-calendar.html#availability">Gweld y tabl argaeledd</a> (yn Saesneg).'''
+cy = '''<strong>Statws pob nodwedd.</strong> Nid yw nodweddion prawf (sandbox) a rhagolwg (preview) yn cyflwyno dim byd go iawn. <a href="mtd-calendar.html#availability">Gweld y tabl argaeledd</a>.'''
 
 [strings."index.reviews-label"]
 hash = "9d9e7a6d6c12"
@@ -323,7 +323,7 @@ cy = '''Dechreuodd Troi Treth yn Ddigidol ar gyfer Treth Incwm ar 6 Ebrill 2026 
 
 [strings."get-started.itsa-2"]
 hash = "a99887fc646f"
-cy = '''Mae ein gwasanaeth Treth Incwm yn rhedeg yn amgylchedd prawf (sandbox) CThEF, felly nid yw’n cyflwyno dim byd go iawn eto. Mae’r <a href="mtd-calendar.html#availability">tabl argaeledd</a> (yn Saesneg) yn dangos statws pob gwasanaeth. Hyd nes y bydd Treth Incwm ar waith yma, defnyddiwch feddalwedd o <a href="https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-income-tax.cy">restr CThEF o feddalwedd sy’n cydweddu</a>.'''
+cy = '''Mae ein gwasanaeth Treth Incwm yn rhedeg yn amgylchedd prawf (sandbox) CThEF, felly nid yw’n cyflwyno dim byd go iawn eto. Mae’r <a href="mtd-calendar.html#availability">tabl argaeledd</a> yn dangos statws pob gwasanaeth. Hyd nes y bydd Treth Incwm ar waith yma, defnyddiwch feddalwedd o <a href="https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-income-tax.cy">restr CThEF o feddalwedd sy’n cydweddu</a>.'''
 
 [strings."get-started.help-heading"]
 hash = "00f1193a0417"
@@ -336,6 +336,1551 @@ cy = '''Darllenwch y <a href="help.html">cymorth a’r cwestiynau cyffredin</a>,
 [strings."get-started.help-2"]
 hash = "e8493e1fc280"
 cy = '''Am gwestiynau am eich treth eich hun, cysylltwch â CThEF.'''
+
+# == tools.html (LANG9): the build marks this page; ids tools.<first words>-<hash> ==
+[strings."tools.title"]
+hash = "694704109570"
+cy = '''Offer am ddim ar gyfer dyddiadau cau treth a ffeilio yn y DU - DIY Accounting Submit'''
+
+[strings."tools.free-tools-5c2bd9"]
+hash = "5c2bd9d1471a"
+cy = '''Offer am ddim'''
+
+[strings."tools.checkers-calculators-and-tables-for-making-96a14e"]
+hash = "96a14ede8036"
+cy = '''Gwirwyr, cyfrifianellau a thablau ar gyfer Troi Treth yn Ddigidol, TAW a ffeilio cwmnïau. Mae pob un yn gweithio heb i chi fewngofnodi.'''
+
+[strings."tools.each-tool-on-this-page-opens-679804"]
+hash = "67980419e741"
+cy = '''Mae pob teclyn ar y dudalen hon yn agor heb i chi fewngofnodi. Mae angen cyfrif i ffeilio Ffurflen neu gyfrifon cwmni.'''
+
+[strings."tools.mtd-income-tax-checker-8b2340"]
+hash = "8b2340fee92a"
+cy = '''<a href="mtd-income-tax-checker.html">Gwiriwr MTD ar gyfer Treth Incwm</a> (yn Saesneg)'''
+
+[strings."tools.answer-a-few-questions-to-learn-8b97a6"]
+hash = "8b97a66ae1dd"
+cy = '''Atebwch ychydig o gwestiynau i weld a yw Troi Treth yn Ddigidol ar gyfer Treth Incwm yn berthnasol i chi, a’r dyddiad y byddwch yn dechrau.'''
+
+[strings."tools.vat-return-due-date-and-penalty-1d170e"]
+hash = "1d170ec02dac"
+cy = '''<a href="vat-return-due-date-and-penalty-points.html">Cyfrifiannell dyddiad dyledus Ffurflen TAW a phwyntiau cosb</a> (yn Saesneg)'''
+
+[strings."tools.enter-a-vat-period-end-and-b61330"]
+hash = "b61330308201"
+cy = '''Rhowch ddiwedd cyfnod TAW i weld y dyddiad dyledus, a chyfrif y pwyntiau cyflwyno’n hwyr y byddai Ffurflen yn eu hychwanegu.'''
+
+[strings."tools.company-filing-deadlines-1da980"]
+hash = "1da9800d6a97"
+cy = '''<a href="company-filing-deadlines.html">Dyddiadau cau ffeilio cwmnïau</a> (yn Saesneg)'''
+
+[strings."tools.type-a-company-name-or-number-5905fb"]
+hash = "5905fbaf4dfe"
+cy = '''Teipiwch enw neu rif cwmni i weld pryd mae ei gyfrifon a’i ddatganiad cadarnhau yn ddyledus.'''
+
+[strings."tools.mtd-calendar-daf27a"]
+hash = "daf27a445e00"
+cy = '''<a href="mtd-calendar.html">Calendr MTD</a>'''
+
+[strings."tools.every-making-tax-digital-date-for-72c555"]
+hash = "72c5555158a5"
+cy = '''Pob dyddiad Troi Treth yn Ddigidol ar gyfer TAW, Treth Incwm a ffeilio cwmnïau, a pha ffeilio y mae Submit yn ei gynnig.'''
+
+[strings."tools.tax-rates-and-allowances-627c5e"]
+hash = "627c5ebcb16a"
+cy = '''<a href="rates.html">Cyfraddau a lwfansau treth</a>'''
+
+[strings."tools.the-current-rates-and-allowances-for-dfddf1"]
+hash = "dfddf191d9aa"
+cy = '''Y cyfraddau a’r lwfansau presennol ar gyfer TAW, treth incwm a threth cwmnïau, pob un gyda’i ffynhonnell.'''
+
+[strings."tools.mtd-income-tax-checker-for-your-b730ec"]
+hash = "b730ec3dbe2e"
+cy = '''<a href="embed/mtd-income-tax-checker.html">Gwiriwr MTD ar gyfer Treth Incwm i’ch gwefan eich hun</a> (yn Saesneg)'''
+
+[strings."tools.the-checker-in-a-frame-with-7fdd51"]
+hash = "7fdd51de3983"
+cy = '''Y gwiriwr mewn ffrâm, gyda’r un llinell o sgript sy’n ei roi ar wefan arall.'''
+
+[strings."tools.mtd-vat-bridging-software-compared-f272f6"]
+hash = "f272f6285323"
+cy = '''<a href="mtd-vat-bridging-software-compared.html">Cymharu meddalwedd bontio MTD ar gyfer TAW</a> (yn Saesneg)'''
+
+[strings."tools.mtd-vat-bridging-tools-sorted-by-7224f7"]
+hash = "7224f772c57d"
+cy = '''Offer pontio MTD ar gyfer TAW yn nhrefn pris, pob pris wedi’i ddarllen ar dudalen y gwerthwr ei hun.'''
+
+[strings."tools.company-accounts-filing-software-compared-257a6e"]
+hash = "257a6e680b70"
+cy = '''<a href="company-accounts-filing-software-compared.html">Cymharu meddalwedd ffeilio cyfrifon cwmni</a> (yn Saesneg)'''
+
+[strings."tools.tools-that-file-micro-entity-or-332334"]
+hash = "3323341180a1"
+cy = '''Offer sy’n ffeilio cyfrifon micro-endid neu gyfrifon cwmni bach, yn nhrefn pris.'''
+
+[strings."tools.mtd-income-tax-over-30-000-3c715f"]
+hash = "3c715f793acc"
+cy = '''<a href="making-tax-digital-income-tax-over-30000.html">MTD ar gyfer Treth Incwm dros £30,000</a> (yn Saesneg)'''
+
+[strings."tools.what-changes-from-6-april-2027-34c839"]
+hash = "34c8391ea385"
+cy = '''Beth sy’n newid o 6 Ebrill 2027 i unig fasnachwr neu landlord sydd ag incwm dros £30,000.'''
+
+[strings."tools.connector-for-ai-assistants-f229a5"]
+hash = "f229a5de4d29"
+cy = '''<a href="mcp.html">Cysylltydd ar gyfer cynorthwywyr AI</a> (yn Saesneg)'''
+
+[strings."tools.use-submit-from-an-ai-assistant-b39ce7"]
+hash = "b39ce71ec6c3"
+cy = '''Defnyddiwch Submit o gynorthwyydd AI sy’n cefnogi MCP: darllen llyfr cyfrifon, cyfrifo a pharatoi Ffurflen TAW.'''
+
+[strings."tools.spreadsheets-c54847"]
+hash = "c548470c80f0"
+cy = '''<a href="spreadsheets.html">Taenlenni</a>'''
+
+[strings."tools.accounting-spreadsheets-for-a-sole-trader-68ba88"]
+hash = "68ba882884d7"
+cy = '''Taenlenni cyfrifyddu ar gyfer unig fasnachwr, landlord neu gwmni cyfyngedig, yn Excel.'''
+
+[strings."tools.diya-gl-f36009"]
+hash = "f36009d3b68d"
+cy = '''<a href="https://diya-gl.co.uk/" rel="noopener">diya-gl</a> (yn Saesneg)'''
+
+[strings."tools.a-plain-text-ledger-that-reads-fab66e"]
+hash = "fab66ecfad5b"
+cy = '''Llyfr cyfrifon testun plaen sy’n darllen eich cyfriflenni banc ac yn argraffu eich cyfrifon; mae hefyd ar npm fel diya-gl. <a href="https://www.npmjs.com/package/diya-gl" rel="noopener">diya-gl ar npm</a> (yn Saesneg)'''
+
+[strings."tools.see-what-submit-files-2fa327"]
+hash = "2fa3274d5fe8"
+cy = '''<a class="btn" href="get-started.html">Gweld beth mae Submit yn ei ffeilio</a>'''
+
+[strings."tools.description-28f0ec"]
+hash = "28f0ec501f5f"
+cy = '''Offer am ddim gan DIY Accounting: gwiriwr MTD Treth Incwm, dyddiadau dyledus TAW a phwyntiau cosb, dyddiadau ffeilio cwmnïau, cyfraddau treth a phrisiau.'''
+
+[strings."tools.og-title-694704"]
+hash = "694704109570"
+cy = '''Offer am ddim ar gyfer dyddiadau cau treth a ffeilio yn y DU - DIY Accounting Submit'''
+
+[strings."tools.og-description-28f0ec"]
+hash = "28f0ec501f5f"
+cy = '''Offer am ddim gan DIY Accounting: gwiriwr MTD Treth Incwm, dyddiadau dyledus TAW a phwyntiau cosb, dyddiadau ffeilio cwmnïau, cyfraddau treth a phrisiau.'''
+
+# == bundles.html (LANG9): the build marks this page; ids bundles.<first words>-<hash> ==
+[strings."bundles.title"]
+hash = "b412615118a9"
+cy = '''Bundles - DIY Accounting Submit'''
+
+[strings."bundles.bundles-ff042b"]
+hash = "ff042b6ded4e"
+cy = '''Bundles'''
+
+[strings."bundles.what-your-account-can-use-and-e4379e"]
+hash = "e4379e457e48"
+cy = '''Beth y gall eich cyfrif ei ddefnyddio, a sut i ychwanegu mwy'''
+
+[strings."bundles.your-current-bundles-694669"]
+hash = "6946698ccb81"
+cy = '''Eich Bundles presennol'''
+
+[strings."bundles.choose-a-bundle-dc582f"]
+hash = "dc582fa2ba6a"
+cy = '''Dewiswch Bundle'''
+
+[strings."bundles.each-filing-uses-one-token-7cedfa"]
+hash = "7cedfa047fe0"
+cy = '''Mae pob ffeilio yn defnyddio un credyd (token).'''
+
+[strings."bundles.have-a-pass-35ffd0"]
+hash = "35ffd00d104e"
+cy = '''Oes gennych chi docyn?'''
+
+[strings."bundles.enter-the-four-words-of-your-4e233f"]
+hash = "4e233f8ebf33"
+cy = '''Rhowch bedwar gair eich tocyn.'''
+
+[strings."bundles.pass-ebdf8c"]
+hash = "ebdf8cc00bc4"
+cy = '''Tocyn'''
+
+[strings."bundles.four-words-with-hyphens-between-them-ec6631"]
+hash = "ec6631681240"
+cy = '''Pedwar gair gyda chysylltnodau rhyngddynt, er enghraifft gair-gair-gair-gair.'''
+
+[strings."bundles.redeem-pass-831ca4"]
+hash = "831ca4f189a5"
+cy = '''Defnyddio’r tocyn'''
+
+[strings."bundles.share-your-feedback-6d62df"]
+hash = "6d62dfbd9b4c"
+cy = '''Rhannu eich adborth'''
+
+[strings."bundles.i-m-willing-to-share-feedback-09f35c"]
+hash = "09f35caecbad"
+cy = '''Rwy’n fodlon rhannu adborth'''
+
+[strings."bundles.my-generated-passes-3ffb3e"]
+hash = "3ffb3e826bf3"
+cy = '''Y tocynnau a greais'''
+
+[strings."bundles.passes-you-have-generated-for-others-f3b848"]
+hash = "f3b848ca4811"
+cy = '''Tocynnau rydych wedi’u creu i bobl eraill eu defnyddio.'''
+
+[strings."bundles.your-earnings-ffc901"]
+hash = "ffc9019070df"
+cy = '''Eich enillion'''
+
+[strings."bundles.select-all-1291b8"]
+hash = "1291b897ecd8"
+cy = '''<input type="checkbox" id="selectAllPasses" /> Dewis y cyfan'''
+
+[strings."bundles.delete-selected-d2ab5d"]
+hash = "d2ab5d46fed4"
+cy = '''Dileu’r rhai a ddewiswyd'''
+
+[strings."bundles.load-more-ac8991"]
+hash = "ac8991ef0101"
+cy = '''Llwytho mwy'''
+
+[strings."bundles.become-an-affiliate-746be4"]
+hash = "746be4f24d3e"
+cy = '''Dod yn bartner cyswllt'''
+
+[strings."bundles.an-affiliate-earns-a-share-of-bc442d"]
+hash = "bc442d706232"
+cy = '''Mae partner cyswllt yn ennill cyfran o’r hyn y mae’r bobl y mae’n eu cyfeirio yn ei dalu. Mae Stripe yn casglu eich manylion ac yn gwirio pwy ydych chi. Mae’r cynllun ar gyfer pobl yn y DU.'''
+
+[strings."bundles.apply-with-stripe-2c02ac"]
+hash = "2c02ac2db044"
+cy = '''Gwneud cais gyda Stripe'''
+
+[strings."bundles.affiliates-63b48b"]
+hash = "63b48b223e14"
+cy = '''Partneriaid cyswllt'''
+
+[strings."bundles.set-the-tier-and-state-of-94b657"]
+hash = "94b657dfef76"
+cy = '''Gosodwch haen a statws atgyfeiriwr. Dim ond partner cyswllt sydd wedi’i gymeradwyo sy’n ennill cyfradd yr haen.'''
+
+[strings."bundles.referrer-hash-be6fe9"]
+hash = "be6fe9589aac"
+cy = '''Hash yr atgyfeiriwr'''
+
+[strings."bundles.look-up-504101"]
+hash = "504101bcda9e"
+cy = '''Chwilio'''
+
+[strings."bundles.tier-cb9e86"]
+hash = "cb9e8664edea"
+cy = '''Haen'''
+
+[strings."bundles.customer-bf3763"]
+hash = "bf3763383aaf"
+cy = '''Cwsmer'''
+
+[strings."bundles.casual-affiliate-0b6a93"]
+hash = "0b6a93d27948"
+cy = '''Partner cyswllt achlysurol'''
+
+[strings."bundles.creator-affiliate-df86bd"]
+hash = "df86bde8fbde"
+cy = '''Partner cyswllt crëwr'''
+
+[strings."bundles.family-bd2d67"]
+hash = "bd2d677b2ed4"
+cy = '''Teulu'''
+
+[strings."bundles.state-a3b50c"]
+hash = "a3b50c476732"
+cy = '''Statws'''
+
+[strings."bundles.applied-0c79a9"]
+hash = "0c79a9c22284"
+cy = '''Wedi gwneud cais'''
+
+[strings."bundles.approved-87b42e"]
+hash = "87b42e40c2a2"
+cy = '''Wedi’i gymeradwyo'''
+
+[strings."bundles.ended-7cdc80"]
+hash = "7cdc804e6996"
+cy = '''Wedi dod i ben'''
+
+[strings."bundles.save-affiliate-3818bf"]
+hash = "3818bfddb79b"
+cy = '''Cadw’r partner cyswllt'''
+
+[strings."bundles.status-of-each-feature-sandbox-and-4506e5"]
+hash = "4506e5b3700f"
+cy = '''<strong>Statws pob nodwedd.</strong> Nid yw nodweddion prawf (sandbox) a rhagolwg (preview) yn ffeilio dim byd go iawn. <a href="mtd-calendar.html#availability">Gweld y tabl argaeledd</a>.'''
+
+[strings."bundles.description-51f664"]
+hash = "51f664b00ed7"
+cy = '''Agorwch y ddolen hon i weld beth mae eich tocyn yn ei roi. Yna £0.99 y mis neu £9.99 y flwyddyn. Gallwch ganslo ar unrhyw adeg.'''
+
+[strings."bundles.og-title-0f7810"]
+hash = "0f781063d89d"
+cy = '''Ffurflenni TAW i CThEF am 99c y mis'''
+
+[strings."bundles.og-description-51f664"]
+hash = "51f664b00ed7"
+cy = '''Agorwch y ddolen hon i weld beth mae eich tocyn yn ei roi. Yna £0.99 y mis neu £9.99 y flwyddyn. Gallwch ganslo ar unrhyw adeg.'''
+
+# == spreadsheets.html (LANG9): the build marks this page; ids spreadsheets.<first words>-<hash> ==
+[strings."spreadsheets.title"]
+hash = "b0b685eb311b"
+cy = '''Taenlenni - DIY Accounting Submit'''
+
+[strings."spreadsheets.spreadsheets-fdae66"]
+hash = "fdae6602c2be"
+cy = '''Taenlenni'''
+
+[strings."spreadsheets.diy-accounting-excel-bookkeeping-and-accounts-e00bc8"]
+hash = "e00bc8c58d82"
+cy = '''Meddalwedd cadw cyfrifon a chyfrifon Excel DIY Accounting'''
+
+[strings."spreadsheets.diy-accounting-products-00f393"]
+hash = "00f3939b6fb0"
+cy = '''Cynhyrchion DIY Accounting'''
+
+[strings."spreadsheets.diy-accounting-provides-excel-bookkeeping-and-082693"]
+hash = "082693d52779"
+cy = '''Mae DIY Accounting yn darparu taenlenni Excel ar gyfer cadw cyfrifon a chyfrifyddu i fusnesau bach yn y DU. Wedi’u cynllunio gan Gyfrifydd Rheoli Siartredig, mae pob cynnyrch yn set gyflawn o lyfrau gwaith Excel sy’n cwmpasu gwerthiannau, pryniannau, elw a cholled, a chyfrifiadau treth sy’n addas i’ch math o fusnes.'''
+
+[strings."spreadsheets.all-products-are-compatible-with-microsoft-f6a05f"]
+hash = "f6a05f01da6d"
+cy = '''Mae pob cynnyrch yn gweithio gyda Microsoft Excel ac OpenOffice Calc. Gallwch eu llwytho i lawr ar unwaith, ac maen nhw’n cynnwys canllawiau defnyddiwr gam wrth gam. Mae’r taenlenni a’u canllawiau yn Saesneg.'''
+
+[strings."spreadsheets.file-what-your-spreadsheet-works-out-06de3f"]
+hash = "06de3f0b03bd"
+cy = '''Ffeiliwch yr hyn y mae eich taenlen yn ei gyfrifo'''
+
+[strings."spreadsheets.diy-accounting-submit-sends-the-figures-71d3b6"]
+hash = "71d3b69c23eb"
+cy = '''Mae DIY Accounting Submit yn anfon y ffigurau o’ch taenlen i CThEF ac i Dŷ’r Cwmnïau. Darllenwch sut mae pob ffeilio yn gweithio, gyda lluniau sgrin, y pris a’r dyddiad dyledus:'''
+
+[strings."spreadsheets.how-to-file-a-vat-return-197920"]
+hash = "1979208bed0d"
+cy = '''<a href="vat-return-from-a-spreadsheet.html">Sut i ffeilio Ffurflen TAW o daenlen</a> (yn Saesneg)'''
+
+[strings."spreadsheets.how-to-file-micro-entity-accounts-d94773"]
+hash = "d94773f50eac"
+cy = '''<a href="micro-entity-accounts.html">Sut i ffeilio cyfrifon micro-endid yn Nhŷ’r Cwmnïau</a> (yn Saesneg)'''
+
+[strings."spreadsheets.how-to-file-small-company-accounts-5850f6"]
+hash = "5850f64855bd"
+cy = '''<a href="small-company-accounts.html">Sut i ffeilio cyfrifon cwmni bach yn Nhŷ’r Cwmnïau</a> (yn Saesneg)'''
+
+[strings."spreadsheets.how-to-file-dormant-company-accounts-2c6815"]
+hash = "2c6815543861"
+cy = '''<a href="dormant-company-accounts.html">Sut i ffeilio cyfrifon cwmni segur yn Nhŷ’r Cwmnïau</a> (yn Saesneg)'''
+
+[strings."spreadsheets.how-to-file-a-confirmation-statement-39dc0c"]
+hash = "39dc0c0fb30f"
+cy = '''<a href="confirmation-statement.html">Sut i ffeilio datganiad cadarnhau (CS01)</a> (yn Saesneg)'''
+
+[strings."spreadsheets.5-0-out-of-5-4f469a"]
+hash = "4f469a4342af"
+cy = '''5.0 allan o 5'''
+
+[strings."spreadsheets.9-reviews-on-google-bf52a2"]
+hash = "bf52a2f6d25c"
+cy = '''9 adolygiad ar Google'''
+
+[strings."spreadsheets.4-8-out-of-5-on-cf7d96"]
+hash = "cf7d968612f0"
+cy = '''4.8 allan o 5 ar FeaturedCustomers'''
+
+[strings."spreadsheets.basic-sole-trader-de12b8"]
+hash = "de12b857370e"
+cy = '''<a href="https://spreadsheets.diyaccounting.co.uk/download.html?product=BasicSoleTrader" target="_blank" rel="noopener"> Basic Sole Trader </a> (yn Saesneg)'''
+
+[strings."spreadsheets.the-simplest-accounting-package-for-sole-4aa3df"]
+hash = "4aa3df92a655"
+cy = '''Y pecyn cyfrifyddu symlaf ar gyfer unig fasnachwyr nad ydynt wedi cofrestru ar gyfer TAW ac nad oes ganddynt weithwyr. Mae’n cynnwys taenlenni gwerthiannau a phryniannau gyda chyfrif elw a cholled awtomatig a Ffurflen Dreth fer ar gyfer pobl hunangyflogedig.'''
+
+[strings."spreadsheets.sales-spreadsheet-c474ec"]
+hash = "c474ec8d9f0c"
+cy = '''Taenlen gwerthiannau'''
+
+[strings."spreadsheets.purchases-spreadsheet-ebf620"]
+hash = "ebf6207222a0"
+cy = '''Taenlen pryniannau'''
+
+[strings."spreadsheets.profit-loss-account-b7aaec"]
+hash = "b7aaecd8179a"
+cy = '''Cyfrif elw a cholled'''
+
+[strings."spreadsheets.self-employed-tax-return-ee07af"]
+hash = "ee07af837360"
+cy = '''Ffurflen Dreth hunangyflogedig'''
+
+[strings."spreadsheets.income-tax-calculation-6cfc44"]
+hash = "6cfc442c5686"
+cy = '''Cyfrifo treth incwm'''
+
+[strings."spreadsheets.self-employed-338206"]
+hash = "33820635090f"
+cy = '''<a href="https://spreadsheets.diyaccounting.co.uk/download.html?product=SelfEmployed" target="_blank" rel="noopener"> Self Employed </a> (yn Saesneg)'''
+
+[strings."spreadsheets.easy-to-use-accounting-software-for-f9c80e"]
+hash = "f9c80e514e76"
+cy = '''Meddalwedd cyfrifyddu hawdd ei defnyddio i unrhyw un sy’n hunangyflogedig, wedi cofrestru ar gyfer TAW neu beidio, gyda gweithwyr neu hebddynt. Mae’n llunio’r Ffurflenni Treth hunangyflogedig byr a llawn, yn ogystal â Ffurflenni TAW chwarterol.'''
+
+[strings."spreadsheets.sales-invoices-732c48"]
+hash = "732c484937c2"
+cy = '''Anfonebau gwerthu'''
+
+[strings."spreadsheets.cash-bank-reconciliation-e52fb8"]
+hash = "e52fb89251ad"
+cy = '''Cysoni arian parod a banc'''
+
+[strings."spreadsheets.vat-returns-010c07"]
+hash = "010c07685b42"
+cy = '''Ffurflenni TAW'''
+
+[strings."spreadsheets.self-assessment-tax-return-22b6e6"]
+hash = "22b6e653b9c2"
+cy = '''Ffurflen Dreth Hunanasesiad'''
+
+[strings."spreadsheets.payslips-8826b7"]
+hash = "8826b7c5de8f"
+cy = '''Slipiau cyflog'''
+
+[strings."spreadsheets.company-accounts-134a13"]
+hash = "134a13d32612"
+cy = '''<a href="https://spreadsheets.diyaccounting.co.uk/download.html?product=Company" target="_blank" rel="noopener"> Company Accounts </a> (yn Saesneg)'''
+
+[strings."spreadsheets.small-business-accounting-software-for-limited-41de3b"]
+hash = "41de3bc65cc2"
+cy = '''Meddalwedd cyfrifyddu busnesau bach ar gyfer cwmnïau atebolrwydd cyfyngedig, wedi cofrestru ar gyfer TAW neu beidio, gyda gweithwyr neu hebddynt. Mae’n defnyddio cadw cyfrifon dwbl ac yn llunio Ffurflenni TAW chwarterol, cyfrifon elw a cholled, mantolenni, cyfrifon diwedd blwyddyn ar gyfer Tŷ’r Cwmnïau, a chyfrifiadau Treth Gorfforaeth CT600.'''
+
+[strings."spreadsheets.balance-sheet-659a65"]
+hash = "659a653dd0a9"
+cy = '''Mantolen'''
+
+[strings."spreadsheets.final-accounts-01fcd5"]
+hash = "01fcd5793011"
+cy = '''Cyfrifon terfynol'''
+
+[strings."spreadsheets.corporation-tax-ct600-d20057"]
+hash = "d2005741a93e"
+cy = '''Treth Gorfforaeth (CT600)'''
+
+[strings."spreadsheets.fixed-assets-capital-allowances-3a65e4"]
+hash = "3a65e47d0362"
+cy = '''Asedau sefydlog a lwfansau cyfalaf'''
+
+[strings."spreadsheets.payslips-5-10-or-20-employees-0d60c6"]
+hash = "0d60c6527e8b"
+cy = '''Slipiau cyflog (5, 10 neu 20 o weithwyr)'''
+
+[strings."spreadsheets.taxi-driver-cabsmart-227697"]
+hash = "227697ac938f"
+cy = '''<a href="https://spreadsheets.diyaccounting.co.uk/download.html?product=TaxiDriver" target="_blank" rel="noopener"> Taxi Driver (Cabsmart) </a> (yn Saesneg)'''
+
+[strings."spreadsheets.practical-bookkeeping-software-designed-for-self-3ffa6e"]
+hash = "3ffa6eb271b5"
+cy = '''Meddalwedd cadw cyfrifon ymarferol ar gyfer gyrwyr tacsi hunangyflogedig, gyrwyr hurio preifat, gyrwyr faniau a negeswyr. Mae’n cymharu lwfansau milltiroedd yn awtomatig â chostau rhedeg go iawn y cerbyd ac yn dewis y dull mwyaf effeithlon o ran treth ar gyfer eich hawliad treuliau.'''
+
+[strings."spreadsheets.income-expenses-tracking-e05c1f"]
+hash = "e05c1f974652"
+cy = '''Cofnodi incwm a threuliau'''
+
+[strings."spreadsheets.mileage-allowance-calculation-e091de"]
+hash = "e091deb86fbd"
+cy = '''Cyfrifo lwfans milltiroedd'''
+
+[strings."spreadsheets.vehicle-expense-comparison-aea35b"]
+hash = "aea35bbd8516"
+cy = '''Cymharu treuliau cerbyd'''
+
+[strings."spreadsheets.income-tax-estimation-8a1833"]
+hash = "8a183370aaca"
+cy = '''Amcangyfrif treth incwm'''
+
+[strings."spreadsheets.payslips-247063"]
+hash = "247063805d34"
+cy = '''<a href="https://spreadsheets.diyaccounting.co.uk/download.html?product=Payslip05" target="_blank" rel="noopener"> Payslips </a> (yn Saesneg)'''
+
+[strings."spreadsheets.a-payslip-generator-for-businesses-that-d82159"]
+hash = "d82159da3bf0"
+cy = '''Generadur slipiau cyflog ar gyfer busnesau sy’n defnyddio cyfrifiannell treth ar wahân fel Basic PAYE Tools CThEF. Rhowch y ffigurau treth ac Yswiriant Gwladol ac mae’r daenlen yn argraffu slipiau cyflog ar bapur plaen, gyda chyfanswm cyflogau a didyniadau drwy’r flwyddyn.'''
+
+[strings."spreadsheets.weekly-or-monthly-payslips-06ca60"]
+hash = "06ca60b44779"
+cy = '''Slipiau cyflog wythnosol neu fisol'''
+
+[strings."spreadsheets.plain-paper-printing-750327"]
+hash = "7503275777d6"
+cy = '''Argraffu ar bapur plaen'''
+
+[strings."spreadsheets.running-yearly-totals-7d69c1"]
+hash = "7d69c1198780"
+cy = '''Cyfansymiau’r flwyddyn hyd yma'''
+
+[strings."spreadsheets.compatible-with-hmrc-basic-paye-tools-9878ce"]
+hash = "9878ced4ef4d"
+cy = '''Yn gweithio gyda Basic PAYE Tools CThEF'''
+
+[strings."spreadsheets.diya-gl-ba572e"]
+hash = "ba572e5e80fd"
+cy = '''<a href="https://diya-gl.co.uk/" target="_blank" rel="noopener"> DIYA-GL </a> (yn Saesneg)'''
+
+[strings."spreadsheets.free-double-entry-bookkeeping-for-basic-a94f39"]
+hash = "a94f39a59a1a"
+cy = '''Cadw cyfrifon dwbl am ddim ar gyfer Basic Sole Trader, Self Employed, Taxi Driver a chwmni cyfyngedig. Cadwch eich llyfrau yn y porwr, a’u cadw yn y cwmwl pan fyddwch wedi mewngofnodi.'''
+
+[strings."spreadsheets.double-entry-bookkeeping-c7e300"]
+hash = "c7e300dd620d"
+cy = '''Cadw cyfrifon dwbl'''
+
+[strings."spreadsheets.run-in-the-browser-927a2c"]
+hash = "927a2c856acb"
+cy = '''Yn rhedeg yn y porwr'''
+
+[strings."spreadsheets.cloud-save-on-sign-in-d99a03"]
+hash = "d99a03241c92"
+cy = '''Cadw yn y cwmwl pan fyddwch wedi mewngofnodi'''
+
+[strings."spreadsheets.free-to-use-ebf404"]
+hash = "ebf40440a07f"
+cy = '''Am ddim i’w ddefnyddio'''
+
+[strings."spreadsheets.partner-29035e"]
+hash = "29035e784f93"
+cy = '''Partner'''
+
+[strings."spreadsheets.business-insurance-from-policybee-f6e4fc"]
+hash = "f6e4fc33e058"
+cy = '''<a href="policybee.html">Yswiriant busnes gan PolicyBee</a> (yn Saesneg)'''
+
+[strings."spreadsheets.looking-for-professional-insurance-try-policybee-a0e4a0"]
+hash = "a0e4a0ee4142"
+cy = '''Chwilio am yswiriant proffesiynol? Rhowch gynnig ar PolicyBee, brocer ar-lein sy’n arbenigo mewn yswiriant indemniad proffesiynol, atebolrwydd cyhoeddus, atebolrwydd cyflogwyr a swyddfa ar gyfer gweithwyr llawrydd a busnesau bach. Diogelwch syml i unig fasnachwyr a chwmnïau cyfyngedig.'''
+
+[strings."spreadsheets.professional-indemnity-insurance-d8d8ec"]
+hash = "d8d8ec5be352"
+cy = '''Yswiriant indemniad proffesiynol'''
+
+[strings."spreadsheets.public-liability-insurance-bf82cf"]
+hash = "bf82cf671059"
+cy = '''Yswiriant atebolrwydd cyhoeddus'''
+
+[strings."spreadsheets.employers-liability-insurance-151aab"]
+hash = "151aabce127f"
+cy = '''Yswiriant atebolrwydd cyflogwyr'''
+
+[strings."spreadsheets.office-contents-insurance-c3fa05"]
+hash = "c3fa055b82e6"
+cy = '''Yswiriant swyddfa a chynnwys'''
+
+[strings."spreadsheets.rated-4-8-5-from-6-40eaed"]
+hash = "40eaed87df39"
+cy = '''Sgôr o 4.8/5 o fwy na 6,000 o adolygiadau'''
+
+[strings."spreadsheets.visit-policybee-45fb7c"]
+hash = "45fb7caf636c"
+cy = '''<a class="btn btn-secondary btn-small" href="policybee.html">Ewch i PolicyBee</a> (yn Saesneg)'''
+
+[strings."spreadsheets.download-d6eafe"]
+hash = "d6eafe823591"
+cy = '''Llwytho i lawr'''
+
+[strings."spreadsheets.all-diy-accounting-spreadsheet-products-are-9f76df"]
+hash = "9f76df35feff"
+cy = '''Gallwch lwytho holl daenlenni DIY Accounting i lawr ar unwaith o’r wefan taenlenni.'''
+
+[strings."spreadsheets.visit-spreadsheets-diyaccounting-co-uk-to-22102b"]
+hash = "22102b40d398"
+cy = '''Ewch i spreadsheets.diyaccounting.co.uk i lwytho i lawr (yn Saesneg)'''
+
+[strings."spreadsheets.support-diy-accounting-with-a-donation-66dbcf"]
+hash = "66dbcff48b28"
+cy = '''<a class="link-target" href="https://spreadsheets.diyaccounting.co.uk/donate.html" target="_blank" rel="noopener">Cefnogwch DIY Accounting gyda rhodd</a> (yn Saesneg)'''
+
+[strings."spreadsheets.more-free-tools-are-on-the-28e172"]
+hash = "28e1728bf9c6"
+cy = '''Mae rhagor o offer am ddim ar y dudalen <a href="tools.html">Offer</a>.'''
+
+[strings."spreadsheets.description-f7ec0d"]
+hash = "f7ec0de2c2ff"
+cy = '''Taenlenni Excel i gadw cyfrifon busnesau bach yn y DU: unig fasnachwyr, pobl hunangyflogedig, cyfrifon cwmni, cyflogres a gyrwyr tacsi.'''
+
+[strings."spreadsheets.og-title-b0b685"]
+hash = "b0b685eb311b"
+cy = '''Taenlenni - DIY Accounting Submit'''
+
+[strings."spreadsheets.og-description-f7ec0d"]
+hash = "f7ec0de2c2ff"
+cy = '''Taenlenni Excel i gadw cyfrifon busnesau bach yn y DU: unig fasnachwyr, pobl hunangyflogedig, cyfrifon cwmni, cyflogres a gyrwyr tacsi.'''
+
+[strings."spreadsheets.5-out-of-5-stars-88c294"]
+hash = "88c29454b65e"
+cy = '''5 allan o 5 seren'''
+
+# == mtd-calendar.html (LANG9): the build marks this page; ids mtd-calendar.<first words>-<hash> ==
+[strings."mtd-calendar.title"]
+hash = "efd1aada1618"
+cy = '''Calendr MTD - DIY Accounting Submit'''
+
+[strings."mtd-calendar.mtd-calendar-4b7b12"]
+hash = "4b7b1227de08"
+cy = '''Calendr MTD'''
+
+[strings."mtd-calendar.when-making-tax-digital-applies-to-c4bd3a"]
+hash = "c4bd3a549d8f"
+cy = '''Pryd mae Troi Treth yn Ddigidol yn berthnasol i chi'''
+
+[strings."mtd-calendar.which-dates-apply-to-your-business-5e85b7"]
+hash = "5e85b7b5707c"
+cy = '''Pa ddyddiadau sy’n berthnasol i’ch busnes'''
+
+[strings."mtd-calendar.find-your-business-type-then-follow-6e419d"]
+hash = "6e419d3aff1d"
+cy = '''Dewch o hyd i’ch math o fusnes, ac yna dilynwch y ddolen ym mhob colofn at ei ddyddiadau. Mae Troi Treth yn Ddigidol ar gyfer Treth Incwm yn cynnwys unig fasnachwyr a landlordiaid sydd wedi cofrestru ar gyfer Hunanasesiad, felly nid yw’n cynnwys cwmni cyfyngedig. Nid oes dyddiad ar gyfer partneriaethau eto. Mae gyrrwr tacsi neu yrrwr hurio preifat, ac unig fasnachwr sydd â gweithwyr, yn dilyn rheolau unig fasnachwyr.'''
+
+[strings."mtd-calendar.business-type-against-what-applies-5ddc05"]
+hash = "5ddc05e2f72d"
+cy = '''Math o fusnes yn erbyn yr hyn sy’n berthnasol'''
+
+[strings."mtd-calendar.business-type-f697bb"]
+hash = "f697bb12b06c"
+cy = '''Math o fusnes'''
+
+[strings."mtd-calendar.not-vat-registered-1bd17d"]
+hash = "1bd17d5cfab0"
+cy = '''Heb gofrestru ar gyfer TAW'''
+
+[strings."mtd-calendar.vat-registered-64e845"]
+hash = "64e845dfde67"
+cy = '''Wedi cofrestru ar gyfer TAW'''
+
+[strings."mtd-calendar.income-tax-mtd-ff4815"]
+hash = "ff4815d62564"
+cy = '''Treth Incwm (MTD)'''
+
+[strings."mtd-calendar.companies-house-filings-141d2c"]
+hash = "141d2c30b453"
+cy = '''Ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."mtd-calendar.companies-house-accounts-e430dc"]
+hash = "e430dc04114a"
+cy = '''Cyfrifon Tŷ’r Cwmnïau'''
+
+[strings."mtd-calendar.self-employed-384acd"]
+hash = "384acd39a3de"
+cy = '''Hunangyflogedig'''
+
+[strings."mtd-calendar.sole-trader-603775"]
+hash = "60377506a8b2"
+cy = '''Unig fasnachwr'''
+
+[strings."mtd-calendar.no-vat-dates-b283e4"]
+hash = "b283e40d6843"
+cy = '''<a href="#vat-mtd-all-registered-2022-04">Dim dyddiadau TAW</a>'''
+
+[strings."mtd-calendar.vat-returns-6e22b7"]
+hash = "6e22b7303043"
+cy = '''<a href="#vat-mtd-all-registered-2022-04">Ffurflenni TAW</a>'''
+
+[strings."mtd-calendar.dates-by-income-714bef"]
+hash = "714bef8da140"
+cy = '''<a href="#itsa-mtd-over-50k-2026-04">Dyddiadau yn ôl incwm</a>'''
+
+[strings."mtd-calendar.quarterly-updates-9e60f5"]
+hash = "9e60f55e1d99"
+cy = '''<a href="#itsa-quarterly-update-deadlines">Diweddariadau chwarterol</a>'''
+
+[strings."mtd-calendar.final-declaration-d21073"]
+hash = "d2107332ec95"
+cy = '''<a href="#itsa-final-declaration-deadline">Datganiad terfynol</a>'''
+
+[strings."mtd-calendar.not-applicable-5237c9"]
+hash = "5237c96ac1a2"
+cy = '''Ddim yn berthnasol'''
+
+[strings."mtd-calendar.taxi-and-private-hire-driver-1f14b2"]
+hash = "1f14b21d6268"
+cy = '''Gyrrwr tacsi a hurio preifat'''
+
+[strings."mtd-calendar.partnership-b61dd8"]
+hash = "b61dd8f40159"
+cy = '''Partneriaeth'''
+
+[strings."mtd-calendar.no-date-yet-b494ef"]
+hash = "b494efe5704c"
+cy = '''<a href="#itsa-mtd-partnerships-date-unset">Dim dyddiad eto</a>'''
+
+[strings."mtd-calendar.landlord-38077d"]
+hash = "38077d682735"
+cy = '''Landlord'''
+
+[strings."mtd-calendar.sole-trader-with-employees-2d9f55"]
+hash = "2d9f552022f4"
+cy = '''Unig fasnachwr sydd â gweithwyr'''
+
+[strings."mtd-calendar.limited-company-623fba"]
+hash = "623fba6f1b31"
+cy = '''Cwmni cyfyngedig'''
+
+[strings."mtd-calendar.owner-managed-company-with-one-director-b7ce1e"]
+hash = "b7ce1e1f4a69"
+cy = '''Cwmni a reolir gan ei berchennog, gydag un cyfarwyddwr'''
+
+[strings."mtd-calendar.not-in-this-rule-f09048"]
+hash = "f09048a4dd92"
+cy = '''Ddim o dan y rheol hon'''
+
+[strings."mtd-calendar.confirmation-statement-40b0fe"]
+hash = "40b0fe7c01ab"
+cy = '''<a href="#ch-confirmation-statement-12-months">Datganiad cadarnhau</a>'''
+
+[strings."mtd-calendar.identity-verification-59435a"]
+hash = "59435a905925"
+cy = '''<a href="#ch-identity-verification-2025-11">Dilysu hunaniaeth</a>'''
+
+[strings."mtd-calendar.annual-accounts-287278"]
+hash = "28727865090f"
+cy = '''<a href="#ch-accounts-9-months">Cyfrifon blynyddol</a>'''
+
+[strings."mtd-calendar.company-tax-return-6be244"]
+hash = "6be2442daac2"
+cy = '''<a href="#ct600-12-months">Ffurflen Dreth y Cwmni</a>'''
+
+[strings."mtd-calendar.corporation-tax-payment-694891"]
+hash = "6948919927f3"
+cy = '''<a href="#ct-payment-9-months-1-day">Talu Treth Gorfforaeth</a>'''
+
+[strings."mtd-calendar.property-company-ef19b0"]
+hash = "ef19b0a10a7f"
+cy = '''Cwmni eiddo'''
+
+[strings."mtd-calendar.small-company-cc90c9"]
+hash = "cc90c9048dd8"
+cy = '''Cwmni bach'''
+
+[strings."mtd-calendar.what-you-can-file-and-how-b99889"]
+hash = "b99889488f38"
+cy = '''Beth gallwch ei ffeilio, a sut'''
+
+[strings."mtd-calendar.each-filing-can-be-made-in-b06817"]
+hash = "b068174aa2e8"
+cy = '''Gallwch wneud pob ffeilio yn y ffyrdd a restrir isod: ar y wefan hon, neu drwy gynorthwyydd AI. Mae Cynhyrchu (production) yn golygu y gallwch ei ddefnyddio go iawn. Mae Prawf (sandbox) yn golygu ei fod yn rhedeg yn erbyn gwasanaeth prawf ac nad yw’n ffeilio dim byd go iawn. Mae Rhagolwg (preview) yn golygu y gallwch roi cynnig ar y sgriniau, ac nid oes dim yn cael ei anfon.'''
+
+[strings."mtd-calendar.availability-by-filing-and-way-to-67070a"]
+hash = "67070a8ca913"
+cy = '''Argaeledd yn ôl ffeilio a ffordd o ffeilio'''
+
+[strings."mtd-calendar.filing-590391"]
+hash = "5903914fb56a"
+cy = '''Ffeilio'''
+
+[strings."mtd-calendar.web-form-a7cbe3"]
+hash = "a7cbe3d19149"
+cy = '''Ffurflen ar y we'''
+
+[strings."mtd-calendar.diya-gl-book-drop-95fe9f"]
+hash = "95fe9f8e0c52"
+cy = '''Gollwng llyfr diya-gl'''
+
+[strings."mtd-calendar.spreadsheets-drop-5de500"]
+hash = "5de50032ac5c"
+cy = '''Gollwng taenlen'''
+
+[strings."mtd-calendar.ixbrl-drop-c60797"]
+hash = "c6079770d187"
+cy = '''Gollwng iXBRL'''
+
+[strings."mtd-calendar.mcp-53f13a"]
+hash = "53f13ae99ed5"
+cy = '''MCP'''
+
+[strings."mtd-calendar.api-c8e599"]
+hash = "c8e5998f6a39"
+cy = '''API'''
+
+[strings."mtd-calendar.docs-and-video-038418"]
+hash = "03841852e1e0"
+cy = '''Dogfennau a fideo'''
+
+[strings."mtd-calendar.hmrc-vat-return-f65749"]
+hash = "f6574940c197"
+cy = '''Ffurflen TAW CThEF'''
+
+[strings."mtd-calendar.production-ab8e18"]
+hash = "ab8e18ef4ebe"
+cy = '''cynhyrchu (production)'''
+
+[strings."mtd-calendar.not-offered-e737f7"]
+hash = "e737f71674c1"
+cy = '''ddim ar gael'''
+
+[strings."mtd-calendar.production-local-server-the-hosted-connector-4e7d87"]
+hash = "4e7d87d11fc9"
+cy = '''cynhyrchu (production) <span class="calendar-date">gweinydd lleol; mae’r cysylltydd ar y we yn cyfrifo’r ffigurau ac yn cysylltu â’r ffurflen ar y we</span>'''
+
+[strings."mtd-calendar.web-form-guide-video-mcp-13e435"]
+hash = "13e43514acd8"
+cy = '''<a href="hmrc/vat/submitVat.html" data-activity="submit-vat">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=XUt2gdYxR1g" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
+
+[strings."mtd-calendar.hmrc-income-tax-mtd-af49d6"]
+hash = "af49d6d15973"
+cy = '''Treth Incwm CThEF (MTD)'''
+
+[strings."mtd-calendar.sandbox-self-employment-uk-and-foreign-bab689"]
+hash = "bab6892240ad"
+cy = '''prawf (sandbox) <span class="calendar-date">hunangyflogaeth, eiddo yn y DU a thramor</span>'''
+
+[strings."mtd-calendar.sandbox-b7ad56"]
+hash = "b7ad567477c8"
+cy = '''prawf (sandbox)'''
+
+[strings."mtd-calendar.sandbox-figures-only-b3bb34"]
+hash = "b3bb348f8a5c"
+cy = '''prawf (sandbox) <span class="calendar-date">ffigurau yn unig</span>'''
+
+[strings."mtd-calendar.web-form-guide-video-mcp-22bb09"]
+hash = "22bb0931e0d9"
+cy = '''<a href="hmrc/itsa/dashboard.html" data-activity="self-employed">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=H1LRSZG984Q" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
+
+[strings."mtd-calendar.hmrc-company-tax-return-ct600-8a1c6e"]
+hash = "8a1c6e669367"
+cy = '''Ffurflen Dreth y Cwmni CThEF (CT600)'''
+
+[strings."mtd-calendar.preview-period-of-account-up-to-7c5530"]
+hash = "7c553015999f"
+cy = '''rhagolwg (preview) <span class="calendar-date">cyfnod cyfrifon hyd at 18 mis</span>'''
+
+[strings."mtd-calendar.preview-book-export-file-fe1847"]
+hash = "fe1847d81d29"
+cy = '''rhagolwg (preview) <span class="calendar-date">ffeil allforio llyfr</span>'''
+
+[strings."mtd-calendar.web-form-guide-video-6afae7"]
+hash = "6afae78ffc07"
+cy = '''<a href="companies-house/fileCompanyTaxReturn.html" data-activity="file-company-tax-return">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=ZoUTlFPvUes" rel="noopener">Fideo</a> (yn Saesneg)'''
+
+[strings."mtd-calendar.hmrc-assist-check-on-a-vat-b4a415"]
+hash = "b4a4151c19d1"
+cy = '''Gwiriad HMRC Assist ar Ffurflen TAW'''
+
+[strings."mtd-calendar.preview-5975cf"]
+hash = "5975cf1bba43"
+cy = '''rhagolwg (preview)'''
+
+[strings."mtd-calendar.web-form-guide-video-c25dd2"]
+hash = "c25dd2814c4a"
+cy = '''<a href="hmrc/vat/submitVat.html" data-activity="vat-assist-check">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=cyOZsF9qe28" rel="noopener">Fideo</a> (yn Saesneg)'''
+
+[strings."mtd-calendar.companies-house-accounts-micro-entity-small-ed0557"]
+hash = "ed0557d967ec"
+cy = '''Cyfrifon Tŷ’r Cwmnïau (micro-endid, cwmni bach, segur)'''
+
+[strings."mtd-calendar.production-micro-entity-164ccd"]
+hash = "164ccd139c50"
+cy = '''cynhyrchu (production) <span class="calendar-date">micro-endid</span>'''
+
+[strings."mtd-calendar.web-form-guide-video-mcp-a0c9b5"]
+hash = "a0c9b5728662"
+cy = '''<a href="companies-house/fileMicroEntityAccounts.html" data-activity="file-micro-entity-accounts">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=yPSpvLKrTJU" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
+
+[strings."mtd-calendar.companies-house-confirmation-statement-afa872"]
+hash = "afa872a4f861"
+cy = '''Datganiad cadarnhau Tŷ’r Cwmnïau'''
+
+[strings."mtd-calendar.web-form-guide-video-mcp-428a93"]
+hash = "428a9344d8dc"
+cy = '''<a href="companies-house/fileConfirmationStatement.html" data-activity="file-confirmation-statement">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=P0aG_mLfhZI" rel="noopener">Fideo</a>, <a href="mcp.html">MCP</a> (yn Saesneg)'''
+
+[strings."mtd-calendar.companies-house-psc-verification-statement-a728e0"]
+hash = "a728e0bd84f5"
+cy = '''Datganiad dilysu PSC Tŷ’r Cwmnïau'''
+
+[strings."mtd-calendar.guide-video-81060b"]
+hash = "81060bf89496"
+cy = '''<a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=zyo32coCwso" rel="noopener">Fideo</a> (yn Saesneg)'''
+
+[strings."mtd-calendar.companies-house-registered-office-and-registered-4084e9"]
+hash = "4084e96d19ce"
+cy = '''Swyddfa gofrestredig a chyfeiriad e-bost cofrestredig Tŷ’r Cwmnïau'''
+
+[strings."mtd-calendar.web-form-guide-video-4a9892"]
+hash = "4a9892c85e92"
+cy = '''<a href="companies-house/changeRegisteredOffice.html" data-activity="change-registered-office">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a>, <a href="https://www.youtube.com/watch?v=sN_FhTnAqF4" rel="noopener">Fideo</a> (yn Saesneg)'''
+
+[strings."mtd-calendar.accounts-at-companies-house-and-ct600-d1399f"]
+hash = "d1399f34f121"
+cy = '''Cyfrifon yn Nhŷ’r Cwmnïau a CT600 gyda CThEF gyda’i gilydd'''
+
+[strings."mtd-calendar.web-form-guide-da3299"]
+hash = "da3299d86091"
+cy = '''<a href="companies-house/fileCompanyTaxReturn.html" data-activity="file-company-tax-return-with-accounts">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a> (yn Saesneg)'''
+
+[strings."mtd-calendar.dates-789639"]
+hash = "78963905f399"
+cy = '''Dyddiadau'''
+
+[strings."mtd-calendar.each-entry-shows-the-words-from-10a645"]
+hash = "10a645e05324"
+cy = '''Mae pob cofnod yn dangos y geiriau o’r dudalen gov.uk y daw ohoni, yn Saesneg, a’r diwrnod y gwnaethom ddarllen y dudalen honno.'''
+
+[strings."mtd-calendar.1-april-2022-vat-every-vat-cafeb3"]
+hash = "cafeb3e3af3f"
+cy = '''<span class="calendar-date">1 Ebrill 2022</span>TAW: pob busnes sydd wedi’i gofrestru ar gyfer TAW'''
+
+[strings."mtd-calendar.all-vat-registered-businesses-use-making-756b14"]
+hash = "756b146266da"
+cy = '''Mae pob busnes sydd wedi’i gofrestru ar gyfer TAW yn defnyddio Troi Treth yn Ddigidol ar gyfer TAW, beth bynnag yw ei drosiant. Eich cyfnod TAW cyntaf sy’n dechrau ar neu ar ôl 1 Ebrill 2022 yw’r cyntaf o dan y rheol.'''
+
+[strings."mtd-calendar.relevant-for-every-business-type-in-95fdb5"]
+hash = "95fdb5d88b9c"
+cy = '''<strong>Yn berthnasol i:</strong> pob math o fusnes yn y tabl, unwaith y bydd wedi cofrestru ar gyfer TAW.'''
+
+[strings."mtd-calendar.work-out-a-vat-return-due-bb789a"]
+hash = "bb789a9a14d2"
+cy = '''<a href="vat-return-due-date-and-penalty-points.html">Cyfrifo dyddiad dyledus Ffurflen TAW a’ch pwyntiau cosb</a> (yn Saesneg)'''
+
+[strings."mtd-calendar.18-november-2025-companies-house-director-c6b8ad"]
+hash = "c6b8ad593856"
+cy = '''<span class="calendar-date">18 Tachwedd 2025</span>Tŷ’r Cwmnïau: dilysu hunaniaeth cyfarwyddwyr a PSCs'''
+
+[strings."mtd-calendar.identity-verification-is-a-legal-requirement-6e2a59"]
+hash = "6e2a5922bf17"
+cy = '''Mae dilysu hunaniaeth yn ofyniad cyfreithiol ar gyfer cyfarwyddwyr ac ar gyfer pobl â rheolaeth arwyddocaol (PSCs). Mae cyfarwyddwr yn rhoi’r cod personol gyda datganiad cadarnhau nesaf y cwmni. Mae PSC yn dilysu ac yn rhoi’r cod personol o fewn cyfnod o 14 diwrnod sy’n dibynnu ar sefyllfa’r PSC.'''
+
+[strings."mtd-calendar.relevant-for-owner-managed-company-with-414f16"]
+hash = "414f162c1af1"
+cy = '''<strong>Yn berthnasol i:</strong> Cwmni a reolir gan ei berchennog, gydag un cyfarwyddwr, Cwmni eiddo, Cwmni bach.'''
+
+[strings."mtd-calendar.31-march-2026-hmrc-free-online-6d804e"]
+hash = "6d804e2fe3df"
+cy = '''<span class="calendar-date">31 Mawrth 2026</span>CThEF: daeth y gwasanaeth ar-lein am ddim ar gyfer cyfrifon a Ffurflen Dreth y Cwmni i ben'''
+
+[strings."mtd-calendar.from-1-april-2026-a-company-402eec"]
+hash = "402eec4e2c24"
+cy = '''O 1 Ebrill 2026 ymlaen, mae cwmni’n defnyddio meddalwedd fasnachol i ffeilio ei gyfrifon blynyddol a’i Ffurflen Dreth y Cwmni gyda CThEF.'''
+
+[strings."mtd-calendar.read-the-page-for-this-date-16fed8"]
+hash = "16fed8d06d61"
+cy = '''<a href="hmrc-company-tax-return-service-closed.html">Darllenwch y dudalen ar gyfer y dyddiad hwn</a> (yn Saesneg)'''
+
+[strings."mtd-calendar.6-april-2026-income-tax-qualifying-ed7945"]
+hash = "ed794526bac4"
+cy = '''<span class="calendar-date">6 Ebrill 2026</span>Treth Incwm: incwm cymhwysol dros £50,000'''
+
+[strings."mtd-calendar.sole-traders-and-landlords-with-qualifying-1b3f77"]
+hash = "1b3f77470cd9"
+cy = '''Mae unig fasnachwyr a landlordiaid sydd ag incwm cymhwysol dros £50,000 ym mlwyddyn dreth 2024 i 2025 yn defnyddio Troi Treth yn Ddigidol ar gyfer Treth Incwm.'''
+
+[strings."mtd-calendar.relevant-for-sole-trader-taxi-and-6161a0"]
+hash = "6161a0c2a2e7"
+cy = '''<strong>Yn berthnasol i:</strong> Unig fasnachwr, Gyrrwr tacsi a hurio preifat, Landlord, Unig fasnachwr sydd â gweithwyr.'''
+
+[strings."mtd-calendar.6-april-2027-income-tax-qualifying-accc5d"]
+hash = "accc5d57d11a"
+cy = '''<span class="calendar-date">6 Ebrill 2027</span>Treth Incwm: incwm cymhwysol dros £30,000'''
+
+[strings."mtd-calendar.the-rule-reaches-qualifying-income-over-e93fd2"]
+hash = "e93fd2fa4896"
+cy = '''Mae’r rheol yn cynnwys incwm cymhwysol dros £30,000 ym mlwyddyn dreth 2025 i 2026.'''
+
+[strings."mtd-calendar.read-the-page-for-this-date-8ba47c"]
+hash = "8ba47c08ebdd"
+cy = '''<a href="making-tax-digital-income-tax-over-30000.html">Darllenwch y dudalen ar gyfer y dyddiad hwn</a> (yn Saesneg)'''
+
+[strings."mtd-calendar.1-april-2028-companies-house-accounts-8749d6"]
+hash = "8749d61cfe09"
+cy = '''<span class="calendar-date">1 Ebrill 2028</span>Tŷ’r Cwmnïau: cyfrifon yn cael eu ffeilio gyda meddalwedd fasnachol yn unig'''
+
+[strings."mtd-calendar.from-april-2028-every-company-files-bb12c4"]
+hash = "bb12c4fac051"
+cy = '''O fis Ebrill 2028 ymlaen, mae pob cwmni’n ffeilio ei gyfrifon ar ffurf iXBRL gyda meddalwedd fasnachol. Mae gwasanaethau gwe a phapur Tŷ’r Cwmnïau yn cau ar gyfer cyfrifon. Mae datganiadau cadarnhau a ffeilio arall yn aros ar y gwasanaeth gwe.'''
+
+[strings."mtd-calendar.read-the-page-for-this-date-fcad00"]
+hash = "fcad0040d2ad"
+cy = '''<a href="company-accounts-by-software-from-april-2028.html">Darllenwch y dudalen ar gyfer y dyddiad hwn</a> (yn Saesneg)'''
+
+[strings."mtd-calendar.6-april-2028-income-tax-qualifying-98f5b9"]
+hash = "98f5b9ec3dc4"
+cy = '''<span class="calendar-date">6 Ebrill 2028</span>Treth Incwm: incwm cymhwysol dros £20,000'''
+
+[strings."mtd-calendar.the-rule-reaches-qualifying-income-over-758628"]
+hash = "758628a91385"
+cy = '''Mae’r rheol yn cynnwys incwm cymhwysol dros £20,000 ym mlwyddyn dreth 2026 i 2027.'''
+
+[strings."mtd-calendar.every-year-828ca0"]
+hash = "828ca0e45f14"
+cy = '''Bob blwyddyn'''
+
+[strings."mtd-calendar.income-tax-quarterly-updates-af1cd6"]
+hash = "af1cd65a4117"
+cy = '''Diweddariadau chwarterol Treth Incwm'''
+
+[strings."mtd-calendar.send-an-update-for-each-quarter-abf258"]
+hash = "abf258d2f55f"
+cy = '''Anfonwch ddiweddariad ar gyfer pob chwarter erbyn ei ddyddiad cau. Dyma’r cyfnodau diweddaru safonol.'''
+
+[strings."mtd-calendar.standard-update-periods-and-deadlines-19a565"]
+hash = "19a565eae432"
+cy = '''Cyfnodau diweddaru safonol a’u dyddiadau cau'''
+
+[strings."mtd-calendar.update-period-d472e4"]
+hash = "d472e4c70059"
+cy = '''Cyfnod diweddaru'''
+
+[strings."mtd-calendar.deadline-6fcb38"]
+hash = "6fcb38ddc858"
+cy = '''Dyddiad cau'''
+
+[strings."mtd-calendar.6-april-to-5-july-3e2be9"]
+hash = "3e2be9237fdb"
+cy = '''6 Ebrill i 5 Gorffennaf'''
+
+[strings."mtd-calendar.7-august-5409db"]
+hash = "5409dbfe104a"
+cy = '''7 Awst'''
+
+[strings."mtd-calendar.6-april-to-5-october-3718ca"]
+hash = "3718cae09b34"
+cy = '''6 Ebrill i 5 Hydref'''
+
+[strings."mtd-calendar.7-november-dab19f"]
+hash = "dab19fe81191"
+cy = '''7 Tachwedd'''
+
+[strings."mtd-calendar.6-april-to-5-january-22bb82"]
+hash = "22bb82c9a9f1"
+cy = '''6 Ebrill i 5 Ionawr'''
+
+[strings."mtd-calendar.7-february-517c83"]
+hash = "517c838f7d1f"
+cy = '''7 Chwefror'''
+
+[strings."mtd-calendar.6-april-to-5-april-20ea04"]
+hash = "20ea04831d5a"
+cy = '''6 Ebrill i 5 Ebrill'''
+
+[strings."mtd-calendar.7-may-in-the-following-tax-12d47d"]
+hash = "12d47d96339d"
+cy = '''7 Mai, yn y flwyddyn dreth ddilynol'''
+
+[strings."mtd-calendar.check-whether-you-need-making-tax-9f94fd"]
+hash = "9f94fdc38091"
+cy = '''<a href="mtd-income-tax-checker.html">Gwirio a oes angen Troi Treth yn Ddigidol ar gyfer Treth Incwm arnoch, a phryd y byddwch yn dechrau</a> (yn Saesneg)'''
+
+[strings."mtd-calendar.income-tax-final-declaration-31abe1"]
+hash = "31abe1a46f74"
+cy = '''Datganiad terfynol Treth Incwm'''
+
+[strings."mtd-calendar.submit-your-tax-return-by-31-6d519d"]
+hash = "6d519dd3f139"
+cy = '''Cyflwynwch eich Ffurflen Dreth erbyn 31 Ionawr ar ôl diwedd y flwyddyn dreth. Gallwch ei chyflwyno’n gynharach.'''
+
+[strings."mtd-calendar.file-at-least-one-confirmation-statement-ea1c1c"]
+hash = "ea1c1c42f332"
+cy = '''Ffeiliwch o leiaf un datganiad cadarnhau bob 12 mis, hyd yn oed os nad oes dim wedi newid.'''
+
+[strings."mtd-calendar.optional-you-can-file-early-you-95c9be"]
+hash = "95c9bef7db2f"
+cy = '''<strong>Dewisol:</strong> Gallwch ffeilio’n gynnar. Nid oes rhaid i chi aros i’r cyfnod adolygu presennol ddod i ben.'''
+
+[strings."mtd-calendar.companies-house-annual-accounts-9a8c10"]
+hash = "9a8c10595806"
+cy = '''Cyfrifon blynyddol Tŷ’r Cwmnïau'''
+
+[strings."mtd-calendar.file-the-annual-accounts-with-companies-a9b16c"]
+hash = "a9b16ceab96c"
+cy = '''Ffeiliwch y cyfrifon blynyddol gyda Thŷ’r Cwmnïau 9 mis ar ôl diwedd blwyddyn ariannol y cwmni.'''
+
+[strings."mtd-calendar.optional-you-can-file-the-accounts-a80f9e"]
+hash = "a80f9eaa0cfd"
+cy = '''<strong>Dewisol:</strong> Gallwch ffeilio’r cyfrifon a Ffurflen Dreth y Cwmni gyda’i gilydd neu ar wahân.'''
+
+[strings."mtd-calendar.look-up-when-a-company-s-a8af14"]
+hash = "a8af14739a87"
+cy = '''<a href="company-filing-deadlines.html">Chwilio pryd mae cyfrifon a datganiad cadarnhau cwmni yn ddyledus</a> (yn Saesneg)'''
+
+[strings."mtd-calendar.company-tax-return-ct600-45fec2"]
+hash = "45fec261ce04"
+cy = '''Ffurflen Dreth y Cwmni (CT600)'''
+
+[strings."mtd-calendar.file-the-company-tax-return-with-a8aa02"]
+hash = "a8aa02433de9"
+cy = '''Ffeiliwch Ffurflen Dreth y Cwmni gyda CThEF 12 mis ar ôl diwedd y cyfnod cyfrifyddu y mae’n ei gwmpasu. Mae cyfnod cyfrifon sy’n hirach na 12 mis, hyd at 18 mis, yn cael ei ffeilio fel dwy Ffurflen, y ddwy yn ddyledus 12 mis ar ôl i’r cyfnod cyfrifon ddod i ben.'''
+
+[strings."mtd-calendar.corporation-tax-payment-064d94"]
+hash = "064d94cb51a6"
+cy = '''Talu Treth Gorfforaeth'''
+
+[strings."mtd-calendar.pay-corporation-tax-9-months-and-19c828"]
+hash = "19c828253e71"
+cy = '''Talwch Dreth Gorfforaeth 9 mis ac 1 diwrnod ar ôl diwedd y cyfnod cyfrifyddu, pan fydd yr elw trethadwy hyd at £1.5 miliwn.'''
+
+[strings."mtd-calendar.no-date-yet-fa6d4d"]
+hash = "fa6d4deb2ed7"
+cy = '''Dim dyddiad eto'''
+
+[strings."mtd-calendar.income-tax-partnerships-d49d07"]
+hash = "d49d076ebe8f"
+cy = '''Treth Incwm: partneriaethau'''
+
+[strings."mtd-calendar.partnerships-will-use-making-tax-digital-348af5"]
+hash = "348af5dbf0d3"
+cy = '''Bydd partneriaethau’n defnyddio Troi Treth yn Ddigidol ar gyfer Treth Incwm. Nid yw CThEF wedi pennu’r dyddiad eto.'''
+
+[strings."mtd-calendar.relevant-for-partnership-1adad7"]
+hash = "1adad70dbd39"
+cy = '''<strong>Yn berthnasol i:</strong> Partneriaeth.'''
+
+[strings."mtd-calendar.more-free-tools-are-on-the-28e172"]
+hash = "28e1728bf9c6"
+cy = '''Mae rhagor o offer am ddim ar y dudalen <a href="tools.html">Offer</a>.'''
+
+[strings."mtd-calendar.description-8f3633"]
+hash = "8f36337a7d4f"
+cy = '''Beth gallwch ei ffeilio a sut, a phryd mae Troi Treth yn Ddigidol yn berthnasol: TAW, Treth Incwm, diweddariadau chwarterol a Thŷ’r Cwmnïau, gyda ffynonellau.'''
+
+[strings."mtd-calendar.og-title-efd1aa"]
+hash = "efd1aada1618"
+cy = '''Calendr MTD - DIY Accounting Submit'''
+
+[strings."mtd-calendar.og-description-8f3633"]
+hash = "8f36337a7d4f"
+cy = '''Beth gallwch ei ffeilio a sut, a phryd mae Troi Treth yn Ddigidol yn berthnasol: TAW, Treth Incwm, diweddariadau chwarterol a Thŷ’r Cwmnïau, gyda ffynonellau.'''
+
+# == rates.html (LANG9): the build marks this page; ids rates.<first words>-<hash> ==
+[strings."rates.title"]
+hash = "92c8a4884158"
+cy = '''Cyfraddau a lwfansau - DIY Accounting Submit'''
+
+[strings."rates.tax-rates-e15f56"]
+hash = "e15f5606be6f"
+cy = '''Cyfraddau treth'''
+
+[strings."rates.rates-and-allowances-the-figures-behind-a9b405"]
+hash = "a9b4051f8295"
+cy = '''Cyfraddau a lwfansau: y ffigurau y tu ôl i’ch Ffurflenni'''
+
+[strings."rates.calculator-668b80"]
+hash = "668b80455fdb"
+cy = '''Cyfrifiannell'''
+
+[strings."rates.the-calculator-needs-javascript-the-rate-faa720"]
+hash = "faa7202c0183"
+cy = '''Mae angen JavaScript ar y gyfrifiannell. Mae’r tablau cyfraddau isod yn gweithio hebddo.'''
+
+[strings."rates.business-type-f697bb"]
+hash = "f697bb12b06c"
+cy = '''Math o fusnes'''
+
+[strings."rates.self-employed-384acd"]
+hash = "384acd39a3de"
+cy = '''Hunangyflogedig'''
+
+[strings."rates.limited-company-623fba"]
+hash = "623fba6f1b31"
+cy = '''Cwmni cyfyngedig'''
+
+[strings."rates.tax-year-09a6de"]
+hash = "09a6de3cf95f"
+cy = '''Blwyddyn dreth'''
+
+[strings."rates.accounting-period-end-the-period-is-dbc48c"]
+hash = "dbc48c2f8859"
+cy = '''Diwedd y cyfnod cyfrifyddu (y cyfnod yw’r deuddeg mis cyn hynny)'''
+
+[strings."rates.income-for-the-period-75417e"]
+hash = "75417e3eca7d"
+cy = '''Incwm ar gyfer y cyfnod (£)'''
+
+[strings."rates.expenses-for-the-period-af845b"]
+hash = "af845b8ca1c3"
+cy = '''Treuliau ar gyfer y cyfnod (£)'''
+
+[strings."rates.enter-income-and-expenses-excluding-vat-de2773"]
+hash = "de277399e5c7"
+cy = '''Rhowch incwm a threuliau heb TAW. Mae pob traul yn cael ei thrin fel un ar y gyfradd safonol.'''
+
+[strings."rates.business-miles-by-car-e3bb8d"]
+hash = "e3bb8df50a77"
+cy = '''Milltiroedd busnes mewn car'''
+
+[strings."rates.equipment-bought-in-the-period-28ac53"]
+hash = "28ac534160b3"
+cy = '''Offer a brynwyd yn y cyfnod (£)'''
+
+[strings."rates.main-pool-brought-forward-93242f"]
+hash = "93242f919f39"
+cy = '''Y brif gronfa a ddygwyd ymlaen (£)'''
+
+[strings."rates.personal-allowance-8791a7"]
+hash = "8791a7476b26"
+cy = '''Lwfans Personol (£)'''
+
+[strings."rates.associated-companies-9acd84"]
+hash = "9acd84478502"
+cy = '''Cwmnïau cysylltiedig'''
+
+[strings."rates.vat-registered-64e845"]
+hash = "64e845dfde67"
+cy = '''Wedi cofrestru ar gyfer TAW'''
+
+[strings."rates.vat-scheme-299b83"]
+hash = "299b83ca4d7e"
+cy = '''Cynllun TAW'''
+
+[strings."rates.standard-ef6691"]
+hash = "ef6691545d2c"
+cy = '''Safonol'''
+
+[strings."rates.flat-rate-scheme-b26881"]
+hash = "b2688146ba7b"
+cy = '''Cynllun Cyfradd Unffurf'''
+
+[strings."rates.flat-rate-1423b9"]
+hash = "1423b92f6426"
+cy = '''Cyfradd unffurf (%)'''
+
+[strings."rates.construction-industry-scheme-deductions-82333c"]
+hash = "82333ca622cf"
+cy = '''Didyniadau Cynllun y Diwydiant Adeiladu'''
+
+[strings."rates.cis-status-f9e0c5"]
+hash = "f9e0c530f5e4"
+cy = '''Statws CIS'''
+
+[strings."rates.registered-2351ee"]
+hash = "2351ee992626"
+cy = '''Wedi cofrestru'''
+
+[strings."rates.not-registered-ca374c"]
+hash = "ca374c23ed92"
+cy = '''Heb gofrestru'''
+
+[strings."rates.gross-payment-status-1818c4"]
+hash = "1818c443f592"
+cy = '''Statws taliad gros'''
+
+[strings."rates.labour-paid-under-cis-e98175"]
+hash = "e9817517862a"
+cy = '''Llafur a dalwyd o dan CIS (£)'''
+
+[strings."rates.vat-to-pay-e8c335"]
+hash = "e8c335b960d7"
+cy = '''TAW i’w thalu'''
+
+[strings."rates.mileage-allowance-a05003"]
+hash = "a050030dd90f"
+cy = '''Lwfans milltiroedd'''
+
+[strings."rates.capital-allowances-0196ff"]
+hash = "0196ffadf67d"
+cy = '''Lwfansau cyfalaf'''
+
+[strings."rates.taxable-profit-33af55"]
+hash = "33af55bb6c03"
+cy = '''Elw trethadwy'''
+
+[strings."rates.personal-allowance-after-any-reduction-145f6a"]
+hash = "145f6a6bf95e"
+cy = '''Lwfans Personol ar ôl unrhyw ostyngiad'''
+
+[strings."rates.income-tax-de2ae4"]
+hash = "de2ae4a1b305"
+cy = '''Treth incwm'''
+
+[strings."rates.class-4-national-insurance-5c951c"]
+hash = "5c951c60db22"
+cy = '''Yswiriant Gwladol Dosbarth 4'''
+
+[strings."rates.voluntary-class-2-not-in-the-38364a"]
+hash = "38364ad309c2"
+cy = '''Dosbarth 2 gwirfoddol (nid yw yn y cyfanswm)'''
+
+[strings."rates.income-tax-and-class-4-national-6af87c"]
+hash = "6af87cf90bcb"
+cy = '''Treth incwm ac Yswiriant Gwladol Dosbarth 4'''
+
+[strings."rates.cis-deducted-11c760"]
+hash = "11c76081c862"
+cy = '''CIS a ddidynnwyd'''
+
+[strings."rates.left-to-pay-after-cis-30a178"]
+hash = "30a178934676"
+cy = '''Ar ôl i’w dalu ar ôl CIS'''
+
+[strings."rates.accounting-period-0c5c2f"]
+hash = "0c5c2f476275"
+cy = '''Cyfnod cyfrifyddu'''
+
+[strings."rates.marginal-relief-7e11b4"]
+hash = "7e11b41987ef"
+cy = '''Rhyddhad ymylol'''
+
+[strings."rates.corporation-tax-2390d7"]
+hash = "2390d7d778d3"
+cy = '''Treth Gorfforaeth'''
+
+[strings."rates.profit-after-tax-17e4c8"]
+hash = "17e4c8b0af6f"
+cy = '''Elw ar ôl treth'''
+
+[strings."rates.corporation-tax-by-financial-year-094fa3"]
+hash = "094fa3ec5cbc"
+cy = '''Treth Gorfforaeth yn ôl blwyddyn ariannol'''
+
+[strings."rates.financial-year-32cc83"]
+hash = "32cc836f4200"
+cy = '''Blwyddyn ariannol'''
+
+[strings."rates.days-e08c0a"]
+hash = "e08c0aa8f558"
+cy = '''Diwrnodau'''
+
+[strings."rates.profit-share-b321e6"]
+hash = "b321e6af4076"
+cy = '''Cyfran o’r elw'''
+
+[strings."rates.rate-45b63f"]
+hash = "45b63ffd01af"
+cy = '''Cyfradd'''
+
+[strings."rates.tax-before-relief-a2fd1d"]
+hash = "a2fd1dd8e8f9"
+cy = '''Treth cyn rhyddhad'''
+
+[strings."rates.tax-47e288"]
+hash = "47e2886ee5d3"
+cy = '''Treth'''
+
+[strings."rates.self-employed-and-sole-traders-7e871a"]
+hash = "7e871a556c2c"
+cy = '''Pobl hunangyflogedig ac unig fasnachwyr'''
+
+[strings."rates.tax-years-run-from-6-april-4e9f5f"]
+hash = "4e9f5f44c09e"
+cy = '''Mae blynyddoedd treth yn rhedeg o 6 Ebrill i 5 Ebrill.'''
+
+[strings."rates.rate-or-allowance-df6646"]
+hash = "df664696156f"
+cy = '''Cyfradd neu lwfans'''
+
+[strings."rates.source-0e570c"]
+hash = "0e570ca6fabe"
+cy = '''Ffynhonnell'''
+
+[strings."rates.personal-allowance-1fc3cb"]
+hash = "1fc3cb722203"
+cy = '''Lwfans Personol'''
+
+[strings."rates.income-limit-for-personal-allowance-ee48d8"]
+hash = "ee48d8ab336c"
+cy = '''Terfyn incwm ar gyfer y Lwfans Personol'''
+
+[strings."rates.basic-rate-ee23a9"]
+hash = "ee23a9a80a04"
+cy = '''Cyfradd sylfaenol'''
+
+[strings."rates.basic-rate-band-b66dbc"]
+hash = "b66dbcb94168"
+cy = '''Band y gyfradd sylfaenol'''
+
+[strings."rates.higher-rate-ff3553"]
+hash = "ff355308e66d"
+cy = '''Cyfradd uwch'''
+
+[strings."rates.additional-rate-threshold-6d51bd"]
+hash = "6d51bdd15c7e"
+cy = '''Trothwy’r gyfradd ychwanegol'''
+
+[strings."rates.additional-rate-9fa1e5"]
+hash = "9fa1e5fb5edb"
+cy = '''Cyfradd ychwanegol'''
+
+[strings."rates.national-insurance-6c256f"]
+hash = "6c256f829fe1"
+cy = '''Yswiriant Gwladol'''
+
+[strings."rates.class-4-lower-profits-limit-25de1b"]
+hash = "25de1be163ed"
+cy = '''Terfyn elw isaf Dosbarth 4'''
+
+[strings."rates.class-4-upper-profits-limit-2d4d82"]
+hash = "2d4d82cddb7a"
+cy = '''Terfyn elw uchaf Dosbarth 4'''
+
+[strings."rates.class-4-main-rate-60803d"]
+hash = "60803d9dd36c"
+cy = '''Prif gyfradd Dosbarth 4'''
+
+[strings."rates.class-4-additional-rate-d3a9e7"]
+hash = "d3a9e7e040f4"
+cy = '''Cyfradd ychwanegol Dosbarth 4'''
+
+[strings."rates.class-2-weekly-rate-voluntary-ed6f29"]
+hash = "ed6f293de727"
+cy = '''Cyfradd wythnosol Dosbarth 2 (gwirfoddol)'''
+
+[strings."rates.class-2-small-profits-threshold-9fa909"]
+hash = "9fa9095b79be"
+cy = '''Trothwy elw bach Dosbarth 2'''
+
+[strings."rates.annual-investment-allowance-limit-085558"]
+hash = "0855583b2a93"
+cy = '''Terfyn y Lwfans Buddsoddi Blynyddol'''
+
+[strings."rates.1-million-eff7ed"]
+hash = "eff7edf22fc0"
+cy = '''£1 miliwn'''
+
+[strings."rates.main-pool-writing-down-allowance-c2bdf8"]
+hash = "c2bdf821d1fa"
+cy = '''Lwfans ysgrifennu i lawr y brif gronfa'''
+
+[strings."rates.special-rate-pool-writing-down-allowance-d66279"]
+hash = "d6627982c20e"
+cy = '''Lwfans ysgrifennu i lawr y gronfa cyfradd arbennig'''
+
+[strings."rates.mileage-allowances-b2ca73"]
+hash = "b2ca7320b3b5"
+cy = '''Lwfansau milltiroedd'''
+
+[strings."rates.cars-and-vans-first-10-000-4f92b2"]
+hash = "4f92b2f02cc4"
+cy = '''Ceir a faniau, y 10,000 milltir fusnes gyntaf'''
+
+[strings."rates.45p-abdda1"]
+hash = "abdda1f99022"
+cy = '''45c'''
+
+[strings."rates.55p-6e0302"]
+hash = "6e0302fbf38f"
+cy = '''55c'''
+
+[strings."rates.cars-and-vans-over-10-000-5c5dd9"]
+hash = "5c5dd9b62df4"
+cy = '''Ceir a faniau, dros 10,000 milltir fusnes'''
+
+[strings."rates.25p-0c4f2e"]
+hash = "0c4f2ea23487"
+cy = '''25c'''
+
+[strings."rates.business-miles-at-the-higher-rate-b435ee"]
+hash = "b435ee8f2cea"
+cy = '''Milltiroedd busnes ar y gyfradd uwch'''
+
+[strings."rates.registered-subcontractor-3cd832"]
+hash = "3cd832815ccb"
+cy = '''Is-gontractwr sydd wedi cofrestru'''
+
+[strings."rates.subcontractor-not-registered-4c9040"]
+hash = "4c904067df98"
+cy = '''Is-gontractwr heb gofrestru'''
+
+[strings."rates.no-deduction-c5adf0"]
+hash = "c5adf0e12bd0"
+cy = '''Dim didyniad'''
+
+[strings."rates.vat-4885a1"]
+hash = "4885a17383f9"
+cy = '''TAW'''
+
+[strings."rates.vat-thresholds-and-rates-e068a6"]
+hash = "e068a65070dd"
+cy = '''Trothwyon a chyfraddau TAW'''
+
+[strings."rates.registration-threshold-8818d7"]
+hash = "8818d7282630"
+cy = '''Trothwy cofrestru'''
+
+[strings."rates.standard-rate-a2e813"]
+hash = "a2e81394e1a8"
+cy = '''Cyfradd safonol'''
+
+[strings."rates.flat-rate-scheme-joining-limit-58da93"]
+hash = "58da93248890"
+cy = '''Terfyn ymuno â’r Cynllun Cyfradd Unffurf'''
+
+[strings."rates.flat-rate-scheme-leaving-limit-da83fb"]
+hash = "da83fbde2b00"
+cy = '''Terfyn gadael y Cynllun Cyfradd Unffurf'''
+
+[strings."rates.flat-rate-for-a-limited-cost-777a55"]
+hash = "777a55ddf33b"
+cy = '''Cyfradd unffurf ar gyfer busnes costau cyfyngedig'''
+
+[strings."rates.limited-companies-410011"]
+hash = "410011a88f39"
+cy = '''Cwmnïau cyfyngedig'''
+
+[strings."rates.financial-years-run-from-1-april-eb41b4"]
+hash = "eb41b4d5b70f"
+cy = '''Mae blynyddoedd ariannol yn rhedeg o 1 Ebrill i 31 Mawrth.'''
+
+[strings."rates.fy2025-6d3bcb"]
+hash = "6d3bcb4900a2"
+cy = '''FY2025'''
+
+[strings."rates.fy2026-5b0477"]
+hash = "5b0477754208"
+cy = '''FY2026'''
+
+[strings."rates.main-rate-4fcc4c"]
+hash = "4fcc4c671829"
+cy = '''Prif gyfradd'''
+
+[strings."rates.small-profits-rate-f3608a"]
+hash = "f3608aa8e362"
+cy = '''Cyfradd elw bach'''
+
+[strings."rates.lower-limit-05f510"]
+hash = "05f51010ce64"
+cy = '''Terfyn isaf'''
+
+[strings."rates.upper-limit-6e6f7b"]
+hash = "6e6f7b6df7c8"
+cy = '''Terfyn uchaf'''
+
+[strings."rates.marginal-relief-fraction-5a289b"]
+hash = "5a289b2feab7"
+cy = '''Ffracsiwn rhyddhad ymylol'''
+
+[strings."rates.capital-allowances-for-companies-f82cd2"]
+hash = "f82cd255bc18"
+cy = '''Lwfansau cyfalaf ar gyfer cwmnïau'''
+
+[strings."rates.full-expensing-main-pool-plant-and-99aab2"]
+hash = "99aab2cee7d3"
+cy = '''Treulio llawn, peiriannau ac offer y brif gronfa'''
+
+[strings."rates.sources-caf85b"]
+hash = "caf85b0888d7"
+cy = '''Ffynonellau'''
+
+[strings."rates.each-entry-shows-the-words-from-10a645"]
+hash = "10a645e05324"
+cy = '''Mae pob cofnod yn dangos y geiriau o’r dudalen gov.uk y daw ohoni, yn Saesneg, a’r diwrnod y gwnaethom ddarllen y dudalen honno.'''
+
+[strings."rates.more-free-tools-are-on-the-28e172"]
+hash = "28e1728bf9c6"
+cy = '''Mae rhagor o offer am ddim ar y dudalen <a href="tools.html">Offer</a>.'''
+
+[strings."rates.description-dabdc2"]
+hash = "dabdc24f7f32"
+cy = '''Cyfraddau a lwfansau treth y DU i bobl hunangyflogedig a chwmnïau, 2025-26 a 2026-27, pob un gyda’i ffynhonnell gov.uk, a chyfrifiannell treth.'''
+
+[strings."rates.og-title-92c8a4"]
+hash = "92c8a4884158"
+cy = '''Cyfraddau a lwfansau - DIY Accounting Submit'''
+
+[strings."rates.og-description-dabdc2"]
+hash = "dabdc24f7f32"
+cy = '''Cyfraddau a lwfansau treth y DU i bobl hunangyflogedig a chwmnïau, 2025-26 a 2026-27, pob un gyda’i ffynhonnell gov.uk, a chyfrifiannell treth.'''
+
+[strings."rates.rates-calculator-9a1f96"]
+hash = "9a1f963d45e6"
+cy = '''Cyfrifiannell cyfraddau'''
 
 # == Site chrome (LANG9) ==
 # ids chrome.*: the header, the nav, the footer and the header widgets, through siteText; add entries below this line.

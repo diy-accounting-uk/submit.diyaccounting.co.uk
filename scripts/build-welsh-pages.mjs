@@ -3,7 +3,7 @@
 
 // @capability SITE-30 Build the Welsh pages
 // - **Use when:** a page needs a Welsh copy at /cy/, an English string on a Welsh page changed, or a Welsh string needs a fix.
-// - **Does:** Reads each English page in WELSH_PAGES, replaces every element marked data-i18n (and every attribute marked data-i18n-<attr>) with its Welsh text from i18n/cy.toml, sets lang="cy", the canonical and og:url and the paths of links and assets, adds HMRC's Welsh services block, and writes web/public/cy/<page>. It also finds every siteText("<id>", "<English>") call in the site's scripts and writes their Welsh text, and the list of pages with a Welsh copy, to web/public/lib/welsh-text.js, which page-chrome.js loads when the reader's language choice is Welsh. Each catalogue entry holds a hash of its English source; the unit test fails on a missing, stale or unused entry and on a committed Welsh page or text file that differs from the render.
+// - **Does:** Reads each English page in WELSH_PAGES, replaces every element marked data-i18n (and every attribute marked data-i18n-<attr>) with its Welsh text from i18n/cy.toml, sets lang="cy", the canonical and og:url and the paths of links and assets, adds HMRC's Welsh services block, and writes web/public/cy/<page>. A page with marks: "build" (the generated pages, and long static ones) is marked by the build as it reads it, with ids made from the first words and a hash of the English. It also finds every siteText("<id>", "<English>") call in the site's scripts and writes their Welsh text, and the list of pages with a Welsh copy, to web/public/lib/welsh-text.js, which page-chrome.js loads when the reader's language choice is Welsh. Each catalogue entry holds a hash of its English source; the unit test fails on a missing, stale or unused entry and on a committed Welsh page or text file that differs from the render.
 // - **Run:** `npm run build:welsh`; `npx vitest run web/unit-tests/welsh-pages.test.js`
 // - **Entry:** `scripts/build-welsh-pages.mjs:renderWelshPage`; `scripts/build-welsh-pages.mjs:catalogueProblems`
 // - **Files:** scripts/build-welsh-pages.mjs, i18n/cy.toml, web/public/cy/, web/public/lib/welsh-text.js, web/public/get-started.html, web/public/widgets/page-chrome.js, web/unit-tests/welsh-pages.test.js
@@ -23,6 +23,12 @@
 //   "<English>") with both arguments as double-quoted literals, and {name} for a value passed as
 //   siteText(id, english, { name }). It follows the reader's language choice on every page.
 // Each id has one [strings."<id>"] entry in i18n/cy.toml, under the section that names its prefix.
+//
+// How a page gets its Welsh copy: add it to WELSH_PAGES, give the English page the three hreflang
+// links of expectedAlternates (a generator writes them with alternateLinksHtml), list both pages in
+// sitemap.xml with the same links and in lighthouse.config.json, translate every string the build
+// lists, and run this script. Mark the page's strings with data-i18n, or set marks: "build" to let the
+// build mark it. A link in the Welsh text to a page with no Welsh copy is followed by "(yn Saesneg)".
 
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -37,9 +43,15 @@ export const CATALOGUE_PATH = join(ROOT, "i18n", "cy.toml");
 export const SITE_ORIGIN = "https://submit.diyaccounting.co.uk";
 export const WELSH_TEXT_PATH = join(PUBLIC_DIR, "lib", "welsh-text.js");
 
+// The pages with a Welsh copy. A page that a script writes is built after it: run its generator, then this.
 export const WELSH_PAGES = [
   { id: "index", en: "index.html", cy: "cy/index.html", enUrl: `${SITE_ORIGIN}/` },
   { id: "get-started", en: "get-started.html", cy: "cy/get-started.html", enUrl: `${SITE_ORIGIN}/get-started.html` },
+  { id: "tools", en: "tools.html", cy: "cy/tools.html", enUrl: `${SITE_ORIGIN}/tools.html`, marks: "build" },
+  { id: "bundles", en: "bundles.html", cy: "cy/bundles.html", enUrl: `${SITE_ORIGIN}/bundles.html`, marks: "build" },
+  { id: "spreadsheets", en: "spreadsheets.html", cy: "cy/spreadsheets.html", enUrl: `${SITE_ORIGIN}/spreadsheets.html`, marks: "build" },
+  { id: "mtd-calendar", en: "mtd-calendar.html", cy: "cy/mtd-calendar.html", enUrl: `${SITE_ORIGIN}/mtd-calendar.html`, marks: "build" },
+  { id: "rates", en: "rates.html", cy: "cy/rates.html", enUrl: `${SITE_ORIGIN}/rates.html`, marks: "build" },
 ];
 
 export function welshUrl(page) {
@@ -52,6 +64,15 @@ export function expectedAlternates(page) {
     { hreflang: "cy", href: welshUrl(page) },
     { hreflang: "x-default", href: page.enUrl },
   ];
+}
+
+// The hreflang links of a page with a Welsh copy, for a generator to put after the canonical link.
+export function alternateLinksHtml(file, indent = "    ") {
+  const page = WELSH_PAGES.find((entry) => entry.en === file);
+  if (!page) return "";
+  return expectedAlternates(page)
+    .map(({ hreflang, href }) => `\n${indent}<link rel="alternate" hreflang="${hreflang}" href="${href}" />`)
+    .join("");
 }
 
 export function sourceHash(html) {
@@ -67,8 +88,107 @@ export function loadCatalogue(text = readFileSync(CATALOGUE_PATH, "utf-8")) {
   return { strings: parsed.strings || {}, shared: parsed.shared || {} };
 }
 
+// A page with marks: "build" carries no data-i18n marks of its own: the build marks it as it reads it.
+// A page that a script generates uses this, so its generator stays as it is, and so does a long page
+// of static text.
 export function readEnglishPage(page) {
-  return readFileSync(join(PUBLIC_DIR, page.en), "utf-8");
+  const html = readFileSync(join(PUBLIC_DIR, page.en), "utf-8");
+  return page.marks === "build" ? markPage(html, page) : html;
+}
+
+const MARKED_TAGS = [
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "p",
+  "li",
+  "th",
+  "td",
+  "caption",
+  "dt",
+  "dd",
+  "figcaption",
+  "summary",
+  "label",
+  "button",
+];
+const INLINE_TAGS = ["a", "span", "strong", "option", "legend"];
+const BLOCK_TAG = /<(p|ul|ol|li|div|table|tr|td|th|h[1-6]|section|blockquote|dl|dt|dd|figure|details|caption|form|nav|aside)[\s>]/;
+const MARKED_ATTRIBUTES = ["data-label", "aria-label", "title", "placeholder", "alt"];
+
+function slug(text) {
+  return text
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&[a-z]+;|&#\d+;/g, " ")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .split(" ")
+    .slice(0, 6)
+    .join("-");
+}
+
+// The id of a string that the build marks: the page id, the first words of the English and a hash of
+// all of it, so a changed English string gets a new id and the catalogue check lists it.
+function markedId(page, source) {
+  return `${page.id}.${slug(source) || "text"}-${sourceHash(source).slice(0, 6)}`;
+}
+
+// Marks every element of the header and main that holds text and no block element (and the
+// attributes that a reader sees or hears). It skips the skip link, the chrome's fallback link and
+// each quote of a source: a quote keeps the words of its English source.
+export function markPage(html, page) {
+  const bodyStart = html.indexOf("<body>");
+  const mainEnd = html.indexOf("</main>");
+  if (bodyStart === -1 || mainEnd === -1) throw new Error(`${page.en}: no <body> or </main>`);
+  let body = html.slice(bodyStart, mainEnd);
+  const edits = [];
+  const covered = [...body.matchAll(/<blockquote\b[\s\S]*?<\/blockquote>/g)].map((quote) => [quote.index, quote.index + quote[0].length]);
+  const inside = (index) => covered.some(([start, end]) => index >= start && index < end);
+  // Block elements first; then the inline ones (a link, a span, an option) that no marked block holds.
+  for (const tags of [MARKED_TAGS, INLINE_TAGS]) {
+    for (const match of body.matchAll(new RegExp(`<(${tags.join("|")})\\b([^>]*)>`, "g"))) {
+      const [tag, name, attributes] = match;
+      if (inside(match.index)) continue;
+      const innerStart = match.index + tag.length;
+      const closing = new RegExp(`</${name}\\s*>`, "g");
+      closing.lastIndex = innerStart;
+      const close = closing.exec(body)?.index ?? -1;
+      if (close === -1) continue;
+      if (/\sdata-i18n=/.test(attributes) || /class="[^"]*(skip-link|chrome-fallback)/.test(attributes)) {
+        covered.push([match.index, close]);
+        continue;
+      }
+      const inner = body.slice(innerStart, close);
+      if (new RegExp(`<${name}[\\s>]`).test(inner) || BLOCK_TAG.test(inner) || /<(script|template|svg)[\s>]/.test(inner)) continue;
+      if (!/[A-Za-z]/.test(inner.replace(/<[^>]*>/g, "").replace(/&[a-z]+;/g, ""))) continue;
+      edits.push({ at: match.index + 1 + name.length, text: ` data-i18n="${markedId(page, inner)}"` });
+      covered.push([match.index, close]);
+    }
+  }
+  for (const edit of edits.sort((a, b) => b.at - a.at)) body = body.slice(0, edit.at) + edit.text + body.slice(edit.at);
+  body = body.replace(/<([a-z][a-z0-9]*)\b([^>]*)>/g, (tag, name, attributes, offset) => {
+    if (covered.some(([start, end]) => offset >= start && offset < end && /^<blockquote/.test(body.slice(start)))) return tag;
+    let marks = "";
+    for (const attribute of MARKED_ATTRIBUTES) {
+      const value = attributeValue(tag, attribute);
+      if (value === null || !/[A-Za-z]/.test(value) || new RegExp(`\\sdata-i18n-${attribute}=`).test(attributes)) continue;
+      marks += ` data-i18n-${attribute}="${markedId(page, value)}"`;
+    }
+    return marks ? tag.replace(/\s*(\/?)>$/, `${marks}$1>`) : tag;
+  });
+  let head = html.slice(0, bodyStart);
+  head = head.replace(
+    /<meta\s+(name="description"|property="og:title"|property="og:description")\s+content="([^"]*)"/g,
+    (whole, which, value) => {
+      const name = which.replace(/^(name|property)="|"$/g, "").replace(":", "-");
+      return `${whole} data-i18n-content="${page.id}.${name}-${sourceHash(value).slice(0, 6)}"`;
+    },
+  );
+  return head + body + html.slice(mainEnd);
 }
 
 const TITLE_PATTERN = /<title>([\s\S]*?)<\/title>/;
@@ -215,6 +335,7 @@ export async function renderWelshPage(page, catalogue = loadCatalogue(), pages =
   html = replaceOnce(html, /(<link rel="canonical" href=")[^"]*(")/, `$1${welshUrl(page)}$2`, `canonical link in ${page.en}`);
   html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${welshUrl(page)}$2`);
   html = replaceOnce(html, /<\/main>/, `${welshServicesBlock(catalogue)}</main>`, `</main> in ${page.en}`);
+  html = html.replace(/<blockquote class="source-quote">/g, '<blockquote class="source-quote" lang="en-GB">');
   html = html.replace(/(\s(?:href|src)=")([^"]*)(")/g, (whole, start, url, end) => `${start}${relocate(url, pages)}${end}`);
   html = replaceOnce(
     html,

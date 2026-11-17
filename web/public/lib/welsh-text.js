@@ -68,4 +68,12 @@ window.WELSH_TEXT = {
     "Rydym yn defnyddio cwcis i fesur sut mae’r wefan hon yn perfformio ac yn cael ei defnyddio, dim ond os byddwch yn derbyn. Gweler ein",
 };
 
-window.WELSH_COPIES = ["index.html", "get-started.html"];
+window.WELSH_COPIES = [
+  "index.html",
+  "get-started.html",
+  "tools.html",
+  "bundles.html",
+  "spreadsheets.html",
+  "mtd-calendar.html",
+  "rates.html",
+];

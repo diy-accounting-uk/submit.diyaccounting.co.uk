@@ -63,10 +63,23 @@
       }
     },
     {
+      "path": "/cy/spreadsheets.html",
+      "thresholds": {
+        "performance": 49,
+        "bestPractices": 92
+      }
+    },
+    {
       "path": "/mtd-calendar.html"
     },
     {
+      "path": "/cy/mtd-calendar.html"
+    },
+    {
       "path": "/rates.html"
+    },
+    {
+      "path": "/cy/rates.html"
     },
     {
       "path": "/vat-return-from-a-spreadsheet.html"
@@ -102,6 +115,9 @@
       "path": "/tools.html"
     },
     {
+      "path": "/cy/tools.html"
+    },
+    {
       "path": "/company-filing-deadlines.html"
     },
     {
@@ -112,6 +128,13 @@
     },
     {
       "path": "/bundles.html",
+      "thresholds": {
+        "performance": 51,
+        "bestPractices": 92
+      }
+    },
+    {
+      "path": "/cy/bundles.html",
       "thresholds": {
         "performance": 51,
         "bestPractices": 92

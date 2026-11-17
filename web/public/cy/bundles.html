@@ -1,0 +1,247 @@
+<!-- cy/bundles.html -->
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from bundles.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bundles - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Agorwch y ddolen hon i weld beth mae eich tocyn yn ei roi. Yna £0.99 y mis neu £9.99 y flwyddyn. Gallwch ganslo ar unrhyw adeg."
+      data-i18n-content="bundles.description-51f664"
+    />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/bundles.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/bundles.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/bundles.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/bundles.html" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "DIY Accounting Submit", "item": "https://submit.diyaccounting.co.uk/" },
+          { "@type": "ListItem", "position": 2, "name": "Bundles", "item": "https://submit.diyaccounting.co.uk/bundles.html" }
+        ]
+      }
+    </script>
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DIY Accounting" />
+    <meta property="og:url" content="https://submit.diyaccounting.co.uk/cy/bundles.html" />
+    <meta property="og:title" content="Ffurflenni TAW i CThEF am 99c y mis" data-i18n-content="bundles.og-title-0f7810" />
+    <meta
+      property="og:description"
+      content="Agorwch y ddolen hon i weld beth mae eich tocyn yn ei roi. Yna £0.99 y mis neu £9.99 y flwyddyn. Gallwch ganslo ar unrhyw adeg."
+      data-i18n-content="bundles.og-description-51f664"
+    />
+    <meta property="og:image" content="https://submit.diyaccounting.co.uk/images/social/og-pass.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../lib/analytics.js"></script>
+    <script src="../lib/session-beacon.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="bundles.bundles-ff042b">Bundles</h1>
+      <p data-i18n="bundles.what-your-account-can-use-and-e4379e" class="subtitle">
+        Beth y gall eich cyfrif ei ddefnyddio, a sut i ychwanegu mwy
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" hidden></div>
+
+      <div class="form-container">
+        <div class="bundles-block">
+          <div
+            data-requires-sign-in
+            data-sign-in-title="Sign in to see your bundles"
+            data-sign-in-text="Your bundles and tokens are kept with your account. Sign in to see what you hold and to add more. If you have a pass, enter it below first."
+          >
+            <div id="currentBundlesSection" class="bundles-section" hidden>
+              <h2 data-i18n="bundles.your-current-bundles-694669">Eich Bundles presennol</h2>
+              <div id="currentBundles"></div>
+            </div>
+          </div>
+
+          <h2 data-i18n="bundles.choose-a-bundle-dc582f" class="bundles-catalogue-heading">Dewiswch Bundle</h2>
+          <p data-i18n="bundles.each-filing-uses-one-token-7cedfa" class="hint">Mae pob ffeilio yn defnyddio un credyd (token).</p>
+          <div class="bundles-list" id="catalogBundles">
+            <!-- generated:bundle-list:start -->
+            <!-- generated:bundle-list:end -->
+          </div>
+        </div>
+
+        <div class="bundles-section">
+          <h2 data-i18n="bundles.have-a-pass-35ffd0">Oes gennych chi docyn?</h2>
+          <p data-i18n="bundles.enter-the-four-words-of-your-4e233f" class="hint">Rhowch bedwar gair eich tocyn.</p>
+          <form id="passEntryForm" class="pass-entry" action="pass.html" method="get">
+            <label data-i18n="bundles.pass-ebdf8c" for="passInput">Tocyn</label>
+            <p data-i18n="bundles.four-words-with-hyphens-between-them-ec6631" id="passInput-hint" class="hint">
+              Pedwar gair gyda chysylltnodau rhyngddynt, er enghraifft gair-gair-gair-gair.
+            </p>
+            <input
+              type="text"
+              id="passInput"
+              name="pass"
+              autocomplete="off"
+              spellcheck="false"
+              required
+              aria-describedby="passInput-hint"
+            />
+            <button data-i18n="bundles.redeem-pass-831ca4" type="submit" id="redeemPassBtn" class="btn">Defnyddio’r tocyn</button>
+          </form>
+        </div>
+
+        <div id="feedbackEngagementSection" class="bundles-section" hidden>
+          <h2 data-i18n="bundles.share-your-feedback-6d62df">Rhannu eich adborth</h2>
+          <p class="hint" id="feedbackEngagementMessage"></p>
+          <button data-i18n="bundles.i-m-willing-to-share-feedback-09f35c" type="button" id="feedbackEngagementBtn" class="btn btn-small">
+            Rwy’n fodlon rhannu adborth
+          </button>
+        </div>
+
+        <div id="myGeneratedPasses" class="bundles-section" hidden>
+          <h2 data-i18n="bundles.my-generated-passes-3ffb3e">Y tocynnau a greais</h2>
+          <p data-i18n="bundles.passes-you-have-generated-for-others-f3b848" class="hint">
+            Tocynnau rydych wedi’u creu i bobl eraill eu defnyddio.
+          </p>
+          <div id="commissionEarnings" class="pass-totals" hidden>
+            <h3 data-i18n="bundles.your-earnings-ffc901">Eich enillion</h3>
+            <ul id="commissionEarningsList"></ul>
+          </div>
+          <div id="generatedPassesToolbar" class="pass-toolbar" hidden>
+            <label data-i18n="bundles.select-all-1291b8" class="pass-select-all"
+              ><input type="checkbox" id="selectAllPasses" /> Dewis y cyfan</label
+            >
+            <button
+              data-i18n="bundles.delete-selected-d2ab5d"
+              type="button"
+              id="deleteSelectedPassesBtn"
+              class="btn btn-small btn-danger-outline"
+              disabled
+            >
+              Dileu’r rhai a ddewiswyd
+            </button>
+          </div>
+          <div id="generatedPassesList"></div>
+          <p id="generatedPassesEmpty" class="hint" hidden></p>
+          <div id="generatedPassesLoadMore" hidden>
+            <button data-i18n="bundles.load-more-ac8991" type="button" id="loadMorePassesBtn" class="btn btn-small btn-secondary">
+              Llwytho mwy
+            </button>
+          </div>
+        </div>
+
+        <div id="affiliateApplySection" class="bundles-section" hidden>
+          <h2 data-i18n="bundles.become-an-affiliate-746be4">Dod yn bartner cyswllt</h2>
+          <p data-i18n="bundles.an-affiliate-earns-a-share-of-bc442d" class="hint">
+            Mae partner cyswllt yn ennill cyfran o’r hyn y mae’r bobl y mae’n eu cyfeirio yn ei dalu. Mae Stripe yn casglu eich manylion ac
+            yn gwirio pwy ydych chi. Mae’r cynllun ar gyfer pobl yn y DU.
+          </p>
+          <p id="affiliateApplyState" role="status" aria-live="polite"></p>
+          <button data-i18n="bundles.apply-with-stripe-2c02ac" type="button" id="affiliateApplyBtn" class="btn" hidden>
+            Gwneud cais gyda Stripe
+          </button>
+        </div>
+
+        <div id="affiliateSection" class="bundles-section" hidden>
+          <h2 data-i18n="bundles.affiliates-63b48b">Partneriaid cyswllt</h2>
+          <p data-i18n="bundles.set-the-tier-and-state-of-94b657" class="hint">
+            Gosodwch haen a statws atgyfeiriwr. Dim ond partner cyswllt sydd wedi’i gymeradwyo sy’n ennill cyfradd yr haen.
+          </p>
+          <div class="pass-entry">
+            <label data-i18n="bundles.referrer-hash-be6fe9" for="affiliateReferrerHash">Hash yr atgyfeiriwr</label>
+            <input type="text" id="affiliateReferrerHash" autocomplete="off" spellcheck="false" />
+            <button data-i18n="bundles.look-up-504101" type="button" id="affiliateLookupBtn" class="btn btn-small btn-secondary">
+              Chwilio
+            </button>
+            <label data-i18n="bundles.tier-cb9e86" for="affiliateTier">Haen</label>
+            <select id="affiliateTier">
+              <option data-i18n="bundles.customer-bf3763" value="customer">Cwsmer</option>
+              <option data-i18n="bundles.casual-affiliate-0b6a93" value="casual">Partner cyswllt achlysurol</option>
+              <option data-i18n="bundles.creator-affiliate-df86bd" value="creator">Partner cyswllt crëwr</option>
+              <option data-i18n="bundles.family-bd2d67" value="family">Teulu</option>
+            </select>
+            <label data-i18n="bundles.state-a3b50c" for="affiliateState">Statws</label>
+            <select id="affiliateState">
+              <option data-i18n="bundles.applied-0c79a9" value="applied">Wedi gwneud cais</option>
+              <option data-i18n="bundles.approved-87b42e" value="approved">Wedi’i gymeradwyo</option>
+              <option data-i18n="bundles.ended-7cdc80" value="ended">Wedi dod i ben</option>
+            </select>
+            <button data-i18n="bundles.save-affiliate-3818bf" type="button" id="affiliateSaveBtn" class="btn">
+              Cadw’r partner cyswllt
+            </button>
+            <p id="affiliateResult" class="hint" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="feature-status-summary" data-feature-status="summary" hidden>
+        <p data-i18n="bundles.status-of-each-feature-sandbox-and-4506e5">
+          <strong>Statws pob nodwedd.</strong> Nid yw nodweddion prawf (sandbox) a rhagolwg (preview) yn ffeilio dim byd go iawn.
+          <a href="mtd-calendar.html#availability">Gweld y tabl argaeledd</a>.
+        </p>
+        <ul data-feature-status-list="auto"></ul>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../lib/welsh-text.js"></script>
+    <script src="../widgets/page-chrome.js"></script>
+    <script src="../lib/env-loader.js"></script>
+    <script type="module" src="../submit.js"></script>
+    <script src="../developer-mode.js"></script>
+    <script src="../lib/request-cache.js"></script>
+    <script src="../lib/bundle-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
+    <script src="../lib/money-format.js"></script>
+    <script src="../lib/feature-flags.js"></script>
+    <script src="../widgets/feature-status.js"></script>
+    <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/signed-out-panel.js"></script>
+    <script src="../widgets/loading-spinner.js"></script>
+    <script type="module" src="../widgets/view-source-link.js"></script>
+
+    <script src="../bundles.page.js"></script>
+  </body>
+</html>

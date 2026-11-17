@@ -20,6 +20,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import prettier from "prettier";
 import { loadSources, formatIsoDate, escapeHtml, sourcesQuoteHtml } from "./tax-sources.mjs";
+import { alternateLinksHtml } from "./build-welsh-pages.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const PAGE_PATH = join(ROOT, "web", "public", "mtd-calendar.html");
@@ -434,7 +435,7 @@ export function renderCalendarHtml(sources) {
       name="description"
       content="What you can file and how, and when Making Tax Digital applies: VAT, Income Tax by income level, quarterly updates and Companies House dates, with sources."
     />
-    <link rel="canonical" href="https://submit.diyaccounting.co.uk/mtd-calendar.html" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/mtd-calendar.html" />${alternateLinksHtml("mtd-calendar.html")}
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="DIY Accounting" />
     <meta property="og:url" content="https://submit.diyaccounting.co.uk/mtd-calendar.html" />

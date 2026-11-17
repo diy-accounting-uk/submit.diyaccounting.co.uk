@@ -174,29 +174,34 @@ test.describe("Layout shift while data loads on a phone", () => {
     });
   }
 
-  for (const width of [320, 375, 390, 600, 601, 700, 760, 761, 1280]) {
-    test(`index.html reserves the height the built navigation takes at ${width}px wide`, async ({ page }) => {
-      await page.setViewportSize({ width, height: 900 });
-      await serveRealSiteWithSlowData(page);
-      await page.goto("http://localhost:3000/index.html", { waitUntil: "load" });
-      await expect(page.locator("#homeIntro")).toContainText("Companies House");
-      await expect(page.locator(".main-nav a:visible").first()).toBeVisible();
+  for (const { pagePath, storage, label } of [
+    { pagePath: "index.html", storage: {}, label: "" },
+    { pagePath: "cy/index.html", storage: {}, label: " in Welsh" },
+    { pagePath: "index.html", storage: { siteLanguage: "cy" }, label: " with the Welsh choice" },
+  ])
+    for (const width of [320, 375, 390, 600, 601, 700, 760, 761, 1280]) {
+      test(`${pagePath} reserves the height the built navigation takes at ${width}px wide${label}`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await serveRealSiteWithSlowData(page, { storage });
+        await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "load" });
+        await expect(page.locator("#homeIntro")).toContainText(/Companies House|Thŷ’r Cwmnïau/);
+        await expect(page.locator(".main-nav a:visible").first()).toBeVisible();
 
-      const sizes = await page.evaluate(() => {
-        const header = document.querySelector("header");
-        const nav = document.querySelector(".main-nav");
-        const fallback = document.createElement("p");
-        fallback.className = "chrome-fallback";
-        header.prepend(fallback);
-        const reserved = parseFloat(getComputedStyle(header).paddingTop);
-        const bandHeight = fallback.getBoundingClientRect().height;
-        fallback.remove();
-        const navBox = nav.getBoundingClientRect();
-        return { reserved, bandHeight, navHeight: navBox.height + parseFloat(getComputedStyle(nav).marginTop) };
+        const sizes = await page.evaluate(() => {
+          const header = document.querySelector("header");
+          const nav = document.querySelector(".main-nav");
+          const fallback = document.createElement("p");
+          fallback.className = "chrome-fallback";
+          header.prepend(fallback);
+          const reserved = parseFloat(getComputedStyle(header).paddingTop);
+          const bandHeight = fallback.getBoundingClientRect().height;
+          fallback.remove();
+          const navBox = nav.getBoundingClientRect();
+          return { reserved, bandHeight, navHeight: navBox.height + parseFloat(getComputedStyle(nav).marginTop) };
+        });
+        expect(Math.abs(sizes.reserved - sizes.navHeight), JSON.stringify(sizes)).toBeLessThan(1.5);
       });
-      expect(Math.abs(sizes.reserved - sizes.navHeight), JSON.stringify(sizes)).toBeLessThan(1.5);
-    });
-  }
+    }
 
   for (const [width, height] of [
     [375, 800],

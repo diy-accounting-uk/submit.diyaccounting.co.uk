@@ -14,7 +14,28 @@ import { serveRealSite, SITE_ORIGIN } from "./serveRealSite.js";
 const PAIRS = [
   { english: "/index.html", welsh: "/cy/index.html" },
   { english: "/get-started.html", welsh: "/cy/get-started.html" },
+  { english: "/tools.html", welsh: "/cy/tools.html" },
+  { english: "/bundles.html", welsh: "/cy/bundles.html" },
+  { english: "/spreadsheets.html", welsh: "/cy/spreadsheets.html" },
+  { english: "/mtd-calendar.html", welsh: "/cy/mtd-calendar.html" },
+  { english: "/rates.html", welsh: "/cy/rates.html" },
 ];
+
+for (const { welsh } of PAIRS) {
+  test(`${welsh} loads every file it asks for and reads its chrome in Welsh`, async ({ page }) => {
+    const missing = [];
+    page.on("response", (response) => {
+      if (response.status() === 404) missing.push(response.url());
+    });
+    await serveRealSite(page);
+    await page.goto(`${SITE_ORIGIN}${welsh}`, { waitUntil: "load" });
+    await expect(page.locator(".main-nav")).toHaveAttribute("aria-label", "Prif lywio");
+    await expect(page.locator(".main-nav a.active")).toHaveCount(welsh === "/cy/get-started.html" ? 0 : 1);
+    await expect(page.locator(".language-notice")).toHaveCount(0);
+    await page.waitForLoadState("networkidle");
+    expect(missing).toEqual([]);
+  });
+}
 
 for (const { english, welsh } of PAIRS) {
   test(`${english} links to ${welsh} and back`, async ({ page }) => {
@@ -108,6 +129,13 @@ test("the Welsh choice stays as the reader moves between pages, and the English 
   await expect(nav.getByRole("link", { name: /^Derbynebau/ })).toHaveAttribute("aria-current", "page");
   await expect(nav.getByRole("link", { name: /^Derbynebau/ })).toContainText("(yn Saesneg)");
   await expect(page.locator(".language-switch").getByRole("link", { name: "English" })).toBeVisible();
+
+  await nav.getByRole("link", { name: "Calendr MTD" }).click();
+  await expect(page).toHaveURL(`${SITE_ORIGIN}/cy/mtd-calendar.html`);
+  await expect(page.locator("h1")).toHaveText("Calendr MTD");
+  await nav.getByRole("link", { name: "Cyfraddau treth" }).click();
+  await expect(page).toHaveURL(`${SITE_ORIGIN}/cy/rates.html`);
+  await expect(page.locator("h1")).toHaveText("Cyfraddau treth");
 
   await page.locator(".home-link").click();
   await expect(page).toHaveURL(`${SITE_ORIGIN}/cy/index.html`);
