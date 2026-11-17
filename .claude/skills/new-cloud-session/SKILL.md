@@ -1,0 +1,161 @@
+---
+name: new-cloud-session
+description: Lease a work repository (diy-accounting-uk/submit-cloud-<codename>) from the pool, or create the next one when none is free, re-sync it from origin/main (and a base branch), and start or link a Claude Code cloud session on it that runs /collaborate <codename>. Prints the worker, the repository, the base, the session start, the Monitor command and the release command. Invoke as /new-cloud-session [codename] [--base <branch>], or when the operator asks for a new cloud session, a cloud worker, or another web Claude to hand rows to.
+---
+
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
+<!-- @capability DEV-65 Lease a cloud work repository and start a worker session
+- **Use when:** the coordinator needs a Claude Code cloud session as a worker, or a pool repository must be leased, re-synced, released or watched.
+- **Does:** new-cloud-session.sh leases the first free submit-cloud-<codename> repository by a .collab/lease file on its collab branch. It creates the next one with Actions off when none is free. It pushes origin/main and the base branch to it by URL. It starts claude --cloud from a clone in a terminal, or prints the claude.ai/code/new link. Its watch subcommand polls the claude/* branches for the Monitor.
+- **Run:** `/new-cloud-session [codename] [--base <branch>]`; `bash .claude/skills/new-cloud-session/new-cloud-session.sh [codename] [--base <branch>] [--dry-run]`; `... release <codename>`; `... post <codename> <file>`; `... watch <codename>`
+- **Entry:** `.claude/skills/new-cloud-session/SKILL.md`; `.claude/skills/new-cloud-session/new-cloud-session.sh:cmd_start`
+- **Files:** .claude/skills/new-cloud-session/SKILL.md, .claude/skills/new-cloud-session/new-cloud-session.sh, .claude/skills/new-cloud-session/pool.txt, PLAN_CLOUD_COLLABORATION.md
+- **Keywords:** cloud session, claude code on the web, claude --cloud, work repository, submit-cloud, pool, lease, collab branch, worker, deep link, remote worker
+- **Related:** DEV-66, DEV-27, DEV-30
+@end-capability -->
+
+# new-cloud-session
+
+The design and the facts behind this skill are in `PLAN_CLOUD_COLLABORATION.md`. The worker side
+is the `collaborate` skill (`.claude/skills/collaborate/SKILL.md`), which reaches each work
+repository with `main`.
+
+## Run
+
+```bash
+bash .claude/skills/new-cloud-session/new-cloud-session.sh --dry-run                # what it would do
+bash .claude/skills/new-cloud-session/new-cloud-session.sh [codename] [--base <branch>]
+```
+
+Run it from the primary checkout or from a worktree. Show the operator its output in full. The
+other subcommands:
+
+| Subcommand | What it does |
+| --- | --- |
+| `release <codename>` | Removes `.collab/lease` on `collab`. Keeps every branch. |
+| `post <codename> <file>` | Writes the file as `.collab/<codename>.md` on `collab`, for the fallback loop. |
+| `watch <codename> [--interval <s>]` | Polls `refs/heads/claude/*` every 120 s and prints one line per new tip. |
+
+## The pool
+
+`pool.txt` holds one code name a line (today `anvil`). Each name is the repository
+`diy-accounting-uk/submit-cloud-<codename>`, and the worker name is the same code name. The
+operator adds each repository to the Claude GitHub app once, so a leased repository needs no
+permission step.
+
+A repository is free when its `collab` branch has no `.collab/lease`. It is also free when the
+lease is older than 24 hours and no `claude/*` branch tip on it is newer than 24 hours. The script
+reads this with `gh api` REST and `git ls-remote`, and lists each pool entry as `free`, `stale` or
+`busy`. It leases the first free one. With a code name it leases that one, or stops when it is
+busy.
+
+The lease is a commit on `collab` that writes `.collab/lease`:
+
+```
+worker: anvil
+leased: 2026-11-17T22:09:51Z
+coordinator: https://claude.ai/code/session_...
+base: main
+```
+
+The script makes the commit in a scratch repository and pushes it without force, so of two
+coordinators that lease at the same time, one push is rejected. The coordinator URL comes from
+`--coordinator`, else from `CLAUDE_CODE_BRIDGE_SESSION_ID`.
+
+## When no repository is free
+
+The script creates the next one by steps 1 to 3 of "To add a work repository" in the plan:
+
+1. `gh repo create diy-accounting-uk/submit-cloud-<codename> --public --disable-wiki`.
+2. `gh api -X PUT repos/…/actions/permissions -F enabled=false`, then a read that Actions is
+   off. It stops before any push when Actions is on.
+3. The push of `origin/main` to `main` (the re-sync below).
+
+The code name comes from `CODENAMES.txt` by the `/do-next` rule, in its own sequence: a random
+name from the line after the letter of the last pool name, skipping names already in the pool or
+on GitHub. The script appends the name to `pool.txt`. Commit `pool.txt` to `main` (a docs commit)
+in the same turn.
+
+It then prints the operator's one-time steps:
+
+1. Open the Claude app's installation page on the org, under **Repository access** add
+   `submit-cloud-<codename>`, and click **Save**. The script reads the page URL
+   (`https://github.com/organizations/diy-accounting-uk/settings/installations/<id>`) from `gh api
+   orgs/diy-accounting-uk/installations`. The list of all the org's apps is
+   https://github.com/organizations/diy-accounting-uk/settings/installations.
+2. `! git -C <primary checkout> remote add cloud-<codename> git@github.com:diy-accounting-uk/submit-cloud-<codename>.git`
+
+Sessions never add a remote. The script pushes and fetches by URL, so nothing waits on step 2.
+
+## The re-sync
+
+After the lease, the script pushes by URL:
+
+- `refs/remotes/origin/main` to the work repository's `main`, after a `git fetch origin main`.
+  The work repository then has the current `CLAUDE.md` and `.claude/skills`, `/collaborate` too.
+- With `--base <branch>`, the local branch `<branch>` to the same name. The worker builds from it.
+
+Both pushes are fast-forward only. A rejected push stops the script with the lease held, and
+prints the release command.
+
+## The session
+
+The script keeps a clone of each work repository in
+`/Users/antony/projects/diy-accounting-limited/cloud-sessions/<codename>` (outside every git
+repository; `git clone --depth 50`). The clone has one remote, `origin`, the work repository. Its
+`main` follows the work repository's `main`, fast-forward only. The script stops when the clone
+has other remotes or uncommitted changes. It then starts the session by the first method that
+applies, and prints the method it used:
+
+| Method | When | What happens |
+| --- | --- | --- |
+| a. `claude --cloud "/collaborate <codename>"` from the clone | stdin and stdout are a terminal, no `--no-launch`, no `--dry-run` | The CLI clones the current directory's GitHub remote at the current branch. It shows a live checklist while the VM starts, so it needs a terminal. |
+| b. The link `https://claude.ai/code/new?q=%2Fcollaborate%20<codename>&repo=diy-accounting-uk%2Fsubmit-cloud-<codename>&branch=main` | no terminal, which is the case under the Bash tool | The link opens the new-session form with the prompt, repository and branch filled in. The operator checks the environment and presses send. |
+| c. The steps | always printed | Open https://claude.ai/code, choose the repository and branch `main`, choose the work environment, type `/collaborate <codename>`. |
+
+Facts behind the table, read on 2026-11-17:
+
+- `claude --cloud` is the documented way to start a cloud session from the terminal. Without the
+  Claude app on the repository, it uploads a bundle of the clone in place of a GitHub clone, and the
+  session can then push only where the operator's GitHub connection can.
+- The `/new` link and its parameters `q` (alias `prompt`), `repo`, `branch` and `mode` are in
+  Anthropic's help article "Open the Claude mobile app with a link" (6 May 2026). It fills the
+  form; it does not send. That article names no environment parameter.
+- `--environment` takes only self-hosted `ccpool_` ids; the CLI rejects Anthropic-hosted `env_`
+  ids. The CLI uses `remote.defaultEnvironmentId`, which `/remote-env` sets in
+  `~/.claude/settings.json`. When `environment.txt` in this folder holds an `env_` id, the script
+  passes it as `--settings '{"remote":{"defaultEnvironmentId":"env_..."}}'`.
+- To find the work environment's id: in a local `claude` session run `/remote-env` and pick the
+  work environment, then `jq -r .remote.defaultEnvironmentId ~/.claude/settings.json`. Write that
+  id to `environment.txt`, or keep the `/remote-env` pick as it is.
+
+The session URL is the address of the new session in the browser and in the claude.ai/code
+sidebar. In method a the CLI shows it.
+
+## After the start
+
+1. Arm a Monitor with the `watch` command the script prints. Each line is a new `claude/*` tip.
+2. Send the task to the worker by `SendMessage`, by its session name, in the format of "The task
+   message" in the `collaborate` skill. When a message does not reach an idle worker, queue it with
+   `claude -p "<task message>" --cloud <session-id>` (documented; the CLI posts it and exits).
+   When neither wakes it, `post <codename> <file>` writes the task for the worker's fallback loop,
+   and the operator types `/collaborate <codename> --loop` in the session.
+3. On a new tip, read the last commit: `git fetch git@github.com:diy-accounting-uk/submit-cloud-<codename>.git claude/<codename>-<row>`,
+   then `git log -1 --format=%B FETCH_HEAD`. Land only a tip whose body has `Collab-Status: done`:
+   `git merge --squash FETCH_HEAD` onto the local wave branch, one commit per row. A tip with
+   `Collab-Status: wip` is a save before a long gate; a tip with `Collab-Status: not-done` says why
+   in its body.
+4. When the worker has no more tasks, run `release <codename>`.
+
+## Rules
+
+- Never delete a branch or a tag on a work repository. The GitHub proxy of a cloud session rejects
+  it, and the operator's rules forbid it.
+- Never push a work repository's branch to `origin`. Results reach `origin` only through the
+  local wave branch and its one push.
+- Never add, remove or change a git remote. Print the `!` command for the operator.
+- Never turn on Actions in a work repository. A push to one starts nothing.
+- Dependabot opens its own `dependabot/*` branches and pull requests on a work repository. Leave
+  them; `watch` reads only `claude/*`.

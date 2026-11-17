@@ -20,7 +20,7 @@ only when the operator boards it.
 
 ## Status
 
-Researched 2026-11-17. The first work repository, `diy-accounting-uk/submit-cloud-anvil`, exists with Actions off; steps 3 to 9 and the first trial are not started.
+Researched 2026-11-17. The first work repository, `diy-accounting-uk/submit-cloud-anvil`, exists with Actions off. The `/new-cloud-session` and `/collaborate` skills are written; steps 3 to 5, 7 to 9 and the first trial are not started.
 
 ## The goal
 
@@ -120,7 +120,7 @@ To add a work repository (a session runs 1 to 3, the operator 4 and 5):
 
 | Direction | Mechanism |
 | --- | --- |
-| Task down | `SendMessage` from the coordinator to the worker by its session name. `ListAgents` here already lists cloud sessions as peers (2026-11-17). |
+| Task down | `SendMessage` from the coordinator to the worker by its session name. `ListAgents` here already lists cloud sessions as peers (2026-11-17). `claude -p "<task>" --cloud <session-id>` also queues a message into a cloud session (documented). |
 | Result up | The worker pushes `claude/<codename>-<row>` to its work repository. The last commit's body holds the report: what changed, the commands run with counts, what it did not do. |
 | Detect a result | A Monitor here polls `git ls-remote cloud-<codename> 'refs/heads/claude/*'` for each worker every 2 minutes and wakes the coordinator on a new tip. |
 | Next task | The worker ends its turn after the push. The next `SendMessage` starts its next turn. |
@@ -152,7 +152,8 @@ Rejected for now:
 Steps 3 to 5 are the operator's. Steps 1, 2 and 6 to 9 are a session's.
 
 1. Done 2026-11-17: `submit-cloud-anvil` created by steps 1 to 3 of "To add a work repository".
-2. For each further worker: steps 1 to 3 of "To add a work repository" (a session).
+2. For each further worker: `/new-cloud-session` runs steps 1 to 3 of "To add a work repository" when no pool
+   repository is free, and adds the name to `.claude/skills/new-cloud-session/pool.txt`.
 3. Install the Claude GitHub app (https://github.com/apps/claude) on the `diy-accounting-uk` org,
    with "Only select repositories" set to the `submit-cloud-*` repositories only. Do not run
    `/web-setup`, because it sends the local `gh` token, which can push to the org repository.
@@ -160,10 +161,14 @@ Steps 3 to 5 are the operator's. Steps 1, 2 and 6 to 9 are a session's.
 5. At https://claude.ai/code, create one environment for the work repositories: network Limited
    plus the Playwright download domain; environment variables `BASH_DEFAULT_TIMEOUT_MS=3600000` and
    `BASH_MAX_TIMEOUT_MS=3600000`; a setup script that installs Node 24 and JDK 25 and runs `npm ci`.
-6. Write `.claude/skills/collaborate/SKILL.md` (a docs commit to `main`).
-7. Before each dispatch: `git push cloud-<codename> origin/main:refs/heads/main`, then push the wave's base branch to
-   `cloud-<codename>`. Start the Monitor on each work repository's `claude/*` branches.
-8. Land a result: `git fetch cloud-<codename> claude/<codename>-<row>`, then `git merge --squash` onto the local
+   Make it the CLI default with `/remote-env`, or put its `env_` id in
+   `.claude/skills/new-cloud-session/environment.txt` (`--environment` takes only self-hosted ids).
+6. Done 2026-11-17: `.claude/skills/collaborate/SKILL.md` (the worker) and
+   `.claude/skills/new-cloud-session/SKILL.md` (lease, re-sync, start, watch, release).
+7. Before each dispatch: `/new-cloud-session [codename] --base <wave branch>` leases a pool repository, pushes
+   `origin/main` and the base to it by URL, starts or links the session, and prints the `watch` command. Start the
+   Monitor with it.
+8. Land a result whose last commit has `Collab-Status: done`: `git fetch cloud-<codename> claude/<codename>-<row>`, then `git merge --squash` onto the local
    wave branch, one commit per row. The local commit carries the operator's signature, which the
    signature check on `main` needs.
 9. The set's one push to `origin` still goes from the local checkout.
@@ -182,8 +187,8 @@ One tab, one small row. It proves:
 
 ## Open unknowns
 
-- Which remote `claude --cloud` clones when `origin` and a `cloud-<codename>` remote both exist. Until it is known,
-  workers start from claude.ai/code on their work repository, not from `claude --cloud` here.
+- Whether `claude --cloud` starts a session without a terminal, and honours an `env_` id passed by `--settings`.
+  `new-cloud-session.sh` runs it only from a terminal and prints the `claude.ai/code/new` link otherwise.
 - A source for JDK 25 that the Limited network allows.
 - The Agent tool's `isolation: "remote"` runs locally without saying so
   (anthropics/claude-code issue #101834, open since 2026-10-13). Do not use it for this.
