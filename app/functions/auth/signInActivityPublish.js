@@ -10,6 +10,7 @@
 
 import crypto from "crypto";
 import { publishActivityEvent, classifyActor, maskEmail } from "../../lib/activityAlert.js";
+import { warmOperators } from "../../lib/operators.js";
 import { createLogger } from "../../lib/logger.js";
 import { resolveAppClient } from "../../lib/appClientResolver.js";
 import { initializeSalt, hashSub, isSaltInitialized } from "../../services/subHasher.js";
@@ -94,6 +95,7 @@ export async function handler(payload) {
   const { triggerSource, clientId, sub, email, identities } = payload;
   const appClient = await resolveAppClient(clientId);
   const provider = extractProvider(identities);
+  await warmOperators();
   const actor = classifyActor(email);
   const hashedSub = sub && isSaltInitialized() ? hashSub(sub) : null;
   const now = Date.now();

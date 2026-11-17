@@ -36,6 +36,7 @@ import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncReques
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent, classifyActor } from "../../lib/activityAlert.js";
+import { warmOperators } from "../../lib/operators.js";
 import { processSqsRecords } from "../../lib/sqsWorkerHelper.js";
 import { buildAcquisitionMap, isTaggedAcquisition } from "../../lib/acquisition.js";
 import { corsOriginHeaders } from "../../lib/corsOrigins.js";
@@ -430,6 +431,7 @@ export async function grantBundle(
   // decodedToken flows here unchanged from both the synchronous ingestHandler and the SQS
   // workerHandler (see the same classification below, on the activity event), so the item
   // itself carries the same actor as whichever path granted it.
+  await warmOperators();
   const newBundle = { bundleId: requestedBundle, expiry: expiryStr, actor: classifyActor(decodedToken?.email) };
   const effectiveQualifiers = grantQualifiers || (Object.keys(qualifiers).length > 0 ? qualifiers : undefined);
   if (effectiveQualifiers && Object.keys(effectiveQualifiers).length > 0) {

@@ -177,7 +177,16 @@ describe("alarm-triage.yml", () => {
     const proof = stepBlock(jobBlock("run-triage"), "Prove the triage credentials against the alarm's telemetry");
     expect(proof).toContain("proof firstLogQuery aws logs filter-log-events");
     expect(proof).toContain("/tmp/proof-firstLogQuery.json");
-    expect(proof).toContain("del(.firstLogQuery)");
+    expect(proof).toContain("del(.firstLogQuery, .wafBlocks)");
+  });
+
+  it("proves the blocked requests and our own compliance runs for a web ACL alarm, and keeps the blocks out of the summary", () => {
+    const proof = readFileSync(".github/workflows/alarm-triage.yml", "utf8");
+    expect(proof).toContain("aws-waf-logs-*)");
+    expect(proof).toContain("aws logs start-query");
+    expect(proof).toContain("proof ourRuns gh run list --repo");
+    expect(proof).toContain("--workflow compliance.yml");
+    expect(proof).toContain("/tmp/proof-wafBlocks.json");
   });
 
   it("holds the model's draft-PR path: the filter reads the runner's result and the draft PR step stays gated on a complete answer", () => {

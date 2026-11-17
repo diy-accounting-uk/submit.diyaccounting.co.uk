@@ -1,0 +1,129 @@
+{
+  "description": "A WAF alarm whose blocked requests come from one address while a compliance run of ours was running; the alarm is back to OK.",
+  "alarm": {
+    "name": "prod-zz9fig-app-waf-rate-limit",
+    "environment": "prod",
+    "deployment": "zz9fig",
+    "region": "us-east-1",
+    "window": "2026-01-15T08:50:00Z to 2026-01-15T09:20:00Z",
+    "issueNumber": 9121
+  },
+  "remedyRow": {
+    "family": "prod-app-waf-rate-limit",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  "evidence": {
+    "alarmFound": true,
+    "deploymentLive": true,
+    "liveDeployment": "zz9fig",
+    "logGroupNamePrefixes": [
+      "aws-waf-logs-prod-zz9fig-app",
+      "/aws/lambda/prod-zz9fig-app-waf-scan-detect"
+    ],
+    "triggeringLogGroupNamePrefixes": [],
+    "credentialProof": {
+      "identity": {
+        "Account": "000000000000",
+        "Arn": "arn:aws:sts::000000000000:assumed-role/example-triage-role/replay"
+      },
+      "logGroups": [
+        {
+          "logGroupName": "aws-waf-logs-prod-zz9fig-app",
+          "retentionInDays": 30
+        }
+      ],
+      "alarmHistory": [
+        {
+          "at": "2026-01-15T09:14:00Z",
+          "summary": "Alarm updated from ALARM to OK",
+          "newState": {
+            "value": "OK",
+            "stateReason": "Threshold Crossed: no datapoints were received for 1 period and 1 missing datapoint was treated as [NonBreaching]."
+          }
+        }
+      ],
+      "wafBlocks": {
+        "rules": [
+          {
+            "terminatingRuleId": "RateLimitRule",
+            "count": 138
+          }
+        ],
+        "clients": [
+          {
+            "clientIp": "203.0.113.42",
+            "country": "US",
+            "count": 138
+          }
+        ],
+        "userAgents": [
+          {
+            "userAgent": "Mozilla/5.0 HeadlessChrome/120.0",
+            "count": 138
+          }
+        ],
+        "topPaths": [
+          {
+            "path": "/about.html",
+            "count": 12
+          },
+          {
+            "path": "/privacy.html",
+            "count": 11
+          }
+        ]
+      },
+      "ourRuns": [
+        {
+          "databaseId": 90000000001,
+          "createdAt": "2026-01-15T08:52:00Z",
+          "updatedAt": "2026-01-15T09:10:00Z",
+          "event": "workflow_dispatch"
+        }
+      ]
+    }
+  },
+  "frozenResults": [
+    {
+      "command": "cloudwatch describe-alarm-history",
+      "result": "{\"AlarmHistoryItems\": [{\"at\": \"2026-01-15T09:14:00Z\", \"summary\": \"Alarm updated from ALARM to OK\", \"newState\": {\"value\": \"OK\", \"stateReason\": \"Threshold Crossed: no datapoints were received for 1 period and 1 missing datapoint was treated as [NonBreaching].\"}}]}"
+    },
+    {
+      "command": "cloudwatch describe-alarms",
+      "result": "{\"MetricAlarms\": [{\"AlarmName\": \"prod-zz9fig-app-waf-rate-limit\", \"StateValue\": \"OK\", \"StateReason\": \"Threshold Crossed: no datapoints were received for 1 period and 1 missing datapoint was treated as [NonBreaching].\"}]}"
+    },
+    {
+      "command": "logs describe-log-groups",
+      "result": "{\"logGroups\": [{\"logGroupName\": \"aws-waf-logs-prod-zz9fig-app\", \"retentionInDays\": 30}]}"
+    },
+    {
+      "command": "logs filter-log-events",
+      "result": "{\"events\": [{\"timestamp\": 1768467900000, \"message\": \"INFO blocked request on rule RateLimitRule\"}]}"
+    }
+  ],
+  "expect": {
+    "stillBroken": false,
+    "whatBroke": [
+      [
+        "compliance"
+      ],
+      [
+        "RateLimitRule",
+        "rate limit",
+        "rate-limit"
+      ]
+    ],
+    "nextAction": [
+      [
+        "close",
+        "no action",
+        "no further action",
+        "watch",
+        "monitor"
+      ]
+    ],
+    "remedy": "close-when-gone"
+  }
+}

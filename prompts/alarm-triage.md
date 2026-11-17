@@ -25,6 +25,15 @@ Any other reason text, or a state set with `aws cloudwatch set-alarm-state`, mea
 the state by hand: say that plainly in answer 1, quote the reason, and do not name a code cause
 for it. Then check the metric and logs for the window; if they show no breach, answer 2 with
 "not broken" and question 3 with "watch, no action".
+A web ACL alarm (the log group is `aws-waf-logs-...`) adds two keys to `credentialProof`.
+`wafBlocks` counts the requests the web ACL blocked in the window: `rules` (by `terminatingRuleId`),
+`clients` (client address and country), `userAgents` and the ten most requested `topPaths`. Name
+the rule, the address and what the paths show in answer 1. One address with paths such as `/.env`
+or `/config.json` is a scanner. `ourRuns` lists the runs of `compliance.yml` that started within
+an hour before the window; it is our own load test of the site, and a run in the window with
+blocks from one address under `RateLimitRule` means the run caused the alarm. An empty `ourRuns`
+means no run of ours was near. A `wafBlocks` with an `error` instead of counts: quote it. The
+operator's Secrets Manager secrets are not the cause of a web ACL alarm.
 Those calls worked; yours will too. If one of them carries an `error` instead of an answer, quote
 that error in your answer and say which call it was. Everything else you need about this alarm is already in the list above — you have no `gh`
 command and no general shell access, so do not run `ls`, `cat`, `gh issue view`, or anything

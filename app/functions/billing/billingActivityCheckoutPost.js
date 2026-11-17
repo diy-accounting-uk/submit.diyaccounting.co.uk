@@ -28,6 +28,7 @@ import { getStripeClient } from "../../lib/stripeClient.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { hasPaidCharge } from "../../services/activityCharges.js";
 import { publishActivityEvent, classifyActor, maskEmail } from "../../lib/activityAlert.js";
+import { warmOperators } from "../../lib/operators.js";
 import { resolveAllowedReturnTo } from "./billingReturnUrl.js";
 import { loadCatalogFromRoot, getActivityPrices, isActivityListedInEnvironment } from "../../services/productCatalog.js";
 import { corsOriginHeaders } from "../../lib/corsOrigins.js";
@@ -179,6 +180,7 @@ export async function ingestHandler(event) {
 
     logger.info({ message: "Activity checkout session created", sessionId: session.id, hashedSub, activityId, isSynthetic });
 
+    await warmOperators();
     await publishActivityEvent({
       event: "activity-checkout-session-created",
       site: "submit",

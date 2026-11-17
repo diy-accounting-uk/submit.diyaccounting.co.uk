@@ -64,10 +64,10 @@ function perfectAnswer(fixture) {
 }
 
 describe("alarm replay fixtures", () => {
-  it("holds twenty well-formed fixtures with distinct names and issue numbers", () => {
-    expect(fixtures).toHaveLength(20);
-    expect(new Set(fixtures.map((fixture) => fixture.name)).size).toBe(20);
-    expect(new Set(fixtures.map((fixture) => fixture.alarm.issueNumber)).size).toBe(20);
+  it("holds twenty-two well-formed fixtures with distinct names and issue numbers", () => {
+    expect(fixtures).toHaveLength(22);
+    expect(new Set(fixtures.map((fixture) => fixture.name)).size).toBe(22);
+    expect(new Set(fixtures.map((fixture) => fixture.alarm.issueNumber)).size).toBe(22);
     for (const fixture of fixtures) expect(fixtureProblems(fixture), fixture.name).toEqual([]);
   });
 
@@ -91,7 +91,7 @@ describe("alarm replay fixtures", () => {
     const emails = text.split(/\s/).filter((word) => word.includes("@"));
     expect(emails.every((email) => email.includes("@example.invalid"))).toBe(true);
     const addresses = [...text.matchAll(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g)].map((match) => match[0]);
-    expect(addresses.every((address) => address.startsWith("192.0.2."))).toBe(true);
+    expect(addresses.every((address) => address.startsWith("192.0.2.") || address.startsWith("203.0.113."))).toBe(true);
     expect(text).not.toMatch(/arn:aws:[a-z0-9-]+:[a-z0-9-]*:(?!000000000000)\d{12}:/);
   });
 

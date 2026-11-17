@@ -78,7 +78,8 @@ export async function publishActivityEvent({
   const requestId = context.get("requestId") || null;
   const effectiveUserSub = userSub || context.get("userSub") || null;
   const hashedSub = hashSubForEvent(effectiveUserSub);
-  await warmOperators();
+  // An explicit actor needs no operator list. A caller that classifies by email warms it itself.
+  if (!actor) await warmOperators();
   const effectiveActor = resolveActorClass(actor, hashedSub, userEmail);
   const effectiveFlow = flow || (effectiveUserSub ? "user-journey" : "unknown");
 
