@@ -333,6 +333,17 @@ test.describe("Layout shift while data loads on a phone", () => {
     await expect(page.locator('#dataSplitBody tr[data-table="bundles"] td')).toHaveText(["bundles", "410", "724", "96", "6", "60"]);
     await expect(page.locator("#dataBucketsBody .data-bucket-row")).toHaveCount(3);
     await expect(page.locator("#dataAnalyticsBody .data-bucket-row")).toHaveCount(2);
+    await expect(page.locator('#dataBucketsSplitBody tr[data-name="diya-gl books"] td')).toHaveText([
+      "diya-gl books",
+      "2",
+      "7",
+      "1",
+      "0",
+      "1",
+    ]);
+    await expect(page.locator('#dataBucketsSplitBody tr[data-name="diya-gl"] td')).toHaveText(["diya-gl", "4", "14", "2", "0", "2"]);
+    await page.locator("#dataBucketsPanel").screenshot({ path: "target/screenshots/operator-dashboard-data-buckets.png" });
+    await page.locator("#dataAnalyticsPanel").screenshot({ path: "target/screenshots/operator-dashboard-data-analytics.png" });
     await expect(page.locator("#chart-data-totals")).toBeHidden();
     await page.locator('.dashboard-tab[data-tab-id="main"]').click();
     await expect(page.locator("#chart-data-totals .chart-line")).toHaveCount(3);

@@ -1224,6 +1224,7 @@ const STATIC_TABLE_PANELS = [
   "dataTablesPanel",
   "dataSplitPanel",
   "dataBucketsPanel",
+  "dataAnalyticsPanel",
   "companyAccountsPanel",
   "reservePanel",
   "monthlyMarketingBudgetPanel",
