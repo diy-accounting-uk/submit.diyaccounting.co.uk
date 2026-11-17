@@ -63,7 +63,7 @@ plan limits as the CLI. Enterprise bills usage at API rates. The Free plan has n
 | Team Standard / Premium | $25 / $125 | per seat; Premium 5x Standard |
 | Enterprise | $20 a seat | usage at API rates |
 
-Ultra fits many parallel workers best. A worker that waits on a test run uses few tokens.
+The operator's plan is Ultra (operator, 2026-11-17): about 10 workers at today's token use per batch. Ultra fits many parallel workers best. A worker that waits on a test run uses few tokens.
 
 ## What can move to the cloud
 
