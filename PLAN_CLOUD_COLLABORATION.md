@@ -22,6 +22,8 @@ only when the operator boards it.
 
 > Make them private, we don't need to share the and it's work that hasn't had a lot of scrutiny.
 
+> please design a messaging system that can use public private key pairs and get creative with a storage medium... gh discussions in that repos discussions ? get creative, see if we can avoid polling by leaning into something both ends have as a trigger.
+
 ## Status
 
 Researched 2026-11-17. The first work repository, `diy-accounting-uk/submit-cloud-anvil`, exists with Actions off. The `/new-cloud-session` and `/collaborate` skills are written; steps 3 to 5, 7 to 9 and the first trial are not started.
@@ -155,6 +157,55 @@ Rejected for now:
    start with `claude/`. Never delete a branch.
 4. Commit before a long gate. A reclaimed VM loses uncommitted work.
 5. The fallback loop of the channel table, used only when a message does not arrive.
+
+## Signed and encrypted messages without polling (design, not built)
+
+The aim: a worker tells the coordinator something the moment it happens, with no approval click
+and no poll, and nobody but the two ends can read or forge it.
+
+What each end can do today:
+
+| Capability | Coordinator (laptop) | Worker (cloud VM) |
+| --- | --- | --- |
+| Receive a push | `Monitor` with a WebSocket source: each text frame is an event, with no polling | a `SendMessage` from the coordinator starts its next turn |
+| Send a push | `SendMessage` to the worker | `send_message` to the coordinator, but each message needs the operator's approval |
+| GitHub | REST and GraphQL | REST only: the GitHub proxy blocks GraphQL |
+| Outbound HTTP | yes | yes (network Full) |
+
+So the only gap is worker to coordinator. GitHub Discussions cannot fill it, because the
+Discussions API is GraphQL only and the worker cannot reach GraphQL. Git commits and issue or pull
+request comments reach the coordinator only by polling.
+
+The design: the coordinator holds one WebSocket open, and the worker posts to it.
+
+1. Down (coordinator to worker): `SendMessage`, as now. It starts the worker's turn, so the worker
+   never polls.
+2. Up (worker to coordinator): the worker posts the message to a pub/sub topic over HTTPS; the
+   coordinator's `Monitor` holds a WebSocket subscription to the same topic and wakes on each frame.
+   The topic is a long random name per worker, kept in the work repository's `collab` branch.
+3. Keys: the coordinator has one ed25519 key pair on the laptop; its public key is committed at
+   `.collab/coordinator.pub` on `main`, so every work repository has it after the sync. Each worker
+   makes a new ed25519 key pair on its VM and pushes the public key to `.collab/<codename>.pub` on
+   its `collab` branch; only the worker's repository can carry it, so the coordinator trusts it.
+4. Each message is encrypted to the recipient's public key (`age -R`, which reads ssh-ed25519 keys)
+   and signed with the sender's private key (`ssh-keygen -Y sign`, namespace `submit-collab`). The
+   envelope is a small JSON line: `{from, to, seq, ts, sig, body}`, where `body` is the ciphertext.
+   The receiver drops a frame whose signature fails, whose `seq` is not newer, or whose `ts` is old.
+5. A large result (a gate report, a log) stays in git: the message carries the branch, the commit
+   and the SHA-256 of the file, so the coordinator fetches it and checks the hash.
+6. The topic carries only ciphertext and a random name; the content stays private even on a public
+   relay.
+
+The relay, in order of preference:
+
+| Relay | Cost | Notes |
+| --- | --- | --- |
+| A public pub/sub service with WebSocket subscribe (for example ntfy.sh: `POST https://ntfy.sh/<topic>`, `wss://ntfy.sh/<topic>/ws`) | none | works today; a third party sees ciphertext, the topic name and timing; message size limit applies, so results go by git (step 5) |
+| A self-hosted relay: an API Gateway WebSocket API with a Lambda and a DynamoDB table in submit-ci | cents a month | no third party; a CDK stack and a pull request |
+| The pull request trick: the coordinator subscribes to a never-merged mailbox pull request in each work repository and the worker comments on it (REST) | none | depends on whether this session's notifications cover a pull request in another repository; not verified |
+
+Until one is built, the channel is git: the worker pushes, and the coordinator's Monitor polls
+`git ls-remote` every 2 minutes.
 
 ## AWS credentials for a worker (design, not built)
 
