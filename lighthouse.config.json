@@ -125,13 +125,6 @@
       }
     },
     {
-      "path": "/diy-accounting-spreadsheets.html",
-      "thresholds": {
-        "performance": 67,
-        "bestPractices": 92
-      }
-    },
-    {
       "path": "/diy-accounting-limited.html",
       "thresholds": {
         "performance": 62,

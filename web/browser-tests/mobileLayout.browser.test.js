@@ -111,7 +111,7 @@ test.describe("Mobile layout - no page-level horizontal scroll", () => {
 });
 
 test.describe("Mobile layout - spreadsheet pages at 390px", () => {
-  for (const pagePath of ["spreadsheets.html", "diy-accounting-spreadsheets.html"]) {
+  for (const pagePath of ["spreadsheets.html"]) {
     test(`${pagePath} is no wider than the viewport at 390px`, async ({ page }) => {
       await page.setViewportSize({ width: 390, height: 800 });
       await serveRealSite(page);

@@ -873,10 +873,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### SITE-11 Promote sibling products and partners
 
 - **Use when:** adding or changing a cross-sell page for a sibling product or an affiliate.
-- **Does:** Cross-sell pages sit outside the VAT-filing product. They cover the company background, the DIY Accounting Spreadsheets product, and a PolicyBee business-insurance affiliate page.
+- **Does:** Cross-sell pages sit outside the VAT-filing product. They cover the company background, the spreadsheets product, and a PolicyBee business-insurance affiliate page.
 - **Run:** no command; see Does and Entry
-- **Entry:** `web/public/diy-accounting-spreadsheets.html`; `web/public/policybee.html`
-- **Files:** web/public/diy-accounting-limited.html, web/public/diy-accounting-spreadsheets.html, web/public/policybee.html, web/public/spreadsheets.html
+- **Entry:** `web/public/spreadsheets.html`; `web/public/policybee.html`
+- **Files:** web/public/diy-accounting-limited.html, web/public/policybee.html, web/public/spreadsheets.html
 - **Keywords:** cross-sell, spreadsheets product, policybee, affiliate, company background page
 - **Related:** SITE-10, SS-21
 

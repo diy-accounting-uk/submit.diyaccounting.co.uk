@@ -46,7 +46,6 @@ const PAGES = [
   "/guide.html",
   "/help.html",
   "/mcp.html",
-  "/diy-accounting-spreadsheets.html",
   "/diy-accounting-limited.html",
   "/spreadsheets.html",
   "/errors/403.html",
