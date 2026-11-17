@@ -22,7 +22,7 @@ the set, with no deployment of its own.
 
 ## Status
 
-approved 2026-11-17 (the operator's `/iterate`). Wave 1 gated; wave 2 building.
+approved 2026-11-17 (the operator's `/iterate`). Waves 1 and 2 gated; wave 3 building.
 
 ## The goal
 
@@ -77,7 +77,7 @@ State: gated 0d8730ca8 (batch-check: every gate PASS after two fixes; 9 simulato
 
 `AUTH` rides in wave 2 by the operator's answer (2026-11-17): a customer's expired sign-in with no refresh token showed her as signed in while every call returned 401; the fix (64fe014c4) clears such a session before any page script runs and sends a user action to sign in with `next=`. Its ci proof: an expired id token with no refresh token in localStorage, then `bundles.html` shows "Not signed in" and Subscribe opens `auth/login.html?next=%2Fbundles.html`.
 
-State: building.
+State: gated 9a3d9d872 (batch-check: every gate PASS after the fixes below, docker after freeing Docker's disk; 15 simulator suites pass; auth, submitVat and companiesHouse again on the tip). Fixes on the wave: the dashboard test's sign-in link carries next= (WEB8); the pages that load auth-status.js load page-chrome.js (AUTH).
 
 ### Wave 3: help, the guide, the sources
 
@@ -88,7 +88,7 @@ State: building.
 | sources | WEB20 | Sonnet | `tax-sources.mjs`, the 50 source files |
 | dash-c | DASH43, DASH44 | Opus | stored data graph, retention graph |
 
-State: pending.
+State: building.
 
 ### Wave 4: the last English copy
 
