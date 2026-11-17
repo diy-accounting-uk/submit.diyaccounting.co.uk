@@ -80,18 +80,15 @@ test.describe("Home page activities for a Resident account", () => {
     }
   });
 
-  test("the status box and the introduction list only what the catalogue lists for prod", async ({ page }) => {
+  test("prod shows no status box, and the introduction lists only what the catalogue lists for prod", async ({ page }) => {
     await serveHomeForResident(page, "prod");
     await page.goto("http://localhost:3000/", { waitUntil: "domcontentloaded" });
 
-    const box = page.locator("#featureStatusList");
-    await expect(box.locator('.status-tag[data-status="production"]')).toBeVisible();
-    await expect(box).toContainText("HMRC VAT");
-    await expect(box.locator('.status-tag[data-status="sandbox"]')).toHaveCount(0);
-    await expect(box.locator('.status-tag[data-status="preview"]')).toHaveCount(0);
-    await expect(box).not.toContainText(/Income Tax|Assist|Company Tax Return|PSC/i);
     await expect(page.locator("#homeIntro")).toContainText("VAT returns");
     await expect(page.locator("#homeIntro")).not.toContainText("Income Tax");
+    await expect(page.locator("#dynamicActivities .activity-group").first()).toBeVisible();
+    await expect(page.locator('[data-feature-status="summary"]')).toBeHidden();
+    await expect(page.locator('#featureStatusList .status-tag[data-status="production"]')).toHaveCount(1);
   });
 
   test("the status box lists sandbox and preview features where the catalogue lists them", async ({ page }) => {
@@ -102,6 +99,8 @@ test.describe("Home page activities for a Resident account", () => {
     await expect(box.locator('.status-tag[data-status="sandbox"]')).toBeVisible();
     await expect(box.locator("li", { hasText: "Preview" })).toContainText("HMRC Assist for VAT");
     await expect(box.locator("li", { hasText: "Sandbox" })).toContainText("HMRC Income Tax (MTD)");
+    await expect(box.locator("li", { hasText: "Preview" })).toContainText("you can try the screens, and nothing is sent");
+    await expect(page.locator('[data-feature-status="summary"]')).toBeVisible();
   });
 
   test("a signed-out visitor sees the Companies House filings, and each button names the page that sign-in returns to", async ({

@@ -6,7 +6,9 @@
 // A page with <ul data-feature-status-list="auto"> is filled on load. The home page calls
 // window.renderFeatureStatusList with a catalogue it has already read. A page that holds
 // <template id="pageText"> supplies its own words for the status text: each span in it is marked
-// data-i18n="<page>.rt-<key>", and the Welsh page build translates them.
+// data-i18n="<page>.rt-<key>", and the Welsh page build translates them. The block that holds a
+// list (data-feature-status="summary") ships hidden and shows only when the list has a status
+// other than production to name.
 
 (function () {
   "use strict";
@@ -25,7 +27,7 @@
   const STATUS_MEANINGS = {
     production: "for real use",
     sandbox: "against a test service",
-    preview: "on our simulator only",
+    preview: "you can try the screens, and nothing is sent",
   };
 
   function joinWithAnd(items) {
@@ -38,6 +40,8 @@
   }
 
   function renderFeatureStatusList(list, groups) {
+    const summary = list.closest('[data-feature-status="summary"]');
+    if (summary) summary.hidden = !groups.some(({ status }) => status !== "production");
     list.replaceChildren(
       ...groups.map(({ status, labels }) => {
         const item = document.createElement("li");

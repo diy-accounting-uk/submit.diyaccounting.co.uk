@@ -193,8 +193,8 @@ hash = "2c4f1359ac6e"
 cy = '''yn erbyn gwasanaeth prawf'''
 
 [strings."index.rt-meaning-preview"]
-hash = "ac683e52a277"
-cy = '''ar ein hefelychydd yn unig'''
+hash = "511b23ef52ae"
+cy = '''gallwch roi cynnig ar y sgriniau, ac nid oes dim yn cael ei anfon'''
 
 [strings."index.rt-and"]
 hash = "6201111b83a0"
