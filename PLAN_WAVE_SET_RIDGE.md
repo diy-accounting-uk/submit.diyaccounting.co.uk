@@ -22,7 +22,7 @@ the set, with no deployment of its own.
 
 ## Status
 
-defined 2026-11-17. The operator's `/iterate` is the approval.
+approved 2026-11-17 (the operator's `/iterate`). Wave 1 building.
 
 ## The goal
 
@@ -60,7 +60,7 @@ Wave branches are `claude/ridge-w01` to `claude/ridge-w10`; a batch branch is
 | ops | WEB4, SD1, OS24e | Sonnet | `submit.js` consent, `stack-drift.yml`, register |
 | mcp | MCP2 | Opus | `mcpHttp.js`, `mcp/server.json` |
 
-State: pending.
+State: building.
 
 ### Wave 2: the home page, the articles' template, the 404 page
 
@@ -133,7 +133,7 @@ State: pending.
 | 1 | links | SL2 | Sonnet | the "Submit VAT MTD" links and their three writers |
 
 It builds beside submit's wave 1, in `../spreadsheets.diyaccounting.co.uk`, by that repository's
-rules (`orient-spreadsheets` first). State: pending.
+rules (`orient-spreadsheets` first). State: building.
 
 ## Gates
 
