@@ -8,6 +8,9 @@
 #   BASH_DEFAULT_TIMEOUT_MS=3600000
 #   BASH_MAX_TIMEOUT_MS=3600000
 #   JAVA_HOME=/opt/jdk25
+#   VITEST_MAX_WORKERS=4        (CP1: vitest.config.js reads it; default 50%)
+#   PW_BROWSER_WORKERS=2        (CP1: the browser-tests project reads it; default 1)
+#   PW_VIDEO=off and PW_TRACE=off (CP1: the browser-tests project drops video and trace)
 # Network access: Full.
 set -euo pipefail
 # Node 24 (package.json engines); /opt/node22/bin precedes /usr/local/bin on PATH
