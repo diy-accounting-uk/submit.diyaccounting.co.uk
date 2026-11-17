@@ -169,9 +169,22 @@
   window.addEventListener("bundle-changed", onRefreshTokenBalance);
   window.addEventListener("token-balance-changed", onRefreshTokenBalance);
 
+  // A stored sign-in whose id token has expired and has no refresh token to renew it is no sign-in.
+  function sessionIsDead() {
+    try {
+      const idToken = localStorage.getItem("cognitoIdToken");
+      if (!idToken || localStorage.getItem("cognitoRefreshToken")) return false;
+      const payload = idToken.split(".")[1];
+      const claims = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+      return Boolean(claims.exp) && claims.exp * 1000 < Date.now();
+    } catch {
+      return false;
+    }
+  }
+
   // Update login status display
   function updateLoginStatus() {
-    const userInfo = localStorage.getItem("userInfo");
+    const userInfo = sessionIsDead() ? null : localStorage.getItem("userInfo");
     const loginStatusElement = document.querySelector(".login-status");
     const loginLinkElement = document.querySelector(".login-link");
 

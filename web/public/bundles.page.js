@@ -161,12 +161,8 @@ function readStoredLandingAttribution() {
 
 // --- request individual bundle
 async function requestBundle(bundleId, bundleName, qualifiers = {}) {
+  if (!(await window.requireSession())) return false;
   const idToken = getIdToken();
-  if (!idToken) {
-    showStatus("Please sign in first to request bundles.", "warning");
-    window.location.href = window.signInHref("auth/login.html");
-    return false;
-  }
 
   // Show status immediately before making the request
   showStatus(`Requesting bundle "${bundleName}"...`, "info");
@@ -435,12 +431,8 @@ document.addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-subscribe]");
   if (!btn || btn.disabled) return;
 
+  if (!(await window.requireSession())) return;
   const idToken = getIdToken();
-  if (!idToken) {
-    showStatus("Please sign in first to subscribe.", "warning");
-    window.location.href = window.signInHref("auth/login.html");
-    return;
-  }
 
   const original = btn.textContent;
   btn.textContent = "Redirecting to checkout...";
@@ -841,12 +833,8 @@ document.addEventListener("click", async (e) => {
 // --- remove individual bundle
 async function removeBundle(bundleId, fireAndForget = true) {
   const bundleName = __catalogueData?.bundles?.find((cb) => cb.id === bundleId)?.name || bundleId;
+  if (!(await window.requireSession())) return;
   const idToken = getIdToken();
-  if (!idToken) {
-    showStatus("Please sign in first to remove bundles.", "warning");
-    window.location.href = window.signInHref("auth/login.html");
-    return;
-  }
 
   // Show status immediately before making the request
   showStatus(`Removing bundle "${bundleName}"...`, "info");

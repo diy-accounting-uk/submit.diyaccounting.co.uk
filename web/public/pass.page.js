@@ -17,12 +17,18 @@ const SIGN_OUT_RETURN_KEY = "passReturnAfterSignOut";
 
 const el = (id) => document.getElementById(id);
 
-const getIdToken = () => {
+const getStoredIdToken = () => {
   try {
     return localStorage.getItem("cognitoIdToken");
   } catch {
     return null;
   }
+};
+
+// An expired id token is no sign-in.
+const getIdToken = () => {
+  const token = getStoredIdToken();
+  return token && !window.isTokenExpired(token) ? token : null;
 };
 
 const getSignedInEmail = () => {
@@ -400,11 +406,16 @@ async function redeem() {
   }
 }
 
-function onRedeemClick() {
+async function onRedeemClick() {
+  if (!getIdToken() && getStoredIdToken() && (await window.ensureSession({ force: true }))) {
+    redeem();
+    return;
+  }
   if (getIdToken()) {
     redeem();
     return;
   }
+  if (getStoredIdToken()) window.clearSession();
   try {
     sessionStorage.setItem("postLoginRedirect", window.location.pathname + window.location.search);
     sessionStorage.setItem(ADD_ON_RETURN_KEY, currentCode);

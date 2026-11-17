@@ -9,6 +9,85 @@ import { fetchWithId } from "../utils/correlation-utils.js";
 // Track in-flight session refresh to prevent duplicate requests
 let __ensureSessionInflight = null;
 
+// One sign-in redirect per page load, so a burst of failed calls does not start several.
+let __signInRedirectStarted = false;
+
+const SESSION_STORAGE_KEYS = ["cognitoAccessToken", "cognitoIdToken", "cognitoRefreshToken", "userInfo"];
+
+/**
+ * True when the token carries an expiry that has passed. A token with no readable expiry is not expired.
+ * @param {string|null} jwt - JWT string
+ * @returns {boolean}
+ */
+export function isTokenExpired(jwt) {
+  if (!jwt) return false;
+  const expMs = getJwtExpiryMs(jwt);
+  return Boolean(expMs) && expMs < Date.now();
+}
+
+/**
+ * Remove every stored sign-in token and the stored user, then refresh the header.
+ */
+export function clearSession() {
+  for (const key of SESSION_STORAGE_KEYS) {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // storage unavailable: nothing to clear
+    }
+  }
+  try {
+    window.requestCache?.invalidate?.("/api/");
+  } catch {
+    // no cache to invalidate
+  }
+  if (typeof window !== "undefined" && typeof window.updateLoginStatus === "function") {
+    try {
+      window.updateLoginStatus();
+    } catch {
+      // header not on this page
+    }
+  }
+}
+
+/**
+ * Clear the dead session and go to the sign-in page, which returns to this page. Runs once per page load
+ * and never on a sign-in page, so it cannot loop.
+ * @param {string} [message] - Notice shown before the page changes
+ * @returns {boolean} True when this call started the redirect
+ */
+export function sendToSignIn(message = "Your session has expired. Please sign in again.") {
+  if (typeof window === "undefined") return false;
+  if (__signInRedirectStarted) return false;
+  if (/^\/(cy\/)?auth\//.test(window.location.pathname || "")) return false;
+  __signInRedirectStarted = true;
+  clearSession();
+  if (window.showStatus) window.showStatus(message, "warning");
+  window.location.href = window.signInHref("/auth/login.html");
+  return true;
+}
+
+/**
+ * Make sure the page holds a live id token before an action that needs one. A dead token is refreshed
+ * once; when that cannot give a live session the user goes to sign in.
+ * @returns {Promise<boolean>} True when the session is live
+ */
+export async function requireSession() {
+  let idToken;
+  try {
+    idToken = localStorage.getItem("cognitoIdToken");
+  } catch {
+    idToken = null;
+  }
+  if (idToken && !isTokenExpired(idToken)) return true;
+  if (idToken) {
+    const refreshed = await ensureSession({ force: true });
+    if (refreshed) return true;
+  }
+  sendToSignIn(idToken ? undefined : "Please sign in first.");
+  return false;
+}
+
 /**
  * Check if tokens are expired and notify user
  * @param {string} accessToken - Access token
@@ -26,13 +105,20 @@ export function checkTokenExpiry(accessToken, idToken) {
 
     if (accessExpired || idExpired) {
       console.warn("Token(s) expired on page load", { accessExpired, idExpired });
+      const hasRefreshToken = Boolean(localStorage.getItem("cognitoRefreshToken"));
 
-      // Notify user and offer to refresh
+      if (!hasRefreshToken) {
+        // Nothing can renew it: show the visitor as signed out. The sign-in page is offered by the header
+        // and by any action that needs a session.
+        clearSession();
+        return;
+      }
+
       if (typeof window !== "undefined" && window.showStatus) {
         window.showStatus("Your session has expired. Attempting to refresh...", "info");
       }
 
-      // Attempt to refresh tokens (fire-and-forget)
+      // Attempt to refresh tokens (fire-and-forget); a token comes back only from a real refresh
       ensureSession({ force: true })
         .then((newToken) => {
           if (newToken) {
@@ -40,24 +126,21 @@ export function checkTokenExpiry(accessToken, idToken) {
             if (typeof window !== "undefined" && window.showStatus) {
               window.showStatus("Session refreshed successfully.", "success");
             }
+            if (typeof window !== "undefined" && typeof window.updateLoginStatus === "function") window.updateLoginStatus();
           } else {
             console.warn("Token refresh failed on page load");
+            clearSession();
             if (typeof window !== "undefined" && window.showStatus) {
               window.showStatus("Session expired. Please sign in again.", "warning");
-              setTimeout(() => {
-                window.location.href = window.signInHref("/auth/login.html");
-              }, 3000);
             }
           }
           return undefined;
         })
         .catch((err) => {
           console.error("Token refresh error on page load:", err);
+          clearSession();
           if (typeof window !== "undefined" && window.showStatus) {
             window.showStatus("Session expired. Please sign in again.", "warning");
-            setTimeout(() => {
-              window.location.href = window.signInHref("/auth/login.html");
-            }, 3000);
           }
         });
       return;
@@ -125,15 +208,18 @@ export async function ensureSession({ minTTLms = 30000, force = false } = {}) {
     const refreshToken = localStorage.getItem("cognitoRefreshToken");
     if (!accessToken) return null;
 
+    // A token that is still unexpired can be used when no refresh is possible or forced
+    const usable = () => (!isTokenExpired(accessToken) && !isTokenExpired(localStorage.getItem("cognitoIdToken")) ? accessToken : null);
+
     // If not forced, and token is fresh enough, skip
     if (!force) {
       const expMs = getJwtExpiryMs(accessToken);
       const now = Date.now();
-      if (expMs && expMs - now > minTTLms) return accessToken;
+      if (expMs && expMs - now > minTTLms && usable()) return accessToken;
     }
 
-    // No refresh token or already in-flight
-    if (!refreshToken) return accessToken;
+    // No refresh token: the session ends with the token
+    if (!refreshToken) return force ? null : usable();
     if (__ensureSessionInflight) return __ensureSessionInflight;
 
     // Attempt refresh via backend endpoint
@@ -149,21 +235,22 @@ export async function ensureSession({ minTTLms = 30000, force = false } = {}) {
         if (!res.ok) {
           console.warn("Refresh token failed, clearing stale refresh token");
           localStorage.removeItem("cognitoRefreshToken");
-          return accessToken;
+          return force ? null : usable();
         }
         const json = await res.json();
-        const newAccess = json.accessToken || json.access_token || accessToken;
+        const newAccess = json.accessToken || json.access_token;
         const newId = json.idToken || json.id_token || localStorage.getItem("cognitoIdToken");
         const newRefresh = json.refreshToken || json.refresh_token || refreshToken;
+        if (!newAccess) return force ? null : usable();
 
         const prevAccess = localStorage.getItem("cognitoAccessToken");
         // Persist
-        if (newAccess) localStorage.setItem("cognitoAccessToken", newAccess);
+        localStorage.setItem("cognitoAccessToken", newAccess);
         if (newId) localStorage.setItem("cognitoIdToken", newId);
         if (newRefresh) localStorage.setItem("cognitoRefreshToken", newRefresh);
 
         // If token changed, invalidate request cache
-        if (newAccess && newAccess !== prevAccess) {
+        if (newAccess !== prevAccess) {
           try {
             window.requestCache?.invalidate?.("/api/");
           } catch (err) {
@@ -178,7 +265,7 @@ export async function ensureSession({ minTTLms = 30000, force = false } = {}) {
         return newAccess;
       } catch (err) {
         console.warn("Failed to refresh access token:", err.message, err.stack);
-        return accessToken;
+        return force ? null : usable();
       } finally {
         __ensureSessionInflight = null;
       }
@@ -186,7 +273,7 @@ export async function ensureSession({ minTTLms = 30000, force = false } = {}) {
 
     return __ensureSessionInflight;
   } catch {
-    return localStorage.getItem("cognitoAccessToken");
+    return null;
   }
 }
 
@@ -195,4 +282,8 @@ if (typeof window !== "undefined") {
   window.checkAuthStatus = checkAuthStatus;
   window.checkTokenExpiry = checkTokenExpiry;
   window.ensureSession = ensureSession;
+  window.isTokenExpired = isTokenExpired;
+  window.clearSession = clearSession;
+  window.sendToSignIn = sendToSignIn;
+  window.requireSession = requireSession;
 }

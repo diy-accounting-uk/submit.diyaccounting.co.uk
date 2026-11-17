@@ -4,7 +4,7 @@
 // API client for making authorized requests
 
 import { fetchWithId } from "../utils/correlation-utils.js";
-import { ensureSession } from "./auth-service.js";
+import { ensureSession, sendToSignIn } from "./auth-service.js";
 
 /**
  * Handle 403 Forbidden errors with user guidance
@@ -178,12 +178,7 @@ async function authorizedFetchOnce(input, init) {
     const refreshed = await ensureSession({ force: true });
     if (!refreshed) {
       console.warn("Token refresh failed, user needs to re-authenticate");
-      if (typeof window !== "undefined" && window.showStatus) {
-        window.showStatus("Your session has expired. Please sign in again.", "warning");
-        setTimeout(() => {
-          window.location.href = window.signInHref("/auth/login.html");
-        }, 2000);
-      }
+      sendToSignIn();
       return first;
     }
   } catch (e) {
@@ -210,6 +205,9 @@ async function authorizedFetchOnce(input, init) {
     if (rid) headers2.set("x-request-id", rid);
     second = await executeAsyncRequestPolling(second, input, init, headers2);
   }
+
+  // A 401 after a real refresh means the session cannot be repaired here
+  if (second.status === 401) sendToSignIn();
 
   return second;
 }
@@ -276,12 +274,7 @@ export async function fetchWithIdToken(input, init = {}) {
     const refreshed = await ensureSession({ force: true });
     if (!refreshed) {
       console.warn("Token refresh failed, user needs to re-authenticate");
-      if (typeof window !== "undefined" && window.showStatus) {
-        window.showStatus("Your session has expired. Please sign in again.", "warning");
-        setTimeout(() => {
-          window.location.href = window.signInHref("/auth/login.html");
-        }, 2000);
-      }
+      sendToSignIn();
       return response;
     }
   } catch (e) {
@@ -302,7 +295,10 @@ export async function fetchWithIdToken(input, init = {}) {
     headers2.delete("x-initial-request");
   }
 
-  return executeFetch(headers2);
+  const retried = await executeFetch(headers2);
+  // A 401 after a real refresh means the session cannot be repaired here
+  if (retried.status === 401 && !(await isUpstreamRejection(retried))) sendToSignIn();
+  return retried;
 }
 
 // Export on window for backward compatibility

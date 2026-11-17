@@ -50,6 +50,31 @@
   }
   window.signInHref = signInHref;
 
+  // Runs before any page script or widget: a stored sign-in whose id or access token has expired and
+  // that has no refresh token to renew it is cleared once, so the page renders signed out and no call
+  // carries the dead token.
+  (function clearUnrenewableSession() {
+    try {
+      const expired = (jwt) => {
+        if (!jwt) return false;
+        const claims = JSON.parse(atob(jwt.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+        return Boolean(claims.exp) && claims.exp * 1000 < Date.now();
+      };
+      const readExpired = (key) => {
+        try {
+          return expired(localStorage.getItem(key));
+        } catch {
+          return false;
+        }
+      };
+      if (localStorage.getItem("cognitoRefreshToken")) return;
+      if (!readExpired("cognitoIdToken") && !readExpired("cognitoAccessToken")) return;
+      for (const key of ["cognitoAccessToken", "cognitoIdToken", "userInfo"]) localStorage.removeItem(key);
+    } catch {
+      // storage unavailable: nothing was stored
+    }
+  })();
+
   const HOME_ICON_PATH = "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z";
   const INFO_ICON_PATH = "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z";
 

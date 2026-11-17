@@ -383,4 +383,124 @@ describe("Token refresh on 401 errors", () => {
     // Restore
     window.fetchWithIdToken = originalFetchWithIdToken;
   });
+
+  describe("an expired session", () => {
+    const expiredJwt = () => `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${b64url({ exp: 1 })}.test`;
+    const liveJwt = () => `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${b64url({ exp: Math.floor(Date.now() / 1000) + 3600 })}.test`;
+
+    beforeEach(() => {
+      window.signInHref = (loginPath) => `${loginPath}?next=%2Fbundles.html`;
+      window.showStatus = vi.fn();
+      window.updateLoginStatus = vi.fn();
+      storageMock.userInfo = JSON.stringify({ sub: "u1" });
+    });
+
+    const expectSignedOutAndSentToSignIn = () => {
+      expect(window.location.href).toBe("/auth/login.html?next=%2Fbundles.html");
+      expect(storageMock.cognitoAccessToken).toBeUndefined();
+      expect(storageMock.cognitoIdToken).toBeUndefined();
+      expect(storageMock.userInfo).toBeUndefined();
+    };
+
+    it("ensureSession returns null when the token expired and there is no refresh token", async () => {
+      storageMock.cognitoAccessToken = expiredJwt();
+      storageMock.cognitoIdToken = expiredJwt();
+      delete storageMock.cognitoRefreshToken;
+      expect(await window.ensureSession({ force: true })).toBeNull();
+      expect(await window.ensureSession()).toBeNull();
+    });
+
+    it("ensureSession returns null when the refresh fails", async () => {
+      storageMock.cognitoAccessToken = expiredJwt();
+      storageMock.cognitoIdToken = expiredJwt();
+      fetchMock.mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({ error: "invalid_grant" }) });
+      expect(await window.ensureSession({ force: true })).toBeNull();
+    });
+
+    it("a 401 with no refresh token sends the user to sign in without a retry", async () => {
+      storageMock.cognitoAccessToken = expiredJwt();
+      storageMock.cognitoIdToken = expiredJwt();
+      delete storageMock.cognitoRefreshToken;
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ message: "Unauthorized" }),
+        clone() {
+          return this;
+        },
+      });
+      const result = await window.fetchWithIdToken("/api/v1/billing/checkout", { method: "POST" });
+      expect(result.status).toBe(401);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expectSignedOutAndSentToSignIn();
+    });
+
+    it("a failed refresh sends the user to sign in without a retry", async () => {
+      storageMock.cognitoAccessToken = expiredJwt();
+      storageMock.cognitoIdToken = expiredJwt();
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 401,
+          json: async () => ({ message: "Unauthorized" }),
+          clone() {
+            return this;
+          },
+        })
+        .mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({ error: "invalid_grant" }) });
+      await window.authorizedFetch("/api/v1/bundle");
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expectSignedOutAndSentToSignIn();
+    });
+
+    it("a 401 after a real refresh retries once and then sends the user to sign in", async () => {
+      storageMock.cognitoAccessToken = expiredJwt();
+      storageMock.cognitoIdToken = expiredJwt();
+      const unauthorized = {
+        ok: false,
+        status: 401,
+        json: async () => ({ message: "Unauthorized" }),
+        clone() {
+          return this;
+        },
+      };
+      fetchMock
+        .mockResolvedValueOnce(unauthorized)
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ accessToken: liveJwt(), idToken: liveJwt() }) })
+        .mockResolvedValueOnce(unauthorized);
+      const result = await window.fetchWithIdToken("/api/v1/bundle", {});
+      expect(result.status).toBe(401);
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(window.location.href).toBe("/auth/login.html?next=%2Fbundles.html");
+    });
+
+    it("a valid token is sent once and nobody is redirected", async () => {
+      storageMock.cognitoAccessToken = liveJwt();
+      storageMock.cognitoIdToken = liveJwt();
+      fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) });
+      const result = await window.fetchWithIdToken("/api/v1/bundle", {});
+      expect(result.status).toBe(200);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(window.location.href).toBe("http://localhost:3000");
+      expect(storageMock.cognitoIdToken).toBeDefined();
+    });
+
+    it("requireSession sends the user to sign in when the id token expired and cannot be refreshed", async () => {
+      storageMock.cognitoAccessToken = expiredJwt();
+      storageMock.cognitoIdToken = expiredJwt();
+      delete storageMock.cognitoRefreshToken;
+      expect(await window.requireSession()).toBe(false);
+      expectSignedOutAndSentToSignIn();
+    });
+
+    it("checkTokenExpiry with no refresh token signs the user out and never says the session refreshed", async () => {
+      storageMock.cognitoAccessToken = expiredJwt();
+      storageMock.cognitoIdToken = expiredJwt();
+      delete storageMock.cognitoRefreshToken;
+      window.checkTokenExpiry(storageMock.cognitoAccessToken, storageMock.cognitoIdToken);
+      expect(storageMock.userInfo).toBeUndefined();
+      expect(window.updateLoginStatus).toHaveBeenCalled();
+      expect(window.showStatus).not.toHaveBeenCalledWith("Session refreshed successfully.", "success");
+    });
+  });
 });
