@@ -4,13 +4,13 @@
 // Fetches each source file's gov.uk page and checks its quote appears in the page text.
 // Usage: node scripts/verify-tax-sources.mjs [--max-age-days <n>] [--issue-body <file>] [source-name ...]
 // (names without .json; none means all)
-// Exits 1 when a page cannot be fetched, a quote is absent, or, with --max-age-days, a source was
+// Exits 1 when a page cannot be fetched, a quote or title is absent, or, with --max-age-days, a source was
 // retrieved more than <n> days ago. With --issue-body it writes the problems to that file as an issue body.
 
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SOURCES_DIR, quoteAppearsIn, sourcesOlderThan } from "./tax-sources.mjs";
+import { SOURCES_DIR, pageTitle, quoteAppearsIn, sourcesOlderThan } from "./tax-sources.mjs";
 
 function takeOption(args, flag) {
   const index = args.indexOf(flag);
@@ -32,9 +32,12 @@ async function main() {
   for (const name of names) {
     const source = JSON.parse(readFileSync(join(SOURCES_DIR, `${name}.json`), "utf8"));
     const response = await fetch(source.url);
-    const ok = response.ok && quoteAppearsIn(source.quote, await response.text());
-    console.log(`${ok ? "ok  " : "FAIL"} ${name} (${response.status}) ${source.url}`);
-    if (!ok) problems.push(`${name}: the quote is not on ${source.url} (HTTP ${response.status})`);
+    const html = response.ok ? await response.text() : "";
+    const quoteOk = quoteAppearsIn(source.quote, html);
+    const titleOk = source.title === pageTitle(html);
+    console.log(`${quoteOk && titleOk ? "ok  " : "FAIL"} ${name} (${response.status}) ${source.url}`);
+    if (!quoteOk) problems.push(`${name}: the quote is not on ${source.url} (HTTP ${response.status})`);
+    if (!titleOk) problems.push(`${name}: the title "${source.title}" is not the page title "${pageTitle(html)}" on ${source.url}`);
   }
   if (maxAgeDays !== null) {
     const sources = names.map((name) => ({ name, ...JSON.parse(readFileSync(join(SOURCES_DIR, `${name}.json`), "utf8")) }));

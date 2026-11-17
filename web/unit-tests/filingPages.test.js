@@ -24,7 +24,7 @@ import {
   yearPence,
   renderFilingPages,
 } from "../../scripts/build-filing-pages.mjs";
-import { loadSources } from "../../scripts/tax-sources.mjs";
+import { formatIsoDate, loadSources } from "../../scripts/tax-sources.mjs";
 
 const catalog = loadCatalog();
 const pages = loadPages();
@@ -62,8 +62,18 @@ describe("filing pages", () => {
       const source = sources.find((candidate) => candidate.name === page.deadline.source);
       const html = read(filingPagePath(page));
       expect(html, page.file).toContain(source.url);
-      expect(html, page.file).toContain(source.quote.replace(/’/g, "’"));
+      expect(html.replace(/\s+/g, " "), page.file).toContain(source.quote);
+      expect(html.replace(/\s+/g, " ").replace(/<\/a >/g, "</a>"), page.file).toContain(
+        `GOV.UK, ${source.title}</a> (checked ${formatIsoDate(source.retrieved)})`,
+      );
+      expect(html, page.file).not.toContain("Retrieved");
     }
+  });
+
+  test("a section that cites one GOV.UK page twice prints its link once", () => {
+    const html = read("web/public/vat-return-due-date-and-penalty-points.html");
+    const links = html.match(/<a href="https:\/\/www\.gov\.uk\/[^"]+"/g);
+    expect(links.length).toBe(new Set(links).size);
   });
 
   test("the price of each page is the catalogue price of its bundle", () => {

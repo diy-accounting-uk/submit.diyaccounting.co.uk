@@ -24,7 +24,7 @@ import { AREA_PAGES } from "../web/public/widgets/video-pages.js";
 import { AVAILABILITY, QUARTERLY_FACT, availabilityStatus } from "./build-mtd-calendar.mjs";
 import { FREQUENCIES } from "../web/public/lib/vat/penalty-rules.js";
 import { escapeHtml } from "./page-markers.mjs";
-import { formatIsoDate, loadSources, sourceQuoteHtml } from "./tax-sources.mjs";
+import { formatIsoDate, loadSources, sourceQuoteHtml, sourcesQuoteHtml } from "./tax-sources.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PUBLIC_DIRECTORY = join(ROOT, "web", "public");
@@ -399,10 +399,13 @@ function articleSectionHtml(section, sources, id, closingHtml = "") {
   for (const name of section.status ?? []) {
     parts.push(`<p>${escapeHtml(filingStatusText(name.activity, name.label))}</p>`);
   }
-  for (const name of section.sources ?? []) {
-    const source = sources.find((candidate) => candidate.name === name);
-    if (!source) throw new Error(`no source file named ${name}`);
-    parts.push(sourceQuoteHtml(source));
+  if (section.sources?.length) {
+    const cited = section.sources.map((name) => {
+      const source = sources.find((candidate) => candidate.name === name);
+      if (!source) throw new Error(`no source file named ${name}`);
+      return source;
+    });
+    parts.push(sourcesQuoteHtml(cited));
   }
   if (closingHtml) parts.push(closingHtml);
   return `<div class="form-container">${parts.join("")}</div>`;

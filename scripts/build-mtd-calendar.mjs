@@ -19,7 +19,7 @@ import { writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import prettier from "prettier";
-import { loadSources, formatIsoDate, escapeHtml, sourceQuoteHtml } from "./tax-sources.mjs";
+import { loadSources, formatIsoDate, escapeHtml, sourcesQuoteHtml } from "./tax-sources.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const PAGE_PATH = join(ROOT, "web", "public", "mtd-calendar.html");
@@ -373,7 +373,7 @@ function availabilityHtml() {
 function sourcesHtml(factId, sources) {
   const supporting = sources.filter((s) => s.facts.includes(factId));
   if (supporting.length === 0) throw new Error(`Fact ${factId} has no source file`);
-  return supporting.map(sourceQuoteHtml).join("");
+  return sourcesQuoteHtml(supporting);
 }
 
 function entryHtml(fact, sources, heading, extraHtml = "") {

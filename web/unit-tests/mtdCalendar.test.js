@@ -21,10 +21,12 @@ describe("MTD calendar page", () => {
   });
 
   test("each fact shows its quote, source link and retrieval date", () => {
-    const html = readFileSync(PAGE_PATH, "utf8");
+    const html = readFileSync(PAGE_PATH, "utf8")
+      .replace(/\s+/g, " ")
+      .replace(/<\/a >/g, "</a>");
     for (const s of calendarSources) {
       expect(html).toContain(s.url);
-      expect(html).toContain(`Retrieved ${formatIsoDate(s.retrieved)}`);
+      expect(html).toContain(`GOV.UK, ${s.title}</a> (checked ${formatIsoDate(s.retrieved)})`);
     }
   });
 
