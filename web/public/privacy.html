@@ -59,7 +59,7 @@
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
       <h1>Privacy policy</h1>
-      <p class="legal-meta">Last updated: 9 November 2026</p>
+      <p class="legal-meta">Last updated: 17 November 2026</p>
     </header>
 
     <main id="mainContent" class="legal">
@@ -176,7 +176,7 @@
           <li><strong>Navigation Events</strong>: Pages visited, route changes</li>
           <li><strong>Device Information</strong>: Browser type/version, operating system, screen resolution, viewport size</li>
           <li>
-            <strong>Session Information</strong>: Anonymous session ID, hashed user ID (if logged in - we hash your identifier in the
+            <strong>Session Information</strong>: Anonymous session ID, hashed user ID (if signed in - we hash your identifier in the
             browser before sending)
           </li>
         </ul>
@@ -342,7 +342,7 @@
             </tr>
             <tr>
               <td>User Identifier</td>
-              <td>Your Cognito user ID (or "anonymous" if not logged in)</td>
+              <td>Your Cognito user ID (or "anonymous" if not signed in)</td>
               <td>From authentication token claims</td>
             </tr>
             <tr>
@@ -520,7 +520,7 @@
             </tr>
             <tr>
               <td>Browser tokens (localStorage)</td>
-              <td>Until logout or expiry</td>
+              <td>Until sign-out or expiry</td>
               <td>Session management</td>
             </tr>
           </tbody>
@@ -580,7 +580,9 @@
         <ul>
           <li><strong>Authentication tokens</strong>: Cognito access, identity, and refresh tokens for session management</li>
           <li><strong>User info</strong>: Parsed user profile from Cognito (sub, name, email)</li>
-          <li><strong>Sign-in details</strong>: Login provider, last auth update time, and OAuth state for CSRF protection during login</li>
+          <li>
+            <strong>Sign-in details</strong>: Sign-in provider, last auth update time, and OAuth state for CSRF protection during sign-in
+          </li>
           <li>
             <strong><code>consent.rum</code> and <code>consent.analytics</code></strong
             >: Your banner choice, so we do not ask again
