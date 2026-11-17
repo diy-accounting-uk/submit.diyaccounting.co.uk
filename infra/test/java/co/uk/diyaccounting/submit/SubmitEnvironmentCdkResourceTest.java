@@ -158,6 +158,14 @@ class SubmitEnvironmentCdkResourceTest {
         // instead of the Hub auto-enabling CIS v1.2.0 on creation.
         observability.hasResourceProperties(
                 "AWS::SecurityHub::Hub", Match.objectLike(Map.of("EnableDefaultStandards", false)));
+        // Suppression rules: the CIS CloudWatch controls, the retired RUM guest role's GuardDuty
+        // finding and the SES DKIM notice each set the workflow status to SUPPRESSED.
+        observability.resourceCountIs("AWS::SecurityHub::AutomationRule", 3);
+        var suppressed = Match.objectLike(Map.of("Workflow", Match.objectLike(Map.of("Status", "SUPPRESSED"))));
+        var suppressAction = Match.objectLike(Map.of("FindingFieldsUpdate", suppressed));
+        observability.allResourcesProperties(
+                "AWS::SecurityHub::AutomationRule",
+                Match.objectLike(Map.of("Actions", Match.arrayWith(List.of(suppressAction)))));
 
         // 8a) SecurityBaselineStack: the Config recorder, its delivery channel and bucket, and
         // the standards-swap custom resources (disable CIS v1.2.0, enable CIS v5.0.0, keep AWS

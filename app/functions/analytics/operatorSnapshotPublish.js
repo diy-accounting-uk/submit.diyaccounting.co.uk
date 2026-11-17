@@ -233,7 +233,8 @@ export const OBJECTIVE_GUIDANCE = {
   },
   "security": {
     sli: "Open findings in Security Hub, GuardDuty and GitHub.",
-    levers: "Patch the dependency or fix the configuration each finding names.",
+    levers:
+      "Patch the dependency or fix the configuration each finding names. A finding that needs no action is suppressed by an automation rule in ObservabilityStack, which sets its workflow status to SUPPRESSED, and leaves the count at the next nightly run. An archived GuardDuty finding leaves the GuardDuty count at the next nightly run; its Security Hub copy stays open until a rule suppresses it.",
   },
   "retention": {
     sli: "Customers who submit again, renew, or cancel.",
