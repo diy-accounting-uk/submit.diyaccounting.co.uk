@@ -13,6 +13,10 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/vat/submitVat.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html" />
     <link rel="stylesheet" href="../../submit.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
@@ -23,7 +27,7 @@
     <!--script async src="../../prefetch/prefetch-hmrc-receipt-head.js"></script-->
   </head>
   <body>
-    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
       <h1>Submit VAT return</h1>
@@ -37,7 +41,7 @@
           >The HMRC Assist check on this page is preview: you can try the screens, and nothing is sent.</span
         >
       </p>
-      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator"><span>Synthetic mode - calls go to HMRC's sandbox API</span></div>
 
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
@@ -341,7 +345,7 @@
             </div>
             <label for="testScenario">Test scenario (Developer/Synthetic only)</label>
             <p id="testScenario-hint" class="hint">Test different HMRC sandbox error scenarios</p>
-            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint" translate="no">
               <option value="">Default</option>
               <!-- Values aligned with reference/hmrc-mtd-vat-api-1.0.yaml (POST /organisations/vat/{vrn}/returns) -->
               <option value="INVALID_VRN">Invalid VAT registration number</option>
@@ -394,7 +398,7 @@
             <circle cx="12" cy="12" r="10" />
             <path d="M8 12.5l3 3 5-6" />
           </svg>
-          VAT return submitted successfully
+          <span>VAT return submitted successfully</span>
         </h3>
         <div class="receipt-details">
           <div class="receipt-item">

@@ -627,6 +627,14 @@ cy = '''Ffurflenni TAW i CThEF am 99c y mis'''
 hash = "51f664b00ed7"
 cy = '''Agorwch y ddolen hon i weld beth mae eich tocyn yn ei roi. Yna £0.99 y mis neu £9.99 y flwyddyn. Gallwch ganslo ar unrhyw adeg.'''
 
+[strings."bundles.sign-in-to-see-your-bundles-f0ebff"]
+hash = "f0ebffbf26a5"
+cy = '''Mewngofnodwch i weld eich Bundles'''
+
+[strings."bundles.your-bundles-and-tokens-are-kept-86a8dc"]
+hash = "86a8dcc273b0"
+cy = '''Mae eich Bundles a’ch credydau (tokens) yn cael eu cadw gyda’ch cyfrif. Mewngofnodwch i weld beth sydd gennych ac i ychwanegu rhagor. Os oes gennych docyn, rhowch ef isod yn gyntaf.'''
+
 # == spreadsheets.html (LANG9): the build marks this page; ids spreadsheets.<first words>-<hash> ==
 [strings."spreadsheets.title"]
 hash = "b0b685eb311b"
@@ -2116,6 +2124,1892 @@ cy = '''Daeth dolen â chi yma. Os byddwch yn derbyn, rydym yn cadw pa ddolen am
 
 # == HMRC VAT and receipts (LANG10a) ==
 # ids vat.* and receipt.*; add entries below this line.
+#
+# HMRC's Welsh for the VAT Return, from the Welsh text of HMRC's own VAT services on GOV.UK. Use these words.
+#   Box 1 VAT due in the period on sales and other outputs
+#         TAW sy’n ddyledus yn y cyfnod ar werthiannau ac allbynnau eraill
+#   Box 2 VAT due in the period on acquisitions of goods made in Northern Ireland from EU Member States
+#         TAW sy’n ddyledus yn y cyfnod ar gaffael nwyddau a wneir yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE
+#   Box 3 Total VAT due (this is the total of box 1 and 2)
+#         Cyfanswm y TAW sy’n ddyledus (dyma gyfanswm blychau 1 a 2)
+#   Box 4 VAT reclaimed in the period on purchases and other inputs (including acquisitions in Northern Ireland from EU member states)
+#         TAW a adenillwyd yn y cyfnod ar bryniadau a mewnbynnau eraill (gan gynnwys caffaeliadau yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE)
+#   Box 5 Net VAT to pay to HMRC or reclaim (this is the difference between box 3 and 4)
+#         TAW net i dalu i CThEF neu ei hadennill (dyma’r gwahaniaeth rhwng blychau 3 a 4)
+#   Box 6 Total value of sales and other supplies, excluding VAT
+#         Cyfanswm gwerth y gwerthiannau a chyflenwadau eraill, ac eithrio TAW
+#   Box 7 Total value of purchases and all other inputs excluding any VAT
+#         Cyfanswm gwerth y pryniadau a’r holl fewnbynnau eraill, heb gynnwys TAW
+#   Box 8 Total value of dispatches of goods and related costs (excluding VAT) from Northern Ireland to EU Member States
+#         Cyfanswm gwerth anfon y nwyddau a’r costau cysylltiedig (ac eithrio TAW) o Ogledd Iwerddon i Aelod-wladwriaethau’r UE
+#   Box 9 Total value of acquisitions of goods and related costs (excluding VAT) made in Northern Ireland from EU Member States
+#         Cyfanswm gwerth caffael y nwyddau a’r costau cysylltiedig (ac eithrio TAW) a wneir yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE
+#   Box (n), in box (n), boxes      Blwch (n), ym Mlwch (n), blychau
+#   Declaration                     Datganiad
+#   The legal declaration (HMRC's Welsh, used word for word; it is not a translation of our English):
+#     Drwy gyflwyno’r Ffurflen TAW hon, rydych yn gwneud datganiad cyfreithiol bod yr wybodaeth yn gywir ac yn gyflawn
+#     hyd eithaf eich gwybodaeth a’ch cred. Gall datganiad ffug arwain at erlyniad.
+#   Submit return                   Cyflwyno Ffurflen TAW
+#   You have submitted a VAT Return Rydych wedi cyflwyno Ffurflen TAW
+#   Submitted returns               Ffurflenni TAW wedi’u cyflwyno
+#   View VAT Return                 Bwrw golwg dros y Ffurflen TAW
+#   VAT period, accounting period   Cyfnod TAW, cyfnod cyfrifyddu
+#   for the period {0}              ar gyfer y cyfnod {0}
+#   {date} to {date}                {date} hyd at {date}
+#   Return deadlines                Dyddiadau cau ar gyfer cyflwyno
+#   Return due date                 Dyddiad cau ar gyfer cyflwyno’r Ffurflen TAW
+#   obligations (open, fulfilled)   rhwymedigaethau (agored, wedi’u cyflawni)
+#   We received your return         Cawsom eich Ffurflen TAW
+#   What you owe                    Yr hyn sydd arnoch
+#   Due date                        Dyddiad dyledus
+#   Amount due, Total               Swm sy’n ddyledus, Cyfanswm
+#   Left to pay                     Yn weddill i’w dalu
+#   Amount received                 Swm a gafwyd
+#   Payment history, payment        Hanes taliadau, taliad
+#   liability                       rhwymedigaeth (HMRC: Rhwymedigaeth TAW); our VAT liabilities page says
+#                                   rhwymedigaethau talu TAW, to tell it from the obligations page
+#   Balance                         Balans
+#   Overdue charge                  Tâl am fod yn hwyr
+#   Payment on account instalment   Rhandaliad taliad ar gyfrif
+#   repayment                       ad-daliad
+#   Penalty, penalty type, amount   Cosb, Math o gosb, Swm y gosb
+#   Penalty point, points total     Pwynt cosb, Cyfanswm pwyntiau cosb
+#   penalty points threshold        trothwy pwyntiau cosb
+#   Late submission penalties       Cosbau am gyflwyno’n hwyr
+#   Late payment penalties          Cosbau am dalu’n hwyr
+#   Late payment interest           Llog am dalu’n hwyr
+#   (estimate)                      (amcangyfrif)
+#   appeal                          apêl
+#   Error:, There is a problem      Gwall:, Mae problem wedi codi
+#   Sign out                        Allgofnodi
+#   insolvent                       ansolfent
+#   month names                     Ionawr, Chwefror, Mawrth, Ebrill, Mai, Mehefin, Gorffennaf, Awst, Medi, Hydref, Tachwedd, Rhagfyr
+# What HMRC's services offer in Welsh (read 17 November 2026):
+#   The VAT (MTD) API 1.0 takes no language header and answers in English; its messages show as received.
+#   HMRC Assist answers in both languages, welshFeedback beside englishFeedback; a Welsh reader sees the Welsh first.
+#   The authorise address (/oauth/authorize) takes no language parameter; HMRC's sign-in pages carry their own
+#   Cymraeg link. The callback address stays as registered and sends a Welsh reader back to the Welsh copy.
+# Our own terms on these pages:
+#   receipt                         derbynneb (plural derbynebau)
+#   Form bundle number              rhif bwndel y ffurflen (Form bundle number)
+#   Charge reference                cyfeirnod y tâl
+#   Processing date                 dyddiad prosesu
+#   HMRC feedback (Assist)          adborth CThEF; HMRC Assist stays as the name of HMRC's service
+# Sources (retrieved 17 November 2026):
+#   https://github.com/hmrc/submit-vat-return-frontend/blob/main/conf/messages.cy (the boxes, the declaration, months)
+#   https://github.com/hmrc/view-vat-returns-frontend/blob/main/conf/messages.cy (returns, periods, deadlines)
+#   https://github.com/hmrc/vat-summary-frontend/blob/main/conf/messages.cy (what you owe, payments, charges)
+#   https://github.com/hmrc/penalties-frontend/blob/main/conf/messages.cy (penalties, points, interest)
+#   https://www.gov.uk/guidance/penalty-points-and-penalties-if-you-submit-your-vat-return-late.cy
+#   https://www.gov.uk/guidance/complete-your-vat-return-to-account-for-import-vat.cy
+
+[strings."vat-submit.title"]
+hash = "1dc9872665fe"
+cy = '''Cyflwyno Ffurflen TAW - DIY Accounting Submit'''
+
+[strings."vat-submit.submit-vat-return-734379"]
+hash = "734379343c19"
+cy = '''Cyflwyno Ffurflen TAW'''
+
+[strings."vat-submit.submit-uk-vat-returns-to-hmrc-863e14"]
+hash = "863e14503f49"
+cy = '''Cyflwyno Ffurflenni TAW y DU i CThEF o dan Troi Treth yn Ddigidol (MTD)'''
+
+[strings."vat-submit.status-production-returns-you-submit-here-5961c5"]
+hash = "5961c500796d"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae’r Ffurflenni TAW y byddwch yn eu cyflwyno yma yn cyrraedd CThEF. <span id="hmrcAssistStatusNote" hidden>Rhagolwg (preview) yw’r gwiriad HMRC Assist ar y dudalen hon: gallwch roi cynnig ar y sgriniau, ac nid oes dim yn cael ei anfon.</span>'''
+
+[strings."vat-submit.synthetic-mode-calls-go-to-hmrc-efa44d"]
+hash = "efa44dee9611"
+cy = '''Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF'''
+
+[strings."vat-submit.show-submission-form-f17097"]
+hash = "f1709784a9b9"
+cy = '''Dangos y ffurflen gyflwyno'''
+
+[strings."vat-submit.cancel-request-561966"]
+hash = "56196683592d"
+cy = '''Canslo’r cais'''
+
+[strings."vat-submit.vat-registration-number-873ba7"]
+hash = "873ba742b4fb"
+cy = '''Rhif cofrestru TAW'''
+
+[strings."vat-submit.this-is-9-numbers-sometimes-with-b921f3"]
+hash = "b921f391013c"
+cy = '''Mae hwn yn 9 rhif, weithiau gyda ‘GB’ ar y dechrau, er enghraifft 123456789 neu GB123456789. Mae i’w weld ar eich tystysgrif cofrestru TAW.'''
+
+[strings."vat-submit.vat-period-14cb33"]
+hash = "14cb33941fe9"
+cy = '''Cyfnod TAW'''
+
+[strings."vat-submit.choose-a-period-hmrc-is-expecting-9820cc"]
+hash = "9820cc663643"
+cy = '''Dewiswch gyfnod y mae CThEF yn disgwyl Ffurflen TAW ar ei gyfer'''
+
+[strings."vat-submit.connect-to-hmrc-to-list-your-345255"]
+hash = "3452554a72d5"
+cy = '''Cysylltu â CThEF i restru’ch cyfnodau agored'''
+
+[strings."vat-submit.enter-the-start-and-end-dates-422250"]
+hash = "4222504403d2"
+cy = '''Nodwch ddyddiadau dechrau a diwedd eich cyfnod TAW'''
+
+[strings."vat-submit.period-start-32d302"]
+hash = "32d302d52482"
+cy = '''Dechrau’r cyfnod'''
+
+[strings."vat-submit.period-end-eeae9f"]
+hash = "eeae9fdd63e0"
+cy = '''Diwedd y cyfnod'''
+
+[strings."vat-submit.vat-return-details-a7d1b0"]
+hash = "a7d1b059db04"
+cy = '''Manylion y Ffurflen TAW'''
+
+[strings."vat-submit.box-512fd3"]
+hash = "512fd3c6042c"
+cy = '''Blwch'''
+
+[strings."vat-submit.amount-2d7841"]
+hash = "2d7841b4ecc5"
+cy = '''Swm (£)'''
+
+[strings."vat-submit.box-1-vat-due-in-the-50f77d"]
+hash = "50f77d59a4fe"
+cy = '''Blwch 1: TAW sy’n ddyledus yn y cyfnod ar werthiannau ac allbynnau eraill'''
+
+[strings."vat-submit.enter-an-amount-with-up-to-1be124"]
+hash = "1be12402cfe1"
+cy = '''Nodwch swm gyda hyd at 2 le degol, er enghraifft £600 neu £193.54'''
+
+[strings."vat-submit.box-2-vat-due-in-the-194b1d"]
+hash = "194b1d5cb49f"
+cy = '''Blwch 2: TAW sy’n ddyledus yn y cyfnod ar gaffael nwyddau a wneir yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE'''
+
+[strings."vat-submit.enter-an-amount-with-up-to-c102eb"]
+hash = "c102eb6fb8e3"
+cy = '''Nodwch swm gyda hyd at 2 le degol, er enghraifft £600 neu £193.54. Fel arfer 0 ers Brexit.'''
+
+[strings."vat-submit.box-3-total-vat-due-f077f5"]
+hash = "f077f54c4777"
+cy = '''Blwch 3: Cyfanswm y TAW sy’n ddyledus'''
+
+[strings."vat-submit.calculated-the-sum-of-boxes-1-a0486a"]
+hash = "a0486a225cea"
+cy = '''Wedi’i gyfrifo: cyfanswm blychau 1 a 2'''
+
+[strings."vat-submit.box-4-vat-reclaimed-in-the-58efa3"]
+hash = "58efa3ad43a4"
+cy = '''Blwch 4: TAW a adenillwyd yn y cyfnod ar bryniadau a mewnbynnau eraill (gan gynnwys caffaeliadau yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE)'''
+
+[strings."vat-submit.box-5-net-vat-to-pay-fc79f7"]
+hash = "fc79f7804a94"
+cy = '''Blwch 5: TAW net i dalu i CThEF neu ei hadennill'''
+
+[strings."vat-submit.calculated-the-difference-between-boxes-3-3af40b"]
+hash = "3af40b62c183"
+cy = '''Wedi’i gyfrifo: y gwahaniaeth rhwng blychau 3 a 4, bob amser yn swm positif'''
+
+[strings."vat-submit.box-6-total-value-of-sales-d1656e"]
+hash = "d1656e6bda9b"
+cy = '''Blwch 6: Cyfanswm gwerth y gwerthiannau a chyflenwadau eraill, ac eithrio TAW'''
+
+[strings."vat-submit.enter-a-whole-number-without-pence-c5339d"]
+hash = "c5339dc4b897"
+cy = '''Nodwch rif cyfan heb geiniogau, er enghraifft £15000'''
+
+[strings."vat-submit.box-7-total-value-of-purchases-1ee58e"]
+hash = "1ee58eb6daa8"
+cy = '''Blwch 7: Cyfanswm gwerth y pryniadau a’r holl fewnbynnau eraill, heb gynnwys TAW'''
+
+[strings."vat-submit.box-8-total-value-of-all-2b4f8e"]
+hash = "2b4f8e6603c7"
+cy = '''Blwch 8: Cyfanswm gwerth anfon y nwyddau a’r costau cysylltiedig (ac eithrio TAW) o Ogledd Iwerddon i Aelod-wladwriaethau’r UE'''
+
+[strings."vat-submit.enter-a-whole-number-without-pence-fb06e5"]
+hash = "fb06e570710b"
+cy = '''Nodwch rif cyfan heb geiniogau. Fel arfer 0 ers Brexit.'''
+
+[strings."vat-submit.box-9-total-value-of-all-c20913"]
+hash = "c2091393276f"
+cy = '''Blwch 9: Cyfanswm gwerth caffael y nwyddau a’r costau cysylltiedig (ac eithrio TAW) a wneir yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE'''
+
+[strings."vat-submit.declaration-760934"]
+hash = "7609342dc466"
+cy = '''Datganiad'''
+
+[strings."vat-submit.when-you-submit-this-vat-information-540c7c"]
+hash = "540c7ce6c03c"
+cy = '''Drwy gyflwyno’r Ffurflen TAW hon, rydych yn gwneud datganiad cyfreithiol bod yr wybodaeth yn gywir ac yn gyflawn hyd eithaf eich gwybodaeth a’ch cred. Gall datganiad ffug arwain at erlyniad.'''
+
+[strings."vat-submit.tick-this-box-to-confirm-you-3a13b5"]
+hash = "3a13b5c8e938"
+cy = '''Ticiwch y blwch hwn i gadarnhau eich bod yn deall cyn cyflwyno.'''
+
+[strings."vat-submit.add-test-data-28908b"]
+hash = "28908bfe6fec"
+cy = '''ychwanegu data prawf'''
+
+[strings."vat-submit.test-scenario-developer-synthetic-only-bc20fe"]
+hash = "bc20fe9282b9"
+cy = '''Senario prawf (datblygwr neu synthetig yn unig)'''
+
+[strings."vat-submit.test-different-hmrc-sandbox-error-scenarios-679bff"]
+hash = "679bff1dd5c0"
+cy = '''Profi senarios gwall gwahanol yn amgylchedd prawf (sandbox) CThEF'''
+
+[strings."vat-submit.validate-fraud-prevention-headers-ea7c94"]
+hash = "ea7c941445f7"
+cy = '''Dilysu’r penawdau atal twyll'''
+
+[strings."vat-submit.allow-any-open-obligation-synthetic-only-d49472"]
+hash = "d49472cb0ff7"
+cy = '''Caniatáu unrhyw rwymedigaeth agored (synthetig yn unig: mae’n defnyddio’r cyfnod cyntaf sydd ar gael os nad yw’r dyddiadau’n cyfateb)'''
+
+[strings."vat-submit.vat-return-submitted-successfully-89c74a"]
+hash = "89c74ac6af4b"
+cy = '''Rydych wedi cyflwyno Ffurflen TAW'''
+
+[strings."vat-submit.processing-date-2d3ed7"]
+hash = "2d3ed76199a1"
+cy = '''<strong>Dyddiad prosesu</strong>'''
+
+[strings."vat-submit.form-bundle-number-ba0637"]
+hash = "ba063722a436"
+cy = '''<strong>Rhif bwndel y ffurflen (Form bundle number)</strong>'''
+
+[strings."vat-submit.charge-reference-a5b172"]
+hash = "a5b17295c750"
+cy = '''<strong>Cyfeirnod y tâl</strong>'''
+
+[strings."vat-submit.vat-registration-number-fc811f"]
+hash = "fc811ff3ff0a"
+cy = '''<strong>Rhif cofrestru TAW</strong>'''
+
+[strings."vat-submit.period-35a97c"]
+hash = "35a97c1c2c80"
+cy = '''<strong>Cyfnod</strong>'''
+
+[strings."vat-submit.keep-this-receipt-for-your-records-a1fdec"]
+hash = "a1fdecc1dc99"
+cy = '''Cadwch y dderbynneb hon ar gyfer eich cofnodion.'''
+
+[strings."vat-submit.see-your-receipts-ab780d"]
+hash = "ab780dfb3ddb"
+cy = '''Gweld eich derbynebau'''
+
+[strings."vat-submit.see-your-vat-obligations-f9042f"]
+hash = "f9042fd7567e"
+cy = '''Gweld eich rhwymedigaethau TAW'''
+
+[strings."vat-submit.sign-in-to-submit-a-vat-57f235"]
+hash = "57f2353f63b4"
+cy = '''Mewngofnodwch i gyflwyno Ffurflen TAW'''
+
+[strings."vat-submit.sign-in-to-submit-your-vat-723188"]
+hash = "72318891853f"
+cy = '''Mewngofnodwch i gyflwyno’ch Ffurflen TAW i CThEF. Mae eich llyfrau, eich cysylltiad â CThEF a’ch derbynebau yn cael eu cadw gyda’ch cyfrif.'''
+
+[strings."vat-submit.vat-period-to-submit-236d4c"]
+hash = "236d4ccf5d13"
+cy = '''Y cyfnod TAW i’w gyflwyno'''
+
+[strings."vat-submit.what-to-do-next-6164ad"]
+hash = "6164ad73de30"
+cy = '''Beth i’w wneud nesaf'''
+
+[strings."vat-obligations.title"]
+hash = "e6190334883b"
+cy = '''Rhwymedigaethau TAW - DIY Accounting Submit'''
+
+[strings."vat-obligations.vat-obligations-353db3"]
+hash = "353db3ca7935"
+cy = '''Rhwymedigaethau TAW'''
+
+[strings."vat-obligations.retrieve-vat-obligations-from-hmrc-77933d"]
+hash = "77933d598cbe"
+cy = '''Cael eich rhwymedigaethau TAW gan CThEF'''
+
+[strings."vat-obligations.status-production-this-reads-your-real-8ae5ea"]
+hash = "8ae5ead1596a"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn darllen eich cofnodion go iawn yn CThEF.'''
+
+[strings."vat-obligations.synthetic-mode-calls-go-to-hmrc-efa44d"]
+hash = "efa44dee9611"
+cy = '''Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF'''
+
+[strings."vat-obligations.show-obligation-search-criteria-fd272b"]
+hash = "fd272b5ff178"
+cy = '''Dangos meini prawf chwilio’r rhwymedigaethau'''
+
+[strings."vat-obligations.cancel-request-561966"]
+hash = "56196683592d"
+cy = '''Canslo’r cais'''
+
+[strings."vat-obligations.retrieve-vat-obligations-9fc891"]
+hash = "9fc8919e916f"
+cy = '''Cael rhwymedigaethau TAW'''
+
+[strings."vat-obligations.vat-registration-number-873ba7"]
+hash = "873ba742b4fb"
+cy = '''Rhif cofrestru TAW'''
+
+[strings."vat-obligations.this-is-9-numbers-sometimes-with-b921f3"]
+hash = "b921f391013c"
+cy = '''Mae hwn yn 9 rhif, weithiau gyda ‘GB’ ar y dechrau, er enghraifft 123456789 neu GB123456789. Mae i’w weld ar eich tystysgrif cofrestru TAW.'''
+
+[strings."vat-obligations.from-date-optional-f40f4c"]
+hash = "f40f4c152f1d"
+cy = '''O’r dyddiad (dewisol)'''
+
+[strings."vat-obligations.start-date-for-obligation-search-defaults-e59845"]
+hash = "e59845e2bab4"
+cy = '''Dyddiad dechrau’r chwiliad am rwymedigaethau. Os na fyddwch yn ei nodi, dechrau’r flwyddyn galendr bresennol fydd hwn.'''
+
+[strings."vat-obligations.to-date-optional-e1b0ad"]
+hash = "e1b0adc12fbb"
+cy = '''Hyd at y dyddiad (dewisol)'''
+
+[strings."vat-obligations.end-date-for-obligation-search-defaults-32cf86"]
+hash = "32cf862ba01f"
+cy = '''Dyddiad diwedd y chwiliad am rwymedigaethau. Os na fyddwch yn ei nodi, dyddiad heddiw fydd hwn. Yr ystod hwyaf yw 366 diwrnod.'''
+
+[strings."vat-obligations.status-optional-02bab6"]
+hash = "02bab60a84ff"
+cy = '''Statws (dewisol)'''
+
+[strings."vat-obligations.open-obligations-require-a-vat-return-39ae7f"]
+hash = "39ae7f62f448"
+cy = '''Mae angen cyflwyno Ffurflen TAW ar gyfer rhwymedigaethau agored. Mae Ffurflenni ar gyfer rhwymedigaethau wedi’u cyflawni eisoes wedi’u cyflwyno.'''
+
+[strings."vat-obligations.all-statuses-8ee573"]
+hash = "8ee57323a6f2"
+cy = '''Pob statws'''
+
+[strings."vat-obligations.open-awaiting-submission-8761ce"]
+hash = "8761cef1af11"
+cy = '''Agored (yn aros i gael ei chyflwyno)'''
+
+[strings."vat-obligations.fulfilled-already-submitted-b3fe58"]
+hash = "b3fe584ed4f8"
+cy = '''Wedi’i chyflawni (wedi’i chyflwyno eisoes)'''
+
+[strings."vat-obligations.add-test-data-28908b"]
+hash = "28908bfe6fec"
+cy = '''ychwanegu data prawf'''
+
+[strings."vat-obligations.test-scenario-developer-synthetic-only-bc20fe"]
+hash = "bc20fe9282b9"
+cy = '''Senario prawf (datblygwr neu synthetig yn unig)'''
+
+[strings."vat-obligations.test-different-hmrc-sandbox-scenarios-39d913"]
+hash = "39d913dbbc78"
+cy = '''Profi senarios gwahanol yn amgylchedd prawf (sandbox) CThEF'''
+
+[strings."vat-obligations.validate-fraud-prevention-headers-ea7c94"]
+hash = "ea7c941445f7"
+cy = '''Dilysu’r penawdau atal twyll'''
+
+[strings."vat-obligations.retrieve-obligations-63a80e"]
+hash = "63a80e6fd500"
+cy = '''Cael rhwymedigaethau'''
+
+[strings."vat-obligations.view-the-chosen-period-s-return-fd6ecc"]
+hash = "fd6ecc3eae51"
+cy = '''<a href="viewVatReturn.html">Bwrw golwg dros Ffurflen TAW y cyfnod a ddewiswyd</a>'''
+
+[strings."vat-obligations.new-search-4587eb"]
+hash = "4587eb457003"
+cy = '''Chwiliad newydd'''
+
+[strings."vat-obligations.sign-in-to-see-your-vat-8d9ce8"]
+hash = "8d9ce85a0ee3"
+cy = '''Mewngofnodwch i weld eich rhwymedigaethau TAW'''
+
+[strings."vat-obligations.sign-in-to-retrieve-your-vat-9a159f"]
+hash = "9a159fcb24d7"
+cy = '''Mewngofnodwch i gael eich rhwymedigaethau TAW gan CThEF. Maen nhw’n dangos pa Ffurflenni TAW y mae CThEF yn aros amdanynt.'''
+
+[strings."vat-liabilities.title"]
+hash = "20f34fbf5383"
+cy = '''Rhwymedigaethau talu TAW - DIY Accounting Submit'''
+
+[strings."vat-liabilities.vat-liabilities-143a60"]
+hash = "143a60593d7e"
+cy = '''Rhwymedigaethau talu TAW'''
+
+[strings."vat-liabilities.retrieve-vat-liabilities-from-hmrc-d35f00"]
+hash = "d35f00524b21"
+cy = '''Cael yr hyn sydd arnoch o ran TAW gan CThEF'''
+
+[strings."vat-liabilities.status-production-this-reads-your-real-8ae5ea"]
+hash = "8ae5ead1596a"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn darllen eich cofnodion go iawn yn CThEF.'''
+
+[strings."vat-liabilities.synthetic-mode-calls-go-to-hmrc-efa44d"]
+hash = "efa44dee9611"
+cy = '''Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF'''
+
+[strings."vat-liabilities.show-liabilities-search-criteria-6f6df4"]
+hash = "6f6df4aee00e"
+cy = '''Dangos meini prawf chwilio’r rhwymedigaethau talu'''
+
+[strings."vat-liabilities.cancel-request-561966"]
+hash = "56196683592d"
+cy = '''Canslo’r cais'''
+
+[strings."vat-liabilities.retrieve-vat-liabilities-4ea340"]
+hash = "4ea34015441b"
+cy = '''Cael rhwymedigaethau talu TAW'''
+
+[strings."vat-liabilities.vat-registration-number-873ba7"]
+hash = "873ba742b4fb"
+cy = '''Rhif cofrestru TAW'''
+
+[strings."vat-liabilities.this-is-9-numbers-sometimes-with-b921f3"]
+hash = "b921f391013c"
+cy = '''Mae hwn yn 9 rhif, weithiau gyda ‘GB’ ar y dechrau, er enghraifft 123456789 neu GB123456789. Mae i’w weld ar eich tystysgrif cofrestru TAW.'''
+
+[strings."vat-liabilities.from-date-optional-f40f4c"]
+hash = "f40f4c152f1d"
+cy = '''O’r dyddiad (dewisol)'''
+
+[strings."vat-liabilities.start-date-for-liability-search-defaults-abae59"]
+hash = "abae596701c0"
+cy = '''Dyddiad dechrau’r chwiliad am rwymedigaethau talu. Os na fyddwch yn ei nodi, dechrau’r flwyddyn galendr bresennol fydd hwn.'''
+
+[strings."vat-liabilities.to-date-optional-e1b0ad"]
+hash = "e1b0adc12fbb"
+cy = '''Hyd at y dyddiad (dewisol)'''
+
+[strings."vat-liabilities.end-date-for-liability-search-defaults-ae7bcf"]
+hash = "ae7bcfcfc1e2"
+cy = '''Dyddiad diwedd y chwiliad am rwymedigaethau talu. Os na fyddwch yn ei nodi, dyddiad heddiw fydd hwn. Yr ystod hwyaf yw 365 diwrnod.'''
+
+[strings."vat-liabilities.add-test-data-28908b"]
+hash = "28908bfe6fec"
+cy = '''ychwanegu data prawf'''
+
+[strings."vat-liabilities.test-scenario-developer-synthetic-only-bc20fe"]
+hash = "bc20fe9282b9"
+cy = '''Senario prawf (datblygwr neu synthetig yn unig)'''
+
+[strings."vat-liabilities.test-different-hmrc-sandbox-scenarios-39d913"]
+hash = "39d913dbbc78"
+cy = '''Profi senarios gwahanol yn amgylchedd prawf (sandbox) CThEF'''
+
+[strings."vat-liabilities.validate-fraud-prevention-headers-ea7c94"]
+hash = "ea7c941445f7"
+cy = '''Dilysu’r penawdau atal twyll'''
+
+[strings."vat-liabilities.retrieve-liabilities-c8d362"]
+hash = "c8d3621a77d5"
+cy = '''Cael rhwymedigaethau talu'''
+
+[strings."vat-liabilities.new-search-4587eb"]
+hash = "4587eb457003"
+cy = '''Chwiliad newydd'''
+
+[strings."vat-liabilities.sign-in-to-see-your-vat-95007b"]
+hash = "95007bcb48f1"
+cy = '''Mewngofnodwch i weld eich rhwymedigaethau talu TAW'''
+
+[strings."vat-liabilities.sign-in-to-retrieve-your-vat-1ddc6c"]
+hash = "1ddc6c063a20"
+cy = '''Mewngofnodwch i gael eich rhwymedigaethau talu TAW gan CThEF. Maen nhw’n dangos yr hyn sydd arnoch ar gyfer pob cyfnod.'''
+
+[strings."vat-payments.title"]
+hash = "5dc682feb40b"
+cy = '''Taliadau TAW - DIY Accounting Submit'''
+
+[strings."vat-payments.vat-payments-00d327"]
+hash = "00d327ceb6d9"
+cy = '''Taliadau TAW'''
+
+[strings."vat-payments.retrieve-vat-payments-from-hmrc-af0000"]
+hash = "af0000c78d51"
+cy = '''Cael eich taliadau TAW gan CThEF'''
+
+[strings."vat-payments.status-production-this-reads-your-real-8ae5ea"]
+hash = "8ae5ead1596a"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn darllen eich cofnodion go iawn yn CThEF.'''
+
+[strings."vat-payments.synthetic-mode-calls-go-to-hmrc-efa44d"]
+hash = "efa44dee9611"
+cy = '''Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF'''
+
+[strings."vat-payments.show-payments-search-criteria-c623f1"]
+hash = "c623f10df518"
+cy = '''Dangos meini prawf chwilio’r taliadau'''
+
+[strings."vat-payments.cancel-request-561966"]
+hash = "56196683592d"
+cy = '''Canslo’r cais'''
+
+[strings."vat-payments.retrieve-vat-payments-b9f603"]
+hash = "b9f60365d984"
+cy = '''Cael taliadau TAW'''
+
+[strings."vat-payments.vat-registration-number-873ba7"]
+hash = "873ba742b4fb"
+cy = '''Rhif cofrestru TAW'''
+
+[strings."vat-payments.this-is-9-numbers-sometimes-with-b921f3"]
+hash = "b921f391013c"
+cy = '''Mae hwn yn 9 rhif, weithiau gyda ‘GB’ ar y dechrau, er enghraifft 123456789 neu GB123456789. Mae i’w weld ar eich tystysgrif cofrestru TAW.'''
+
+[strings."vat-payments.from-date-optional-f40f4c"]
+hash = "f40f4c152f1d"
+cy = '''O’r dyddiad (dewisol)'''
+
+[strings."vat-payments.start-date-for-payment-search-defaults-469c7b"]
+hash = "469c7bfe8af1"
+cy = '''Dyddiad dechrau’r chwiliad am daliadau. Os na fyddwch yn ei nodi, dechrau’r flwyddyn galendr bresennol fydd hwn.'''
+
+[strings."vat-payments.to-date-optional-e1b0ad"]
+hash = "e1b0adc12fbb"
+cy = '''Hyd at y dyddiad (dewisol)'''
+
+[strings."vat-payments.end-date-for-payment-search-defaults-974191"]
+hash = "974191541d6d"
+cy = '''Dyddiad diwedd y chwiliad am daliadau. Os na fyddwch yn ei nodi, dyddiad heddiw fydd hwn. Yr ystod hwyaf yw 365 diwrnod.'''
+
+[strings."vat-payments.add-test-data-28908b"]
+hash = "28908bfe6fec"
+cy = '''ychwanegu data prawf'''
+
+[strings."vat-payments.test-scenario-developer-synthetic-only-bc20fe"]
+hash = "bc20fe9282b9"
+cy = '''Senario prawf (datblygwr neu synthetig yn unig)'''
+
+[strings."vat-payments.test-different-hmrc-sandbox-scenarios-39d913"]
+hash = "39d913dbbc78"
+cy = '''Profi senarios gwahanol yn amgylchedd prawf (sandbox) CThEF'''
+
+[strings."vat-payments.validate-fraud-prevention-headers-ea7c94"]
+hash = "ea7c941445f7"
+cy = '''Dilysu’r penawdau atal twyll'''
+
+[strings."vat-payments.retrieve-payments-4025b4"]
+hash = "4025b4d27266"
+cy = '''Cael taliadau'''
+
+[strings."vat-payments.new-search-4587eb"]
+hash = "4587eb457003"
+cy = '''Chwiliad newydd'''
+
+[strings."vat-payments.sign-in-to-see-your-vat-5b97e2"]
+hash = "5b97e2aed816"
+cy = '''Mewngofnodwch i weld eich taliadau TAW'''
+
+[strings."vat-payments.sign-in-to-retrieve-the-vat-fa4c4e"]
+hash = "fa4c4e9afadb"
+cy = '''Mewngofnodwch i gael y taliadau TAW y mae CThEF wedi’u cofnodi ar eich cyfer.'''
+
+[strings."vat-penalties.title"]
+hash = "15010d05d3be"
+cy = '''Cosbau TAW - DIY Accounting Submit'''
+
+[strings."vat-penalties.vat-penalties-ab32b8"]
+hash = "ab32b85f914a"
+cy = '''Cosbau TAW'''
+
+[strings."vat-penalties.retrieve-vat-penalties-from-hmrc-507b01"]
+hash = "507b017da61a"
+cy = '''Cael eich cosbau TAW gan CThEF'''
+
+[strings."vat-penalties.status-production-this-reads-your-real-8ae5ea"]
+hash = "8ae5ead1596a"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn darllen eich cofnodion go iawn yn CThEF.'''
+
+[strings."vat-penalties.synthetic-mode-calls-go-to-hmrc-efa44d"]
+hash = "efa44dee9611"
+cy = '''Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF'''
+
+[strings."vat-penalties.show-penalties-search-criteria-95b7ad"]
+hash = "95b7ad64a7b7"
+cy = '''Dangos meini prawf chwilio’r cosbau'''
+
+[strings."vat-penalties.cancel-request-561966"]
+hash = "56196683592d"
+cy = '''Canslo’r cais'''
+
+[strings."vat-penalties.retrieve-vat-penalties-21cde3"]
+hash = "21cde375922b"
+cy = '''Cael cosbau TAW'''
+
+[strings."vat-penalties.shows-penalties-hmrc-has-recorded-in-7b5419"]
+hash = "7b5419dfe7f2"
+cy = '''Mae’n dangos y cosbau y mae CThEF wedi’u cofnodi yn ystod y 24 mis diwethaf. Nid oes ystod dyddiadau i’w dewis.'''
+
+[strings."vat-penalties.vat-registration-number-873ba7"]
+hash = "873ba742b4fb"
+cy = '''Rhif cofrestru TAW'''
+
+[strings."vat-penalties.this-is-9-numbers-sometimes-with-b921f3"]
+hash = "b921f391013c"
+cy = '''Mae hwn yn 9 rhif, weithiau gyda ‘GB’ ar y dechrau, er enghraifft 123456789 neu GB123456789. Mae i’w weld ar eich tystysgrif cofrestru TAW.'''
+
+[strings."vat-penalties.add-test-data-28908b"]
+hash = "28908bfe6fec"
+cy = '''ychwanegu data prawf'''
+
+[strings."vat-penalties.test-scenario-developer-synthetic-only-bc20fe"]
+hash = "bc20fe9282b9"
+cy = '''Senario prawf (datblygwr neu synthetig yn unig)'''
+
+[strings."vat-penalties.test-different-hmrc-sandbox-scenarios-39d913"]
+hash = "39d913dbbc78"
+cy = '''Profi senarios gwahanol yn amgylchedd prawf (sandbox) CThEF'''
+
+[strings."vat-penalties.validate-fraud-prevention-headers-ea7c94"]
+hash = "ea7c941445f7"
+cy = '''Dilysu’r penawdau atal twyll'''
+
+[strings."vat-penalties.retrieve-penalties-03a4b0"]
+hash = "03a4b0fc04cf"
+cy = '''Cael cosbau'''
+
+[strings."vat-penalties.new-search-4587eb"]
+hash = "4587eb457003"
+cy = '''Chwiliad newydd'''
+
+[strings."vat-penalties.sign-in-to-see-your-vat-d2189c"]
+hash = "d2189ccaac60"
+cy = '''Mewngofnodwch i weld eich cosbau TAW'''
+
+[strings."vat-penalties.sign-in-to-retrieve-the-vat-90d8ba"]
+hash = "90d8ba3e59e7"
+cy = '''Mewngofnodwch i gael y cosbau TAW a’r pwyntiau cosb y mae CThEF wedi’u cofnodi ar eich cyfer.'''
+
+[strings."vat-view-return.title"]
+hash = "568572ecdce1"
+cy = '''Bwrw golwg dros Ffurflen TAW - DIY Accounting Submit'''
+
+[strings."vat-view-return.view-vat-return-34bef1"]
+hash = "34bef14f5a87"
+cy = '''Bwrw golwg dros Ffurflen TAW'''
+
+[strings."vat-view-return.view-submitted-vat-return-details-641f64"]
+hash = "641f641e98c7"
+cy = '''Bwrw golwg dros fanylion Ffurflen TAW a gyflwynwyd'''
+
+[strings."vat-view-return.status-production-this-reads-your-real-8ae5ea"]
+hash = "8ae5ead1596a"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn darllen eich cofnodion go iawn yn CThEF.'''
+
+[strings."vat-view-return.synthetic-mode-calls-go-to-hmrc-efa44d"]
+hash = "efa44dee9611"
+cy = '''Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF'''
+
+[strings."vat-view-return.show-search-form-e48130"]
+hash = "e4813084870b"
+cy = '''Dangos y ffurflen chwilio'''
+
+[strings."vat-view-return.cancel-request-561966"]
+hash = "56196683592d"
+cy = '''Canslo’r cais'''
+
+[strings."vat-view-return.retrieve-vat-return-aad595"]
+hash = "aad59558dcf6"
+cy = '''Cael Ffurflen TAW'''
+
+[strings."vat-view-return.vat-registration-number-873ba7"]
+hash = "873ba742b4fb"
+cy = '''Rhif cofrestru TAW'''
+
+[strings."vat-view-return.this-is-9-numbers-sometimes-with-b921f3"]
+hash = "b921f391013c"
+cy = '''Mae hwn yn 9 rhif, weithiau gyda ‘GB’ ar y dechrau, er enghraifft 123456789 neu GB123456789. Mae i’w weld ar eich tystysgrif cofrestru TAW.'''
+
+[strings."vat-view-return.vat-period-14cb33"]
+hash = "14cb33941fe9"
+cy = '''Cyfnod TAW'''
+
+[strings."vat-view-return.filled-in-when-you-choose-a-c87e3d"]
+hash = "c87e3daf0d30"
+cy = '''Caiff ei llenwi pan fyddwch yn dewis cyfnod ar y dudalen rhwymedigaethau TAW. Fel arall, nodwch ddyddiadau dechrau a diwedd y cyfnod TAW yr hoffech ei weld.'''
+
+[strings."vat-view-return.period-start-32d302"]
+hash = "32d302d52482"
+cy = '''Dechrau’r cyfnod'''
+
+[strings."vat-view-return.period-end-eeae9f"]
+hash = "eeae9fdd63e0"
+cy = '''Diwedd y cyfnod'''
+
+[strings."vat-view-return.add-test-data-28908b"]
+hash = "28908bfe6fec"
+cy = '''ychwanegu data prawf'''
+
+[strings."vat-view-return.test-scenario-developer-synthetic-only-bc20fe"]
+hash = "bc20fe9282b9"
+cy = '''Senario prawf (datblygwr neu synthetig yn unig)'''
+
+[strings."vat-view-return.test-different-hmrc-sandbox-scenarios-39d913"]
+hash = "39d913dbbc78"
+cy = '''Profi senarios gwahanol yn amgylchedd prawf (sandbox) CThEF'''
+
+[strings."vat-view-return.validate-fraud-prevention-headers-ea7c94"]
+hash = "ea7c941445f7"
+cy = '''Dilysu’r penawdau atal twyll'''
+
+[strings."vat-view-return.view-return-d62c33"]
+hash = "d62c330f4643"
+cy = '''Bwrw golwg dros y Ffurflen TAW'''
+
+[strings."vat-view-return.view-another-return-ecf5fc"]
+hash = "ecf5fc66e60f"
+cy = '''Bwrw golwg dros Ffurflen TAW arall'''
+
+[strings."vat-view-return.back-to-obligations-0ce824"]
+hash = "0ce8243b50bf"
+cy = '''Yn ôl i’r rhwymedigaethau'''
+
+[strings."vat-view-return.sign-in-to-view-a-vat-02396d"]
+hash = "02396df5e58b"
+cy = '''Mewngofnodwch i fwrw golwg dros Ffurflen TAW'''
+
+[strings."vat-view-return.sign-in-to-view-a-vat-6b0303"]
+hash = "6b030393d158"
+cy = '''Mewngofnodwch i fwrw golwg dros Ffurflen TAW rydych wedi’i chyflwyno i CThEF.'''
+
+[strings."receipts.title"]
+hash = "6d6f8f8031ff"
+cy = '''Eich derbynebau - DIY Accounting Submit'''
+
+[strings."receipts.your-receipts-28d5f7"]
+hash = "28d5f76d0ce7"
+cy = '''Eich derbynebau'''
+
+[strings."receipts.the-receipts-hmrc-and-companies-house-ae44cc"]
+hash = "ae44cc60af59"
+cy = '''Y derbynebau a anfonodd CThEF a Thŷ’r Cwmnïau yn ôl ar gyfer eich cyflwyniadau'''
+
+[strings."receipts.date-99c40a"]
+hash = "99c40ab40592"
+cy = '''Dyddiad'''
+
+[strings."receipts.receipt-dad5a9"]
+hash = "dad5a9692313"
+cy = '''Derbynneb'''
+
+[strings."receipts.no-receipts-yet-3d93a3"]
+hash = "3d93a35cf00f"
+cy = '''Dim derbynebau eto.'''
+
+[strings."receipts.export-csv-91f71c"]
+hash = "91f71c14c8d6"
+cy = '''Allforio CSV'''
+
+[strings."receipts.receipt-details-02f7cc"]
+hash = "02f7cc377c23"
+cy = '''Manylion y dderbynneb'''
+
+[strings."receipts.sign-in-to-see-your-receipts-ab5e0b"]
+hash = "ab5e0bdfecfd"
+cy = '''Mewngofnodwch i weld eich derbynebau'''
+
+[strings."receipts.sign-in-to-see-the-receipts-b844ae"]
+hash = "b844ae8bb89c"
+cy = '''Mewngofnodwch i weld y derbynebau ar gyfer eich cyflwyniadau ac i’w lawrlwytho.'''
+
+[strings."receipts.load-failed"]
+hash = "dd8eceb8f221"
+cy = '''Methu llwytho’r derbynebau'''
+
+[strings."widget.date-range"]
+hash = "c72e51fdcb01"
+cy = '''{start} hyd at {end}'''
+
+[strings."receipts.part-of"]
+hash = "d989975a6ca4"
+cy = '''{part} o {parts}'''
+
+[strings."receipts.none"]
+hash = "3d93a35cf00f"
+cy = '''Dim derbynebau eto.'''
+
+[strings."receipts.col-date"]
+hash = "99c40ab40592"
+cy = '''Dyddiad'''
+
+[strings."receipts.col-receipt"]
+hash = "dad5a9692313"
+cy = '''Derbynneb'''
+
+[strings."receipts.kind-accounts"]
+hash = "8a7c8b67fe8b"
+cy = '''Cyfrifon'''
+
+[strings."receipts.kind-ct600"]
+hash = "e84474d2d95e"
+cy = '''Ffurflen Dreth y Cwmni'''
+
+[strings."receipts.kind-revised-accounts"]
+hash = "fb8e973b6fe9"
+cy = '''Cyfrifon diwygiedig'''
+
+[strings."receipts.kind-amended-ct600"]
+hash = "755b43917dd6"
+cy = '''Ffurflen Dreth y Cwmni wedi’i diwygio'''
+
+[strings."receipts.unnamed"]
+hash = "2ad0d52676d4"
+cy = '''Derbynneb heb enw'''
+
+[strings."receipts.download"]
+hash = "ce358dca88ce"
+cy = '''Lawrlwytho’r dderbynneb'''
+
+[strings."receipts.fetch-failed"]
+hash = "a5d52f59cab0"
+cy = '''Methu cael y dderbynneb'''
+
+[strings."receipt.processing-date"]
+hash = "919808c7dd8d"
+cy = '''Dyddiad prosesu'''
+
+[strings."receipt.payment-indicator"]
+hash = "db628f882aa7"
+cy = '''Dangosydd talu'''
+
+[strings."receipt.form-bundle-number"]
+hash = "6410a8dfb868"
+cy = '''Rhif bwndel y ffurflen (Form bundle number)'''
+
+[strings."receipt.charge-reference"]
+hash = "ffed0300255d"
+cy = '''Cyfeirnod y tâl'''
+
+[strings."receipts.field-period-id"]
+hash = "af71f50c376d"
+cy = '''ID y cyfnod'''
+
+[strings."receipts.field-submission-id"]
+hash = "bac6814e63b3"
+cy = '''ID y cyflwyniad'''
+
+[strings."receipts.field-calculation-id"]
+hash = "133aaf0b420b"
+cy = '''ID y cyfrifiad'''
+
+[strings."receipts.field-correlation-id"]
+hash = "c267c186e80d"
+cy = '''ID cydberthyniad'''
+
+[strings."receipts.field-tax-year"]
+hash = "09a6de3cf95f"
+cy = '''Blwyddyn dreth'''
+
+[strings."receipts.field-start-date"]
+hash = "8169693101a4"
+cy = '''Dyddiad dechrau'''
+
+[strings."receipts.field-end-date"]
+hash = "14303aa0c4a0"
+cy = '''Dyddiad gorffen'''
+
+[strings."receipts.field-link"]
+hash = "a6a32dbc5618"
+cy = '''Dolen'''
+
+[strings."receipts.field-relation"]
+hash = "1367485dc3c3"
+cy = '''Perthynas'''
+
+[strings."widget.field-item"]
+hash = "652bcc3a4784"
+cy = '''Eitem'''
+
+[strings."widget.assist-feedback-heading"]
+hash = "d45d59c02382"
+cy = '''Adborth CThEF'''
+
+[strings."receipts.assist-acknowledged"]
+hash = "91fc8be1e073"
+cy = '''Rhoddwyd gwybod i CThEF ar {date}'''
+
+[strings."receipts.assist-not-acknowledged"]
+hash = "aceebe544849"
+cy = '''Heb roi gwybod i CThEF'''
+
+[strings."receipts.assist-related"]
+hash = "67cea94e8930"
+cy = '''Yn ymwneud â: {path}'''
+
+[strings."receipt.vat-explanation"]
+hash = "c8e536cdf280"
+cy = '''Mae CThEF yn rhoi’r dderbynneb hon pan fydd yn derbyn Ffurflen TAW. Rhif bwndel y ffurflen yw cyfeirnod CThEF ar gyfer eich Ffurflen TAW. Cadwch ef: bydd CThEF yn gofyn amdano os byddwch yn holi am y Ffurflen.'''
+
+[strings."receipt.indicator-dd"]
+hash = "07a583b7bf65"
+cy = '''Ystyr DD yw Debyd Uniongyrchol.'''
+
+[strings."receipt.indicator-bank"]
+hash = "6d8dc694743f"
+cy = '''Ystyr BANK yw taliad drwy’ch banc.'''
+
+[strings."receipt.quote-charge"]
+hash = "7f9ce3718bb6"
+cy = '''Dyfynnwch gyfeirnod y tâl {reference} pan fyddwch yn talu.'''
+
+[strings."receipt.copy-title"]
+hash = "9f0b912a70b0"
+cy = '''Eich copi o’r dderbynneb ar gyfer Ffurflen TAW'''
+
+[strings."vat.status-accepted"]
+hash = "211880accc66"
+cy = '''Derbyniwyd gan CThEF'''
+
+[strings."receipt.from-hmrc"]
+hash = "e966d02a52a6"
+cy = '''Derbynneb gan CThEF'''
+
+[strings."receipts.back"]
+hash = "e762cb65672c"
+cy = '''Yn ôl i’ch derbynebau'''
+
+[strings."receipts.see-obligations"]
+hash = "f9042fd7567e"
+cy = '''Gweld eich rhwymedigaethau TAW'''
+
+[strings."receipts.see-payments"]
+hash = "3d2c65952b63"
+cy = '''Gweld eich taliadau TAW'''
+
+[strings."receipts.field-name"]
+hash = "4d5e23e57ad1"
+cy = '''Enw’r dderbynneb'''
+
+[strings."receipts.details"]
+hash = "02f7cc377c23"
+cy = '''Manylion y dderbynneb'''
+
+[strings."receipts.download-failed"]
+hash = "3c891fed50ff"
+cy = '''Methu lawrlwytho’r dderbynneb'''
+
+[strings."receipts.export-failed"]
+hash = "061ea77f739e"
+cy = '''Methu allforio’r CSV'''
+
+[strings."vat-submit.error-prefix"]
+hash = "617062906764"
+cy = '''Gwall:'''
+
+[strings."vat-submit.box-name-1"]
+hash = "b7057208b690"
+cy = '''y TAW sy’n ddyledus ar werthiannau'''
+
+[strings."vat-submit.box-name-2"]
+hash = "0fd07e3064f3"
+cy = '''y TAW sy’n ddyledus ar gaffaeliadau'''
+
+[strings."vat-submit.box-name-4"]
+hash = "d770b2363fde"
+cy = '''y TAW a adenillwyd'''
+
+[strings."vat-submit.box-name-6"]
+hash = "50664e7a636e"
+cy = '''cyfanswm gwerth y gwerthiannau'''
+
+[strings."vat-submit.box-name-7"]
+hash = "f496c1bbb626"
+cy = '''cyfanswm gwerth y pryniadau'''
+
+[strings."vat-submit.box-name-8"]
+hash = "c1c844073310"
+cy = '''cyfanswm gwerth y nwyddau a anfonwyd i’r UE'''
+
+[strings."vat-submit.box-name-9"]
+hash = "a156240948bd"
+cy = '''cyfanswm y caffaeliadau o’r UE'''
+
+[strings."vat-submit.enter-box"]
+hash = "a272e1b5e6ec"
+cy = '''Nodwch {label}'''
+
+[strings."vat-submit.valid-number"]
+hash = "0f7113aa18ac"
+cy = '''Nodwch rif dilys ar gyfer {label}'''
+
+[strings."vat-submit.range-pence"]
+hash = "0955ec3673c4"
+cy = '''Mae’n rhaid i’r swm ar gyfer {label} fod rhwng £-9,999,999,999,999.99 a £9,999,999,999,999.99'''
+
+[strings."vat-submit.two-decimals"]
+hash = "ebd01b4dd534"
+cy = '''Ni chaiff y swm ar gyfer {label} fod â mwy na 2 le degol'''
+
+[strings."vat-submit.net-valid"]
+hash = "bf881a37d8ad"
+cy = '''Mae’n rhaid i’r TAW net sy’n ddyledus fod yn rhif dilys'''
+
+[strings."vat-submit.net-positive"]
+hash = "f9eb02c25afb"
+cy = '''Mae’n rhaid i’r TAW net sy’n ddyledus fod yn swm positif (wedi’i gyfrifo fel y gwahaniaeth absoliwt)'''
+
+[strings."vat-submit.net-max"]
+hash = "9a1a05b4420d"
+cy = '''Mae’n rhaid i’r TAW net sy’n ddyledus fod yn £99,999,999,999.99 neu lai'''
+
+[strings."vat-submit.whole-pounds"]
+hash = "5e87f0377610"
+cy = '''Mae’n rhaid i’r swm ar gyfer {label} fod yn rhif cyfan heb geiniogau'''
+
+[strings."vat-submit.range-whole"]
+hash = "32c384d92770"
+cy = '''Mae’n rhaid i’r swm ar gyfer {label} fod rhwng £-9,999,999,999,999 a £9,999,999,999,999'''
+
+[strings."widget.required-vrn"]
+hash = "5111b0893ad7"
+cy = '''Nodwch eich rhif cofrestru TAW'''
+
+[strings."widget.vrn-nine-numbers"]
+hash = "b28449d6fa3f"
+cy = '''Mae’n rhaid i’r rhif cofrestru TAW fod yn 9 rhif'''
+
+[strings."widget.required-period-start"]
+hash = "65ca1496db66"
+cy = '''Nodwch ddyddiad dechrau’r cyfnod'''
+
+[strings."widget.required-period-end"]
+hash = "88c59e9e30ac"
+cy = '''Nodwch ddyddiad diwedd y cyfnod'''
+
+[strings."vat-submit.tick-declaration"]
+hash = "71cbabb0410d"
+cy = '''Ticiwch y blwch i gadarnhau’r datganiad'''
+
+[strings."widget.hmrc-auth-starting"]
+hash = "5cd7ce2ab882"
+cy = '''Yn dechrau mewngofnodi gyda CThEF...'''
+
+[strings."widget.hmrc-auth-redirecting"]
+hash = "178940a79760"
+cy = '''Yn eich anfon i CThEF i fewngofnodi yn {url}...'''
+
+[strings."widget.hmrc-auth-failed"]
+hash = "2b6c0c78d25e"
+cy = '''Methodd y mewngofnodi: {reason}'''
+
+[strings."vat-submit.submitting"]
+hash = "c6d14204dc13"
+cy = '''Yn cyflwyno’r Ffurflen TAW i CThEF...'''
+
+[strings."vat-submit.could-not-submit"]
+hash = "8cb42615ee2c"
+cy = '''Methu cyflwyno’r Ffurflen TAW'''
+
+[strings."vat-submit.receipt-box-1"]
+hash = "e680bdf35cb7"
+cy = '''Blwch 1: TAW sy’n ddyledus ar werthiannau'''
+
+[strings."vat-submit.receipt-box-2"]
+hash = "e13de4491ea6"
+cy = '''Blwch 2: TAW sy’n ddyledus ar gaffaeliadau'''
+
+[strings."vat-submit.receipt-box-3"]
+hash = "f077f54c4777"
+cy = '''Blwch 3: Cyfanswm y TAW sy’n ddyledus'''
+
+[strings."vat-submit.receipt-box-4"]
+hash = "f8e8d3d07aac"
+cy = '''Blwch 4: TAW a adenillwyd'''
+
+[strings."vat-submit.receipt-box-5"]
+hash = "dfc6e07cb663"
+cy = '''Blwch 5: TAW net i dalu neu ei hadennill'''
+
+[strings."vat-submit.receipt-box-6"]
+hash = "bb12cceae008"
+cy = '''Blwch 6: Cyfanswm y gwerthiannau, heb gynnwys TAW'''
+
+[strings."vat-submit.receipt-box-7"]
+hash = "c3f68a8999ed"
+cy = '''Blwch 7: Cyfanswm y pryniadau, heb gynnwys TAW'''
+
+[strings."vat-submit.receipt-box-8"]
+hash = "f8ea2fc253b1"
+cy = '''Blwch 8: Nwyddau a anfonwyd i’r UE'''
+
+[strings."vat-submit.receipt-box-9"]
+hash = "06efff5b1057"
+cy = '''Blwch 9: Caffaeliadau o’r UE'''
+
+[strings."vat-submit.connect-for-periods"]
+hash = "94a3d70bb6df"
+cy = '''Cysylltwch â CThEF i ddewis o’ch cyfnodau TAW agored, neu nodwch y dyddiadau isod.'''
+
+[strings."vat-submit.no-open-periods"]
+hash = "2e52c2520f39"
+cy = '''Nid yw CThEF yn rhestru unrhyw gyfnodau TAW agored ar gyfer y rhif hwn. Nodwch y dyddiadau isod.'''
+
+[strings."vat-submit.periods-unreadable"]
+hash = "ca90cd7ba19f"
+cy = '''Nid oedd modd darllen rhestr CThEF o gyfnodau TAW agored. Nodwch y dyddiadau isod.'''
+
+[strings."vat-submit.status-sandbox"]
+hash = "983109fd7107"
+cy = '''Statws: amgylchedd prawf (sandbox).'''
+
+[strings."vat-submit.status-sandbox-text"]
+hash = "aad002ecf269"
+cy = '''Mae’r Ffurflenni TAW y byddwch yn eu cyflwyno yma yn mynd i wasanaeth prawf CThEF ac nid ydynt yn cyrraedd unrhyw gofnod go iawn.'''
+
+[strings."vat-submit.token-use"]
+hash = "79257175c1e2"
+cy = '''Bydd y cyflwyniad hwn yn defnyddio 1 credyd (token) ({remaining} ar ôl)'''
+
+[strings."vat-submit.no-tokens"]
+hash = "1355665d617f"
+cy = '''Dim credydau (tokens) ar ôl.'''
+
+[strings."vat-submit.tokens-refresh"]
+hash = "c5b57f776548"
+cy = '''Bydd y credydau’n cael eu hadnewyddu ar {date}.'''
+
+[strings."vat-submit.assist-unavailable"]
+hash = "8f58239e1faf"
+cy = '''Nid yw adborth HMRC Assist ar gael ar hyn o bryd. Gallwch gyflwyno’ch Ffurflen TAW o hyd.'''
+
+[strings."vat-liabilities.retrieving"]
+hash = "b3d03a171183"
+cy = '''Yn cael eich rhwymedigaethau talu TAW...'''
+
+[strings."widget.still-processing"]
+hash = "7de569d46d54"
+cy = '''Yn dal i brosesu...'''
+
+[strings."vat-liabilities.retrieved"]
+hash = "17ad175db2df"
+cy = '''Cafwyd eich rhwymedigaethau talu TAW.'''
+
+[strings."vat-liabilities.retrieve-failed"]
+hash = "170d00ffc96f"
+cy = '''Methu cael eich rhwymedigaethau talu TAW.'''
+
+[strings."vat-liabilities.could-not-retrieve"]
+hash = "c13ad9a37718"
+cy = '''Methu cael eich rhwymedigaethau talu TAW'''
+
+[strings."vat-liabilities.none-found"]
+hash = "6c7277afcf2a"
+cy = '''Ni chafwyd hyd i rwymedigaethau talu ar gyfer y meini prawf hyn.'''
+
+[strings."vat-liabilities.paid"]
+hash = "fb81b961af45"
+cy = '''Wedi’i dalu'''
+
+[strings."vat-liabilities.col-period"]
+hash = "6e795d4d3cc2"
+cy = '''Cyfnod'''
+
+[strings."vat-liabilities.col-type"]
+hash = "baaddf70fb5d"
+cy = '''Math'''
+
+[strings."vat-liabilities.col-original"]
+hash = "16e9e4fa031d"
+cy = '''Swm gwreiddiol'''
+
+[strings."vat-liabilities.col-outstanding"]
+hash = "d1fb9edefdf8"
+cy = '''Yn weddill i’w dalu'''
+
+[strings."vat-liabilities.col-due"]
+hash = "57870fd03032"
+cy = '''Dyddiad dyledus'''
+
+[strings."vat-obligations.retrieving"]
+hash = "9db9d3af2b77"
+cy = '''Yn cael eich rhwymedigaethau TAW...'''
+
+[strings."vat-obligations.retrieved"]
+hash = "fd3030684797"
+cy = '''Cafwyd eich rhwymedigaethau TAW.'''
+
+[strings."vat-obligations.retrieve-failed"]
+hash = "bbaca8ef20d4"
+cy = '''Methu cael eich rhwymedigaethau TAW.'''
+
+[strings."vat-obligations.could-not-retrieve"]
+hash = "e7748ad052da"
+cy = '''Methu cael eich rhwymedigaethau TAW'''
+
+[strings."vat-obligations.none-found"]
+hash = "0aecbe810f20"
+cy = '''Ni chafwyd hyd i rwymedigaethau ar gyfer y meini prawf hyn.'''
+
+[strings."vat-obligations.status-open"]
+hash = "ed077f3d8125"
+cy = '''Agored'''
+
+[strings."vat-obligations.status-fulfilled"]
+hash = "b7c6220ada3d"
+cy = '''Wedi’i chyflawni'''
+
+[strings."vat-obligations.not-yet-received"]
+hash = "3958f3985bba"
+cy = '''Heb ei chael eto'''
+
+[strings."vat-obligations.view-return"]
+hash = "d62c330f4643"
+cy = '''Bwrw golwg dros y Ffurflen TAW'''
+
+[strings."vat-obligations.submit-return"]
+hash = "53d3aee06a73"
+cy = '''Cyflwyno Ffurflen TAW'''
+
+[strings."vat-obligations.use-period"]
+hash = "63f59570ed54"
+cy = '''Defnyddio’r cyfnod hwn'''
+
+[strings."vat-obligations.col-period"]
+hash = "8f07610d0238"
+cy = '''Cyfnod TAW'''
+
+[strings."vat-obligations.col-due"]
+hash = "57870fd03032"
+cy = '''Dyddiad cau'''
+
+[strings."vat-obligations.col-status"]
+hash = "920e413c7d41"
+cy = '''Statws'''
+
+[strings."vat-obligations.col-received"]
+hash = "49f19beeecf4"
+cy = '''Wedi’i chael'''
+
+[strings."vat-obligations.col-action"]
+hash = "64cff1319d2f"
+cy = '''Cam gweithredu'''
+
+[strings."vat-obligations.period-chosen"]
+hash = "694cb9f15ae6"
+cy = '''Rydych wedi dewis y cyfnod {period}. Bwriwch olwg dros ei Ffurflen TAW gyda’r ddolen o dan y rhestr.'''
+
+[strings."vat-payments.retrieving"]
+hash = "5e7d18b295f5"
+cy = '''Yn cael eich taliadau TAW...'''
+
+[strings."vat-payments.retrieved"]
+hash = "9235f59963b1"
+cy = '''Cafwyd eich taliadau TAW.'''
+
+[strings."vat-payments.retrieve-failed"]
+hash = "557b8959bb4d"
+cy = '''Methu cael eich taliadau TAW.'''
+
+[strings."vat-payments.could-not-retrieve"]
+hash = "5ff0640a86c0"
+cy = '''Methu cael eich taliadau TAW'''
+
+[strings."vat-payments.none-found"]
+hash = "5df517bb881f"
+cy = '''Ni chafwyd hyd i daliadau ar gyfer y meini prawf hyn.'''
+
+[strings."vat-payments.pending"]
+hash = "331551b0de41"
+cy = '''Yn yr arfaeth'''
+
+[strings."vat-payments.col-amount"]
+hash = "49e96d7cdf58"
+cy = '''Swm'''
+
+[strings."vat-payments.col-received"]
+hash = "49f19beeecf4"
+cy = '''Swm a gafwyd ar'''
+
+[strings."vat-penalties.retrieving"]
+hash = "4863bc034b65"
+cy = '''Yn cael eich cosbau TAW...'''
+
+[strings."vat-penalties.retrieved"]
+hash = "e2019916a809"
+cy = '''Cafwyd eich cosbau TAW.'''
+
+[strings."vat-penalties.retrieve-failed"]
+hash = "500c5a7090ef"
+cy = '''Methu cael eich cosbau TAW.'''
+
+[strings."vat-penalties.could-not-retrieve"]
+hash = "f190796ea4f5"
+cy = '''Methu cael eich cosbau TAW'''
+
+[strings."vat-penalties.none-found"]
+hash = "7473a68f781f"
+cy = '''Ni chafwyd hyd i gosbau yn ystod y 24 mis diwethaf.'''
+
+[strings."vat-penalties.active-points"]
+hash = "96db97ff5c68"
+cy = '''Pwyntiau cosb gweithredol'''
+
+[strings."vat-penalties.inactive-points"]
+hash = "b922fa80c7d9"
+cy = '''Pwyntiau cosb anweithredol'''
+
+[strings."vat-penalties.compliance-by"]
+hash = "8d3f15a3e0b2"
+cy = '''Cydymffurfiad wedi’i gyflawni erbyn'''
+
+[strings."vat-penalties.threshold"]
+hash = "348ec9b49aaa"
+cy = '''Trothwy pwyntiau cosb'''
+
+[strings."vat-penalties.late-submission-total"]
+hash = "4473351e4d71"
+cy = '''Cyfanswm y cosbau am gyflwyno’n hwyr'''
+
+[strings."vat-penalties.penalised-principal"]
+hash = "45e8b2511be3"
+cy = '''Cyfanswm y prif swm y codwyd cosb arno'''
+
+[strings."vat-penalties.late-payment-posted"]
+hash = "82f90e15f2c2"
+cy = '''Cosb am dalu’n hwyr (wedi’i chodi)'''
+
+[strings."vat-penalties.late-payment-estimated"]
+hash = "f7d7fb43db18"
+cy = '''Cosb am dalu’n hwyr (amcangyfrif)'''
+
+[strings."vat-penalties.late-submission"]
+hash = "fb6fc3994fd4"
+cy = '''Cosbau am gyflwyno’n hwyr'''
+
+[strings."vat-penalties.none-late-submission"]
+hash = "e15c947a77a5"
+cy = '''Dim cosbau am gyflwyno’n hwyr yn ystod y 24 mis diwethaf.'''
+
+[strings."vat-penalties.col-category"]
+hash = "292c06f0045a"
+cy = '''Categori'''
+
+[strings."vat-penalties.col-status"]
+hash = "920e413c7d41"
+cy = '''Statws'''
+
+[strings."vat-penalties.col-created"]
+hash = "d70b9e24bca2"
+cy = '''Crëwyd'''
+
+[strings."vat-penalties.col-expires"]
+hash = "f6725f3af08a"
+cy = '''Yn dod i ben'''
+
+[strings."vat-penalties.col-charge-amount"]
+hash = "f733012fdfc7"
+cy = '''Swm y tâl'''
+
+[strings."vat-penalties.late-payment"]
+hash = "c764696ddfe6"
+cy = '''Cosbau am dalu’n hwyr'''
+
+[strings."vat-penalties.none-late-payment"]
+hash = "c8521ae557fd"
+cy = '''Dim cosbau am dalu’n hwyr yn ystod y 24 mis diwethaf.'''
+
+[strings."vat-penalties.col-charge-reference"]
+hash = "e9af1ebf2067"
+cy = '''Cyfeirnod y tâl'''
+
+[strings."vat-penalties.col-period"]
+hash = "6e795d4d3cc2"
+cy = '''Cyfnod'''
+
+[strings."vat-penalties.col-penalty-amount"]
+hash = "4b058a228bd5"
+cy = '''Swm y gosb'''
+
+[strings."vat-penalties.col-due"]
+hash = "57870fd03032"
+cy = '''Dyddiad dyledus'''
+
+[strings."vat-view-return.retrieving"]
+hash = "6d512426b766"
+cy = '''Yn cael y Ffurflen TAW...'''
+
+[strings."vat-view-return.retrieved"]
+hash = "930b6d1b450b"
+cy = '''Cafwyd y Ffurflen TAW.'''
+
+[strings."vat-view-return.retrieve-failed"]
+hash = "ab3014243dce"
+cy = '''Methu cael y Ffurflen TAW.'''
+
+[strings."vat-view-return.could-not-retrieve"]
+hash = "f827fd92cc7f"
+cy = '''Methu cael y Ffurflen TAW'''
+
+[strings."vat-view-return.explain-amounts"]
+hash = "4b7fa0aaa073"
+cy = '''Mae blychau 1 i 5 yn dangos y TAW sy’n ddyledus ar eich gwerthiannau, y TAW y gallwch ei hadennill ar bryniadau, a’r swm net. Blwch 5 yw blwch 3 llai blwch 4: y TAW rydych yn ei thalu i CThEF neu’n ei hadennill. Mae’r symiau mewn punnoedd a cheiniogau.'''
+
+[strings."vat-view-return.explain-turnover"]
+hash = "c29228ff023e"
+cy = '''Mae blychau 6 i 9 yn dangos gwerth eich gwerthiannau a’ch pryniadau heb TAW, mewn punnoedd cyfan. Maen nhw ar wahân i’r TAW ym mlychau 1 i 5.'''
+
+[strings."vat-view-return.explain-declaration"]
+hash = "f925b5226246"
+cy = '''Mae ‘Wedi’i chwblhau’ yn dangos a gafodd y Ffurflen TAW ei chadarnhau’n gyflawn pan gafodd ei hanfon. Y datganiad yw’r datganiad bod yr wybodaeth yn y Ffurflen TAW yn gywir ac yn gyflawn.'''
+
+[strings."vat-view-return.status-held"]
+hash = "0856fcfc1be6"
+cy = '''Gyda CThEF, heb fod yn derfynol eto'''
+
+[strings."vat-view-return.status-retrieved"]
+hash = "3b69b2aa0e9c"
+cy = '''Cafwyd gan CThEF'''
+
+[strings."vat.box-row"]
+hash = "510e5331202a"
+cy = '''Blwch {box}: {label}'''
+
+[strings."vat-view-return.notice-box"]
+hash = "3b6dc32f5cbe"
+cy = '''VAT Notice 700/12, blwch {box} (yn Saesneg)'''
+
+[strings."vat-view-return.what-each-box-means"]
+hash = "16b056942d28"
+cy = '''Ystyr pob blwch'''
+
+[strings."widget.yes"]
+hash = "85a39ab345d6"
+cy = '''Iawn'''
+
+[strings."widget.no"]
+hash = "1ea442a134b2"
+cy = '''Na'''
+
+[strings."vat-view-return.declaration-line"]
+hash = "34183c6061fd"
+cy = '''Wedi’i chwblhau: <strong>{finalised}</strong>. Cafodd yr wybodaeth yn y Ffurflen TAW hon ei datgan yn gywir ac yn gyflawn pan gafodd ei hanfon i CThEF.'''
+
+[strings."vat-view-return.copy-title"]
+hash = "317825101a63"
+cy = '''Eich copi o Ffurflen TAW'''
+
+[strings."vat-view-return.copy-title-period"]
+hash = "f274df502001"
+cy = '''Eich copi o’r Ffurflen TAW ar gyfer {period}'''
+
+[strings."vat.vrn"]
+hash = "873ba742b4fb"
+cy = '''Rhif cofrestru TAW'''
+
+[strings."vat.record-vat-due"]
+hash = "619429810502"
+cy = '''TAW sy’n ddyledus'''
+
+[strings."vat-view-return.turnover"]
+hash = "8ecaf1d78b2e"
+cy = '''Trosiant'''
+
+[strings."vat-view-return.declaration"]
+hash = "7609342dc466"
+cy = '''Datganiad'''
+
+[strings."vat.see-receipts"]
+hash = "ab780dfb3ddb"
+cy = '''Gweld eich derbynebau'''
+
+[strings."vat-view-return.see-owe"]
+hash = "9893403f078c"
+cy = '''Gweld yr hyn sydd arnoch i CThEF'''
+
+[strings."vat-view-return.see-payments"]
+hash = "43c2774ebcf5"
+cy = '''Gweld eich taliadau'''
+
+[strings."vat-view-return.definitions-from"]
+hash = "341756bca67b"
+cy = '''Diffiniadau’r blychau wedi’u dyfynnu o'''
+
+[strings."vat-view-return.definitions-retrieved"]
+hash = "24c152263ede"
+cy = ''', adalwyd {date}.'''
+
+[strings."widget.required-field"]
+hash = "81c1ff9d7854"
+cy = '''Nodwch {label}'''
+
+[strings."widget.error-prefix"]
+hash = "617062906764"
+cy = '''Gwall: '''
+
+[strings."widget.error-summary"]
+hash = "3f63f8bb3785"
+cy = '''Mae problem wedi codi'''
+
+[strings."widget.money-negative"]
+hash = "fdee7d6a627d"
+cy = '''Ni all y swm fod yn negyddol. Gwiriwch {label}.'''
+
+[strings."widget.money-whole-pounds"]
+hash = "68ddfc95624b"
+cy = '''Nodwch swm mewn punnoedd cyfan, fel £600 neu £1,200. Gwiriwch {label}.'''
+
+[strings."widget.money-pounds-pence"]
+hash = "59df3f43243f"
+cy = '''Nodwch swm mewn punnoedd a cheiniogau, fel £600 neu £193.54. Gwiriwch {label}.'''
+
+[strings."vat.box-1"]
+hash = "fad75272126a"
+cy = '''TAW sy’n ddyledus yn y cyfnod ar werthiannau ac allbynnau eraill'''
+
+[strings."vat.box-2"]
+hash = "e063556b0e51"
+cy = '''TAW sy’n ddyledus yn y cyfnod ar gaffael nwyddau a wneir yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE'''
+
+[strings."vat.box-3"]
+hash = "9af666eb45a2"
+cy = '''Cyfanswm y TAW sy’n ddyledus'''
+
+[strings."vat.box-4"]
+hash = "9dedc512e1e3"
+cy = '''TAW a adenillwyd yn y cyfnod ar bryniadau a mewnbynnau eraill (gan gynnwys caffaeliadau yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE)'''
+
+[strings."vat.box-5"]
+hash = "ca83f7afa2e2"
+cy = '''TAW net i dalu i CThEF neu ei hadennill'''
+
+[strings."vat.box-6"]
+hash = "ce2ad2982308"
+cy = '''Cyfanswm gwerth y gwerthiannau a chyflenwadau eraill, ac eithrio TAW'''
+
+[strings."vat.box-7"]
+hash = "6f102035a2ea"
+cy = '''Cyfanswm gwerth y pryniadau a’r holl fewnbynnau eraill, heb gynnwys TAW'''
+
+[strings."vat.box-8"]
+hash = "f657b58caf78"
+cy = '''Cyfanswm gwerth anfon y nwyddau a’r costau cysylltiedig (ac eithrio TAW) o Ogledd Iwerddon i Aelod-wladwriaethau’r UE'''
+
+[strings."vat.box-9"]
+hash = "9ad5a7c308cc"
+cy = '''Cyfanswm gwerth caffael y nwyddau a’r costau cysylltiedig (ac eithrio TAW) a wneir yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE'''
+
+[strings."widget.field-source"]
+hash = "0e6306f5e349"
+cy = '''{link} (yn Saesneg), adalwyd {date}'''
+
+[strings."widget.field-sources"]
+hash = "add90cd646ca"
+cy = '''Diffiniadau wedi’u dyfynnu o {cited}.'''
+
+[strings."widget.field-key"]
+hash = "f6259fa65fb6"
+cy = '''Ystyr pob llinell'''
+
+[strings."widget.field-none"]
+hash = "087cde8f24b6"
+cy = '''Ni roddodd CThEF unrhyw ffigurau yma.'''
+
+[strings."widget.field-amount"]
+hash = "49e96d7cdf58"
+cy = '''Swm'''
+
+[strings."widget.field-value"]
+hash = "8e37953d23da"
+cy = '''Gwerth'''
+
+[strings."widget.access-forbidden"]
+hash = "5b9ec0781c77"
+cy = '''Dim mynediad. Efallai y bydd angen i chi ychwanegu Bundle i ddefnyddio’r nodwedd hon.'''
+
+[strings."widget.cannot-use-yet"]
+hash = "50574ff56edb"
+cy = '''Ni allwch ddefnyddio hwn eto'''
+
+[strings."widget.record-region"]
+hash = "a91de76c9f44"
+cy = '''Y cofnod: {label}'''
+
+[strings."widget.record-next"]
+hash = "6164ad73de30"
+cy = '''Beth i’w wneud nesaf'''
+
+[strings."widget.record-status"]
+hash = "920e413c7d41"
+cy = '''Statws'''
+
+[strings."widget.record-date"]
+hash = "99c40ab40592"
+cy = '''Dyddiad'''
+
+[strings."widget.record-accepted-prefix"]
+hash = "a00fb0c50741"
+cy = '''Derbyniwyd'''
+
+[strings."widget.record-or"]
+hash = "7175517a370b"
+cy = '''neu'''
+
+[strings."widget.record-review"]
+hash = "b72404e74a50"
+cy = '''Rhowch adolygiad o DIY Accounting Submit ar {sites}.'''
+
+[strings."widget.close-message"]
+hash = "31105acdcdcf"
+cy = '''Cau’r neges'''
+
+[strings."widget.failure-hmrc-expired"]
+hash = "bbb8f5b8886f"
+cy = '''Mae eich cysylltiad â CThEF wedi dod i ben.'''
+
+[strings."widget.connect-hmrc-again"]
+hash = "36ec23b244b5"
+cy = '''Cysylltu â CThEF eto'''
+
+[strings."widget.failure-insolvent"]
+hash = "7a085730d065"
+cy = '''Ni fydd CThEF yn rhyddhau cofnodion masnachwr y mae’n ei restru fel ansolfent.'''
+
+[strings."widget.back-to-activities"]
+hash = "5c11b1d0823b"
+cy = '''Yn ôl i’r gweithgareddau'''
+
+[strings."widget.failure-no-tokens"]
+hash = "7e4993fe1577"
+cy = '''Nid oes gennych gredydau (tokens) ar ôl.'''
+
+[strings."widget.add-a-bundle"]
+hash = "85b34076aeb9"
+cy = '''Ychwanegu Bundle'''
+
+[strings."widget.failure-no-bundle"]
+hash = "d1675766c715"
+cy = '''Nid oes gan eich cyfrif Bundle sy’n caniatáu hyn.'''
+
+[strings."widget.failure-hmrc-forbidden"]
+hash = "4aba8b0a518a"
+cy = '''Ni wnaeth CThEF ganiatáu mynediad at y cofnodion hyn.'''
+
+[strings."widget.failure-hmrc-not-found"]
+hash = "3847dadc636f"
+cy = '''Nid oes gan CThEF ddim ar gyfer y manylion hyn.'''
+
+[strings."widget.check-and-try-again"]
+hash = "e301dc8e6b73"
+cy = '''Gwiriwch y manylion a rhowch gynnig arall arni'''
+
+[strings."widget.failure-hmrc-server"]
+hash = "f43e374ae0bb"
+cy = '''Nid oedd CThEF yn gallu cwblhau’r cais.'''
+
+[strings."widget.try-again"]
+hash = "d8b8392e2c54"
+cy = '''Rhowch gynnig arall arni'''
+
+[strings."widget.failure-hmrc-refused"]
+hash = "36dda68a23ea"
+cy = '''Gwrthododd CThEF y cais.'''
+
+[strings."vat.period-label"]
+hash = "c72e51fdcb01"
+cy = '''{start} hyd at {end}'''
+
+[strings."vat.period-label-due"]
+hash = "d545075bb423"
+cy = '''{start} hyd at {end}, dyddiad cau {due}'''
+
+[strings."vat.another-period"]
+hash = "41bca5ded5ce"
+cy = '''Cyfnod arall'''
+
+[strings."vat.record-vrn"]
+hash = "b50eb6c240b6"
+cy = '''Rhif cofrestru TAW {vrn}'''
+
+[strings."vat.record-name"]
+hash = "aa015a068e3f"
+cy = '''Ffurflen TAW'''
+
+[strings."vat.record-title"]
+hash = "a692bb67fdc1"
+cy = '''Ffurflen Treth ar Werth'''
+
+[strings."vat.record-period"]
+hash = "629ecc96b9a7"
+cy = '''Cyfnod: {period}'''
+
+[strings."vat.record-turnover"]
+hash = "9acbd53773f5"
+cy = '''Trosiant, mewn punnoedd cyfan'''
+
+[strings."vat.record-value"]
+hash = "8e37953d23da"
+cy = '''Gwerth'''
+
+[strings."receipt.not-returned"]
+hash = "229ced9c1084"
+cy = '''Ni roddodd CThEF hwn'''
+
+[strings."receipt.vat-name"]
+hash = "6cebec6a98cb"
+cy = '''Derbynneb Ffurflen TAW'''
+
+[strings."receipt.form-bundle-ref"]
+hash = "78dac5f03de9"
+cy = '''Rhif bwndel y ffurflen {number}'''
+
+[strings."receipt.processed"]
+hash = "b4a2e6f1134b"
+cy = '''Proseswyd {date}'''
+
+[strings."widget.books-covers"]
+hash = "d6080c9662a5"
+cy = '''Mae’r llyfr hwn yn cwmpasu {covered}.'''
+
+[strings."vat.books-choose-period"]
+hash = "fdf10e9dcae1"
+cy = '''Dewiswch y cyfnod TAW yn gyntaf a bydd y blychau’n cael eu llenwi o {file}.'''
+
+[strings."widget.books-nothing-filled"]
+hash = "8d7bd3ec8bae"
+cy = '''Ni lenwyd dim.'''
+
+[strings."vat.books-filled"]
+hash = "465d6d1078a2"
+cy = '''Llenwyd y naw blwch o {file} ar gyfer y cyfnod {start} hyd at {end}. Gwiriwch nhw, yna cyflwynwch.'''
+
+[strings."widget.books-heading"]
+hash = "6f8e51431cf9"
+cy = '''Llenwi o’ch llyfrau'''
+
+[strings."widget.books-hint"]
+hash = "4110bc3b7239"
+cy = '''Gollyngwch eich llyfr DIYA-GL, eich gweithlyfr taenlen neu eich zip pecyn yma, neu dewiswch ffeil. Caiff ei darllen yn y porwr hwn ac ni chaiff byth ei huwchlwytho; dim ond y ffigurau rydych yn eu ffeilio sy’n cael eu hanfon.'''
+
+[strings."widget.books-hint-ixbrl"]
+hash = "fb506ec60890"
+cy = '''Mae dogfen gyfrifon iXBRL (.xhtml) yn llenwi’r un ffurflen. Mae set o ddogfennau iXBRL yn ei llenwi hefyd: dewiswch ei holl ffeiliau gyda’i gilydd, neu un zip.'''
+
+[strings."widget.books-choose"]
+hash = "3e10c3cd6e0d"
+cy = '''Dewis ffeil'''
+
+[strings."widget.books-drop"]
+hash = "347bd9fc8998"
+cy = '''Gollyngwch lyfr yma'''
+
+[strings."widget.books-file-label"]
+hash = "5a2169b7d04a"
+cy = '''Ffeil y llyfr i’w mewnforio'''
+
+[strings."widget.books-saved-label"]
+hash = "e1139c29d726"
+cy = '''Neu defnyddiwch un o lyfrau cadw’r cleient'''
+
+[strings."widget.books-saved-use"]
+hash = "b67a330349da"
+cy = '''Llenwi o’r llyfr hwn'''
+
+[strings."widget.books-could-not-fill"]
+hash = "53c063cdfdac"
+cy = '''Methu llenwi o {file}: {reason}.'''
+
+[strings."widget.books-reading"]
+hash = "74c58757285c"
+cy = '''Yn darllen {file}...'''
+
+[strings."widget.books-could-not-import"]
+hash = "5bfd81210a2f"
+cy = '''Methu mewnforio {file}: {reason}.'''
+
+[strings."widget.books-handoff-unusable"]
+hash = "a52707642711"
+cy = '''Nid oedd modd defnyddio’r ffigurau a anfonwyd o’ch llyfrau: {reason}. Ni lenwyd dim.'''
+
+[strings."widget.books-handoff-sign-in"]
+hash = "18044f42ff77"
+cy = '''Mewngofnodwch a bydd y ffigurau o {file} yn llenwi’r ffurflen hon.'''
+
+[strings."widget.books-saved-option"]
+hash = "7926f2fb025f"
+cy = '''{title} (fersiwn {version})'''
+
+[strings."widget.books-reading-saved"]
+hash = "72279db5d88c"
+cy = '''Yn darllen y llyfr a gadwyd...'''
+
+[strings."widget.books-saved-failed"]
+hash = "b40416740344"
+cy = '''Methu defnyddio’r llyfr a gadwyd: {reason}.'''
+
+[strings."widget.books-drive"]
+hash = "65d020087ada"
+cy = '''Dewis o Google Drive'''
+
+[strings."widget.books-drive-waiting"]
+hash = "fc212d128f58"
+cy = '''Yn aros am Google Drive...'''
+
+[strings."widget.books-drive-sheet"]
+hash = "bf6aeb65abb8"
+cy = '''Methu mewnforio {file}: Google Sheet yw hwn. Dewiswch y llyfr DIYA-GL, y gweithlyfr taenlen (.xlsx) neu’r zip pecyn yn lle hynny.'''
+
+[strings."widget.books-drive-failed"]
+hash = "032d4a88cf0e"
+cy = '''Methu agor Google Drive: {reason}.'''
+
+[strings."widget.assist-check"]
+hash = "fd71bbc052b0"
+cy = '''Gwirio’r Ffurflen TAW hon gyda HMRC Assist'''
+
+[strings."widget.assist-hold-time-left"]
+hash = "c6b2bd19559a"
+cy = '''Yr amser sydd ar ôl cyn i’r saib ar gyflwyno ddod i ben'''
+
+[strings."widget.assist-seconds-short"]
+hash = "5307d20dc7c4"
+cy = '''{seconds}e'''
+
+[strings."widget.assist-seconds-left"]
+hash = "77700d38003c"
+cy = '''{seconds} eiliad ar ôl'''
+
+[strings."widget.assist-feedback-language"]
+hash = "a69efaa58eed"
+cy = '''Iaith adborth CThEF'''
+
+[strings."widget.assist-asking"]
+hash = "3a6b7c1ba2ad"
+cy = '''Yn gofyn i HMRC Assist am adborth. Mae hyn yn cymryd ychydig eiliadau.'''
+
+[strings."widget.assist-no-feedback"]
+hash = "33a5ce83a1b1"
+cy = '''Nid oes gan HMRC Assist adborth ar y Ffurflen TAW hon'''
+
+[strings."widget.sign-in-to-continue"]
+hash = "607a80121c65"
+cy = '''Mewngofnodwch i barhau'''
+
+[strings."widget.sign-in-to-use-page"]
+hash = "28bd8e0b87e5"
+cy = '''Mewngofnodwch i ddefnyddio’r dudalen hon.'''
+
+[strings."widget.callback-no-code"]
+hash = "53c110ac71e2"
+cy = '''Ni chafwyd cod awdurdodi dilys. Rhowch gynnig arall arni.'''
+
+[strings."widget.callback-exchanging"]
+hash = "7ec737c6a5e9"
+cy = '''Yn cyfnewid y cod awdurdodi am docyn mynediad...'''
+
+[strings."widget.callback-back"]
+hash = "83aafa57f231"
+cy = '''Yn ôl i {activity}'''
+
+[strings."widget.callback-oauth-error"]
+hash = "55974b92ab57"
+cy = '''Gwall OAuth: {error}'''
+
+[strings."widget.callback-bad-state"]
+hash = "24952cf34f68"
+cy = '''Cyflwr OAuth annilys. Rhowch gynnig arall arni.'''
 
 # == Income Tax (LANG10b) ==
 # ids itsa.*; add entries below this line.

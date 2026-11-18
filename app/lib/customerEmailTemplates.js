@@ -25,6 +25,29 @@ const PAYMENT_INDICATORS = {
   BANK: "BANK means a payment through your bank.",
 };
 
+// The receipt email of a VAT return in Welsh, for a reader whose language choice is Welsh. The
+// words follow the site's catalogue (i18n/cy.toml) and HMRC's Welsh; the data HMRC returned stays
+// as returned.
+const WELSH_VAT_RECEIPT = {
+  subject: "Eich derbynneb: Ffurflen TAW",
+  preheader: "Eich derbynneb ar gyfer y Ffurflen TAW.",
+  heading: "Eich derbynneb: Ffurflen TAW",
+  intro: "Dyma gopi o’r dderbynneb ar gyfer eich cyflwyniad. Mae’r copi llawn ar y wefan.",
+  action: "Gweld eich derbynebau",
+  explanation:
+    "Mae CThEF yn rhoi’r dderbynneb hon pan fydd yn derbyn Ffurflen TAW. Rhif bwndel y ffurflen yw cyfeirnod CThEF ar gyfer eich Ffurflen TAW. Cadwch ef: bydd CThEF yn gofyn amdano os byddwch yn holi am y Ffurflen.",
+  indicators: { DD: "Ystyr DD yw Debyd Uniongyrchol.", BANK: "Ystyr BANK yw taliad drwy’ch banc." },
+  quoteCharge: (reference) => `Dyfynnwch gyfeirnod y tâl ${reference} pan fyddwch yn talu.`,
+  fields: {
+    formBundleNumber: "Rhif bwndel y ffurflen (Form bundle number)",
+    processingDate: "Dyddiad prosesu",
+    paymentIndicator: "Dangosydd talu",
+    chargeRefNumber: "Cyfeirnod y tâl",
+  },
+  reason: "Rydych yn cael yr e-bost hwn oherwydd cam gweithredu ar eich cyfrif DIY Accounting Submit.",
+  reply: "Atebwch yr e-bost hwn neu ysgrifennwch at",
+};
+
 const RECEIPT_KIND_TITLES = {
   "vat-return": "VAT return",
   "itsa-period-self-employment": "Self-employment update",
@@ -84,7 +107,19 @@ function assertHttps(href) {
  * @param {string} model.reason - why the person gets this email
  * @returns {{subject: string, text: string, html: string}}
  */
-export function renderEmail({ subject, preheader = "", heading, intro = "", rows = [], actions = [], notes = [], image = null, reason }) {
+export function renderEmail({
+  subject,
+  preheader = "",
+  heading,
+  intro = "",
+  rows = [],
+  actions = [],
+  notes = [],
+  image = null,
+  reason,
+  language = "en",
+}) {
+  const reply = language === "cy" ? WELSH_VAT_RECEIPT.reply : "Reply to this email or write to";
   for (const action of actions) assertHttps(action.href);
   const cleanSubject = stripLineBreaks(subject);
   const e = escapeRecordText;
@@ -97,7 +132,7 @@ export function renderEmail({ subject, preheader = "", heading, intro = "", rows
   if (actions.length) textLines.push("");
   if (image) textLines.push(`${image.alt}: see the attached image.`, "");
   for (const note of notes) textLines.push(note, "");
-  textLines.push("--", reason, `Reply to this email or write to ${SUPPORT_ADDRESS}`, COMPANY_NAME);
+  textLines.push("--", reason, `${reply} ${SUPPORT_ADDRESS}`, COMPANY_NAME);
   const text = textLines.join("\n");
 
   const cell = `padding:6px 0;font-size:15px;line-height:1.5;color:${TEXT_COLOUR};`;
@@ -119,7 +154,7 @@ export function renderEmail({ subject, preheader = "", heading, intro = "", rows
   const notesHtml = notes.map((note) => `<p style="margin:16px 0 0 0;font-size:15px;line-height:1.5;">${e(note)}</p>`).join("");
 
   const html =
-    `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${e(cleanSubject)}</title></head>` +
+    `<!DOCTYPE html><html lang="${language === "cy" ? "cy" : "en"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${e(cleanSubject)}</title></head>` +
     `<body style="margin:0;padding:0;background:#ffffff;font-family:${FONT_STACK};color:${TEXT_COLOUR};">` +
     `<div style="display:none;max-height:0;overflow:hidden;">${e(preheader)}</div>` +
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;"><tr><td align="center" style="padding:16px;">` +
@@ -132,7 +167,7 @@ export function renderEmail({ subject, preheader = "", heading, intro = "", rows
     imageHtml +
     notesHtml +
     `</td></tr>` +
-    `<tr><td style="padding-top:24px;font-size:13px;line-height:1.5;color:${SECONDARY_COLOUR};">${e(reason)}<br>Reply to this email or write to ${SUPPORT_ADDRESS}<br>${COMPANY_NAME}</td></tr>` +
+    `<tr><td style="padding-top:24px;font-size:13px;line-height:1.5;color:${SECONDARY_COLOUR};">${e(reason)}<br>${e(reply)} ${SUPPORT_ADDRESS}<br>${COMPANY_NAME}</td></tr>` +
     `</table></td></tr></table></body></html>`;
 
   return { subject: cleanSubject, text, html };
@@ -143,19 +178,44 @@ function bundleName(catalog, bundleId) {
   return bundle?.name || bundleId || "your bundle";
 }
 
-function formatDate(value) {
+function formatDate(value, locale = "en-GB") {
   if (!value) return "Not set";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+  return date.toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
-function formatDateTime(value) {
+function formatDateTime(value, locale = "en-GB") {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return formatDate(value);
-  const time = date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
-  return `${formatDate(value)}, ${time} UTC`;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return formatDate(value, locale);
+  const time = date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+  return `${formatDate(value, locale)}, ${time} UTC`;
+}
+
+// The Welsh receipt email of a VAT return: the fields of HMRC's receipt under Welsh labels.
+function welshVatReceiptEmail(receipt, baseUrl) {
+  const words = WELSH_VAT_RECEIPT;
+  const rows = Object.entries(words.fields)
+    .filter(([field]) => receipt?.[field] !== undefined && receipt?.[field] !== null && receipt?.[field] !== "")
+    .map(([field, label]) => ({
+      label,
+      value: field === "processingDate" ? formatDateTime(receipt[field], "cy-GB") : String(receipt[field]),
+    }));
+  const isVat = Boolean(receipt?.formBundleNumber) && Boolean(receipt?.processingDate);
+  const indicator = Object.hasOwn(words.indicators, receipt?.paymentIndicator) ? words.indicators[receipt.paymentIndicator] : "";
+  const charge = receipt?.chargeRefNumber ? words.quoteCharge(receipt.chargeRefNumber) : "";
+  return renderEmail({
+    subject: words.subject,
+    preheader: words.preheader,
+    heading: words.heading,
+    intro: words.intro,
+    rows,
+    actions: [{ href: siteUrl(baseUrl, "cy/hmrc/receipt/receipts.html"), text: words.action }],
+    notes: isVat ? [[words.explanation, indicator, charge].filter(Boolean).join(" ")] : [],
+    reason: words.reason,
+    language: "cy",
+  });
 }
 
 function formatPeriod(value) {
@@ -225,6 +285,7 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
         passQr: null,
       };
     case "submission-receipt": {
+      if (data.language === "cy" && data.receiptKind === "vat-return") return { ...welshVatReceiptEmail(receipt, baseUrl), passQr: null };
       const title = RECEIPT_KIND_TITLES[data.receiptKind] || "Submission";
       return {
         ...renderEmail({

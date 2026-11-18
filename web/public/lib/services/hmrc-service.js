@@ -340,6 +340,8 @@ export async function submitVat(
     finalised: vatData.finalised,
     runFraudPreventionHeaderValidation,
     allowSyntheticObligations,
+    // The reader's language choice: HMRC gets the same request either way; the receipt email follows it.
+    language: globalThis.siteLanguage?.chrome?.() === "cy" ? "cy" : "en",
   });
 
   const response = await authorizedFetch(url, {

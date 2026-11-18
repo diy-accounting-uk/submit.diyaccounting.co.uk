@@ -15,6 +15,13 @@
 
 import { reviewLinks as defaultReviewLinks } from "./review-links.js";
 
+// In a browser, page-chrome.js gives the frame's words in the reader's language; under Node, and
+// without it, the English stands. The record a builder writes for a filing is always English.
+function siteText(id, english, values) {
+  if (globalThis.siteText) return globalThis.siteText(id, english, values);
+  return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+}
+
 const STATUS_KINDS = new Set(["accepted", "sent", "pending", "rejected"]);
 
 /**
@@ -145,7 +152,7 @@ export function customerCopyHtml({ title, reference, status, date, sections, lin
         ? `<div class="status-message status-warning customer-copy-warning"><div class="status-message-content">${escapeRecordText(section.warning)}</div></div>\n`
         : "";
       return `<section class="customer-copy-section" aria-label="${escapeRecordAttribute(label)}">
-${heading}${explanation}${warning}<div class="customer-copy-sheet" role="region" tabindex="0" aria-label="${escapeRecordAttribute(`The record: ${label}`)}"><div class="submission-record">
+${heading}${explanation}${warning}<div class="customer-copy-sheet" role="region" tabindex="0" aria-label="${escapeRecordAttribute(siteText("widget.record-region", "The record: {label}", { label }))}"><div class="submission-record">
 ${section.recordHtml}
 </div></div>
 </section>`;
@@ -154,15 +161,17 @@ ${section.recordHtml}
   const linkItems = links
     .map((link) => `<li><a href="${escapeRecordAttribute(link.href)}">${escapeRecordText(link.text)}</a></li>`)
     .join("");
-  const linksHtml = links.length ? `\n<nav class="customer-copy-links" aria-label="What to do next"><ul>${linkItems}</ul></nav>` : "";
+  const linksHtml = links.length
+    ? `\n<nav class="customer-copy-links" aria-label="${escapeRecordAttribute(siteText("widget.record-next", "What to do next"))}"><ul>${linkItems}</ul></nav>`
+    : "";
   return `<article class="customer-copy">
 <header class="customer-copy-header">
 <p class="customer-copy-brand">DIY Accounting Submit</p>
 <h2 class="customer-copy-title">${escapeRecordText(title)}</h2>
 <dl class="customer-copy-submission">
 <div><dt>${escapeRecordText(reference.label)}</dt><dd>${escapeRecordText(reference.value)}</dd></div>
-<div><dt>Status</dt><dd class="customer-copy-status" data-status="${status.kind}">${escapeRecordText(status.text)}</dd></div>
-<div><dt>Date</dt><dd>${escapeRecordText(date)}</dd></div>
+<div><dt>${escapeRecordText(siteText("widget.record-status", "Status"))}</dt><dd class="customer-copy-status" data-status="${status.kind}">${escapeRecordText(status.text)}</dd></div>
+<div><dt>${escapeRecordText(siteText("widget.record-date", "Date"))}</dt><dd>${escapeRecordText(date)}</dd></div>
 </dl>
 </header>
 ${sectionHtml}${linksHtml}${reviewLineHtml(status, reviewLinks)}
@@ -177,12 +186,14 @@ ${sectionHtml}${linksHtml}${reviewLineHtml(status, reviewLinks)}
  * @returns {string}
  */
 export function reviewLineHtml(status, reviewLinks) {
-  if (status.kind !== "accepted" || !status.text.startsWith("Accepted") || reviewLinks.length === 0) return "";
+  const accepted = status.text.startsWith("Accepted") || status.text.startsWith(siteText("widget.record-accepted-prefix", "Accepted"));
+  if (status.kind !== "accepted" || !accepted || reviewLinks.length === 0) return "";
   const anchors = reviewLinks.map(
     (link) =>
       `<a href="${escapeRecordAttribute(link.url)}" data-review-site="${escapeRecordAttribute(link.site)}" target="_blank" rel="noopener noreferrer">${escapeRecordText(link.site)}</a>`,
   );
-  return `\n<p class="customer-copy-review">Leave a review of DIY Accounting Submit on ${anchors.join(" or ")}.</p>`;
+  const sites = anchors.join(` ${siteText("widget.record-or", "or")} `);
+  return `\n<p class="customer-copy-review">${siteText("widget.record-review", "Leave a review of DIY Accounting Submit on {sites}.", { sites })}</p>`;
 }
 
 if (globalThis.document) {

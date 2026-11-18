@@ -15,10 +15,17 @@
   const activeBindings = new WeakMap();
   const boundObligations = new WeakMap();
 
-  const dateFormat = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+  // page-chrome.js gives the text in the chosen language; without it the English stands.
+  function siteText(id, english, values) {
+    if (window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
 
+  // Dates follow the language of the site's text: cy-GB when it reads in Welsh.
   function formatIsoDate(isoDate) {
-    return dateFormat.format(new Date(`${isoDate}T00:00:00Z`));
+    const date = new Date(`${isoDate}T00:00:00Z`);
+    if (window.HmrcDisplayFormat) return window.HmrcDisplayFormat.dateText(date, { utc: true });
+    return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(date);
   }
 
   function openObligations(obligations) {
@@ -27,8 +34,10 @@
   }
 
   function obligationLabel(obligation) {
-    const period = `${formatIsoDate(obligation.start)} to ${formatIsoDate(obligation.end)}`;
-    return obligation.due ? `${period}, due ${formatIsoDate(obligation.due)}` : period;
+    const start = formatIsoDate(obligation.start);
+    const end = formatIsoDate(obligation.end);
+    if (!obligation.due) return siteText("vat.period-label", "{start} to {end}", { start, end });
+    return siteText("vat.period-label-due", "{start} to {end}, due {due}", { start, end, due: formatIsoDate(obligation.due) });
   }
 
   function findMatchingObligation(obligations, periodStart, periodEnd) {
@@ -69,7 +78,7 @@
     });
     const another = doc.createElement("option");
     another.value = ANOTHER_PERIOD;
-    another.textContent = "Another period";
+    another.textContent = siteText("vat.another-period", "Another period");
     select.appendChild(another);
 
     function showChoice(value) {

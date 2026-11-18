@@ -10,6 +10,12 @@
 (function () {
   "use strict";
 
+  // page-chrome.js gives the text in the chosen language; without it the English stands.
+  function siteText(id, english, values) {
+    if (window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
+
   const MAX_MESSAGES = 5;
   const UNACKNOWLEDGED_KEY = "hmrcAssistUnacknowledged";
   const LANGUAGES = [
@@ -181,7 +187,7 @@
     control.type = "button";
     control.id = "hmrcAssistCheckBtn";
     control.className = "secondary-button";
-    control.textContent = "Check this return with HMRC Assist";
+    control.textContent = siteText("widget.assist-check", "Check this return with HMRC Assist");
     control.hidden = true;
 
     const status = doc.createElement("p");
@@ -209,7 +215,7 @@
     holdBar.id = "hmrcAssistHoldBar";
     holdBar.className = "hmrc-assist-hold-bar";
     holdBar.setAttribute("role", "progressbar");
-    holdBar.setAttribute("aria-label", "Time left before the pause on submit ends");
+    holdBar.setAttribute("aria-label", siteText("widget.assist-hold-time-left", "Time left before the pause on submit ends"));
     holdBar.setAttribute("aria-valuemin", "0");
     holdBar.setAttribute("aria-valuemax", String(HOLD_SECONDS));
     const holdFill = doc.createElement("div");
@@ -250,13 +256,13 @@
     }
 
     function showHoldSeconds(secondsLeft) {
-      holdSeconds.textContent = `${secondsLeft}s`;
+      holdSeconds.textContent = siteText("widget.assist-seconds-short", "{seconds}s", { seconds: secondsLeft });
       holdBar.setAttribute("aria-valuenow", String(secondsLeft));
-      holdBar.setAttribute("aria-valuetext", `${secondsLeft} seconds left`);
+      holdBar.setAttribute("aria-valuetext", siteText("widget.assist-seconds-left", "{seconds} seconds left", { seconds: secondsLeft }));
       holdFill.style.width = `${(secondsLeft / HOLD_SECONDS) * 100}%`;
       if (secondsLeft % HOLD_ANNOUNCE_EVERY_SECONDS === 0 && secondsLeft !== lastAnnouncedSecond) {
         lastAnnouncedSecond = secondsLeft;
-        holdAnnouncement.textContent = `${secondsLeft} seconds left`;
+        holdAnnouncement.textContent = siteText("widget.assist-seconds-left", "{seconds} seconds left", { seconds: secondsLeft });
       }
     }
 
@@ -383,7 +389,7 @@
 
       const heading = doc.createElement("h3");
       heading.id = "hmrcAssistFeedbackHeading";
-      heading.textContent = "HMRC feedback";
+      heading.textContent = siteText("widget.assist-feedback-heading", "HMRC feedback");
       feedback.appendChild(heading);
 
       const switchButtons = new Map();
@@ -392,8 +398,10 @@
         languageSwitch.id = "hmrcAssistLanguageSwitch";
         languageSwitch.className = "hmrc-assist-language-switch";
         languageSwitch.setAttribute("role", "group");
-        languageSwitch.setAttribute("aria-label", "Language of HMRC feedback");
-        for (const { code, label } of LANGUAGES) {
+        languageSwitch.setAttribute("aria-label", siteText("widget.assist-feedback-language", "Language of HMRC feedback"));
+        // The reader's language comes first: a Welsh reader sees HMRC's Welsh feedback and its option first.
+        const ordered = [...LANGUAGES].sort((a, b) => (b.code === language) - (a.code === language));
+        for (const { code, label } of ordered) {
           const button = doc.createElement("button");
           button.type = "button";
           button.className = "secondary-button hmrc-assist-language-button";
@@ -451,7 +459,7 @@
       requestInFlight = true;
       requestOwner = thisGeneration;
       startHold();
-      setStatus("Asking HMRC Assist for feedback. This takes a few seconds.");
+      setStatus(siteText("widget.assist-asking", "Asking HMRC Assist for feedback. This takes a few seconds."));
       refresh();
 
       let outcome = null;
@@ -484,7 +492,7 @@
         setStatus(unavailableText);
       } else if (outcome.noFeedback) {
         endHold();
-        setStatus("HMRC Assist has no feedback on this return");
+        setStatus(siteText("widget.assist-no-feedback", "HMRC Assist has no feedback on this return"));
         reportShown = true;
       } else {
         setStatus("");

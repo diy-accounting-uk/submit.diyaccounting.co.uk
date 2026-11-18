@@ -6,6 +6,12 @@
 import { fetchWithId } from "../utils/correlation-utils.js";
 import { ensureSession, sendToSignIn } from "./auth-service.js";
 
+// page-chrome.js gives the text in the chosen language; without it the English stands.
+function siteText(id, english, values) {
+  if (typeof window !== "undefined" && window.siteText) return window.siteText(id, english, values);
+  return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+}
+
 /**
  * Handle 403 Forbidden errors with user guidance
  * @param {Response} response - Fetch response
@@ -13,12 +19,16 @@ import { ensureSession, sendToSignIn } from "./auth-service.js";
 export async function handle403Error(response) {
   try {
     const errorBody = await response.json().catch(() => ({}));
-    const message = errorBody.message || "Access forbidden. You may need to add a bundle to access this feature.";
+    const message =
+      errorBody.message || siteText("widget.access-forbidden", "Access forbidden. You may need to add a bundle to access this feature.");
     console.warn("403 Forbidden:", message);
 
     // One message: what failed, the cause, and a link to the bundles page
     if (typeof window !== "undefined" && window.showFailure) {
-      window.showFailure({ status: 403, code: errorBody.code || errorBody.reason, message }, "You cannot use this yet");
+      window.showFailure(
+        { status: 403, code: errorBody.code || errorBody.reason, message },
+        siteText("widget.cannot-use-yet", "You cannot use this yet"),
+      );
     }
   } catch (e) {
     console.warn("Failed to handle 403 error:", e);
@@ -84,7 +94,9 @@ export async function executeAsyncRequestPolling(res, input, init, currentHeader
     const delay = urlPath.includes("/hmrc/") ? Math.min(Math.pow(2, pollCount - 1) * 1000, 4000) : 1000;
 
     if (typeof window !== "undefined" && window.showStatus) {
-      window.showStatus(init.pollPendingMessage || "Still processing...", "info", { requestId: statusRequestId });
+      window.showStatus(init.pollPendingMessage || siteText("widget.still-processing", "Still processing..."), "info", {
+        requestId: statusRequestId,
+      });
     }
 
     await new Promise((resolve, reject) => {

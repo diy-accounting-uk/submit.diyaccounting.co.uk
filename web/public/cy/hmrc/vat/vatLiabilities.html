@@ -1,0 +1,221 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from hmrc/vat/vatLiabilities.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Rhwymedigaethau talu TAW - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/hmrc/vat/vatLiabilities.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/vat/vatLiabilities.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/vat/vatLiabilities.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/vat/vatLiabilities.html" />
+    <link rel="stylesheet" href="../../../submit.css" />
+    <link rel="stylesheet" href="../../../lib/hmrc-field-table.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="vat-liabilities.vat-liabilities-143a60">Rhwymedigaethau talu TAW</h1>
+      <p data-i18n="vat-liabilities.retrieve-vat-liabilities-from-hmrc-d35f00" class="subtitle">
+        Cael yr hyn sydd arnoch o ran TAW gan CThEF
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p data-i18n="vat-liabilities.status-production-this-reads-your-real-8ae5ea" class="hint" data-feature-status="production">
+        <strong>Statws: cynhyrchu (production).</strong> Mae hyn yn darllen eich cofnodion go iawn yn CThEF.
+      </p>
+      <div id="syntheticIndicator" class="synthetic-indicator">
+        <span data-i18n="vat-liabilities.synthetic-mode-calls-go-to-hmrc-efa44d"
+          >Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF</span
+        >
+      </div>
+
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- VAT Liabilities Form -->
+      <div
+        id="liabilitiesForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i weld eich rhwymedigaethau talu TAW"
+        data-sign-in-text="Mewngofnodwch i gael eich rhwymedigaethau talu TAW gan CThEF. Maen nhw’n dangos yr hyn sydd arnoch ar gyfer pob cyfnod."
+        data-i18n-data-sign-in-title="vat-liabilities.sign-in-to-see-your-vat-95007b"
+        data-i18n-data-sign-in-text="vat-liabilities.sign-in-to-retrieve-your-vat-1ddc6c"
+      >
+        <div class="form-toggle-buttons">
+          <button
+            data-i18n="vat-liabilities.show-liabilities-search-criteria-6f6df4"
+            type="button"
+            id="toggleSearchCriteriaBtn"
+            class="secondary-button"
+            style="display: none"
+          >
+            Dangos meini prawf chwilio’r rhwymedigaethau talu
+          </button>
+          <button
+            data-i18n="vat-liabilities.cancel-request-561966"
+            type="button"
+            id="cancelRequestBtn"
+            class="cancel-button"
+            style="display: none"
+          >
+            Canslo’r cais
+          </button>
+        </div>
+        <div id="searchCriteriaContainer">
+          <h2 data-i18n="vat-liabilities.retrieve-vat-liabilities-4ea340">Cael rhwymedigaethau talu TAW</h2>
+          <form id="vatLiabilitiesForm" novalidate>
+            <div class="form-group">
+              <label data-i18n="vat-liabilities.vat-registration-number-873ba7" for="vrn">Rhif cofrestru TAW</label>
+              <p data-i18n="vat-liabilities.this-is-9-numbers-sometimes-with-b921f3" id="vrn-hint" class="hint">
+                Mae hwn yn 9 rhif, weithiau gyda ‘GB’ ar y dechrau, er enghraifft 123456789 neu GB123456789. Mae i’w weld ar eich tystysgrif
+                cofrestru TAW.
+              </p>
+              <input
+                type="text"
+                id="vrn"
+                name="vrn"
+                required
+                value=""
+                maxlength="9"
+                pattern="[0-9]{9}"
+                aria-describedby="vrn-hint"
+                spellcheck="false"
+              />
+            </div>
+
+            <div class="form-group">
+              <label data-i18n="vat-liabilities.from-date-optional-f40f4c" for="fromDate">O’r dyddiad (dewisol)</label>
+              <p data-i18n="vat-liabilities.start-date-for-liability-search-defaults-abae59" id="fromDate-hint" class="hint">
+                Dyddiad dechrau’r chwiliad am rwymedigaethau talu. Os na fyddwch yn ei nodi, dechrau’r flwyddyn galendr bresennol fydd hwn.
+              </p>
+              <input type="date" id="fromDate" name="fromDate" value="" aria-describedby="fromDate-hint" />
+            </div>
+
+            <div class="form-group">
+              <label data-i18n="vat-liabilities.to-date-optional-e1b0ad" for="toDate">Hyd at y dyddiad (dewisol)</label>
+              <p data-i18n="vat-liabilities.end-date-for-liability-search-defaults-ae7bcf" id="toDate-hint" class="hint">
+                Dyddiad diwedd y chwiliad am rwymedigaethau talu. Os na fyddwch yn ei nodi, dyddiad heddiw fydd hwn. Yr ystod hwyaf yw 365
+                diwrnod.
+              </p>
+              <input type="date" id="toDate" name="toDate" value="" aria-describedby="toDate-hint" />
+            </div>
+
+            <!-- Developer Test Scenario Section -->
+            <div id="developerSection" class="form-group" style="display: none">
+              <div id="testDataLink" class="test-data-link">
+                <a data-i18n="vat-liabilities.add-test-data-28908b" href="#" id="addTestDataLink">ychwanegu data prawf</a>
+              </div>
+              <label data-i18n="vat-liabilities.test-scenario-developer-synthetic-only-bc20fe" for="testScenario"
+                >Senario prawf (datblygwr neu synthetig yn unig)</label
+              >
+              <p data-i18n="vat-liabilities.test-different-hmrc-sandbox-scenarios-39d913" id="testScenario-hint" class="hint">
+                Profi senarios gwahanol yn amgylchedd prawf (sandbox) CThEF
+              </p>
+              <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint" translate="no">
+                <option value="">Default (No data found)</option>
+                <option value="SINGLE_LIABILITY">Single Liability</option>
+                <option value="MULTIPLE_LIABILITIES">Multiple Liabilities</option>
+                <option value="SINGLE_LIABILITY_2018_19">Single Liability 2018-19</option>
+                <option value="MULTIPLE_LIABILITIES_2018_19">Multiple Liabilities 2018-19</option>
+                <option value="INSOLVENT_TRADER">Insolvent Trader</option>
+                <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
+                <option value="SUBMIT_HMRC_API_HTTP_500">HMRC API responds with 500</option>
+                <option value="SUBMIT_HMRC_API_HTTP_503">HMRC API responds with 503</option>
+                <option value="SUBMIT_HMRC_API_HTTP_SLOW_10S">HMRC API responds slowly</option>
+              </select>
+              <div class="choice">
+                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                  data-i18n="vat-liabilities.validate-fraud-prevention-headers-ea7c94"
+                  for="runFraudPreventionHeaderValidation"
+                  >Dilysu’r penawdau atal twyll</label
+                >
+              </div>
+            </div>
+
+            <button
+              data-i18n="vat-liabilities.retrieve-liabilities-c8d362"
+              type="submit"
+              id="retrieveBtn"
+              class="btn"
+              data-activity-start="vat-liabilities"
+            >
+              Cael rhwymedigaethau talu
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Results Display -->
+      <div id="liabilitiesResults" class="results-container" style="display: none">
+        <h3 data-i18n="vat-liabilities.vat-liabilities-143a60">Rhwymedigaethau talu TAW</h3>
+        <div id="liabilitiesTable"></div>
+        <div class="button-group">
+          <button data-i18n="vat-liabilities.new-search-4587eb" type="button" id="newSearchBtn" class="secondary-button">
+            Chwiliad newydd
+          </button>
+        </div>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../../lib/welsh-text.js"></script>
+    <script src="../../../widgets/page-chrome.js"></script>
+    <script src="../../../lib/env-loader.js"></script>
+    <script src="../../../lib/auth-url-builder.js"></script>
+    <script src="../../../lib/test-data-generator.js"></script>
+    <script type="module" src="../../../submit.js"></script>
+    <script src="../../../developer-mode.js"></script>
+    <script src="../../../lib/request-cache.js"></script>
+    <script src="../../../lib/carried-identifiers.js"></script>
+    <script src="../../../lib/money-format.js"></script>
+    <script src="../../../lib/hmrc-display-format.js"></script>
+    <script src="../../../lib/toml-parser.js"></script>
+    <script src="../../../lib/hmrc-scope-check.js"></script>
+    <script src="../../../widgets/entitlement-status.js"></script>
+    <script src="../../../widgets/auth-status.js"></script>
+    <script src="../../../lib/form-errors.js"></script>
+    <script src="../../../widgets/status-messages.js"></script>
+    <script src="../../../widgets/signed-out-panel.js"></script>
+    <script src="../../../widgets/pass-redeemer.js"></script>
+    <script src="../../../hmrc/vat/vatLiabilities.page.js"></script>
+  </body>
+</html>

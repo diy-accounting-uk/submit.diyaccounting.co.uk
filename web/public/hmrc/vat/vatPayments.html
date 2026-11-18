@@ -12,6 +12,10 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/hmrc/vat/vatPayments.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/vat/vatPayments.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/vat/vatPayments.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/vat/vatPayments.html" />
     <link rel="stylesheet" href="../../submit.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
@@ -19,7 +23,7 @@
     <script src="../../lib/analytics.js"></script>
   </head>
   <body>
-    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
       <h1>VAT payments</h1>
@@ -28,7 +32,7 @@
 
     <main id="mainContent">
       <p class="hint" data-feature-status="production"><strong>Status: production.</strong> This reads your real records at HMRC.</p>
-      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator"><span>Synthetic mode - calls go to HMRC's sandbox API</span></div>
 
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
@@ -93,7 +97,7 @@
               </div>
               <label for="testScenario">Test scenario (Developer/Synthetic only)</label>
               <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios</p>
-              <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+              <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint" translate="no">
                 <option value="">Default (No data found)</option>
                 <option value="SINGLE_PAYMENT">Single Payment</option>
                 <option value="MULTIPLE_PAYMENTS">Multiple Payments</option>

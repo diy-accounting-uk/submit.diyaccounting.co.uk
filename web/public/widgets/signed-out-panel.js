@@ -9,6 +9,12 @@
 (function () {
   "use strict";
 
+  // page-chrome.js gives the text in the chosen language; without it the English stands.
+  function siteText(id, english, values) {
+    if (window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
+
   function isSignedIn() {
     try {
       return Boolean(localStorage.getItem("cognitoIdToken"));
@@ -29,13 +35,13 @@
     panel.className = "signed-out-panel";
     panel.id = "signedOutPanel";
     const heading = document.createElement("h2");
-    heading.textContent = marked.dataset.signInTitle || "Sign in to continue";
+    heading.textContent = marked.dataset.signInTitle || siteText("widget.sign-in-to-continue", "Sign in to continue");
     const text = document.createElement("p");
-    text.textContent = marked.dataset.signInText || "Sign in to use this page.";
+    text.textContent = marked.dataset.signInText || siteText("widget.sign-in-to-use-page", "Sign in to use this page.");
     const link = document.createElement("a");
     link.className = "btn";
     link.href = window.signInHref(loginHref);
-    link.textContent = "Sign in";
+    link.textContent = siteText("chrome.sign-in", "Sign in");
     panel.append(heading, text, link);
     return panel;
   }

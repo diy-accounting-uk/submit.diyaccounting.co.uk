@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 // Global variables
 let searchCriteriaHidden = false;
 
@@ -113,7 +119,7 @@ async function continuePaymentsRetrieval() {
     hideSearchCriteria(); // Hide the form when retrieving payments after auth
     showLoading();
     hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
-    showStatus("Retrieving VAT payments...", "info");
+    showStatus(siteText("vat-payments.retrieving", "Retrieving VAT payments..."), "info");
 
     // Restore form values
     if (pendingRequest.vrn) document.getElementById("vrn").value = pendingRequest.vrn;
@@ -151,9 +157,9 @@ async function continuePaymentsRetrieval() {
         ...requestHeaders,
         "x-wait-time-ms": "0",
       },
-      pollPendingMessage: "Still processing...",
-      pollSuccessMessage: "VAT payments retrieved.",
-      pollErrorMessage: "Failed to retrieve VAT payments.",
+      pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+      pollSuccessMessage: siteText("vat-payments.retrieved", "VAT payments retrieved."),
+      pollErrorMessage: siteText("vat-payments.retrieve-failed", "Failed to retrieve VAT payments."),
     });
 
     const result = await response.json();
@@ -163,7 +169,7 @@ async function continuePaymentsRetrieval() {
       if (response.status === 401) {
         sessionStorage.removeItem("hmrcGrantId");
         sessionStorage.removeItem("hmrcTokenScope");
-        showFailure({ status: 401 }, "Could not retrieve VAT payments");
+        showFailure({ status: 401 }, siteText("vat-payments.could-not-retrieve", "Could not retrieve VAT payments"));
         showSearchCriteria(); // Show form on error
         return;
       }
@@ -185,7 +191,7 @@ async function continuePaymentsRetrieval() {
     console.log("Payments retrieval completed successfully");
   } catch (error) {
     console.error("Error retrieving payments:", error);
-    showFailure(error, "Could not retrieve VAT payments");
+    showFailure(error, siteText("vat-payments.could-not-retrieve", "Could not retrieve VAT payments"));
     showSearchCriteria(); // Show form on error
     // Clear pending request data to prevent auto-retry loop on next page load
     sessionStorage.removeItem("pendingPaymentsRequest");
@@ -224,7 +230,7 @@ async function handleFormSubmission(event) {
     }
     try {
       showLoading();
-      showStatus("Initiating HMRC authentication...", "info");
+      showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
 
       // Store request parameters and generate state
       const state = generateRandomState();
@@ -251,7 +257,10 @@ async function handleFormSubmission(event) {
       const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
       console.log("Generated HMRC Auth URL:", authResponseUrl);
 
-      showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+      showStatus(
+        siteText("widget.hmrc-auth-redirecting", "Redirecting to HMRC for authentication at {url}...", { url: authResponseUrl }),
+        "info",
+      );
 
       // Redirect to HMRC OAuth
       console.log(`Page transition initiated: Redirecting to HMRC OAuth URL ${authResponseUrl}`);
@@ -261,7 +270,7 @@ async function handleFormSubmission(event) {
       window.location.href = authResponseUrl;
     } catch (error) {
       console.error("Authentication error:", error);
-      showStatus(`Authentication failed: ${error.message}`, "error");
+      showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
       hideLoading();
     }
   } else {
@@ -269,7 +278,7 @@ async function handleFormSubmission(event) {
     try {
       showLoading();
       hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
-      showStatus("Retrieving VAT payments...", "info");
+      showStatus(siteText("vat-payments.retrieving", "Retrieving VAT payments..."), "info");
 
       // Build query parameters
       const params = new URLSearchParams({ vrn });
@@ -299,9 +308,9 @@ async function handleFormSubmission(event) {
           ...requestHeaders,
           "x-wait-time-ms": "0",
         },
-        pollPendingMessage: "Still processing...",
-        pollSuccessMessage: "VAT payments retrieved.",
-        pollErrorMessage: "Failed to retrieve VAT payments.",
+        pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+        pollSuccessMessage: siteText("vat-payments.retrieved", "VAT payments retrieved."),
+        pollErrorMessage: siteText("vat-payments.retrieve-failed", "Failed to retrieve VAT payments."),
       });
 
       const result = await response.json();
@@ -311,7 +320,7 @@ async function handleFormSubmission(event) {
         if (response.status === 401) {
           sessionStorage.removeItem("hmrcGrantId");
           sessionStorage.removeItem("hmrcTokenScope");
-          showFailure({ status: 401 }, "Could not retrieve VAT payments");
+          showFailure({ status: 401 }, siteText("vat-payments.could-not-retrieve", "Could not retrieve VAT payments"));
           return;
         }
         throw requestError(response, result, "Failed to retrieve payments");
@@ -324,7 +333,7 @@ async function handleFormSubmission(event) {
       hideStatus();
     } catch (error) {
       console.error("Error retrieving payments:", error);
-      showFailure(error, "Could not retrieve VAT payments");
+      showFailure(error, siteText("vat-payments.could-not-retrieve", "Could not retrieve VAT payments"));
     } finally {
       hideLoading();
     }
@@ -357,7 +366,7 @@ function displayPayments(payments) {
   const tableContainer = document.getElementById("paymentsTable");
 
   if (!payments || payments.length === 0) {
-    tableContainer.replaceChildren(noDataMessage("No payments found for the specified criteria."));
+    tableContainer.replaceChildren(noDataMessage(siteText("vat-payments.none-found", "No payments found for the specified criteria.")));
     return;
   }
 
@@ -365,7 +374,7 @@ function displayPayments(payments) {
     const amountDisplay = formatCurrency(payment.amount);
     // A payment not yet received omits "received" - show "Pending", not a bare "-",
     // since a payment that just hasn't landed yet isn't an error state.
-    const receivedDisplay = payment.received ? formatDate(payment.received) : "Pending";
+    const receivedDisplay = payment.received ? formatDate(payment.received) : siteText("vat-payments.pending", "Pending");
     return element(
       "tr",
       {},
@@ -374,7 +383,12 @@ function displayPayments(payments) {
     );
   });
 
-  tableContainer.replaceChildren(resultsTable([["Amount", "money-column"], ["Received"]], rows));
+  tableContainer.replaceChildren(
+    resultsTable(
+      [[siteText("vat-payments.col-amount", "Amount"), "money-column"], [siteText("vat-payments.col-received", "Received")]],
+      rows,
+    ),
+  );
 }
 
 const formatDate = HmrcDisplayFormat.formatDate;

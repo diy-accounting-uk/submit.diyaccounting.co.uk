@@ -17,11 +17,16 @@
 // How a string gets its Welsh:
 // - Static text on a page in WELSH_PAGES: mark the element data-i18n="<page id>.<name>" (an attribute:
 //   data-i18n-<attr>="<id>"). The Welsh copy under cy/ carries the Welsh text in its place.
-// - Text a page script writes on a page in WELSH_PAGES: a <span data-i18n="<page id>.rt-<name>"> in the
-//   page's <template id="pageText">, read by the script (index.page.js does this), so it follows the page.
-// - Text any other script writes (page-chrome.js, the shared widgets, submit.js): siteText("<id>",
+// - Text a script writes (a .page.js, page-chrome.js, the shared widgets, submit.js): siteText("<id>",
 //   "<English>") with both arguments as double-quoted literals, and {name} for a value passed as
-//   siteText(id, english, { name }). It follows the reader's language choice on every page.
+//   siteText(id, english, { name }). It follows the reader's language choice on every page. A .page.js
+//   names its ids "<page id>.<name>" and starts with the helper `const siteText = (id, english, values)
+//   => window.siteText ? ... : english`, so a unit test that loads it without page-chrome.js reads the
+//   English (submitVat.page.js has it). Text that more than one page of a family writes uses the
+//   family's id ("vat.<name>"); text of a shared widget uses "widget.<name>". A date, a number or an
+//   amount follows the same choice: HmrcDisplayFormat.locale() gives "cy-GB" or "en-GB".
+//   index.page.js keeps its older <template id="pageText"> spans, which follow the page.
+// - Text that HMRC or Companies House sends back shows as received, in its own language.
 // Each id has one [strings."<id>"] entry in i18n/cy.toml, under the section that names its prefix.
 //
 // How a page gets its Welsh copy: add it to WELSH_PAGES, give the English page the three hreflang
@@ -31,7 +36,7 @@
 // build mark it. A link in the Welsh text to a page with no Welsh copy is followed by "(yn Saesneg)".
 
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, dirname, posix } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 import toml from "@iarna/toml";
@@ -53,6 +58,15 @@ export const WELSH_PAGES = [
   { id: "mtd-calendar", en: "mtd-calendar.html", cy: "cy/mtd-calendar.html", enUrl: `${SITE_ORIGIN}/mtd-calendar.html`, marks: "build" },
   { id: "rates", en: "rates.html", cy: "cy/rates.html", enUrl: `${SITE_ORIGIN}/rates.html`, marks: "build" },
   // LANG10a: the HMRC VAT pages and the receipts page, ids vat-* and receipt-*.
+  ...[
+    ["vat-submit", "hmrc/vat/submitVat.html"],
+    ["vat-obligations", "hmrc/vat/vatObligations.html"],
+    ["vat-liabilities", "hmrc/vat/vatLiabilities.html"],
+    ["vat-payments", "hmrc/vat/vatPayments.html"],
+    ["vat-penalties", "hmrc/vat/vatPenalties.html"],
+    ["vat-view-return", "hmrc/vat/viewVatReturn.html"],
+    ["receipts", "hmrc/receipt/receipts.html"],
+  ].map(([id, en]) => ({ id, en, cy: `cy/${en}`, enUrl: `${SITE_ORIGIN}/${en}`, marks: "build" })),
 
   // LANG10b: the Income Tax pages, ids itsa-*.
 
@@ -122,7 +136,7 @@ const MARKED_TAGS = [
 ];
 const INLINE_TAGS = ["a", "span", "strong", "option", "legend"];
 const BLOCK_TAG = /<(p|ul|ol|li|div|table|tr|td|th|h[1-6]|section|blockquote|dl|dt|dd|figure|details|caption|form|nav|aside)[\s>]/;
-const MARKED_ATTRIBUTES = ["data-label", "aria-label", "title", "placeholder", "alt"];
+const MARKED_ATTRIBUTES = ["data-label", "aria-label", "title", "placeholder", "alt", "data-sign-in-title", "data-sign-in-text"];
 
 function slug(text) {
   return text
@@ -143,15 +157,20 @@ function markedId(page, source) {
 }
 
 // Marks every element of the header and main that holds text and no block element (and the
-// attributes that a reader sees or hears). It skips the skip link, the chrome's fallback link and
-// each quote of a source: a quote keeps the words of its English source.
+// attributes that a reader sees or hears). It skips the skip link, the chrome's fallback link, each
+// quote of a source (a quote keeps the words of its English source) and each element marked
+// translate="no" with all it holds (the HMRC sandbox scenario names of the developer options).
 export function markPage(html, page) {
   const bodyStart = html.indexOf("<body>");
   const mainEnd = html.indexOf("</main>");
   if (bodyStart === -1 || mainEnd === -1) throw new Error(`${page.en}: no <body> or </main>`);
   let body = html.slice(bodyStart, mainEnd);
   const edits = [];
-  const covered = [...body.matchAll(/<blockquote\b[\s\S]*?<\/blockquote>/g)].map((quote) => [quote.index, quote.index + quote[0].length]);
+  const keptEnglish = () =>
+    [...body.matchAll(/<blockquote\b[\s\S]*?<\/blockquote>|<([a-z][a-z0-9]*)\b[^>]*\stranslate="no"[^>]*>[\s\S]*?<\/\1\s*>/g)].map(
+      (kept) => [kept.index, kept.index + kept[0].length],
+    );
+  const covered = keptEnglish();
   const inside = (index) => covered.some(([start, end]) => index >= start && index < end);
   // Block elements first; then the inline ones (a link, a span, an option) that no marked block holds.
   for (const tags of [MARKED_TAGS, INLINE_TAGS]) {
@@ -175,8 +194,9 @@ export function markPage(html, page) {
     }
   }
   for (const edit of edits.sort((a, b) => b.at - a.at)) body = body.slice(0, edit.at) + edit.text + body.slice(edit.at);
+  const keptRanges = keptEnglish();
   body = body.replace(/<([a-z][a-z0-9]*)\b([^>]*)>/g, (tag, name, attributes, offset) => {
-    if (covered.some(([start, end]) => offset >= start && offset < end && /^<blockquote/.test(body.slice(start)))) return tag;
+    if (keptRanges.some(([start, end]) => offset >= start && offset < end)) return tag;
     let marks = "";
     for (const attribute of MARKED_ATTRIBUTES) {
       const value = attributeValue(tag, attribute);
@@ -297,17 +317,21 @@ function replaceOnce(html, pattern, replacement, what) {
   return html.replace(pattern, replacement);
 }
 
-// A relative href or src on an English page, as seen from web/public/cy/.
-function relocate(url, pages) {
+// A relative href or src on an English page, as seen from its Welsh copy one folder deeper under
+// web/public/cy/. A link to a page with a Welsh copy goes to the copy; any other link reaches the
+// English file.
+function relocate(url, pages, page) {
   if (url === "" || /^(\/|#|\$\{|[a-z][a-z0-9+.-]*:)/i.test(url)) return url;
   const bare = url.replace(/^\.\//, "");
   const suffixStart = bare.search(/[?#]/);
   const path = suffixStart === -1 ? bare : bare.slice(0, suffixStart);
   const suffix = suffixStart === -1 ? "" : bare.slice(suffixStart);
-  const target = path === "" ? "index.html" : path;
-  const welsh = pages.find((page) => page.en === target);
-  if (welsh) return welsh.cy.replace(/^cy\//, "") + suffix;
-  return `../${bare}`;
+  const resolved = posix.join(posix.dirname(page.en), path || ".").replace(/^\.\/?/, "");
+  const target = resolved === "" || resolved.endsWith("/") ? `${resolved}index.html` : resolved;
+  const welsh = pages.find((entry) => entry.en === target);
+  if (welsh) return posix.relative(posix.dirname(page.cy), welsh.cy) + suffix;
+  const folder = path === "" || path.endsWith("/") ? "/" : "";
+  return posix.relative(posix.dirname(page.cy), resolved.replace(/\/$/, "") || ".") + folder + suffix;
 }
 
 function welshServicesBlock(catalogue) {
@@ -323,7 +347,8 @@ export async function renderWelshPage(page, catalogue = loadCatalogue(), pages =
       throw new Error(`${page.en}: missing <link rel="alternate" hreflang="${hreflang}" href="${href}" />`);
     }
   }
-  let html = english;
+  // A capability header names the English file; the copy is generated, so it carries none.
+  let html = english.replace(/<!-- @capability [\s\S]*?@end-capability -->\n?/g, "");
   html = replaceOnce(html, /<html lang="en-GB">/, '<html lang="cy">', `<html lang="en-GB"> in ${page.en}`);
   const titleId = `${page.id}.title`;
   html = html.replace(TITLE_PATTERN, () => `<title>${welshText(catalogue, titleId)}</title>`);
@@ -341,7 +366,7 @@ export async function renderWelshPage(page, catalogue = loadCatalogue(), pages =
   html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${welshUrl(page)}$2`);
   html = replaceOnce(html, /<\/main>/, `${welshServicesBlock(catalogue)}</main>`, `</main> in ${page.en}`);
   html = html.replace(/<blockquote class="source-quote">/g, '<blockquote class="source-quote" lang="en-GB">');
-  html = html.replace(/(\s(?:href|src)=")([^"]*)(")/g, (whole, start, url, end) => `${start}${relocate(url, pages)}${end}`);
+  html = html.replace(/(\s(?:href|src)=")([^"]*)(")/g, (whole, start, url, end) => `${start}${relocate(url, pages, page)}${end}`);
   html = replaceOnce(
     html,
     /(<script src="([^"]*)widgets\/page-chrome\.js"><\/script>)/,

@@ -125,9 +125,10 @@ test("the Welsh choice stays as the reader moves between pages, and the English 
   const nav = page.locator(".main-nav");
   await expect(nav.getByRole("link", { name: "Gweithgareddau" })).toHaveAttribute("href", "../cy/index.html");
   await nav.getByRole("link", { name: /^Derbynebau/ }).click();
-  await expect(page).toHaveURL(`${SITE_ORIGIN}/hmrc/receipt/receipts.html`);
+  await expect(page).toHaveURL(`${SITE_ORIGIN}/cy/hmrc/receipt/receipts.html`);
+  await expect(page.locator("h1")).toHaveText("Eich derbynebau");
   await expect(nav.getByRole("link", { name: /^Derbynebau/ })).toHaveAttribute("aria-current", "page");
-  await expect(nav.getByRole("link", { name: /^Derbynebau/ })).toContainText("(yn Saesneg)");
+  await expect(nav.getByRole("link", { name: /^Derbynebau/ })).not.toContainText("(yn Saesneg)");
   await expect(page.locator(".language-switch").getByRole("link", { name: "English" })).toBeVisible();
 
   await nav.getByRole("link", { name: "Calendr MTD" }).click();

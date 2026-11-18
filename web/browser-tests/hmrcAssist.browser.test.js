@@ -69,7 +69,10 @@ function obligation(status) {
  * @param {import("@playwright/test").Page} page
  * @param {{obligations?: object[], report?: (request: object, count: number) => {status: number, body?: object}|Promise<object>, acknowledge?: (request: object, count: number) => {status: number}}} behaviour
  */
-async function openForm(page, { obligations = [obligation("O")], report, acknowledge, environmentName = "ci" } = {}) {
+async function openForm(
+  page,
+  { obligations = [obligation("O")], report, acknowledge, environmentName = "ci", pagePath = "/hmrc/vat/submitVat.html" } = {},
+) {
   const reportRequests = [];
   const acknowledgeRequests = [];
   const reportHeaders = [];
@@ -137,7 +140,7 @@ async function openForm(page, { obligations = [obligation("O")], report, acknowl
     sessionStorage.setItem("hmrcGrantId", "00000000-0000-4000-8000-000000000001");
     localStorage.setItem("cognitoIdToken", "test-id-token");
   });
-  await page.goto(`${baseUrl}/hmrc/vat/submitVat.html`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${baseUrl}${pagePath}`, { waitUntil: "domcontentloaded" });
   await page.locator("#vatNumber").fill(VRN);
   await expect(page.locator("#obligationStatus")).toBeAttached();
   return { reportRequests, acknowledgeRequests, reportHeaders };
@@ -246,6 +249,31 @@ test.describe("HMRC Assist check on the VAT return, in English and Welsh", () =>
     await settle(page);
     expect(acknowledgeRequests).toHaveLength(1);
     expect(acknowledgeRequests[0].presentedLanguage).toBe("en");
+  });
+
+  test("on the Welsh copy, a Welsh reader gets HMRC's Welsh feedback first, its option first, and the page in Welsh", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("siteLanguage", "cy"));
+    const { acknowledgeRequests } = await openForm(page, { report: bilingualReport, pagePath: "/cy/hmrc/vat/submitVat.html" });
+    await expect(page.locator("h1")).toHaveText("Cyflwyno Ffurflen TAW");
+    await expect(page.locator('label[for="vatDueSales"]')).toHaveText(
+      "Blwch 1: TAW sy’n ddyledus yn y cyfnod ar werthiannau ac allbynnau eraill",
+    );
+    await expect(page.locator('label[for="declaration"]')).toContainText(
+      "Drwy gyflwyno’r Ffurflen TAW hon, rydych yn gwneud datganiad cyfreithiol",
+    );
+    await fillBoxes(page);
+    await expect(page.locator("#hmrcAssistCheckBtn")).toHaveText("Gwirio’r Ffurflen TAW hon gyda HMRC Assist");
+    await page.locator("#hmrcAssistCheckBtn").click();
+
+    await expect(page.locator("#hmrcAssistFeedbackHeading")).toHaveText("Adborth CThEF");
+    const options = page.locator("#hmrcAssistLanguageSwitch button");
+    await expect(options.first()).toHaveText("Cymraeg");
+    await expect(page.locator("#hmrcAssistLanguage-cy")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#hmrcAssistMessages")).toHaveAttribute("lang", "cy");
+    await expect(page.locator("#hmrcAssistMessages > li .hmrc-assist-message-title").first()).toHaveText(welshMessages()[0].title);
+    await scrollToLastMessage(page);
+    await expect.poll(() => acknowledgeRequests.length).toBe(1);
+    expect(acknowledgeRequests[0].presentedLanguage).toBe("cy");
   });
 
   test("stores the chosen language as the site's one language choice and records it in the acknowledgement", async ({ page }) => {

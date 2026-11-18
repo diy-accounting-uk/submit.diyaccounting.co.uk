@@ -2,6 +2,11 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 (function () {
+  // page-chrome.js gives the text in the chosen language; without it the English stands.
+  function siteText(id, english, values) {
+    if (window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
   // Lightweight, reusable status & loading UI helper shared across pages
   // Usage:
   //  - Include submit.css for styling
@@ -52,7 +57,7 @@
     const closeButton = document.createElement("button");
     closeButton.textContent = "×";
     closeButton.className = "status-close-button";
-    closeButton.setAttribute("aria-label", "Close message");
+    closeButton.setAttribute("aria-label", siteText("widget.close-message", "Close message"));
     closeButton.addEventListener("click", () => removeStatusMessage(msgDiv));
 
     msgDiv.appendChild(messageContent);

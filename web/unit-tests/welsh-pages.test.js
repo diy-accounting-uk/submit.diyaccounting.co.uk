@@ -91,6 +91,17 @@ describe.each(WELSH_PAGES)("Welsh page $cy", (page) => {
     );
   });
 
+  it("reaches a file with every relative link and script", () => {
+    const missing = [];
+    for (const [, url] of welsh.matchAll(/\s(?:href|src)="([^"]*)"/g)) {
+      if (url === "" || /^(\/|#|\$\{|[a-z][a-z0-9+.-]*:)/i.test(url)) continue;
+      const target = path.posix.join(path.posix.dirname(page.cy), url.replace(/[?#].*$/, ""));
+      const file = target.endsWith("/") || url.replace(/[?#].*$/, "") === "" ? path.posix.join(target, "index.html") : target;
+      if (!fs.existsSync(path.join(PUBLIC_DIR, file))) missing.push(url);
+    }
+    expect(missing).toEqual([]);
+  });
+
   it("names itself as canonical", () => {
     expect(welsh).toContain(`<link rel="canonical" href="${welshUrl(page)}" />`);
   });

@@ -1,0 +1,211 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from hmrc/vat/vatPenalties.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cosbau TAW - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/hmrc/vat/vatPenalties.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/vat/vatPenalties.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/vat/vatPenalties.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/vat/vatPenalties.html" />
+    <link rel="stylesheet" href="../../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="vat-penalties.vat-penalties-ab32b8">Cosbau TAW</h1>
+      <p data-i18n="vat-penalties.retrieve-vat-penalties-from-hmrc-507b01" class="subtitle">Cael eich cosbau TAW gan CThEF</p>
+    </header>
+
+    <main id="mainContent">
+      <p data-i18n="vat-penalties.status-production-this-reads-your-real-8ae5ea" class="hint" data-feature-status="production">
+        <strong>Statws: cynhyrchu (production).</strong> Mae hyn yn darllen eich cofnodion go iawn yn CThEF.
+      </p>
+      <div id="syntheticIndicator" class="synthetic-indicator">
+        <span data-i18n="vat-penalties.synthetic-mode-calls-go-to-hmrc-efa44d"
+          >Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF</span
+        >
+      </div>
+
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- VAT Penalties Form -->
+      <div
+        id="penaltiesForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i weld eich cosbau TAW"
+        data-sign-in-text="Mewngofnodwch i gael y cosbau TAW a’r pwyntiau cosb y mae CThEF wedi’u cofnodi ar eich cyfer."
+        data-i18n-data-sign-in-title="vat-penalties.sign-in-to-see-your-vat-d2189c"
+        data-i18n-data-sign-in-text="vat-penalties.sign-in-to-retrieve-the-vat-90d8ba"
+      >
+        <div class="form-toggle-buttons">
+          <button
+            data-i18n="vat-penalties.show-penalties-search-criteria-95b7ad"
+            type="button"
+            id="toggleSearchCriteriaBtn"
+            class="secondary-button"
+            style="display: none"
+          >
+            Dangos meini prawf chwilio’r cosbau
+          </button>
+          <button
+            data-i18n="vat-penalties.cancel-request-561966"
+            type="button"
+            id="cancelRequestBtn"
+            class="cancel-button"
+            style="display: none"
+          >
+            Canslo’r cais
+          </button>
+        </div>
+        <div id="searchCriteriaContainer">
+          <h2 data-i18n="vat-penalties.retrieve-vat-penalties-21cde3">Cael cosbau TAW</h2>
+          <p data-i18n="vat-penalties.shows-penalties-hmrc-has-recorded-in-7b5419" class="hint">
+            Mae’n dangos y cosbau y mae CThEF wedi’u cofnodi yn ystod y 24 mis diwethaf. Nid oes ystod dyddiadau i’w dewis.
+          </p>
+          <form id="vatPenaltiesForm" novalidate>
+            <div class="form-group">
+              <label data-i18n="vat-penalties.vat-registration-number-873ba7" for="vrn">Rhif cofrestru TAW</label>
+              <p data-i18n="vat-penalties.this-is-9-numbers-sometimes-with-b921f3" id="vrn-hint" class="hint">
+                Mae hwn yn 9 rhif, weithiau gyda ‘GB’ ar y dechrau, er enghraifft 123456789 neu GB123456789. Mae i’w weld ar eich tystysgrif
+                cofrestru TAW.
+              </p>
+              <input
+                type="text"
+                id="vrn"
+                name="vrn"
+                required
+                value=""
+                maxlength="9"
+                pattern="[0-9]{9}"
+                aria-describedby="vrn-hint"
+                spellcheck="false"
+              />
+            </div>
+
+            <!-- Developer Test Scenario Section -->
+            <div id="developerSection" class="form-group" style="display: none">
+              <div id="testDataLink" class="test-data-link">
+                <a data-i18n="vat-penalties.add-test-data-28908b" href="#" id="addTestDataLink">ychwanegu data prawf</a>
+              </div>
+              <label data-i18n="vat-penalties.test-scenario-developer-synthetic-only-bc20fe" for="testScenario"
+                >Senario prawf (datblygwr neu synthetig yn unig)</label
+              >
+              <p data-i18n="vat-penalties.test-different-hmrc-sandbox-scenarios-39d913" id="testScenario-hint" class="hint">
+                Profi senarios gwahanol yn amgylchedd prawf (sandbox) CThEF
+              </p>
+              <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint" translate="no">
+                <option value="">Default (No penalties)</option>
+                <option value="DEFAULT">HMRC Default (Multiple penalties)</option>
+                <option value="NO_PENALTIES">No Penalties</option>
+                <option value="LATE_SUBMISSION">Late Submission (single)</option>
+                <option value="LATE_PAYMENT">Late Payment (single)</option>
+                <option value="MULTIPLE_PENALTIES">Multiple Penalties (one of each)</option>
+                <option value="MULTIPLE_LATE_PAYMENT_PENALTIES">Multiple Late payment penalties</option>
+                <option value="MULTIPLE_LATE_SUBMISSION_PENALTIES">Multiple Late submission penalties</option>
+                <option value="MULTIPLE_INACTIVE_LATE_SUBMISSION_PENALTIES">Multiple Inactive Late submission penalties</option>
+                <option value="THRESHOLD_LATE_SUBMISSION_PENALTIES">Threshold Late submission penalties</option>
+                <option value="CHARGE_LATE_SUBMISSION_PENALTIES">Charge Late submission penalties</option>
+                <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
+                <option value="SUBMIT_HMRC_API_HTTP_500">HMRC API responds with 500</option>
+                <option value="SUBMIT_HMRC_API_HTTP_503">HMRC API responds with 503</option>
+                <option value="SUBMIT_HMRC_API_HTTP_SLOW_10S">HMRC API responds slowly</option>
+              </select>
+              <div class="choice">
+                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                  data-i18n="vat-penalties.validate-fraud-prevention-headers-ea7c94"
+                  for="runFraudPreventionHeaderValidation"
+                  >Dilysu’r penawdau atal twyll</label
+                >
+              </div>
+            </div>
+
+            <button
+              data-i18n="vat-penalties.retrieve-penalties-03a4b0"
+              type="submit"
+              id="retrieveBtn"
+              class="btn"
+              data-activity-start="vat-penalties"
+            >
+              Cael cosbau
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Results Display -->
+      <div id="penaltiesResults" class="results-container" style="display: none">
+        <h3 data-i18n="vat-penalties.vat-penalties-ab32b8">Cosbau TAW</h3>
+        <div id="penaltiesSummary"></div>
+        <div id="lateSubmissionPenaltiesTable"></div>
+        <div id="latePaymentPenaltiesTable"></div>
+        <div class="button-group">
+          <button data-i18n="vat-penalties.new-search-4587eb" type="button" id="newSearchBtn" class="secondary-button">
+            Chwiliad newydd
+          </button>
+        </div>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../../lib/welsh-text.js"></script>
+    <script src="../../../widgets/page-chrome.js"></script>
+    <script src="../../../lib/env-loader.js"></script>
+    <script src="../../../lib/auth-url-builder.js"></script>
+    <script src="../../../lib/test-data-generator.js"></script>
+    <script type="module" src="../../../submit.js"></script>
+    <script src="../../../developer-mode.js"></script>
+    <script src="../../../lib/request-cache.js"></script>
+    <script src="../../../lib/carried-identifiers.js"></script>
+    <script src="../../../lib/money-format.js"></script>
+    <script src="../../../lib/hmrc-display-format.js"></script>
+    <script src="../../../lib/toml-parser.js"></script>
+    <script src="../../../lib/hmrc-scope-check.js"></script>
+    <script src="../../../widgets/entitlement-status.js"></script>
+    <script src="../../../widgets/auth-status.js"></script>
+    <script src="../../../lib/form-errors.js"></script>
+    <script src="../../../widgets/status-messages.js"></script>
+    <script src="../../../widgets/signed-out-panel.js"></script>
+    <script src="../../../widgets/pass-redeemer.js"></script>
+    <script src="../../../hmrc/vat/vatPenalties.page.js"></script>
+  </body>
+</html>

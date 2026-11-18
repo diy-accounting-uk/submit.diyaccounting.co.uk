@@ -9,6 +9,12 @@
 (function () {
   "use strict";
 
+  // page-chrome.js gives the text in the chosen language; without it the English stands.
+  function siteText(id, english, values) {
+    if (window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
+
   const RETRIEVED = "2026-10-01";
 
   const SOURCES = {
@@ -204,62 +210,82 @@
     {
       box: 1,
       field: "vatDueSales",
-      label: "VAT due in the period on sales and other outputs",
+      label: siteText("vat.box-1", "VAT due in the period on sales and other outputs"),
       definition: "Include the VAT due on all goods and services you supplied in the period covered by the return.",
     },
     {
       box: 2,
       field: "vatDueAcquisitions",
-      label: "VAT due in the period on acquisitions of goods made in Northern Ireland from EU member states",
+      label: siteText("vat.box-2", "VAT due in the period on acquisitions of goods made in Northern Ireland from EU member states"),
       definition: "Box 2 VAT due in the period on acquisitions of goods made in Northern Ireland from EU member states",
     },
     {
       box: 3,
       field: "totalVatDue",
-      label: "Total VAT due",
+      label: siteText("vat.box-3", "Total VAT due"),
       definition: "Show the total VAT due, that is, boxes 1 and 2 added together.",
     },
     {
       box: 4,
       field: "vatReclaimedCurrPeriod",
-      label: "VAT reclaimed in the period on purchases and other inputs (including acquisitions from the EU)",
+      label: siteText("vat.box-4", "VAT reclaimed in the period on purchases and other inputs (including acquisitions from the EU)"),
       definition: "Show the total amount of deductible VAT charged on your business purchases.",
     },
     {
       box: 5,
       field: "netVatDue",
-      label: "Net VAT to pay to HMRC or reclaim",
+      label: siteText("vat.box-5", "Net VAT to pay to HMRC or reclaim"),
       definition: "deduct the number in box 4 from the number in box 3",
     },
     {
       box: 6,
       field: "totalValueSalesExVAT",
-      label: "Total value of sales and all other outputs excluding any VAT",
+      label: siteText("vat.box-6", "Total value of sales and all other outputs excluding any VAT"),
       definition: "Show the total value of all your business sales and other specific outputs but leave out any VAT.",
     },
     {
       box: 7,
       field: "totalValuePurchasesExVAT",
-      label: "Total value of purchases and all other inputs excluding any VAT",
+      label: siteText("vat.box-7", "Total value of purchases and all other inputs excluding any VAT"),
       definition: "Show the total value of your purchases and expenses but leave out any VAT.",
     },
     {
       box: 8,
       field: "totalValueGoodsSuppliedExVAT",
-      label: "Total value of all supplies of goods and related costs, excluding any VAT, to EU member states",
+      label: siteText("vat.box-8", "Total value of all supplies of goods and related costs, excluding any VAT, to EU member states"),
       definition:
         "Show the total value of all supplies of goods to EU member states and directly related costs, such as freight and insurance, where these form part of the invoice or contract price.",
     },
     {
       box: 9,
       field: "totalAcquisitionsExVAT",
-      label: "Total value of all acquisitions of goods and related costs, excluding any VAT, from EU member states",
+      label: siteText("vat.box-9", "Total value of all acquisitions of goods and related costs, excluding any VAT, from EU member states"),
       definition: "Box 9 total value of all acquisitions goods and related costs, excluding any VAT, from EU member states.",
     },
   ].map((entry) => ({ ...entry, source: "vatNotice70012", anchor: `filling-in-box-${entry.box}` }));
 
   const ABSENT = "—";
+
   const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  // HMRC's Welsh month names; dates follow the language of the site's text.
+  const WELSH_MONTHS = [
+    "Ionawr",
+    "Chwefror",
+    "Mawrth",
+    "Ebrill",
+    "Mai",
+    "Mehefin",
+    "Gorffennaf",
+    "Awst",
+    "Medi",
+    "Hydref",
+    "Tachwedd",
+    "Rhagfyr",
+  ];
+
+  function inWelsh() {
+    return window.siteLanguage?.chrome?.() === "cy";
+  }
 
   function escapeHtml(text) {
     return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -271,7 +297,7 @@
     if (!match) return ABSENT;
     const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
     if (month < 1 || month > 12 || day < 1 || day > 31) return ABSENT;
-    return `${day} ${MONTHS[month - 1]} ${year}`;
+    return `${day} ${(inWelsh() ? WELSH_MONTHS : MONTHS)[month - 1]} ${year}`;
   }
 
   function isAmount(value) {
@@ -284,7 +310,7 @@
 
   function formatTextValue(value) {
     if (value === null || value === undefined) return ABSENT;
-    if (typeof value === "boolean") return value ? "Yes" : "No";
+    if (typeof value === "boolean") return value ? siteText("widget.yes", "Yes") : siteText("widget.no", "No");
     if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return formatIsoDate(value);
     if (typeof value === "string") return value.trim() === "" ? ABSENT : value;
     if (typeof value === "number") return Number.isFinite(value) ? String(value) : ABSENT;
@@ -389,6 +415,11 @@
     );
   }
 
+  // A definition quotes its English source, so on a Welsh page it is marked as English.
+  function quoteLang() {
+    return inWelsh() ? ' lang="en-GB"' : "";
+  }
+
   function sourceLink(sourceKey, { anchor, text } = {}) {
     const source = SOURCES[sourceKey];
     const href = anchor ? `${source.url}#${anchor}` : source.url;
@@ -398,19 +429,23 @@
   function sourcesFooter(rows) {
     const keys = [...new Set(rows.map((row) => row.source).filter(Boolean))];
     if (keys.length === 0) return "";
-    const cited = keys.map((key) => `${sourceLink(key)}, retrieved ${formatIsoDate(SOURCES[key].retrieved)}`).join("; ");
-    return `<p class="field-table-source">Definitions quoted from ${cited}.</p>`;
+    const cited = keys
+      .map((key) =>
+        siteText("widget.field-source", "{link}, retrieved {date}", { link: sourceLink(key), date: formatIsoDate(SOURCES[key].retrieved) }),
+      )
+      .join("; ");
+    return `<p class="field-table-source">${siteText("widget.field-sources", "Definitions quoted from {cited}.", { cited })}</p>`;
   }
 
   // The definitions behind a set of rows, quoted from the sources that publish them, as a closed
   // key under the table that holds the figures. Rows without a definition are left out.
-  function mountFieldKey(container, rows, { summary = "What each line means" } = {}) {
+  function mountFieldKey(container, rows, { summary = siteText("widget.field-key", "What each line means") } = {}) {
     const defined = (rows || []).filter((row) => row.definition);
     if (defined.length === 0) {
       container.replaceChildren();
       return;
     }
-    const items = defined.map((row) => `<dt>${escapeHtml(row.label)}</dt><dd>“${escapeHtml(row.definition)}”</dd>`).join("");
+    const items = defined.map((row) => `<dt>${escapeHtml(row.label)}</dt><dd${quoteLang()}>“${escapeHtml(row.definition)}”</dd>`).join("");
     const markup = `<details class="field-key"><summary>${escapeHtml(summary)}</summary><dl>${items}</dl>${sourcesFooter(defined)}</details>`;
     const parsed = new DOMParser().parseFromString(markup, "text/html");
     container.replaceChildren(...parsed.body.childNodes);
@@ -419,11 +454,11 @@
   // rows: [{ field, label, value, kind? (money, percent or text), definition?, source?, total?, valueId? }]
   function renderFieldTable(rows, { caption, emptyText } = {}) {
     if (!rows || rows.length === 0) {
-      return `<p class="no-data">${escapeHtml(emptyText || "HMRC returned no figures here.")}</p>`;
+      return `<p class="no-data">${escapeHtml(emptyText || siteText("widget.field-none", "HMRC returned no figures here."))}</p>`;
     }
     const body = rows
       .map((row) => {
-        const definition = row.definition ? `<span class="field-definition">“${escapeHtml(row.definition)}”</span>` : "";
+        const definition = row.definition ? `<span class="field-definition"${quoteLang()}>“${escapeHtml(row.definition)}”</span>` : "";
         const valueId = row.valueId ? ` id="${escapeHtml(row.valueId)}"` : "";
         return (
           `<tr class="field-row${row.total ? " field-row-total" : ""}" data-hmrc-field="${escapeHtml(row.field)}">` +
@@ -433,10 +468,12 @@
       })
       .join("");
     // "Amount" heads a column of money; a column that holds any text value is headed "Value".
-    const valueHeading = rows.every((row) => row.kind !== "text") ? "Amount" : "Value";
+    const valueHeading = rows.every((row) => row.kind !== "text")
+      ? siteText("widget.field-amount", "Amount")
+      : siteText("widget.field-value", "Value");
     const captionHtml = caption ? `<caption class="visually-hidden">${escapeHtml(caption)}</caption>` : "";
     return (
-      `<table class="field-table">${captionHtml}<thead><tr><th scope="col">Item</th><th scope="col" class="field-amount">${valueHeading}</th></tr></thead>` +
+      `<table class="field-table">${captionHtml}<thead><tr><th scope="col">${siteText("widget.field-item", "Item")}</th><th scope="col" class="field-amount">${valueHeading}</th></tr></thead>` +
       `<tbody>${body}</tbody></table>${sourcesFooter(rows)}`
     );
   }

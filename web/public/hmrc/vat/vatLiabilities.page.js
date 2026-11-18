@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 // Global variables
 let searchCriteriaHidden = false;
 
@@ -113,7 +119,7 @@ async function continueLiabilitiesRetrieval() {
     hideSearchCriteria(); // Hide the form when retrieving liabilities after auth
     showLoading();
     hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
-    showStatus("Retrieving VAT liabilities...", "info");
+    showStatus(siteText("vat-liabilities.retrieving", "Retrieving VAT liabilities..."), "info");
 
     // Restore form values
     if (pendingRequest.vrn) document.getElementById("vrn").value = pendingRequest.vrn;
@@ -151,9 +157,9 @@ async function continueLiabilitiesRetrieval() {
         ...requestHeaders,
         "x-wait-time-ms": "0",
       },
-      pollPendingMessage: "Still processing...",
-      pollSuccessMessage: "VAT liabilities retrieved.",
-      pollErrorMessage: "Failed to retrieve VAT liabilities.",
+      pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+      pollSuccessMessage: siteText("vat-liabilities.retrieved", "VAT liabilities retrieved."),
+      pollErrorMessage: siteText("vat-liabilities.retrieve-failed", "Failed to retrieve VAT liabilities."),
     });
 
     const result = await response.json();
@@ -163,7 +169,7 @@ async function continueLiabilitiesRetrieval() {
       if (response.status === 401) {
         sessionStorage.removeItem("hmrcGrantId");
         sessionStorage.removeItem("hmrcTokenScope");
-        showFailure({ status: 401 }, "Could not retrieve VAT liabilities");
+        showFailure({ status: 401 }, siteText("vat-liabilities.could-not-retrieve", "Could not retrieve VAT liabilities"));
         showSearchCriteria(); // Show form on error
         return;
       }
@@ -185,7 +191,7 @@ async function continueLiabilitiesRetrieval() {
     console.log("Liabilities retrieval completed successfully");
   } catch (error) {
     console.error("Error retrieving liabilities:", error);
-    showFailure(error, "Could not retrieve VAT liabilities");
+    showFailure(error, siteText("vat-liabilities.could-not-retrieve", "Could not retrieve VAT liabilities"));
     showSearchCriteria(); // Show form on error
     // Clear pending request data to prevent auto-retry loop on next page load
     sessionStorage.removeItem("pendingLiabilitiesRequest");
@@ -224,7 +230,7 @@ async function handleFormSubmission(event) {
     }
     try {
       showLoading();
-      showStatus("Initiating HMRC authentication...", "info");
+      showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
 
       // Store request parameters and generate state
       const state = generateRandomState();
@@ -251,7 +257,10 @@ async function handleFormSubmission(event) {
       const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
       console.log("Generated HMRC Auth URL:", authResponseUrl);
 
-      showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+      showStatus(
+        siteText("widget.hmrc-auth-redirecting", "Redirecting to HMRC for authentication at {url}...", { url: authResponseUrl }),
+        "info",
+      );
 
       // Redirect to HMRC OAuth
       console.log(`Page transition initiated: Redirecting to HMRC OAuth URL ${authResponseUrl}`);
@@ -261,7 +270,7 @@ async function handleFormSubmission(event) {
       window.location.href = authResponseUrl;
     } catch (error) {
       console.error("Authentication error:", error);
-      showStatus(`Authentication failed: ${error.message}`, "error");
+      showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
       hideLoading();
     }
   } else {
@@ -269,7 +278,7 @@ async function handleFormSubmission(event) {
     try {
       showLoading();
       hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
-      showStatus("Retrieving VAT liabilities...", "info");
+      showStatus(siteText("vat-liabilities.retrieving", "Retrieving VAT liabilities..."), "info");
 
       // Build query parameters
       const params = new URLSearchParams({ vrn });
@@ -299,9 +308,9 @@ async function handleFormSubmission(event) {
           ...requestHeaders,
           "x-wait-time-ms": "0",
         },
-        pollPendingMessage: "Still processing...",
-        pollSuccessMessage: "VAT liabilities retrieved.",
-        pollErrorMessage: "Failed to retrieve VAT liabilities.",
+        pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+        pollSuccessMessage: siteText("vat-liabilities.retrieved", "VAT liabilities retrieved."),
+        pollErrorMessage: siteText("vat-liabilities.retrieve-failed", "Failed to retrieve VAT liabilities."),
       });
 
       const result = await response.json();
@@ -311,7 +320,7 @@ async function handleFormSubmission(event) {
         if (response.status === 401) {
           sessionStorage.removeItem("hmrcGrantId");
           sessionStorage.removeItem("hmrcTokenScope");
-          showFailure({ status: 401 }, "Could not retrieve VAT liabilities");
+          showFailure({ status: 401 }, siteText("vat-liabilities.could-not-retrieve", "Could not retrieve VAT liabilities"));
           return;
         }
         throw requestError(response, result, "Failed to retrieve liabilities");
@@ -324,7 +333,7 @@ async function handleFormSubmission(event) {
       hideStatus();
     } catch (error) {
       console.error("Error retrieving liabilities:", error);
-      showFailure(error, "Could not retrieve VAT liabilities");
+      showFailure(error, siteText("vat-liabilities.could-not-retrieve", "Could not retrieve VAT liabilities"));
     } finally {
       hideLoading();
     }
@@ -357,7 +366,9 @@ function displayLiabilities(liabilities) {
   const tableContainer = document.getElementById("liabilitiesTable");
 
   if (!liabilities || liabilities.length === 0) {
-    tableContainer.replaceChildren(noDataMessage("No liabilities found for the specified criteria."));
+    tableContainer.replaceChildren(
+      noDataMessage(siteText("vat-liabilities.none-found", "No liabilities found for the specified criteria.")),
+    );
     return;
   }
 
@@ -367,7 +378,9 @@ function displayLiabilities(liabilities) {
     // HMRC leaves the outstanding amount out of a liability that is paid in full.
     const outstanding = liability.outstandingAmount;
     const outstandingAmountDisplay =
-      outstanding === undefined || outstanding === null || Number(outstanding) === 0 ? "Paid" : formatCurrency(outstanding);
+      outstanding === undefined || outstanding === null || Number(outstanding) === 0
+        ? siteText("vat-liabilities.paid", "Paid")
+        : formatCurrency(outstanding);
     const dueDateDisplay = formatDate(liability.due);
 
     return element(
@@ -382,7 +395,16 @@ function displayLiabilities(liabilities) {
   });
 
   tableContainer.replaceChildren(
-    resultsTable([["Period"], ["Type"], ["Original Amount", "money-column"], ["Outstanding Amount", "money-column"], ["Due Date"]], rows),
+    resultsTable(
+      [
+        [siteText("vat-liabilities.col-period", "Period")],
+        [siteText("vat-liabilities.col-type", "Type")],
+        [siteText("vat-liabilities.col-original", "Original Amount"), "money-column"],
+        [siteText("vat-liabilities.col-outstanding", "Outstanding Amount"), "money-column"],
+        [siteText("vat-liabilities.col-due", "Due Date")],
+      ],
+      rows,
+    ),
   );
 }
 

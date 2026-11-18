@@ -609,6 +609,16 @@ describe("hmrcVatReturnPost client-scoped requests", () => {
   });
 });
 
+describe("hmrcVatReturnPost extractAndValidateParameters language", () => {
+  const body = { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100 };
+
+  test("reads a Welsh reader's choice and takes English for anything else", () => {
+    expect(extractAndValidateParameters(buildHmrcEvent({ body: { ...body, language: "cy" } }), []).language).toBe("cy");
+    expect(extractAndValidateParameters(buildHmrcEvent({ body }), []).language).toBe("en");
+    expect(extractAndValidateParameters(buildHmrcEvent({ body: { ...body, language: "fr" } }), []).language).toBe("en");
+  });
+});
+
 describe("hmrcVatReturnPost extractAndValidateParameters allowSyntheticObligations", () => {
   function buildParamsEvent(allowSyntheticObligations, hmrcAccount) {
     return buildHmrcEvent({

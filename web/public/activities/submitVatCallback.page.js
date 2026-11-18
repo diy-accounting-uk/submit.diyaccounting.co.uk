@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 // OAuth callback handling
 
 // A state that starts "mcp." belongs to a grant an MCP tool started: the code goes to the MCP
@@ -72,11 +78,11 @@ async function handleOAuthCallback() {
 
   if (!code) {
     console.error("No valid authorisation code found in URL parameters.");
-    showStatus("No valid authorisation code found. Please try again.", "error");
+    showStatus(siteText("widget.callback-no-code", "No valid authorisation code found. Please try again."), "error");
   } else {
     try {
       showLoading();
-      showStatus("Exchanging authorisation code for access token...", "info");
+      showStatus(siteText("widget.callback-exchanging", "Exchanging authorisation code for access token..."), "info");
 
       // Exchange code for access token
       const grantId = await exchangeToken(code);
@@ -137,7 +143,7 @@ function offerReturnToActivity() {
   const currentActivity = sessionStorage.getItem("currentActivity");
   const navigationBtn = document.getElementById("navigationBtn");
   if (currentActivity && navigationBtn) {
-    navigationBtn.textContent = `Back to ${pendingActivityName()}`;
+    navigationBtn.textContent = siteText("widget.callback-back", "Back to {activity}", { activity: pendingActivityName() });
     navigationTarget = currentActivity;
   }
 }
@@ -150,7 +156,7 @@ function getValidatedAuthorisationCode() {
   const error = urlParams.get("error");
 
   if (error) {
-    showStatus(`OAuth error: ${error}`, "error");
+    showStatus(siteText("widget.callback-oauth-error", "OAuth error: {error}", { error }), "error");
     console.error("OAuth callback handler (error exit)");
     return null;
   }
@@ -159,7 +165,7 @@ function getValidatedAuthorisationCode() {
     const storedState = sessionStorage.getItem("oauth_state");
 
     if (state !== storedState) {
-      showStatus("Invalid OAuth state. Please try again.", "error");
+      showStatus(siteText("widget.callback-bad-state", "Invalid OAuth state. Please try again."), "error");
       console.error("OAuth callback handler (invalid state exit)");
       return null;
     }
@@ -230,11 +236,21 @@ async function exchangeToken(code) {
   return grantId;
 }
 
+// The page the request started on, or its Welsh copy when the reader's choice is Welsh. HMRC
+// returns to the one registered callback address, so this page reads the stored choice.
+function activityInChosenLanguage(activity) {
+  if (window.siteLanguage?.chrome() !== "cy" || activity.startsWith("/cy/")) return activity;
+  const cut = activity.search(/[?#]/);
+  const path = cut === -1 ? activity : activity.slice(0, cut);
+  const copies = window.WELSH_COPIES || [];
+  return copies.includes(path.replace(/^\//, "")) ? `/cy${path}${cut === -1 ? "" : activity.slice(cut)}` : activity;
+}
+
 function checkCurrentActivityAndRedirect() {
   const currentActivity = sessionStorage.getItem("currentActivity");
   if (currentActivity) {
     console.log("Current activity found:", currentActivity);
-    window.location.href = currentActivity;
+    window.location.href = activityInChosenLanguage(currentActivity);
   } else {
     console.log("No current activity found, staying on current page");
   }

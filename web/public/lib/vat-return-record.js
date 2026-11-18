@@ -8,6 +8,12 @@
 
 import { escapeRecordAttribute, escapeRecordText, recordAmount, recordHeading, recordTable } from "./submission-record.js";
 
+// page-chrome.js gives the text in the reader's language; without it the English stands.
+function siteText(id, english, values) {
+  if (globalThis.siteText) return globalThis.siteText(id, english, values);
+  return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+}
+
 const ABSENT = "—";
 const MONEY_BOXES_TO = 5;
 const ROW_STYLES = { 3: "subtotal", 5: "total" };
@@ -39,7 +45,7 @@ export function vatBoxRows(data, boxes, first, last) {
   return boxes
     .filter((box) => box.box >= first && box.box <= last)
     .map((box) => ({
-      label: `Box ${box.box}: ${box.label}`,
+      label: siteText("vat.box-row", "Box {box}: {label}", { box: box.box, label: box.label }),
       cells: [boxCell(box.box, data[box.field])],
       style: ROW_STYLES[box.box],
       box,
@@ -73,22 +79,27 @@ function boxTable(data, boxes, first, last, columnHeading) {
  * @returns {{moneyHtml: string, turnoverHtml: string, declarationHtml: string}}
  */
 export function vatReturnRecordSections({ data, boxes, vatNumber, periodHtml, declarationHtml }) {
-  const reference = vatNumber ? [`VAT registration number ${escapeRecordText(vatNumber)}`] : [];
+  const reference = vatNumber ? [siteText("vat.record-vrn", "VAT registration number {vrn}", { vrn: escapeRecordText(vatNumber) })] : [];
   const heading = recordHeading({
-    nameHtml: "VAT return",
+    nameHtml: siteText("vat.record-name", "VAT return"),
     referenceHtml: reference,
-    title: "Value Added Tax return",
-    subtitleHtml: `Period: ${periodHtml}`,
+    title: siteText("vat.record-title", "Value Added Tax return"),
+    subtitleHtml: siteText("vat.record-period", "Period: {period}", { period: periodHtml }),
   });
   return {
-    moneyHtml: page(`${heading}${boxTable(data, boxes, 1, MONEY_BOXES_TO, "VAT due")}`),
-    turnoverHtml: page(`<h3>Turnover, in whole pounds</h3>\n${boxTable(data, boxes, MONEY_BOXES_TO + 1, 9, "Value")}`),
+    moneyHtml: page(`${heading}${boxTable(data, boxes, 1, MONEY_BOXES_TO, siteText("vat.record-vat-due", "VAT due"))}`),
+    turnoverHtml: page(
+      `<h3>${siteText("vat.record-turnover", "Turnover, in whole pounds")}</h3>\n${boxTable(data, boxes, MONEY_BOXES_TO + 1, 9, siteText("vat.record-value", "Value"))}`,
+    ),
     declarationHtml: page(`<p class="approval">${declarationHtml}</p>`),
   };
 }
 
 function receiptLine(label, value) {
-  const text = value === undefined || value === null || String(value).trim() === "" ? "Not returned by HMRC" : String(value).trim();
+  const text =
+    value === undefined || value === null || String(value).trim() === ""
+      ? siteText("receipt.not-returned", "Not returned by HMRC")
+      : String(value).trim();
   return `<tr><td class="label">${escapeRecordText(label)}</td><td class="label text-value">${escapeRecordText(text)}</td></tr>`;
 }
 
@@ -103,16 +114,18 @@ function receiptLine(label, value) {
  */
 export function vatReceiptRecordHtml({ processingDateText, formBundleNumber, paymentIndicator, chargeRefNumber }) {
   const heading = recordHeading({
-    nameHtml: "VAT return receipt",
-    referenceHtml: formBundleNumber ? [`Form bundle number ${escapeRecordText(formBundleNumber)}`] : [],
-    title: "Receipt from HMRC",
-    subtitleHtml: `Processed ${escapeRecordText(processingDateText)}`,
+    nameHtml: siteText("receipt.vat-name", "VAT return receipt"),
+    referenceHtml: formBundleNumber
+      ? [siteText("receipt.form-bundle-ref", "Form bundle number {number}", { number: escapeRecordText(formBundleNumber) })]
+      : [],
+    title: siteText("receipt.from-hmrc", "Receipt from HMRC"),
+    subtitleHtml: siteText("receipt.processed", "Processed {date}", { date: escapeRecordText(processingDateText) }),
   });
   const lines = [
-    receiptLine("Processing date", processingDateText),
-    receiptLine("Form bundle number", formBundleNumber),
-    receiptLine("Payment indicator", paymentIndicator),
-    receiptLine("Charge reference number", chargeRefNumber),
+    receiptLine(siteText("receipt.processing-date", "Processing date"), processingDateText),
+    receiptLine(siteText("receipt.form-bundle-number", "Form bundle number"), formBundleNumber),
+    receiptLine(siteText("receipt.payment-indicator", "Payment indicator"), paymentIndicator),
+    receiptLine(siteText("receipt.charge-reference", "Charge reference number"), chargeRefNumber),
   ].join("\n");
   return page(`${heading}<table class="statement">\n<tbody>\n${lines}\n</tbody>\n</table>`);
 }
