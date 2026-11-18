@@ -356,10 +356,9 @@ function drawChart(state) {
   const hiddenWithData = seriesList.filter((series) => state.hidden.has(series.id) && !hasNoFigure(series)).length;
   const span = `${days.length} ${hourly ? "hours" : "days"}`;
   const hiddenLines = hiddenWithData === 1 ? "1 hidden line has" : `${hiddenWithData} hidden lines have`;
+  const shown = visible.length > 0 ? `The lines shown have no data in the last ${span}.` : "Every line is hidden.";
   state.empty.textContent =
-    hiddenWithData > 0
-      ? `The lines shown have no data in the last ${span}. ${hiddenLines} data: press Show all, or a line in the legend.`
-      : `No data in the last ${span}.`;
+    hiddenWithData > 0 ? `${shown} ${hiddenLines} data: press Show all, or a line in the legend.` : `No data in the last ${span}.`;
   state.empty.hidden = !everyValueZero;
   svg.setAttribute(
     "aria-label",

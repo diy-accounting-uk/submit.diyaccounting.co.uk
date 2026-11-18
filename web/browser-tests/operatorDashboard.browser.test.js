@@ -1772,6 +1772,9 @@ test.describe("Operator Dashboard", () => {
 
       await card.locator('[data-action="hide-all"]').click();
       await expect(lines).toHaveCount(0);
+      await expect(card.locator(".chart-empty")).toHaveText(
+        /^Every line is hidden\. \d+ hidden lines have data: press Show all, or a line in the legend\.$/,
+      );
       await card.locator('[data-action="show-all"]').click();
       await expect(lines).toHaveCount(7);
 
