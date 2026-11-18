@@ -72,15 +72,26 @@ iframe {
   max-width: 100%;
 }
 
-/* Money and counts line up in columns. */
+/* Money and counts line up in columns. A th is a heading, so it keeps the body's text font. */
 td,
-th,
 .receipt-item,
 input[type="number"],
 .input-prefix input,
 .token-balance {
   font-family: var(--font-figures);
   font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Cells that are words: every cell of a .table-words table, or one cell marked .cell-words. A cell's
+   ::before label (a stacked table's column heading on a phone) is a heading. */
+.table-words td,
+td.cell-words,
+td::before {
+  font-family: var(--font-text);
+}
+
+.table-words td.cell-figure {
+  font-family: var(--font-figures);
 }
 
 /* WCAG 2.1 AA: Skip link for keyboard navigation (2.4.1 Bypass Blocks) */

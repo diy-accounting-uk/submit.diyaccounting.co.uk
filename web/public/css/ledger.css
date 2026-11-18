@@ -23,10 +23,8 @@
   text-align: left;
 }
 
-/* base.css gives every th and td the figures font; a line's label, its hint and an error are words. */
-.ledger th,
-.ledger .error-message,
-.ledger td.ledger__figure::before {
+/* base.css gives every td the figures font; an error in a figure cell is words. */
+.ledger .error-message {
   font-family: var(--font-text);
 }
 

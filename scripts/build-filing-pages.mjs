@@ -522,7 +522,7 @@ export function renderComparisonPage(comparison, tools, catalog) {
         <p>${escapeHtml(summary)}</p>
         <p>${escapeHtml(comparison.list_sentence)} <a href="${escapeHtml(comparison.list_url)}" rel="noopener">${escapeHtml(comparison.list_name)}</a>.</p>
         <p>The rows run from the lowest price for one year to the highest: ${escapeHtml(sortRule)}.</p>
-        <div class="table-scroll" role="region" tabindex="0" aria-labelledby="compare-caption"><table class="deadline-table stacked-table compare-table"><caption id="compare-caption" class="calendar-date">${escapeHtml(comparison.heading)}</caption><thead><tr><th scope="col">Tool</th><th scope="col">What it files</th><th scope="col">Price, in the vendor's words</th><th scope="col">Source</th></tr></thead><tbody>${body}</tbody></table></div>
+        <div class="table-scroll" role="region" tabindex="0" aria-labelledby="compare-caption"><table class="deadline-table stacked-table compare-table table-words"><caption id="compare-caption" class="calendar-date">${escapeHtml(comparison.heading)}</caption><thead><tr><th scope="col">Tool</th><th scope="col">What it files</th><th scope="col">Price, in the vendor's words</th><th scope="col">Source</th></tr></thead><tbody>${body}</tbody></table></div>
         <p>${escapeHtml(comparison.note)}</p>
         <p>Prices change. The vendor's own page is the authority, so check it before you buy.</p>
         <p><a class="btn" href="${escapeHtml(comparison.action.href)}">${escapeHtml(comparison.action.label)}</a></p>

@@ -44,8 +44,14 @@ describe("the help page", () => {
     expect(html).toContain("<ol>\n<li><strong>One</strong> first</li>\n<li>Two</li>\n</ol>");
     expect(html).toContain("<ul>\n<li>a</li>\n<li>b</li>\n</ul>");
     expect(html).toContain(
-      '<table class="faq-table"><thead><tr><th>H1</th><th>H2</th></tr></thead><tbody><tr><td>x</td><td>y</td></tr></tbody></table>',
+      '<table class="faq-table table-words"><thead><tr><th>H1</th><th>H2</th></tr></thead><tbody><tr><td>x</td><td>y</td></tr></tbody></table>',
     );
+  });
+
+  test("a table cell that is only a number or an amount is marked as a figure", () => {
+    const html = renderFaqMarkdown("| Box | Description |\n|---|---|\n| 1 | VAT due on sales |\n| £600 | 20% |");
+    expect(html).toContain('<tr><td class="cell-figure">1</td><td>VAT due on sales</td></tr>');
+    expect(html).toContain('<tr><td class="cell-figure">£600</td><td class="cell-figure">20%</td></tr>');
   });
 });
 

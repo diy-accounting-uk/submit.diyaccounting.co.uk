@@ -58,6 +58,9 @@ export function renderFaqInline(text) {
   return output;
 }
 
+// A cell that is only a number or an amount, such as a box number or a rate, keeps the figures font.
+const FIGURE_CELL = /^[£$€]?-?\d[\d,.]*[%p]?$/;
+
 function renderFaqTable(rows) {
   if (rows.length === 0) return "";
   const parseRow = (row) =>
@@ -69,10 +72,10 @@ function renderFaqTable(rows) {
   const body = rows.slice(1).map(
     (row) =>
       `<tr>${parseRow(row)
-        .map((cell) => `<td>${renderFaqInline(cell)}</td>`)
+        .map((cell) => `<td${FIGURE_CELL.test(cell) ? ' class="cell-figure"' : ""}>${renderFaqInline(cell)}</td>`)
         .join("")}</tr>`,
   );
-  return `<table class="faq-table"><thead><tr>${header.join("")}</tr></thead><tbody>${body.join("")}</tbody></table>`;
+  return `<table class="faq-table table-words"><thead><tr>${header.join("")}</tr></thead><tbody>${body.join("")}</tbody></table>`;
 }
 
 export function renderFaqMarkdown(text) {

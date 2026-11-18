@@ -35,6 +35,13 @@
 
 .review-table td {
   overflow-wrap: anywhere;
+  font-family: var(--font-text);
+}
+
+/* A review table's questions, answers and Change links are words; its amounts and box numbers are figures. */
+.review-table td.amount,
+.review-table--boxes td:first-child {
+  font-family: var(--font-figures);
 }
 
 .review-table td:last-child,
