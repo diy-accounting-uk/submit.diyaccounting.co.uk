@@ -61,11 +61,22 @@
   color: var(--c-ok);
 }
 
-/* MCP harness: the conversation, then the browser step, in the site's column */
+/* MCP harness: the conversation, then the browser step, in the site's column. At desktop width the
+   two panels sit side by side in a band wider than the column, centred on it, so the browser step a
+   tool opens is on screen beside the turn that opened it; the header and nav stay in the column. */
 .harness-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
+}
+
+@media (min-width: 1200px) {
+  .harness-grid {
+    --harness-band: min(75rem, calc(100vw - 2 * var(--gutter)));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    width: var(--harness-band);
+    margin-left: calc((100% - var(--harness-band)) / 2);
+  }
 }
 
 .harness-panel {

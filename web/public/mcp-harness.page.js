@@ -68,10 +68,13 @@
     return null;
   }
 
+  // The frame is brought on screen: where the panels stack it opens below the conversation, and a
+  // browser draws nothing in a frame outside the viewport, so its page would wait unseen.
   function showBrowserStep(url) {
     frame.hidden = false;
     frame.src = url;
     browserStatus.textContent = `Browser step: ${url}`;
+    frame.scrollIntoView({ block: "nearest" });
   }
 
   // A string argument of the form "${turnId.path.to.value}" takes that value from an earlier tool

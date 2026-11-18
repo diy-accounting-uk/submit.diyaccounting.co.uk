@@ -69,6 +69,40 @@ test.describe("MCP chat harness", () => {
     }
   });
 
+  test("at 1920 the two panels sit side by side, wider than the column, with the header still in the column", async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await setupRoutes(page, OBLIGATIONS);
+    await page.goto("http://localhost:3000/mcp-harness.html", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#toolList")).toContainText("list_vat_obligations");
+
+    const main = await page.locator("main").boundingBox();
+    const header = await page.locator("header").first().boundingBox();
+    const [chat, browserPanel] = await page
+      .locator(".harness-grid > .harness-panel")
+      .evaluateAll((panels) => panels.map((panel) => panel.getBoundingClientRect().toJSON()));
+    expect(main.width).toBeLessThan(900);
+    expect(Math.abs(header.x - main.x)).toBeLessThan(2);
+    expect(Math.abs(chat.top - browserPanel.top)).toBeLessThan(2);
+    expect(browserPanel.left).toBeGreaterThan(chat.right);
+    expect(browserPanel.right - chat.left).toBeGreaterThan(main.width);
+    expect(Math.abs(chat.left - (1920 - browserPanel.right))).toBeLessThan(24);
+  });
+
+  test("where the panels stack, a browser step a tool opens is brought on screen", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await setupRoutes(page, { authorizationUrl: "http://localhost:3000/browser-step.html" });
+    await page.goto("http://localhost:3000/mcp-harness.html", { waitUntil: "domcontentloaded" });
+
+    await page.locator("#playAll").click();
+
+    await expect(page.frameLocator("#browserStep").locator("h1")).toHaveText("Sign in to continue");
+    const [chat, browserPanel] = await page
+      .locator(".harness-grid > .harness-panel")
+      .evaluateAll((panels) => panels.map((panel) => panel.getBoundingClientRect().toJSON()));
+    expect(browserPanel.top).toBeGreaterThan(chat.bottom);
+    await expect(page.locator("#browserStep")).toBeInViewport();
+  });
+
   test("sits in the site's centred column at 1280, with the buttons under the script choice before the first turn", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await setupRoutes(page, OBLIGATIONS);
