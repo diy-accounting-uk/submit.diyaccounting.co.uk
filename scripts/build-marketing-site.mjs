@@ -320,12 +320,32 @@ function buildTokens(siblings) {
   for (const source of ICON_SOURCES) {
     const target = path.join(MARKETING_DIR, logoFiles(source.id).icon);
     fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.copyFileSync(tokenSourcePath(source, siblings), target);
+    fs.writeFileSync(target, withSvgLicenceHeader(fs.readFileSync(tokenSourcePath(source, siblings), "utf8")));
   }
   const company = readMarketingData().company;
   fs.mkdirSync(COMPANY_DIR, { recursive: true });
   fs.copyFileSync(path.join(REPO_ROOT, company.teamPhotoSource), path.join(MARKETING_DIR, company.teamPhoto));
   console.log(`Wrote ${path.relative(REPO_ROOT, TOKENS_FILE)}, ${FONT_FILES.length} font files, the four icons and the team photo`);
+}
+
+/**
+ * A sibling site's icon carries that repository's header, in its own shape or none at all; the copy
+ * here gets this repository's two header lines after the XML declaration.
+ */
+export function withSvgLicenceHeader(svg) {
+  let body = svg.replace(/^\s*<\?xml[^>]*\?>\s*/, "");
+  const kept = [];
+  for (let match = body.match(/^\s*(<!--[\s\S]*?-->)\s*/); match; match = body.match(/^\s*(<!--[\s\S]*?-->)\s*/)) {
+    if (!/SPDX-License-Identifier|Copyright \(C\)/.test(match[1])) kept.push(match[1]);
+    body = body.slice(match[0].length);
+  }
+  body = [...kept, body].join("\n");
+  return (
+    '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    "<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->\n" +
+    "<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->\n" +
+    body
+  );
 }
 
 // ---------------------------------------------------------------------------------------------

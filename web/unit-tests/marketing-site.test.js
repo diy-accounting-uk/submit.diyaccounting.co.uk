@@ -35,6 +35,7 @@ import {
   renderSiteTokens,
   siteTokenBlock,
   tokenSourcePath,
+  withSvgLicenceHeader,
 } from "../../scripts/build-marketing-site.mjs";
 import {
   carriesPass,
@@ -825,10 +826,10 @@ describe("listing packs", () => {
     }
   });
 
-  it.skipIf(!siblings)("copies each brand's icon byte for byte", () => {
+  it.skipIf(!siblings)("copies each brand's icon with this repository's header", () => {
     for (const source of ICON_SOURCES) {
-      const copy = fs.readFileSync(path.join(LOGOS_DIR, source.id, "icon.svg"));
-      expect(copy.equals(fs.readFileSync(tokenSourcePath(source, siblings))), source.id).toBe(true);
+      const copy = fs.readFileSync(path.join(LOGOS_DIR, source.id, "icon.svg"), "utf8");
+      expect(copy, source.id).toBe(withSvgLicenceHeader(fs.readFileSync(tokenSourcePath(source, siblings), "utf8")));
     }
   });
 
@@ -916,5 +917,33 @@ describe("the company's facts", () => {
     const sof = jpg.indexOf(Buffer.from([0xff, 0xc0]));
     expect([jpg.readUInt16BE(sof + 7), jpg.readUInt16BE(sof + 5)]).toEqual([company.founderPhotoCrop.size, company.founderPhotoCrop.size]);
     expect(path.dirname(path.join(MARKETING_DIR, company.founderPhoto))).toBe(COMPANY_DIR);
+  });
+});
+
+describe("copied icons", () => {
+  const header =
+    '<?xml version="1.0" encoding="UTF-8"?>\n<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->\n<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->\n';
+
+  it("gives an icon with no header this repository's two header lines", () => {
+    expect(withSvgLicenceHeader('<svg viewBox="0 0 32 32"></svg>\n')).toBe(header + '<svg viewBox="0 0 32 32"></svg>\n');
+  });
+
+  it("replaces a header written as one comment, after the XML declaration", () => {
+    const sibling =
+      '<?xml version="1.0" encoding="UTF-8"?>\n<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0\n     Copyright (C) 2006-2026 DIY Accounting Limited -->\n<svg></svg>\n';
+    expect(withSvgLicenceHeader(sibling)).toBe(header + "<svg></svg>\n");
+  });
+
+  it("keeps the icon's own descriptive comment", () => {
+    const sibling =
+      "<!-- SPDX-License-Identifier: X -->\n<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->\n<!-- the ledger mark -->\n<svg></svg>\n";
+    expect(withSvgLicenceHeader(sibling)).toBe(header + "<!-- the ledger mark -->\n<svg></svg>\n");
+  });
+
+  it("leaves every committed brand icon with the header", () => {
+    const logos = path.join(process.cwd(), "web", "marketing", "brand", "logos");
+    for (const brand of fs.readdirSync(logos).filter((name) => fs.statSync(path.join(logos, name)).isDirectory())) {
+      expect(fs.readFileSync(path.join(logos, brand, "icon.svg"), "utf8").startsWith(header), brand).toBe(true);
+    }
   });
 });
