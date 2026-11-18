@@ -21,6 +21,8 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 const simulatorApp = express();
 xmlGatewaySimulatorEndpoint(simulatorApp);
 const gatewayRequests = [];
+// A test can rewrite the simulator's answer, to send a status the simulator never sends.
+let rewriteGatewayAnswer = (xml) => xml;
 
 vi.mock("@app/services/companiesHouseSend.js", () => ({
   sendXmlToCompaniesHouse: async (url, init) => {
@@ -29,7 +31,7 @@ vi.mock("@app/services/companiesHouseSend.js", () => ({
       .post(GATEWAY_PATH)
       .set({ "Content-Type": "text/xml", ...init.headers })
       .send(init.body);
-    return { ok: true, status: response.status, data: response.text, headers: {}, duration: 1 };
+    return { ok: true, status: response.status, data: rewriteGatewayAnswer(response.text), headers: {}, duration: 1 };
   },
 }));
 
@@ -147,6 +149,7 @@ describe("companiesHouseSubmissionStatusPoll handler", () => {
     filingStates.clear();
     pollState = {};
     gatewayRequests.length = 0;
+    rewriteGatewayAnswer = (xml) => xml;
     vi.clearAllMocks();
   });
 
@@ -295,6 +298,23 @@ describe("companiesHouseSubmissionStatusPoll handler", () => {
     expect(second.outcomes).toEqual([{ submissionNumber: "PRS011", statusCode: "ACCEPT", outcome: "already-recorded" }]);
     expect(second.acknowledged).toBe(true);
     expect(mockRecordFiledReceipt).toHaveBeenCalledTimes(1);
+  });
+
+  test("a poll that answers a status that is not final is not acknowledged, so the gateway answers it again", async () => {
+    await fileAccounts("PRS012");
+    rewriteGatewayAnswer = (xml) => xml.replace("<StatusCode>ACCEPT</StatusCode>", "<StatusCode>PARKED</StatusCode>");
+
+    const first = await handler();
+
+    expect(first).toMatchObject({ polled: true, acknowledged: false });
+    expect(first.outcomes).toEqual([{ submissionNumber: "PRS012", statusCode: "PARKED", outcome: "not-final" }]);
+    expect(gatewayClasses()).toEqual(["GetSubmissionStatus"]);
+
+    rewriteGatewayAnswer = (xml) => xml;
+    allowNextPoll();
+    const second = await handler();
+    expect(second.outcomes).toEqual([{ submissionNumber: "PRS012", statusCode: "ACCEPT", outcome: "recorded" }]);
+    expect(second.acknowledged).toBe(true);
   });
 
   test("a second run inside the poll interval does not reach the gateway", async () => {

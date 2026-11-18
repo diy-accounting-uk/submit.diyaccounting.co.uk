@@ -128,7 +128,10 @@ export async function pollPresenterSubmissions({ now = new Date() } = {}) {
       outcomes.push({ submissionNumber: status.submissionNumber, statusCode: status.statusCode, outcome: "error" });
     }
   }
-  if (outcomes.some(({ outcome }) => outcome === "error")) {
+  // A StatusAck acknowledges the whole poll. TIS v5.3 section 2.5 says a presenter poll answers
+  // only accepted or rejected submissions; a poll that answers anything else, or whose record
+  // failed, is not acknowledged, so the gateway answers it again.
+  if (outcomes.some(({ outcome }) => outcome === "error" || outcome === "not-final")) {
     return { polled: true, acknowledged: false, outcomes };
   }
 
