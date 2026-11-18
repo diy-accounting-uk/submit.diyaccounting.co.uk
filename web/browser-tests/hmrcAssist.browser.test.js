@@ -71,7 +71,14 @@ function obligation(status) {
  */
 async function openForm(
   page,
-  { obligations = [obligation("O")], report, acknowledge, environmentName = "ci", pagePath = "/hmrc/vat/submitVat.html" } = {},
+  {
+    obligations = [obligation("O")],
+    report,
+    acknowledge,
+    environmentName = "ci",
+    pagePath = "/hmrc/vat/submitVat.html",
+    tokenScope = null,
+  } = {},
 ) {
   const reportRequests = [];
   const acknowledgeRequests = [];
@@ -90,6 +97,7 @@ async function openForm(
         import "/lib/services/catalog-service.js";
         window.authorizedFetch = (url, options) => fetch(url, options);
         window.getGovClientHeaders = async () => ({});
+        window.generateRandomState = () => "state-for-the-test";
       `,
     });
   });
@@ -97,8 +105,8 @@ async function openForm(
     await route.fulfill({
       status: 200,
       contentType: "application/javascript",
-      body: `window.hmrcScopeCheck = { isTokenSufficient: async () => true, clearHmrcToken: () => {}, storedGrantId: () => sessionStorage.getItem("hmrcGrantId"),
-        grantHeaders: () => ({ "x-mcp-hmrc-grant": sessionStorage.getItem("hmrcGrantId") }), getOAuthScopeString: async () => "read:vat",
+      body: `window.hmrcScopeCheck = { isTokenSufficient: async (path) => (sessionStorage.getItem("hmrcTokenScope") || "write:vat read:vat").includes(path ? "read:vat" : "write:vat"), clearHmrcToken: () => {}, storedGrantId: () => sessionStorage.getItem("hmrcGrantId"),
+        grantHeaders: () => ({ "x-mcp-hmrc-grant": sessionStorage.getItem("hmrcGrantId") }), getOAuthScopeString: async () => "write:vat read:vat",
         getActivityById: async (id) => window.TOML.parse(await (await fetch("/submit.catalogue.toml")).text()).activities.find((activity) => activity.id === id) };`,
     });
   });
@@ -136,10 +144,22 @@ async function openForm(
     await route.fulfill({ status: answer.status, contentType: "application/json", body: answer.status === 204 ? undefined : "{}" });
   });
 
-  await page.addInitScript(() => {
+  await page.route("**/auth-url-builder.js", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: `window.authUrlBuilder = { buildHmrcAuthUrl: async (state, scope) => "/hmrc-sign-in?scope=" + encodeURIComponent(scope) };`,
+    });
+  });
+  await page.route("**/hmrc-sign-in*", async (route) => {
+    await route.fulfill({ status: 200, contentType: "text/html", body: "<title>HMRC sign in</title>" });
+  });
+
+  await page.addInitScript((scope) => {
+    if (scope && !sessionStorage.getItem("hmrcTokenScope")) sessionStorage.setItem("hmrcTokenScope", scope);
     sessionStorage.setItem("hmrcGrantId", "00000000-0000-4000-8000-000000000001");
     localStorage.setItem("cognitoIdToken", "test-id-token");
-  });
+  }, tokenScope);
   await page.goto(`${baseUrl}${pagePath}`, { waitUntil: "domcontentloaded" });
   await page.locator("#vatNumber").fill(VRN);
   await expect(page.locator("#obligationStatus")).toBeAttached();
@@ -350,6 +370,30 @@ test.describe("HMRC Assist check on the VAT return", () => {
     expect(request.netVatDue).toBe(80);
     expect(request.totalValueSalesExVAT).toBe(1000);
     expect(request).not.toHaveProperty("finalised");
+  });
+
+  test("sends a reader holding only a read token to HMRC for the write scope before it asks for the report", async ({ page }) => {
+    const { reportRequests } = await openForm(page, { tokenScope: "read:vat" });
+    await fillBoxes(page);
+    await page.locator("#hmrcAssistCheckBtn").click();
+    await page.waitForURL(/hmrc-sign-in\?scope=write%3Avat%20read%3Avat/);
+    expect(reportRequests).toHaveLength(0);
+    expect(await page.evaluate(() => sessionStorage.getItem("hmrcAssistCheckPending"))).toBe("true");
+  });
+
+  test("runs the check on return from HMRC with the form as it was, once the token holds the write scope", async ({ page }) => {
+    const { reportRequests } = await openForm(page, { tokenScope: "read:vat" });
+    await fillBoxes(page);
+    await page.locator("#hmrcAssistCheckBtn").click();
+    await page.waitForURL(/hmrc-sign-in/);
+    await page.evaluate(() => sessionStorage.setItem("hmrcTokenScope", "write:vat read:vat"));
+    await page.goto(`${baseUrl}/hmrc/vat/submitVat.html`, { waitUntil: "domcontentloaded" });
+
+    await expect(page.locator("#hmrcAssistMessages")).toBeVisible();
+    expect(reportRequests).toHaveLength(1);
+    expect(reportRequests[0].vrn).toBe(VRN);
+    expect(reportRequests[0].vatDueSales).toBe(100);
+    expect(await page.evaluate(() => sessionStorage.getItem("hmrcAssistCheckPending"))).toBeNull();
   });
 
   test("acknowledges the report once, with the receipt id, after the messages are displayed", async ({ page }) => {

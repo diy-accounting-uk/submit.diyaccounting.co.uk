@@ -662,6 +662,7 @@ let vatFormContainer = null;
 // offers a connect button and keeps the free date inputs.
 let obligationsLoadedForVrn = null;
 let hmrcAssist = null;
+const HMRC_ASSIST_CHECK_PENDING_KEY = "hmrcAssistCheckPending";
 
 const HMRC_ASSIST_BOX_IDS = [
   "vatDueSales",
@@ -758,6 +759,23 @@ async function loadOpenObligations() {
       siteText("vat-submit.periods-unreadable", "HMRC's list of open VAT periods could not be read. Enter the dates below."),
     );
   }
+}
+
+// The Assist check needs the write scope for VAT. A reader who only read their obligations holds a
+// read token, so the check asks HMRC for the scopes first, keeps the form and runs itself on return.
+async function ensureHmrcAssistAccess() {
+  if (!window.hmrcScopeCheck || (await window.hmrcScopeCheck.isTokenSufficient())) return true;
+  sessionStorage.setItem(HMRC_ASSIST_CHECK_PENDING_KEY, "true");
+  window.saveFormDraft?.();
+  await connectHmrc();
+  return false;
+}
+
+async function resumeHmrcAssistCheck() {
+  if (sessionStorage.getItem(HMRC_ASSIST_CHECK_PENDING_KEY) !== "true") return;
+  sessionStorage.removeItem(HMRC_ASSIST_CHECK_PENDING_KEY);
+  if (!hmrcAssist || !window.hmrcScopeCheck || !(await window.hmrcScopeCheck.isTokenSufficient())) return;
+  await hmrcAssist.check();
 }
 
 async function connectHmrc() {
@@ -1021,6 +1039,7 @@ onDOMReady(async function () {
         ...HMRC_ASSIST_BOX_IDS.filter((id) => id !== "totalVatDue" && id !== "netVatDue"),
       ].map((id) => document.getElementById(id)),
       submitButton: document.getElementById("submitBtn"),
+      ensureAccess: ensureHmrcAssistAccess,
       highlightIds: HMRC_ASSIST_BOX_IDS,
       unavailableText: siteText(
         "vat-submit.assist-unavailable",
@@ -1115,6 +1134,7 @@ onDOMReady(async function () {
 
   // Expose clearFormDraft for post-submission cleanup
   window.clearFormDraft = clearFormDraft;
+  window.saveFormDraft = saveFormDraft;
 
   // Toggle form button handler
   document.getElementById("toggleFormBtn")?.addEventListener("click", () => {
@@ -1130,6 +1150,7 @@ onDOMReady(async function () {
   await initializePage();
   // Check if we're returning from OAuth
   handleOAuthCallback();
+  await resumeHmrcAssistCheck();
   console.log("JS block finished loading: DOMContentLoaded event handler");
 });
 
