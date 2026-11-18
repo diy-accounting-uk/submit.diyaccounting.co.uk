@@ -127,6 +127,16 @@ main ol.calendar {
   padding: var(--space-1);
 }
 
+/* The Welsh cells carry HMRC's Welsh term with the English after it ("cynhyrchu (production)") and run
+   longer than the English, so at desktop width the Welsh table takes the smaller step to keep its eight
+   columns to a few words a line. The English table keeps the body size. */
+@media (min-width: 601px) {
+  html[lang="cy"] .availability-table th,
+  html[lang="cy"] .availability-table td {
+    font-size: var(--step--1);
+  }
+}
+
 /* Availability cells: the state shades the cell; a production cell also carries a tick after its text. */
 .avail-production {
   background-color: var(--c-ok-tint);
