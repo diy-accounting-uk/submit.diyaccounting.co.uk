@@ -9,13 +9,17 @@
 #   new-cloud-session.sh release <codename> [--dry-run]
 #   new-cloud-session.sh post <codename> <task-file> [--dry-run]
 #   new-cloud-session.sh watch <codename> [--interval <seconds>]
+#   new-cloud-session.sh creds <codename> [--dry-run]
 #
-# --dry-run runs every read and prints every write (repository create, push, clone, file append) in its place.
+# --dry-run runs every read and prints every write (repository create, push, clone, file append, workflow dispatch)
+# in its place.
 
 set -euo pipefail
 
 ORG=diy-accounting-uk
 PREFIX=submit-cloud-
+MAIN_REPO=$ORG/submit.diyaccounting.co.uk
+CREDS_WORKFLOW=cloud-credentials.yml
 LEASE_MAX_AGE=86400
 SKILL_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(git -C "$SKILL_DIR" rev-parse --show-toplevel)
@@ -36,7 +40,7 @@ die() {
 }
 
 usage() {
-  sed -n '8,11p' "${BASH_SOURCE[0]}" | sed 's/^# *//' >&2
+  sed -n '8,12p' "${BASH_SOURCE[0]}" | sed 's/^# *//' >&2
   exit 2
 }
 
@@ -403,8 +407,60 @@ cmd_watch() {
   done
 }
 
+# Gives a worker one-hour ci credentials that only it can read. Reads the worker's public key from .collab/<codename>.pub
+# on its collab branch, dispatches cloud-credentials.yml on main with it, waits for the run, downloads the age
+# ciphertext and pushes it to .collab/<codename>.aws.age on collab. The plaintext never reaches this machine.
+cmd_creds() {
+  local cn="" g key before run_id="" title tries
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --dry-run) DRY=1; shift ;;
+      -*) usage ;;
+      *) [ -z "$cn" ] || usage; cn=$1; shift ;;
+    esac
+  done
+  [ -n "$cn" ] || usage
+  valid_codename "$cn"
+  repo_exists "$cn" || die "$(repo_of "$cn") is not on GitHub"
+
+  g=$TMP/creds
+  git init -q "$g"
+  git -C "$g" fetch -q --depth 1 "https://github.com/$(repo_of "$cn").git" refs/heads/collab ||
+    die "$(repo_of "$cn") has no collab branch"
+  key=$(git -C "$g" show "FETCH_HEAD:.collab/$cn.pub" 2>/dev/null) ||
+    die "no .collab/$cn.pub on the collab branch of $(repo_of "$cn"); the worker pushes it by the collaborate skill"
+  [ "$(printf '%s\n' "$key" | grep -c .)" = 1 ] || die ".collab/$cn.pub is not one line"
+  [[ $key =~ ^ssh-ed25519\ [A-Za-z0-9+/]+={0,2}(\ .*)?$ ]] || die ".collab/$cn.pub is not an ssh-ed25519 public key"
+  echo "worker key: $(printf '%s\n' "$key" | ssh-keygen -l -f -)"
+
+  title="cloud credentials for $cn"
+  before=$(gh run list --repo "$MAIN_REPO" --workflow "$CREDS_WORKFLOW" --limit 20 --json databaseId --jq '.[].databaseId')
+  run gh workflow run "$CREDS_WORKFLOW" --repo "$MAIN_REPO" --ref main -f "codename=$cn" -f "public_key=$key"
+  if [ "$DRY" = 1 ]; then
+    echo "dry-run: wait for the run, download $cn.aws.age, and push it to .collab/$cn.aws.age on the collab branch of $(repo_of "$cn")"
+    return
+  fi
+
+  for tries in $(seq 1 30); do
+    run_id=$(gh run list --repo "$MAIN_REPO" --workflow "$CREDS_WORKFLOW" --branch main --event workflow_dispatch --limit 20 \
+      --json databaseId,displayTitle --jq ".[] | select(.displayTitle == \"$title\") | .databaseId" |
+      grep -vxF -f <(printf '%s\n' "$before") | head -1 || true)
+    [ -z "$run_id" ] || break
+    [ "$tries" -lt 30 ] || die "no new '$title' run appeared on $MAIN_REPO within 150 seconds"
+    sleep 5
+  done
+  echo "run: https://github.com/$MAIN_REPO/actions/runs/$run_id"
+  gh run watch "$run_id" --repo "$MAIN_REPO" --exit-status --interval 10 >/dev/null ||
+    die "run $run_id failed: gh run view $run_id --repo $MAIN_REPO --log-failed"
+  gh run download "$run_id" --repo "$MAIN_REPO" -n "$cn.aws.age" -D "$TMP/artifact"
+  [ "$(head -c 21 "$TMP/artifact/$cn.aws.age")" = "age-encryption.org/v1" ] || die "the artifact of run $run_id is not an age file"
+  collab_commit "$cn" "AWS credentials for $cn from run $run_id (age ciphertext)" ".collab/$cn.aws.age" "$TMP/artifact/$cn.aws.age"
+  echo "pushed: .collab/$cn.aws.age on the collab branch of $(repo_of "$cn"); the credentials expire within the hour"
+}
+
 case ${1:-} in
   release) shift; cmd_release "$@" ;;
+  creds) shift; cmd_creds "$@" ;;
   post) shift; cmd_post "$@" ;;
   watch) shift; cmd_watch "$@" ;;
   -h | --help) usage ;;

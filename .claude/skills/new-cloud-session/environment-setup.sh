@@ -26,8 +26,18 @@ mkdir -p /opt/jdk25
 curl -fsSL "https://api.adoptium.net/v3/binary/latest/25/ga/linux/x64/jdk/hotspot/normal/eclipse" | tar -xz -C /opt/jdk25 --strip-components=1
 ln -sf /opt/jdk25/bin/* /usr/local/bin/
 fi
+# age v1.3.2 (the collaborate skill decrypts the AWS credentials handoff with it); the sha256 is the
+# one GitHub records for the release asset, and cloud-credentials.yml pins the same release
+if ! /usr/local/bin/age --version 2>/dev/null | grep -qx 'v1.3.2'; then
+curl -fsSL -o /tmp/age.tar.gz https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-amd64.tar.gz
+echo "cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10  /tmp/age.tar.gz" | sha256sum -c -
+tar -xzf /tmp/age.tar.gz -C /tmp
+install -m 0755 /tmp/age/age /tmp/age/age-keygen /usr/local/bin/
+rm -rf /tmp/age /tmp/age.tar.gz
+fi
 node --version
 java -version
+age --version
 # Dependencies and the Playwright browser, in each work repository checkout (the script starts in
 # /home/user, one level above the checkout)
 for d in submit-cloud-*/; do

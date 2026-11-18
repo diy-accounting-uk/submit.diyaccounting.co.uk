@@ -8,11 +8,11 @@ description: Run this Claude Code cloud session as a worker for the local coordi
 
 <!-- @capability DEV-66 Work rows as a cloud worker for the coordinator
 - **Use when:** a Claude Code cloud session on a submit-cloud-<codename> work repository starts, or a task message from the coordinator arrives in it.
-- **Does:** collaborate checks Node 24, JDK 25, node_modules, a Playwright browser and the timeout variables, and stops when one is missing. On a task it branches claude/<codename>-<row> from the named base, builds the row, runs the named gates, and pushes to its own work repository. The last commit body carries the report and a Collab-Status trailer. The --loop form polls .collab/<codename>.md on the collab branch every 10 minutes.
+- **Does:** collaborate checks Node 24, JDK 25, node_modules, a Playwright browser and the timeout variables, and stops when one is missing. It makes an ssh-ed25519 key pair once per VM and pushes the public key to .collab/<codename>.pub on the collab branch, so the coordinator can hand it AWS credentials. On a task it branches claude/<codename>-<row> from the named base, builds the row, runs the named gates, and pushes to its own work repository. The last commit body carries the report and a Collab-Status trailer. The --loop form polls .collab/<codename>.md on the collab branch every 10 minutes.
 - **Run:** `/collaborate <codename>`; `/collaborate <codename> --loop`
 - **Entry:** `.claude/skills/collaborate/SKILL.md`
 - **Files:** .claude/skills/collaborate/SKILL.md, PLAN_CLOUD_COLLABORATION.md
-- **Keywords:** collaborate, cloud worker, claude code on the web, work repository, submit-cloud, report-back contract, collab branch, poll loop
+- **Keywords:** collaborate, cloud worker, claude code on the web, work repository, submit-cloud, report-back contract, collab branch, poll loop, aws credentials, age, aws-handoff
 - **Related:** DEV-65
 @end-capability -->
 
@@ -43,6 +43,7 @@ node --version; java -version 2>&1 | head -1; test -d node_modules && echo node_
 ls -d ~/.cache/ms-playwright/chromium-* 2>/dev/null || echo "no playwright chromium"; echo "CHROME_PATH=${CHROME_PATH:-}"
 echo "BASH_DEFAULT_TIMEOUT_MS=${BASH_DEFAULT_TIMEOUT_MS:-unset} BASH_MAX_TIMEOUT_MS=${BASH_MAX_TIMEOUT_MS:-unset}"
 git remote get-url origin; git log -1 --oneline origin/main
+age --version; aws --version
 ```
 
 | Check | Needs | When it is missing |
@@ -52,11 +53,39 @@ git remote get-url origin; git log -1 --oneline origin/main
 | `node_modules` | present | Run `npm ci`. The setup script runs it. |
 | Playwright Chromium | a `chromium-*` folder | Run `npx playwright install chromium`. It needs the Playwright download domains (`cdn.playwright.dev`, `playwright.download.prss.microsoft.com`) on the environment's allowlist. `playwright.config.js` does not read `CHROME_PATH`. |
 | The two timeout variables | `3600000` each | Without them a command moves to the background after 10 minutes and stops 30 minutes later. |
+| `age --version` | `v1.3.2` | The setup script installs it. Without it you cannot decrypt AWS credentials, so you take no task that needs AWS. |
+| `aws --version` | `aws-cli/2.*` | `scripts/proxy-secrets.sh` calls the AWS CLI. Without it you take no task that runs that script. |
 
 When Node 24, JDK 25 or `node_modules` is missing, the reply of the turn is the list of what is
 missing and the setup-script line that fixes it, and you take no task. When only the browser is
-missing, you take tasks whose gates need no browser. Then reply `ready: <codename>` and end the
-turn.
+missing, you take tasks whose gates need no browser.
+
+Then make sure the coordinator has your public key for AWS credentials. Make the key pair once per
+VM, and push the public key when `collab` does not hold this VM's key:
+
+```bash
+test -f ~/.ssh/aws-handoff || ssh-keygen -q -t ed25519 -N '' -C aws-handoff-<codename> -f ~/.ssh/aws-handoff
+git fetch origin collab:refs/remotes/origin/collab
+git show origin/collab:.collab/<codename>.pub 2>/dev/null | cmp -s - ~/.ssh/aws-handoff.pub && echo "key on collab"
+```
+
+When the last line prints nothing, push the key from a temporary worktree, so your own branch does
+not change:
+
+```bash
+git worktree add --detach /tmp/collab-key origin/collab
+mkdir -p /tmp/collab-key/.collab && cp ~/.ssh/aws-handoff.pub /tmp/collab-key/.collab/<codename>.pub
+git -C /tmp/collab-key add .collab/<codename>.pub
+git -C /tmp/collab-key commit -q -m "<codename>: public key for the AWS credentials handoff"
+git -C /tmp/collab-key push origin HEAD:collab
+git worktree remove /tmp/collab-key
+```
+
+When the push is rejected, the coordinator pushed to `collab` first: remove the worktree, fetch
+`collab` again and repeat. The private key `~/.ssh/aws-handoff` never leaves the VM. Do not print
+it, copy it or commit it.
+
+Then reply `ready: <codename>` and end the turn.
 
 ## The task message
 
@@ -86,9 +115,41 @@ On a task:
 7. Reply in one line: the branch, the SHA, `done` or `not-done`. End the turn. The next message
    starts the next task.
 
-When you cannot do the task (a missing tool, a brief that needs AWS, a gate that cannot run here),
+When you cannot do the task (a missing tool, a brief that needs AWS with no credentials for you, a
+gate that cannot run here),
 push the branch with one commit (`git commit --allow-empty` when nothing changed) whose body says
 why, with `Collab-Status: not-done`.
+
+## AWS credentials
+
+When a task says to load AWS credentials, the coordinator has pushed
+`.collab/<codename>.aws.age` to `collab`: one-hour credentials for the role
+`submit-ci-cloud-worker-role` in the ci account, encrypted to your public key. Load them in one Bash
+call, and print nothing of the decrypted file:
+
+```bash
+git fetch origin collab:refs/remotes/origin/collab
+mkdir -p ~/.aws && chmod 700 ~/.aws
+(umask 077 && git show origin/collab:.collab/<codename>.aws.age | age -d -i ~/.ssh/aws-handoff > ~/.aws/credentials)
+chmod 600 ~/.aws/credentials
+printf '[default]\nregion = eu-west-2\n' > ~/.aws/config
+AWS_PROFILE=default aws sts get-caller-identity --query Arn --output text
+```
+
+The last line must print an ARN with `assumed-role/submit-ci-cloud-worker-role/`. When it does not,
+or `age` fails, the task is `not-done` with the error in the body.
+
+- The credentials expire within the hour. The first line of the file is a comment with the expiry
+  time: read it with `head -1 ~/.aws/credentials`, which prints no key. When they expire, push the
+  work so far with `Collab-Status: wip` and say in the body that the task needs new credentials.
+- The file holds only the `default` profile. `scripts/proxy-secrets.sh` uses the profile
+  `diya-submit-ci` unless `AWS_PROFILE` is set, so run it as
+  `AWS_PROFILE=default scripts/proxy-secrets.sh <command>`. The Polly narration uses the default
+  profile as it is.
+- The role may call `polly:SynthesizeSpeech` in eu-west-2 and read the two `ci/` secrets that
+  `scripts/proxy-secrets.sh` reads. Every other AWS call is denied.
+- Never print, `cat`, copy or commit `~/.aws/credentials`, and never echo a variable that holds a
+  key. A key in your transcript stays readable after the file expires.
 
 ## The report in the last commit's body
 
@@ -113,9 +174,12 @@ line, with the reason.
 ## Rules
 
 - Push only to `origin`, the work repository of this session. Never push to any other repository.
-- Never push a branch whose name does not start with `claude/`. Never push `main` or `collab`.
+- Never push a branch whose name does not start with `claude/`. Never push `main`. Push to
+  `collab` only the commit that adds `.collab/<codename>.pub`.
 - Never delete a branch or a tag. Never force-push a branch the coordinator may have fetched.
-- Never call AWS. This VM has no SSO session; a brief that needs AWS is `not-done`.
+- Call AWS only with the credentials of "AWS credentials", and only for the task that asked for
+  them. This VM has no SSO session; a brief that needs AWS before the coordinator has pushed
+  credentials is `not-done`.
 - Never edit `NEXT.md` or a `PLAN_*.md`. The coordinator owns them.
 - Never open a pull request. `gh pr` fails here (the proxy blocks GraphQL), and none is needed.
 - Commit before any long gate, and push the commit (step 5).

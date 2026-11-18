@@ -8,11 +8,11 @@ description: Lease a work repository (diy-accounting-uk/submit-cloud-<codename>)
 
 <!-- @capability DEV-65 Lease a cloud work repository and start a worker session
 - **Use when:** the coordinator needs a Claude Code cloud session as a worker, or a pool repository must be leased, re-synced, released or watched.
-- **Does:** new-cloud-session.sh leases the first free submit-cloud-<codename> repository by a .collab/lease file on its collab branch. It creates the next one with Actions off when none is free. It pushes origin/main and the base branch to it by URL. It starts claude --cloud from a clone in a terminal, or prints the claude.ai/code/new link. Its watch subcommand polls the claude/* branches for the Monitor.
-- **Run:** `/new-cloud-session [codename] [--base <branch>]`; `bash .claude/skills/new-cloud-session/new-cloud-session.sh [codename] [--base <branch>] [--dry-run]`; `... release <codename>`; `... post <codename> <file>`; `... watch <codename>`
+- **Does:** new-cloud-session.sh leases the first free submit-cloud-<codename> repository by a .collab/lease file on its collab branch. It creates the next one with Actions off when none is free. It pushes origin/main and the base branch to it by URL. It starts claude --cloud from a clone in a terminal, or prints the claude.ai/code/new link. Its watch subcommand polls the claude/* branches for the Monitor. Its creds subcommand dispatches cloud-credentials.yml with the worker's public key and pushes the age ciphertext of one-hour ci credentials to the collab branch.
+- **Run:** `/new-cloud-session [codename] [--base <branch>]`; `bash .claude/skills/new-cloud-session/new-cloud-session.sh [codename] [--base <branch>] [--dry-run]`; `... release <codename>`; `... post <codename> <file>`; `... watch <codename>`; `... creds <codename>`
 - **Entry:** `.claude/skills/new-cloud-session/SKILL.md`; `.claude/skills/new-cloud-session/new-cloud-session.sh:cmd_start`
-- **Files:** .claude/skills/new-cloud-session/SKILL.md, .claude/skills/new-cloud-session/new-cloud-session.sh, .claude/skills/new-cloud-session/pool.txt, PLAN_CLOUD_COLLABORATION.md
-- **Keywords:** cloud session, claude code on the web, claude --cloud, work repository, submit-cloud, pool, lease, collab branch, worker, deep link, remote worker
+- **Files:** .claude/skills/new-cloud-session/SKILL.md, .claude/skills/new-cloud-session/new-cloud-session.sh, .claude/skills/new-cloud-session/pool.txt, .claude/skills/new-cloud-session/environment-setup.sh, .github/workflows/cloud-credentials.yml, infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java, PLAN_CLOUD_COLLABORATION.md
+- **Keywords:** cloud session, claude code on the web, claude --cloud, work repository, submit-cloud, pool, lease, collab branch, worker, deep link, remote worker, aws credentials, age, cloud worker role
 - **Related:** DEV-66, DEV-27, DEV-30
 @end-capability -->
 
@@ -37,6 +37,35 @@ other subcommands:
 | `release <codename>` | Removes `.collab/lease` on `collab`. Keeps every branch. |
 | `post <codename> <file>` | Writes the file as `.collab/<codename>.md` on `collab`, for the fallback loop. |
 | `watch <codename> [--interval <s>]` | Polls `refs/heads/claude/*` every 120 s and prints one line per new tip. |
+| `creds <codename>` | Gives the worker one-hour ci credentials that only it can read (below). |
+
+## AWS credentials for a worker
+
+A cloud worker has no AWS SSO session. When a row needs AWS (Polly narration,
+`scripts/proxy-secrets.sh`, a ci proof), give the worker credentials before the task message:
+
+1. Check that `.collab/<codename>.pub` is on the worker's `collab` branch. The worker pushes it at
+   its start, by the `collaborate` skill.
+2. Run `bash .claude/skills/new-cloud-session/new-cloud-session.sh creds <codename>`.
+3. Tell the worker in the task message to load the credentials (the `collaborate` skill, "AWS
+   credentials").
+
+What `creds` does:
+
+1. It fetches `collab` from `https://github.com/diy-accounting-uk/submit-cloud-<codename>.git` and
+   reads `.collab/<codename>.pub`. It stops when the file is missing or is not one `ssh-ed25519` line.
+2. It runs `gh workflow run cloud-credentials.yml --repo diy-accounting-uk/submit.diyaccounting.co.uk --ref main -f codename=<codename> -f public_key=<key>`.
+3. It finds the new run named `cloud credentials for <codename>` and waits for it with `gh run watch`.
+4. It downloads the artifact `<codename>.aws.age` with `gh run download` and pushes it to
+   `.collab/<codename>.aws.age` on `collab`.
+
+The workflow assumes `submit-ci-cloud-worker-role` (IdentityStack, ci account only) for 3600 seconds.
+The role trusts only `cloud-credentials.yml` on `main` of this repository. It may call
+`polly:SynthesizeSpeech` in eu-west-2 and read the two `ci/` secrets that `proxy-secrets.sh` reads,
+and nothing else. The workflow encrypts the credentials file to the worker's key with `age -R` and
+uploads only the ciphertext, kept for one day. Only the worker's private key decrypts it, so neither
+this machine nor the public Actions record holds the plaintext. Run `creds` again for each hour of
+AWS work; each run is in the Actions record.
 
 ## The pool
 
