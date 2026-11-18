@@ -4,6 +4,7 @@
 import { describe, test, expect, vi } from "vitest";
 import {
   actorClassOf,
+  actorClassSql,
   artefactKindOf,
   buildActorSplitSql,
   buildDataSection,
@@ -59,6 +60,8 @@ describe("dataSection", () => {
   test("an empty actor is unknown and never a customer", () => {
     expect(actorClassOf("")).toBe("unknown");
     expect(actorClassOf(null)).toBe("unknown");
+    expect(actorClassOf("unknown")).toBe("unknown");
+    expect(actorClassSql("actor")).toContain("WHEN actor = 'unknown' THEN 'unknown'");
     expect(actorClassOf("customer")).toBe("customer");
     expect(actorClassOf("test-user")).toBe("test");
     expect(actorClassOf("probe")).toBe("synthetic");

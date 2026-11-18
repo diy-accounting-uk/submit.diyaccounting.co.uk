@@ -1071,6 +1071,10 @@ const VISITOR_KIND_LABELS = {
   "(unclassified)": "Unclassified",
 };
 
+// A sign-in's provider, then its account's class after "@", so a test user's sign-ins never share a
+// line with a customer's.
+const SIGN_IN_PROVIDER_COMPONENT = `coalesce(provider, 'Native') || '@' || ${actorClassSql("actor")}`;
+
 const VISITOR_KIND_DESCRIPTIONS = {
   operator: "Google Analytics sessions of the operator, flagged once the operator bundle has loaded in the browser.",
   authenticated:
@@ -1126,14 +1130,22 @@ function integrationLongFormSql({ hourly, componentExpression, valueExpression, 
 }
 
 // A call's actor class rides on its component after "@", so each line is one line of one class.
-// buildChartSeries splits the classes apart; customer lines come first and show at the start.
+// buildChartSeries splits the classes apart; customer lines come first and show at the start. The
+// sentence of each class ends the description of each of its lines.
 const CALL_CLASSES = ["customer", "test", "synthetic", "other", "unknown"];
 const CALL_CLASS_PHRASES = {
-  customer: "made for a signed-in customer",
-  test: "made for a test user",
-  synthetic: "made by a probe",
-  other: "made by an operator or a scheduled job",
-  unknown: "recorded with no actor",
+  customer: "Only calls made for a signed-in customer.",
+  test: "Only calls made for a test user.",
+  synthetic: "Only calls made by a probe.",
+  other: "Only calls made by an operator or a scheduled job.",
+  unknown: "Only calls recorded with no actor.",
+};
+const SIGN_IN_CLASS_PHRASES = {
+  customer: "Only sign-ins of customers.",
+  test: "Only sign-ins of test users.",
+  synthetic: "Only sign-ins of probes.",
+  other: "Only sign-ins of operators and scheduled jobs.",
+  unknown: "Only sign-ins recorded with no actor.",
 };
 const CALL_CLASS_COMPONENT = `'@' || ${actorClassSql("actor")}`;
 
@@ -1244,6 +1256,11 @@ const CONTRIBUTION_COLUMNS = {
   "ads-cost": "ads_cost_gbp",
   "contribution": "contribution_gbp",
 };
+
+// A tax charge names no resource and lands on the first day of the month, so the Cost tab draws it
+// as one line apart from the services.
+const COST_TAX_FILTER = "charge_description LIKE 'Tax for product code%'";
+const COST_TAX_COMPONENT = "Tax";
 
 // A campaign line carries its platform, so a Google and a Microsoft campaign never share a line.
 const CAMPAIGN_COMPONENT = `CASE platform WHEN 'microsoft' THEN 'Microsoft: ' ELSE 'Google: ' END || campaign_name`;
@@ -1362,19 +1379,22 @@ const RETENTION_LINES = {
   },
 };
 
-const RETENTION_TOTALS_ORDER = [
+const RETENTION_ACCOUNTS_ORDER = [
   "accounts-total",
   "active-customers-90d",
   "active-customers-7d",
-  "submitters-90d",
-  "submitters-7d",
-  "due-submitters-90d",
-  "returning-submitters-90d",
-  "returning-submitters-7d",
-  "active-subscriptions",
-  "active-passes",
   ...Object.keys(RETENTION_OTHER_CLASSES).map((name) => `accounts-total-${name}`),
 ];
+
+const RETENTION_RETURNS_ORDER = [
+  "submitters-90d",
+  "due-submitters-90d",
+  "returning-submitters-90d",
+  "submitters-7d",
+  "returning-submitters-7d",
+];
+
+const RETENTION_HOLDINGS_ORDER = ["active-subscriptions", "active-passes"];
 
 const RETENTION_EVENTS_ORDER = [
   "new-accounts",
@@ -1410,7 +1430,8 @@ const RETENTION_LIFECYCLE_COLUMNS = {
 
 const RETENTION_NOTE = [
   "Days are UTC.",
-  "Totals reads a figure on each day; Daily events counts the events of each day.",
+  "The Accounts, Returning and Subscriptions tabs read a figure on each day; Daily events counts the events of each day.",
+  "Each tab holds lines of a like size, so a small line is not drawn flat under a large one.",
   "The 90 and 7 day windows roll, so a line falls when a submission leaves its window.",
   "Submitters due are the customers who submitted in the 90 days before the window.",
   "A quarterly VAT filer submits once in 90 days, so returning submitters over submitters due is the return rate.",
@@ -1520,7 +1541,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "uptime",
       title: "HMRC submission failures",
       unit: "count",
-      note: "VAT returns that failed on their way to HMRC, from the activity events. Days are UTC. Failure rate is a percentage of that day's or hour's submissions.",
+      note: "Customers' VAT returns that failed on their way to HMRC, from the activity events; test users and probes are not counted. Days and hours are UTC. Failure rate is a percentage of that day's or hour's submissions, and Submissions and failures shows the two counts the rate divides.",
       modes: [
         {
           id: "class",
@@ -1586,6 +1607,34 @@ export function buildDailyChartDefinitions() {
             where: "failure_rate IS NOT NULL",
           }),
         },
+        {
+          id: "submissions",
+          label: "Submissions and failures",
+          total: null,
+          componentOrder: ["submissions", "failures"],
+          labelOf: (id) => ({ submissions: "Submissions", failures: "Failures" })[id] ?? id,
+          descriptionOf: (id) =>
+            ({
+              submissions: "Customers' VAT submissions, successful or failed: the base of the failure rate.",
+              failures: "Customers' VAT submissions that failed: the part of the base the failure rate counts.",
+            })[id],
+          sql: ["submissions", "failures"]
+            .map((column) =>
+              longFormSql({
+                dayExpression: "day",
+                componentExpression: `'${column}'`,
+                valueExpression: column,
+                view: "v_submission_failure_rate_daily",
+                dayColumn: "day",
+              }),
+            )
+            .join("\nUNION ALL\n"),
+          hourlySql: ["submissions", "failures"]
+            .map((column) =>
+              hourlyLongFormSql({ componentExpression: `'${column}'`, valueExpression: column, view: "v_submission_failure_rate_hourly" }),
+            )
+            .join("\nUNION ALL\n"),
+        },
       ],
     },
     {
@@ -1593,7 +1642,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "integrations",
       title: "API requests by organisation and status",
       unit: "count",
-      note: "Live calls to HMRC, Companies House and Stripe, by the class of the caller. The customer lines show at the start; the lines for test users, probes, operators with scheduled jobs, and calls recorded before the caller was recorded start hidden and stay in the legend. A call with no response reads failed. Days are UTC.",
+      note: "Live calls to HMRC, Companies House and Stripe, from the call records, by the class of the caller. The customer lines and the unknown lines (calls recorded before the caller was recorded) show at the start; the lines for test users, probes, and operators with scheduled jobs start hidden and stay in the legend. A call with no response reads failed. Days and hours are UTC.",
       modes: [
         integrationRequestsMode({ id: "all", label: "All" }),
         ...Object.entries(INTEGRATION_ORG_LABELS).map(([org, label]) => integrationRequestsMode({ id: org, label, org })),
@@ -1604,7 +1653,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "integrations",
       title: "Average API request duration",
       unit: "ms",
-      note: "Live calls only, by the class of the caller; the customer lines show at the start. The time until the response arrived, or until the call failed, averaged over the calls of each day or hour. Days are UTC.",
+      note: "Live calls only, from the call records, by the class of the caller; the customer lines and the unknown lines (calls recorded before the caller was recorded) show at the start. The time until the response arrived, or until the call failed, averaged over the calls of each day or hour. API requests by organisation and status counts the calls each average is taken over. Days and hours are UTC.",
       modes: [integrationDurationMode({ id: "organisation", label: "By organisation" })],
     },
     {
@@ -1920,21 +1969,24 @@ export function buildDailyChartDefinitions() {
       objectiveId: "low-running-cost",
       title: "AWS costs",
       unit: "usd",
-      note: "AWS cost across every account in the organisation. Cost shows the 12 largest services and folds the rest into Other.",
+      note: "AWS cost across every account in the organisation, from the AWS cost export (FOCUS), one point per UTC day of the charge. Cost shows the 12 largest services and folds the rest into Other; tax is a line of its own, because AWS bills the tax of each service on the first day of the month. Cost and CloudWatch by charge start with the total and the tax hidden, and By deployment starts with the total and the untagged charges hidden, so the daily run of each service shows.",
       modes: [
         {
           id: "cost",
           label: "Cost",
           total: "All services",
-          totalDescription: "Every service in every account added together, in dollars.",
+          totalDescription: "Every service in every account added together, tax included, in dollars.",
           maxComponents: 12,
           labelOf: (id) => id,
-          descriptionOf: (id) => `Dollars billed for ${id} across all accounts.`,
+          descriptionOf: (id) =>
+            id === COST_TAX_COMPONENT
+              ? "Dollars billed as tax on every service across all accounts. AWS bills it on the first day of the month."
+              : `Dollars billed for ${id} across all accounts, tax apart.`,
           sql: longFormSql({
             dayExpression: "day",
-            componentExpression: "service_name",
+            componentExpression: `CASE WHEN ${COST_TAX_FILTER} THEN '${COST_TAX_COMPONENT}' ELSE service_name END`,
             valueExpression: "billed_cost_usd",
-            view: "v_cost_daily",
+            view: "v_cost_by_resource_daily",
             dayColumn: "day",
           }),
         },
@@ -2054,9 +2106,9 @@ export function buildDailyChartDefinitions() {
       modes: [
         {
           id: "totals",
-          label: "Totals",
+          label: "Accounts",
           total: null,
-          componentOrder: RETENTION_TOTALS_ORDER,
+          componentOrder: RETENTION_ACCOUNTS_ORDER,
           labelOf: (id) => RETENTION_LINES[id]?.label ?? id,
           descriptionOf: (id) => RETENTION_LINES[id]?.description,
           sql:
@@ -2067,17 +2119,31 @@ export function buildDailyChartDefinitions() {
             `FROM   v_active_customers_7d_daily\nWHERE  ${dailyWindowFilter("day")} AND app_client = 'all'\nGROUP  BY 1\n` +
             `UNION ALL\n` +
             `SELECT cast(day AS varchar), 'active-customers-7d', cast(sum(active_users_7d) AS double)\n` +
-            `FROM   v_active_customers_7d_daily\nWHERE  ${dailyWindowFilter("day")} AND app_client = 'all'\nGROUP  BY 1\n` +
-            ["submitters-90d", "submitters-7d", "returning-submitters-90d", "returning-submitters-7d", "due-submitters-90d"]
-              .map(
-                (id) =>
-                  `UNION ALL\n` +
-                  `SELECT cast(day AS varchar), '${id}', cast(sum(${RETENTION_ROLLING_COLUMNS[id]}) AS double)\n` +
-                  `FROM   v_returning_submitters_rolling_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n`,
-              )
-              .join("") +
-            `UNION ALL\n` +
-            `SELECT cast(day AS varchar), 'active-subscriptions', cast(sum(active_subscriptions) AS double)\n` +
+            `FROM   v_active_customers_7d_daily\nWHERE  ${dailyWindowFilter("day")} AND app_client = 'all'\nGROUP  BY 1`,
+        },
+        {
+          id: "returns",
+          label: "Returning",
+          total: null,
+          componentOrder: RETENTION_RETURNS_ORDER,
+          labelOf: (id) => RETENTION_LINES[id]?.label ?? id,
+          descriptionOf: (id) => RETENTION_LINES[id]?.description,
+          sql: RETENTION_RETURNS_ORDER.map(
+            (id, index) =>
+              `SELECT cast(day AS varchar)${index === 0 ? " AS day" : ""}, '${id}'${index === 0 ? " AS component" : ""}, ` +
+              `cast(sum(${RETENTION_ROLLING_COLUMNS[id]}) AS double)${index === 0 ? " AS value" : ""}\n` +
+              `FROM   v_returning_submitters_rolling_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1`,
+          ).join("\nUNION ALL\n"),
+        },
+        {
+          id: "holdings",
+          label: "Subscriptions",
+          total: null,
+          componentOrder: RETENTION_HOLDINGS_ORDER,
+          labelOf: (id) => RETENTION_LINES[id]?.label ?? id,
+          descriptionOf: (id) => RETENTION_LINES[id]?.description,
+          sql:
+            `SELECT cast(day AS varchar) AS day, 'active-subscriptions' AS component, cast(sum(active_subscriptions) AS double) AS value\n` +
             `FROM   v_account_lifecycle_daily\nWHERE  ${dailyWindowFilter("day")} AND actor_class = 'customer'\nGROUP  BY 1\n` +
             `UNION ALL\n` +
             `SELECT cast(day AS varchar), 'active-passes', cast(sum(active_passes) AS double)\n` +
@@ -2138,7 +2204,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "conversion-to-submission",
       title: "Visitors",
       unit: "count",
-      note: "Operator and human count Google Analytics sessions, so only visitors who accepted analytics. Authenticated user counts distinct signed-in customers each day from the activity events, so every customer who signs in, whether or not they accepted analytics. System counts the activity events published by scheduled and detection jobs, not visitors. Synthetic and bot count distinct visitors each day from the CloudFront access log, which Google Analytics cannot see; a visitor is a salted hash of the client address that changes every day, so one visitor is counted once a day and never followed across days. By landing page counts the Google Analytics sessions that began on each page; By country counts the activity events' new sessions, with AI agents apart.",
+      note: "Operator and human count Google Analytics sessions, so only visitors who accepted analytics. Authenticated user counts distinct signed-in customers each day from the activity events, so every customer who signs in, whether or not they accepted analytics. System counts the activity events published by scheduled and detection jobs, not visitors. Synthetic and bot count distinct visitors each day from the CloudFront access log, which Google Analytics cannot see; a visitor is a salted hash of the client address that changes every day, so one visitor is counted once a day and never followed across days. By landing page counts the Google Analytics sessions that began on each page, and Sign-ins by landing page counts the ones that went on to sign in, the numerator of the sign-in rate. Sign-ins by provider splits each provider by the class of the account, and only the customer lines show at the start. By country counts the activity events' new sessions, with AI agents apart; a country with no session has no line. Days and hours are UTC.",
       modes: [
         {
           id: "sessions",
@@ -2184,6 +2250,23 @@ export function buildDailyChartDefinitions() {
           }),
         },
         {
+          id: "landing-page-sign-ins",
+          label: "Sign-ins by landing page",
+          total: "All sign-ins from a landing page",
+          totalDescription: "Sessions of every landing page that went on to sign in, added together.",
+          maxComponents: 10,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `Google Analytics sessions that began on ${id} and went on to sign in.`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "landing_page",
+            valueExpression: "sign_ins",
+            view: "v_ga4_landing_pages_daily",
+            dayColumn: "day",
+            where: "sign_ins > 0",
+          }),
+        },
+        {
           id: "landing-page-sign-in",
           label: "Sign-in rate by landing page",
           unit: "ratio",
@@ -2202,19 +2285,21 @@ export function buildDailyChartDefinitions() {
           label: "Sign-ins by provider",
           total: "All sign-ins",
           totalDescription: "Sign-ins of every provider added together.",
+          classes: CALL_CLASSES,
+          classPhrases: SIGN_IN_CLASS_PHRASES,
           maxComponents: 10,
           labelOf: (id) => id,
           descriptionOf: (id) => `Sign-ins through ${id}, from the activity events. Native accounts carry no provider.`,
           sql: longFormSql({
             dayExpression: "day",
-            componentExpression: "coalesce(provider, 'Native')",
+            componentExpression: SIGN_IN_PROVIDER_COMPONENT,
             valueExpression: "sign_ins",
             view: "v_sign_ins_daily",
             dayColumn: "day",
             where: "event = 'login'",
           }),
           hourlySql: hourlyLongFormSql({
-            componentExpression: "coalesce(provider, 'Native')",
+            componentExpression: SIGN_IN_PROVIDER_COMPONENT,
             valueExpression: "sign_ins",
             view: "v_sign_ins_hourly",
             where: "event = 'login'",
@@ -2234,11 +2319,13 @@ export function buildDailyChartDefinitions() {
             valueExpression: "human_sessions",
             view: "v_traffic_by_country_daily",
             dayColumn: "day",
+            where: "human_sessions > 0",
           }),
           hourlySql: hourlyLongFormSql({
             componentExpression: "country",
             valueExpression: "human_sessions",
             view: "v_traffic_by_country_hourly",
+            where: "human_sessions > 0",
           }),
         },
         {
@@ -2255,11 +2342,13 @@ export function buildDailyChartDefinitions() {
             valueExpression: "ai_agent_sessions",
             view: "v_traffic_by_country_daily",
             dayColumn: "day",
+            where: "ai_agent_sessions > 0",
           }),
           hourlySql: hourlyLongFormSql({
             componentExpression: "country",
             valueExpression: "ai_agent_sessions",
             view: "v_traffic_by_country_hourly",
+            where: "ai_agent_sessions > 0",
           }),
         },
       ],
@@ -2324,7 +2413,7 @@ function buildClassedChartSeries({ days, rows, mode }) {
       ...line,
       id: `${line.id}@${name}`,
       label: line.isTotal ? line.label : `${line.label}, ${name}`,
-      ...(line.description ? { description: `${line.description} Only calls ${classPhrases[name]}.` } : {}),
+      ...(line.description ? { description: `${line.description} ${classPhrases[name]}` } : {}),
     }));
   });
 }

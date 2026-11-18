@@ -455,6 +455,9 @@ body.page-dashboard #mainContent {
   align-items: center;
   justify-content: center;
   margin: 0;
+  /* Clear of the value labels at the left, so a message of two lines does not cover them. */
+  padding: 0 var(--space-4) 0 3.5rem;
+  text-align: center;
   pointer-events: none;
 }
 

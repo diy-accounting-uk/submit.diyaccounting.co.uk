@@ -58,23 +58,35 @@ function lastDays(series) {
   return series.map((line) => ({ ...line, values: line.values.slice(-DAILY_SOURCE_DAYS) }));
 }
 
+// The call lines that show at the start: the customer's, and the calls recorded before the caller
+// was recorded, which leave the 90 days as they age.
+const CUSTOMER_AND_UNKNOWN_CALLS = ["@customer", "@unknown"];
+
 // Lines that start hidden, by chart id and mode id; the legend still shows them.
 const INITIALLY_HIDDEN_SERIES = {
-  "visitors": { sessions: ["synthetic", "bot", "system"] },
+  "visitors": {
+    "sessions": ["synthetic", "bot", "system"],
+    "sign-in-provider": { showOnlySuffix: ["@customer"] },
+  },
   "activity-started-and-completed": {
     "started": ["total", "bundle"],
     "completed": ["total", "bundle"],
     "api-calls": { showOnly: ["all"] },
   },
   "integration-requests": {
-    "all": { showOnlySuffix: "@customer" },
-    "hmrc": { showOnlySuffix: "@customer" },
-    "companies-house": { showOnlySuffix: "@customer" },
-    "stripe": { showOnlySuffix: "@customer" },
+    "all": { showOnlySuffix: CUSTOMER_AND_UNKNOWN_CALLS },
+    "hmrc": { showOnlySuffix: CUSTOMER_AND_UNKNOWN_CALLS },
+    "companies-house": { showOnlySuffix: CUSTOMER_AND_UNKNOWN_CALLS },
+    "stripe": { showOnlySuffix: CUSTOMER_AND_UNKNOWN_CALLS },
   },
-  "integration-duration": { organisation: { showOnlySuffix: "@customer" } },
+  "integration-duration": { organisation: { showOnlySuffix: CUSTOMER_AND_UNKNOWN_CALLS } },
   "conversion-to-submission": { funnel: ["sessions-from-spreadsheets", "sessions-from-www", "sessions-from-elsewhere"] },
-  "data-totals": { transactional: { hideSuffix: "@synthetic" } },
+  "low-running-cost": {
+    cost: ["total", "Tax"],
+    deployment: ["total", "untagged"],
+    charge: { hide: ["total"], hidePrefix: "Tax for product code" },
+  },
+  "data-totals": { transactional: { showOnlySuffix: ["@customer"] } },
   "retention": {
     totals: ["accounts-total-test", "accounts-total-synthetic", "accounts-total-other", "accounts-total-unknown"],
     events: ["new-accounts-test", "new-accounts-synthetic", "new-accounts-other", "new-accounts-unknown"],
@@ -82,24 +94,22 @@ const INITIALLY_HIDDEN_SERIES = {
 };
 
 // An entry is a list of hidden line ids, or { showOnly: [ids] } for a mode whose lines are not
-// known in advance: every other line, daily or hourly, starts hidden. { showOnlySuffix } hides
-// every line whose id does not end with the suffix, as the lines of a caller class do, and
-// { hideSuffix } hides every line whose id ends with it.
+// known in advance: every other line, daily or hourly, starts hidden. { showOnlySuffix: [suffixes] }
+// hides every line whose id ends with none of the suffixes, as the lines of a caller class do, and
+// { hide: [ids], hidePrefix } hides those lines and every line whose id starts with the prefix.
 function initiallyHidden(chart, modeIndex) {
   const byMode = INITIALLY_HIDDEN_SERIES[chart.id];
   const mode = chart.modes[modeIndex];
   const entry = byMode && byMode[mode.id];
-  if (entry && entry.hideSuffix) {
-    const lines = [...mode.series, ...(mode.hourly ? mode.hourly.series : [])];
-    return new Set(lines.map((series) => series.id).filter((id) => id.endsWith(entry.hideSuffix)));
-  }
+  const lineIds = () => [...mode.series, ...(mode.hourly ? mode.hourly.series : [])].map((series) => series.id);
   if (entry && entry.showOnlySuffix) {
-    const lines = [...mode.series, ...(mode.hourly ? mode.hourly.series : [])];
-    return new Set(lines.map((series) => series.id).filter((id) => !id.endsWith(entry.showOnlySuffix)));
+    return new Set(lineIds().filter((id) => !entry.showOnlySuffix.some((suffix) => id.endsWith(suffix))));
   }
   if (entry && entry.showOnly) {
-    const lines = [...mode.series, ...(mode.hourly ? mode.hourly.series : [])];
-    return new Set(lines.map((series) => series.id).filter((id) => !entry.showOnly.includes(id)));
+    return new Set(lineIds().filter((id) => !entry.showOnly.includes(id)));
+  }
+  if (entry && entry.hidePrefix) {
+    return new Set(lineIds().filter((id) => entry.hide.includes(id) || id.startsWith(entry.hidePrefix)));
   }
   return new Set(entry || []);
 }
@@ -193,6 +203,15 @@ function lineRuns(values) {
   return runs.filter(Boolean);
 }
 
+// A line with a figure other than 0 on at most one point in ten. Its figures are dotted, so a
+// lone event reads as a point and not as a spike that rises and falls over two days.
+const SPARSE_POINT_SHARE = 0.1;
+
+function isSparse(values) {
+  const figures = values.filter((value) => value !== null && value !== undefined && value !== 0).length;
+  return figures > 0 && figures <= values.length * SPARSE_POINT_SHARE;
+}
+
 // The value axis: from 0, or below 0 when a line falls below it, to a nice ceiling, in four
 // steps. Below 0 the step is a nice number and the lowest value a whole number of steps, so 0 is
 // a grid line.
@@ -264,6 +283,7 @@ function drawChart(state) {
   seriesList.forEach((series, seriesIndex) => {
     if (state.hidden.has(series.id)) return;
     const style = styles[seriesIndex];
+    const sparse = isSparse(series.values);
     // A day with no figure (null) breaks the line; a lone figure is drawn as a dot, and a chart that sets `marks` dots every figure.
     lineRuns(series.values).forEach((run) => {
       const points = run.map(({ value, index }) => xAt(index).toFixed(1) + "," + yAt(value).toFixed(1)).join(" ");
@@ -277,12 +297,21 @@ function drawChart(state) {
       };
       if (style.dash) attributes["stroke-dasharray"] = style.dash;
       svg.appendChild(svgElement("polyline", attributes));
-      if (chart.marks || run.length === 1 || series.values.some((value) => value === null)) {
-        run.forEach(({ value, index }) =>
-          svg.appendChild(
-            svgElement("circle", { cx: xAt(index).toFixed(1), cy: yAt(value).toFixed(1), r: 3, fill: style.colour, class: "chart-point" }),
-          ),
-        );
+      const everyFigure = chart.marks || run.length === 1 || series.values.some((value) => value === null);
+      if (everyFigure || sparse) {
+        run
+          .filter(({ value }) => everyFigure || value !== 0)
+          .forEach(({ value, index }) =>
+            svg.appendChild(
+              svgElement("circle", {
+                cx: xAt(index).toFixed(1),
+                cy: yAt(value).toFixed(1),
+                r: 3,
+                fill: style.colour,
+                class: "chart-point",
+              }),
+            ),
+          );
       }
     });
   });
@@ -322,8 +351,15 @@ function drawChart(state) {
   });
   readout.textContent = describeDay(days.length - 1);
 
-  const everyValueZero = visible.every((series) => series.values.every((value) => value === 0 || value === null));
-  state.empty.textContent = "No data in the last " + days.length + (hourly ? " hours." : " days.");
+  const hasNoFigure = (series) => series.values.every((value) => value === 0 || value === null);
+  const everyValueZero = visible.every(hasNoFigure);
+  const hiddenWithData = seriesList.filter((series) => state.hidden.has(series.id) && !hasNoFigure(series)).length;
+  const span = `${days.length} ${hourly ? "hours" : "days"}`;
+  const hiddenLines = hiddenWithData === 1 ? "1 hidden line has" : `${hiddenWithData} hidden lines have`;
+  state.empty.textContent =
+    hiddenWithData > 0
+      ? `The lines shown have no data in the last ${span}. ${hiddenLines} data: press Show all, or a line in the legend.`
+      : `No data in the last ${span}.`;
   state.empty.hidden = !everyValueZero;
   svg.setAttribute(
     "aria-label",
@@ -511,8 +547,10 @@ function sortCharts(charts) {
     .map(({ chart }) => chart);
 }
 
-// The id of the table section that backs a chart.
+// The id of the table section that backs a chart, or null for a chart with no table.
 function chartTableId(chart) {
+  if (chart.id === "data-totals") return "dataTablesPanel";
+  if (chart.standalone) return null;
   if (chart.id === "visitors") return "visitorsPanel";
   if (chart.id === "activity-started-and-completed") return "activitiesPanel";
   if (chart.id.startsWith("integration-")) return "integrationsSummaryPanel";
@@ -528,7 +566,8 @@ function renderChartCard(chart, days, hours) {
   const heading = document.createElement("h3");
   heading.textContent = chart.title;
   card.appendChild(heading);
-  if (!chart.standalone) decorateSectionHeading(heading, card.id, [["Table", "#" + chartTableId(chart), "chart-table-link"]]);
+  const tableId = chartTableId(chart);
+  if (tableId) decorateSectionHeading(heading, card.id, [["Table", "#" + tableId, "chart-table-link"]]);
 
   const state = { chart, days, hours, range: "daily", modeIndex: 0, hidden: initiallyHidden(chart, 0), card };
 

@@ -612,7 +612,7 @@ describe("operatorSnapshotPublish", () => {
       const chart = buildDailyChartDefinitions().find((definition) => definition.id === "hmrc-failures");
 
       expect(chart.objectiveId).toBe("uptime");
-      expect(chart.modes.map((mode) => mode.id)).toEqual(["class", "status", "rate"]);
+      expect(chart.modes.map((mode) => mode.id)).toEqual(["class", "status", "rate", "submissions"]);
       expect(chart.modes[0].sql).toContain("failure_class AS component");
       expect(chart.modes[1].sql).toContain("hmrc_status AS component");
       expect(chart.modes[1].sql).toContain("FROM   v_hmrc_failures_by_class");
@@ -620,6 +620,21 @@ describe("operatorSnapshotPublish", () => {
       expect(chart.modes[1].labelOf("429")).toBe("HMRC 429");
       expect(chart.modes[2].sql).toContain("failure_rate * 100");
       expect(chart.modes[2].sql).toContain("failure_rate IS NOT NULL");
+    });
+
+    test("the failure rate has its base beside it: the day's and the hour's submissions and failures as counts", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "hmrc-failures");
+      const mode = chart.modes.find((candidate) => candidate.id === "submissions");
+
+      expect(mode.label).toBe("Submissions and failures");
+      expect(mode.unit).toBeUndefined();
+      expect(mode.componentOrder).toEqual(["submissions", "failures"]);
+      expect(mode.sql).toContain("FROM   v_submission_failure_rate_daily");
+      expect(mode.sql).toContain("cast(sum(submissions) AS double)");
+      expect(mode.sql).toContain("cast(sum(failures) AS double)");
+      expect(mode.hourlySql).toContain("FROM   v_submission_failure_rate_hourly");
+      expect(mode.descriptionOf("submissions")).toContain("base of the failure rate");
+      expect(chart.note).toContain("test users and probes are not counted");
     });
 
     test("the API request graph counts live calls by organisation and status class, with a mode for each organisation", () => {
@@ -858,26 +873,69 @@ describe("operatorSnapshotPublish", () => {
       expect(chart.modes[2].labelOf("all")).toBe("All clients");
     });
 
+    test("Sign-ins by provider splits each provider by the class of the account, so test sign-ins never join a customer line", () => {
+      const mode = buildDailyChartDefinitions()
+        .find((definition) => definition.id === "visitors")
+        .modes.find((candidate) => candidate.id === "sign-in-provider");
+
+      expect(mode.sql).toContain("coalesce(provider, 'Native') || '@' || CASE WHEN actor IS NULL");
+      expect(mode.hourlySql).toContain("coalesce(provider, 'Native') || '@' || CASE WHEN actor IS NULL");
+      const series = buildChartSeries({
+        days: [END_DAY],
+        rows: [
+          { day: END_DAY, component: "Google@customer", value: "2" },
+          { day: END_DAY, component: "Native@customer", value: "1" },
+          { day: END_DAY, component: "Native@test", value: "60" },
+        ],
+        mode,
+      });
+      expect(series.map((line) => line.id)).toEqual(["total@customer", "Google@customer", "Native@customer", "total@test", "Native@test"]);
+      const byId = Object.fromEntries(series.map((line) => [line.id, line]));
+      expect(byId["total@customer"].label).toBe("All sign-ins, customer");
+      expect(byId["total@customer"].values).toEqual([3]);
+      expect(byId["Native@test"].label).toBe("Native, test");
+      expect(byId["Native@test"].description).toBe(
+        "Sign-ins through Native, from the activity events. Native accounts carry no provider. Only sign-ins of test users.",
+      );
+    });
+
+    test("the AWS costs Cost tab draws tax as a line apart from the services it is billed on", () => {
+      const mode = buildDailyChartDefinitions()
+        .find((definition) => definition.id === "low-running-cost")
+        .modes.find((candidate) => candidate.id === "cost");
+
+      expect(mode.sql).toContain("FROM   v_cost_by_resource_daily");
+      expect(mode.sql).toContain("CASE WHEN charge_description LIKE 'Tax for product code%' THEN 'Tax' ELSE service_name END AS component");
+      expect(mode.descriptionOf("Tax")).toContain("first day of the month");
+      expect(mode.descriptionOf("AWS Lambda")).toContain("tax apart");
+    });
+
     test("the Visitors chart reads sessions by landing page, the sign-in rate and sessions by country with AI agents apart", () => {
       const visitors = buildDailyChartDefinitions().find((definition) => definition.id === "visitors");
 
       expect(visitors.modes.map((mode) => mode.id)).toEqual([
         "sessions",
         "landing-page",
+        "landing-page-sign-ins",
         "landing-page-sign-in",
         "sign-in-provider",
         "country",
         "ai-agent-country",
       ]);
-      expect(visitors.modes[1].label).toBe("By landing page");
-      expect(visitors.modes[1].sql).toContain("FROM   v_ga4_landing_pages_daily");
-      expect(visitors.modes[2].unit).toBe("ratio");
-      expect(visitors.modes[2].sql).toContain("sum(sign_ins)");
-      expect(visitors.modes[3].sql).toContain("FROM   v_sign_ins_daily");
-      expect(visitors.modes[3].sql).toContain("event = 'login'");
-      expect(visitors.modes[3].sql).toContain("coalesce(provider, 'Native')");
-      expect(visitors.modes[4].sql).toContain("human_sessions");
-      expect(visitors.modes[5].sql).toContain("ai_agent_sessions");
+      const mode = (id) => visitors.modes.find((candidate) => candidate.id === id);
+      expect(mode("landing-page").label).toBe("By landing page");
+      expect(mode("landing-page").sql).toContain("FROM   v_ga4_landing_pages_daily");
+      expect(mode("landing-page-sign-ins").sql).toContain("cast(sum(sign_ins) AS double)");
+      expect(mode("landing-page-sign-ins").sql).toContain("sign_ins > 0");
+      expect(mode("landing-page-sign-in").unit).toBe("ratio");
+      expect(mode("landing-page-sign-in").sql).toContain("sum(sign_ins)");
+      expect(mode("sign-in-provider").sql).toContain("FROM   v_sign_ins_daily");
+      expect(mode("sign-in-provider").sql).toContain("event = 'login'");
+      expect(mode("sign-in-provider").sql).toContain("coalesce(provider, 'Native')");
+      expect(mode("country").sql).toContain("human_sessions > 0");
+      expect(mode("country").hourlySql).toContain("human_sessions > 0");
+      expect(mode("ai-agent-country").sql).toContain("ai_agent_sessions > 0");
+      expect(mode("ai-agent-country").hourlySql).toContain("ai_agent_sessions > 0");
       for (const mode of visitors.modes.slice(1)) {
         expect(mode.descriptionOf("/pricing"), mode.id).toBeTruthy();
         if (mode.total) expect(mode.totalDescription, mode.id).toBeTruthy();
@@ -1238,33 +1296,36 @@ describe("operatorSnapshotPublish", () => {
       expect(series.map((line) => line.description)).toEqual(["Everything.", "Line a.", "Line b.", "The 1 smaller lines added together."]);
     });
 
-    test("the Retention graph has a Totals, a Daily events and a Submitters by kind tab", () => {
+    test("the Retention graph keeps lines of a like size together: accounts, submitters due and returning, holdings, events and kinds", () => {
       const chart = buildDailyChartDefinitions().find((definition) => definition.id === "retention");
 
       expect(chart.modes.map((mode) => [mode.id, mode.label])).toEqual([
-        ["totals", "Totals"],
+        ["totals", "Accounts"],
+        ["returns", "Returning"],
+        ["holdings", "Subscriptions"],
         ["events", "Daily events"],
         ["submitters", "Submitters by kind"],
       ]);
-      const [totals, events, submitters] = chart.modes;
-      expect(totals.total).toBeNull();
-      expect(events.total).toBeNull();
+      const [totals, returns, holdings, events, submitters] = chart.modes;
+      for (const mode of [totals, returns, holdings, events]) expect(mode.total, mode.id).toBeNull();
       expect(submitters.total).toBe("All submitters, 90 days to this day");
-      for (const id of [
-        "accounts-total",
-        "active-customers-90d",
-        "active-customers-7d",
-        "submitters-90d",
-        "submitters-7d",
-        "returning-submitters-90d",
-        "returning-submitters-7d",
-        "due-submitters-90d",
-        "active-subscriptions",
-        "active-passes",
+      for (const [mode, ids] of [
+        [totals, ["accounts-total", "active-customers-90d", "active-customers-7d"]],
+        [returns, ["submitters-90d", "due-submitters-90d", "returning-submitters-90d", "submitters-7d", "returning-submitters-7d"]],
+        [holdings, ["active-subscriptions", "active-passes"]],
       ]) {
-        expect(totals.componentOrder).toContain(id);
-        expect(totals.descriptionOf(id), id).toBeTruthy();
+        for (const id of ids) {
+          expect(mode.componentOrder, mode.id).toContain(id);
+          expect(mode.descriptionOf(id), id).toBeTruthy();
+        }
       }
+      expect(returns.componentOrder).toEqual([
+        "submitters-90d",
+        "due-submitters-90d",
+        "returning-submitters-90d",
+        "submitters-7d",
+        "returning-submitters-7d",
+      ]);
       for (const id of [
         "new-accounts",
         "first-submissions",
@@ -1284,7 +1345,8 @@ describe("operatorSnapshotPublish", () => {
 
     test("the Retention graph draws test, synthetic, operator and unknown accounts as lines of their own", () => {
       const chart = buildDailyChartDefinitions().find((definition) => definition.id === "retention");
-      const [totals, events] = chart.modes;
+      const totals = chart.modes.find((mode) => mode.id === "totals");
+      const events = chart.modes.find((mode) => mode.id === "events");
 
       for (const name of ["test", "synthetic", "other", "unknown"]) {
         expect(totals.componentOrder).toContain(`accounts-total-${name}`);
@@ -1308,9 +1370,12 @@ describe("operatorSnapshotPublish", () => {
       expect(series.find((line) => line.id === "new-accounts-test").values).toEqual([69]);
     });
 
-    test("each Totals line of the Retention graph reads the view and column of its table row", () => {
+    test("each level line of the Retention graph reads the view and column of its table row", () => {
       const retention = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "retention");
-      const totals = buildDailyChartDefinitions().find((definition) => definition.id === "retention").modes[0];
+      const levels = buildDailyChartDefinitions()
+        .find((definition) => definition.id === "retention")
+        .modes.slice(0, 3);
+      const sqlOf = (line) => levels.find((mode) => mode.componentOrder.includes(line)).sql;
       const rowOf = (id) => retention.observations.find((observation) => observation.id === id);
 
       for (const [line, rowId] of [
@@ -1326,8 +1391,8 @@ describe("operatorSnapshotPublish", () => {
         const row = rowOf(rowId);
         expect(row, rowId).toBeDefined();
         expect(["latest", "latest-total"], rowId).toContain(row.aggregation);
-        expect(totals.sql, line).toContain(`sum(${row.valueExpr})`);
-        expect(totals.sql, line).toContain(`FROM   ${row.view}`);
+        expect(sqlOf(line), line).toContain(`sum(${row.valueExpr})`);
+        expect(sqlOf(line), line).toContain(`FROM   ${row.view}`);
       }
     });
 
@@ -1414,8 +1479,9 @@ describe("operatorSnapshotPublish", () => {
       expect(returning.view).toBe("v_returning_submitters_rolling_daily");
       expect(returning.valueExpr).toBe("returning_submitters_90d");
       expect(returning.aggregation).toBe("latest");
-      expect(chart.modes[0].sql).toContain("returning_submitters_90d");
-      expect(chart.modes[0].sql).toContain("FROM   v_returning_submitters_rolling_daily");
+      const returns = chart.modes.find((mode) => mode.id === "returns");
+      expect(returns.sql).toContain("returning_submitters_90d");
+      expect(returns.sql).toContain("FROM   v_returning_submitters_rolling_daily");
       expect(chart.note).toContain("roll");
     });
 
@@ -1604,6 +1670,7 @@ describe("operatorSnapshotPublish", () => {
         "hmrc-failures/class",
         "hmrc-failures/status",
         "hmrc-failures/rate",
+        "hmrc-failures/submissions",
         "integration-requests/all",
         "integration-requests/hmrc",
         "integration-requests/companies-house",
@@ -1645,7 +1712,7 @@ describe("operatorSnapshotPublish", () => {
 
       expect(failedChartIds).toEqual([]);
       expect(dailyCharts.hours).toHaveLength(336);
-      expect(queries.filter((sql) => /_hourly/.test(sql))).toHaveLength(16);
+      expect(queries.filter((sql) => /_hourly/.test(sql))).toHaveLength(17);
       const hourlyModes = dailyCharts.charts.flatMap((chart) =>
         chart.modes.filter((mode) => mode.hourly).map((mode) => `${chart.id}/${mode.id}`),
       );
@@ -1656,6 +1723,7 @@ describe("operatorSnapshotPublish", () => {
         "hmrc-failures/class",
         "hmrc-failures/status",
         "hmrc-failures/rate",
+        "hmrc-failures/submissions",
         "integration-requests/all",
         "integration-requests/hmrc",
         "integration-requests/companies-house",
@@ -1709,8 +1777,8 @@ describe("operatorSnapshotPublish", () => {
         previous: first.dailyCharts,
       });
 
-      expect(firstRunQueryCount).toBe(59);
-      expect(queries).toHaveLength(16);
+      expect(firstRunQueryCount).toBe(64);
+      expect(queries).toHaveLength(17);
       expect(queries.every((sql) => /_hourly/.test(sql))).toBe(true);
       expect(second.failedChartIds).toEqual([]);
       expect(second.dailyCharts.dailySeriesQueriedAt).toBe(firstRunAt.toISOString());
@@ -2893,7 +2961,7 @@ describe("operatorSnapshotPublish", () => {
       await handler();
 
       expect(mockS3Send.mock.calls.at(-3)[0].input).toEqual({ Bucket: "test-env-analytics-lake", Key: "snapshots/test/latest.json" });
-      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 43);
+      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 47);
     });
 
     test("a failing cost drivers query publishes the snapshot without them and counts as one failure", async () => {
