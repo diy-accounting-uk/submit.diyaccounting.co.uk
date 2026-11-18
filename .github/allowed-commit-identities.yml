@@ -30,3 +30,8 @@ allowed_author_emails:
   # The diyaccounting-agent GitHub App, which commits alarm-triage drafts
   # through the GitHub API.
   - 331076434+diyaccounting-agent[bot]@users.noreply.github.com
+
+  # Claude Code cloud sessions working as the operator's workers in the
+  # submit-cloud-<codename> repositories. Their commits reach this repository
+  # on the operator's branches, each signed with the operator's registered key.
+  - noreply@anthropic.com
