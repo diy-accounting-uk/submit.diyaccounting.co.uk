@@ -850,6 +850,138 @@ cy = '''Ydw, dileu'''
 hash = "183f00f483d3"
 cy = '''Cadw'''
 
+[strings."bundles.fewer-than-three"]
+hash = "cc3874eabdb4"
+cy = '''llai na 3'''
+
+[strings."bundles.not-used-yet"]
+hash = "9de87487a30e"
+cy = '''Heb ei ddefnyddio eto'''
+
+[strings."bundles.figure-uses"]
+hash = "9e6151acb057"
+cy = '''Defnyddiau'''
+
+[strings."bundles.figure-new-accounts"]
+hash = "38586d62ee9a"
+cy = '''Cyfrifon newydd'''
+
+[strings."bundles.figure-filed"]
+hash = "e7c1f91c1adb"
+cy = '''Wedi ffeilio'''
+
+[strings."bundles.figure-subscribers"]
+hash = "a344c89d660e"
+cy = '''Tanysgrifwyr'''
+
+[strings."bundles.figure-paid-charges"]
+hash = "cdac27290327"
+cy = '''Taliadau a dalwyd'''
+
+[strings."bundles.figure-last-used"]
+hash = "830ec7f812f9"
+cy = '''Defnyddiwyd ddiwethaf'''
+
+[strings."bundles.pass-generated"]
+hash = "649770ece34a"
+cy = '''Crëwyd tocyn {code}. Dilynwch yr hyn y mae’r ddolen hon yn ei ennill o dan Y tocynnau a greais'''
+
+[strings."bundles.earnings-held"]
+hash = "e1eac87e8452"
+cy = '''Wedi’i ddal: {amount}'''
+
+[strings."bundles.earnings-release"]
+hash = "bdf6be290cca"
+cy = '''{amount} yn cael ei ryddhau ar {date}'''
+
+[strings."bundles.earnings-payable"]
+hash = "040a45d35e29"
+cy = '''I’w dalu: {amount}'''
+
+[strings."bundles.earnings-paid"]
+hash = "6f4479ad9226"
+cy = '''Wedi’i dalu: {amount}'''
+
+[strings."bundles.pass-digital"]
+hash = "42be1f53d688"
+cy = '''Digidol'''
+
+[strings."bundles.pass-physical"]
+hash = "a89383f1a430"
+cy = '''Ffisegol'''
+
+[strings."bundles.pass-expires"]
+hash = "4bd9e42fe2cf"
+cy = '''Yn dod i ben {date}'''
+
+[strings."bundles.pass-no-expiry"]
+hash = "fe06351db8da"
+cy = '''Dim dyddiad dod i ben'''
+
+[strings."bundles.pass-uses"]
+hash = "71acdccd45fc"
+cy = '''{count} defnydd'''
+
+[strings."bundles.pass-uses-of"]
+hash = "ffe65b24e43a"
+cy = '''{count} o {max} defnydd'''
+
+[strings."bundles.pass-on-hold"]
+hash = "101e09d7bcf1"
+cy = '''wedi’i ddal i’w adolygu'''
+
+[strings."bundles.pass-select"]
+hash = "34bced0813eb"
+cy = '''Dewis tocyn {code}'''
+
+[strings."bundles.pass-copy-link"]
+hash = "724e78a3254c"
+cy = '''Copïo’r ddolen'''
+
+[strings."bundles.pass-view-qr"]
+hash = "4c048cc07861"
+cy = '''Gweld y cod QR'''
+
+[strings."bundles.pass-post"]
+hash = "a5554622c655"
+cy = '''Postio'''
+
+[strings."bundles.pass-release"]
+hash = "e020e3c67bd0"
+cy = '''Rhyddhau'''
+
+[strings."bundles.pass-delete"]
+hash = "a0018a8d7aef"
+cy = '''Dileu tocyn {code}'''
+
+[strings."bundles.pass-delete-title"]
+hash = "bb98b3348434"
+cy = '''Dileu’r tocyn hwn'''
+
+[strings."bundles.pass-copied"]
+hash = "ea61bc15688d"
+cy = '''Wedi copïo!'''
+
+[strings."bundles.pass-delete-confirm-one-label"]
+hash = "04c65d23255c"
+cy = '''Cadarnhau dileu tocyn {code}'''
+
+[strings."bundles.pass-delete-confirm-many-label"]
+hash = "e9cdb8a45615"
+cy = '''Cadarnhau dileu {count} tocyn'''
+
+[strings."bundles.pass-delete-confirm-one"]
+hash = "0172bd88fa64"
+cy = '''Dileu tocyn {code}? Mae’r ddolen yn stopio gweithio ar unwaith. Mae ei ffigurau’n aros yn eich cyfansymiau.'''
+
+[strings."bundles.pass-delete-confirm-many"]
+hash = "d858519b886b"
+cy = '''Dileu {count} tocyn? Mae’r dolenni’n stopio gweithio ar unwaith. Mae eu ffigurau’n aros yn eich cyfansymiau.'''
+
+[strings."bundles.pass-delete-yes"]
+hash = "7b05a8e35af9"
+cy = '''Ydw, dileu'''
+
 [strings."login.title"]
 hash = "c0e2df789143"
 cy = '''Mewngofnodi - DIY Accounting Submit'''

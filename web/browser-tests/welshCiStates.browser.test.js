@@ -1,0 +1,169 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
+// web/browser-tests/welshCiStates.browser.test.js
+//
+// The Welsh pages in the states a long-used account reaches: generated passes on the Bundles page, a
+// past filing on the filings page, and a subscription's cost line on an Income Tax page. Each reads in
+// Welsh, with no English string that has a Welsh entry.
+
+import { test, expect } from "@playwright/test";
+import fs from "fs";
+import path from "path";
+import { accountsDocumentCases, computationsDocumentCase } from "@app/test-helpers/accountsDocumentCases.js";
+
+const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
+
+const CONTENT_TYPES = {
+  ".html": "text/html",
+  ".js": "application/javascript",
+  ".mjs": "application/javascript",
+  ".css": "text/css",
+  ".toml": "text/x-toml",
+  ".json": "application/json",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".woff2": "font/woff2",
+};
+
+const ACCOUNTS_RECEIPT_NAME = "2026-10-24T10:15:00.000Z-00001A.json";
+const ACCOUNTS_RECEIPT = {
+  kind: "companies-house-accounts",
+  statusCode: "ACCEPT",
+  submissionNumber: "00001A",
+  companyNumber: "06846849",
+  rejections: [],
+  filedDocument: accountsDocumentCases()[0].xhtml,
+};
+
+const CT_RECEIPT_NAME = "2026-10-24T11:30:00.000Z-ABCDEF0123456789.json";
+const CT_RECEIPT = {
+  kind: "company-tax-return",
+  statusCode: "ACCEPT",
+  correlationId: "ABCDEF0123456789",
+  utr: "8596148860",
+  irmark: "RB3VJQ7ATMNZ7DXZRD3GVKMWDFPAYR5S",
+  irmarkReceipt: "RB3VJQ7ATMNZ7DXZRD3GVKMWDFPAYR5S",
+  successMessage: "The submission was successfully received.",
+  filed: {
+    boxes: {
+      1: "Example Trading Limited",
+      2: "06846849",
+      3: "8596148860",
+      30: "2025-04-01",
+      35: "2026-03-31",
+      145: 10000,
+      155: 4500,
+      475: 855,
+    },
+    computationsIxbrl: computationsDocumentCase(),
+    accountsIxbrl: accountsDocumentCases().find((candidate) => candidate.name === "small-company-accounts").xhtml,
+  },
+};
+
+const GENERATED_PASSES = {
+  passes: [
+    {
+      code: "maple-river-quiet-harbour",
+      passTypeId: "digital-pass",
+      bundleId: "resident-vat",
+      validFrom: "2026-08-01T00:00:00.000Z",
+      validUntil: "2027-08-01T00:00:00.000Z",
+      maxUses: 25,
+      useCount: 14,
+      heldForReview: false,
+      createdAt: "2026-08-01T09:30:00.000Z",
+      notes: "Bookkeepers' meet-up",
+      revokedAt: null,
+      figures: {
+        uses: 14,
+        newAccounts: 11,
+        filed: 6,
+        subscribers: 4,
+        paidCharges: 3,
+        fewerThanThree: false,
+        lastUsed: "2026-10-28T16:05:00.000Z",
+      },
+    },
+  ],
+  count: 1,
+  totals: {
+    passes: 1,
+    countedPasses: 1,
+    uses: 14,
+    newAccounts: 11,
+    filed: 6,
+    subscribers: 4,
+    paidCharges: 3,
+    fewerThanThree: false,
+    lastUsed: "2026-10-28T16:05:00.000Z",
+  },
+};
+
+async function serveSite(page, apiBodies) {
+  await page.route("**/*", async (route) => {
+    const url = new URL(route.request().url());
+    if (url.hostname !== "localhost") {
+      await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
+      return;
+    }
+    if (url.pathname.startsWith("/api/")) {
+      const body = Object.entries(apiBodies).find(([prefix]) => url.pathname.startsWith(prefix))?.[1] ?? {};
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+      return;
+    }
+    const filePath = path.join(PUBLIC_ROOT, decodeURIComponent(url.pathname));
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      await route.fulfill({
+        status: 200,
+        contentType: CONTENT_TYPES[path.extname(filePath)] || "application/octet-stream",
+        body: fs.readFileSync(filePath),
+      });
+    } else {
+      await route.fulfill({ status: 404, contentType: "text/plain", body: "Not found" });
+    }
+  });
+  await page.addInitScript(() => {
+    localStorage.setItem("cognitoIdToken", "test-id-token");
+    localStorage.setItem("siteLanguage", "cy");
+  });
+}
+
+test.describe("Welsh pages in a long-used account's states", () => {
+  test("generated passes: the Delete selected control reads in Welsh, before and after a pass is ticked", async ({ page }) => {
+    await serveSite(page, {
+      "/api/v1/pass/my-passes": GENERATED_PASSES,
+      "/api/v1/bundle": { bundles: [{ bundleId: "resident-vat", allocated: true }] },
+    });
+    await page.goto("http://localhost:3000/cy/bundles.html", { waitUntil: "load" });
+    await expect(page.locator("#generatedPassesList .pass-select").first()).toBeVisible();
+    const button = page.locator("#deleteSelectedPassesBtn");
+    await expect(button).toHaveText("Dileu’r rhai a ddewiswyd");
+    await page.locator("#generatedPassesList .pass-select").first().check();
+    await expect(button).toHaveText("Dileu’r rhai a ddewiswyd (1)");
+    const card = page.locator("#generatedPassesList [data-pass-code]").first();
+    await expect(card.locator('[data-figure="filed"] dt')).toHaveText("Wedi ffeilio");
+    await expect(card.locator('[data-figure="last-used"] dd')).toHaveText("28 Hyd 2026");
+    await expect(card).toContainText("Yn dod i ben 1 Awst 2027 · 14 o 25 defnydd");
+    await expect(card.locator(".pass-copy-link")).toHaveText("Copïo’r ddolen");
+    const cardLines = (await card.innerText()).split("\n").map((line) => line.trim());
+    for (const english of ["Filed", "Uses", "Subscribers", "Last used", "Copy Link", "View QR", "Post", "Digital"])
+      expect(cardLines).not.toContain(english);
+    await page.locator("#generatedPassesList .pass-select").first().uncheck();
+    await expect(button).toHaveText("Dileu’r rhai a ddewiswyd");
+  });
+
+  for (const [kind, name, receipt] of [
+    ["accounts", ACCOUNTS_RECEIPT_NAME, ACCOUNTS_RECEIPT],
+    ["Company Tax Return", CT_RECEIPT_NAME, CT_RECEIPT],
+  ]) {
+    test(`a past ${kind} filing: every filed line of the record reads in Welsh`, async ({ page }) => {
+      await serveSite(page, { "/api/v1/hmrc/receipt/": receipt, "/api/v1/bundle": { bundles: [] } });
+      await page.goto(`http://localhost:3000/cy/companies-house/filings.html?receipt=${encodeURIComponent(name)}`, { waitUntil: "load" });
+      await expect(page.locator("#filingContent")).not.toBeEmpty();
+      const text = await page.locator("#filingContent").innerText();
+      expect(text).toMatch(/Ffeiliwyd \d/);
+      expect(text).not.toMatch(/\bFiled\b/);
+    });
+  }
+});

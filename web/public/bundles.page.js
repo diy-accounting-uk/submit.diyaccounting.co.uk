@@ -1026,33 +1026,53 @@ async function initFeedbackEngagementSection() {
 // --- My Generated Passes ---
 let __myPassesNextPageKey = null;
 
-const FEWER_THAN_THREE = "fewer than 3";
+const fewerThanThree = () => siteText("bundles.fewer-than-three", "fewer than 3");
 
-function figureCell(label, value, { count = true } = {}) {
-  const shown = value === null || value === undefined ? (count ? FEWER_THAN_THREE : "—") : String(value);
-  return domEl(
-    "div",
-    { "class": "pass-figure", "data-figure": label.toLowerCase().replace(/ /g, "-") },
-    domEl("dt", {}, label),
-    domEl("dd", {}, shown),
-  );
+// Chromium's Intl has no Welsh dates, so a Welsh date is written here with HMRC's Welsh month names.
+const WELSH_MONTHS = [
+  "Ionawr",
+  "Chwefror",
+  "Mawrth",
+  "Ebrill",
+  "Mai",
+  "Mehefin",
+  "Gorffennaf",
+  "Awst",
+  "Medi",
+  "Hydref",
+  "Tachwedd",
+  "Rhagfyr",
+];
+const WELSH_SHORT_MONTHS = ["Ion", "Chwef", "Maw", "Ebr", "Mai", "Meh", "Gorff", "Awst", "Medi", "Hyd", "Tach", "Rhag"];
+
+function dateInReaderLanguage(date, { month = "long", utc = false } = {}) {
+  if (window.siteLanguage?.chrome?.() !== "cy") {
+    return date.toLocaleDateString("en-GB", { day: "numeric", month, year: "numeric", ...(utc ? { timeZone: "UTC" } : {}) });
+  }
+  const part = (name) => (utc ? date[`getUTC${name}`]() : date[`get${name}`]());
+  return `${part("Date")} ${(month === "short" ? WELSH_SHORT_MONTHS : WELSH_MONTHS)[part("Month")]} ${part("FullYear")}`;
+}
+
+function figureCell(key, label, value, { count = true } = {}) {
+  const shown = value === null || value === undefined ? (count ? fewerThanThree() : "—") : String(value);
+  return domEl("div", { "class": "pass-figure", "data-figure": key }, domEl("dt", {}, label), domEl("dd", {}, shown));
 }
 
 function lastUsedLabel(lastUsed) {
-  if (!lastUsed) return "Not used yet";
-  return new Date(lastUsed).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  if (!lastUsed) return siteText("bundles.not-used-yet", "Not used yet");
+  return dateInReaderLanguage(new Date(lastUsed), { month: "short" });
 }
 
 function passFiguresEl(figures, className) {
   return domEl(
     "dl",
     { class: className },
-    figureCell("Uses", figures.uses, { count: false }),
-    figureCell("New accounts", figures.newAccounts),
-    figureCell("Filed", figures.filed),
-    figureCell("Subscribers", figures.subscribers),
-    figureCell("Paid charges", figures.paidCharges),
-    figureCell("Last used", lastUsedLabel(figures.lastUsed), { count: false }),
+    figureCell("uses", siteText("bundles.figure-uses", "Uses"), figures.uses, { count: false }),
+    figureCell("new-accounts", siteText("bundles.figure-new-accounts", "New accounts"), figures.newAccounts),
+    figureCell("filed", siteText("bundles.figure-filed", "Filed"), figures.filed),
+    figureCell("subscribers", siteText("bundles.figure-subscribers", "Subscribers"), figures.subscribers),
+    figureCell("paid-charges", siteText("bundles.figure-paid-charges", "Paid charges"), figures.paidCharges),
+    figureCell("last-used", siteText("bundles.figure-last-used", "Last used"), lastUsedLabel(figures.lastUsed), { count: false }),
   );
 }
 let __noGeneratedPasses = false;
@@ -1101,7 +1121,10 @@ function focusNewlyGeneratedPass() {
   card.setAttribute("tabindex", "-1");
   card.scrollIntoView({ block: "center" });
   card.focus();
-  showStatus(`Pass ${newCode} generated. Track what this link earns under My generated passes`, "success");
+  showStatus(
+    siteText("bundles.pass-generated", "Pass {code} generated. Track what this link earns under My generated passes", { code: newCode }),
+    "success",
+  );
 }
 
 // The caller's own commission totals: held (with the day each part releases), payable and paid.
@@ -1120,20 +1143,36 @@ async function fetchCommissionEarnings() {
       return;
     }
     const pounds = (pence) => formatGbp(pence / 100);
-    const day = (isoDay) =>
-      new Date(`${isoDay}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
-    const rows = [domEl("li", { "data-earnings": "held" }, `Held: ${pounds(held.totalPence)}`)];
+    const day = (isoDay) => dateInReaderLanguage(new Date(`${isoDay}T00:00:00Z`), { utc: true });
+    const rows = [
+      domEl("li", { "data-earnings": "held" }, siteText("bundles.earnings-held", "Held: {amount}", { amount: pounds(held.totalPence) })),
+    ];
     if (held.releases.length > 0) {
       rows.push(
         domEl(
           "li",
           { "data-earnings": "releases" },
-          held.releases.map((release) => `${pounds(release.amountPence)} releases on ${day(release.releaseDate)}`).join("; "),
+          held.releases
+            .map((release) =>
+              siteText("bundles.earnings-release", "{amount} releases on {date}", {
+                amount: pounds(release.amountPence),
+                date: day(release.releaseDate),
+              }),
+            )
+            .join("; "),
         ),
       );
     }
-    rows.push(domEl("li", { "data-earnings": "payable" }, `Payable: ${pounds(payable.totalPence)}`));
-    rows.push(domEl("li", { "data-earnings": "paid" }, `Paid: ${pounds(paid.totalPence)}`));
+    rows.push(
+      domEl(
+        "li",
+        { "data-earnings": "payable" },
+        siteText("bundles.earnings-payable", "Payable: {amount}", { amount: pounds(payable.totalPence) }),
+      ),
+    );
+    rows.push(
+      domEl("li", { "data-earnings": "paid" }, siteText("bundles.earnings-paid", "Paid: {amount}", { amount: pounds(paid.totalPence) })),
+    );
     list.replaceChildren(...rows);
     block.hidden = false;
   } catch (err) {
@@ -1186,15 +1225,16 @@ async function fetchMyGeneratedPasses(append) {
     document.getElementById("passDeleteConfirm")?.remove();
 
     data.passes.forEach((pass) => {
-      const typeLabel = pass.passTypeId === "digital-pass" ? "Digital" : "Physical";
+      const typeLabel =
+        pass.passTypeId === "digital-pass" ? siteText("bundles.pass-digital", "Digital") : siteText("bundles.pass-physical", "Physical");
       const expiryLabel = pass.validUntil
-        ? `Expires ${new Date(pass.validUntil).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`
-        : "No expiry";
+        ? siteText("bundles.pass-expires", "Expires {date}", { date: dateInReaderLanguage(new Date(pass.validUntil)) })
+        : siteText("bundles.pass-no-expiry", "No expiry");
       const usageLabel =
         pass.maxUses === undefined || pass.maxUses === null
-          ? `${pass.useCount || 0} uses`
-          : `${pass.useCount || 0} of ${pass.maxUses} uses`;
-      const heldLabel = pass.heldForReview ? " · on hold for review" : "";
+          ? siteText("bundles.pass-uses", "{count} uses", { count: pass.useCount || 0 })
+          : siteText("bundles.pass-uses-of", "{count} of {max} uses", { count: pass.useCount || 0, max: pass.maxUses });
+      const heldLabel = pass.heldForReview ? ` · ${siteText("bundles.pass-on-hold", "on hold for review")}` : "";
       const passUrl = `${window.location.origin}/pass.html?pass=${encodeURIComponent(pass.code)}`;
       const qrPage = pass.passTypeId === "digital-pass" ? "generate-digital.html" : "generate-physical.html";
       const qrUrl = `${window.location.origin}/passes/${qrPage}?code=${encodeURIComponent(pass.code)}`;
@@ -1211,7 +1251,7 @@ async function fetchMyGeneratedPasses(append) {
             "type": "checkbox",
             "class": "pass-select",
             "data-select-code": pass.code,
-            "aria-label": `Select pass ${pass.code}`,
+            "aria-label": siteText("bundles.pass-select", "Select pass {code}", { code: pass.code }),
           }),
           domEl("span", { class: "pass-code" }, pass.code),
           domEl("span", { class: "status-tag" }, typeLabel),
@@ -1229,7 +1269,7 @@ async function fetchMyGeneratedPasses(append) {
               "class": "btn btn-small btn-secondary pass-copy-link",
               "data-pass-url": passUrl,
             },
-            "Copy Link",
+            siteText("bundles.pass-copy-link", "Copy Link"),
           ),
           domEl(
             "a",
@@ -1237,7 +1277,7 @@ async function fetchMyGeneratedPasses(append) {
               href: qrUrl,
               class: "btn btn-small btn-secondary",
             },
-            "View QR",
+            siteText("bundles.pass-view-qr", "View QR"),
           ),
           domEl(
             "a",
@@ -1247,7 +1287,7 @@ async function fetchMyGeneratedPasses(append) {
               target: "_blank",
               rel: "noopener",
             },
-            "Post",
+            siteText("bundles.pass-post", "Post"),
           ),
           pass.heldForReview && viewerIsOperator
             ? domEl(
@@ -1257,7 +1297,7 @@ async function fetchMyGeneratedPasses(append) {
                   "class": "btn btn-small btn-primary pass-release",
                   "data-pass-code": pass.code,
                 },
-                "Release",
+                siteText("bundles.pass-release", "Release"),
               )
             : null,
           domEl(
@@ -1266,8 +1306,8 @@ async function fetchMyGeneratedPasses(append) {
               "type": "button",
               "class": "btn btn-small btn-danger-outline pass-delete",
               "data-delete-code": pass.code,
-              "aria-label": `Delete pass ${pass.code}`,
-              "title": "Delete this pass",
+              "aria-label": siteText("bundles.pass-delete", "Delete pass {code}", { code: pass.code }),
+              "title": siteText("bundles.pass-delete-title", "Delete this pass"),
             },
             trashIconEl(),
           ),
@@ -1328,9 +1368,9 @@ document.addEventListener("click", async (e) => {
   const url = btn.getAttribute("data-pass-url");
   try {
     await navigator.clipboard.writeText(url);
-    btn.textContent = "Copied!";
+    btn.textContent = siteText("bundles.pass-copied", "Copied!");
     setTimeout(() => {
-      btn.textContent = "Copy Link";
+      btn.textContent = siteText("bundles.pass-copy-link", "Copy Link");
     }, 2000);
   } catch {}
 });
@@ -1402,14 +1442,33 @@ function updatePassSelection() {
 
 function showPassDeleteConfirm(codes, anchor, placement) {
   document.getElementById("passDeleteConfirm")?.remove();
-  const noun = codes.length === 1 ? `pass ${codes[0]}` : `${codes.length} passes`;
+  const one = codes.length === 1;
   const panel = domEl(
     "div",
-    { "id": "passDeleteConfirm", "class": "pass-delete-confirm", "role": "group", "aria-label": `Confirm delete of ${noun}` },
+    {
+      "id": "passDeleteConfirm",
+      "class": "pass-delete-confirm",
+      "role": "group",
+      "aria-label": one
+        ? siteText("bundles.pass-delete-confirm-one-label", "Confirm delete of pass {code}", { code: codes[0] })
+        : siteText("bundles.pass-delete-confirm-many-label", "Confirm delete of {count} passes", { count: codes.length }),
+    },
     domEl(
       "p",
       { class: "pass-delete-confirm-text" },
-      `Delete ${noun}? ${codes.length === 1 ? "The link stops working at once." : "The links stop working at once."} Their figures stay in your totals.`,
+      one
+        ? siteText(
+            "bundles.pass-delete-confirm-one",
+            "Delete pass {code}? The link stops working at once. Their figures stay in your totals.",
+            {
+              code: codes[0],
+            },
+          )
+        : siteText(
+            "bundles.pass-delete-confirm-many",
+            "Delete {count} passes? The links stop working at once. Their figures stay in your totals.",
+            { count: codes.length },
+          ),
     ),
     domEl(
       "div",
@@ -1417,9 +1476,13 @@ function showPassDeleteConfirm(codes, anchor, placement) {
       domEl(
         "button",
         { "type": "button", "class": "btn btn-small btn-danger-outline pass-delete-confirm-yes", "data-pass-codes": codes.join(",") },
-        "Yes, delete",
+        siteText("bundles.pass-delete-yes", "Yes, delete"),
       ),
-      domEl("button", { type: "button", class: "btn btn-small btn-secondary pass-delete-confirm-keep" }, "Keep"),
+      domEl(
+        "button",
+        { type: "button", class: "btn btn-small btn-secondary pass-delete-confirm-keep" },
+        siteText("bundles.affiliate-withdraw-keep", "Keep"),
+      ),
     ),
   );
   anchor.insertAdjacentElement(placement, panel);
