@@ -501,6 +501,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability OPS-54 -->
 <!-- capability OPS-55 -->
 <!-- capability OPS-56 -->
+<!-- capability OPS-216 -->
 ### Environment and accounts (OPS)
 
 <!-- generated:group environment-and-accounts-ops -->

@@ -13,6 +13,7 @@ import co.uk.diyaccounting.submit.stacks.ActivityStack;
 import co.uk.diyaccounting.submit.stacks.AnalyticsStack;
 import co.uk.diyaccounting.submit.stacks.BackupStack;
 import co.uk.diyaccounting.submit.stacks.BillingWebhookStack;
+import co.uk.diyaccounting.submit.stacks.CollabRelayStack;
 import co.uk.diyaccounting.submit.stacks.DataStack;
 import co.uk.diyaccounting.submit.stacks.EcrStack;
 import co.uk.diyaccounting.submit.stacks.EmailStack;
@@ -27,7 +28,10 @@ import co.uk.diyaccounting.submit.stacks.SecurityDetectionStack;
 import co.uk.diyaccounting.submit.stacks.StaticSiteStack;
 import co.uk.diyaccounting.submit.stacks.security.SecurityLakeStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import software.amazon.awscdk.App;
@@ -55,6 +59,7 @@ public class SubmitEnvironment {
     public final BillingWebhookStack billingWebhookStack;
     public final EcrStack ecrStack;
     public final EcrStack ue1EcrStack;
+    public final CollabRelayStack collabRelayStack;
 
     public static class SubmitEnvironmentProps {
 
@@ -99,6 +104,7 @@ public class SubmitEnvironment {
         public String githubAppId;
         public String githubAppInstallationId;
         public String companiesHouseBaseUri;
+        public String collabCoordinatorPublicKeyPath;
 
         public static class Builder {
             private final SubmitEnvironmentProps p = new SubmitEnvironmentProps();
@@ -724,7 +730,59 @@ public class SubmitEnvironment {
                         .sharedNames(sharedNames)
                         .build());
 
+        // Create CollabRelayStack, the relay that wakes the coordinator when a cloud worker
+        // reports. It exists in ci only: the workers build ci rows and never touch prod.
+        if ("ci".equals(envName)) {
+            var coordinatorPublicKeyPath = envOr(
+                    "COLLAB_COORDINATOR_PUBLIC_KEY_PATH",
+                    appProps.collabCoordinatorPublicKeyPath,
+                    "(from collabCoordinatorPublicKeyPath in cdk.json)");
+            var collabRelayStackId = "%s-env-CollabRelayStack".formatted(envName);
+            infof("Synthesizing stack %s for environment %s", collabRelayStackId, envName);
+            this.collabRelayStack = new CollabRelayStack(
+                    app,
+                    collabRelayStackId,
+                    CollabRelayStack.CollabRelayStackProps.builder()
+                            .env(primaryEnv)
+                            .crossRegionReferences(false)
+                            .envName(envName)
+                            .deploymentName(deploymentName)
+                            .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                            .cloudTrailEnabled(cloudTrailEnabled)
+                            .sharedNames(sharedNames)
+                            .baseImageTag(baseImageTag)
+                            .coordinatorPublicKey(readCoordinatorPublicKey(coordinatorPublicKeyPath))
+                            .build());
+        } else {
+            this.collabRelayStack = null;
+        }
+
         CostAllocationTags.applyTo(app, envName, deploymentName);
+    }
+
+    // The first line of .collab/coordinator.pub. Until that file is committed the relay deploys
+    // with no coordinator key and refuses every registration and every coordinator request.
+    static String readCoordinatorPublicKey(String path) {
+        if (path == null || path.isBlank()) {
+            warnf("CollabRelayStack: no coordinator public key path; the relay refuses registrations");
+            return "";
+        }
+        var file = Paths.get(path);
+        if (!Files.isRegularFile(file)) {
+            warnf(
+                    "CollabRelayStack: no coordinator public key at %s; the relay refuses registrations",
+                    file.toAbsolutePath());
+            return "";
+        }
+        try {
+            return Files.readAllLines(file).stream()
+                    .map(String::trim)
+                    .filter(line -> !line.isEmpty())
+                    .findFirst()
+                    .orElse("");
+        } catch (IOException e) {
+            throw new UncheckedIOException("Cannot read the coordinator public key at " + file.toAbsolutePath(), e);
+        }
     }
 
     // load context from cdk.json like existing apps

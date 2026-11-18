@@ -94,6 +94,12 @@ on:
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/EcrStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ScanDetectionStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/SecurityDetectionStack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/CollabRelayStack.java'
+      # Collaboration relay Lambda source, and the coordinator key the stack reads at synth
+      - 'app/functions/collab/**'
+      - 'app/data/dynamoDbCollabRelayRepository.js'
+      - 'app/lib/sshSignature.js'
+      - '.collab/coordinator.pub'
       # Analytics Lambda source
       - 'app/functions/analytics/**'
       # Activity Telegram forwarder Lambda source
@@ -410,6 +416,25 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       image-name: scan-detection
       stack-name: ${{ needs.names.outputs.environment-name }}-env-ScanDetectionStack
+
+  deploy-collab-relay:
+    name: 'deploy collab relay'
+    # The relay serves the cloud workers, which build ci rows only, so SubmitEnvironment
+    # synthesises CollabRelayStack for ci alone and this job deploys it there alone.
+    if: ${{ needs.names.outputs.environment-name == 'ci' }}
+    needs:
+      - names
+      - create-secrets
+      - deploy-ecr
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-env-image-stack.yml
+    secrets: inherit
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      image-name: collab-relay
+      stack-name: ${{ needs.names.outputs.environment-name }}-env-CollabRelayStack
 
   deploy-ingestion:
     name: 'deploy ingestion'

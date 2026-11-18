@@ -213,7 +213,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3: use when a fast iteration deploy of app or web code is needed, without a full CDK deploy.
     - [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand: use when only one CDK stack needs deploying, without running the full pipeline.
     - [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets: use when environment-level infrastructure or its secrets must be redeployed independently of an app deploy.
-    - [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack: use when reading or changing how an environment stack that runs from the env image (Activity, Email, Analytics, SecurityLake, ScanDetection, Ingestion, BillingWebhook, Observability) builds and deploys.
+    - [OPS-156](#ops-156-build-an-environment-image-and-deploy-one-environment-stack) Build an environment image and deploy one environment stack: use when reading or changing how an environment stack that runs from the env image (Activity, Email, Analytics, SecurityLake, ScanDetection, Ingestion, BillingWebhook, Observability, CollabRelay) builds and deploys.
     - [OPS-157](#ops-157-write-an-environments-secrets-into-aws-secrets-manager) Write an environment's secrets into AWS Secrets Manager: use when reading or changing which GitHub Environment secrets reach AWS Secrets Manager for an environment, or how the salt and hash secrets are created.
     - [OPS-182](#ops-182-provision-the-customer-email-sender) Provision the customer email sender: use when the SES identity, the DNS records for mail, the customer email queue or its workers need a change.
     - [OPS-131](#ops-131-serve-the-404-page-and-extensionless-paths-at-the-edge) Serve the 404 page and extensionless paths at the edge: use when a web address has no page, has no .html, or ends in a slash, and CloudFront must answer it without touching the API's JSON errors.
@@ -339,6 +339,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas: use when dispatching a sub-agent that needs one of these domains' conventions already loaded.
     - [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup: use when checking or changing what Copilot's review agent or coding-agent workspace knows about this repository.
     - [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links: use when opening a PR needs the repository's standard structured template, or the issue chooser needs its contact link.
+    - [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator) Relay signed messages from cloud workers to the coordinator: use when a cloud worker must wake the local coordinator at once, or the coordinator must reach a worker without git.
   - [Environment and accounts](#environment-and-accounts-ops)
     - [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration: use when setting up or checking a repository's branch protection, OIDC trust or webhook configuration.
     - [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex) Design CI branch deploys off the apex: use when checking the design rationale behind CI branch deploys, before changing that mechanism.
@@ -2512,7 +2513,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-171](#ops-171-renew-the-local-tls-certificate-by-github-oidc) Renew the local TLS certificate by GitHub OIDC · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
 - [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data) Roll the MCP blob key without breaking sealed data · [OPS-183](#ops-183-replace-a-google-refresh-token-or-oauth-client-without-a-gap) Replace a Google refresh token or OAuth client without a gap · [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator) Run a full key rotation with the operator · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-165](#ops-165-check-every-secret-against-its-rotation-schedule) Check every secret against its rotation schedule · [OPS-215](#ops-215-list-every-github-secret-and-variable-in-the-readme) List every GitHub secret and variable in the README · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-166](#ops-166-roll-one-secret-without-an-environment-deploy) Roll one secret without an environment deploy · [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store) Rotate the user sub hash salt and re-key every store · [OPS-196](#ops-196-clear-test-records-out-of-the-customer-tables) Clear test records out of the customer tables · [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set) Check public surfaces for keys in the rotation set · [OPS-210](#ops-210-scan-every-repository-and-branch-for-secrets) Scan every repository and branch for secrets · [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report) Report the security state of every repository in one ranked report · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly) Check the listing register against the bundle catalogue monthly · [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root) Write llms.txt, llms-full.txt and a Markdown copy of each page into the deployed web root · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-a-site-or-holding-page-certificate) Request a site or holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
 - [Video, publishing and accessibility](#video-publishing-and-accessibility-ops): [OPS-51](#ops-51-publish-build-artifacts-and-documentation) Publish build artifacts and documentation · [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy) Auto-record demo videos on prod deploy · [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly) Verify YouTube channel consistency weekly · [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys) Orchestrate demo-video recording journeys · [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video) Overlay pointer and caption cues on video · [OPS-90](#ops-90-encode-captured-video-frames-and-captions) Encode captured video frames and captions · [OPS-91](#ops-91-validate-video-scene-scripts-and-timing) Validate video scene scripts and timing · [OPS-92](#ops-92-redact-secrets-from-video-artefacts) Redact secrets from video artefacts · [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube · [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site · [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site) Check every public video is embedded on the site · [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video) Build the walkthrough panel under each video · [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online) Record a real spreadsheet workbook in Collabora Online · [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows · [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations · [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report
-- [Agent workflows](#agent-workflows-ops): [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas · [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup · [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links
+- [Agent workflows](#agent-workflows-ops): [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas · [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup · [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links · [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator) Relay signed messages from cloud workers to the coordinator
 - [Environment and accounts](#environment-and-accounts-ops): [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration · [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex) Design CI branch deploys off the apex · [OPS-62](#ops-62-report-accessibility-penetration-testing) Report accessibility penetration testing · [OPS-64](#ops-64-runbook-information-security-operations) Runbook information-security operations · [OPS-65](#ops-65-document-security-policy-and-disclosure) Document security policy and disclosure · [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user · [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure · [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning · [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials · [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK
 - [Shared runtime libraries](#shared-runtime-libraries-ops): [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs) Mask and redact sensitive data from logs · [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe) Record an outbound call to HMRC, Companies House or Stripe · [OPS-167](#ops-167-read-a-secrets-manager-secret-with-a-five-minute-cache-and-a-forced-refresh) Read a Secrets Manager secret with a five minute cache and a forced refresh · [OPS-82](#ops-82-provide-a-shared-dynamodb-client) Provide a shared DynamoDB client · [OPS-83](#ops-83-emit-cloudwatch-emf-metrics) Emit CloudWatch EMF metrics · [OPS-84](#ops-84-validate-required-environment-variables-at-startup) Validate required environment variables at startup · [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens) Obtain and use GitHub App API tokens · [OPS-86](#ops-86-provide-structured-pii-redacting-logging) Provide structured PII-redacting logging · [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers) Process SQS message batches in Lambda workers
 - [Backup and disaster recovery](#backup-and-disaster-recovery-ops): [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account) Disaster-recovery restore into a new prod account · [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident) Force logout all users during a security incident
@@ -2644,7 +2645,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### OPS-156 Build an environment image and deploy one environment stack
 
-- **Use when:** reading or changing how an environment stack that runs from the env image (Activity, Email, Analytics, SecurityLake, ScanDetection, Ingestion, BillingWebhook, Observability) builds and deploys.
+- **Use when:** reading or changing how an environment stack that runs from the env image (Activity, Email, Analytics, SecurityLake, ScanDetection, Ingestion, BillingWebhook, Observability, CollabRelay) builds and deploys.
 - **Does:** deploy-env-image-stack.yml is called by deploy-environment.yml once per stack. It builds the ARM64 env image, pushes it to the environment ECR repository (and to us-east-1 when asked), then runs cdk deploy on the one stack.
 - **Run:** no command; deploy-environment.yml calls it (see OPS-09)
 - **Entry:** `.github/workflows/deploy-env-image-stack.yml`
@@ -3936,6 +3937,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas
 - [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup
 - [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links
+- [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator) Relay signed messages from cloud workers to the coordinator
 <!-- /generated:group agent-workflows-ops -->
 
 #### OPS-54 Define specialized Claude Code sub-agent personas
@@ -3965,6 +3967,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `.github/ISSUE_TEMPLATE/config.yml`; `.github/PULL_REQUEST_TEMPLATE.md`
 - **Files:** .github/FUNDING.yml, .github/ISSUE_TEMPLATE/config.yml, .github/PULL_REQUEST_TEMPLATE.md
 - **Keywords:** issue template, pr template, funding links, origin label, issue chooser
+
+#### OPS-216 Relay signed messages from cloud workers to the coordinator
+
+- **Use when:** a cloud worker must wake the local coordinator at once, or the coordinator must reach a worker without git.
+- **Does:** collabRelay.js is the one Lambda of CollabRelayStack, in ci only. It accepts a WebSocket connection only with a fresh SSH signature of its party. POST /send stores a signed envelope for seven days and pushes it to the recipient's open connections. A connection gets the unacknowledged messages again, POST /ack removes them, and POST /register takes a party key that the coordinator signed. A rule pings every connection each 9 minutes.
+- **Run:** `bash .claude/skills/new-cloud-session/new-cloud-session.sh relay-url`
+- **Entry:** `app/functions/collab/collabRelay.js:handler`; `app/lib/sshSignature.js:verifySshSignature`
+- **Files:** app/functions/collab/collabRelay.js, app/lib/sshSignature.js, app/data/dynamoDbCollabRelayRepository.js, app/unit-tests/functions/collabRelay.test.js, app/unit-tests/lib/sshSignature.test.js, app/system-tests/collabRelay.system.test.js, app/test-helpers/sshSignatureTestKeys.js, infra/main/java/co/uk/diyaccounting/submit/stacks/CollabRelayStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/CollabRelayStackTest.java
+- **Keywords:** relay, websocket, cloud worker, coordinator, collaborate, ssh signature, sshsig, age, wake, monitor
+- **Related:** OPS-09, OPS-156
 
 ### Environment and accounts (OPS)
 
@@ -7059,6 +7071,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ads.toml: [DATA-32](#data-32-sync-the-google-ads-account)
 - advertising standards: [SITE-20](#site-20-document-business-governance-and-positioning)
 - affiliate: [SITE-11](#site-11-promote-sibling-products-and-partners), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect), [BILL-53](#bill-53-read-the-callers-affiliate-application), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect), [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events), [DATA-64](#data-64-publish-per-pass-figures-nightly)
+- age: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator)
 - agent authorisation: [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client), [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - agent output: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - agent path: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
@@ -7466,6 +7479,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cloud book: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
 - cloud sign-in: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - cloud sign-in event: [SS-33](#ss-33-send-diya-gl-ga4-events)
+- cloud worker: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator)
 - cloudformation: [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs)
 - cloudformation drift: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3), [OPS-32](#ops-32-detect-cloudformation-drift)
 - cloudfront: [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention), [OPS-115](#ops-115-provision-the-edgecloudfront-stack)
@@ -7512,6 +7526,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cognito-registered host: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - cold start: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - collabora: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
+- collaborate: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator)
 - commission: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-57](#bill-57-show-a-referrer-the-callers-own-commission-totals), [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect), [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events), [DATA-68](#data-68-sql-view-campaign-results-by-place)
 - commissions: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - commit author: [SS-39](#ss-39-guard-commit-author-identity-on-prs)
@@ -7595,6 +7610,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cookie consent: [SITE-15](#site-15-show-and-persist-cookie-consent)
 - cool-down: [DEV-35](#dev-35-cool-down-an-overloaded-batch)
 - cool-down skill: [SS-54](#ss-54-cool-down-an-overloaded-batch)
+- coordinator: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator)
 - coordinator model: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
 - copilot instructions: [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup)
 - copilot review: [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup)
@@ -8614,6 +8630,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - model selection: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
 - module bundle: [SITE-18](#site-18-bootstrap-the-frontend-module-bundle)
 - module index: [DEV-21](#dev-21-verify-module-wiring-and-repository-shape)
+- monitor: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator)
 - monitor tool: [DEV-31](#dev-31-watch-github-ci-to-green)
 - monthly budget: [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
 - monthly check: [SITE-34](#site-34-check-the-compared-prices-each-month), [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly)
@@ -9077,6 +9094,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - regulatory checklist: [OPS-42](#ops-42-guide-icogdpr-compliance)
 - reinvestment ceiling: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
 - relationships endpoint: [BILL-13](#bill-13-check-a-clients-authorisation-status)
+- relay: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator)
 - release: [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events)
 - release record: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
 - release slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
@@ -9407,6 +9425,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - spreadsheetsstack: [SS-35](#ss-35-cdk-spreadsheetsstack)
 - sqale: [DEV-56](#dev-56-audit-the-workspaces-technical-debt)
 - sqs: [HMRC-42](#hmrc-42-queue-a-new-fraud-prevention-header-shape-for-hmrcs-validator), [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
+- ssh signature: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator)
+- sshsig: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator)
 - ssm parameter: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows), [OPS-77](#ops-77-silence-alarms-during-deployment-teardown)
 - sso profile: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - sso window: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
@@ -9788,7 +9808,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - wait for ci deploys: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
 - wait for main deploy: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
 - wait for slot: [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks)
-- wake: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
+- wake: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator), [DEV-36](#dev-36-resume-normal-work-from-cool-down)
 - wake skill: [SS-55](#ss-55-resume-normal-work-from-cool-down)
 - walkthrough: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - warm container: [OPS-168](#ops-168-roll-the-mcp-blob-key-without-breaking-sealed-data), [OPS-167](#ops-167-read-a-secrets-manager-secret-with-a-five-minute-cache-and-a-forced-refresh)
@@ -9815,6 +9835,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - webhooks: [OPS-60](#ops-60-guide-github-repository-configuration)
 - webmaster email: [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks)
 - webp: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
+- websocket: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator)
 - webvtt: [OPS-90](#ops-90-encode-captured-video-frames-and-captions)
 - week on week: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
 - weekly check: [SITE-33](#site-33-check-the-tax-sources-each-week)
