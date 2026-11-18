@@ -7,39 +7,6 @@ const siteText = (id, english, values) =>
     ? window.siteText(id, english, values)
     : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
 
-// Global variables
-let searchCriteriaHidden = false;
-
-// Functions to manage search criteria visibility
-function hideSearchCriteria() {
-  const container = document.getElementById("searchCriteriaContainer");
-  const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
-  const cancelBtn = document.getElementById("cancelRequestBtn");
-  if (container && toggleBtn) {
-    container.style.display = "none";
-    toggleBtn.style.display = "inline-block";
-    if (cancelBtn) cancelBtn.style.display = "inline-block";
-    searchCriteriaHidden = true;
-  }
-}
-
-function showSearchCriteria() {
-  const container = document.getElementById("searchCriteriaContainer");
-  const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
-  const cancelBtn = document.getElementById("cancelRequestBtn");
-  if (container && toggleBtn) {
-    container.style.display = "block";
-    toggleBtn.style.display = "none";
-    if (cancelBtn) cancelBtn.style.display = "none";
-    searchCriteriaHidden = false;
-  }
-}
-
-function hideRequestControls() {
-  document.getElementById("cancelRequestBtn").style.display = "none";
-  document.getElementById("toggleSearchCriteriaBtn").style.display = "none";
-}
-
 function cancelRequest() {
   // Clear all in-progress session data
   sessionStorage.removeItem("pendingPenaltiesRequest");
@@ -51,7 +18,7 @@ function cancelRequest() {
   sessionStorage.removeItem("currentActivity");
 
   // Show form and hide results
-  showSearchCriteria();
+  window.SearchForm.showCriteria("penaltiesForm");
   document.getElementById("penaltiesResults").style.display = "none";
   hideStatus();
   console.log("Request cancelled, session data cleared");
@@ -117,7 +84,7 @@ async function continuePenaltiesRetrieval() {
     }
 
     console.log("Retrieved pending request:", pendingRequest);
-    hideSearchCriteria(); // Hide the form when retrieving penalties after auth
+    window.SearchForm.hideCriteria(); // Hide the form when retrieving penalties after auth
     showLoading();
     hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
     showStatus(siteText("vat-penalties.retrieving", "Retrieving VAT penalties..."), "info");
@@ -167,7 +134,7 @@ async function continuePenaltiesRetrieval() {
         sessionStorage.removeItem("hmrcGrantId");
         sessionStorage.removeItem("hmrcTokenScope");
         showFailure({ status: 401 }, siteText("vat-penalties.could-not-retrieve", "Could not retrieve VAT penalties"));
-        showSearchCriteria(); // Show form on error
+        window.SearchForm.showCriteria("penaltiesForm"); // Show form on error
         return;
       }
       throw requestError(response, result, "Failed to retrieve penalties");
@@ -176,7 +143,7 @@ async function continuePenaltiesRetrieval() {
     // Display results
     displayPenalties(result.penalties || null);
     document.getElementById("penaltiesResults").style.display = "block";
-    hideRequestControls();
+    window.SearchForm.hideForResults("penaltiesForm");
     hideStatus();
 
     // Clean up session storage - keep token for subsequent HMRC operations
@@ -189,7 +156,7 @@ async function continuePenaltiesRetrieval() {
   } catch (error) {
     console.error("Error retrieving penalties:", error);
     showFailure(error, siteText("vat-penalties.could-not-retrieve", "Could not retrieve VAT penalties"));
-    showSearchCriteria(); // Show form on error
+    window.SearchForm.showCriteria("penaltiesForm"); // Show form on error
     // Clear pending request data to prevent auto-retry loop on next page load
     sessionStorage.removeItem("pendingPenaltiesRequest");
     sessionStorage.removeItem("hmrcGrantId");
@@ -320,7 +287,7 @@ async function handleFormSubmission(event) {
       // Display results
       displayPenalties(result.penalties || null);
       document.getElementById("penaltiesResults").style.display = "block";
-      hideRequestControls();
+      window.SearchForm.hideForResults("penaltiesForm");
       hideStatus();
     } catch (error) {
       console.error("Error retrieving penalties:", error);
@@ -509,7 +476,7 @@ const formatCurrency = HmrcDisplayFormat.formatAmount;
 
 // Toggle search criteria button handler
 document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {
-  showSearchCriteria();
+  window.SearchForm.showCriteria("penaltiesForm");
 });
 
 // Cancel request button handler
@@ -523,7 +490,7 @@ document.getElementById("newSearchBtn")?.addEventListener("click", () => {
   const resultsContainer = document.getElementById("penaltiesResults");
   form.reset();
   resultsContainer.style.display = "none";
-  showSearchCriteria(); // Show the form again when doing a new search
+  window.SearchForm.showCriteria("penaltiesForm"); // Show the form again when doing a new search
   hideStatus();
 });
 
