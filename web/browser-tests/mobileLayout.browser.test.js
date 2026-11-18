@@ -160,6 +160,22 @@ test.describe("Mobile layout - specific findings", () => {
 
     expect(await hasRealHorizontalScroll(page)).toBe(false);
   });
+
+  test("privacy.html keeps a stacked cell's text and code together in the value column at 390px", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/privacy.html", { waitUntil: "domcontentloaded" });
+
+    const cell = page.locator("td:has(code)", { hasText: "From window.innerWidth" }).first();
+    await expect(cell.locator(".stacked-value")).toHaveCount(1);
+    const layout = await cell.evaluate((td) => {
+      const label = parseFloat(getComputedStyle(td, "::before").width);
+      const tdLeft = td.getBoundingClientRect().left;
+      return [...td.querySelectorAll("code")].map((code) => code.getBoundingClientRect().left - tdLeft - label);
+    });
+    expect(layout.length).toBe(2);
+    for (const offsetPastLabel of layout) expect(offsetPastLabel).toBeGreaterThan(0);
+  });
 });
 
 test.describe("Feedback banner", () => {
