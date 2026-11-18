@@ -11957,6 +11957,10 @@ cy = '''Saesneg'''
 hash = "0ae24c757d03"
 cy = '''Cymraeg'''
 
+[strings."ch-small-company.check-again-fb7099"]
+hash = "fb7099ad8e81"
+cy = '''Gwirio eto'''
+
 [strings."ch-tax-return.title"]
 hash = "486ac7c7dc6c"
 cy = '''Ffeilio Ffurflen Dreth y Cwmni - DIY Accounting Submit'''
@@ -12420,6 +12424,10 @@ cy = '''Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau'''
 [strings."ch-confirmation-statement.sign-in-to-look-up-your-eb0bf2"]
 hash = "eb0bf28eeabf"
 cy = '''Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif.'''
+
+[strings."ch-confirmation-statement.check-again-fb7099"]
+hash = "fb7099ad8e81"
+cy = '''Gwirio eto'''
 
 [strings."ch-registered-office.title"]
 hash = "1427b5b915d4"
@@ -13829,6 +13837,14 @@ cy = '''Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes di
 hash = "d8832e35fa30"
 cy = '''Mae Tŷ’r Cwmnïau yn gwirio’r hyn rydych yn ei ffeilio yma yn y modd prawf ac nid yw’n cofnodi dim. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.'''
 
+[strings."ch.gateway.pending"]
+hash = "7b3f3f6e3429"
+cy = '''Nid yw Tŷ’r Cwmnïau wedi gorffen gwirio cyflwyniad {number}. Mae’n gwirio rhai ffeiliadau â llaw, yn ystod oriau swyddfa.'''
+
+[strings."ch.gateway.pending-note"]
+hash = "0cb32fe2bd5a"
+cy = '''Nid yw Tŷ’r Cwmnïau wedi gorffen gwirio cyflwyniad {number}. Mae’n gwirio rhai ffeiliadau â llaw, yn ystod oriau swyddfa. Dewiswch Gwirio eto i ofyn am y canlyniad. Unwaith y bydd Tŷ’r Cwmnïau yn derbyn y ffeilio, mae eich copi yn eich ffeiliadau.'''
+
 [strings."ch.ct.line-profit-per-accounts"]
 hash = "a62ab0e6fed3"
 cy = '''Elw neu golled yn ôl y cyfrifon'''
@@ -15016,6 +15032,10 @@ cy = '''Saesneg'''
 [strings."ch-micro-entity.welsh-cymraeg-0ae24c"]
 hash = "0ae24c757d03"
 cy = '''Cymraeg'''
+
+[strings."ch-micro-entity.check-again-fb7099"]
+hash = "fb7099ad8e81"
+cy = '''Gwirio eto'''
 
 # ids ch.ct600.*: web/public/lib/ct600-fields.js, the CT600 form, its checks and the review (LANG11a).
 # HMRC's Welsh CT600: https://www.gov.uk/government/publications/corporation-tax-company-tax-return-ct600-2015-version-3.cy

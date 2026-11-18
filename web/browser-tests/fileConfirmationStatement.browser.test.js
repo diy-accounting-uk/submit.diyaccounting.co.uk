@@ -564,6 +564,68 @@ test.describe("File Confirmation Statement page", () => {
     });
   });
 
+  async function submitWithGateway(page, { pollInterval, statuses }) {
+    await page.addInitScript(
+      ({ pollIntervalArg, statusesArg }) => {
+        window.__pollCalls = [];
+        window.__pollStatuses = statusesArg;
+        window.submitConfirmationStatement = (statement) => {
+          window.__submitCalls.push(statement);
+          return Promise.resolve({ submissionNumber: "ABC123", gatewayTimestamp: "2026-09-24T00:00:00Z", pollInterval: pollIntervalArg });
+        };
+        window.pollConfirmationStatement = (submissionNumber) => {
+          window.__pollCalls.push(Date.now());
+          const statusCode = window.__pollStatuses.length > 1 ? window.__pollStatuses.shift() : window.__pollStatuses[0];
+          return Promise.resolve({ submissionNumber, statusCode, rejections: [] });
+        };
+      },
+      { pollIntervalArg: pollInterval, statusesArg: statuses },
+    );
+    await loadPage(page);
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
+    await page.click("#previewBtn");
+    await delay(200);
+    await page.click("#submitFilingBtn");
+  }
+
+  test("polls at the gateway's PollInterval, at most eight times, then says the filing is still being checked", async ({ page }) => {
+    test.setTimeout(60_000);
+    setupPage(page);
+    await setupRoutes(page);
+    await submitWithGateway(page, { pollInterval: 1, statuses: ["PENDING"] });
+
+    await expect(page.locator("#checkAgainBtn")).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("#filingResult")).toContainText("has not finished checking submission ABC123");
+    await expect(page.locator("#filingResult")).not.toContainText("was PENDING");
+    await expect(page.locator("#filingRecord")).toBeEmpty();
+    const calls = await page.evaluate(() => window.__pollCalls);
+    expect(calls).toHaveLength(8);
+    for (let index = 1; index < calls.length; index++) expect(calls[index] - calls[index - 1]).toBeGreaterThanOrEqual(950);
+
+    await page.evaluate(() => {
+      window.__pollStatuses = ["ACCEPT"];
+    });
+    await page.click("#checkAgainBtn");
+    await expect(page.locator("#filingResult")).toContainText("ACCEPT", { timeout: 10_000 });
+    await expect(page.locator("#checkAgainBtn")).toBeHidden();
+    await expect(page.locator("#pscFollowUp")).toBeVisible();
+  });
+
+  test("polls no more when the gateway's PollInterval is 0", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await submitWithGateway(page, { pollInterval: 0, statuses: ["PENDING"] });
+
+    await expect(page.locator("#filingResult")).toContainText("has not finished checking submission ABC123", { timeout: 5_000 });
+    await expect(page.locator("#filingResult")).not.toContainText("Check again");
+    await expect(page.locator("#checkAgainBtn")).toBeHidden();
+    expect(await page.evaluate(() => window.__pollCalls)).toHaveLength(0);
+  });
+
   test("shows the filed statement as a record in a customer copy with the submission number, status and date", async ({ page }) => {
     setupPage(page);
     await setupRoutes(page);

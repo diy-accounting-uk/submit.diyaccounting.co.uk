@@ -108,14 +108,43 @@ export async function enterCompanyAuthCodeAndSubmit(page, companyAuthCode, scree
   });
 }
 
+// Companies House's own XML gateway, in test mode or live, answers a new filing PENDING for as long
+// as it takes to check it; the simulator accepts at once.
+export function filesThroughRealCompaniesHouseGateway() {
+  return /companieshouse\.gov\.uk/.test(process.env.COMPANIES_HOUSE_XMLGW_URI || "");
+}
+
+// The page polls the gateway's PollInterval at most eight times before it says the filing is still
+// being checked, so a real gateway gets the time those polls take.
+const REAL_GATEWAY_OUTCOME_TIMEOUT_MS = 300_000;
+
 export async function verifyFilingAccepted(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user sees the filing accepted", async () => {
-    await expect(page.locator("#filingResult")).toContainText("ACCEPT", { timeout: 30000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accepted.png`, readerView: true });
+  if (!filesThroughRealCompaniesHouseGateway()) {
+    await test.step("The user sees the filing accepted", async () => {
+      await expect(page.locator("#filingResult")).toContainText("ACCEPT", { timeout: 30000 });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accepted.png`, readerView: true });
+    });
+    return;
+  }
+  await test.step("The user sees the filing accepted, or still being checked under its submission number", async () => {
+    const accepted = page.locator("#filingResult", { hasText: "ACCEPT" });
+    const pending = page.locator("#checkAgainBtn");
+    await expect(accepted.or(pending)).toBeVisible({ timeout: REAL_GATEWAY_OUTCOME_TIMEOUT_MS });
+    await expect(page.locator("#filingResult")).toContainText(/\d{6}/);
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-outcome.png`, readerView: true });
   });
 }
 
 export async function openFilingCustomerCopy(page, screenshotPath = defaultScreenshotPath) {
+  // A filing Companies House is still checking has no receipt yet: the page offers Check again in
+  // place of the copy link.
+  if (filesThroughRealCompaniesHouseGateway() && (await page.locator("#checkAgainBtn").isVisible())) {
+    await test.step("The user sees no copy yet for a filing Companies House is still checking", async () => {
+      await expect(page.locator("#filingCopyLink")).toBeHidden();
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-still-checking.png`, readerView: true });
+    });
+    return;
+  }
   await test.step("The user opens the customer copy of the filing and sees the accounts as filed with the receipt", async () => {
     await loggedClick(page, "#filingCopyLink", "Opening the customer copy of the filing", { screenshotPath });
     const copy = page.locator(".customer-copy");

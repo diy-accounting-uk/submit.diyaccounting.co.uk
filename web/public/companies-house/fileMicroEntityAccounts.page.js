@@ -288,21 +288,60 @@ function showFilingCopyLink(outcome) {
   link.style.display = "inline";
 }
 
-async function pollUntilSettled(submissionNumber, extraHeaders = {}) {
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const result = await window.pollMicroEntityAccounts(submissionNumber, extraHeaders);
-    if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") {
-      return result;
-    }
+function pollUntilSettled(submission, extraHeaders) {
+  const { submissionNumber } = submission;
+  return window.companiesHouseGatewayPoll.pollGatewayUntilSettled({
+    submissionNumber,
+    pollIntervalSeconds: submission.pollInterval,
+    poll: () => window.pollMicroEntityAccounts(submissionNumber, extraHeaders),
+    onPending: (result) =>
+      showFilingResult(
+        window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again...", {
+          number: submissionNumber,
+          status: result.statusCode,
+        }),
+      ),
+  });
+}
+
+// Polls for the outcome and shows it. Pending after the last poll, the page says so and offers Check again.
+async function checkOutcome(submission, headers) {
+  const checkAgain = document.getElementById("checkAgainBtn");
+  checkAgain.style.display = "none";
+  checkAgain.onclick = null;
+  try {
+    const outcome = await pollUntilSettled(submission, headers);
+    const outcomeHeadlines = {
+      ACCEPT: window.siteText("ch.accounts.accepted", "Companies House accepted the accounts."),
+      REJECT: window.siteText("ch.accounts.rejected", "Companies House rejected the accounts."),
+    };
+    const settled = window.companiesHouseGatewayPoll.isSettled(outcome);
     showFilingResult(
-      window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again...", {
-        number: submissionNumber,
-        status: result.statusCode,
+      outcomeHeadlines[outcome.statusCode] ||
+        window.siteText("ch.accounts.not-finished", "Companies House has the accounts and has not finished checking them."),
+      settled
+        ? window.siteText("ch.accounts.status-line", "Status: {status}. Submission number {number}.", {
+            status: outcome.statusCode,
+            number: outcome.submissionNumber,
+          })
+        : window.companiesHouseGatewayPoll.pendingNote(submission),
+    );
+    renderRejections(outcome.rejections);
+    showFilingCopyLink(outcome);
+    if (!settled && window.companiesHouseGatewayPoll.mayCheckAgain(submission)) {
+      checkAgain.onclick = () => checkOutcome(submission, headers);
+      checkAgain.style.display = "inline-block";
+    }
+  } catch (error) {
+    console.error("Companies House accounts status check failed:", error);
+    showFilingResult(
+      window.siteText("ch.accounts.not-confirmed", "Your accounts were submitted. Companies House has not confirmed the outcome yet."),
+      window.siteText("ch.accounts.check-failed", "Submission number {number}. The status check failed: {message}.", {
+        number: submission.submissionNumber,
+        message: error.message || window.siteText("ch.accounts.unknown-error", "unknown error"),
       }),
     );
-    await new Promise((resolve) => setTimeout(resolve, 500));
   }
-  return window.pollMicroEntityAccounts(submissionNumber, extraHeaders);
 }
 
 function syncOwnPresenterFields() {
@@ -388,30 +427,7 @@ async function handleSubmitFiling() {
   showView("resultView");
   try {
     const presenterHeaders = ownPresenter ? { "X-Presenter-Id": ownPresenter.id, "X-Presenter-Code": ownPresenter.code } : {};
-    const outcome = await pollUntilSettled(submission.submissionNumber, { ...govTestScenarioHeaders, ...presenterHeaders });
-    const outcomeHeadlines = {
-      ACCEPT: window.siteText("ch.accounts.accepted", "Companies House accepted the accounts."),
-      REJECT: window.siteText("ch.accounts.rejected", "Companies House rejected the accounts."),
-    };
-    showFilingResult(
-      outcomeHeadlines[outcome.statusCode] ||
-        window.siteText("ch.accounts.not-finished", "Companies House has the accounts and has not finished checking them."),
-      window.siteText("ch.accounts.status-line", "Status: {status}. Submission number {number}.", {
-        status: outcome.statusCode,
-        number: outcome.submissionNumber,
-      }),
-    );
-    renderRejections(outcome.rejections);
-    showFilingCopyLink(outcome);
-  } catch (error) {
-    console.error("Companies House accounts status check failed:", error);
-    showFilingResult(
-      window.siteText("ch.accounts.not-confirmed", "Your accounts were submitted. Companies House has not confirmed the outcome yet."),
-      window.siteText("ch.accounts.check-failed", "Submission number {number}. The status check failed: {message}.", {
-        number: submission.submissionNumber,
-        message: error.message || window.siteText("ch.accounts.unknown-error", "unknown error"),
-      }),
-    );
+    await checkOutcome(submission, { ...govTestScenarioHeaders, ...presenterHeaders });
   } finally {
     document.getElementById("startAgainBtn").style.display = "inline-block";
     hideLoading();
@@ -435,6 +451,7 @@ function startAgain() {
   window.accountsFormSections.showAccountantsReportFields();
   document.getElementById("rejections").style.display = "none";
   document.getElementById("startAgainBtn").style.display = "none";
+  document.getElementById("checkAgainBtn").style.display = "none";
   hideStatus();
   showView("companyView");
 }

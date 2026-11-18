@@ -864,6 +864,10 @@ window.WELSH_TEXT = {
   "ch.filing.choose": "Dewiswch ffeilio o’ch derbynebau i weld eich copi ohono.",
   "ch.filing.load-failed": "Nid oeddem yn gallu llwytho’r ffeilio hwn. Ewch yn ôl i’ch derbynebau a rhoi cynnig arall arni.",
   "ch.filing.not-a-filing": "Nid yw’r dderbynneb hon yn ffeilio cyfrifon nac yn Ffurflen Dreth y Cwmni. Agorwch hi o’ch derbynebau.",
+  "ch.gateway.pending":
+    "Nid yw Tŷ’r Cwmnïau wedi gorffen gwirio cyflwyniad {number}. Mae’n gwirio rhai ffeiliadau â llaw, yn ystod oriau swyddfa.",
+  "ch.gateway.pending-note":
+    "Nid yw Tŷ’r Cwmnïau wedi gorffen gwirio cyflwyniad {number}. Mae’n gwirio rhai ffeiliadau â llaw, yn ystod oriau swyddfa. Dewiswch Gwirio eto i ofyn am y canlyniad. Unwaith y bydd Tŷ’r Cwmnïau yn derbyn y ffeilio, mae eich copi yn eich ffeiliadau.",
   "ch.jurisdiction.england-wales": "Lloegr a Chymru",
   "ch.jurisdiction.european-union": "Yr Undeb Ewropeaidd",
   "ch.jurisdiction.noneu": "Y tu allan i’r Undeb Ewropeaidd",

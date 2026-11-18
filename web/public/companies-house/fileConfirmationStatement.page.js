@@ -950,15 +950,12 @@ function buildParagraph(parts, className) {
   return paragraph;
 }
 
-async function pollPscVerificationUntilSettled(submissionNumber) {
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const result = await window.pollPscVerificationStatement(submissionNumber, ownPresenterHeaders());
-    if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") {
-      return result;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  }
-  return window.pollPscVerificationStatement(submissionNumber, ownPresenterHeaders());
+function pollPscVerificationUntilSettled(submission) {
+  return window.companiesHouseGatewayPoll.pollGatewayUntilSettled({
+    submissionNumber: submission.submissionNumber,
+    pollIntervalSeconds: submission.pollInterval,
+    poll: () => window.pollPscVerificationStatement(submission.submissionNumber, ownPresenterHeaders()),
+  });
 }
 
 async function handlePscVerificationSubmit(index, matches) {
@@ -1009,7 +1006,12 @@ async function handlePscVerificationSubmit(index, matches) {
         ),
       ),
     );
-    const outcome = await pollPscVerificationUntilSettled(submission.submissionNumber);
+    const outcome = await pollPscVerificationUntilSettled(submission);
+    if (!window.companiesHouseGatewayPoll.isSettled(outcome)) {
+      // A PSC row has no Check again, so its note never offers one.
+      resultContainer.replaceChildren(buildParagraph([window.companiesHouseGatewayPoll.pendingNote({ ...submission, pollInterval: 0 })]));
+      return;
+    }
     resultContainer.replaceChildren(
       buildParagraph(
         valueParts(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
@@ -1038,19 +1040,50 @@ function showSubmissionProgress(text, values) {
   document.getElementById("filingResult").replaceChildren(element("p", {}, ...parts.filter((part) => part !== "")));
 }
 
-async function pollUntilSettled(submissionNumber, extraHeaders = {}) {
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const result = await window.pollConfirmationStatement(submissionNumber, extraHeaders);
-    if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") {
-      return result;
-    }
-    showSubmissionProgress(window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again..."), {
-      number: submissionNumber,
-      status: result.statusCode,
-    });
-    await new Promise((resolve) => setTimeout(resolve, 500));
+function pollUntilSettled(submission, extraHeaders) {
+  const { submissionNumber } = submission;
+  return window.companiesHouseGatewayPoll.pollGatewayUntilSettled({
+    submissionNumber,
+    pollIntervalSeconds: submission.pollInterval,
+    poll: () => window.pollConfirmationStatement(submissionNumber, extraHeaders),
+    onPending: (result) =>
+      showSubmissionProgress(window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again..."), {
+        number: submissionNumber,
+        status: result.statusCode,
+      }),
+  });
+}
+
+// Polls for the outcome and shows it with the filing record. Pending after the last poll, the page
+// says so and offers Check again.
+async function checkOutcome(submission, headers, payload) {
+  const checkAgain = document.getElementById("checkAgainBtn");
+  checkAgain.style.display = "none";
+  checkAgain.onclick = null;
+  const outcome = await pollUntilSettled(submission, headers);
+  const result = document.getElementById("filingResult");
+  if (!window.companiesHouseGatewayPoll.isSettled(outcome)) {
+    result.replaceChildren(element("p", {}, window.companiesHouseGatewayPoll.pendingNote(submission)));
+    result.className = "outcome";
+    if (!window.companiesHouseGatewayPoll.mayCheckAgain(submission)) return;
+    checkAgain.onclick = () =>
+      checkOutcome(submission, headers, payload).catch((error) => {
+        console.error("Companies House confirmation statement status check failed:", error);
+        showStatus(error.message, "error");
+      });
+    checkAgain.style.display = "inline-block";
+    return;
   }
-  return window.pollConfirmationStatement(submissionNumber, extraHeaders);
+  showSubmissionProgress(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
+    number: outcome.submissionNumber,
+    status: outcome.statusCode,
+  });
+  result.className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
+  renderRejections(outcome.rejections);
+  await renderFilingRecord(payload, outcome);
+  if (outcome.statusCode === "ACCEPT") {
+    renderPscFollowUp();
+  }
 }
 
 function confirmedOfficers() {
@@ -1113,17 +1146,7 @@ async function handleSubmitFiling() {
     );
     showView("resultView");
 
-    const outcome = await pollUntilSettled(submission.submissionNumber, { ...govTestScenarioHeaders, ...ownPresenterHeaders() });
-    showSubmissionProgress(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
-      number: outcome.submissionNumber,
-      status: outcome.statusCode,
-    });
-    document.getElementById("filingResult").className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
-    renderRejections(outcome.rejections);
-    await renderFilingRecord(payload, outcome);
-    if (outcome.statusCode === "ACCEPT") {
-      renderPscFollowUp();
-    }
+    await checkOutcome(submission, { ...govTestScenarioHeaders, ...ownPresenterHeaders() }, payload);
     document.getElementById("startAgainBtn").style.display = "inline-block";
   } catch (error) {
     // A fresh 402 from the submit route (the payment period is unpaid and no activity
@@ -1218,6 +1241,7 @@ function startAgain() {
   document.getElementById("filingRecord").replaceChildren();
   document.getElementById("pscFollowUp").style.display = "none";
   document.getElementById("startAgainBtn").style.display = "none";
+  document.getElementById("checkAgainBtn").style.display = "none";
   document.getElementById("previewFeeMessage").style.display = "none";
   document.getElementById("submitFilingBtn").textContent = window.siteText("ch.cs.submit", "Submit to Companies House");
   hideStatus();

@@ -572,21 +572,52 @@ function showFilingCopyLink(outcome) {
   link.style.display = "inline";
 }
 
-async function pollUntilSettled(submissionNumber, extraHeaders = {}) {
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const result = await window.pollMicroEntityAccounts(submissionNumber, extraHeaders);
-    if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") {
-      return result;
-    }
-    document.getElementById("filingResult").replaceChildren(
-      paragraphWithValues(window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again..."), {
-        number: submissionNumber,
-        status: result.statusCode,
-      }),
-    );
-    await new Promise((resolve) => setTimeout(resolve, 500));
+function pollUntilSettled(submission, extraHeaders) {
+  const { submissionNumber } = submission;
+  return window.companiesHouseGatewayPoll.pollGatewayUntilSettled({
+    submissionNumber,
+    pollIntervalSeconds: submission.pollInterval,
+    poll: () => window.pollMicroEntityAccounts(submissionNumber, extraHeaders),
+    onPending: (result) =>
+      document.getElementById("filingResult").replaceChildren(
+        paragraphWithValues(window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again..."), {
+          number: submissionNumber,
+          status: result.statusCode,
+        }),
+      ),
+  });
+}
+
+// Polls for the outcome and shows it. Pending after the last poll, the page says so and offers Check again.
+async function checkOutcome(submission, headers) {
+  const checkAgain = document.getElementById("checkAgainBtn");
+  checkAgain.style.display = "none";
+  checkAgain.onclick = null;
+  const outcome = await pollUntilSettled(submission, headers);
+  const result = document.getElementById("filingResult");
+  if (!window.companiesHouseGatewayPoll.isSettled(outcome)) {
+    const note = document.createElement("p");
+    note.textContent = window.companiesHouseGatewayPoll.pendingNote(submission);
+    result.replaceChildren(note);
+    result.className = "outcome";
+    if (!window.companiesHouseGatewayPoll.mayCheckAgain(submission)) return;
+    checkAgain.onclick = () =>
+      checkOutcome(submission, headers).catch((error) => {
+        console.error("Companies House accounts status check failed:", error);
+        showStatus(error.message, "error");
+      });
+    checkAgain.style.display = "inline-block";
+    return;
   }
-  return window.pollMicroEntityAccounts(submissionNumber, extraHeaders);
+  result.replaceChildren(
+    paragraphWithValues(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
+      number: outcome.submissionNumber,
+      status: outcome.statusCode,
+    }),
+  );
+  result.className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
+  renderRejections(outcome.rejections);
+  showFilingCopyLink(outcome);
 }
 
 // The reader's language choice goes with a filing, so the receipt email of an accepted filing is in it.
@@ -629,16 +660,7 @@ async function handleSubmitFiling() {
       );
     showView("resultView");
 
-    const outcome = await pollUntilSettled(submission.submissionNumber, govTestScenarioHeaders);
-    document.getElementById("filingResult").replaceChildren(
-      paragraphWithValues(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
-        number: outcome.submissionNumber,
-        status: outcome.statusCode,
-      }),
-    );
-    document.getElementById("filingResult").className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
-    renderRejections(outcome.rejections);
-    showFilingCopyLink(outcome);
+    await checkOutcome(submission, govTestScenarioHeaders);
     document.getElementById("startAgainBtn").style.display = "inline-block";
   } catch (error) {
     console.error("Companies House accounts filing failed:", error);
@@ -668,6 +690,7 @@ function startAgain() {
   document.getElementById("accountsForm").reset();
   toggleSections();
   document.getElementById("rejections").style.display = "none";
+  document.getElementById("checkAgainBtn").style.display = "none";
   document.getElementById("startAgainBtn").style.display = "none";
   hideStatus();
   showView("companyView");

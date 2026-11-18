@@ -12,6 +12,7 @@ import { loggedClick, loggedFill, timestamp, takeScreenshot } from "../helpers/b
 import { isCompaniesHouseSimulatorLane } from "./behaviour-companies-house-filing-steps.js";
 import { hashSub, initializeSalt } from "@app/services/subHasher.js";
 import { buildChargeKey, deleteActivityCharge } from "@app/data/dynamoDbActivityChargeRepository.js";
+import { verifyFilingAccepted as verifyGatewayFilingOutcome } from "./behaviour-companies-house-accounts-steps.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-companies-house-confirmation-steps";
 
@@ -284,11 +285,9 @@ export async function submitConfirmationStatementFiling(page, screenshotPath = d
   });
 }
 
+// The confirmation statement page shows its outcome as the accounts pages do, so the same step reads it.
 export async function verifyFilingAccepted(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user sees the filing accepted after polling to a terminal state", async () => {
-    await expect(page.locator("#filingResult")).toContainText("ACCEPT", { timeout: 30000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accepted.png`, readerView: true });
-  });
+  await verifyGatewayFilingOutcome(page, screenshotPath);
 }
 
 export async function verifyFilingRejected(page, expectedRejectCode, screenshotPath = defaultScreenshotPath) {

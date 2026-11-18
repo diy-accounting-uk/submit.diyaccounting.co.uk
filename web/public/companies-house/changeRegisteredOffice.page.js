@@ -136,13 +136,16 @@ function newAddressFromFiling() {
   };
 }
 
+// Each poll reads the transaction from Companies House's filing API, so polls are two seconds apart.
+const TRANSACTION_POLL_MS = 2000;
+
 async function pollTransactionUntilSettled(transactionId) {
   let transaction;
   for (let attempt = 0; attempt < 5; attempt++) {
     transaction = await window.getCompaniesHouseTransaction(transactionId);
     const stillProcessing = (transaction.filings || []).some((entry) => entry.status === "processing");
     if (!stillProcessing) break;
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await new Promise((resolve) => setTimeout(resolve, TRANSACTION_POLL_MS));
   }
   return transaction;
 }
