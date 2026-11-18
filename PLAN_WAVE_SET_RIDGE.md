@@ -121,7 +121,7 @@ pages after the last batch lands.
 
 CW1 (the AWS credential handoff) leaves the set and ships on its own pull request as soon as it is built (operator, 2026-11-18); CW2 (the relay) and CP1 (the cloud profile) stay in wave 5. Wave 6's scene work (VID1 to VID5) runs on the cloud workers before the wave 5 gate (operator, 2026-11-18).
 
-State: building. LANG9 committed (19447bda4, built from the wave 4 batch tip); welsh-vat-itsa (LANG10a), welsh-ch (LANG11a) and marketing (MKT8) running from it.
+State: building. Built: LANG9 19447bda4; welsh-vat-itsa (LANG10a, LANG10b) 3d18a518b; welsh-ch (LANG11a, LANG11b micro-entity) a26b7d89b; marketing (MKT8) c4b7237b7; cloud-profile (CP1) e8a829e99; relay (CW2) 577b7980f, its skill commit on main 9bb0ca687. On cloud workers: the Welsh CT600 labels (bugle), Welsh small company accounts (anvil), the wave 5 assembly on `claude/ridge-w05` (epoch). CW1 left the set: PR #836.
 
 ### Wave 6: the look wave
 
