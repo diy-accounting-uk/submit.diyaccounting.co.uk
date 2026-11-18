@@ -154,10 +154,13 @@ gate_content_scan() {
   node scripts/content-scan.mjs "$logdir/content-scan.diff"
 }
 
+# The cache-only output keeps no image: Docker Desktop's docker driver loads a build with no named
+# output into the image store, one untagged image a run.
 gate_docker_build() {
   docker buildx build \
     --platform linux/arm64 \
     --provenance=false \
+    --output type=cacheonly \
     -f Dockerfile .
 }
 
