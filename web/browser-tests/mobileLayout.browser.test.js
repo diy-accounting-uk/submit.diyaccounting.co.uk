@@ -428,3 +428,21 @@ test.describe("Main navigation shows every item on a phone", () => {
     });
   }
 });
+
+test.describe("The PolicyBee logo reads in both colour schemes", () => {
+  for (const [colorScheme, background] of [
+    ["dark", "rgb(255, 255, 255)"],
+    ["light", "rgba(0, 0, 0, 0)"],
+  ]) {
+    test(`sits on ${colorScheme === "dark" ? "a white plate" : "the card"} in the ${colorScheme} scheme at 390px`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.setViewportSize({ width: 390, height: 800 });
+      await serveRealSite(page);
+      await page.goto("http://localhost:3000/policybee.html", { waitUntil: "domcontentloaded" });
+
+      const logo = page.locator(".policybee-logo");
+      await expect(logo).toBeVisible();
+      expect(await logo.evaluate((img) => getComputedStyle(img).backgroundColor)).toBe(background);
+    });
+  }
+});
