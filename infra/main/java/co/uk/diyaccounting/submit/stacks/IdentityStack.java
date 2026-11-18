@@ -611,9 +611,69 @@ public class IdentityStack extends Stack {
 
         cfnOutput(this, "SpreadsheetsBehaviourRoleArn", spreadsheetsBehaviourRole.getRoleArn());
 
+        if (CLOUD_WORKER_ENV_NAME.equals(props.envName())) {
+            var cloudWorkerRole = createCloudWorkerRole(githubOidcProviderArn, props);
+            cfnOutput(this, "CloudWorkerRoleArn", cloudWorkerRole.getRoleArn());
+        }
+
         infof(
                 "IdentityStack %s created successfully for %s",
                 this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
+    }
+
+    // The cloud worker role exists in the ci account only. The cloud-credentials.yml workflow
+    // assumes it on main, encrypts the session credentials to the worker's own public key, and
+    // hands over only the ciphertext. Cloud workers have no AWS SSO session.
+    static final String CLOUD_WORKER_ENV_NAME = "ci";
+    static final String CLOUD_WORKER_ROLE_NAME = "submit-ci-cloud-worker-role";
+    static final String CLOUD_WORKER_SUB = "repo:diy-accounting-uk/submit.diyaccounting.co.uk:ref:refs/heads/main";
+    static final String CLOUD_WORKER_JOB_WORKFLOW_REF =
+            "diy-accounting-uk/submit.diyaccounting.co.uk/.github/workflows/cloud-credentials.yml@refs/heads/main";
+
+    // The secrets scripts/proxy-secrets.sh reads; the suffix matches the six random characters
+    // Secrets Manager adds to every secret ARN.
+    static final List<String> CLOUD_WORKER_SECRET_NAMES =
+            List.of("ci/submit/hmrc/sandbox_client_secret", "ci/submit/stripe/test_secret_key");
+
+    private Role createCloudWorkerRole(String githubOidcProviderArn, IdentityStackProps props) {
+        var oidcHost = "token.actions.githubusercontent.com";
+        var cloudWorkerRole = Role.Builder.create(this, props.resourceNamePrefix() + "-CloudWorkerRole")
+                .roleName(CLOUD_WORKER_ROLE_NAME)
+                .maxSessionDuration(Duration.hours(1))
+                .assumedBy(new WebIdentityPrincipal(
+                        githubOidcProviderArn,
+                        Map.of(
+                                "StringEquals",
+                                Map.of(
+                                        oidcHost + ":aud", "sts.amazonaws.com",
+                                        oidcHost + ":sub", CLOUD_WORKER_SUB,
+                                        oidcHost + ":job_workflow_ref", CLOUD_WORKER_JOB_WORKFLOW_REF))))
+                .build();
+
+        // scripts/lib/video/pollySynthesizeChild.mjs: one SynthesizeSpeech call per caption, in
+        // the region narration.js passes (AWS_REGION, else eu-west-2). The action's only resource
+        // type is a lexicon and the narration names none, so the resource is "*" and the region
+        // condition is the limit.
+        cloudWorkerRole.addToPolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("polly:SynthesizeSpeech"))
+                .resources(List.of("*"))
+                .conditions(Map.of(
+                        "StringEquals",
+                        Map.of("aws:RequestedRegion", props.getEnv().getRegion())))
+                .build());
+
+        cloudWorkerRole.addToPolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("secretsmanager:GetSecretValue"))
+                .resources(CLOUD_WORKER_SECRET_NAMES.stream()
+                        .map(name -> String.format(
+                                "arn:aws:secretsmanager:%s:%s:secret:%s-??????",
+                                props.getEnv().getRegion(), props.getEnv().getAccount(), name))
+                        .toList())
+                .build());
+
+        return cloudWorkerRole;
     }
 
     private static List<String> buildAuthHosts(SubmitSharedNames sharedNames, String envName) {
