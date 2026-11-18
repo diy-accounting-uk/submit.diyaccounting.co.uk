@@ -145,4 +145,22 @@ test.describe("MCP chat harness", () => {
     await expect(page.frameLocator("#browserStep").locator("h1")).toHaveText("Sign in to continue");
     await expect(page.locator('.harness-turn[data-role="assistant"]')).toHaveCount(3);
   });
+
+  test("wraps a long browser step link inside its panel", async ({ page }) => {
+    const longQuery = `state=${"a1b2c3d4".repeat(40)}&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Factivities%2FsubmitVatCallback.html`;
+    await setupRoutes(page, { authorizationUrl: `http://localhost:3000/browser-step.html?${longQuery}` });
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.goto("http://localhost:3000/mcp-harness.html", { waitUntil: "domcontentloaded" });
+
+    await page.locator("#playAll").click();
+
+    const status = page.locator("#browserStatus");
+    await expect(status).toContainText("redirect_uri=");
+    const fits = await status.evaluate((element) => {
+      const panel = element.closest(".harness-panel").getBoundingClientRect();
+      const text = element.getBoundingClientRect();
+      return element.scrollWidth <= element.clientWidth && text.right <= panel.right;
+    });
+    expect(fits).toBe(true);
+  });
 });

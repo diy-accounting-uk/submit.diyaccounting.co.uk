@@ -85,6 +85,11 @@
   font-size: var(--step-1);
 }
 
+/* The browser step names the link a tool handed back, which can be one long unbroken URL. */
+#browserStatus {
+  overflow-wrap: anywhere;
+}
+
 .harness-chat {
   display: flex;
   flex-direction: column;
