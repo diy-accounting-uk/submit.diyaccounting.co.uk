@@ -119,6 +119,8 @@ every page that MKT8 photographs. Each batch adds its keys to `i18n/cy.toml` in 
 conflict there is resolved by keeping both sides' keys, and `npm run build:welsh` writes the `cy/`
 pages after the last batch lands.
 
+CW1 (the AWS credential handoff) leaves the set and ships on its own pull request as soon as it is built (operator, 2026-11-18); CW2 (the relay) and CP1 (the cloud profile) stay in wave 5. Wave 6's scene work (VID1 to VID5) runs on the cloud workers before the wave 5 gate (operator, 2026-11-18).
+
 State: building. LANG9 committed (19447bda4, built from the wave 4 batch tip); welsh-vat-itsa (LANG10a), welsh-ch (LANG11a) and marketing (MKT8) running from it.
 
 ### Wave 6: the look wave
