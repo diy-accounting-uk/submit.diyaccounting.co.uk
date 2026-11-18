@@ -81,4 +81,14 @@ describe("the period's days and a date as a person reads it", () => {
   test("a date reads as day, month and year", () => {
     expect(longDateText("2025-12-31")).toBe("31 December 2025");
   });
+
+  test("a date reads in Welsh when the chrome is Welsh", () => {
+    globalThis.siteLanguage = { chrome: () => "cy" };
+    try {
+      expect(longDateText("2025-12-31")).toBe("31 Rhagfyr 2025");
+      expect(longDateText("2026-03-01")).toBe("1 Mawrth 2026");
+    } finally {
+      delete globalThis.siteLanguage;
+    }
+  });
 });

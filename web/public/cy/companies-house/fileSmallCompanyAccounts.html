@@ -1,0 +1,3530 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from companies-house/fileSmallCompanyAccounts.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ffeilio cyfrifon cwmni bach - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/companies-house/fileSmallCompanyAccounts.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/fileSmallCompanyAccounts.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/fileSmallCompanyAccounts.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/fileSmallCompanyAccounts.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="ch-small-company.file-small-company-accounts-72adc6">Ffeilio cyfrifon cwmni bach</h1>
+      <p data-i18n="ch-small-company.file-a-small-company-s-frs-482ce0" class="subtitle">
+        Ffeilio cyfrifon blynyddol FRS 102 adran 1A cwmni bach gyda Thŷ’r Cwmnïau
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p data-i18n="ch-small-company.status-production-accounts-you-file-here-1775a4" class="hint" data-feature-status="production">
+        <strong>Statws: cynhyrchu (production).</strong> Mae’r cyfrifon rydych yn eu ffeilio yma yn cyrraedd cofrestr fyw Tŷ’r Cwmnïau.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau"
+        data-sign-in-text="Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif."
+        data-i18n-data-sign-in-title="ch-small-company.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-small-company.sign-in-to-look-up-your-eb0bf2"
+        data-i18n-data-sign-in-title="ch-small-company.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-small-company.sign-in-to-look-up-your-eb0bf2"
+      >
+        <h2 data-i18n="ch-small-company.which-company-d9aae4">Pa gwmni?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="ch-small-company.company-number-8b121b" for="companyNumber">Rhif y cwmni</label>
+            <p data-i18n="ch-small-company.8-characters-for-example-00000001-do-090062" id="companyNumber-hint" class="hint">
+              8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button data-i18n="ch-small-company.look-up-company-e9e4a8" type="submit" id="companyLookupBtn" class="btn">
+            Chwilio am y cwmni
+          </button>
+        </form>
+      </div>
+
+      <!-- Accounts form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2 data-i18n="ch-small-company.small-company-accounts-77ba8c">Cyfrifon cwmni bach</h2>
+        <p data-i18n="ch-small-company.company-change-company-dd2fd9">
+          Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).
+          <a href="#" id="changeCompanyLink">Newid y cwmni</a>.
+        </p>
+        <div id="booksImport"></div>
+        <form id="accountsForm" novalidate>
+          <section class="form-section">
+            <h3 data-i18n="ch-small-company.period-6e795d">Cyfnod</h3>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.period-start-32d302" for="periodStart">Dechrau’r cyfnod</label>
+              <input type="date" id="periodStart" name="periodStart" required />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.period-end-eeae9f" for="periodEnd">Diwedd y cyfnod</label>
+              <input type="date" id="periodEnd" name="periodEnd" required />
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-small-company.registered-office-bc395e">Swyddfa gofrestredig</h3>
+            <p data-i18n="ch-small-company.filled-in-from-the-company-s-1bca2e" id="officeHint" class="hint">
+              Wedi’i llenwi o gofnod y cwmni yn Nhŷ’r Cwmnïau. Newidiwch ran i’w chywiro.
+            </p>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.address-line-1-ee760b" for="officeAddressLine1">Llinell 1 y cyfeiriad</label>
+              <input type="text" id="officeAddressLine1" name="officeAddressLine1" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.address-line-2-optional-9ada76" for="officeAddressLine2"
+                >Llinell 2 y cyfeiriad (dewisol)</label
+              >
+              <input type="text" id="officeAddressLine2" name="officeAddressLine2" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.address-line-3-optional-39373e" for="officeAddressLine3"
+                >Llinell 3 y cyfeiriad (dewisol)</label
+              >
+              <input type="text" id="officeAddressLine3" name="officeAddressLine3" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.town-or-city-9ce565" for="officeCityOrTown">Tref neu ddinas</label>
+              <input type="text" id="officeCityOrTown" name="officeCityOrTown" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.county-or-region-optional-8c5d96" for="officeCountyRegion"
+                >Sir neu ranbarth (dewisol)</label
+              >
+              <input type="text" id="officeCountyRegion" name="officeCountyRegion" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.postcode-0a4387" for="officePostalCode">Cod post</label>
+              <input type="text" id="officePostalCode" name="officePostalCode" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.country-optional-e54c63" for="officeCountry">Gwlad (dewisol)</label>
+              <input type="text" id="officeCountry" name="officeCountry" autocomplete="off" />
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-small-company.what-companies-house-receives-0882f0">Beth mae Tŷ’r Cwmnïau yn ei gael</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input type="radio" id="copyFull" name="copy" value="full" checked /><label
+                  data-i18n="ch-small-company.full-accounts-the-profit-and-loss-1a3db9"
+                  for="copyFull"
+                  >Cyfrifon llawn: y cyfrif elw a cholled, y fantolen, y nodiadau ac adroddiad y cyfarwyddwyr</label
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="choice">
+                <input type="radio" id="copyFilleted" name="copy" value="filleted" aria-describedby="copyFilleted-hint" /><label
+                  data-i18n="ch-small-company.filleted-accounts-the-balance-sheet-and-3f92df"
+                  for="copyFilleted"
+                  >Cyfrifon wedi’u ffiledu (filleted): y fantolen a’r nodiadau, heb y cyfrif elw a cholled ac adroddiad y
+                  cyfarwyddwyr</label
+                >
+              </div>
+              <p data-i18n="ch-small-company.section-444-of-the-companies-act-cfd59d" id="copyFilleted-hint" class="hint">
+                Mae adran 444 o Ddeddf Cwmnïau 2006 yn caniatáu i gwmni bach gyflwyno cyfrifon heb ei gyfrif elw a cholled. Mae aelodau’r
+                cwmni yn dal i gael y cyfrifon llawn.
+              </p>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-small-company.profit-and-loss-format-1240c6">Fformat yr elw a’r golled</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input type="radio" id="profitAndLossFormat1" name="profitAndLossFormat" value="1" checked /><label
+                  data-i18n="ch-small-company.format-1-costs-by-function-cost-eaf911"
+                  for="profitAndLossFormat1"
+                  >Fformat 1, costau yn ôl swyddogaeth: cost gwerthiant a threuliau gweinyddu</label
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="radio"
+                  id="profitAndLossFormat2"
+                  name="profitAndLossFormat"
+                  value="2"
+                  aria-describedby="profitAndLossFormat2-hint"
+                /><label data-i18n="ch-small-company.format-2-costs-by-nature-raw-9a6cd8" for="profitAndLossFormat2"
+                  >Fformat 2, costau yn ôl natur: deunyddiau crai, costau staff, dibrisiant a thaliadau eraill</label
+                >
+              </div>
+              <p data-i18n="ch-small-company.schedule-1-to-the-small-companies-23f870" id="profitAndLossFormat2-hint" class="hint">
+                Mae Atodlen 1 i Reoliadau Cwmnïau a Grwpiau Bach (Cyfrifon ac Adroddiad y Cyfarwyddwyr) 2008 yn rhoi’r ddau fformat.
+                Defnyddiwch y fformat a ddefnyddiodd y cwmni y llynedd.
+              </p>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-small-company.current-year-07e958">Y flwyddyn gyfredol</h3>
+            <h4 data-i18n="ch-small-company.profit-and-loss-account-dd8ab0">Cyfrif elw a cholled</h4>
+            <p data-i18n="ch-small-company.whole-pounds-for-example-600-or-94af4a" id="ledgerHint1" class="hint">
+              Punnoedd cyfan. Er enghraifft, £600 neu £1,200.
+            </p>
+            <table class="ledger ledger--one-year">
+              <thead>
+                <tr>
+                  <th data-i18n="ch-small-company.line-d7852c" scope="col">Llinell</th>
+                  <th data-i18n="ch-small-company.amount-2d7841" scope="col" class="ledger__figure">Swm (£)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-profit-and-loss-format="2" hidden>
+                  <th data-i18n="ch-small-company.change-in-stocks-of-finished-goods-f391c3" scope="row">
+                    Newid mewn stociau o nwyddau gorffenedig a gwaith ar y gweill
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.change-in-stocks-of-finished-goods-9ff5d6"
+                      for="currentChangeInStocks"
+                      class="visually-hidden"
+                      >Newid mewn stociau o nwyddau gorffenedig a gwaith ar y gweill, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentChangeInStocks"
+                        name="currentChangeInStocks"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer newid mewn stociau o nwyddau gorffenedig a gwaith ar y gweill"
+                        disabled
+                        data-i18n-data-required-message="ch-small-company.enter-change-in-stocks-of-finished-ac8e27"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr data-profit-and-loss-format="2" hidden>
+                  <th data-i18n="ch-small-company.own-work-capitalised-6d2b8e" scope="row">Gwaith eich hun wedi’i gyfalafu</th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.own-work-capitalised-this-year-8222f9"
+                      for="currentOwnWorkCapitalised"
+                      class="visually-hidden"
+                      >Gwaith eich hun wedi’i gyfalafu, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentOwnWorkCapitalised"
+                        name="currentOwnWorkCapitalised"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer gwaith eich hun wedi’i gyfalafu"
+                        disabled
+                        data-i18n-data-required-message="ch-small-company.enter-own-work-capitalised-this-year-01b56d"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr data-profit-and-loss-format="2" hidden>
+                  <th data-i18n="ch-small-company.other-operating-income-66b1c9" scope="row">Incwm gweithredu arall</th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.other-operating-income-this-year-dd26a5"
+                      for="currentOtherOperatingIncome"
+                      class="visually-hidden"
+                      >Incwm gweithredu arall, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentOtherOperatingIncome"
+                        name="currentOtherOperatingIncome"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer incwm gweithredu arall"
+                        disabled
+                        data-i18n-data-required-message="ch-small-company.enter-other-operating-income-this-year-4fabac"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr data-profit-and-loss-format="2" hidden>
+                  <th data-i18n="ch-small-company.raw-materials-and-consumables-8471ca" scope="row">Deunyddiau crai a nwyddau traul</th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.raw-materials-and-consumables-this-year-b4b8a3"
+                      for="currentRawMaterialsConsumables"
+                      class="visually-hidden"
+                      >Deunyddiau crai a nwyddau traul, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentRawMaterialsConsumables"
+                        name="currentRawMaterialsConsumables"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer deunyddiau crai a nwyddau traul"
+                        disabled
+                        data-i18n-data-required-message="ch-small-company.enter-raw-materials-and-consumables-this-3e0fce"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr data-profit-and-loss-format="2" hidden>
+                  <th data-i18n="ch-small-company.other-external-charges-88457e" scope="row">Taliadau allanol eraill</th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.other-external-charges-this-year-053a04"
+                      for="currentOtherExternalCharges"
+                      class="visually-hidden"
+                      >Taliadau allanol eraill, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentOtherExternalCharges"
+                        name="currentOtherExternalCharges"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer taliadau allanol eraill"
+                        disabled
+                        data-i18n-data-required-message="ch-small-company.enter-other-external-charges-this-year-01296d"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr data-profit-and-loss-format="2" hidden>
+                  <th data-i18n="ch-small-company.staff-costs-f64e0c" scope="row">Costau staff</th>
+                  <td class="ledger__figure">
+                    <label data-i18n="ch-small-company.staff-costs-this-year-680361" for="currentStaffCosts" class="visually-hidden"
+                      >Costau staff, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentStaffCosts"
+                        name="currentStaffCosts"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer costau staff"
+                        disabled
+                        data-i18n-data-required-message="ch-small-company.enter-staff-costs-this-year-15bc39"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr data-profit-and-loss-format="2" hidden>
+                  <th data-i18n="ch-small-company.depreciation-and-other-amounts-written-off-43b439" scope="row">
+                    Dibrisiant a symiau eraill a ddilëwyd oddi ar asedion sefydlog diriaethol ac anniriaethol
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.depreciation-and-other-amounts-written-off-16753f"
+                      for="currentDepreciation"
+                      class="visually-hidden"
+                      >Dibrisiant a symiau eraill a ddilëwyd oddi ar asedion sefydlog diriaethol ac anniriaethol, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentDepreciation"
+                        name="currentDepreciation"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer dibrisiant a symiau eraill a ddilëwyd oddi ar asedion sefydlog diriaethol ac anniriaethol"
+                        disabled
+                        data-i18n-data-required-message="ch-small-company.enter-depreciation-and-other-amounts-written-7ed6b4"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr data-profit-and-loss-format="2" hidden>
+                  <th data-i18n="ch-small-company.other-operating-expenses-71c310" scope="row">Treuliau gweithredu eraill</th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.other-operating-expenses-this-year-966848"
+                      for="currentOtherOperatingExpenses"
+                      class="visually-hidden"
+                      >Treuliau gweithredu eraill, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentOtherOperatingExpenses"
+                        name="currentOtherOperatingExpenses"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer treuliau gweithredu eraill"
+                        disabled
+                        data-i18n-data-required-message="ch-small-company.enter-other-operating-expenses-this-year-33f516"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.turnover-8ecaf1" scope="row">Trosiant</th>
+                  <td class="ledger__figure">
+                    <label data-i18n="ch-small-company.turnover-this-year-6ee801" for="currentTurnover" class="visually-hidden"
+                      >Trosiant, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentTurnover"
+                        name="currentTurnover"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer trosiant"
+                        data-i18n-data-required-message="ch-small-company.enter-turnover-this-year-b3db5a"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr data-profit-and-loss-format="1">
+                  <th data-i18n="ch-small-company.cost-of-sales-9bbf71" scope="row">Cost gwerthiant</th>
+                  <td class="ledger__figure">
+                    <label data-i18n="ch-small-company.cost-of-sales-this-year-5dfa9c" for="currentCostOfSales" class="visually-hidden"
+                      >Cost gwerthiant, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentCostOfSales"
+                        name="currentCostOfSales"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer cost gwerthiant"
+                        data-i18n-data-required-message="ch-small-company.enter-cost-of-sales-this-year-f2bd44"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr data-profit-and-loss-format="1">
+                  <th data-i18n="ch-small-company.administrative-expenses-878a5e" scope="row">Treuliau gweinyddu</th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.administrative-expenses-this-year-6fe352"
+                      for="currentAdministrativeExpenses"
+                      class="visually-hidden"
+                      >Treuliau gweinyddu, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentAdministrativeExpenses"
+                        name="currentAdministrativeExpenses"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer treuliau gweinyddu"
+                        data-i18n-data-required-message="ch-small-company.enter-administrative-expenses-this-year-90b624"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.interest-receivable-and-similar-income-adb8a3" scope="row">
+                    Llog derbyniadwy ac incwm tebyg
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.interest-receivable-and-similar-income-this-0ff57d"
+                      for="currentInterestReceivable"
+                      class="visually-hidden"
+                      >Llog derbyniadwy ac incwm tebyg, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentInterestReceivable"
+                        name="currentInterestReceivable"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer llog derbyniadwy ac incwm tebyg"
+                        data-i18n-data-required-message="ch-small-company.enter-interest-receivable-and-similar-income-fa9853"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr data-profit-and-loss-format="2" hidden>
+                  <th data-i18n="ch-small-company.interest-payable-and-similar-expenses-663f7c" scope="row">
+                    Llog taladwy a threuliau tebyg
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.interest-payable-and-similar-expenses-this-41fe54"
+                      for="currentInterestPayable"
+                      class="visually-hidden"
+                      >Llog taladwy a threuliau tebyg, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentInterestPayable"
+                        name="currentInterestPayable"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer llog taladwy a threuliau tebyg"
+                        disabled
+                        data-i18n-data-required-message="ch-small-company.enter-interest-payable-and-similar-expenses-0b00e7"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.tax-on-profit-on-ordinary-activities-929b05" scope="row">
+                    Treth ar elw ar weithgareddau cyffredin
+                  </th>
+                  <td class="ledger__figure">
+                    <label data-i18n="ch-small-company.tax-on-profit-on-ordinary-activities-f6d67f" for="currentTax" class="visually-hidden"
+                      >Treth ar elw ar weithgareddau cyffredin, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentTax"
+                        name="currentTax"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer treth ar elw ar weithgareddau cyffredin"
+                        data-i18n-data-required-message="ch-small-company.enter-tax-on-profit-on-ordinary-e1a11d"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p id="currentProfitAndLossTotals" class="hint"></p>
+            <h4 data-i18n="ch-small-company.balance-sheet-659a65">Mantolen</h4>
+            <p data-i18n="ch-small-company.whole-pounds-for-example-600-or-94af4a" id="ledgerHint2" class="hint">
+              Punnoedd cyfan. Er enghraifft, £600 neu £1,200.
+            </p>
+            <table class="ledger ledger--one-year">
+              <thead>
+                <tr>
+                  <th data-i18n="ch-small-company.line-d7852c" scope="col">Llinell</th>
+                  <th data-i18n="ch-small-company.amount-2d7841" scope="col" class="ledger__figure">Swm (£)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th data-i18n="ch-small-company.fixed-assets-959c37" scope="row">Asedion sefydlog</th>
+                  <td class="ledger__figure">
+                    <label data-i18n="ch-small-company.fixed-assets-this-year-9cdb81" for="currentFixedAssets" class="visually-hidden"
+                      >Asedion sefydlog, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentFixedAssets"
+                        name="currentFixedAssets"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer asedion sefydlog"
+                        data-i18n-data-required-message="ch-small-company.enter-fixed-assets-this-year-395897"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.stocks-df09c2" scope="row">Stociau</th>
+                  <td class="ledger__figure">
+                    <label data-i18n="ch-small-company.stocks-this-year-70cbb7" for="currentStocks" class="visually-hidden"
+                      >Stociau, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentStocks"
+                        name="currentStocks"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer stociau"
+                        data-i18n-data-required-message="ch-small-company.enter-stocks-this-year-3c1c23"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.debtors-ac2230" scope="row">Dyledwyr</th>
+                  <td class="ledger__figure">
+                    <label data-i18n="ch-small-company.debtors-this-year-a90665" for="currentDebtors" class="visually-hidden"
+                      >Dyledwyr, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentDebtors"
+                        name="currentDebtors"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer dyledwyr"
+                        data-i18n-data-required-message="ch-small-company.enter-debtors-this-year-e579cc"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.of-which-trade-debtors-1c26ff" scope="row" class="ledger__part">
+                    O hynny, dyledwyr masnach
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.of-which-trade-debtors-this-year-19cf88"
+                      for="currentTradeDebtors"
+                      class="visually-hidden"
+                      >O hynny, dyledwyr masnach, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentTradeDebtors"
+                        name="currentTradeDebtors"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.of-which-other-debtors-3adaed" scope="row" class="ledger__part">
+                    O hynny, dyledwyr eraill
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.of-which-other-debtors-this-year-0a0a75"
+                      for="currentOtherDebtors"
+                      class="visually-hidden"
+                      >O hynny, dyledwyr eraill, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentOtherDebtors"
+                        name="currentOtherDebtors"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.of-which-amounts-owed-by-directors-23911d" scope="row" class="ledger__part">
+                    O hynny, symiau dyledus gan gyfarwyddwyr
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.of-which-amounts-owed-by-directors-307adf"
+                      for="currentAmountsOwedByDirectors"
+                      class="visually-hidden"
+                      >O hynny, symiau dyledus gan gyfarwyddwyr, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentAmountsOwedByDirectors"
+                        name="currentAmountsOwedByDirectors"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.of-which-prepayments-and-accrued-income-bd5805" scope="row" class="ledger__part">
+                    O hynny, rhagdaliadau ac incwm cronedig
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.of-which-prepayments-and-accrued-income-379d38"
+                      for="currentPrepayments"
+                      class="visually-hidden"
+                      >O hynny, rhagdaliadau ac incwm cronedig, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentPrepayments"
+                        name="currentPrepayments"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.cash-at-bank-and-in-hand-658d88" scope="row">Arian yn y banc a mewn llaw</th>
+                  <td class="ledger__figure">
+                    <label data-i18n="ch-small-company.cash-at-bank-and-in-hand-7e3237" for="currentCashAtBank" class="visually-hidden"
+                      >Arian yn y banc a mewn llaw, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentCashAtBank"
+                        name="currentCashAtBank"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer arian yn y banc a mewn llaw"
+                        data-i18n-data-required-message="ch-small-company.enter-cash-at-bank-and-in-ac5003"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.bank-loans-and-overdrafts-due-within-1a8457" scope="row">
+                    Benthyciadau banc a gorddrafftiau (dyledus o fewn blwyddyn)
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.bank-loans-and-overdrafts-due-within-4b6081"
+                      for="currentBankLoansOverdrafts"
+                      class="visually-hidden"
+                      >Benthyciadau banc a gorddrafftiau (dyledus o fewn blwyddyn), eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentBankLoansOverdrafts"
+                        name="currentBankLoansOverdrafts"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.trade-creditors-due-within-one-year-afe765" scope="row">
+                    Credydwyr masnach (dyledus o fewn blwyddyn)
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.trade-creditors-due-within-one-year-8db8d1"
+                      for="currentTradeCreditors"
+                      class="visually-hidden"
+                      >Credydwyr masnach (dyledus o fewn blwyddyn), eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentTradeCreditors"
+                        name="currentTradeCreditors"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer credydwyr masnach (dyledus o fewn blwyddyn)"
+                        data-i18n-data-required-message="ch-small-company.enter-trade-creditors-due-within-one-0ba1eb"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.corporation-tax-due-within-one-year-7f5179" scope="row">
+                    Treth gorfforaeth (dyledus o fewn blwyddyn)
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.corporation-tax-due-within-one-year-521917"
+                      for="currentCorporationTax"
+                      class="visually-hidden"
+                      >Treth gorfforaeth (dyledus o fewn blwyddyn), eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentCorporationTax"
+                        name="currentCorporationTax"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer treth gorfforaeth (dyledus o fewn blwyddyn)"
+                        data-i18n-data-required-message="ch-small-company.enter-corporation-tax-due-within-one-b8da0a"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.taxation-and-social-security-due-within-887bab" scope="row">
+                    Trethiant a nawdd cymdeithasol (dyledus o fewn blwyddyn)
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.taxation-and-social-security-due-within-3ecb88"
+                      for="currentTaxationSocialSecurity"
+                      class="visually-hidden"
+                      >Trethiant a nawdd cymdeithasol (dyledus o fewn blwyddyn), eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentTaxationSocialSecurity"
+                        name="currentTaxationSocialSecurity"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.accruals-due-within-one-year-bc9f66" scope="row">Croniadau (dyledus o fewn blwyddyn)</th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.accruals-due-within-one-year-this-06db63"
+                      for="currentAccruals"
+                      class="visually-hidden"
+                      >Croniadau (dyledus o fewn blwyddyn), eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentAccruals"
+                        name="currentAccruals"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.other-creditors-due-within-one-year-e25519" scope="row">
+                    Credydwyr eraill (dyledus o fewn blwyddyn)
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.other-creditors-due-within-one-year-95bfd0"
+                      for="currentOtherCreditors"
+                      class="visually-hidden"
+                      >Credydwyr eraill (dyledus o fewn blwyddyn), eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentOtherCreditors"
+                        name="currentOtherCreditors"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer credydwyr eraill (dyledus o fewn blwyddyn)"
+                        data-i18n-data-required-message="ch-small-company.enter-other-creditors-due-within-one-8324ca"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.creditors-amounts-falling-due-after-more-a35994" scope="row">
+                    Credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.creditors-amounts-falling-due-after-more-d5e45f"
+                      for="currentCreditorsAfterOneYear"
+                      class="visually-hidden"
+                      >Credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentCreditorsAfterOneYear"
+                        name="currentCreditorsAfterOneYear"
+                        required
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn"
+                        data-i18n-data-required-message="ch-small-company.enter-creditors-amounts-falling-due-after-02fbda"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.of-which-bank-loans-e4ae3a" scope="row" class="ledger__part">
+                    O hynny, benthyciadau banc
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.of-which-bank-loans-this-year-48fa41"
+                      for="currentBankLoansAfterOneYear"
+                      class="visually-hidden"
+                      >O hynny, benthyciadau banc, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentBankLoansAfterOneYear"
+                        name="currentBankLoansAfterOneYear"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.of-which-amounts-owed-to-directors-1c5fcd" scope="row" class="ledger__part">
+                    O hynny, symiau dyledus i gyfarwyddwyr
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.of-which-amounts-owed-to-directors-bdf4c6"
+                      for="currentAmountsOwedToDirectors"
+                      class="visually-hidden"
+                      >O hynny, symiau dyledus i gyfarwyddwyr, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentAmountsOwedToDirectors"
+                        name="currentAmountsOwedToDirectors"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.of-which-amounts-owed-to-group-253346" scope="row" class="ledger__part">
+                    O hynny, symiau dyledus i ymgymeriadau grŵp
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.of-which-amounts-owed-to-group-63a023"
+                      for="currentAmountsOwedToGroupUndertakings"
+                      class="visually-hidden"
+                      >O hynny, symiau dyledus i ymgymeriadau grŵp, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentAmountsOwedToGroupUndertakings"
+                        name="currentAmountsOwedToGroupUndertakings"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.provisions-for-liabilities-2be61a" scope="row">Darpariaethau ar gyfer rhwymedigaethau</th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.provisions-for-liabilities-this-year-f784ac"
+                      for="currentProvisionsForLiabilities"
+                      class="visually-hidden"
+                      >Darpariaethau ar gyfer rhwymedigaethau, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentProvisionsForLiabilities"
+                        name="currentProvisionsForLiabilities"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.called-up-share-capital-4473b4" scope="row">Cyfalaf cyfrannau wedi’i alw</th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.called-up-share-capital-this-year-4381cb"
+                      for="currentCalledUpShareCapital"
+                      class="visually-hidden"
+                      >Cyfalaf cyfrannau wedi’i alw, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentCalledUpShareCapital"
+                        name="currentCalledUpShareCapital"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer cyfalaf cyfrannau wedi’i alw"
+                        data-i18n-data-required-message="ch-small-company.enter-called-up-share-capital-this-4fc206"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.profit-and-loss-account-reserve-5ad91d" scope="row">
+                    Cronfa wrth gefn y cyfrif elw a cholled
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.profit-and-loss-account-reserve-this-ae67d1"
+                      for="currentProfitAndLossAccount"
+                      class="visually-hidden"
+                      >Cronfa wrth gefn y cyfrif elw a cholled, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentProfitAndLossAccount"
+                        name="currentProfitAndLossAccount"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch swm eleni ar gyfer cronfa wrth gefn y cyfrif elw a cholled"
+                        data-i18n-data-required-message="ch-small-company.enter-profit-and-loss-account-reserve-6f10dc"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p id="currentBalanceSheetTotals" class="hint"></p>
+
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="checkbox"
+                  id="includeComparatives"
+                  name="includeComparatives"
+                  aria-describedby="includeComparatives-hint"
+                /><label data-i18n="ch-small-company.include-prior-year-comparatives-26e542" for="includeComparatives"
+                  >Cynnwys ffigurau cymharol y flwyddyn flaenorol</label
+                >
+              </div>
+              <p data-i18n="ch-small-company.fill-in-the-prior-year-only-40b9e3" id="includeComparatives-hint" class="hint">
+                Llenwch y flwyddyn flaenorol dim ond pan fydd ei ffigurau gennych. Nid oes dim yn cael ei lenwi i chi, ac mae blwyddyn
+                flaenorol a adawyd allan yn cael ei gadael allan o’r cyfrifon.
+              </p>
+            </div>
+            <div id="comparativeFields" class="form-section" style="display: none">
+              <h3 data-i18n="ch-small-company.prior-year-ff70f6">Y flwyddyn flaenorol</h3>
+              <h4 data-i18n="ch-small-company.profit-and-loss-account-dd8ab0">Cyfrif elw a cholled</h4>
+              <p data-i18n="ch-small-company.whole-pounds-for-example-600-or-94af4a" id="ledgerHint3" class="hint">
+                Punnoedd cyfan. Er enghraifft, £600 neu £1,200.
+              </p>
+              <table class="ledger ledger--one-year">
+                <thead>
+                  <tr>
+                    <th data-i18n="ch-small-company.line-d7852c" scope="col">Llinell</th>
+                    <th data-i18n="ch-small-company.amount-2d7841" scope="col" class="ledger__figure">Swm (£)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-profit-and-loss-format="2" hidden>
+                    <th data-i18n="ch-small-company.change-in-stocks-of-finished-goods-f391c3" scope="row">
+                      Newid mewn stociau o nwyddau gorffenedig a gwaith ar y gweill
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.change-in-stocks-of-finished-goods-3793c6"
+                        for="priorChangeInStocks"
+                        class="visually-hidden"
+                        >Newid mewn stociau o nwyddau gorffenedig a gwaith ar y gweill, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorChangeInStocks"
+                          name="priorChangeInStocks"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer newid mewn stociau o nwyddau gorffenedig a gwaith ar y gweill"
+                          disabled
+                          data-i18n-data-required-message="ch-small-company.enter-change-in-stocks-of-finished-8e41b5"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-profit-and-loss-format="2" hidden>
+                    <th data-i18n="ch-small-company.own-work-capitalised-6d2b8e" scope="row">Gwaith eich hun wedi’i gyfalafu</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.own-work-capitalised-last-year-03366d"
+                        for="priorOwnWorkCapitalised"
+                        class="visually-hidden"
+                        >Gwaith eich hun wedi’i gyfalafu, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorOwnWorkCapitalised"
+                          name="priorOwnWorkCapitalised"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer gwaith eich hun wedi’i gyfalafu"
+                          disabled
+                          data-i18n-data-required-message="ch-small-company.enter-own-work-capitalised-last-year-e64775"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-profit-and-loss-format="2" hidden>
+                    <th data-i18n="ch-small-company.other-operating-income-66b1c9" scope="row">Incwm gweithredu arall</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.other-operating-income-last-year-f3b05e"
+                        for="priorOtherOperatingIncome"
+                        class="visually-hidden"
+                        >Incwm gweithredu arall, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorOtherOperatingIncome"
+                          name="priorOtherOperatingIncome"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer incwm gweithredu arall"
+                          disabled
+                          data-i18n-data-required-message="ch-small-company.enter-other-operating-income-last-year-ebda0d"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-profit-and-loss-format="2" hidden>
+                    <th data-i18n="ch-small-company.raw-materials-and-consumables-8471ca" scope="row">Deunyddiau crai a nwyddau traul</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.raw-materials-and-consumables-last-year-317537"
+                        for="priorRawMaterialsConsumables"
+                        class="visually-hidden"
+                        >Deunyddiau crai a nwyddau traul, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorRawMaterialsConsumables"
+                          name="priorRawMaterialsConsumables"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer deunyddiau crai a nwyddau traul"
+                          disabled
+                          data-i18n-data-required-message="ch-small-company.enter-raw-materials-and-consumables-last-5f5fb7"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-profit-and-loss-format="2" hidden>
+                    <th data-i18n="ch-small-company.other-external-charges-88457e" scope="row">Taliadau allanol eraill</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.other-external-charges-last-year-7b4a86"
+                        for="priorOtherExternalCharges"
+                        class="visually-hidden"
+                        >Taliadau allanol eraill, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorOtherExternalCharges"
+                          name="priorOtherExternalCharges"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer taliadau allanol eraill"
+                          disabled
+                          data-i18n-data-required-message="ch-small-company.enter-other-external-charges-last-year-be7390"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-profit-and-loss-format="2" hidden>
+                    <th data-i18n="ch-small-company.staff-costs-f64e0c" scope="row">Costau staff</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.staff-costs-last-year-0eb0e8" for="priorStaffCosts" class="visually-hidden"
+                        >Costau staff, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorStaffCosts"
+                          name="priorStaffCosts"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer costau staff"
+                          disabled
+                          data-i18n-data-required-message="ch-small-company.enter-staff-costs-last-year-4d76e5"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-profit-and-loss-format="2" hidden>
+                    <th data-i18n="ch-small-company.depreciation-and-other-amounts-written-off-43b439" scope="row">
+                      Dibrisiant a symiau eraill a ddilëwyd oddi ar asedion sefydlog diriaethol ac anniriaethol
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.depreciation-and-other-amounts-written-off-59da10"
+                        for="priorDepreciation"
+                        class="visually-hidden"
+                        >Dibrisiant a symiau eraill a ddilëwyd oddi ar asedion sefydlog diriaethol ac anniriaethol, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorDepreciation"
+                          name="priorDepreciation"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer dibrisiant a symiau eraill a ddilëwyd oddi ar asedion sefydlog diriaethol ac anniriaethol"
+                          disabled
+                          data-i18n-data-required-message="ch-small-company.enter-depreciation-and-other-amounts-written-2829a1"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-profit-and-loss-format="2" hidden>
+                    <th data-i18n="ch-small-company.other-operating-expenses-71c310" scope="row">Treuliau gweithredu eraill</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.other-operating-expenses-last-year-42b112"
+                        for="priorOtherOperatingExpenses"
+                        class="visually-hidden"
+                        >Treuliau gweithredu eraill, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorOtherOperatingExpenses"
+                          name="priorOtherOperatingExpenses"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer treuliau gweithredu eraill"
+                          disabled
+                          data-i18n-data-required-message="ch-small-company.enter-other-operating-expenses-last-year-ceda37"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.turnover-8ecaf1" scope="row">Trosiant</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.turnover-last-year-a09b26" for="priorTurnover" class="visually-hidden"
+                        >Trosiant, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorTurnover"
+                          name="priorTurnover"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer trosiant"
+                          data-i18n-data-required-message="ch-small-company.enter-turnover-last-year-5d53ba"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-profit-and-loss-format="1">
+                    <th data-i18n="ch-small-company.cost-of-sales-9bbf71" scope="row">Cost gwerthiant</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.cost-of-sales-last-year-cac0d3" for="priorCostOfSales" class="visually-hidden"
+                        >Cost gwerthiant, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorCostOfSales"
+                          name="priorCostOfSales"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer cost gwerthiant"
+                          data-i18n-data-required-message="ch-small-company.enter-cost-of-sales-last-year-18d8ee"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-profit-and-loss-format="1">
+                    <th data-i18n="ch-small-company.administrative-expenses-878a5e" scope="row">Treuliau gweinyddu</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.administrative-expenses-last-year-fcf586"
+                        for="priorAdministrativeExpenses"
+                        class="visually-hidden"
+                        >Treuliau gweinyddu, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorAdministrativeExpenses"
+                          name="priorAdministrativeExpenses"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer treuliau gweinyddu"
+                          data-i18n-data-required-message="ch-small-company.enter-administrative-expenses-last-year-2ffcea"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.interest-receivable-and-similar-income-adb8a3" scope="row">
+                      Llog derbyniadwy ac incwm tebyg
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.interest-receivable-and-similar-income-last-ea72dd"
+                        for="priorInterestReceivable"
+                        class="visually-hidden"
+                        >Llog derbyniadwy ac incwm tebyg, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorInterestReceivable"
+                          name="priorInterestReceivable"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer llog derbyniadwy ac incwm tebyg"
+                          data-i18n-data-required-message="ch-small-company.enter-interest-receivable-and-similar-income-0b6368"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-profit-and-loss-format="2" hidden>
+                    <th data-i18n="ch-small-company.interest-payable-and-similar-expenses-663f7c" scope="row">
+                      Llog taladwy a threuliau tebyg
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.interest-payable-and-similar-expenses-last-d3df70"
+                        for="priorInterestPayable"
+                        class="visually-hidden"
+                        >Llog taladwy a threuliau tebyg, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorInterestPayable"
+                          name="priorInterestPayable"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer llog taladwy a threuliau tebyg"
+                          disabled
+                          data-i18n-data-required-message="ch-small-company.enter-interest-payable-and-similar-expenses-0834d3"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.tax-on-profit-on-ordinary-activities-929b05" scope="row">
+                      Treth ar elw ar weithgareddau cyffredin
+                    </th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.tax-on-profit-on-ordinary-activities-48a0ba" for="priorTax" class="visually-hidden"
+                        >Treth ar elw ar weithgareddau cyffredin, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorTax"
+                          name="priorTax"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer treth ar elw ar weithgareddau cyffredin"
+                          data-i18n-data-required-message="ch-small-company.enter-tax-on-profit-on-ordinary-f00a03"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p id="priorProfitAndLossTotals" class="hint"></p>
+              <h4 data-i18n="ch-small-company.balance-sheet-659a65">Mantolen</h4>
+              <p data-i18n="ch-small-company.whole-pounds-for-example-600-or-94af4a" id="ledgerHint4" class="hint">
+                Punnoedd cyfan. Er enghraifft, £600 neu £1,200.
+              </p>
+              <table class="ledger ledger--one-year">
+                <thead>
+                  <tr>
+                    <th data-i18n="ch-small-company.line-d7852c" scope="col">Llinell</th>
+                    <th data-i18n="ch-small-company.amount-2d7841" scope="col" class="ledger__figure">Swm (£)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th data-i18n="ch-small-company.fixed-assets-959c37" scope="row">Asedion sefydlog</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.fixed-assets-last-year-7a8f8c" for="priorFixedAssets" class="visually-hidden"
+                        >Asedion sefydlog, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorFixedAssets"
+                          name="priorFixedAssets"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer asedion sefydlog"
+                          data-i18n-data-required-message="ch-small-company.enter-fixed-assets-last-year-569ffd"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.stocks-df09c2" scope="row">Stociau</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.stocks-last-year-377ed2" for="priorStocks" class="visually-hidden"
+                        >Stociau, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorStocks"
+                          name="priorStocks"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer stociau"
+                          data-i18n-data-required-message="ch-small-company.enter-stocks-last-year-13ce23"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.debtors-ac2230" scope="row">Dyledwyr</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.debtors-last-year-3602b9" for="priorDebtors" class="visually-hidden"
+                        >Dyledwyr, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorDebtors"
+                          name="priorDebtors"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer dyledwyr"
+                          data-i18n-data-required-message="ch-small-company.enter-debtors-last-year-484eae"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.of-which-trade-debtors-1c26ff" scope="row" class="ledger__part">
+                      O hynny, dyledwyr masnach
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.of-which-trade-debtors-last-year-374966"
+                        for="priorTradeDebtors"
+                        class="visually-hidden"
+                        >O hynny, dyledwyr masnach, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorTradeDebtors"
+                          name="priorTradeDebtors"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.of-which-other-debtors-3adaed" scope="row" class="ledger__part">
+                      O hynny, dyledwyr eraill
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.of-which-other-debtors-last-year-25dcee"
+                        for="priorOtherDebtors"
+                        class="visually-hidden"
+                        >O hynny, dyledwyr eraill, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorOtherDebtors"
+                          name="priorOtherDebtors"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.of-which-amounts-owed-by-directors-23911d" scope="row" class="ledger__part">
+                      O hynny, symiau dyledus gan gyfarwyddwyr
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.of-which-amounts-owed-by-directors-133fac"
+                        for="priorAmountsOwedByDirectors"
+                        class="visually-hidden"
+                        >O hynny, symiau dyledus gan gyfarwyddwyr, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorAmountsOwedByDirectors"
+                          name="priorAmountsOwedByDirectors"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.of-which-prepayments-and-accrued-income-bd5805" scope="row" class="ledger__part">
+                      O hynny, rhagdaliadau ac incwm cronedig
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.of-which-prepayments-and-accrued-income-31f0bd"
+                        for="priorPrepayments"
+                        class="visually-hidden"
+                        >O hynny, rhagdaliadau ac incwm cronedig, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorPrepayments"
+                          name="priorPrepayments"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.cash-at-bank-and-in-hand-658d88" scope="row">Arian yn y banc a mewn llaw</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.cash-at-bank-and-in-hand-2b4d00" for="priorCashAtBank" class="visually-hidden"
+                        >Arian yn y banc a mewn llaw, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorCashAtBank"
+                          name="priorCashAtBank"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer arian yn y banc a mewn llaw"
+                          data-i18n-data-required-message="ch-small-company.enter-cash-at-bank-and-in-120667"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.bank-loans-and-overdrafts-due-within-1a8457" scope="row">
+                      Benthyciadau banc a gorddrafftiau (dyledus o fewn blwyddyn)
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.bank-loans-and-overdrafts-due-within-98901f"
+                        for="priorBankLoansOverdrafts"
+                        class="visually-hidden"
+                        >Benthyciadau banc a gorddrafftiau (dyledus o fewn blwyddyn), y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorBankLoansOverdrafts"
+                          name="priorBankLoansOverdrafts"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.trade-creditors-due-within-one-year-afe765" scope="row">
+                      Credydwyr masnach (dyledus o fewn blwyddyn)
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.trade-creditors-due-within-one-year-058a63"
+                        for="priorTradeCreditors"
+                        class="visually-hidden"
+                        >Credydwyr masnach (dyledus o fewn blwyddyn), y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorTradeCreditors"
+                          name="priorTradeCreditors"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer credydwyr masnach (dyledus o fewn blwyddyn)"
+                          data-i18n-data-required-message="ch-small-company.enter-trade-creditors-due-within-one-6ee4f2"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.corporation-tax-due-within-one-year-7f5179" scope="row">
+                      Treth gorfforaeth (dyledus o fewn blwyddyn)
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.corporation-tax-due-within-one-year-413b93"
+                        for="priorCorporationTax"
+                        class="visually-hidden"
+                        >Treth gorfforaeth (dyledus o fewn blwyddyn), y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorCorporationTax"
+                          name="priorCorporationTax"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer treth gorfforaeth (dyledus o fewn blwyddyn)"
+                          data-i18n-data-required-message="ch-small-company.enter-corporation-tax-due-within-one-f0bca9"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.taxation-and-social-security-due-within-887bab" scope="row">
+                      Trethiant a nawdd cymdeithasol (dyledus o fewn blwyddyn)
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.taxation-and-social-security-due-within-04e1e7"
+                        for="priorTaxationSocialSecurity"
+                        class="visually-hidden"
+                        >Trethiant a nawdd cymdeithasol (dyledus o fewn blwyddyn), y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorTaxationSocialSecurity"
+                          name="priorTaxationSocialSecurity"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.accruals-due-within-one-year-bc9f66" scope="row">
+                      Croniadau (dyledus o fewn blwyddyn)
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.accruals-due-within-one-year-last-aceaf1"
+                        for="priorAccruals"
+                        class="visually-hidden"
+                        >Croniadau (dyledus o fewn blwyddyn), y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorAccruals"
+                          name="priorAccruals"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.other-creditors-due-within-one-year-e25519" scope="row">
+                      Credydwyr eraill (dyledus o fewn blwyddyn)
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.other-creditors-due-within-one-year-020644"
+                        for="priorOtherCreditors"
+                        class="visually-hidden"
+                        >Credydwyr eraill (dyledus o fewn blwyddyn), y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorOtherCreditors"
+                          name="priorOtherCreditors"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer credydwyr eraill (dyledus o fewn blwyddyn)"
+                          data-i18n-data-required-message="ch-small-company.enter-other-creditors-due-within-one-46094f"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.creditors-amounts-falling-due-after-more-a35994" scope="row">
+                      Credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.creditors-amounts-falling-due-after-more-dafc98"
+                        for="priorCreditorsAfterOneYear"
+                        class="visually-hidden"
+                        >Credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorCreditorsAfterOneYear"
+                          name="priorCreditorsAfterOneYear"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn"
+                          data-i18n-data-required-message="ch-small-company.enter-creditors-amounts-falling-due-after-9c640b"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.of-which-bank-loans-e4ae3a" scope="row" class="ledger__part">
+                      O hynny, benthyciadau banc
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.of-which-bank-loans-last-year-5b1cdb"
+                        for="priorBankLoansAfterOneYear"
+                        class="visually-hidden"
+                        >O hynny, benthyciadau banc, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorBankLoansAfterOneYear"
+                          name="priorBankLoansAfterOneYear"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.of-which-amounts-owed-to-directors-1c5fcd" scope="row" class="ledger__part">
+                      O hynny, symiau dyledus i gyfarwyddwyr
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.of-which-amounts-owed-to-directors-1922bc"
+                        for="priorAmountsOwedToDirectors"
+                        class="visually-hidden"
+                        >O hynny, symiau dyledus i gyfarwyddwyr, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorAmountsOwedToDirectors"
+                          name="priorAmountsOwedToDirectors"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.of-which-amounts-owed-to-group-253346" scope="row" class="ledger__part">
+                      O hynny, symiau dyledus i ymgymeriadau grŵp
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.of-which-amounts-owed-to-group-f09353"
+                        for="priorAmountsOwedToGroupUndertakings"
+                        class="visually-hidden"
+                        >O hynny, symiau dyledus i ymgymeriadau grŵp, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorAmountsOwedToGroupUndertakings"
+                          name="priorAmountsOwedToGroupUndertakings"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.provisions-for-liabilities-2be61a" scope="row">
+                      Darpariaethau ar gyfer rhwymedigaethau
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.provisions-for-liabilities-last-year-495eaa"
+                        for="priorProvisionsForLiabilities"
+                        class="visually-hidden"
+                        >Darpariaethau ar gyfer rhwymedigaethau, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorProvisionsForLiabilities"
+                          name="priorProvisionsForLiabilities"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.called-up-share-capital-4473b4" scope="row">Cyfalaf cyfrannau wedi’i alw</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.called-up-share-capital-last-year-74c14f"
+                        for="priorCalledUpShareCapital"
+                        class="visually-hidden"
+                        >Cyfalaf cyfrannau wedi’i alw, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorCalledUpShareCapital"
+                          name="priorCalledUpShareCapital"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer cyfalaf cyfrannau wedi’i alw"
+                          data-i18n-data-required-message="ch-small-company.enter-called-up-share-capital-last-309f9f"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.profit-and-loss-account-reserve-5ad91d" scope="row">
+                      Cronfa wrth gefn y cyfrif elw a cholled
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.profit-and-loss-account-reserve-last-e3c37f"
+                        for="priorProfitAndLossAccount"
+                        class="visually-hidden"
+                        >Cronfa wrth gefn y cyfrif elw a cholled, y llynedd</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorProfitAndLossAccount"
+                          name="priorProfitAndLossAccount"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch swm y llynedd ar gyfer cronfa wrth gefn y cyfrif elw a cholled"
+                          data-i18n-data-required-message="ch-small-company.enter-profit-and-loss-account-reserve-e12fbf"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p id="priorBalanceSheetTotals" class="hint"></p>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-small-company.tangible-fixed-assets-note-d14ccc">Nodyn asedion sefydlog diriaethol</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="checkbox"
+                  id="includeFixedAssetNote"
+                  name="includeFixedAssetNote"
+                  aria-describedby="includeFixedAssetNote-hint"
+                /><label data-i18n="ch-small-company.include-the-tangible-fixed-assets-note-38c54e" for="includeFixedAssetNote"
+                  >Cynnwys y nodyn asedion sefydlog diriaethol</label
+                >
+              </div>
+              <p data-i18n="ch-small-company.leave-an-asset-class-at-0-9cc4b7" id="includeFixedAssetNote-hint" class="hint">
+                Gadewch ddosbarth o asedion ar 0 i’w adael allan. Rhaid i werth llyfr net y dosbarthiadau fod yn hafal i’r asedion sefydlog
+                uchod.
+              </p>
+            </div>
+            <div id="fixedAssetNoteFields" style="display: none">
+              <h4 data-i18n="ch-small-company.land-and-buildings-b6a218">Tir ac adeiladau</h4>
+              <p data-i18n="ch-small-company.whole-pounds-for-example-600-or-94af4a" id="ledgerHint5" class="hint">
+                Punnoedd cyfan. Er enghraifft, £600 neu £1,200.
+              </p>
+              <table class="ledger ledger--one-year">
+                <thead>
+                  <tr>
+                    <th data-i18n="ch-small-company.line-d7852c" scope="col">Llinell</th>
+                    <th data-i18n="ch-small-company.amount-2d7841" scope="col" class="ledger__figure">Swm (£)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th data-i18n="ch-small-company.cost-at-the-start-of-the-266a42" scope="row">Cost ar ddechrau’r cyfnod</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.cost-at-the-start-of-the-266a42"
+                        for="noteLandBuildingsCostAtStart"
+                        class="visually-hidden"
+                        >Cost ar ddechrau’r cyfnod</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint5"
+                          type="text"
+                          id="noteLandBuildingsCostAtStart"
+                          name="noteLandBuildingsCostAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer cost ar ddechrau’r cyfnod"
+                          data-i18n-data-required-message="ch-small-company.enter-cost-at-the-start-of-69ba4b"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.additions-966ff9" scope="row">Ychwanegiadau</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.additions-966ff9" for="noteLandBuildingsAdditions" class="visually-hidden"
+                        >Ychwanegiadau</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint5"
+                          type="text"
+                          id="noteLandBuildingsAdditions"
+                          name="noteLandBuildingsAdditions"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer ychwanegiadau"
+                          data-i18n-data-required-message="ch-small-company.enter-additions-5a1dab"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.disposals-cost-c96a28" scope="row">Gwarediadau (cost)</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.disposals-cost-c96a28" for="noteLandBuildingsDisposals" class="visually-hidden"
+                        >Gwarediadau (cost)</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint5"
+                          type="text"
+                          id="noteLandBuildingsDisposals"
+                          name="noteLandBuildingsDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer gwarediadau (cost)"
+                          data-i18n-data-required-message="ch-small-company.enter-disposals-cost-3fc6f9"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.depreciation-at-the-start-of-the-813f88" scope="row">
+                      Dibrisiant ar ddechrau’r cyfnod
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.depreciation-at-the-start-of-the-813f88"
+                        for="noteLandBuildingsDepreciationAtStart"
+                        class="visually-hidden"
+                        >Dibrisiant ar ddechrau’r cyfnod</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint5"
+                          type="text"
+                          id="noteLandBuildingsDepreciationAtStart"
+                          name="noteLandBuildingsDepreciationAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer dibrisiant ar ddechrau’r cyfnod"
+                          data-i18n-data-required-message="ch-small-company.enter-depreciation-at-the-start-of-77cbea"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.depreciation-charge-for-the-period-3be48f" scope="row">
+                      Tâl dibrisiant ar gyfer y cyfnod
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.depreciation-charge-for-the-period-3be48f"
+                        for="noteLandBuildingsDepreciationCharge"
+                        class="visually-hidden"
+                        >Tâl dibrisiant ar gyfer y cyfnod</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint5"
+                          type="text"
+                          id="noteLandBuildingsDepreciationCharge"
+                          name="noteLandBuildingsDepreciationCharge"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer tâl dibrisiant ar gyfer y cyfnod"
+                          data-i18n-data-required-message="ch-small-company.enter-depreciation-charge-for-the-period-a0fc73"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.depreciation-on-disposals-d10d02" scope="row">Dibrisiant ar warediadau</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.depreciation-on-disposals-d10d02"
+                        for="noteLandBuildingsDepreciationOnDisposals"
+                        class="visually-hidden"
+                        >Dibrisiant ar warediadau</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint5"
+                          type="text"
+                          id="noteLandBuildingsDepreciationOnDisposals"
+                          name="noteLandBuildingsDepreciationOnDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer dibrisiant ar warediadau"
+                          data-i18n-data-required-message="ch-small-company.enter-depreciation-on-disposals-7d9909"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <h4 data-i18n="ch-small-company.plant-and-machinery-01c1ed">Peiriannau ac offer</h4>
+              <p data-i18n="ch-small-company.whole-pounds-for-example-600-or-94af4a" id="ledgerHint6" class="hint">
+                Punnoedd cyfan. Er enghraifft, £600 neu £1,200.
+              </p>
+              <table class="ledger ledger--one-year">
+                <thead>
+                  <tr>
+                    <th data-i18n="ch-small-company.line-d7852c" scope="col">Llinell</th>
+                    <th data-i18n="ch-small-company.amount-2d7841" scope="col" class="ledger__figure">Swm (£)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th data-i18n="ch-small-company.cost-at-the-start-of-the-266a42" scope="row">Cost ar ddechrau’r cyfnod</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.cost-at-the-start-of-the-266a42"
+                        for="notePlantMachineryCostAtStart"
+                        class="visually-hidden"
+                        >Cost ar ddechrau’r cyfnod</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint6"
+                          type="text"
+                          id="notePlantMachineryCostAtStart"
+                          name="notePlantMachineryCostAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer cost ar ddechrau’r cyfnod"
+                          data-i18n-data-required-message="ch-small-company.enter-cost-at-the-start-of-69ba4b"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.additions-966ff9" scope="row">Ychwanegiadau</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.additions-966ff9" for="notePlantMachineryAdditions" class="visually-hidden"
+                        >Ychwanegiadau</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint6"
+                          type="text"
+                          id="notePlantMachineryAdditions"
+                          name="notePlantMachineryAdditions"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer ychwanegiadau"
+                          data-i18n-data-required-message="ch-small-company.enter-additions-5a1dab"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.disposals-cost-c96a28" scope="row">Gwarediadau (cost)</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.disposals-cost-c96a28" for="notePlantMachineryDisposals" class="visually-hidden"
+                        >Gwarediadau (cost)</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint6"
+                          type="text"
+                          id="notePlantMachineryDisposals"
+                          name="notePlantMachineryDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer gwarediadau (cost)"
+                          data-i18n-data-required-message="ch-small-company.enter-disposals-cost-3fc6f9"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.depreciation-at-the-start-of-the-813f88" scope="row">
+                      Dibrisiant ar ddechrau’r cyfnod
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.depreciation-at-the-start-of-the-813f88"
+                        for="notePlantMachineryDepreciationAtStart"
+                        class="visually-hidden"
+                        >Dibrisiant ar ddechrau’r cyfnod</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint6"
+                          type="text"
+                          id="notePlantMachineryDepreciationAtStart"
+                          name="notePlantMachineryDepreciationAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer dibrisiant ar ddechrau’r cyfnod"
+                          data-i18n-data-required-message="ch-small-company.enter-depreciation-at-the-start-of-77cbea"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.depreciation-charge-for-the-period-3be48f" scope="row">
+                      Tâl dibrisiant ar gyfer y cyfnod
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.depreciation-charge-for-the-period-3be48f"
+                        for="notePlantMachineryDepreciationCharge"
+                        class="visually-hidden"
+                        >Tâl dibrisiant ar gyfer y cyfnod</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint6"
+                          type="text"
+                          id="notePlantMachineryDepreciationCharge"
+                          name="notePlantMachineryDepreciationCharge"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer tâl dibrisiant ar gyfer y cyfnod"
+                          data-i18n-data-required-message="ch-small-company.enter-depreciation-charge-for-the-period-a0fc73"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.depreciation-on-disposals-d10d02" scope="row">Dibrisiant ar warediadau</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.depreciation-on-disposals-d10d02"
+                        for="notePlantMachineryDepreciationOnDisposals"
+                        class="visually-hidden"
+                        >Dibrisiant ar warediadau</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint6"
+                          type="text"
+                          id="notePlantMachineryDepreciationOnDisposals"
+                          name="notePlantMachineryDepreciationOnDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer dibrisiant ar warediadau"
+                          data-i18n-data-required-message="ch-small-company.enter-depreciation-on-disposals-7d9909"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <h4 data-i18n="ch-small-company.fixtures-and-fittings-b390a0">Gosodiadau a ffitiadau</h4>
+              <p data-i18n="ch-small-company.whole-pounds-for-example-600-or-94af4a" id="ledgerHint7" class="hint">
+                Punnoedd cyfan. Er enghraifft, £600 neu £1,200.
+              </p>
+              <table class="ledger ledger--one-year">
+                <thead>
+                  <tr>
+                    <th data-i18n="ch-small-company.line-d7852c" scope="col">Llinell</th>
+                    <th data-i18n="ch-small-company.amount-2d7841" scope="col" class="ledger__figure">Swm (£)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th data-i18n="ch-small-company.cost-at-the-start-of-the-266a42" scope="row">Cost ar ddechrau’r cyfnod</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.cost-at-the-start-of-the-266a42"
+                        for="noteFurnitureFittingsCostAtStart"
+                        class="visually-hidden"
+                        >Cost ar ddechrau’r cyfnod</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint7"
+                          type="text"
+                          id="noteFurnitureFittingsCostAtStart"
+                          name="noteFurnitureFittingsCostAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer cost ar ddechrau’r cyfnod"
+                          data-i18n-data-required-message="ch-small-company.enter-cost-at-the-start-of-69ba4b"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.additions-966ff9" scope="row">Ychwanegiadau</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.additions-966ff9" for="noteFurnitureFittingsAdditions" class="visually-hidden"
+                        >Ychwanegiadau</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint7"
+                          type="text"
+                          id="noteFurnitureFittingsAdditions"
+                          name="noteFurnitureFittingsAdditions"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer ychwanegiadau"
+                          data-i18n-data-required-message="ch-small-company.enter-additions-5a1dab"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.disposals-cost-c96a28" scope="row">Gwarediadau (cost)</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.disposals-cost-c96a28" for="noteFurnitureFittingsDisposals" class="visually-hidden"
+                        >Gwarediadau (cost)</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint7"
+                          type="text"
+                          id="noteFurnitureFittingsDisposals"
+                          name="noteFurnitureFittingsDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer gwarediadau (cost)"
+                          data-i18n-data-required-message="ch-small-company.enter-disposals-cost-3fc6f9"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.depreciation-at-the-start-of-the-813f88" scope="row">
+                      Dibrisiant ar ddechrau’r cyfnod
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.depreciation-at-the-start-of-the-813f88"
+                        for="noteFurnitureFittingsDepreciationAtStart"
+                        class="visually-hidden"
+                        >Dibrisiant ar ddechrau’r cyfnod</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint7"
+                          type="text"
+                          id="noteFurnitureFittingsDepreciationAtStart"
+                          name="noteFurnitureFittingsDepreciationAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer dibrisiant ar ddechrau’r cyfnod"
+                          data-i18n-data-required-message="ch-small-company.enter-depreciation-at-the-start-of-77cbea"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.depreciation-charge-for-the-period-3be48f" scope="row">
+                      Tâl dibrisiant ar gyfer y cyfnod
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.depreciation-charge-for-the-period-3be48f"
+                        for="noteFurnitureFittingsDepreciationCharge"
+                        class="visually-hidden"
+                        >Tâl dibrisiant ar gyfer y cyfnod</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint7"
+                          type="text"
+                          id="noteFurnitureFittingsDepreciationCharge"
+                          name="noteFurnitureFittingsDepreciationCharge"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer tâl dibrisiant ar gyfer y cyfnod"
+                          data-i18n-data-required-message="ch-small-company.enter-depreciation-charge-for-the-period-a0fc73"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.depreciation-on-disposals-d10d02" scope="row">Dibrisiant ar warediadau</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.depreciation-on-disposals-d10d02"
+                        for="noteFurnitureFittingsDepreciationOnDisposals"
+                        class="visually-hidden"
+                        >Dibrisiant ar warediadau</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint7"
+                          type="text"
+                          id="noteFurnitureFittingsDepreciationOnDisposals"
+                          name="noteFurnitureFittingsDepreciationOnDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer dibrisiant ar warediadau"
+                          data-i18n-data-required-message="ch-small-company.enter-depreciation-on-disposals-7d9909"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <h4 data-i18n="ch-small-company.computer-equipment-09cc5b">Offer cyfrifiadurol</h4>
+              <p data-i18n="ch-small-company.whole-pounds-for-example-600-or-94af4a" id="ledgerHint8" class="hint">
+                Punnoedd cyfan. Er enghraifft, £600 neu £1,200.
+              </p>
+              <table class="ledger ledger--one-year">
+                <thead>
+                  <tr>
+                    <th data-i18n="ch-small-company.line-d7852c" scope="col">Llinell</th>
+                    <th data-i18n="ch-small-company.amount-2d7841" scope="col" class="ledger__figure">Swm (£)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th data-i18n="ch-small-company.cost-at-the-start-of-the-266a42" scope="row">Cost ar ddechrau’r cyfnod</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.cost-at-the-start-of-the-266a42"
+                        for="noteComputerEquipmentCostAtStart"
+                        class="visually-hidden"
+                        >Cost ar ddechrau’r cyfnod</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint8"
+                          type="text"
+                          id="noteComputerEquipmentCostAtStart"
+                          name="noteComputerEquipmentCostAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer cost ar ddechrau’r cyfnod"
+                          data-i18n-data-required-message="ch-small-company.enter-cost-at-the-start-of-69ba4b"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.additions-966ff9" scope="row">Ychwanegiadau</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.additions-966ff9" for="noteComputerEquipmentAdditions" class="visually-hidden"
+                        >Ychwanegiadau</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint8"
+                          type="text"
+                          id="noteComputerEquipmentAdditions"
+                          name="noteComputerEquipmentAdditions"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer ychwanegiadau"
+                          data-i18n-data-required-message="ch-small-company.enter-additions-5a1dab"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.disposals-cost-c96a28" scope="row">Gwarediadau (cost)</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.disposals-cost-c96a28" for="noteComputerEquipmentDisposals" class="visually-hidden"
+                        >Gwarediadau (cost)</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint8"
+                          type="text"
+                          id="noteComputerEquipmentDisposals"
+                          name="noteComputerEquipmentDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer gwarediadau (cost)"
+                          data-i18n-data-required-message="ch-small-company.enter-disposals-cost-3fc6f9"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.depreciation-at-the-start-of-the-813f88" scope="row">
+                      Dibrisiant ar ddechrau’r cyfnod
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.depreciation-at-the-start-of-the-813f88"
+                        for="noteComputerEquipmentDepreciationAtStart"
+                        class="visually-hidden"
+                        >Dibrisiant ar ddechrau’r cyfnod</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint8"
+                          type="text"
+                          id="noteComputerEquipmentDepreciationAtStart"
+                          name="noteComputerEquipmentDepreciationAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer dibrisiant ar ddechrau’r cyfnod"
+                          data-i18n-data-required-message="ch-small-company.enter-depreciation-at-the-start-of-77cbea"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.depreciation-charge-for-the-period-3be48f" scope="row">
+                      Tâl dibrisiant ar gyfer y cyfnod
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.depreciation-charge-for-the-period-3be48f"
+                        for="noteComputerEquipmentDepreciationCharge"
+                        class="visually-hidden"
+                        >Tâl dibrisiant ar gyfer y cyfnod</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint8"
+                          type="text"
+                          id="noteComputerEquipmentDepreciationCharge"
+                          name="noteComputerEquipmentDepreciationCharge"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer tâl dibrisiant ar gyfer y cyfnod"
+                          data-i18n-data-required-message="ch-small-company.enter-depreciation-charge-for-the-period-a0fc73"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.depreciation-on-disposals-d10d02" scope="row">Dibrisiant ar warediadau</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.depreciation-on-disposals-d10d02"
+                        for="noteComputerEquipmentDepreciationOnDisposals"
+                        class="visually-hidden"
+                        >Dibrisiant ar warediadau</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint8"
+                          type="text"
+                          id="noteComputerEquipmentDepreciationOnDisposals"
+                          name="noteComputerEquipmentDepreciationOnDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer dibrisiant ar warediadau"
+                          data-i18n-data-required-message="ch-small-company.enter-depreciation-on-disposals-7d9909"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <h4 data-i18n="ch-small-company.motor-vehicles-602d25">Cerbydau modur</h4>
+              <p data-i18n="ch-small-company.whole-pounds-for-example-600-or-94af4a" id="ledgerHint9" class="hint">
+                Punnoedd cyfan. Er enghraifft, £600 neu £1,200.
+              </p>
+              <table class="ledger ledger--one-year">
+                <thead>
+                  <tr>
+                    <th data-i18n="ch-small-company.line-d7852c" scope="col">Llinell</th>
+                    <th data-i18n="ch-small-company.amount-2d7841" scope="col" class="ledger__figure">Swm (£)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th data-i18n="ch-small-company.cost-at-the-start-of-the-266a42" scope="row">Cost ar ddechrau’r cyfnod</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.cost-at-the-start-of-the-266a42"
+                        for="noteMotorVehiclesCostAtStart"
+                        class="visually-hidden"
+                        >Cost ar ddechrau’r cyfnod</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint9"
+                          type="text"
+                          id="noteMotorVehiclesCostAtStart"
+                          name="noteMotorVehiclesCostAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer cost ar ddechrau’r cyfnod"
+                          data-i18n-data-required-message="ch-small-company.enter-cost-at-the-start-of-69ba4b"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.additions-966ff9" scope="row">Ychwanegiadau</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.additions-966ff9" for="noteMotorVehiclesAdditions" class="visually-hidden"
+                        >Ychwanegiadau</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint9"
+                          type="text"
+                          id="noteMotorVehiclesAdditions"
+                          name="noteMotorVehiclesAdditions"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer ychwanegiadau"
+                          data-i18n-data-required-message="ch-small-company.enter-additions-5a1dab"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.disposals-cost-c96a28" scope="row">Gwarediadau (cost)</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.disposals-cost-c96a28" for="noteMotorVehiclesDisposals" class="visually-hidden"
+                        >Gwarediadau (cost)</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint9"
+                          type="text"
+                          id="noteMotorVehiclesDisposals"
+                          name="noteMotorVehiclesDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer gwarediadau (cost)"
+                          data-i18n-data-required-message="ch-small-company.enter-disposals-cost-3fc6f9"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.depreciation-at-the-start-of-the-813f88" scope="row">
+                      Dibrisiant ar ddechrau’r cyfnod
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.depreciation-at-the-start-of-the-813f88"
+                        for="noteMotorVehiclesDepreciationAtStart"
+                        class="visually-hidden"
+                        >Dibrisiant ar ddechrau’r cyfnod</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint9"
+                          type="text"
+                          id="noteMotorVehiclesDepreciationAtStart"
+                          name="noteMotorVehiclesDepreciationAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer dibrisiant ar ddechrau’r cyfnod"
+                          data-i18n-data-required-message="ch-small-company.enter-depreciation-at-the-start-of-77cbea"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.depreciation-charge-for-the-period-3be48f" scope="row">
+                      Tâl dibrisiant ar gyfer y cyfnod
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.depreciation-charge-for-the-period-3be48f"
+                        for="noteMotorVehiclesDepreciationCharge"
+                        class="visually-hidden"
+                        >Tâl dibrisiant ar gyfer y cyfnod</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint9"
+                          type="text"
+                          id="noteMotorVehiclesDepreciationCharge"
+                          name="noteMotorVehiclesDepreciationCharge"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer tâl dibrisiant ar gyfer y cyfnod"
+                          data-i18n-data-required-message="ch-small-company.enter-depreciation-charge-for-the-period-a0fc73"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.depreciation-on-disposals-d10d02" scope="row">Dibrisiant ar warediadau</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.depreciation-on-disposals-d10d02"
+                        for="noteMotorVehiclesDepreciationOnDisposals"
+                        class="visually-hidden"
+                        >Dibrisiant ar warediadau</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint9"
+                          type="text"
+                          id="noteMotorVehiclesDepreciationOnDisposals"
+                          name="noteMotorVehiclesDepreciationOnDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer dibrisiant ar warediadau"
+                          data-i18n-data-required-message="ch-small-company.enter-depreciation-on-disposals-7d9909"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p id="fixedAssetNoteTotals" class="hint"></p>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-small-company.intangible-assets-note-2deeb9">Nodyn asedion anniriaethol</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="checkbox"
+                  id="includeIntangibleAssetNote"
+                  name="includeIntangibleAssetNote"
+                  aria-describedby="includeIntangibleAssetNote-hint"
+                /><label data-i18n="ch-small-company.include-the-intangible-assets-note-goodwill-ecee71" for="includeIntangibleAssetNote"
+                  >Cynnwys y nodyn asedion anniriaethol (ewyllys da ac asedion anniriaethol eraill)</label
+                >
+              </div>
+              <p data-i18n="ch-small-company.the-net-book-value-of-the-57c739" id="includeIntangibleAssetNote-hint" class="hint">
+                Mae gwerth llyfr net yr asedion anniriaethol yn rhan o’r asedion sefydlog uchod, gydag unrhyw nodyn asedion sefydlog
+                diriaethol.
+              </p>
+            </div>
+            <div id="intangibleAssetNoteFields" style="display: none">
+              <p data-i18n="ch-small-company.whole-pounds-for-example-600-or-94af4a" id="ledgerHint10" class="hint">
+                Punnoedd cyfan. Er enghraifft, £600 neu £1,200.
+              </p>
+              <table class="ledger ledger--one-year">
+                <thead>
+                  <tr>
+                    <th data-i18n="ch-small-company.line-d7852c" scope="col">Llinell</th>
+                    <th data-i18n="ch-small-company.amount-2d7841" scope="col" class="ledger__figure">Swm (£)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th data-i18n="ch-small-company.cost-at-the-start-of-the-266a42" scope="row">Cost ar ddechrau’r cyfnod</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.cost-at-the-start-of-the-266a42"
+                        for="intangibleNoteCostAtStart"
+                        class="visually-hidden"
+                        >Cost ar ddechrau’r cyfnod</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint10"
+                          type="text"
+                          id="intangibleNoteCostAtStart"
+                          name="intangibleNoteCostAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer cost ar ddechrau’r cyfnod"
+                          data-i18n-data-required-message="ch-small-company.enter-cost-at-the-start-of-69ba4b"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.additions-966ff9" scope="row">Ychwanegiadau</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.additions-966ff9" for="intangibleNoteAdditions" class="visually-hidden"
+                        >Ychwanegiadau</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint10"
+                          type="text"
+                          id="intangibleNoteAdditions"
+                          name="intangibleNoteAdditions"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer ychwanegiadau"
+                          data-i18n-data-required-message="ch-small-company.enter-additions-5a1dab"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.disposals-cost-c96a28" scope="row">Gwarediadau (cost)</th>
+                    <td class="ledger__figure">
+                      <label data-i18n="ch-small-company.disposals-cost-c96a28" for="intangibleNoteDisposals" class="visually-hidden"
+                        >Gwarediadau (cost)</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint10"
+                          type="text"
+                          id="intangibleNoteDisposals"
+                          name="intangibleNoteDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer gwarediadau (cost)"
+                          data-i18n-data-required-message="ch-small-company.enter-disposals-cost-3fc6f9"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.amortisation-at-the-start-of-the-e33ff3" scope="row">
+                      Amorteiddiad ar ddechrau’r cyfnod
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.amortisation-at-the-start-of-the-e33ff3"
+                        for="intangibleNoteAmortisationAtStart"
+                        class="visually-hidden"
+                        >Amorteiddiad ar ddechrau’r cyfnod</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint10"
+                          type="text"
+                          id="intangibleNoteAmortisationAtStart"
+                          name="intangibleNoteAmortisationAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer amorteiddiad ar ddechrau’r cyfnod"
+                          data-i18n-data-required-message="ch-small-company.enter-amortisation-at-the-start-of-fc0c55"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.amortisation-charge-for-the-period-446020" scope="row">
+                      Tâl amorteiddio ar gyfer y cyfnod
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.amortisation-charge-for-the-period-446020"
+                        for="intangibleNoteAmortisationCharge"
+                        class="visually-hidden"
+                        >Tâl amorteiddio ar gyfer y cyfnod</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint10"
+                          type="text"
+                          id="intangibleNoteAmortisationCharge"
+                          name="intangibleNoteAmortisationCharge"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer tâl amorteiddio ar gyfer y cyfnod"
+                          data-i18n-data-required-message="ch-small-company.enter-amortisation-charge-for-the-period-f0f1f9"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-small-company.amortisation-on-disposals-226acd" scope="row">Amorteiddiad ar warediadau</th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-small-company.amortisation-on-disposals-226acd"
+                        for="intangibleNoteAmortisationOnDisposals"
+                        class="visually-hidden"
+                        >Amorteiddiad ar warediadau</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint10"
+                          type="text"
+                          id="intangibleNoteAmortisationOnDisposals"
+                          name="intangibleNoteAmortisationOnDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Rhowch y swm ar gyfer amorteiddiad ar warediadau"
+                          data-i18n-data-required-message="ch-small-company.enter-amortisation-on-disposals-ae4da2"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p id="intangibleAssetNoteTotals" class="hint"></p>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-small-company.directors-and-activity-72301e">Cyfarwyddwyr a gweithgarwch</h3>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.principal-activity-72e7d9" for="principalActivity">Prif weithgarwch</label>
+              <input type="text" id="principalActivity" name="principalActivity" required />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.accounting-policies-0d09e1" for="accountingPolicies">Polisïau cyfrifyddu</label>
+              <textarea id="accountingPolicies" name="accountingPolicies" rows="4" required></textarea>
+            </div>
+            <details id="morePolicies">
+              <summary data-i18n="ch-small-company.more-accounting-policies-optional-f47eff">
+                Rhagor o bolisïau cyfrifyddu (dewisol)
+              </summary>
+              <p data-i18n="ch-small-company.each-text-appears-in-the-accounting-976eef" class="hint">
+                Mae pob testun yn ymddangos yn y nodyn polisïau cyfrifyddu o dan ei bennawd ei hun. Gadewch flwch yn wag i’w adael allan.
+              </p>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.going-concern-828746" for="goingConcernStatement"
+                  >Busnes gweithredol (going concern)</label
+                >
+                <textarea id="goingConcernStatement" name="goingConcernStatement" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.turnover-8ecaf1" for="revenueRecognitionPolicy">Trosiant</label>
+                <textarea id="revenueRecognitionPolicy" name="revenueRecognitionPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.tangible-fixed-assets-286645" for="tangibleFixedAssetsPolicy"
+                  >Asedion sefydlog diriaethol</label
+                >
+                <textarea id="tangibleFixedAssetsPolicy" name="tangibleFixedAssetsPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.tangible-fixed-assets-accounting-policy-1141ff" for="propertyPlantEquipmentPolicy"
+                  >Asedion sefydlog diriaethol: polisi cyfrifyddu</label
+                >
+                <textarea id="propertyPlantEquipmentPolicy" name="propertyPlantEquipmentPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.tangible-fixed-assets-depreciation-method-97d497" for="depreciationMethodPolicy"
+                  >Asedion sefydlog diriaethol: dull dibrisio</label
+                >
+                <textarea id="depreciationMethodPolicy" name="depreciationMethodPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.intangible-assets-7363ef" for="intangibleAssetsPolicy">Asedion anniriaethol</label>
+                <textarea id="intangibleAssetsPolicy" name="intangibleAssetsPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.impairment-240bd7" for="impairmentPolicy">Amhariad</label>
+                <textarea id="impairmentPolicy" name="impairmentPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.stocks-df09c2" for="inventoriesPolicy">Stociau</label>
+                <textarea id="inventoriesPolicy" name="inventoriesPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.cash-and-cash-equivalents-4a6d36" for="cashCashEquivalentsPolicy"
+                  >Arian parod a chyfwerth ag arian parod</label
+                >
+                <textarea id="cashCashEquivalentsPolicy" name="cashCashEquivalentsPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.financial-instruments-bbc592" for="financialInstrumentsPolicy"
+                  >Offerynnau ariannol</label
+                >
+                <textarea id="financialInstrumentsPolicy" name="financialInstrumentsPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label
+                  data-i18n="ch-small-company.financial-instruments-classification-6d4a4a"
+                  for="financialInstrumentsClassificationPolicy"
+                  >Offerynnau ariannol: dosbarthiad</label
+                >
+                <textarea id="financialInstrumentsClassificationPolicy" name="financialInstrumentsClassificationPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.employee-benefits-22ebc8" for="employeeBenefitsPolicy">Buddion gweithwyr</label>
+                <textarea id="employeeBenefitsPolicy" name="employeeBenefitsPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.pension-costs-defined-contribution-81d0fd" for="definedContributionPensionsPolicy"
+                  >Costau pensiwn (cyfraniadau diffiniedig)</label
+                >
+                <textarea id="definedContributionPensionsPolicy" name="definedContributionPensionsPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.foreign-currency-translation-c19230" for="foreignCurrencyTranslationPolicy"
+                  >Trosi arian tramor</label
+                >
+                <textarea id="foreignCurrencyTranslationPolicy" name="foreignCurrencyTranslationPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.functional-and-presentation-currency-fc37ed" for="functionalPresentationCurrencyPolicy"
+                  >Arian cyfred gweithredol a chyflwyno</label
+                >
+                <textarea id="functionalPresentationCurrencyPolicy" name="functionalPresentationCurrencyPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.leases-86c4d4" for="leasesPolicy">Prydlesi</label>
+                <textarea id="leasesPolicy" name="leasesPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.taxation-ba0724" for="taxPolicy">Trethiant</label>
+                <textarea id="taxPolicy" name="taxPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.how-current-tax-is-calculated-b15015" for="currentIncomeTaxPolicy"
+                  >Sut mae’r dreth gyfredol yn cael ei chyfrifo</label
+                >
+                <textarea id="currentIncomeTaxPolicy" name="currentIncomeTaxPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.deferred-tax-e04f1f" for="deferredTaxPolicy">Treth ohiriedig</label>
+                <textarea id="deferredTaxPolicy" name="deferredTaxPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.dividends-6e0b22" for="dividendPolicy">Difidendau</label>
+                <textarea id="dividendPolicy" name="dividendPolicy" rows="3"></textarea>
+              </div>
+            </details>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.average-number-of-employees-during-the-6d5b2b" for="averageEmployees"
+                >Nifer cyfartalog y gweithwyr yn ystod y cyfnod</label
+              >
+              <input type="number" id="averageEmployees" name="averageEmployees" required step="1" min="0" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.directors-who-held-office-during-the-443f2d" for="directors"
+                >Cyfarwyddwyr a oedd yn y swydd yn ystod y cyfnod</label
+              >
+              <p data-i18n="ch-small-company.one-name-on-each-line-5f69ed" id="directors-hint" class="hint">Un enw ar bob llinell.</p>
+              <textarea id="directors" name="directors" rows="3" required aria-describedby="directors-hint"></textarea>
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.director-approving-the-accounts-48329c" for="directorName"
+                >Y cyfarwyddwr sy’n cymeradwyo’r cyfrifon</label
+              >
+              <input type="text" id="directorName" name="directorName" required />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.date-approved-0410b4" for="directorDateApproved">Dyddiad cymeradwyo</label>
+              <input type="date" id="directorDateApproved" name="directorDateApproved" required />
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-small-company.accountants-report-ab913e">Adroddiad y cyfrifwyr</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="checkbox"
+                  id="includeAccountantsReport"
+                  name="includeAccountantsReport"
+                  aria-describedby="includeAccountantsReport-hint"
+                /><label data-i18n="ch-small-company.an-accountant-compiled-these-accounts-b82a97" for="includeAccountantsReport"
+                  >Lluniodd cyfrifydd y cyfrifon hyn</label
+                >
+              </div>
+              <p data-i18n="ch-small-company.the-accounts-gain-a-page-for-ed45c6" id="includeAccountantsReport-hint" class="hint">
+                Mae’r cyfrifon yn cael tudalen ar gyfer adroddiad y cyfrifwyr, ac mae Tŷ’r Cwmnïau yn eu gweld fel rhai wedi eu heithrio
+                rhag archwilio ariannol gydag adroddiad cyfrifydd.
+              </p>
+            </div>
+            <div id="accountantsReportFields" style="display: none">
+              <div class="form-group">
+                <label data-i18n="ch-small-company.name-of-the-accountancy-firm-eb9e0e" for="accountantsName">Enw’r cwmni cyfrifyddu</label>
+                <input type="text" id="accountantsName" name="accountantsName" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.statement-of-the-scope-of-the-451332" for="accountantsStatement"
+                  >Datganiad o gwmpas yr adroddiad</label
+                >
+                <textarea id="accountantsStatement" name="accountantsStatement" rows="6">
+In accordance with your instructions, we have compiled these unaudited financial statements from the accounting records and from information and explanations you have given us.</textarea>
+              </div>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-small-company.advances-to-directors-67576f">Blaensymiau i gyfarwyddwyr</h3>
+            <p data-i18n="ch-small-company.fill-this-in-when-the-balance-6961e2" class="hint">
+              Llenwch hwn pan fydd y fantolen yn dangos symiau sy’n ddyledus gan gyfarwyddwyr. Mae adran 413 o Ddeddf Cwmnïau 2006 yn gofyn
+              am y nodyn.
+            </p>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.director-who-owes-the-company-money-3ba594" for="directorsAdvanceName"
+                >Cyfarwyddwr sydd mewn dyled i’r cwmni</label
+              >
+              <input type="text" id="directorsAdvanceName" name="directorsAdvanceName" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.interest-rate-and-main-conditions-of-edab6a" for="directorsAdvanceTerms"
+                >Cyfradd llog a phrif amodau’r blaenswm</label
+              >
+              <input type="text" id="directorsAdvanceTerms" name="directorsAdvanceTerms" />
+            </div>
+            <p data-i18n="ch-small-company.whole-pounds-for-example-600-or-94af4a" id="ledgerHintAdvances" class="hint">
+              Punnoedd cyfan. Er enghraifft, £600 neu £1,200.
+            </p>
+            <table class="ledger ledger--one-year">
+              <thead>
+                <tr>
+                  <th data-i18n="ch-small-company.line-d7852c" scope="col">Llinell</th>
+                  <th data-i18n="ch-small-company.amount-2d7841" scope="col" class="ledger__figure">Swm (£)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th data-i18n="ch-small-company.owed-by-that-director-at-the-c20cd5" scope="row">
+                    Yn ddyledus gan y cyfarwyddwr hwnnw ar ddechrau’r flwyddyn
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.owed-by-that-director-at-the-c20cd5"
+                      for="directorsAdvanceAtStart"
+                      class="visually-hidden"
+                      >Yn ddyledus gan y cyfarwyddwr hwnnw ar ddechrau’r flwyddyn</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHintAdvances"
+                        type="text"
+                        id="directorsAdvanceAtStart"
+                        name="directorsAdvanceAtStart"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.advanced-to-that-director-in-the-b70866" scope="row">
+                    Wedi’i roi ymlaen llaw i’r cyfarwyddwr hwnnw yn y flwyddyn
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.advanced-to-that-director-in-the-b70866"
+                      for="directorsAdvanceMade"
+                      class="visually-hidden"
+                      >Wedi’i roi ymlaen llaw i’r cyfarwyddwr hwnnw yn y flwyddyn</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHintAdvances"
+                        type="text"
+                        id="directorsAdvanceMade"
+                        name="directorsAdvanceMade"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-small-company.repaid-by-that-director-in-the-51e195" scope="row">
+                    Wedi’i ad-dalu gan y cyfarwyddwr hwnnw yn y flwyddyn
+                  </th>
+                  <td class="ledger__figure">
+                    <label
+                      data-i18n="ch-small-company.repaid-by-that-director-in-the-51e195"
+                      for="directorsAdvanceRepaid"
+                      class="visually-hidden"
+                      >Wedi’i ad-dalu gan y cyfarwyddwr hwnnw yn y flwyddyn</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHintAdvances"
+                        type="text"
+                        id="directorsAdvanceRepaid"
+                        name="directorsAdvanceRepaid"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-small-company.controlling-party-e3b475">Parti sy’n rheoli</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input type="radio" id="controllingPartyNone" name="controllingParty" value="none" checked /><label
+                  data-i18n="ch-small-company.say-nothing-about-a-controlling-party-d8d006"
+                  for="controllingPartyNone"
+                  >Peidio â dweud dim am barti sy’n rheoli</label
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="choice">
+                <input type="radio" id="controllingPartyNoUltimate" name="controllingParty" value="noUltimate" /><label
+                  data-i18n="ch-small-company.say-the-company-has-no-ultimate-c46c6c"
+                  for="controllingPartyNoUltimate"
+                  >Dweud nad oes gan y cwmni barti rheoli eithaf</label
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="choice">
+                <input type="radio" id="controllingPartyNamed" name="controllingParty" value="named" /><label
+                  data-i18n="ch-small-company.name-the-controlling-party-64a42c"
+                  for="controllingPartyNamed"
+                  >Enwi’r parti sy’n rheoli</label
+                >
+              </div>
+            </div>
+            <div id="controllingPartyFields" style="display: none">
+              <div class="form-group">
+                <label data-i18n="ch-small-company.name-of-the-controlling-party-c7e09a" for="controllingPartyName"
+                  >Enw’r parti sy’n rheoli</label
+                >
+                <input type="text" id="controllingPartyName" name="controllingPartyName" />
+              </div>
+              <div class="form-group">
+                <div class="choice">
+                  <input type="checkbox" id="controllingPartyUltimate" name="controllingPartyUltimate" checked /><label
+                    data-i18n="ch-small-company.this-party-is-the-ultimate-controlling-08e9c9"
+                    for="controllingPartyUltimate"
+                    >Y parti hwn yw’r parti rheoli eithaf</label
+                  >
+                </div>
+              </div>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-small-company.statements-85f86d">Datganiadau</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="statementSection477Exemption" name="statementSection477Exemption" /><label
+                  data-i18n="ch-small-company.the-company-is-entitled-to-exemption-f30d0a"
+                  for="statementSection477Exemption"
+                  >Mae gan y cwmni hawl i eithriad rhag archwiliad o dan adran 477 o Ddeddf Cwmnïau 2006 sy’n ymwneud â chwmnïau
+                  bach.</label
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="statementMembersNotRequiredAudit" name="statementMembersNotRequiredAudit" /><label
+                  data-i18n="ch-small-company.the-members-have-not-required-the-303cb8"
+                  for="statementMembersNotRequiredAudit"
+                  >Nid yw’r aelodau wedi ei gwneud yn ofynnol i’r cwmni gael archwiliad ar gyfer y flwyddyn dan sylw.</label
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="statementDirectorsResponsibilities" name="statementDirectorsResponsibilities" /><label
+                  data-i18n="ch-small-company.the-directors-acknowledge-their-responsibilities-for-f16963"
+                  for="statementDirectorsResponsibilities"
+                  >Mae’r cyfarwyddwyr yn cydnabod eu cyfrifoldebau am gydymffurfio â gofynion Deddf Cwmnïau 2006 o ran cofnodion cyfrifyddu
+                  a pharatoi cyfrifon.</label
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="statementSmallCompaniesRegime" name="statementSmallCompaniesRegime" /><label
+                  data-i18n="ch-small-company.these-accounts-have-been-prepared-in-481edb"
+                  for="statementSmallCompaniesRegime"
+                  >Paratowyd y cyfrifon hyn yn unol â’r darpariaethau sy’n berthnasol i gwmnïau sy’n ddarostyngedig i’r drefn cwmnïau
+                  bach.</label
+                >
+              </div>
+            </div>
+            <div class="form-group calculated-field">
+              <label data-i18n="ch-small-company.directors-report-consistent-with-the-accounts-0b34a1" for="directorsReportConsistent"
+                >Adroddiad y cyfarwyddwyr yn gyson â’r cyfrifon</label
+              >
+              <input
+                type="text"
+                id="directorsReportConsistent"
+                name="directorsReportConsistent"
+                value="Not applicable"
+                readonly
+                aria-describedby="directorsReportConsistent-hint"
+              />
+              <p data-i18n="ch-small-company.these-accounts-are-unaudited-so-this-3ccf4d" id="directorsReportConsistent-hint" class="hint">
+                Nid yw’r cyfrifon hyn wedi eu harchwilio, felly nid yw’r datganiad hwn yn berthnasol. Nid oes dim yn cael ei anfon.
+              </p>
+            </div>
+          </section>
+
+          <button data-i18n="ch-small-company.preview-accounts-3a09e0" type="submit" id="previewBtn" class="btn">
+            Rhagolwg o’r cyfrifon
+          </button>
+        </form>
+      </div>
+
+      <!-- Preview view -->
+      <div id="previewView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-small-company.preview-324b13">Rhagolwg</h2>
+        <p data-i18n="ch-small-company.these-are-the-accounts-as-they-56ba87">
+          Dyma’r cyfrifon fel y byddant yn cael eu ffeilio. Nid oes dim wedi’i gyflwyno i Dŷ’r Cwmnïau eto.
+        </p>
+        <iframe
+          id="previewRendered"
+          class="accounts-preview-frame"
+          title="Y cyfrifon fel y byddant yn cael eu ffeilio"
+          sandbox=""
+          data-i18n-title="ch-small-company.the-accounts-as-they-will-be-40a0c4"
+        ></iframe>
+        <pre id="previewIxbrl" class="ixbrl-preview developer-only-section"></pre>
+        <div class="send-step">
+          <h3 data-i18n="ch-small-company.send-to-companies-house-6257b0">Anfon i Dŷ’r Cwmnïau</h3>
+          <div class="form-group">
+            <label data-i18n="ch-small-company.company-authentication-code-56d0e6" for="companyAuthCode">Cod dilysu’r cwmni</label>
+            <p data-i18n="ch-small-company.the-6-to-8-character-code-48646a" id="companyAuthCode-hint" class="hint">
+              Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei
+              ddefnyddio.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <div class="form-group" id="govTestScenarioGroup" style="display: none">
+            <label data-i18n="ch-small-company.gov-test-scenario-dab532" for="govTestScenario">Gov-Test-Scenario</label>
+            <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+          </div>
+          <div id="submissionCost" class="submission-cost" data-submit-button="submitFilingBtn"></div>
+          <div class="button-group">
+            <button data-i18n="ch-small-company.back-76900f" type="button" id="backToFormBtn" class="secondary-button">Yn ôl</button>
+            <button
+              data-i18n="ch-small-company.submit-to-companies-house-31272e"
+              type="button"
+              id="submitFilingBtn"
+              class="btn"
+              aria-describedby="submissionCost"
+            >
+              Cyflwyno i Dŷ’r Cwmnïau
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-small-company.filing-result-0ecbf7">Canlyniad y ffeilio</h2>
+        <div id="filingResult"></div>
+        <div id="rejections" style="display: none"></div>
+        <p data-i18n="ch-small-company.see-your-copy-of-this-filing-03d016">
+          <a id="filingCopyLink" href="filings.html" style="display: none">Gweld eich copi o’r ffeilio hwn</a>
+        </p>
+        <div class="button-group">
+          <button
+            data-i18n="ch-small-company.start-a-new-filing-0a9f24"
+            type="button"
+            id="startAgainBtn"
+            class="secondary-button"
+            style="display: none"
+          >
+            Dechrau ffeilio newydd
+          </button>
+        </div>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../lib/welsh-text.js"></script>
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/money-input.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/submission-cost.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../lib/form-errors.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
+    <script src="../../lib/accounts-form-sections.js"></script>
+    <script src="../../widgets/books-import.js"></script>
+    <script src="../../companies-house/fileSmallCompanyAccounts.page.js"></script>
+  </body>
+</html>

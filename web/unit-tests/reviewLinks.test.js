@@ -60,6 +60,22 @@ describe("the review line", () => {
     expect(html).toContain(`href="${CAPTERRA.url}" data-review-site="Capterra" target="_blank" rel="noopener noreferrer"`);
   });
 
+  test.each([
+    { kind: "accepted", text: "Accepted by Companies House" },
+    { kind: "accepted", text: "Derbyniwyd gan Dŷ’r Cwmnïau" },
+    { kind: "accepted", text: "Accepted by HMRC" },
+    { kind: "accepted", text: "Derbyniwyd gan CThEF" },
+  ])("an accepted result shows the line in either language: $text", (status) => {
+    expect(copy(status, [TRUSTPILOT])).toContain('class="customer-copy-review"');
+  });
+
+  test.each([
+    { kind: "rejected", text: "Gwrthodwyd gan Dŷ’r Cwmnïau" },
+    { kind: "held", text: "Wedi’i ddal gan CThEF" },
+  ])("a Welsh $kind result shows no line", (status) => {
+    expect(copy(status, [TRUSTPILOT])).not.toContain("customer-copy-review");
+  });
+
   test("the customer copy carries it for an accepted Companies House result", () => {
     expect(copy({ kind: "accepted", text: "Accepted by Companies House" }, [TRUSTPILOT])).toContain('class="customer-copy-review"');
   });
@@ -72,7 +88,7 @@ describe("the review line", () => {
     { kind: "rejected", text: "Rejected by HMRC" },
     { kind: "pending", text: "With Companies House" },
     { kind: "sent", text: "Sent to HMRC" },
-    { kind: "accepted", text: "Held by HMRC" },
+    { kind: "held", text: "Held by HMRC" },
   ])("a $text result shows no line", (status) => {
     expect(copy(status, [TRUSTPILOT, CAPTERRA])).not.toContain("customer-copy-review");
   });

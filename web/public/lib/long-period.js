@@ -84,7 +84,27 @@ export function returnDueDate(periodOfAccountEnd) {
   return addMonths(periodOfAccountEnd, 12);
 }
 
-/** A date as a person reads it, for example "31 December 2025". */
+// Chromium's Intl has no Welsh, so a Welsh date is written from the month names here.
+const WELSH_MONTHS = [
+  "Ionawr",
+  "Chwefror",
+  "Mawrth",
+  "Ebrill",
+  "Mai",
+  "Mehefin",
+  "Gorffennaf",
+  "Awst",
+  "Medi",
+  "Hydref",
+  "Tachwedd",
+  "Rhagfyr",
+];
+
+/** A date as a person reads it in the chrome's language, for example "31 December 2025" or "31 Rhagfyr 2025". */
 export function longDateText(isoDate) {
-  return utcDate(isoDate).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+  const date = utcDate(isoDate);
+  if (globalThis.siteLanguage && globalThis.siteLanguage.chrome() === "cy") {
+    return `${date.getUTCDate()} ${WELSH_MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+  }
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }

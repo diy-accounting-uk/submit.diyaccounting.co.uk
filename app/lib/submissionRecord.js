@@ -29,7 +29,7 @@ function siteText(id, english, values) {
   return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
 }
 
-const STATUS_KINDS = new Set(["accepted", "sent", "pending", "rejected"]);
+const STATUS_KINDS = new Set(["accepted", "held", "sent", "pending", "rejected"]);
 
 /**
  * Text made safe to place in XHTML element content.
@@ -142,7 +142,7 @@ ${references}<h2>${escapeRecordText(title)}</h2>
  * @param {object} copy
  * @param {string} copy.title - e.g. "Your copy of the VAT return for July to September 2026"
  * @param {{label: string, value: string}} copy.reference - e.g. {label: "Form bundle number", value: "123456789012"}
- * @param {{kind: "accepted"|"sent"|"pending"|"rejected", text: string}} copy.status
+ * @param {{kind: "accepted"|"held"|"sent"|"pending"|"rejected", text: string}} copy.status - "held" is data the authority holds that a view retrieved, not a filing
  * @param {string} copy.date - the date as the customer reads it, e.g. "24 October 2026"
  * @param {{heading?: string, explanation?: string, warning?: string, recordHtml: string}[]} copy.sections
  * @param {{href: string, text: string}[]} [copy.links]
@@ -187,14 +187,14 @@ ${sectionHtml}${linksHtml}${reviewLineHtml(status, reviewLinks)}
 
 /**
  * The one line that invites a review, shown to every customer whose filing the authority accepted.
- * It is empty for any other status, and while no review profile is live.
+ * It is empty for any other status kind, and while no review profile is live. The kind decides, so
+ * the line shows whatever the language of the status text.
  * @param {{kind: string, text: string}} status
  * @param {{site: string, url: string}[]} reviewLinks - Trustpilot first
  * @returns {string}
  */
 export function reviewLineHtml(status, reviewLinks) {
-  const accepted = status.text.startsWith("Accepted") || status.text.startsWith(siteText("widget.record-accepted-prefix", "Accepted"));
-  if (status.kind !== "accepted" || !accepted || reviewLinks.length === 0) return "";
+  if (status.kind !== "accepted" || reviewLinks.length === 0) return "";
   const anchors = reviewLinks.map(
     (link) =>
       `<a href="${escapeRecordAttribute(link.url)}" data-review-site="${escapeRecordAttribute(link.site)}" target="_blank" rel="noopener noreferrer">${escapeRecordText(link.site)}</a>`,

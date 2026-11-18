@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives window.siteText, the text in the chosen language. Without it (a test that
+// stubs the chrome) the English stands.
+window.siteText =
+  window.siteText ||
+  ((id, english, values) => english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole)));
+
 // Change registered email address: companyView (with the eligibility check) -> formView ->
 // reviewView -> resultView, with an authorise round trip through filingCallback.html
 // whenever no usable Companies House token is already held.
@@ -8,13 +14,16 @@
 const PENDING_KEY = "companiesHousePendingFiling";
 const RESOURCE = "registered-email-address";
 
-const ELIGIBILITY_STOP_MESSAGES = {
-  INVALID_NO_REGISTERED_EMAIL_ADDRESS_EXISTS:
+// A function, so each message is read in the chrome's language when it is shown.
+const eligibilityStopMessages = () => ({
+  INVALID_NO_REGISTERED_EMAIL_ADDRESS_EXISTS: window.siteText(
+    "ch.email.no-address-yet",
     "This company has no registered email address yet. This filing changes an existing address; it does not set the first one.",
-  INVALID_COMPANY_STATUS: "This company's status blocks a registered email address change.",
-  INVALID_COMPANY_TYPE: "This company's type is not covered by this filing.",
-  COMPANY_NOT_FOUND: "That company number is not on the register.",
-};
+  ),
+  INVALID_COMPANY_STATUS: window.siteText("ch.email.status-blocks", "This company's status blocks a registered email address change."),
+  INVALID_COMPANY_TYPE: window.siteText("ch.email.type-not-covered", "This company's type is not covered by this filing."),
+  COMPANY_NOT_FOUND: window.siteText("ch.email.not-on-register", "That company number is not on the register."),
+});
 
 // In-memory filing state. Mirrored into sessionStorage (PENDING_KEY) before any redirect,
 // so the page can resume the same filing after the OAuth round trip.
@@ -59,8 +68,10 @@ async function checkEligibilityAndProceed() {
     const eligibility = await window.getRegisteredEmailEligibility(filing.companyNumber);
     if (eligibility.eligibilityStatusCode !== "COMPANY_VALID_FOR_SERVICE") {
       const message =
-        ELIGIBILITY_STOP_MESSAGES[eligibility.eligibilityStatusCode] ||
-        `This company is not eligible for a registered email address change (${eligibility.eligibilityStatusCode}).`;
+        eligibilityStopMessages()[eligibility.eligibilityStatusCode] ||
+        window.siteText("ch.email.not-eligible", "This company is not eligible for a registered email address change ({code}).", {
+          code: eligibility.eligibilityStatusCode,
+        });
       showStatus(message, "error");
       clearPendingFiling();
       showView("companyView");
@@ -77,7 +88,10 @@ async function checkEligibilityAndProceed() {
       return;
     }
     console.error("Failed to check registered email address eligibility:", error);
-    showStatus(error.message || "Failed to check registered email address eligibility.", "error");
+    showStatus(
+      error.message || window.siteText("ch.email.eligibility-failed", "Failed to check registered email address eligibility."),
+      "error",
+    );
     showView("companyView");
   } finally {
     hideLoading();
@@ -103,11 +117,19 @@ function handleFormSubmit(event) {
   event.preventDefault();
   const emailInput = document.getElementById("registeredEmailAddress");
   const errors = [];
-  if (emailInput.value.trim() === "") errors.push({ input: emailInput, message: "Enter the new registered email address" });
+  if (emailInput.value.trim() === "")
+    errors.push({ input: emailInput, message: window.siteText("ch.email.enter-address", "Enter the new registered email address") });
   else if (!emailInput.checkValidity())
-    errors.push({ input: emailInput, message: "Enter an email address in the format name@example.com" });
+    errors.push({
+      input: emailInput,
+      message: window.siteText("ch.email.format", "Enter an email address in the format name@example.com"),
+    });
   const acceptInput = document.getElementById("acceptEmailStatement");
-  if (!acceptInput.checked) errors.push({ input: acceptInput, message: "Confirm the section 88A(2) appropriate email address statement" });
+  if (!acceptInput.checked)
+    errors.push({
+      input: acceptInput,
+      message: window.siteText("ch.email.confirm-statement", "Confirm the section 88A(2) appropriate email address statement"),
+    });
   if (errors.length > 0) {
     window.formErrors.showFormErrors(errors);
     return;
@@ -151,33 +173,37 @@ function renderFilingResult(transaction) {
   headlineParagraph.className = "outcome__title";
   const strong = document.createElement("strong");
   if (filings.some((entry) => entry.status === "rejected")) {
-    strong.textContent = "Companies House rejected the change.";
+    strong.textContent = window.siteText("ch.change.rejected", "Companies House rejected the change.");
     container.className = "outcome outcome--error";
   } else if (filings.length > 0 && filings.every((entry) => entry.status === "accepted")) {
-    strong.textContent = "Companies House accepted the change.";
+    strong.textContent = window.siteText("ch.change.accepted", "Companies House accepted the change.");
     container.className = "outcome outcome--ok";
   } else {
-    strong.textContent = "Companies House is still processing the change.";
+    strong.textContent = window.siteText("ch.change.processing", "Companies House is still processing the change.");
     container.className = "outcome";
   }
   headlineParagraph.append(strong);
   const paragraphs = [headlineParagraph];
   filings.forEach((entry) => {
     if (entry.rejectReasons && entry.rejectReasons.length > 0) {
-      paragraphs.push(paragraph(`Rejected: ${entry.rejectReasons.join(", ")}`));
+      paragraphs.push(
+        paragraph(window.siteText("ch.change.rejected-reasons", "Rejected: {reasons}", { reasons: entry.rejectReasons.join(", ") })),
+      );
     }
   });
-  paragraphs.push(paragraph(`Reference: ${transaction.transactionId}`, "hint"));
+  paragraphs.push(
+    paragraph(window.siteText("ch.change.reference", "Reference: {reference}", { reference: transaction.transactionId }), "hint"),
+  );
   container.replaceChildren(...paragraphs);
 }
 
 async function renderFilingRecord(transaction) {
   const { registeredChangeCopyHtml, todayText } = await import("../lib/filing-result-record.js");
   const html = registeredChangeCopyHtml({
-    title: "Change of registered email address",
+    title: window.siteText("ch.email.record-title", "Change of registered email address"),
     companyNumber: filing.companyNumber,
     transaction,
-    details: [["New registered email address", filing.registeredEmailAddress]],
+    details: [[window.siteText("ch.email.record-new-address", "New registered email address"), filing.registeredEmailAddress]],
     dateText: todayText(),
   });
   const parsed = new DOMParser().parseFromString(html, "text/html");
@@ -187,7 +213,11 @@ async function renderFilingRecord(transaction) {
 function renderValidationErrors(errors) {
   const container = document.getElementById("validationErrors");
   container.style.display = "block";
-  container.replaceChildren(...(errors || []).map((entry) => paragraph(`${entry.location || ""}: ${entry.error || "invalid value"}`)));
+  container.replaceChildren(
+    ...(errors || []).map((entry) =>
+      paragraph(`${entry.location || ""}: ${entry.error || window.siteText("ch.change.invalid-value", "invalid value")}`),
+    ),
+  );
 }
 
 function redirectToAuthorise(scope) {
@@ -260,7 +290,7 @@ async function runFilingSequence() {
       return;
     }
     console.error("Companies House filing failed:", error);
-    showStatus(error.message || "Failed to file the change with Companies House.", "error");
+    showStatus(error.message || window.siteText("ch.change.file-failed", "Failed to file the change with Companies House."), "error");
   } finally {
     hideLoading();
   }

@@ -611,7 +611,7 @@ export function periodCopyHtml({ kind, period, nino, businessId, taxYear, period
   });
 
   const columnHeading = periodLine || year || siteText("widget.field-amount", "Amount");
-  const heldBy = { kind: "accepted", text: siteText("itsa.record-held-by-hmrc", "Held by HMRC") };
+  const heldBy = { kind: "held", text: siteText("itsa.record-held-by-hmrc", "Held by HMRC") };
   const retrievedLine = retrieved
     ? siteText("itsa.record-retrieved", "Retrieved {date}", { date: retrieved })
     : siteText("itsa.record-not-recorded", "Not recorded");

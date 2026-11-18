@@ -349,7 +349,9 @@ export async function ingestHandler(event) {
 
     submissionNumber = await allocateSubmissionNumber();
 
-    await putAsyncRequest(userSub, submissionNumber, "pending", null, asyncRequestsTableName);
+    // The reader's language choice, so the receipt email of an accepted filing is in it.
+    const welsh = getHeader(event.headers, "X-Site-Language") === "cy";
+    await putAsyncRequest(userSub, submissionNumber, "pending", welsh ? { language: "cy" } : null, asyncRequestsTableName);
 
     const submissionXml = buildConfirmationStatementSubmission({
       presenterId,

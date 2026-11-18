@@ -3739,10 +3739,6 @@ cy = '''Statws'''
 hash = "99c40ab40592"
 cy = '''Dyddiad'''
 
-[strings."widget.record-accepted-prefix"]
-hash = "a00fb0c50741"
-cy = '''Derbyniwyd'''
-
 [strings."widget.record-or"]
 hash = "7175517a370b"
 cy = '''neu'''
@@ -9349,6 +9345,4782 @@ cy = '''Dewiswch y flwyddyn dreth'''
 
 # == Companies House (LANG11a, LANG11b) ==
 # ids ch.*; add entries below this line.
+
+[strings."ch-company-search.title"]
+hash = "372efac1b99d"
+cy = '''Chwilio am gwmni - DIY Accounting Submit'''
+
+[strings."ch-company-search.company-lookup-501e46"]
+hash = "501e46345a0d"
+cy = '''Chwilio am gwmni'''
+
+[strings."ch-company-search.search-companies-house-for-a-company-88d453"]
+hash = "88d45337548b"
+cy = '''Chwilio Tŷ’r Cwmnïau am gwmni yn ôl ei enw neu ei rif'''
+
+[strings."ch-company-search.status-production-this-reads-the-live-ea48cf"]
+hash = "ea48cff80613"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae’r dudalen hon yn darllen cofrestr fyw Tŷ’r Cwmnïau.'''
+
+[strings."ch-company-search.search-for-a-company-0a9577"]
+hash = "0a957768a2c6"
+cy = '''Chwilio am gwmni'''
+
+[strings."ch-company-search.company-name-or-number-cd75c6"]
+hash = "cd75c6d8f181"
+cy = '''Enw neu rif y cwmni'''
+
+[strings."ch-company-search.a-company-name-or-the-8-8782ed"]
+hash = "8782ed4aa91d"
+cy = '''Enw cwmni, neu rif y cwmni o 8 nod, er enghraifft 00000001.'''
+
+[strings."ch-company-search.search-49c266"]
+hash = "49c266baaaa7"
+cy = '''Chwilio'''
+
+[strings."ch-company-search.search-results-e978b0"]
+hash = "e978b00de465"
+cy = '''Canlyniadau chwilio'''
+
+[strings."ch-company-search.company-profile-cd9a67"]
+hash = "cd9a67fca2a5"
+cy = '''Proffil y cwmni'''
+
+[strings."ch-company-search.new-search-4587eb"]
+hash = "4587eb457003"
+cy = '''Chwiliad newydd'''
+
+[strings."ch-company-search.sign-in-to-search-companies-house-33c251"]
+hash = "33c2514054f4"
+cy = '''Mewngofnodwch i chwilio Tŷ’r Cwmnïau'''
+
+[strings."ch-company-search.sign-in-to-search-the-companies-605395"]
+hash = "605395d112e6"
+cy = '''Mewngofnodwch i chwilio cofrestr Tŷ’r Cwmnïau yn ôl enw neu rif y cwmni.'''
+
+[strings."ch-filings.title"]
+hash = "794742a8a614"
+cy = '''Eich ffeilio - DIY Accounting Submit'''
+
+[strings."ch-filings.your-copy-of-a-filing-40a891"]
+hash = "40a891991051"
+cy = '''Eich copi o ffeilio'''
+
+[strings."ch-filings.the-accounts-or-company-tax-return-8bc7ec"]
+hash = "8bc7ec2f4ed5"
+cy = '''Y cyfrifon neu’r Ffurflen Dreth y Cwmni fel y gwnaethoch eu ffeilio'''
+
+[strings."ch-filings.print-or-save-as-pdf-24d7db"]
+hash = "24d7db5d4830"
+cy = '''Argraffu neu gadw fel PDF'''
+
+[strings."ch-filings.amend-4475f5"]
+hash = "4475f5152487"
+cy = '''Diwygio'''
+
+[strings."ch-filings.all-your-receipts-99abb9"]
+hash = "99abb9fa11a9"
+cy = '''Eich holl dderbynebau'''
+
+[strings."ch-filings.sign-in-to-see-your-filing-93204f"]
+hash = "93204fc9553a"
+cy = '''Mewngofnodwch i weld eich ffeilio'''
+
+[strings."ch-filings.your-copy-of-a-filing-is-bce7ba"]
+hash = "bce7baf75f7a"
+cy = '''Mae eich copi o ffeilio yn cael ei gadw gyda’ch cyfrif. Mewngofnodwch i’w agor.'''
+
+[strings."ch-micro-entity.title"]
+hash = "8618f63f76e0"
+cy = '''Ffeilio cyfrifon micro-endid - DIY Accounting Submit'''
+
+[strings."ch-micro-entity.file-micro-entity-accounts-d7e856"]
+hash = "d7e85627b2c7"
+cy = '''Ffeilio cyfrifon micro-endid'''
+
+[strings."ch-micro-entity.file-a-company-s-frs-105-ab5ace"]
+hash = "ab5ace3f4b0f"
+cy = '''Ffeilio cyfrifon blynyddol micro-endid FRS 105 cwmni gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-micro-entity.status-production-accounts-you-file-here-1775a4"]
+hash = "1775a4113c52"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae’r cyfrifon rydych yn eu ffeilio yma yn cyrraedd cofrestr fyw Tŷ’r Cwmnïau.'''
+
+[strings."ch-micro-entity.which-company-d9aae4"]
+hash = "d9aae49b05ee"
+cy = '''Pa gwmni?'''
+
+[strings."ch-micro-entity.company-number-8b121b"]
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
+
+[strings."ch-micro-entity.8-characters-for-example-00000001-do-090062"]
+hash = "090062b139be"
+cy = '''8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.'''
+
+[strings."ch-micro-entity.look-up-company-e9e4a8"]
+hash = "e9e4a8b61283"
+cy = '''Chwilio am y cwmni'''
+
+[strings."ch-micro-entity.micro-entity-accounts-b8156d"]
+hash = "b8156d93e1d2"
+cy = '''Cyfrifon micro-endid'''
+
+[strings."ch-micro-entity.company-change-company-dd2fd9"]
+hash = "dd2fd92fd208"
+cy = '''Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>). <a href="#" id="changeCompanyLink">Newid y cwmni</a>.'''
+
+[strings."ch-micro-entity.period-6e795d"]
+hash = "6e795d4d3cc2"
+cy = '''Cyfnod'''
+
+[strings."ch-micro-entity.period-start-32d302"]
+hash = "32d302d52482"
+cy = '''Dechrau’r cyfnod'''
+
+[strings."ch-micro-entity.period-end-eeae9f"]
+hash = "eeae9fdd63e0"
+cy = '''Diwedd y cyfnod'''
+
+[strings."ch-micro-entity.registered-office-bc395e"]
+hash = "bc395eb428a7"
+cy = '''Swyddfa gofrestredig'''
+
+[strings."ch-micro-entity.filled-in-from-the-company-s-1bca2e"]
+hash = "1bca2e66c3a9"
+cy = '''Wedi’i llenwi o gofnod y cwmni yn Nhŷ’r Cwmnïau. Newidiwch ran i’w chywiro.'''
+
+[strings."ch-micro-entity.address-line-1-ee760b"]
+hash = "ee760b6e81b9"
+cy = '''Llinell 1 y cyfeiriad'''
+
+[strings."ch-micro-entity.address-line-2-optional-9ada76"]
+hash = "9ada761440a3"
+cy = '''Llinell 2 y cyfeiriad (dewisol)'''
+
+[strings."ch-micro-entity.address-line-3-optional-39373e"]
+hash = "39373e03af27"
+cy = '''Llinell 3 y cyfeiriad (dewisol)'''
+
+[strings."ch-micro-entity.town-or-city-9ce565"]
+hash = "9ce56586c728"
+cy = '''Tref neu ddinas'''
+
+[strings."ch-micro-entity.county-or-region-optional-8c5d96"]
+hash = "8c5d962945a0"
+cy = '''Sir neu ranbarth (dewisol)'''
+
+[strings."ch-micro-entity.postcode-0a4387"]
+hash = "0a4387d25c62"
+cy = '''Cod post'''
+
+[strings."ch-micro-entity.country-optional-e54c63"]
+hash = "e54c6306e0cf"
+cy = '''Gwlad (dewisol)'''
+
+[strings."ch-micro-entity.balance-sheet-659a65"]
+hash = "659a653dd0a9"
+cy = '''Mantolen'''
+
+[strings."ch-micro-entity.whole-pounds-for-example-600-or-3d55fd"]
+hash = "3d55fd32c6bf"
+cy = '''Punnoedd cyfan. Er enghraifft, £600 neu £1,200. Mae angen y ddwy flynedd.'''
+
+[strings."ch-micro-entity.line-d7852c"]
+hash = "d7852cd0d245"
+cy = '''Llinell'''
+
+[strings."ch-micro-entity.this-year-251996"]
+hash = "251996763364"
+cy = '''Eleni (£)'''
+
+[strings."ch-micro-entity.prior-year-9ca024"]
+hash = "9ca024f2d198"
+cy = '''Y flwyddyn flaenorol (£)'''
+
+[strings."ch-micro-entity.called-up-share-capital-not-paid-30e7aa"]
+hash = "30e7aadacfd0"
+cy = '''Cyfalaf cyfrannau wedi’i alw heb ei dalu (dewisol)'''
+
+[strings."ch-micro-entity.called-up-share-capital-not-paid-9f0c82"]
+hash = "9f0c8275a170"
+cy = '''Cyfalaf cyfrannau wedi’i alw heb ei dalu, eleni'''
+
+[strings."ch-micro-entity.called-up-share-capital-not-paid-c1f41d"]
+hash = "c1f41d30497a"
+cy = '''Cyfalaf cyfrannau wedi’i alw heb ei dalu, y llynedd'''
+
+[strings."ch-micro-entity.fixed-assets-959c37"]
+hash = "959c37b4f9bd"
+cy = '''Asedion sefydlog'''
+
+[strings."ch-micro-entity.fixed-assets-this-year-9cdb81"]
+hash = "9cdb81e2324f"
+cy = '''Asedion sefydlog, eleni'''
+
+[strings."ch-micro-entity.fixed-assets-last-year-7a8f8c"]
+hash = "7a8f8ced9765"
+cy = '''Asedion sefydlog, y llynedd'''
+
+[strings."ch-micro-entity.current-assets-ccafff"]
+hash = "ccafff34606e"
+cy = '''Asedion cyfredol'''
+
+[strings."ch-micro-entity.current-assets-this-year-168bc4"]
+hash = "168bc48bd801"
+cy = '''Asedion cyfredol, eleni'''
+
+[strings."ch-micro-entity.current-assets-last-year-d3e6ca"]
+hash = "d3e6ca1f0f0c"
+cy = '''Asedion cyfredol, y llynedd'''
+
+[strings."ch-micro-entity.prepayments-and-accrued-income-optional-c42ba6"]
+hash = "c42ba6d0267b"
+cy = '''Rhagdaliadau ac incwm cronedig (dewisol)'''
+
+[strings."ch-micro-entity.prepayments-and-accrued-income-this-year-93988f"]
+hash = "93988fb3f8a6"
+cy = '''Rhagdaliadau ac incwm cronedig, eleni'''
+
+[strings."ch-micro-entity.prepayments-and-accrued-income-last-year-6c802c"]
+hash = "6c802ce77159"
+cy = '''Rhagdaliadau ac incwm cronedig, y llynedd'''
+
+[strings."ch-micro-entity.creditors-amounts-falling-due-within-one-e33d88"]
+hash = "e33d886e29d8"
+cy = '''Credydwyr: symiau sy’n ddyledus o fewn blwyddyn'''
+
+[strings."ch-micro-entity.creditors-amounts-falling-due-within-one-d2bb3c"]
+hash = "d2bb3c1fded2"
+cy = '''Credydwyr: symiau sy’n ddyledus o fewn blwyddyn, eleni'''
+
+[strings."ch-micro-entity.creditors-amounts-falling-due-within-one-8b2d0a"]
+hash = "8b2d0a6d85c1"
+cy = '''Credydwyr: symiau sy’n ddyledus o fewn blwyddyn, y llynedd'''
+
+[strings."ch-micro-entity.creditors-amounts-falling-due-after-more-a35994"]
+hash = "a3599428629d"
+cy = '''Credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn'''
+
+[strings."ch-micro-entity.creditors-amounts-falling-due-after-more-d5e45f"]
+hash = "d5e45f0831c8"
+cy = '''Credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn, eleni'''
+
+[strings."ch-micro-entity.creditors-amounts-falling-due-after-more-dafc98"]
+hash = "dafc98310498"
+cy = '''Credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn, y llynedd'''
+
+[strings."ch-micro-entity.provisions-for-liabilities-optional-318955"]
+hash = "318955ac68b5"
+cy = '''Darpariaethau ar gyfer rhwymedigaethau (dewisol)'''
+
+[strings."ch-micro-entity.provisions-for-liabilities-this-year-f784ac"]
+hash = "f784acb6143d"
+cy = '''Darpariaethau ar gyfer rhwymedigaethau, eleni'''
+
+[strings."ch-micro-entity.provisions-for-liabilities-last-year-495eaa"]
+hash = "495eaa8a5e41"
+cy = '''Darpariaethau ar gyfer rhwymedigaethau, y llynedd'''
+
+[strings."ch-micro-entity.accruals-and-deferred-income-optional-254a3e"]
+hash = "254a3e9d08ea"
+cy = '''Croniadau ac incwm gohiriedig (dewisol)'''
+
+[strings."ch-micro-entity.accruals-and-deferred-income-this-year-549a72"]
+hash = "549a724a8027"
+cy = '''Croniadau ac incwm gohiriedig, eleni'''
+
+[strings."ch-micro-entity.accruals-and-deferred-income-last-year-25f04e"]
+hash = "25f04e86be5c"
+cy = '''Croniadau ac incwm gohiriedig, y llynedd'''
+
+[strings."ch-micro-entity.called-up-share-capital-4473b4"]
+hash = "4473b4128459"
+cy = '''Cyfalaf cyfrannau wedi’i alw'''
+
+[strings."ch-micro-entity.called-up-share-capital-this-year-4381cb"]
+hash = "4381cb2d4659"
+cy = '''Cyfalaf cyfrannau wedi’i alw, eleni'''
+
+[strings."ch-micro-entity.called-up-share-capital-last-year-74c14f"]
+hash = "74c14f2a6753"
+cy = '''Cyfalaf cyfrannau wedi’i alw, y llynedd'''
+
+[strings."ch-micro-entity.profit-and-loss-account-dd8ab0"]
+hash = "dd8ab0040551"
+cy = '''Cyfrif elw a cholled'''
+
+[strings."ch-micro-entity.profit-and-loss-account-this-year-f12556"]
+hash = "f12556651260"
+cy = '''Cyfrif elw a cholled, eleni'''
+
+[strings."ch-micro-entity.profit-and-loss-account-last-year-96e336"]
+hash = "96e336a196d6"
+cy = '''Cyfrif elw a cholled, y llynedd'''
+
+[strings."ch-micro-entity.capital-and-reserves-2853bb"]
+hash = "2853bb928d05"
+cy = '''Cyfalaf a chronfeydd wrth gefn'''
+
+[strings."ch-micro-entity.capital-and-reserves-this-year-ed8dfb"]
+hash = "ed8dfb428d3c"
+cy = '''Cyfalaf a chronfeydd wrth gefn, eleni'''
+
+[strings."ch-micro-entity.capital-and-reserves-last-year-3cced7"]
+hash = "3cced7842346"
+cy = '''Cyfalaf a chronfeydd wrth gefn, y llynedd'''
+
+[strings."ch-micro-entity.employees-and-director-048bfc"]
+hash = "048bfc39a938"
+cy = '''Gweithwyr a chyfarwyddwr'''
+
+[strings."ch-micro-entity.average-number-of-employees-during-the-6d5b2b"]
+hash = "6d5b2b873045"
+cy = '''Nifer cyfartalog y gweithwyr yn ystod y cyfnod'''
+
+[strings."ch-micro-entity.director-approving-the-balance-sheet-30d266"]
+hash = "30d266c5c771"
+cy = '''Y cyfarwyddwr sy’n cymeradwyo’r fantolen'''
+
+[strings."ch-micro-entity.date-approved-0410b4"]
+hash = "0410b4536f5f"
+cy = '''Dyddiad cymeradwyo'''
+
+[strings."ch-micro-entity.dormant-company-462c3c"]
+hash = "462c3c5caaac"
+cy = '''Cwmni segur'''
+
+[strings."ch-micro-entity.the-company-was-dormant-throughout-the-e565ae"]
+hash = "e565ae02fb36"
+cy = '''Roedd y cwmni’n segur drwy gydol y cyfnod'''
+
+[strings."ch-micro-entity.under-the-companies-act-2006-a-5ad40f"]
+hash = "5ad40fe99f54"
+cy = '''O dan Ddeddf Cwmnïau 2006, mae cwmni’n segur pan na chafodd unrhyw drafodiad cyfrifyddu sylweddol yn y cyfnod. Nid yw ffioedd ffeilio i Dŷ’r Cwmnïau a chyfrannau a glustnodwyd wrth gorffori yn cyfrif fel rhai sylweddol. Rhaid i’w gyfrif elw a cholled orffen y cyfnod lle y dechreuodd.'''
+
+[strings."ch-micro-entity.trading-history-c3cb58"]
+hash = "c3cb585e5915"
+cy = '''Hanes masnachu'''
+
+[strings."ch-micro-entity.the-company-has-never-traded-943968"]
+hash = "943968500419"
+cy = '''Nid yw’r cwmni erioed wedi masnachu'''
+
+[strings."ch-micro-entity.the-company-traded-in-the-past-f3e5ff"]
+hash = "f3e5ff3b0192"
+cy = '''Roedd y cwmni’n masnachu yn y gorffennol ac nid yw’n masnachu mwyach'''
+
+[strings."ch-micro-entity.share-class-acf5ea"]
+hash = "acf5eaf66e10"
+cy = '''Dosbarth cyfrannau'''
+
+[strings."ch-micro-entity.ordinary-f46f36"]
+hash = "f46f36f72dc6"
+cy = '''Cyffredin'''
+
+[strings."ch-micro-entity.preference-a0dc19"]
+hash = "a0dc191bc1d4"
+cy = '''Blaengyfrannau'''
+
+[strings."ch-micro-entity.deferred-1fc4d2"]
+hash = "1fc4d2e60ca8"
+cy = '''Gohiriedig'''
+
+[strings."ch-micro-entity.other-f97e9d"]
+hash = "f97e9da0e3b8"
+cy = '''Arall'''
+
+[strings."ch-micro-entity.nominal-value-of-each-share-in-06c00d"]
+hash = "06c00d6c3009"
+cy = '''Gwerth nominal pob cyfran, mewn punnoedd'''
+
+[strings."ch-micro-entity.for-example-1-or-0-01-509697"]
+hash = "509697802c67"
+cy = '''Er enghraifft, 1 neu 0.01. Y cyfalaf cyfrannau wedi’i alw wedi’i rannu â hwn yw nifer y cyfrannau.'''
+
+[strings."ch-micro-entity.accountants-report-ab913e"]
+hash = "ab913eaa2c6d"
+cy = '''Adroddiad y cyfrifwyr'''
+
+[strings."ch-micro-entity.an-accountant-compiled-these-accounts-b82a97"]
+hash = "b82a9760122e"
+cy = '''Lluniodd cyfrifydd y cyfrifon hyn'''
+
+[strings."ch-micro-entity.the-accounts-gain-a-page-for-ed45c6"]
+hash = "ed45c6fd0f6d"
+cy = '''Mae’r cyfrifon yn cael tudalen ar gyfer adroddiad y cyfrifwyr, ac mae Tŷ’r Cwmnïau yn eu gweld fel rhai wedi eu heithrio rhag archwilio ariannol gydag adroddiad cyfrifydd.'''
+
+[strings."ch-micro-entity.name-of-the-accountancy-firm-eb9e0e"]
+hash = "eb9e0e9b74f6"
+cy = '''Enw’r cwmni cyfrifyddu'''
+
+[strings."ch-micro-entity.statement-of-the-scope-of-the-451332"]
+hash = "451332fa4c11"
+cy = '''Datganiad o gwmpas yr adroddiad'''
+
+[strings."ch-micro-entity.statements-85f86d"]
+hash = "85f86d38c4d6"
+cy = '''Datganiadau'''
+
+[strings."ch-micro-entity.the-company-is-entitled-to-exemption-f30d0a"]
+hash = "f30d0a74f6e2"
+cy = '''Mae gan y cwmni hawl i eithriad rhag archwiliad o dan adran 477 o Ddeddf Cwmnïau 2006 sy’n ymwneud â chwmnïau bach.'''
+
+[strings."ch-micro-entity.the-members-have-not-required-the-303cb8"]
+hash = "303cb8324c48"
+cy = '''Nid yw’r aelodau wedi ei gwneud yn ofynnol i’r cwmni gael archwiliad ar gyfer y flwyddyn dan sylw.'''
+
+[strings."ch-micro-entity.the-directors-acknowledge-their-responsibilities-for-f16963"]
+hash = "f16963f3bf9a"
+cy = '''Mae’r cyfarwyddwyr yn cydnabod eu cyfrifoldebau am gydymffurfio â gofynion Deddf Cwmnïau 2006 o ran cofnodion cyfrifyddu a pharatoi cyfrifon.'''
+
+[strings."ch-micro-entity.these-accounts-have-been-prepared-in-4b6856"]
+hash = "4b6856bb5834"
+cy = '''Paratowyd y cyfrifon hyn yn unol â’r darpariaethau sy’n berthnasol i gwmnïau sy’n ddarostyngedig i’r drefn cwmnïau bach ac yn unol â’r darpariaethau sydd ar gael i ficro-endidau.'''
+
+[strings."ch-micro-entity.directors-report-consistent-with-the-accounts-0b34a1"]
+hash = "0b34a12a8b81"
+cy = '''Adroddiad y cyfarwyddwyr yn gyson â’r cyfrifon'''
+
+[strings."ch-micro-entity.these-accounts-are-unaudited-so-this-3ccf4d"]
+hash = "3ccf4d82fb5a"
+cy = '''Nid yw’r cyfrifon hyn wedi eu harchwilio, felly nid yw’r datganiad hwn yn berthnasol. Nid oes dim yn cael ei anfon.'''
+
+[strings."ch-micro-entity.preview-accounts-3a09e0"]
+hash = "3a09e0597f02"
+cy = '''Rhagolwg o’r cyfrifon'''
+
+[strings."ch-micro-entity.preview-324b13"]
+hash = "324b134f57c7"
+cy = '''Rhagolwg'''
+
+[strings."ch-micro-entity.these-are-the-accounts-as-they-56ba87"]
+hash = "56ba87e38f2a"
+cy = '''Dyma’r cyfrifon fel y byddant yn cael eu ffeilio. Nid oes dim wedi’i gyflwyno i Dŷ’r Cwmnïau eto.'''
+
+[strings."ch-micro-entity.send-to-companies-house-6257b0"]
+hash = "6257b0e83f82"
+cy = '''Anfon i Dŷ’r Cwmnïau'''
+
+[strings."ch-micro-entity.company-authentication-code-56d0e6"]
+hash = "56d0e640f9f0"
+cy = '''Cod dilysu’r cwmni'''
+
+[strings."ch-micro-entity.the-6-to-8-character-code-48646a"]
+hash = "48646a151fe7"
+cy = '''Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei ddefnyddio.'''
+
+[strings."ch-micro-entity.file-under-my-own-companies-house-33fa3f"]
+hash = "33fa3f819dde"
+cy = '''Ffeilio o dan fy nghyflwynydd Tŷ’r Cwmnïau fy hun'''
+
+[strings."ch-micro-entity.micro-entity-accounts-carry-no-companies-39aab3"]
+hash = "39aab3937aaa"
+cy = '''Nid oes ffi Tŷ’r Cwmnïau ar gyfrifon micro-endid, felly dim ond cyflwynydd pwy sy’n ymddangos ar y ffeilio y mae hyn yn ei newid. Mae arnoch angen ID cyflwynydd Tŷ’r Cwmnïau a chod dilysu cyflwynydd. Mae Submit yn eu defnyddio ar gyfer y ffeilio hwn yn unig ac nid yw’n cadw copi o’r naill na’r llall.'''
+
+[strings."ch-micro-entity.presenter-id-71f500"]
+hash = "71f500fb7ae8"
+cy = '''ID cyflwynydd'''
+
+[strings."ch-micro-entity.presenter-authentication-code-f8bbc9"]
+hash = "f8bbc973bd86"
+cy = '''Cod dilysu’r cyflwynydd'''
+
+[strings."ch-micro-entity.gov-test-scenario-dab532"]
+hash = "dab5326bb25a"
+cy = '''Gov-Test-Scenario'''
+
+[strings."ch-micro-entity.back-76900f"]
+hash = "76900f1bfd16"
+cy = '''Yn ôl'''
+
+[strings."ch-micro-entity.submit-to-companies-house-31272e"]
+hash = "31272e0852e8"
+cy = '''Cyflwyno i Dŷ’r Cwmnïau'''
+
+[strings."ch-micro-entity.filing-result-0ecbf7"]
+hash = "0ecbf7d7af61"
+cy = '''Canlyniad y ffeilio'''
+
+[strings."ch-micro-entity.see-your-copy-of-this-filing-03d016"]
+hash = "03d016a9eeee"
+cy = '''<a id="filingCopyLink" href="filings.html" style="display: none">Gweld eich copi o’r ffeilio hwn</a>'''
+
+[strings."ch-micro-entity.start-a-new-filing-0a9f24"]
+hash = "0a9f240ab551"
+cy = '''Dechrau ffeilio newydd'''
+
+[strings."ch-micro-entity.sign-in-to-file-with-companies-5a7303"]
+hash = "5a7303865fa5"
+cy = '''Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-micro-entity.sign-in-to-look-up-your-eb0bf2"]
+hash = "eb0bf28eeabf"
+cy = '''Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif.'''
+
+[strings."ch-micro-entity.this-year-985971"]
+hash = "98597183c8c6"
+cy = '''Eleni'''
+
+[strings."ch-micro-entity.prior-year-ff70f6"]
+hash = "ff70f6c507a4"
+cy = '''Y flwyddyn flaenorol'''
+
+[strings."ch-micro-entity.enter-fixed-assets-for-this-year-8a7559"]
+hash = "8a7559bdf062"
+cy = '''Rhowch yr asedion sefydlog ar gyfer eleni'''
+
+[strings."ch-micro-entity.enter-fixed-assets-for-last-year-734c37"]
+hash = "734c379f8e44"
+cy = '''Rhowch yr asedion sefydlog ar gyfer y llynedd'''
+
+[strings."ch-micro-entity.enter-current-assets-for-this-year-31782e"]
+hash = "31782ecb994d"
+cy = '''Rhowch yr asedion cyfredol ar gyfer eleni'''
+
+[strings."ch-micro-entity.enter-current-assets-for-last-year-b6359d"]
+hash = "b6359d979e27"
+cy = '''Rhowch yr asedion cyfredol ar gyfer y llynedd'''
+
+[strings."ch-micro-entity.enter-creditors-amounts-falling-due-within-a8546c"]
+hash = "a8546c2a65e5"
+cy = '''Rhowch y credydwyr: symiau sy’n ddyledus o fewn blwyddyn ar gyfer eleni'''
+
+[strings."ch-micro-entity.enter-creditors-amounts-falling-due-within-3258e1"]
+hash = "3258e1472510"
+cy = '''Rhowch y credydwyr: symiau sy’n ddyledus o fewn blwyddyn ar gyfer y llynedd'''
+
+[strings."ch-micro-entity.enter-creditors-amounts-falling-due-after-76fa36"]
+hash = "76fa36a33202"
+cy = '''Rhowch y credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn ar gyfer eleni'''
+
+[strings."ch-micro-entity.enter-creditors-amounts-falling-due-after-c35bef"]
+hash = "c35bef892173"
+cy = '''Rhowch y credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn ar gyfer y llynedd'''
+
+[strings."ch-micro-entity.enter-called-up-share-capital-for-5d8ace"]
+hash = "5d8ace47aa6a"
+cy = '''Rhowch y cyfalaf cyfrannau wedi’i alw ar gyfer eleni'''
+
+[strings."ch-micro-entity.enter-called-up-share-capital-for-a6cf0f"]
+hash = "a6cf0fc91579"
+cy = '''Rhowch y cyfalaf cyfrannau wedi’i alw ar gyfer y llynedd'''
+
+[strings."ch-micro-entity.enter-profit-and-loss-account-for-b19176"]
+hash = "b1917681d94c"
+cy = '''Rhowch y cyfrif elw a cholled ar gyfer eleni'''
+
+[strings."ch-micro-entity.enter-profit-and-loss-account-for-4c4a29"]
+hash = "4c4a29bb65c2"
+cy = '''Rhowch y cyfrif elw a cholled ar gyfer y llynedd'''
+
+[strings."ch-micro-entity.enter-capital-and-reserves-for-this-3f655f"]
+hash = "3f655fd65296"
+cy = '''Rhowch y cyfalaf a’r cronfeydd wrth gefn ar gyfer eleni'''
+
+[strings."ch-micro-entity.enter-capital-and-reserves-for-last-119e3e"]
+hash = "119e3e8c7482"
+cy = '''Rhowch y cyfalaf a’r cronfeydd wrth gefn ar gyfer y llynedd'''
+
+[strings."ch-micro-entity.the-accounts-as-they-will-be-40a0c4"]
+hash = "40a0c45c4c00"
+cy = '''Y cyfrifon fel y byddant yn cael eu ffeilio'''
+
+[strings."ch-small-company.title"]
+hash = "3e7aa67e7f1a"
+cy = '''Ffeilio cyfrifon cwmni bach - DIY Accounting Submit'''
+
+[strings."ch-small-company.file-small-company-accounts-72adc6"]
+hash = "72adc6789f98"
+cy = '''Ffeilio cyfrifon cwmni bach'''
+
+[strings."ch-small-company.file-a-small-company-s-frs-482ce0"]
+hash = "482ce0e7039c"
+cy = '''Ffeilio cyfrifon blynyddol FRS 102 adran 1A cwmni bach gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-small-company.status-production-accounts-you-file-here-1775a4"]
+hash = "1775a4113c52"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae’r cyfrifon rydych yn eu ffeilio yma yn cyrraedd cofrestr fyw Tŷ’r Cwmnïau.'''
+
+[strings."ch-small-company.which-company-d9aae4"]
+hash = "d9aae49b05ee"
+cy = '''Pa gwmni?'''
+
+[strings."ch-small-company.company-number-8b121b"]
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
+
+[strings."ch-small-company.8-characters-for-example-00000001-do-090062"]
+hash = "090062b139be"
+cy = '''8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.'''
+
+[strings."ch-small-company.look-up-company-e9e4a8"]
+hash = "e9e4a8b61283"
+cy = '''Chwilio am y cwmni'''
+
+[strings."ch-small-company.small-company-accounts-77ba8c"]
+hash = "77ba8c1168e2"
+cy = '''Cyfrifon cwmni bach'''
+
+[strings."ch-small-company.company-change-company-dd2fd9"]
+hash = "dd2fd92fd208"
+cy = '''Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>). <a href="#" id="changeCompanyLink">Newid y cwmni</a>.'''
+
+[strings."ch-small-company.period-6e795d"]
+hash = "6e795d4d3cc2"
+cy = '''Cyfnod'''
+
+[strings."ch-small-company.period-start-32d302"]
+hash = "32d302d52482"
+cy = '''Dechrau’r cyfnod'''
+
+[strings."ch-small-company.period-end-eeae9f"]
+hash = "eeae9fdd63e0"
+cy = '''Diwedd y cyfnod'''
+
+[strings."ch-small-company.registered-office-bc395e"]
+hash = "bc395eb428a7"
+cy = '''Swyddfa gofrestredig'''
+
+[strings."ch-small-company.filled-in-from-the-company-s-1bca2e"]
+hash = "1bca2e66c3a9"
+cy = '''Wedi’i llenwi o gofnod y cwmni yn Nhŷ’r Cwmnïau. Newidiwch ran i’w chywiro.'''
+
+[strings."ch-small-company.address-line-1-ee760b"]
+hash = "ee760b6e81b9"
+cy = '''Llinell 1 y cyfeiriad'''
+
+[strings."ch-small-company.address-line-2-optional-9ada76"]
+hash = "9ada761440a3"
+cy = '''Llinell 2 y cyfeiriad (dewisol)'''
+
+[strings."ch-small-company.address-line-3-optional-39373e"]
+hash = "39373e03af27"
+cy = '''Llinell 3 y cyfeiriad (dewisol)'''
+
+[strings."ch-small-company.town-or-city-9ce565"]
+hash = "9ce56586c728"
+cy = '''Tref neu ddinas'''
+
+[strings."ch-small-company.county-or-region-optional-8c5d96"]
+hash = "8c5d962945a0"
+cy = '''Sir neu ranbarth (dewisol)'''
+
+[strings."ch-small-company.postcode-0a4387"]
+hash = "0a4387d25c62"
+cy = '''Cod post'''
+
+[strings."ch-small-company.country-optional-e54c63"]
+hash = "e54c6306e0cf"
+cy = '''Gwlad (dewisol)'''
+
+[strings."ch-small-company.what-companies-house-receives-0882f0"]
+hash = "0882f0b2861e"
+cy = '''Beth mae Tŷ’r Cwmnïau yn ei gael'''
+
+[strings."ch-small-company.full-accounts-the-profit-and-loss-1a3db9"]
+hash = "1a3db928385a"
+cy = '''Cyfrifon llawn: y cyfrif elw a cholled, y fantolen, y nodiadau ac adroddiad y cyfarwyddwyr'''
+
+[strings."ch-small-company.filleted-accounts-the-balance-sheet-and-3f92df"]
+hash = "3f92df3ba39a"
+cy = '''Cyfrifon wedi’u ffiledu (filleted): y fantolen a’r nodiadau, heb y cyfrif elw a cholled ac adroddiad y cyfarwyddwyr'''
+
+[strings."ch-small-company.section-444-of-the-companies-act-cfd59d"]
+hash = "cfd59d504c69"
+cy = '''Mae adran 444 o Ddeddf Cwmnïau 2006 yn caniatáu i gwmni bach gyflwyno cyfrifon heb ei gyfrif elw a cholled. Mae aelodau’r cwmni yn dal i gael y cyfrifon llawn.'''
+
+[strings."ch-small-company.profit-and-loss-format-1240c6"]
+hash = "1240c6c2b1a5"
+cy = '''Fformat yr elw a’r golled'''
+
+[strings."ch-small-company.format-1-costs-by-function-cost-eaf911"]
+hash = "eaf9117506f9"
+cy = '''Fformat 1, costau yn ôl swyddogaeth: cost gwerthiant a threuliau gweinyddu'''
+
+[strings."ch-small-company.format-2-costs-by-nature-raw-9a6cd8"]
+hash = "9a6cd8a6793a"
+cy = '''Fformat 2, costau yn ôl natur: deunyddiau crai, costau staff, dibrisiant a thaliadau eraill'''
+
+[strings."ch-small-company.schedule-1-to-the-small-companies-23f870"]
+hash = "23f870faa772"
+cy = '''Mae Atodlen 1 i Reoliadau Cwmnïau a Grwpiau Bach (Cyfrifon ac Adroddiad y Cyfarwyddwyr) 2008 yn rhoi’r ddau fformat. Defnyddiwch y fformat a ddefnyddiodd y cwmni y llynedd.'''
+
+[strings."ch-small-company.current-year-07e958"]
+hash = "07e958351b97"
+cy = '''Y flwyddyn gyfredol'''
+
+[strings."ch-small-company.profit-and-loss-account-dd8ab0"]
+hash = "dd8ab0040551"
+cy = '''Cyfrif elw a cholled'''
+
+[strings."ch-small-company.whole-pounds-for-example-600-or-94af4a"]
+hash = "94af4ae4de7d"
+cy = '''Punnoedd cyfan. Er enghraifft, £600 neu £1,200.'''
+
+[strings."ch-small-company.line-d7852c"]
+hash = "d7852cd0d245"
+cy = '''Llinell'''
+
+[strings."ch-small-company.amount-2d7841"]
+hash = "2d7841b4ecc5"
+cy = '''Swm (£)'''
+
+[strings."ch-small-company.change-in-stocks-of-finished-goods-f391c3"]
+hash = "f391c3557abe"
+cy = '''Newid mewn stociau o nwyddau gorffenedig a gwaith ar y gweill'''
+
+[strings."ch-small-company.change-in-stocks-of-finished-goods-9ff5d6"]
+hash = "9ff5d60e26d8"
+cy = '''Newid mewn stociau o nwyddau gorffenedig a gwaith ar y gweill, eleni'''
+
+[strings."ch-small-company.own-work-capitalised-6d2b8e"]
+hash = "6d2b8e519fc0"
+cy = '''Gwaith eich hun wedi’i gyfalafu'''
+
+[strings."ch-small-company.own-work-capitalised-this-year-8222f9"]
+hash = "8222f90d9909"
+cy = '''Gwaith eich hun wedi’i gyfalafu, eleni'''
+
+[strings."ch-small-company.other-operating-income-66b1c9"]
+hash = "66b1c9867144"
+cy = '''Incwm gweithredu arall'''
+
+[strings."ch-small-company.other-operating-income-this-year-dd26a5"]
+hash = "dd26a53eb245"
+cy = '''Incwm gweithredu arall, eleni'''
+
+[strings."ch-small-company.raw-materials-and-consumables-8471ca"]
+hash = "8471ca9007cb"
+cy = '''Deunyddiau crai a nwyddau traul'''
+
+[strings."ch-small-company.raw-materials-and-consumables-this-year-b4b8a3"]
+hash = "b4b8a39c9fc8"
+cy = '''Deunyddiau crai a nwyddau traul, eleni'''
+
+[strings."ch-small-company.other-external-charges-88457e"]
+hash = "88457ef59862"
+cy = '''Taliadau allanol eraill'''
+
+[strings."ch-small-company.other-external-charges-this-year-053a04"]
+hash = "053a04a88da1"
+cy = '''Taliadau allanol eraill, eleni'''
+
+[strings."ch-small-company.staff-costs-f64e0c"]
+hash = "f64e0cbf55e8"
+cy = '''Costau staff'''
+
+[strings."ch-small-company.staff-costs-this-year-680361"]
+hash = "680361ec4561"
+cy = '''Costau staff, eleni'''
+
+[strings."ch-small-company.depreciation-and-other-amounts-written-off-43b439"]
+hash = "43b4394c94f7"
+cy = '''Dibrisiant a symiau eraill a ddilëwyd oddi ar asedion sefydlog diriaethol ac anniriaethol'''
+
+[strings."ch-small-company.depreciation-and-other-amounts-written-off-16753f"]
+hash = "16753f63880c"
+cy = '''Dibrisiant a symiau eraill a ddilëwyd oddi ar asedion sefydlog diriaethol ac anniriaethol, eleni'''
+
+[strings."ch-small-company.other-operating-expenses-71c310"]
+hash = "71c31090776d"
+cy = '''Treuliau gweithredu eraill'''
+
+[strings."ch-small-company.other-operating-expenses-this-year-966848"]
+hash = "966848ec572f"
+cy = '''Treuliau gweithredu eraill, eleni'''
+
+[strings."ch-small-company.turnover-8ecaf1"]
+hash = "8ecaf1d78b2e"
+cy = '''Trosiant'''
+
+[strings."ch-small-company.turnover-this-year-6ee801"]
+hash = "6ee801a704e4"
+cy = '''Trosiant, eleni'''
+
+[strings."ch-small-company.cost-of-sales-9bbf71"]
+hash = "9bbf71f39d4a"
+cy = '''Cost gwerthiant'''
+
+[strings."ch-small-company.cost-of-sales-this-year-5dfa9c"]
+hash = "5dfa9c0dd571"
+cy = '''Cost gwerthiant, eleni'''
+
+[strings."ch-small-company.administrative-expenses-878a5e"]
+hash = "878a5ee632f2"
+cy = '''Treuliau gweinyddu'''
+
+[strings."ch-small-company.administrative-expenses-this-year-6fe352"]
+hash = "6fe352a93afa"
+cy = '''Treuliau gweinyddu, eleni'''
+
+[strings."ch-small-company.interest-receivable-and-similar-income-adb8a3"]
+hash = "adb8a32010ba"
+cy = '''Llog derbyniadwy ac incwm tebyg'''
+
+[strings."ch-small-company.interest-receivable-and-similar-income-this-0ff57d"]
+hash = "0ff57d2a98ef"
+cy = '''Llog derbyniadwy ac incwm tebyg, eleni'''
+
+[strings."ch-small-company.interest-payable-and-similar-expenses-663f7c"]
+hash = "663f7cecca4f"
+cy = '''Llog taladwy a threuliau tebyg'''
+
+[strings."ch-small-company.interest-payable-and-similar-expenses-this-41fe54"]
+hash = "41fe54caf5b2"
+cy = '''Llog taladwy a threuliau tebyg, eleni'''
+
+[strings."ch-small-company.tax-on-profit-on-ordinary-activities-929b05"]
+hash = "929b05df8433"
+cy = '''Treth ar elw ar weithgareddau cyffredin'''
+
+[strings."ch-small-company.tax-on-profit-on-ordinary-activities-f6d67f"]
+hash = "f6d67fa7722a"
+cy = '''Treth ar elw ar weithgareddau cyffredin, eleni'''
+
+[strings."ch-small-company.balance-sheet-659a65"]
+hash = "659a653dd0a9"
+cy = '''Mantolen'''
+
+[strings."ch-small-company.fixed-assets-959c37"]
+hash = "959c37b4f9bd"
+cy = '''Asedion sefydlog'''
+
+[strings."ch-small-company.fixed-assets-this-year-9cdb81"]
+hash = "9cdb81e2324f"
+cy = '''Asedion sefydlog, eleni'''
+
+[strings."ch-small-company.stocks-df09c2"]
+hash = "df09c2fb2400"
+cy = '''Stociau'''
+
+[strings."ch-small-company.stocks-this-year-70cbb7"]
+hash = "70cbb77d15e3"
+cy = '''Stociau, eleni'''
+
+[strings."ch-small-company.debtors-ac2230"]
+hash = "ac2230adf999"
+cy = '''Dyledwyr'''
+
+[strings."ch-small-company.debtors-this-year-a90665"]
+hash = "a9066532fccf"
+cy = '''Dyledwyr, eleni'''
+
+[strings."ch-small-company.of-which-trade-debtors-1c26ff"]
+hash = "1c26ff4a90ce"
+cy = '''O hynny, dyledwyr masnach'''
+
+[strings."ch-small-company.of-which-trade-debtors-this-year-19cf88"]
+hash = "19cf88cbe8d8"
+cy = '''O hynny, dyledwyr masnach, eleni'''
+
+[strings."ch-small-company.of-which-other-debtors-3adaed"]
+hash = "3adaed26bb86"
+cy = '''O hynny, dyledwyr eraill'''
+
+[strings."ch-small-company.of-which-other-debtors-this-year-0a0a75"]
+hash = "0a0a75375200"
+cy = '''O hynny, dyledwyr eraill, eleni'''
+
+[strings."ch-small-company.of-which-amounts-owed-by-directors-23911d"]
+hash = "23911d152ec9"
+cy = '''O hynny, symiau dyledus gan gyfarwyddwyr'''
+
+[strings."ch-small-company.of-which-amounts-owed-by-directors-307adf"]
+hash = "307adf6fe592"
+cy = '''O hynny, symiau dyledus gan gyfarwyddwyr, eleni'''
+
+[strings."ch-small-company.of-which-prepayments-and-accrued-income-bd5805"]
+hash = "bd5805b9b40c"
+cy = '''O hynny, rhagdaliadau ac incwm cronedig'''
+
+[strings."ch-small-company.of-which-prepayments-and-accrued-income-379d38"]
+hash = "379d3882a9fa"
+cy = '''O hynny, rhagdaliadau ac incwm cronedig, eleni'''
+
+[strings."ch-small-company.cash-at-bank-and-in-hand-658d88"]
+hash = "658d88d6a8a9"
+cy = '''Arian yn y banc a mewn llaw'''
+
+[strings."ch-small-company.cash-at-bank-and-in-hand-7e3237"]
+hash = "7e32374ea1a9"
+cy = '''Arian yn y banc a mewn llaw, eleni'''
+
+[strings."ch-small-company.bank-loans-and-overdrafts-due-within-1a8457"]
+hash = "1a84575d9ee7"
+cy = '''Benthyciadau banc a gorddrafftiau (dyledus o fewn blwyddyn)'''
+
+[strings."ch-small-company.bank-loans-and-overdrafts-due-within-4b6081"]
+hash = "4b6081769161"
+cy = '''Benthyciadau banc a gorddrafftiau (dyledus o fewn blwyddyn), eleni'''
+
+[strings."ch-small-company.trade-creditors-due-within-one-year-afe765"]
+hash = "afe7659897ed"
+cy = '''Credydwyr masnach (dyledus o fewn blwyddyn)'''
+
+[strings."ch-small-company.trade-creditors-due-within-one-year-8db8d1"]
+hash = "8db8d1442e6a"
+cy = '''Credydwyr masnach (dyledus o fewn blwyddyn), eleni'''
+
+[strings."ch-small-company.corporation-tax-due-within-one-year-7f5179"]
+hash = "7f5179f643ae"
+cy = '''Treth gorfforaeth (dyledus o fewn blwyddyn)'''
+
+[strings."ch-small-company.corporation-tax-due-within-one-year-521917"]
+hash = "5219170f8d1d"
+cy = '''Treth gorfforaeth (dyledus o fewn blwyddyn), eleni'''
+
+[strings."ch-small-company.taxation-and-social-security-due-within-887bab"]
+hash = "887bab4d1dd3"
+cy = '''Trethiant a nawdd cymdeithasol (dyledus o fewn blwyddyn)'''
+
+[strings."ch-small-company.taxation-and-social-security-due-within-3ecb88"]
+hash = "3ecb88ef8746"
+cy = '''Trethiant a nawdd cymdeithasol (dyledus o fewn blwyddyn), eleni'''
+
+[strings."ch-small-company.accruals-due-within-one-year-bc9f66"]
+hash = "bc9f66b47c37"
+cy = '''Croniadau (dyledus o fewn blwyddyn)'''
+
+[strings."ch-small-company.accruals-due-within-one-year-this-06db63"]
+hash = "06db63fa8822"
+cy = '''Croniadau (dyledus o fewn blwyddyn), eleni'''
+
+[strings."ch-small-company.other-creditors-due-within-one-year-e25519"]
+hash = "e25519e6ab8f"
+cy = '''Credydwyr eraill (dyledus o fewn blwyddyn)'''
+
+[strings."ch-small-company.other-creditors-due-within-one-year-95bfd0"]
+hash = "95bfd0c76df8"
+cy = '''Credydwyr eraill (dyledus o fewn blwyddyn), eleni'''
+
+[strings."ch-small-company.creditors-amounts-falling-due-after-more-a35994"]
+hash = "a3599428629d"
+cy = '''Credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn'''
+
+[strings."ch-small-company.creditors-amounts-falling-due-after-more-d5e45f"]
+hash = "d5e45f0831c8"
+cy = '''Credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn, eleni'''
+
+[strings."ch-small-company.of-which-bank-loans-e4ae3a"]
+hash = "e4ae3a542ddb"
+cy = '''O hynny, benthyciadau banc'''
+
+[strings."ch-small-company.of-which-bank-loans-this-year-48fa41"]
+hash = "48fa41de07d9"
+cy = '''O hynny, benthyciadau banc, eleni'''
+
+[strings."ch-small-company.of-which-amounts-owed-to-directors-1c5fcd"]
+hash = "1c5fcd061911"
+cy = '''O hynny, symiau dyledus i gyfarwyddwyr'''
+
+[strings."ch-small-company.of-which-amounts-owed-to-directors-bdf4c6"]
+hash = "bdf4c666ffc4"
+cy = '''O hynny, symiau dyledus i gyfarwyddwyr, eleni'''
+
+[strings."ch-small-company.of-which-amounts-owed-to-group-253346"]
+hash = "253346011d5d"
+cy = '''O hynny, symiau dyledus i ymgymeriadau grŵp'''
+
+[strings."ch-small-company.of-which-amounts-owed-to-group-63a023"]
+hash = "63a0236f3bbd"
+cy = '''O hynny, symiau dyledus i ymgymeriadau grŵp, eleni'''
+
+[strings."ch-small-company.provisions-for-liabilities-2be61a"]
+hash = "2be61aad53b3"
+cy = '''Darpariaethau ar gyfer rhwymedigaethau'''
+
+[strings."ch-small-company.provisions-for-liabilities-this-year-f784ac"]
+hash = "f784acb6143d"
+cy = '''Darpariaethau ar gyfer rhwymedigaethau, eleni'''
+
+[strings."ch-small-company.called-up-share-capital-4473b4"]
+hash = "4473b4128459"
+cy = '''Cyfalaf cyfrannau wedi’i alw'''
+
+[strings."ch-small-company.called-up-share-capital-this-year-4381cb"]
+hash = "4381cb2d4659"
+cy = '''Cyfalaf cyfrannau wedi’i alw, eleni'''
+
+[strings."ch-small-company.profit-and-loss-account-reserve-5ad91d"]
+hash = "5ad91d2794c5"
+cy = '''Cronfa wrth gefn y cyfrif elw a cholled'''
+
+[strings."ch-small-company.profit-and-loss-account-reserve-this-ae67d1"]
+hash = "ae67d1067b8e"
+cy = '''Cronfa wrth gefn y cyfrif elw a cholled, eleni'''
+
+[strings."ch-small-company.include-prior-year-comparatives-26e542"]
+hash = "26e5423d1499"
+cy = '''Cynnwys ffigurau cymharol y flwyddyn flaenorol'''
+
+[strings."ch-small-company.fill-in-the-prior-year-only-40b9e3"]
+hash = "40b9e367e174"
+cy = '''Llenwch y flwyddyn flaenorol dim ond pan fydd ei ffigurau gennych. Nid oes dim yn cael ei lenwi i chi, ac mae blwyddyn flaenorol a adawyd allan yn cael ei gadael allan o’r cyfrifon.'''
+
+[strings."ch-small-company.prior-year-ff70f6"]
+hash = "ff70f6c507a4"
+cy = '''Y flwyddyn flaenorol'''
+
+[strings."ch-small-company.change-in-stocks-of-finished-goods-3793c6"]
+hash = "3793c6ab8f71"
+cy = '''Newid mewn stociau o nwyddau gorffenedig a gwaith ar y gweill, y llynedd'''
+
+[strings."ch-small-company.own-work-capitalised-last-year-03366d"]
+hash = "03366de081c5"
+cy = '''Gwaith eich hun wedi’i gyfalafu, y llynedd'''
+
+[strings."ch-small-company.other-operating-income-last-year-f3b05e"]
+hash = "f3b05e7abd3c"
+cy = '''Incwm gweithredu arall, y llynedd'''
+
+[strings."ch-small-company.raw-materials-and-consumables-last-year-317537"]
+hash = "31753787b5ff"
+cy = '''Deunyddiau crai a nwyddau traul, y llynedd'''
+
+[strings."ch-small-company.other-external-charges-last-year-7b4a86"]
+hash = "7b4a86b42ad8"
+cy = '''Taliadau allanol eraill, y llynedd'''
+
+[strings."ch-small-company.staff-costs-last-year-0eb0e8"]
+hash = "0eb0e8a7df3d"
+cy = '''Costau staff, y llynedd'''
+
+[strings."ch-small-company.depreciation-and-other-amounts-written-off-59da10"]
+hash = "59da104964ee"
+cy = '''Dibrisiant a symiau eraill a ddilëwyd oddi ar asedion sefydlog diriaethol ac anniriaethol, y llynedd'''
+
+[strings."ch-small-company.other-operating-expenses-last-year-42b112"]
+hash = "42b1120b8cbf"
+cy = '''Treuliau gweithredu eraill, y llynedd'''
+
+[strings."ch-small-company.turnover-last-year-a09b26"]
+hash = "a09b26d4bfba"
+cy = '''Trosiant, y llynedd'''
+
+[strings."ch-small-company.cost-of-sales-last-year-cac0d3"]
+hash = "cac0d3ccc279"
+cy = '''Cost gwerthiant, y llynedd'''
+
+[strings."ch-small-company.administrative-expenses-last-year-fcf586"]
+hash = "fcf586632b12"
+cy = '''Treuliau gweinyddu, y llynedd'''
+
+[strings."ch-small-company.interest-receivable-and-similar-income-last-ea72dd"]
+hash = "ea72dde4b1ed"
+cy = '''Llog derbyniadwy ac incwm tebyg, y llynedd'''
+
+[strings."ch-small-company.interest-payable-and-similar-expenses-last-d3df70"]
+hash = "d3df701810bf"
+cy = '''Llog taladwy a threuliau tebyg, y llynedd'''
+
+[strings."ch-small-company.tax-on-profit-on-ordinary-activities-48a0ba"]
+hash = "48a0ba389040"
+cy = '''Treth ar elw ar weithgareddau cyffredin, y llynedd'''
+
+[strings."ch-small-company.fixed-assets-last-year-7a8f8c"]
+hash = "7a8f8ced9765"
+cy = '''Asedion sefydlog, y llynedd'''
+
+[strings."ch-small-company.stocks-last-year-377ed2"]
+hash = "377ed25686b6"
+cy = '''Stociau, y llynedd'''
+
+[strings."ch-small-company.debtors-last-year-3602b9"]
+hash = "3602b9ce78ce"
+cy = '''Dyledwyr, y llynedd'''
+
+[strings."ch-small-company.of-which-trade-debtors-last-year-374966"]
+hash = "374966f03656"
+cy = '''O hynny, dyledwyr masnach, y llynedd'''
+
+[strings."ch-small-company.of-which-other-debtors-last-year-25dcee"]
+hash = "25dcee66eef5"
+cy = '''O hynny, dyledwyr eraill, y llynedd'''
+
+[strings."ch-small-company.of-which-amounts-owed-by-directors-133fac"]
+hash = "133fac076e2a"
+cy = '''O hynny, symiau dyledus gan gyfarwyddwyr, y llynedd'''
+
+[strings."ch-small-company.of-which-prepayments-and-accrued-income-31f0bd"]
+hash = "31f0bdd4aafd"
+cy = '''O hynny, rhagdaliadau ac incwm cronedig, y llynedd'''
+
+[strings."ch-small-company.cash-at-bank-and-in-hand-2b4d00"]
+hash = "2b4d00875d16"
+cy = '''Arian yn y banc a mewn llaw, y llynedd'''
+
+[strings."ch-small-company.bank-loans-and-overdrafts-due-within-98901f"]
+hash = "98901fe3256c"
+cy = '''Benthyciadau banc a gorddrafftiau (dyledus o fewn blwyddyn), y llynedd'''
+
+[strings."ch-small-company.trade-creditors-due-within-one-year-058a63"]
+hash = "058a632a5977"
+cy = '''Credydwyr masnach (dyledus o fewn blwyddyn), y llynedd'''
+
+[strings."ch-small-company.corporation-tax-due-within-one-year-413b93"]
+hash = "413b930ec1a2"
+cy = '''Treth gorfforaeth (dyledus o fewn blwyddyn), y llynedd'''
+
+[strings."ch-small-company.taxation-and-social-security-due-within-04e1e7"]
+hash = "04e1e74548b6"
+cy = '''Trethiant a nawdd cymdeithasol (dyledus o fewn blwyddyn), y llynedd'''
+
+[strings."ch-small-company.accruals-due-within-one-year-last-aceaf1"]
+hash = "aceaf163be90"
+cy = '''Croniadau (dyledus o fewn blwyddyn), y llynedd'''
+
+[strings."ch-small-company.other-creditors-due-within-one-year-020644"]
+hash = "020644739383"
+cy = '''Credydwyr eraill (dyledus o fewn blwyddyn), y llynedd'''
+
+[strings."ch-small-company.creditors-amounts-falling-due-after-more-dafc98"]
+hash = "dafc98310498"
+cy = '''Credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn, y llynedd'''
+
+[strings."ch-small-company.of-which-bank-loans-last-year-5b1cdb"]
+hash = "5b1cdb7e4acb"
+cy = '''O hynny, benthyciadau banc, y llynedd'''
+
+[strings."ch-small-company.of-which-amounts-owed-to-directors-1922bc"]
+hash = "1922bca830eb"
+cy = '''O hynny, symiau dyledus i gyfarwyddwyr, y llynedd'''
+
+[strings."ch-small-company.of-which-amounts-owed-to-group-f09353"]
+hash = "f09353a05a9f"
+cy = '''O hynny, symiau dyledus i ymgymeriadau grŵp, y llynedd'''
+
+[strings."ch-small-company.provisions-for-liabilities-last-year-495eaa"]
+hash = "495eaa8a5e41"
+cy = '''Darpariaethau ar gyfer rhwymedigaethau, y llynedd'''
+
+[strings."ch-small-company.called-up-share-capital-last-year-74c14f"]
+hash = "74c14f2a6753"
+cy = '''Cyfalaf cyfrannau wedi’i alw, y llynedd'''
+
+[strings."ch-small-company.profit-and-loss-account-reserve-last-e3c37f"]
+hash = "e3c37f5214c2"
+cy = '''Cronfa wrth gefn y cyfrif elw a cholled, y llynedd'''
+
+[strings."ch-small-company.tangible-fixed-assets-note-d14ccc"]
+hash = "d14ccc12c69c"
+cy = '''Nodyn asedion sefydlog diriaethol'''
+
+[strings."ch-small-company.include-the-tangible-fixed-assets-note-38c54e"]
+hash = "38c54eddc911"
+cy = '''Cynnwys y nodyn asedion sefydlog diriaethol'''
+
+[strings."ch-small-company.leave-an-asset-class-at-0-9cc4b7"]
+hash = "9cc4b7aaae2b"
+cy = '''Gadewch ddosbarth o asedion ar 0 i’w adael allan. Rhaid i werth llyfr net y dosbarthiadau fod yn hafal i’r asedion sefydlog uchod.'''
+
+[strings."ch-small-company.land-and-buildings-b6a218"]
+hash = "b6a2189d82fc"
+cy = '''Tir ac adeiladau'''
+
+[strings."ch-small-company.cost-at-the-start-of-the-266a42"]
+hash = "266a426b63ee"
+cy = '''Cost ar ddechrau’r cyfnod'''
+
+[strings."ch-small-company.additions-966ff9"]
+hash = "966ff94170d3"
+cy = '''Ychwanegiadau'''
+
+[strings."ch-small-company.disposals-cost-c96a28"]
+hash = "c96a2805a97c"
+cy = '''Gwarediadau (cost)'''
+
+[strings."ch-small-company.depreciation-at-the-start-of-the-813f88"]
+hash = "813f8807d93c"
+cy = '''Dibrisiant ar ddechrau’r cyfnod'''
+
+[strings."ch-small-company.depreciation-charge-for-the-period-3be48f"]
+hash = "3be48f6f957f"
+cy = '''Tâl dibrisiant ar gyfer y cyfnod'''
+
+[strings."ch-small-company.depreciation-on-disposals-d10d02"]
+hash = "d10d025b58fd"
+cy = '''Dibrisiant ar warediadau'''
+
+[strings."ch-small-company.plant-and-machinery-01c1ed"]
+hash = "01c1ed161f68"
+cy = '''Peiriannau ac offer'''
+
+[strings."ch-small-company.fixtures-and-fittings-b390a0"]
+hash = "b390a0638b93"
+cy = '''Gosodiadau a ffitiadau'''
+
+[strings."ch-small-company.computer-equipment-09cc5b"]
+hash = "09cc5bb1675b"
+cy = '''Offer cyfrifiadurol'''
+
+[strings."ch-small-company.motor-vehicles-602d25"]
+hash = "602d25f25cca"
+cy = '''Cerbydau modur'''
+
+[strings."ch-small-company.intangible-assets-note-2deeb9"]
+hash = "2deeb944408a"
+cy = '''Nodyn asedion anniriaethol'''
+
+[strings."ch-small-company.include-the-intangible-assets-note-goodwill-ecee71"]
+hash = "ecee7169d78d"
+cy = '''Cynnwys y nodyn asedion anniriaethol (ewyllys da ac asedion anniriaethol eraill)'''
+
+[strings."ch-small-company.the-net-book-value-of-the-57c739"]
+hash = "57c7390179d9"
+cy = '''Mae gwerth llyfr net yr asedion anniriaethol yn rhan o’r asedion sefydlog uchod, gydag unrhyw nodyn asedion sefydlog diriaethol.'''
+
+[strings."ch-small-company.amortisation-at-the-start-of-the-e33ff3"]
+hash = "e33ff37695b1"
+cy = '''Amorteiddiad ar ddechrau’r cyfnod'''
+
+[strings."ch-small-company.amortisation-charge-for-the-period-446020"]
+hash = "446020b1187e"
+cy = '''Tâl amorteiddio ar gyfer y cyfnod'''
+
+[strings."ch-small-company.amortisation-on-disposals-226acd"]
+hash = "226acd8efacd"
+cy = '''Amorteiddiad ar warediadau'''
+
+[strings."ch-small-company.directors-and-activity-72301e"]
+hash = "72301e7638ea"
+cy = '''Cyfarwyddwyr a gweithgarwch'''
+
+[strings."ch-small-company.principal-activity-72e7d9"]
+hash = "72e7d9d6851e"
+cy = '''Prif weithgarwch'''
+
+[strings."ch-small-company.accounting-policies-0d09e1"]
+hash = "0d09e1eeec54"
+cy = '''Polisïau cyfrifyddu'''
+
+[strings."ch-small-company.more-accounting-policies-optional-f47eff"]
+hash = "f47effc3d757"
+cy = '''Rhagor o bolisïau cyfrifyddu (dewisol)'''
+
+[strings."ch-small-company.each-text-appears-in-the-accounting-976eef"]
+hash = "976eef9f3c2a"
+cy = '''Mae pob testun yn ymddangos yn y nodyn polisïau cyfrifyddu o dan ei bennawd ei hun. Gadewch flwch yn wag i’w adael allan.'''
+
+[strings."ch-small-company.going-concern-828746"]
+hash = "828746f1aab6"
+cy = '''Busnes gweithredol (going concern)'''
+
+[strings."ch-small-company.tangible-fixed-assets-286645"]
+hash = "2866458ee90a"
+cy = '''Asedion sefydlog diriaethol'''
+
+[strings."ch-small-company.tangible-fixed-assets-accounting-policy-1141ff"]
+hash = "1141ffdd7a7d"
+cy = '''Asedion sefydlog diriaethol: polisi cyfrifyddu'''
+
+[strings."ch-small-company.tangible-fixed-assets-depreciation-method-97d497"]
+hash = "97d497417c49"
+cy = '''Asedion sefydlog diriaethol: dull dibrisio'''
+
+[strings."ch-small-company.intangible-assets-7363ef"]
+hash = "7363efeadc49"
+cy = '''Asedion anniriaethol'''
+
+[strings."ch-small-company.impairment-240bd7"]
+hash = "240bd778b80b"
+cy = '''Amhariad'''
+
+[strings."ch-small-company.cash-and-cash-equivalents-4a6d36"]
+hash = "4a6d36f685ad"
+cy = '''Arian parod a chyfwerth ag arian parod'''
+
+[strings."ch-small-company.financial-instruments-bbc592"]
+hash = "bbc59236838d"
+cy = '''Offerynnau ariannol'''
+
+[strings."ch-small-company.financial-instruments-classification-6d4a4a"]
+hash = "6d4a4a934ad7"
+cy = '''Offerynnau ariannol: dosbarthiad'''
+
+[strings."ch-small-company.employee-benefits-22ebc8"]
+hash = "22ebc88c84a7"
+cy = '''Buddion gweithwyr'''
+
+[strings."ch-small-company.pension-costs-defined-contribution-81d0fd"]
+hash = "81d0fd0943f7"
+cy = '''Costau pensiwn (cyfraniadau diffiniedig)'''
+
+[strings."ch-small-company.foreign-currency-translation-c19230"]
+hash = "c19230d6e1cb"
+cy = '''Trosi arian tramor'''
+
+[strings."ch-small-company.functional-and-presentation-currency-fc37ed"]
+hash = "fc37ed8d768d"
+cy = '''Arian cyfred gweithredol a chyflwyno'''
+
+[strings."ch-small-company.leases-86c4d4"]
+hash = "86c4d4b8b288"
+cy = '''Prydlesi'''
+
+[strings."ch-small-company.taxation-ba0724"]
+hash = "ba0724188508"
+cy = '''Trethiant'''
+
+[strings."ch-small-company.how-current-tax-is-calculated-b15015"]
+hash = "b15015b30432"
+cy = '''Sut mae’r dreth gyfredol yn cael ei chyfrifo'''
+
+[strings."ch-small-company.deferred-tax-e04f1f"]
+hash = "e04f1fcd5868"
+cy = '''Treth ohiriedig'''
+
+[strings."ch-small-company.dividends-6e0b22"]
+hash = "6e0b22a7cbc0"
+cy = '''Difidendau'''
+
+[strings."ch-small-company.average-number-of-employees-during-the-6d5b2b"]
+hash = "6d5b2b873045"
+cy = '''Nifer cyfartalog y gweithwyr yn ystod y cyfnod'''
+
+[strings."ch-small-company.directors-who-held-office-during-the-443f2d"]
+hash = "443f2dba251c"
+cy = '''Cyfarwyddwyr a oedd yn y swydd yn ystod y cyfnod'''
+
+[strings."ch-small-company.one-name-on-each-line-5f69ed"]
+hash = "5f69ede43dbb"
+cy = '''Un enw ar bob llinell.'''
+
+[strings."ch-small-company.director-approving-the-accounts-48329c"]
+hash = "48329ce10573"
+cy = '''Y cyfarwyddwr sy’n cymeradwyo’r cyfrifon'''
+
+[strings."ch-small-company.date-approved-0410b4"]
+hash = "0410b4536f5f"
+cy = '''Dyddiad cymeradwyo'''
+
+[strings."ch-small-company.accountants-report-ab913e"]
+hash = "ab913eaa2c6d"
+cy = '''Adroddiad y cyfrifwyr'''
+
+[strings."ch-small-company.an-accountant-compiled-these-accounts-b82a97"]
+hash = "b82a9760122e"
+cy = '''Lluniodd cyfrifydd y cyfrifon hyn'''
+
+[strings."ch-small-company.the-accounts-gain-a-page-for-ed45c6"]
+hash = "ed45c6fd0f6d"
+cy = '''Mae’r cyfrifon yn cael tudalen ar gyfer adroddiad y cyfrifwyr, ac mae Tŷ’r Cwmnïau yn eu gweld fel rhai wedi eu heithrio rhag archwilio ariannol gydag adroddiad cyfrifydd.'''
+
+[strings."ch-small-company.name-of-the-accountancy-firm-eb9e0e"]
+hash = "eb9e0e9b74f6"
+cy = '''Enw’r cwmni cyfrifyddu'''
+
+[strings."ch-small-company.statement-of-the-scope-of-the-451332"]
+hash = "451332fa4c11"
+cy = '''Datganiad o gwmpas yr adroddiad'''
+
+[strings."ch-small-company.advances-to-directors-67576f"]
+hash = "67576f5f1dec"
+cy = '''Blaensymiau i gyfarwyddwyr'''
+
+[strings."ch-small-company.fill-this-in-when-the-balance-6961e2"]
+hash = "6961e21a893d"
+cy = '''Llenwch hwn pan fydd y fantolen yn dangos symiau sy’n ddyledus gan gyfarwyddwyr. Mae adran 413 o Ddeddf Cwmnïau 2006 yn gofyn am y nodyn.'''
+
+[strings."ch-small-company.director-who-owes-the-company-money-3ba594"]
+hash = "3ba5941a16dd"
+cy = '''Cyfarwyddwr sydd mewn dyled i’r cwmni'''
+
+[strings."ch-small-company.interest-rate-and-main-conditions-of-edab6a"]
+hash = "edab6a0d831e"
+cy = '''Cyfradd llog a phrif amodau’r blaenswm'''
+
+[strings."ch-small-company.owed-by-that-director-at-the-c20cd5"]
+hash = "c20cd5afa15d"
+cy = '''Yn ddyledus gan y cyfarwyddwr hwnnw ar ddechrau’r flwyddyn'''
+
+[strings."ch-small-company.advanced-to-that-director-in-the-b70866"]
+hash = "b70866706bc7"
+cy = '''Wedi’i roi ymlaen llaw i’r cyfarwyddwr hwnnw yn y flwyddyn'''
+
+[strings."ch-small-company.repaid-by-that-director-in-the-51e195"]
+hash = "51e19517e9a3"
+cy = '''Wedi’i ad-dalu gan y cyfarwyddwr hwnnw yn y flwyddyn'''
+
+[strings."ch-small-company.controlling-party-e3b475"]
+hash = "e3b475787dcd"
+cy = '''Parti sy’n rheoli'''
+
+[strings."ch-small-company.say-nothing-about-a-controlling-party-d8d006"]
+hash = "d8d006c19586"
+cy = '''Peidio â dweud dim am barti sy’n rheoli'''
+
+[strings."ch-small-company.say-the-company-has-no-ultimate-c46c6c"]
+hash = "c46c6c757a82"
+cy = '''Dweud nad oes gan y cwmni barti rheoli eithaf'''
+
+[strings."ch-small-company.name-the-controlling-party-64a42c"]
+hash = "64a42c61527d"
+cy = '''Enwi’r parti sy’n rheoli'''
+
+[strings."ch-small-company.name-of-the-controlling-party-c7e09a"]
+hash = "c7e09a207d8a"
+cy = '''Enw’r parti sy’n rheoli'''
+
+[strings."ch-small-company.this-party-is-the-ultimate-controlling-08e9c9"]
+hash = "08e9c9259ef5"
+cy = '''Y parti hwn yw’r parti rheoli eithaf'''
+
+[strings."ch-small-company.statements-85f86d"]
+hash = "85f86d38c4d6"
+cy = '''Datganiadau'''
+
+[strings."ch-small-company.the-company-is-entitled-to-exemption-f30d0a"]
+hash = "f30d0a74f6e2"
+cy = '''Mae gan y cwmni hawl i eithriad rhag archwiliad o dan adran 477 o Ddeddf Cwmnïau 2006 sy’n ymwneud â chwmnïau bach.'''
+
+[strings."ch-small-company.the-members-have-not-required-the-303cb8"]
+hash = "303cb8324c48"
+cy = '''Nid yw’r aelodau wedi ei gwneud yn ofynnol i’r cwmni gael archwiliad ar gyfer y flwyddyn dan sylw.'''
+
+[strings."ch-small-company.the-directors-acknowledge-their-responsibilities-for-f16963"]
+hash = "f16963f3bf9a"
+cy = '''Mae’r cyfarwyddwyr yn cydnabod eu cyfrifoldebau am gydymffurfio â gofynion Deddf Cwmnïau 2006 o ran cofnodion cyfrifyddu a pharatoi cyfrifon.'''
+
+[strings."ch-small-company.these-accounts-have-been-prepared-in-481edb"]
+hash = "481edbe99dea"
+cy = '''Paratowyd y cyfrifon hyn yn unol â’r darpariaethau sy’n berthnasol i gwmnïau sy’n ddarostyngedig i’r drefn cwmnïau bach.'''
+
+[strings."ch-small-company.directors-report-consistent-with-the-accounts-0b34a1"]
+hash = "0b34a12a8b81"
+cy = '''Adroddiad y cyfarwyddwyr yn gyson â’r cyfrifon'''
+
+[strings."ch-small-company.these-accounts-are-unaudited-so-this-3ccf4d"]
+hash = "3ccf4d82fb5a"
+cy = '''Nid yw’r cyfrifon hyn wedi eu harchwilio, felly nid yw’r datganiad hwn yn berthnasol. Nid oes dim yn cael ei anfon.'''
+
+[strings."ch-small-company.preview-accounts-3a09e0"]
+hash = "3a09e0597f02"
+cy = '''Rhagolwg o’r cyfrifon'''
+
+[strings."ch-small-company.preview-324b13"]
+hash = "324b134f57c7"
+cy = '''Rhagolwg'''
+
+[strings."ch-small-company.these-are-the-accounts-as-they-56ba87"]
+hash = "56ba87e38f2a"
+cy = '''Dyma’r cyfrifon fel y byddant yn cael eu ffeilio. Nid oes dim wedi’i gyflwyno i Dŷ’r Cwmnïau eto.'''
+
+[strings."ch-small-company.send-to-companies-house-6257b0"]
+hash = "6257b0e83f82"
+cy = '''Anfon i Dŷ’r Cwmnïau'''
+
+[strings."ch-small-company.company-authentication-code-56d0e6"]
+hash = "56d0e640f9f0"
+cy = '''Cod dilysu’r cwmni'''
+
+[strings."ch-small-company.the-6-to-8-character-code-48646a"]
+hash = "48646a151fe7"
+cy = '''Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei ddefnyddio.'''
+
+[strings."ch-small-company.gov-test-scenario-dab532"]
+hash = "dab5326bb25a"
+cy = '''Gov-Test-Scenario'''
+
+[strings."ch-small-company.back-76900f"]
+hash = "76900f1bfd16"
+cy = '''Yn ôl'''
+
+[strings."ch-small-company.submit-to-companies-house-31272e"]
+hash = "31272e0852e8"
+cy = '''Cyflwyno i Dŷ’r Cwmnïau'''
+
+[strings."ch-small-company.filing-result-0ecbf7"]
+hash = "0ecbf7d7af61"
+cy = '''Canlyniad y ffeilio'''
+
+[strings."ch-small-company.see-your-copy-of-this-filing-03d016"]
+hash = "03d016a9eeee"
+cy = '''<a id="filingCopyLink" href="filings.html" style="display: none">Gweld eich copi o’r ffeilio hwn</a>'''
+
+[strings."ch-small-company.start-a-new-filing-0a9f24"]
+hash = "0a9f240ab551"
+cy = '''Dechrau ffeilio newydd'''
+
+[strings."ch-small-company.sign-in-to-file-with-companies-5a7303"]
+hash = "5a7303865fa5"
+cy = '''Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-small-company.sign-in-to-look-up-your-eb0bf2"]
+hash = "eb0bf28eeabf"
+cy = '''Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif.'''
+
+[strings."ch-small-company.enter-change-in-stocks-of-finished-ac8e27"]
+hash = "ac8e275bf76a"
+cy = '''Rhowch swm eleni ar gyfer newid mewn stociau o nwyddau gorffenedig a gwaith ar y gweill'''
+
+[strings."ch-small-company.enter-own-work-capitalised-this-year-01b56d"]
+hash = "01b56df79fce"
+cy = '''Rhowch swm eleni ar gyfer gwaith eich hun wedi’i gyfalafu'''
+
+[strings."ch-small-company.enter-other-operating-income-this-year-4fabac"]
+hash = "4fabac54af62"
+cy = '''Rhowch swm eleni ar gyfer incwm gweithredu arall'''
+
+[strings."ch-small-company.enter-raw-materials-and-consumables-this-3e0fce"]
+hash = "3e0fcec7d079"
+cy = '''Rhowch swm eleni ar gyfer deunyddiau crai a nwyddau traul'''
+
+[strings."ch-small-company.enter-other-external-charges-this-year-01296d"]
+hash = "01296dad5df7"
+cy = '''Rhowch swm eleni ar gyfer taliadau allanol eraill'''
+
+[strings."ch-small-company.enter-staff-costs-this-year-15bc39"]
+hash = "15bc39be685b"
+cy = '''Rhowch swm eleni ar gyfer costau staff'''
+
+[strings."ch-small-company.enter-depreciation-and-other-amounts-written-7ed6b4"]
+hash = "7ed6b4e9ac2f"
+cy = '''Rhowch swm eleni ar gyfer dibrisiant a symiau eraill a ddilëwyd oddi ar asedion sefydlog diriaethol ac anniriaethol'''
+
+[strings."ch-small-company.enter-other-operating-expenses-this-year-33f516"]
+hash = "33f516d96a61"
+cy = '''Rhowch swm eleni ar gyfer treuliau gweithredu eraill'''
+
+[strings."ch-small-company.enter-turnover-this-year-b3db5a"]
+hash = "b3db5aa8acbe"
+cy = '''Rhowch swm eleni ar gyfer trosiant'''
+
+[strings."ch-small-company.enter-cost-of-sales-this-year-f2bd44"]
+hash = "f2bd442ae2a5"
+cy = '''Rhowch swm eleni ar gyfer cost gwerthiant'''
+
+[strings."ch-small-company.enter-administrative-expenses-this-year-90b624"]
+hash = "90b6242f2dba"
+cy = '''Rhowch swm eleni ar gyfer treuliau gweinyddu'''
+
+[strings."ch-small-company.enter-interest-receivable-and-similar-income-fa9853"]
+hash = "fa985377bce1"
+cy = '''Rhowch swm eleni ar gyfer llog derbyniadwy ac incwm tebyg'''
+
+[strings."ch-small-company.enter-interest-payable-and-similar-expenses-0b00e7"]
+hash = "0b00e72f0aa8"
+cy = '''Rhowch swm eleni ar gyfer llog taladwy a threuliau tebyg'''
+
+[strings."ch-small-company.enter-tax-on-profit-on-ordinary-e1a11d"]
+hash = "e1a11d36a8d7"
+cy = '''Rhowch swm eleni ar gyfer treth ar elw ar weithgareddau cyffredin'''
+
+[strings."ch-small-company.enter-fixed-assets-this-year-395897"]
+hash = "395897d16ccf"
+cy = '''Rhowch swm eleni ar gyfer asedion sefydlog'''
+
+[strings."ch-small-company.enter-stocks-this-year-3c1c23"]
+hash = "3c1c23fcd0c5"
+cy = '''Rhowch swm eleni ar gyfer stociau'''
+
+[strings."ch-small-company.enter-debtors-this-year-e579cc"]
+hash = "e579cc72a2d5"
+cy = '''Rhowch swm eleni ar gyfer dyledwyr'''
+
+[strings."ch-small-company.enter-cash-at-bank-and-in-ac5003"]
+hash = "ac5003a7cfa2"
+cy = '''Rhowch swm eleni ar gyfer arian yn y banc a mewn llaw'''
+
+[strings."ch-small-company.enter-trade-creditors-due-within-one-0ba1eb"]
+hash = "0ba1eb2597ba"
+cy = '''Rhowch swm eleni ar gyfer credydwyr masnach (dyledus o fewn blwyddyn)'''
+
+[strings."ch-small-company.enter-corporation-tax-due-within-one-b8da0a"]
+hash = "b8da0ac0e508"
+cy = '''Rhowch swm eleni ar gyfer treth gorfforaeth (dyledus o fewn blwyddyn)'''
+
+[strings."ch-small-company.enter-other-creditors-due-within-one-8324ca"]
+hash = "8324ca877506"
+cy = '''Rhowch swm eleni ar gyfer credydwyr eraill (dyledus o fewn blwyddyn)'''
+
+[strings."ch-small-company.enter-creditors-amounts-falling-due-after-02fbda"]
+hash = "02fbdae8fc08"
+cy = '''Rhowch swm eleni ar gyfer credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn'''
+
+[strings."ch-small-company.enter-called-up-share-capital-this-4fc206"]
+hash = "4fc206078a36"
+cy = '''Rhowch swm eleni ar gyfer cyfalaf cyfrannau wedi’i alw'''
+
+[strings."ch-small-company.enter-profit-and-loss-account-reserve-6f10dc"]
+hash = "6f10dcb576f5"
+cy = '''Rhowch swm eleni ar gyfer cronfa wrth gefn y cyfrif elw a cholled'''
+
+[strings."ch-small-company.enter-change-in-stocks-of-finished-8e41b5"]
+hash = "8e41b539b01b"
+cy = '''Rhowch swm y llynedd ar gyfer newid mewn stociau o nwyddau gorffenedig a gwaith ar y gweill'''
+
+[strings."ch-small-company.enter-own-work-capitalised-last-year-e64775"]
+hash = "e64775f5e85e"
+cy = '''Rhowch swm y llynedd ar gyfer gwaith eich hun wedi’i gyfalafu'''
+
+[strings."ch-small-company.enter-other-operating-income-last-year-ebda0d"]
+hash = "ebda0d5b593c"
+cy = '''Rhowch swm y llynedd ar gyfer incwm gweithredu arall'''
+
+[strings."ch-small-company.enter-raw-materials-and-consumables-last-5f5fb7"]
+hash = "5f5fb732d175"
+cy = '''Rhowch swm y llynedd ar gyfer deunyddiau crai a nwyddau traul'''
+
+[strings."ch-small-company.enter-other-external-charges-last-year-be7390"]
+hash = "be7390cdf681"
+cy = '''Rhowch swm y llynedd ar gyfer taliadau allanol eraill'''
+
+[strings."ch-small-company.enter-staff-costs-last-year-4d76e5"]
+hash = "4d76e5f90bdf"
+cy = '''Rhowch swm y llynedd ar gyfer costau staff'''
+
+[strings."ch-small-company.enter-depreciation-and-other-amounts-written-2829a1"]
+hash = "2829a1064178"
+cy = '''Rhowch swm y llynedd ar gyfer dibrisiant a symiau eraill a ddilëwyd oddi ar asedion sefydlog diriaethol ac anniriaethol'''
+
+[strings."ch-small-company.enter-other-operating-expenses-last-year-ceda37"]
+hash = "ceda37632151"
+cy = '''Rhowch swm y llynedd ar gyfer treuliau gweithredu eraill'''
+
+[strings."ch-small-company.enter-turnover-last-year-5d53ba"]
+hash = "5d53bada18e4"
+cy = '''Rhowch swm y llynedd ar gyfer trosiant'''
+
+[strings."ch-small-company.enter-cost-of-sales-last-year-18d8ee"]
+hash = "18d8eec6cff5"
+cy = '''Rhowch swm y llynedd ar gyfer cost gwerthiant'''
+
+[strings."ch-small-company.enter-administrative-expenses-last-year-2ffcea"]
+hash = "2ffceac8acca"
+cy = '''Rhowch swm y llynedd ar gyfer treuliau gweinyddu'''
+
+[strings."ch-small-company.enter-interest-receivable-and-similar-income-0b6368"]
+hash = "0b6368f019d3"
+cy = '''Rhowch swm y llynedd ar gyfer llog derbyniadwy ac incwm tebyg'''
+
+[strings."ch-small-company.enter-interest-payable-and-similar-expenses-0834d3"]
+hash = "0834d3a93a45"
+cy = '''Rhowch swm y llynedd ar gyfer llog taladwy a threuliau tebyg'''
+
+[strings."ch-small-company.enter-tax-on-profit-on-ordinary-f00a03"]
+hash = "f00a03f2b9e9"
+cy = '''Rhowch swm y llynedd ar gyfer treth ar elw ar weithgareddau cyffredin'''
+
+[strings."ch-small-company.enter-fixed-assets-last-year-569ffd"]
+hash = "569ffddcc188"
+cy = '''Rhowch swm y llynedd ar gyfer asedion sefydlog'''
+
+[strings."ch-small-company.enter-stocks-last-year-13ce23"]
+hash = "13ce23bbcd23"
+cy = '''Rhowch swm y llynedd ar gyfer stociau'''
+
+[strings."ch-small-company.enter-debtors-last-year-484eae"]
+hash = "484eaedc075a"
+cy = '''Rhowch swm y llynedd ar gyfer dyledwyr'''
+
+[strings."ch-small-company.enter-cash-at-bank-and-in-120667"]
+hash = "1206671fc776"
+cy = '''Rhowch swm y llynedd ar gyfer arian yn y banc a mewn llaw'''
+
+[strings."ch-small-company.enter-trade-creditors-due-within-one-6ee4f2"]
+hash = "6ee4f2efb51e"
+cy = '''Rhowch swm y llynedd ar gyfer credydwyr masnach (dyledus o fewn blwyddyn)'''
+
+[strings."ch-small-company.enter-corporation-tax-due-within-one-f0bca9"]
+hash = "f0bca91f004e"
+cy = '''Rhowch swm y llynedd ar gyfer treth gorfforaeth (dyledus o fewn blwyddyn)'''
+
+[strings."ch-small-company.enter-other-creditors-due-within-one-46094f"]
+hash = "46094f44aad8"
+cy = '''Rhowch swm y llynedd ar gyfer credydwyr eraill (dyledus o fewn blwyddyn)'''
+
+[strings."ch-small-company.enter-creditors-amounts-falling-due-after-9c640b"]
+hash = "9c640b3270a2"
+cy = '''Rhowch swm y llynedd ar gyfer credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn'''
+
+[strings."ch-small-company.enter-called-up-share-capital-last-309f9f"]
+hash = "309f9fde9b60"
+cy = '''Rhowch swm y llynedd ar gyfer cyfalaf cyfrannau wedi’i alw'''
+
+[strings."ch-small-company.enter-profit-and-loss-account-reserve-e12fbf"]
+hash = "e12fbf293c9f"
+cy = '''Rhowch swm y llynedd ar gyfer cronfa wrth gefn y cyfrif elw a cholled'''
+
+[strings."ch-small-company.enter-cost-at-the-start-of-69ba4b"]
+hash = "69ba4b7ecbaa"
+cy = '''Rhowch y swm ar gyfer cost ar ddechrau’r cyfnod'''
+
+[strings."ch-small-company.enter-additions-5a1dab"]
+hash = "5a1dab34d65a"
+cy = '''Rhowch y swm ar gyfer ychwanegiadau'''
+
+[strings."ch-small-company.enter-disposals-cost-3fc6f9"]
+hash = "3fc6f9f49bb5"
+cy = '''Rhowch y swm ar gyfer gwarediadau (cost)'''
+
+[strings."ch-small-company.enter-depreciation-at-the-start-of-77cbea"]
+hash = "77cbea86086b"
+cy = '''Rhowch y swm ar gyfer dibrisiant ar ddechrau’r cyfnod'''
+
+[strings."ch-small-company.enter-depreciation-charge-for-the-period-a0fc73"]
+hash = "a0fc73d9ff69"
+cy = '''Rhowch y swm ar gyfer tâl dibrisiant ar gyfer y cyfnod'''
+
+[strings."ch-small-company.enter-depreciation-on-disposals-7d9909"]
+hash = "7d990981ad8f"
+cy = '''Rhowch y swm ar gyfer dibrisiant ar warediadau'''
+
+[strings."ch-small-company.enter-amortisation-at-the-start-of-fc0c55"]
+hash = "fc0c557623f9"
+cy = '''Rhowch y swm ar gyfer amorteiddiad ar ddechrau’r cyfnod'''
+
+[strings."ch-small-company.enter-amortisation-charge-for-the-period-f0f1f9"]
+hash = "f0f1f95749c4"
+cy = '''Rhowch y swm ar gyfer tâl amorteiddio ar gyfer y cyfnod'''
+
+[strings."ch-small-company.enter-amortisation-on-disposals-ae4da2"]
+hash = "ae4da27f002e"
+cy = '''Rhowch y swm ar gyfer amorteiddiad ar warediadau'''
+
+[strings."ch-small-company.the-accounts-as-they-will-be-40a0c4"]
+hash = "40a0c45c4c00"
+cy = '''Y cyfrifon fel y byddant yn cael eu ffeilio'''
+
+[strings."ch-tax-return.title"]
+hash = "486ac7c7dc6c"
+cy = '''Ffeilio Ffurflen Dreth y Cwmni - DIY Accounting Submit'''
+
+[strings."ch-tax-return.file-a-company-tax-return-f72d4f"]
+hash = "f72d4fc1888f"
+cy = '''Ffeilio Ffurflen Dreth y Cwmni'''
+
+[strings."ch-tax-return.file-a-small-company-s-ct600-d036c1"]
+hash = "d036c1002ed4"
+cy = '''Ffeilio Ffurflen CT600, cyfrifiannau a chyfrifon cwmni bach gyda CThEF'''
+
+[strings."ch-tax-return.status-preview-you-can-prepare-the-748a37"]
+hash = "748a374a83fa"
+cy = '''<strong>Statws: rhagolwg (preview).</strong> Gallwch baratoi’r Ffurflen a gweld rhagolwg o’i blychau yma. Mae’n rhedeg ar ein hefelychydd a gwasanaeth prawf CThEF yn unig, felly nid oes dim rydych yn ei anfon yn cyrraedd CThEF.'''
+
+[strings."ch-tax-return.which-company-d9aae4"]
+hash = "d9aae49b05ee"
+cy = '''Pa gwmni?'''
+
+[strings."ch-tax-return.who-is-this-return-for-5ed6ea"]
+hash = "5ed6ea2a9732"
+cy = '''Ar gyfer pwy mae’r Ffurflen hon?'''
+
+[strings."ch-tax-return.practice-name-for-hmrc-s-records-348072"]
+hash = "348072f0d990"
+cy = '''Enw’r practis (ar gyfer cofnodion CThEF)'''
+
+[strings."ch-tax-return.up-to-35-characters-it-goes-2c4414"]
+hash = "2c44145cf4eb"
+cy = '''Hyd at 35 nod. Mae’n mynd yn y Ffurflen fel enw’r asiant.'''
+
+[strings."ch-tax-return.company-number-8b121b"]
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
+
+[strings."ch-tax-return.8-characters-for-example-00000001-do-090062"]
+hash = "090062b139be"
+cy = '''8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.'''
+
+[strings."ch-tax-return.look-up-company-e9e4a8"]
+hash = "e9e4a8b61283"
+cy = '''Chwilio am y cwmni'''
+
+[strings."ch-tax-return.company-tax-return-e84474"]
+hash = "e84474d2d95e"
+cy = '''Ffurflen Dreth y Cwmni'''
+
+[strings."ch-tax-return.company-change-company-dd2fd9"]
+hash = "dd2fd92fd208"
+cy = '''Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>). <a href="#" id="changeCompanyLink">Newid y cwmni</a>.'''
+
+[strings."ch-tax-return.filing-as-the-company-s-agent-e1a598"]
+hash = "e1a598cd9803"
+cy = '''Ffeilio fel asiant y cwmni'''
+
+[strings."ch-tax-return.the-practice-s-own-government-gateway-30f937"]
+hash = "30f9373f3cf5"
+cy = '''Mae Dynodydd Defnyddiwr (ID) Porth y Llywodraeth y practis ei hun, gyda Threth Gorfforaeth wedi’i chofrestru, yn llofnodi’r Ffurflen. Blwch 975 yw enw’r person yn y practis sy’n gwneud y datganiad. Blwch 985 yw ei statws, ac mae’n dechrau fel Asiant.'''
+
+[strings."ch-tax-return.preview-the-return-6ebf80"]
+hash = "6ebf80ff1c38"
+cy = '''Rhagolwg o’r Ffurflen'''
+
+[strings."ch-tax-return.review-aff076"]
+hash = "aff0766a5290"
+cy = '''Adolygu'''
+
+[strings."ch-tax-return.check-your-answers-these-are-the-a1a220"]
+hash = "a1a220f9d868"
+cy = '''Gwiriwch eich atebion. Dyma’r ffigurau y bydd CThEF yn eu cael. Nid oes dim wedi’i anfon i CThEF eto.'''
+
+[strings."ch-tax-return.the-company-tax-return-guide-explains-1164a1"]
+hash = "1164a114b062"
+cy = '''Mae’r <a id="companyTaxReturnGuideLink" href="https://www.gov.uk/guidance/the-company-tax-return-guide" target="_blank" rel="noopener">canllaw Ffurflen Dreth y Cwmni</a> (yn Saesneg) yn esbonio pob blwch. Y ffurflen ei hun yw’r <a id="ct600FormLink" href="https://assets.publishing.service.gov.uk/media/69c543424a06660f085442bd/ct600.pdf" target="_blank" rel="noopener">CT600 (2026) Fersiwn 3</a> (yn Saesneg).'''
+
+[strings."ch-tax-return.your-answers-5feb1f"]
+hash = "5feb1f08d245"
+cy = '''Eich atebion'''
+
+[strings."ch-tax-return.ct600-boxes-8feb1a"]
+hash = "8feb1a7518d5"
+cy = '''Blychau’r CT600'''
+
+[strings."ch-tax-return.box-512fd3"]
+hash = "512fd3c6042c"
+cy = '''Blwch'''
+
+[strings."ch-tax-return.meaning-1f5d64"]
+hash = "1f5d64b92820"
+cy = '''Ystyr'''
+
+[strings."ch-tax-return.value-amounts-in-6a4d92"]
+hash = "6a4d923d934a"
+cy = '''Gwerth (symiau mewn £)'''
+
+[strings."ch-tax-return.change-c0bf75"]
+hash = "c0bf75bd78bf"
+cy = '''Newid'''
+
+[strings."ch-tax-return.computations-25d4d3"]
+hash = "25d4d34ff1fd"
+cy = '''Cyfrifiannau'''
+
+[strings."ch-tax-return.line-d7852c"]
+hash = "d7852cd0d245"
+cy = '''Llinell'''
+
+[strings."ch-tax-return.send-to-hmrc-362a82"]
+hash = "362a821ab604"
+cy = '''Anfon i CThEF'''
+
+[strings."ch-tax-return.how-we-protect-your-filing-data-ea38da"]
+hash = "ea38dac72827"
+cy = '''Mae sut rydym yn diogelu data eich ffeilio yn y <a href="../security.html">datganiad diogelwch</a> (yn Saesneg).'''
+
+[strings."ch-tax-return.company-authentication-code-56d0e6"]
+hash = "56d0e640f9f0"
+cy = '''Cod dilysu’r cwmni'''
+
+[strings."ch-tax-return.6-to-8-characters-from-companies-5dc87b"]
+hash = "5dc87bc3b086"
+cy = '''6 i 8 nod, gan Dŷ’r Cwmnïau. Mae’n cael ei anfon unwaith gyda’r cyfrifon ac nid yw byth yn cael ei gadw.'''
+
+[strings."ch-tax-return.what-do-the-revised-accounts-change-ff3c9b"]
+hash = "ff3c9b4ea7bf"
+cy = '''Beth mae’r cyfrifon diwygiedig yn ei newid?'''
+
+[strings."ch-tax-return.companies-house-prints-this-in-the-2021dd"]
+hash = "2021ddba8c7f"
+cy = '''Mae Tŷ’r Cwmnïau yn argraffu hyn yn y cyfrifon diwygiedig, o dan y datganiad eu bod yn cymryd lle’r cyfrifon sydd ganddo.'''
+
+[strings."ch-tax-return.sign-in-with-the-government-gateway-968fb6"]
+hash = "968fb651a320"
+cy = '''<span id="gatewayWhose">Mewngofnodwch gyda Dynodydd Defnyddiwr (ID) a chyfrinair Porth y Llywodraeth ar gyfer cofrestriad Treth Gorfforaeth y cwmni.</span> <span id="gatewayStored">Maent yn cael eu hanfon unwaith gyda’r Ffurflen hon ac nid ydynt byth yn cael eu cadw.</span>'''
+
+[strings."ch-tax-return.government-gateway-user-id-739100"]
+hash = "7391007f16b5"
+cy = '''Dynodydd Defnyddiwr (ID) Porth y Llywodraeth'''
+
+[strings."ch-tax-return.government-gateway-password-c848fb"]
+hash = "c848fb774034"
+cy = '''Cyfrinair Porth y Llywodraeth'''
+
+[strings."ch-tax-return.gov-test-scenario-dab532"]
+hash = "dab5326bb25a"
+cy = '''Gov-Test-Scenario'''
+
+[strings."ch-tax-return.back-76900f"]
+hash = "76900f1bfd16"
+cy = '''Yn ôl'''
+
+[strings."ch-tax-return.submit-to-hmrc-d86d87"]
+hash = "d86d870c10f9"
+cy = '''Cyflwyno i CThEF'''
+
+[strings."ch-tax-return.return-result-6be952"]
+hash = "6be95295d387"
+cy = '''Canlyniad y Ffurflen'''
+
+[strings."ch-tax-return.companies-house-dbfbe8"]
+hash = "dbfbe8c46331"
+cy = '''Tŷ’r Cwmnïau'''
+
+[strings."ch-tax-return.send-the-company-tax-return-now-d412b1"]
+hash = "d412b159115d"
+cy = '''Anfon Ffurflen Dreth y Cwmni nawr'''
+
+[strings."ch-tax-return.wait-for-companies-house-7087a0"]
+hash = "7087a0b35cf1"
+cy = '''Aros am Dŷ’r Cwmnïau'''
+
+[strings."ch-tax-return.hmrc-e23afe"]
+hash = "e23afedb2045"
+cy = '''CThEF'''
+
+[strings."ch-tax-return.amend-this-filing-745521"]
+hash = "7455210b4182"
+cy = '''Diwygio’r ffeilio hwn'''
+
+[strings."ch-tax-return.amend-the-return-when-a-tax-88a562"]
+hash = "88a562d28651"
+cy = '''Diwygiwch y Ffurflen pan oedd ateb treth yn anghywir. Diwygiwch y cyfrifon a’r Ffurflen pan oedd ffigur yn y cyfrifon yn anghywir: mae Tŷ’r Cwmnïau yn cael cyfrifon diwygiedig, yna mae CThEF yn cael Ffurflen ddiwygiedig. Mae eich derbynebau yn dangos y diwygiadau o dan y ffeilio hwn.'''
+
+[strings."ch-tax-return.the-loss-claimed-in-return-2-a0d7cc"]
+hash = "a0d7cca94869"
+cy = '''Mae’r golled a hawliwyd yn Ffurflen 2 yn newid Ffurflen 1. Diwygiwch Ffurflen 1 fel bod gan CThEF y ffigurau a anfonwyd gennych gyda Ffurflen 2.'''
+
+[strings."ch-tax-return.amend-the-return-fb799a"]
+hash = "fb799ae9bb41"
+cy = '''Diwygio’r Ffurflen'''
+
+[strings."ch-tax-return.amend-the-accounts-and-the-return-a96b0f"]
+hash = "a96b0fcc06a6"
+cy = '''Diwygio’r cyfrifon a’r Ffurflen'''
+
+[strings."ch-tax-return.where-to-get-help-00f119"]
+hash = "00f1193a0417"
+cy = '''Ble i gael help'''
+
+[strings."ch-tax-return.a-problem-with-the-live-hmrc-46086f"]
+hash = "46086fc93eae"
+cy = '''Problem gyda gwasanaeth byw CThEF, neu gyda Phorth y Llywodraeth: <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/online-services-helpdesk" target="_blank" rel="noopener">Desg Gymorth Gwasanaethau Ar-lein CThEF</a>.'''
+
+[strings."ch-tax-return.a-problem-with-this-software-diy-01b06a"]
+hash = "01b06a9606c2"
+cy = '''Problem gyda’r feddalwedd hon: DIY Accounting yn <a href="mailto:support@diyaccounting.co.uk">support@diyaccounting.co.uk</a>, neu’r <a href="../help.html">dudalen Help</a> (yn Saesneg).'''
+
+[strings."ch-tax-return.check-the-return-and-try-again-149cf1"]
+hash = "149cf10e83c2"
+cy = '''Gwiriwch y Ffurflen a rhoi cynnig arall arni'''
+
+[strings."ch-tax-return.start-a-new-return-4a07a8"]
+hash = "4a07a825e42e"
+cy = '''Dechrau Ffurflen newydd'''
+
+[strings."ch-tax-return.sign-in-to-file-a-company-647f8a"]
+hash = "647f8a0bfbfe"
+cy = '''Mewngofnodwch i ffeilio Ffurflen Dreth y Cwmni'''
+
+[strings."ch-tax-return.sign-in-to-look-up-your-6191a0"]
+hash = "6191a0cb0fe6"
+cy = '''Mewngofnodwch i chwilio am eich cwmni a ffeilio ei Ffurflen CT600, ei gyfrifiannau a’i gyfrifon.'''
+
+[strings."ch-confirmation-statement.title"]
+hash = "e5309a0aad30"
+cy = '''Ffeilio datganiad cadarnhau - DIY Accounting Submit'''
+
+[strings."ch-confirmation-statement.file-confirmation-statement-e96c59"]
+hash = "e96c5970abee"
+cy = '''Ffeilio datganiad cadarnhau'''
+
+[strings."ch-confirmation-statement.file-a-company-s-annual-confirmation-cf3051"]
+hash = "cf30516e262e"
+cy = '''Ffeilio datganiad cadarnhau blynyddol (CS01) cwmni gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-confirmation-statement.status-production-a-confirmation-statement-you-491f61"]
+hash = "491f610f6b39"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae datganiad cadarnhau rydych yn ei ffeilio yma yn cyrraedd cofrestr fyw Tŷ’r Cwmnïau.'''
+
+[strings."ch-confirmation-statement.which-company-d9aae4"]
+hash = "d9aae49b05ee"
+cy = '''Pa gwmni?'''
+
+[strings."ch-confirmation-statement.company-number-8b121b"]
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
+
+[strings."ch-confirmation-statement.8-characters-for-example-00000001-do-090062"]
+hash = "090062b139be"
+cy = '''8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.'''
+
+[strings."ch-confirmation-statement.look-up-company-e9e4a8"]
+hash = "e9e4a8b61283"
+cy = '''Chwilio am y cwmni'''
+
+[strings."ch-confirmation-statement.next-confirmation-statement-due-made-up-9d83d6"]
+hash = "9d83d6245371"
+cy = '''Mae’r datganiad cadarnhau nesaf yn ddyledus ar <strong id="authNextDue"></strong>, hyd at <strong id="authNextMadeUpTo"></strong>. <a href="#" id="changeCompanyLink">Newid y cwmni</a>.'''
+
+[strings."ch-confirmation-statement.current-directors-on-the-public-register-b9c1b4"]
+hash = "b9c1b443deda"
+cy = '''Cyfarwyddwyr presennol ar y gofrestr gyhoeddus'''
+
+[strings."ch-confirmation-statement.name-dcd1d5"]
+hash = "dcd1d5223f73"
+cy = '''Enw'''
+
+[strings."ch-confirmation-statement.role-14736a"]
+hash = "14736a2eb9f4"
+cy = '''Rôl'''
+
+[strings."ch-confirmation-statement.appointed-fb1899"]
+hash = "fb1899d48486"
+cy = '''Penodwyd'''
+
+[strings."ch-confirmation-statement.identity-verification-b207ae"]
+hash = "b207ae38ab70"
+cy = '''Gwiriad hunaniaeth'''
+
+[strings."ch-confirmation-statement.persons-with-significant-control-a9d753"]
+hash = "a9d753d49b58"
+cy = '''Pobl â rheolaeth arwyddocaol'''
+
+[strings."ch-confirmation-statement.nature-of-control-74d2a6"]
+hash = "74d2a600c189"
+cy = '''Natur y rheolaeth'''
+
+[strings."ch-confirmation-statement.notified-3a623a"]
+hash = "3a623a728b2d"
+cy = '''Hysbyswyd'''
+
+[strings."ch-confirmation-statement.company-authentication-code-56d0e6"]
+hash = "56d0e640f9f0"
+cy = '''Cod dilysu’r cwmni'''
+
+[strings."ch-confirmation-statement.the-6-to-8-character-code-48646a"]
+hash = "48646a151fe7"
+cy = '''Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei ddefnyddio.'''
+
+[strings."ch-confirmation-statement.file-under-my-own-companies-house-33fa3f"]
+hash = "33fa3f819dde"
+cy = '''Ffeilio o dan fy nghyflwynydd Tŷ’r Cwmnïau fy hun'''
+
+[strings."ch-confirmation-statement.companies-house-charges-its-filing-fee-409773"]
+hash = "409773964a23"
+cy = '''Mae Tŷ’r Cwmnïau yn codi ei ffi ffeilio (£50 ar hyn o bryd) ar y cyfrif credyd y tu ôl i’ch cyflwynydd, ac nid yw Submit yn codi ffi ei hun. Mae arnoch angen cyfrif credyd Tŷ’r Cwmnïau gydag ID cyflwynydd a chod dilysu cyflwynydd. Mae Submit yn eu defnyddio ar gyfer y ffeilio hwn yn unig ac nid yw’n cadw copi o’r naill na’r llall.'''
+
+[strings."ch-confirmation-statement.presenter-id-71f500"]
+hash = "71f500fb7ae8"
+cy = '''ID cyflwynydd'''
+
+[strings."ch-confirmation-statement.presenter-authentication-code-f8bbc9"]
+hash = "f8bbc973bd86"
+cy = '''Cod dilysu’r cyflwynydd'''
+
+[strings."ch-confirmation-statement.read-register-data-1a5001"]
+hash = "1a500173d4f4"
+cy = '''Darllen data’r gofrestr'''
+
+[strings."ch-confirmation-statement.review-and-change-adcd34"]
+hash = "adcd34d6b7d0"
+cy = '''Adolygu a newid'''
+
+[strings."ch-confirmation-statement.review-date-1c205c"]
+hash = "1c205cbb90e1"
+cy = '''Dyddiad adolygu'''
+
+[strings."ch-confirmation-statement.confirmation-statement-date-5f8793"]
+hash = "5f8793fe1c07"
+cy = '''Dyddiad y datganiad cadarnhau'''
+
+[strings."ch-confirmation-statement.sic-codes-2e5a3b"]
+hash = "2e5a3b2c8cc2"
+cy = '''Codau SIC'''
+
+[strings."ch-confirmation-statement.enter-up-to-four-codes-separated-9a0a01"]
+hash = "9a0a01a1d948"
+cy = '''Rhowch hyd at bedwar cod wedi’u gwahanu gan gomas.'''
+
+[strings."ch-confirmation-statement.statement-of-capital-185b89"]
+hash = "185b896f521e"
+cy = '''Datganiad cyfalaf'''
+
+[strings."ch-confirmation-statement.sent-only-when-a-value-below-a7518c"]
+hash = "a7518cb4d911"
+cy = '''Yn cael ei anfon dim ond pan fydd gwerth isod yn wahanol i’r gofrestr.'''
+
+[strings."ch-confirmation-statement.total-amount-unpaid-e98c8f"]
+hash = "e98c8fab91d3"
+cy = '''Cyfanswm y swm heb ei dalu'''
+
+[strings."ch-confirmation-statement.for-example-600-or-1-200-b18cc2"]
+hash = "b18cc2d721b4"
+cy = '''Er enghraifft, 600 neu 1,200.50'''
+
+[strings."ch-confirmation-statement.total-number-of-issued-shares-2c65ee"]
+hash = "2c65eed11759"
+cy = '''Cyfanswm nifer y cyfrannau a ddyroddwyd'''
+
+[strings."ch-confirmation-statement.share-currency-b4500c"]
+hash = "b4500c5b2111"
+cy = '''Arian cyfred y cyfrannau'''
+
+[strings."ch-confirmation-statement.total-aggregate-nominal-value-858417"]
+hash = "85841792563c"
+cy = '''Cyfanswm y gwerth nominal cyfanred'''
+
+[strings."ch-confirmation-statement.add-share-class-0287f6"]
+hash = "0287f6405683"
+cy = '''Ychwanegu dosbarth cyfrannau'''
+
+[strings."ch-confirmation-statement.shareholdings-c961e9"]
+hash = "c961e996aae0"
+cy = '''Cyfranddaliadau'''
+
+[strings."ch-confirmation-statement.add-shareholding-a3cacf"]
+hash = "a3cacf46bbfd"
+cy = '''Ychwanegu cyfranddaliad'''
+
+[strings."ch-confirmation-statement.registered-email-address-bd2f6c"]
+hash = "bd2f6cd0c05d"
+cy = '''Cyfeiriad e-bost cofrestredig'''
+
+[strings."ch-confirmation-statement.trading-on-a-regulated-market-061925"]
+hash = "06192511fae3"
+cy = '''Masnachu ar farchnad reoleiddiedig'''
+
+[strings."ch-confirmation-statement.this-company-does-not-trade-on-17341e"]
+hash = "17341e5e3f9f"
+cy = '''Nid yw’r cwmni hwn yn masnachu ar farchnad reoleiddiedig, felly nid yw DTR5 yn berthnasol. Mae’r ddau yn cael eu ffeilio fel ‘ffug’ (false).'''
+
+[strings."ch-confirmation-statement.lawful-purpose-statement-c5ba54"]
+hash = "c5ba54985700"
+cy = '''Datganiad pwrpas cyfreithiol'''
+
+[strings."ch-confirmation-statement.the-company-confirms-that-the-intended-963e13"]
+hash = "963e13d4520e"
+cy = '''Mae’r cwmni yn cadarnhau fod y gweithgareddau a fwriedir gan y cwmni yn y dyfodol yn gyfreithlon.'''
+
+[strings."ch-confirmation-statement.statement-of-confirmation-4986be"]
+hash = "4986bea21f77"
+cy = '''Datganiad cadarnhau'''
+
+[strings."ch-confirmation-statement.the-company-confirms-that-the-information-7eae08"]
+hash = "7eae0866e8d1"
+cy = '''Mae’r cwmni’n cadarnhau bod yr wybodaeth y mae’n ofynnol iddo ei chyflwyno i’r cofrestrydd wedi’i chyflwyno, a bod yr holl wybodaeth yn y datganiad hwn yn gywir ar y dyddiad cadarnhau.'''
+
+[strings."ch-confirmation-statement.director-identity-verification-49d8a7"]
+hash = "49d8a7bb8886"
+cy = '''Gwiriad hunaniaeth y cyfarwyddwr'''
+
+[strings."ch-confirmation-statement.every-current-director-must-have-verified-5de76d"]
+hash = "5de76d15e2ae"
+cy = '''Rhaid i bob cyfarwyddwr presennol fod wedi gwirio ei hunaniaeth gyda Thŷ’r Cwmnïau, ac mae angen ei enw llawn fel y’i gwiriwyd (gan gynnwys unrhyw enwau cyntaf eraill) a’i god personol Tŷ’r Cwmnïau o 11 nod ar y datganiad hwn. Mae rhes wag yn atal cyflwyno’r datganiad hwn. <a href="https://www.gov.uk/guidance/verify-your-identity-for-companies-house">Sut i wirio hunaniaeth</a> (yn Saesneg).'''
+
+[strings."ch-confirmation-statement.if-someone-else-s-code-is-406839"]
+hash = "4068398840fd"
+cy = '''Os oes angen cod rhywun arall i gwblhau’r ffeilio hwn, gall cyfarwyddwyr y cwmni rannu eu codau gyda phwy bynnag sy’n ffeilio - mae Submit yn anfon cod gyda’r ffeilio hwn yn unig ac nid yw’n cadw copi ohono.'''
+
+[strings."ch-confirmation-statement.filing-fee-bc2748"]
+hash = "bc274891b428"
+cy = '''Ffi ffeilio'''
+
+[strings."ch-confirmation-statement.preview-confirmation-statement-4974e1"]
+hash = "4974e1c7fce2"
+cy = '''Rhagolwg o’r datganiad cadarnhau'''
+
+[strings."ch-confirmation-statement.preview-324b13"]
+hash = "324b134f57c7"
+cy = '''Rhagolwg'''
+
+[strings."ch-confirmation-statement.this-is-the-statement-that-will-4737ea"]
+hash = "4737eabe7ca9"
+cy = '''Dyma’r datganiad a fydd yn cael ei ffeilio. Nid oes dim wedi’i gyflwyno i Dŷ’r Cwmnïau eto.'''
+
+[strings."ch-confirmation-statement.gov-test-scenario-dab532"]
+hash = "dab5326bb25a"
+cy = '''Gov-Test-Scenario'''
+
+[strings."ch-confirmation-statement.back-76900f"]
+hash = "76900f1bfd16"
+cy = '''Yn ôl'''
+
+[strings."ch-confirmation-statement.submit-to-companies-house-31272e"]
+hash = "31272e0852e8"
+cy = '''Cyflwyno i Dŷ’r Cwmnïau'''
+
+[strings."ch-confirmation-statement.filing-result-0ecbf7"]
+hash = "0ecbf7d7af61"
+cy = '''Canlyniad y ffeilio'''
+
+[strings."ch-confirmation-statement.start-a-new-filing-0a9f24"]
+hash = "0a9f240ab551"
+cy = '''Dechrau ffeilio newydd'''
+
+[strings."ch-confirmation-statement.sign-in-to-file-with-companies-5a7303"]
+hash = "5a7303865fa5"
+cy = '''Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-confirmation-statement.sign-in-to-look-up-your-eb0bf2"]
+hash = "eb0bf28eeabf"
+cy = '''Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif.'''
+
+[strings."ch-registered-office.title"]
+hash = "1427b5b915d4"
+cy = '''Newid cyfeiriad swyddfa gofrestredig - DIY Accounting Submit'''
+
+[strings."ch-registered-office.change-registered-office-address-337a43"]
+hash = "337a432acff6"
+cy = '''Newid cyfeiriad swyddfa gofrestredig'''
+
+[strings."ch-registered-office.file-a-change-of-registered-office-9172d6"]
+hash = "9172d636b54d"
+cy = '''Ffeilio newid cyfeiriad swyddfa gofrestredig gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-registered-office.status-production-a-change-you-file-7e9990"]
+hash = "7e9990c58ae7"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae newid rydych yn ei ffeilio yma yn cyrraedd cofrestr fyw Tŷ’r Cwmnïau.'''
+
+[strings."ch-registered-office.which-company-d9aae4"]
+hash = "d9aae49b05ee"
+cy = '''Pa gwmni?'''
+
+[strings."ch-registered-office.company-number-8b121b"]
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
+
+[strings."ch-registered-office.8-characters-for-example-00000001-do-090062"]
+hash = "090062b139be"
+cy = '''8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.'''
+
+[strings."ch-registered-office.look-up-current-address-4c82b1"]
+hash = "4c82b1f641d9"
+cy = '''Chwilio am y cyfeiriad presennol'''
+
+[strings."ch-registered-office.registered-office-address-a1537a"]
+hash = "a1537a1efbb2"
+cy = '''Cyfeiriad swyddfa gofrestredig'''
+
+[strings."ch-registered-office.current-address-71a304"]
+hash = "71a3048b3aa2"
+cy = '''Cyfeiriad presennol'''
+
+[strings."ch-registered-office.new-address-b71b5d"]
+hash = "b71b5df47d4b"
+cy = '''Cyfeiriad newydd'''
+
+[strings."ch-registered-office.premises-26b995"]
+hash = "26b995fbd429"
+cy = '''Adeilad'''
+
+[strings."ch-registered-office.the-building-number-or-name-for-f96c52"]
+hash = "f96c52dd1615"
+cy = '''Rhif neu enw’r adeilad, er enghraifft 13 neu Yr Hen Reithordy.'''
+
+[strings."ch-registered-office.address-line-1-ee760b"]
+hash = "ee760b6e81b9"
+cy = '''Llinell 1 y cyfeiriad'''
+
+[strings."ch-registered-office.address-line-2-optional-9ada76"]
+hash = "9ada761440a3"
+cy = '''Llinell 2 y cyfeiriad (dewisol)'''
+
+[strings."ch-registered-office.town-or-city-9ce565"]
+hash = "9ce56586c728"
+cy = '''Tref neu ddinas'''
+
+[strings."ch-registered-office.county-optional-25a6e2"]
+hash = "25a6e2959632"
+cy = '''Sir (dewisol)'''
+
+[strings."ch-registered-office.postcode-0a4387"]
+hash = "0a4387d25c62"
+cy = '''Cod post'''
+
+[strings."ch-registered-office.country-701d02"]
+hash = "701d021d08c5"
+cy = '''Gwlad'''
+
+[strings."ch-registered-office.england-c0ea96"]
+hash = "c0ea960b065c"
+cy = '''Lloegr'''
+
+[strings."ch-registered-office.wales-0cf387"]
+hash = "0cf3878b94e1"
+cy = '''Cymru'''
+
+[strings."ch-registered-office.scotland-a24667"]
+hash = "a246670dbf76"
+cy = '''Yr Alban'''
+
+[strings."ch-registered-office.northern-ireland-304a7e"]
+hash = "304a7ea100d7"
+cy = '''Gogledd Iwerddon'''
+
+[strings."ch-registered-office.great-britain-b5cbec"]
+hash = "b5cbec1a064d"
+cy = '''Prydain Fawr'''
+
+[strings."ch-registered-office.united-kingdom-8d23a6"]
+hash = "8d23a6e37e0a"
+cy = '''Y Deyrnas Unedig'''
+
+[strings."ch-registered-office.not-specified-dc12be"]
+hash = "dc12bec5d71f"
+cy = '''Heb ei nodi'''
+
+[strings."ch-registered-office.i-confirm-this-is-an-appropriate-89ef3b"]
+hash = "89ef3ba710e8"
+cy = '''Mae’r cwmni’n cadarnhau bod y cyfeiriad swyddfa gofrestredig newydd yn gyfeiriad priodol fel yr amlinellir yn adran 86(2) o Ddeddf Cwmnïau 2006 - rhywle y gellir cysylltu â swyddogion y cwmni a lle y gellir cofnodi dogfennau a ddanfonir iddynt.'''
+
+[strings."ch-registered-office.continue-31fbef"]
+hash = "31fbef162594"
+cy = '''Parhau'''
+
+[strings."ch-registered-office.review-the-filing-769b96"]
+hash = "769b96283d75"
+cy = '''Adolygu’r ffeilio'''
+
+[strings."ch-registered-office.company-number-will-have-its-registered-83b929"]
+hash = "83b929350eff"
+cy = '''Bydd cyfeiriad swyddfa gofrestredig rhif cwmni <strong id="reviewCompanyNumber"></strong> yn newid i:'''
+
+[strings."ch-registered-office.file-with-companies-house-327c43"]
+hash = "327c43b89de4"
+cy = '''Ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-registered-office.filing-result-0ecbf7"]
+hash = "0ecbf7d7af61"
+cy = '''Canlyniad y ffeilio'''
+
+[strings."ch-registered-office.start-a-new-filing-0a9f24"]
+hash = "0a9f240ab551"
+cy = '''Dechrau ffeilio newydd'''
+
+[strings."ch-registered-office.sign-in-to-file-with-companies-5a7303"]
+hash = "5a7303865fa5"
+cy = '''Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-registered-office.sign-in-to-look-up-your-eb0bf2"]
+hash = "eb0bf28eeabf"
+cy = '''Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif.'''
+
+[strings."ch-registered-email.title"]
+hash = "109052cc5114"
+cy = '''Newid cyfeiriad e-bost cofrestredig - DIY Accounting Submit'''
+
+[strings."ch-registered-email.change-registered-email-address-7dc8b1"]
+hash = "7dc8b15a930e"
+cy = '''Newid cyfeiriad e-bost cofrestredig'''
+
+[strings."ch-registered-email.file-a-change-of-registered-email-58b04e"]
+hash = "58b04e2eb787"
+cy = '''Ffeilio newid cyfeiriad e-bost cofrestredig gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-registered-email.status-production-a-change-you-file-7e9990"]
+hash = "7e9990c58ae7"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae newid rydych yn ei ffeilio yma yn cyrraedd cofrestr fyw Tŷ’r Cwmnïau.'''
+
+[strings."ch-registered-email.which-company-d9aae4"]
+hash = "d9aae49b05ee"
+cy = '''Pa gwmni?'''
+
+[strings."ch-registered-email.company-number-8b121b"]
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
+
+[strings."ch-registered-email.8-characters-for-example-00000001-do-090062"]
+hash = "090062b139be"
+cy = '''8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.'''
+
+[strings."ch-registered-email.check-eligibility-67ae07"]
+hash = "67ae073e0f9e"
+cy = '''Gwirio cymhwysedd'''
+
+[strings."ch-registered-email.new-registered-email-address-165d34"]
+hash = "165d34bf7cf4"
+cy = '''Cyfeiriad e-bost cofrestredig newydd'''
+
+[strings."ch-registered-email.i-confirm-this-is-an-appropriate-b0ed48"]
+hash = "b0ed486d8795"
+cy = '''Rwy’n cadarnhau bod hwn yn gyfeiriad e-bost priodol o dan adran 88A(2) o Ddeddf Cwmnïau 2006 - un lle mae’n debygol y bydd y cwmni’n sylwi ar negeseuon a anfonir ato.'''
+
+[strings."ch-registered-email.continue-31fbef"]
+hash = "31fbef162594"
+cy = '''Parhau'''
+
+[strings."ch-registered-email.review-the-filing-769b96"]
+hash = "769b96283d75"
+cy = '''Adolygu’r ffeilio'''
+
+[strings."ch-registered-email.company-number-will-have-its-registered-d962ff"]
+hash = "d962ffe29cd8"
+cy = '''Bydd cyfeiriad e-bost cofrestredig rhif cwmni <strong id="reviewCompanyNumber"></strong> yn newid i <strong id="reviewEmailAddress"></strong>.'''
+
+[strings."ch-registered-email.file-with-companies-house-327c43"]
+hash = "327c43b89de4"
+cy = '''Ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-registered-email.filing-result-0ecbf7"]
+hash = "0ecbf7d7af61"
+cy = '''Canlyniad y ffeilio'''
+
+[strings."ch-registered-email.start-a-new-filing-0a9f24"]
+hash = "0a9f240ab551"
+cy = '''Dechrau ffeilio newydd'''
+
+[strings."ch-registered-email.sign-in-to-file-with-companies-5a7303"]
+hash = "5a7303865fa5"
+cy = '''Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-registered-email.sign-in-to-look-up-your-eb0bf2"]
+hash = "eb0bf28eeabf"
+cy = '''Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif.'''
+
+[strings."ch-mcp-codes.title"]
+hash = "c6700f8b0aaf"
+cy = '''Codau Tŷ’r Cwmnïau - DIY Accounting Submit'''
+
+[strings."ch-mcp-codes.companies-house-codes-d354c4"]
+hash = "d354c4d0061e"
+cy = '''Codau Tŷ’r Cwmnïau'''
+
+[strings."ch-mcp-codes.type-the-codes-for-your-filing-49499d"]
+hash = "49499dfe2908"
+cy = '''Teipiwch y codau ar gyfer eich ffeilio yma, nid yn y sgwrs'''
+
+[strings."ch-mcp-codes.the-codes-go-straight-to-diy-2973e1"]
+hash = "2973e1da54ce"
+cy = '''Mae’r codau’n mynd yn syth i DIY Accounting Submit, yn cael eu cadw dan sêl am ddeg munud ac yn cael eu defnyddio unwaith, ar gyfer <span id="codesUse">y ffeilio hwn</span>. Nid ydynt yn ymddangos yn eich sgwrs.'''
+
+[strings."ch-mcp-codes.company-authentication-code-56d0e6"]
+hash = "56d0e640f9f0"
+cy = '''Cod dilysu’r cwmni'''
+
+[strings."ch-mcp-codes.save-codes-1595ca"]
+hash = "1595ca2d262a"
+cy = '''Cadw’r codau'''
+
+[strings."ch-mcp-codes.codes-saved-6eedc5"]
+hash = "6eedc5b24ae9"
+cy = '''Codau wedi’u cadw'''
+
+[strings."ch-mcp-codes.go-back-to-your-chat-and-375e81"]
+hash = "375e81a4c637"
+cy = '''Ewch yn ôl i’ch sgwrs a gofynnwch i’r ffeilio gael ei wneud.'''
+
+[strings."ch.search.no-match"]
+hash = "cef84a5aa312"
+cy = '''Nid oedd unrhyw gwmni yn cyfateb i’r chwiliad hwnnw.'''
+
+[strings."ch.search.column-company"]
+hash = "de4743c87973"
+cy = '''Cwmni'''
+
+[strings."ch.search.column-number"]
+hash = "bd82cf16699b"
+cy = '''Rhif'''
+
+[strings."ch.search.column-status"]
+hash = "920e413c7d41"
+cy = '''Statws'''
+
+[strings."ch.search.column-incorporated"]
+hash = "2058050f9cd3"
+cy = '''Corfforwyd'''
+
+[strings."ch.search.column-address"]
+hash = "56ef8f20955f"
+cy = '''Cyfeiriad'''
+
+[strings."ch.search.rate-limited-seconds"]
+hash = "74ee3d8f38ad"
+cy = '''Mae Tŷ’r Cwmnïau yn cyfyngu ar nifer ein chwiliadau. Rhowch gynnig arall arni ymhen {seconds} eiliad.'''
+
+[strings."ch.search.rate-limited"]
+hash = "b5a0becc6cd9"
+cy = '''Mae Tŷ’r Cwmnïau yn cyfyngu ar nifer ein chwiliadau. Rhowch gynnig arall arni ymhen ychydig funudau.'''
+
+[strings."ch.search.failed"]
+hash = "cc7fabfdd4b0"
+cy = '''Methwyd â chwilio Tŷ’r Cwmnïau.'''
+
+[strings."ch.profile.name"]
+hash = "dcd1d5223f73"
+cy = '''Enw'''
+
+[strings."ch.profile.number"]
+hash = "bd82cf16699b"
+cy = '''Rhif'''
+
+[strings."ch.profile.status"]
+hash = "920e413c7d41"
+cy = '''Statws'''
+
+[strings."ch.profile.type"]
+hash = "baaddf70fb5d"
+cy = '''Math'''
+
+[strings."ch.profile.incorporated"]
+hash = "2058050f9cd3"
+cy = '''Corfforwyd'''
+
+[strings."ch.profile.jurisdiction"]
+hash = "d69b9ac78e0f"
+cy = '''Awdurdodaeth'''
+
+[strings."ch.profile.registered-office"]
+hash = "bc395eb428a7"
+cy = '''Swyddfa gofrestredig'''
+
+[strings."ch.profile.sic-codes"]
+hash = "2e5a3b2c8cc2"
+cy = '''Codau SIC'''
+
+[strings."ch.profile.accounts-due"]
+hash = "b038409b1bdb"
+cy = '''Cyfrifon nesaf yn ddyledus'''
+
+[strings."ch.profile.confirmation-due"]
+hash = "b80cee8a539f"
+cy = '''Datganiad cadarnhau nesaf yn ddyledus'''
+
+[strings."ch.callback.title"]
+hash = "41d3228370bf"
+cy = '''Galwad yn ôl Tŷ’r Cwmnïau - DIY Accounting Submit'''
+
+[strings."ch.callback.heading"]
+hash = "c3e526e3728e"
+cy = '''Cysylltu â Thŷ’r Cwmnïau'''
+
+[strings."ch.callback.subtitle"]
+hash = "05a6d82318a3"
+cy = '''Gorffen mewngofnodi gyda Thŷ’r Cwmnïau'''
+
+[strings."ch.callback.return-home"]
+hash = "bbcc935e4263"
+cy = '''Yn ôl i’r hafan'''
+
+[strings."ch.callback.no-code"]
+hash = "53c110ac71e2"
+cy = '''Ni chafwyd cod awdurdodi dilys. Rhowch gynnig arall arni.'''
+
+[strings."ch.callback.exchanging"]
+hash = "7ec737c6a5e9"
+cy = '''Wrthi’n cyfnewid y cod awdurdodi am docyn mynediad...'''
+
+[strings."ch.callback.no-scope"]
+hash = "e120d4fb9c5a"
+cy = '''Ni chafwyd cwmpas awdurdodi Tŷ’r Cwmnïau yn aros. Dechreuwch y ffeilio eto.'''
+
+[strings."ch.callback.obtained"]
+hash = "fbb34a021c66"
+cy = '''Wedi cael tocyn mynediad gan Dŷ’r Cwmnïau...'''
+
+[strings."ch.callback.sign-in-failed"]
+hash = "2b81d1ea57df"
+cy = '''Methodd mewngofnodi gyda Thŷ’r Cwmnïau: {message}'''
+
+[strings."ch.callback.back-to-filing"]
+hash = "bee3d9074c48"
+cy = '''Yn ôl i’r ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch.callback.oauth-error"]
+hash = "30b383c7d9ff"
+cy = '''Gwall OAuth Tŷ’r Cwmnïau: {error}'''
+
+[strings."ch.callback.invalid-state"]
+hash = "24952cf34f68"
+cy = '''Cyflwr OAuth annilys. Rhowch gynnig arall arni.'''
+
+[strings."ch.filing.load-failed"]
+hash = "9a6f54d564b7"
+cy = '''Nid oeddem yn gallu llwytho’r ffeilio hwn. Ewch yn ôl i’ch derbynebau a rhoi cynnig arall arni.'''
+
+[strings."ch.filing.not-a-filing"]
+hash = "4f58834b3904"
+cy = '''Nid yw’r dderbynneb hon yn ffeilio cyfrifon nac yn Ffurflen Dreth y Cwmni. Agorwch hi o’ch derbynebau.'''
+
+[strings."ch.filing.choose"]
+hash = "0457ded8c8bd"
+cy = '''Dewiswch ffeilio o’ch derbynebau i weld eich copi ohono.'''
+
+[strings."ch.codes.expiry"]
+hash = "a73a8271d16c"
+cy = '''Mae’r ddolen hon yn gweithio tan {time}.'''
+
+[strings."ch.codes.use-one"]
+hash = "0928de3f18c1"
+cy = '''y ffeilio hwn'''
+
+[strings."ch.codes.use-each"]
+hash = "8e2100546935"
+cy = '''ffeilio pob cleient'''
+
+[strings."ch.codes.intro-one-client"]
+hash = "fe0c6fcc1a5a"
+cy = '''Ffeilio gyda Thŷ’r Cwmnïau ar gyfer 1 cleient. Teipiwch god dilysu cwmni’r cleient isod i adael i DIY Accounting Submit wneud y ffeilio.'''
+
+[strings."ch.codes.intro-clients"]
+hash = "55146d3511f6"
+cy = '''Ffeilio gyda Thŷ’r Cwmnïau ar gyfer {count} cleient. Teipiwch god dilysu cwmni pob cleient isod i adael i DIY Accounting Submit wneud y ffeilio.'''
+
+[strings."ch.codes.client-code"]
+hash = "06c69959300a"
+cy = '''Cod dilysu’r cwmni ar gyfer {client}'''
+
+[strings."ch.codes.intro-company"]
+hash = "f6af005bede8"
+cy = '''Cwmni {number} yn Nhŷ’r Cwmnïau. Teipiwch y codau isod i adael i DIY Accounting Submit wneud y ffeilio.'''
+
+[strings."ch.codes.personal-code"]
+hash = "591eee911b5e"
+cy = '''Cod personol ar gyfer {director}'''
+
+[strings."ch.codes.no-entry"]
+hash = "427867904818"
+cy = '''Nid oes cofnod codau yn y ddolen hon. Gofynnwch am ddolen newydd yn eich sgwrs.'''
+
+[strings."ch.codes.expired"]
+hash = "bdd9800ec4ca"
+cy = '''Mae’r ddolen codau hon wedi dod i ben neu nid yw’n bodoli. Gofynnwch am ddolen newydd yn eich sgwrs.'''
+
+[strings."ch.codes.not-saved"]
+hash = "0f2860922383"
+cy = '''Ni chafodd y codau eu cadw. Gofynnwch am ddolen newydd yn eich sgwrs.'''
+
+[strings."ch.codes.unreachable"]
+hash = "2b24eefa6f08"
+cy = '''Nid oedd modd cyrraedd y dudalen codau. Rhowch gynnig arall ar y ddolen.'''
+
+[strings."ch.status.active"]
+hash = "92340695899b"
+cy = '''Gweithredol'''
+
+[strings."ch.status.dissolved"]
+hash = "c5a40351584c"
+cy = '''Wedi’i ddiddymu'''
+
+[strings."ch.status.liquidation"]
+hash = "6710e946def1"
+cy = '''Yn ymddatod'''
+
+[strings."ch.status.receivership"]
+hash = "367d17c42ef2"
+cy = '''Mewn derbynyddiaeth'''
+
+[strings."ch.status.administration"]
+hash = "45e94e487dfc"
+cy = '''Mewn gweinyddiad'''
+
+[strings."ch.status.voluntary-arrangement"]
+hash = "7c74a9b5ee60"
+cy = '''Trefniant gwirfoddol'''
+
+[strings."ch.status.converted-closed"]
+hash = "a28887241667"
+cy = '''Wedi’i drosi neu ei gau'''
+
+[strings."ch.status.insolvency-proceedings"]
+hash = "d2c4aeb488bd"
+cy = '''Gweithrediadau ansolfedd'''
+
+[strings."ch.status.registered"]
+hash = "2351ee992626"
+cy = '''Cofrestredig'''
+
+[strings."ch.status.removed"]
+hash = "4118fb4fed0e"
+cy = '''Wedi’i dynnu'''
+
+[strings."ch.status.closed"]
+hash = "c21ead0614e7"
+cy = '''Ar gau'''
+
+[strings."ch.status.open"]
+hash = "ed077f3d8125"
+cy = '''Ar agor'''
+
+[strings."ch.type.ltd"]
+hash = "262d9ded2283"
+cy = '''Cwmni cyfyngedig preifat'''
+
+[strings."ch.type.plc"]
+hash = "79c4166d8851"
+cy = '''Cwmni cyfyngedig cyhoeddus'''
+
+[strings."ch.type.llp"]
+hash = "3c9269a6c7a7"
+cy = '''Partneriaeth atebolrwydd cyfyngedig'''
+
+[strings."ch.type.limited-partnership"]
+hash = "6d9d74244e0e"
+cy = '''Partneriaeth cyfyngedig'''
+
+[strings."ch.type.private-limited-guarant-nsc"]
+hash = "0bccc0830739"
+cy = '''Cwmni preifat wedi ei gyfyngu drwy warant'''
+
+[strings."ch.type.private-limited-guarant-nsc-limited-exemption"]
+hash = "b74398f8e22d"
+cy = '''Cwmni preifat wedi ei gyfyngu drwy warant (eithriad enw)'''
+
+[strings."ch.type.private-unlimited"]
+hash = "010e1d0fb631"
+cy = '''Cwmni anghyfyngedig preifat'''
+
+[strings."ch.type.private-unlimited-nsc"]
+hash = "010e1d0fb631"
+cy = '''Cwmni anghyfyngedig preifat'''
+
+[strings."ch.type.old-public-company"]
+hash = "9ca0fe854bca"
+cy = '''Hen gwmni cyhoeddus'''
+
+[strings."ch.type.royal-charter"]
+hash = "7b16585c3861"
+cy = '''Cwmni siarter frenhinol'''
+
+[strings."ch.type.industrial-and-provident-society"]
+hash = "211ee1f6a995"
+cy = '''Cymdeithas ddiwydiannol a darbodus'''
+
+[strings."ch.type.registered-society-non-jurisdictional"]
+hash = "a40f9337daa1"
+cy = '''Cymdeithas gofrestredig'''
+
+[strings."ch.type.scottish-partnership"]
+hash = "73e35779b588"
+cy = '''Partneriaeth Albanaidd'''
+
+[strings."ch.type.oversea-company"]
+hash = "edbf3a5b3599"
+cy = '''Cwmni tramor'''
+
+[strings."ch.type.uk-establishment"]
+hash = "2dcd17c644b7"
+cy = '''Sefydliad yn y DU cwmni tramor'''
+
+[strings."ch.type.european-public-limited-liability-company-se"]
+hash = "b9811fe2573f"
+cy = '''Cwmni atebolrwydd cyfyngedig cyhoeddus Ewropeaidd (SE)'''
+
+[strings."ch.type.charitable-incorporated-organisation"]
+hash = "6e3ad93c3d33"
+cy = '''Sefydliad corfforedig elusennol'''
+
+[strings."ch.type.scottish-charitable-incorporated-organisation"]
+hash = "9dbcfe0ff181"
+cy = '''Sefydliad corfforedig elusennol Albanaidd'''
+
+[strings."ch.type.protected-cell-company"]
+hash = "a0e494421fc5"
+cy = '''Cwmni celloedd gwarchodedig'''
+
+[strings."ch.type.investment-company-with-variable-capital"]
+hash = "5b6ff0be59bd"
+cy = '''Cwmni buddsoddi â chyfalaf newidiol'''
+
+[strings."ch.type.unregistered-company"]
+hash = "6190fdc0124e"
+cy = '''Cwmni anghofrestredig'''
+
+[strings."ch.type.other"]
+hash = "f97e9da0e3b8"
+cy = '''Arall'''
+
+[strings."ch.jurisdiction.england-wales"]
+hash = "272b9799481c"
+cy = '''Lloegr a Chymru'''
+
+[strings."ch.jurisdiction.wales"]
+hash = "0cf3878b94e1"
+cy = '''Cymru'''
+
+[strings."ch.jurisdiction.scotland"]
+hash = "a246670dbf76"
+cy = '''Yr Alban'''
+
+[strings."ch.jurisdiction.northern-ireland"]
+hash = "304a7ea100d7"
+cy = '''Gogledd Iwerddon'''
+
+[strings."ch.jurisdiction.united-kingdom"]
+hash = "8d23a6e37e0a"
+cy = '''Y Deyrnas Unedig'''
+
+[strings."ch.jurisdiction.european-union"]
+hash = "7fe24f2b7ba5"
+cy = '''Yr Undeb Ewropeaidd'''
+
+[strings."ch.jurisdiction.noneu"]
+hash = "3f0a8110cf8e"
+cy = '''Y tu allan i’r Undeb Ewropeaidd'''
+
+[strings."ch.email.no-address-yet"]
+hash = "7b81e777ef55"
+cy = '''Nid oes gan y cwmni hwn gyfeiriad e-bost cofrestredig eto. Mae’r ffeilio hwn yn newid cyfeiriad sy’n bodoli; nid yw’n gosod y cyntaf.'''
+
+[strings."ch.email.status-blocks"]
+hash = "2062aa84a4f9"
+cy = '''Mae statws y cwmni hwn yn atal newid i’r cyfeiriad e-bost cofrestredig.'''
+
+[strings."ch.email.type-not-covered"]
+hash = "46f67eb1808b"
+cy = '''Nid yw’r ffeilio hwn yn cynnwys y math hwn o gwmni.'''
+
+[strings."ch.email.not-on-register"]
+hash = "a71afabcb20b"
+cy = '''Nid yw rhif y cwmni hwnnw ar y gofrestr.'''
+
+[strings."ch.email.not-eligible"]
+hash = "550b2e3e5c96"
+cy = '''Nid yw’r cwmni hwn yn gymwys i newid ei gyfeiriad e-bost cofrestredig ({code}).'''
+
+[strings."ch.email.eligibility-failed"]
+hash = "b7a3cf1826ed"
+cy = '''Methwyd â gwirio a yw’r cwmni’n gymwys i newid ei gyfeiriad e-bost cofrestredig.'''
+
+[strings."ch.email.enter-address"]
+hash = "c049bf45205c"
+cy = '''Rhowch y cyfeiriad e-bost cofrestredig newydd'''
+
+[strings."ch.email.format"]
+hash = "fd4bf08a7550"
+cy = '''Rhowch gyfeiriad e-bost yn y fformat enw@enghraifft.com'''
+
+[strings."ch.email.confirm-statement"]
+hash = "434f3ed7d2e7"
+cy = '''Cadarnhewch y datganiad cyfeiriad e-bost priodol o dan adran 88A(2)'''
+
+[strings."ch.change.rejected"]
+hash = "e27cc6bccb9a"
+cy = '''Gwrthododd Tŷ’r Cwmnïau y newid.'''
+
+[strings."ch.change.accepted"]
+hash = "c9c7ddda9c76"
+cy = '''Derbyniodd Tŷ’r Cwmnïau y newid.'''
+
+[strings."ch.change.processing"]
+hash = "6d1d2934ad2d"
+cy = '''Mae Tŷ’r Cwmnïau yn dal i brosesu’r newid.'''
+
+[strings."ch.change.rejected-reasons"]
+hash = "8508af95ac42"
+cy = '''Wedi’i wrthod: {reasons}'''
+
+[strings."ch.change.reference"]
+hash = "6c205d570cce"
+cy = '''Cyfeirnod: {reference}'''
+
+[strings."ch.email.record-title"]
+hash = "e4cdda84203e"
+cy = '''Newid cyfeiriad e-bost cofrestredig'''
+
+[strings."ch.email.record-new-address"]
+hash = "165d34bf7cf4"
+cy = '''Cyfeiriad e-bost cofrestredig newydd'''
+
+[strings."ch.change.invalid-value"]
+hash = "194570380f6c"
+cy = '''gwerth annilys'''
+
+[strings."ch.change.file-failed"]
+hash = "d0211d6572cd"
+cy = '''Methwyd â ffeilio’r newid gyda Thŷ’r Cwmnïau.'''
+
+[strings."ch.address.premises"]
+hash = "26b995fbd429"
+cy = '''Adeilad'''
+
+[strings."ch.address.line-1"]
+hash = "ee760b6e81b9"
+cy = '''Llinell 1 y cyfeiriad'''
+
+[strings."ch.address.line-2"]
+hash = "350b2b85c4af"
+cy = '''Llinell 2 y cyfeiriad'''
+
+[strings."ch.address.town"]
+hash = "9ce56586c728"
+cy = '''Tref neu ddinas'''
+
+[strings."ch.address.county"]
+hash = "136c87dec469"
+cy = '''Sir'''
+
+[strings."ch.address.postcode"]
+hash = "0a4387d25c62"
+cy = '''Cod post'''
+
+[strings."ch.address.country"]
+hash = "701d021d08c5"
+cy = '''Gwlad'''
+
+[strings."ch.office.read-failed"]
+hash = "72a3eae59250"
+cy = '''Methwyd â darllen y cyfeiriad swyddfa gofrestredig presennol.'''
+
+[strings."ch.office.confirm-statement"]
+hash = "0d1849c367e7"
+cy = '''Cadarnhewch y datganiad cyfeiriad priodol o dan adran 86(2)'''
+
+[strings."ch.office.record-title"]
+hash = "8d8f6e43875b"
+cy = '''Newid cyfeiriad swyddfa gofrestredig'''
+
+[strings."ch.micro.mismatch-this-year"]
+hash = "633bb52cd2df"
+cy = '''eleni (cyfalaf a chronfeydd wrth gefn {amount})'''
+
+[strings."ch.micro.mismatch-last-year"]
+hash = "cc77281c7707"
+cy = '''y llynedd (cyfalaf a chronfeydd wrth gefn {amount})'''
+
+[strings."ch.micro.mismatch"]
+hash = "4b17b389978a"
+cy = '''Nid yw’n cyfateb i’r cyfalaf a’r cronfeydd wrth gefn ar gyfer {years} - cywirwch hyn cyn gweld y rhagolwg.'''
+
+[strings."ch.micro.matches"]
+hash = "adf0829fd4f9"
+cy = '''Yn cyfateb i’r cyfalaf a’r cronfeydd wrth gefn.'''
+
+[strings."ch.micro.net-assets"]
+hash = "3b47f8b69df6"
+cy = '''Asedion net: {current} eleni, {prior} y llynedd. {verdict}'''
+
+[strings."ch.accounts.lookup-failed"]
+hash = "37fdf0338e6b"
+cy = '''Methwyd â chwilio am y cwmni.'''
+
+[strings."ch.micro.section-480"]
+hash = "0e9c6dcd2267"
+cy = '''Mae gan y cwmni hawl i eithriad rhag archwiliad o dan adran 480 o Ddeddf Cwmnïau 2006 sy’n ymwneud â chwmnïau segur.'''
+
+[strings."ch.accounts.confirm-477"]
+hash = "7ed41d8667e6"
+cy = '''Cadarnhewch fod gan y cwmni hawl i eithriad rhag archwiliad o dan adran 477'''
+
+[strings."ch.accounts.confirm-members"]
+hash = "fb825c16c88b"
+cy = '''Cadarnhewch nad yw’r aelodau wedi ei gwneud yn ofynnol i’r cwmni gael archwiliad'''
+
+[strings."ch.accounts.confirm-directors"]
+hash = "f3545b0dac32"
+cy = '''Cadarnhewch fod y cyfarwyddwyr yn cydnabod eu cyfrifoldebau'''
+
+[strings."ch.micro.confirm-provisions"]
+hash = "0dc548761960"
+cy = '''Cadarnhewch fod y cyfrifon yn dilyn y darpariaethau micro-endid'''
+
+[strings."ch.micro.must-equal"]
+hash = "44e7ec414cbd"
+cy = '''Rhaid i’r cyfalaf a’r cronfeydd wrth gefn fod yn hafal i’r asedion net ar gyfer y ddwy flynedd cyn gweld y rhagolwg.'''
+
+[strings."ch.accounts.preview-failed"]
+hash = "69d9aacfdc24"
+cy = '''Methwyd â chreu’r rhagolwg o’r cyfrifon.'''
+
+[strings."ch.accounts.checking"]
+hash = "a5acf0e5cc4d"
+cy = '''Mae cyflwyniad {number} yn {status}. Wrthi’n gwirio eto...'''
+
+[strings."ch.accounts.enter-presenter-id"]
+hash = "b97c96b48d9b"
+cy = '''Rhowch eich ID cyflwynydd'''
+
+[strings."ch.accounts.enter-presenter-code"]
+hash = "dfef5d26adf7"
+cy = '''Rhowch eich cod dilysu cyflwynydd'''
+
+[strings."ch.accounts.enter-auth-code"]
+hash = "13aba63d425e"
+cy = '''Rhowch god dilysu’r cwmni o 6 i 8 nod'''
+
+[strings."ch.accounts.file-failed"]
+hash = "ee30a93be3ed"
+cy = '''Methwyd â ffeilio’r cyfrifon gyda Thŷ’r Cwmnïau.'''
+
+[strings."ch.accounts.gateway-accepted"]
+hash = "e775a48a6fad"
+cy = '''Derbyniodd y porth gyflwyniad {number} am {time}. Wrthi’n aros am Dŷ’r Cwmnïau...'''
+
+[strings."ch.accounts.accepted"]
+hash = "7b7f930377b3"
+cy = '''Derbyniodd Tŷ’r Cwmnïau y cyfrifon.'''
+
+[strings."ch.accounts.rejected"]
+hash = "32fb1f012a68"
+cy = '''Gwrthododd Tŷ’r Cwmnïau y cyfrifon.'''
+
+[strings."ch.accounts.not-finished"]
+hash = "f8173276046f"
+cy = '''Mae’r cyfrifon gan Dŷ’r Cwmnïau ac nid yw wedi gorffen eu gwirio.'''
+
+[strings."ch.accounts.status-line"]
+hash = "73f563a802a8"
+cy = '''Statws: {status}. Rhif cyflwyno {number}.'''
+
+[strings."ch.accounts.not-confirmed"]
+hash = "a5e6154660a9"
+cy = '''Cyflwynwyd eich cyfrifon. Nid yw Tŷ’r Cwmnïau wedi cadarnhau’r canlyniad eto.'''
+
+[strings."ch.accounts.check-failed"]
+hash = "a8a83d538d76"
+cy = '''Rhif cyflwyno {number}. Methodd y gwiriad statws: {message}.'''
+
+[strings."ch.accounts.unknown-error"]
+hash = "3e4443e52275"
+cy = '''gwall anhysbys'''
+
+[strings."ch.small.gross-profit"]
+hash = "76741f5822b0"
+cy = '''Elw gros: {amount}. '''
+
+[strings."ch.small.profit-totals"]
+hash = "43c3a0c4b9f0"
+cy = '''Elw gweithredol: {operating}. Elw cyn treth: {beforeTax}. Elw am y flwyddyn: {profit}.'''
+
+[strings."ch.small.matches-capital"]
+hash = "2de562166fa8"
+cy = '''Yn cyfateb i’r cyfalaf cyfrannau a chronfa wrth gefn y cyfrif elw a cholled.'''
+
+[strings."ch.small.mismatch-capital"]
+hash = "99f24c983406"
+cy = '''Nid yw’n cyfateb i’r cyfalaf cyfrannau a chronfa wrth gefn y cyfrif elw a cholled ({amount}) - cywirwch hyn cyn gweld y rhagolwg.'''
+
+[strings."ch.small.net-assets"]
+hash = "158ec55f6847"
+cy = '''Asedion net: {amount}. {verdict}'''
+
+[strings."ch.small.matches-fixed"]
+hash = "dc79ff76075e"
+cy = '''Yn cyfateb i’r asedion sefydlog.'''
+
+[strings."ch.small.mismatch-fixed"]
+hash = "f2845c8f4190"
+cy = '''Nid yw’n cyfateb i’r asedion sefydlog ({amount}) - cywirwch hyn cyn gweld y rhagolwg.'''
+
+[strings."ch.small.net-book-value"]
+hash = "06af02b95c6d"
+cy = '''Gwerth llyfr net: {amount}. {verdict}'''
+
+[strings."ch.small.matches-fixed-with-note"]
+hash = "8b1d3f12d3e3"
+cy = '''Gyda’r nodyn asedion sefydlog diriaethol, yn cyfateb i’r asedion sefydlog.'''
+
+[strings."ch.small.mismatch-fixed-with-note"]
+hash = "a63f4b729515"
+cy = '''Gyda’r nodyn asedion sefydlog diriaethol, nid yw’n cyfateb i’r asedion sefydlog ({amount}) - cywirwch hyn cyn gweld y rhagolwg.'''
+
+[strings."ch.small.net-assets-must-equal"]
+hash = "0847c0beb34a"
+cy = '''Rhaid i’r asedion net fod yn hafal i’r cyfalaf cyfrannau a chronfa wrth gefn y cyfrif elw a cholled ar gyfer pob blwyddyn cyn gweld y rhagolwg.'''
+
+[strings."ch.small.bank-loans-too-big"]
+hash = "83aeea668265"
+cy = '''Ni all benthyciadau banc sy’n ddyledus ar ôl blwyddyn fod yn fwy na’r credydwyr sy’n ddyledus ar ôl blwyddyn.'''
+
+[strings."ch.small.debtors-split"]
+hash = "e0bcc7a824f7"
+cy = '''Rhaid i ddyledwyr masnach, dyledwyr eraill, symiau dyledus gan gyfarwyddwyr a rhagdaliadau adio i’r dyledwyr ar gyfer pob blwyddyn cyn gweld y rhagolwg.'''
+
+[strings."ch.small.after-one-year-split"]
+hash = "02f901328d99"
+cy = '''Ni all benthyciadau banc, symiau dyledus i gyfarwyddwyr a symiau dyledus i ymgymeriadau grŵp fod yn fwy na’r credydwyr sy’n ddyledus ar ôl blwyddyn.'''
+
+[strings."ch.small.notes-must-equal"]
+hash = "7965c3d2343c"
+cy = '''Rhaid i werth llyfr net nodiadau’r asedion sefydlog fod yn hafal i’r asedion sefydlog cyn gweld y rhagolwg.'''
+
+[strings."ch.small.confirm-regime"]
+hash = "a86486606865"
+cy = '''Cadarnhewch fod y cyfrifon yn dilyn y drefn cwmnïau bach'''
+
+[strings."ch.small.outcome"]
+hash = "8b29ae1ed641"
+cy = '''Roedd cyflwyniad {number} yn {status}.'''
+
+[strings."ch.cs.fee-paid"]
+hash = "0fea1f92b0e8"
+cy = '''Dim ffi: mae’r cyfnod talu hwn wedi’i dalu eisoes.'''
+
+[strings."ch.cs.fee-own-presenter"]
+hash = "de4c74c4dff5"
+cy = '''Mae Tŷ’r Cwmnïau yn codi ei ffi ar y cyfrif credyd y tu ôl i’ch cyflwynydd. Nid yw Submit yn codi ffi ei hun.'''
+
+[strings."ch.cs.fee-applies"]
+hash = "65c7399e5df8"
+cy = '''Mae ffi yn berthnasol i’r cyfnod talu hwn - mae’r swm yn cael ei ddangos cyn i chi gyflwyno.'''
+
+[strings."ch.cs.verified"]
+hash = "4f7838402f37"
+cy = '''Wedi’i wirio'''
+
+[strings."ch.cs.not-verified"]
+hash = "151339072593"
+cy = '''Heb ei wirio'''
+
+[strings."ch.cs.only-active-ltd"]
+hash = "e89fae51ef56"
+cy = '''Dim ond cwmni preifat gweithredol wedi ei gyfyngu drwy gyfrannau sy’n gallu ffeilio datganiad cadarnhau yma.'''
+
+[strings."ch.cs.share-class-n"]
+hash = "4565cfa32c17"
+cy = '''Dosbarth cyfrannau {n}'''
+
+[strings."ch.cs.share-class"]
+hash = "acf5eaf66e10"
+cy = '''Dosbarth cyfrannau'''
+
+[strings."ch.cs.prescribed-particulars"]
+hash = "c4f2b5b1b4aa"
+cy = '''Manylion penodedig'''
+
+[strings."ch.cs.number-of-shares"]
+hash = "d215a98eb2a3"
+cy = '''Nifer y cyfrannau'''
+
+[strings."ch.cs.aggregate-nominal-value"]
+hash = "2ba6f070054f"
+cy = '''Cyfanswm y gwerth nominal cyfanred'''
+
+[strings."ch.cs.money-example"]
+hash = "b18cc2d721b4"
+cy = '''Er enghraifft, 600 neu 1,200.50'''
+
+[strings."ch.cs.remove"]
+hash = "c3812fc4acb8"
+cy = '''Dileu'''
+
+[strings."ch.cs.transfer-date"]
+hash = "0ff496d5520a"
+cy = '''Dyddiad trosglwyddiad {n}'''
+
+[strings."ch.cs.transfer-shares"]
+hash = "fcf458e53e51"
+cy = '''Nifer y cyfrannau yn nhrosglwyddiad {n}'''
+
+[strings."ch.cs.remove-transfer"]
+hash = "38abbab33ebf"
+cy = '''Dileu’r trosglwyddiad'''
+
+[strings."ch.cs.holder-surname"]
+hash = "bbc0b38b5419"
+cy = '''Cyfenw’r cyfranddeiliad'''
+
+[strings."ch.cs.holder-forename"]
+hash = "d3eda3e79843"
+cy = '''Enw cyntaf y cyfranddeiliad'''
+
+[strings."ch.cs.holder-amalgamated"]
+hash = "6fc4a9973052"
+cy = '''Neu enw cyfunol (yn lle cyfenw/enw cyntaf)'''
+
+[strings."ch.cs.holder-premise"]
+hash = "7ca7e06b7809"
+cy = '''Adeilad'''
+
+[strings."ch.cs.holder-street"]
+hash = "c666591df053"
+cy = '''Stryd'''
+
+[strings."ch.cs.holder-thoroughfare"]
+hash = "04145f23f725"
+cy = '''Tramwyfa'''
+
+[strings."ch.cs.holder-post-town"]
+hash = "89cec1d7722a"
+cy = '''Tref bost'''
+
+[strings."ch.cs.joint-holder-n"]
+hash = "26986f314ea1"
+cy = '''Cyd-ddeiliad {n}'''
+
+[strings."ch.cs.remove-joint-holder"]
+hash = "015131d3b69d"
+cy = '''Dileu’r cyd-ddeiliad'''
+
+[strings."ch.cs.shareholding-n"]
+hash = "6a1bb5e136d8"
+cy = '''Cyfranddaliad {n}'''
+
+[strings."ch.cs.number-held"]
+hash = "07d3606c5cf2"
+cy = '''Nifer a ddelir'''
+
+[strings."ch.cs.joint-hint"]
+hash = "7d15a9d5560d"
+cy = '''Mae daliad a ddelir ar y cyd yn cynnwys pob cyd-ddeiliad isod, hyd at {max}.'''
+
+[strings."ch.cs.share-transfers"]
+hash = "d8d72b2dbb54"
+cy = '''Trosglwyddiadau cyfrannau'''
+
+[strings."ch.cs.transfers-hint"]
+hash = "8a547bfae6fc"
+cy = '''Pob trosglwyddiad cyfrannau ers y datganiad diwethaf: ei ddyddiad a nifer y cyfrannau, hyd at {max}.'''
+
+[strings."ch.cs.add-transfer"]
+hash = "04fd62606452"
+cy = '''Ychwanegu trosglwyddiad'''
+
+[strings."ch.cs.add-joint-holder"]
+hash = "8aabe5f89d16"
+cy = '''Ychwanegu cyd-ddeiliad'''
+
+[strings."ch.cs.remove-shareholding"]
+hash = "715f806a6c1b"
+cy = '''Dileu’r cyfranddaliad'''
+
+[strings."ch.cs.no-dob"]
+hash = "e3747311ed23"
+cy = '''dim dyddiad geni ar gofnod'''
+
+[strings."ch.cs.other-forenames"]
+hash = "72707ba8593a"
+cy = '''Enwau cyntaf eraill'''
+
+[strings."ch.cs.other-forenames-hint"]
+hash = "88e324050c64"
+cy = '''Pob enw canol ar y gofrestr. Mae Tŷ’r Cwmnïau yn paru’r cyfarwyddwr yn ôl yr enw llawn - mae gadael un allan yn gwrthod y ffeilio.'''
+
+[strings."ch.cs.personal-code"]
+hash = "07df48853a1b"
+cy = '''Cod personol Tŷ’r Cwmnïau'''
+
+[strings."ch.cs.mismatch-reason"]
+hash = "0f6fdd407780"
+cy = '''Rheswm dros enw nad yw’n cyfateb'''
+
+[strings."ch.cs.mismatch-hint"]
+hash = "59e467a8dd7e"
+cy = '''Dim ond pan fydd yr enw y gwnaeth y cyfarwyddwr hwn ei wirio oddi tano yn wahanol i enw’r gofrestr uchod.'''
+
+[strings."ch.cs.no-next-date"]
+hash = "e6899244fd09"
+cy = '''Nid yw Tŷ’r Cwmnïau wedi cyhoeddi dyddiad datganiad cadarnhau nesaf ar gyfer y cwmni hwn.'''
+
+[strings."ch.cs.read-failed"]
+hash = "98eafc97d82a"
+cy = '''Methwyd â darllen data ffeilio’r datganiad cadarnhau.'''
+
+[strings."ch.cs.enter-date"]
+hash = "9efe012a51cc"
+cy = '''Rhowch ddyddiad y datganiad cadarnhau.'''
+
+[strings."ch.cs.lawful-required"]
+hash = "af26a0edc7a6"
+cy = '''Rhaid derbyn y datganiad pwrpas cyfreithiol cyn gweld y rhagolwg.'''
+
+[strings."ch.cs.confirmation-required"]
+hash = "f83ae87c5746"
+cy = '''Rhaid derbyn y datganiad cadarnhau cyn gweld y rhagolwg.'''
+
+[strings."ch.cs.director-required"]
+hash = "a203dbeca531"
+cy = '''Mae angen datganiad gwirio gan o leiaf un cyfarwyddwr presennol.'''
+
+[strings."ch.cs.director-blank"]
+hash = "9c291d1fd60a"
+cy = '''Rhaid i {name} wirio ei hunaniaeth gyda Thŷ’r Cwmnïau, ac mae angen ei enwau cyntaf eraill a’i god personol o 11 nod (llythrennau a digidau) ar y datganiad hwn cyn y gellir ei gyflwyno.'''
+
+[strings."ch.cs.summary-date"]
+hash = "5f8793fe1c07"
+cy = '''Dyddiad y datganiad cadarnhau'''
+
+[strings."ch.cs.summary-lawful"]
+hash = "c5ba54985700"
+cy = '''Datganiad pwrpas cyfreithiol'''
+
+[strings."ch.cs.accepted"]
+hash = "a00fb0c50741"
+cy = '''Wedi’i dderbyn'''
+
+[strings."ch.cs.summary-confirmation"]
+hash = "4986bea21f77"
+cy = '''Datganiad cadarnhau'''
+
+[strings."ch.cs.summary-directors"]
+hash = "59d68d25d35e"
+cy = '''Cyfarwyddwyr sy’n gwirio eu hunaniaeth'''
+
+[strings."ch.cs.summary-sic"]
+hash = "2df5db7ed25a"
+cy = '''Natur y busnes (codau SIC)'''
+
+[strings."ch.cs.summary-email"]
+hash = "bd2f6cd0c05d"
+cy = '''Cyfeiriad e-bost cofrestredig'''
+
+[strings."ch.cs.summary-capital"]
+hash = "185b896f521e"
+cy = '''Datganiad cyfalaf'''
+
+[strings."ch.cs.changed"]
+hash = "40649f4e6c31"
+cy = '''Wedi newid o’r gofrestr'''
+
+[strings."ch.cs.summary-shareholders"]
+hash = "da31087015c2"
+cy = '''Cyfranddeiliaid'''
+
+[strings."ch.cs.holding-summary"]
+hash = "ec203c3653a4"
+cy = '''{shareClass}, {number} yn cael eu dal'''
+
+[strings."ch.cs.transfer-label"]
+hash = "23fd3046d616"
+cy = '''Cyfranddaliad {n} trosglwyddiad {m}'''
+
+[strings."ch.cs.transfer-summary"]
+hash = "99b9c10aa5cf"
+cy = '''{number} o gyfrannau ar {date}'''
+
+[strings."ch.cs.confirm-lawful"]
+hash = "2c8f09a561c2"
+cy = '''Cadarnhewch y datganiad pwrpas cyfreithiol'''
+
+[strings."ch.cs.confirm-confirmation"]
+hash = "cf759f47f311"
+cy = '''Cadarnhewch y datganiad cadarnhau'''
+
+[strings."ch.cs.fee-charged"]
+hash = "1d2926c5c421"
+cy = '''Bydd {fee} yn cael ei godi cyn i hyn gael ei gyflwyno i Dŷ’r Cwmnïau.'''
+
+[strings."ch.cs.pay-and-submit"]
+hash = "32633c6d17a3"
+cy = '''Talu a chyflwyno'''
+
+[strings."ch.cs.submit"]
+hash = "31272e0852e8"
+cy = '''Cyflwyno i Dŷ’r Cwmnïau'''
+
+[strings."ch.cs.preview-failed"]
+hash = "5158b3037f69"
+cy = '''Methwyd â chreu’r rhagolwg o’r datganiad cadarnhau.'''
+
+[strings."ch.cs.psc-heading"]
+hash = "4716e57c8443"
+cy = '''Gwirio PRhA'''
+
+[strings."ch.cs.psc-explanation"]
+hash = "f96891e020d0"
+cy = '''Mae Tŷ’r Cwmnïau yn gwirio person â rheolaeth arwyddocaol ar wahân i’r datganiad cadarnhau, drwy ddatganiad gwirio PRhA a ffeilir ar ôl yr un hwn, o fewn y cyfnod sy’n dechrau’r diwrnod ar ôl y dyddiad adolygu. Rhowch god personol PRhA pob person isod i ffeilio eu un hwy nawr.'''
+
+[strings."ch.cs.psc-code"]
+hash = "8a37ae833160"
+cy = '''Cod personol PRhA'''
+
+[strings."ch.cs.psc-submit"]
+hash = "85c73e89c467"
+cy = '''Cyflwyno datganiad gwirio PRhA'''
+
+[strings."ch.cs.psc-code-invalid"]
+hash = "7c4955ab5aff"
+cy = '''Rhaid i’r cod personol PRhA fod yn god personol Tŷ’r Cwmnïau o 11 nod, yn llythrennau a digidau.'''
+
+[strings."ch.cs.psc-gateway-accepted"]
+hash = "bb1a497a8b84"
+cy = '''Derbyniodd y porth gyflwyniad {number}. Wrthi’n aros am Dŷ’r Cwmnïau...'''
+
+[strings."ch.cs.psc-failed"]
+hash = "6d2ff3c2c73d"
+cy = '''Methwyd â ffeilio’r datganiad gwirio PRhA.'''
+
+[strings."ch.cs.identity-verified"]
+hash = "99b52fb41be2"
+cy = '''Hunaniaeth wedi’i gwirio'''
+
+[strings."ch.cs.identity-not-verified"]
+hash = "13b58a61daec"
+cy = '''Hunaniaeth heb ei gwirio'''
+
+[strings."ch.cs.file-failed"]
+hash = "695f75c19c10"
+cy = '''Methwyd â ffeilio’r datganiad cadarnhau gyda Thŷ’r Cwmnïau.'''
+
+[strings."ch.cs.payment-failed-reason"]
+hash = "85528157871a"
+cy = '''Methwyd â dechrau’r taliad: {reason}'''
+
+[strings."ch.cs.unknown-error"]
+hash = "27c2ccd962c2"
+cy = '''Gwall anhysbys'''
+
+[strings."ch.cs.payment-failed"]
+hash = "fcb4da20d6b6"
+cy = '''Methwyd â dechrau’r taliad.'''
+
+[strings."ch.cs.payment-received"]
+hash = "addcc72c5c15"
+cy = '''Daeth y taliad am y ffeilio hwn i law. Rhowch god dilysu’r cwmni i’w orffen.'''
+
+[strings."ch.cs.payment-not-completed"]
+hash = "400b36222f32"
+cy = '''Ni chwblhawyd y taliad. Dewiswch Talu a chyflwyno eto pan fyddwch yn barod.'''
+
+[strings."ch.cs.max-transfers"]
+hash = "ef632869b91d"
+cy = '''Gall cyfranddaliad gynnwys {max} trosglwyddiad ar y mwyaf.'''
+
+[strings."ch.cs.max-joint-holders"]
+hash = "4c677d748d2e"
+cy = '''Gall cyfranddaliad gynnwys {max} cyd-ddeiliad ar y mwyaf.'''
+
+[strings."ch.record.download"]
+hash = "81ad39a3f4e3"
+cy = '''Lawrlwytho {title}'''
+
+[strings."ch.record.download-advice"]
+hash = "54844c74a595"
+cy = '''Cadwch y ffeil hon gyda’ch cofnodion. Peidiwch â chadw’r ddogfen o dudalen eich porwr, oherwydd mae porwr yn ei newid.'''
+
+[strings."ch.record.not-kept"]
+hash = "a6a43d325fb0"
+cy = '''Heb ei chadw'''
+
+[strings."ch.record.not-kept-why"]
+hash = "dcab1ad26801"
+cy = '''Gwnaed y ffeilio hwn cyn i’r wefan gadw copi o’r ddogfen a ffeiliwyd.'''
+
+[strings."ch.record.receipt-name"]
+hash = "ed07b46cb5cd"
+cy = '''Derbynneb Tŷ’r Cwmnïau'''
+
+[strings."ch.record.submission-number-line"]
+hash = "c5bc7b04d302"
+cy = '''Rhif cyflwyno {number}'''
+
+[strings."ch.record.receipt-title"]
+hash = "2a9a80f163d1"
+cy = '''Derbynneb gan Dŷ’r Cwmnïau'''
+
+[strings."ch.record.filed-on-line"]
+hash = "3b4a9fa1d264"
+cy = '''Ffeiliwyd {date}'''
+
+[strings."ch.record.submission-number"]
+hash = "7582a6dc98b1"
+cy = '''Rhif cyflwyno'''
+
+[strings."ch.record.company-number"]
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
+
+[strings."ch.record.status"]
+hash = "920e413c7d41"
+cy = '''Statws'''
+
+[strings."ch.record.accepted"]
+hash = "d622083eaae8"
+cy = '''Derbyniwyd gan Dŷ’r Cwmnïau'''
+
+[strings."ch.record.filed-on"]
+hash = "063304855090"
+cy = '''Ffeiliwyd ar'''
+
+[strings."ch.record.accounts-as-filed"]
+hash = "9c73a18d0b70"
+cy = '''Y cyfrifon fel y’u ffeiliwyd'''
+
+[strings."ch.record.accounts-explanation"]
+hash = "9ed66adc1659"
+cy = '''Dyma’r ddogfen a gafodd Tŷ’r Cwmnïau, yn union fel y gwnaethom ei hanfon. Mae’n cynnwys eich mantolen a’r nodiadau a ffeiliwyd gennych. Mae Tŷ’r Cwmnïau yn rhoi cyfrifon a ffeiliwyd ar y gofrestr gyhoeddus, lle gall unrhyw un eu darllen.'''
+
+[strings."ch.record.accounts-frame"]
+hash = "def42c03143b"
+cy = '''Y cyfrifon fel y’u ffeiliwyd'''
+
+[strings."ch.record.accounts-receipt-explanation"]
+hash = "ac097ed25550"
+cy = '''Rhoddodd Tŷ’r Cwmnïau rif cyflwyno i’r ffeilio hwn. Dyfynnwch ef os byddwch yn ysgrifennu at Dŷ’r Cwmnïau am y cyfrifon hyn. Mae wedi’i dderbyn yn golygu bod y cyfrifon ar y gofrestr.'''
+
+[strings."ch.record.accounts-copy-title"]
+hash = "825fda0cd455"
+cy = '''Eich copi o’r cyfrifon a ffeiliwyd gyda Thŷ’r Cwmnïau'''
+
+[strings."ch.record.file-again"]
+hash = "a09c9b9a3fdb"
+cy = '''Ffeilio cyfrifon eto gyda ffigurau wedi’u cywiro'''
+
+[strings."ch.record.look-up-another"]
+hash = "898cdc34e197"
+cy = '''Chwilio am gwmni arall'''
+
+[strings."ch.record.all-receipts"]
+hash = "99abb9fa11a9"
+cy = '''Eich holl dderbynebau'''
+
+[strings."ch.record.rejected"]
+hash = "16d9cafed33f"
+cy = '''Gwrthodwyd gan Dŷ’r Cwmnïau'''
+
+[strings."ch.record.pending"]
+hash = "242475235954"
+cy = '''Gyda Thŷ’r Cwmnïau'''
+
+[strings."ch.record.confirmed"]
+hash = "89d5c1886850"
+cy = '''Wedi’i gadarnhau fel y mae ar y gofrestr'''
+
+[strings."ch.record.company-number-line"]
+hash = "d691cbbac827"
+cy = '''Rhif y cwmni {number}'''
+
+[strings."ch.record.cs-title"]
+hash = "9e84a7fe6e03"
+cy = '''Datganiad cadarnhau'''
+
+[strings."ch.record.made-up-to-line"]
+hash = "98c5ad5b845d"
+cy = '''Hyd at {date}'''
+
+[strings."ch.record.made-up-to"]
+hash = "b9a9d425f105"
+cy = '''Hyd at'''
+
+[strings."ch.record.as-confirmed-on"]
+hash = "910637568e74"
+cy = '''Fel y’i cadarnhawyd ar {date}'''
+
+[strings."ch.record.none-on-register"]
+hash = "b4641e7959d2"
+cy = '''Dim ar y gofrestr'''
+
+[strings."ch.record.cs-copy-title"]
+hash = "ec5a0973fb2b"
+cy = '''Eich copi o’r datganiad cadarnhau ar gyfer {company}'''
+
+[strings."ch.record.cs-as-filed"]
+hash = "5088eb9647ac"
+cy = '''Y datganiad fel y’i ffeiliwyd'''
+
+[strings."ch.record.cs-explanation"]
+hash = "239221d67188"
+cy = '''Dyma’r hyn a gadarnhawyd gennych i Dŷ’r Cwmnïau: y cwmni, y dyddiad y mae’r datganiad yn ei gwmpasu, a’ch atebion. Mae unrhyw beth a nodir fel wedi’i gadarnhau heb newid ar y gofrestr.'''
+
+[strings."ch.record.officers-as-confirmed"]
+hash = "7574adc1b3e8"
+cy = '''Swyddogion fel y’u cadarnhawyd'''
+
+[strings."ch.record.officers-explanation"]
+hash = "fca7f478604f"
+cy = '''Dyma swyddogion presennol y cwmni ar y gofrestr pan wnaethoch ffeilio, ac a yw pob un wedi gwirio ei hunaniaeth.'''
+
+[strings."ch.record.officers"]
+hash = "ffc77e8b8be4"
+cy = '''Swyddogion'''
+
+[strings."ch.record.pscs-as-confirmed"]
+hash = "ec7610b9ecd9"
+cy = '''Pobl â rheolaeth arwyddocaol fel y’u cadarnhawyd'''
+
+[strings."ch.record.pscs-explanation"]
+hash = "cd3b23867d41"
+cy = '''Dyma’r bobl â rheolaeth arwyddocaol ar y gofrestr pan wnaethoch ffeilio, gyda sut maent yn rheoli’r cwmni.'''
+
+[strings."ch.record.pscs"]
+hash = "c9412efd9841"
+cy = '''Pobl â rheolaeth arwyddocaol'''
+
+[strings."ch.record.psc-row"]
+hash = "3c2c82b3b4c4"
+cy = '''{control}. Hysbyswyd {date}'''
+
+[strings."ch.record.cs-receipt-explanation"]
+hash = "38dcba130514"
+cy = '''Rhoddodd Tŷ’r Cwmnïau rif cyflwyno i’r ffeilio hwn. Dyfynnwch ef os byddwch yn ysgrifennu at Dŷ’r Cwmnïau am y datganiad hwn.'''
+
+[strings."ch.record.submitted-line"]
+hash = "16e00e0ff211"
+cy = '''Cyflwynwyd {date}'''
+
+[strings."ch.record.change-copy-title"]
+hash = "233b105e575b"
+cy = '''Eich copi: {title}'''
+
+[strings."ch.record.change-as-submitted"]
+hash = "ea92d85e4beb"
+cy = '''Y newid fel y’i cyflwynwyd'''
+
+[strings."ch.record.change-explanation"]
+hash = "36bc6977d5cd"
+cy = '''Dyma’r hyn y gofynnoch i Dŷ’r Cwmnïau ei gofnodi ar y gofrestr.'''
+
+[strings."ch.record.change-receipt-explanation"]
+hash = "3cdb687da7e9"
+cy = '''Rhoddodd Tŷ’r Cwmnïau rif cyflwyno i’r ffeilio hwn. Dyfynnwch ef os byddwch yn ysgrifennu at Dŷ’r Cwmnïau am y newid hwn.'''
+
+[strings."ch.lane.status-production"]
+hash = "b234a63f0120"
+cy = '''Statws: cynhyrchu (production).'''
+
+[strings."ch.lane.production"]
+hash = "33befcb39e38"
+cy = '''Mae newid rydych yn ei ffeilio yma yn cyrraedd cofrestr fyw Tŷ’r Cwmnïau.'''
+
+[strings."ch.lane.status-sandbox"]
+hash = "983109fd7107"
+cy = '''Statws: prawf (sandbox).'''
+
+[strings."ch.lane.sandbox"]
+hash = "86257ba02943"
+cy = '''Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.'''
+
+[strings."ch.ct.line-profit-per-accounts"]
+hash = "a62ab0e6fed3"
+cy = '''Elw neu golled yn ôl y cyfrifon'''
+
+[strings."ch.ct.line-loan-credits"]
+hash = "50346cff3434"
+cy = '''Llai: credydau perthynas benthyciad anfasnachu'''
+
+[strings."ch.ct.line-depreciation"]
+hash = "fcfa75e12b50"
+cy = '''Adio: dibrisiant'''
+
+[strings."ch.ct.line-amortisation"]
+hash = "77267e2932f6"
+cy = '''Adio: amorteiddiad'''
+
+[strings."ch.ct.line-entertaining"]
+hash = "6810449b5168"
+cy = '''Adio: adloniant'''
+
+[strings."ch.ct.line-donations"]
+hash = "e11cae05062a"
+cy = '''Adio: rhoddion'''
+
+[strings."ch.ct.line-before-apportionment"]
+hash = "d94ed12b958d"
+cy = '''Elw wedi’i addasu cyn dosrannu amser'''
+
+[strings."ch.ct.line-time-apportionment"]
+hash = "e8758b70d10d"
+cy = '''Dosrannu amser'''
+
+[strings."ch.ct.line-before-allowances"]
+hash = "7779db63e030"
+cy = '''Elw wedi’i addasu cyn lwfansau cyfalaf'''
+
+[strings."ch.ct.line-total-allowances"]
+hash = "2edc3d0ab603"
+cy = '''Llai: cyfanswm y lwfansau cyfalaf'''
+
+[strings."ch.ct.line-adjusted-profit"]
+hash = "e0024582e885"
+cy = '''Elw wedi’i addasu'''
+
+[strings."ch.ct.return-to-review"]
+hash = "f67dc0e66860"
+cy = '''Yn ôl i’r adolygiad'''
+
+[strings."ch.ct.preview-the-return"]
+hash = "6ebf80ff1c38"
+cy = '''Rhagolwg o’r Ffurflen'''
+
+[strings."ch.ct.guide-link"]
+hash = "692963a49f79"
+cy = '''canllaw Ffurflen Dreth y Cwmni'''
+
+[strings."ch.ct.no"]
+hash = "1ea442a134b2"
+cy = '''Na'''
+
+[strings."ch.ct.yes"]
+hash = "85a39ab345d6"
+cy = '''Ie'''
+
+[strings."ch.ct.period-start"]
+hash = "32d302d52482"
+cy = '''Dechrau’r cyfnod'''
+
+[strings."ch.ct.period-end"]
+hash = "eeae9fdd63e0"
+cy = '''Diwedd y cyfnod'''
+
+[strings."ch.ct.return-tag"]
+hash = "fbe932acb024"
+cy = ''' (Ffurflen {part})'''
+
+[strings."ch.ct.column-line"]
+hash = "d7852cd0d245"
+cy = '''Llinell'''
+
+[strings."ch.ct.this-year-title"]
+hash = "98597183c8c6"
+cy = '''Eleni'''
+
+[strings."ch.ct.this-year"]
+hash = "ee7ca167efc7"
+cy = '''eleni'''
+
+[strings."ch.ct.last-year-title"]
+hash = "5822754796c6"
+cy = '''Y llynedd'''
+
+[strings."ch.ct.last-year"]
+hash = "2793b49185e3"
+cy = '''y llynedd'''
+
+[strings."ch.ct.cell-label"]
+hash = "2aab6990cbcd"
+cy = '''{label}, {when}'''
+
+[strings."ch.ct.note-cost"]
+hash = "204a5eb2cd28"
+cy = '''Cost'''
+
+[strings."ch.ct.note-depreciation"]
+hash = "88e93c4c0bae"
+cy = '''Dibrisiant'''
+
+[strings."ch.ct.note-at-start"]
+hash = "d61a8bba4a47"
+cy = '''Ar ddechrau’r cyfnod'''
+
+[strings."ch.ct.note-added"]
+hash = "6c9262823e9d"
+cy = '''Wedi’i ychwanegu yn y cyfnod'''
+
+[strings."ch.ct.note-disposals"]
+hash = "2b70a010f5bd"
+cy = '''Wedi’i dynnu allan ar waredu'''
+
+[strings."ch.ct.send-hmrc-only-hint"]
+hash = "f05e2d7f1b3a"
+cy = '''Mae’r cyfrifon yn mynd i CThEF gyda Ffurflen Dreth y Cwmni.'''
+
+[strings."ch.ct.send-both-hint"]
+hash = "c9e9faa2345e"
+cy = '''I ffeilio yn y ddau le, mae Tŷ’r Cwmnïau yn cael y cyfrifon yn gyntaf. Pan fydd yn eu derbyn, mae Ffurflen Dreth y Cwmni yn mynd i CThEF gyda’r un ffigurau.'''
+
+[strings."ch.ct.where-accounts-go"]
+hash = "77b9b827ec25"
+cy = '''Ble mae’r cyfrifon yn mynd'''
+
+[strings."ch.ct.where-sending"]
+hash = "04120a3f9661"
+cy = '''I ble rydych yn anfon y cyfrifon hyn?'''
+
+[strings."ch.ct.send-to-hmrc"]
+hash = "0550f729f9f3"
+cy = '''I CThEF gyda Ffurflen Dreth y Cwmni'''
+
+[strings."ch.ct.send-to-both"]
+hash = "a2d7084923e9"
+cy = '''I Dŷ’r Cwmnïau ac i CThEF gyda Ffurflen Dreth y Cwmni'''
+
+[strings."ch.ct.which-copy"]
+hash = "05f7e25bdee4"
+cy = '''Pa gopi sy’n mynd i Dŷ’r Cwmnïau?'''
+
+[strings."ch.ct.which-copy-hint"]
+hash = "2cf0dde61faf"
+cy = '''Mae Tŷ’r Cwmnïau yn cyhoeddi’r hyn y mae’n ei gael. Mae cyfrifon wedi’u ffiledu (filleted) yn gadael y cyfrif elw a cholled ac adroddiad y cyfarwyddwyr allan o’r copi cyhoeddus. Mae CThEF yn cael y cyfrifon llawn y naill ffordd neu’r llall.'''
+
+[strings."ch.ct.full-accounts"]
+hash = "ba3c03029b79"
+cy = '''Cyfrifon llawn'''
+
+[strings."ch.ct.filleted-accounts"]
+hash = "caa3b8b2efec"
+cy = '''Cyfrifon wedi’u ffiledu (filleted)'''
+
+[strings."ch.ct.micro-note"]
+hash = "da5277c0892b"
+cy = '''Mae Tŷ’r Cwmnïau yn cael mantolen a nodiadau’r micro-endid. Mae’r cyfrif elw a cholled yn mynd i CThEF yn unig.'''
+
+[strings."ch.ct.which-accounts"]
+hash = "7be29c4a7e17"
+cy = '''Pa gyfrifon y mae’r cwmni yn eu paratoi?'''
+
+[strings."ch.ct.which-accounts-hint"]
+hash = "dad3ad021bf6"
+cy = '''Mae micro-endid yn bodloni dau o’r rhain: trosiant hyd at £1 miliwn, cyfanswm mantolen hyd at £500,000, a 10 o weithwyr neu lai. Mae llyfr yn dewis hyn i chi.'''
+
+[strings."ch.ct.accounts-intro"]
+hash = "db5d7a167dda"
+cy = '''Mae CThEF yn cymryd y cyfrifon llawn gyda’r Ffurflen, felly maent yn rhan o’r ffurflen hon. Rhowch bunnoedd cyfan, er enghraifft 600 neu 1,200.'''
+
+[strings."ch.ct.include-comparatives"]
+hash = "02c9431aa7e7"
+cy = '''Cynnwys ffigurau’r llynedd'''
+
+[strings."ch.ct.profit-and-loss"]
+hash = "dd8ab0040551"
+cy = '''Cyfrif elw a cholled'''
+
+[strings."ch.ct.balance-sheet"]
+hash = "659a653dd0a9"
+cy = '''Mantolen'''
+
+[strings."ch.ct.fixed-assets-note"]
+hash = "d14ccc12c69c"
+cy = '''Nodyn asedion sefydlog diriaethol'''
+
+[strings."ch.ct.include-fixed-assets-note"]
+hash = "38c54eddc911"
+cy = '''Cynnwys y nodyn asedion sefydlog diriaethol'''
+
+[strings."ch.ct.micro-profit-hint"]
+hash = "324855689eed"
+cy = '''Mae’r elw cyn treth a’r elw am y flwyddyn yn cael eu cyfrifo o’r llinellau hyn.'''
+
+[strings."ch.ct.micro-balance-hint"]
+hash = "5a64b780cba5"
+cy = '''Mae cyfrifon micro-endid bob amser yn dangos mantolen y llynedd wrth ochr mantolen eleni.'''
+
+[strings."ch.ct.about-accounts"]
+hash = "65d339b3c2b3"
+cy = '''Am y cyfrifon'''
+
+[strings."ch.ct.worked-heading"]
+hash = "ba1448683f64"
+cy = '''Y dreth wedi’i chyfrifo o’ch atebion'''
+
+[strings."ch.ct.worked-hint"]
+hash = "c3ac1e94c6a9"
+cy = '''Mae’r blychau hyn yn cael eu cyfrifo ac ni allwch deipio ynddynt. Mae pob un yn dangos y rheol sy’n ei roi.'''
+
+[strings."ch.ct.worked-empty"]
+hash = "9030294bcb76"
+cy = '''Llenwch y cyfnod a’r cyfrifon ac mae’r dreth yn ymddangos yma.'''
+
+[strings."ch.ct.class-aia"]
+hash = "14601134a94d"
+cy = '''Lwfans buddsoddi blynyddol'''
+
+[strings."ch.ct.class-main-pool"]
+hash = "c3a88b84986e"
+cy = '''Y brif gronfa'''
+
+[strings."ch.ct.class-full-expensing"]
+hash = "f5163c8a8e3f"
+cy = '''Treulio’n llawn'''
+
+[strings."ch.ct.class-special-rate"]
+hash = "8337d65d5fb8"
+cy = '''Lwfans cyfradd arbennig'''
+
+[strings."ch.ct.class-special-rate-pool"]
+hash = "aed275206058"
+cy = '''Cronfa cyfradd arbennig'''
+
+[strings."ch.ct.class-first-year"]
+hash = "0db321d0779b"
+cy = '''Lwfans blwyddyn gyntaf ac offer arall'''
+
+[strings."ch.ct.loan-name"]
+hash = "f0a91174561b"
+cy = '''Enw’r cyfranogwr neu’r cysylltai'''
+
+[strings."ch.ct.loan-amount"]
+hash = "1b95469227f1"
+cy = '''Y swm sy’n dal yn ddyledus ar ddiwedd y cyfnod'''
+
+[strings."ch.ct.loan-amount-hint"]
+hash = "0f53b263fa97"
+cy = '''Er enghraifft, £12,000'''
+
+[strings."ch.ct.loan-lent"]
+hash = "fc3337a1cde1"
+cy = '''O hyn, y swm a fenthycwyd ar ddyddiad newid y gyfradd neu ar ôl hynny'''
+
+[strings."ch.ct.loan-lent-hint"]
+hash = "19fd2b518e2a"
+cy = '''Gadewch hwn yn wag pan na fenthycwyd dim ar ôl y newid'''
+
+[strings."ch.ct.loan-rate"]
+hash = "249fd89a008f"
+cy = '''Cyfradd adran 455 ar gyfer y benthyciad hwn, os ydych am ddefnyddio un arall (%)'''
+
+[strings."ch.ct.loan-rate-hint"]
+hash = "1027bc32e667"
+cy = '''Gadewch hwn yn wag i ddefnyddio’r gyfradd a ddangosir gyda’r dreth wedi’i chyfrifo. Nid yw cyfradd rydych yn ei rhoi yn cael ei gwirio yn erbyn y data treth.'''
+
+[strings."ch.ct.remove-loan"]
+hash = "91a2aa7e5a0e"
+cy = '''Dileu’r benthyciad hwn'''
+
+[strings."ch.ct.participator"]
+hash = "1f749998ce4e"
+cy = '''Cyfranogwr'''
+
+[strings."ch.ct.date"]
+hash = "99c40ab40592"
+cy = '''Dyddiad'''
+
+[strings."ch.ct.amount-repaid"]
+hash = "bfb320993df4"
+cy = '''Y swm a ad-dalwyd'''
+
+[strings."ch.ct.amount-repaid-hint"]
+hash = "4e3c9bce22dd"
+cy = '''Gadewch hwn yn wag pan na ad-dalwyd dim'''
+
+[strings."ch.ct.amount-released"]
+hash = "cd8669bc3d43"
+cy = '''Y swm a ryddhawyd neu a ddilëwyd'''
+
+[strings."ch.ct.amount-released-hint"]
+hash = "e2a1132d7422"
+cy = '''Gadewch hwn yn wag pan na ryddhawyd na dileu dim'''
+
+[strings."ch.ct.remove-repayment"]
+hash = "dc1deac63bd9"
+cy = '''Dileu’r ad-daliad hwn'''
+
+[strings."ch.ct.loans-owed"]
+hash = "7720a4b706a7"
+cy = '''Benthyciadau sy’n dal yn ddyledus ar ddiwedd y cyfnod'''
+
+[strings."ch.ct.add-participator"]
+hash = "6dad04bdbd90"
+cy = '''Ychwanegu cyfranogwr arall'''
+
+[strings."ch.ct.repayments-heading"]
+hash = "362acb09ac00"
+cy = '''Ad-daliadau, rhyddhadau a dilead ers diwedd y cyfnod'''
+
+[strings."ch.ct.repayments-hint"]
+hash = "1fac1994fb61"
+cy = '''Rhowch yr hyn a ad-dalwyd hyd at heddiw. Rydych yn hawlio rhyddhad ar ad-daliadau diweddarach gan CThEF ar ôl iddynt gael eu gwneud.'''
+
+[strings."ch.ct.add-repayment"]
+hash = "3f4cacfc8961"
+cy = '''Ychwanegu ad-daliad arall'''
+
+[strings."ch.ct.loans-part-2"]
+hash = "cf288b02f63d"
+cy = '''Ffurflen 2 o 2: yr ail gyfnod cyfrifyddu'''
+
+[strings."ch.ct.choose-participator"]
+hash = "b6e8d8c3f9b6"
+cy = '''Dewiswch gyfranogwr'''
+
+[strings."ch.ct.first-period-start"]
+hash = "54e7b99d5ac5"
+cy = '''A yw’r cyfnod cyfrifyddu cyntaf yn dechrau ar ddiwrnod cyntaf y cyfrifon?'''
+
+[strings."ch.ct.first-period-start-hint"]
+hash = "fdcfa59b0374"
+cy = '''Atebwch Ie pan ddechreuodd cyfnod cyfrifyddu’r cwmni ar ddiwrnod cyntaf y cyfrifon hyn. Mae Submit yn ffeilio cyfnod hir o’r fan honno yn unig.'''
+
+[strings."ch.ct.statements"]
+hash = "85f86d38c4d6"
+cy = '''Datganiadau'''
+
+[strings."ch.ct.declaration"]
+hash = "7609342dc466"
+cy = '''Datganiad'''
+
+[strings."ch.ct.return-of-2-message"]
+hash = "a0c1b428d564"
+cy = '''Ffurflen {part} o 2: {message}'''
+
+[strings."ch.ct.rate-tax-data"]
+hash = "8a600c67b0f7"
+cy = '''o’r data treth ar gyfer blwyddyn dreth y benthyciad'''
+
+[strings."ch.ct.rate-online-rules"]
+hash = "eb7bd9d15bda"
+cy = '''y gyfradd y mae rheolau ar-lein CThEF yn ei derbyn'''
+
+[strings."ch.ct.rate-customer"]
+hash = "c62f17cdf833"
+cy = '''y gyfradd a roesoch'''
+
+[strings."ch.ct.a15"]
+hash = "4168fca25999"
+cy = '''Blwch A15: cyfanswm y benthyciadau sy’n dal yn ddyledus'''
+
+[strings."ch.ct.a15-rule"]
+hash = "10a13b71e26e"
+cy = '''Y benthyciadau a roesoch'''
+
+[strings."ch.ct.a20"]
+hash = "0b8ae19852d3"
+cy = '''Blwch A20: treth ar y benthyciadau'''
+
+[strings."ch.ct.a20-rule"]
+hash = "5431dbb10cd9"
+cy = '''Pob benthyciad ar ei gyfradd adran 455, i’r geiniog'''
+
+[strings."ch.ct.a45"]
+hash = "314942ccc924"
+cy = '''Blwch A45: rhyddhad ar fenthyciadau a ad-dalwyd o fewn naw mis'''
+
+[strings."ch.ct.a45-rule"]
+hash = "ea79618b945c"
+cy = '''Y swm a ad-dalwyd, a ryddhawyd neu a ddilëwyd, ar gyfradd y benthyciad'''
+
+[strings."ch.ct.a70"]
+hash = "4c377bcc33f2"
+cy = '''Blwch A70: rhyddhad ar ad-daliadau diweddarach'''
+
+[strings."ch.ct.a70-rule"]
+hash = "0cf1365fd1cd"
+cy = '''Rhyddhad sydd eisoes yn ddyledus'''
+
+[strings."ch.ct.a80"]
+hash = "6f5e52ff79dc"
+cy = '''Blwch A80: treth sy’n daladwy ar fenthyciadau i gyfranogwyr'''
+
+[strings."ch.ct.a80-rule"]
+hash = "08b33a010eff"
+cy = '''Wedi’i gario i flwch 480'''
+
+[strings."ch.ct.loan-rate-from"]
+hash = "fcc2cd20a702"
+cy = '''Cyfradd adran 455 ar gyfer {name} (wedi’i fenthyca o {from})'''
+
+[strings."ch.ct.loan-rate-for"]
+hash = "4dc6f5934bef"
+cy = '''Cyfradd adran 455 ar gyfer {name}'''
+
+[strings."ch.ct.warning"]
+hash = "e981ddae45d8"
+cy = '''Rhybudd'''
+
+[strings."ch.ct.worked-adjusted"]
+hash = "9e4880c56bd2"
+cy = '''Elw neu golled wedi’i addasu yn y cyfrifiant'''
+
+[strings."ch.ct.worked-adjusted-rule"]
+hash = "28a6be2264a4"
+cy = '''Elw yn ôl y cyfrifon, llai llog banc, adio dibrisiant, amorteiddiad, adloniant a rhoddion, llai lwfansau cyfalaf. Mae colled yn ymddangos mewn cromfachau.'''
+
+[strings."ch.ct.box-label"]
+hash = "510e5331202a"
+cy = '''Blwch {box}: {label}'''
+
+[strings."ch.ct.losses-carried"]
+hash = "8244a5132845"
+cy = '''Colledion masnachu a gariwyd ymlaen'''
+
+[strings."ch.ct.losses-carried-rule"]
+hash = "a9dd998c66b6"
+cy = '''Colled y cyfnod hwn a’r colledion a ddygwyd ymlaen nad oes hawliad yn eu defnyddio'''
+
+[strings."ch.ct.carry-back"]
+hash = "e28c447286a5"
+cy = '''Treth Gorfforaeth i’w had-dalu ar yr hawliad i gario’n ôl'''
+
+[strings."ch.ct.carry-back-rule"]
+hash = "d5fa5fa4f7a0"
+cy = '''Wedi’i hawlio yn erbyn y cyfnod {start} i {end}. Mae’r Ffurflen honno yn cario’r golled ym mlwch 275 gyda blwch 280 wedi’i dicio.'''
+
+[strings."ch.ct.limits"]
+hash = "7c77c0a27c1e"
+cy = '''Terfynau ar gyfer blwyddyn ariannol {year}'''
+
+[strings."ch.ct.limits-value"]
+hash = "17e5ecce4f58"
+cy = '''£{small} a £{upper}'''
+
+[strings."ch.ct.limits-rule"]
+hash = "f77a7f509416"
+cy = '''Y terfyn elw bach a’r terfyn uchaf, wedi’u graddio i {days} diwrnod y cyfnod cyfrifyddu hwn'''
+
+[strings."ch.ct.return-range"]
+hash = "cc152f9b4f0a"
+cy = '''Ffurflen {part} o 2: {start} i {end}'''
+
+[strings."ch.ct.days"]
+hash = "f92ee0ed6b3c"
+cy = '''Diwrnodau yn y cyfnod cyfrifyddu hwn'''
+
+[strings."ch.ct.days-value"]
+hash = "7b73bee4d4bd"
+cy = '''{days} o {whole} diwrnod'''
+
+[strings."ch.ct.days-rule"]
+hash = "282335cc2e4a"
+cy = '''Mae’r trosiant, y llog banc a’r elw wedi’i addasu yn cael eu rhannu yn ôl diwrnodau: {percent}% o’r cyfnod cyfrifon.'''
+
+[strings."ch.ct.tax-due"]
+hash = "99fbfc85893e"
+cy = '''Treth yn ddyledus'''
+
+[strings."ch.ct.tax-due-rule"]
+hash = "72616d070151"
+cy = '''Y diwrnod ar ôl naw mis o ddiwedd y cyfnod cyfrifyddu hwn'''
+
+[strings."ch.ct.return-due"]
+hash = "b157462ff24d"
+cy = '''Ffurflen yn ddyledus'''
+
+[strings."ch.ct.return-due-rule"]
+hash = "fa311f64d830"
+cy = '''Mae’r ddwy Ffurflen yn ddyledus 12 mis ar ôl i’r cyfnod cyfrifon ddod i ben'''
+
+[strings."ch.ct.error-prefix"]
+hash = "617062906764"
+cy = '''Gwall: '''
+
+[strings."ch.ct.problem"]
+hash = "3f63f8bb3785"
+cy = '''Mae problem'''
+
+[strings."ch.ct.range"]
+hash = "c72e51fdcb01"
+cy = '''{start} i {end}'''
+
+[strings."ch.ct.long-heading"]
+hash = "00ace54148de"
+cy = '''Mae’r cyfnod cyfrifon hwn yn ffeilio fel dwy Ffurflen'''
+
+[strings."ch.ct.long-intro"]
+hash = "cdb8ec59c7fd"
+cy = '''Mae Ffurflen Dreth y Cwmni yn cwmpasu 12 mis ar y mwyaf, felly mae CThEF yn cymryd y {days} diwrnod hyn fel dau gyfnod cyfrifyddu. Mae’r ddwy Ffurflen yn cario’r un cyfrifon.'''
+
+[strings."ch.ct.return-1-of-2"]
+hash = "1d08b936deba"
+cy = '''Ffurflen 1 o 2: '''
+
+[strings."ch.ct.range-days"]
+hash = "1d6bce00e6c7"
+cy = '''{range} ({days} diwrnod)'''
+
+[strings."ch.ct.return-2-of-2"]
+hash = "1357c428b4df"
+cy = '''Ffurflen 2 o 2: '''
+
+[strings."ch.ct.long-order"]
+hash = "0a3c77c7bf34"
+cy = '''Rydych yn anfon Ffurflen 1 yn gyntaf. Rhaid i CThEF ei derbyn cyn i chi anfon Ffurflen 2. Mae’r ddwy Ffurflen yn costio un tocyn rhyngddynt.'''
+
+[strings."ch.ct.long-tell-hmrc"]
+hash = "5d6a40979ae4"
+cy = '''Cyn y dyddiad ffeilio gwreiddiol, rhowch wybod i CThEF am ddyddiadau cyfnod cyfrifyddu newydd y cwmni. '''
+
+[strings."ch.ct.long-guide-link"]
+hash = "ac6e4e5616c8"
+cy = '''Sut i ddiweddaru’r dyddiadau ar GOV.UK'''
+
+[strings."ch.ct.long-guide-after"]
+hash = "cdb4ee2aea69"
+cy = '''.'''
+
+[strings."ch.ct.long-book"]
+hash = "b3d1fb8e823a"
+cy = '''Mae’r llyfr yn cwmpasu 12 mis, felly nid yw ei waith treth ei hun yn cael ei wirio yn erbyn cyfnod hirach. Teipiwch y ffigurau ar gyfer y cyfnod cyfrifon cyfan.'''
+
+[strings."ch.ct.aia-most"]
+hash = "320d083b1cca"
+cy = ''' Yr uchafswm ar gyfer {range} yw £{amount}.'''
+
+[strings."ch.ct.main-pool-rate"]
+hash = "a5132c93baa1"
+cy = ''' Cyfradd y brif gronfa ar gyfer y cyfnod hwn yw {rate}.'''
+
+[strings."ch.ct.main-pool-hybrid"]
+hash = "4c55df26a7f7"
+cy = ''' Mae’r cyfnod yn croesi newid yng nghyfradd y brif gronfa ({rates}), felly mae’r gyfradd yn gymysgedd o {rate}.'''
+
+[strings."ch.ct.then"]
+hash = "21af6f1260f9"
+cy = ''' yna '''
+
+[strings."ch.ct.first-period-start-on"]
+hash = "be1f51cdad17"
+cy = '''A yw’r cyfnod cyfrifyddu cyntaf yn dechrau ar {date}?'''
+
+[strings."ch.ct.own-company"]
+hash = "76b62f504f6b"
+cy = '''Fy nghwmni fy hun'''
+
+[strings."ch.ct.open-practice"]
+hash = "79289875e15d"
+cy = '''Agor cleientiaid y practis'''
+
+[strings."ch.ct.gateway-agent"]
+hash = "6c83cfdb81ad"
+cy = '''Mewngofnodwch gyda Dynodydd Defnyddiwr (ID) a chyfrinair Porth y Llywodraeth asiant y practis ei hun, gyda Threth Gorfforaeth wedi’i chofrestru.'''
+
+[strings."ch.ct.gateway-company"]
+hash = "74cb28f7c5f8"
+cy = '''Mewngofnodwch gyda Dynodydd Defnyddiwr (ID) a chyfrinair Porth y Llywodraeth ar gyfer cofrestriad Treth Gorfforaeth y cwmni.'''
+
+[strings."ch.ct.agent-authorised"]
+hash = "f74460747708"
+cy = '''Mae’r cwmni wedi awdurdodi’r practis hwn i weithredu ar ei ran ar gyfer Treth Gorfforaeth (ffurflen 64-8 neu ar-lein), ac mae wedi cymeradwyo’r Ffurflen hon.'''
+
+[strings."ch.ct.enter-practice"]
+hash = "79bf90aab9ad"
+cy = '''Rhowch enw’r practis ar gyfer cofnodion CThEF.'''
+
+[strings."ch.ct.confirm-authorised"]
+hash = "78c23309b5a7"
+cy = '''Cadarnhewch fod y cwmni wedi awdurdodi’r practis ar gyfer Treth Gorfforaeth a’i fod wedi cymeradwyo’r Ffurflen hon.'''
+
+[strings."ch.ct.change"]
+hash = "c0bf75bd78bf"
+cy = '''Newid'''
+
+[strings."ch.ct.change-company"]
+hash = "f168ccdd9154"
+cy = ''' y cwmni'''
+
+[strings."ch.ct.column-question"]
+hash = "289aff12b042"
+cy = '''Cwestiwn'''
+
+[strings."ch.ct.column-answer"]
+hash = "b2a3aa602762"
+cy = '''Ateb'''
+
+[strings."ch.ct.ch-gets-micro"]
+hash = "e73c3889b727"
+cy = '''Mantolen a nodiadau’r micro-endid. Mae’r cyfrif elw a cholled yn mynd i CThEF yn unig.'''
+
+[strings."ch.ct.ch-gets-filleted"]
+hash = "bb3f5da3bebd"
+cy = '''Cyfrifon wedi’u ffiledu (filleted). Mae’r cyfrif elw a cholled ac adroddiad y cyfarwyddwyr yn cael eu gadael allan o’r copi ar y gofrestr gyhoeddus.'''
+
+[strings."ch.ct.ch-gets-full"]
+hash = "812205ce77fc"
+cy = '''Y cyfrifon llawn, gan gynnwys y cyfrif elw a cholled ac adroddiad y cyfarwyddwyr. Mae Tŷ’r Cwmnïau yn eu cyhoeddi.'''
+
+[strings."ch.ct.sending-to"]
+hash = "71843eb7856c"
+cy = '''Anfon y cyfrifon i'''
+
+[strings."ch.ct.sending-both"]
+hash = "f7128346f4d9"
+cy = '''Tŷ’r Cwmnïau yn gyntaf, yna CThEF gyda Ffurflen Dreth y Cwmni'''
+
+[strings."ch.ct.sending-hmrc"]
+hash = "a9016b3e5821"
+cy = '''CThEF gyda Ffurflen Dreth y Cwmni'''
+
+[strings."ch.ct.ch-receives"]
+hash = "0882f0b2861e"
+cy = '''Beth mae Tŷ’r Cwmnïau yn ei gael'''
+
+[strings."ch.ct.hmrc-receives"]
+hash = "b31bdb1527b4"
+cy = '''Beth mae CThEF yn ei gael'''
+
+[strings."ch.ct.hmrc-receives-value"]
+hash = "e1145d54d4b7"
+cy = '''Y cyfrifon llawn, gyda Ffurflen Dreth y Cwmni'''
+
+[strings."ch.ct.change-box"]
+hash = "8f7032e56626"
+cy = '''blwch {box}, {label}'''
+
+[strings."ch.ct.column-box"]
+hash = "512fd3c6042c"
+cy = '''Blwch'''
+
+[strings."ch.ct.column-meaning"]
+hash = "1f5d64b92820"
+cy = '''Ystyr'''
+
+[strings."ch.ct.column-value"]
+hash = "6a4d923d934a"
+cy = '''Gwerth (symiau mewn £)'''
+
+[strings."ch.ct.line-long-adjusted"]
+hash = "533c461380eb"
+cy = '''Elw wedi’i addasu ar gyfer {days} diwrnod y cyfnod cyfrifon'''
+
+[strings."ch.ct.line-long-apportionment"]
+hash = "4f0f04e29891"
+cy = '''Dosrannu amser: {days} o {whole} diwrnod'''
+
+[strings."ch.ct.return-of-2-range"]
+hash = "3be2f51e7adc"
+cy = '''Ffurflen {part} o 2: {range}'''
+
+[strings."ch.ct.long-due"]
+hash = "0a6554fbb2eb"
+cy = '''Mae’r dreth yn ddyledus ar {tax}. Mae’r Ffurflen yn ddyledus ar {return}.'''
+
+[strings."ch.ct.boxes-return"]
+hash = "4470acd4df48"
+cy = '''Blychau’r CT600, Ffurflen {part}'''
+
+[strings."ch.ct.computations-return"]
+hash = "53b6f5cbced5"
+cy = '''Cyfrifiannau, Ffurflen {part}'''
+
+[strings."ch.ct.preview-failed"]
+hash = "88e8e3abd602"
+cy = '''Methwyd â dangos rhagolwg o Ffurflen Dreth y Cwmni.'''
+
+[strings."ch.ct.error-line"]
+hash = "6b304aa2f22f"
+cy = '''Gwall {number}: {text}'''
+
+[strings."ch.ct.check-errors"]
+hash = "3ca0b578cd97"
+cy = '''Gwiriwch yr atebion y mae’r gwallau hyn yn eu henwi, newidiwch nhw yn yr adolygiad, ac anfonwch y Ffurflen eto.'''
+
+[strings."ch.ct.return-word"]
+hash = "6b0143d03864"
+cy = '''Ffurflen '''
+
+[strings."ch.ct.is"]
+hash = "fa51fd49abf6"
+cy = ''' yw '''
+
+[strings."ch.ct.checking-again"]
+hash = "12ee0cd620a7"
+cy = '''. Yn gwirio eto...'''
+
+[strings."ch.ct.hmrc-accepted-amended"]
+hash = "e6fbd408979f"
+cy = '''Derbyniodd CThEF y Ffurflen Dreth y Cwmni ddiwygiedig'''
+
+[strings."ch.ct.hmrc-accepted"]
+hash = "82ee3934400e"
+cy = '''Derbyniodd CThEF Ffurflen Dreth y Cwmni'''
+
+[strings."ch.ct.keep-irmark"]
+hash = "6722c7ebe2ea"
+cy = '''Cadwch yr IRmark. Dyma gofnod CThEF o’r union beth a anfonwyd gennych.'''
+
+[strings."ch.ct.receipt-proof"]
+hash = "e4a407fa0a29"
+cy = '''Y dderbynneb isod yw prawf y cwmni ei fod wedi ffeilio’r Ffurflen hon. Cadwch hi gyda chofnodion y cwmni.'''
+
+[strings."ch.ct.hmrc-rejected-amended"]
+hash = "0f8a2812b5ad"
+cy = '''Gwrthododd CThEF y Ffurflen Dreth y Cwmni ddiwygiedig'''
+
+[strings."ch.ct.hmrc-rejected"]
+hash = "7b1965241940"
+cy = '''Gwrthododd CThEF Ffurflen Dreth y Cwmni'''
+
+[strings."ch.ct.not-settled"]
+hash = "f8f17129acb3"
+cy = '''Nid yw CThEF wedi setlo’r Ffurflen eto. Statws Ffurflen '''
+
+[strings."ch.ct.is-still"]
+hash = "2e89bd6ae037"
+cy = ''' yw '''
+
+[strings."ch.ct.full-stop"]
+hash = "cdb4ee2aea69"
+cy = '''.'''
+
+[strings."ch.ct.gateway-stored-once"]
+hash = "988551d482b1"
+cy = '''Maent yn cael eu hanfon unwaith gyda’r Ffurflen hon ac nid ydynt byth yn cael eu cadw.'''
+
+[strings."ch.ct.send-amended-heading"]
+hash = "fd517f118039"
+cy = '''Anfon y Ffurflen ddiwygiedig i CThEF'''
+
+[strings."ch.ct.send-hmrc-heading"]
+hash = "362a821ab604"
+cy = '''Anfon i CThEF'''
+
+[strings."ch.ct.send-revised-heading"]
+hash = "dcc51eddbefa"
+cy = '''Anfon y cyfrifon diwygiedig i Dŷ’r Cwmnïau a’r Ffurflen ddiwygiedig i CThEF'''
+
+[strings."ch.ct.send-both-heading"]
+hash = "b17862cbfc4f"
+cy = '''Anfon i Dŷ’r Cwmnïau a CThEF'''
+
+[strings."ch.ct.order-first"]
+hash = "ef974aabcd59"
+cy = '''Mae Tŷ’r Cwmnïau yn cael y cyfrifon yn gyntaf. Pan fydd yn eu derbyn, mae Ffurflen Dreth y Cwmni yn mynd i CThEF.'''
+
+[strings."ch.ct.order-left"]
+hash = "11a88c0ae0f2"
+cy = '''Derbyniodd Tŷ’r Cwmnïau y cyfrifon. Ffurflen Dreth y Cwmni yw’r un ffeilio sydd ar ôl i’w anfon.'''
+
+[strings."ch.ct.button-revised"]
+hash = "d0ec8a80bac7"
+cy = '''Anfon y cyfrifon diwygiedig, yna’r Ffurflen ddiwygiedig'''
+
+[strings."ch.ct.button-both"]
+hash = "a88bc0af3f08"
+cy = '''Anfon i Dŷ’r Cwmnïau, yna CThEF'''
+
+[strings."ch.ct.button-amended"]
+hash = "6e54bf7b7dc0"
+cy = '''Cyflwyno’r Ffurflen ddiwygiedig i CThEF'''
+
+[strings."ch.ct.button-hmrc"]
+hash = "d86d870c10f9"
+cy = '''Cyflwyno i CThEF'''
+
+[strings."ch.ct.cost-two-returns"]
+hash = "8b8b42fb8600"
+cy = '''y ddwy Ffurflen'''
+
+[strings."ch.ct.cost-return-of-2"]
+hash = "ef96ca008655"
+cy = '''Ffurflen {part} o 2'''
+
+[strings."ch.ct.cost-the-return"]
+hash = "f6c9c2674601"
+cy = '''y Ffurflen'''
+
+[strings."ch.ct.cost-accounts-one"]
+hash = "40f112c91eb2"
+cy = '''Mae’r cyfrifon a {returns} yn costio {cost} tocyn.'''
+
+[strings."ch.ct.cost-accounts"]
+hash = "423c9c5e95ec"
+cy = '''Mae’r cyfrifon a {returns} yn costio {cost} tocyn.'''
+
+[strings."ch.ct.cost-none"]
+hash = "efce78ca3d14"
+cy = '''Nid yw Ffurflen 2 o 2 yn costio tocyn. Defnyddiodd Ffurflen 1 y tocyn ar gyfer y ddwy.'''
+
+[strings."ch.ct.cost-two"]
+hash = "9ca4ec7ec9f0"
+cy = '''Mae’r ddwy Ffurflen yn costio 1 tocyn rhyngddynt.'''
+
+[strings."ch.ct.cost-one"]
+hash = "192e1906be66"
+cy = '''Mae’r Ffurflen hon yn costio 1 tocyn.'''
+
+[strings."ch.ct.order-accounts-then"]
+hash = "0f2198d86259"
+cy = '''y cyfrifon, yna '''
+
+[strings."ch.ct.the-amended-return"]
+hash = "a5a2f6e0ee8f"
+cy = '''y Ffurflen ddiwygiedig'''
+
+[strings."ch.ct.return-lower"]
+hash = "7187f0675eb3"
+cy = '''Ffurflen'''
+
+[strings."ch.ct.the-amended-return-start"]
+hash = "b706b8c6e0af"
+cy = '''Y Ffurflen ddiwygiedig'''
+
+[strings."ch.ct.return-start"]
+hash = "6b0143d03864"
+cy = '''Ffurflen'''
+
+[strings."ch.ct.long-send-both"]
+hash = "d240f7b134d0"
+cy = '''Rydych yn anfon {order}{word} 1 o 2, yna {word} 2 o 2. Mae pob un yn aros i’r un o’i blaen gael ei derbyn. Rydych yn teipio Dynodydd Defnyddiwr (ID) a chyfrinair Porth y Llywodraeth unwaith ar gyfer y ddwy.'''
+
+[strings."ch.ct.long-send-left"]
+hash = "f1213d335c04"
+cy = '''{word} {part} o 2 yw’r un sydd ar ôl i’w hanfon. Rydych yn teipio cyfrinair Porth y Llywodraeth eto.'''
+
+[strings."ch.ct.gateway-stored-each"]
+hash = "176f9cb6967c"
+cy = '''Maent yn cael eu hanfon gyda phob un o’r ddwy Ffurflen ac nid ydynt byth yn cael eu cadw.'''
+
+[strings."ch.ct.amended-return"]
+hash = "35d2b1fe28d9"
+cy = '''Ffurflen ddiwygiedig'''
+
+[strings."ch.ct.send-amended-returns"]
+hash = "8466a246ce60"
+cy = '''Anfon y Ffurflenni diwygiedig i CThEF'''
+
+[strings."ch.ct.send-two-returns"]
+hash = "d3acb7eb73b9"
+cy = '''Anfon dwy Ffurflen i CThEF'''
+
+[strings."ch.ct.send-return-of-2"]
+hash = "f872b5034c95"
+cy = '''Anfon {word} {part} o 2 i CThEF'''
+
+[strings."ch.ct.submit-both-of-2"]
+hash = "4642118ab5d5"
+cy = '''Cyflwyno {word} 1 o 2, yna {word} 2 o 2'''
+
+[strings."ch.ct.submit-one-of-2"]
+hash = "0b3305273e8f"
+cy = '''Cyflwyno {word} {part} o 2 i CThEF'''
+
+[strings."ch.ct.accounts-locked"]
+hash = "bbd7a790e48c"
+cy = '''Wedi’u ffeilio yn Nhŷ’r Cwmnïau ar {date}, cyflwyniad {number}. Ni all y cyfrifon newid yma. Newidiwch yr atebion treth yn unig.'''
+
+[strings."ch.ct.accounts-revising"]
+hash = "3ba632a1d8fd"
+cy = '''Rydych yn diwygio’r cyfrifon a ffeiliwyd yn Nhŷ’r Cwmnïau. Newidiwch y ffigurau a’r dyddiad y mae’r cyfarwyddwyr yn cymeradwyo’r cyfrifon diwygiedig.'''
+
+[strings."ch.ct.nothing-to-amend"]
+hash = "3179faf9ad1f"
+cy = '''Nid yw’r naill Ffurflen na’r llall yn newid gyda’r atebion hyn, felly nid oes dim i’w ddiwygio. Newidiwch ateb a gweld rhagolwg eto.'''
+
+[strings."ch.ct.say-differences"]
+hash = "bffa02d9d26a"
+cy = '''Dywedwch beth mae’r cyfrifon diwygiedig yn ei newid'''
+
+[strings."ch.ct.resume-failed"]
+hash = "290422307873"
+cy = '''Methwyd ag ailgychwyn y ffeilio.'''
+
+[strings."ch.ct.see-copy"]
+hash = "ba45d913fe0b"
+cy = '''Gweld eich copi'''
+
+[strings."ch.ct.ch-accepted-revised"]
+hash = "4d3a1fab5e19"
+cy = '''Derbyniodd Tŷ’r Cwmnïau y cyfrifon diwygiedig'''
+
+[strings."ch.ct.submission"]
+hash = "8d11f7f3b359"
+cy = '''Cyflwyniad '''
+
+[strings."ch.ct.full-stop-space"]
+hash = "cdb4ee2aea69"
+cy = '''. '''
+
+[strings."ch.ct.joint-long-amended"]
+hash = "8f1cf4202a89"
+cy = '''Mae’r cyfrifon a’r ddwy Ffurflen Dreth y Cwmni ddiwygiedig wedi’u derbyn. Mae eich derbynebau yn eu dangos fel un ffeilio: '''
+
+[strings."ch.ct.joint-long"]
+hash = "df34b449d943"
+cy = '''Mae’r cyfrifon a’r ddwy Ffurflen Dreth y Cwmni wedi’u derbyn. Mae eich derbynebau yn eu dangos fel un ffeilio: '''
+
+[strings."ch.ct.joint-amended"]
+hash = "9c0c47290978"
+cy = '''Mae’r ddau ffeilio diwygiedig wedi’u derbyn. Mae eich derbynebau yn eu dangos o dan y ffeilio y maent yn ei ddiwygio: '''
+
+[strings."ch.ct.joint"]
+hash = "29d090b05fc1"
+cy = '''Mae’r ddau ffeilio wedi’u derbyn. Mae eich derbynebau yn eu dangos fel un ffeilio: '''
+
+[strings."ch.ct.your-receipts"]
+hash = "28d5f76d0ce7"
+cy = '''Eich derbynebau'''
+
+[strings."ch.ct.ch-rejected-revised"]
+hash = "ba26f825b8e1"
+cy = '''Gwrthododd Tŷ’r Cwmnïau y cyfrifon diwygiedig'''
+
+[strings."ch.ct.check-accounts"]
+hash = "d068b0e99104"
+cy = '''Gwiriwch y cyfrifon, newidiwch nhw yn yr adolygiad, ac anfonwch eto. Nid yw Ffurflen Dreth y Cwmni wedi’i hanfon.'''
+
+[strings."ch.ct.ch-not-settled"]
+hash = "ee85937fc823"
+cy = '''Nid yw Tŷ’r Cwmnïau wedi setlo’r cyfrifon eto. Statws cyflwyniad '''
+
+[strings."ch.ct.send-now-or-wait"]
+hash = "8e58eed55150"
+cy = '''Gallwch anfon Ffurflen Dreth y Cwmni nawr, neu aros am Dŷ’r Cwmnïau. Os bydd Tŷ’r Cwmnïau wedyn yn gwrthod y cyfrifon, mae ffigur sydd wedi newid angen Ffurflen ddiwygiedig.'''
+
+[strings."ch.ct.ch-file-failed"]
+hash = "81b367b5e07b"
+cy = '''{text} Ni ffeiliwyd dim. Gwiriwch yr atebion ac anfonwch eto.'''
+
+[strings."ch.ct.enter-gateway"]
+hash = "d45bd313c2b2"
+cy = '''Rhowch Ddynodydd Defnyddiwr (ID) a chyfrinair Porth y Llywodraeth.'''
+
+[strings."ch.ct.gateway-waiting"]
+hash = "ae6b5eb206de"
+cy = ''' wedi’i derbyn gan y porth. Yn aros am CThEF...'''
+
+[strings."ch.ct.return-title"]
+hash = "ce1c64431c2a"
+cy = '''Ffurflen Dreth y Cwmni {part} o 2'''
+
+[strings."ch.ct.hmrc-accepted-amended-part"]
+hash = "bcf6bc89664a"
+cy = '''Derbyniodd CThEF {title} ddiwygiedig'''
+
+[strings."ch.ct.hmrc-accepted-part"]
+hash = "12f8e5275063"
+cy = '''Derbyniodd CThEF {title}'''
+
+[strings."ch.ct.irmark-part"]
+hash = "76bfbf92e66b"
+cy = '''IRmark Ffurflen {part} o 2: '''
+
+[strings."ch.ct.hmrc-rejected-amended-part"]
+hash = "2ceb531100a4"
+cy = '''Gwrthododd CThEF {title} ddiwygiedig'''
+
+[strings."ch.ct.hmrc-rejected-part"]
+hash = "c518729e02bd"
+cy = '''Gwrthododd CThEF {title}'''
+
+[strings."ch.ct.part-not-accepted"]
+hash = "c02891d82324"
+cy = '''Ni chafodd Ffurflen {part} o 2 ei derbyn.'''
+
+[strings."ch.ct.check-errors-part"]
+hash = "2a425e4c06c9"
+cy = '''Gwiriwch yr atebion y mae’r gwallau hyn yn eu henwi, newidiwch nhw yn yr adolygiad, ac anfonwch Ffurflen {part} o 2 eto.'''
+
+[strings."ch.ct.return-part-word"]
+hash = "eaf34387ba87"
+cy = '''Statws Ffurflen {part} o 2 '''
+
+[strings."ch.ct.keep-irmarks"]
+hash = "78570ddc87d1"
+cy = '''Cadwch yr IRmarks. Dyma gofnod CThEF o’r union beth a anfonwyd gennych.'''
+
+[strings."ch.ct.receipts-proof"]
+hash = "07b31f734b23"
+cy = '''Y derbynebau isod yw prawf y cwmni ei fod wedi ffeilio’r Ffurflenni hyn. Cadwch nhw gyda chofnodion y cwmni.'''
+
+[strings."ch.ct.first-return-locked"]
+hash = "b1596e53bd24"
+cy = '''Mae Ffurflen 1 wedi’i ffeilio gyda CThEF. Anfonwch Ffurflen 2 yn gyntaf, yna diwygiwch Ffurflen 1 o’i derbynneb.'''
+
+[strings."ch.ct.accounts-filed-then"]
+hash = "4492ecc92a4e"
+cy = '''Mae’r cyfrifon wedi’u ffeilio gyda Thŷ’r Cwmnïau. {message}'''
+
+[strings."ch.ct.hmrc-file-failed"]
+hash = "89b31cce1dd4"
+cy = '''Methwyd â ffeilio gyda CThEF.'''
+
+[strings."ch.ct.refuse-one-receipt"]
+hash = "80b7fa3d3e32"
+cy = '''Dim ond un o ddwy Ffurflen y ffeilio hwn sydd â derbynneb wedi’i derbyn. Anfonwch y Ffurflen arall yn gyntaf, yna diwygiwch o’i derbynneb.'''
+
+[strings."ch.ct.refuse-load"]
+hash = "ea3485f0571b"
+cy = '''Ni allem lwytho’r dderbynneb honno, felly nid oes dim i’w ddiwygio. Agorwch hi eto o’ch derbynebau.'''
+
+[strings."ch.ct.refuse-kind"]
+hash = "bdb262f75686"
+cy = '''Nid yw’r dderbynneb honno yn ffeilio cyfrifon nac yn Ffurflen Dreth y Cwmni, felly ni ellir ei diwygio. Agorwch y ffeilio o’ch derbynebau.'''
+
+[strings."ch.ct.refuse-not-accepted"]
+hash = "f11244d2fc48"
+cy = '''Ni chafodd y ffeilio hwnnw ei dderbyn, felly nid oes dim i’w ddiwygio. Ffeiliwch ef eto o’r dechrau.'''
+
+[strings."ch.ct.refuse-old"]
+hash = "b2eae365a535"
+cy = '''Gwnaed y ffeilio hwn cyn ei bod yn bosibl diwygio o dderbynneb, felly ni chadwyd ei atebion. Ffeiliwch y Ffurflen ddiwygiedig o’r dechrau.'''
+
+[strings."ch.ct.refuse-joint"]
+hash = "95fbb7d75c8f"
+cy = '''Nid yw ffeilio’r cyfrifon a Ffurflen Dreth y Cwmni gyda’i gilydd ar gael yma, felly ni ellir diwygio’r ffeilio ar y cyd hwn.'''
+
+[strings."ch.ct.refuse-accounts-alone"]
+hash = "a8b151930227"
+cy = '''Cafodd y cyfrifon hyn eu ffeilio ar eu pen eu hunain. Diwygiwch y Ffurflen Dreth y Cwmni a ffeiliwyd gyda nhw, neu ffeiliwch gyfrifon diwygiedig o’r dechrau.'''
+
+[strings."ch.ct.amend-load-failed"]
+hash = "eb3d30bc3ebc"
+cy = '''Methwyd â llwytho’r ffeilio i’w ddiwygio.'''
+
+[strings."ch.ct.record-of-parts"]
+hash = "d989975a6ca4"
+cy = ''' {part} o {parts}'''
+
+[strings."ch.ct.record-name"]
+hash = "e84474d2d95e"
+cy = '''Ffurflen Dreth y Cwmni'''
+
+[strings."ch.ct.record-utr-line"]
+hash = "790206e6162b"
+cy = '''Cyfeirnod Unigryw y Trethdalwr {utr}'''
+
+[strings."ch.ct.record-title"]
+hash = "9fa560474380"
+cy = '''Ffurflen Dreth y Cwmni (CT600){parts}'''
+
+[strings."ch.ct.record-receipt-name"]
+hash = "0e8001a46645"
+cy = '''Derbynneb CThEF ar gyfer Ffurflen Dreth y Cwmni'''
+
+[strings."ch.ct.record-correlation-line"]
+hash = "72a5c1cb94d9"
+cy = '''ID cydberthynas {id}'''
+
+[strings."ch.ct.record-receipt-title"]
+hash = "e966d02a52a6"
+cy = '''Derbynneb gan CThEF'''
+
+[strings."ch.ct.record-irmark-receipt"]
+hash = "c7d4a53193f1"
+cy = '''Derbynneb IRmark'''
+
+[strings."ch.ct.record-irmark-sent"]
+hash = "781762b9190b"
+cy = '''Yr IRmark a anfonwyd gennym'''
+
+[strings."ch.ct.record-correlation"]
+hash = "c267c186e80d"
+cy = '''ID cydberthynas'''
+
+[strings."ch.ct.record-utr"]
+hash = "883d9ae8c92b"
+cy = '''Cyfeirnod Unigryw y Trethdalwr'''
+
+[strings."ch.ct.record-hmrc-message"]
+hash = "b42998cfd313"
+cy = '''Neges CThEF'''
+
+[strings."ch.ct.record-as-filed"]
+hash = "c6eb5e4ec95c"
+cy = '''Y Ffurflen fel y’i ffeiliwyd'''
+
+[strings."ch.ct.record-boxes-explanation"]
+hash = "1e776079304b"
+cy = '''Dyma flychau’r CT600 a gafodd CThEF. Mae gan bob blwch y rhif sydd ganddo ar ffurflen CThEF. Gwiriwch y ffigurau yn erbyn eich cofnodion.'''
+
+[strings."ch.ct.record-computations-as-filed"]
+hash = "901eb9ee7caf"
+cy = '''Y cyfrifiannau treth fel y’u ffeiliwyd'''
+
+[strings."ch.ct.record-computations-explanation"]
+hash = "137e283796ae"
+cy = '''Dyma’r ddogfen sy’n cyfrifo eich elw trethadwy. Mae CThEF yn ei darllen gyda’r Ffurflen.'''
+
+[strings."ch.ct.record-computations-frame"]
+hash = "d306781c0c4b"
+cy = '''Y cyfrifiannau treth fel y cawsant eu ffeilio'''
+
+[strings."ch.ct.record-accounts-with-return"]
+hash = "9783ab8c72d1"
+cy = '''Y cyfrifon a ffeiliwyd gyda’r Ffurflen'''
+
+[strings."ch.ct.record-accounts-explanation"]
+hash = "4f72908e606d"
+cy = '''Mae CThEF yn cymryd cyfrifon y cwmni gyda’r Ffurflen. Dyma’r un ffigurau a ffeiliwyd gennych yn Nhŷ’r Cwmnïau.'''
+
+[strings."ch.ct.record-accounts-frame"]
+hash = "46558954ed7a"
+cy = '''Y cyfrifon fel y cawsant eu ffeilio gyda’r Ffurflen'''
+
+[strings."ch.ct.record-receipt-explanation"]
+hash = "e980aa28e91b"
+cy = '''Y dderbynneb hon yw prawf y cwmni ei fod wedi ffeilio’r Ffurflen. Cadwch hi gyda chofnodion y cwmni. Mae’r dderbynneb IRmark yn dangos bod CThEF wedi cael y Ffurflen heb newid. Yr ID cydberthynas yw’r cyfeirnod i’w ddyfynnu os byddwch yn holi CThEF am y ffeilio hwn.'''
+
+[strings."ch.ct.record-copy-title"]
+hash = "ec83b4f3a6e2"
+cy = '''Eich copi o Ffurflen Dreth y Cwmni{parts}'''
+
+[strings."ch.ct.record-accepted"]
+hash = "211880accc66"
+cy = '''Derbyniwyd gan CThEF'''
+
+[strings."ch.ct.record-file-another"]
+hash = "d9a2e4fdf4e2"
+cy = '''Gweld tudalen y CT600 i ffeilio Ffurflen arall'''
+
+[strings."ch.ct.record-irmark-mismatch"]
+hash = "3e7e7b0930dd"
+cy = '''Derbyniodd CThEF y Ffurflen, ond mae’r IRmark ar dderbynneb CThEF yn wahanol i’r un a gyfrifwyd gennym. Cadwch y dderbynneb. Cysylltwch â’r tîm cymorth os oes angen esbonio’r gwahaniaeth.'''
+
+[strings."ch.ct.record-period"]
+hash = "3e7d65528834"
+cy = '''Cyfnod y Ffurflen {start} i {end}'''
+
+[strings."ch.ct.record-period-column"]
+hash = "6e795d4d3cc2"
+cy = '''Cyfnod'''
+
+[strings."ch.ct.record-computation"]
+hash = "4c65e333c66d"
+cy = '''Cyfrifiant treth'''
+
+[strings."ch.ct.record-result-explanation"]
+hash = "6ff2b27de780"
+cy = '''Dyma’r ffigurau a gafodd CThEF: cyfnod y Ffurflen, y cyfrifiant treth sy’n cyfrifo’r elw, a’r dreth sy’n ddyledus. Gwiriwch nhw yn erbyn eich cofnodion.'''
+
+[strings."ch.ct.record-see-full"]
+hash = "8225dcbffcc7"
+cy = '''Gweld y copi llawn a ffeiliwyd'''
+
+[strings."ch.ct.ch-accepted"]
+hash = "fafd8cdeaca8"
+cy = '''Derbyniodd Tŷ’r Cwmnïau y cyfrifon'''
+
+[strings."ch.ct.ch-rejected"]
+hash = "58ac09fcb859"
+cy = '''Gwrthododd Tŷ’r Cwmnïau y cyfrifon'''
 
 # == Marketing site (MKT8) ==
 # ids marketing.*; add entries below this line.

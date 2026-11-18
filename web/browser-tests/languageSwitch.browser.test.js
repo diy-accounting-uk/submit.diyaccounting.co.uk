@@ -185,14 +185,30 @@ test("the Welsh header names a signed-in reader and the sign-out link in Welsh",
   await expect(page.locator(".settings-cog")).toHaveAttribute("aria-label", "Gosodiadau");
 });
 
-test("the Welsh home keeps its Welsh subtitle and its activity links reach the site root", async ({ page }) => {
+test("the Welsh home keeps its Welsh subtitle and its activity links reach a page that exists, its Welsh copy where it has one", async ({
+  page,
+}) => {
   await serveRealSite(page);
   await page.goto(`${SITE_ORIGIN}/cy/index.html`, { waitUntil: "domcontentloaded" });
   await expect(page.locator("h1")).toHaveText("Ffeiliwch Ffurflenni TAW a chyfrifon cwmni o’ch taenlen");
   await expect(page.locator(".activity-item button").first()).toBeVisible();
   await expect(page.locator("#homeIntro")).toContainText("£0.99 y mis neu £9.99 y flwyddyn");
+  const copies = await page.evaluate(() => window.WELSH_COPIES);
   await page.locator(".activity-item button:not([disabled])").first().click();
-  await expect(page).not.toHaveURL(/\/cy\/(?!index\.html)/);
+  await page.waitForURL((url) => url.pathname !== "/cy/index.html");
+  const reached = new URL(page.url()).pathname;
+  if (reached.startsWith("/cy/")) expect(copies).toContain(reached.slice("/cy/".length));
+  await expect(page.locator("h1")).toBeVisible();
+});
+
+test("a Welsh reader on the Welsh micro-entity accounts page reads its form and its chrome in Welsh", async ({ page }) => {
+  await storeWelsh(page);
+  await serveRealSite(page, { signedIn: true });
+  await page.goto(`${SITE_ORIGIN}/cy/companies-house/fileMicroEntityAccounts.html`, { waitUntil: "load" });
+  await expect(page.locator("html")).toHaveAttribute("lang", "cy");
+  await expect(page.locator("h1")).toHaveText("Ffeilio cyfrifon micro-endid");
+  await expect(page.locator("label[for='companyNumber']")).toHaveText("Rhif y cwmni");
+  await expect(page.locator(".language-notice")).toHaveCount(0);
 });
 
 for (const { path, otherName } of [
@@ -308,3 +324,15 @@ for (const width of [320, 390]) {
     await expect(page.locator(".language-switch a")).toBeInViewport({ ratio: 1 });
   });
 }
+
+test("the Companies House callback stays at its registered address and writes its text in the stored Welsh choice", async ({ page }) => {
+  await storeWelsh(page);
+  await serveRealSite(page, { signedIn: true });
+  await page.goto(`${SITE_ORIGIN}/companies-house/filingCallback.html`, { waitUntil: "load" });
+  await expect(page).toHaveURL(`${SITE_ORIGIN}/companies-house/filingCallback.html`);
+  await expect(page.locator("html")).toHaveAttribute("lang", "cy");
+  await expect(page.locator("header h1")).toHaveText("Cysylltu â Thŷ’r Cwmnïau");
+  await expect(page.locator("#navigationBtn")).toHaveText("Yn ôl i’r hafan");
+  await expect(page.locator(".language-notice")).toHaveCount(0);
+  await expect(page.locator("#statusMessagesContainer")).toContainText("Ni chafwyd cod awdurdodi dilys.");
+});

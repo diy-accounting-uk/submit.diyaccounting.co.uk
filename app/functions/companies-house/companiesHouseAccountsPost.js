@@ -520,6 +520,8 @@ export async function ingestHandler(event) {
         ...jointFilingFields(jointFilingId),
         ...amendedFields(Boolean(accounts.revision)),
         ...formRequestFields(formRequest),
+        // The reader's language choice, so the receipt email of an accepted filing is in it.
+        ...(getHeader(event.headers, "X-Site-Language") === "cy" ? { language: "cy" } : {}),
       },
       asyncRequestsTableName,
     );

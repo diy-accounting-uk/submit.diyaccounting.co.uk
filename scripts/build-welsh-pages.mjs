@@ -48,6 +48,8 @@ export const CATALOGUE_PATH = join(ROOT, "i18n", "cy.toml");
 export const SITE_ORIGIN = "https://submit.diyaccounting.co.uk";
 export const WELSH_TEXT_PATH = join(PUBLIC_DIR, "lib", "welsh-text.js");
 
+const CH_MARK_ATTRIBUTES = ["data-sign-in-title", "data-sign-in-text", "data-required-message", "data-column"];
+
 // The pages with a Welsh copy. A page that a script writes is built after it: run its generator, then this.
 export const WELSH_PAGES = [
   { id: "index", en: "index.html", cy: "cy/index.html", enUrl: `${SITE_ORIGIN}/` },
@@ -99,6 +101,80 @@ export const WELSH_PAGES = [
   ].map(([id, en]) => ({ id, en, cy: `cy/${en}`, enUrl: `${SITE_ORIGIN}/${en}`, marks: "build" })),
 
   // LANG11a, LANG11b: the Companies House pages, ids ch-*.
+  // The filing callback has no copy: its address is registered with Companies House, and its script writes its text.
+  // The sign-in panel, the form's error summary and the ledger's phone layout read the markAttributes.
+  {
+    id: "ch-company-search",
+    en: "companies-house/companySearch.html",
+    cy: "cy/companies-house/companySearch.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/companySearch.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-filings",
+    en: "companies-house/filings.html",
+    cy: "cy/companies-house/filings.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/filings.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-micro-entity",
+    en: "companies-house/fileMicroEntityAccounts.html",
+    cy: "cy/companies-house/fileMicroEntityAccounts.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/fileMicroEntityAccounts.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-small-company",
+    en: "companies-house/fileSmallCompanyAccounts.html",
+    cy: "cy/companies-house/fileSmallCompanyAccounts.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/fileSmallCompanyAccounts.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-tax-return",
+    en: "companies-house/fileCompanyTaxReturn.html",
+    cy: "cy/companies-house/fileCompanyTaxReturn.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/fileCompanyTaxReturn.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-confirmation-statement",
+    en: "companies-house/fileConfirmationStatement.html",
+    cy: "cy/companies-house/fileConfirmationStatement.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/fileConfirmationStatement.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-registered-office",
+    en: "companies-house/changeRegisteredOffice.html",
+    cy: "cy/companies-house/changeRegisteredOffice.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/changeRegisteredOffice.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-registered-email",
+    en: "companies-house/changeRegisteredEmail.html",
+    cy: "cy/companies-house/changeRegisteredEmail.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/changeRegisteredEmail.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
+    id: "ch-mcp-codes",
+    en: "companies-house/mcpCodes.html",
+    cy: "cy/companies-house/mcpCodes.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/mcpCodes.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
 ];
 
 export function welshUrl(page) {
@@ -185,9 +261,10 @@ function markedId(page, source) {
 }
 
 // Marks every element of the header and main that holds text and no block element (and the
-// attributes that a reader sees or hears). It skips the skip link, the chrome's fallback link, each
-// quote of a source (a quote keeps the words of its English source) and each element marked
-// translate="no" with all it holds (the HMRC sandbox scenario names of the developer options).
+// attributes that a reader sees or hears, with the page's own markAttributes: text that a script
+// reads from an attribute). It skips the skip link, the chrome's fallback link, each quote of a
+// source (a quote keeps the words of its English source) and each element marked translate="no"
+// with all it holds (the HMRC sandbox scenario names of the developer options).
 export function markPage(html, page) {
   const bodyStart = html.indexOf("<body>");
   const mainEnd = html.indexOf("</main>");
@@ -226,7 +303,7 @@ export function markPage(html, page) {
   body = body.replace(/<([a-z][a-z0-9]*)\b([^>]*)>/g, (tag, name, attributes, offset) => {
     if (keptRanges.some(([start, end]) => offset >= start && offset < end)) return tag;
     let marks = "";
-    for (const attribute of MARKED_ATTRIBUTES) {
+    for (const attribute of [...MARKED_ATTRIBUTES, ...(page.markAttributes || [])]) {
       const value = attributeValue(tag, attribute);
       if (value === null || !/[A-Za-z]/.test(value) || new RegExp(`\\sdata-i18n-${attribute}=`).test(attributes)) continue;
       marks += ` data-i18n-${attribute}="${markedId(page, value)}"`;

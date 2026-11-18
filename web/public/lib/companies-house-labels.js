@@ -2,61 +2,106 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // web/public/lib/companies-house-labels.js
-// Plain-English wording for the values the Companies House API returns:
-// en-GB dates, company status, company type, jurisdiction and SIC code text.
+// Plain wording for the values the Companies House API returns, in the chrome's language: dates,
+// company status, company type and jurisdiction. The SIC code text stays as Companies House
+// publishes it, in English.
 
 (function () {
   "use strict";
 
-  const COMPANY_STATUS = {
-    "active": "Active",
-    "dissolved": "Dissolved",
-    "liquidation": "In liquidation",
-    "receivership": "In receivership",
-    "administration": "In administration",
-    "voluntary-arrangement": "Voluntary arrangement",
-    "converted-closed": "Converted or closed",
-    "insolvency-proceedings": "Insolvency proceedings",
-    "registered": "Registered",
-    "removed": "Removed",
-    "closed": "Closed",
-    "open": "Open",
-  };
+  // page-chrome.js gives the text in the chosen language; without it the English stands.
+  function siteText(id, english, values) {
+    if (window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
 
-  const COMPANY_TYPE = {
-    "ltd": "Private limited company",
-    "plc": "Public limited company",
-    "llp": "Limited liability partnership",
-    "limited-partnership": "Limited partnership",
-    "private-limited-guarant-nsc": "Private company limited by guarantee",
-    "private-limited-guarant-nsc-limited-exemption": "Private company limited by guarantee (name exemption)",
-    "private-unlimited": "Private unlimited company",
-    "private-unlimited-nsc": "Private unlimited company",
-    "old-public-company": "Old public company",
-    "royal-charter": "Royal charter company",
-    "industrial-and-provident-society": "Industrial and provident society",
-    "registered-society-non-jurisdictional": "Registered society",
-    "scottish-partnership": "Scottish partnership",
-    "oversea-company": "Overseas company",
-    "uk-establishment": "UK establishment of an overseas company",
-    "european-public-limited-liability-company-se": "European public limited-liability company (SE)",
-    "charitable-incorporated-organisation": "Charitable incorporated organisation",
-    "scottish-charitable-incorporated-organisation": "Scottish charitable incorporated organisation",
-    "protected-cell-company": "Protected cell company",
-    "investment-company-with-variable-capital": "Investment company with variable capital",
-    "unregistered-company": "Unregistered company",
-    "other": "Other",
-  };
+  // Chromium's Intl has no Welsh, so a Welsh date is written from the month names here.
+  const WELSH_MONTHS = [
+    "Ionawr",
+    "Chwefror",
+    "Mawrth",
+    "Ebrill",
+    "Mai",
+    "Mehefin",
+    "Gorffennaf",
+    "Awst",
+    "Medi",
+    "Hydref",
+    "Tachwedd",
+    "Rhagfyr",
+  ];
 
-  const JURISDICTION = {
-    "england-wales": "England and Wales",
-    "wales": "Wales",
-    "scotland": "Scotland",
-    "northern-ireland": "Northern Ireland",
-    "united-kingdom": "United Kingdom",
-    "european-union": "European Union",
-    "noneu": "Outside the European Union",
-  };
+  function welshChrome() {
+    return Boolean(window.siteLanguage && window.siteLanguage.chrome() === "cy");
+  }
+
+  // A function, so each label is read in the chrome's language when it is asked for.
+  const companyStatuses = () => ({
+    "active": siteText("ch.status.active", "Active"),
+    "dissolved": siteText("ch.status.dissolved", "Dissolved"),
+    "liquidation": siteText("ch.status.liquidation", "In liquidation"),
+    "receivership": siteText("ch.status.receivership", "In receivership"),
+    "administration": siteText("ch.status.administration", "In administration"),
+    "voluntary-arrangement": siteText("ch.status.voluntary-arrangement", "Voluntary arrangement"),
+    "converted-closed": siteText("ch.status.converted-closed", "Converted or closed"),
+    "insolvency-proceedings": siteText("ch.status.insolvency-proceedings", "Insolvency proceedings"),
+    "registered": siteText("ch.status.registered", "Registered"),
+    "removed": siteText("ch.status.removed", "Removed"),
+    "closed": siteText("ch.status.closed", "Closed"),
+    "open": siteText("ch.status.open", "Open"),
+  });
+
+  // A function, so each label is read in the chrome's language when it is asked for.
+  const companyTypes = () => ({
+    "ltd": siteText("ch.type.ltd", "Private limited company"),
+    "plc": siteText("ch.type.plc", "Public limited company"),
+    "llp": siteText("ch.type.llp", "Limited liability partnership"),
+    "limited-partnership": siteText("ch.type.limited-partnership", "Limited partnership"),
+    "private-limited-guarant-nsc": siteText("ch.type.private-limited-guarant-nsc", "Private company limited by guarantee"),
+    "private-limited-guarant-nsc-limited-exemption": siteText(
+      "ch.type.private-limited-guarant-nsc-limited-exemption",
+      "Private company limited by guarantee (name exemption)",
+    ),
+    "private-unlimited": siteText("ch.type.private-unlimited", "Private unlimited company"),
+    "private-unlimited-nsc": siteText("ch.type.private-unlimited-nsc", "Private unlimited company"),
+    "old-public-company": siteText("ch.type.old-public-company", "Old public company"),
+    "royal-charter": siteText("ch.type.royal-charter", "Royal charter company"),
+    "industrial-and-provident-society": siteText("ch.type.industrial-and-provident-society", "Industrial and provident society"),
+    "registered-society-non-jurisdictional": siteText("ch.type.registered-society-non-jurisdictional", "Registered society"),
+    "scottish-partnership": siteText("ch.type.scottish-partnership", "Scottish partnership"),
+    "oversea-company": siteText("ch.type.oversea-company", "Overseas company"),
+    "uk-establishment": siteText("ch.type.uk-establishment", "UK establishment of an overseas company"),
+    "european-public-limited-liability-company-se": siteText(
+      "ch.type.european-public-limited-liability-company-se",
+      "European public limited-liability company (SE)",
+    ),
+    "charitable-incorporated-organisation": siteText(
+      "ch.type.charitable-incorporated-organisation",
+      "Charitable incorporated organisation",
+    ),
+    "scottish-charitable-incorporated-organisation": siteText(
+      "ch.type.scottish-charitable-incorporated-organisation",
+      "Scottish charitable incorporated organisation",
+    ),
+    "protected-cell-company": siteText("ch.type.protected-cell-company", "Protected cell company"),
+    "investment-company-with-variable-capital": siteText(
+      "ch.type.investment-company-with-variable-capital",
+      "Investment company with variable capital",
+    ),
+    "unregistered-company": siteText("ch.type.unregistered-company", "Unregistered company"),
+    "other": siteText("ch.type.other", "Other"),
+  });
+
+  // A function, so each label is read in the chrome's language when it is asked for.
+  const jurisdictions = () => ({
+    "england-wales": siteText("ch.jurisdiction.england-wales", "England and Wales"),
+    "wales": siteText("ch.jurisdiction.wales", "Wales"),
+    "scotland": siteText("ch.jurisdiction.scotland", "Scotland"),
+    "northern-ireland": siteText("ch.jurisdiction.northern-ireland", "Northern Ireland"),
+    "united-kingdom": siteText("ch.jurisdiction.united-kingdom", "United Kingdom"),
+    "european-union": siteText("ch.jurisdiction.european-union", "European Union"),
+    "noneu": siteText("ch.jurisdiction.noneu", "Outside the European Union"),
+  });
 
   const SIC_TEXT = {
     "01110": "Growing of cereals, leguminous crops and oil seeds",
@@ -125,6 +170,7 @@
     if (isoDate === undefined || isoDate === null || isoDate === "") return "";
     const date = new Date(`${isoDate}T00:00:00Z`);
     if (Number.isNaN(date.getTime())) return String(isoDate);
+    if (welshChrome()) return `${date.getUTCDate()} ${WELSH_MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
     return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
   }
 
@@ -139,9 +185,9 @@
 
   window.companiesHouseLabels = {
     formatCompanyDate,
-    companyStatusLabel: (value) => labelFrom(COMPANY_STATUS, value),
-    companyTypeLabel: (value) => labelFrom(COMPANY_TYPE, value),
-    jurisdictionLabel: (value) => labelFrom(JURISDICTION, value),
+    companyStatusLabel: (value) => labelFrom(companyStatuses(), value),
+    companyTypeLabel: (value) => labelFrom(companyTypes(), value),
+    jurisdictionLabel: (value) => labelFrom(jurisdictions(), value),
     formatSicCode,
     formatSicCodes,
   };

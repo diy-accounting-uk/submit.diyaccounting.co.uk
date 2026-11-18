@@ -1,0 +1,415 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from companies-house/fileCompanyTaxReturn.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ffeilio Ffurflen Dreth y Cwmni - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/companies-house/fileCompanyTaxReturn.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/fileCompanyTaxReturn.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/fileCompanyTaxReturn.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/fileCompanyTaxReturn.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <link rel="stylesheet" href="../../submission-record.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="ch-tax-return.file-a-company-tax-return-f72d4f">Ffeilio Ffurflen Dreth y Cwmni</h1>
+      <p data-i18n="ch-tax-return.file-a-small-company-s-ct600-d036c1" class="subtitle">
+        Ffeilio Ffurflen CT600, cyfrifiannau a chyfrifon cwmni bach gyda CThEF
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p data-i18n="ch-tax-return.status-preview-you-can-prepare-the-748a37" class="hint" data-feature-status="preview">
+        <strong>Statws: rhagolwg (preview).</strong> Gallwch baratoi’r Ffurflen a gweld rhagolwg o’i blychau yma. Mae’n rhedeg ar ein
+        hefelychydd a gwasanaeth prawf CThEF yn unig, felly nid oes dim rydych yn ei anfon yn cyrraedd CThEF.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i ffeilio Ffurflen Dreth y Cwmni"
+        data-sign-in-text="Mewngofnodwch i chwilio am eich cwmni a ffeilio ei Ffurflen CT600, ei gyfrifiannau a’i gyfrifon."
+        data-i18n-data-sign-in-title="ch-tax-return.sign-in-to-file-a-company-647f8a"
+        data-i18n-data-sign-in-text="ch-tax-return.sign-in-to-look-up-your-6191a0"
+        data-i18n-data-sign-in-title="ch-tax-return.sign-in-to-file-a-company-647f8a"
+        data-i18n-data-sign-in-text="ch-tax-return.sign-in-to-look-up-your-6191a0"
+      >
+        <h2 data-i18n="ch-tax-return.which-company-d9aae4">Pa gwmni?</h2>
+        <form id="companyForm" novalidate>
+          <fieldset id="clientChoice" class="form-group" style="display: none">
+            <legend data-i18n="ch-tax-return.who-is-this-return-for-5ed6ea">Ar gyfer pwy mae’r Ffurflen hon?</legend>
+            <div id="clientChoiceOptions"></div>
+            <p id="clientStop" class="hint" role="alert" style="display: none"></p>
+            <div id="practiceNameGroup" style="display: none">
+              <label data-i18n="ch-tax-return.practice-name-for-hmrc-s-records-348072" for="practiceName"
+                >Enw’r practis (ar gyfer cofnodion CThEF)</label
+              >
+              <p data-i18n="ch-tax-return.up-to-35-characters-it-goes-2c4414" id="practiceName-hint" class="hint">
+                Hyd at 35 nod. Mae’n mynd yn y Ffurflen fel enw’r asiant.
+              </p>
+              <input
+                type="text"
+                id="practiceName"
+                name="practiceName"
+                maxlength="35"
+                autocomplete="organization"
+                aria-describedby="practiceName-hint"
+              />
+            </div>
+          </fieldset>
+          <div class="form-group">
+            <label data-i18n="ch-tax-return.company-number-8b121b" for="companyNumber">Rhif y cwmni</label>
+            <p data-i18n="ch-tax-return.8-characters-for-example-00000001-do-090062" id="companyNumber-hint" class="hint">
+              8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button data-i18n="ch-tax-return.look-up-company-e9e4a8" type="submit" id="companyLookupBtn" class="btn">
+            Chwilio am y cwmni
+          </button>
+        </form>
+      </div>
+
+      <!-- Return details view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2 data-i18n="ch-tax-return.company-tax-return-e84474">Ffurflen Dreth y Cwmni</h2>
+        <p data-i18n="ch-tax-return.company-change-company-dd2fd9">
+          Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).
+          <a href="#" id="changeCompanyLink">Newid y cwmni</a>.
+        </p>
+        <div id="booksImport"></div>
+        <form id="returnForm" novalidate>
+          <div id="formSections"></div>
+          <section id="agentSection" class="form-section" style="display: none" aria-labelledby="agentHeading">
+            <h3 data-i18n="ch-tax-return.filing-as-the-company-s-agent-e1a598" id="agentHeading">Ffeilio fel asiant y cwmni</h3>
+            <p data-i18n="ch-tax-return.the-practice-s-own-government-gateway-30f937" class="hint">
+              Mae Dynodydd Defnyddiwr (ID) Porth y Llywodraeth y practis ei hun, gyda Threth Gorfforaeth wedi’i chofrestru, yn llofnodi’r
+              Ffurflen. Blwch 975 yw enw’r person yn y practis sy’n gwneud y datganiad. Blwch 985 yw ei statws, ac mae’n dechrau fel Asiant.
+            </p>
+            <div id="agentAuthorisedHost"></div>
+          </section>
+          <button data-i18n="ch-tax-return.preview-the-return-6ebf80" type="submit" id="previewBtn" class="btn">
+            Rhagolwg o’r Ffurflen
+          </button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="previewView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-tax-return.review-aff076">Adolygu</h2>
+        <p data-i18n="ch-tax-return.check-your-answers-these-are-the-a1a220">
+          Gwiriwch eich atebion. Dyma’r ffigurau y bydd CThEF yn eu cael. Nid oes dim wedi’i anfon i CThEF eto.
+        </p>
+        <p data-i18n="ch-tax-return.the-company-tax-return-guide-explains-1164a1">
+          Mae’r
+          <a id="companyTaxReturnGuideLink" href="https://www.gov.uk/guidance/the-company-tax-return-guide" target="_blank" rel="noopener"
+            >canllaw Ffurflen Dreth y Cwmni</a
+          >
+          (yn Saesneg) yn esbonio pob blwch. Y ffurflen ei hun yw’r
+          <a
+            id="ct600FormLink"
+            href="https://assets.publishing.service.gov.uk/media/69c543424a06660f085442bd/ct600.pdf"
+            target="_blank"
+            rel="noopener"
+            >CT600 (2026) Fersiwn 3</a
+          >
+          (yn Saesneg).
+        </p>
+        <h3 data-i18n="ch-tax-return.your-answers-5feb1f">Eich atebion</h3>
+        <div id="reviewSendTo"></div>
+        <div id="reviewAnswers"></div>
+        <div id="singleReview">
+          <h3 data-i18n="ch-tax-return.ct600-boxes-8feb1a">Blychau’r CT600</h3>
+          <table id="ct600Table" class="results-table review-table review-table--boxes">
+            <colgroup>
+              <col class="review-table__box" />
+              <col />
+              <col class="review-table__value" />
+              <col class="review-table__change" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th data-i18n="ch-tax-return.box-512fd3" scope="col">Blwch</th>
+                <th data-i18n="ch-tax-return.meaning-1f5d64" scope="col">Ystyr</th>
+                <th data-i18n="ch-tax-return.value-amounts-in-6a4d92" scope="col" class="amount">Gwerth (symiau mewn £)</th>
+                <th data-i18n="ch-tax-return.change-c0bf75" scope="col">Newid</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <h3 data-i18n="ch-tax-return.computations-25d4d3">Cyfrifiannau</h3>
+          <table id="computationsTable" class="results-table review-table">
+            <colgroup>
+              <col />
+              <col class="review-table__value" />
+              <col class="review-table__change" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th data-i18n="ch-tax-return.line-d7852c" scope="col">Llinell</th>
+                <th scope="col" class="amount">£</th>
+                <th data-i18n="ch-tax-return.change-c0bf75" scope="col">Newid</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="longReviews" hidden></div>
+        <pre id="previewIxbrl" class="ixbrl-preview developer-only-section"></pre>
+
+        <section class="send-step" aria-labelledby="sendStepHeading">
+          <h3 data-i18n="ch-tax-return.send-to-hmrc-362a82" id="sendStepHeading">Anfon i CThEF</h3>
+          <p data-i18n="ch-tax-return.how-we-protect-your-filing-data-ea38da" class="hint">
+            Mae sut rydym yn diogelu data eich ffeilio yn y <a href="../../security.html">datganiad diogelwch</a> (yn Saesneg).
+          </p>
+          <p id="sendStepOrder" class="hint" style="display: none"></p>
+          <p id="longSendOrder" class="hint" style="display: none"></p>
+          <div class="form-group" id="companyAuthCodeGroup" style="display: none">
+            <label data-i18n="ch-tax-return.company-authentication-code-56d0e6" for="companyAuthCode">Cod dilysu’r cwmni</label>
+            <p data-i18n="ch-tax-return.6-to-8-characters-from-companies-5dc87b" id="companyAuthCode-hint" class="hint">
+              6 i 8 nod, gan Dŷ’r Cwmnïau. Mae’n cael ei anfon unwaith gyda’r cyfrifon ac nid yw byth yn cael ei gadw.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              name="companyAuthCode"
+              autocomplete="off"
+              spellcheck="false"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+            />
+          </div>
+          <div class="form-group" id="revisionGroup" style="display: none">
+            <label data-i18n="ch-tax-return.what-do-the-revised-accounts-change-ff3c9b" for="revisionDifferences"
+              >Beth mae’r cyfrifon diwygiedig yn ei newid?</label
+            >
+            <p data-i18n="ch-tax-return.companies-house-prints-this-in-the-2021dd" id="revisionDifferences-hint" class="hint">
+              Mae Tŷ’r Cwmnïau yn argraffu hyn yn y cyfrifon diwygiedig, o dan y datganiad eu bod yn cymryd lle’r cyfrifon sydd ganddo.
+            </p>
+            <textarea
+              id="revisionDifferences"
+              name="revisionDifferences"
+              rows="4"
+              maxlength="2000"
+              aria-describedby="revisionDifferences-hint"
+            ></textarea>
+          </div>
+          <p data-i18n="ch-tax-return.sign-in-with-the-government-gateway-968fb6" class="hint">
+            <span id="gatewayWhose"
+              >Mewngofnodwch gyda Dynodydd Defnyddiwr (ID) a chyfrinair Porth y Llywodraeth ar gyfer cofrestriad Treth Gorfforaeth y
+              cwmni.</span
+            >
+            <span id="gatewayStored">Maent yn cael eu hanfon unwaith gyda’r Ffurflen hon ac nid ydynt byth yn cael eu cadw.</span>
+          </p>
+          <div class="form-group">
+            <label data-i18n="ch-tax-return.government-gateway-user-id-739100" for="gatewayUserId"
+              >Dynodydd Defnyddiwr (ID) Porth y Llywodraeth</label
+            >
+            <input type="text" id="gatewayUserId" name="gatewayUserId" required autocomplete="off" spellcheck="false" maxlength="128" />
+          </div>
+          <div class="form-group">
+            <label data-i18n="ch-tax-return.government-gateway-password-c848fb" for="gatewayPassword">Cyfrinair Porth y Llywodraeth</label>
+            <input
+              type="password"
+              id="gatewayPassword"
+              name="gatewayPassword"
+              required
+              autocomplete="off"
+              spellcheck="false"
+              maxlength="128"
+            />
+          </div>
+          <div class="form-group" id="govTestScenarioGroup" style="display: none">
+            <label data-i18n="ch-tax-return.gov-test-scenario-dab532" for="govTestScenario">Gov-Test-Scenario</label>
+            <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+          </div>
+          <div id="submissionCost" class="submission-cost" data-submit-button="submitReturnBtn"></div>
+          <div class="button-group">
+            <button data-i18n="ch-tax-return.back-76900f" type="button" id="backToFormBtn" class="secondary-button">Yn ôl</button>
+            <button
+              data-i18n="ch-tax-return.submit-to-hmrc-d86d87"
+              type="button"
+              id="submitReturnBtn"
+              class="btn"
+              aria-describedby="submissionCost"
+            >
+              Cyflwyno i CThEF
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-tax-return.return-result-6be952">Canlyniad y Ffurflen</h2>
+        <section id="jointProgress" aria-labelledby="companiesHouseHeading" style="display: none">
+          <h3 data-i18n="ch-tax-return.companies-house-dbfbe8" id="companiesHouseHeading">Tŷ’r Cwmnïau</h3>
+          <div id="companiesHouseOutcome" class="outcome" role="status"></div>
+          <div id="companiesHouseErrors" style="display: none"></div>
+          <div class="button-group">
+            <button
+              data-i18n="ch-tax-return.send-the-company-tax-return-now-d412b1"
+              type="button"
+              id="sendCtNowBtn"
+              class="btn"
+              style="display: none"
+            >
+              Anfon Ffurflen Dreth y Cwmni nawr
+            </button>
+            <button
+              data-i18n="ch-tax-return.wait-for-companies-house-7087a0"
+              type="button"
+              id="waitForCompaniesHouseBtn"
+              class="secondary-button"
+              style="display: none"
+            >
+              Aros am Dŷ’r Cwmnïau
+            </button>
+          </div>
+          <h3 data-i18n="ch-tax-return.hmrc-e23afe" id="hmrcHeading">CThEF</h3>
+        </section>
+        <div id="returnOutcome" class="outcome">
+          <div id="returnResult"></div>
+          <div id="returnIrmark" style="display: none"></div>
+          <div id="returnErrors" style="display: none"></div>
+        </div>
+        <div id="returnRecord"></div>
+        <section id="amendPanel" aria-labelledby="amendHeading" style="display: none">
+          <h3 data-i18n="ch-tax-return.amend-this-filing-745521" id="amendHeading">Diwygio’r ffeilio hwn</h3>
+          <p data-i18n="ch-tax-return.amend-the-return-when-a-tax-88a562" class="hint">
+            Diwygiwch y Ffurflen pan oedd ateb treth yn anghywir. Diwygiwch y cyfrifon a’r Ffurflen pan oedd ffigur yn y cyfrifon yn
+            anghywir: mae Tŷ’r Cwmnïau yn cael cyfrifon diwygiedig, yna mae CThEF yn cael Ffurflen ddiwygiedig. Mae eich derbynebau yn
+            dangos y diwygiadau o dan y ffeilio hwn.
+          </p>
+          <p data-i18n="ch-tax-return.the-loss-claimed-in-return-2-a0d7cc" id="amendLongNote" class="hint" hidden>
+            Mae’r golled a hawliwyd yn Ffurflen 2 yn newid Ffurflen 1. Diwygiwch Ffurflen 1 fel bod gan CThEF y ffigurau a anfonwyd gennych
+            gyda Ffurflen 2.
+          </p>
+          <div class="button-group">
+            <button data-i18n="ch-tax-return.amend-the-return-fb799a" type="button" id="amendReturnBtn" class="secondary-button">
+              Diwygio’r Ffurflen
+            </button>
+            <button
+              data-i18n="ch-tax-return.amend-the-accounts-and-the-return-a96b0f"
+              type="button"
+              id="amendAccountsBtn"
+              class="secondary-button"
+              style="display: none"
+            >
+              Diwygio’r cyfrifon a’r Ffurflen
+            </button>
+          </div>
+        </section>
+        <section id="supportHelp" aria-labelledby="supportHelpHeading">
+          <h3 data-i18n="ch-tax-return.where-to-get-help-00f119" id="supportHelpHeading">Ble i gael help</h3>
+          <ul>
+            <li data-i18n="ch-tax-return.a-problem-with-the-live-hmrc-46086f">
+              Problem gyda gwasanaeth byw CThEF, neu gyda Phorth y Llywodraeth:
+              <a
+                href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/online-services-helpdesk"
+                target="_blank"
+                rel="noopener"
+                >Desg Gymorth Gwasanaethau Ar-lein CThEF</a
+              >.
+            </li>
+            <li data-i18n="ch-tax-return.a-problem-with-this-software-diy-01b06a">
+              Problem gyda’r feddalwedd hon: DIY Accounting yn <a href="mailto:support@diyaccounting.co.uk">support@diyaccounting.co.uk</a>,
+              neu’r <a href="../../help.html">dudalen Help</a> (yn Saesneg).
+            </li>
+          </ul>
+        </section>
+        <div class="button-group">
+          <button
+            data-i18n="ch-tax-return.check-the-return-and-try-again-149cf1"
+            type="button"
+            id="tryAgainBtn"
+            class="secondary-button"
+            style="display: none"
+          >
+            Gwiriwch y Ffurflen a rhoi cynnig arall arni
+          </button>
+          <button
+            data-i18n="ch-tax-return.start-a-new-return-4a07a8"
+            type="button"
+            id="startAgainBtn"
+            class="secondary-button"
+            style="display: none"
+          >
+            Dechrau Ffurflen newydd
+          </button>
+        </div>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../lib/welsh-text.js"></script>
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script src="../../lib/form-errors.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/submission-cost.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/books-import.js"></script>
+    <script type="module" src="../../companies-house/fileCompanyTaxReturn.page.js"></script>
+  </body>
+</html>

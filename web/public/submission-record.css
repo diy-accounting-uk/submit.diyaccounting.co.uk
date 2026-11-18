@@ -260,7 +260,8 @@
   border-left: 4px solid var(--c-ink-muted, #505a5f);
   padding-left: 0.5em;
 }
-.customer-copy-status[data-status="accepted"] {
+.customer-copy-status[data-status="accepted"],
+.customer-copy-status[data-status="held"] {
   border-left-color: var(--c-ok, #28a745);
 }
 .customer-copy-status[data-status="rejected"] {

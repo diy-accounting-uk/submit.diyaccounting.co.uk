@@ -28,7 +28,7 @@ import { requestCustomerEmail } from "../lib/customerEmailRequest.js";
  * @param {string} [params.clientId]
  * @param {string} params.receiptKind - e.g. "vat-return", "itsa-final-declaration", "ct-return"
  * @param {boolean} params.synthetic - True when a test or sandbox flow caused the filing
- * @param {"en"|"cy"} [params.language] - The reader's language choice, which the email follows
+ * @param {"en"|"cy"} [params.language] - "cy" when the reader filed with the Welsh choice: the email is in Welsh
  */
 export async function recordFiledReceipt({ userSub, receiptId, receipt, actor, clientId, receiptKind, synthetic, language }) {
   await putReceipt(userSub, receiptId, receipt, actor, clientId);

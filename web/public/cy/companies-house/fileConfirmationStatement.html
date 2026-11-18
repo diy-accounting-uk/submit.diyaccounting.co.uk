@@ -1,0 +1,437 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from companies-house/fileConfirmationStatement.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ffeilio datganiad cadarnhau - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/companies-house/fileConfirmationStatement.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/fileConfirmationStatement.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/fileConfirmationStatement.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/fileConfirmationStatement.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <link rel="stylesheet" href="../../submission-record.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="ch-confirmation-statement.file-confirmation-statement-e96c59">Ffeilio datganiad cadarnhau</h1>
+      <p data-i18n="ch-confirmation-statement.file-a-company-s-annual-confirmation-cf3051" class="subtitle">
+        Ffeilio datganiad cadarnhau blynyddol (CS01) cwmni gyda Thŷ’r Cwmnïau
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p
+        data-i18n="ch-confirmation-statement.status-production-a-confirmation-statement-you-491f61"
+        class="hint"
+        data-feature-status="production"
+      >
+        <strong>Statws: cynhyrchu (production).</strong> Mae datganiad cadarnhau rydych yn ei ffeilio yma yn cyrraedd cofrestr fyw Tŷ’r
+        Cwmnïau.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- View 1: which company -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau"
+        data-sign-in-text="Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif."
+        data-i18n-data-sign-in-title="ch-confirmation-statement.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-confirmation-statement.sign-in-to-look-up-your-eb0bf2"
+        data-i18n-data-sign-in-title="ch-confirmation-statement.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-confirmation-statement.sign-in-to-look-up-your-eb0bf2"
+      >
+        <h2 data-i18n="ch-confirmation-statement.which-company-d9aae4">Pa gwmni?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="ch-confirmation-statement.company-number-8b121b" for="companyNumber">Rhif y cwmni</label>
+            <p data-i18n="ch-confirmation-statement.8-characters-for-example-00000001-do-090062" id="companyNumber-hint" class="hint">
+              8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button data-i18n="ch-confirmation-statement.look-up-company-e9e4a8" type="submit" id="companyLookupBtn" class="btn">
+            Chwilio am y cwmni
+          </button>
+        </form>
+      </div>
+
+      <!-- View 2: company authentication code -->
+      <div id="authView" class="form-container" style="display: none">
+        <h2><span id="authCompanyName"></span> (<span id="authCompanyNumber"></span>)</h2>
+        <p data-i18n="ch-confirmation-statement.next-confirmation-statement-due-made-up-9d83d6">
+          Mae’r datganiad cadarnhau nesaf yn ddyledus ar <strong id="authNextDue"></strong>, hyd at <strong id="authNextMadeUpTo"></strong>.
+          <a href="#" id="changeCompanyLink">Newid y cwmni</a>.
+        </p>
+
+        <h3 data-i18n="ch-confirmation-statement.current-directors-on-the-public-register-b9c1b4">
+          Cyfarwyddwyr presennol ar y gofrestr gyhoeddus
+        </h3>
+        <table class="data-table" id="publicOfficersTable">
+          <thead>
+            <tr>
+              <th data-i18n="ch-confirmation-statement.name-dcd1d5">Enw</th>
+              <th data-i18n="ch-confirmation-statement.role-14736a">Rôl</th>
+              <th data-i18n="ch-confirmation-statement.appointed-fb1899">Penodwyd</th>
+              <th data-i18n="ch-confirmation-statement.identity-verification-b207ae">Gwiriad hunaniaeth</th>
+            </tr>
+          </thead>
+          <tbody id="publicOfficersBody"></tbody>
+        </table>
+
+        <h3 data-i18n="ch-confirmation-statement.persons-with-significant-control-a9d753">Pobl â rheolaeth arwyddocaol</h3>
+        <table class="data-table" id="publicPscsTable">
+          <thead>
+            <tr>
+              <th data-i18n="ch-confirmation-statement.name-dcd1d5">Enw</th>
+              <th data-i18n="ch-confirmation-statement.nature-of-control-74d2a6">Natur y rheolaeth</th>
+              <th data-i18n="ch-confirmation-statement.notified-3a623a">Hysbyswyd</th>
+            </tr>
+          </thead>
+          <tbody id="publicPscsBody"></tbody>
+        </table>
+
+        <form id="authForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="ch-confirmation-statement.company-authentication-code-56d0e6" for="companyAuthCode">Cod dilysu’r cwmni</label>
+            <p data-i18n="ch-confirmation-statement.the-6-to-8-character-code-48646a" id="companyAuthCode-hint" class="hint">
+              Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei
+              ddefnyddio.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <div class="form-group">
+            <div class="choice">
+              <input type="checkbox" id="useOwnPresenter" name="useOwnPresenter" aria-controls="ownPresenterFields" /><label
+                data-i18n="ch-confirmation-statement.file-under-my-own-companies-house-33fa3f"
+                for="useOwnPresenter"
+                >Ffeilio o dan fy nghyflwynydd Tŷ’r Cwmnïau fy hun</label
+              >
+            </div>
+          </div>
+          <div id="ownPresenterFields" class="form-section" hidden>
+            <p data-i18n="ch-confirmation-statement.companies-house-charges-its-filing-fee-409773" id="ownPresenter-hint" class="hint">
+              Mae Tŷ’r Cwmnïau yn codi ei ffi ffeilio (£50 ar hyn o bryd) ar y cyfrif credyd y tu ôl i’ch cyflwynydd, ac nid yw Submit yn
+              codi ffi ei hun. Mae arnoch angen cyfrif credyd Tŷ’r Cwmnïau gydag ID cyflwynydd a chod dilysu cyflwynydd. Mae Submit yn eu
+              defnyddio ar gyfer y ffeilio hwn yn unig ac nid yw’n cadw copi o’r naill na’r llall.
+            </p>
+            <div class="form-group">
+              <label data-i18n="ch-confirmation-statement.presenter-id-71f500" for="ownPresenterId">ID cyflwynydd</label>
+              <input
+                type="text"
+                id="ownPresenterId"
+                class="input--code"
+                name="ownPresenterId"
+                autocomplete="off"
+                maxlength="32"
+                spellcheck="false"
+                aria-describedby="ownPresenter-hint"
+              />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-confirmation-statement.presenter-authentication-code-f8bbc9" for="ownPresenterCode"
+                >Cod dilysu’r cyflwynydd</label
+              >
+              <input
+                type="password"
+                id="ownPresenterCode"
+                class="input--code"
+                name="ownPresenterCode"
+                autocomplete="off"
+                maxlength="32"
+                spellcheck="false"
+                aria-describedby="ownPresenter-hint"
+              />
+            </div>
+          </div>
+          <button data-i18n="ch-confirmation-statement.read-register-data-1a5001" type="submit" id="authSubmitBtn" class="btn">
+            Darllen data’r gofrestr
+          </button>
+        </form>
+      </div>
+
+      <!-- View 3: review and change -->
+      <div id="reviewView" class="form-container" style="display: none">
+        <h2 data-i18n="ch-confirmation-statement.review-and-change-adcd34">Adolygu a newid</h2>
+        <form id="reviewForm" novalidate>
+          <section class="form-section">
+            <h3 data-i18n="ch-confirmation-statement.review-date-1c205c">Dyddiad adolygu</h3>
+            <div class="form-group">
+              <label data-i18n="ch-confirmation-statement.confirmation-statement-date-5f8793" for="reviewDate"
+                >Dyddiad y datganiad cadarnhau</label
+              >
+              <input type="date" id="reviewDate" name="reviewDate" required />
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-confirmation-statement.sic-codes-2e5a3b">Codau SIC</h3>
+            <div class="form-group">
+              <label data-i18n="ch-confirmation-statement.sic-codes-2e5a3b" for="sicCodes">Codau SIC</label>
+              <p data-i18n="ch-confirmation-statement.enter-up-to-four-codes-separated-9a0a01" id="sicCodes-hint" class="hint">
+                Rhowch hyd at bedwar cod wedi’u gwahanu gan gomas.
+              </p>
+              <input type="text" id="sicCodes" name="sicCodes" spellcheck="false" aria-describedby="sicCodes-hint" />
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-confirmation-statement.statement-of-capital-185b89">Datganiad cyfalaf</h3>
+            <p data-i18n="ch-confirmation-statement.sent-only-when-a-value-below-a7518c" class="hint">
+              Yn cael ei anfon dim ond pan fydd gwerth isod yn wahanol i’r gofrestr.
+            </p>
+            <div class="form-group">
+              <label data-i18n="ch-confirmation-statement.total-amount-unpaid-e98c8f" for="totalAmountUnpaid"
+                >Cyfanswm y swm heb ei dalu</label
+              >
+              <p data-i18n="ch-confirmation-statement.for-example-600-or-1-200-b18cc2" id="totalAmountUnpaid-money-hint" class="hint">
+                Er enghraifft, 600 neu 1,200.50
+              </p>
+              <div class="input-prefix">
+                <span class="prefix" data-share-currency-prefix style="display: none"></span>
+                <input
+                  type="text"
+                  id="totalAmountUnpaid"
+                  name="totalAmountUnpaid"
+                  aria-describedby="totalAmountUnpaid-money-hint"
+                  inputmode="decimal"
+                  data-money="pounds-and-pence"
+                  data-money-min="0"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-confirmation-statement.total-number-of-issued-shares-2c65ee" for="totalNumberOfIssuedShares"
+                >Cyfanswm nifer y cyfrannau a ddyroddwyd</label
+              >
+              <input type="number" id="totalNumberOfIssuedShares" name="totalNumberOfIssuedShares" step="1" min="0" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-confirmation-statement.share-currency-b4500c" for="shareCurrency">Arian cyfred y cyfrannau</label>
+              <input type="text" id="shareCurrency" name="shareCurrency" spellcheck="false" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-confirmation-statement.total-aggregate-nominal-value-858417" for="totalAggregateNominalValue"
+                >Cyfanswm y gwerth nominal cyfanred</label
+              >
+              <p
+                data-i18n="ch-confirmation-statement.for-example-600-or-1-200-b18cc2"
+                id="totalAggregateNominalValue-money-hint"
+                class="hint"
+              >
+                Er enghraifft, 600 neu 1,200.50
+              </p>
+              <div class="input-prefix">
+                <span class="prefix" data-share-currency-prefix style="display: none"></span>
+                <input
+                  type="text"
+                  id="totalAggregateNominalValue"
+                  name="totalAggregateNominalValue"
+                  aria-describedby="totalAggregateNominalValue-money-hint"
+                  inputmode="decimal"
+                  data-money="pounds-and-pence"
+                  data-money-min="0"
+                />
+              </div>
+            </div>
+            <div id="shareClassesContainer"></div>
+            <button data-i18n="ch-confirmation-statement.add-share-class-0287f6" type="button" id="addShareClassBtn" class="btn-small">
+              Ychwanegu dosbarth cyfrannau
+            </button>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-confirmation-statement.shareholdings-c961e9">Cyfranddaliadau</h3>
+            <div id="shareholdingsContainer"></div>
+            <button data-i18n="ch-confirmation-statement.add-shareholding-a3cacf" type="button" id="addShareholdingBtn" class="btn-small">
+              Ychwanegu cyfranddaliad
+            </button>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-confirmation-statement.registered-email-address-bd2f6c">Cyfeiriad e-bost cofrestredig</h3>
+            <div class="form-group">
+              <label data-i18n="ch-confirmation-statement.registered-email-address-bd2f6c" for="registeredEmailAddress"
+                >Cyfeiriad e-bost cofrestredig</label
+              >
+              <input type="email" id="registeredEmailAddress" name="registeredEmailAddress" spellcheck="false" />
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-confirmation-statement.trading-on-a-regulated-market-061925">Masnachu ar farchnad reoleiddiedig</h3>
+            <p data-i18n="ch-confirmation-statement.this-company-does-not-trade-on-17341e">
+              Nid yw’r cwmni hwn yn masnachu ar farchnad reoleiddiedig, felly nid yw DTR5 yn berthnasol. Mae’r ddau yn cael eu ffeilio fel
+              ‘ffug’ (false).
+            </p>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-confirmation-statement.lawful-purpose-statement-c5ba54">Datganiad pwrpas cyfreithiol</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="lawfulPurposeStatement" name="lawfulPurposeStatement" required /><label
+                  data-i18n="ch-confirmation-statement.the-company-confirms-that-the-intended-963e13"
+                  for="lawfulPurposeStatement"
+                  >Mae’r cwmni yn cadarnhau fod y gweithgareddau a fwriedir gan y cwmni yn y dyfodol yn gyfreithlon.</label
+                >
+              </div>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-confirmation-statement.statement-of-confirmation-4986be">Datganiad cadarnhau</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="stateConfirmation" name="stateConfirmation" required /><label
+                  data-i18n="ch-confirmation-statement.the-company-confirms-that-the-information-7eae08"
+                  for="stateConfirmation"
+                  >Mae’r cwmni’n cadarnhau bod yr wybodaeth y mae’n ofynnol iddo ei chyflwyno i’r cofrestrydd wedi’i chyflwyno, a bod yr
+                  holl wybodaeth yn y datganiad hwn yn gywir ar y dyddiad cadarnhau.</label
+                >
+              </div>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-confirmation-statement.director-identity-verification-49d8a7">Gwiriad hunaniaeth y cyfarwyddwr</h3>
+            <p data-i18n="ch-confirmation-statement.every-current-director-must-have-verified-5de76d" class="hint">
+              Rhaid i bob cyfarwyddwr presennol fod wedi gwirio ei hunaniaeth gyda Thŷ’r Cwmnïau, ac mae angen ei enw llawn fel y’i gwiriwyd
+              (gan gynnwys unrhyw enwau cyntaf eraill) a’i god personol Tŷ’r Cwmnïau o 11 nod ar y datganiad hwn. Mae rhes wag yn atal
+              cyflwyno’r datganiad hwn.
+              <a href="https://www.gov.uk/guidance/verify-your-identity-for-companies-house">Sut i wirio hunaniaeth</a> (yn Saesneg).
+            </p>
+            <p data-i18n="ch-confirmation-statement.if-someone-else-s-code-is-406839" class="hint">
+              Os oes angen cod rhywun arall i gwblhau’r ffeilio hwn, gall cyfarwyddwyr y cwmni rannu eu codau gyda phwy bynnag sy’n ffeilio
+              - mae Submit yn anfon cod gyda’r ffeilio hwn yn unig ac nid yw’n cadw copi ohono.
+            </p>
+            <div id="directorRowsContainer"></div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-confirmation-statement.filing-fee-bc2748">Ffi ffeilio</h3>
+            <p id="feeMessage" class="hint"></p>
+          </section>
+
+          <button data-i18n="ch-confirmation-statement.preview-confirmation-statement-4974e1" type="submit" id="previewBtn" class="btn">
+            Rhagolwg o’r datganiad cadarnhau
+          </button>
+        </form>
+      </div>
+
+      <!-- View 4: preview -->
+      <div id="previewView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-confirmation-statement.preview-324b13">Rhagolwg</h2>
+        <p data-i18n="ch-confirmation-statement.this-is-the-statement-that-will-4737ea">
+          Dyma’r datganiad a fydd yn cael ei ffeilio. Nid oes dim wedi’i gyflwyno i Dŷ’r Cwmnïau eto.
+        </p>
+        <dl id="previewSummary"></dl>
+        <pre id="previewXml" class="ixbrl-preview developer-only-section"></pre>
+        <p id="previewFeeMessage" class="hint" style="display: none"></p>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label data-i18n="ch-confirmation-statement.gov-test-scenario-dab532" for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button data-i18n="ch-confirmation-statement.back-76900f" type="button" id="backToReviewBtn" class="secondary-button">
+            Yn ôl
+          </button>
+          <button data-i18n="ch-confirmation-statement.submit-to-companies-house-31272e" type="button" id="submitFilingBtn" class="btn">
+            Cyflwyno i Dŷ’r Cwmnïau
+          </button>
+        </div>
+      </div>
+
+      <!-- View 5: result -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-confirmation-statement.filing-result-0ecbf7">Canlyniad y ffeilio</h2>
+        <div id="filingResult"></div>
+        <div id="rejections" style="display: none"></div>
+        <div id="pscFollowUp" style="display: none"></div>
+        <div id="filingRecord"></div>
+        <div class="button-group">
+          <button
+            data-i18n="ch-confirmation-statement.start-a-new-filing-0a9f24"
+            type="button"
+            id="startAgainBtn"
+            class="secondary-button"
+            style="display: none"
+          >
+            Dechrau ffeilio newydd
+          </button>
+        </div>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../lib/welsh-text.js"></script>
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/stacked-table.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/money-input.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../lib/form-errors.js"></script>
+    <script src="../../lib/companies-house-labels.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
+    <script src="../../companies-house/fileConfirmationStatement.page.js"></script>
+  </body>
+</html>

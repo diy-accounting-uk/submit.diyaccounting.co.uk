@@ -18,6 +18,16 @@ describe("companies-house-labels", () => {
     expect(labels.formatCompanyDate("2019-12-31")).toBe("31 December 2019");
   });
 
+  it("writes the date in Welsh, with Welsh month names, when the chrome is Welsh", () => {
+    window.siteLanguage = { chrome: () => "cy" };
+    try {
+      expect(labels.formatCompanyDate("2026-03-05")).toBe("5 Mawrth 2026");
+      expect(labels.formatCompanyDate("2019-12-31")).toBe("31 Rhagfyr 2019");
+    } finally {
+      delete window.siteLanguage;
+    }
+  });
+
   it("returns an empty string for a missing date and the input for an unreadable one", () => {
     expect(labels.formatCompanyDate(undefined)).toBe("");
     expect(labels.formatCompanyDate("")).toBe("");

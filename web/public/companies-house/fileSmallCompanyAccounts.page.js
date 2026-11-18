@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives window.siteText, the text in the chosen language. Without it (a test that
+// stubs the chrome) the English stands.
+window.siteText =
+  window.siteText ||
+  ((id, english, values) => english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole)));
+
 // File small company accounts: companyView -> formView -> previewView -> resultView. No
 // Companies House OAuth token: the filing goes through the XML Gateway with the operator's
 // presenter credentials, so only the Cognito id token is needed to reach the API.
@@ -245,17 +251,39 @@ function renderTotals() {
   ["current", "prior"].forEach((prefix) => {
     if (prefix === "prior" && !comparativesIncluded()) return;
     const profitAndLoss = readProfitAndLoss(prefix);
-    const grossProfitText = profitAndLossFormat() === 1 ? `Gross profit: ${profitAndLoss.grossProfit}. ` : "";
+    const grossProfitText =
+      profitAndLossFormat() === 1
+        ? `${window.siteText("ch.small.gross-profit", "Gross profit: {amount}.", { amount: profitAndLoss.grossProfit })} `
+        : "";
     document.getElementById(prefix + "ProfitAndLossTotals").textContent =
-      `${grossProfitText}Operating profit: ${profitAndLoss.operatingProfit}. ` +
-      `Profit before tax: ${profitAndLoss.profitBeforeTax}. Profit for the year: ${profitAndLoss.profit}.`;
+      grossProfitText +
+      window.siteText(
+        "ch.small.profit-totals",
+        "Operating profit: {operating}. Profit before tax: {beforeTax}. Profit for the year: {profit}.",
+        {
+          operating: profitAndLoss.operatingProfit,
+          beforeTax: profitAndLoss.profitBeforeTax,
+          profit: profitAndLoss.profit,
+        },
+      );
     const balanceSheet = readBalanceSheet(prefix);
     const netAssets = netAssetsOf(balanceSheet);
-    document.getElementById(prefix + "BalanceSheetTotals").textContent = `Net assets: ${netAssets}. ${
+    const verdict =
       netAssets === balanceSheet.capitalAndReserves
-        ? "Matches share capital plus the profit and loss reserve."
-        : `Does not match share capital plus the profit and loss reserve (${balanceSheet.capitalAndReserves}) - correct this before previewing.`
-    }`;
+        ? window.siteText("ch.small.matches-capital", "Matches share capital plus the profit and loss reserve.")
+        : window.siteText(
+            "ch.small.mismatch-capital",
+            "Does not match share capital plus the profit and loss reserve ({amount}) - correct this before previewing.",
+            { amount: balanceSheet.capitalAndReserves },
+          );
+    document.getElementById(prefix + "BalanceSheetTotals").textContent = window.siteText(
+      "ch.small.net-assets",
+      "Net assets: {amount}. {verdict}",
+      {
+        amount: netAssets,
+        verdict,
+      },
+    );
   });
   const note = readFixedAssetNote();
   const intangibleNote = readIntangibleAssetNote();
@@ -263,18 +291,40 @@ function renderTotals() {
   if (note) {
     const netBookValue = netBookValueOf(note);
     const total = netBookValue + intangibleNetBookValueOf(intangibleNote);
-    document.getElementById("fixedAssetNoteTotals").textContent = `Net book value: ${netBookValue}. ${
-      total === fixedAssets ? "Matches fixed assets." : `Does not match fixed assets (${fixedAssets}) - correct this before previewing.`
-    }`;
+    const verdict =
+      total === fixedAssets
+        ? window.siteText("ch.small.matches-fixed", "Matches fixed assets.")
+        : window.siteText("ch.small.mismatch-fixed", "Does not match fixed assets ({amount}) - correct this before previewing.", {
+            amount: fixedAssets,
+          });
+    document.getElementById("fixedAssetNoteTotals").textContent = window.siteText(
+      "ch.small.net-book-value",
+      "Net book value: {amount}. {verdict}",
+      {
+        amount: netBookValue,
+        verdict,
+      },
+    );
   }
   if (intangibleNote) {
     const netBookValue = intangibleNetBookValueOf(intangibleNote);
     const total = netBookValue + (note ? netBookValueOf(note) : 0);
-    document.getElementById("intangibleAssetNoteTotals").textContent = `Net book value: ${netBookValue}. ${
+    const verdict =
       total === fixedAssets
-        ? "With the tangible fixed assets note, matches fixed assets."
-        : `With the tangible fixed assets note, does not match fixed assets (${fixedAssets}) - correct this before previewing.`
-    }`;
+        ? window.siteText("ch.small.matches-fixed-with-note", "With the tangible fixed assets note, matches fixed assets.")
+        : window.siteText(
+            "ch.small.mismatch-fixed-with-note",
+            "With the tangible fixed assets note, does not match fixed assets ({amount}) - correct this before previewing.",
+            { amount: fixedAssets },
+          );
+    document.getElementById("intangibleAssetNoteTotals").textContent = window.siteText(
+      "ch.small.net-book-value",
+      "Net book value: {amount}. {verdict}",
+      {
+        amount: netBookValue,
+        verdict,
+      },
+    );
   }
 }
 
@@ -308,7 +358,7 @@ async function handleCompanySubmit(event) {
     showView("formView");
   } catch (error) {
     console.error("Failed to look up the company:", error);
-    showStatus(error.message || "Failed to look up the company.", "error");
+    showStatus(error.message || window.siteText("ch.accounts.lookup-failed", "Failed to look up the company."), "error");
   } finally {
     hideLoading();
   }
@@ -383,20 +433,32 @@ function formProblem() {
   for (const prefix of years) {
     const balanceSheet = readBalanceSheet(prefix);
     if (netAssetsOf(balanceSheet) !== balanceSheet.capitalAndReserves) {
-      return "Net assets must equal share capital plus the profit and loss reserve for every year before previewing.";
+      return window.siteText(
+        "ch.small.net-assets-must-equal",
+        "Net assets must equal share capital plus the profit and loss reserve for every year before previewing.",
+      );
     }
     if (balanceSheet.bankLoansAfterOneYear > balanceSheet.creditorsAfterOneYear) {
-      return "Bank loans due after one year cannot be more than the creditors due after one year.";
+      return window.siteText(
+        "ch.small.bank-loans-too-big",
+        "Bank loans due after one year cannot be more than the creditors due after one year.",
+      );
     }
     const debtorsSplit =
       balanceSheet.tradeDebtors + balanceSheet.otherDebtors + balanceSheet.amountsOwedByDirectors + balanceSheet.prepayments;
     if (debtorsSplit !== 0 && debtorsSplit !== balanceSheet.debtors) {
-      return "Trade debtors, other debtors, amounts owed by directors and prepayments must add up to the debtors for every year before previewing.";
+      return window.siteText(
+        "ch.small.debtors-split",
+        "Trade debtors, other debtors, amounts owed by directors and prepayments must add up to the debtors for every year before previewing.",
+      );
     }
     const afterOneYearSplit =
       balanceSheet.bankLoansAfterOneYear + balanceSheet.amountsOwedToDirectors + balanceSheet.amountsOwedToGroupUndertakings;
     if (afterOneYearSplit > balanceSheet.creditorsAfterOneYear) {
-      return "Bank loans, amounts owed to directors and amounts owed to group undertakings cannot be more than the creditors due after one year.";
+      return window.siteText(
+        "ch.small.after-one-year-split",
+        "Bank loans, amounts owed to directors and amounts owed to group undertakings cannot be more than the creditors due after one year.",
+      );
     }
   }
   const note = readFixedAssetNote();
@@ -405,16 +467,28 @@ function formProblem() {
     (note || intangibleNote) &&
     (note ? netBookValueOf(note) : 0) + intangibleNetBookValueOf(intangibleNote) !== readPounds("currentFixedAssets")
   ) {
-    return "The fixed assets notes' net book value must equal the fixed assets before previewing.";
+    return window.siteText(
+      "ch.small.notes-must-equal",
+      "The fixed assets notes' net book value must equal the fixed assets before previewing.",
+    );
   }
   return null;
 }
 
 const STATEMENT_MESSAGES = {
-  statementSection477Exemption: "Confirm the company is entitled to exemption from audit under section 477",
-  statementMembersNotRequiredAudit: "Confirm the members have not required the company to obtain an audit",
-  statementDirectorsResponsibilities: "Confirm the directors acknowledge their responsibilities",
-  statementSmallCompaniesRegime: "Confirm the accounts follow the small companies regime",
+  statementSection477Exemption: window.siteText(
+    "ch.accounts.confirm-477",
+    "Confirm the company is entitled to exemption from audit under section 477",
+  ),
+  statementMembersNotRequiredAudit: window.siteText(
+    "ch.accounts.confirm-members",
+    "Confirm the members have not required the company to obtain an audit",
+  ),
+  statementDirectorsResponsibilities: window.siteText(
+    "ch.accounts.confirm-directors",
+    "Confirm the directors acknowledge their responsibilities",
+  ),
+  statementSmallCompaniesRegime: window.siteText("ch.small.confirm-regime", "Confirm the accounts follow the small companies regime"),
 };
 
 async function handleAccountsFormSubmit(event) {
@@ -439,7 +513,7 @@ async function handleAccountsFormSubmit(event) {
     document.getElementById("previewView").scrollIntoView();
   } catch (error) {
     console.error("Failed to render the accounts preview:", error);
-    showStatus(error.message || "Failed to render the accounts preview.", "error");
+    showStatus(error.message || window.siteText("ch.accounts.preview-failed", "Failed to render the accounts preview."), "error");
   } finally {
     hideLoading();
   }
@@ -457,6 +531,12 @@ function paragraph(...parts) {
     }
   }
   return element;
+}
+
+// A paragraph from a text with {name} places: each place holds its value in bold.
+function paragraphWithValues(text, values) {
+  const parts = text.split(/\{([a-z]+)\}/).map((part, index) => (index % 2 === 1 ? { strong: values[part] } : part));
+  return paragraph(...parts.filter((part) => part !== ""));
 }
 
 function renderRejections(rejections) {
@@ -484,21 +564,32 @@ async function pollUntilSettled(submissionNumber, extraHeaders = {}) {
     if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") {
       return result;
     }
-    document
-      .getElementById("filingResult")
-      .replaceChildren(
-        paragraph("Submission ", { strong: submissionNumber }, " is ", { strong: result.statusCode }, ". Checking again..."),
-      );
+    document.getElementById("filingResult").replaceChildren(
+      paragraphWithValues(window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again..."), {
+        number: submissionNumber,
+        status: result.statusCode,
+      }),
+    );
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   return window.pollMicroEntityAccounts(submissionNumber, extraHeaders);
+}
+
+// The reader's language choice goes with a filing, so the receipt email of an accepted filing is in it.
+function languageHeaders() {
+  return window.siteLanguage && window.siteLanguage.current() === "cy" ? { "X-Site-Language": "cy" } : {};
 }
 
 async function handleSubmitFiling() {
   const companyAuthCodeInput = document.getElementById("companyAuthCode");
   const companyAuthCode = companyAuthCodeInput.value.trim();
   if (companyAuthCode.length < 6 || companyAuthCode.length > 8) {
-    window.formErrors.showFormErrors([{ input: companyAuthCodeInput, message: "Enter the 6 to 8 character company authentication code" }]);
+    window.formErrors.showFormErrors([
+      {
+        input: companyAuthCodeInput,
+        message: window.siteText("ch.accounts.enter-auth-code", "Enter the 6 to 8 character company authentication code"),
+      },
+    ]);
     return;
   }
   window.formErrors.clearFormErrors();
@@ -510,22 +601,27 @@ async function handleSubmitFiling() {
     const accounts = { ...filedAccounts, companyAuthCode };
     const govTestScenario = document.getElementById("govTestScenario").value.trim();
     const govTestScenarioHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
-    const submission = await window.submitMicroEntityAccounts(accounts, govTestScenarioHeaders);
+    const submission = await window.submitMicroEntityAccounts(accounts, { ...govTestScenarioHeaders, ...languageHeaders() });
     document
       .getElementById("filingResult")
       .replaceChildren(
-        paragraph(
-          "Submission ",
-          { strong: submission.submissionNumber },
-          ` accepted by the gateway at ${submission.gatewayTimestamp}. Waiting for Companies House...`,
+        paragraphWithValues(
+          window.siteText(
+            "ch.accounts.gateway-accepted",
+            "Submission {number} accepted by the gateway at {time}. Waiting for Companies House...",
+          ),
+          { number: submission.submissionNumber, time: submission.gatewayTimestamp },
         ),
       );
     showView("resultView");
 
     const outcome = await pollUntilSettled(submission.submissionNumber, govTestScenarioHeaders);
-    document
-      .getElementById("filingResult")
-      .replaceChildren(paragraph("Submission ", { strong: outcome.submissionNumber }, " was ", { strong: outcome.statusCode }, "."));
+    document.getElementById("filingResult").replaceChildren(
+      paragraphWithValues(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
+        number: outcome.submissionNumber,
+        status: outcome.statusCode,
+      }),
+    );
     document.getElementById("filingResult").className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
     renderRejections(outcome.rejections);
     showFilingCopyLink(outcome);
@@ -535,7 +631,7 @@ async function handleSubmitFiling() {
     const tokensExhausted = error.status === 403 && error.reason === "tokens_exhausted";
     // The request layer already showed its own refusal; the page's message replaces it.
     if (tokensExhausted) hideStatus();
-    showStatus(error.message || "Failed to file the accounts with Companies House.", "error");
+    showStatus(error.message || window.siteText("ch.accounts.file-failed", "Failed to file the accounts with Companies House."), "error");
     if (tokensExhausted) {
       window.dispatchEvent(new CustomEvent("bundle-changed"));
       document.getElementById("statusMessagesContainer").scrollIntoView({ block: "start" });

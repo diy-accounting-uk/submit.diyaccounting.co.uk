@@ -8,21 +8,28 @@
 // answered, and gets markup back.
 
 import { customerCopyHtml, escapeRecordText, recordAmount, recordHeading, recordTable } from "./submission-record.js";
-import { ABSENT, ctReceiptRecord, page, textLine } from "./filing-record.js";
+import { ABSENT, ctReceiptRecord, longDateText, page, textLine } from "./filing-record.js";
 import { boxRow } from "./ct600-fields.js";
 
-const RECEIPTS_LINK = { href: "../hmrc/receipt/receipts.html", text: "All your receipts" };
+// page-chrome.js gives the text in the chosen language; without it the English stands.
+function siteText(id, english, values) {
+  if (globalThis.siteText) return globalThis.siteText(id, english, values);
+  return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+}
+
+// A function, so the link text is read in the chrome's language when a copy is drawn.
+const receiptsLink = () => ({ href: "../hmrc/receipt/receipts.html", text: siteText("ch.record.all-receipts", "All your receipts") });
 const TAX_BOXES = [440, 475, 528];
 
 function longDate(isoDate) {
   const date = new Date(`${isoDate}T00:00:00Z`);
   if (!isoDate || Number.isNaN(date.getTime())) return ABSENT;
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+  return longDateText(date, { utc: true });
 }
 
 /** Today as the customer reads a date, e.g. "24 October 2026". */
 export function todayText() {
-  return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  return longDateText(new Date());
 }
 
 function textTable(lines) {
@@ -30,13 +37,13 @@ function textTable(lines) {
 }
 
 function statementStatus(statusCode) {
-  if (statusCode === "ACCEPT") return { kind: "accepted", text: "Accepted by Companies House" };
-  if (statusCode === "REJECT") return { kind: "rejected", text: "Rejected by Companies House" };
-  return { kind: "pending", text: "With Companies House" };
+  if (statusCode === "ACCEPT") return { kind: "accepted", text: siteText("ch.record.accepted", "Accepted by Companies House") };
+  if (statusCode === "REJECT") return { kind: "rejected", text: siteText("ch.record.rejected", "Rejected by Companies House") };
+  return { kind: "pending", text: siteText("ch.record.pending", "With Companies House") };
 }
 
 function changedOrConfirmed(changed) {
-  return changed ? "Changed from the register" : "Confirmed as on the register";
+  return changed ? siteText("ch.cs.changed", "Changed from the register") : siteText("ch.record.confirmed", "Confirmed as on the register");
 }
 
 /**
@@ -53,28 +60,34 @@ function changedOrConfirmed(changed) {
 export function confirmationStatementCopyHtml({ company, payload, officers, pscs, outcome, dateText }) {
   const heading = recordHeading({
     nameHtml: escapeRecordText(company.companyName),
-    referenceHtml: [`Company number ${escapeRecordText(company.companyNumber)}`],
-    title: "Confirmation statement",
-    subtitleHtml: `Made up to ${escapeRecordText(longDate(payload.reviewDate))}`,
+    referenceHtml: [
+      escapeRecordText(siteText("ch.record.company-number-line", "Company number {number}", { number: company.companyNumber })),
+    ],
+    title: siteText("ch.record.cs-title", "Confirmation statement"),
+    subtitleHtml: escapeRecordText(siteText("ch.record.made-up-to-line", "Made up to {date}", { date: longDate(payload.reviewDate) })),
   });
+  const accepted = siteText("ch.cs.accepted", "Accepted");
   const answers = [
-    ["Lawful purpose statement", payload.lawfulPurposeStatementAccepted ? "Accepted" : ABSENT],
-    ["Statement of confirmation", payload.stateConfirmationAccepted ? "Accepted" : ABSENT],
-    ["Nature of business (SIC codes)", payload.sicCodes ? payload.sicCodes.join(", ") : changedOrConfirmed(false)],
-    ["Registered email address", payload.registeredEmailAddress ?? changedOrConfirmed(false)],
-    ["Statement of capital", changedOrConfirmed(Boolean(payload.statementOfCapital))],
-    ["Shareholders", changedOrConfirmed(Boolean(payload.shareholdings))],
+    [siteText("ch.cs.summary-lawful", "Lawful purpose statement"), payload.lawfulPurposeStatementAccepted ? accepted : ABSENT],
+    [siteText("ch.cs.summary-confirmation", "Statement of confirmation"), payload.stateConfirmationAccepted ? accepted : ABSENT],
+    [
+      siteText("ch.cs.summary-sic", "Nature of business (SIC codes)"),
+      payload.sicCodes ? payload.sicCodes.join(", ") : changedOrConfirmed(false),
+    ],
+    [siteText("ch.cs.summary-email", "Registered email address"), payload.registeredEmailAddress ?? changedOrConfirmed(false)],
+    [siteText("ch.cs.summary-capital", "Statement of capital"), changedOrConfirmed(Boolean(payload.statementOfCapital))],
+    [siteText("ch.cs.summary-shareholders", "Shareholders"), changedOrConfirmed(Boolean(payload.shareholdings))],
   ];
   const directors = payload.directors.map((director) =>
     [director.forename, director.otherForenames, director.surname].filter(Boolean).join(" "),
   );
   const confirmation = page(
     `${heading}${textTable([
-      ["Company", company.companyName],
-      ["Company number", company.companyNumber],
-      ["Made up to", longDate(payload.reviewDate)],
+      [siteText("ch.search.column-company", "Company"), company.companyName],
+      [siteText("ch.record.company-number", "Company number"), company.companyNumber],
+      [siteText("ch.record.made-up-to", "Made up to"), longDate(payload.reviewDate)],
       ...answers,
-      ["Directors verifying their identity", directors.join(", ")],
+      [siteText("ch.cs.summary-directors", "Directors verifying their identity"), directors.join(", ")],
     ])}`,
   );
   const people = (title, rows, columns) =>
@@ -82,52 +95,58 @@ export function confirmationStatementCopyHtml({ company, payload, officers, pscs
       recordHeading({
         nameHtml: escapeRecordText(company.companyName),
         title,
-        subtitleHtml: `As confirmed on ${escapeRecordText(longDate(payload.reviewDate))}`,
-      }) + (rows.length ? textTable(rows.map((row) => columns(row))) : textTable([["None on the register", ABSENT]])),
+        subtitleHtml: escapeRecordText(
+          siteText("ch.record.as-confirmed-on", "As confirmed on {date}", { date: longDate(payload.reviewDate) }),
+        ),
+      }) +
+        (rows.length
+          ? textTable(rows.map((row) => columns(row)))
+          : textTable([[siteText("ch.record.none-on-register", "None on the register"), ABSENT]])),
     );
-  const submission = page(
-    `${recordHeading({
-      nameHtml: "Companies House receipt",
-      referenceHtml: [`Submission number ${escapeRecordText(outcome.submissionNumber)}`],
-      title: "Receipt from Companies House",
-      subtitleHtml: `Filed ${escapeRecordText(dateText)}`,
-    })}${textTable([
-      ["Submission number", outcome.submissionNumber],
-      ["Company number", company.companyNumber],
-      ["Status", statementStatus(outcome.statusCode).text],
-      ["Filed on", dateText],
-    ])}`,
-  );
+  const submission = receiptPage(outcome.submissionNumber, company.companyNumber, statementStatus(outcome.statusCode).text, dateText);
   return customerCopyHtml({
-    title: `Your copy of the confirmation statement for ${company.companyName}`,
-    reference: { label: "Submission number", value: String(outcome.submissionNumber ?? ABSENT) },
+    title: siteText("ch.record.cs-copy-title", "Your copy of the confirmation statement for {company}", { company: company.companyName }),
+    reference: { label: siteText("ch.record.submission-number", "Submission number"), value: String(outcome.submissionNumber ?? ABSENT) },
     status: statementStatus(outcome.statusCode),
     date: dateText,
     sections: [
       {
-        heading: "The statement as filed",
-        explanation:
+        heading: siteText("ch.record.cs-as-filed", "The statement as filed"),
+        explanation: siteText(
+          "ch.record.cs-explanation",
           "This is what you confirmed to Companies House: the company, the date the statement is made up to, and your answers. Anything marked as confirmed is unchanged on the register.",
+        ),
         recordHtml: confirmation,
       },
       {
-        heading: "Officers as confirmed",
-        explanation:
+        heading: siteText("ch.record.officers-as-confirmed", "Officers as confirmed"),
+        explanation: siteText(
+          "ch.record.officers-explanation",
           "These are the company's current officers on the register when you filed, and whether each has verified their identity.",
-        recordHtml: people("Officers", officers, (row) => [row.name, `${row.role}. ${row.verification}`]),
+        ),
+        recordHtml: people(siteText("ch.record.officers", "Officers"), officers, (row) => [row.name, `${row.role}. ${row.verification}`]),
       },
       {
-        heading: "People with significant control as confirmed",
-        explanation: "These are the people with significant control on the register when you filed, with how they control the company.",
-        recordHtml: people("People with significant control", pscs, (row) => [row.name, `${row.control}. Notified ${row.notifiedOn}`]),
+        heading: siteText("ch.record.pscs-as-confirmed", "People with significant control as confirmed"),
+        explanation: siteText(
+          "ch.record.pscs-explanation",
+          "These are the people with significant control on the register when you filed, with how they control the company.",
+        ),
+        recordHtml: people(siteText("ch.record.pscs", "People with significant control"), pscs, (row) => [
+          row.name,
+          siteText("ch.record.psc-row", "{control}. Notified {date}", { control: row.control, date: row.notifiedOn }),
+        ]),
       },
       {
-        heading: "Receipt from Companies House",
-        explanation: "Companies House gave this filing a submission number. Quote it if you write to Companies House about this statement.",
+        heading: siteText("ch.record.receipt-title", "Receipt from Companies House"),
+        explanation: siteText(
+          "ch.record.cs-receipt-explanation",
+          "Companies House gave this filing a submission number. Quote it if you write to Companies House about this statement.",
+        ),
         recordHtml: submission,
       },
     ],
-    links: [{ href: "companySearch.html", text: "Look up another company" }, RECEIPTS_LINK],
+    links: [{ href: "companySearch.html", text: siteText("ch.record.look-up-another", "Look up another company") }, receiptsLink()],
   });
 }
 
@@ -137,8 +156,10 @@ function figureCell(value, options) {
   return recordAmount(amount, { decimals: Number.isInteger(amount) ? 0 : 2, ...options });
 }
 
-export const IRMARK_MISMATCH_WARNING =
-  "HMRC accepted the return, but the IRmark on HMRC's receipt is different from the one we calculated. Keep the receipt. Contact support if you need the difference explained.";
+export const IRMARK_MISMATCH_WARNING = siteText(
+  "ch.ct.record-irmark-mismatch",
+  "HMRC accepted the return, but the IRmark on HMRC's receipt is different from the one we calculated. Keep the receipt. Contact support if you need the difference explained.",
+);
 
 /**
  * The customer copy of an accepted Company Tax Return as filed.
@@ -153,69 +174,106 @@ export const IRMARK_MISMATCH_WARNING =
  * @returns {string}
  */
 export function ctResultCopyHtml({ company, utr, boxes, computation, outcome, dateText, longPeriod }) {
-  const ofParts = longPeriod ? ` ${longPeriod.part} of ${longPeriod.parts}` : "";
+  const ofParts = longPeriod ? siteText("ch.ct.record-of-parts", " {part} of {parts}", longPeriod) : "";
   const periodEnd = String(boxes[35] ?? "");
   const heading = recordHeading({
     nameHtml: escapeRecordText(company.companyName),
-    referenceHtml: [`Unique Taxpayer Reference ${escapeRecordText(utr)}`, `Company number ${escapeRecordText(company.companyNumber)}`],
-    title: `Company Tax Return (CT600)${ofParts}`,
-    subtitleHtml: `Return period ${escapeRecordText(longDate(boxes[30]))} to ${escapeRecordText(longDate(periodEnd))}`,
+    referenceHtml: [
+      escapeRecordText(siteText("ch.ct.record-utr-line", "Unique Taxpayer Reference {utr}", { utr })),
+      escapeRecordText(siteText("ch.record.company-number-line", "Company number {number}", { number: company.companyNumber })),
+    ],
+    title: siteText("ch.ct.record-title", "Company Tax Return (CT600){parts}", { parts: ofParts }),
+    subtitleHtml: escapeRecordText(
+      siteText("ch.ct.record-period", "Return period {start} to {end}", { start: longDate(boxes[30]), end: longDate(periodEnd) }),
+    ),
   });
   const taxRows = TAX_BOXES.filter((box) => boxes[box] !== undefined).map((box) => ({
-    label: `Box ${box}: ${boxRow(box).label}`,
+    label: siteText("ch.ct.box-label", "Box {box}: {label}", { box, label: boxRow(box).label }),
     cells: [figureCell(boxes[box])],
     style: box === TAX_BOXES.findLast((candidate) => boxes[candidate] !== undefined) ? "total" : undefined,
   }));
   const table = recordTable({
-    columns: [periodEnd.slice(0, 4) || "Period"],
+    columns: [periodEnd.slice(0, 4) || siteText("ch.ct.record-period-column", "Period")],
     rows: [
-      { label: "Tax computation", style: "heading" },
+      { label: siteText("ch.ct.record-computation", "Tax computation"), style: "heading" },
       ...computation.map((line) => ({
         label: line.label,
         cells: [figureCell(line.value, { deduction: line.deduction })],
         style: line.style,
       })),
-      { label: "Tax due", style: "heading" },
+      { label: siteText("ch.ct.tax-due", "Tax due"), style: "heading" },
       ...taxRows,
     ],
   });
   const receipt = { ...outcome, utr, successMessage: undefined };
   return customerCopyHtml({
-    title: `Your copy of the Company Tax Return${ofParts}`,
-    reference: { label: "IRmark receipt", value: String(outcome.irmarkReceipt ?? outcome.irmark ?? ABSENT) },
-    status: { kind: "accepted", text: "Accepted by HMRC" },
+    title: siteText("ch.ct.record-copy-title", "Your copy of the Company Tax Return{parts}", { parts: ofParts }),
+    reference: {
+      label: siteText("ch.ct.record-irmark-receipt", "IRmark receipt"),
+      value: String(outcome.irmarkReceipt ?? outcome.irmark ?? ABSENT),
+    },
+    status: { kind: "accepted", text: siteText("ch.ct.record-accepted", "Accepted by HMRC") },
     date: dateText,
     sections: [
       {
-        heading: "The return as filed",
-        explanation:
+        heading: siteText("ch.ct.record-as-filed", "The return as filed"),
+        explanation: siteText(
+          "ch.ct.record-result-explanation",
           "These are the figures HMRC received: the return period, the tax computation that works out the profit, and the tax due. Check them against your records.",
+        ),
         recordHtml: page(heading + table),
       },
       {
-        heading: "Receipt from HMRC",
-        explanation:
+        heading: siteText("ch.ct.record-receipt-title", "Receipt from HMRC"),
+        explanation: siteText(
+          "ch.ct.record-receipt-explanation",
           "This receipt is the company's proof that it filed the return. Keep it with the company's records. The IRmark receipt shows HMRC received the return unchanged. The correlation ID is the reference to quote if you ask HMRC about this filing.",
+        ),
         warning: outcome.irmarkReceiptMismatch ? IRMARK_MISMATCH_WARNING : undefined,
         recordHtml: ctReceiptRecord(receipt, dateText),
       },
     ],
     links: [
       ...(outcome.receiptId
-        ? [{ href: `filings.html?receipt=${encodeURIComponent(outcome.receiptId + ".json")}`, text: "See the full filed copy" }]
+        ? [
+            {
+              href: `filings.html?receipt=${encodeURIComponent(outcome.receiptId + ".json")}`,
+              text: siteText("ch.ct.record-see-full", "See the full filed copy"),
+            },
+          ]
         : []),
-      RECEIPTS_LINK,
+      receiptsLink(),
     ],
   });
+}
+
+// The receipt page of a Companies House filing: its submission number, company, status and date.
+function receiptPage(submissionNumber, companyNumber, statusText, dateText) {
+  return page(
+    `${recordHeading({
+      nameHtml: escapeRecordText(siteText("ch.record.receipt-name", "Companies House receipt")),
+      referenceHtml: [
+        escapeRecordText(siteText("ch.record.submission-number-line", "Submission number {number}", { number: submissionNumber })),
+      ],
+      title: siteText("ch.record.receipt-title", "Receipt from Companies House"),
+      subtitleHtml: escapeRecordText(siteText("ch.record.filed-on-line", "Filed {date}", { date: dateText })),
+    })}${textTable([
+      [siteText("ch.record.submission-number", "Submission number"), submissionNumber],
+      [siteText("ch.record.company-number", "Company number"), companyNumber],
+      [siteText("ch.record.status", "Status"), statusText],
+      [siteText("ch.record.filed-on", "Filed on"), dateText],
+    ])}`,
+  );
 }
 
 /** The record status of a Companies House transaction, from the status of each filing in it. */
 export function transactionStatus(transaction) {
   const filings = transaction.filings || [];
-  if (filings.some((entry) => entry.status === "rejected")) return { kind: "rejected", text: "Rejected by Companies House" };
+  if (filings.some((entry) => entry.status === "rejected"))
+    return { kind: "rejected", text: siteText("ch.record.rejected", "Rejected by Companies House") };
   if (filings.length > 0 && filings.every((entry) => entry.status === "accepted"))
-    return { kind: "accepted", text: "Accepted by Companies House" };
-  return { kind: "pending", text: "With Companies House" };
+    return { kind: "accepted", text: siteText("ch.record.accepted", "Accepted by Companies House") };
+  return { kind: "pending", text: siteText("ch.record.pending", "With Companies House") };
 }
 
 /**
@@ -232,41 +290,32 @@ export function registeredChangeCopyHtml({ title, companyNumber, transaction, de
   const status = transactionStatus(transaction);
   const changeRecord = page(
     `${recordHeading({
-      nameHtml: `Company number ${escapeRecordText(companyNumber)}`,
+      nameHtml: escapeRecordText(siteText("ch.record.company-number-line", "Company number {number}", { number: companyNumber })),
       title,
-      subtitleHtml: `Submitted ${escapeRecordText(dateText)}`,
-    })}${textTable([["Company number", companyNumber], ...details])}`,
+      subtitleHtml: escapeRecordText(siteText("ch.record.submitted-line", "Submitted {date}", { date: dateText })),
+    })}${textTable([[siteText("ch.record.company-number", "Company number"), companyNumber], ...details])}`,
   );
-  const receiptRecord = page(
-    `${recordHeading({
-      nameHtml: "Companies House receipt",
-      referenceHtml: [`Submission number ${escapeRecordText(transaction.transactionId)}`],
-      title: "Receipt from Companies House",
-      subtitleHtml: `Filed ${escapeRecordText(dateText)}`,
-    })}${textTable([
-      ["Submission number", transaction.transactionId],
-      ["Company number", companyNumber],
-      ["Status", status.text],
-      ["Filed on", dateText],
-    ])}`,
-  );
+  const receiptRecord = receiptPage(transaction.transactionId, companyNumber, status.text, dateText);
   return customerCopyHtml({
-    title: `Your copy of the ${title.charAt(0).toLowerCase()}${title.slice(1)}`,
-    reference: { label: "Submission number", value: String(transaction.transactionId ?? ABSENT) },
+    title: siteText("ch.record.change-copy-title", "Your copy of the {title}", { title: title.charAt(0).toLowerCase() + title.slice(1) }),
+    reference: { label: siteText("ch.record.submission-number", "Submission number"), value: String(transaction.transactionId ?? ABSENT) },
     status,
     date: dateText,
     sections: [
       {
-        heading: "The change as submitted",
-        explanation: "This is what you asked Companies House to record on the register.",
+        heading: siteText("ch.record.change-as-submitted", "The change as submitted"),
+        explanation: siteText("ch.record.change-explanation", "This is what you asked Companies House to record on the register."),
         recordHtml: changeRecord,
       },
       {
-        heading: "Receipt from Companies House",
-        explanation: "Companies House gave this filing a submission number. Quote it if you write to Companies House about this change.",
+        heading: siteText("ch.record.receipt-title", "Receipt from Companies House"),
+        explanation: siteText(
+          "ch.record.change-receipt-explanation",
+          "Companies House gave this filing a submission number. Quote it if you write to Companies House about this change.",
+        ),
         recordHtml: receiptRecord,
       },
     ],
-    links: [{ href: "companySearch.html", text: "Look up another company" }, RECEIPTS_LINK],
+    links: [{ href: "companySearch.html", text: siteText("ch.record.look-up-another", "Look up another company") }, receiptsLink()],
   });
 }

@@ -136,14 +136,29 @@ describe("lib/customerEmailTemplates", () => {
     expect(m.text).toContain("cy/hmrc/receipt/receipts.html");
     expect(m.text).not.toContain("Reply to this email");
 
-    const english = buildCustomerEmail({
+  });
+
+  test("submission-receipt is in Welsh when the filing was made with the Welsh choice", () => {
+    const m = buildCustomerEmail({
       kind: "submission-receipt",
-      data: { receiptKind: "itsa-final-declaration", language: "cy" },
+      data: { receiptKind: "accounts", language: "cy" },
       baseUrl,
       catalog,
-      receipt: { kind: "itsa-final-declaration", correlationId: "c1" },
+      receipt: {
+        kind: "companies-house-accounts",
+        submissionNumber: "AB1234",
+        statusCode: "ACCEPT",
+        processingDate: "2026-11-05T09:30:00.000Z",
+      },
     });
-    expect(english.subject).toBe("Your receipt: Final declaration");
+    expect(m.subject).toBe("Eich derbynneb: Cyfrifon blynyddol");
+    expect(m.text).toContain("Rhif cyflwyno: AB1234");
+    expect(m.text).toContain("Statws: ACCEPT");
+    expect(m.text).toContain("5 Tachwedd 2026");
+    expect(m.text).toContain("Atebwch yr e-bost hwn neu ysgrifennwch at support@diyaccounting.co.uk");
+    expect(m.html).toContain('<html lang="cy">');
+    expect(m.html).toContain("Gweld eich derbynebau");
+    expect(m.text).not.toContain("Your receipt");
   });
 
   test("a pass with no end date says so", () => {

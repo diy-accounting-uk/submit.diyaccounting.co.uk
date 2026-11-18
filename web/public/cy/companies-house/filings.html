@@ -1,0 +1,97 @@
+<!-- cy/companies-house/filings.html -->
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from companies-house/filings.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Eich ffeilio - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/companies-house/filings.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/filings.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/filings.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/filings.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <link rel="stylesheet" href="../../submission-record.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="ch-filings.your-copy-of-a-filing-40a891">Eich copi o ffeilio</h1>
+      <p data-i18n="ch-filings.the-accounts-or-company-tax-return-8bc7ec" class="subtitle">
+        Y cyfrifon neu’r Ffurflen Dreth y Cwmni fel y gwnaethoch eu ffeilio
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p id="filingNotice" class="filing-notice" style="display: none"></p>
+      <div class="filing-actions" id="filingActions" style="display: none">
+        <button data-i18n="ch-filings.print-or-save-as-pdf-24d7db" type="button" class="btn-small" id="printFilingBtn">
+          Argraffu neu gadw fel PDF
+        </button>
+        <a data-i18n="ch-filings.amend-4475f5" href="fileCompanyTaxReturn.html" id="amendFilingLink" class="btn-small" style="display: none"
+          >Diwygio</a
+        >
+        <a data-i18n="ch-filings.all-your-receipts-99abb9" href="../hmrc/receipt/receipts.html">Eich holl dderbynebau</a>
+      </div>
+      <div
+        id="filingContent"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i weld eich ffeilio"
+        data-sign-in-text="Mae eich copi o ffeilio yn cael ei gadw gyda’ch cyfrif. Mewngofnodwch i’w agor."
+        data-i18n-data-sign-in-title="ch-filings.sign-in-to-see-your-filing-93204f"
+        data-i18n-data-sign-in-text="ch-filings.your-copy-of-a-filing-is-bce7ba"
+        data-i18n-data-sign-in-title="ch-filings.sign-in-to-see-your-filing-93204f"
+        data-i18n-data-sign-in-text="ch-filings.your-copy-of-a-filing-is-bce7ba"
+      ></div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../lib/welsh-text.js"></script>
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
+    <script type="module" src="../../widgets/view-source-link.js"></script>
+    <script src="../../companies-house/filings.page.js"></script>
+  </body>
+</html>

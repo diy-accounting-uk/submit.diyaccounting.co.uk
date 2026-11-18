@@ -59,6 +59,13 @@ describe("recordFiledReceipt", () => {
     );
   });
 
+  test("carries the Welsh language choice into the email request", async () => {
+    await recordFiledReceipt({ ...filing, receiptKind: "accounts", language: "cy" });
+    expect(mockRequestCustomerEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { receiptId: filing.receiptId, receiptKind: "accounts", clientId: "client-1", language: "cy" } }),
+    );
+  });
+
   test("rejects and requests nothing when the receipt write fails", async () => {
     mockPutReceipt.mockRejectedValue(new Error("write failed"));
     await expect(recordFiledReceipt(filing)).rejects.toThrow("write failed");

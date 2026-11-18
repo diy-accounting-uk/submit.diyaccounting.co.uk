@@ -9,10 +9,25 @@
 (function () {
   "use strict";
 
-  const BANNERS = {
-    production: "A change you file here reaches the live Companies House register.",
-    sandbox: "This runs against Companies House's test service. Nothing you file here reaches the live register.",
-  };
+  // page-chrome.js gives the text in the chosen language; without it the English stands.
+  function siteText(id, english) {
+    return window.siteText ? window.siteText(id, english) : english;
+  }
+
+  // A function, so the banner is read in the chrome's language when it is set.
+  const banners = () => ({
+    production: {
+      status: siteText("ch.lane.status-production", "Status: production."),
+      text: siteText("ch.lane.production", "A change you file here reaches the live Companies House register."),
+    },
+    sandbox: {
+      status: siteText("ch.lane.status-sandbox", "Status: sandbox."),
+      text: siteText(
+        "ch.lane.sandbox",
+        "This runs against Companies House's test service. Nothing you file here reaches the live register.",
+      ),
+    },
+  });
 
   function laneFromEnv(env) {
     const base = String(env.COMPANIES_HOUSE_FILING_BASE_URI || "");
@@ -27,8 +42,9 @@
     banner.setAttribute("data-feature-status", lane);
     banner.replaceChildren();
     const strong = document.createElement("strong");
-    strong.textContent = `Status: ${lane}.`;
-    banner.append(strong, ` ${BANNERS[lane]}`);
+    const { status, text } = banners()[lane];
+    strong.textContent = status;
+    banner.append(strong, ` ${text}`);
   }
 
   window.applyCompaniesHouseLaneBanner = applyCompaniesHouseLaneBanner;
