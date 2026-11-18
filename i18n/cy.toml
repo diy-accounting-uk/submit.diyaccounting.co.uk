@@ -3181,6 +3181,74 @@ cy = '''Nodwch eich rhif cofrestru TAW'''
 hash = "b28449d6fa3f"
 cy = '''Mae’n rhaid i’r rhif cofrestru TAW fod yn 9 rhif'''
 
+[strings."widget.required-nino"]
+hash = "08715e9e6db7"
+cy = '''Nodwch eich rhif Yswiriant Gwladol'''
+
+[strings."widget.required-business-id"]
+hash = "08ebca932ac7"
+cy = '''Nodwch ID y busnes'''
+
+[strings."widget.required-tax-year"]
+hash = "e5dab9cd9b18"
+cy = '''Nodwch y flwyddyn dreth'''
+
+[strings."widget.required-period-id"]
+hash = "a231a0974c50"
+cy = '''Nodwch ID y cyfnod'''
+
+[strings."widget.required-submission-id"]
+hash = "cd08be3d2b2a"
+cy = '''Nodwch ID y cyflwyniad'''
+
+[strings."widget.required-calculation-id"]
+hash = "edfd6d1d9f05"
+cy = '''Nodwch ID y cyfrifiad'''
+
+[strings."widget.required-calculation-type"]
+hash = "da5945cb00e1"
+cy = '''Dewiswch y math o gyfrifiad'''
+
+[strings."widget.required-average-employees"]
+hash = "e54046f4c1d2"
+cy = '''Nodwch nifer cyfartalog y gweithwyr'''
+
+[strings."widget.required-director-name"]
+hash = "b99f9419394a"
+cy = '''Nodwch enw’r cyfarwyddwr sy’n cymeradwyo’r fantolen'''
+
+[strings."widget.required-director-date-approved"]
+hash = "b474310fff01"
+cy = '''Nodwch y dyddiad y cymeradwywyd y fantolen'''
+
+[strings."widget.required-review-date"]
+hash = "43cdb0247a38"
+cy = '''Nodwch ddyddiad y datganiad cadarnhau'''
+
+[strings."widget.required-accounting-period-start"]
+hash = "8f42f64b5e49"
+cy = '''Nodwch ddyddiad dechrau’r cyfnod cyfrifyddu'''
+
+[strings."widget.required-accounting-period-end"]
+hash = "79eede138221"
+cy = '''Nodwch ddyddiad gorffen y cyfnod cyfrifyddu'''
+
+[strings."widget.required-company-number"]
+hash = "a3c40e7350a5"
+cy = '''Nodwch rif y cwmni'''
+
+[strings."widget.required-company-query"]
+hash = "5c38cdbe7165"
+cy = '''Nodwch enw neu rif y cwmni'''
+
+[strings."widget.required-company-auth-code"]
+hash = "44138c2a9a02"
+cy = '''Nodwch god dilysu’r cwmni'''
+
+[strings."widget.required-registered-email"]
+hash = "c049bf45205c"
+cy = '''Nodwch y cyfeiriad e-bost cofrestredig newydd'''
+
 [strings."widget.required-period-start"]
 hash = "65ca1496db66"
 cy = '''Nodwch ddyddiad dechrau’r cyfnod'''
