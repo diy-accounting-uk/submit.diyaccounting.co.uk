@@ -424,8 +424,8 @@ function displayPenalties(penalties) {
     );
   } else {
     const rows = lateSubmissionDetails.map((detail) => {
-      const category = capitalize(detail.penaltyCategory);
-      const status = capitalize(detail.penaltyStatus);
+      const category = penaltyCategoryText(detail.penaltyCategory);
+      const status = penaltyStatusText(detail.penaltyStatus);
       const created = formatDate(detail.penaltyCreationDate);
       const expires = formatDate(detail.penaltyExpiryDate);
       const chargeAmount = formatCurrency(detail.chargeAmount);
@@ -456,7 +456,7 @@ function displayPenalties(penalties) {
     const rows = latePaymentDetails.map((detail) => {
       const chargeReference = detail.principalChargeReference;
       const category = detail.penaltyCategory;
-      const status = capitalize(detail.penaltyStatus);
+      const status = penaltyStatusText(detail.penaltyStatus);
       const period = formatDateRange(detail.principalChargeBillingFrom, detail.principalChargeBillingTo);
       const amount =
         detail.penaltyStatus === "posted" ? formatCurrency(detail.penaltyAmountPosted) : formatCurrency(detail.penaltyAmountAccruing);
@@ -481,6 +481,28 @@ function displayPenalties(penalties) {
 }
 
 const capitalize = HmrcDisplayFormat.sentenceCase;
+
+// HMRC's penalty codes as words in the chosen language. A code HMRC adds later shows as it sent it.
+const penaltyStatuses = () => ({
+  active: siteText("vat-penalties.status-active", "Active"),
+  inactive: siteText("vat-penalties.status-inactive", "Inactive"),
+  accruing: siteText("vat-penalties.status-accruing", "Accruing"),
+  posted: siteText("vat-penalties.status-posted", "Posted"),
+});
+
+const penaltyCategories = () => ({
+  point: siteText("vat-penalties.category-point", "Point"),
+  threshold: siteText("vat-penalties.category-threshold", "Threshold"),
+  charge: siteText("vat-penalties.category-charge", "Charge"),
+});
+
+function penaltyStatusText(code) {
+  return penaltyStatuses()[String(code ?? "").toLowerCase()] ?? capitalize(code);
+}
+
+function penaltyCategoryText(code) {
+  return penaltyCategories()[String(code ?? "").toLowerCase()] ?? capitalize(code);
+}
 const formatDate = HmrcDisplayFormat.formatDate;
 const formatDateRange = HmrcDisplayFormat.formatDateRange;
 const formatCurrency = HmrcDisplayFormat.formatAmount;

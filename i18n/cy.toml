@@ -3831,6 +3831,41 @@ cy = '''Swm y gosb'''
 hash = "57870fd03032"
 cy = '''Dyddiad dyledus'''
 
+# HMRC Welsh: https://github.com/hmrc/penalties-frontend/blob/main/conf/messages.cy (status.active)
+[strings."vat-penalties.status-active"]
+hash = "92340695899b"
+cy = '''Gweithredol'''
+
+# no HMRC Welsh found
+[strings."vat-penalties.status-inactive"]
+hash = "ac7c949f1211"
+cy = '''Anweithredol'''
+
+# no HMRC Welsh found (HMRC shows an accruing penalty as status.estimate, amcangyfrif)
+[strings."vat-penalties.status-accruing"]
+hash = "b2b9bc80daea"
+cy = '''Yn cronni'''
+
+# no HMRC Welsh found
+[strings."vat-penalties.status-posted"]
+hash = "afd80c5a1b84"
+cy = '''Wedi’i godi'''
+
+# HMRC Welsh: https://github.com/hmrc/penalties-frontend/blob/main/conf/messages.cy (summaryCard.header.adjustedPoint, Pwynt cosb)
+[strings."vat-penalties.category-point"]
+hash = "2fc0c524431a"
+cy = '''Pwynt'''
+
+# HMRC Welsh: https://github.com/hmrc/penalties-frontend/blob/main/conf/messages.cy (lsp.onThreshold.p1, y trothwy)
+[strings."vat-penalties.category-threshold"]
+hash = "0da627ada476"
+cy = '''Trothwy'''
+
+# no HMRC Welsh found
+[strings."vat-penalties.category-charge"]
+hash = "ff9f88ce353a"
+cy = '''Tâl'''
+
 [strings."vat-view-return.retrieving"]
 hash = "6d512426b766"
 cy = '''Yn cael y Ffurflen TAW...'''
