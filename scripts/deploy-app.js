@@ -364,6 +364,7 @@ function syncWebAssets(config) {
       `COMPANIES_HOUSE_CLIENT_ID=${process.env.COMPANIES_HOUSE_CLIENT_ID || ""}`,
       `COMPANIES_HOUSE_IDENTITY_BASE_URI=${process.env.COMPANIES_HOUSE_IDENTITY_BASE_URI || ""}`,
       `COMPANIES_HOUSE_FILING_BASE_URI=${process.env.COMPANIES_HOUSE_FILING_BASE_URI || ""}`,
+      `COMPANIES_HOUSE_GATEWAY_TEST=${process.env.COMPANIES_HOUSE_GATEWAY_TEST || ""}`,
       "",
       `DIY_SUBMIT_BASE_URL=${process.env.DIY_SUBMIT_BASE_URL || ""}`,
       `GA4_MEASUREMENT_ID=${process.env.GA4_MEASUREMENT_ID || ""}`,

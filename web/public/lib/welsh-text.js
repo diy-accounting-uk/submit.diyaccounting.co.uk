@@ -871,6 +871,8 @@ window.WELSH_TEXT = {
   "ch.jurisdiction.scotland": "Yr Alban",
   "ch.jurisdiction.united-kingdom": "Y Deyrnas Unedig",
   "ch.jurisdiction.wales": "Cymru",
+  "ch.lane.gateway-sandbox":
+    "Mae Tŷ’r Cwmnïau yn gwirio’r hyn rydych yn ei ffeilio yma yn y modd prawf ac nid yw’n cofnodi dim. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.",
   "ch.lane.production": "Mae newid rydych yn ei ffeilio yma yn cyrraedd cofrestr fyw Tŷ’r Cwmnïau.",
   "ch.lane.sandbox":
     "Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.",

@@ -13825,6 +13825,10 @@ cy = '''Statws: prawf (sandbox).'''
 hash = "86257ba02943"
 cy = '''Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.'''
 
+[strings."ch.lane.gateway-sandbox"]
+hash = "d8832e35fa30"
+cy = '''Mae Tŷ’r Cwmnïau yn gwirio’r hyn rydych yn ei ffeilio yma yn y modd prawf ac nid yw’n cofnodi dim. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.'''
+
 [strings."ch.ct.line-profit-per-accounts"]
 hash = "a62ab0e6fed3"
 cy = '''Elw neu golled yn ôl y cyfrifon'''
