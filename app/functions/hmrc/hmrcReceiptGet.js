@@ -158,11 +158,12 @@ export async function ingestHandler(event) {
       });
     }
   } catch (error) {
-    logger.error({ message: "Error retrieving receipts", error: error.message, stack: error.stack });
     // Check if this is a not found error
     if (error.message && error.message.includes("not found")) {
+      logger.warn({ message: "Receipt not found", error: error.message });
       return buildValidationError(request, ["Receipt not found"], responseHeaders);
     }
+    logger.error({ message: "Error retrieving receipts", error: error.message, stack: error.stack });
     return http500ServerErrorResponse({
       request,
       headers: { ...responseHeaders },

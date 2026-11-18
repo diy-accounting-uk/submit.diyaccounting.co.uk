@@ -10158,7 +10158,7 @@
       "videoFile": "target/videos/video-assistant-vat-handoff-ci/assistant-vat-handoff.mp4",
       "captionFile": "target/videos/video-assistant-vat-handoff-ci/assistant-vat-handoff.vtt",
       "title": "A VAT return from an AI assistant | DIY Accounting Submit",
-      "description": "An AI assistant connects to DIY Accounting Submit through the connector page and works out the nine VAT boxes from a saved book. It files nothing. It gives you a link that opens the VAT form with the figures filled in. You check each figure, tick the declaration and submit the return yourself. HMRC's test service confirms it and the receipt shows. This is a real recording of the product. The VAT service is a test service and the figures come from a sample book, so nothing here is a live filing. DIY Accounting Submit costs 99p a month for VAT, with a free day pass to try it. Try it at https://submit.diyaccounting.co.uk/?utm_source=youtube&utm_medium=video.",
+      "description": "An AI assistant connects to DIY Accounting Submit through the connector page and works out the nine VAT boxes from a saved book. It files nothing. It gives you a link that opens the VAT form with the figures filled in. You check each figure, tick the declaration and submit the return yourself. HMRC's test service confirms it and the receipt shows. This is a real recording of the product. The VAT service is a test service and the figures come from a sample book, so nothing here is a live filing. Read more at https://submit.diyaccounting.co.uk/mcp.html?utm_source=youtube&utm_medium=video.",
       "tags": ["DIY Accounting", "VAT", "HMRC", "Making Tax Digital", "MCP", "AI assistant", "VAT return"],
       "categoryId": "27",
       "videoId": "0tBQzkjmNgM"

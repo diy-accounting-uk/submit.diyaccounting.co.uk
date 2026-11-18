@@ -27,6 +27,26 @@ vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
   getClient: vi.fn(),
 }));
 
+const mockLoggerWarn = vi.fn();
+const mockLoggerError = vi.fn();
+vi.mock("@app/lib/logger.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    createLogger: (bindings) => {
+      const child = actual.createLogger(bindings);
+      return {
+        info: (...args) => child.info(...args),
+        error: (obj) => mockLoggerError(obj),
+        warn: (obj) => mockLoggerWarn(obj),
+        debug: (...args) => child.debug(...args),
+        trace: (...args) => child.trace(...args),
+        fatal: (...args) => child.fatal(...args),
+      };
+    },
+  };
+});
+
 const { ingestHandler: hmrcReceiptGetHandler } = await import("@app/functions/hmrc/hmrcReceiptGet.js");
 const { listUserReceipts } = await import("@app/data/dynamoDbReceiptRepository.js");
 const { getClient } = await import("@app/data/dynamoDbPracticeClientRepository.js");
@@ -131,6 +151,19 @@ describe("hmrcReceiptGet ingestHandler", () => {
     expect(response.statusCode).toBe(200);
     expect(getClient).toHaveBeenCalledWith("practice-sub", "client-1");
     expect(listUserReceipts).toHaveBeenCalledWith("practice-sub", "client-1");
+  });
+
+  test("a receipt not found logs at warn, not error, and answers a validation error", async () => {
+    mockLoggerWarn.mockClear();
+    mockLoggerError.mockClear();
+    listUserReceipts.mockRejectedValueOnce(new Error("Receipt not found"));
+
+    const response = await hmrcReceiptGetHandler(buildAuthenticatedEvent({ sub: "missing-sub" }));
+
+    expect(mockLoggerWarn).toHaveBeenCalledWith(expect.objectContaining({ message: "Receipt not found" }));
+    expect(mockLoggerError).not.toHaveBeenCalledWith(expect.objectContaining({ message: "Error retrieving receipts" }));
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body).message).toBe("Receipt not found");
   });
 
   test("403s a client id that does not belong to the caller's practice", async () => {
