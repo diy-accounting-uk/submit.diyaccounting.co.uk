@@ -894,6 +894,58 @@ cy = '''Nid oes modd mewngofnodi gan fod gosodiadau’r wefan wedi methu llwytho
 hash = "ab0b82ed8486"
 cy = '''Mewngofnodwch i barhau i {name}.'''
 
+[strings."login.callback-title"]
+hash = "ead40a00be7b"
+cy = '''Yn eich mewngofnodi - DIY Accounting Submit'''
+
+[strings."login.callback-heading"]
+hash = "5bd41da830c6"
+cy = '''Yn eich mewngofnodi'''
+
+[strings."login.callback-subtitle"]
+hash = "36df660ca7e5"
+cy = '''Mae hyn yn cymryd ychydig eiliadau.'''
+
+[strings."login.callback-note"]
+hash = "149eacfa580a"
+cy = '''Mae’r dudalen hon yn eich anfon ymlaen pan fyddwch wedi mewngofnodi. Os nad oes dim yn digwydd, ewch i’r hafan.'''
+
+[strings."login.callback-auth-error"]
+hash = "f3b73ea0a6e5"
+cy = '''Gwall dilysu: {reason}'''
+
+[strings."login.callback-linking"]
+hash = "8e1c602f4d6c"
+cy = '''Yn cysylltu eich mewngofnodi â’ch cyfrif presennol...'''
+
+[strings."login.callback-not-completed"]
+hash = "ebc93baa4d10"
+cy = '''Nid oedd modd cwblhau’r mewngofnodi. Rhowch gynnig arall ar fewngofnodi.'''
+
+[strings."login.callback-security-failed"]
+hash = "894be5332ffe"
+cy = '''Methodd y gwiriad diogelwch. Rhowch gynnig arall ar fewngofnodi.'''
+
+[strings."login.callback-exchanging"]
+hash = "5c8254c7899e"
+cy = '''Yn cyfnewid y cod awdurdodi am docyn mynediad...'''
+
+[strings."login.callback-nonce-failed"]
+hash = "68a5068368b8"
+cy = '''Methodd y gwiriad diogelwch (nonce yn wahanol). Rhowch gynnig arall ar fewngofnodi.'''
+
+[strings."login.callback-fetching-bundles"]
+hash = "0a9a86a90210"
+cy = '''Wedi dilysu. Yn nôl eich Bundles...'''
+
+[strings."login.callback-redirecting"]
+hash = "f419cb722929"
+cy = '''Wedi dilysu. Yn eich anfon ymlaen...'''
+
+[strings."login.callback-auth-failed"]
+hash = "2b6c0c78d25e"
+cy = '''Methodd y dilysu: {reason}'''
+
 # == spreadsheets.html (LANG9): the build marks this page; ids spreadsheets.<first words>-<hash> ==
 [strings."spreadsheets.title"]
 hash = "b0b685eb311b"
@@ -4513,6 +4565,26 @@ cy = '''Mewngofnodwch i ddefnyddio’r dudalen hon.'''
 [strings."widget.callback-no-code"]
 hash = "53c110ac71e2"
 cy = '''Ni chafwyd cod awdurdodi dilys. Rhowch gynnig arall arni.'''
+
+[strings."widget.callback-hmrc-title"]
+hash = "f11760cf324c"
+cy = '''Cysylltu â CThEF - DIY Accounting Submit'''
+
+[strings."widget.callback-hmrc-heading"]
+hash = "8439d01244c0"
+cy = '''Cysylltu â CThEF'''
+
+[strings."widget.callback-hmrc-subtitle"]
+hash = "6d020f0ee8c2"
+cy = '''Rydym yn gorffen eich awdurdodiad CThEF.'''
+
+[strings."widget.callback-hmrc-note"]
+hash = "96dc8eacb38f"
+cy = '''Mae’r dudalen hon yn eich anfon ymlaen pan fydd CThEF wedi cadarnhau eich awdurdodiad. Os nad oes dim yn digwydd, ewch yn ôl.'''
+
+[strings."widget.callback-home"]
+hash = "adceddedfd59"
+cy = '''Mynd i’r hafan'''
 
 [strings."widget.callback-exchanging"]
 hash = "7ec737c6a5e9"

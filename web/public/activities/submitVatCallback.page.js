@@ -7,6 +7,19 @@ const siteText = (id, english, values) =>
     ? window.siteText(id, english, values)
     : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
 
+// The page's address is registered with HMRC, so it has no Welsh copy: its static text is written here.
+document.title = siteText("widget.callback-hmrc-title", "Connecting to HMRC - DIY Accounting Submit");
+document.querySelector("header h1").textContent = siteText("widget.callback-hmrc-heading", "Connecting to HMRC");
+document.querySelector("header .subtitle").textContent = siteText(
+  "widget.callback-hmrc-subtitle",
+  "We are finishing your HMRC authorisation.",
+);
+document.querySelector(".auth-panel p").textContent = siteText(
+  "widget.callback-hmrc-note",
+  "This page sends you on when HMRC has confirmed your authorisation. If nothing happens, go back.",
+);
+document.getElementById("navigationBtn").textContent = siteText("widget.callback-home", "Go to the home page");
+
 // OAuth callback handling
 
 // A state that starts "mcp." belongs to a grant an MCP tool started: the code goes to the MCP

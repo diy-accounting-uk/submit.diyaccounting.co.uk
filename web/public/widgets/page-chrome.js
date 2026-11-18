@@ -530,12 +530,15 @@
     if (notice) header.querySelector(".main-nav").after(notice);
   }
 
-  // The skip link is each page's own markup; it reads in the chrome's language too.
+  // The skip link is each page's own markup; it reads in the chrome's language too. A Welsh copy's
+  // skip link carries its Welsh; a callback page that callback-language.js set to Welsh has English markup.
   function renderSkipLink() {
     const skipLink = document.querySelector("body > .skip-link");
-    if (!skipLink || chromeLanguage() === pageLanguage) return;
+    if (!skipLink) return;
+    const markedInPageLanguage = pageLanguage === "en" || skipLink.hasAttribute("data-i18n");
+    if (chromeLanguage() === pageLanguage && markedInPageLanguage) return;
     skipLink.textContent = siteText("common.skip-link", "Skip to main content");
-    skipLink.setAttribute("lang", HREFLANG[chromeLanguage()]);
+    if (chromeLanguage() !== pageLanguage) skipLink.setAttribute("lang", HREFLANG[chromeLanguage()]);
   }
 
   function loadTomlParser(rootPrefix) {

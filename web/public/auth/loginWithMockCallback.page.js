@@ -1,6 +1,22 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
+// The page's address is registered with Cognito, so it has no Welsh copy: its static text is written here.
+document.title = siteText("login.callback-title", "Signing you in - DIY Accounting Submit");
+document.querySelector("header h1").textContent = siteText("login.callback-heading", "Signing you in");
+document.querySelector("header .subtitle").textContent = siteText("login.callback-subtitle", "This takes a few seconds.");
+document.querySelector(".auth-panel p").textContent = siteText(
+  "login.callback-note",
+  "This page sends you on when you are signed in. If nothing happens, go to the home page.",
+);
+document.getElementById("homeBtn").textContent = siteText("widget.callback-home", "Go to the home page");
+
 // Check for authentication callback
 function checkAuthCallback() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -32,11 +48,11 @@ async function handleAuthCallback(code, state) {
     sessionStorage.removeItem("cognito_pkce_verifier");
     if (!codeVerifier) {
       console.error("PKCE code verifier missing from sessionStorage");
-      showStatus("Security validation failed. Please try logging in again.", "error");
+      showStatus(siteText("login.callback-security-failed", "Security validation failed. Please try logging in again."), "error");
       hideLoading();
       return;
     }
-    showStatus("Exchanging authorization code for access token...", "info");
+    showStatus(siteText("login.callback-exchanging", "Exchanging authorization code for access token..."), "info");
     // Exchange authorization code for tokens via same-origin proxy to avoid PNA/CORS
     const tokenResponse = await fetch(`/api/v1/mock/token`, {
       method: "POST",
@@ -141,10 +157,10 @@ async function handleAuthCallback(code, state) {
       console.log("No MFA detected. amr:", amrClaims, "federated:", isFederatedLogin, "auth_time:", authTime);
     }
 
-    showStatus("Authenticated successfully. Fetching bundles...", "info");
+    showStatus(siteText("login.callback-fetching-bundles", "Authenticated successfully. Fetching bundles..."), "info");
 
     // No longer store bundles in localStorage; bundles will be fetched by pages as needed from /api/v1/bundle
-    showStatus("Authenticated successfully. Redirecting...", "info");
+    showStatus(siteText("login.callback-redirecting", "Authenticated successfully. Redirecting..."), "info");
 
     // Clear URL parameters
     window.history.replaceState({}, document.title, window.location.pathname);
@@ -161,7 +177,7 @@ async function handleAuthCallback(code, state) {
     window.location.replace(redirectUrl);
   } catch (error) {
     console.error("Authentication callback error:", error);
-    showStatus(`Authentication failed: ${error.message}`, "error");
+    showStatus(siteText("login.callback-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
   } finally {
     hideLoading();
   }
