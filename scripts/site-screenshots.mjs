@@ -84,9 +84,7 @@ export async function loadAllImages(page, { timeoutMs = 15000 } = {}) {
     window.scrollTo(0, document.documentElement.scrollHeight);
     for (const image of document.querySelectorAll('img[loading="lazy"]')) image.loading = "eager";
   });
-  await page
-    .waitForFunction(() => [...document.images].every((image) => image.complete), null, { timeout: timeoutMs })
-    .catch(() => {});
+  await page.waitForFunction(() => [...document.images].every((image) => image.complete), null, { timeout: timeoutMs }).catch(() => {});
   await page.evaluate(() => window.scrollTo(0, 0));
 }
 
