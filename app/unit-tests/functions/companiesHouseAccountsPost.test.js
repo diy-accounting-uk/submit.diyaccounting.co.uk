@@ -87,7 +87,8 @@ const mockAllocateSubmissionNumber = vi.fn();
 const mockResolvePresenterCredentials = vi.fn();
 const mockPostToGateway = vi.fn();
 const mockParseGatewayResponse = vi.fn();
-vi.mock("@app/services/companiesHouseXmlGateway.js", () => ({
+vi.mock("@app/services/companiesHouseXmlGateway.js", async (importOriginal) => ({
+  gatewayRequestNotDelivered: (await importOriginal()).gatewayRequestNotDelivered,
   hashPresenterCredential: vi.fn((value) => `hashed-${value}`),
   buildAccountsSubmission: (...args) => mockBuildAccountsSubmission(...args),
   buildStatusRequest: vi.fn(),
@@ -394,6 +395,19 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     expect(writes.map((values) => values[":status"])).toEqual(["pending"]);
     expect(writes[0][":data"]).toMatchObject({ kind: "accounts", filedDocument: '<?xml version="1.0"?><html>fake ixbrl</html>' });
     expect(writes[0][":data"].chargeActivityId).toBeTruthy();
+  });
+
+  test("marks the filing failed when the connection to the gateway was refused, so nothing was delivered", async () => {
+    mockPostToGateway.mockRejectedValue(
+      Object.assign(new TypeError("fetch failed"), {
+        cause: Object.assign(new Error("connect ECONNREFUSED 10.0.0.1:443"), { code: "ECONNREFUSED", syscall: "connect" }),
+      }),
+    );
+
+    const response = await companiesHouseAccountsPostHandler(buildEvent());
+
+    expect(response.statusCode).toBe(500);
+    expect((await asyncRequestWrites()).map((values) => values[":status"])).toEqual(["pending", "failed"]);
   });
 
   test("marks the filing failed when the envelope could not be built, before anything was sent", async () => {

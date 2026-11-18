@@ -770,6 +770,37 @@ export function getXmlGatewayUri() {
  *   gateway ignores headers it does not know, so the same call shape reaches both.
  * @returns {Promise<{ok: boolean, status: number, data: string, headers: object, duration: number}>}
  */
+// Node's fetch (undici) fails with TypeError("fetch failed") and puts the system error in cause.
+// These codes come before a byte of the request leaves: the name does not resolve (getaddrinfo),
+// the connection is refused or unreachable (connect), the connect phase times out (undici), or
+// the TLS handshake fails. A timeout or reset after that may follow a delivered request.
+const NOT_DELIVERED_CODES = new Set([
+  "ENOTFOUND",
+  "EAI_AGAIN",
+  "ECONNREFUSED",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "EADDRNOTAVAIL",
+  "UND_ERR_CONNECT_TIMEOUT",
+  "CERT_HAS_EXPIRED",
+  "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+  "UNABLE_TO_GET_ISSUER_CERT_LOCALLY",
+  "DEPTH_ZERO_SELF_SIGNED_CERT",
+  "SELF_SIGNED_CERT_IN_CHAIN",
+]);
+
+/**
+ * Whether a postToGateway failure proves the envelope never reached Companies House.
+ * @param {Error} error - what postToGateway threw
+ * @returns {boolean} true for a DNS, connection or TLS handshake failure; false for a timeout,
+ *   a reset or anything else, after which Companies House may hold the envelope
+ */
+export function gatewayRequestNotDelivered(error) {
+  const code = error?.cause?.code ?? error?.code;
+  if (typeof code !== "string") return false;
+  return NOT_DELIVERED_CODES.has(code) || code.startsWith("ERR_SSL_") || code.startsWith("ERR_TLS_");
+}
+
 export async function postToGateway(xml, extraHeaders = {}) {
   const url = getXmlGatewayUri();
 

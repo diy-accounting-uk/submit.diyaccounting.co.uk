@@ -55,6 +55,7 @@ const {
   buildCompanyDataRequest,
   buildPaymentPeriodsRequest,
   buildStatusRequest,
+  gatewayRequestNotDelivered,
   buildStatusAckRequest,
   parseGatewayResponse,
   parseCompanyDataResponse,
@@ -500,6 +501,35 @@ describe("services/companiesHouseXmlGateway", () => {
     test("returns undefined when the response carries no PaymentPeriods element", () => {
       const xml = `<?xml version="1.0"?><GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope"><Body></Body></GovTalkMessage>`;
       expect(parsePaymentPeriodsResponse(xml)).toBeUndefined();
+    });
+  });
+
+  describe("gatewayRequestNotDelivered", () => {
+    const fetchFailed = (code) => Object.assign(new TypeError("fetch failed"), { cause: Object.assign(new Error(code), { code }) });
+
+    test.each([
+      "ENOTFOUND",
+      "EAI_AGAIN",
+      "ECONNREFUSED",
+      "EHOSTUNREACH",
+      "ENETUNREACH",
+      "UND_ERR_CONNECT_TIMEOUT",
+      "ERR_SSL_WRONG_VERSION_NUMBER",
+      "CERT_HAS_EXPIRED",
+    ])("a %s from fetch proves nothing was delivered", (code) => {
+      expect(gatewayRequestNotDelivered(fetchFailed(code))).toBe(true);
+    });
+
+    test.each(["UND_ERR_SOCKET", "ECONNRESET", "UND_ERR_HEADERS_TIMEOUT", "UND_ERR_BODY_TIMEOUT"])(
+      "a %s may follow a delivered request",
+      (code) => {
+        expect(gatewayRequestNotDelivered(fetchFailed(code))).toBe(false);
+      },
+    );
+
+    test("a timeout of the whole request, or an error with no code, may follow a delivered request", () => {
+      expect(gatewayRequestNotDelivered(Object.assign(new Error("timed out"), { name: "HttpTimeoutError" }))).toBe(false);
+      expect(gatewayRequestNotDelivered(new Error("something else"))).toBe(false);
     });
   });
 

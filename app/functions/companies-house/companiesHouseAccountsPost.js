@@ -55,6 +55,7 @@ import {
   allocateSubmissionNumber,
   resolvePresenterCredentials,
   postToGateway,
+  gatewayRequestNotDelivered,
   parseGatewayResponse,
 } from "../../services/companiesHouseXmlGateway.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
@@ -624,7 +625,8 @@ export async function ingestHandler(event) {
     });
   } catch (error) {
     logger.error({ message: "Unexpected error submitting Companies House accounts", error: error.message, stack: error.stack });
-    if (envelopeSent) return submittedWithOutcomeUnknown({ request, responseHeaders, submissionNumber, userSub, clientId, error });
+    if (envelopeSent && !gatewayRequestNotDelivered(error))
+      return submittedWithOutcomeUnknown({ request, responseHeaders, submissionNumber, userSub, clientId, error });
     if (submissionNumber) {
       await putAsyncRequest(userSub, submissionNumber, "failed", { message: error.message }, asyncRequestsTableName);
     }

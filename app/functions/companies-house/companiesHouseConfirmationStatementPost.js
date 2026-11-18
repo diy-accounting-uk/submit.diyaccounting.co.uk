@@ -46,6 +46,7 @@ import {
   allocateSubmissionNumber,
   resolvePresenterCredentials,
   postToGateway,
+  gatewayRequestNotDelivered,
   parseGatewayResponse,
 } from "../../services/companiesHouseXmlGateway.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
@@ -440,7 +441,8 @@ export async function ingestHandler(event) {
       error: error.message,
       stack: error.stack,
     });
-    if (envelopeSent) return submittedWithOutcomeUnknown({ request, responseHeaders, submissionNumber, userSub, error });
+    if (envelopeSent && !gatewayRequestNotDelivered(error))
+      return submittedWithOutcomeUnknown({ request, responseHeaders, submissionNumber, userSub, error });
     if (submissionNumber) {
       await putAsyncRequest(userSub, submissionNumber, "failed", { message: error.message }, asyncRequestsTableName);
     }
