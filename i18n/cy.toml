@@ -645,6 +645,166 @@ cy = '''Mewngofnodwch i weld eich Bundles'''
 hash = "86a8dcc273b0"
 cy = '''Mae eich Bundles a’ch credydau (tokens) yn cael eu cadw gyda’ch cyfrif. Mewngofnodwch i weld beth sydd gennych ac i ychwanegu rhagor. Os oes gennych docyn, rhowch ef isod yn gyntaf.'''
 
+[strings."bundles.description-resident-vat"]
+hash = "ac9cf06867fb"
+cy = '''Cyflwyno Ffurflenni TAW i CThEF. £9.99/yr / £0.99/mo, canslo unrhyw bryd.'''
+
+[strings."bundles.description-resident-ltd"]
+hash = "06969571d87b"
+cy = '''Ffeilio cyfrifon a datganiadau cadarnhau gyda Thŷ’r Cwmnïau. £9.99/yr / £0.99/mo, canslo unrhyw bryd.'''
+
+[strings."bundles.description-resident-pro"]
+hash = "7329b7256561"
+cy = '''Cyflwyno Ffurflenni TAW i CThEF a chyfrifon i Dŷ’r Cwmnïau. £39.99/yr / £3.99/mo, canslo unrhyw bryd.'''
+
+[strings."bundles.description-resident-tax-agent"]
+hash = "bc839cd690dc"
+cy = '''Rheoli cleientiaid practis a ffeilio ar eu rhan, gyda phopeth yn Resident Pro a dim terfyn ar gredyd. £199.99/yr / £19.99/mo, canslo unrhyw bryd.'''
+
+[strings."bundles.tokens-unlimited"]
+hash = "8848fad3f510"
+cy = '''Dim terfyn ar gredyd (tokens).'''
+
+[strings."bundles.tokens-for-24-hours"]
+hash = "e91c3b9abb08"
+cy = '''{count} credyd (tokens) am 24 awr.'''
+
+[strings."bundles.tokens-for-7-days"]
+hash = "d8c22dfd8524"
+cy = '''{count} credyd (tokens) am 7 diwrnod.'''
+
+[strings."bundles.tokens-each-month"]
+hash = "95d985cdc735"
+cy = '''{count} credyd (tokens) bob mis.'''
+
+[strings."bundles.tokens-each-year"]
+hash = "bacb4c9d9881"
+cy = '''{count} credyd (tokens) bob blwyddyn.'''
+
+[strings."bundles.request-free"]
+hash = "ad95d5fa651b"
+cy = '''am ddim'''
+
+[strings."bundles.request-one-token"]
+hash = "bc1131e15dfa"
+cy = '''{count} credyd'''
+
+[strings."bundles.request-tokens"]
+hash = "bc17ff48c052"
+cy = '''{count} credyd'''
+
+[strings."bundles.request-bundle"]
+hash = "c8515a97b783"
+cy = '''Gofyn am Bundle'''
+
+[strings."bundles.pass-required"]
+hash = "ecf75d218ad3"
+cy = '''Angen tocyn — {name}'''
+
+[strings."bundles.pass-required-note"]
+hash = "19f07a769282"
+cy = '''Rhowch wahoddiad tocyn uchod i ddatgloi’r Bundle hwn'''
+
+[strings."bundles.subscribe-month"]
+hash = "1c633895ee89"
+cy = '''Tanysgrifio {price} y mis — {name}'''
+
+[strings."bundles.monthly-via-stripe"]
+hash = "7ec2f3f2cfb6"
+cy = '''Tanysgrifiad misol drwy Stripe'''
+
+[strings."bundles.subscribe-year"]
+hash = "6d2016589c5e"
+cy = '''Tanysgrifio {price} y flwyddyn — {name}'''
+
+[strings."bundles.or-per-month"]
+hash = "b44f171d1a66"
+cy = '''neu {price} y mis'''
+
+[strings."bundles.via-stripe"]
+hash = "7ed8c2bc6619"
+cy = '''Tanysgrifiad drwy Stripe'''
+
+[strings."bundles.subscribe"]
+hash = "21289664ca19"
+cy = '''Tanysgrifio — {name}'''
+
+[strings."bundles.subscription-required"]
+hash = "82cc06cafeba"
+cy = '''Angen tanysgrifiad — {name}'''
+
+[strings."bundles.subscription-required-note"]
+hash = "e0fb1fa334eb"
+cy = '''Mae angen tanysgrifiad ar gyfer y Bundle hwn'''
+
+[strings."bundles.limit-reached"]
+hash = "ba3b067a9ccb"
+cy = '''Wedi cyrraedd y terfyn — {name}'''
+
+[strings."bundles.limit-reached-note"]
+hash = "466c66745c9a"
+cy = '''Mae pob tocyn diwrnod yn cael ei ddefnyddio. Rhowch gynnig arall arni yfory, neu dewiswch Bundle.'''
+
+[strings."bundles.request"]
+hash = "d85d88384504"
+cy = '''Gofyn am {name}'''
+
+[strings."bundles.day-pass-note"]
+hash = "0d3914c01ad8"
+cy = '''Un diwrnod, dim cerdyn. I ddal ati i ffeilio ar ôl heddiw, dewiswch gynllun uchod.'''
+
+[strings."bundles.requesting"]
+hash = "8b895b87b336"
+cy = '''Yn gofyn...'''
+
+[strings."bundles.redirecting"]
+hash = "28ffe466e979"
+cy = '''Yn mynd i’r dudalen dalu...'''
+
+[strings."bundles.or"]
+hash = "7175517a370b"
+cy = '''neu'''
+
+[strings."bundles.no-passes-use"]
+hash = "6c152c20d6a9"
+cy = '''Nid ydych wedi creu unrhyw docynnau eto. Defnyddiwch {names} yn y rhestr gweithgareddau.'''
+
+[strings."bundles.no-passes-bundles"]
+hash = "5380bc6da86b"
+cy = '''Nid ydych wedi creu unrhyw docynnau eto. Mae tocyn yn cael ei greu o Bundle sy’n caniatáu hynny: {names}.'''
+
+[strings."bundles.apply-none"]
+hash = "52fbaeb93ccf"
+cy = '''Nid ydych wedi gwneud cais.'''
+
+[strings."bundles.apply-button"]
+hash = "2c02ac2db044"
+cy = '''Gwneud cais gyda Stripe'''
+
+[strings."bundles.apply-started"]
+hash = "03194a102785"
+cy = '''Mae eich cais wedi dechrau. Gorffennwch gamau Stripe i’w anfon.'''
+
+[strings."bundles.apply-continue"]
+hash = "01fb6b2be74c"
+cy = '''Parhau gyda Stripe'''
+
+[strings."bundles.apply-submitted"]
+hash = "01a9d7a884e4"
+cy = '''Mae gan Stripe eich manylion. Rydym yn adolygu’r cais ac yn rhoi gwybod i chi am ein penderfyniad drwy e-bost.'''
+
+[strings."bundles.apply-approved"]
+hash = "2f8cd327c812"
+cy = '''Rydych yn bartner cyswllt cymeradwy.'''
+
+[strings."bundles.apply-ended"]
+hash = "40da3a3a4afb"
+cy = '''Mae’r bartneriaeth gyswllt hon wedi dod i ben.'''
+
+[strings."bundles.apply-read-failed"]
+hash = "c9c81f826401"
+cy = '''Nid oedd modd darllen eich cais ({message}). Ail-lwythwch y dudalen.'''
+
 # == spreadsheets.html (LANG9): the build marks this page; ids spreadsheets.<first words>-<hash> ==
 [strings."spreadsheets.title"]
 hash = "b0b685eb311b"
@@ -3248,6 +3408,38 @@ cy = '''Nodwch god dilysu’r cwmni'''
 [strings."widget.required-registered-email"]
 hash = "c049bf45205c"
 cy = '''Nodwch y cyfeiriad e-bost cofrestredig newydd'''
+
+[strings."widget.status-production"]
+hash = "13a7c655a7d4"
+cy = '''Cynhyrchu'''
+
+[strings."widget.status-sandbox"]
+hash = "67fc62497e85"
+cy = '''Prawf'''
+
+[strings."widget.status-preview"]
+hash = "324b134f57c7"
+cy = '''Rhagolwg'''
+
+[strings."widget.status-meaning-production"]
+hash = "bc8c0922be6a"
+cy = '''at ddefnydd go iawn'''
+
+[strings."widget.status-meaning-sandbox"]
+hash = "2c4f1359ac6e"
+cy = '''yn erbyn gwasanaeth prawf'''
+
+[strings."widget.status-meaning-preview"]
+hash = "511b23ef52ae"
+cy = '''gallwch roi cynnig ar y sgriniau, ac nid oes dim yn cael ei anfon'''
+
+[strings."widget.status-and-vowel"]
+hash = "6201111b83a0"
+cy = '''ac'''
+
+[strings."widget.status-and"]
+hash = "6201111b83a0"
+cy = '''a'''
 
 [strings."widget.required-period-start"]
 hash = "65ca1496db66"

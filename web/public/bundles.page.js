@@ -5,6 +5,60 @@
 const passForward = new URLSearchParams(window.location.search).get("pass") ? "/pass.html" + window.location.search : null;
 if (passForward) window.location.replace(passForward);
 
+// page-chrome.js gives the text in the chosen language; without it the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
+// The Welsh of each listed bundle's catalogue description, keyed by the catalogue's English. A
+// description the catalogue has since changed is not in this map and shows as the catalogue writes it.
+const BUNDLE_DESCRIPTIONS = {
+  "Submit VAT returns to HMRC. £9.99/yr / £0.99/mo, cancel anytime.": () =>
+    siteText("bundles.description-resident-vat", "Submit VAT returns to HMRC. £9.99/yr / £0.99/mo, cancel anytime."),
+  "File accounts and confirmation statements to Companies House. £9.99/yr / £0.99/mo, cancel anytime.": () =>
+    siteText(
+      "bundles.description-resident-ltd",
+      "File accounts and confirmation statements to Companies House. £9.99/yr / £0.99/mo, cancel anytime.",
+    ),
+  "Submit VAT returns to HMRC and Accounts to Companies House. £39.99/yr / £3.99/mo, cancel anytime.": () =>
+    siteText(
+      "bundles.description-resident-pro",
+      "Submit VAT returns to HMRC and Accounts to Companies House. £39.99/yr / £3.99/mo, cancel anytime.",
+    ),
+  "Manage a practice's clients and file for them, with everything in Resident Pro and no token limit. £199.99/yr / £19.99/mo, cancel anytime.":
+    () =>
+      siteText(
+        "bundles.description-resident-tax-agent",
+        "Manage a practice's clients and file for them, with everything in Resident Pro and no token limit. £199.99/yr / £19.99/mo, cancel anytime.",
+      ),
+};
+
+const bundleDescription = (b, fallback) => {
+  if (!b.description) return fallback;
+  return Object.hasOwn(BUNDLE_DESCRIPTIONS, b.description) ? BUNDLE_DESCRIPTIONS[b.description]() : b.description;
+};
+
+// The token note in the reader's language: the English sentence the catalogue gives, matched by its shape.
+const tokenSentenceText = (sentence) => {
+  if (sentence === "No limit on tokens.") return siteText("bundles.tokens-unlimited", "No limit on tokens.");
+  const match = /^(\d+) (tokens? .*)$/.exec(sentence);
+  if (!match) return sentence;
+  const count = match[1];
+  switch (match[2].replace(/^token /, "tokens ")) {
+    case "tokens for 24 hours.":
+      return siteText("bundles.tokens-for-24-hours", "{count} tokens for 24 hours.", { count });
+    case "tokens for 7 days.":
+      return siteText("bundles.tokens-for-7-days", "{count} tokens for 7 days.", { count });
+    case "tokens each month.":
+      return siteText("bundles.tokens-each-month", "{count} tokens each month.", { count });
+    case "tokens each year.":
+      return siteText("bundles.tokens-each-year", "{count} tokens each year.", { count });
+    default:
+      return sentence;
+  }
+};
+
 // --- helpers
 const getIdToken = () => {
   try {
@@ -131,11 +185,14 @@ const hasBundle = (bundles, id) =>
 
 // The suffix after "Request <name>": a free bundle says "free", the others state their token count.
 const requestLabelSuffix = (free, tokens) => {
-  if (free) return " (free)";
-  return tokens ? ` (${tokens} token${String(tokens) !== "1" ? "s" : ""})` : "";
+  if (free) return ` (${siteText("bundles.request-free", "free")})`;
+  if (!tokens) return "";
+  return String(tokens) === "1"
+    ? ` (${siteText("bundles.request-one-token", "{count} token", { count: tokens })})`
+    : ` (${siteText("bundles.request-tokens", "{count} tokens", { count: tokens })})`;
 };
 
-const markToRequest = (btn, message = "Request bundle") => {
+const markToRequest = (btn, message = siteText("bundles.request-bundle", "Request bundle")) => {
   const free = btn.getAttribute("data-free") === "true";
   btn.textContent = message + requestLabelSuffix(free, btn.getAttribute("data-tokens-granted"));
   btn.disabled = false;
@@ -232,7 +289,7 @@ const noteEl = (kind, text) => domEl("p", { class: `bundle-note bundle-note--${k
 // The bundle's token allowance from the catalogue, as a card note; nothing when the catalogue names none.
 const tokenNoteEl = (b) => {
   const sentence = __bundleListing?.tokenSentence(b);
-  return sentence ? noteEl("plain", sentence) : null;
+  return sentence ? noteEl("plain", tokenSentenceText(sentence)) : null;
 };
 
 const serviceItemEl = (...children) => domEl("div", { class: "service-item" }, ...children);
@@ -303,10 +360,10 @@ const cardEl = (b) => {
       bundleButton(
         "btn service-btn",
         { "data-requires-pass": "true", "data-disabled-reason": "on-pass", "disabled": "" },
-        `Pass required — ${name}`,
+        siteText("bundles.pass-required", "Pass required — {name}", { name }),
         true,
       ),
-      noteEl("warn", "Enter a pass invitation above to unlock this bundle"),
+      noteEl("warn", siteText("bundles.pass-required-note", "Enter a pass invitation above to unlock this bundle")),
     );
   }
 
@@ -314,8 +371,12 @@ const cardEl = (b) => {
   if (allocation === "on-pass-on-subscription" && passCode) {
     if (hasActiveSubscription()) return manageCard();
     return serviceItemEl(
-      bundleButton("btn service-btn", { "data-subscribe": "true" }, `Subscribe £9.99/mo — ${name}`),
-      noteEl("plain", "Monthly subscription via Stripe"),
+      bundleButton(
+        "btn service-btn",
+        { "data-subscribe": "true" },
+        siteText("bundles.subscribe-month", "Subscribe {price}/mo — {name}", { price: "£9.99", name }),
+      ),
+      noteEl("plain", siteText("bundles.monthly-via-stripe", "Monthly subscription via Stripe")),
     );
   }
 
@@ -334,7 +395,7 @@ const cardEl = (b) => {
         bundleButton(
           "btn service-btn",
           { "data-subscribe": "true", "data-interval": "annual" },
-          `Subscribe ${formatGbp(annual.amount / 100)}/yr — ${name}`,
+          siteText("bundles.subscribe-year", "Subscribe {price}/yr — {name}", { price: formatGbp(annual.amount / 100), name }),
         ),
         monthly
           ? domEl(
@@ -346,20 +407,24 @@ const cardEl = (b) => {
                   "data-subscribe": "true",
                   "data-interval": "monthly",
                 },
-                `or ${formatGbp(monthly.amount / 100)}/month`,
+                siteText("bundles.or-per-month", "or {price}/month", { price: formatGbp(monthly.amount / 100) }),
               ),
             )
           : null,
-        noteEl("plain", b.description || "Subscription via Stripe"),
+        noteEl("plain", bundleDescription(b, siteText("bundles.via-stripe", "Subscription via Stripe"))),
         tokenNoteEl(b),
       );
     }
 
-    const singlePriceLabel =
-      prices.length === 1 ? ` ${formatGbp(prices[0].amount / 100)}/${prices[0].interval === "year" ? "yr" : "mo"}` : "";
+    const singlePrice = prices.length === 1 ? formatGbp(prices[0].amount / 100) : null;
+    const subscribeLabel = !singlePrice
+      ? siteText("bundles.subscribe", "Subscribe — {name}", { name })
+      : prices[0].interval === "year"
+        ? siteText("bundles.subscribe-year", "Subscribe {price}/yr — {name}", { price: singlePrice, name })
+        : siteText("bundles.subscribe-month", "Subscribe {price}/mo — {name}", { price: singlePrice, name });
     return serviceItemEl(
-      bundleButton("btn service-btn", { "data-subscribe": "true" }, `Subscribe${singlePriceLabel} — ${name}`),
-      noteEl("plain", b.description || "Monthly subscription via Stripe"),
+      bundleButton("btn service-btn", { "data-subscribe": "true" }, subscribeLabel),
+      noteEl("plain", bundleDescription(b, siteText("bundles.monthly-via-stripe", "Monthly subscription via Stripe"))),
       tokenNoteEl(b),
     );
   }
@@ -370,18 +435,23 @@ const cardEl = (b) => {
       bundleButton(
         "btn service-btn",
         { "data-disabled-reason": "on-subscription", "disabled": "" },
-        `Subscription required — ${name}`,
+        siteText("bundles.subscription-required", "Subscription required — {name}", { name }),
         true,
       ),
-      noteEl("warn", "A subscription is needed for this bundle"),
+      noteEl("warn", siteText("bundles.subscription-required-note", "A subscription is needed for this bundle")),
     );
   }
 
   // Capacity full: disabled with reason on button (pass bypasses cap)
   if (!capacityAvailable && !passCode) {
     return serviceItemEl(
-      bundleButton("btn service-btn", { "data-disabled-reason": "capacity", "disabled": "" }, `Limit reached — ${name}`, true),
-      noteEl("warn", "All day passes are in use. Try again tomorrow, or choose a bundle."),
+      bundleButton(
+        "btn service-btn",
+        { "data-disabled-reason": "capacity", "disabled": "" },
+        siteText("bundles.limit-reached", "Limit reached — {name}", { name }),
+        true,
+      ),
+      noteEl("warn", siteText("bundles.limit-reached-note", "All day passes are in use. Try again tomorrow, or choose a bundle.")),
       tokenNoteEl(b),
     );
   }
@@ -389,9 +459,16 @@ const cardEl = (b) => {
   // enable = "always": normal enabled button
   const isFree = allocation === "on-request" && !(Array.isArray(b.prices) && b.prices.length > 0);
   return serviceItemEl(
-    bundleButton("btn service-btn", isFree ? { "data-free": "true" } : {}, `Request ${name}${requestLabelSuffix(isFree, tg)}`, true),
+    bundleButton(
+      "btn service-btn",
+      isFree ? { "data-free": "true" } : {},
+      siteText("bundles.request", "Request {name}", { name }) + requestLabelSuffix(isFree, tg),
+      true,
+    ),
     tokenNoteEl(b),
-    isFree ? noteEl("plain", "One day, no card. To keep filing after today, choose a plan above.") : null,
+    isFree
+      ? noteEl("plain", siteText("bundles.day-pass-note", "One day, no card. To keep filing after today, choose a plan above."))
+      : null,
   );
 };
 
@@ -414,7 +491,7 @@ document.addEventListener("click", async (e) => {
   const tier = card?.querySelector('input[name="subscriptionTier"]');
   if (tier?.value) qualifiers.subscriptionTier = tier.value;
 
-  btn.textContent = "Requesting...";
+  btn.textContent = siteText("bundles.requesting", "Requesting...");
   btn.disabled = true;
 
   const success = await requestBundle(bundleId, bundleName, qualifiers);
@@ -435,7 +512,7 @@ document.addEventListener("click", async (e) => {
   const idToken = getIdToken();
 
   const original = btn.textContent;
-  btn.textContent = "Redirecting to checkout...";
+  btn.textContent = siteText("bundles.redirecting", "Redirecting to checkout...");
   btn.disabled = true;
 
   try {
@@ -518,7 +595,7 @@ function updateBundleStatus() {
       markGranted(btn, `Added ✓ ${name}`);
     } else if (!btn.hasAttribute("data-disabled-reason")) {
       // Re-enable buttons that are not structurally disabled (on-pass/on-subscription/capacity)
-      markToRequest(btn, `Request ${name}`);
+      markToRequest(btn, siteText("bundles.request", "Request {name}", { name }));
     }
   });
 }
@@ -977,16 +1054,21 @@ function renderGeneratedPassesEmptyText() {
   const passActivities = (__catalogueData.activities || []).filter((a) => PASS_ACTIVITY_IDS.includes(a.id));
   const allowedIds = new Set(passActivities.flatMap((a) => a.bundles || []));
   const heldAllowed = parseUserBundles().some((entry) => allowedIds.has(typeof entry === "string" ? entry : entry.bundleId));
-  const prefix = "You haven't generated any passes yet. ";
   if (heldAllowed) {
-    const names = passActivities.map((a) => a.name).join(" or ");
-    emptyMsg.textContent = `${prefix}Use ${names} in the activities list.`;
+    const names = passActivities.map((a) => a.name).join(` ${siteText("bundles.or", "or")} `);
+    emptyMsg.textContent = siteText("bundles.no-passes-use", "You haven't generated any passes yet. Use {names} in the activities list.", {
+      names,
+    });
   } else {
     const offered = __catalogueData.bundles
       .filter((b) => allowedIds.has(b.id) && !b.hidden && b.enable === "always")
       .filter(isListedInCurrentEnvironment);
     const names = offered.map((b) => b.name).join(", ");
-    emptyMsg.textContent = `${prefix}A pass is generated from a bundle that allows it: ${names}.`;
+    emptyMsg.textContent = siteText(
+      "bundles.no-passes-bundles",
+      "You haven't generated any passes yet. A pass is generated from a bundle that allows it: {names}.",
+      { names },
+    );
   }
   emptyMsg.style.display = "block";
 }
@@ -1383,20 +1465,29 @@ document.addEventListener("change", (e) => {
 
 // Affiliates: a signed-in user applies through Stripe Connect onboarding
 const AFFILIATE_APPLY_TEXT = {
-  none: { text: "You have not applied.", button: "Apply with Stripe" },
-  started: { text: "Your application is started. Finish the Stripe steps to send it.", button: "Continue with Stripe" },
-  submitted: { text: "Stripe has your details. We review the application and tell you our decision by email.", button: null },
-  approved: { text: "You are an approved affiliate.", button: null },
-  ended: { text: "This affiliate has ended.", button: null },
+  none: () => ({
+    text: siteText("bundles.apply-none", "You have not applied."),
+    button: siteText("bundles.apply-button", "Apply with Stripe"),
+  }),
+  started: () => ({
+    text: siteText("bundles.apply-started", "Your application is started. Finish the Stripe steps to send it."),
+    button: siteText("bundles.apply-continue", "Continue with Stripe"),
+  }),
+  submitted: () => ({
+    text: siteText("bundles.apply-submitted", "Stripe has your details. We review the application and tell you our decision by email."),
+    button: null,
+  }),
+  approved: () => ({ text: siteText("bundles.apply-approved", "You are an approved affiliate."), button: null }),
+  ended: () => ({ text: siteText("bundles.apply-ended", "This affiliate has ended."), button: null }),
 };
 
 function affiliateApplyView(application) {
-  if (application.state === "approved") return AFFILIATE_APPLY_TEXT.approved;
-  if (application.state === "ended") return AFFILIATE_APPLY_TEXT.ended;
+  if (application.state === "approved") return AFFILIATE_APPLY_TEXT.approved();
+  if (application.state === "ended") return AFFILIATE_APPLY_TEXT.ended();
   if (application.state === "applied") {
-    return application.detailsSubmitted ? AFFILIATE_APPLY_TEXT.submitted : AFFILIATE_APPLY_TEXT.started;
+    return application.detailsSubmitted ? AFFILIATE_APPLY_TEXT.submitted() : AFFILIATE_APPLY_TEXT.started();
   }
-  return AFFILIATE_APPLY_TEXT.none;
+  return AFFILIATE_APPLY_TEXT.none();
 }
 
 function renderAffiliateApplyState() {
@@ -1418,7 +1509,9 @@ async function initAffiliateApplySection() {
     renderAffiliateApplyState();
     renderCurrentBundles();
   } catch (err) {
-    stateEl.textContent = `Your application could not be read (${err.message}). Reload the page.`;
+    stateEl.textContent = siteText("bundles.apply-read-failed", "Your application could not be read ({message}). Reload the page.", {
+      message: err.message,
+    });
   }
 }
 
