@@ -39,6 +39,7 @@ import {
   verifyFilingAccepted,
   openFilingCustomerCopy,
   verifyFilingRejected,
+  filesThroughRealCompaniesHouseGateway,
   writeFixtureBookZip,
   writeBuiltIxbrlFile,
   fillAccountsFormFromBook,
@@ -274,6 +275,9 @@ test("Click through: file micro-entity accounts end to end and see the filing ac
 });
 
 test("Click through: file micro-entity accounts shows the reject reason Companies House returns", async ({ page }, testInfo) => {
+  // The reject comes from the simulator's ACCOUNTS_REJECTED scenario; the real gateway has no such
+  // scenario and answers a valid test filing PENDING.
+  test.skip(filesThroughRealCompaniesHouseGateway(), "the simulator's reject scenario has no counterpart on the real gateway");
   const testUrl = baseUrl;
 
   addOnPageLogging(page);

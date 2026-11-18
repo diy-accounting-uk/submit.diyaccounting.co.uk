@@ -127,9 +127,11 @@ export async function verifyFilingAccepted(page, screenshotPath = defaultScreens
     return;
   }
   await test.step("The user sees the filing accepted, or still being checked under its submission number", async () => {
-    const accepted = page.locator("#filingResult", { hasText: "ACCEPT" });
+    // A regular expression, because hasText with a string ignores case and the pending note's own
+    // words would match "ACCEPT".
+    const accepted = page.locator("#filingResult", { hasText: /\bACCEPT\b/ });
     const pending = page.locator("#checkAgainBtn");
-    await expect(accepted.or(pending)).toBeVisible({ timeout: REAL_GATEWAY_OUTCOME_TIMEOUT_MS });
+    await expect(accepted.or(pending).first()).toBeVisible({ timeout: REAL_GATEWAY_OUTCOME_TIMEOUT_MS });
     await expect(page.locator("#filingResult")).toContainText(/\d{6}/);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-outcome.png`, readerView: true });
   });
