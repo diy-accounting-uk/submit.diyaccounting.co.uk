@@ -27,7 +27,7 @@ import {
   getLocalStorageJson,
   setLocalStorageJson,
 } from "./lib/utils/storage-utils.js";
-import { showStatus, hideStatus, removeStatusMessage, onDomReady, readMeta } from "./lib/utils/dom-utils.js";
+import { showStatus, hideStatus, dismissStatus, removeStatusMessage, onDomReady, readMeta } from "./lib/utils/dom-utils.js";
 import {
   getTraceparent,
   getLastXRequestId,
@@ -577,6 +577,7 @@ if (typeof window !== "undefined") {
   // DOM utils
   window.showStatus = showStatus;
   window.hideStatus = hideStatus;
+  window.dismissStatus = dismissStatus;
   window.removeStatusMessage = removeStatusMessage;
   window.onDomReady = onDomReady;
   window.readMeta = readMeta;

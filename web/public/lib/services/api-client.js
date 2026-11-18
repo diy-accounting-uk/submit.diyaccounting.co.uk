@@ -75,16 +75,22 @@ export async function executeAsyncRequestPolling(res, input, init, currentHeader
   const statusRequestId = requestId || `async-${crypto.randomUUID()}`;
   let pollCount = 0;
   const startTime = Date.now();
+  // The "Still processing" banner belongs to this request: it goes when the request ends, however it ends.
+  const dismissPendingStatus = () => {
+    if (pollCount > 0 && typeof window !== "undefined" && window.dismissStatus) window.dismissStatus(statusRequestId);
+  };
 
   while (res.status === 202) {
     const elapsed = Date.now() - startTime;
     if (init.signal?.aborted) {
       console.log(`aborted async request ${requestDesc} (poll #${pollCount}, elapsed: ${elapsed}ms)`);
+      dismissPendingStatus();
       return res;
     }
 
     if (elapsed > timeoutMs) {
       console.error(`timed out async request ${requestDesc} (poll #${pollCount}, elapsed: ${elapsed}ms, timeout: ${timeoutMs}ms)`);
+      dismissPendingStatus();
       return res;
     }
 
@@ -108,6 +114,7 @@ export async function executeAsyncRequestPolling(res, input, init, currentHeader
             clearTimeout(timeout);
             const abortElapsed = Date.now() - startTime;
             console.log(`aborted async request ${requestDesc} (poll #${pollCount}, elapsed: ${abortElapsed}ms)`);
+            dismissPendingStatus();
             reject(new DOMException("Aborted", "AbortError"));
           },
           { once: true },
@@ -120,16 +127,21 @@ export async function executeAsyncRequestPolling(res, input, init, currentHeader
     console.log(
       `re-trying async request ${requestDesc} (poll #${pollCount}, elapsed: ${Date.now() - startTime}ms, timeout: ${timeoutMs}ms, last status: ${res.status})...`,
     );
-    res = await fetch(input, { ...init, headers: currentHeaders });
+    try {
+      res = await fetch(input, { ...init, headers: currentHeaders });
+    } catch (error) {
+      dismissPendingStatus();
+      throw error;
+    }
   }
 
   console.log(`finished async request ${requestDesc} (poll #${pollCount}, elapsed: ${Date.now() - startTime}ms, status: ${res.status})`);
-  if (typeof window !== "undefined" && window.showStatus) {
-    if (res.ok && init.pollSuccessMessage) {
-      window.showStatus(init.pollSuccessMessage, "success", { requestId: statusRequestId });
-    } else if (!res.ok && init.pollErrorMessage) {
-      window.showStatus(init.pollErrorMessage, "error", { requestId: statusRequestId });
-    }
+  if (typeof window !== "undefined" && window.showStatus && res.ok && init.pollSuccessMessage) {
+    window.showStatus(init.pollSuccessMessage, "success", { requestId: statusRequestId });
+  } else if (typeof window !== "undefined" && window.showStatus && !res.ok && init.pollErrorMessage) {
+    window.showStatus(init.pollErrorMessage, "error", { requestId: statusRequestId });
+  } else {
+    dismissPendingStatus();
   }
   return res;
 }

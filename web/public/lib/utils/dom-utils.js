@@ -14,7 +14,7 @@ function siteText(id, english, values) {
  * @param {string} message - Message to display
  * @param {string} type - Message type: "info", "success", "warning", "error"
  */
-export function showStatus(message, type = "info") {
+export function showStatus(message, type = "info", options = {}) {
   console.log("Status message:", message, "Type:", type);
   const statusMessagesContainer = document.getElementById("statusMessagesContainer");
   if (!statusMessagesContainer) {
@@ -23,9 +23,11 @@ export function showStatus(message, type = "info") {
   }
 
   clearSupersededMessages(statusMessagesContainer, message, type);
+  if (options.requestId) dismissStatus(options.requestId);
 
   const msgDiv = document.createElement("div");
   msgDiv.className = `status-message status-${type}`;
+  if (options.requestId) msgDiv.dataset.requestId = options.requestId;
 
   // Create message content container
   const messageContent = document.createElement("span");
@@ -66,6 +68,19 @@ function clearSupersededMessages(container, message, type) {
     const isRepeatedError =
       type === "error" && existing.classList.contains("status-error") && message.startsWith(existingText.replace(/\.$/, ""));
     if (isProgress || isRepeatedError) removeStatusMessage(existing);
+  }
+}
+
+/**
+ * Remove the messages shown with this requestId, and no others: a request's own progress message
+ * when the request ends.
+ * @param {string} requestId - The requestId the messages were shown with
+ */
+export function dismissStatus(requestId) {
+  const container = document.getElementById("statusMessagesContainer");
+  if (!container || !requestId) return;
+  for (const message of Array.from(container.querySelectorAll(".status-message[data-request-id]"))) {
+    if (message.dataset.requestId === requestId) removeStatusMessage(message);
   }
 }
 
@@ -228,6 +243,7 @@ export function readMeta(name) {
 if (typeof window !== "undefined") {
   window.showStatus = showStatus;
   window.hideStatus = hideStatus;
+  window.dismissStatus = dismissStatus;
   window.showFailure = showFailure;
   window.requestError = requestError;
   window.removeStatusMessage = removeStatusMessage;

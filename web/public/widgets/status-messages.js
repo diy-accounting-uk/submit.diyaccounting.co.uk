@@ -15,6 +15,7 @@
   //      <div id="loadingSpinner" class="spinner" style="display:none"></div>
   //  - Call StatusMessages.show('Message', 'info'|'error'|'success'|'warning', { requestId })
   //    A message with a requestId replaces the earlier message carrying the same requestId.
+  //  - Call StatusMessages.dismiss(requestId) to remove the message carrying that requestId.
   //  - Or use globals: showStatus(), hideStatus(), showLoading(), hideLoading()
 
   function getStatusContainer(customId) {
@@ -68,6 +69,14 @@
     const autoHideMs = options.autoHideMs ?? 30000; // 30s default (browser tests expect non-instant)
     if (autoHide) {
       setTimeout(() => removeStatusMessage(msgDiv), autoHideMs);
+    }
+  }
+
+  // Removes the messages carrying this requestId, and no others.
+  function dismiss(requestId, options = {}) {
+    const container = getStatusContainer(options.containerId);
+    for (const message of container.querySelectorAll(".status-message[data-request-id]")) {
+      if (message.dataset.requestId === requestId) removeStatusMessage(message);
     }
   }
 
@@ -129,6 +138,7 @@
   const api = {
     show,
     clear,
+    dismiss,
     showInfo: (m, o) => show(m, "info", o),
     showSuccess: (m, o) => show(m, "success", o),
     showWarning: (m, o) => show(m, "warning", o),
@@ -150,6 +160,9 @@
   }
   if (typeof window.hideStatus !== "function") {
     window.hideStatus = () => api.clear();
+  }
+  if (typeof window.dismissStatus !== "function") {
+    window.dismissStatus = (requestId) => api.dismiss(requestId);
   }
   if (typeof window.showLoading !== "function") {
     window.showLoading = () => api.showLoading();

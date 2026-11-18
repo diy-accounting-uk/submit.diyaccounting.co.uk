@@ -5,7 +5,7 @@
 // @vitest-environment happy-dom
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { showStatus } from "../public/lib/utils/dom-utils.js";
+import { showStatus, dismissStatus } from "../public/lib/utils/dom-utils.js";
 
 const texts = () => Array.from(document.querySelectorAll(".status-message-content")).map((el) => el.textContent);
 
@@ -73,5 +73,16 @@ describe("failure message", () => {
     showFailure({ status: 403, code: "tokens_exhausted", message: "Token limit reached" }, "You cannot use this yet");
     expect(document.querySelector(".status-message-cause").textContent).toBe("You have no tokens left.");
     expect(document.querySelector("a.status-message-next").getAttribute("href")).toBe("/bundles.html");
+  });
+
+  it("replaces a request's progress message with its next one, and dismisses only that request's", () => {
+    showStatus("Retrieving business details...", "info");
+    showStatus("Still processing...", "info", { requestId: "request-1" });
+    showStatus("Still processing...", "info", { requestId: "request-1" });
+    showStatus("Still processing...", "info", { requestId: "request-2" });
+    expect(texts()).toEqual(["Retrieving business details...", "Still processing...", "Still processing..."]);
+    dismissStatus("request-1");
+    expect(texts()).toEqual(["Retrieving business details...", "Still processing..."]);
+    expect(document.querySelector(".status-message[data-request-id]").dataset.requestId).toBe("request-2");
   });
 });
