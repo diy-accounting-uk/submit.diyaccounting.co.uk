@@ -487,7 +487,14 @@ function welshSourceFooter(catalogue, link, day, month, year) {
   return `<footer>${line}</footer>`;
 }
 
+// HMRC's Welsh services block tells the reader that Submit sends them to HMRC to sign in, which a
+// Companies House page does not do, so the Companies House pages carry none.
+function carriesHmrcWelshServices(page) {
+  return !page.id.startsWith("ch-");
+}
+
 function welshServicesBlock(catalogue, page) {
+  if (!carriesHmrcWelshServices(page)) return "";
   const entry = catalogue.shared["hmrc-welsh-services"];
   if (!entry || !entry.cy) throw new Error("shared.hmrc-welsh-services: no Welsh text in i18n/cy.toml");
   let block = entry.cy.trim();

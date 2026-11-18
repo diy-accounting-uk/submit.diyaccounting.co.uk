@@ -128,8 +128,13 @@ describe.each(WELSH_PAGES)("Welsh page $cy", (page) => {
     expect(welsh).toContain(`<link rel="canonical" href="${welshUrl(page)}" />`);
   });
 
-  it("carries HMRC's Welsh services block", () => {
+  it("carries HMRC's Welsh services block where Submit sends the reader to HMRC, and none on a Companies House page", () => {
     const block = welsh.match(/<aside class="welsh-services"[^>]*data-welsh-services[^>]*>([\s\S]*?)<\/aside>/);
+    if (page.id.startsWith("ch-")) {
+      expect(block).toBeNull();
+      expect(welsh).not.toContain("Gwasanaethau Cymraeg CThEF");
+      return;
+    }
     expect(block).not.toBeNull();
     const text = block[1].replace(/\s+/g, " ");
     expect(text).toContain("0300 200 1900");
