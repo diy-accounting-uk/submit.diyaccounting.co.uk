@@ -179,7 +179,7 @@
         {
           "action": "type",
           "target": "#companyNumber",
-          "text": "00000001",
+          "text": "12345678",
           "clear": true,
           "caption": "Type the company number.",
           "headline": "Enter the company number",
@@ -251,6 +251,16 @@
           "headline": "Turnover from the book",
           "keyWord": "Turnover",
           "instruction": "Check Turnover against your book."
+        },
+        {
+          "action": "fill",
+          "target": "#directorDateApproved",
+          "value": "2026-09-15",
+          "scrollTo": "#directorName",
+          "caption": "A book holds no approval date, so give the day the directors approved the accounts.",
+          "headline": "Date the accounts were approved",
+          "keyWord": "approved",
+          "instruction": "Enter the date the directors approved the accounts, after the end of the period."
         },
         {
           "action": "scroll",
