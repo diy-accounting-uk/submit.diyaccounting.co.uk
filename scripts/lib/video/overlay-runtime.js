@@ -475,6 +475,13 @@
     const config = window.__svcConfig;
     if (!config) return;
     if (config.suppress && config.suppress.length > 0) suppress(config.suppress);
+    // A site whose own logo and title fill the top-left corner takes the label in the middle of
+    // its header bar instead.
+    if (config.chapterPosition === "top-center" && chapterLabel) {
+      chapterLabel.style.top = "7px";
+      chapterLabel.style.left = "50%";
+      chapterLabel.style.transform = "translateX(-50%)";
+    }
     if (config.replaceText && config.replaceText.from && typeof MutationObserver === "function") {
       const { from, to } = config.replaceText;
       swapText(from, to);

@@ -19,12 +19,13 @@ export function unlistedNavTabSelectors(activities) {
 }
 
 /**
- * @param {{suppress?: string[]}} script - The scene script
+ * @param {{suppress?: string[], chapterPosition?: string}} script - The scene script
  * @param {{activities?: object[]}} catalog - The parsed catalogue
  * @param {string|null} authUsername - The address the capture signs in with, or null for a script with no sign-in
  */
 export function captureOverlayConfig(script, catalog, authUsername) {
   const config = { suppress: [...(script.suppress || []), ...unlistedNavTabSelectors(catalog?.activities)] };
   if (authUsername) config.replaceText = { from: authUsername, to: EXAMPLE_SIGN_IN_ADDRESS };
+  if (script.chapterPosition) config.chapterPosition = script.chapterPosition;
   return config;
 }

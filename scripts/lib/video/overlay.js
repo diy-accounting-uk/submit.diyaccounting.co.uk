@@ -84,12 +84,12 @@ export async function typeChar(page, rect) {
 // own {width, height}. The placement — clear of rect, above or below it, inside the frame — is
 // computed here in Node (headlinePlacement.js, unit-tested) rather than in overlay-runtime.js,
 // which is a self-contained browser-side IIFE with no imports and so cannot be tested directly.
-export async function headline(page, text, keyWord, rect, viewport) {
+export async function headline(page, text, keyWord, rect, viewport, { beside = false } = {}) {
   if (!text) return svcCall(page, "headline", null, null, null);
   if (!rect) return svcCall(page, "headline", text, keyWord || null, placeHeadline(null, viewport));
   const { subject, obstacles } = await probeAroundTarget(page, rect);
   const width = Math.min(DEFAULT_HEADLINE_CONFIG.maxWidth, HEADLINE_PADDING_WIDTH + text.length * HEADLINE_CHAR_WIDTH);
-  const placement = placeHeadline(subject, viewport, { ...DEFAULT_HEADLINE_CONFIG, width }, obstacles);
+  const placement = placeHeadline(subject, viewport, { ...DEFAULT_HEADLINE_CONFIG, width }, obstacles, { beside });
   return svcCall(page, "headline", text, keyWord || null, placement);
 }
 

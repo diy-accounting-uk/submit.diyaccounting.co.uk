@@ -42,6 +42,7 @@
     }
   },
   "finalHoldMs": 4000,
+  "chapterPosition": "top-center",
   "scenes": [
     {
       "id": "setup",

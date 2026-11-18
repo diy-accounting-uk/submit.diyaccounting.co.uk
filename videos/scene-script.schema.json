@@ -105,6 +105,11 @@
       }
     },
     "suppress": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "chapterPosition": {
+      "type": "string",
+      "enum": ["top-left", "top-center"],
+      "description": "Where the chapter label sits. top-left (the default) suits the submit site's empty left margin; top-center puts it in the middle of the header bar, for a site whose logo and title fill the top-left corner."
+    },
     "consentAnswer": {
       "type": "string",
       "enum": ["granted", "declined"],
@@ -278,6 +283,10 @@
               },
               "headline": { "type": "string", "minLength": 1 },
               "keyWord": { "type": "string", "minLength": 1 },
+              "headlineBeside": {
+                "type": "boolean",
+                "description": "Place the headline in the margin left of the target, level with it, for a target with content right above and below it. Needs a margin as wide as the headline; otherwise the headline goes above or below as usual."
+              },
               "scrollTo": {
                 "$ref": "#/definitions/target",
                 "description": "Before the step acts, scroll so this element's top edge sits a small margin below the top of the viewport, so the frame starts at it."

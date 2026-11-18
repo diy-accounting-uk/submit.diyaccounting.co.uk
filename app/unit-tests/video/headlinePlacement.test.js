@@ -4,7 +4,7 @@
 // app/unit-tests/video/headlinePlacement.test.js
 
 import { describe, test, expect } from "vitest";
-import { placeHeadline } from "../../../scripts/lib/video/headlinePlacement.js";
+import { DEFAULT_HEADLINE_CONFIG, placeHeadline } from "../../../scripts/lib/video/headlinePlacement.js";
 
 const viewport = { width: 1920, height: 1080 };
 const config = { maxWidth: 680, height: 64, gapPx: 22, marginPx: 28, defaultTop: 132 };
@@ -88,5 +88,23 @@ describe("placeHeadline", () => {
     const rect = { left: 860, top: 100, width: 200, height: 60 };
     const controlBelow = { left: 760, top: 182, width: 400, height: 60, weight: 4 };
     expect(placeHeadline(rect, viewport, config, [controlBelow]).anchor).toBe("below");
+  });
+});
+
+describe("placeHeadline beside the target", () => {
+  const viewport = { width: 1920, height: 1080 };
+  const config = { ...DEFAULT_HEADLINE_CONFIG, width: 400 };
+
+  test("sits in the margin left of the target, level with it", () => {
+    const rect = { left: 609, top: 300, width: 700, height: 24 };
+    const placement = placeHeadline(rect, viewport, config, [], { beside: true });
+    expect(placement.anchor).toBe("beside");
+    expect(placement.centerX + placement.maxWidth / 2).toBeLessThanOrEqual(rect.left - DEFAULT_HEADLINE_CONFIG.gapPx);
+    expect(placement.top + placement.height / 2).toBe(rect.top + rect.height / 2);
+  });
+
+  test("falls back to above or below when the margin is narrower than the tag", () => {
+    const rect = { left: 200, top: 300, width: 700, height: 24 };
+    expect(placeHeadline(rect, viewport, config, [], { beside: true }).anchor).not.toBe("beside");
   });
 });

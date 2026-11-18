@@ -23,6 +23,11 @@ describe("captureOverlayConfig", () => {
     expect(config.replaceText).toBeUndefined();
   });
 
+  it("carries the script's chapter position", () => {
+    expect(captureOverlayConfig({ chapterPosition: "top-center" }, { activities }, null).chapterPosition).toBe("top-center");
+    expect(captureOverlayConfig({}, { activities }, null).chapterPosition).toBeUndefined();
+  });
+
   it("swaps the sign-in address for one example address", () => {
     const config = captureOverlayConfig({}, { activities }, "synthetic-video-capture@test.diyaccounting.co.uk");
     expect(config.replaceText).toEqual({ from: "synthetic-video-capture@test.diyaccounting.co.uk", to: EXAMPLE_SIGN_IN_ADDRESS });

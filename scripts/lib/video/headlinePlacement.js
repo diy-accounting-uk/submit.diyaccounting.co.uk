@@ -34,7 +34,9 @@ function overlapArea(a, b) {
 // one that hides less weighted area. config.width is the tag's expected width, used only to
 // score overlap. Returns {anchor, centerX, top, maxWidth, height}: anchor is "above", "below"
 // or "default"; centerX/top are where the runtime centers and positions the tag.
-export function placeHeadline(rect, viewport, config = DEFAULT_HEADLINE_CONFIG, obstacles = []) {
+// beside: place the tag in the margin left of the target, level with it, when the margin is wide
+// enough for the tag; for a target with content right above and below it.
+export function placeHeadline(rect, viewport, config = DEFAULT_HEADLINE_CONFIG, obstacles = [], { beside = false } = {}) {
   const { maxWidth, height, gapPx, marginPx, defaultTop } = config;
   const tagWidth = config.width ?? maxWidth;
   const halfWidth = maxWidth / 2;
@@ -45,6 +47,12 @@ export function placeHeadline(rect, viewport, config = DEFAULT_HEADLINE_CONFIG, 
 
   if (!rect) {
     return { anchor: "default", centerX: clampCenterX(viewport.width / 2), top: clampTop(defaultTop), maxWidth, height };
+  }
+
+  const besideWidth = Math.min(tagWidth, maxWidth);
+  if (beside && rect.left - gapPx - marginPx >= besideWidth) {
+    const top = clampTop(rect.top + rect.height / 2 - height / 2);
+    return { anchor: "beside", centerX: rect.left - gapPx - besideWidth / 2, top, maxWidth: besideWidth, height };
   }
 
   const centerX = clampCenterX(rect.left + rect.width / 2);

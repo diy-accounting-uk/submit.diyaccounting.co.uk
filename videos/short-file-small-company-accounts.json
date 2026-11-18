@@ -344,12 +344,14 @@
         {
           "action": "point",
           "target": "#currentBalanceSheetTotals",
-          "scrollTo": "#currentBalanceSheetTotals",
+          "scrollTo": "#currentCalledUpShareCapital",
           "dwellMs": 400,
           "caption": "The balance sheet must balance.",
           "instruction": "Enter this year's balance sheet, the directors and the statutory statements, then check that the net assets equal your capital and reserves.",
           "headline": "Net assets must balance",
-          "keyWord": "balance"
+          "keyWord": "balance",
+          "headlineBeside": true,
+          "note": "Starts the frame two rows above the totals, so the headline beside the totals sits clear of the chapter label, the table rows above and the comparatives choice below."
         }
       ]
     },

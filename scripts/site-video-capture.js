@@ -621,7 +621,7 @@ async function main() {
         const holdHeadline = (text, keyWord, rect) => {
           const minMs = fastForward ? 0 : captionMinMs(text, script.captions);
           headlineHideAt = () => elapsed() + minMs;
-          return overlayHeadline(page, text, keyWord, rect, script.viewport);
+          return overlayHeadline(page, text, keyWord, rect, script.viewport, { beside: step.headlineBeside === true });
         };
         const showHeadlineBeforeAction = !offCamera && step.headline && step.action !== "goto" && !TARGET_RECT_ACTIONS.has(step.action);
         if (showHeadlineBeforeAction) {
