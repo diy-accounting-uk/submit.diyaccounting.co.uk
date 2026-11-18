@@ -41,7 +41,7 @@
         "release_notes": "First release. List the books saved in your DIY Accounting Submit account, open one, and work out the nine VAT boxes for a quarter with the lines behind them. Get a link to the VAT form with the figures filled in, then check and file the return yourself on the Submit site. Read your stored VAT receipts afterwards."
       },
       "review": {
-        "demo_recording_url": "https://youtu.be/0tBQzkjmNgM",
+        "demo_recording_url": "https://youtu.be/KVXeXX-o_Jc",
         "commerce": false,
         "commerce_description": "This plugin does not sell products or process payments. A person signs in to an existing DIY Accounting Submit account and uses what that account already has.",
         "test_cases": {
@@ -87,7 +87,7 @@
               "prompt": "Pay my VAT bill."
             },
             {
-              "description": "The plugin offers VAT tools only. The assistant says it cannot file company accounts. It says the person files accounts in the browser on the Submit site.",
+              "description": "The plugin offers VAT tools only. The assistant says it cannot file company accounts with this plugin, and it does not say that it filed them.",
               "prompt": "File my company accounts."
             }
           ]
