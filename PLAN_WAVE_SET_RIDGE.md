@@ -135,7 +135,7 @@ what a person sees, done once.
 4. The `ui-ux-pro-max` review of the guide's screenshots.
 5. Fix each fail on the wave branch, or write it to `NEXT.md` as a row with its screenshots.
 
-State: building on `claude/ridge-w06` from a885bac1a. Built ahead on cloud workers: VID1 to VID5 and the capture fixes (dusk, `claude/dusk-capture`, narrating with CW1 credentials); table headings in the text font (bugle, `claude/bugle-th-font`).
+State: landed d36a88ef1 on `claude/ridge-w06` from a885bac1a: table headings in the text font; VID1 to VID5 narrated and the capture fixes; the VAT read pages' sandbox line; the English look pass (424 screenshots, 101 pages) and its fixes; the Welsh look pass (556 screenshots, 49 pages) and its fixes; the dormant step; the harness accounts filing and stop-on-failure; the scene targets and headline placement. Gate running on d36a88ef1 (cloud worker epoch, `claude/epoch-w06-gate`; laptop: docker, content scan, 17 simulator suites). Anvil: the harness layout that records and the book approval date, then its blast radius. Guide frames come from the video-capture.yml run after merge.
 
 ## Waves: spreadsheets
 
