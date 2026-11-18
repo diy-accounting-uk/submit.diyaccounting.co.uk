@@ -176,6 +176,17 @@ test.describe("Mobile layout - specific findings", () => {
     expect(layout.length).toBe(2);
     for (const offsetPastLabel of layout) expect(offsetPastLabel).toBeGreaterThan(0);
   });
+
+  test("terms.html labels every cell of its bundle table at 390px", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/terms.html", { waitUntil: "domcontentloaded" });
+
+    const table = page.locator("table.data-table").first();
+    await expect(table.locator("tbody td").first()).toHaveAttribute("data-label", "Who it is for");
+    expect(await table.locator("tbody td:not([data-label])").count()).toBe(0);
+    expect(await hasRealHorizontalScroll(page)).toBe(false);
+  });
 });
 
 test.describe("Feedback banner", () => {
