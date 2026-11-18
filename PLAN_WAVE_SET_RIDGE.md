@@ -121,7 +121,7 @@ pages after the last batch lands.
 
 CW1 (the AWS credential handoff) leaves the set and ships on its own pull request as soon as it is built (operator, 2026-11-18); CW2 (the relay) and CP1 (the cloud profile) stay in wave 5. Wave 6's scene work (VID1 to VID5) runs on the cloud workers before the wave 5 gate (operator, 2026-11-18).
 
-State: landed a885bac1a on `claude/ridge-w05`: the epoch assembly, CW2, LANG11a's CT600 Welsh, the icon header and lint fixes, wave 4's gate fixes (the batches branched before them), LANG11b's small company accounts. Gate: the first run on 9569e8d4d failed licence headers, prettier, the ESLint ratchet and compliance, all fixed; the rerun on a885bac1a is on cloud worker epoch (`claude/epoch-w05-gate2`), the simulator suites on the laptop. CW1 merged alone (PR #836) and proved on worker bugle: role, both secrets, a narrated recording.
+State: gated a885bac1a. Cloud worker epoch: maven verify 541 tests (397 s), npm test 12,439 (127 s), mcp 426, browser tests 1,399 of 1,400 with 2 workers (562 s), prettier, both ESLint ratchets, ESLint on added files. Laptop: docker, the content scan, 21 simulator suites (compliance, companiesHouse, fileMicroEntityAccounts, postVatReturn rerun on the tip). CW1 left the set: merged in #836.
 
 ### Wave 6: the look wave
 
@@ -135,7 +135,7 @@ what a person sees, done once.
 4. The `ui-ux-pro-max` review of the guide's screenshots.
 5. Fix each fail on the wave branch, or write it to `NEXT.md` as a row with its screenshots.
 
-State: pending.
+State: building on `claude/ridge-w06` from a885bac1a. Built ahead on cloud workers: VID1 to VID5 and the capture fixes (dusk, `claude/dusk-capture`, narrating with CW1 credentials); table headings in the text font (bugle, `claude/bugle-th-font`).
 
 ## Waves: spreadsheets
 
