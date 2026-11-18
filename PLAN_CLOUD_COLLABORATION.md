@@ -204,6 +204,8 @@ The relay, in order of preference:
 | A self-hosted relay: an API Gateway WebSocket API with a Lambda and a DynamoDB table in submit-ci | cents a month | no third party; a CDK stack and a pull request |
 | The pull request trick: the coordinator subscribes to a never-merged mailbox pull request in each work repository and the worker comments on it (REST) | none | depends on whether this session's notifications cover a pull request in another repository; not verified |
 
+The operator chose the self-hosted relay (2026-11-18), boarded as CW2. Nisshi (an Apache 2.0, Kafka-compatible broker with S3, PostgreSQL or SQLite storage; now part of Solace) was considered: it gives a durable log with replay, but it needs a broker process on a host both ends can reach, a Kafka client at each end, and the coordinator's `Monitor` cannot hold a Kafka subscription the way it holds a WebSocket; for a few messages a day the WebSocket relay with stored, acknowledged messages gives the same catch-up after a restart at a few cents a month.
+
 Until one is built, the channel is git: the worker pushes, and the coordinator's Monitor polls
 `git ls-remote` every 2 minutes.
 
