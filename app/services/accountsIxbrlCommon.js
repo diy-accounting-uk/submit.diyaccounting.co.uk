@@ -608,14 +608,18 @@ export function renderControllingPartyFacts({ controllingParty, refs, entityIden
 export function controllingPartyNote({ controllingParty, contextRef }) {
   if (!controllingParty.name) {
     return {
-      title: "Controlling party",
-      html: "<p>The company has no ultimate controlling party. It is owned by its directors, and there is no single controlling party.</p>",
+      title: accountsText("Controlling party"),
+      html: `<p>${accountsText(
+        "The company has no ultimate controlling party. It is owned by its directors, and there is no single controlling party.",
+      )}</p>`,
     };
   }
-  const kind = controllingParty.ultimate ? "ultimate controlling party" : "controlling party";
+  const sentence = controllingParty.ultimate
+    ? "The company's ultimate controlling party is {name}."
+    : "The company's controlling party is {name}.";
   return {
-    title: "Controlling party",
-    html: `<p>The company's ${kind} is ${renderTextFact("nameControllingParty", contextRef, controllingParty.name)}.</p>`,
+    title: accountsText("Controlling party"),
+    html: `<p>${accountsText(sentence, { name: renderTextFact("nameControllingParty", contextRef, controllingParty.name) })}</p>`,
   };
 }
 

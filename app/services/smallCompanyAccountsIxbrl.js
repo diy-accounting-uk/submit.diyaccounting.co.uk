@@ -22,6 +22,7 @@ import {
   displayDate,
   previousDay,
   periodEndedPhrase,
+  periodSpanWord,
   renderStatement,
   renderFixedFact,
   renderTextFact,
@@ -53,6 +54,7 @@ import {
 } from "./accountsIxbrlCommon.js";
 import { recordAmount, recordFigure, recordTable } from "../lib/submissionRecord.js";
 import { SHARE_CLASS_LABEL, sharesIssuedFor } from "./microEntityAccountsIxbrl.js";
+import { accountsText } from "./accountsLanguage.js";
 
 const SMALL_COMPANY_FRAMEWORK_COMPLIANCE =
   "These financial statements have been prepared in accordance with Section 1A Small Entities of FRS 102 The Financial Reporting Standard applicable to the UK and Republic of Ireland.";
@@ -459,7 +461,7 @@ function profitAndLossPage({ heading, refs, current, prior, columns, format }) {
     const conceptKey = details.concepts[line];
     const cells = [recordFigure(money(conceptKey, refs.current, current[line]), current[line], { deduction })];
     if (prior) cells.push(recordFigure(money(conceptKey, refs.prior, prior[line]), prior[line], { deduction }));
-    return { label: details.labels[line], style, cells };
+    return { label: accountsText(details.labels[line]), style, cells };
   });
   return `<div class="page">
 ${heading}${recordTable({ columns: prior ? columns : columns.slice(0, 1), rows })}
@@ -485,7 +487,7 @@ const CREDITOR_SUB_LINES = [
 function subLineRows(lines, yearFigures, contextRefs, contextSuffix) {
   const shown = lines.filter(([, , field, optional]) => !optional || yearFigures.some((figures) => (figures[field] ?? 0) !== 0));
   return shown.map(([label, conceptKey, field, , ownContextSuffix]) => ({
-    label,
+    label: accountsText(label),
     cells: yearFigures.map((figures, index) =>
       recordFigure(
         money(conceptKey, `${contextRefs[index]}${ownContextSuffix ?? contextSuffix}`, figures[field] ?? 0),
@@ -516,7 +518,7 @@ function fixedAssetNoteTable({ refs, fixedAssetNote, entityIdentifierXml, period
         id: `${periodKey}-ppe-${className}${suffix}`,
       });
     columns.push({
-      heading: FIXED_ASSET_CLASS_LABEL[className],
+      heading: accountsText(FIXED_ASSET_CLASS_LABEL[className]),
       figures: { ...classFigures, ...fixedAssetClosingFigures(classFigures) },
       refs: { opening: context(refs.priorInstant, ""), duration: context(refs.current, ""), closing: context(refs.currentInstant, "") },
     });
@@ -526,7 +528,7 @@ function fixedAssetNoteTable({ refs, fixedAssetNote, entityIdentifierXml, period
     totals[field] = columns.reduce((total, column) => total + column.figures[field], 0);
   }
   columns.push({
-    heading: "Total",
+    heading: accountsText("Total"),
     figures: totals,
     refs: { opening: refs.priorInstant, duration: refs.current, closing: refs.currentInstant },
   });
@@ -541,22 +543,24 @@ function fixedAssetNoteTable({ refs, fixedAssetNote, entityIdentifierXml, period
     }),
   });
   const openingNetBookValue = (figures) => figures.costAtStart - figures.depreciationAtStart;
-  const startLabel = `At ${displayDate(refs.periodStartDate)}`;
-  const endLabel = `At ${displayDate(refs.periodEndDate)}`;
-  const priorEndLabel = `At ${displayDate(previousDay(refs.periodStartDate))}`;
+  const startLabel = accountsText("At {date}", { date: displayDate(refs.periodStartDate) });
+  const endLabel = accountsText("At {date}", { date: displayDate(refs.periodEndDate) });
+  const priorEndLabel = accountsText("At {date}", { date: displayDate(previousDay(refs.periodStartDate)) });
 
   return recordTable({
     columns: columns.map((column) => column.heading),
     rows: [
-      { label: "Cost", style: "heading" },
+      { label: accountsText("Cost"), style: "heading" },
       row(startLabel, "propertyPlantEquipmentGrossCost", "opening", (f) => f.costAtStart, { indent: true }),
-      row("Additions", "additionsPropertyPlantEquipment", "duration", (f) => f.additions, { indent: true }),
-      row("Disposals", "disposalsPropertyPlantEquipment", "duration", (f) => f.disposals, { indent: true, deduction: true }),
+      row(accountsText("Additions"), "additionsPropertyPlantEquipment", "duration", (f) => f.additions, { indent: true }),
+      row(accountsText("Disposals"), "disposalsPropertyPlantEquipment", "duration", (f) => f.disposals, { indent: true, deduction: true }),
       row(endLabel, "propertyPlantEquipmentGrossCost", "closing", (f) => f.costAtEnd, { indent: true, style: "subtotal" }),
-      { label: "Depreciation", style: "heading" },
+      { label: accountsText("Depreciation"), style: "heading" },
       row(startLabel, "accumulatedDepreciationPropertyPlantEquipment", "opening", (f) => f.depreciationAtStart, { indent: true }),
-      row("Charge for the year", "depreciationChargePropertyPlantEquipment", "duration", (f) => f.depreciationCharge, { indent: true }),
-      row("On disposals", "depreciationDisposalsPropertyPlantEquipment", "duration", (f) => f.depreciationOnDisposals, {
+      row(accountsText("Charge for the year"), "depreciationChargePropertyPlantEquipment", "duration", (f) => f.depreciationCharge, {
+        indent: true,
+      }),
+      row(accountsText("On disposals"), "depreciationDisposalsPropertyPlantEquipment", "duration", (f) => f.depreciationOnDisposals, {
         indent: true,
         deduction: true,
       }),
@@ -564,7 +568,7 @@ function fixedAssetNoteTable({ refs, fixedAssetNote, entityIdentifierXml, period
         indent: true,
         style: "subtotal",
       }),
-      { label: "Net book value", style: "heading" },
+      { label: accountsText("Net book value"), style: "heading" },
       row(endLabel, "propertyPlantEquipment", "closing", (f) => f.netBookValue, { indent: true, style: "total" }),
       row(priorEndLabel, "propertyPlantEquipment", "opening", openingNetBookValue, { indent: true }),
     ],
@@ -583,21 +587,23 @@ function intangibleAssetNoteTable({ refs, intangibleAssetNote }) {
     style: options.style,
     cells: [recordFigure(money(conceptKey, contextRef, value), value, { deduction: options.deduction })],
   });
-  const startLabel = `At ${displayDate(refs.periodStartDate)}`;
-  const endLabel = `At ${displayDate(refs.periodEndDate)}`;
-  const priorEndLabel = `At ${displayDate(previousDay(refs.periodStartDate))}`;
+  const startLabel = accountsText("At {date}", { date: displayDate(refs.periodStartDate) });
+  const endLabel = accountsText("At {date}", { date: displayDate(refs.periodEndDate) });
+  const priorEndLabel = accountsText("At {date}", { date: displayDate(previousDay(refs.periodStartDate)) });
   return recordTable({
-    columns: ["Intangible assets"],
+    columns: [accountsText("Intangible assets")],
     rows: [
-      { label: "Cost", style: "heading" },
+      { label: accountsText("Cost"), style: "heading" },
       row(startLabel, "intangibleAssetsGrossCost", refs.priorInstant, figures.costAtStart, { indent: true }),
-      row("Additions", "additionsIntangibleAssets", refs.current, figures.additions, { indent: true }),
-      row("Disposals", "disposalsIntangibleAssets", refs.current, figures.disposals, { indent: true, deduction: true }),
+      row(accountsText("Additions"), "additionsIntangibleAssets", refs.current, figures.additions, { indent: true }),
+      row(accountsText("Disposals"), "disposalsIntangibleAssets", refs.current, figures.disposals, { indent: true, deduction: true }),
       row(endLabel, "intangibleAssetsGrossCost", refs.currentInstant, figures.costAtEnd, { indent: true, style: "subtotal" }),
-      { label: "Amortisation", style: "heading" },
+      { label: accountsText("Amortisation"), style: "heading" },
       row(startLabel, "accumulatedAmortisationIntangibleAssets", refs.priorInstant, figures.amortisationAtStart, { indent: true }),
-      row("Charge for the year", "amortisationChargeIntangibleAssets", refs.current, figures.amortisationCharge, { indent: true }),
-      row("On disposals", "amortisationDisposalsIntangibleAssets", refs.current, figures.amortisationOnDisposals, {
+      row(accountsText("Charge for the year"), "amortisationChargeIntangibleAssets", refs.current, figures.amortisationCharge, {
+        indent: true,
+      }),
+      row(accountsText("On disposals"), "amortisationDisposalsIntangibleAssets", refs.current, figures.amortisationOnDisposals, {
         indent: true,
         deduction: true,
       }),
@@ -605,7 +611,7 @@ function intangibleAssetNoteTable({ refs, intangibleAssetNote }) {
         indent: true,
         style: "subtotal",
       }),
-      { label: "Net book value", style: "heading" },
+      { label: accountsText("Net book value"), style: "heading" },
       row(endLabel, "intangibleAssets", refs.currentInstant, figures.netBookValue, { indent: true, style: "total" }),
       row(priorEndLabel, "intangibleAssets", refs.priorInstant, figures.costAtStart - figures.amortisationAtStart, { indent: true }),
     ],
@@ -629,9 +635,12 @@ function creditorAfterOneYearLines(yearFigures, contextRefs) {
     });
   const splitTotal = (figures) => SMALL_COMPANY_AFTER_ONE_YEAR_SPLIT_LINES.reduce((total, field) => total + (figures[field] ?? 0), 0);
   return [
-    ...shownSplits.map(([label, conceptKey, field]) => ({ label, cells: cells(conceptKey, (figures) => figures[field] ?? 0) })),
+    ...shownSplits.map(([label, conceptKey, field]) => ({
+      label: accountsText(label),
+      cells: cells(conceptKey, (figures) => figures[field] ?? 0),
+    })),
     {
-      label: "Other creditors",
+      label: accountsText("Other creditors"),
       cells: cells("otherCreditors", (figures) => figures.creditorsAfterOneYear - splitTotal(figures)),
     },
   ];
@@ -689,8 +698,11 @@ function debtorsNoteTable({ balanceSheetYears, balanceSheetRefs, columns }) {
   return recordTable({
     columns: columns.slice(0, balanceSheetYears.length),
     rows: [
-      ...shownRows.map(([label, conceptKey, field]) => ({ label, cells: cells((figures) => figures[field] ?? 0, conceptKey) })),
-      { label: "Total debtors", style: "subtotal", cells: cells((figures) => figures.debtors) },
+      ...shownRows.map(([label, conceptKey, field]) => ({
+        label: accountsText(label),
+        cells: cells((figures) => figures[field] ?? 0, conceptKey),
+      })),
+      { label: accountsText("Total debtors"), style: "subtotal", cells: cells((figures) => figures.debtors) },
     ],
   });
 }
@@ -699,16 +711,16 @@ function accountingPoliciesNote({ input, refs }) {
   const policies = SMALL_COMPANY_POLICY_FIELDS.filter(({ field }) => input[field]);
   const subheading = (text) => (policies.length > 0 ? `\n<h4>${text}</h4>` : "");
   const parts = [
-    `<p>${renderTextFact("statementComplianceWithReportingFramework", refs.current, SMALL_COMPANY_FRAMEWORK_COMPLIANCE)}</p>`,
-    `${subheading("Basis of preparation")}\n<p>${renderTextFact("generalDescriptionBasisMeasurement", refs.current, input.accountingPolicies)}</p>`,
+    `<p>${renderTextFact("statementComplianceWithReportingFramework", refs.current, accountsText(SMALL_COMPANY_FRAMEWORK_COMPLIANCE))}</p>`,
+    `${subheading(accountsText("Basis of preparation"))}\n<p>${renderTextFact("generalDescriptionBasisMeasurement", refs.current, input.accountingPolicies)}</p>`,
   ];
   let previousHeading;
   for (const { field, heading, conceptKey } of policies) {
     const fact = `<p>${renderTextFact(conceptKey, refs.current, input[field])}</p>`;
-    parts.push(heading === previousHeading ? `\n${fact}` : `${subheading(heading)}\n${fact}`);
+    parts.push(heading === previousHeading ? `\n${fact}` : `${subheading(accountsText(heading))}\n${fact}`);
     previousHeading = heading;
   }
-  return { title: "Accounting policies", html: parts.join("").replace(/^\n/, "") };
+  return { title: accountsText("Accounting policies"), html: parts.join("").replace(/^\n/, "") };
 }
 
 function shareCapitalNoteHtml({ shareCapital, calledUpShareCapital, refs, entityIdentifierXml, periodXml, additionalContexts }) {
@@ -718,10 +730,15 @@ function shareCapitalNoteHtml({ shareCapital, calledUpShareCapital, refs, entity
     buildDimensionedContext({ additionalContexts, entityIdentifierXml, periodXml: periodXml[periodKey], dimensionXml, id });
   const durationContext = classContext(refs.current, `${refs.current}-share-class`);
   const instantContext = classContext(refs.currentInstant, `${refs.currentInstant}-share-class`);
-  const description = `<ix:nonNumeric name="${qname(CONCEPTS.descriptionShareType)}" contextRef="${durationContext}">${escapeXmlText(SHARE_CLASS_LABEL[shareCapital.shareClass])}</ix:nonNumeric>`;
+  const description = `<ix:nonNumeric name="${qname(CONCEPTS.descriptionShareType)}" contextRef="${durationContext}">${escapeXmlText(accountsText(SHARE_CLASS_LABEL[shareCapital.shareClass]))}</ix:nonNumeric>`;
   const count = `<ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${instantContext}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction>`;
   const parValue = `<ix:nonFraction name="${qname(CONCEPTS.parValueShare)}" contextRef="${durationContext}" unitRef="pure" decimals="INF">${formatNominalValue(shareCapital.nominalValue)}</ix:nonFraction>`;
-  return `<p>Allotted, called up and fully paid: ${count} ${description} ${shareNoun(sharesIssued)} of £${parValue} each.</p>`;
+  return `<p>${accountsText("Allotted, called up and fully paid: {shares} {kind} {noun} of £{nominal} each.", {
+    shares: count,
+    kind: description,
+    noun: shareNoun(sharesIssued),
+    nominal: parValue,
+  })}</p>`;
 }
 
 function directorsReportPage({ heading, input, refs, additionalContexts, entityIdentifierXml, periodXml }) {
@@ -730,15 +747,23 @@ function directorsReportPage({ heading, input, refs, additionalContexts, entityI
     return renderTextFact("nameEntityOfficer", contextRef, name);
   });
   return `<div class="page">
-${heading}<p>The directors present their report and the financial statements for the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd))}.</p>
-<h3>Principal activity</h3>
+${heading}<p>${escapeXmlText(
+    accountsText("The directors present their report and the financial statements for the {period}.", {
+      period: periodEndedPhrase(input.periodStart, input.periodEnd),
+    }),
+  )}</p>
+<h3>${accountsText("Principal activity")}</h3>
 ${principalActivitySentence(input.principalActivity, refs)}
-<h3>Directors</h3>
-<p>The directors who held office during the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd).split(" ")[0])} were:</p>
+<h3>${accountsText("Directors")}</h3>
+<p>${escapeXmlText(
+    accountsText("The directors who held office during the {span} were:", { span: periodSpanWord(input.periodStart, input.periodEnd) }),
+  )}</p>
 <p>${directorFacts.join("<br/>")}</p>
 <p>${renderStatement("statementSmallCompaniesRegimeDirectorsReport", refs.current)}</p>
-<p class="approval">This report was approved by the board of directors on ${renderDateFact("dateSigningDirectorsReport", refs.currentInstant, input.dateOfApproval)} and signed on its behalf by:</p>
-<p class="signature">${escapeXmlText(input.directorName)}<br/>Director</p>
+<p class="approval">${accountsText("This report was approved by the board of directors on {date} and signed on its behalf by:", {
+    date: renderDateFact("dateSigningDirectorsReport", refs.currentInstant, input.dateOfApproval),
+  })}</p>
+<p class="signature">${escapeXmlText(input.directorName)}<br/>${accountsText("Director")}</p>
 </div>`;
 }
 
@@ -929,8 +954,11 @@ export function buildSmallCompanyAccounts(input) {
     ),
     accountingPoliciesNote({ input, refs }),
     {
-      title: "Employees",
-      html: `<p>The average number of employees during the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd).split(" ")[0])} was <ix:nonFraction name="${qname(CONCEPTS.averageNumberEmployeesDuringPeriod)}" contextRef="${refs.current}" unitRef="pure" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(input.averageNumberOfEmployees)}</ix:nonFraction>.</p>`,
+      title: accountsText("Employees"),
+      html: `<p>${accountsText("The average number of employees during the {span} was {count}.", {
+        span: escapeXmlText(periodSpanWord(input.periodStart, input.periodEnd)),
+        count: `<ix:nonFraction name="${qname(CONCEPTS.averageNumberEmployeesDuringPeriod)}" contextRef="${refs.current}" unitRef="pure" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(input.averageNumberOfEmployees)}</ix:nonFraction>`,
+      })}</p>`,
     },
   ];
   if (input.controllingParty) {
@@ -938,7 +966,7 @@ export function buildSmallCompanyAccounts(input) {
   }
   if (input.shareCapital) {
     notes.push({
-      title: "Called up share capital",
+      title: accountsText("Called up share capital"),
       html: shareCapitalNoteHtml({
         shareCapital: input.shareCapital,
         calledUpShareCapital: input.balanceSheet.current.calledUpShareCapital,
@@ -952,7 +980,7 @@ export function buildSmallCompanyAccounts(input) {
   const fixedAssetNoteNumbers = [];
   if (hasFixedAssetNote) {
     notes.push({
-      title: "Tangible fixed assets",
+      title: accountsText("Tangible fixed assets"),
       html: fixedAssetNoteTable({
         refs: { ...refs, periodStartDate: input.periodStart, periodEndDate: input.periodEnd },
         fixedAssetNote: input.fixedAssetNote,
@@ -969,17 +997,22 @@ export function buildSmallCompanyAccounts(input) {
     const depreciationFact = money("depreciationExpensePropertyPlantEquipment", refs.current, depreciationCharge);
     notes.push(
       input.filleted
-        ? { title: "Depreciation", html: `<p>Depreciation of tangible assets charged in the year was £${depreciationFact}.</p>` }
+        ? {
+            title: accountsText("Depreciation"),
+            html: `<p>${accountsText("Depreciation of tangible assets charged in the year was £{amount}.", { amount: depreciationFact })}</p>`,
+          }
         : {
-            title: "Operating profit",
-            html: `<p>Operating profit is stated after charging depreciation of tangible assets of £${depreciationFact}.</p>`,
+            title: accountsText("Operating profit"),
+            html: `<p>${accountsText("Operating profit is stated after charging depreciation of tangible assets of £{amount}.", {
+              amount: depreciationFact,
+            })}</p>`,
           },
     );
   }
 
   if (hasIntangibleNote) {
     notes.push({
-      title: "Intangible assets",
+      title: accountsText("Intangible assets"),
       html: intangibleAssetNoteTable({
         refs: { ...refs, periodStartDate: input.periodStart, periodEndDate: input.periodEnd },
         intangibleAssetNote: input.intangibleAssetNote,
@@ -991,7 +1024,7 @@ export function buildSmallCompanyAccounts(input) {
 
   let debtorsNoteNumber;
   if (hasDebtorsSplit(balanceSheetYears)) {
-    notes.push({ title: "Debtors", html: debtorsNoteTable({ balanceSheetYears, balanceSheetRefs, columns }) });
+    notes.push({ title: accountsText("Debtors"), html: debtorsNoteTable({ balanceSheetYears, balanceSheetRefs, columns }) });
     debtorsNoteNumber = notes.length;
   }
 
@@ -1023,15 +1056,15 @@ export function buildSmallCompanyAccounts(input) {
       return recordFigure(money("currentTaxForPeriod", contextRef, figures.tax), figures.tax);
     });
     notes.push({
-      title: "Tax on profit",
+      title: accountsText("Tax on profit"),
       html: recordTable({
         columns: columns.slice(0, taxYears.length),
-        rows: [{ label: "UK corporation tax: current tax on profit for the year", cells }],
+        rows: [{ label: accountsText("UK corporation tax: current tax on profit for the year"), cells }],
       }),
     });
   }
 
-  const period = escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd));
+  const forThePeriod = escapeXmlText(accountsText("for the {period}", { period: periodEndedPhrase(input.periodStart, input.periodEnd) }));
   const heading = (title, subtitleHtml) =>
     pageHeading({ companyName: input.companyName, companyNumber: input.companyNumber, title, subtitleHtml });
 
@@ -1040,7 +1073,7 @@ export function buildSmallCompanyAccounts(input) {
       refs,
       companyName: input.companyName,
       companyNumber: input.companyNumber,
-      title: "Unaudited financial statements",
+      title: accountsText("Unaudited financial statements"),
       periodStart: input.periodStart,
       periodEnd: input.periodEnd,
     }),
@@ -1048,7 +1081,7 @@ export function buildSmallCompanyAccounts(input) {
   if (input.revision) {
     pages.push(
       revisionPage({
-        heading: heading("Revised accounts", `for the ${period}`),
+        heading: heading(accountsText("Revised accounts"), forThePeriod),
         periodEnd: input.periodEnd,
         revision: input.revision,
       }),
@@ -1057,8 +1090,13 @@ export function buildSmallCompanyAccounts(input) {
   const accountantsPage = input.accountantsReport
     ? accountantsReportPage({
         heading: heading(
-          "Accountants' report",
-          `to the board of directors of ${escapeXmlText(input.companyName)} on the unaudited financial statements for the ${period}`,
+          accountsText("Accountants' report"),
+          escapeXmlText(
+            accountsText("to the board of directors of {company} on the unaudited financial statements for the {period}", {
+              company: input.companyName,
+              period: periodEndedPhrase(input.periodStart, input.periodEnd),
+            }),
+          ),
         ),
         accountantsReport: input.accountantsReport,
         refs,
@@ -1068,7 +1106,7 @@ export function buildSmallCompanyAccounts(input) {
   if (!input.filleted) {
     pages.push(
       directorsReportPage({
-        heading: heading("Directors' report", `for the ${period}`),
+        heading: heading(accountsText("Directors' report"), forThePeriod),
         input,
         refs,
         additionalContexts,
@@ -1077,7 +1115,7 @@ export function buildSmallCompanyAccounts(input) {
       }),
       ...(accountantsPage ? [accountantsPage] : []),
       profitAndLossPage({
-        heading: heading("Profit and loss account", `for the ${period}`),
+        heading: heading(accountsText("Profit and loss account"), forThePeriod),
         refs,
         current: input.profitAndLoss.current,
         prior: priorProfitAndLoss,
@@ -1087,13 +1125,17 @@ export function buildSmallCompanyAccounts(input) {
     );
   }
   pages.push(`<div class="page">
-${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.currentInstant, input.periodEnd)}`)}${recordTable({
+${heading(
+  accountsText("Balance sheet"),
+  accountsText("as at {date}", { date: renderDateFact("balanceSheetDate", refs.currentInstant, input.periodEnd) }),
+)}${recordTable({
     columns: columns.slice(0, years.length),
     notes: Boolean(fixedAssetNoteRef) || Boolean(debtorsNoteNumber),
+    noteHeading: accountsText("Note"),
     rows: balanceSheetRows({
       years,
       currentAssetLines: subLineRows(CURRENT_ASSET_SUB_LINES, balanceSheetYears, balanceSheetRefs, "").map((line) =>
-        line.label === "Debtors" && debtorsNoteNumber ? { ...line, note: debtorsNoteNumber } : line,
+        line.label === accountsText("Debtors") && debtorsNoteNumber ? { ...line, note: debtorsNoteNumber } : line,
       ),
       creditorLines: subLineRows(CREDITOR_SUB_LINES, balanceSheetYears, balanceSheetRefs, "-within-one-year"),
       creditorAfterOneYearLines: creditorAfterOneYearLines(balanceSheetYears, balanceSheetRefs),
@@ -1110,13 +1152,13 @@ ${approvalHtml({
 })}
 </div>`);
   pages.push(`<div class="page">
-${heading("Notes to the financial statements", `for the ${period}`)}${notes
+${heading(accountsText("Notes to the financial statements"), forThePeriod)}${notes
     .map((note, index) => `<h3>${index + 1}. ${escapeXmlText(note.title)}</h3>\n${note.html}`)
     .join("\n")}
 </div>`);
 
   return renderAccountsDocument({
-    title: `${input.companyName} - Accounts`,
+    title: accountsText("{company} - Accounts", { company: input.companyName }),
     contextsXml: `${contextsXml}${additionalContexts.join("")}`,
     hiddenFactsXml: hiddenFacts.join("\n"),
     bodyHtml: pages.join("\n"),

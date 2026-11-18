@@ -474,6 +474,17 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       expect(await pendingData()).toMatchObject({ documentLanguage: "cy" });
     });
 
+    test("a Welsh company's small company accounts are built in Welsh and sent with Language CY", async () => {
+      mockGetCompanyProfile.mockResolvedValue({ profile: { jurisdiction: "wales" } });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody({ documentLanguage: "cy" }) }));
+      expect(response.statusCode).toBe(201);
+      const submission = mockBuildAccountsSubmission.mock.calls[0][0];
+      expect(submission.language).toBe("CY");
+      expect(submission.ixbrl).toContain('xml:lang="cy"');
+      expect(submission.ixbrl).toContain("Adroddiad y cyfarwyddwyr");
+      expect(await pendingData()).toMatchObject({ documentLanguage: "cy" });
+    });
+
     test("a company whose jurisdiction is england-wales cannot file in Welsh, and nothing is sent", async () => {
       mockGetCompanyProfile.mockResolvedValue({ profile: { jurisdiction: "england-wales" } });
       const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ documentLanguage: "cy" }) }));

@@ -78,6 +78,34 @@
         </p>
         <div id="booksImport"></div>
         <form id="accountsForm" novalidate>
+          <section id="documentLanguageSection" class="form-section" hidden>
+            <h3>Language of the accounts</h3>
+            <p id="documentLanguage-hint" class="hint">
+              The company's registered office is in Wales, so it can deliver its accounts in Welsh. Companies House gets them translated
+              into English for the register. The page language does not change this choice. Companies House sends its answer in English.
+            </p>
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="radio"
+                  id="documentLanguageEn"
+                  name="documentLanguage"
+                  value="en"
+                  checked
+                  aria-describedby="documentLanguage-hint"
+                /><label for="documentLanguageEn">English</label>
+              </div>
+              <div class="choice">
+                <input
+                  type="radio"
+                  id="documentLanguageCy"
+                  name="documentLanguage"
+                  value="cy"
+                  aria-describedby="documentLanguage-hint"
+                /><label for="documentLanguageCy">Welsh (Cymraeg)</label>
+              </div>
+            </div>
+          </section>
           <section class="form-section">
             <h3>Period</h3>
             <div class="form-group">

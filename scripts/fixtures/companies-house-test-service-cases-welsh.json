@@ -50,5 +50,120 @@
       "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 500 ordinary shares of £0.20 each (share capital £100) follow the register entry. Prior year equals the filed 2025 accounts; current year figures are synthetic, with the reserve moving from 34 by the year's profit of 4,698 and no 2026 dividend assumed (the 2025 profit of 4,195 against a reserve of 34 implies dividends in 2025)."
     },
     "documentLanguage": "cy"
+  },
+  {
+    "name": "small-company-accounts-welsh",
+    "type": "accounts",
+    "companyNumber": "06846849",
+    "companyName": "DIY ACCOUNTING LIMITED",
+    "registeredOffice": {
+      "addressLine1": "37 Sutherland Avenue",
+      "cityOrTown": "Leeds",
+      "postalCode": "LS8 1BY",
+      "country": "England"
+    },
+    "companyAuthCode": "AUTH09",
+    "periodStart": "2025-04-01",
+    "periodEnd": "2026-03-31",
+    "averageEmployees": 0,
+    "director": {
+      "name": "Antony Christopher Cartwright",
+      "dateApproved": "2026-09-15"
+    },
+    "statementsAccepted": {
+      "section477Exemption": true,
+      "membersNotRequiredAudit": true,
+      "directorsResponsibilities": true,
+      "smallCompaniesRegime": true
+    },
+    "smallCompany": {
+      "filleted": false,
+      "principalActivity": "the retail of accounting software",
+      "accountingPolicies": "The financial statements have been prepared under the historical cost convention.",
+      "goingConcernStatement": "The directors expect the company to have enough resources to continue in operation for the foreseeable future, so the financial statements are prepared on a going concern basis.",
+      "revenueRecognitionPolicy": "Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
+      "tangibleFixedAssetsPolicy": "Tangible fixed assets are measured at cost less accumulated depreciation. Computer equipment is depreciated at 33% a year on cost.",
+      "impairmentPolicy": "At each reporting date the company reviews its assets for signs of impairment. An asset whose carrying value is more than its recoverable amount is written down to that amount.",
+      "financialInstrumentsPolicy": "The company has only basic financial instruments. Debtors, cash and creditors are measured at the undiscounted amount of cash the company expects to receive or pay.",
+      "directors": ["Antony Christopher Cartwright", "Samantha Ashley Cartwright", "Jane Elizabeth Grundy"],
+      "balanceSheet": {
+        "currentYear": {
+          "fixedAssets": 800,
+          "stocks": 0,
+          "debtors": 800,
+          "cashAtBank": 5200,
+          "tradeCreditors": 500,
+          "corporationTax": 1102,
+          "otherCreditors": 366,
+          "creditorsAfterOneYear": 0,
+          "calledUpShareCapital": 100,
+          "profitAndLossAccount": 4732,
+          "capitalAndReserves": 4832
+        },
+        "priorYear": {
+          "fixedAssets": 0,
+          "stocks": 0,
+          "debtors": 1200,
+          "cashAtBank": 2153,
+          "tradeCreditors": 500,
+          "corporationTax": 984,
+          "otherCreditors": 1735,
+          "creditorsAfterOneYear": 0,
+          "calledUpShareCapital": 100,
+          "profitAndLossAccount": 34,
+          "capitalAndReserves": 134
+        }
+      },
+      "profitAndLoss": {
+        "currentYear": {
+          "turnover": 8500,
+          "costOfSales": 0,
+          "grossProfit": 8500,
+          "administrativeExpenses": 2700,
+          "operatingProfit": 5800,
+          "interestReceivable": 0,
+          "profitBeforeTax": 5800,
+          "tax": 1102,
+          "profit": 4698
+        },
+        "priorYear": {
+          "turnover": 7639,
+          "costOfSales": 0,
+          "grossProfit": 7639,
+          "administrativeExpenses": 2482,
+          "operatingProfit": 5157,
+          "interestReceivable": 22,
+          "profitBeforeTax": 5179,
+          "tax": 984,
+          "profit": 4195
+        }
+      },
+      "fixedAssetNote": {
+        "computerEquipment": {
+          "costAtStart": 0,
+          "additions": 1200,
+          "disposals": 0,
+          "depreciationAtStart": 0,
+          "depreciationCharge": 400,
+          "depreciationOnDisposals": 0
+        }
+      },
+      "taxPolicy": "The tax expense for the year comprises current tax, recognised in profit or loss.",
+      "currentIncomeTaxPolicy": "The current income tax charge is calculated on the tax rates and laws enacted or substantively enacted by the reporting date.",
+      "dividendPolicy": "Dividends are recognised as a liability in the period in which they are declared.",
+      "shareCapital": {
+        "shareClass": "ordinaryShares",
+        "nominalValue": 0.2
+      },
+      "controllingParty": {
+        "ultimate": false
+      }
+    },
+    "expectedOutcome": {
+      "status": "POLL_TIMEOUT",
+      "pinned": true,
+      "note": "Not yet filed with this data. The full small company case of companies-house-test-service-cases.json written in Welsh (documentLanguage cy). The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the figures are those of small-company-accounts-full."
+    },
+    "documentLanguage": "cy"
   }
 ]

@@ -64,6 +64,31 @@ describe("ixbrlStructureProblems", () => {
     expect(ixbrlStructureProblems(duplicated).some((problem) => problem.includes("reported twice with different values"))).toBe(true);
   });
 
+  test("reads a date written as numbers with ixt2:datedaymonthyear, and reports one it cannot read", () => {
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+    const numeric = micro.replace(
+      /format="ixt2:datedaymonthyearen">(\d{1,2}) ([A-Za-z]+) (\d{4})</g,
+      (_, day, month, year) => `format="ixt2:datedaymonthyear">${day}/${months.indexOf(month) + 1}/${year}<`,
+    );
+    expect(numeric).not.toContain("ixt2:datedaymonthyearen");
+    expect(ixbrlStructureProblems(numeric)).toEqual([]);
+    const unreadable = numeric.replace(/format="ixt2:datedaymonthyear">[^<]+</, 'format="ixt2:datedaymonthyear">31 Rhagfyr 2025<');
+    expect(ixbrlStructureProblems(unreadable).some((problem) => problem.includes("which ixt2:datedaymonthyear cannot read"))).toBe(true);
+  });
+
   test("reports a script, a hyperlink and an image", () => {
     const adorned = micro.replace(
       "</body>",

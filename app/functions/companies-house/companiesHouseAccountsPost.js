@@ -214,7 +214,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
   }
 
   const isSmallCompany = smallCompany !== undefined && smallCompany !== null;
-  const language = readDocumentLanguage(documentLanguage, isSmallCompany ? "small-company" : "micro-entity", errorMessages);
+  const language = readDocumentLanguage(documentLanguage, errorMessages);
   const languageField = language === "cy" ? { documentLanguage: "cy" } : {};
   if (isSmallCompany && dormant === true) {
     errorMessages.push("A dormant company files micro-entity accounts: dormant cannot be combined with smallCompany");

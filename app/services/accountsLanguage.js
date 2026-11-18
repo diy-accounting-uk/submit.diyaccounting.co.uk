@@ -13,7 +13,9 @@
 //   (November 2026, section "Statements") checks, https://www.gov.uk/government/publications/technical-interface-specifications-for-companies-house-software
 // - Balance sheet and note labels: the Welsh labels (xml:lang="cy") of the FRC 2026 taxonomy,
 //   https://www.frc.org.uk/documents/8907/FRC-2026-Taxonomy-v1.0.0.zip, without the taxonomy's
-//   qualifiers ("fformat 2", "is-gyfanswm mantolen"), as the English lines drop theirs.
+//   qualifiers ("fformat 2", "is-gyfanswm mantolen"), as the English lines drop theirs. The small
+//   company profit and loss, balance sheet sub-lines, fixed asset note and policy headings use the
+//   same taxonomy's Welsh labels of the concepts each line tags.
 // - Kinds of accounts: "Ffeilio eich gwybodaeth Tŷ'r Cwmnïau ar-lein",
 //   https://www.gov.uk/guidance/filing-your-companies-house-information-online.cy
 
@@ -34,7 +36,8 @@ const WELSH_MONTHS = [
   "Rhagfyr",
 ];
 
-// The Welsh of each phrase a micro-entity document can carry, keyed by its English. {name} is a value.
+// The Welsh of each phrase a micro-entity or small company document can carry, keyed by its English.
+// {name} is a value.
 export const WELSH_ACCOUNTS_TEXT = {
   // Statements (TIS phrases: "Eithriad" and "adran 477 o Ddeddf Cwmnïau 2006"; "adran 480 o Ddeddf
   // Cwmnïau 2006"; "aelodau heb ei gwneud yn ofynnol i'r cwmni gael archwiliad"; "Cyfarwyddwr yn
@@ -145,6 +148,105 @@ export const WELSH_ACCOUNTS_TEXT = {
   "Advanced": "Wedi’i roi ymlaen llaw",
   "Repaid": "Wedi’i ad-dalu",
   "Owed at end": "Yn ddyledus ar y diwedd",
+
+  // Small company statements (the TIS phrases "wedi eu paratoi", "yn unol â" and "darpariaethau",
+  // with "drefn cwmnïau bach" in place of the micro-entity statement's "micro"; "adran 444(5A) o
+  // Ddeddf Cwmnïau 2006" for the filleted copy).
+  "These accounts have been prepared and delivered in accordance with the provisions applicable to companies subject to the small companies regime.":
+    "Mae'r cyfrifon hyn wedi eu paratoi a'u cyflwyno yn unol â'r darpariaethau sy'n gymwys i gwmnïau sy'n ddarostyngedig i'r drefn cwmnïau bach.",
+  "This report has been prepared in accordance with the provisions applicable to companies entitled to the small companies regime.":
+    "Mae'r adroddiad hwn wedi ei baratoi yn unol â'r darpariaethau sy'n gymwys i gwmnïau sydd â hawl i'r drefn cwmnïau bach.",
+  "The directors have elected not to deliver a copy of the profit and loss account to the registrar of companies in accordance with section 444(5A) of the Companies Act 2006.":
+    "Mae'r cyfarwyddwyr wedi dewis peidio â chyflwyno copi o'r cyfrif elw a cholled i gofrestrydd y cwmnïau yn unol ag adran 444(5A) o Ddeddf Cwmnïau 2006.",
+
+  // Small company pages.
+  "Unaudited financial statements": "Datganiadau ariannol heb eu harchwilio",
+  "Directors' report": "Adroddiad y cyfarwyddwyr",
+  "The directors present their report and the financial statements for the {period}.":
+    "Mae’r cyfarwyddwyr yn cyflwyno eu hadroddiad a’r datganiadau ariannol ar gyfer y {period}.",
+  "Principal activity": "Prif weithgaredd",
+  "Directors": "Cyfarwyddwyr",
+  "The directors who held office during the {span} were:": "Y cyfarwyddwyr a oedd yn eu swyddi yn ystod y {span} oedd:",
+  "This report was approved by the board of directors on {date} and signed on its behalf by:":
+    "Cymeradwywyd yr adroddiad hwn gan y bwrdd cyfarwyddwyr ar {date} a’i lofnodi ar ei ran gan:",
+
+  // The small company profit and loss account, Formats 1 and 2 (FRC 2026 Welsh labels).
+  "Cost of sales": "Cost gwerthiant",
+  "Gross profit": "Elw gros",
+  "Administrative expenses": "Treuliau gweinyddol",
+  "Operating profit": "Elw gweithredol",
+  "Interest receivable and similar income": "Llog derbyniadwy ac incwm tebyg",
+  "Interest payable and similar expenses": "Llog taladwy a threuliau tebyg",
+  "Profit on ordinary activities before taxation": "Elw ar weithgareddau cyffredin cyn trethiant",
+  "Tax on profit on ordinary activities": "Treth ar elw ar weithgareddau cyffredin",
+  "Profit for the financial year": "Elw ar gyfer y flwyddyn ariannol",
+  "Change in stocks of finished goods and in work in progress": "Newid mewn stociau o nwyddau gorffenedig a gwaith ar y gweill",
+  "Own work capitalised": "Gwaith eich hun wedi’i gyfalafu",
+  "Other operating income": "Incwm gweithredol arall",
+  "Other external charges": "Taliadau allanol eraill",
+  "Depreciation and other amounts written off tangible and intangible fixed assets":
+    "Dibrisiant a symiau eraill wedi’u dileu oddi ar asedau sefydlog diriaethol ac anniriaethol",
+  "Other operating expenses": "Treuliau gweithredol eraill",
+
+  // Small company balance sheet sub-lines (FRC 2026 Welsh labels).
+  "Stocks": "Stociau",
+  "Debtors": "Dyledwyr",
+  "Cash at bank and in hand": "Arian yn y banc ac mewn llaw",
+  "Bank loans and overdrafts": "Benthyciadau banc a gorddrafftiau",
+  "Trade creditors": "Credydwyr masnach",
+  "Corporation tax": "Treth gorfforaeth",
+  "Taxation and social security": "Trethiant a nawdd cymdeithasol",
+  "Other creditors": "Credydwyr eraill",
+  "Accruals": "Croniadau",
+  "Bank loans": "Benthyciadau banc",
+  "Amounts owed to directors": "Symiau sy’n ddyledus i gyfarwyddwyr",
+  "Amounts owed to group undertakings": "Symiau sy’n ddyledus i ymgymeriadau grŵp",
+
+  // Small company notes.
+  "These financial statements have been prepared in accordance with Section 1A Small Entities of FRS 102 The Financial Reporting Standard applicable to the UK and Republic of Ireland.":
+    "Mae’r datganiadau ariannol hyn wedi eu paratoi yn unol ag Adran 1A Endidau Bach FRS 102, y Safon Adrodd Ariannol sy’n gymwys yn y DU a Gweriniaeth Iwerddon.",
+  "Basis of preparation": "Sail paratoi",
+  "Going concern": "Busnes gweithredol",
+  "Tangible fixed assets": "Asedau sefydlog diriaethol",
+  "Intangible assets": "Asedau anniriaethol",
+  "Impairment": "Amhariad",
+  "Cash and cash equivalents": "Arian parod a chyfwerth ag arian parod",
+  "Financial instruments": "Offerynnau ariannol",
+  "Employee benefits": "Buddion gweithwyr",
+  "Foreign currency": "Arian tramor",
+  "Leases": "Prydlesi",
+  "Taxation": "Trethiant",
+  "Dividends": "Difidendau",
+  "Land and buildings": "Tir ac adeiladau",
+  "Plant and machinery": "Offer a pheiriannau",
+  "Fixtures and fittings": "Gosodiadau a ffitiadau",
+  "Computer equipment": "Offer cyfrifiadurol",
+  "Motor vehicles": "Cerbydau modur",
+  "Total": "Cyfanswm",
+  "Cost": "Cost",
+  "At {date}": "Ar {date}",
+  "Additions": "Ychwanegiadau",
+  "Disposals": "Gwarediadau",
+  "Depreciation": "Dibrisiant",
+  "Charge for the year": "Tâl am y flwyddyn",
+  "On disposals": "Ar warediadau",
+  "Net book value": "Gwerth llyfr net",
+  "Amortisation": "Amorteiddiad",
+  "Depreciation of tangible assets charged in the year was £{amount}.":
+    "Y dibrisiant ar asedau diriaethol a godwyd yn y flwyddyn oedd £{amount}.",
+  "Operating profit is stated after charging depreciation of tangible assets of £{amount}.":
+    "Nodir yr elw gweithredol ar ôl codi dibrisiant ar asedau diriaethol o £{amount}.",
+  "Trade debtors": "Dyledwyr masnach",
+  "Other debtors": "Dyledwyr eraill",
+  "Amounts owed by directors": "Symiau sy’n ddyledus gan gyfarwyddwyr",
+  "Total debtors": "Cyfanswm y dyledwyr",
+  "Tax on profit": "Treth ar elw",
+  "UK corporation tax: current tax on profit for the year": "Treth gorfforaeth y DU: treth gyfredol ar elw’r flwyddyn",
+  "Controlling party": "Parti sy’n rheoli",
+  "The company has no ultimate controlling party. It is owned by its directors, and there is no single controlling party.":
+    "Nid oes gan y cwmni barti sy’n rheoli yn y pen draw. Ei gyfarwyddwyr sy’n berchen arno, ac nid oes un parti sy’n rheoli.",
+  "The company's ultimate controlling party is {name}.": "Parti sy’n rheoli’r cwmni yn y pen draw yw {name}.",
+  "The company's controlling party is {name}.": "Parti sy’n rheoli’r cwmni yw {name}.",
 };
 
 let documentLanguage = "en";
@@ -197,18 +299,13 @@ export function welshDisplayDate(isoDate) {
 /**
  * The language a request asks its accounts to be written in: "en" when it names none.
  * @param {unknown} value - the request's documentLanguage
- * @param {"micro-entity"|"small-company"} regime
  * @param {string[]} errorMessages
  * @returns {"en"|"cy"}
  */
-export function readDocumentLanguage(value, regime, errorMessages) {
+export function readDocumentLanguage(value, errorMessages) {
   if (value === undefined || value === null || value === "en") return "en";
   if (value !== "cy") {
     errorMessages.push(`Invalid documentLanguage - must be one of ${ACCOUNTS_LANGUAGES.join(", ")}`);
-    return "en";
-  }
-  if (regime !== "micro-entity") {
-    errorMessages.push("Welsh accounts (documentLanguage cy) are written for micro-entity accounts");
     return "en";
   }
   return "cy";

@@ -355,6 +355,7 @@ async function handleCompanySubmit(event) {
     window.accountsFormSections.fillRegisteredOffice(profile.registeredOffice);
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
+    showDocumentLanguageChoice(profile.jurisdiction);
     showView("formView");
   } catch (error) {
     console.error("Failed to look up the company:", error);
@@ -373,6 +374,18 @@ function readPolicies() {
   return policies;
 }
 
+// Only a Welsh company (jurisdiction "wales") may deliver its accounts in Welsh, so only it sees the choice.
+function showDocumentLanguageChoice(jurisdiction) {
+  const welshCompany = jurisdiction === "wales";
+  document.getElementById("documentLanguageSection").hidden = !welshCompany;
+  if (!welshCompany) document.getElementById("documentLanguageEn").checked = true;
+}
+
+function documentLanguagePayload() {
+  const welsh = !document.getElementById("documentLanguageSection").hidden && document.getElementById("documentLanguageCy").checked;
+  return welsh ? { documentLanguage: "cy" } : {};
+}
+
 function buildAccountsPayload() {
   const includeComparatives = comparativesIncluded();
   const fixedAssetNote = readFixedAssetNote();
@@ -382,6 +395,7 @@ function buildAccountsPayload() {
   const controllingParty = window.accountsFormSections.readControllingParty();
   const directorsAdvances = readDirectorsAdvances(readBalanceSheet("current"));
   return {
+    ...documentLanguagePayload(),
     companyNumber: company.companyNumber,
     companyName: company.companyName,
     ...(registeredOffice ? { registeredOffice } : {}),

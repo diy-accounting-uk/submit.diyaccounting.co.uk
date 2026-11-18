@@ -11192,6 +11192,22 @@ cy = '''Rhowch y swm ar gyfer amorteiddiad ar warediadau'''
 hash = "40a0c45c4c00"
 cy = '''Y cyfrifon fel y byddant yn cael eu ffeilio'''
 
+[strings."ch-small-company.language-of-the-accounts-8aae0f"]
+hash = "8aae0f8ad626"
+cy = '''Iaith y cyfrifon'''
+
+[strings."ch-small-company.the-company-s-registered-office-is-01369a"]
+hash = "01369a6c1e68"
+cy = '''Mae swyddfa gofrestredig y cwmni yng Nghymru, felly gall gyflwyno ei gyfrifon yn Gymraeg. Mae Tŷ’r Cwmnïau yn eu cyfieithu i’r Saesneg ar gyfer y gofrestr. Nid yw iaith y dudalen yn newid y dewis hwn. Mae Tŷ’r Cwmnïau yn anfon ei ateb yn Saesneg.'''
+
+[strings."ch-small-company.english-ba118b"]
+hash = "ba118bf7fc9c"
+cy = '''Saesneg'''
+
+[strings."ch-small-company.welsh-cymraeg-0ae24c"]
+hash = "0ae24c757d03"
+cy = '''Cymraeg'''
+
 [strings."ch-tax-return.title"]
 hash = "486ac7c7dc6c"
 cy = '''Ffeilio Ffurflen Dreth y Cwmni - DIY Accounting Submit'''
