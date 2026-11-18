@@ -4286,45 +4286,117 @@ cy = '''ychwanegu bwndel'''
 hash = "fad75272126a"
 cy = '''TAW sy’n ddyledus yn y cyfnod ar werthiannau ac allbynnau eraill'''
 
+# VAT Notice 700/12 is in English only (no Welsh page found 2026-11-18): the box definitions are our Welsh of its sentences, in the glossary's terms.
+[strings."vat.box-1-definition"]
+hash = "63436c4dcf0d"
+cy = '''Rhowch y TAW sy’n ddyledus ar yr holl nwyddau a gwasanaethau a gyflenwyd gennych yn y cyfnod y mae’r Ffurflen TAW yn ei gwmpasu.'''
+
 [strings."vat.box-2"]
 hash = "e063556b0e51"
 cy = '''TAW sy’n ddyledus yn y cyfnod ar gaffael nwyddau a wneir yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE'''
+
+[strings."vat.box-2-definition"]
+hash = "4d4c7ad364ac"
+cy = '''Blwch 2: TAW sy’n ddyledus yn y cyfnod ar gaffael nwyddau a wneir yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE'''
 
 [strings."vat.box-3"]
 hash = "9af666eb45a2"
 cy = '''Cyfanswm y TAW sy’n ddyledus'''
 
+[strings."vat.box-3-definition"]
+hash = "aa315eb3f54e"
+cy = '''Dangoswch gyfanswm y TAW sy’n ddyledus, hynny yw, blychau 1 a 2 wedi’u hadio at ei gilydd.'''
+
 [strings."vat.box-4"]
 hash = "9dedc512e1e3"
 cy = '''TAW a adenillwyd yn y cyfnod ar bryniadau a mewnbynnau eraill (gan gynnwys caffaeliadau yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE)'''
+
+[strings."vat.box-4-definition"]
+hash = "f504772aa45a"
+cy = '''Dangoswch gyfanswm y TAW y gellir ei didynnu a godwyd ar bryniadau eich busnes.'''
 
 [strings."vat.box-5"]
 hash = "ca83f7afa2e2"
 cy = '''TAW net i dalu i CThEF neu ei hadennill'''
 
+[strings."vat.box-5-definition"]
+hash = "6f8e8c9477c6"
+cy = '''tynnwch y rhif ym mlwch 4 o’r rhif ym mlwch 3'''
+
 [strings."vat.box-6"]
 hash = "ce2ad2982308"
 cy = '''Cyfanswm gwerth y gwerthiannau a chyflenwadau eraill, ac eithrio TAW'''
+
+[strings."vat.box-6-definition"]
+hash = "ff66a231f5a2"
+cy = '''Dangoswch gyfanswm gwerth holl werthiannau eich busnes ac allbynnau penodol eraill, ond heb gynnwys TAW.'''
 
 [strings."vat.box-7"]
 hash = "6f102035a2ea"
 cy = '''Cyfanswm gwerth y pryniadau a’r holl fewnbynnau eraill, heb gynnwys TAW'''
 
+[strings."vat.box-7-definition"]
+hash = "08c5755bdc2b"
+cy = '''Dangoswch gyfanswm gwerth eich pryniadau a’ch treuliau, ond heb gynnwys TAW.'''
+
 [strings."vat.box-8"]
 hash = "f657b58caf78"
 cy = '''Cyfanswm gwerth anfon y nwyddau a’r costau cysylltiedig (ac eithrio TAW) o Ogledd Iwerddon i Aelod-wladwriaethau’r UE'''
+
+[strings."vat.box-8-definition"]
+hash = "97522121fb92"
+cy = '''Dangoswch gyfanswm gwerth yr holl gyflenwadau o nwyddau i Aelod-wladwriaethau’r UE a’r costau sy’n uniongyrchol gysylltiedig, megis cludo nwyddau ac yswiriant, pan fo’r rhain yn rhan o bris yr anfoneb neu’r contract.'''
 
 [strings."vat.box-9"]
 hash = "9ad5a7c308cc"
 cy = '''Cyfanswm gwerth caffael y nwyddau a’r costau cysylltiedig (ac eithrio TAW) a wneir yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE'''
 
+[strings."vat.box-9-definition"]
+hash = "407a8c9b2fa3"
+cy = '''Blwch 9: cyfanswm gwerth caffael yr holl nwyddau a’r costau cysylltiedig, ac eithrio TAW, o Aelod-wladwriaethau’r UE.'''
+
 [strings."widget.field-source"]
 hash = "0e6306f5e349"
 cy = '''{link} (yn Saesneg), adalwyd {date}'''
 
+[strings."widget.field-source-welsh-copy"]
+hash = "0e6306f5e349"
+cy = '''{link}, adalwyd {date}'''
+
+[strings."widget.source-adjustable-summary"]
+hash = "bab65e521e88"
+cy = '''API Crynodeb Addasadwy Ffynhonnell Busnes (MTD) 7.0 CThEF'''
+
+[strings."widget.source-blind-persons-allowance"]
+hash = "71ce9f93259c"
+cy = '''gov.uk: Lwfans Person Dall'''
+
+# The title of GOV.UK's Welsh page, https://www.gov.uk/treth-ar-ddifidendau (read 2026-11-18).
+[strings."widget.source-dividends"]
+hash = "342c2a6e85ec"
+cy = '''gov.uk: Treth ar ddifidendau'''
+
+[strings."widget.source-gift-aid"]
+hash = "06bd76496af4"
+cy = '''gov.uk: Rhyddhad treth pan fyddwch yn rhoi i elusen'''
+
+# HMRC's API documentation is in English only: the widget.field-source line adds (yn Saesneg) after the title.
+[strings."widget.source-individual-calculations"]
+hash = "467bffcfcfe1"
+cy = '''API Cyfrifiadau Unigol (MTD) 8.0 CThEF'''
+
+# The title of GOV.UK's Welsh page, https://www.gov.uk/lwfans-priodasol (read 2026-11-18).
+[strings."widget.source-marriage-allowance"]
+hash = "9b2097b7327b"
+cy = '''gov.uk: Lwfans Priodasol'''
+
+[strings."widget.source-vat-notice-700-12"]
+hash = "1630ee65b51c"
+cy = '''Hysbysiad TAW 700/12: sut i lenwi a chyflwyno eich Ffurflen TAW'''
+
 [strings."widget.field-sources"]
 hash = "add90cd646ca"
-cy = '''Diffiniadau wedi’u dyfynnu o {cited}.'''
+cy = '''Mae’r diffiniadau’n dod o {cited}. Rydym wedi cyfieithu i’r Gymraeg y rhai sydd yn Saesneg yn unig yn y ffynhonnell.'''
 
 [strings."widget.field-key"]
 hash = "f6259fa65fb6"
@@ -4726,137 +4798,277 @@ cy = '''Cyflwr OAuth annilys. Rhowch gynnig arall arni.'''
 hash = "31db62e1dc8f"
 cy = '''Treth Incwm'''
 
+[strings."itsa.definition-income-tax"]
+hash = "9234f82fd36a"
+cy = '''Cyfanswm y Dreth Incwm sy’n ddyledus.'''
+
 [strings."itsa.field-national-insurance"]
 hash = "6c256f829fe1"
 cy = '''Yswiriant Gwladol'''
+
+[strings."itsa.definition-national-insurance"]
+hash = "1011a1d14516"
+cy = '''Cyfanswm y didyniadau Yswiriant Gwladol.'''
 
 [strings."itsa.field-tax-already-deducted"]
 hash = "e17588fc5e02"
 cy = '''Treth a ddidynnwyd eisoes'''
 
+[strings."itsa.definition-tax-already-deducted"]
+hash = "7b2439378ed9"
+cy = '''Cyfanswm y dreth a ddidynnwyd.'''
+
 [strings."itsa.field-personal-allowance"]
 hash = "1fc3cb722203"
 cy = '''Lwfans Personol'''
+
+[strings."itsa.definition-personal-allowance"]
+hash = "6f3592bcd75e"
+cy = '''Y Lwfans Personol sydd ar gael ar gyfer y flwyddyn dreth.'''
 
 [strings."itsa.field-reduced-personal-allowance"]
 hash = "adccdc281c48"
 cy = '''Lwfans Personol wedi’i ostwng'''
 
+[strings."itsa.definition-reduced-personal-allowance"]
+hash = "b24c4178b1a2"
+cy = '''Y swm y gostyngwyd y Lwfans Personol iddo.'''
+
 [strings."itsa.field-personal-allowance-before-marriage-allowance-transfer"]
 hash = "2379d2e1863a"
 cy = '''Lwfans Personol cyn trosglwyddo Lwfans Priodasol'''
+
+[strings."itsa.definition-personal-allowance-before-marriage-allowance-transfer"]
+hash = "b055c6b791b5"
+cy = '''Swm y Lwfans Personol cyn ei drosglwyddo allan.'''
 
 [strings."itsa.field-marriage-allowance-transferred-out"]
 hash = "5ffb123e1dc1"
 cy = '''Lwfans Priodasol a drosglwyddwyd allan'''
 
+# GOV.UK's Welsh, https://www.gov.uk/lwfans-priodasol (read 2026-11-18).
+[strings."itsa.definition-marriage-allowance-transferred-out"]
+hash = "824c808e3490"
+cy = '''Mae’r Lwfans Priodasol yn eich galluogi i drosglwyddo £1,260 o’ch Lwfans Personol i’ch gŵr, gwraig neu bartner sifil.'''
+
 [strings."itsa.field-blind-person-s-allowance"]
 hash = "c9cd54de0a75"
 cy = '''Lwfans Person Dall'''
+
+# Lwfans Person Dall: the label's term. GOV.UK has no Welsh page for Blind Person's Allowance (none found 2026-11-18); the sentence is ours.
+[strings."itsa.definition-blind-person-s-allowance"]
+hash = "78af30073581"
+cy = '''Mae Lwfans Person Dall yn swm ychwanegol o lwfans di-dreth.'''
 
 [strings."itsa.field-gifts-of-investments-and-property-to"]
 hash = "7e68e40a9369"
 cy = '''Rhoddion o fuddsoddiadau ac eiddo i elusen'''
 
+[strings."itsa.definition-gifts-of-investments-and-property-to"]
+hash = "9999f903a91d"
+cy = '''Rhoddion o fuddsoddiadau neu eiddo a wnaed i elusen.'''
+
 [strings."itsa.field-gift-aid-relief"]
 hash = "9b2a95daba47"
 cy = '''Rhyddhad Rhodd Cymorth'''
+
+# Rhodd Cymorth: HMRC's Welsh for Gift Aid. GOV.UK has no Welsh page for Gift Aid (none found 2026-11-18); the sentence is ours.
+[strings."itsa.definition-gift-aid-relief"]
+hash = "8f43a0540ec9"
+cy = '''Mae rhoi drwy Rodd Cymorth yn golygu bod elusennau a chlybiau chwaraeon amatur cymunedol (CASCs) yn gallu hawlio 25c ychwanegol am bob £1 a roddwch.'''
 
 [strings."itsa.field-dividend-allowance"]
 hash = "add2c8f2ffeb"
 cy = '''Lwfans difidend'''
 
+# GOV.UK's Welsh, https://www.gov.uk/treth-ar-ddifidendau (read 2026-11-18).
+[strings."itsa.definition-dividend-allowance"]
+hash = "4b6ccee1354f"
+cy = '''Cewch lwfans difidendau o £500 bob blwyddyn hefyd. Dim ond unrhyw incwm o ddifidendau sydd dros y lwfans o ran difidendau y mae angen i chi dalu treth arno.'''
+
 [strings."itsa.field-losses-set-against-general-income"]
 hash = "0e220f29fe00"
 cy = '''Colledion a wrthbwyswyd yn erbyn incwm cyffredinol'''
+
+[strings."itsa.definition-losses-set-against-general-income"]
+hash = "1b188ec5deeb"
+cy = '''Colledion a wrthbwyswyd yn erbyn incwm cyffredinol.'''
 
 [strings."itsa.field-capital-gains-tax-losses-set-against"]
 hash = "aca94bc94e83"
 cy = '''Colledion Treth Enillion Cyfalaf a wrthbwyswyd yn erbyn incwm cyffredinol'''
 
+[strings."itsa.definition-capital-gains-tax-losses-set-against"]
+hash = "a653daa6cd8a"
+cy = '''Colledion Treth Enillion Cyfalaf a wrthbwyswyd yn erbyn incwm cyffredinol.'''
+
 [strings."itsa.field-qualifying-loan-interest"]
 hash = "cee68d963527"
 cy = '''Llog cymwys ar fenthyciad'''
+
+[strings."itsa.definition-qualifying-loan-interest"]
+hash = "533c42b1ebf1"
+cy = '''Taliadau llog cymwys ar fenthyciad a wnaed.'''
 
 [strings."itsa.field-post-cessation-trade-relief"]
 hash = "9f5995dd921d"
 cy = '''Rhyddhad masnach ar ôl i’r busnes ddod i ben'''
 
+[strings."itsa.definition-post-cessation-trade-relief"]
+hash = "12c9469a71a6"
+cy = '''Rhyddhad masnach a cholledion eraill ar ôl i fusnes ddod i ben.'''
+
 [strings."itsa.field-payments-to-trade-unions-for-death"]
 hash = "ae501ef804bd"
 cy = '''Taliadau i undebau llafur ar gyfer buddiannau marwolaeth'''
+
+[strings."itsa.definition-payments-to-trade-unions-for-death"]
+hash = "95b3227fd4b8"
+cy = '''Taliadau a wnaed i undeb llafur neu gymdeithas gyfeillgar ar gyfer buddiannau marwolaeth.'''
 
 [strings."itsa.field-gross-annuity-payments"]
 hash = "84734e5b5425"
 cy = '''Taliadau blwydd-dal gros'''
 
+[strings."itsa.definition-gross-annuity-payments"]
+hash = "1638029d14d4"
+cy = '''Gwerth gros y taliadau blwydd-dal a wnaed.'''
+
 [strings."itsa.field-annual-payments-relief-claimed"]
 hash = "e5bd6dfb394a"
 cy = '''Rhyddhad a hawliwyd ar daliadau blynyddol'''
+
+[strings."itsa.definition-annual-payments-relief-claimed"]
+hash = "6a7e1d60a7e4"
+cy = '''Gwerth y taliadau blynyddol a wnaed.'''
 
 [strings."itsa.field-annual-payments-tax-rate"]
 hash = "f8d83e80eeba"
 cy = '''Cyfradd dreth taliadau blynyddol'''
 
+[strings."itsa.definition-annual-payments-tax-rate"]
+hash = "8fe0a74b75c7"
+cy = '''Y gyfradd dreth a ddefnyddiwyd yn y cyfrifiad.'''
+
 [strings."itsa.field-pension-contributions"]
 hash = "9fbb8e8fc32b"
 cy = '''Cyfraniadau pensiwn'''
+
+[strings."itsa.definition-pension-contributions"]
+hash = "c0979804e8ef"
+cy = '''Cyfanswm y ‘Taliadau blwydd-dal ymddeol’, y ‘Taliadau i gynllun cyflogwr heb ryddhad treth’ a’r ‘Cyfraniadau i gynllun pensiwn tramor’.'''
 
 [strings."itsa.field-retirement-annuity-payments"]
 hash = "b0c4f717f586"
 cy = '''Taliadau blwydd-dal ymddeol'''
 
+[strings."itsa.definition-retirement-annuity-payments"]
+hash = "0fbd07bff14c"
+cy = '''Gwerth y taliadau blwydd-dal ymddeol.'''
+
 [strings."itsa.field-payments-to-an-employer-s-scheme"]
 hash = "1b00610724df"
 cy = '''Taliadau i gynllun cyflogwr heb ryddhad treth'''
+
+[strings."itsa.definition-payments-to-an-employer-s-scheme"]
+hash = "5b663764aef5"
+cy = '''Taliadau i gynllun pensiwn cyflogwr heb ryddhad treth.'''
 
 [strings."itsa.field-overseas-pension-scheme-contributions"]
 hash = "60d6f8374627"
 cy = '''Cyfraniadau i gynllun pensiwn tramor'''
 
+[strings."itsa.definition-overseas-pension-scheme-contributions"]
+hash = "e3206049e7df"
+cy = '''Gwerth y cyfraniadau i gynllun pensiwn tramor.'''
+
 [strings."itsa.field-total-income"]
 hash = "28090e4e870c"
 cy = '''Cyfanswm yr incwm'''
+
+[strings."itsa.definition-total-income"]
+hash = "d0fc26009d35"
+cy = '''Cyfanswm yr incwm ar gyfer y ffynhonnell incwm.'''
 
 [strings."itsa.field-total-expenses"]
 hash = "668da715579c"
 cy = '''Cyfanswm y treuliau'''
 
+[strings."itsa.definition-total-expenses"]
+hash = "9e3b66c4216b"
+cy = '''Cyfanswm y treuliau ar gyfer y ffynhonnell incwm.'''
+
 [strings."itsa.field-total-additions"]
 hash = "63bed82cefe9"
 cy = '''Cyfanswm yr ychwanegiadau'''
+
+[strings."itsa.definition-total-additions"]
+hash = "c138bf516807"
+cy = '''Cyfanswm yr ychwanegiadau at elw net (neu’r didyniadau o golled net).'''
 
 [strings."itsa.field-total-deductions"]
 hash = "03e3f10287bd"
 cy = '''Cyfanswm y didyniadau'''
 
+[strings."itsa.definition-total-deductions"]
+hash = "5fd0d6f7bc4d"
+cy = '''Cyfanswm y didyniadau o golled net (neu’r ychwanegiadau at elw net).'''
+
 [strings."itsa.field-net-profit"]
 hash = "c6993cef38d3"
 cy = '''Elw net'''
+
+[strings."itsa.definition-net-profit"]
+hash = "833afeebe9ba"
+cy = '''Elw net y ffynhonnell incwm.'''
 
 [strings."itsa.field-net-loss"]
 hash = "014a9b015a43"
 cy = '''Colled net'''
 
+[strings."itsa.definition-net-loss"]
+hash = "f30ada02951c"
+cy = '''Colled net y ffynhonnell incwm.'''
+
 [strings."itsa.field-turnover"]
 hash = "8ecaf1d78b2e"
 cy = '''Trosiant'''
+
+[strings."itsa.definition-turnover"]
+hash = "c0fa7067e057"
+cy = '''Yr enillion, y ffioedd, y gwerthiannau neu’r arian a enillwyd gan eich busnes. Incwm sy’n gysylltiedig â rhedeg y busnes.'''
 
 [strings."itsa.field-cost-of-goods"]
 hash = "762f53d2fe02"
 cy = '''Cost nwyddau'''
 
+[strings."itsa.definition-cost-of-goods"]
+hash = "765a9aba2d9d"
+cy = '''Cost nwyddau a brynwyd i’w hailwerthu neu nwyddau a ddefnyddiwyd. Treuliau sy’n gysylltiedig â rhedeg y busnes.'''
+
 [strings."itsa.field-total-rents-received"]
 hash = "f6fa8efa520f"
 cy = '''Cyfanswm y rhenti a gafwyd'''
+
+[strings."itsa.definition-total-rents-received"]
+hash = "6645ea078f95"
+cy = '''Cyfanswm yr incwm o rentu eiddo.'''
 
 [strings."itsa.field-other-property-income"]
 hash = "308af5e56790"
 cy = '''Incwm eiddo arall'''
 
+[strings."itsa.definition-other-property-income"]
+hash = "5d100cf0ea85"
+cy = '''Incwm arall o eiddo, megis taliadau rhent a rhenti tir, incwm o adael i eraill dipio gwastraff ar eich tir, ac incwm am ddefnyddio carafán neu gwch preswyl mewn lleoliad sefydlog.'''
+
 [strings."itsa.field-cost-of-replacing-domestic-items"]
 hash = "c03387a418db"
 cy = '''Cost amnewid eitemau domestig'''
+
+[strings."itsa.definition-cost-of-replacing-domestic-items"]
+hash = "cffcab0665c3"
+cy = '''Cost amnewid eitemau domestig – lwfans traul a gwisgo gynt.'''
 
 [strings."itsa.field-premiums-for-the-grant-of-a"]
 hash = "6c724fd2492e"

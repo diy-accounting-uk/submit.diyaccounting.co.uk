@@ -19,29 +19,39 @@
 
   const SOURCES = {
     individualCalculations: {
-      title: "HMRC Individual Calculations (MTD) API 8.0",
+      title: siteText("widget.source-individual-calculations", "HMRC Individual Calculations (MTD) API 8.0"),
       url: "https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/individual-calculations-api/8.0",
       retrieved: RETRIEVED,
     },
     adjustableSummary: {
-      title: "HMRC Business Source Adjustable Summary (MTD) API 7.0",
+      title: siteText("widget.source-adjustable-summary", "HMRC Business Source Adjustable Summary (MTD) API 7.0"),
       url: "https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-assessment-bsas-api/7.0",
       retrieved: RETRIEVED,
     },
     blindPersonsAllowance: {
-      title: "gov.uk: Blind Person's Allowance",
+      title: siteText("widget.source-blind-persons-allowance", "gov.uk: Blind Person's Allowance"),
       url: "https://www.gov.uk/blind-persons-allowance",
       retrieved: RETRIEVED,
     },
-    marriageAllowance: { title: "gov.uk: Marriage Allowance", url: "https://www.gov.uk/marriage-allowance", retrieved: RETRIEVED },
+    marriageAllowance: {
+      title: siteText("widget.source-marriage-allowance", "gov.uk: Marriage Allowance"),
+      url: "https://www.gov.uk/marriage-allowance",
+      welshUrl: "https://www.gov.uk/lwfans-priodasol",
+      retrieved: RETRIEVED,
+    },
     giftAid: {
-      title: "gov.uk: Tax relief when you donate to a charity",
+      title: siteText("widget.source-gift-aid", "gov.uk: Tax relief when you donate to a charity"),
       url: "https://www.gov.uk/donating-to-charity/gift-aid",
       retrieved: RETRIEVED,
     },
-    dividends: { title: "gov.uk: Tax on dividends", url: "https://www.gov.uk/tax-on-dividends", retrieved: RETRIEVED },
+    dividends: {
+      title: siteText("widget.source-dividends", "gov.uk: Tax on dividends"),
+      url: "https://www.gov.uk/tax-on-dividends",
+      welshUrl: "https://www.gov.uk/treth-ar-ddifidendau",
+      retrieved: RETRIEVED,
+    },
     vatNotice70012: {
-      title: "VAT Notice 700/12: how to fill in and submit your VAT Return",
+      title: siteText("widget.source-vat-notice-700-12", "VAT Notice 700/12: how to fill in and submit your VAT Return"),
       url: "https://www.gov.uk/guidance/how-to-fill-in-and-submit-your-vat-return-vat-notice-70012",
       retrieved: RETRIEVED,
     },
@@ -51,15 +61,15 @@
   const TAX_CALCULATION_FIELDS = {
     "taxCalculation.incomeTax.totalIncomeTaxDue": {
       label: siteText("itsa.field-income-tax", "Income Tax"),
-      definition: "Total income tax due.",
+      definition: siteText("itsa.definition-income-tax", "Total income tax due."),
     },
     "taxCalculation.nics.totalNic": {
       label: siteText("itsa.field-national-insurance", "National Insurance"),
-      definition: "Total NIC deductions.",
+      definition: siteText("itsa.definition-national-insurance", "Total NIC deductions."),
     },
     "taxCalculation.totalTaxDeducted": {
       label: siteText("itsa.field-tax-already-deducted", "Tax already deducted"),
-      definition: "Total tax deducted.",
+      definition: siteText("itsa.definition-tax-already-deducted", "Total tax deducted."),
     },
   };
 
@@ -67,113 +77,145 @@
   const ALLOWANCE_FIELDS = {
     "personalAllowance": {
       label: siteText("itsa.field-personal-allowance", "Personal Allowance"),
-      definition: "The personal allowance available for the tax year.",
+      definition: siteText("itsa.definition-personal-allowance", "The personal allowance available for the tax year."),
     },
     "reducedPersonalAllowance": {
       label: siteText("itsa.field-reduced-personal-allowance", "Reduced Personal Allowance"),
-      definition: "The amount that the personal allowance has been reduced to.",
+      definition: siteText("itsa.definition-reduced-personal-allowance", "The amount that the personal allowance has been reduced to."),
     },
     "marriageAllowanceTransferOut.personalAllowanceBeforeTransferOut": {
       label: siteText(
         "itsa.field-personal-allowance-before-marriage-allowance-transfer",
         "Personal Allowance before Marriage Allowance transfer",
       ),
-      definition: "The amount of the personal allowance before transferring out.",
+      definition: siteText(
+        "itsa.definition-personal-allowance-before-marriage-allowance-transfer",
+        "The amount of the personal allowance before transferring out.",
+      ),
     },
     "marriageAllowanceTransferOut.transferredOutAmount": {
       label: siteText("itsa.field-marriage-allowance-transferred-out", "Marriage Allowance transferred out"),
-      definition: "Marriage Allowance lets you transfer £1,260 of your Personal Allowance to your husband, wife or civil partner.",
+      definition: siteText(
+        "itsa.definition-marriage-allowance-transferred-out",
+        "Marriage Allowance lets you transfer £1,260 of your Personal Allowance to your husband, wife or civil partner.",
+      ),
       source: "marriageAllowance",
     },
     "blindPersonsAllowance": {
       label: siteText("itsa.field-blind-person-s-allowance", "Blind Person's Allowance"),
-      definition: "Blind Person’s Allowance is an extra amount of tax-free allowance.",
+      definition: siteText(
+        "itsa.definition-blind-person-s-allowance",
+        "Blind Person’s Allowance is an extra amount of tax-free allowance.",
+      ),
       source: "blindPersonsAllowance",
     },
     "giftOfInvestmentsAndPropertyToCharity": {
       label: siteText("itsa.field-gifts-of-investments-and-property-to", "Gifts of investments and property to charity"),
-      definition: "Investments or property gifts made to charity.",
+      definition: siteText("itsa.definition-gifts-of-investments-and-property-to", "Investments or property gifts made to charity."),
     },
     "giftAidRelief": {
       label: siteText("itsa.field-gift-aid-relief", "Gift Aid relief"),
-      definition:
+      definition: siteText(
+        "itsa.definition-gift-aid-relief",
         "Donating through Gift Aid means charities and community amateur sports clubs (CASCs) can claim an extra 25p for every £1 you give.",
+      ),
       source: "giftAid",
     },
     "dividendAllowance": {
       label: siteText("itsa.field-dividend-allowance", "Dividend allowance"),
-      definition:
+      definition: siteText(
+        "itsa.definition-dividend-allowance",
         "You also get a dividend allowance of £500 each year. You only pay tax on any dividend income above the dividend allowance.",
+      ),
       source: "dividends",
     },
     "lossesAppliedToGeneralIncome": {
       label: siteText("itsa.field-losses-set-against-general-income", "Losses set against general income"),
-      definition: "Losses that have been applied to general income.",
+      definition: siteText("itsa.definition-losses-set-against-general-income", "Losses that have been applied to general income."),
     },
     "cgtLossSetAgainstInYearGeneralIncome": {
       label: siteText("itsa.field-capital-gains-tax-losses-set-against", "Capital Gains Tax losses set against general income"),
-      definition: "CGT losses that have been applied to general income.",
+      definition: siteText("itsa.definition-capital-gains-tax-losses-set-against", "CGT losses that have been applied to general income."),
     },
     "qualifyingLoanInterestFromInvestments": {
       label: siteText("itsa.field-qualifying-loan-interest", "Qualifying loan interest"),
-      definition: "Qualifying loan interest payments made.",
+      definition: siteText("itsa.definition-qualifying-loan-interest", "Qualifying loan interest payments made."),
     },
     "postCessationTradeReceipts": {
       label: siteText("itsa.field-post-cessation-trade-relief", "Post-cessation trade relief"),
-      definition: "Trade reliefs and other losses post cessation of a business.",
+      definition: siteText("itsa.definition-post-cessation-trade-relief", "Trade reliefs and other losses post cessation of a business."),
     },
     "paymentsToTradeUnionsForDeathBenefits": {
       label: siteText("itsa.field-payments-to-trade-unions-for-death", "Payments to trade unions for death benefits"),
-      definition: "Payments made to a trade union or friendly society for death benefits.",
+      definition: siteText(
+        "itsa.definition-payments-to-trade-unions-for-death",
+        "Payments made to a trade union or friendly society for death benefits.",
+      ),
     },
     "grossAnnuityPayments": {
       label: siteText("itsa.field-gross-annuity-payments", "Gross annuity payments"),
-      definition: "The gross value of annuity payments made.",
+      definition: siteText("itsa.definition-gross-annuity-payments", "The gross value of annuity payments made."),
     },
     "annuityPayments.reliefClaimed": {
       label: siteText("itsa.field-annual-payments-relief-claimed", "Annual payments relief claimed"),
-      definition: "The value of annual payments made.",
+      definition: siteText("itsa.definition-annual-payments-relief-claimed", "The value of annual payments made."),
     },
     "annuityPayments.rate": {
       label: siteText("itsa.field-annual-payments-tax-rate", "Annual payments tax rate"),
-      definition: "The tax rate used in the calculation.",
+      definition: siteText("itsa.definition-annual-payments-tax-rate", "The tax rate used in the calculation."),
       kind: "percent",
     },
     "pensionContributions": {
       label: siteText("itsa.field-pension-contributions", "Pension contributions"),
-      definition:
+      definition: siteText(
+        "itsa.definition-pension-contributions",
         "Total of 'Retirement Annuity Payments', 'Payment To Employers Scheme No Tax Relief' and 'Overseas Pension Scheme Contributions'.",
+      ),
     },
     "pensionContributionsDetail.retirementAnnuityPayments": {
       label: siteText("itsa.field-retirement-annuity-payments", "Retirement annuity payments"),
-      definition: "The value of retirement annuity payments.",
+      definition: siteText("itsa.definition-retirement-annuity-payments", "The value of retirement annuity payments."),
     },
     "pensionContributionsDetail.paymentToEmployersSchemeNoTaxRelief": {
       label: siteText("itsa.field-payments-to-an-employer-s-scheme", "Payments to an employer's scheme with no tax relief"),
-      definition: "Payments to employer's pension scheme with no tax relief.",
+      definition: siteText("itsa.definition-payments-to-an-employer-s-scheme", "Payments to employer's pension scheme with no tax relief."),
     },
     "pensionContributionsDetail.overseasPensionSchemeContributions": {
       label: siteText("itsa.field-overseas-pension-scheme-contributions", "Overseas pension scheme contributions"),
-      definition: "The value of contributions to an overseas pension scheme.",
+      definition: siteText(
+        "itsa.definition-overseas-pension-scheme-contributions",
+        "The value of contributions to an overseas pension scheme.",
+      ),
     },
   };
 
   const SUMMARY_TOTALS = {
-    totalIncome: { label: siteText("itsa.field-total-income", "Total income"), definition: "The total income for the income source." },
+    totalIncome: {
+      label: siteText("itsa.field-total-income", "Total income"),
+      definition: siteText("itsa.definition-total-income", "The total income for the income source."),
+    },
     totalExpenses: {
       label: siteText("itsa.field-total-expenses", "Total expenses"),
-      definition: "The total expenses for the income source.",
+      definition: siteText("itsa.definition-total-expenses", "The total expenses for the income source."),
     },
     totalAdditions: {
       label: siteText("itsa.field-total-additions", "Total additions"),
-      definition: "The total additions to net profit (or deduction to net loss).",
+      definition: siteText("itsa.definition-total-additions", "The total additions to net profit (or deduction to net loss)."),
     },
     totalDeductions: {
       label: siteText("itsa.field-total-deductions", "Total deductions"),
-      definition: "The total deductions to net loss (or addition to net profit).",
+      definition: siteText("itsa.definition-total-deductions", "The total deductions to net loss (or addition to net profit)."),
     },
-    netProfit: { label: siteText("itsa.field-net-profit", "Net profit"), definition: "The net profit of income source.", total: true },
-    netLoss: { label: siteText("itsa.field-net-loss", "Net loss"), definition: "The net loss of income source.", total: true },
+    netProfit: {
+      label: siteText("itsa.field-net-profit", "Net profit"),
+      definition: siteText("itsa.definition-net-profit", "The net profit of income source."),
+      total: true,
+    },
+    netLoss: {
+      label: siteText("itsa.field-net-loss", "Net loss"),
+      definition: siteText("itsa.definition-net-loss", "The net loss of income source."),
+      total: true,
+    },
   };
 
   // Keyed by the field's path under the adjustable summary's adjustableSummaryCalculation.
@@ -181,12 +223,18 @@
     "totalIncome": SUMMARY_TOTALS.totalIncome,
     "income.turnover": {
       label: siteText("itsa.field-turnover", "Turnover"),
-      definition: "The takings, fees, sales or money earned by your business Income associated with the running of the business.",
+      definition: siteText(
+        "itsa.definition-turnover",
+        "The takings, fees, sales or money earned by your business Income associated with the running of the business.",
+      ),
     },
     "totalExpenses": SUMMARY_TOTALS.totalExpenses,
     "expenses.costOfGoods": {
       label: siteText("itsa.field-cost-of-goods", "Cost of goods"),
-      definition: "Cost of goods bought for resale or goods used. Expenses associated with the running of the business.",
+      definition: siteText(
+        "itsa.definition-cost-of-goods",
+        "Cost of goods bought for resale or goods used. Expenses associated with the running of the business.",
+      ),
     },
     "totalAdditions": SUMMARY_TOTALS.totalAdditions,
     "netProfit": SUMMARY_TOTALS.netProfit,
@@ -197,17 +245,22 @@
     "totalIncome": SUMMARY_TOTALS.totalIncome,
     "income.totalRentsReceived": {
       label: siteText("itsa.field-total-rents-received", "Total rents received"),
-      definition: "The total amount of property rental income.",
+      definition: siteText("itsa.definition-total-rents-received", "The total amount of property rental income."),
     },
     "income.otherPropertyIncome": {
       label: siteText("itsa.field-other-property-income", "Other property income"),
-      definition:
+      definition: siteText(
+        "itsa.definition-other-property-income",
         "Other income from property, such as rent charges and ground rents, income from letting others tip waste on your land, and income for the use of a caravan or houseboat at a fixed location.",
+      ),
     },
     "totalDeductions": SUMMARY_TOTALS.totalDeductions,
     "deductions.costOfReplacingDomesticItems": {
       label: siteText("itsa.field-cost-of-replacing-domestic-items", "Cost of replacing domestic items"),
-      definition: "Cost of Replacing Domestic Items - formerly Wear and Tear allowance.",
+      definition: siteText(
+        "itsa.definition-cost-of-replacing-domestic-items",
+        "Cost of Replacing Domestic Items - formerly Wear and Tear allowance.",
+      ),
     },
     "netProfit": SUMMARY_TOTALS.netProfit,
     "netLoss": SUMMARY_TOTALS.netLoss,
@@ -278,56 +331,70 @@
       box: 1,
       field: "vatDueSales",
       label: siteText("vat.box-1", "VAT due in the period on sales and other outputs"),
-      definition: "Include the VAT due on all goods and services you supplied in the period covered by the return.",
+      definition: siteText(
+        "vat.box-1-definition",
+        "Include the VAT due on all goods and services you supplied in the period covered by the return.",
+      ),
     },
     {
       box: 2,
       field: "vatDueAcquisitions",
       label: siteText("vat.box-2", "VAT due in the period on acquisitions of goods made in Northern Ireland from EU member states"),
-      definition: "Box 2 VAT due in the period on acquisitions of goods made in Northern Ireland from EU member states",
+      definition: siteText(
+        "vat.box-2-definition",
+        "Box 2 VAT due in the period on acquisitions of goods made in Northern Ireland from EU member states",
+      ),
     },
     {
       box: 3,
       field: "totalVatDue",
       label: siteText("vat.box-3", "Total VAT due"),
-      definition: "Show the total VAT due, that is, boxes 1 and 2 added together.",
+      definition: siteText("vat.box-3-definition", "Show the total VAT due, that is, boxes 1 and 2 added together."),
     },
     {
       box: 4,
       field: "vatReclaimedCurrPeriod",
       label: siteText("vat.box-4", "VAT reclaimed in the period on purchases and other inputs (including acquisitions from the EU)"),
-      definition: "Show the total amount of deductible VAT charged on your business purchases.",
+      definition: siteText("vat.box-4-definition", "Show the total amount of deductible VAT charged on your business purchases."),
     },
     {
       box: 5,
       field: "netVatDue",
       label: siteText("vat.box-5", "Net VAT to pay to HMRC or reclaim"),
-      definition: "deduct the number in box 4 from the number in box 3",
+      definition: siteText("vat.box-5-definition", "deduct the number in box 4 from the number in box 3"),
     },
     {
       box: 6,
       field: "totalValueSalesExVAT",
       label: siteText("vat.box-6", "Total value of sales and all other outputs excluding any VAT"),
-      definition: "Show the total value of all your business sales and other specific outputs but leave out any VAT.",
+      definition: siteText(
+        "vat.box-6-definition",
+        "Show the total value of all your business sales and other specific outputs but leave out any VAT.",
+      ),
     },
     {
       box: 7,
       field: "totalValuePurchasesExVAT",
       label: siteText("vat.box-7", "Total value of purchases and all other inputs excluding any VAT"),
-      definition: "Show the total value of your purchases and expenses but leave out any VAT.",
+      definition: siteText("vat.box-7-definition", "Show the total value of your purchases and expenses but leave out any VAT."),
     },
     {
       box: 8,
       field: "totalValueGoodsSuppliedExVAT",
       label: siteText("vat.box-8", "Total value of all supplies of goods and related costs, excluding any VAT, to EU member states"),
-      definition:
+      definition: siteText(
+        "vat.box-8-definition",
         "Show the total value of all supplies of goods to EU member states and directly related costs, such as freight and insurance, where these form part of the invoice or contract price.",
+      ),
     },
     {
       box: 9,
       field: "totalAcquisitionsExVAT",
       label: siteText("vat.box-9", "Total value of all acquisitions of goods and related costs, excluding any VAT, from EU member states"),
-      definition: "Box 9 total value of all acquisitions goods and related costs, excluding any VAT, from EU member states.",
+      definition: siteText(
+        "vat.box-9-definition",
+        "Box 9 total value of all acquisitions goods and related costs, excluding any VAT, from EU member states.",
+      ),
     },
   ].map((entry) => ({ ...entry, source: "vatNotice70012", anchor: `filling-in-box-${entry.box}` }));
 
@@ -431,12 +498,18 @@
     for (const key of Object.keys(data)) {
       const value = data[key];
       if (isAmount(value) && !seen.has(key)) {
-        rows.push({ field: key, label: humanise(key), kind: "money", value });
+        rows.push({ field: key, label: humanise(key), fromHmrcKey: true, kind: "money", value });
       } else if (value && typeof value === "object" && !Array.isArray(value)) {
         for (const child of Object.keys(value)) {
           const path = `${key}.${child}`;
           if (isAmount(value[child]) && !seen.has(path)) {
-            rows.push({ field: path, label: `${humanise(key)}: ${humanise(child).toLowerCase()}`, kind: "money", value: value[child] });
+            rows.push({
+              field: path,
+              label: `${humanise(key)}: ${humanise(child).toLowerCase()}`,
+              fromHmrcKey: true,
+              kind: "money",
+              value: value[child],
+            });
           }
         }
       }
@@ -482,14 +555,16 @@
     );
   }
 
-  // A definition quotes its English source, so on a Welsh page it is marked as English.
-  function quoteLang() {
-    return inWelsh() ? ' lang="en-GB"' : "";
+  // A row named from HMRC's own field key shows that name as HMRC sent it, so on a Welsh page it is
+  // marked as English.
+  function labelLang(row) {
+    return row.fromHmrcKey && inWelsh() ? ' lang="en-GB"' : "";
   }
 
   function sourceLink(sourceKey, { anchor, text } = {}) {
     const source = SOURCES[sourceKey];
-    const href = anchor ? `${source.url}#${anchor}` : source.url;
+    const url = inWelsh() && source.welshUrl ? source.welshUrl : source.url;
+    const href = anchor ? `${url}#${anchor}` : url;
     return `<a href="${escapeHtml(href)}" rel="noopener" target="_blank">${escapeHtml(text || source.title)}</a>`;
   }
 
@@ -497,9 +572,13 @@
     const keys = [...new Set(rows.map((row) => row.source).filter(Boolean))];
     if (keys.length === 0) return "";
     const cited = keys
-      .map((key) =>
-        siteText("widget.field-source", "{link}, retrieved {date}", { link: sourceLink(key), date: formatIsoDate(SOURCES[key].retrieved) }),
-      )
+      .map((key) => {
+        const values = { link: sourceLink(key), date: formatIsoDate(SOURCES[key].retrieved) };
+        // A source that GOV.UK publishes in Welsh links to its Welsh page; the others are in English only.
+        return SOURCES[key].welshUrl
+          ? siteText("widget.field-source-welsh-copy", "{link}, retrieved {date}", values)
+          : siteText("widget.field-source", "{link}, retrieved {date}", values);
+      })
       .join("; ");
     return `<p class="field-table-source">${siteText("widget.field-sources", "Definitions quoted from {cited}.", { cited })}</p>`;
   }
@@ -512,7 +591,9 @@
       container.replaceChildren();
       return;
     }
-    const items = defined.map((row) => `<dt>${escapeHtml(row.label)}</dt><dd${quoteLang()}>“${escapeHtml(row.definition)}”</dd>`).join("");
+    const items = defined
+      .map((row) => `<dt${labelLang(row)}>${escapeHtml(row.label)}</dt><dd>“${escapeHtml(row.definition)}”</dd>`)
+      .join("");
     const markup = `<details class="field-key"><summary>${escapeHtml(summary)}</summary><dl>${items}</dl>${sourcesFooter(defined)}</details>`;
     const parsed = new DOMParser().parseFromString(markup, "text/html");
     container.replaceChildren(...parsed.body.childNodes);
@@ -525,11 +606,11 @@
     }
     const body = rows
       .map((row) => {
-        const definition = row.definition ? `<span class="field-definition"${quoteLang()}>“${escapeHtml(row.definition)}”</span>` : "";
+        const definition = row.definition ? `<span class="field-definition">“${escapeHtml(row.definition)}”</span>` : "";
         const valueId = row.valueId ? ` id="${escapeHtml(row.valueId)}"` : "";
         return (
           `<tr class="field-row${row.total ? " field-row-total" : ""}" data-hmrc-field="${escapeHtml(row.field)}">` +
-          `<th scope="row"><span class="field-name">${escapeHtml(row.label)}</span>${definition}</th>` +
+          `<th scope="row"><span class="field-name"${labelLang(row)}>${escapeHtml(row.label)}</span>${definition}</th>` +
           `<td class="field-amount"${valueId}>${escapeHtml(formatValue(row.value, row.kind))}</td></tr>`
         );
       })

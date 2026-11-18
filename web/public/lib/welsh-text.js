@@ -1256,6 +1256,48 @@ window.WELSH_TEXT = {
   "itsa.current-total-token-expired": "Mae’r tocyn mynediad wedi dod i ben. Rhowch gynnig arall ar lwytho’r cyfanswm.",
   "itsa.declaration-wording":
     "Rwy’n datgan bod yr wybodaeth a’r Hunanasesiad a gyflwynwyd gennyf (o’u hystyried gyda’i gilydd) yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth. Rwy’n deall y gallai fod yn rhaid i mi dalu cosbau ariannol ac wynebu erlyniad os byddaf yn rhoi gwybodaeth anwir.",
+  "itsa.definition-annual-payments-relief-claimed": "Gwerth y taliadau blynyddol a wnaed.",
+  "itsa.definition-annual-payments-tax-rate": "Y gyfradd dreth a ddefnyddiwyd yn y cyfrifiad.",
+  "itsa.definition-blind-person-s-allowance": "Mae Lwfans Person Dall yn swm ychwanegol o lwfans di-dreth.",
+  "itsa.definition-capital-gains-tax-losses-set-against": "Colledion Treth Enillion Cyfalaf a wrthbwyswyd yn erbyn incwm cyffredinol.",
+  "itsa.definition-cost-of-goods":
+    "Cost nwyddau a brynwyd i’w hailwerthu neu nwyddau a ddefnyddiwyd. Treuliau sy’n gysylltiedig â rhedeg y busnes.",
+  "itsa.definition-cost-of-replacing-domestic-items": "Cost amnewid eitemau domestig – lwfans traul a gwisgo gynt.",
+  "itsa.definition-dividend-allowance":
+    "Cewch lwfans difidendau o £500 bob blwyddyn hefyd. Dim ond unrhyw incwm o ddifidendau sydd dros y lwfans o ran difidendau y mae angen i chi dalu treth arno.",
+  "itsa.definition-gift-aid-relief":
+    "Mae rhoi drwy Rodd Cymorth yn golygu bod elusennau a chlybiau chwaraeon amatur cymunedol (CASCs) yn gallu hawlio 25c ychwanegol am bob £1 a roddwch.",
+  "itsa.definition-gifts-of-investments-and-property-to": "Rhoddion o fuddsoddiadau neu eiddo a wnaed i elusen.",
+  "itsa.definition-gross-annuity-payments": "Gwerth gros y taliadau blwydd-dal a wnaed.",
+  "itsa.definition-income-tax": "Cyfanswm y Dreth Incwm sy’n ddyledus.",
+  "itsa.definition-losses-set-against-general-income": "Colledion a wrthbwyswyd yn erbyn incwm cyffredinol.",
+  "itsa.definition-marriage-allowance-transferred-out":
+    "Mae’r Lwfans Priodasol yn eich galluogi i drosglwyddo £1,260 o’ch Lwfans Personol i’ch gŵr, gwraig neu bartner sifil.",
+  "itsa.definition-national-insurance": "Cyfanswm y didyniadau Yswiriant Gwladol.",
+  "itsa.definition-net-loss": "Colled net y ffynhonnell incwm.",
+  "itsa.definition-net-profit": "Elw net y ffynhonnell incwm.",
+  "itsa.definition-other-property-income":
+    "Incwm arall o eiddo, megis taliadau rhent a rhenti tir, incwm o adael i eraill dipio gwastraff ar eich tir, ac incwm am ddefnyddio carafán neu gwch preswyl mewn lleoliad sefydlog.",
+  "itsa.definition-overseas-pension-scheme-contributions": "Gwerth y cyfraniadau i gynllun pensiwn tramor.",
+  "itsa.definition-payments-to-an-employer-s-scheme": "Taliadau i gynllun pensiwn cyflogwr heb ryddhad treth.",
+  "itsa.definition-payments-to-trade-unions-for-death":
+    "Taliadau a wnaed i undeb llafur neu gymdeithas gyfeillgar ar gyfer buddiannau marwolaeth.",
+  "itsa.definition-pension-contributions":
+    "Cyfanswm y ‘Taliadau blwydd-dal ymddeol’, y ‘Taliadau i gynllun cyflogwr heb ryddhad treth’ a’r ‘Cyfraniadau i gynllun pensiwn tramor’.",
+  "itsa.definition-personal-allowance": "Y Lwfans Personol sydd ar gael ar gyfer y flwyddyn dreth.",
+  "itsa.definition-personal-allowance-before-marriage-allowance-transfer": "Swm y Lwfans Personol cyn ei drosglwyddo allan.",
+  "itsa.definition-post-cessation-trade-relief": "Rhyddhad masnach a cholledion eraill ar ôl i fusnes ddod i ben.",
+  "itsa.definition-qualifying-loan-interest": "Taliadau llog cymwys ar fenthyciad a wnaed.",
+  "itsa.definition-reduced-personal-allowance": "Y swm y gostyngwyd y Lwfans Personol iddo.",
+  "itsa.definition-retirement-annuity-payments": "Gwerth y taliadau blwydd-dal ymddeol.",
+  "itsa.definition-tax-already-deducted": "Cyfanswm y dreth a ddidynnwyd.",
+  "itsa.definition-total-additions": "Cyfanswm yr ychwanegiadau at elw net (neu’r didyniadau o golled net).",
+  "itsa.definition-total-deductions": "Cyfanswm y didyniadau o golled net (neu’r ychwanegiadau at elw net).",
+  "itsa.definition-total-expenses": "Cyfanswm y treuliau ar gyfer y ffynhonnell incwm.",
+  "itsa.definition-total-income": "Cyfanswm yr incwm ar gyfer y ffynhonnell incwm.",
+  "itsa.definition-total-rents-received": "Cyfanswm yr incwm o rentu eiddo.",
+  "itsa.definition-turnover":
+    "Yr enillion, y ffioedd, y gwerthiannau neu’r arian a enillwyd gan eich busnes. Incwm sy’n gysylltiedig â rhedeg y busnes.",
   "itsa.due-date": "Dyddiad dyledus",
   "itsa.end-date": "Dyddiad gorffen",
   "itsa.expense-basis": "Sut ydych yn rhoi gwybod am dreuliau?",
@@ -1855,16 +1897,29 @@ window.WELSH_TEXT = {
   "vat.books-choose-period": "Dewiswch y cyfnod TAW yn gyntaf a bydd y blychau’n cael eu llenwi o {file}.",
   "vat.books-filled": "Llenwyd y naw blwch o {file} ar gyfer y cyfnod {start} hyd at {end}. Gwiriwch nhw, yna cyflwynwch.",
   "vat.box-1": "TAW sy’n ddyledus yn y cyfnod ar werthiannau ac allbynnau eraill",
+  "vat.box-1-definition":
+    "Rhowch y TAW sy’n ddyledus ar yr holl nwyddau a gwasanaethau a gyflenwyd gennych yn y cyfnod y mae’r Ffurflen TAW yn ei gwmpasu.",
   "vat.box-2": "TAW sy’n ddyledus yn y cyfnod ar gaffael nwyddau a wneir yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE",
+  "vat.box-2-definition":
+    "Blwch 2: TAW sy’n ddyledus yn y cyfnod ar gaffael nwyddau a wneir yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE",
   "vat.box-3": "Cyfanswm y TAW sy’n ddyledus",
+  "vat.box-3-definition": "Dangoswch gyfanswm y TAW sy’n ddyledus, hynny yw, blychau 1 a 2 wedi’u hadio at ei gilydd.",
   "vat.box-4":
     "TAW a adenillwyd yn y cyfnod ar bryniadau a mewnbynnau eraill (gan gynnwys caffaeliadau yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE)",
+  "vat.box-4-definition": "Dangoswch gyfanswm y TAW y gellir ei didynnu a godwyd ar bryniadau eich busnes.",
   "vat.box-5": "TAW net i dalu i CThEF neu ei hadennill",
+  "vat.box-5-definition": "tynnwch y rhif ym mlwch 4 o’r rhif ym mlwch 3",
   "vat.box-6": "Cyfanswm gwerth y gwerthiannau a chyflenwadau eraill, ac eithrio TAW",
+  "vat.box-6-definition": "Dangoswch gyfanswm gwerth holl werthiannau eich busnes ac allbynnau penodol eraill, ond heb gynnwys TAW.",
   "vat.box-7": "Cyfanswm gwerth y pryniadau a’r holl fewnbynnau eraill, heb gynnwys TAW",
+  "vat.box-7-definition": "Dangoswch gyfanswm gwerth eich pryniadau a’ch treuliau, ond heb gynnwys TAW.",
   "vat.box-8": "Cyfanswm gwerth anfon y nwyddau a’r costau cysylltiedig (ac eithrio TAW) o Ogledd Iwerddon i Aelod-wladwriaethau’r UE",
+  "vat.box-8-definition":
+    "Dangoswch gyfanswm gwerth yr holl gyflenwadau o nwyddau i Aelod-wladwriaethau’r UE a’r costau sy’n uniongyrchol gysylltiedig, megis cludo nwyddau ac yswiriant, pan fo’r rhain yn rhan o bris yr anfoneb neu’r contract.",
   "vat.box-9":
     "Cyfanswm gwerth caffael y nwyddau a’r costau cysylltiedig (ac eithrio TAW) a wneir yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE",
+  "vat.box-9-definition":
+    "Blwch 9: cyfanswm gwerth caffael yr holl nwyddau a’r costau cysylltiedig, ac eithrio TAW, o Aelod-wladwriaethau’r UE.",
   "vat.box-row": "Blwch {box}: {label}",
   "vat.period-label": "{start} hyd at {end}",
   "vat.period-label-due": "{start} hyd at {end}, dyddiad cau {due}",
@@ -1967,7 +2022,9 @@ window.WELSH_TEXT = {
   "widget.field-key": "Ystyr pob llinell",
   "widget.field-none": "Ni roddodd CThEF unrhyw ffigurau yma.",
   "widget.field-source": "{link} (yn Saesneg), adalwyd {date}",
-  "widget.field-sources": "Diffiniadau wedi’u dyfynnu o {cited}.",
+  "widget.field-source-welsh-copy": "{link}, adalwyd {date}",
+  "widget.field-sources":
+    "Mae’r diffiniadau’n dod o {cited}. Rydym wedi cyfieithu i’r Gymraeg y rhai sydd yn Saesneg yn unig yn y ffynhonnell.",
   "widget.field-value": "Gwerth",
   "widget.hmrc-auth-failed": "Methodd y mewngofnodi: {reason}",
   "widget.hmrc-auth-redirecting": "Yn eich anfon i CThEF i fewngofnodi yn {url}...",
@@ -2010,6 +2067,13 @@ window.WELSH_TEXT = {
   "widget.required-vrn": "Nodwch eich rhif cofrestru TAW",
   "widget.sign-in-to-continue": "Mewngofnodwch i barhau",
   "widget.sign-in-to-use-page": "Mewngofnodwch i ddefnyddio’r dudalen hon.",
+  "widget.source-adjustable-summary": "API Crynodeb Addasadwy Ffynhonnell Busnes (MTD) 7.0 CThEF",
+  "widget.source-blind-persons-allowance": "gov.uk: Lwfans Person Dall",
+  "widget.source-dividends": "gov.uk: Treth ar ddifidendau",
+  "widget.source-gift-aid": "gov.uk: Rhyddhad treth pan fyddwch yn rhoi i elusen",
+  "widget.source-individual-calculations": "API Cyfrifiadau Unigol (MTD) 8.0 CThEF",
+  "widget.source-marriage-allowance": "gov.uk: Lwfans Priodasol",
+  "widget.source-vat-notice-700-12": "Hysbysiad TAW 700/12: sut i lenwi a chyflwyno eich Ffurflen TAW",
   "widget.status-and": "a",
   "widget.status-and-vowel": "ac",
   "widget.status-meaning-preview": "gallwch roi cynnig ar y sgriniau, ac nid oes dim yn cael ei anfon",
