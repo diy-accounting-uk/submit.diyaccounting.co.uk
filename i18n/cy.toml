@@ -3297,9 +3297,33 @@ cy = '''cyfanswm gwerth y nwyddau a anfonwyd i’r UE'''
 hash = "a156240948bd"
 cy = '''cyfanswm y caffaeliadau o’r UE'''
 
-[strings."vat-submit.enter-box"]
-hash = "a272e1b5e6ec"
-cy = '''Nodwch {label}'''
+[strings."vat-submit.enter-box-1"]
+hash = "e3a2fe0382af"
+cy = '''Nodwch y TAW sy’n ddyledus ar werthiannau'''
+
+[strings."vat-submit.enter-box-2"]
+hash = "a480e5dcac09"
+cy = '''Nodwch y TAW sy’n ddyledus ar gaffaeliadau'''
+
+[strings."vat-submit.enter-box-4"]
+hash = "abfce2747a2b"
+cy = '''Nodwch y TAW a adenillwyd'''
+
+[strings."vat-submit.enter-box-6"]
+hash = "df7bcdd83bb2"
+cy = '''Nodwch gyfanswm gwerth y gwerthiannau'''
+
+[strings."vat-submit.enter-box-7"]
+hash = "435c1a772256"
+cy = '''Nodwch gyfanswm gwerth y pryniadau'''
+
+[strings."vat-submit.enter-box-8"]
+hash = "47e5860bdc4e"
+cy = '''Nodwch gyfanswm gwerth y nwyddau a anfonwyd i’r UE'''
+
+[strings."vat-submit.enter-box-9"]
+hash = "9f323e4b860b"
+cy = '''Nodwch gyfanswm y caffaeliadau o’r UE'''
 
 [strings."vat-submit.valid-number"]
 hash = "0f7113aa18ac"

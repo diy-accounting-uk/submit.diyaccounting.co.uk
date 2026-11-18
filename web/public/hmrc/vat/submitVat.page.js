@@ -107,11 +107,23 @@ const BOX_NAMES = {
   totalAcquisitionsExVAT: siteText("vat-submit.box-name-9", "total acquisitions from EU"),
 };
 
+// The message for an empty box, one whole sentence a box, because the Welsh object after "Nodwch"
+// takes a soft mutation ("Nodwch gyfanswm") that the box name keeps after "ar gyfer".
+const ENTER_BOX = {
+  vatDueSales: () => siteText("vat-submit.enter-box-1", "Enter the VAT due on sales"),
+  vatDueAcquisitions: () => siteText("vat-submit.enter-box-2", "Enter the VAT due on acquisitions"),
+  vatReclaimedCurrPeriod: () => siteText("vat-submit.enter-box-4", "Enter the VAT reclaimed"),
+  totalValueSalesExVAT: () => siteText("vat-submit.enter-box-6", "Enter the total value of sales"),
+  totalValuePurchasesExVAT: () => siteText("vat-submit.enter-box-7", "Enter the total value of purchases"),
+  totalValueGoodsSuppliedExVAT: () => siteText("vat-submit.enter-box-8", "Enter the total value of goods supplied to EU"),
+  totalAcquisitionsExVAT: () => siteText("vat-submit.enter-box-9", "Enter the total acquisitions from EU"),
+};
+
 // Validate VAT monetary amount (boxes 1-4)
 function validateVatMonetaryAmount(value, fieldId, fieldLabel) {
   const strValue = stripCommas(String(value).trim());
   if (strValue === "") {
-    showFieldError(fieldId, siteText("vat-submit.enter-box", "Enter the {label}", { label: fieldLabel }));
+    showFieldError(fieldId, ENTER_BOX[fieldId]());
     return false;
   }
 
@@ -168,7 +180,7 @@ function validateNetVatDue(value, fieldId) {
 function validateVatWholeAmount(value, fieldId, fieldLabel) {
   const strValue = stripCommas(String(value).trim());
   if (strValue === "") {
-    showFieldError(fieldId, siteText("vat-submit.enter-box", "Enter the {label}", { label: fieldLabel }));
+    showFieldError(fieldId, ENTER_BOX[fieldId]());
     return false;
   }
 
