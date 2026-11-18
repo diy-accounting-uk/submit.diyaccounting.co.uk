@@ -192,12 +192,13 @@
   src: url("../fonts/atkinson-hyperlegible-latin-700-normal.woff2") format("woff2");
 }
 
-/* Running text is Arial. A device with no Arial (Android, Linux) gets Arimo, which has Arial's letter widths. */
+/* Running text is Arial. A device with no Arial (Android, Linux) gets Arimo, which has Arial's letter widths. The unicode-range lists the characters of the Arimo subset files, so a symbol outside it (such as a star) never loads Arimo. */
 @font-face {
   font-family: "Arimo";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
+  unicode-range: U+0020-007E, U+00A0-00FF, U+0174-0177, U+2013-2014, U+2018-2019, U+201C-201D, U+2022, U+2026, U+20AC, U+2190-2193, U+2212;
   src:
     local("Arimo"),
     local("Liberation Sans"),
@@ -209,6 +210,7 @@
   font-style: italic;
   font-weight: 400;
   font-display: swap;
+  unicode-range: U+0020-007E, U+00A0-00FF, U+0174-0177, U+2013-2014, U+2018-2019, U+201C-201D, U+2022, U+2026, U+20AC, U+2190-2193, U+2212;
   src:
     local("Arimo"),
     local("Liberation Sans"),
@@ -220,6 +222,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
+  unicode-range: U+0020-007E, U+00A0-00FF, U+0174-0177, U+2013-2014, U+2018-2019, U+201C-201D, U+2022, U+2026, U+20AC, U+2190-2193, U+2212;
   src:
     local("Arimo"),
     local("Liberation Sans"),
