@@ -190,6 +190,10 @@ This section is the one source for `/iterate` and `/do-next`; they point here.
    so far and the expected end time. The Monitor stops when the gate ends.
 6. Park the wave: write `gated <tip sha>` in the plan and commit the plan on `main`. The wave
    branch and its worktree stay until the set is on `main`.
+7. The next wave's batches branch from that `gated <tip sha>`. A batch that started earlier, from
+   the wave's tip before its gate fixes, takes the difference before it lands:
+   `git diff <tip it branched from> <gated tip>`, applied as one commit. Wave 5 of ridge branched
+   before wave 4's gate fixes and failed its compliance suite on them (2026-11-18).
 
 **Write the restart state at each wave boundary.** At dispatch, each batch landed, gate start and
 `gated`, the coordinator writes into the wave's state line in `PLAN_WAVE_SET_<NAME>.md`: the
