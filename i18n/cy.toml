@@ -4528,7 +4528,7 @@ cy = '''Methu agor Google Drive: {reason}.'''
 
 [strings."widget.assist-check"]
 hash = "fd71bbc052b0"
-cy = '''Gwirio’r Ffurflen TAW hon gyda HMRC Assist'''
+cy = '''Gwirio’r Ffurflen hon gyda HMRC Assist'''
 
 [strings."widget.assist-hold-time-left"]
 hash = "c6b2bd19559a"
@@ -4552,7 +4552,7 @@ cy = '''Yn gofyn i HMRC Assist am adborth. Mae hyn yn cymryd ychydig eiliadau.''
 
 [strings."widget.assist-no-feedback"]
 hash = "33a5ce83a1b1"
-cy = '''Nid oes gan HMRC Assist adborth ar y Ffurflen TAW hon'''
+cy = '''Nid oes gan HMRC Assist adborth ar y Ffurflen hon'''
 
 [strings."widget.sign-in-to-continue"]
 hash = "607a80121c65"

@@ -22,3 +22,16 @@ describe("the Welsh catalogue uses HMRC's Welsh Corporation Tax terms", () => {
     expect(lines).toEqual([]);
   });
 });
+
+// The HMRC Assist widget draws the same control on the VAT return and on the Income Tax calculation
+// and final declaration, so its Welsh names "the return" (y Ffurflen) and not a VAT return (Ffurflen TAW).
+describe("the Welsh of the HMRC Assist widget fits every return it checks", () => {
+  test("no widget.assist entry names a VAT return", () => {
+    const entries = [...catalogue.matchAll(/^\[strings\."(widget\.assist[^"]*)"\][^[]*?^cy = '''([\s\S]*?)'''/gm)].map(([, id, cy]) => ({
+      id,
+      cy,
+    }));
+    expect(entries.length).toBeGreaterThan(5);
+    expect(entries.filter(({ cy }) => /\bTAW\b/.test(cy))).toEqual([]);
+  });
+});
