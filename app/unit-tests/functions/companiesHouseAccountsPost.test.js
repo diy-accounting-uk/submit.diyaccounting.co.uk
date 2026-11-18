@@ -375,6 +375,39 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     expect(body.errors[0].number).toBe("502");
   });
 
+  async function asyncRequestWrites() {
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    return mockSend.mock.calls
+      .map(([cmd]) => cmd)
+      .filter((cmd) => cmd instanceof lib.UpdateCommand && cmd.input.ExpressionAttributeValues?.[":status"])
+      .map((cmd) => cmd.input.ExpressionAttributeValues);
+  }
+
+  test("keeps the filing pending with its request data and answers its number when the gateway never answers the sent envelope", async () => {
+    mockPostToGateway.mockRejectedValue(new Error("The operation was aborted due to timeout"));
+
+    const response = await companiesHouseAccountsPostHandler(buildEvent());
+
+    expect(response.statusCode).toBe(201);
+    expect(parseResponseBody(response).submissionNumber).toBe("00001A");
+    const writes = await asyncRequestWrites();
+    expect(writes.map((values) => values[":status"])).toEqual(["pending"]);
+    expect(writes[0][":data"]).toMatchObject({ kind: "accounts", filedDocument: '<?xml version="1.0"?><html>fake ixbrl</html>' });
+    expect(writes[0][":data"].chargeActivityId).toBeTruthy();
+  });
+
+  test("marks the filing failed when the envelope could not be built, before anything was sent", async () => {
+    mockBuildAccountsSubmission.mockImplementation(() => {
+      throw new Error("envelope build failed");
+    });
+
+    const response = await companiesHouseAccountsPostHandler(buildEvent());
+
+    expect(response.statusCode).toBe(500);
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+    expect((await asyncRequestWrites()).map((values) => values[":status"])).toEqual(["pending", "failed"]);
+  });
+
   test("returns 400 with the gateway errors when the gateway reports the company authentication code as invalid", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [{ raisedBy: "CompanyDataRequest", number: 9999, type: "fatal", text: "Invalid CompanyAuthenticationCode", location: "" }],

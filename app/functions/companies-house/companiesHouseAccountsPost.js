@@ -392,6 +392,19 @@ function validateBalanceSheetAddsUp(year, yearLabel, errorMessages) {
   }
 }
 
+// The envelope left, so Companies House may have it. The filing stays pending with its request
+// data, the page polls it by number, and a late ACCEPT still gets its receipt, email and charge.
+async function submittedWithOutcomeUnknown({ request, responseHeaders, submissionNumber, userSub, clientId, error }) {
+  await recordSubmissionFailure({
+    failure: "gateway-outcome-unknown",
+    summary: "Companies House accounts sent with no answer from the gateway; kept pending",
+    userSub,
+    detail: { submissionNumber, error: error.message },
+    clientId,
+  });
+  return http201CreatedResponse({ request, headers: { ...responseHeaders }, data: { submissionNumber } });
+}
+
 async function recordSubmissionFailure({ failure, summary, userSub, detail = {}, clientId }) {
   await publishActivityFailureEvent({
     event: "companies-house-accounts-failed",
@@ -520,6 +533,7 @@ export async function ingestHandler(event) {
   }
 
   let submissionNumber;
+  let envelopeSent = false;
   try {
     const ixbrl = buildAccountsIxbrl(accounts);
     submissionNumber = await allocateSubmissionNumber();
@@ -557,6 +571,7 @@ export async function ingestHandler(event) {
       language: accounts.documentLanguage === "cy" ? "CY" : undefined,
     });
 
+    envelopeSent = true;
     const gatewayResponse = await postToGateway(submissionXml, govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {});
     const parsed = parseGatewayResponse(gatewayResponse.data);
 
@@ -609,6 +624,7 @@ export async function ingestHandler(event) {
     });
   } catch (error) {
     logger.error({ message: "Unexpected error submitting Companies House accounts", error: error.message, stack: error.stack });
+    if (envelopeSent) return submittedWithOutcomeUnknown({ request, responseHeaders, submissionNumber, userSub, clientId, error });
     if (submissionNumber) {
       await putAsyncRequest(userSub, submissionNumber, "failed", { message: error.message }, asyncRequestsTableName);
     }

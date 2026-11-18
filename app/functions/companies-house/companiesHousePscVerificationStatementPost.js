@@ -125,6 +125,18 @@ export function extractAndValidateParameters(event, errorMessages) {
   };
 }
 
+// The envelope left, so Companies House may have it. The filing stays pending with its request
+// data, the page polls it by number, and a late ACCEPT still gets its receipt and email.
+async function submittedWithOutcomeUnknown({ request, responseHeaders, submissionNumber, userSub, error }) {
+  await recordSubmissionFailure({
+    failure: "gateway-outcome-unknown",
+    summary: "Companies House PSC verification statement sent with no answer from the gateway; kept pending",
+    userSub,
+    detail: { submissionNumber, error: error.message },
+  });
+  return http201CreatedResponse({ request, headers: { ...responseHeaders }, data: { submissionNumber } });
+}
+
 async function recordSubmissionFailure({ failure, summary, userSub, detail = {} }) {
   await publishActivityFailureEvent({
     event: "companies-house-psc-verification-statement-failed",
@@ -176,6 +188,7 @@ export async function ingestHandler(event) {
   const govTestScenario = getHeader(event.headers, "Gov-Test-Scenario");
 
   let submissionNumber;
+  let envelopeSent = false;
   try {
     const { presenterId, presenterCode } = ownPresenter ?? (await resolvePresenterCredentials());
 
@@ -212,6 +225,7 @@ export async function ingestHandler(event) {
     });
 
     const gatewayHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
+    envelopeSent = true;
     const gatewayResponse = await postToGateway(submissionXml, gatewayHeaders);
     const parsed = parseGatewayResponse(gatewayResponse.data);
 
@@ -260,6 +274,7 @@ export async function ingestHandler(event) {
       error: error.message,
       stack: error.stack,
     });
+    if (envelopeSent) return submittedWithOutcomeUnknown({ request, responseHeaders, submissionNumber, userSub, error });
     if (submissionNumber) {
       await putAsyncRequest(userSub, submissionNumber, "failed", { message: error.message }, asyncRequestsTableName);
     }

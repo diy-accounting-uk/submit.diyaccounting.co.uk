@@ -170,6 +170,25 @@ describe("companiesHousePscVerificationStatementPost ingestHandler", () => {
     );
   });
 
+  test("keeps the filing pending and answers its number when the gateway never answers the sent envelope", async () => {
+    mockPostToGateway.mockImplementation(async (xml) => {
+      if (xml === "<GovTalkMessage>submission</GovTalkMessage>") throw new Error("The operation was aborted due to timeout");
+      return { ok: true, status: 200, data: "<GovTalkMessage>ack</GovTalkMessage>", headers: {}, duration: 1 };
+    });
+
+    const response = await companiesHousePscVerificationStatementPostHandler(buildEvent());
+
+    expect(response.statusCode).toBe(201);
+    expect(parseResponseBody(response).submissionNumber).toBe("00001A");
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const writes = mockSend.mock.calls
+      .map(([cmd]) => cmd)
+      .filter((cmd) => cmd instanceof lib.UpdateCommand && cmd.input.ExpressionAttributeValues?.[":status"])
+      .map((cmd) => cmd.input.ExpressionAttributeValues);
+    expect(writes.map((values) => values[":status"])).toEqual(["pending"]);
+    expect(writes[0][":data"]).toMatchObject({ kind: "psc-verification-statement" });
+  });
+
   test("forwards a Gov-Test-Scenario header to the gateway call", async () => {
     await companiesHousePscVerificationStatementPostHandler(buildEvent({ headers: { "Gov-Test-Scenario": "AUTH_FAILURE" } }));
     expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>submission</GovTalkMessage>", {
