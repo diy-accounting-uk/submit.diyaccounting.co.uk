@@ -62,6 +62,21 @@ test.describe("MCP chat harness", () => {
     }
   });
 
+  test("sits in the site's centred column at 1280, with the buttons under the script choice before the first turn", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await setupRoutes(page, OBLIGATIONS);
+    await page.goto("http://localhost:3000/mcp-harness.html", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#toolList")).toContainText("list_vat_obligations");
+
+    const main = await page.locator("main").boundingBox();
+    expect(main.width).toBeLessThan(900);
+    expect(Math.abs(main.x - (1280 - main.x - main.width))).toBeLessThan(24);
+
+    const choice = await page.locator("#scriptChoice").boundingBox();
+    const nextTurn = await page.locator("#nextTurn").boundingBox();
+    expect(nextTurn.y - (choice.y + choice.height)).toBeLessThan(120);
+  });
+
   test("stops the script at a 404 and says the endpoint is local only", async ({ page }) => {
     await setupRoutes(page, OBLIGATIONS, { callStatus: 404 });
     await page.goto("http://localhost:3000/mcp-harness.html", { waitUntil: "domcontentloaded" });

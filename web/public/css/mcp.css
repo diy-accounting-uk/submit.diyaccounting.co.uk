@@ -61,21 +61,11 @@
   color: var(--c-ok);
 }
 
-/* MCP harness */
-body.page-wide {
-  max-width: none;
-}
-
+/* MCP harness: the conversation, then the browser step, in the site's column */
 .harness-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
-}
-
-@media (max-width: 900px) {
-  .harness-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 .harness-panel {
@@ -102,6 +92,11 @@ body.page-wide {
   min-height: 18rem;
   max-height: 32rem;
   overflow-y: auto;
+}
+
+/* Before the first turn the log holds no space, so the buttons sit under the script choice. */
+.harness-chat:empty {
+  min-height: 0;
 }
 
 .harness-turn {
