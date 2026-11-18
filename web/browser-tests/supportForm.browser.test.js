@@ -52,9 +52,6 @@ test.describe("Support form reply address", () => {
       await page.addInitScript((value) => localStorage.setItem("userInfo", value), JSON.stringify(userInfo));
     }
     await page.goto("http://localhost:3000/help.html", { waitUntil: "domcontentloaded" });
-    await page.evaluate(() => {
-      document.documentElement.dataset.apiUrl = "http://localhost:3000";
-    });
     await page.locator("#open-support-form").click();
     await expect(page.locator("#support-modal")).toBeVisible();
   }
