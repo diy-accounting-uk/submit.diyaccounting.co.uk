@@ -22,7 +22,7 @@ the set, with no deployment of its own.
 
 ## Status
 
-approved 2026-11-17 (the operator's `/iterate`). Waves 1 to 6 gated; `claude/ridge-set` gated at 1e59137dc and pushed (main merged in, every commit signed). Set gate: batch-check every gate PASS (anvil), the Docker build (laptop), 42 simulator suites (four cloud workers), 33 proxy suites against HMRC's sandbox and the Companies House services, the LANG10a, LANG10b and LANG11a Welsh journey proofs on the proxy lane. Its fixes: the HMRC error-scenario waits; the proxy lane's price ids, Companies House keys, gateway test mode, mock sign-in identity and stripe listen; the Welsh proofs' findings; the gateway banner and PollInterval polling; the cloud worker role's Companies House secrets.
+approved 2026-11-17 (the operator's `/iterate`). On main as 66bc3c536 (PR #837, merged 2026-11-18), the prod deploy running. ci proofs passed on ci-set1: WEB2, WEB3, WEB8, WEB14, AUTH, DASH40 (bundles), CW2, WAF2 (alarm-replay), and the LANG10a, LANG10b and LANG11a Welsh journeys. Fixes the ci proofs found rode on the set: the support form posts to the site's own API (WEB14), and the Welsh Bundles page strings. Next: the prod proofs, SD1's and WAF1's dispatches on main, the MCP2 tag and registry publish, then SL2's spreadsheets push after WEB4 is on prod.
 
 ## The goal
 
