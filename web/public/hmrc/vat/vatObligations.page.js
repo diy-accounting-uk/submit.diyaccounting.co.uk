@@ -24,6 +24,7 @@ function hideSearchCriteria() {
 }
 
 function showSearchCriteria() {
+  document.getElementById("obligationsForm").style.display = "";
   const container = document.getElementById("searchCriteriaContainer");
   const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
   const cancelBtn = document.getElementById("cancelRequestBtn");
@@ -35,9 +36,11 @@ function showSearchCriteria() {
   }
 }
 
-function hideRequestControls() {
+// With the results shown, the form's card would hold nothing, so the whole card goes; New search brings it back.
+function hideFormForResults() {
   document.getElementById("cancelRequestBtn").style.display = "none";
   document.getElementById("toggleSearchCriteriaBtn").style.display = "none";
+  document.getElementById("obligationsForm").style.display = "none";
 }
 
 function cancelRequest() {
@@ -183,7 +186,7 @@ async function continueObligationsRetrieval() {
     // Display results
     displayObligations(result.obligations || []);
     document.getElementById("obligationsResults").style.display = "block";
-    hideRequestControls();
+    hideFormForResults();
     hideStatus();
 
     // Clean up session storage - keep token for subsequent HMRC operations
@@ -337,7 +340,7 @@ async function handleFormSubmission(event) {
       // Display results
       displayObligations(result.obligations || []);
       document.getElementById("obligationsResults").style.display = "block";
-      hideRequestControls();
+      hideFormForResults();
       hideStatus();
     } catch (error) {
       console.error("Error retrieving obligations:", error);
