@@ -71,6 +71,9 @@ on:
           - 'assistant-vat-handoff'
           - 'accounting-diya-gl-profit'
           - 'accounting-spreadsheet-profit'
+          - 'short-spreadsheets'
+          - 'short-submit-return'
+          - 'short-file-micro-entity-accounts'
           - 'itsa-loss-claims'
           - 'itsa-foreign-property-losses'
           - 'itsa-carry-back-adjustments'
@@ -162,8 +165,12 @@ jobs:
         run: |
           HAS_LOCAL_APP=$(node -p "!!(require('./videos/${{ needs.params.outputs.script }}.json').localApp)")
           echo "has-local-app=${HAS_LOCAL_APP}" | tee -a "$GITHUB_OUTPUT"
+          # A script whose local app is the spreadsheet host records a workbook in Collabora Online.
+          USES_COLLABORA=$(node -p "String(require('./videos/${{ needs.params.outputs.script }}.json').localApp?.command || '').includes('scripts/collabora-sheet-host.js')")
+          echo "uses-collabora=${USES_COLLABORA}" | tee -a "$GITHUB_OUTPUT"
     outputs:
       has-local-app: ${{ steps.meta.outputs.has-local-app }}
+      uses-collabora: ${{ steps.meta.outputs.uses-collabora }}
 
   names:
     needs:
@@ -240,14 +247,15 @@ jobs:
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     environment: ${{ needs.params.outputs.github-environment }}
-    # Collabora Online (the workbook video's spreadsheet editor) starts only for that script; an
-    # empty image string starts no service. SYS_ADMIN lets it bind-mount each document's jail.
+    # Collabora Online (the workbook videos' spreadsheet editor) starts only for a script whose local
+    # app is the spreadsheet host; an empty image string starts no service. SYS_ADMIN lets it
+    # bind-mount each document's jail. net.proto=IPv4 matches scripts/collabora-sheet-host.js.
     services:
       collabora:
-        image: ${{ needs.params.outputs.script == 'accounting-spreadsheet-profit' && 'collabora/code@sha256:4e983196eb9878f339cc506c38c21f1cc3473bca3d6de883c5de08f9c0cc3a6c' || '' }}
+        image: ${{ needs.script-meta.outputs.uses-collabora == 'true' && 'collabora/code@sha256:4e983196eb9878f339cc506c38c21f1cc3473bca3d6de883c5de08f9c0cc3a6c' || '' }}
         env:
           aliasgroup1: http://.*:8099
-          extra_params: --o:ssl.enable=false --o:ssl.termination=false --o:user_interface.mode=classic
+          extra_params: --o:ssl.enable=false --o:ssl.termination=false --o:user_interface.mode=classic --o:net.proto=IPv4
         options: --cap-add MKNOD --cap-add SYS_ADMIN
     # This job rotates and purges the videoCapture lane's durable Cognito user, so two runs on
     # that user queue rather than overlap.
@@ -343,8 +351,8 @@ jobs:
           # is not the environment's last-known-good, so by this point the apex is guaranteed
           # to serve whichever deployment is being recorded. A localApp script supplies its own.
           DIY_SUBMIT_BASE_URL: ${{ needs.script-meta.outputs.has-local-app == 'true' && '' || needs.names.outputs.public-url }}
-          # The workbook video's Collabora service container; the host starts no container of its own when this is set.
-          COLLABORA_URL: ${{ needs.params.outputs.script == 'accounting-spreadsheet-profit' && 'http://collabora:9980' || '' }}
+          # The workbook videos' Collabora service container; the host starts no container of its own when this is set.
+          COLLABORA_URL: ${{ needs.script-meta.outputs.uses-collabora == 'true' && 'http://collabora:9980' || '' }}
           HMRC_ACCOUNT: synthetic
           # HMRC_SANDBOX_CLIENT_ID is a test application credential - not a production secret
           HMRC_SANDBOX_CLIENT_ID: 'uqMHA6RsDGGa7h8EG2VqfqAmv4tV'

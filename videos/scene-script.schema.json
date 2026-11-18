@@ -108,7 +108,7 @@
     "consentAnswer": {
       "type": "string",
       "enum": ["granted", "declined"],
-      "description": "The site's cookie-consent answer, stored in the browser before any page loads, so the banner never appears in a frame. Absent: the banner shows until a consent step answers it."
+      "description": "The site's cookie-consent answer, stored in the browser before any page loads, so the banner never appears in a frame. Absent: declined for a script that records the submit site; none for a script with a localApp, whose site keeps its own banner."
     },
     "finalHoldMs": { "type": "number", "minimum": 0 },
     "hmrcServices": {

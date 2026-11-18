@@ -7,6 +7,7 @@ import { expect, test } from "@playwright/test";
 import { loggedClick, loggedFill, timestamp, takeScreenshot } from "../helpers/behaviour-helpers.js";
 import { hasReachedHostedUi, hostedUiFormFailureMessage, hostedUiRedirectFailureMessage } from "../helpers/hosted-ui-navigation.js";
 import { TOTP, Secret } from "otpauth";
+import { mockIdentityEmail } from "../helpers/mockIdentity.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-login-steps";
 
@@ -193,7 +194,7 @@ export async function fillInMockAuth(page, testAuthUsername, screenshotPath = de
     // <textarea class="u-full-width claims" name="claims" rows="15" placeholder="Optional claims JSON" autofocus="on"></textarea>
     // { "email": "synthetic-user@test.diyaccounting.co.uk" }
     const identityToken = {
-      email: `synthetic-${testAuthUsername}@test.diyaccounting.co.uk`,
+      email: mockIdentityEmail(testAuthUsername),
     };
     await loggedFill(page, 'textarea[name="claims"]', JSON.stringify(identityToken), "Entering identity claims", { screenshotPath });
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-fill-in-moc-filled-claims.png`, readerView: true });
