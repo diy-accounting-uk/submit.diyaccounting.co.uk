@@ -121,7 +121,7 @@ pages after the last batch lands.
 
 CW1 (the AWS credential handoff) leaves the set and ships on its own pull request as soon as it is built (operator, 2026-11-18); CW2 (the relay) and CP1 (the cloud profile) stay in wave 5. Wave 6's scene work (VID1 to VID5) runs on the cloud workers before the wave 5 gate (operator, 2026-11-18).
 
-State: landed 9569e8d4d on `claude/ridge-w05` (assembled on cloud worker epoch, then CW2 and LANG11a's CT600 Welsh); gate running (epoch: maven, npm test, mcp, browser tests, lint; laptop: docker, content scan, 21 simulator suites). Welsh small company accounts (LANG11b, anvil) lands after the gate with its blast radius. CW1 merged alone: PR #836.
+State: landed a885bac1a on `claude/ridge-w05`: the epoch assembly, CW2, LANG11a's CT600 Welsh, the icon header and lint fixes, wave 4's gate fixes (the batches branched before them), LANG11b's small company accounts. Gate: the first run on 9569e8d4d failed licence headers, prettier, the ESLint ratchet and compliance, all fixed; the rerun on a885bac1a is on cloud worker epoch (`claude/epoch-w05-gate2`), the simulator suites on the laptop. CW1 merged alone (PR #836) and proved on worker bugle: role, both secrets, a narrated recording.
 
 ### Wave 6: the look wave
 
