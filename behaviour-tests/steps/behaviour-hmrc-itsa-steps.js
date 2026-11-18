@@ -23,7 +23,7 @@ import {
   isSyntheticMode,
   takeScreenshot,
 } from "../helpers/behaviour-helpers.js";
-import { waitForSuccessOrError } from "../helpers/waitForSuccessOrError.js";
+import { waitForScenarioError, waitForSuccessOrError } from "../helpers/waitForSuccessOrError.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-hmrc-itsa-steps";
 
@@ -134,7 +134,7 @@ export async function verifyItsaBusinessDetailsResults(page, businessDetailsQuer
     if (hasScenario) {
       switch (testScenario) {
         case "NOT_FOUND":
-          await page.waitForTimeout(500);
+          await waitForScenarioError(page);
           const businessDetailsResults = page.locator("#businessDetailsResults");
           await expect(businessDetailsResults).toBeHidden();
           break;
@@ -288,7 +288,7 @@ export async function verifyItsaObligationsResults(page, obligationsQuery, scree
       switch (testScenario) {
         case "NOT_FOUND":
         case "NO_OBLIGATIONS_FOUND":
-          await page.waitForTimeout(500);
+          await waitForScenarioError(page);
           const obligationsResults = page.locator("#obligationsResults");
           await expect(obligationsResults).toBeHidden();
           break;
@@ -456,7 +456,7 @@ export async function verifyItsaSelfEmploymentPeriodResults(page, periodQuery, s
         case "NOT_CONTIGUOUS_PERIOD":
         case "DUPLICATE_SUBMISSION":
         case "TAX_YEAR_NOT_SUPPORTED":
-          await page.waitForTimeout(500);
+          await waitForScenarioError(page);
           const selfEmploymentPeriodResults = page.locator("#selfEmploymentPeriodResults");
           await expect(selfEmploymentPeriodResults).toBeHidden();
           break;
@@ -609,7 +609,7 @@ export async function verifyItsaUkPropertyPeriodResults(page, periodQuery, scree
         case "NOT_CONTIGUOUS":
         case "DUPLICATE_SUBMISSION":
         case "TYPE_OF_BUSINESS_INCORRECT":
-          await page.waitForTimeout(500);
+          await waitForScenarioError(page);
           const ukPropertyPeriodResults = page.locator("#ukPropertyPeriodResults");
           await expect(ukPropertyPeriodResults).toBeHidden();
           break;

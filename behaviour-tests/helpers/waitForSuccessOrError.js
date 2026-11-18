@@ -3,6 +3,7 @@
 
 // behaviour-tests/helpers/waitForSuccessOrError.js
 
+import { expect } from "@playwright/test";
 import { timestamp } from "./behaviour-helpers.js";
 
 /**
@@ -166,4 +167,11 @@ export async function waitForSuccessOrError(page, options = {}) {
     // 5. Sleep before next poll
     await page.waitForTimeout(pollIntervalMs);
   }
+}
+
+// An HMRC sandbox scenario that answers with an error is done when the page shows its error. The request
+// goes out only after the fraud prevention headers are gathered, and the public IP lookup there can take
+// several seconds, so a fixed short wait can read the page before the request has even been sent.
+export async function waitForScenarioError(page, { timeout = 60_000 } = {}) {
+  await expect(page.locator("#statusMessagesContainer .status-message.status-error").first()).toBeVisible({ timeout });
 }
