@@ -22,7 +22,7 @@ the set, with no deployment of its own.
 
 ## Status
 
-approved 2026-11-17 (the operator's `/iterate`). Waves 1 to 6 gated; `claude/ridge-set` at 2c6a1c081 (two gate fixes: the HMRC error-scenario steps wait for the page's error; the proxy lane's price ids and Companies House keys), its set gate running.
+approved 2026-11-17 (the operator's `/iterate`). Waves 1 to 6 gated; `claude/ridge-set` at 237d950c7, its set gate running. Gate fixes on the set: the HMRC error-scenario steps wait for the page's error; the proxy lane's price ids, Companies House keys, gateway test mode, mock sign-in identity and stripe listen; the Welsh journey proofs' findings for LANG10a, LANG10b and LANG11a (the sign-in page, callbacks, bundles, penalties, the Assist widget, receipts, the figures table, the stale processing banner).
 
 ## The goal
 
