@@ -391,6 +391,19 @@ test.describe("Wide tables read at 390px and 1280px without sideways scroll", ()
     expect(unlabelled).toBe(0);
   });
 
+  test("rates.html keeps a row's two source links and their comma on one line at 390px", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 900 });
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/rates.html", { waitUntil: "domcontentloaded" });
+
+    const cell = page.locator("td.rate-source:has(a[href='#source-capital-allowances-writing-down-rates'])").first();
+    await expect(cell.locator(".stacked-value")).toHaveCount(1);
+    await expect(cell.locator(".stacked-value")).toHaveText("3, 4");
+    const tops = await cell.locator("a").evaluateAll((links) => links.map((link) => Math.round(link.getBoundingClientRect().top)));
+    expect(tops.length).toBe(2);
+    expect(tops[0]).toBe(tops[1]);
+  });
+
   test("the calendar's deadline caption is a block inside a stacked table at 390px", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 900 });
     await serveRealSite(page);
