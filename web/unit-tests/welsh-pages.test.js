@@ -102,6 +102,12 @@ describe.each(WELSH_PAGES)("Welsh page $cy", (page) => {
     expect(missing).toEqual([]);
   });
 
+  it("reads its skip link in Welsh", () => {
+    const links = [...welsh.matchAll(/<a [^>]*class="skip-link"[^>]*>([^<]*)<\/a>/g)].map((match) => match[1].trim());
+    expect(links.length).toBeGreaterThan(0);
+    for (const text of links) expect(text).toBe("Neidio i’r prif gynnwys");
+  });
+
   it("names itself as canonical", () => {
     expect(welsh).toContain(`<link rel="canonical" href="${welshUrl(page)}" />`);
   });

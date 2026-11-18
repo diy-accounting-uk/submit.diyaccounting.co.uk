@@ -477,6 +477,12 @@ export async function renderWelshPage(page, catalogue = loadCatalogue(), pages =
     }
     return result;
   });
+  // markPage leaves the skip link unmarked, so a page the build marks gets the shared Welsh here.
+  html = html.replace(/<a ([^>]*class="skip-link"[^>]*)>[^<]*<\/a>/g, (whole, attributes) =>
+    /\sdata-i18n=/.test(` ${attributes}`)
+      ? whole
+      : `<a ${attributes} data-i18n="common.skip-link">${welshText(catalogue, "common.skip-link")}</a>`,
+  );
   html = replaceOnce(html, /(<link rel="canonical" href=")[^"]*(")/, `$1${welshUrl(page)}$2`, `canonical link in ${page.en}`);
   html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${welshUrl(page)}$2`);
   html = replaceOnce(html, /<\/main>/, `${welshServicesBlock(catalogue, page)}</main>`, `</main> in ${page.en}`);
