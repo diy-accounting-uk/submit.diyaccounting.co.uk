@@ -14,7 +14,7 @@ const readPublic = (relativePath) => fs.readFileSync(path.join(PUBLIC_DIR, relat
 
 const OBLIGATIONS = { obligations: [{ start: "2017-01-01", end: "2017-03-31", status: "O", periodKey: "#001" }] };
 
-async function setupRoutes(page, toolAnswer, { callStatus = 200 } = {}) {
+async function setupRoutes(page, toolAnswer, { callStatus = 200, failTool } = {}) {
   const calls = [];
   await page.route("**/*.js", async (route) => {
     await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
@@ -41,6 +41,13 @@ async function setupRoutes(page, toolAnswer, { callStatus = 200 } = {}) {
   await page.route("**/api/v1/dev/mcp-harness/call", async (route) => {
     calls.push(route.request().postDataJSON());
     if (callStatus !== 200) return route.fulfill({ status: callStatus, contentType: "text/html", body: "Not found" });
+    if (route.request().postDataJSON().tool === failTool) {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: false, result: "Missing registeredOffice" }),
+      });
+    }
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, result: toolAnswer }) });
   });
   await page.route("**/browser-step.html", async (route) => {
@@ -89,6 +96,23 @@ test.describe("MCP chat harness", () => {
     await expect(page.locator(".harness-turn")).toHaveCount(3);
     await expect(page.locator("#nextTurn")).toBeDisabled();
     await expect(page.locator("#playAll")).toBeEnabled();
+  });
+
+  test("stops the script at a tool call that answers ok false, and says so", async ({ page }) => {
+    const calls = await setupRoutes(page, OBLIGATIONS, { failTool: "request_hmrc_authorisation" });
+    await page.goto("http://localhost:3000/mcp-harness.html", { waitUntil: "domcontentloaded" });
+
+    await page.locator("#playAll").click();
+
+    const toolCard = page.locator('.harness-turn[data-role="tool"]').first();
+    await expect(toolCard).toHaveAttribute("data-outcome", "error");
+    await expect(toolCard).toContainText("Missing registeredOffice");
+    await expect(toolCard.locator(".harness-stopped")).toHaveText(
+      "This call failed, so the script stops here: the turns after it depend on its answer.",
+    );
+    await expect(page.locator(".harness-turn")).toHaveCount(3);
+    await expect(page.locator("#nextTurn")).toBeDisabled();
+    expect(calls.map((call) => call.tool)).toEqual(["request_hmrc_authorisation"]);
   });
 
   test("offers the scripts in a chooser and a copy button for each configuration", async ({ page }) => {

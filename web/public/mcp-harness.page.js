@@ -29,6 +29,8 @@
   const LOCAL_ONLY_MESSAGE =
     "The harness endpoint is local only. Run the site with npm run start:proxy or npm run start:simulator to play this script.";
 
+  const STOPPED_MESSAGE = "This call failed, so the script stops here: the turns after it depend on its answer.";
+
   let script = null;
   const answers = {};
   let nextIndex = 0;
@@ -132,7 +134,14 @@
       if (turn.id) answers[turn.id] = result;
       output.textContent = typeof result === "string" ? result : JSON.stringify(result, null, 2);
       keepLatestTurnInView();
-      const link = ok ? browserStepLink(result) : null;
+      if (!ok) {
+        const stopped = document.createElement("p");
+        stopped.className = "harness-stopped";
+        stopped.textContent = STOPPED_MESSAGE;
+        card.appendChild(stopped);
+        return false;
+      }
+      const link = browserStepLink(result);
       if (link) showBrowserStep(link);
       return true;
     } catch (error) {
