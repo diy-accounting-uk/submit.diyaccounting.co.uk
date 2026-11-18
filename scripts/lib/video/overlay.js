@@ -86,11 +86,36 @@ export async function typeChar(page, rect) {
 // which is a self-contained browser-side IIFE with no imports and so cannot be tested directly.
 export async function headline(page, text, keyWord, rect, viewport, { beside = false } = {}) {
   if (!text) return svcCall(page, "headline", null, null, null);
-  if (!rect) return svcCall(page, "headline", text, keyWord || null, placeHeadline(null, viewport));
-  const { subject, obstacles } = await probeAroundTarget(page, rect);
   const width = Math.min(DEFAULT_HEADLINE_CONFIG.maxWidth, HEADLINE_PADDING_WIDTH + text.length * HEADLINE_CHAR_WIDTH);
+  if (!rect) {
+    const pageHeadings = await probePageHeadings(page);
+    return svcCall(
+      page,
+      "headline",
+      text,
+      keyWord || null,
+      placeHeadline(null, viewport, { ...DEFAULT_HEADLINE_CONFIG, width }, pageHeadings),
+    );
+  }
+  const { subject, obstacles } = await probeAroundTarget(page, rect);
   const placement = placeHeadline(subject, viewport, { ...DEFAULT_HEADLINE_CONFIG, width }, obstacles, { beside });
   return svcCall(page, "headline", text, keyWord || null, placement);
+}
+
+// The page's h1 boxes, for a tag with no target to keep off.
+async function probePageHeadings(page) {
+  const probe = () =>
+    [...document.querySelectorAll("h1")]
+      .map((el) => el.getBoundingClientRect())
+      .filter((r) => r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < window.innerHeight)
+      .map((r) => ({ left: r.left, top: r.top, width: r.width, height: r.height, weight: 1 }));
+  try {
+    return await page.evaluate(probe);
+  } catch (err) {
+    if (!isExecutionContextDestroyed(err)) throw err;
+    await page.waitForLoadState("domcontentloaded");
+    return page.evaluate(probe);
+  }
 }
 
 // What a tag must keep off: the target joined with the field group it belongs to (label, hint,

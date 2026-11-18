@@ -80,14 +80,16 @@ describe("placeHeadline", () => {
     const rect = { left: 860, top: 500, width: 200, height: 60 };
     const controlAbove = { left: 760, top: 400, width: 400, height: 60, weight: 4 };
     const textBelow = { left: 760, top: 600, width: 400, height: 20, weight: 1 };
-    expect(placeHeadline(rect, viewport, config, [controlAbove, textBelow]).anchor).toBe("below");
+    const marginContent = { left: 0, top: 0, width: 760, height: 1080, weight: 1 };
+    expect(placeHeadline(rect, viewport, config, [controlAbove, textBelow, marginContent]).anchor).toBe("below");
     expect(placeHeadline(rect, viewport, config, []).anchor).toBe("above");
   });
 
   test("a side that hides content still loses to the only side that clears the target", () => {
     const rect = { left: 860, top: 100, width: 200, height: 60 };
     const controlBelow = { left: 760, top: 182, width: 400, height: 60, weight: 4 };
-    expect(placeHeadline(rect, viewport, config, [controlBelow]).anchor).toBe("below");
+    const marginContent = { left: 0, top: 0, width: 760, height: 1080, weight: 1 };
+    expect(placeHeadline(rect, viewport, config, [controlBelow, marginContent]).anchor).toBe("below");
   });
 });
 
@@ -106,5 +108,41 @@ describe("placeHeadline beside the target", () => {
   test("falls back to above or below when the margin is narrower than the tag", () => {
     const rect = { left: 200, top: 300, width: 700, height: 24 };
     expect(placeHeadline(rect, viewport, config, [], { beside: true }).anchor).not.toBe("beside");
+  });
+});
+
+describe("placeHeadline keeps off page content", () => {
+  const viewport = { width: 1920, height: 1080 };
+  const config = { ...DEFAULT_HEADLINE_CONFIG, width: 400 };
+
+  test("a tag that would hide the next label moves to an empty margin beside the target", () => {
+    const rect = { left: 609, top: 400, width: 700, height: 40 };
+    const labelAbove = { left: 609, top: 330, width: 300, height: 24, weight: 1 };
+    const labelBelow = { left: 609, top: 470, width: 300, height: 24, weight: 1 };
+    expect(placeHeadline(rect, viewport, config, [labelAbove, labelBelow]).anchor).toBe("beside");
+  });
+
+  test("a tag that hides nothing above or below stays there", () => {
+    const rect = { left: 609, top: 400, width: 700, height: 40 };
+    expect(placeHeadline(rect, viewport, config, []).anchor).toBe("above");
+  });
+
+  test("a tag with no target takes the band when no h1 is in it", () => {
+    const placement = placeHeadline(null, viewport, config, []);
+    expect(placement.top).toBe(DEFAULT_HEADLINE_CONFIG.defaultTop);
+    expect(placement.centerX).toBe(viewport.width / 2);
+  });
+
+  test("a tag with no target moves into the margin left of an h1 in the band", () => {
+    const h1 = { left: 576, top: 130, width: 600, height: 50, weight: 1 };
+    const placement = placeHeadline(null, viewport, config, [h1]);
+    expect(placement.centerX + placement.maxWidth / 2).toBeLessThanOrEqual(h1.left - DEFAULT_HEADLINE_CONFIG.gapPx);
+  });
+
+  test("a tag with no target goes below an h1 when the margin is too narrow", () => {
+    const narrow = { width: 1280, height: 720 };
+    const h1 = { left: 100, top: 130, width: 1000, height: 50, weight: 1 };
+    const placement = placeHeadline(null, narrow, config, [h1]);
+    expect(placement.top).toBeGreaterThanOrEqual(h1.top + h1.height);
   });
 });
