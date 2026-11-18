@@ -434,9 +434,10 @@ export function buildPaymentPeriodsRequest({
 
 /**
  * Build the GovTalk envelope for a GetSubmissionStatus poll. The Technical Interface Specification
- * names three options: one submission (submissionNumber), every completed submission for one
- * company (companyNumber), and every completed submission for the presenter (neither). Options 2
- * and 3 answer each completed submission once, and only after a StatusAck follows the poll.
+ * (v5.3, section 2.5) names three options: 1, one submission (submissionNumber); 2, every completed
+ * submission for the presenter (neither); 3, every completed submission for one company from the
+ * presenter (companyNumber). Options 2 and 3 answer each completed submission once, provided a
+ * StatusAck follows the poll.
  *
  * @param {object} input
  * @param {string} input.presenterId
