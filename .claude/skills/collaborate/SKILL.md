@@ -132,8 +132,8 @@ git fetch origin collab:refs/remotes/origin/collab
 mkdir -p ~/.aws && chmod 700 ~/.aws
 (umask 077 && git show origin/collab:.collab/<codename>.aws.age | age -d -i ~/.ssh/aws-handoff > ~/.aws/credentials)
 chmod 600 ~/.aws/credentials
-printf '[default]\nregion = eu-west-2\n' > ~/.aws/config
-AWS_PROFILE=default aws sts get-caller-identity --query Arn --output text
+printf '[default]\nregion = eu-west-2\n[profile diya-submit-ci]\nregion = eu-west-2\n' > ~/.aws/config
+AWS_PROFILE=diya-submit-ci aws sts get-caller-identity --query Arn --output text
 ```
 
 The last line must print an ARN with `assumed-role/submit-ci-cloud-worker-role/`. When it does not,
@@ -142,10 +142,8 @@ or `age` fails, the task is `not-done` with the error in the body.
 - The credentials expire within the hour. The first line of the file is a comment with the expiry
   time: read it with `head -1 ~/.aws/credentials`, which prints no key. When they expire, push the
   work so far with `Collab-Status: wip` and say in the body that the task needs new credentials.
-- The file holds only the `default` profile. `scripts/proxy-secrets.sh` uses the profile
-  `diya-submit-ci` unless `AWS_PROFILE` is set, so run it as
-  `AWS_PROFILE=default scripts/proxy-secrets.sh <command>`. The Polly narration uses the default
-  profile as it is.
+- The file holds the same keys under two profiles: `default`, which the Polly narration uses, and
+  `diya-submit-ci`, which `scripts/proxy-secrets.sh` and the npm scripts name. Both run unchanged.
 - The role may call `polly:SynthesizeSpeech` in eu-west-2 and read the two `ci/` secrets that
   `scripts/proxy-secrets.sh` reads. Every other AWS call is denied.
 - Never print, `cat`, copy or commit `~/.aws/credentials`, and never echo a variable that holds a

@@ -6322,21 +6322,21 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-65 Lease a cloud work repository and start a worker session
 
 - **Use when:** the coordinator needs a Claude Code cloud session as a worker, or a pool repository must be leased, re-synced, released or watched.
-- **Does:** new-cloud-session.sh leases the first free submit-cloud-<codename> repository by a .collab/lease file on its collab branch. It creates the next one with Actions off when none is free. It pushes origin/main and the base branch to it by URL. It starts claude --cloud from a clone in a terminal, or prints the claude.ai/code/new link. Its watch subcommand polls the claude/* branches for the Monitor.
-- **Run:** `/new-cloud-session [codename] [--base <branch>]`; `bash .claude/skills/new-cloud-session/new-cloud-session.sh [codename] [--base <branch>] [--dry-run]`; `... release <codename>`; `... post <codename> <file>`; `... watch <codename>`
+- **Does:** new-cloud-session.sh leases the first free submit-cloud-<codename> repository by a .collab/lease file on its collab branch. It creates the next one with Actions off when none is free. It pushes origin/main and the base branch to it by URL. It starts claude --cloud from a clone in a terminal, or prints the claude.ai/code/new link. Its watch subcommand polls the claude/* branches for the Monitor. Its creds subcommand dispatches cloud-credentials.yml with the worker's public key and pushes the age ciphertext of one-hour ci credentials to the collab branch.
+- **Run:** `/new-cloud-session [codename] [--base <branch>]`; `bash .claude/skills/new-cloud-session/new-cloud-session.sh [codename] [--base <branch>] [--dry-run]`; `... release <codename>`; `... post <codename> <file>`; `... watch <codename>`; `... creds <codename>`
 - **Entry:** `.claude/skills/new-cloud-session/SKILL.md`; `.claude/skills/new-cloud-session/new-cloud-session.sh:cmd_start`
-- **Files:** .claude/skills/new-cloud-session/SKILL.md, .claude/skills/new-cloud-session/new-cloud-session.sh, .claude/skills/new-cloud-session/pool.txt, PLAN_CLOUD_COLLABORATION.md
-- **Keywords:** cloud session, claude code on the web, claude --cloud, work repository, submit-cloud, pool, lease, collab branch, worker, deep link, remote worker
+- **Files:** .claude/skills/new-cloud-session/SKILL.md, .claude/skills/new-cloud-session/new-cloud-session.sh, .claude/skills/new-cloud-session/pool.txt, .claude/skills/new-cloud-session/environment-setup.sh, .github/workflows/cloud-credentials.yml, infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java, PLAN_CLOUD_COLLABORATION.md
+- **Keywords:** cloud session, claude code on the web, claude --cloud, work repository, submit-cloud, pool, lease, collab branch, worker, deep link, remote worker, aws credentials, age, cloud worker role
 - **Related:** DEV-66, DEV-27, DEV-30
 
 #### DEV-66 Work rows as a cloud worker for the coordinator
 
 - **Use when:** a Claude Code cloud session on a submit-cloud-<codename> work repository starts, or a task message from the coordinator arrives in it.
-- **Does:** collaborate checks Node 24, JDK 25, node_modules, a Playwright browser and the timeout variables, and stops when one is missing. On a task it branches claude/<codename>-<row> from the named base, builds the row, runs the named gates, and pushes to its own work repository. The last commit body carries the report and a Collab-Status trailer. The --loop form polls .collab/<codename>.md on the collab branch every 10 minutes.
+- **Does:** collaborate checks Node 24, JDK 25, node_modules, a Playwright browser and the timeout variables, and stops when one is missing. It makes an ssh-ed25519 key pair once per VM and pushes the public key to .collab/<codename>.pub on the collab branch, so the coordinator can hand it AWS credentials. On a task it branches claude/<codename>-<row> from the named base, builds the row, runs the named gates, and pushes to its own work repository. The last commit body carries the report and a Collab-Status trailer. The --loop form polls .collab/<codename>.md on the collab branch every 10 minutes.
 - **Run:** `/collaborate <codename>`; `/collaborate <codename> --loop`
 - **Entry:** `.claude/skills/collaborate/SKILL.md`
 - **Files:** .claude/skills/collaborate/SKILL.md, PLAN_CLOUD_COLLABORATION.md
-- **Keywords:** collaborate, cloud worker, claude code on the web, work repository, submit-cloud, report-back contract, collab branch, poll loop
+- **Keywords:** collaborate, cloud worker, claude code on the web, work repository, submit-cloud, report-back contract, collab branch, poll loop, aws credentials, age, aws-handoff
 - **Related:** DEV-65
 
 ## Spreadsheets and diya-gl (SS)
@@ -7083,6 +7083,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ads.toml: [DATA-32](#data-32-sync-the-google-ads-account)
 - advertising standards: [SITE-20](#site-20-document-business-governance-and-positioning)
 - affiliate: [SITE-11](#site-11-promote-sibling-products-and-partners), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect), [BILL-53](#bill-53-read-the-callers-affiliate-application), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect), [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events), [DATA-64](#data-64-publish-per-pass-figures-nightly)
+- age: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session), [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
 - agent authorisation: [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client), [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - agent output: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - agent path: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
@@ -7202,13 +7203,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - availability sli: [DATA-31](#data-31-sql-views-dora-and-operations)
 - aws budgets: [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
 - aws config recorder: [OPS-121](#ops-121-provision-the-security-baseline-stack)
-- aws credentials: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
+- aws credentials: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role), [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session), [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
 - aws health: [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events)
 - aws health fixture: [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod)
 - aws sdk: [OPS-82](#ops-82-provide-a-shared-dynamodb-client)
 - aws security credentials supplier: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud)
 - aws sso: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - aws sso login: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
+- aws-handoff: [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
 - aws-jwt-verify: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - aws_read: [OPS-194](#ops-194-run-a-read-only-nova-agent)
 - awscustomresource: [OPS-127](#ops-127-upsert-route53-alias-and-plain-records-via-custom-resource)
@@ -7492,6 +7494,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cloud sign-in: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - cloud sign-in event: [SS-33](#ss-33-send-diya-gl-ga4-events)
 - cloud worker: [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
+- cloud worker role: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session)
 - cloudformation: [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs)
 - cloudformation drift: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3), [OPS-32](#ops-32-detect-cloudformation-drift)
 - cloudfront: [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention), [OPS-115](#ops-115-provision-the-edgecloudfront-stack)
