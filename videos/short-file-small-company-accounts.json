@@ -47,83 +47,62 @@
     {
       "id": "home",
       "chapter": "Home",
-      "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "goto",
           "url": "/",
-          "waitFor": "#mainContent",
-          "caption": "See the full sign-in walkthrough in our sign-in video.",
-          "headline": "Sign in, faster",
-          "keyWord": "faster"
+          "waitFor": "#mainContent"
         }
-      ]
+      ],
+      "offCamera": true
     },
     {
       "id": "sign-in",
       "chapter": "Sign in",
-      "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "click",
-          "target": "a.login-link",
-          "caption": "Sign in with the account you already use.",
-          "headline": "Sign in first",
-          "keyWord": "Sign"
+          "target": "a.login-link"
         },
         {
-          "action": "login",
-          "caption": "Your account keeps your filings in one place.",
-          "headline": "Confirm your identity",
-          "keyWord": "identity"
+          "action": "login"
         },
         {
           "action": "consent"
         }
-      ]
+      ],
+      "offCamera": true
     },
     {
       "id": "subscription",
       "chapter": "Resident Ltd",
-      "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "click",
           "target": {
             "role": "link",
             "name": "Bundles"
-          },
-          "caption": "Bundles decide which activities you can run.",
-          "headline": "Open your bundles",
-          "keyWord": "bundles"
+          }
         },
         {
           "action": "ensureBundle",
           "bundle": "Resident Ltd",
-          "testPass": true,
-          "caption": "Resident Ltd opens the small company accounts filing.",
-          "headline": "Unlock small company filing",
-          "keyWord": "small"
+          "testPass": true
         },
         {
           "action": "click",
           "target": {
             "role": "link",
             "name": "Activities"
-          },
-          "caption": "Every activity starts from the home page.",
-          "headline": "Go to activities",
-          "keyWord": "activities"
+          }
         },
         {
           "action": "await",
           "until": "button:has-text('File Small Company Accounts (Companies House)')",
           "label": "Waiting for the subscription to unlock the activity"
         }
-      ]
+      ],
+      "offCamera": true
     },
     {
       "id": "company-lookup",
