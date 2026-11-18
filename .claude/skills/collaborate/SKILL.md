@@ -167,7 +167,7 @@ mkdir -p ~/.aws && chmod 700 ~/.aws
 (umask 077 && git show origin/collab:.collab/<codename>.aws.age | age -d -i ~/.ssh/aws-handoff > ~/.aws/credentials)
 chmod 600 ~/.aws/credentials
 printf '[default]\nregion = eu-west-2\n[profile diya-submit-ci]\nregion = eu-west-2\n' > ~/.aws/config
-AWS_PROFILE=diya-submit-ci aws sts get-caller-identity --query Arn --output text
+env -u AWS_ACCESS_KEY_ID -u AWS_SECRET_ACCESS_KEY -u AWS_SESSION_TOKEN AWS_PROFILE=diya-submit-ci aws sts get-caller-identity --query Arn --output text
 ```
 
 The last line must print an ARN with `assumed-role/submit-ci-cloud-worker-role/`. When it does not,
@@ -178,6 +178,10 @@ or `age` fails, the task is `not-done` with the error in the body.
   work so far with `Collab-Status: wip` and say in the body that the task needs new credentials.
 - The file holds the same keys under two profiles: `default`, which the Polly narration uses, and
   `diya-submit-ci`, which `scripts/proxy-secrets.sh` and the npm scripts name. Both run unchanged.
+- The VM's environment sets `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`, which take precedence
+  over the file and fail with `InvalidClientTokenId`. Start every command that calls AWS (the CLI,
+  `scripts/proxy-secrets.sh`, a narrated `npm run video:record`) with
+  `env -u AWS_ACCESS_KEY_ID -u AWS_SECRET_ACCESS_KEY -u AWS_SESSION_TOKEN`.
 - The role may call `polly:SynthesizeSpeech` in eu-west-2 and read the two `ci/` secrets that
   `scripts/proxy-secrets.sh` reads. Every other AWS call is denied.
 - Never print, `cat`, copy or commit `~/.aws/credentials`, and never echo a variable that holds a

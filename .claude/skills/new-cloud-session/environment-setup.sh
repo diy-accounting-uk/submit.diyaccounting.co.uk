@@ -35,9 +35,20 @@ tar -xzf /tmp/age.tar.gz -C /tmp
 install -m 0755 /tmp/age/age /tmp/age/age-keygen /usr/local/bin/
 rm -rf /tmp/age /tmp/age.tar.gz
 fi
+# AWS CLI v2 (scripts/proxy-secrets.sh) and ssh-keygen (the collaborate skill's handoff key);
+# the VM image has neither
+if ! command -v aws >/dev/null 2>&1; then
+curl -fsSL -o /tmp/awscliv2.zip https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+(cd /tmp && unzip -q -o awscliv2.zip && ./aws/install --update)
+rm -rf /tmp/aws /tmp/awscliv2.zip
+fi
+if ! command -v ssh-keygen >/dev/null 2>&1; then
+apt-get update -qq && apt-get install -y -qq openssh-client
+fi
 node --version
 java -version
 age --version
+aws --version
 # Dependencies and the Playwright browser, in each work repository checkout (the script starts in
 # /home/user, one level above the checkout)
 for d in submit-cloud-*/; do
