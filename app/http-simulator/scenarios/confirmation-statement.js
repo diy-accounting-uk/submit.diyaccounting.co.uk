@@ -220,35 +220,15 @@ export function submitConfirmationStatement({ senderIdHash, authValueHash, submi
   }
 
   usedSubmissionNumbers.add(submissionNumber);
-  submissions.set(submissionNumber, { pollCount: 0, scenario: scenario || null, companyNumber });
+  submissions.set(submissionNumber, { pollCount: 0, scenario: scenario || null, companyNumber, senderIdHash });
 
   return { acknowledged: true, gatewayTimestamp: new Date().toISOString(), pollInterval: 1 };
 }
 
-/**
- * Handle a parsed GetSubmissionStatus poll for a submission number this module registered.
- * Returns { errors: [...] }, a status object ({ statusCode, submissionNumber, companyNumber,
- * rejections }), or undefined when this module holds no record for the submission number - the
- * route then falls back to accounts-filing.js's registry, or vice versa.
- */
-export function pollConfirmationStatement({ senderIdHash, authValueHash, submissionNumber, scenario }) {
-  if (!isAuthenticated({ senderIdHash, authValueHash }) || scenario === "AUTH_FAILURE") {
-    return { errors: [AUTHORISATION_FAILURE_ERROR] };
-  }
-  if (scenario === "PRESENTER_ID_MISSING") {
-    return { errors: [PRESENTER_ID_MISSING_ERROR] };
-  }
+const CS_REJECT_SCENARIOS = new Set(["CS_SHAREHOLDERS_REQUIRED", "CS_DIRECTOR_NOT_VERIFIED"]);
 
-  const record = submissions.get(submissionNumber);
-  if (!record) {
-    return undefined;
-  }
-
-  record.pollCount += 1;
-
-  if (scenario === "PENDING_FOREVER") {
-    return { statusCode: "PENDING", submissionNumber, companyNumber: record.companyNumber, rejections: [] };
-  }
+// The verdict Companies House reaches on a confirmation statement, once it is no longer pending.
+function finalStatus(submissionNumber, record, scenario) {
   if (scenario === "CS_SHAREHOLDERS_REQUIRED") {
     return {
       statusCode: "REJECT",
@@ -278,8 +258,50 @@ export function pollConfirmationStatement({ senderIdHash, authValueHash, submiss
       ],
     };
   }
+  return { statusCode: "ACCEPT", submissionNumber, companyNumber: record.companyNumber, rejections: [] };
+}
+
+/**
+ * Handle a parsed GetSubmissionStatus poll for a submission number this module registered.
+ * Returns { errors: [...] }, a status object ({ statusCode, submissionNumber, companyNumber,
+ * rejections }), or undefined when this module holds no record for the submission number - the
+ * route then falls back to accounts-filing.js's registry, or vice versa.
+ */
+export function pollConfirmationStatement({ senderIdHash, authValueHash, submissionNumber, scenario }) {
+  if (!isAuthenticated({ senderIdHash, authValueHash }) || scenario === "AUTH_FAILURE") {
+    return { errors: [AUTHORISATION_FAILURE_ERROR] };
+  }
+  if (scenario === "PRESENTER_ID_MISSING") {
+    return { errors: [PRESENTER_ID_MISSING_ERROR] };
+  }
+
+  const record = submissions.get(submissionNumber);
+  if (!record) {
+    return undefined;
+  }
+
+  record.pollCount += 1;
+
+  if (scenario === "PENDING_FOREVER") {
+    return { statusCode: "PENDING", submissionNumber, companyNumber: record.companyNumber, rejections: [] };
+  }
+  if (CS_REJECT_SCENARIOS.has(scenario)) {
+    return finalStatus(submissionNumber, record, scenario);
+  }
   if (record.pollCount === 1) {
     return { statusCode: "PENDING", submissionNumber, companyNumber: record.companyNumber, rejections: [] };
   }
-  return { statusCode: "ACCEPT", submissionNumber, companyNumber: record.companyNumber, rejections: [] };
+  return finalStatus(submissionNumber, record, scenario);
+}
+
+/**
+ * Every confirmation statement of the presenter that Companies House has finished: all but those
+ * submitted under PENDING_FOREVER, each with the verdict its submission scenario sets.
+ * @param {string} senderIdHash
+ * @returns {Array<object>}
+ */
+export function completedConfirmationStatementStatuses(senderIdHash) {
+  return [...submissions.entries()]
+    .filter(([, record]) => record.senderIdHash === senderIdHash && record.scenario !== "PENDING_FOREVER")
+    .map(([submissionNumber, record]) => finalStatus(submissionNumber, record, record.scenario));
 }

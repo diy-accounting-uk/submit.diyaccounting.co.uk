@@ -49,6 +49,7 @@ import {
   parseGatewayResponse,
 } from "../../services/companiesHouseXmlGateway.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
+import { recordSubmissionInProgress } from "../../services/companiesHouseSubmissionInProgress.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { hasPaidCharge, markChargeUsed } from "../../services/activityCharges.js";
@@ -351,7 +352,13 @@ export async function ingestHandler(event) {
 
     // The reader's language choice, so the receipt email of an accepted filing is in it.
     const welsh = getHeader(event.headers, "X-Site-Language") === "cy";
-    await putAsyncRequest(userSub, submissionNumber, "pending", welsh ? { language: "cy" } : null, asyncRequestsTableName);
+    await recordSubmissionInProgress({
+      userSub,
+      submissionNumber,
+      kind: "confirmation-statement",
+      underOwnPresenter: Boolean(ownPresenter),
+      data: welsh ? { language: "cy" } : {},
+    });
 
     const submissionXml = buildConfirmationStatementSubmission({
       presenterId,

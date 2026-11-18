@@ -433,13 +433,16 @@ export function buildPaymentPeriodsRequest({
 }
 
 /**
- * Build the GovTalk envelope for a GetSubmissionStatus poll.
+ * Build the GovTalk envelope for a GetSubmissionStatus poll. The Technical Interface Specification
+ * names three options: one submission (submissionNumber), every completed submission for one
+ * company (companyNumber), and every completed submission for the presenter (neither). Options 2
+ * and 3 answer each completed submission once, and only after a StatusAck follows the poll.
  *
  * @param {object} input
  * @param {string} input.presenterId
  * @param {string} input.presenterCode
- * @param {string} [input.submissionNumber] - either this or companyNumber
- * @param {string} [input.companyNumber]
+ * @param {string} [input.submissionNumber] - option 1
+ * @param {string} [input.companyNumber] - option 3, when no submissionNumber is given
  * @param {string} [input.transactionId] - defaults to the current epoch milliseconds
  * @param {boolean} [input.gatewayTest]
  * @returns {string} the envelope XML
@@ -452,16 +455,34 @@ export function buildStatusRequest({
   transactionId = String(Date.now()),
   gatewayTest = false,
 }) {
-  const identifierXml = submissionNumber
-    ? `<SubmissionNumber>${escapeXmlText(submissionNumber)}</SubmissionNumber>`
-    : `<CompanyNumber>${escapeXmlText(companyNumber)}</CompanyNumber>`;
+  let identifierXml = "";
+  if (submissionNumber) identifierXml = `<SubmissionNumber>${escapeXmlText(submissionNumber)}</SubmissionNumber>\n      `;
+  else if (companyNumber) identifierXml = `<CompanyNumber>${escapeXmlText(companyNumber)}</CompanyNumber>\n      `;
 
   const bodyXml = `<GetSubmissionStatus xmlns="http://xmlgw.companieshouse.gov.uk">
-      ${identifierXml}
-      <PresenterID>${escapeXmlText(presenterId)}</PresenterID>
+      ${identifierXml}<PresenterID>${escapeXmlText(presenterId)}</PresenterID>
     </GetSubmissionStatus>`;
 
   return buildEnvelopeXml({ requestClass: "GetSubmissionStatus", transactionId, gatewayTest, presenterId, presenterCode, bodyXml });
+}
+
+/**
+ * Build the GovTalk envelope for a GetStatusAck: the acknowledgement that must follow every
+ * presenter or company GetSubmissionStatus poll, or the gateway answers the same submissions
+ * again on the next poll. The schema's root element is StatusAck, and so is the Class
+ * (GetStatusAck-v1-1.xsd and the published GetStatusAck.xml example).
+ *
+ * @param {object} input
+ * @param {string} input.presenterId
+ * @param {string} input.presenterCode
+ * @param {string} [input.transactionId] - defaults to the current epoch milliseconds
+ * @param {boolean} [input.gatewayTest]
+ * @returns {string} the envelope XML
+ */
+export function buildStatusAckRequest({ presenterId, presenterCode, transactionId = String(Date.now()), gatewayTest = false }) {
+  const bodyXml = `<StatusAck xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlgw.companieshouse.gov.uk http://xmlgw.companieshouse.gov.uk/v1-0/schema/forms/GetStatusAck-v1-1.xsd"></StatusAck>`;
+
+  return buildEnvelopeXml({ requestClass: "StatusAck", transactionId, gatewayTest, presenterId, presenterCode, bodyXml });
 }
 
 /**

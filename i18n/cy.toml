@@ -3638,6 +3638,42 @@ cy = '''Cyfrifon diwygiedig'''
 hash = "755b43917dd6"
 cy = '''Ffurflen Dreth y Cwmni wedi’i diwygio'''
 
+[strings."receipts.kind-confirmation-statement"]
+hash = "9e84a7fe6e03"
+cy = '''Datganiad cadarnhau'''
+
+[strings."receipts.kind-psc-verification-statement"]
+hash = "bafc6e6ff2c5"
+cy = '''Datganiad dilysu PSC'''
+
+[strings."receipts.kind-filing"]
+hash = "23439992c152"
+cy = '''Ffeilio i Dŷ’r Cwmnïau'''
+
+[strings."receipts.submission-number"]
+hash = "3b6014a2cff4"
+cy = '''rhif cyflwyniad {number}'''
+
+[strings."receipts.filing-sent"]
+hash = "c6c92d7127f0"
+cy = '''anfonwyd {date},'''
+
+[strings."receipts.filing-rejected"]
+hash = "16d9cafed33f"
+cy = '''Gwrthodwyd gan Dŷ’r Cwmnïau'''
+
+[strings."receipts.filing-pending"]
+hash = "503ac787bdd5"
+cy = '''Yn aros am Dŷ’r Cwmnïau'''
+
+[strings."receipts.in-progress-heading"]
+hash = "fa66b460081d"
+cy = '''Ffeilio i Dŷ’r Cwmnïau sydd heb ei dderbyn eto'''
+
+[strings."receipts.in-progress-hint"]
+hash = "50484fbeccc7"
+cy = '''Mae Tŷ’r Cwmnïau yn gwirio rhai ffeilio â llaw, yn ystod oriau swyddfa. Rydym yn gofyn iddo am ei benderfyniad bob 15 munud yn ystod oriau swyddfa, ac yn anfon y dderbynneb atoch drwy e-bost pan fydd yn derbyn y ffeilio.'''
+
 [strings."receipts.unnamed"]
 hash = "2ad0d52676d4"
 cy = '''Derbynneb heb enw'''

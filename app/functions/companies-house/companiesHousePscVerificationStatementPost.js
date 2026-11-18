@@ -43,6 +43,7 @@ import {
   parseGatewayResponse,
 } from "../../services/companiesHouseXmlGateway.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
+import { recordSubmissionInProgress } from "../../services/companiesHouseSubmissionInProgress.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { readOwnPresenterFromBody } from "../../services/companiesHouseOwnPresenter.js";
@@ -190,7 +191,12 @@ export async function ingestHandler(event) {
 
     submissionNumber = await allocateSubmissionNumber();
 
-    await putAsyncRequest(userSub, submissionNumber, "pending", null, asyncRequestsTableName);
+    await recordSubmissionInProgress({
+      userSub,
+      submissionNumber,
+      kind: "psc-verification-statement",
+      underOwnPresenter: Boolean(ownPresenter),
+    });
 
     const submissionXml = buildPscVerificationStatementSubmission({
       presenterId,

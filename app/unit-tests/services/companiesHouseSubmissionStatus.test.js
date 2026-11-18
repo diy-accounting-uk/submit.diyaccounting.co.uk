@@ -114,8 +114,6 @@ describe("pollSubmission", () => {
       userSub: "user-1",
       submissionNumber: "00001A",
       kind: "confirmation-statement",
-      acceptedEvent: "companies-house-confirmation-statement-accepted",
-      acceptedSummary: "Companies House confirmation statement accepted",
     });
 
     expect(result.data.statusCode).toBe("PENDING");
@@ -178,7 +176,7 @@ describe("pollSubmission", () => {
     expect(everythingStored).not.toContain("OwnSecretCode#42");
   });
 
-  test("writes a receipt and an async request kind on ACCEPT, and publishes acceptedEvent", async () => {
+  test("writes a receipt and an async request kind on ACCEPT, and publishes the form's accepted event", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
       statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
@@ -188,8 +186,6 @@ describe("pollSubmission", () => {
       userSub: "user-1",
       submissionNumber: "00001A",
       kind: "confirmation-statement",
-      acceptedEvent: "companies-house-confirmation-statement-accepted",
-      acceptedSummary: "Companies House confirmation statement accepted",
     });
 
     expect(result.data.statusCode).toBe("ACCEPT");
@@ -222,8 +218,6 @@ describe("pollSubmission", () => {
       userSub: "user-1",
       submissionNumber: "00001A",
       kind: "accounts",
-      acceptedEvent: "companies-house-accounts-accepted",
-      acceptedSummary: "Companies House accounts accepted",
     });
 
     expect(result.data.filedDocument).toBeUndefined();
@@ -253,8 +247,6 @@ describe("pollSubmission", () => {
       userSub: "user-1",
       submissionNumber: "00001A",
       kind: "confirmation-statement",
-      acceptedEvent: "companies-house-confirmation-statement-accepted",
-      acceptedSummary: "Companies House confirmation statement accepted",
     });
 
     const emailRequests = mockEventBridgeSend.mock.calls
@@ -269,7 +261,7 @@ describe("pollSubmission", () => {
     ]);
   });
 
-  test("stores failed and returns the rejections on REJECT, without publishing acceptedEvent", async () => {
+  test("stores failed and returns the rejections on REJECT, without publishing an accepted event", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
       statuses: [
@@ -287,6 +279,46 @@ describe("pollSubmission", () => {
     expect(result.data.statusCode).toBe("REJECT");
     expect(result.data.rejections[0].rejectCode).toBe("11686");
     expect(mockEventBridgeSend).not.toHaveBeenCalled();
+  });
+
+  test("records nothing and sends no email when the presenter poll has already claimed the final status", async () => {
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof lib.GetCommand) return { Item: { requestId: cmd.input.Key.requestId, status: "pending" } };
+      if (cmd instanceof lib.UpdateCommand && cmd.input.ConditionExpression === "attribute_not_exists(claimedAt)") {
+        throw Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" });
+      }
+      return {};
+    });
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+    });
+
+    const result = await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "confirmation-statement" });
+
+    expect(result.data.statusCode).toBe("ACCEPT");
+    expect(mockSend.mock.calls.filter(([cmd]) => cmd instanceof lib.PutCommand)).toHaveLength(0);
+    expect(mockEventBridgeSend).not.toHaveBeenCalled();
+  });
+
+  test("gives the claim back when the receipt write fails, so a later poll can record it", async () => {
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof lib.GetCommand) return { Item: { requestId: cmd.input.Key.requestId, status: "pending" } };
+      if (cmd instanceof lib.PutCommand) throw new Error("receipts table unavailable");
+      return {};
+    });
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+    });
+
+    await expect(pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "confirmation-statement" })).rejects.toThrow(
+      "receipts table unavailable",
+    );
+    const release = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd.input?.UpdateExpression === "REMOVE claimedAt");
+    expect(release.input.Key).toEqual({ hashedSub: "companies-house-xmlgw", requestId: "pending#00001A" });
   });
 
   test("returns the gateway's errors without touching the async request table", async () => {

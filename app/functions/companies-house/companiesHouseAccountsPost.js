@@ -58,6 +58,7 @@ import {
   parseGatewayResponse,
 } from "../../services/companiesHouseXmlGateway.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
+import { recordSubmissionInProgress } from "../../services/companiesHouseSubmissionInProgress.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { isClientAuthorisedForService } from "../../lib/hmrcAgentAuthorisation.js";
@@ -524,11 +525,12 @@ export async function ingestHandler(event) {
     submissionNumber = await allocateSubmissionNumber();
     const { presenterId, presenterCode } = ownPresenter ?? (await resolvePresenterCredentials());
 
-    await putAsyncRequest(
+    await recordSubmissionInProgress({
       userSub,
       submissionNumber,
-      "pending",
-      {
+      kind: "accounts",
+      underOwnPresenter: Boolean(ownPresenter),
+      data: {
         filedDocument: ixbrl,
         chargeActivityId,
         ...jointFilingFields(jointFilingId),
@@ -539,8 +541,7 @@ export async function ingestHandler(event) {
         // The reader's language choice, so the receipt email of an accepted filing is in it.
         ...(getHeader(event.headers, "X-Site-Language") === "cy" ? { language: "cy" } : {}),
       },
-      asyncRequestsTableName,
-    );
+    });
 
     const submissionXml = buildAccountsSubmission({
       presenterId,

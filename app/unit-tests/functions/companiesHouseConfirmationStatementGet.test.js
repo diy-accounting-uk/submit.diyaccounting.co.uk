@@ -109,8 +109,6 @@ describe("companiesHouseConfirmationStatementGet ingestHandler", () => {
       submissionNumber: "00001A",
       govTestScenario: null,
       kind: "confirmation-statement",
-      acceptedEvent: "companies-house-confirmation-statement-accepted",
-      acceptedSummary: "Companies House confirmation statement accepted",
     });
   });
 

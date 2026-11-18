@@ -73,6 +73,7 @@ vi.mock("@app/data/dynamoDbCodesEntryRepository.js", () => ({
 }));
 vi.mock("@app/lib/codesSeal.js", () => ({
   openCodes: async () => ({ companyAuthCode: "ABC123", personalCodes: [] }),
+  sealFor: async () => "v1.sealed-filer",
 }));
 
 const mockBuildMicroEntityAccounts = vi.fn();

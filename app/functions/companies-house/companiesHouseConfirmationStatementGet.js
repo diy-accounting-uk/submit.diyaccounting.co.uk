@@ -80,8 +80,6 @@ export async function ingestHandler(event) {
     govTestScenario,
     ownPresenter,
     kind: "confirmation-statement",
-    acceptedEvent: "companies-house-confirmation-statement-accepted",
-    acceptedSummary: "Companies House confirmation statement accepted",
   });
 
   if (result.notFound) {

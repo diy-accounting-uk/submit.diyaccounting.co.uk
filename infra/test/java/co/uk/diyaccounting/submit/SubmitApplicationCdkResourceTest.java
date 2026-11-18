@@ -217,7 +217,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 25);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 26);
         // The two previews call no external API and share the /api/v1/companies-house alarm.
         assertGroupedStackHealthAlarm(
                 companiesHouseStackTemplate,
@@ -239,6 +239,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                         "companies-house-psc-verification-statement-post",
                         "companies-house-public-deadlines-get",
                         "companies-house-search-get",
+                        "companies-house-submission-status-poll",
                         "companies-house-token-post",
                         "companies-house-transaction-get",
                         "companies-house-transaction-post",

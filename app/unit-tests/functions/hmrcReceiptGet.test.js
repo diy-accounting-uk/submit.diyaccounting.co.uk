@@ -19,6 +19,10 @@ vi.mock("@app/lib/activityAlert.js", async (importOriginal) => ({
   publishActivityEvent: vi.fn().mockResolvedValue({}),
 }));
 
+vi.mock("@app/data/dynamoDbCompaniesHouseFilingStateRepository.js", () => ({
+  listFilingsInProgress: vi.fn(),
+}));
+
 vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
   getClient: vi.fn(),
 }));
@@ -26,6 +30,7 @@ vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
 const { ingestHandler: hmrcReceiptGetHandler } = await import("@app/functions/hmrc/hmrcReceiptGet.js");
 const { listUserReceipts } = await import("@app/data/dynamoDbReceiptRepository.js");
 const { getClient } = await import("@app/data/dynamoDbPracticeClientRepository.js");
+const { listFilingsInProgress } = await import("@app/data/dynamoDbCompaniesHouseFilingStateRepository.js");
 const { publishActivityEvent } = await import("@app/lib/activityAlert.js");
 
 function makeJwt(sub) {
@@ -51,6 +56,7 @@ describe("hmrcReceiptGet ingestHandler", () => {
   beforeEach(() => {
     Object.assign(process.env, setupTestEnv());
     listUserReceipts.mockReset().mockResolvedValue([]);
+    listFilingsInProgress.mockReset().mockResolvedValue([]);
     getClient.mockReset();
     publishActivityEvent.mockClear();
   });
@@ -89,6 +95,32 @@ describe("hmrcReceiptGet ingestHandler", () => {
 
     expect(response.statusCode).toBe(200);
     expect(listUserReceipts).toHaveBeenCalledWith("practice-sub", undefined);
+  });
+
+  test("lists the caller's Companies House filings in progress beside the receipts", async () => {
+    const pending = {
+      submissionNumber: "00001A",
+      kind: "accounts",
+      status: "pending",
+      submittedAt: "2026-11-18T10:00:00.000Z",
+      rejections: [],
+    };
+    listFilingsInProgress.mockResolvedValue([pending]);
+
+    const response = await hmrcReceiptGetHandler(buildAuthenticatedEvent({ sub: "filer-sub" }));
+
+    expect(response.statusCode).toBe(200);
+    expect(listFilingsInProgress).toHaveBeenCalledWith("filer-sub");
+    expect(JSON.parse(response.body).filingsInProgress).toEqual([pending]);
+  });
+
+  test("a practice's list for one client carries no filings in progress", async () => {
+    getClient.mockResolvedValue({ clientId: "client-1" });
+
+    const response = await hmrcReceiptGetHandler(buildAuthenticatedEvent({ clientId: "client-1" }));
+
+    expect(JSON.parse(response.body).filingsInProgress).toEqual([]);
+    expect(listFilingsInProgress).not.toHaveBeenCalled();
   });
 
   test("with a client id belonging to the caller's practice, lists only that client's receipts", async () => {

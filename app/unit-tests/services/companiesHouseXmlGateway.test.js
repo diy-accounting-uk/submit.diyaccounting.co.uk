@@ -55,6 +55,7 @@ const {
   buildCompanyDataRequest,
   buildPaymentPeriodsRequest,
   buildStatusRequest,
+  buildStatusAckRequest,
   parseGatewayResponse,
   parseCompanyDataResponse,
   parsePaymentPeriodsResponse,
@@ -77,6 +78,7 @@ const GET_SUBMISSION_STATUS_REJECT_RESPONSE_FIXTURE = readFileSync(
   new URL("../../../fixtures/companies-house-xmlgw/GetSubmissionStatus_reject_response_GovTalkErrors.xml", import.meta.url),
   "utf8",
 );
+const GET_STATUS_ACK_FIXTURE = readFileSync(new URL("../../../fixtures/companies-house-xmlgw/GetStatusAck.xml", import.meta.url), "utf8");
 const CONFIRMATION_AND_VERIFICATION_STATEMENT_FIXTURE = readFileSync(
   new URL("../../../fixtures/companies-house-xmlgw/ConfirmationAndVerificationStatement.xml", import.meta.url),
   "utf8",
@@ -525,6 +527,37 @@ describe("services/companiesHouseXmlGateway", () => {
       const document = parseXmlDocument(xml);
       expect(firstElementText(document, "CompanyNumber")).toBe("02706061");
       expect(document.getElementsByTagName("SubmissionNumber")).toHaveLength(0);
+    });
+
+    test("carries PresenterID alone for a poll of every completed submission of the presenter", () => {
+      const xml = buildStatusRequest({ ...baseInput, submissionNumber: undefined });
+      const document = parseXmlDocument(xml);
+      const statusRequest = firstElement(document, "GetSubmissionStatus");
+      const childNames = Array.from(statusRequest.childNodes)
+        .filter((node) => node.nodeType === 1)
+        .map((node) => node.localName);
+      expect(childNames).toEqual(["PresenterID"]);
+    });
+  });
+
+  describe("buildStatusAckRequest", () => {
+    test("matches the published GetStatusAck example: Class StatusAck and an empty StatusAck body", () => {
+      const xml = buildStatusAckRequest({ presenterId: "12345678901", presenterCode: "SimTest1", transactionId: "3", gatewayTest: true });
+      const document = parseXmlDocument(xml);
+      const exampleDocument = parseXmlDocument(GET_STATUS_ACK_FIXTURE);
+
+      expect(firstElementText(document, "Class")).toBe("StatusAck");
+      expect(firstElementText(exampleDocument, "Class")).toBe("StatusAck");
+      expect(firstElementText(document, "GatewayTest")).toBe("1");
+      const statusAck = firstElement(document, "StatusAck");
+      expect(statusAck.namespaceURI).toBe(firstElement(exampleDocument, "StatusAck").namespaceURI);
+      expect(statusAck.childNodes).toHaveLength(0);
+      expect(firstElementText(document, "SenderID")).toBe(hashPresenterCredential("12345678901"));
+    });
+
+    test("leaves GatewayTest out for the live service", () => {
+      const xml = buildStatusAckRequest({ presenterId: "12345678901", presenterCode: "SimTest1" });
+      expect(parseXmlDocument(xml).getElementsByTagName("GatewayTest")).toHaveLength(0);
     });
   });
 
