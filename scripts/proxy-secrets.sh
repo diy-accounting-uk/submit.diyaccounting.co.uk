@@ -38,6 +38,8 @@ HMRC_SANDBOX_CLIENT_SECRET="$(get_secret ci/submit/hmrc/sandbox_client_secret)"
 STRIPE_TEST_SECRET_KEY="$(get_secret ci/submit/stripe/test_secret_key)"
 COMPANIES_HOUSE_API_KEY="$(get_secret ci/submit/companies-house/api_key)"
 COMPANIES_HOUSE_SANDBOX_API_KEY="$(get_secret ci/submit/companies-house/sandbox_api_key)"
+COMPANIES_HOUSE_PRESENTER_ID="$(get_secret ci/submit/companies-house/presenter_id)"
+COMPANIES_HOUSE_PRESENTER_CODE="$(get_secret ci/submit/companies-house/presenter_code)"
 
 export HMRC_ACCOUNT=synthetic
 export HMRC_SANDBOX_CLIENT_SECRET
@@ -46,5 +48,7 @@ export STRIPE_SECRET_KEY="$STRIPE_TEST_SECRET_KEY"
 export STRIPE_API_KEY="$STRIPE_TEST_SECRET_KEY"
 export COMPANIES_HOUSE_API_KEY
 export COMPANIES_HOUSE_SANDBOX_API_KEY
+export COMPANIES_HOUSE_PRESENTER_ID
+export COMPANIES_HOUSE_PRESENTER_CODE
 
 exec "$@"
