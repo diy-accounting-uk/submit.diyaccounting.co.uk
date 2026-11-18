@@ -441,6 +441,49 @@ function relocate(url, pages, page) {
 
 // HMRC's Welsh services. The HMRC Assist line names the VAT Return, so only the VAT pages and the
 // receipts page carry it.
+// The line under a GOV.UK quote that tax-sources.mjs writes: "Source: <a>GOV.UK, title</a> (checked 13 November 2026)".
+// The quote keeps its English words, each paragraph marked lang="en-GB"; the line is ours, so the copy
+// writes it in Welsh with the date in Welsh month names, and marks only the linked GOV.UK title as English.
+const SOURCE_FOOTER_PATTERN = /<footer>\s*Source:\s*(<a\b[\s\S]*?<\/a\s*>)\s*\(checked\s+(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})\)\s*<\/footer>/g;
+const ENGLISH_MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+const WELSH_MONTHS = [
+  "Ionawr",
+  "Chwefror",
+  "Mawrth",
+  "Ebrill",
+  "Mai",
+  "Mehefin",
+  "Gorffennaf",
+  "Awst",
+  "Medi",
+  "Hydref",
+  "Tachwedd",
+  "Rhagfyr",
+];
+
+function welshSourceFooter(catalogue, link, day, month, year) {
+  const entry = catalogue.shared["source-line"];
+  if (!entry || !entry.cy) throw new Error("shared.source-line: no Welsh text in i18n/cy.toml");
+  const monthIndex = ENGLISH_MONTHS.indexOf(month);
+  if (monthIndex === -1) throw new Error(`source line: unknown month ${month}`);
+  const englishLink = link.replace(/^<a\b/, '<a lang="en-GB" hreflang="en"');
+  const line = entry.cy.trim().replace("{link}", englishLink).replace("{date}", `${day} ${WELSH_MONTHS[monthIndex]} ${year}`);
+  return `<footer>${line}</footer>`;
+}
+
 function welshServicesBlock(catalogue, page) {
   const entry = catalogue.shared["hmrc-welsh-services"];
   if (!entry || !entry.cy) throw new Error("shared.hmrc-welsh-services: no Welsh text in i18n/cy.toml");
@@ -486,7 +529,10 @@ export async function renderWelshPage(page, catalogue = loadCatalogue(), pages =
   html = replaceOnce(html, /(<link rel="canonical" href=")[^"]*(")/, `$1${welshUrl(page)}$2`, `canonical link in ${page.en}`);
   html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${welshUrl(page)}$2`);
   html = replaceOnce(html, /<\/main>/, `${welshServicesBlock(catalogue, page)}</main>`, `</main> in ${page.en}`);
-  html = html.replace(/<blockquote class="source-quote">/g, '<blockquote class="source-quote" lang="en-GB">');
+  html = html.replace(/<blockquote class="(source-quote[^"]*)">([\s\S]*?)<\/blockquote>/g, (whole, className, inner) => {
+    const quotes = inner.replace(/<p>/g, '<p lang="en-GB">');
+    return `<blockquote class="${className}">${quotes.replace(SOURCE_FOOTER_PATTERN, (footer, link, day, month, year) => welshSourceFooter(catalogue, link, day, month, year))}</blockquote>`;
+  });
   html = html.replace(/(\s(?:href|src)=")([^"]*)(")/g, (whole, start, url, end) => `${start}${relocate(url, pages, page)}${end}`);
   html = replaceOnce(
     html,

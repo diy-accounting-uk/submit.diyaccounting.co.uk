@@ -72,6 +72,11 @@ cy = '''
 <p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
 '''
 
+# The line under a GOV.UK quote on a generated page; {link} is the GOV.UK title, which stays English, and
+# {date} the day it was checked. Wording follows widget.field-source ("{link} (yn Saesneg), adalwyd {date}").
+[shared."source-line"]
+cy = '''Ffynhonnell: {link} (yn Saesneg), gwiriwyd {date}'''
+
 [strings."common.skip-link"]
 hash = "c887f134c26e"
 cy = '''Neidio i’r prif gynnwys'''

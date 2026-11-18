@@ -102,6 +102,22 @@ describe.each(WELSH_PAGES)("Welsh page $cy", (page) => {
     expect(missing).toEqual([]);
   });
 
+  it("writes the line under each source quote in Welsh and keeps the quote's words marked English", () => {
+    const blocks = [...welsh.matchAll(/<blockquote class="source-quote[^"]*"[^>]*>([\s\S]*?)<\/blockquote>/g)];
+    for (const [block, inner] of blocks) {
+      expect(block).not.toMatch(/<blockquote[^>]*\slang=/);
+      for (const [paragraph] of inner.matchAll(/<p\b[^>]*>/g)) expect(paragraph).toContain('lang="en-GB"');
+      const footer = inner.match(/<footer>([\s\S]*?)<\/footer>/);
+      if (!footer) continue;
+      const line = footer[1].replace(/\s+/g, " ");
+      expect(line).toMatch(/^ ?Ffynhonnell: <a lang="en-GB" hreflang="en" /);
+      expect(line).toMatch(
+        /\(yn Saesneg\), gwiriwyd \d{1,2} (Ionawr|Chwefror|Mawrth|Ebrill|Mai|Mehefin|Gorffennaf|Awst|Medi|Hydref|Tachwedd|Rhagfyr) \d{4}/,
+      );
+      expect(line).not.toMatch(/Source:|\(checked/);
+    }
+  });
+
   it("reads its skip link in Welsh", () => {
     const links = [...welsh.matchAll(/<a [^>]*class="skip-link"[^>]*>([^<]*)<\/a>/g)].map((match) => match[1].trim());
     expect(links.length).toBeGreaterThan(0);
