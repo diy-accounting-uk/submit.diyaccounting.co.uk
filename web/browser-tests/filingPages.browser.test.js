@@ -312,3 +312,16 @@ test("the embed script puts the framed checker and a link to the full page on an
   await inner.getByRole("button", { name: "Check" }).click();
   await expect(inner.locator("#itsaCheckerResult")).toContainText("6 April 2026");
 });
+
+test("a how-to step with no picture takes its own height beside a step with one at 1280", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await serveRealSite(page);
+  await page.goto("http://localhost:3000/dormant-company-accounts.html", { waitUntil: "load" });
+  const textOnly = page.locator("#step-1");
+  const withPicture = page.locator("#step-2");
+  await expect(textOnly.locator("img")).toHaveCount(0);
+  await expect(withPicture.locator("img")).toHaveCount(1);
+  const [textBox, pictureBox] = [await textOnly.boundingBox(), await withPicture.boundingBox()];
+  expect(Math.abs(textBox.y - pictureBox.y)).toBeLessThan(2);
+  expect(textBox.height).toBeLessThan(pictureBox.height / 2);
+});

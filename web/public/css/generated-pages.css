@@ -226,6 +226,11 @@ main ol.calendar {
   padding: 0;
 }
 
+/* A step with no picture keeps its own height, at the top of its row, beside a step with one. */
+.filing-page .guide-step:not(:has(img)) {
+  align-self: start;
+}
+
 .filing-page .guide-step img {
   display: block;
   max-width: 100%;

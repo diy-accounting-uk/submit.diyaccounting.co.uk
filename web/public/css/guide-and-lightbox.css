@@ -72,7 +72,9 @@
   gap: var(--space-4);
 }
 
+/* A step is a grid item: the grid's gap spaces it, so it takes no list-item margin. */
 .guide-step {
+  margin: 0;
   counter-increment: guide-step;
   scroll-margin-top: var(--space-4);
   background: var(--c-canvas);
