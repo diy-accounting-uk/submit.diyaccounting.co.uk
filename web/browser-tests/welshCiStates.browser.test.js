@@ -129,7 +129,46 @@ async function serveSite(page, apiBodies) {
   });
 }
 
+const COST_STATES = [
+  { state: "a balance that cannot be read", bundles: null, welsh: /^Mae’r cyflwyniad hwn yn costio 1 credyd\.$/ },
+  {
+    state: "tokens left",
+    bundles: [{ bundleId: "resident-pro", allocated: true, tokensGranted: 100, tokensRemaining: 90 }],
+    welsh: /^Mae’r cyflwyniad hwn yn costio 1 credyd\. Mae gennych 90 ar ôl\.$/,
+  },
+  {
+    state: "an unlimited grant",
+    bundles: [{ bundleId: "resident-pro", allocated: true, tokensGranted: "unlimited" }],
+    welsh: /^Mae’r cyflwyniad hwn yn costio 1 credyd\. Mae gennych gredydau diderfyn\.$/,
+  },
+  {
+    state: "no token left, with a refresh date",
+    bundles: [
+      { bundleId: "resident-pro", allocated: true, tokensGranted: 100, tokensRemaining: 0, tokenResetAt: "2026-12-01T00:00:00.000Z" },
+    ],
+    welsh: /^Nid oes gennych gredydau ar ôl\. Bydd eich lwfans yn adnewyddu ar 1 Rhagfyr 2026, neu gallwch ychwanegu bwndel\.$/,
+  },
+  {
+    state: "no token left, with no refresh date",
+    bundles: [{ bundleId: "resident-pro", allocated: true, tokensGranted: 100, tokensRemaining: 0 }],
+    welsh: /^Nid oes gennych gredydau ar ôl\. Gallwch ychwanegu bwndel\.$/,
+  },
+];
+
 test.describe("Welsh pages in a long-used account's states", () => {
+  for (const { state, bundles, welsh } of COST_STATES) {
+    test(`the cost line on a Welsh Income Tax page reads in Welsh with ${state}`, async ({ page }) => {
+      await serveSite(page, bundles ? { "/api/v1/bundle": { bundles } } : {});
+      if (!bundles)
+        await page.route("**/api/v1/bundle", (route) => route.fulfill({ status: 500, contentType: "application/json", body: "{}" }));
+      await page.goto("http://localhost:3000/cy/hmrc/itsa/selfEmploymentPeriod.html", { waitUntil: "load" });
+      const cost = page.locator("#submissionCost");
+      await expect(cost).toHaveText(welsh);
+      const lines = (await cost.innerText()).split("\n").map((line) => line.trim());
+      for (const english of ["You can", "You have", "This submission"]) expect(lines.some((line) => line.startsWith(english))).toBe(false);
+    });
+  }
+
   test("generated passes: the Delete selected control reads in Welsh, before and after a pass is ticked", async ({ page }) => {
     await serveSite(page, {
       "/api/v1/pass/my-passes": GENERATED_PASSES,
