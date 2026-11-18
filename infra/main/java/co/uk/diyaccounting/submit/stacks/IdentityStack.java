@@ -632,8 +632,13 @@ public class IdentityStack extends Stack {
 
     // The secrets scripts/proxy-secrets.sh reads; the suffix matches the six random characters
     // Secrets Manager adds to every secret ARN.
-    static final List<String> CLOUD_WORKER_SECRET_NAMES =
-            List.of("ci/submit/hmrc/sandbox_client_secret", "ci/submit/stripe/test_secret_key");
+    static final List<String> CLOUD_WORKER_SECRET_NAMES = List.of(
+            "ci/submit/hmrc/sandbox_client_secret",
+            "ci/submit/stripe/test_secret_key",
+            "ci/submit/companies-house/api_key",
+            "ci/submit/companies-house/sandbox_api_key",
+            "ci/submit/companies-house/presenter_id",
+            "ci/submit/companies-house/presenter_code");
 
     private Role createCloudWorkerRole(String githubOidcProviderArn, IdentityStackProps props) {
         var oidcHost = "token.actions.githubusercontent.com";
