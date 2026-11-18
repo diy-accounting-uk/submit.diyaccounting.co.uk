@@ -23,6 +23,13 @@
   text-align: left;
 }
 
+/* base.css gives every th and td the figures font; a line's label, its hint and an error are words. */
+.ledger th,
+.ledger .error-message,
+.ledger td.ledger__figure::before {
+  font-family: var(--font-text);
+}
+
 .ledger thead th {
   padding-bottom: var(--space-2);
   border-bottom: 2px solid var(--c-rule);
