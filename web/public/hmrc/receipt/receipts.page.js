@@ -189,6 +189,20 @@ const RECEIPT_FIELD_NAMES = {
   periodEndDate: siteText("receipts.field-end-date", "End date"),
   href: siteText("receipts.field-link", "Link"),
   rel: siteText("receipts.field-relation", "Relation"),
+  method: siteText("receipts.field-method", "Method"),
+  kind: siteText("receipts.field-kind", "Record type"),
+  reportId: siteText("receipts.field-report-id", "Report ID"),
+  nino: siteText("receipts.field-nino", "National Insurance number"),
+  vrn: siteText("receipts.field-vrn", "VAT registration number"),
+  periodKey: siteText("receipts.field-period-key", "Period key"),
+  requestedAt: siteText("receipts.field-requested-at", "Requested"),
+  acknowledgedAt: siteText("receipts.field-acknowledged-at", "Acknowledged to HMRC"),
+  presentedLanguage: siteText("widget.assist-feedback-language", "Language of HMRC feedback"),
+  figures: siteText("receipts.field-figures", "Figures"),
+  model: siteText("receipts.field-model", "Submission model"),
+  businessId: siteText("receipts.field-business-id", "Business ID"),
+  calculationType: siteText("receipts.field-calculation-type", "Calculation type"),
+  totalIncomeTaxAndNicsDue: siteText("receipts.field-total-due", "Income Tax and National Insurance due"),
 };
 
 function receiptFieldName(key) {
@@ -377,7 +391,8 @@ async function displayReceiptTable(data, name) {
   const vatBoxes = Object.fromEntries(HmrcFieldTable.VAT_RETURN_BOXES.map((box) => [box.field, box]));
   const dataRows = receiptRows(dataToDisplay).map((entry) => {
     const isAmount = typeof entry.value === "number" && Number.isFinite(entry.value);
-    const box = vatBoxes[entry.field];
+    // A VAT Assist report keeps the return's boxes under "figures".
+    const box = vatBoxes[entry.field] || vatBoxes[entry.field.replace(/^figures\./, "")];
     const isTimestamp = typeof entry.value === "string" && ISO_TIMESTAMP.test(entry.value);
     const value = isTimestamp ? HmrcDisplayFormat.formatDateTime(entry.value) : entry.value;
     const row = { ...entry, value, kind: isAmount ? "money" : "text" };

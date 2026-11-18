@@ -133,9 +133,9 @@ test.describe("Receipts page - HMRC Assist reports", () => {
     const content = page.locator("#receiptContent");
 
     await expect(page.locator("#assistMessages")).toContainText("HMRC feedback");
-    await expect(content).toContainText("Vrn");
+    await expect(content).toContainText("VAT registration number");
     await expect(content).toContainText("123456789");
-    await expect(content).toContainText("Report id");
+    await expect(content).toContainText("Report ID");
     await expect(content).toContainText("12345-report-id");
   });
 });

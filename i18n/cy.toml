@@ -3330,6 +3330,58 @@ cy = '''Dolen'''
 hash = "1367485dc3c3"
 cy = '''Perthynas'''
 
+[strings."receipts.field-method"]
+hash = "52a0f9b65b27"
+cy = '''Dull'''
+
+[strings."receipts.field-kind"]
+hash = "91cf117b1d70"
+cy = '''Math o gofnod'''
+
+[strings."receipts.field-report-id"]
+hash = "af0624eb3fe4"
+cy = '''ID yr adroddiad'''
+
+[strings."receipts.field-nino"]
+hash = "21829e7b7b1b"
+cy = '''Rhif Yswiriant Gwladol'''
+
+[strings."receipts.field-vrn"]
+hash = "873ba742b4fb"
+cy = '''Rhif cofrestru TAW'''
+
+[strings."receipts.field-period-key"]
+hash = "f963ec9f0777"
+cy = '''Allwedd y cyfnod'''
+
+[strings."receipts.field-requested-at"]
+hash = "2d9e28289fac"
+cy = '''Gofynnwyd amdano'''
+
+[strings."receipts.field-acknowledged-at"]
+hash = "f0f9c765288f"
+cy = '''Rhoddwyd gwybod i CThEF'''
+
+[strings."receipts.field-figures"]
+hash = "f2f410e7009e"
+cy = '''Ffigurau'''
+
+[strings."receipts.field-model"]
+hash = "31e15e30005a"
+cy = '''Model cyflwyno'''
+
+[strings."receipts.field-business-id"]
+hash = "85b2113f9982"
+cy = '''ID y busnes'''
+
+[strings."receipts.field-calculation-type"]
+hash = "6721e315267d"
+cy = '''Math o gyfrifiad'''
+
+[strings."receipts.field-total-due"]
+hash = "003df6ae26e1"
+cy = '''Treth Incwm ac Yswiriant Gwladol sy’n ddyledus'''
+
 [strings."widget.field-item"]
 hash = "652bcc3a4784"
 cy = '''Eitem'''
