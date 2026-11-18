@@ -160,6 +160,27 @@ export const SCENES = {
     waitFor: "#generatedPassesList .pass-figures",
     clip: "#myGeneratedPasses",
   },
+  "cy-receipts": {
+    page: "cy/hmrc/receipt/receipts.html",
+    apiRoute: {
+      url: "**/api/v1/hmrc/receipt",
+      body: {
+        receipts: [
+          { name: "vat-2026-09-30-123456789012", timestamp: "2026-11-05T09:30:00.000Z", formBundleNumber: "123456789012" },
+          { name: "vat-2026-06-30-123456789011", timestamp: "2026-08-04T14:12:00.000Z", formBundleNumber: "123456789011" },
+          {
+            name: "100245677",
+            timestamp: "2026-07-21T10:05:00.000Z",
+            kind: "companies-house-accounts",
+            jointFilingId: "joint-2026",
+          },
+          { name: "100245678", timestamp: "2026-07-21T10:05:00.000Z", kind: "company-tax-return", jointFilingId: "joint-2026" },
+        ],
+      },
+    },
+    waitFor: "#receiptsTable tbody tr",
+    clip: "main",
+  },
   "pass-link": {
     page: "pass.html?pass=maple-river-quiet-harbour",
     apiRoute: { url: "**/api/v1/pass?code=*", body: { valid: true, bundleId: "resident-pro" } },
