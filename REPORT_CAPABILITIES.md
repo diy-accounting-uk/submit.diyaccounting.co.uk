@@ -516,7 +516,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions) Generate the OpenAPI spec from CDK route definitions: use when the API's OpenAPI document must reflect the real API Gateway routes without a hand-maintained list.
   - [Local dev environment & secrets](#local-dev-environment--secrets-dev)
     - [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments: use when starting local development against native HTTPS with Docker, or a Docker-free simulator variant.
-    - [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets: use when a local proxy-variant run needs HMRC/Stripe secrets.
+    - [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets: use when a local proxy-variant run needs HMRC, Stripe or Companies House secrets.
     - [DEV-60](#dev-60-fetch-the-local-tls-certificate) Fetch the local TLS certificate: use when a developer sets up local HTTPS for local.submit.diyaccounting.co.uk, or the stored certificate has been renewed.
     - [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle: use when a test lane needs a working Cognito login, native email/password auth toggled, or test users purged.
   - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev)
@@ -5771,12 +5771,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### DEV-15 Fetch and publish proxy-variant secrets
 
-- **Use when:** a local proxy-variant run needs HMRC/Stripe secrets.
-- **Does:** proxy-secrets.sh checks the AWS SSO session, then fetches the proxy variant's HMRC and Stripe secrets from Secrets Manager. It execs a given command with those secrets set in its environment.
+- **Use when:** a local proxy-variant run needs HMRC, Stripe or Companies House secrets.
+- **Does:** proxy-secrets.sh checks the AWS SSO session, then fetches the proxy variant's HMRC, Stripe and Companies House secrets from Secrets Manager. It execs a given command with those secrets set in its environment.
 - **Run:** `scripts/proxy-secrets.sh npm run test:submitVatBehaviour-proxy`
 - **Entry:** `scripts/proxy-secrets.sh`
 - **Files:** scripts/proxy-secrets.sh
-- **Keywords:** proxy secrets, secrets manager, hmrc secrets, stripe secrets
+- **Keywords:** proxy secrets, secrets manager, hmrc secrets, stripe secrets, companies house keys
 - **Related:** DEV-14
 
 #### DEV-60 Fetch the local TLS certificate
@@ -7541,6 +7541,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - companies house accounts: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - companies house codes: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - companies house deadline: [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events)
+- companies house keys: [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
 - company accounts: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - company authentication code: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - company background page: [SITE-11](#site-11-promote-sibling-products-and-partners)

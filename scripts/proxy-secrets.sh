@@ -3,19 +3,19 @@
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
 # @capability DEV-15 Fetch and publish proxy-variant secrets
-# - **Use when:** a local proxy-variant run needs HMRC/Stripe secrets.
-# - **Does:** proxy-secrets.sh checks the AWS SSO session, then fetches the proxy variant's HMRC and Stripe secrets from Secrets Manager. It execs a given command with those secrets set in its environment.
+# - **Use when:** a local proxy-variant run needs HMRC, Stripe or Companies House secrets.
+# - **Does:** proxy-secrets.sh checks the AWS SSO session, then fetches the proxy variant's HMRC, Stripe and Companies House secrets from Secrets Manager. It execs a given command with those secrets set in its environment.
 # - **Run:** `scripts/proxy-secrets.sh npm run test:submitVatBehaviour-proxy`
 # - **Entry:** `scripts/proxy-secrets.sh`
 # - **Files:** scripts/proxy-secrets.sh
-# - **Keywords:** proxy secrets, secrets manager, hmrc secrets, stripe secrets
+# - **Keywords:** proxy secrets, secrets manager, hmrc secrets, stripe secrets, companies house keys
 # - **Related:** DEV-14
 # @end-capability
 
 #
 # scripts/proxy-secrets.sh
 #
-# Fetches the proxy variant's HMRC and Stripe secrets from AWS Secrets Manager
+# Fetches the proxy variant's HMRC, Stripe and Companies House secrets from AWS Secrets Manager
 # and execs the given command with them set in its environment.
 # Usage: scripts/proxy-secrets.sh npm run test:submitVatBehaviour-proxy
 
@@ -36,11 +36,15 @@ get_secret() {
 
 HMRC_SANDBOX_CLIENT_SECRET="$(get_secret ci/submit/hmrc/sandbox_client_secret)"
 STRIPE_TEST_SECRET_KEY="$(get_secret ci/submit/stripe/test_secret_key)"
+COMPANIES_HOUSE_API_KEY="$(get_secret ci/submit/companies-house/api_key)"
+COMPANIES_HOUSE_SANDBOX_API_KEY="$(get_secret ci/submit/companies-house/sandbox_api_key)"
 
 export HMRC_ACCOUNT=synthetic
 export HMRC_SANDBOX_CLIENT_SECRET
 export STRIPE_TEST_SECRET_KEY
 export STRIPE_SECRET_KEY="$STRIPE_TEST_SECRET_KEY"
 export STRIPE_API_KEY="$STRIPE_TEST_SECRET_KEY"
+export COMPANIES_HOUSE_API_KEY
+export COMPANIES_HOUSE_SANDBOX_API_KEY
 
 exec "$@"
