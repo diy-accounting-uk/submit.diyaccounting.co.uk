@@ -290,7 +290,11 @@ async function capturePage(browser, { pageOrigin, outDir, page: pagePath, storag
   const shoot = async (state) => {
     const file = path.join(outDir, pagePath, screenshotName(width, theme, state));
     fs.mkdirSync(path.dirname(file), { recursive: true });
-    await loadAllImages(page);
+    // A page that navigates while its images load (a meta refresh) is captured where it lands.
+    await loadAllImages(page).catch(async (error) => {
+      errors.push(`images not settled: ${error.message.split("\n")[0]}`);
+      await page.waitForLoadState("load").catch(() => {});
+    });
     await page.screenshot({ path: file, fullPage: true });
     entries.push({
       page: pagePath,
