@@ -158,8 +158,6 @@ gate_docker_build() {
   docker buildx build \
     --platform linux/arm64 \
     --provenance=false \
-    --load \
-    -t "batch-check:$short" \
     -f Dockerfile .
 }
 
