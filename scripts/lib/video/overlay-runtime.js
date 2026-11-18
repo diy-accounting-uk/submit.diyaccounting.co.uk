@@ -426,6 +426,17 @@
       .join("\n");
   }
 
+  // Invisible but still in place, so an off-camera step can still click it.
+  function conceal(selectors) {
+    if (document.getElementById("__svc-conceal")) return;
+    const sheet = document.createElement("style");
+    sheet.id = "__svc-conceal";
+    sheet.textContent = selectors
+      .map((selector) => `html:not(#__svc-scope-a):not(#__svc-scope-b) ${selector}{opacity:0 !important}`)
+      .join("\n");
+    document.head.appendChild(sheet);
+  }
+
   function mark(name, detail) {
     log("mark", { name, ...detail });
   }
@@ -475,6 +486,7 @@
     const config = window.__svcConfig;
     if (!config) return;
     if (config.suppress && config.suppress.length > 0) suppress(config.suppress);
+    if (config.conceal && config.conceal.length > 0) conceal(config.conceal);
     // A site whose own logo and title fill the top-left corner takes the label in the middle of
     // its header bar instead.
     if (config.chapterPosition === "top-center" && chapterLabel) {
