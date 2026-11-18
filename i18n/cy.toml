@@ -5066,6 +5066,14 @@ cy = '''Methu agor Google Drive: {reason}.'''
 hash = "aa5eeb3cece5"
 cy = '''Ni chafodd Tŷ’r Cwmnïau y ffeilio hwn. Ni ffeiliwyd dim. Ffeiliwch ef eto.'''
 
+[strings."widget.ch-not-received-number"]
+hash = "0d24f13b97cc"
+cy = '''Rhif cyflwyno {number}.'''
+
+[strings."widget.ch-not-received-title"]
+hash = "2aff3dacb517"
+cy = '''Ni chafodd Tŷ’r Cwmnïau y ffeilio hwn. Ni ffeiliwyd dim.'''
+
 [strings."widget.assist-check"]
 hash = "fd71bbc052b0"
 cy = '''Gwirio’r Ffurflen hon gyda HMRC Assist'''

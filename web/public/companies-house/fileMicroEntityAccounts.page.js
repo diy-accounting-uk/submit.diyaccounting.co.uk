@@ -259,13 +259,10 @@ function renderRejections(rejections) {
   );
 }
 
-function showFilingResult(headline, detail) {
+// tone is "ok" for an accepted filing, "error" for one that was not filed, or empty while it is open.
+function showFilingResult(headline, detail, tone = "") {
   const container = document.getElementById("filingResult");
-  container.className = /rejected/.test(headline)
-    ? "outcome outcome--error"
-    : /accepted the accounts/.test(headline)
-      ? "outcome outcome--ok"
-      : "outcome";
+  container.className = tone ? `outcome outcome--${tone}` : "outcome";
   const headlineParagraph = document.createElement("p");
   headlineParagraph.className = "outcome__title";
   const strong = document.createElement("strong");
@@ -316,15 +313,19 @@ async function checkOutcome(submission, headers) {
       REJECT: window.siteText("ch.accounts.rejected", "Companies House rejected the accounts."),
     };
     const settled = window.companiesHouseGatewayPoll.isSettled(outcome);
+    const notReceived = window.companiesHouseRejections.notReceivedHeadline(outcome);
     showFilingResult(
-      outcomeHeadlines[outcome.statusCode] ||
+      notReceived?.title ||
+        outcomeHeadlines[outcome.statusCode] ||
         window.siteText("ch.accounts.not-finished", "Companies House has the accounts and has not finished checking them."),
-      settled
-        ? window.siteText("ch.accounts.status-line", "Status: {status}. Submission number {number}.", {
-            status: outcome.statusCode,
-            number: outcome.submissionNumber,
-          })
-        : window.companiesHouseGatewayPoll.pendingNote(submission),
+      notReceived?.detail ||
+        (settled
+          ? window.siteText("ch.accounts.status-line", "Status: {status}. Submission number {number}.", {
+              status: outcome.statusCode,
+              number: outcome.submissionNumber,
+            })
+          : window.companiesHouseGatewayPoll.pendingNote(submission)),
+      { ACCEPT: "ok", REJECT: "error" }[outcome.statusCode] || "",
     );
     renderRejections(outcome.rejections);
     showFilingCopyLink(outcome);

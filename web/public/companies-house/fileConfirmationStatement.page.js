@@ -1074,10 +1074,15 @@ async function checkOutcome(submission, headers, payload) {
     checkAgain.style.display = "inline-block";
     return;
   }
-  showSubmissionProgress(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
-    number: outcome.submissionNumber,
-    status: outcome.statusCode,
-  });
+  const notReceived = window.companiesHouseRejections.notReceivedHeadline(outcome);
+  if (notReceived) {
+    showSubmissionProgress(`${notReceived.title} ${notReceived.detail}`, {});
+  } else {
+    showSubmissionProgress(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
+      number: outcome.submissionNumber,
+      status: outcome.statusCode,
+    });
+  }
   result.className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
   renderRejections(outcome.rejections);
   await renderFilingRecord(payload, outcome);

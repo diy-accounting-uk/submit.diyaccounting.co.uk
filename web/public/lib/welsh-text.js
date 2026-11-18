@@ -2095,6 +2095,8 @@ window.WELSH_TEXT = {
   "widget.callback-oauth-error": "Gwall OAuth: {error}",
   "widget.cannot-use-yet": "Ni allwch ddefnyddio hwn eto",
   "widget.ch-not-received": "Ni chafodd Tŷ’r Cwmnïau y ffeilio hwn. Ni ffeiliwyd dim. Ffeiliwch ef eto.",
+  "widget.ch-not-received-number": "Rhif cyflwyno {number}.",
+  "widget.ch-not-received-title": "Ni chafodd Tŷ’r Cwmnïau y ffeilio hwn. Ni ffeiliwyd dim.",
   "widget.check-and-try-again": "Gwiriwch y manylion a rhowch gynnig arall arni",
   "widget.close-message": "Cau’r neges",
   "widget.connect-hmrc-again": "Cysylltu â CThEF eto",

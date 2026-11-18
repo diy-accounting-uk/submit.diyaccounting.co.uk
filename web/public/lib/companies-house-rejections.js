@@ -48,5 +48,15 @@
     return Array.isArray(rejections) && rejections.some(isNotReceived);
   }
 
-  window.companiesHouseRejections = { rejectionText, rejectionDescription, notReceived };
+  // The headline and line under it for an outcome Companies House never received, or null for
+  // any other outcome, which keeps the page's own headline.
+  function notReceivedHeadline(outcome) {
+    if (!notReceived(outcome?.rejections)) return null;
+    return {
+      title: siteText("widget.ch-not-received-title", "Companies House did not receive this filing. Nothing was filed."),
+      detail: siteText("widget.ch-not-received-number", "Submission number {number}.", { number: outcome.submissionNumber }),
+    };
+  }
+
+  window.companiesHouseRejections = { rejectionText, rejectionDescription, notReceived, notReceivedHeadline };
 })();
