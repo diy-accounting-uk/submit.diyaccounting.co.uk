@@ -125,7 +125,7 @@ function startContainer({ image, coolPort, port }) {
       "-e",
       `aliasgroup1=http://host.docker.internal:${port}`,
       "-e",
-      "extra_params=--o:ssl.enable=false --o:ssl.termination=false --o:user_interface.mode=classic",
+      "extra_params=--o:ssl.enable=false --o:ssl.termination=false --o:user_interface.mode=classic --o:net.proto=IPv4",
       image,
     ],
     { stdio: "ignore" },

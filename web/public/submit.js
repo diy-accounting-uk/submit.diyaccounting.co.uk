@@ -27,7 +27,7 @@ import {
   getLocalStorageJson,
   setLocalStorageJson,
 } from "./lib/utils/storage-utils.js";
-import { showStatus, hideStatus, removeStatusMessage, onDomReady, readMeta } from "./lib/utils/dom-utils.js";
+import { showStatus, hideStatus, dismissStatus, removeStatusMessage, onDomReady, readMeta } from "./lib/utils/dom-utils.js";
 import {
   getTraceparent,
   getLastXRequestId,
@@ -180,6 +180,8 @@ function removeConsentSurfaces() {
     const element = document.getElementById(id);
     if (element) element.parentNode.removeChild(element);
   }
+  document.documentElement.style.removeProperty("--consent-banner-height");
+  document.removeEventListener("keydown", closeDialogOnEscape);
 }
 
 function answerConsent(value, surface) {
@@ -194,22 +196,88 @@ function answerConsent(value, surface) {
   }
 }
 
+// page-chrome.js gives the text in the reader's language choice; without it the English stands.
+function siteText(id, english) {
+  return window.siteText ? window.siteText(id, english) : english;
+}
+
+// The privacy policy has no Welsh copy, so in Welsh its link carries the "(yn Saesneg)" mark.
+function fillConsentSharedText(element) {
+  element.querySelector(".consent-shared-text").textContent = siteText(
+    "consent.shared",
+    "We use cookies to measure how this site performs and is used, only if you accept. See our",
+  );
+  element.querySelector('a[href="/privacy.html"]').textContent = siteText("consent.privacy-link", "privacy policy");
+  const inWelsh = window.siteLanguage?.chrome() === "cy";
+  element.querySelector(".consent-in-english").textContent = inWelsh ? ` ${siteText("chrome.in-english", "(in English)")}` : "";
+}
+
+function hasAdvertClickId() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.has("gclid") || params.has("msclkid");
+  } catch {
+    return false;
+  }
+}
+
+function storedConsentChoice() {
+  try {
+    const stored = localStorage.getItem("consent.rum") ?? localStorage.getItem("consent.analytics");
+    if (stored === "granted") return "accept";
+    if (stored === "declined") return "reject";
+  } catch (error) {
+    console.warn("Failed to read the consent choice from localStorage:", error);
+  }
+  return null;
+}
+
+function consentVisitSentence(reopen) {
+  if (reopen) return "";
+  if (hasAdvertClickId()) {
+    return siteText(
+      "consent.advert",
+      "You arrived from an advert. If you accept, we store which advert brought you here and use Google Ads and Google Analytics to measure whether it led to a purchase. If you reject, we store nothing and the site works the same.",
+    );
+  }
+  if (isPaidVisit()) {
+    return siteText(
+      "consent.link",
+      "A link brought you here. If you accept, we store which link for 90 days, to see which pages lead to sign-ups. If you reject, we store nothing and the site works the same.",
+    );
+  }
+  return "";
+}
+
+function setConsentBannerHeight(banner) {
+  const publish = () => document.documentElement.style.setProperty("--consent-banner-height", `${banner.offsetHeight}px`);
+  publish();
+  if (typeof ResizeObserver === "function") new ResizeObserver(publish).observe(banner);
+}
+
+function fillConsentButtons(element) {
+  element.querySelector("#consent-accept").textContent = siteText("consent.accept", "Accept");
+  element.querySelector("#consent-decline").textContent = siteText("consent.reject", "Reject");
+}
+
 function buildConsentBanner() {
   const banner = document.createElement("div");
   banner.id = "consent-banner";
   banner.setAttribute("role", "region");
-  banner.setAttribute("aria-label", "Cookie consent");
+  banner.setAttribute("aria-label", siteText("consent.region", "Cookie consent"));
   banner.className = "consent-banner";
   banner.innerHTML = `
-    <p class="consent-banner-text">We use cookies to monitor performance and understand how people use this site. We'll only turn them on if you say yes. See our <a href="/privacy.html">privacy policy</a>.</p>
+    <p class="consent-banner-text"><span class="consent-shared-text"></span> <a href="/privacy.html"></a><span class="consent-in-english"></span>.</p>
     <div class="consent-banner-actions">
-      <button id="consent-accept" class="btn">Accept</button>
-      <button id="consent-decline" class="btn btn-secondary">Decline</button>
+      <button id="consent-accept" class="btn"></button>
+      <button id="consent-decline" class="btn btn-secondary"></button>
     </div>`;
+  fillConsentSharedText(banner);
+  fillConsentButtons(banner);
   return banner;
 }
 
-function buildConsentDialog() {
+function buildConsentDialog(reopen) {
   const dialog = document.createElement("div");
   dialog.id = "consent-dialog";
   dialog.className = "consent-dialog";
@@ -218,14 +286,47 @@ function buildConsentDialog() {
   dialog.setAttribute("aria-labelledby", "consent-dialog-title");
   dialog.innerHTML = `
     <div class="consent-dialog-panel">
-      <h2 id="consent-dialog-title">Your cookie choice</h2>
-      <p>You arrived from an advert. If you accept, we store which advert brought you here and use Google Ads and Google Analytics to measure whether it led to a purchase. If you reject, we store nothing and the site works the same. See our <a href="/privacy.html">privacy policy</a>.</p>
+      <h2 id="consent-dialog-title"></h2>
+      <p id="consent-current-choice" class="consent-current-choice" hidden></p>
+      <p><span class="consent-shared-text"></span> <a href="/privacy.html"></a><span class="consent-in-english"></span>.</p>
+      <p class="consent-visit-sentence" hidden></p>
       <div class="consent-dialog-actions">
-        <button id="consent-accept" class="btn consent-dialog-button">Accept</button>
-        <button id="consent-decline" class="btn consent-dialog-button">Reject</button>
+        <button id="consent-accept" class="btn consent-dialog-button"></button>
+        <button id="consent-decline" class="btn consent-dialog-button"></button>
       </div>
     </div>`;
+  dialog.querySelector("#consent-dialog-title").textContent = siteText("consent.dialog-title", "Your cookie choice");
+  fillConsentSharedText(dialog);
+  fillConsentButtons(dialog);
+  const choice = reopen ? storedConsentChoice() : null;
+  const choiceLine = dialog.querySelector("#consent-current-choice");
+  if (choice) {
+    choiceLine.textContent =
+      choice === "accept" ? siteText("consent.chose-accept", "You chose: accept") : siteText("consent.chose-reject", "You chose: reject");
+    choiceLine.hidden = false;
+  } else choiceLine.remove();
+  const visitSentence = consentVisitSentence(reopen);
+  const visitLine = dialog.querySelector(".consent-visit-sentence");
+  if (visitSentence) {
+    visitLine.textContent = visitSentence;
+    visitLine.hidden = false;
+  } else visitLine.remove();
   return dialog;
+}
+
+// The banner is the second Tab stop: it follows the skip link in the document, and its
+// fixed position keeps it at the bottom of the screen.
+function insertConsentBanner(banner) {
+  const skipLink = document.querySelector("body > .skip-link");
+  if (skipLink) skipLink.insertAdjacentElement("afterend", banner);
+  else document.body.insertBefore(banner, document.body.firstChild);
+}
+
+function closeDialogOnEscape(event) {
+  if (event.key !== "Escape") return;
+  const dialog = document.getElementById("consent-dialog");
+  if (dialog) dialog.parentNode.removeChild(dialog);
+  document.removeEventListener("keydown", closeDialogOnEscape);
 }
 
 function showConsentBannerIfNeeded({ reopen = false } = {}) {
@@ -233,11 +334,16 @@ function showConsentBannerIfNeeded({ reopen = false } = {}) {
   if (document.getElementById("consent-banner") || document.getElementById("consent-dialog")) return;
   const asDialog = reopen || isPaidVisit();
   const surface = asDialog ? "dialog" : "banner";
-  const element = asDialog ? buildConsentDialog() : buildConsentBanner();
-  document.body.appendChild(element);
+  if (asDialog) document.body.appendChild(buildConsentDialog(reopen));
+  else {
+    const banner = buildConsentBanner();
+    insertConsentBanner(banner);
+    setConsentBannerHeight(banner);
+  }
   document.getElementById("consent-accept").onclick = () => answerConsent("granted", surface);
   document.getElementById("consent-decline").onclick = () => answerConsent("declined", surface);
   if (asDialog) document.getElementById("consent-accept").focus();
+  if (reopen) document.addEventListener("keydown", closeDialogOnEscape);
 }
 
 function reopenConsentChoice(event) {
@@ -471,6 +577,7 @@ if (typeof window !== "undefined") {
   // DOM utils
   window.showStatus = showStatus;
   window.hideStatus = hideStatus;
+  window.dismissStatus = dismissStatus;
   window.removeStatusMessage = removeStatusMessage;
   window.onDomReady = onDomReady;
   window.readMeta = readMeta;

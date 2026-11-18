@@ -13,10 +13,12 @@
   ],
   "hmrcServices": ["mtd-vat", "mtd-income-tax"],
   "environments": ["ci"],
-  "viewport": { "width": 1920, "height": 1080 },
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
   "deviceScaleFactor": 2,
   "fps": 30,
-
   "pacing": {
     "perCharMs": 80,
     "betweenActionsMs": 500,
@@ -27,7 +29,6 @@
     "waitCompressionAfterMs": 6000,
     "waitCompressionFactor": 8
   },
-
   "captions": {
     "fontPx": 40,
     "lineHeightPx": 56,
@@ -36,13 +37,14 @@
     "charsPerSecond": 16,
     "minMs": 1200,
     "fadeMs": 200,
-    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
   },
-
   "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
-
   "finalHoldMs": 2500,
-
   "scenes": [
     {
       "id": "home",
@@ -58,8 +60,15 @@
           "headline": "A sandbox preview",
           "keyWord": "sandbox"
         },
-        { "action": "point", "target": { "role": "heading", "name": "Activities" }, "dwellMs": 300 },
-        { "action": "hold", "ms": 400 }
+        {
+          "action": "point",
+          "target": "#dynamicActivities",
+          "dwellMs": 300
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        }
       ]
     },
     {
@@ -81,8 +90,13 @@
           "headline": "Confirm your identity",
           "keyWord": "identity"
         },
-        { "action": "consent" },
-        { "action": "hold", "ms": 400 }
+        {
+          "action": "consent"
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        }
       ]
     },
     {
@@ -93,7 +107,10 @@
       "steps": [
         {
           "action": "click",
-          "target": { "role": "link", "name": "Bundles" },
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          },
           "caption": "Bundles decide which activities you can run.",
           "headline": "Open your bundles",
           "keyWord": "bundles"
@@ -106,7 +123,10 @@
           "headline": "Unlock Self Assessment",
           "keyWord": "Self"
         },
-        { "action": "hold", "ms": 500 }
+        {
+          "action": "hold",
+          "ms": 500
+        }
       ]
     },
     {
@@ -114,17 +134,62 @@
       "chapter": "File a quarter",
       "offCamera": true,
       "steps": [
-        { "action": "goto", "url": "/hmrc/itsa/selfEmploymentPeriod.html", "waitFor": "#itsaSelfEmploymentPeriodForm" },
-        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
-        { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "select", "target": "#taxYear", "value": "2026-27" },
-        { "action": "fill", "target": "#periodStartDate", "value": "2026-04-06" },
-        { "action": "fill", "target": "#periodEndDate", "value": "2026-07-05" },
-        { "action": "fill", "target": "#turnover", "value": "1000" },
-        { "action": "fill", "target": "#costOfGoods", "value": "150" },
-        { "action": "click", "target": "#submitBtn" },
-        { "action": "hmrcAuthorise", "timeoutMs": 60000 },
-        { "action": "await", "until": "#selfEmploymentPeriodResults", "label": "Filing the quarter", "timeoutMs": 60000 }
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/selfEmploymentPeriod.html",
+          "waitFor": "#itsaSelfEmploymentPeriodForm"
+        },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true
+        },
+        {
+          "action": "fill",
+          "target": "#businessId",
+          "value": "XBIS00000000001"
+        },
+        {
+          "action": "select",
+          "target": "#taxYear",
+          "value": "2026-27"
+        },
+        {
+          "action": "fill",
+          "target": "#periodStartDate",
+          "value": "2026-04-06"
+        },
+        {
+          "action": "fill",
+          "target": "#periodEndDate",
+          "value": "2026-07-05"
+        },
+        {
+          "action": "fill",
+          "target": "#turnover",
+          "value": "1000"
+        },
+        {
+          "action": "fill",
+          "target": "#costOfGoods",
+          "value": "150"
+        },
+        {
+          "action": "click",
+          "target": "#submitBtn"
+        },
+        {
+          "action": "hmrcAuthorise",
+          "timeoutMs": 60000
+        },
+        {
+          "action": "await",
+          "until": "#selfEmploymentPeriodResults",
+          "label": "Filing the quarter",
+          "timeoutMs": 60000
+        }
       ]
     },
     {
@@ -138,50 +203,81 @@
           "waitFor": "#itsaAnnualLoadForm",
           "caption": "Once the year's quarters are in, the year-end steps start here.",
           "headline": "Year-end steps start",
-          "keyWord": "Year-end"
+          "keyWord": "Year-end",
+          "instruction": "Choose Go to annual submission on the Self Assessment dashboard."
         },
-        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
-        { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "select", "target": "#taxYear", "value": "2026-27" },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true
+        },
+        {
+          "action": "fill",
+          "target": "#businessId",
+          "value": "XBIS00000000001"
+        },
+        {
+          "action": "select",
+          "target": "#taxYear",
+          "value": "2026-27"
+        },
         {
           "action": "click",
           "target": "#loadBtn",
           "caption": "Load what HMRC already holds for the year.",
           "headline": "Load the year so far",
-          "keyWord": "Load"
+          "keyWord": "Load",
+          "instruction": "Choose Load annual submission."
         },
-        { "action": "await", "until": "#annualEditForm", "label": "Loading the annual submission" },
+        {
+          "action": "await",
+          "until": "#annualEditForm",
+          "label": "Loading the annual submission"
+        },
         {
           "action": "point",
           "target": "#booksImportDrop",
           "dwellMs": 700,
           "caption": "Or fill the form straight from your diya-gl book, instead of typing every figure.",
           "headline": "Import from a book",
-          "keyWord": "Import"
+          "keyWord": "Import",
+          "instruction": "Drop your diya-gl book on the box that says Drop a book here to fill the form from it."
         },
-        { "action": "hold", "ms": 600 },
+        {
+          "action": "hold",
+          "ms": 600
+        },
         {
           "action": "click",
           "target": "#allowanceTypeTrading",
           "caption": "Claim the trading income allowance instead of itemised ones.",
           "headline": "Claim the trading allowance",
-          "keyWord": "allowance"
+          "keyWord": "allowance",
+          "instruction": "Choose Trading income allowance, then enter the amount you claim."
         },
-        { "action": "fill", "target": "#tradingIncomeAllowance", "value": "1000" },
+        {
+          "action": "fill",
+          "target": "#tradingIncomeAllowance",
+          "value": "1000"
+        },
         {
           "action": "select",
           "target": "#class4NicsExemptionReason",
           "value": "over-state-pension-age",
           "caption": "Say why Class 4 National Insurance doesn't apply: pension age, diver, non-resident.",
           "headline": "Say why NICs don't apply",
-          "keyWord": "NICs"
+          "keyWord": "NICs",
+          "instruction": "Choose the reason in the Class 4 National Insurance exemption reason list, if one applies."
         },
         {
           "action": "click",
           "target": "#saveBtn",
           "caption": "Save the year's allowances and non-financial details.",
           "headline": "Save it all",
-          "keyWord": "Save"
+          "keyWord": "Save",
+          "instruction": "Choose Save annual submission."
         },
         {
           "action": "await",
@@ -190,7 +286,8 @@
           "timeoutMs": 60000,
           "caption": "HMRC accepts the annual submission.",
           "headline": "HMRC accepts the year",
-          "keyWord": "accepts"
+          "keyWord": "accepts",
+          "instruction": "Read the result to check that HMRC accepted the annual submission."
         },
         {
           "action": "point",
@@ -199,7 +296,8 @@
           "caption": "Saved. This is the record as submitted: its reference, its status and the date.",
           "headline": "The record as submitted",
           "keyWord": "record",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read the record for its reference, its status and the date."
         },
         {
           "action": "hold",
@@ -212,9 +310,13 @@
           "caption": "Every figure you claimed is on the record, ready to keep.",
           "headline": "Keep this copy",
           "keyWord": "keep",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Check every figure you claimed in the record and keep your copy."
         },
-        { "action": "hold", "ms": 2500 },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
         {
           "action": "hold",
           "ms": 800

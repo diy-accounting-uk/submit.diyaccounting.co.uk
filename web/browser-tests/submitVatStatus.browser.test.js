@@ -3,7 +3,8 @@
 
 // web/browser-tests/submitVatStatus.browser.test.js
 //
-// The submit VAT page shows one status: production for a live account, sandbox for a synthetic one.
+// Each VAT page shows one status: production for a live account, sandbox for a synthetic one, and the
+// submit page and the read pages agree.
 
 import { test, expect } from "@playwright/test";
 import fs from "fs";
@@ -45,7 +46,7 @@ async function serveRealSite(page) {
   });
 }
 
-async function openSubmitVat(page, { synthetic }) {
+async function openVatPage(page, pageName, { synthetic }) {
   await serveRealSite(page);
   await page.route("**/api/v1/bundle", async (route) => {
     const bundles = synthetic ? [{ bundleId: "day-guest", qualifiers: { synthetic: true } }] : [];
@@ -56,12 +57,12 @@ async function openSubmitVat(page, { synthetic }) {
     if (isSynthetic) sessionStorage.setItem("hmrcAccount", "synthetic");
   }, synthetic);
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto("http://localhost:3000/hmrc/vat/submitVat.html", { waitUntil: "domcontentloaded" });
+  await page.goto(`http://localhost:3000/hmrc/vat/${pageName}`, { waitUntil: "domcontentloaded" });
 }
 
 test.describe("Submit VAT status", () => {
   test("a live account reads production", async ({ page }) => {
-    await openSubmitVat(page, { synthetic: false });
+    await openVatPage(page, "submitVat.html", { synthetic: false });
     const banner = page.locator("p.hint[data-feature-status]").first();
     await expect(banner).toHaveAttribute("data-feature-status", "production");
     await expect(banner).toContainText("Status: production.");
@@ -69,11 +70,48 @@ test.describe("Submit VAT status", () => {
   });
 
   test("a synthetic account reads sandbox and never production", async ({ page }) => {
-    await openSubmitVat(page, { synthetic: true });
+    await openVatPage(page, "submitVat.html", { synthetic: true });
     const banner = page.locator("p.hint[data-feature-status]").first();
     await expect(banner).toHaveAttribute("data-feature-status", "sandbox");
     await expect(banner).toContainText("Status: sandbox.");
     await expect(banner).not.toContainText("production");
     await expect(page.locator("#syntheticIndicator")).toBeVisible();
   });
+});
+
+const VAT_PAGES = [
+  "submitVat.html",
+  "vatObligations.html",
+  "vatLiabilities.html",
+  "vatPayments.html",
+  "vatPenalties.html",
+  "viewVatReturn.html",
+];
+
+async function statusOf(page, pageName, synthetic) {
+  await openVatPage(page, pageName, { synthetic });
+  const banner = page.locator("p.hint[data-feature-status]").first();
+  await expect(banner).toContainText("Status: ");
+  return banner.getAttribute("data-feature-status");
+}
+
+test.describe("VAT pages agree on the status", () => {
+  for (const pageName of VAT_PAGES) {
+    test(`${pageName} reads sandbox for a synthetic account`, async ({ page }) => {
+      await openVatPage(page, pageName, { synthetic: true });
+      const banner = page.locator("p.hint[data-feature-status]").first();
+      await expect(banner).toHaveAttribute("data-feature-status", "sandbox");
+      await expect(banner).toContainText("Status: sandbox.");
+      await expect(banner).not.toContainText("production");
+    });
+  }
+
+  for (const synthetic of [false, true]) {
+    test(`the obligations page shows the submit page's status for a ${synthetic ? "synthetic" : "live"} account`, async ({ page }) => {
+      const submitStatus = await statusOf(page, "submitVat.html", synthetic);
+      const obligationsStatus = await statusOf(page, "vatObligations.html", synthetic);
+      expect(obligationsStatus).toBe(submitStatus);
+      expect(obligationsStatus).toBe(synthetic ? "sandbox" : "production");
+    });
+  }
 });

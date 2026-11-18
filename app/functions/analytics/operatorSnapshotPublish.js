@@ -22,9 +22,10 @@
 // itself, so the dashboard stays fast even while a query here is slow.
 
 import { AthenaClient, StartQueryExecutionCommand, GetQueryExecutionCommand, GetQueryResultsCommand } from "@aws-sdk/client-athena";
-import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, ListBucketsCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { DynamoDBClient, DescribeTableCommand, DescribeTimeToLiveCommand } from "@aws-sdk/client-dynamodb";
 import { CloudWatchClient, GetMetricDataCommand } from "@aws-sdk/client-cloudwatch";
+import { CloudWatchLogsClient, DescribeLogGroupsCommand } from "@aws-sdk/client-cloudwatch-logs";
 import { createLogger } from "../../lib/logger.js";
 import { loadCatalogFromRoot } from "../../services/productCatalog.js";
 import { AWS_ACCOUNT_NAMES_BY_ID } from "../../lib/operatorSnapshot/awsAccounts.js";
@@ -45,7 +46,14 @@ import {
   headerCheckPartitionKeys,
   shapeIntegrationsSection,
 } from "../../lib/operatorSnapshot/integrationsSection.js";
-import { buildDataSection } from "../../lib/operatorSnapshot/dataSection.js";
+import {
+  BEDROCK_MODELS,
+  BEDROCK_MODEL_IDS,
+  BEDROCK_OTHER_ID,
+  bedrockComponentExpression,
+  bedrockModelObservationId,
+} from "../../lib/bedrockModels.js";
+import { actorClassSql, buildDataSection } from "../../lib/operatorSnapshot/dataSection.js";
 import { loadFixedRunningCosts } from "../../lib/runningCosts.js";
 import { loadOperators } from "../../lib/operators.js";
 import { loadFamilyAffiliateEmails } from "../../lib/familyAffiliates.js";
@@ -146,6 +154,19 @@ const BETTER_UP_IDS = [
   "retention-active-customers-7d",
   "retention-new-accounts",
   "retention-new-accounts-submitted-share",
+  "retention-accounts-total",
+  "retention-active-customers-90d",
+  "retention-submitters-7d",
+  "retention-returning-share-of-due",
+  "retention-new-submitters-90d",
+  "retention-resurrected-submitters-90d",
+  "retention-submitter-quick-ratio",
+  "retention-active-subscriptions",
+  "retention-active-passes",
+  "retention-first-submissions",
+  "retention-subscriptions-started",
+  "retention-subscriptions-net-change",
+  "retention-passes-redeemed",
 ];
 const BETTER_DOWN_IDS = [
   "alarms-fired",
@@ -165,6 +186,8 @@ const BETTER_DOWN_IDS = [
   "cost-submit-ci-usd",
   "cost-other-accounts-usd",
   "cost-bedrock-usd",
+  ...BEDROCK_MODELS.map(bedrockModelObservationId),
+  "cost-bedrock-other-usd",
   "cost-cloudwatch-usd",
   "cost-cloudfront-usd",
   "ads-cost-gbp",
@@ -190,6 +213,9 @@ const BETTER_DOWN_IDS = [
   "ms-ads-cost-per-paid-landing-gbp",
   "charges-without-activation",
   "median-hours-to-first-submission",
+  "retention-dormant-submitters-90d",
+  "retention-subscription-churn-30d",
+  "retention-subscriptions-ended",
 ];
 
 export function betterDirection(observationId) {
@@ -233,7 +259,8 @@ export const OBJECTIVE_GUIDANCE = {
   },
   "security": {
     sli: "Open findings in Security Hub, GuardDuty and GitHub.",
-    levers: "Patch the dependency or fix the configuration each finding names.",
+    levers:
+      "Patch the dependency or fix the configuration each finding names. A finding that needs no action is suppressed by an automation rule in ObservabilityStack, which sets its workflow status to SUPPRESSED, and leaves the count at the next nightly run. An archived GuardDuty finding leaves the GuardDuty count at the next nightly run; its Security Hub copy stays open until a rule suppresses it.",
   },
   "retention": {
     sli: "Customers who submit again, renew, or cancel.",
@@ -463,7 +490,8 @@ function caseFilter(where) {
  *
  * A view in LATEST_READING_VIEWS reports whole days, so its `o<i>_today` is the value on the
  * newest day up to today and `o<i>_today_as_of` is that day. A view with one row per month or
- * quarter has no Today or Previous day, so those columns are left out.
+ * quarter has no Today or Previous day, so those columns are left out. Its `o<i>_prev_1` reads
+ * the day before the day Today read, with the same aggregation.
  *
  * An observation with aggregation "ratio" divides the window's total of `valueExpr` by its total
  * of `denominatorExpr`, so a share is weighted by the days' sizes rather than averaged.
@@ -492,15 +520,32 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
     // sum, average or highest-day figure would misstate; a whole-day source's Today reads its
     // newest day up to today the same way. "latest-total" does the same for a view with several
     // rows a day, summing the rows of the newest day.
+    const newestDayName = `${prefix}today_newest_day`;
+    if (latestReading && !periodic) {
+      // The newest day up to today that has a row for this observation: Today reads it and
+      // Previous day reads the day before it, so the two columns never show one day.
+      newestDayColumns.push(`max(CASE WHEN ${dayColumn} <= ${UK_TODAY}${filter} THEN ${dayColumn} END) OVER () AS ${newestDayName}`);
+    }
     const windowColumns = WINDOWED_COLUMNS.filter(([alias]) => !(periodic && (alias === "today" || alias === "prev_1"))).map(
       ([alias, condition]) => {
         const newestDay = latestReading && alias === "today";
+        const dayBeforeNewest = latestReading && alias === "prev_1";
+        if (dayBeforeNewest) {
+          const dayBefore = `${dayColumn} = date_add('day', -1, ${newestDayName})`;
+          if (aggregation === "latest-total" || aggregation === "sum") {
+            return `sum(${valueExpr}) FILTER (WHERE ${dayBefore}${filter}) AS ${prefix}${alias}`;
+          }
+          return `max_by(${valueExpr}, ${dayColumn}) FILTER (WHERE ${dayBefore}${filter}) AS ${prefix}${alias}`;
+        }
         if (aggregation === "latest-total" || (newestDay && aggregation === "sum")) {
           // The open items counted on the newest day that has a row in the window: a count of
           // open items is a reading, so summing it over the days would count each item once a day.
-          const window = newestDay ? `${dayColumn} <= ${UK_TODAY}` : condition(dayColumn);
-          const newestDayName = `${prefix}${alias}_newest_day`;
-          newestDayColumns.push(`max(CASE WHEN ${window}${filter} THEN ${dayColumn} END) OVER () AS ${newestDayName}`);
+          if (!newestDay) {
+            const window = condition(dayColumn);
+            const windowNewestDayName = `${prefix}${alias}_newest_day`;
+            newestDayColumns.push(`max(CASE WHEN ${window}${filter} THEN ${dayColumn} END) OVER () AS ${windowNewestDayName}`);
+            return `sum(${valueExpr}) FILTER (WHERE ${dayColumn} = ${windowNewestDayName}${filter}) AS ${prefix}${alias}`;
+          }
           return `sum(${valueExpr}) FILTER (WHERE ${dayColumn} = ${newestDayName}${filter}) AS ${prefix}${alias}`;
         }
         if (aggregation === "latest" || newestDay) {
@@ -528,7 +573,7 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
     }
     return windowColumns;
   });
-  const source = newestDayColumns.length > 0 ? `(SELECT *,\n       ${newestDayColumns.join(",\n       ")}\n       FROM ${view})` : view;
+  const source = newestDayColumns.length > 0 ? `(SELECT *,\n       ${newestDayColumns.join(",\n       ")}\n       FROM   ${view})` : view;
   return `SELECT ${columns.join(",\n       ")}\nFROM   ${source}`;
 }
 
@@ -968,6 +1013,7 @@ export async function buildSnapshot({ workGroup, database, context }) {
         id: observation.id,
         label: observation.label,
         ...(observation.description ? { description: observation.description } : {}),
+        ...(observation.actorClass ? { actorClass: observation.actorClass } : {}),
         unit: observation.unit,
         today: windows.today,
         previousDay: windows.previousDay,
@@ -1009,7 +1055,7 @@ export async function buildSnapshot({ workGroup, database, context }) {
 
 export const DAILY_CHART_DAYS = 90;
 
-export const HOURLY_CHART_HOURS = 168;
+export const HOURLY_CHART_HOURS = 336;
 
 const dailyWindowFilter = (dayColumn) => `${dayColumn} > date_add('day', -${DAILY_CHART_DAYS}, current_date)`;
 const hourlyWindowFilter = (hourColumn) =>
@@ -1054,7 +1100,7 @@ function longFormSql({ dayExpression, componentExpression, valueExpression, view
   );
 }
 
-// One query over an hourly view for the 168 hours to now. The hour comes back as an ISO key in the
+// One query over an hourly view for the 336 hours to now. The hour comes back as an ISO key in the
 // "day" column so buildChartSeries reads it like a daily row.
 function hourlyLongFormSql({ componentExpression, valueExpression, view, where }) {
   const conditions = [hourlyWindowFilter("hour"), ...(where ? [where] : [])].join(" AND ");
@@ -1079,6 +1125,18 @@ function integrationLongFormSql({ hourly, componentExpression, valueExpression, 
   );
 }
 
+// A call's actor class rides on its component after "@", so each line is one line of one class.
+// buildChartSeries splits the classes apart; customer lines come first and show at the start.
+const CALL_CLASSES = ["customer", "test", "synthetic", "other", "unknown"];
+const CALL_CLASS_PHRASES = {
+  customer: "made for a signed-in customer",
+  test: "made for a test user",
+  synthetic: "made by a probe",
+  other: "made by an operator or a scheduled job",
+  unknown: "recorded with no actor",
+};
+const CALL_CLASS_COMPONENT = `'@' || ${actorClassSql("actor")}`;
+
 const INTEGRATION_ORG_LABELS = { "hmrc": "HMRC", "companies-house": "Companies House", "stripe": "Stripe" };
 
 // The status class of a call: its first digit and "xx", or "failed" for a call with no response.
@@ -1087,7 +1145,7 @@ const INTEGRATION_STATUS_CLASS = "CASE WHEN status IS NULL THEN 'failed' ELSE ca
 const integrationRequestsMode = ({ id, label, org }) => {
   const orgFilter = org ? " AND org = '" + org + "'" : "";
   const query = {
-    componentExpression: org ? "status_label" : "org || ' ' || " + INTEGRATION_STATUS_CLASS,
+    componentExpression: (org ? "status_label" : "org || ' ' || " + INTEGRATION_STATUS_CLASS) + " || " + CALL_CLASS_COMPONENT,
     valueExpression: "sum(calls)",
     where: "target = 'live'" + orgFilter,
   };
@@ -1106,6 +1164,8 @@ const integrationRequestsMode = ({ id, label, org }) => {
     totalDescription: org
       ? `Live calls to ${INTEGRATION_ORG_LABELS[org]} of every status added together.`
       : "Live calls to every organisation added together.",
+    classes: CALL_CLASSES,
+    classPhrases: CALL_CLASS_PHRASES,
     ...(org ? {} : { maxComponents: 8 }),
     orderOf: org ? (component) => component : orderOf,
     labelOf: (component) => (org ? component : `${orgName(component)} ${component.split(" ").slice(1).join(" ")}`),
@@ -1127,11 +1187,13 @@ const integrationDurationMode = ({ id, label }) => {
     unit: "ms",
     total: null,
     componentOrder: Object.keys(INTEGRATION_ORG_LABELS),
+    classes: CALL_CLASSES,
+    classPhrases: CALL_CLASS_PHRASES,
     labelOf: (component) => INTEGRATION_ORG_LABELS[component] ?? component,
     descriptionOf: (component) =>
       `Average time until ${INTEGRATION_ORG_LABELS[component] ?? component} answered a live call, or until it failed.`,
-    sql: integrationLongFormSql({ hourly: false, componentExpression: "org", valueExpression, where }),
-    hourlySql: integrationLongFormSql({ hourly: true, componentExpression: "org", valueExpression, where }),
+    sql: integrationLongFormSql({ hourly: false, componentExpression: "org || " + CALL_CLASS_COMPONENT, valueExpression, where }),
+    hourlySql: integrationLongFormSql({ hourly: true, componentExpression: "org || " + CALL_CLASS_COMPONENT, valueExpression, where }),
   };
 };
 
@@ -1215,6 +1277,177 @@ export function vatSubmissionReconciliationText({ rows, series, days }) {
   );
 }
 
+// The classes an account line of the Retention graph is split into, beside the customer line, and
+// the words each class's line ends with.
+const RETENTION_OTHER_CLASSES = {
+  test: "test accounts",
+  synthetic: "synthetic accounts",
+  other: "operator accounts",
+  unknown: "unknown accounts",
+};
+
+// The component of a row of a view with an actor_class column: the line id for a customer row, the
+// line id and the class for any other row.
+const classedComponent = (id) => `CASE actor_class WHEN 'customer' THEN '${id}' ELSE '${id}-' || actor_class END`;
+
+const classedLines = (id, label, description) =>
+  Object.fromEntries([
+    [id, { label, description: `${description} Customer accounts only.` }],
+    ...Object.entries(RETENTION_OTHER_CLASSES).map(([name, words]) => [
+      `${id}-${name}`,
+      { label: `${label}, ${words}`, description: `${description} Only ${words}; the customer line leaves them out.` },
+    ]),
+  ]);
+
+const RETENTION_LINES = {
+  ...classedLines("accounts-total", "Accounts in total", "Accounts with a record on or before the day."),
+  "active-customers-90d": {
+    label: "Active customers, 90 days to this day",
+    description: "Distinct signed-in customers who made a call in the 90 days to the day.",
+  },
+  "active-customers-7d": {
+    label: "Active customers, 7 days to this day",
+    description: "Distinct signed-in customers who made a call in the 7 days to the day.",
+  },
+  "submitters-90d": {
+    label: "Submitters, 90 days to this day",
+    description: "Distinct customers with a VAT submission in the 90 days to the day.",
+  },
+  "submitters-7d": {
+    label: "Submitters, 7 days to this day",
+    description: "Distinct customers with a VAT submission in the 7 days to the day.",
+  },
+  "returning-submitters-90d": {
+    label: "Returning submitters, 90 days to this day",
+    description: "Of the submitters due, the customers who submitted in the 90 days to the day too.",
+  },
+  "returning-submitters-7d": {
+    label: "Returning submitters, 7 days to this day",
+    description: "Of the submitters in the 7 days to the day, the customers who had also submitted before them.",
+  },
+  "due-submitters-90d": {
+    label: "Submitters due, 90 days to this day",
+    description: "Customers who submitted in the 90 days before the window. A quarterly VAT filer is due again in the window.",
+  },
+  "active-subscriptions": {
+    label: "Active subscriptions",
+    description: "Customer subscriptions active at the end of the day.",
+  },
+  "active-passes": {
+    label: "Active passes",
+    description: "Passes issued by customers that are open to redeem at the end of the day.",
+  },
+  ...classedLines("new-accounts", "New accounts", "Accounts opened on the day, by their first bundle grant."),
+  "first-submissions": { label: "First submissions", description: "Customers who made their first VAT submission on the day." },
+  "subscriptions-started": { label: "Subscriptions started", description: "Customer subscriptions that became active on the day." },
+  "renewals": { label: "Subscription renewals", description: "Customer subscriptions renewed on the day." },
+  "cancellations": {
+    label: "Subscription cancellations",
+    description: "Customer subscriptions cancelled on the day, now or at the period end.",
+  },
+  "subscriptions-ended": { label: "Subscriptions ended", description: "Customer subscriptions that stopped being active on the day." },
+  "subscriptions-net-change": {
+    label: "Net change in subscriptions",
+    description: "Subscriptions started less subscriptions ended on the day.",
+  },
+  "passes-issued": { label: "Passes issued", description: "Passes issued on the day, of every pass type." },
+  "passes-redeemed": { label: "Passes redeemed", description: "Redemptions on the day of passes that customers issued." },
+  "new-submitters-90d": {
+    label: "New submitters, 90 days to this day",
+    description: "Customers whose first VAT submission is in the 90 days to the day.",
+  },
+  "resurrected-submitters-90d": {
+    label: "Resurrected submitters, 90 days to this day",
+    description: "Customers who submitted in the 90 days to the day and before the 90 days before them, but not in those 90 days.",
+  },
+};
+
+const RETENTION_TOTALS_ORDER = [
+  "accounts-total",
+  "active-customers-90d",
+  "active-customers-7d",
+  "submitters-90d",
+  "submitters-7d",
+  "due-submitters-90d",
+  "returning-submitters-90d",
+  "returning-submitters-7d",
+  "active-subscriptions",
+  "active-passes",
+  ...Object.keys(RETENTION_OTHER_CLASSES).map((name) => `accounts-total-${name}`),
+];
+
+const RETENTION_EVENTS_ORDER = [
+  "new-accounts",
+  "first-submissions",
+  "subscriptions-started",
+  "renewals",
+  "cancellations",
+  "subscriptions-ended",
+  "subscriptions-net-change",
+  "passes-issued",
+  "passes-redeemed",
+  ...Object.keys(RETENTION_OTHER_CLASSES).map((name) => `new-accounts-${name}`),
+];
+
+// The v_returning_submitters_rolling_daily column behind each rolling line.
+const RETENTION_ROLLING_COLUMNS = {
+  "submitters-90d": "submitters_90d",
+  "submitters-7d": "submitters_7d",
+  "returning-submitters-90d": "returning_submitters_90d",
+  "returning-submitters-7d": "returning_submitters_7d",
+  "due-submitters-90d": "due_submitters_90d",
+  "new-submitters-90d": "new_submitters_90d",
+  "resurrected-submitters-90d": "resurrected_submitters_90d",
+};
+
+// The v_account_lifecycle_daily column behind each daily event line.
+const RETENTION_LIFECYCLE_COLUMNS = {
+  "first-submissions": "first_submissions",
+  "subscriptions-started": "subscriptions_started",
+  "subscriptions-ended": "subscriptions_ended",
+  "subscriptions-net-change": "subscriptions_net_change",
+};
+
+const RETENTION_NOTE = [
+  "Days are UTC.",
+  "Totals reads a figure on each day; Daily events counts the events of each day.",
+  "The 90 and 7 day windows roll, so a line falls when a submission leaves its window.",
+  "Submitters due are the customers who submitted in the 90 days before the window.",
+  "A quarterly VAT filer submits once in 90 days, so returning submitters over submitters due is the return rate.",
+  "Submitters by kind splits the 90 day submitters into new, returning and resurrected, and the three add up to the total line.",
+  "A resurrected submitter came back after more than 90 days without a submission.",
+  "Accounts in total counts an account from its first record; New accounts counts it on its first bundle grant.",
+  "Net change in subscriptions is subscriptions started less subscriptions ended, so it can fall below zero.",
+  "Test, synthetic, operator and unknown accounts have their own lines, hidden at the start.",
+  "The cohort table counts, for each signup month, the accounts that submitted in each month since.",
+  "A quarterly filer submits in months 0, 3 and 6.",
+  "The table above reads the same lines on its latest day.",
+].join(" ");
+
+// The signup months the cohort table under the Retention graph holds.
+export const RETENTION_COHORT_MONTHS = 12;
+
+/**
+ * The cohort table under the Retention graph, from the rows of v_retention_cohorts_monthly: one
+ * row per signup month, oldest first, with the cohort's accounts and its submitters in each month
+ * since signup (month 0 is the signup month).
+ *
+ * @param {{rows: Array<{signup_month: string, months_since_signup: string, accounts: string, submitters: string}>}} params
+ * @returns {{months: number, rows: Array<{signupMonth: string, accounts: number, submitters: number[]}>}}
+ */
+export function retentionCohortTable({ rows }) {
+  const byMonth = new Map();
+  for (const row of rows) {
+    if (!row.signup_month || row.months_since_signup === undefined) continue;
+    const month = row.signup_month.slice(0, 7);
+    if (!byMonth.has(month)) byMonth.set(month, { signupMonth: month, accounts: Number(row.accounts ?? 0), submitters: [] });
+    byMonth.get(month).submitters[Number(row.months_since_signup)] = Number(row.submitters ?? 0);
+  }
+  const cohorts = [...byMonth.values()].sort((a, b) => a.signupMonth.localeCompare(b.signupMonth));
+  for (const cohort of cohorts) cohort.submitters = Array.from(cohort.submitters, (value) => value ?? 0);
+  return { months: Math.max(0, ...cohorts.map((cohort) => cohort.submitters.length)), rows: cohorts };
+}
+
 /**
  * The charts the dashboard draws. A mode is one set of lines; a chart with two modes (activities:
  * started and completed) shows one at a time. `total` names the sum-of-components line, or is
@@ -1287,7 +1520,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "uptime",
       title: "HMRC submission failures",
       unit: "count",
-      note: "VAT returns that failed on their way to HMRC, from the activity events. Days are UTC. Failure rate is a percentage of that day's submissions.",
+      note: "VAT returns that failed on their way to HMRC, from the activity events. Days are UTC. Failure rate is a percentage of that day's or hour's submissions.",
       modes: [
         {
           id: "class",
@@ -1303,6 +1536,11 @@ export function buildDailyChartDefinitions() {
             valueExpression: "failures",
             view: "v_hmrc_failures_by_class",
             dayColumn: "day",
+          }),
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "failure_class",
+            valueExpression: "failures",
+            view: "v_hmrc_failures_by_class_hourly",
           }),
         },
         {
@@ -1321,6 +1559,11 @@ export function buildDailyChartDefinitions() {
             view: "v_hmrc_failures_by_class",
             dayColumn: "day",
           }),
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "hmrc_status",
+            valueExpression: "failures",
+            view: "v_hmrc_failures_by_class_hourly",
+          }),
         },
         {
           id: "rate",
@@ -1336,6 +1579,12 @@ export function buildDailyChartDefinitions() {
             dayColumn: "day",
             where: "failure_rate IS NOT NULL",
           }),
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "'failure-rate'",
+            valueExpression: "failure_rate * 100",
+            view: "v_submission_failure_rate_hourly",
+            where: "failure_rate IS NOT NULL",
+          }),
         },
       ],
     },
@@ -1344,7 +1593,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "integrations",
       title: "API requests by organisation and status",
       unit: "count",
-      note: "Live calls to HMRC, Companies House and Stripe, so sandbox probes do not hide customer traffic. A call with no response reads failed. Days are UTC.",
+      note: "Live calls to HMRC, Companies House and Stripe, by the class of the caller. The customer lines show at the start; the lines for test users, probes, operators with scheduled jobs, and calls recorded before the caller was recorded start hidden and stay in the legend. A call with no response reads failed. Days are UTC.",
       modes: [
         integrationRequestsMode({ id: "all", label: "All" }),
         ...Object.entries(INTEGRATION_ORG_LABELS).map(([org, label]) => integrationRequestsMode({ id: org, label, org })),
@@ -1355,7 +1604,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "integrations",
       title: "Average API request duration",
       unit: "ms",
-      note: "Live calls only. The time until the response arrived, or until the call failed, averaged over the calls of each day or hour. Days are UTC.",
+      note: "Live calls only, by the class of the caller; the customer lines show at the start. The time until the response arrived, or until the call failed, averaged over the calls of each day or hour. Days are UTC.",
       modes: [integrationDurationMode({ id: "organisation", label: "By organisation" })],
     },
     {
@@ -1363,7 +1612,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "conversion-to-submission",
       title: "Conversion to submission",
       unit: "count",
-      note: "Steps, left to right: spreadsheet downloads, human Submit sessions with the ones that came from the spreadsheets site, the gateway site and other sources as parts of it, customers active that day, those who submitted within 7 days. Google Analytics reports whole days two days late. The last few days have not had their 7 days yet. Active customers shows each app client's customers per day and over 7 days.",
+      note: "Steps, left to right: spreadsheet downloads, human Submit sessions with the ones that came from the spreadsheets site, the gateway site and other sources as parts of it, customers active that day, those who submitted within 7 days. Google Analytics reports whole days two days late. The last few days have not had their 7 days yet. Active customers shows each app client's customers per day and over 7 days; by hour it counts the customers active in each hour.",
       modes: [
         {
           id: "funnel",
@@ -1436,6 +1685,15 @@ export function buildDailyChartDefinitions() {
           sql:
             `SELECT cast(day AS varchar) AS day, app_client AS component, cast(sum(active_users_1d) AS double) AS value\n` +
             `FROM   v_active_customers_7d_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+          hourlyDescriptionOf: (id) =>
+            id === "all"
+              ? "Distinct signed-in customers who made a call in the hour, all app clients together."
+              : `Distinct signed-in customers who made a call in the hour through the ${id} app client.`,
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "app_client",
+            valueExpression: "active_users",
+            view: "v_active_customers_hourly",
+          }),
         },
         {
           id: "active-customers-7d",
@@ -1732,6 +1990,26 @@ export function buildDailyChartDefinitions() {
           }),
         },
         {
+          id: "bedrock-model",
+          label: "Bedrock by model",
+          total: "All Bedrock",
+          totalDescription: "Every Bedrock charge added together, in dollars.",
+          componentOrder: [...BEDROCK_MODEL_IDS, BEDROCK_OTHER_ID],
+          labelOf: (id) => BEDROCK_MODELS.find((model) => model.modelId === id)?.label ?? "Other",
+          descriptionOf: (id) =>
+            id === BEDROCK_OTHER_ID
+              ? "Dollars billed for every Bedrock charge that is not a model in use: the Claude models, other Amazon models, guardrail units and tax."
+              : `Dollars billed for the ${BEDROCK_MODELS.find((model) => model.modelId === id)?.label ?? id} model (${id}).`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: bedrockComponentExpression(),
+            valueExpression: "billed_cost_usd",
+            view: "v_cost_by_resource_daily",
+            dayColumn: "day",
+            where: "service_name LIKE '%Bedrock%'",
+          }),
+        },
+        {
           id: "agent",
           label: "Bedrock per agent result",
           total: null,
@@ -1740,8 +2018,8 @@ export function buildDailyChartDefinitions() {
             ({ "cost-per-posted-run": "Per run that posted", "cost-per-accepted-pr": "Per accepted pull request" })[id] ?? id,
           descriptionOf: (id) =>
             ({
-              "cost-per-posted-run": "The day's Claude on Bedrock cost divided by the agent runs that posted a result that day.",
-              "cost-per-accepted-pr": "The day's Claude on Bedrock cost divided by the agent pull requests a person merged that day.",
+              "cost-per-posted-run": "The day's Bedrock cost divided by the agent runs that posted a result that day.",
+              "cost-per-accepted-pr": "The day's Bedrock cost divided by the agent pull requests a person merged that day.",
             })[id],
           sql:
             `SELECT cast(day AS varchar) AS day, 'cost-per-posted-run' AS component, cast(sum(cost_per_posted_run_usd) AS double) AS value\n` +
@@ -1757,68 +2035,101 @@ export function buildDailyChartDefinitions() {
       objectiveId: "retention",
       title: "Retention",
       unit: "count",
-      note: "The 90-day windows roll: each day counts the customers who submitted in the 90 days up to it, so a figure falls when a submission leaves the window. A returning submitter also submitted in the 90 days before that; the table above reads the same line on its latest day. Active customers over 7 days and New accounts are the bases the submitters come from. Passes issued are a count per day.",
+      note: RETENTION_NOTE,
       reconciliation: {
         sql:
           `SELECT actor_group, cast(sum(submissions) AS varchar) AS submissions, cast(count(DISTINCT hashed_sub) AS varchar) AS submitters\n` +
           `FROM   v_vat_submissions_by_actor_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1`,
         text: vatSubmissionReconciliationText,
       },
+      cohort: {
+        sql:
+          `SELECT cast(signup_month AS varchar) AS signup_month, cast(months_since_signup AS varchar) AS months_since_signup,\n` +
+          `       cast(accounts AS varchar) AS accounts, cast(submitters AS varchar) AS submitters\n` +
+          `FROM   v_retention_cohorts_monthly\n` +
+          `WHERE  actor_class = 'customer' AND signup_month > date_add('month', -${RETENTION_COHORT_MONTHS}, current_date)\n` +
+          `ORDER  BY 1, 2`,
+        build: retentionCohortTable,
+      },
       modes: [
         {
-          id: "retention",
-          label: "Retention",
+          id: "totals",
+          label: "Totals",
           total: null,
-          descriptionOf: (id) =>
-            ({
-              "submitters-90d": "Distinct customers with a VAT submission in the 90 days up to the day.",
-              "returning-submitters-90d": "Of those, the customers who also submitted in the 90 days before that.",
-              "renewals": "Subscriptions renewed on the day.",
-              "cancellations": "Subscriptions cancelled on the day.",
-              "passes-issued": "Passes issued on the day, of every pass type.",
-              "active-customers-7d": "Distinct signed-in customers who made a call in the 7 days to the day.",
-              "new-accounts": "Accounts opened on the day, test and operator accounts apart.",
-            })[id],
-          componentOrder: [
-            "active-customers-7d",
-            "new-accounts",
-            "submitters-90d",
-            "returning-submitters-90d",
-            "renewals",
-            "cancellations",
-            "passes-issued",
-          ],
-          labelOf: (id) =>
-            ({
-              "passes-issued": "Passes issued",
-              "submitters-90d": "Submitters, 90 days to this day",
-              "returning-submitters-90d": "Returning submitters, 90 days to this day",
-              "renewals": "Subscription renewals",
-              "cancellations": "Subscription cancellations",
-              "active-customers-7d": "Active customers, 7 days to this day",
-              "new-accounts": "New accounts",
-            })[id] ?? id,
+          componentOrder: RETENTION_TOTALS_ORDER,
+          labelOf: (id) => RETENTION_LINES[id]?.label ?? id,
+          descriptionOf: (id) => RETENTION_LINES[id]?.description,
           sql:
-            `SELECT cast(day AS varchar) AS day, 'active-customers-7d' AS component, cast(sum(active_users_7d) AS double) AS value\n` +
+            `SELECT cast(day AS varchar) AS day, ${classedComponent("accounts-total")} AS component, cast(sum(accounts_total) AS double) AS value\n` +
+            `FROM   v_account_lifecycle_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'active-customers-90d', cast(sum(active_users_90d) AS double)\n` +
             `FROM   v_active_customers_7d_daily\nWHERE  ${dailyWindowFilter("day")} AND app_client = 'all'\nGROUP  BY 1\n` +
             `UNION ALL\n` +
-            `SELECT cast(signup_day AS varchar), 'new-accounts', cast(sum(new_accounts) AS double)\n` +
-            `FROM   v_signup_to_first_submission\nWHERE  ${dailyWindowFilter("signup_day")}\nGROUP  BY 1\n` +
+            `SELECT cast(day AS varchar), 'active-customers-7d', cast(sum(active_users_7d) AS double)\n` +
+            `FROM   v_active_customers_7d_daily\nWHERE  ${dailyWindowFilter("day")} AND app_client = 'all'\nGROUP  BY 1\n` +
+            ["submitters-90d", "submitters-7d", "returning-submitters-90d", "returning-submitters-7d", "due-submitters-90d"]
+              .map(
+                (id) =>
+                  `UNION ALL\n` +
+                  `SELECT cast(day AS varchar), '${id}', cast(sum(${RETENTION_ROLLING_COLUMNS[id]}) AS double)\n` +
+                  `FROM   v_returning_submitters_rolling_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n`,
+              )
+              .join("") +
             `UNION ALL\n` +
-            `SELECT cast(day AS varchar) AS day, 'submitters-90d' AS component, cast(sum(submitters_90d) AS double) AS value\n` +
-            `FROM   v_returning_submitters_rolling_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `SELECT cast(day AS varchar), 'active-subscriptions', cast(sum(active_subscriptions) AS double)\n` +
+            `FROM   v_account_lifecycle_daily\nWHERE  ${dailyWindowFilter("day")} AND actor_class = 'customer'\nGROUP  BY 1\n` +
             `UNION ALL\n` +
-            `SELECT cast(day AS varchar), 'returning-submitters-90d', cast(sum(returning_submitters_90d) AS double)\n` +
-            `FROM   v_returning_submitters_rolling_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `SELECT cast(day AS varchar), 'active-passes', cast(sum(active_passes) AS double)\n` +
+            `FROM   v_account_lifecycle_daily\nWHERE  ${dailyWindowFilter("day")} AND actor_class = 'customer'\nGROUP  BY 1`,
+        },
+        {
+          id: "events",
+          label: "Daily events",
+          total: null,
+          componentOrder: RETENTION_EVENTS_ORDER,
+          labelOf: (id) => RETENTION_LINES[id]?.label ?? id,
+          descriptionOf: (id) => RETENTION_LINES[id]?.description,
+          sql:
+            `SELECT cast(signup_day AS varchar) AS day, ${classedComponent("new-accounts")} AS component, cast(sum(new_accounts) AS double) AS value\n` +
+            `FROM   v_signup_to_first_submission\nWHERE  ${dailyWindowFilter("signup_day")}\nGROUP  BY 1, 2\n` +
+            ["first-submissions", "subscriptions-started", "subscriptions-ended", "subscriptions-net-change"]
+              .map(
+                (id) =>
+                  `UNION ALL\n` +
+                  `SELECT cast(day AS varchar), '${id}', cast(sum(${RETENTION_LIFECYCLE_COLUMNS[id]}) AS double)\n` +
+                  `FROM   v_account_lifecycle_daily\nWHERE  ${dailyWindowFilter("day")} AND actor_class = 'customer'\nGROUP  BY 1\n`,
+              )
+              .join("") +
             `UNION ALL\n` +
             `SELECT cast(day AS varchar), 'renewals', cast(sum(renewals) AS double)\n` +
-            `FROM   v_subscription_renewals_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `FROM   v_subscription_renewals_daily\nWHERE  ${dailyWindowFilter("day")} AND actor_class = 'customer'\nGROUP  BY 1\n` +
             `UNION ALL\n` +
             `SELECT cast(day AS varchar), 'cancellations', cast(sum(cancellations) AS double)\n` +
-            `FROM   v_subscription_cancellations_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `FROM   v_subscription_cancellations_daily\nWHERE  ${dailyWindowFilter("day")} AND actor_class = 'customer'\nGROUP  BY 1\n` +
             `UNION ALL\n` +
             `SELECT cast(day AS varchar), 'passes-issued', cast(sum(passes_issued) AS double)\n` +
+            `FROM   v_pass_redemptions_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'passes-redeemed', cast(sum(passes_redeemed) AS double)\n` +
             `FROM   v_pass_redemptions_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1`,
+        },
+        {
+          id: "submitters",
+          label: "Submitters by kind",
+          total: "All submitters, 90 days to this day",
+          totalDescription: "Distinct customers with a VAT submission in the 90 days to the day: new, returning and resurrected together.",
+          componentOrder: ["new-submitters-90d", "returning-submitters-90d", "resurrected-submitters-90d"],
+          labelOf: (id) => RETENTION_LINES[id]?.label ?? id,
+          descriptionOf: (id) => RETENTION_LINES[id]?.description,
+          sql: ["new-submitters-90d", "returning-submitters-90d", "resurrected-submitters-90d"]
+            .map(
+              (id, index) =>
+                `SELECT cast(day AS varchar)${index === 0 ? " AS day" : ""}, '${id}'${index === 0 ? " AS component" : ""}, ` +
+                `cast(sum(${RETENTION_ROLLING_COLUMNS[id]}) AS double)${index === 0 ? " AS value" : ""}\n` +
+                `FROM   v_returning_submitters_rolling_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1`,
+            )
+            .join("\nUNION ALL\n"),
         },
       ],
     },
@@ -1902,6 +2213,12 @@ export function buildDailyChartDefinitions() {
             dayColumn: "day",
             where: "event = 'login'",
           }),
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "coalesce(provider, 'Native')",
+            valueExpression: "sign_ins",
+            view: "v_sign_ins_hourly",
+            where: "event = 'login'",
+          }),
         },
         {
           id: "country",
@@ -1918,6 +2235,11 @@ export function buildDailyChartDefinitions() {
             view: "v_traffic_by_country_daily",
             dayColumn: "day",
           }),
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "country",
+            valueExpression: "human_sessions",
+            view: "v_traffic_by_country_hourly",
+          }),
         },
         {
           id: "ai-agent-country",
@@ -1933,6 +2255,11 @@ export function buildDailyChartDefinitions() {
             valueExpression: "ai_agent_sessions",
             view: "v_traffic_by_country_daily",
             dayColumn: "day",
+          }),
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "country",
+            valueExpression: "ai_agent_sessions",
+            view: "v_traffic_by_country_hourly",
           }),
         },
       ],
@@ -1956,7 +2283,7 @@ export function dailyChartDays(endDay, count = DAILY_CHART_DAYS) {
 
 /**
  * The last `count` UTC hours ending on the hour that contains `now`, oldest first, as ISO keys
- * like `2026-09-08T14:00:00Z`: the hours the hourly charts' `hour > now_hour - 168 hours` filter returns.
+ * like `2026-09-08T14:00:00Z`: the hours the hourly charts' `hour > now_hour - 336 hours` filter returns.
  */
 export function hourlyChartHours(now, count = HOURLY_CHART_HOURS) {
   const end = new Date(now);
@@ -1974,6 +2301,35 @@ export function hourlyChartHours(now, count = HOURLY_CHART_HOURS) {
  * line when the mode names one.
  */
 export function buildChartSeries({ days, rows, mode }) {
+  return mode.classes ? buildClassedChartSeries({ days, rows, mode }) : buildChartSeriesOfOneKind({ days, rows, mode });
+}
+
+// A mode with `classes` carries each row's class after "@" in its component. Each class is built
+// as a chart of its own (its total, its fold into Other, its order), then its lines are named
+// "<line>, <class>" with ids "<id>@<class>". Customer lines come first. A class with no rows has
+// no lines, except customer, which keeps the lines of a `componentOrder` at zero.
+function buildClassedChartSeries({ days, rows, mode }) {
+  const { classes, classPhrases, ...rest } = mode;
+  return classes.flatMap((name) => {
+    const classRows = rows
+      .filter((row) => typeof row.component === "string" && row.component.endsWith(`@${name}`))
+      .map((row) => ({ ...row, component: row.component.slice(0, -`@${name}`.length) }));
+    if (classRows.length === 0 && name !== classes[0]) return [];
+    const classMode = {
+      ...rest,
+      total: mode.total ? `${mode.total}, ${name}` : mode.total,
+      componentOrder: name === classes[0] ? mode.componentOrder : undefined,
+    };
+    return buildChartSeriesOfOneKind({ days, rows: classRows, mode: classMode }).map((line) => ({
+      ...line,
+      id: `${line.id}@${name}`,
+      label: line.isTotal ? line.label : `${line.label}, ${name}`,
+      ...(line.description ? { description: `${line.description} Only calls ${classPhrases[name]}.` } : {}),
+    }));
+  });
+}
+
+function buildChartSeriesOfOneKind({ days, rows, mode }) {
   const dayIndex = new Map(days.map((day, index) => [day, index]));
   const valuesByComponent = new Map();
   for (const row of rows) {
@@ -2046,7 +2402,7 @@ function reusableDailyCharts(previous, endDay, now) {
  * Each 90-day daily query reads every object of its view's tables, and the series changes only in
  * its last point during a day. So when `previous` (the last snapshot's dailyCharts) ends on the
  * same day and its daily series were queried less than DAILY_SERIES_REFRESH_HOURS ago, each mode
- * and reconciliation line it holds is reused. The 168-hour series are queried on every run.
+ * and reconciliation line it holds is reused. The 336-hour series are queried on every run.
  *
  * @returns {Promise<{dailyCharts: {days: string[], hours: string[], dailySeriesQueriedAt: string, charts: object[]}, failedChartIds: string[]}>}
  */
@@ -2081,7 +2437,11 @@ export async function buildDailyCharts({
               series: buildChartSeries({
                 days: hours,
                 rows: hourlyRows,
-                mode: { ...mode, componentOrder: mode.hourlyComponentOrder ?? mode.componentOrder },
+                mode: {
+                  ...mode,
+                  componentOrder: mode.hourlyComponentOrder ?? mode.componentOrder,
+                  descriptionOf: mode.hourlyDescriptionOf ?? mode.descriptionOf,
+                },
               }),
             };
           } catch (error) {
@@ -2148,6 +2508,22 @@ export async function buildDailyCharts({
         chartId: chart.id,
         error: error.message,
       });
+    }
+  }
+  // A cohort query that fails leaves its chart without the table and still counts as a failure.
+  for (const chart of charts) {
+    const { cohort } = definitions.find((definition) => definition.id === chart.id);
+    if (!cohort) continue;
+    const previousCohort = previousChart(chart.id)?.cohort;
+    if (previousCohort) {
+      chart.cohort = previousCohort;
+      continue;
+    }
+    try {
+      chart.cohort = cohort.build({ rows: await runAthenaQuery({ workGroup, database, sql: cohort.sql }) });
+    } catch (error) {
+      failedChartIds.add(`${chart.id}-cohort`);
+      logger.warn({ message: "Chart cohort query failed, publishing no cohort table", chartId: chart.id, error: error.message });
     }
   }
   const dailySeriesQueriedAt = reusable ? reusable.dailySeriesQueriedAt : now.toISOString();
@@ -2261,25 +2637,162 @@ export async function buildIntegrations({ workGroup, database, envName, region, 
   });
 }
 
+// GetMetricData's limit on the queries of one request.
+const METRIC_QUERIES_PER_REQUEST = 500;
+const PERIOD_SECONDS = { daily: 86400, hourly: 3600 };
+
+// The region of the edge resources. A bucket's S3 metrics and a log group live in its own region,
+// so the Data tab reads this region beside the function's own.
+const EDGE_REGION = "us-east-1";
+
+// The key of a metric point: its ISO day for a daily period, its ISO hour for a shorter one.
+const metricPointKey = (timestamp, period) =>
+  period === PERIOD_SECONDS.daily ? timestamp.toISOString().slice(0, 10) : timestamp.toISOString().slice(0, 13) + ":00:00Z";
+
+/**
+ * Each query's points by day or hour, read through every page of GetMetricData.
+ *
+ * @param {CloudWatchClient} cloudWatch
+ * @param {Array<{id: string, metric: object, stat: string}>} queries
+ * @param {{period: number, start: Date, end: Date}} window
+ * @returns {Promise<Record<string, Record<string, number>>>}
+ */
+export async function metricPoints(cloudWatch, queries, { period, start, end }) {
+  const points = Object.fromEntries(queries.map((query) => [query.id, {}]));
+  for (let offset = 0; offset < queries.length; offset += METRIC_QUERIES_PER_REQUEST) {
+    const batch = queries.slice(offset, offset + METRIC_QUERIES_PER_REQUEST);
+    let NextToken;
+    do {
+      const response = await cloudWatch.send(
+        new GetMetricDataCommand({
+          StartTime: start,
+          EndTime: end,
+          NextToken,
+          MetricDataQueries: batch.map(({ id, metric, stat }) => ({ Id: id, MetricStat: { Metric: metric, Period: period, Stat: stat } })),
+        }),
+      );
+      (response.MetricDataResults || []).forEach((result) => {
+        (result.Timestamps || []).forEach((timestamp, position) => {
+          points[result.Id][metricPointKey(new Date(timestamp), period)] = result.Values[position];
+        });
+      });
+      NextToken = response.NextToken;
+    } while (NextToken);
+  }
+  return points;
+}
+
+// The daily S3 storage metric of each bucket by ISO day, added over the storage types given and
+// over the regions, since a bucket's metric exists only in its own region.
+async function bucketDailyMetric(cloudWatchClients, names, days, metricName, storageTypes) {
+  const end = new Date();
+  const start = new Date(end.getTime() - days * PERIOD_SECONDS.daily * 1000);
+  const queries = names.flatMap((name, bucketIndex) =>
+    storageTypes.map((storageType, typeIndex) => ({
+      id: `b${bucketIndex}s${typeIndex}`,
+      metric: {
+        Namespace: "AWS/S3",
+        MetricName: metricName,
+        Dimensions: [
+          { Name: "BucketName", Value: name },
+          { Name: "StorageType", Value: storageType },
+        ],
+      },
+      stat: "Average",
+    })),
+  );
+  const results = await Promise.all(
+    cloudWatchClients.map((client) => metricPoints(client, queries, { period: PERIOD_SECONDS.daily, start, end })),
+  );
+  return Object.fromEntries(
+    names.map((name, bucketIndex) => {
+      const byDay = {};
+      results.forEach((points) =>
+        storageTypes.forEach((_, typeIndex) =>
+          Object.entries(points[`b${bucketIndex}s${typeIndex}`]).forEach(([day, value]) => {
+            byDay[day] = (byDay[day] || 0) + Math.round(value);
+          }),
+        ),
+      );
+      return [name, byDay];
+    }),
+  );
+}
+
+// The storage types whose bytes add up to a bucket's size; a type a bucket does not use returns no points.
+const BUCKET_STORAGE_TYPES = ["StandardStorage", "StandardIAStorage", "OneZoneIAStorage", "GlacierInstantRetrievalStorage"];
+
+/**
+ * The read and write capacity units each table consumed, by day or by hour, over the last `count`
+ * days or hours. The window starts on a whole day or hour, so each point is one day or one hour.
+ */
+export async function consumedCapacity(cloudWatch, tableNames, grain, count, now = new Date()) {
+  const period = PERIOD_SECONDS[grain];
+  const periodMs = period * 1000;
+  const start = new Date(Math.floor(now.getTime() / periodMs) * periodMs - (count - 1) * periodMs);
+  const metric = (tableName, metricName) => ({
+    Namespace: "AWS/DynamoDB",
+    MetricName: metricName,
+    Dimensions: [{ Name: "TableName", Value: tableName }],
+  });
+  const queries = tableNames.flatMap((tableName, index) => [
+    { id: `t${index}r`, metric: metric(tableName, "ConsumedReadCapacityUnits"), stat: "Sum" },
+    { id: `t${index}w`, metric: metric(tableName, "ConsumedWriteCapacityUnits"), stat: "Sum" },
+  ]);
+  const points = await metricPoints(cloudWatch, queries, { period, start, end: now });
+  return Object.fromEntries(tableNames.map((tableName, index) => [tableName, { read: points[`t${index}r`], write: points[`t${index}w`] }]));
+}
+
+/** The bytes stored in every log group of the account, in each region given. */
+export async function logGroupStoredBytes(logsClients) {
+  let total = 0;
+  for (const client of logsClients) {
+    let nextToken;
+    do {
+      const response = await client.send(new DescribeLogGroupsCommand({ limit: 50, nextToken }));
+      (response.logGroups || []).forEach((group) => {
+        total += group.storedBytes || 0;
+      });
+      nextToken = response.nextToken;
+    } while (nextToken);
+  }
+  return total;
+}
+
+// A figure the graph can do without: a failed read leaves its lines out and the section published.
+async function readOrFallback(what, read, fallback) {
+  try {
+    return await read();
+  } catch (error) {
+    logger.warn({ message: "Data figure not read, publishing the section without it", figure: what, error: error.message });
+    return fallback;
+  }
+}
+
 /**
  * The Data tab's section: item counts, TTL, actor split and object counts, with the daily
- * history files in the lake. See dataSection.js for where each figure comes from.
+ * history files in the lake, and the stored-data graph. See dataSection.js for where each
+ * figure comes from.
  */
 export async function buildData({ workGroup, database, envName, lakeBucket }) {
   const tableNames = splitList(process.env.DATA_TABLE_NAMES);
   const bucketNames = splitList(process.env.DATA_BUCKET_NAMES);
   const diyaGlBucketName = process.env.DIYA_GL_BUCKET_NAME;
-  const dynamo = new DynamoDBClient({ region: process.env.AWS_REGION || "eu-west-2" });
-  const cloudWatch = new CloudWatchClient({ region: process.env.AWS_REGION || "eu-west-2" });
+  const region = process.env.AWS_REGION || "eu-west-2";
+  const dynamo = new DynamoDBClient({ region });
+  const cloudWatch = new CloudWatchClient({ region });
+  const cloudWatchClients = [cloudWatch, new CloudWatchClient({ region: EDGE_REGION })];
+  const logsClients = [new CloudWatchLogsClient({ region }), new CloudWatchLogsClient({ region: EDGE_REGION })];
   const s3Client = getS3Client();
   return buildDataSection({
     envName,
     tableNames,
     bucketNames,
+    diyaGlBucketName: diyaGlBucketName || null,
     io: {
-      describeItemCount: async (TableName) => {
+      describeTable: async (TableName) => {
         const { Table } = await dynamo.send(new DescribeTableCommand({ TableName }));
-        return Table?.ItemCount ?? null;
+        return { items: Table?.ItemCount ?? null, bytes: Table?.TableSizeBytes ?? null };
       },
       describeTtl: async (TableName) => {
         const { TimeToLiveDescription: ttl } = await dynamo.send(new DescribeTimeToLiveCommand({ TableName }));
@@ -2300,40 +2813,31 @@ export async function buildData({ workGroup, database, envName, lakeBucket }) {
         );
       },
       runAthena: (sql) => runAthenaQuery({ workGroup, database, sql }),
-      bucketObjectCounts: async (names, days) => {
-        const end = new Date();
-        const response = await cloudWatch.send(
-          new GetMetricDataCommand({
-            StartTime: new Date(end.getTime() - days * 24 * 60 * 60 * 1000),
-            EndTime: end,
-            MetricDataQueries: names.map((name, index) => ({
-              Id: `b${index}`,
-              MetricStat: {
-                Metric: {
-                  Namespace: "AWS/S3",
-                  MetricName: "NumberOfObjects",
-                  Dimensions: [
-                    { Name: "BucketName", Value: name },
-                    { Name: "StorageType", Value: "AllStorageTypes" },
-                  ],
-                },
-                Period: 86400,
-                Stat: "Average",
-              },
-            })),
-          }),
-        );
-        return Object.fromEntries(
-          names.map((name, index) => {
-            const result = (response.MetricDataResults || []).find((entry) => entry.Id === `b${index}`);
-            const byDay = {};
-            (result?.Timestamps || []).forEach((timestamp, position) => {
-              byDay[timestamp.toISOString().slice(0, 10)] = Math.round(result.Values[position]);
-            });
-            return [name, byDay];
-          }),
-        );
-      },
+      bucketObjectCounts: (names, days) => bucketDailyMetric(cloudWatchClients, names, days, "NumberOfObjects", ["AllStorageTypes"]),
+      bucketBytes: (names, days) =>
+        readOrFallback(
+          "bucket bytes",
+          () => bucketDailyMetric(cloudWatchClients, names, days, "BucketSizeBytes", BUCKET_STORAGE_TYPES),
+          {},
+        ),
+      listBucketNames: () =>
+        readOrFallback(
+          "bucket list",
+          async () => {
+            const names = [];
+            let ContinuationToken;
+            do {
+              const response = await s3Client.send(new ListBucketsCommand({ ContinuationToken }));
+              (response.Buckets || []).forEach((bucket) => names.push(bucket.Name));
+              ContinuationToken = response.ContinuationToken;
+            } while (ContinuationToken);
+            return names;
+          },
+          [],
+        ),
+      consumedCapacity: (names, grain, count) =>
+        readOrFallback(`${grain} consumed capacity`, () => consumedCapacity(cloudWatch, names, grain, count), null),
+      logGroupBytes: () => readOrFallback("log group bytes", () => logGroupStoredBytes(logsClients), null),
       countBooks: async () => (diyaGlBucketName ? countDiyaGlBooks(s3Client, diyaGlBucketName) : null),
     },
   });
@@ -2341,24 +2845,35 @@ export async function buildData({ workGroup, database, envName, lakeBucket }) {
 
 const splitList = (value) => (value ? value.split(",").filter(Boolean) : []);
 
-// A book is a metadata.json under users/<user>/books/<id>/; each version is a zip beside it. The
-// listing stops after DIYA_GL_LIST_PAGE_LIMIT pages of 1,000 keys and says so.
+// A book is a metadata.json under users/<owner>/books/<id>/; each version is a zip beside it. The
+// owner is the hash of the subject (`resolveOwnerPrefix`), the key's second segment. The listing
+// stops after DIYA_GL_LIST_PAGE_LIMIT pages of 1,000 keys and says so. `owners` counts each
+// owner's objects, books and versions, so the section can split them by the owner's class.
 const DIYA_GL_LIST_PAGE_LIMIT = 50;
 
 export async function countDiyaGlBooks(s3Client, Bucket) {
   let books = 0;
   let versions = 0;
+  const owners = {};
   let ContinuationToken;
   for (let page = 0; page < DIYA_GL_LIST_PAGE_LIMIT; page += 1) {
     const response = await s3Client.send(new ListObjectsV2Command({ Bucket, Prefix: "users/", ContinuationToken }));
     (response.Contents || []).forEach(({ Key }) => {
-      if (Key.endsWith("/metadata.json")) books += 1;
-      else if (Key.endsWith(".zip")) versions += 1;
+      const owner = Key.split("/")[1] || "";
+      owners[owner] ||= { books: 0, versions: 0, objects: 0 };
+      owners[owner].objects += 1;
+      if (Key.endsWith("/metadata.json")) {
+        books += 1;
+        owners[owner].books += 1;
+      } else if (Key.endsWith(".zip")) {
+        versions += 1;
+        owners[owner].versions += 1;
+      }
     });
-    if (!response.IsTruncated) return { books, versions, truncated: false };
+    if (!response.IsTruncated) return { books, versions, truncated: false, owners };
     ContinuationToken = response.NextContinuationToken;
   }
-  return { books, versions, truncated: true };
+  return { books, versions, truncated: true, owners };
 }
 
 /**

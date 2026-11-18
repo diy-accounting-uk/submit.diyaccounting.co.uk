@@ -162,7 +162,7 @@
   border-radius: var(--radius-cell, 4px);
 }
 .customer-copy-sheet .submission-record {
-  font-family: var(--font-text, Arial, sans-serif);
+  font-family: var(--font-text, Arial, Arimo, sans-serif);
   font-size: var(--step-0, 1rem);
   font-variant-numeric: tabular-nums lining-nums;
   color: #0b0c0c;
@@ -220,7 +220,7 @@
 
 /* The customer copy. */
 .customer-copy {
-  font-family: var(--font-text, Arial, sans-serif);
+  font-family: var(--font-text, Arial, Arimo, sans-serif);
   color: var(--c-ink, #333);
   margin: 1.5em 0;
 }
@@ -260,7 +260,8 @@
   border-left: 4px solid var(--c-ink-muted, #505a5f);
   padding-left: 0.5em;
 }
-.customer-copy-status[data-status="accepted"] {
+.customer-copy-status[data-status="accepted"],
+.customer-copy-status[data-status="held"] {
   border-left-color: var(--c-ok, #28a745);
 }
 .customer-copy-status[data-status="rejected"] {
@@ -372,4 +373,7 @@
 .customer-copy-title,
 .customer-copy-brand {
   text-align: left;
+}
+.customer-copy-sheet .submission-record .reference {
+  font-family: var(--font-figures, inherit);
 }

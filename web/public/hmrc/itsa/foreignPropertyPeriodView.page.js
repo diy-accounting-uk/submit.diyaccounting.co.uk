@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId"));
@@ -10,8 +16,8 @@ window.CarriedIdentifiers.bind("submissionId", document.getElementById("submissi
 const PENDING_KEY = "pendingForeignPropertyPeriodViewRequest";
 
 const JOURNEY_LINKS = [
-  { href: "foreignPropertyPeriods.html", text: "See the other period summaries" },
-  { href: "dashboard.html", text: "Back to Income Tax" },
+  { href: "foreignPropertyPeriods.html", text: siteText("itsa.link-other-periods", "See the other period summaries") },
+  { href: "dashboard.html", text: siteText("itsa.link-back", "Back to Income Tax") },
 ];
 
 function isCumulativeTaxYear(taxYear) {
@@ -89,7 +95,7 @@ async function displayPeriod(period, query = {}) {
       businessId: query.businessId,
       taxYear: query.taxYear,
       periodId: query.submissionId,
-      idLabel: "Submission ID",
+      idLabel: siteText("itsa.submission-id", "Submission ID"),
       retrievedAt: new Date().toISOString(),
       links: JOURNEY_LINKS,
     }),
@@ -100,7 +106,7 @@ async function runRequest(criteria, hmrcGrantId) {
   try {
     showLoading();
     hideStatus();
-    showStatus("Retrieving period summary...", "info");
+    showStatus(siteText("itsa.period-retrieving", "Retrieving period summary..."), "info");
     const result = await fetchPeriod(criteria, hmrcGrantId);
     await displayPeriod(result, criteria);
     document.getElementById("periodViewResults").style.display = "block";
@@ -109,9 +115,12 @@ async function runRequest(criteria, hmrcGrantId) {
     if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
       sessionStorage.removeItem("hmrcTokenScope");
-      showStatus("Access token expired. Please try again.", "error");
+      showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
     } else {
-      showStatus(`Failed to retrieve the period summary: ${error.message}`, "error");
+      showStatus(
+        siteText("itsa.period-retrieve-failed-reason", "Failed to retrieve the period summary: {reason}", { reason: error.message }),
+        "error",
+      );
     }
     showSearchCriteria();
   } finally {
@@ -145,7 +154,7 @@ async function handleFormSubmission(event) {
   if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
   try {
     showLoading();
-    showStatus("Initiating HMRC authentication...", "info");
+    showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
     const state = generateRandomState();
     sessionStorage.setItem("oauth_state", state);
     sessionStorage.setItem(PENDING_KEY, JSON.stringify(criteria));
@@ -161,7 +170,7 @@ async function handleFormSubmission(event) {
     } catch {}
     window.location.href = authResponseUrl;
   } catch (error) {
-    showStatus(`Authentication failed: ${error.message}`, "error");
+    showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
     hideLoading();
   }
 }

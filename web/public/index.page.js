@@ -211,6 +211,12 @@ function messageParagraph(className, text) {
   return paragraph;
 }
 
+// A site path in the chrome's language: its Welsh copy when the chrome is Welsh and the page has one.
+function inChromeLanguage(path) {
+  const welshChrome = window.siteLanguage && window.siteLanguage.chrome() === "cy";
+  return welshChrome && (window.WELSH_COPIES || []).includes(path) ? `cy/${path}` : path;
+}
+
 // One activity row: a button (disabled, or going to href when clicked) and an optional note beneath it.
 function activityItem({ buttonClass, label, href, disabled, note, noteClass }) {
   const item = document.createElement("div");
@@ -223,7 +229,7 @@ function activityItem({ buttonClass, label, href, disabled, note, noteClass }) {
     button.disabled = true;
   } else {
     button.addEventListener("click", () => {
-      window.location.href = /^(\/|[a-z]+:)/.test(href) ? href : SITE_ROOT_PREFIX + href;
+      window.location.href = /^(\/|[a-z]+:)/.test(href) ? href : SITE_ROOT_PREFIX + inChromeLanguage(href);
     });
   }
   item.append(button);
@@ -382,7 +388,7 @@ async function renderDynamicActivities() {
             path,
             activityItem({
               buttonClass: "btn activity-secondary",
-              href: "auth/login.html",
+              href: window.signInHref("/auth/login.html", `/${path}`),
               label: window.activityName(activity, language),
             }),
           );

@@ -4,6 +4,3 @@
 document.getElementById("getStartedBtn").addEventListener("click", () => {
   window.location.href = "./";
 });
-document.getElementById("readGuideBtn").addEventListener("click", () => {
-  window.location.href = "guide.html";
-});

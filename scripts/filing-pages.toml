@@ -17,6 +17,7 @@ description = "How to file a VAT return from a spreadsheet with HMRC under Makin
 summary = "Submit sends the nine boxes of your VAT return to HMRC. You keep your records in your own spreadsheet, work out the boxes there, and enter the figures here. HMRC sends back a receipt with a Form Bundle Number."
 action = { label = "File a VAT return", href = "hmrc/vat/submitVat.html" }
 compared_in = "mtd-vat-bridging-software-compared.html"
+pictures_note = "These pictures come from HMRC's test service, which uses periods from 2017. Your screen shows your own periods."
 before = [
   "Your VAT registration number.",
   "The figures for the nine boxes of the period, worked out in your spreadsheet.",
@@ -142,7 +143,7 @@ status = [
   { activity = "file-micro-entity-accounts", label = "annual accounts at Companies House" },
   { activity = "file-company-tax-return", label = "Company Tax Return (CT600)" },
 ]
-text = ["Every filing and the channels that offer it are in the [availability table](mtd-calendar.html#availability)."]
+text = ["Every filing and the ways to file it are in the [availability table](mtd-calendar.html#availability)."]
 
 [[article]]
 file = "company-accounts-by-software-from-april-2028.html"
@@ -177,13 +178,13 @@ text = ["Earlier plans gave a date in 2027. This page follows the GOV.UK notice 
 
 [[article]]
 file = "making-tax-digital-income-tax-over-30000.html"
+tools_card = { rank = 9, title = "MTD Income Tax over £30,000", line = "What changes from 6 April 2027 for a sole trader or landlord with income over £30,000." }
 title = "Making Tax Digital for Income Tax from April 2027 - DIY Accounting Submit"
 heading = "Making Tax Digital for Income Tax from 6 April 2027: incomes over £30,000"
 subtitle = "Who starts in April 2027 and when the quarterly updates are due"
 description = "Making Tax Digital for Income Tax reaches sole traders and landlords with qualifying income over £30,000 from 6 April 2027. Who it covers and the update dates."
-summary = "Sole traders and landlords with qualifying income over £30,000 in the 2025 to 2026 tax year use Making Tax Digital for Income Tax from 6 April 2027. Submit's Income Tax filing awaits HMRC recognition. VAT returns are filed today: see [VAT return from a spreadsheet](vat-return-from-a-spreadsheet.html)."
+summary = "Sole traders and landlords with qualifying income over £30,000 in the 2025 to 2026 tax year use Making Tax Digital for Income Tax from 6 April 2027. You cannot file Income Tax with Submit yet. VAT returns are filed today: see [VAT return from a spreadsheet](vat-return-from-a-spreadsheet.html)."
 action = { label = "See the Making Tax Digital dates", href = "mtd-calendar.html" }
-closing_heading = "Every date"
 
 [[article.section]]
 heading = "Who starts on 6 April 2027"
@@ -211,10 +212,11 @@ text = [
 
 [[article]]
 file = "vat-return-due-date-and-penalty-points.html"
+tools_card = { rank = 2, title = "VAT return due date and penalty points calculator", line = "Enter a VAT period end and see the due date, and count the late-submission points a return would add." }
 title = "VAT return due date and penalty points calculator - DIY Accounting Submit"
 heading = "VAT return due date and penalty points calculator"
 subtitle = "Work out when a VAT return is due and how many late submission points you hold"
-description = "Work out the due date of a VAT return and your late submission penalty points. The thresholds, the £200 penalty and what removes the points, each with its gov.uk source."
+description = "Work out the due date of a VAT return and your late submission penalty points: the thresholds, the £200 penalty and what removes points, with gov.uk sources."
 summary = "A VAT return is due one calendar month and 7 days after the end of the accounting period. Each late return adds a penalty point until you reach the threshold, then a £200 penalty. Pick your period end and how often you file, and tick the late returns."
 action = { label = "File a VAT return", href = "vat-return-from-a-spreadsheet.html" }
 script = "lib/vat/penalty-calculator.js"
@@ -253,6 +255,7 @@ text = [
 
 [[article]]
 file = "company-filing-deadlines.html"
+tools_card = { rank = 3, title = "Company filing deadlines", line = "Type a company name or number and see when its accounts and confirmation statement are due." }
 title = "Company filing deadlines lookup - when are your accounts due - DIY Accounting Submit"
 heading = "When are your company's accounts and confirmation statement due?"
 subtitle = "Type a company name or number and see both dates, the days left and what to file"
@@ -281,14 +284,14 @@ text = [
 
 [[article]]
 file = "mtd-income-tax-checker.html"
+tools_card = { rank = 1, title = "MTD Income Tax checker", line = "Answer a few questions to learn whether Making Tax Digital for Income Tax applies to you, and the date you start." }
 title = "Making Tax Digital for Income Tax checker - do you need it and when - DIY Accounting Submit"
 heading = "Do you need Making Tax Digital for Income Tax, and when do you start?"
 subtitle = "Give your income for three tax years and see your start date, your first update deadline and the records to keep"
-description = "Check whether Making Tax Digital for Income Tax applies to you from 6 April 2026, 2027 or 2028, the date of your first quarterly update and the records to keep. Each rule has its gov.uk source."
-summary = "Making Tax Digital for Income Tax starts on 6 April 2026, 6 April 2027 or 6 April 2028, by how much self-employment and property income you had. Give your income for each tax year below. The page shows your start date, your first quarterly update deadline and the records to keep. Submit's Income Tax filing awaits HMRC recognition. VAT returns are filed today: see [VAT return from a spreadsheet](vat-return-from-a-spreadsheet.html)."
+description = "Check whether Making Tax Digital for Income Tax applies to you from 6 April 2026, 2027 or 2028, your first quarterly update date and the records to keep."
+summary = "Making Tax Digital for Income Tax starts on 6 April 2026, 6 April 2027 or 6 April 2028, by how much self-employment and property income you had. Give your income for each tax year below. The page shows your start date, your first quarterly update deadline and the records to keep. You cannot file Income Tax with Submit yet. VAT returns are filed today: see [VAT return from a spreadsheet](vat-return-from-a-spreadsheet.html)."
 action = { label = "See the Making Tax Digital dates", href = "mtd-calendar.html" }
 script = "lib/itsa/scope-checker.js"
-closing_heading = "Every date"
 
 [[article.section]]
 heading = "Check your income"
@@ -335,12 +338,13 @@ code = '<script src="https://submit.diyaccounting.co.uk/embed/mtd-income-tax-che
 
 [[comparison]]
 file = "mtd-vat-bridging-software-compared.html"
+tools_card = { rank = 7, title = "MTD VAT bridging software compared", line = "MTD VAT bridging tools sorted by price, each price read on the vendor's own page." }
 compares = "vat"
 filings_per_year = 4
 title = "MTD VAT bridging software compared by price - DIY Accounting Submit"
 heading = "MTD VAT bridging software compared by price"
 subtitle = "Tools that send a VAT return from a spreadsheet, with each price read on the vendor's own page"
-description = "A table of Making Tax Digital VAT bridging software on HMRC's list, sorted by price, with each vendor's own price words, the price page and the date it was read."
+description = "Making Tax Digital VAT bridging software on HMRC's list, sorted by price, with each vendor's price words, price page and the date it was read."
 job = "send a VAT return to HMRC from a spreadsheet"
 rule = "A tool is in the table when it is on HMRC's list of software compatible with Making Tax Digital for VAT as bridging software, shows a public price on its own website, and does the same job."
 list_sentence = "The list is"
@@ -351,12 +355,13 @@ action = { label = "File a VAT return", href = "vat-return-from-a-spreadsheet.ht
 
 [[comparison]]
 file = "company-accounts-filing-software-compared.html"
+tools_card = { rank = 8, title = "Company accounts filing software compared", line = "Tools that file micro-entity or small company accounts, sorted by price." }
 compares = "accounts"
 filings_per_year = 1
 title = "Company accounts filing software compared by price - DIY Accounting Submit"
 heading = "Company accounts filing software compared by price"
 subtitle = "Tools that file micro-entity or small company accounts, with each price read on the vendor's own page"
-description = "A table of software on Companies House's list that files micro-entity or small company accounts, sorted by price, with each vendor's own price words and the date it was read."
+description = "Software on Companies House's list that files micro-entity or small company accounts, sorted by price, with each vendor's price words and the date read."
 job = "file micro-entity or small company accounts at Companies House"
 rule = "A tool is in the table when it is on the Companies House list of software for filing company accounts, shows a public price on its own website, and does the same job."
 list_sentence = "The list is"
@@ -364,3 +369,53 @@ list_name = "Find software for filing company accounts"
 list_url = "https://www.gov.uk/software-company-accounts"
 note = "DIY Accounting Submit is on this page for comparison and is not on the Companies House list. Several tools also file the Company Tax Return, and their price covers both."
 action = { label = "File company accounts", href = "micro-entity-accounts.html" }
+
+# The tools page lists every article or comparison that has a tools_card, and each [[tools_page.extra]]
+# entry for a page that no script writes. The cards run in rank order.
+
+[tools_page]
+file = "tools.html"
+title = "Free tools for UK tax deadlines and filing - DIY Accounting Submit"
+heading = "Free tools"
+subtitle = "Checkers, calculators and tables for Making Tax Digital, VAT and company filing. Each one works without signing in."
+description = "Free tools from DIY Accounting: MTD Income Tax checker, VAT due date and penalty points calculator, company filing deadlines, tax rates and price comparisons."
+summary = "Each tool on this page opens without signing in. Filing a return or company accounts needs an account."
+action = { label = "See what Submit files", href = "get-started.html" }
+
+[[tools_page.extra]]
+rank = 4
+href = "mtd-calendar.html"
+title = "MTD calendar"
+line = "Every Making Tax Digital date for VAT, Income Tax and company filing, and which filings Submit offers."
+
+[[tools_page.extra]]
+rank = 5
+href = "rates.html"
+title = "Tax rates and allowances"
+line = "The current rates and allowances for VAT, income tax and company tax, each with its source."
+
+[[tools_page.extra]]
+rank = 6
+href = "embed/mtd-income-tax-checker.html"
+title = "MTD Income Tax checker for your own site"
+line = "The checker in a frame, with the one line of script that puts it on another site."
+
+[[tools_page.extra]]
+rank = 10
+href = "mcp.html"
+title = "Connector for AI assistants"
+line = "Use Submit from an AI assistant that supports MCP: read a book, derive and prepare a VAT return."
+
+[[tools_page.extra]]
+rank = 11
+href = "spreadsheets.html"
+title = "Spreadsheets"
+line = "Accounting spreadsheets for a sole trader, a landlord or a limited company, in Excel."
+
+[[tools_page.extra]]
+rank = 12
+href = "https://diya-gl.co.uk/"
+title = "diya-gl"
+line = "A plain-text ledger that reads your bank statements and prints your accounts; also on npm as diya-gl."
+second_href = "https://www.npmjs.com/package/diya-gl"
+second_label = "diya-gl on npm"

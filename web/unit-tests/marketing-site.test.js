@@ -6,25 +6,36 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+import zlib from "node:zlib";
 import { createRequire } from "node:module";
 
 import { generatePassphrase } from "../../app/lib/passphrase.js";
 import { LISTING_STATES, catalogPriceText, liveListings, listingProblems, readListings } from "../../scripts/listings-register.mjs";
 import {
+  COMPANY_DIR,
   FONT_FILES,
+  ICON_SOURCES,
   JSON_FILE,
+  LOGOS_DIR,
+  LOGO_SIZES,
+  PACKS_DIR,
+  PACK_SHOT,
+  PUBLISH_FILE,
   MARKETING_DIR,
   TOKEN_SOURCES,
   IMAGES_DIR,
   SHOTS_DIR,
   findSiblings,
   imageHash,
+  logoHash,
   readMarketingData,
+  renderPackIndex,
   renderMarketingJson,
   renderMarketingPage,
   renderSiteTokens,
   siteTokenBlock,
   tokenSourcePath,
+  withSvgLicenceHeader,
 } from "../../scripts/build-marketing-site.mjs";
 import {
   carriesPass,
@@ -32,8 +43,15 @@ import {
   isPassCode,
   listingLink,
   listingProducts,
+  limitReport,
   londonDate,
+  measure,
   nativeSharePayload,
+  packFiles,
+  packProblems,
+  reviewListings,
+  wordCount,
+  zipStore,
   pageAnchors,
   postLink,
   renderPost,
@@ -536,6 +554,7 @@ describe("listing register", () => {
       "softwarereview",
       "featuredcustomers",
       "linkedin",
+      "freeindex",
     ]);
     for (const place of ["Capterra", "Trustpilot", "AlternativeTo", "SaaSHub", "G2", "Product Hunt", "Yell", "AccountingWEB"]) {
       expect(
@@ -587,8 +606,8 @@ describe("listing register", () => {
   it("returns the live listings that carry a URL", () => {
     const withoutUrl = structuredClone(register);
     withoutUrl.listings.find((l) => l.id === "featuredcustomers").url = "";
-    expect(liveListings(register).map((l) => l.id)).toEqual(["trustpilot", "softwarereview", "featuredcustomers", "linkedin"]);
-    expect(liveListings(withoutUrl).map((l) => l.id)).toEqual(["trustpilot", "softwarereview", "linkedin"]);
+    expect(liveListings(register).map((l) => l.id)).toEqual(["trustpilot", "softwarereview", "featuredcustomers", "linkedin", "freeindex"]);
+    expect(liveListings(withoutUrl).map((l) => l.id)).toEqual(["trustpilot", "softwarereview", "linkedin", "freeindex"]);
   });
 
   it("tags each link with the listing's utm_source and the product", () => {
@@ -608,7 +627,19 @@ describe("listing register", () => {
 
   it("points every logo and screenshot at a file of the site", () => {
     for (const product of data.listingProducts) {
-      for (const file of [product.logo, product.screenshot]) expect(fs.existsSync(path.join(MARKETING_DIR, file)), file).toBe(true);
+      const logos = product.logos;
+      const files = [
+        logos.icon,
+        logos.square.light.svg,
+        logos.square.dark.svg,
+        ...["light", "dark", "transparent"].flatMap((variant) => logos.square[variant].png.map((p) => p.file)),
+        logos.wide.light.svg,
+        logos.wide.light.png,
+        logos.wide.dark.svg,
+        logos.wide.dark.png,
+        ...product.screenshots.map((shot) => shot.file),
+      ];
+      for (const file of files) expect(fs.existsSync(path.join(MARKETING_DIR, file)), file).toBe(true);
     }
   });
 
@@ -673,5 +704,246 @@ describe("the page with its script off", () => {
   it("marks the sample pass code and pass link as examples", () => {
     expect(pageHtml).toContain('placeholder="For example tiger-happy-maple-river"');
     expect(pageHtml).toContain('placeholder="For example https://submit.diyaccounting.co.uk/pass.html?pass=..."');
+  });
+});
+
+describe("listing packs", () => {
+  const packs = data.listingProducts;
+  const catalogue = TOML.parse(fs.readFileSync(path.join(publicDir, "submit.catalogue.toml"), "utf-8"));
+  const png = (file) => fs.readFileSync(path.join(MARKETING_DIR, file));
+  const size = (file) => [png(file).readUInt32BE(16), png(file).readUInt32BE(20)];
+
+  it("has a pack for each site and for each product activity", () => {
+    expect(packs.filter((p) => !p.activity).map((p) => p.id)).toEqual(["submit", "spreadsheets", "diya-gl", "company"]);
+    const activities = (parent) => packs.filter((p) => p.parent === parent).map((p) => p.activity);
+    expect(activities("submit")).toEqual(["MTD VAT", "Limited company accounts"]);
+    expect(activities("spreadsheets")).toEqual(["Basic Sole Trader", "Self Employed", "Taxi Driver", "Limited company", "Payslips"]);
+    for (const pack of packs) if (pack.parent) expect(packs.find((p) => p.id === pack.parent).activity, pack.id).toBe("");
+  });
+
+  it("gives every pack every field, each within its target and every place's limit", () => {
+    expect(packProblems(data)).toEqual([]);
+  });
+
+  it("fails a pack that lacks a field", () => {
+    const broken = structuredClone(data);
+    delete broken.listingProducts[0].tagline;
+    broken.listingProducts[1].keywords = [];
+    broken.listingProducts[2].screenshots = [];
+    const text = packProblems(broken).join("\n");
+    expect(text).toMatch(/pack submit: tagline is missing/);
+    expect(text).toMatch(/pack submit-vat: keywords is missing/);
+    expect(text).toMatch(/pack submit-ltd: screenshots has 0/);
+  });
+
+  it("fails a text over a place's limit, a short long description and a contact detail or call to action in it", () => {
+    const broken = structuredClone(data);
+    broken.listingProducts[0].tagline = "x".repeat(61);
+    broken.listingProducts[1].long = "Too short. Start with a free day pass at https://submit.diyaccounting.co.uk/ or call 0845 0756015.";
+    const text = packProblems(broken).join("\n");
+    expect(text).toMatch(/pack submit: tagline is 61 characters, outside the limit of Product Hunt/);
+    expect(text).toMatch(/pack submit-vat: long is \d+ words, outside its target/);
+    expect(text).toMatch(/pack submit-vat: long holds a link, an email address or a phone number/);
+    expect(text).toMatch(/pack submit-vat: long holds a call to action/);
+  });
+
+  it("measures characters as a person counts them and a long text in words", () => {
+    expect(measure("DIY Accounting Submit™")).toBe(22);
+    expect(wordCount("  one two\n\nthree ")).toBe(3);
+    const field = data.packFields.find((f) => f.id === "categories");
+    expect(limitReport(field, ["a", "b", "c", "d"]).limits.find((l) => l.place === "Product Hunt").fits).toBe(false);
+  });
+
+  it("records every place limit with its source, the date it was read and whether the place's page stated it", () => {
+    for (const field of data.packFields) {
+      for (const limit of field.limits ?? []) {
+        expect(limit.place, field.id).toBeTruthy();
+        expect(limit.source, `${field.id} ${limit.place}`).toBeTruthy();
+        expect(limit.read, `${field.id} ${limit.place}`).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        expect(typeof limit.confirmed, `${field.id} ${limit.place}`).toBe("boolean");
+        expect(limit.min !== undefined || limit.max !== undefined || Boolean(limit.rule), `${field.id} ${limit.place}`).toBe(true);
+      }
+    }
+  });
+
+  it("takes a Submit pack's price from the catalogue and states the confirmation statement charge the catalogue holds", () => {
+    expect(packs.find((p) => p.id === "submit-vat").priceText).toBe(catalogPriceText("resident-vat", catalogue));
+    expect(packs.find((p) => p.id === "submit-ltd").priceText).toBe(catalogPriceText("resident-ltd", catalogue));
+    const cs01 = catalogue.activities.find((a) => a.id === "file-confirmation-statement").prices.find((p) => p.interval === "submission");
+    for (const pack of packs.filter((p) => /£\d+\.\d{2} a filing/.test(p.priceNote ?? ""))) {
+      expect(pack.priceNote, pack.id).toContain(`£${(cs01.amount / 100).toFixed(2)} a filing`);
+    }
+  });
+
+  it("names no endorsement, no Resident bundle and nothing that is not production in the pack texts", () => {
+    for (const pack of packs) {
+      for (const text of [pack.tagline, pack.long, ...pack.features]) {
+        expect(text, pack.id).not.toMatch(
+          /HMRC[- ](approved|accredited|certified|endorsed)|official HMRC software|recommended by HMRC|Resident/i,
+        );
+        expect(text, pack.id).not.toMatch(/Income Tax return|Self Assessment filing|CT600 filing|PSC verification/i);
+      }
+    }
+  });
+
+  it("links each pack's videos to published videos with their lengths", () => {
+    const publish = JSON.parse(fs.readFileSync(PUBLISH_FILE, "utf-8"));
+    for (const pack of packs) {
+      for (const video of pack.videos) {
+        const published = publish.videos.find((v) => v.id === video.id);
+        expect(published?.publish, `${pack.id} ${video.id}`).toBe(true);
+        expect(video.url).toBe(`https://www.youtube.com/watch?v=${published.videoId}`);
+        expect(Number.isInteger(video.seconds) && video.seconds > 0, `${pack.id} ${video.id}`).toBe(true);
+      }
+    }
+  });
+
+  it("has every pack screenshot at 1270 by 760, under 3 MB, captured and listed", () => {
+    const manifest = JSON.parse(fs.readFileSync(path.join(PACKS_DIR, "manifest.json"), "utf-8"));
+    expect(manifest.capturedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const listed = new Set(manifest.shots.map((s) => s.file));
+    for (const pack of packs) {
+      for (const shot of pack.screenshots) {
+        expect(listed.has(shot.file), shot.file).toBe(true);
+        expect(size(shot.file), shot.file).toEqual([PACK_SHOT.width, PACK_SHOT.height]);
+        expect(png(shot.file).length, shot.file).toBeLessThan(3000000);
+        expect(shot.alt.length, shot.file).toBeGreaterThan(0);
+        expect(Boolean(shot.page) !== Boolean(shot.image), `${shot.file} is a page or an image`).toBe(true);
+      }
+    }
+  });
+
+  it("has each brand's logo set at its sizes, rendered from the current icon", () => {
+    const manifest = JSON.parse(fs.readFileSync(path.join(LOGOS_DIR, "manifest.json"), "utf-8"));
+    for (const section of data.sections) {
+      const logos = packs.find((p) => p.section === section.id).logos;
+      expect(manifest.logos[section.id].hash, section.id).toBe(logoHash(section));
+      for (const variant of ["light", "dark", "transparent"]) {
+        expect(logos.square[variant].png.map((p) => p.size)).toEqual(LOGO_SIZES);
+        for (const { size: px, file } of logos.square[variant].png) expect(size(file), file).toEqual([px, px]);
+      }
+      for (const variant of ["light", "dark"]) expect(size(logos.wide[variant].png)[1], `${section.id} wide ${variant}`).toBe(400);
+    }
+  });
+
+  it.skipIf(!siblings)("copies each brand's icon with this repository's header", () => {
+    for (const source of ICON_SOURCES) {
+      const copy = fs.readFileSync(path.join(LOGOS_DIR, source.id, "icon.svg"), "utf8");
+      expect(copy, source.id).toBe(withSvgLicenceHeader(fs.readFileSync(tokenSourcePath(source, siblings), "utf8")));
+    }
+  });
+
+  it("writes the pack index into the page", () => {
+    const html = fs.readFileSync(path.join(MARKETING_DIR, "index.html"), "utf-8");
+    for (const pack of packs) expect(html, pack.id).toContain(`href="#pack-${pack.id}"`);
+    expect(renderPackIndex(data)).toContain("By product activity");
+    expect(html).toMatch(/<p class="built" id="builtAt">Built \d{4}-\d{2}-\d{2}<\/p>/);
+  });
+
+  it("zips a pack's files so that an unzip tool reads each one back", () => {
+    const entries = [
+      { name: "pack.txt", bytes: new TextEncoder().encode("DIY Accounting Submit™") },
+      { name: "logos/icon.svg", bytes: new Uint8Array(fs.readFileSync(path.join(MARKETING_DIR, packs[0].logos.icon))) },
+    ];
+    const zip = Buffer.from(zipStore(entries));
+    const end = zip.length - 22;
+    expect(zip.readUInt32LE(end)).toBe(0x06054b50);
+    expect(zip.readUInt16LE(end + 10)).toBe(2);
+    let at = zip.readUInt32LE(end + 16);
+    for (const entry of entries) {
+      expect(zip.readUInt32LE(at)).toBe(0x02014b50);
+      const nameLength = zip.readUInt16LE(at + 28);
+      expect(zip.subarray(at + 46, at + 46 + nameLength).toString("utf8")).toBe(entry.name);
+      expect(zip.readUInt32LE(at + 16)).toBe(zlib.crc32(entry.bytes));
+      const local = zip.readUInt32LE(at + 42);
+      const dataStart = local + 30 + zip.readUInt16LE(local + 26);
+      expect(Buffer.from(zip.subarray(dataStart, dataStart + entry.bytes.length)).equals(Buffer.from(entry.bytes))).toBe(true);
+      at += 46 + nameLength;
+    }
+  });
+
+  it("gives the review links of the review sites and citation directories only", () => {
+    const places = reviewListings(data).map((l) => l.id);
+    expect(places).toContain("trustpilot");
+    expect(places).toContain("freeindex");
+    expect(places).not.toContain("linkedin");
+  });
+
+  it("zips every file a pack names, under a unique name", () => {
+    for (const pack of packs) {
+      const files = packFiles(pack, data.company);
+      expect(new Set(files.map(([name]) => name)).size, pack.id).toBe(files.length);
+      for (const [, file] of files) expect(fs.existsSync(path.join(MARKETING_DIR, file)), file).toBe(true);
+    }
+  });
+});
+
+describe("the company's facts", () => {
+  const company = data.company;
+  const page = fs.readFileSync(path.join(publicDir, "diy-accounting-limited.html"), "utf-8");
+
+  it("holds every fact a listing form asks for", () => {
+    for (const key of ["name", "number", "registeredOffice", "supportEmail", "phone", "website", "founded", "headCount", "boilerplate"]) {
+      expect(company[key], key).toBeTruthy();
+    }
+    expect(company.founded).toBe(2006);
+    expect(company.headCount).toBe(4);
+    expect(company.links.map((l) => l.id)).toEqual(expect.arrayContaining(["privacy", "terms", "accessibility", "security"]));
+    for (const link of company.links) expect(submitPathExists(link.url), link.url).toBe(true);
+  });
+
+  it("states the number, the registered office and the phone as the company page does", () => {
+    expect(page).toContain(`Company number: ${company.number}`);
+    for (const part of company.registeredOffice.split(", ")) expect(page, part).toContain(part);
+    expect(page).toContain(`Phone: ${company.phone}`);
+    expect(fs.readFileSync(path.join(publicDir, "help.html"), "utf-8")).toContain(company.supportEmail);
+  });
+
+  it("gives the founder a biography of about 50 and about 150 words, and the team the names of the photograph's alt text", () => {
+    expect(wordCount(company.founderShort)).toBeGreaterThanOrEqual(40);
+    expect(wordCount(company.founderShort)).toBeLessThanOrEqual(60);
+    expect(wordCount(company.founderLong)).toBeGreaterThanOrEqual(130);
+    expect(wordCount(company.founderLong)).toBeLessThanOrEqual(170);
+    expect(page).toContain(`alt="${company.teamPhotoAlt}"`);
+    const names = company.teamPhotoAlt.split(": ")[1];
+    expect(company.team).toContain(names);
+  });
+
+  it("copies the team photograph and crops the founder's square", () => {
+    expect(
+      fs.readFileSync(path.join(MARKETING_DIR, company.teamPhoto)).equals(fs.readFileSync(path.join(root, company.teamPhotoSource))),
+    ).toBe(true);
+    const jpg = fs.readFileSync(path.join(MARKETING_DIR, company.founderPhoto));
+    const sof = jpg.indexOf(Buffer.from([0xff, 0xc0]));
+    expect([jpg.readUInt16BE(sof + 7), jpg.readUInt16BE(sof + 5)]).toEqual([company.founderPhotoCrop.size, company.founderPhotoCrop.size]);
+    expect(path.dirname(path.join(MARKETING_DIR, company.founderPhoto))).toBe(COMPANY_DIR);
+  });
+});
+
+describe("copied icons", () => {
+  const header =
+    '<?xml version="1.0" encoding="UTF-8"?>\n<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->\n<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->\n';
+
+  it("gives an icon with no header this repository's two header lines", () => {
+    expect(withSvgLicenceHeader('<svg viewBox="0 0 32 32"></svg>\n')).toBe(header + '<svg viewBox="0 0 32 32"></svg>\n');
+  });
+
+  it("replaces a header written as one comment, after the XML declaration", () => {
+    const sibling =
+      '<?xml version="1.0" encoding="UTF-8"?>\n<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0\n     Copyright (C) 2006-2026 DIY Accounting Limited -->\n<svg></svg>\n';
+    expect(withSvgLicenceHeader(sibling)).toBe(header + "<svg></svg>\n");
+  });
+
+  it("keeps the icon's own descriptive comment", () => {
+    const sibling =
+      "<!-- SPDX-License-Identifier: X -->\n<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->\n<!-- the ledger mark -->\n<svg></svg>\n";
+    expect(withSvgLicenceHeader(sibling)).toBe(header + "<!-- the ledger mark -->\n<svg></svg>\n");
+  });
+
+  it("leaves every committed brand icon with the header", () => {
+    const logos = path.join(process.cwd(), "web", "marketing", "brand", "logos");
+    for (const brand of fs.readdirSync(logos).filter((name) => fs.statSync(path.join(logos, name)).isDirectory())) {
+      expect(fs.readFileSync(path.join(logos, brand, "icon.svg"), "utf8").startsWith(header), brand).toBe(true);
+    }
   });
 });

@@ -35,7 +35,21 @@ describe("integrationsSection", () => {
     expect(sql).toContain("FROM   v_integration_calls_daily");
     expect(sql).toContain("target = 'live'");
     expect(sql).toContain("sum(CASE WHEN day >= TODAY THEN calls END)");
-    expect(sql).toContain("GROUP  BY 1, 2");
+    expect(sql).toContain("GROUP  BY 1, 2, 3");
+    expect(sql).toContain("WHEN actor = 'test-user' THEN 'test'");
+    expect(sql).toContain("AS caller");
+  });
+
+  test("the summary lists the classes of caller under one status, customer first", () => {
+    const row = (caller) => ({ org: "stripe", status: "200", caller, today: "1", prev_1: "2", last_7: "3", last_30: "4", last_90: "5" });
+    const section = shapeIntegrationsSection({
+      summaryRows: [row("other"), row("unknown"), row("customer"), row("test")],
+      callRows: [],
+      tableName: "t",
+      region: "r",
+      toWindows,
+    });
+    expect(section.summary.map((entry) => entry.caller)).toEqual(["customer", "test", "other", "unknown"]);
   });
 
   test("the calls query takes the newest 100 and the newest 100 failed of 30 days", () => {

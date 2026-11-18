@@ -235,6 +235,40 @@ describe("pollSubmission", () => {
     });
   });
 
+  test("asks for the receipt email in Welsh when the filing was made with the Welsh choice", async () => {
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    process.env.ACTIVITY_BUS_NAME = process.env.ACTIVITY_BUS_NAME || "test-bus";
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof lib.GetCommand) {
+        return { Item: { requestId: cmd.input.Key.requestId, status: "pending", data: { language: "cy" } } };
+      }
+      return {};
+    });
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+    });
+
+    await pollSubmission({
+      userSub: "user-1",
+      submissionNumber: "00001A",
+      kind: "confirmation-statement",
+      acceptedEvent: "companies-house-confirmation-statement-accepted",
+      acceptedSummary: "Companies House confirmation statement accepted",
+    });
+
+    const emailRequests = mockEventBridgeSend.mock.calls
+      .flatMap(([command]) => command.input?.Entries || [])
+      .filter((entry) => entry.DetailType === "CustomerEmailRequest")
+      .map((entry) => JSON.parse(entry.Detail).payload);
+    expect(emailRequests).toEqual([
+      expect.objectContaining({
+        kind: "submission-receipt",
+        data: expect.objectContaining({ receiptKind: "confirmation-statement", language: "cy" }),
+      }),
+    ]);
+  });
+
   test("stores failed and returns the rejections on REJECT, without publishing acceptedEvent", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [],

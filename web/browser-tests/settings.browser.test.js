@@ -74,7 +74,7 @@ async function shoot(page, name) {
 }
 
 test.describe("Settings page", () => {
-  test("the cog sits between the token refresh button and Logout and opens the settings page", async ({ page }) => {
+  test("the cog sits between the token refresh button and Sign out and opens the settings page", async ({ page }) => {
     await serveSite(page);
     await page.goto("http://localhost:3000/bundles.html", { waitUntil: "networkidle" });
     const order = await page.evaluate(() => {

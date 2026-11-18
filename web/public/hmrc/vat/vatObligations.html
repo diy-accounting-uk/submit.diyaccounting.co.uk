@@ -12,6 +12,10 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/vat/vatObligations.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html" />
     <link rel="stylesheet" href="../../submit.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
@@ -21,7 +25,7 @@
     <!--script async src="../../prefetch/prefetch-hmrc-vat-obligation-head.js"></script-->
   </head>
   <body>
-    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
       <h1>VAT obligations</h1>
@@ -30,7 +34,7 @@
 
     <main id="mainContent">
       <p class="hint" data-feature-status="production"><strong>Status: production.</strong> This reads your real records at HMRC.</p>
-      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator"><span>Synthetic mode - calls go to HMRC's sandbox API</span></div>
 
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
@@ -41,8 +45,8 @@
         id="obligationsForm"
         class="form-container"
         data-requires-sign-in
-        data-sign-in-title="Log in to see your VAT obligations"
-        data-sign-in-text="Log in to retrieve your VAT obligations from HMRC. They show which VAT returns HMRC is waiting for."
+        data-sign-in-title="Sign in to see your VAT obligations"
+        data-sign-in-text="Sign in to retrieve your VAT obligations from HMRC. They show which VAT returns HMRC is waiting for."
       >
         <div class="form-toggle-buttons">
           <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">
@@ -107,7 +111,7 @@
               </div>
               <label for="testScenario">Test scenario (Developer/Synthetic only)</label>
               <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios</p>
-              <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+              <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint" translate="no">
                 <option value="">Default (One Quarterly Met)</option>
                 <option value="QUARTERLY_NONE_MET">Quarterly - None Met</option>
                 <option value="QUARTERLY_ONE_MET">Quarterly - One Met</option>
@@ -192,6 +196,7 @@
     <script src="../../widgets/signed-out-panel.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="../../lib/hmrc-display-format.js"></script>
+    <script src="../../lib/hmrc-sandbox-status.js"></script>
     <script src="vatObligations.page.js"></script>
   </body>
 </html>

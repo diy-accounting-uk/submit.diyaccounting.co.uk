@@ -20,6 +20,7 @@ import {
   runLocalHttpServer,
   runLocalOAuth2Server,
 } from "./behaviourSteps.js";
+import { mockIdentityEmail } from "../../../behaviour-tests/helpers/mockIdentity.js";
 
 // Cognito's one-time code field, by every name its Hosted UI gives it. Masked on camera so a
 // recording never shows a code being typed, while the rest of the sign-in stays on screen.
@@ -40,6 +41,12 @@ export function authUsernameFrom(env) {
     throw new Error('a scene script with auth "user" needs TEST_AUTH_USERNAME');
   }
   return username;
+}
+
+// The address the site shows for the signed-in test user: the mock and simulator providers sign the
+// username in with a synthetic email claim, and Cognito signs in with the address itself.
+export function signedInAddressFrom(provider, username) {
+  return provider === "mock" || provider === "simulator" ? mockIdentityEmail(username) : username;
 }
 
 // The simulator and proxy variants run the site, its data store and its upstreams in this

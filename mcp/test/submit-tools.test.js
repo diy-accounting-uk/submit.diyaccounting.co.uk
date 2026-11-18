@@ -477,6 +477,15 @@ describe("submit-tools", () => {
       await expect(getVatReceipt(session, {})).rejects.toThrow("name");
     });
 
+    it("answers only HMRC's four receipt fields and refuses a receipt that is not a VAT return's", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(jsonResponse(200, { ...GET_VAT_RECEIPT_RESPONSE, acknowledgedAt: "x" })));
+      expect(Object.keys(await getVatReceipt(session, { name: "a.json" })).sort()).toEqual(
+        ["chargeRefNumber", "formBundleNumber", "paymentIndicator", "processingDate"].sort(),
+      );
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(jsonResponse(200, { kind: "accounts", submissionNumber: "00005D" })));
+      await expect(getVatReceipt(session, { name: "b.json" })).rejects.toThrow("b.json is not the receipt of a VAT return");
+    });
+
     it("carries clientId as a query parameter when given", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, GET_VAT_RECEIPT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
@@ -499,13 +508,20 @@ describe("submit-tools", () => {
   });
 
   describe("list_vat_receipts", () => {
-    it("lists the stored receipts with the session bearer on the plain Authorization header", async () => {
-      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, { receipts: [{ name: "2025-03-31-123456789012.json" }] }));
+    it("lists the stored VAT return receipts with the session bearer on the plain Authorization header", async () => {
+      const rows = [
+        { name: "2026-04-07T09:15:00.000Z-123456789012.json", kind: null, key: "receipts/sub/x.json", size: 160 },
+        { name: "2026-04-01T09:15:00.000Z-00005D.json", kind: "accounts" },
+        { name: "2026-03-01T09:15:00.000Z-2025-26.json", kind: null },
+      ];
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, { receipts: rows }));
       vi.stubGlobal("fetch", mockFetch);
 
       const result = await listVatReceipts(session, {});
 
-      expect(result).toEqual({ receipts: [{ name: "2025-03-31-123456789012.json" }] });
+      expect(result).toEqual({
+        receipts: [{ name: "2026-04-07T09:15:00.000Z-123456789012.json", formBundleNumber: "123456789012", filedOn: "2026-04-07" }],
+      });
       const [url, init] = mockFetch.mock.calls[0];
       expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/hmrc/receipt");
       expect(init.headers["Authorization"]).toBe("Bearer session-access-token");

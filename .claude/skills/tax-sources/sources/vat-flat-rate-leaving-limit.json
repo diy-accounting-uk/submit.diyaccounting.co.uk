@@ -1,7 +1,9 @@
 {
   "url": "https://www.gov.uk/vat-flat-rate-scheme/if-your-circumstances-change",
+  "title": "VAT Flat Rate Scheme: If your circumstances change",
   "retrieved": "2026-11-13",
-  "quote": "on the anniversary of joining, your turnover in the last 12 months was more than £230,000 (including VAT )",
+  "quote": "You must leave the scheme if: you’re no longer eligible to be in it on the anniversary of joining, your turnover in the last 12 months was more than £230,000 (including VAT ) - or you expect it to be in the next 12 months you expect your total income in the next 30 days alone to be more than £230,000 (including VAT )",
+  "table": true,
   "facts": [
     "vat-flat-rate-leaving-limit-2025-26",
     "vat-flat-rate-leaving-limit-2026-27"

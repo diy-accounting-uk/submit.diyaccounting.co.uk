@@ -125,7 +125,9 @@ export function buildPassRecord({
   if (createdBy) record.createdBy = createdBy;
   if (issuedBy) record.issuedBy = issuedBy;
   if (notes) record.notes = notes;
-  if (actor) record.actor = actor;
+  // Every pass names its actor: a test pass with none given is a test user's, and any other pass
+  // with none given was issued by the system.
+  record.actor = actor || (testPass ? "test-user" : "system");
   return record;
 }
 

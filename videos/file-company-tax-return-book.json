@@ -67,10 +67,7 @@
         },
         {
           "action": "point",
-          "target": {
-            "role": "heading",
-            "name": "Activities"
-          },
+          "target": "#dynamicActivities",
           "dwellMs": 300
         },
         {
@@ -170,7 +167,8 @@
           "expectsNavigation": true,
           "caption": "Open File Company Tax Return to find the company.",
           "headline": "Find the company",
-          "keyWord": "company"
+          "keyWord": "company",
+          "instruction": "Choose File Company Tax Return (HMRC, preview) on the activities page."
         },
         {
           "action": "await",
@@ -184,14 +182,16 @@
           "clear": true,
           "caption": "Type the company number.",
           "headline": "Enter the company number",
-          "keyWord": "number"
+          "keyWord": "number",
+          "instruction": "Enter your company number."
         },
         {
           "action": "click",
           "target": "#companyLookupBtn",
           "caption": "Look up the company with Companies House.",
           "headline": "Look up the company",
-          "keyWord": "company"
+          "keyWord": "company",
+          "instruction": "Choose Look up company."
         },
         {
           "action": "await",
@@ -204,7 +204,8 @@
           "caption": "Companies House confirms the company name.",
           "headline": "Confirm the company name",
           "keyWord": "name",
-          "dwellMs": 400
+          "dwellMs": 400,
+          "instruction": "Check that the company name Companies House shows is the company you mean."
         },
         {
           "action": "hold",
@@ -223,17 +224,28 @@
           "file": "videos/books/precision-code-ltd-ct600.diya-gl.zip",
           "caption": "Drop the company's diya-gl book on the form.",
           "headline": "Drop your book",
-          "keyWord": "book"
+          "keyWord": "book",
+          "instruction": "Drop the company's diya-gl book on the box that says Drop a book here."
         },
         {
           "action": "await",
           "until": "#booksImportStatus:has-text('Filled')",
           "label": "Reading the book",
-          "scrollTo": { "role": "heading", "name": "Fill from your books" },
+          "scrollTo": {
+            "role": "heading",
+            "name": "Fill from your books"
+          },
           "timeoutMs": 60000,
           "caption": "The accounts and the tax figures fill from the book.",
           "headline": "The form fills itself",
-          "keyWord": "fills"
+          "keyWord": "fills",
+          "instruction": "Read the status line that says the accounts and tax figures are filled from the book."
+        },
+        {
+          "action": "fill",
+          "target": "#directorDateApproved",
+          "value": "2026-09-15",
+          "note": "A book holds no approval date; the step has no caption so the guide keeps the published video's frames."
         },
         {
           "action": "scroll",
@@ -245,7 +257,8 @@
           "dwellMs": 500,
           "caption": "Turnover comes straight from the book.",
           "headline": "Turnover from the book",
-          "keyWord": "Turnover"
+          "keyWord": "Turnover",
+          "instruction": "Check Turnover against your book."
         },
         {
           "action": "scroll",
@@ -258,7 +271,8 @@
           "dwellMs": 700,
           "caption": "The tax is worked out beside your answers.",
           "headline": "The tax is worked out",
-          "keyWord": "tax"
+          "keyWord": "tax",
+          "instruction": "Read the tax that is worked out beside your answers."
         },
         {
           "action": "hold",
@@ -312,7 +326,8 @@
           "target": "#declarationAccepted",
           "caption": "Tick the declaration to confirm the return is accurate.",
           "headline": "Confirm the declaration",
-          "keyWord": "declaration"
+          "keyWord": "declaration",
+          "instruction": "Tick each of the four statements, then tick the declaration for the return."
         },
         {
           "action": "hold",
@@ -356,11 +371,15 @@
         {
           "action": "point",
           "target": "#computationsTable",
-          "scrollTo": { "role": "heading", "name": "Computations" },
+          "scrollTo": {
+            "role": "heading",
+            "name": "Computations"
+          },
           "caption": "The tax computation sits beside the return.",
           "headline": "The tax computation",
           "keyWord": "computation",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Check the CT600 boxes and the tax computation as HMRC will receive them."
         },
         {
           "action": "hold",
@@ -400,9 +419,13 @@
           "dwellMs": 700,
           "caption": "Filing costs one token. Submit the return to HMRC's test service.",
           "headline": "Submit for one token",
-          "keyWord": "token"
+          "keyWord": "token",
+          "instruction": "Enter the Government Gateway password, then check the cost: filing uses one token."
         },
-        { "action": "click", "target": "#submitReturnBtn" },
+        {
+          "action": "click",
+          "target": "#submitReturnBtn"
+        },
         {
           "action": "await",
           "until": "#resultView",
@@ -426,7 +449,8 @@
           "timeoutMs": 120000,
           "caption": "The simulator accepts the return.",
           "headline": "The simulator accepts the return",
-          "keyWord": "accepts"
+          "keyWord": "accepts",
+          "instruction": "Read the result to check that HMRC accepted the return."
         },
         {
           "action": "point",
@@ -434,7 +458,8 @@
           "caption": "The IRmark proves the return arrived unchanged.",
           "headline": "The IRmark",
           "keyWord": "IRmark",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read the IRmark in the result and keep it with your record."
         },
         {
           "action": "hold",
@@ -450,7 +475,8 @@
           "waitFor": "#receiptsTable .receipt-label",
           "caption": "Your receipts page lists the filing.",
           "headline": "Find your filing",
-          "keyWord": "filing"
+          "keyWord": "filing",
+          "instruction": "Choose Receipts to find the filing in the list."
         },
         {
           "action": "click",
@@ -458,7 +484,8 @@
           "expectsNavigation": true,
           "caption": "Open your copy of the filing.",
           "headline": "Open your copy",
-          "keyWord": "copy"
+          "keyWord": "copy",
+          "instruction": "Choose the receipt for the filing to open your copy."
         },
         {
           "action": "await",
@@ -474,7 +501,8 @@
           "to": "top",
           "caption": "Your copy shows the return as filed, with its figures and declaration.",
           "headline": "The return as filed",
-          "keyWord": "filed"
+          "keyWord": "filed",
+          "instruction": "Read your copy of the return with its figures and declaration."
         },
         {
           "action": "hold",
@@ -485,7 +513,8 @@
           "to": "bottom",
           "caption": "It ends with HMRC's receipt, the status and the date filed.",
           "headline": "HMRC's receipt",
-          "keyWord": "receipt"
+          "keyWord": "receipt",
+          "instruction": "Scroll to the end of the filing to read HMRC's receipt, the status and the date filed."
         },
         {
           "action": "hold",
@@ -500,7 +529,8 @@
           "ms": 2500,
           "caption": "Your copy stays on your receipts page.",
           "headline": "Kept on your receipts",
-          "keyWord": "receipts"
+          "keyWord": "receipts",
+          "instruction": "Check that your copy stays on the Receipts page."
         }
       ]
     }

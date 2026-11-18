@@ -4,20 +4,26 @@
 // The guide's journeys and the wording of their titles. The guide page script renders them in the
 // browser and the build script that writes the committed guide page reads the same list.
 
+/** The line above the steps of a VAT journey: HMRC's test service returns fixed periods, so its pictures show them. */
+export const TEST_PERIODS_NOTE =
+  "These pictures come from HMRC's test service, which uses periods from 2017. Your screen shows your own periods.";
+
+// A journey whose frames show a VAT period has `showsPeriods: true` and gets TEST_PERIODS_NOTE above its steps.
+
 export const GROUPS = [
   {
     title: "VAT",
     intro: "Check what is due, file the return and look up what HMRC holds.",
     journeys: [
       { video: "hmrc-authorise" },
-      { video: "view-obligations" },
-      { video: "submit-return" },
-      { video: "vat-from-books" },
-      { video: "vat-hmrc-assist" },
-      { video: "view-return" },
-      { video: "view-liabilities" },
-      { video: "view-payments" },
-      { video: "view-penalties" },
+      { video: "view-obligations", showsPeriods: true },
+      { video: "submit-return", showsPeriods: true },
+      { video: "vat-from-books", showsPeriods: true },
+      { video: "vat-hmrc-assist", showsPeriods: true },
+      { video: "view-return", showsPeriods: true },
+      { video: "view-liabilities", showsPeriods: true },
+      { video: "view-payments", showsPeriods: true },
+      { video: "view-penalties", showsPeriods: true },
     ],
   },
   {
@@ -117,4 +123,11 @@ export function splitTitle(raw) {
   }
   const startsWithProductName = title.startsWith("diya-gl");
   return { title: startsWithProductName ? title : title.charAt(0).toUpperCase() + title.slice(1), note };
+}
+
+// The title a video page shows: the manifest title without its channel prefix or suffix, with a
+// capital letter first, and its note (sandbox, preview) kept in brackets.
+export function videoHeading(raw) {
+  const { title, note } = splitTitle(raw);
+  return note ? `${title} (${note})` : title;
 }

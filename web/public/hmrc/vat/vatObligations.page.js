@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 // Global variables
 let searchCriteriaHidden = false;
 
@@ -57,6 +63,7 @@ function initializePage() {
 
   // Show synthetic indicator if in synthetic mode (determined by bundle qualifiers via sessionStorage)
   if (hmrcAccount === "synthetic") {
+    window.showHmrcSandboxStatus(siteText("vat-read.status-sandbox-text", "This reads HMRC's test service, not your real records."));
     const syntheticIndicator = document.getElementById("syntheticIndicator");
     if (syntheticIndicator) {
       syntheticIndicator.classList.add("visible");
@@ -113,7 +120,7 @@ async function continueObligationsRetrieval() {
     hideSearchCriteria(); // Hide the form when retrieving obligations after auth
     showLoading();
     hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
-    showStatus("Retrieving VAT obligations...", "info");
+    showStatus(siteText("vat-obligations.retrieving", "Retrieving VAT obligations..."), "info");
 
     // Restore form values
     if (pendingRequest.vrn) document.getElementById("vrn").value = pendingRequest.vrn;
@@ -153,9 +160,9 @@ async function continueObligationsRetrieval() {
         ...requestHeaders,
         "x-wait-time-ms": "0",
       },
-      pollPendingMessage: "Still processing...",
-      pollSuccessMessage: "VAT obligations retrieved.",
-      pollErrorMessage: "Failed to retrieve VAT obligations.",
+      pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+      pollSuccessMessage: siteText("vat-obligations.retrieved", "VAT obligations retrieved."),
+      pollErrorMessage: siteText("vat-obligations.retrieve-failed", "Failed to retrieve VAT obligations."),
     });
 
     const result = await response.json();
@@ -165,7 +172,7 @@ async function continueObligationsRetrieval() {
       if (response.status === 401) {
         sessionStorage.removeItem("hmrcGrantId");
         sessionStorage.removeItem("hmrcTokenScope");
-        showFailure({ status: 401 }, "Could not retrieve VAT obligations");
+        showFailure({ status: 401 }, siteText("vat-obligations.could-not-retrieve", "Could not retrieve VAT obligations"));
         showSearchCriteria(); // Show form on error
         // Could trigger re-auth here if desired
         return;
@@ -188,7 +195,7 @@ async function continueObligationsRetrieval() {
     console.log("Obligations retrieval completed successfully");
   } catch (error) {
     console.error("Error retrieving obligations:", error);
-    showFailure(error, "Could not retrieve VAT obligations");
+    showFailure(error, siteText("vat-obligations.could-not-retrieve", "Could not retrieve VAT obligations"));
     showSearchCriteria(); // Show form on error
     // Clear pending request data to prevent auto-retry loop on next page load
     sessionStorage.removeItem("pendingObligationsRequest");
@@ -228,7 +235,7 @@ async function handleFormSubmission(event) {
     }
     try {
       showLoading();
-      showStatus("Initiating HMRC authentication...", "info");
+      showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
 
       // Store request parameters and generate state
       const state = generateRandomState();
@@ -257,7 +264,10 @@ async function handleFormSubmission(event) {
       const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
       console.log("Generated HMRC Auth URL:", authResponseUrl);
 
-      showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+      showStatus(
+        siteText("widget.hmrc-auth-redirecting", "Redirecting to HMRC for authentication at {url}...", { url: authResponseUrl }),
+        "info",
+      );
 
       // Redirect to HMRC OAuth
       console.log(`Page transition initiated: Redirecting to HMRC OAuth URL ${authResponseUrl}`);
@@ -267,7 +277,7 @@ async function handleFormSubmission(event) {
       window.location.href = authResponseUrl;
     } catch (error) {
       console.error("Authentication error:", error);
-      showStatus(`Authentication failed: ${error.message}`, "error");
+      showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
       hideLoading();
     }
   } else {
@@ -275,7 +285,7 @@ async function handleFormSubmission(event) {
     try {
       showLoading();
       hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
-      showStatus("Retrieving VAT obligations...", "info");
+      showStatus(siteText("vat-obligations.retrieving", "Retrieving VAT obligations..."), "info");
 
       // Build query parameters
       const params = new URLSearchParams({ vrn });
@@ -306,9 +316,9 @@ async function handleFormSubmission(event) {
           ...requestHeaders,
           "x-wait-time-ms": "0",
         },
-        pollPendingMessage: "Still processing...",
-        pollSuccessMessage: "VAT obligations retrieved.",
-        pollErrorMessage: "Failed to retrieve VAT obligations.",
+        pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+        pollSuccessMessage: siteText("vat-obligations.retrieved", "VAT obligations retrieved."),
+        pollErrorMessage: siteText("vat-obligations.retrieve-failed", "Failed to retrieve VAT obligations."),
       });
 
       const result = await response.json();
@@ -318,7 +328,7 @@ async function handleFormSubmission(event) {
         if (response.status === 401) {
           sessionStorage.removeItem("hmrcGrantId");
           sessionStorage.removeItem("hmrcTokenScope");
-          showFailure({ status: 401 }, "Could not retrieve VAT obligations");
+          showFailure({ status: 401 }, siteText("vat-obligations.could-not-retrieve", "Could not retrieve VAT obligations"));
           return;
         }
         throw requestError(response, result, "Failed to retrieve obligations");
@@ -331,7 +341,7 @@ async function handleFormSubmission(event) {
       hideStatus();
     } catch (error) {
       console.error("Error retrieving obligations:", error);
-      showFailure(error, "Could not retrieve VAT obligations");
+      showFailure(error, siteText("vat-obligations.could-not-retrieve", "Could not retrieve VAT obligations"));
     } finally {
       hideLoading();
     }
@@ -364,7 +374,9 @@ function displayObligations(obligations) {
   const tableContainer = document.getElementById("obligationsTable");
 
   if (!obligations || obligations.length === 0) {
-    tableContainer.replaceChildren(noDataMessage("No obligations found for the specified criteria."));
+    tableContainer.replaceChildren(
+      noDataMessage(siteText("vat-obligations.none-found", "No obligations found for the specified criteria.")),
+    );
     return;
   }
 
@@ -372,23 +384,40 @@ function displayObligations(obligations) {
   const vrn = document.getElementById("vrn").value;
 
   const rows = obligations.map((obligation) => {
-    const statusText = obligation.status === "O" ? "Open" : obligation.status === "F" ? "Fulfilled" : "—";
+    const statusText =
+      obligation.status === "O"
+        ? siteText("vat-obligations.status-open", "Open")
+        : obligation.status === "F"
+          ? siteText("vat-obligations.status-fulfilled", "Fulfilled")
+          : "—";
     const statusClass = obligation.status === "O" ? "status-open" : obligation.status === "F" ? "status-fulfilled" : "";
 
     // Format date range for display (HMRC requirement: don't show period key)
     const periodDisplay = formatDateRange(obligation.start, obligation.end);
     const dueDateDisplay = formatDate(obligation.due);
     // An open obligation has no received date yet.
-    const receivedDisplay = obligation.received ? formatDate(obligation.received) : obligation.status === "O" ? "Not yet received" : "—";
+    const receivedDisplay = obligation.received
+      ? formatDate(obligation.received)
+      : obligation.status === "O"
+        ? siteText("vat-obligations.not-yet-received", "Not yet received")
+        : "—";
 
     const isFulfilled = obligation.status === "F";
-    const actionButton = element("button", { class: "action-button", type: "button" }, isFulfilled ? "View return" : "Submit return");
+    const actionButton = element(
+      "button",
+      { class: "action-button", type: "button" },
+      isFulfilled ? siteText("vat-obligations.view-return", "View return") : siteText("vat-obligations.submit-return", "Submit return"),
+    );
     actionButton.addEventListener("click", () => {
       const openReturn = isFulfilled ? viewReturn : submitReturn;
       openReturn(vrn, obligation.periodKey || "", obligation.start || "", obligation.end || "");
     });
 
-    const usePeriodButton = element("button", { class: "link-button", type: "button" }, "Use this period");
+    const usePeriodButton = element(
+      "button",
+      { class: "link-button", type: "button" },
+      siteText("vat-obligations.use-period", "Use this period"),
+    );
     usePeriodButton.addEventListener("click", () => usePeriod(obligation.start || "", obligation.end || "", periodDisplay));
 
     return element(
@@ -402,7 +431,18 @@ function displayObligations(obligations) {
     );
   });
 
-  tableContainer.replaceChildren(resultsTable([["VAT Period"], ["Due Date"], ["Status"], ["Received"], ["Action"]], rows));
+  tableContainer.replaceChildren(
+    resultsTable(
+      [
+        [siteText("vat-obligations.col-period", "VAT Period")],
+        [siteText("vat-obligations.col-due", "Due Date")],
+        [siteText("vat-obligations.col-status", "Status")],
+        [siteText("vat-obligations.col-received", "Received")],
+        [siteText("vat-obligations.col-action", "Action")],
+      ],
+      rows,
+    ),
+  );
 }
 
 const formatDate = HmrcDisplayFormat.formatDate;
@@ -413,7 +453,12 @@ function usePeriod(periodStart, periodEnd, periodDisplay) {
   window.CarriedIdentifiers.remember("periodStart", periodStart);
   window.CarriedIdentifiers.remember("periodEnd", periodEnd);
   document.getElementById("periodNextSteps").hidden = false;
-  showStatus(`Period ${periodDisplay} is chosen. View its return with the link below the list.`, "info");
+  showStatus(
+    siteText("vat-obligations.period-chosen", "Period {period} is chosen. View its return with the link below the list.", {
+      period: periodDisplay,
+    }),
+    "info",
+  );
 }
 
 function viewReturn(vrn, periodKey, periodStart, periodEnd) {

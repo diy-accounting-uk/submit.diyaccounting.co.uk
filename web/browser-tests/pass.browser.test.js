@@ -241,6 +241,16 @@ for (const width of WIDTHS) {
       await shot(page, "redeemed-dated", width);
     });
 
+    test("a day pass says the time it ends as well as the date", async ({ page }) => {
+      await serveRealSite(page, {
+        check: { valid: true, bundleId: "day-guest" },
+        redeem: { redeemed: true, bundleId: "day-guest", expiry: "2026-11-12T20:52:50.772Z" },
+      });
+      await open(page, width);
+      await page.getByRole("button", { name: "Redeem pass" }).click();
+      await expect(page.locator("#passMessage")).toContainText(/It ends on 12 November 2026 at \d{2}:\d{2}/);
+    });
+
     test("Go to your activities leads to the home page", async ({ page }) => {
       await serveRealSite(page);
       await open(page, width);
@@ -262,7 +272,6 @@ for (const width of WIDTHS) {
     });
 
     const GET_REFUSALS = [
-      ["not_found", "We cannot find this pass. Check that the link is complete, or ask the sender for a new one."],
       ["expired", "This pass has ended. Ask the sender for a new one."],
       ["exhausted", "This pass has been used. Ask the sender for a new one."],
       ["revoked", "This pass has been cancelled. Ask the sender for a new one."],
@@ -279,9 +288,23 @@ for (const width of WIDTHS) {
         await expect(page.getByRole("link", { name: "Go to your activities" })).toBeVisible();
         await expect(page.getByRole("button", { name: "Redeem pass" })).toBeHidden();
         if (reason === "expired") await shot(page, "error-expired", width);
-        if (reason === "not_found") await shot(page, "error-not-found", width);
       });
     }
+
+    test("the check answers not_found: the sentence, and the box with the typed words and the focus", async ({ page }) => {
+      await serveRealSite(page, { check: { valid: false, reason: "not_found" } });
+      await open(page, width, "?pass=one-two-three-four");
+      await expect(heading(page)).toHaveText("This pass did not work");
+      await expect(page.getByRole("alert")).toHaveText(
+        "We cannot find this pass. Check the four words, or the link, or ask the sender for a new one.",
+      );
+      await expect(page.locator("#passInput")).toHaveValue("one-two-three-four");
+      await expect(page.locator("#passInput")).toBeFocused();
+      await expect(page.getByLabel("Pass", { exact: true })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Go to your activities" })).toBeVisible();
+      await expectNoSideScroll(page);
+      await shot(page, "error-not-found", width);
+    });
 
     const POST_REFUSALS = [
       ["own_pass", 403, "You made this pass. Send the link to someone else to use."],

@@ -36,4 +36,30 @@ test.describe("Day pass on the bundles page", () => {
     await expect(page.locator("#catalogBundles")).toContainText("One day, no card. To keep filing after today, choose a plan above.");
     await screenshotAll(page, "daypass", "bundles-day-pass-last");
   });
+
+  test("a held day pass shows the time it expires", async ({ page }) => {
+    await serveRealSite(page, {
+      signedIn: true,
+      apiHandler: (url) => {
+        if (url.pathname === "/api/v1/bundle") {
+          return {
+            bundles: [
+              {
+                bundleId: "day-guest",
+                expiry: new Date(Date.now() + 5 * 3_600_000).toISOString(),
+                allocated: true,
+                tokensGranted: 3,
+                tokensRemaining: 3,
+              },
+            ],
+            tokensRemaining: 3,
+          };
+        }
+        if (url.pathname === "/api/v1/pass/my-passes") return { passes: [] };
+        return undefined;
+      },
+    });
+    await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#currentBundles")).toContainText(/expires \d{1,2} \w+ \d{4} at \d{2}:\d{2}/, { timeout: 15000 });
+  });
 });

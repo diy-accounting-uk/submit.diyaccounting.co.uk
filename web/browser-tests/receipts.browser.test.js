@@ -31,6 +31,29 @@ const ITSA_RECEIPT = {
   notes: null,
 };
 
+const ITSA_ASSIST_RECEIPT = {
+  kind: "itsa-assist-report",
+  reportId: "1034fae8-9391-40ed-bbc7-d728596ef5ab",
+  correlationId: "ff95553fd5bf8b67cb72f50b5a316d27956670d3",
+  messages: [{ title: "Review your self-employment income", body: "Your turnover appears low." }],
+  nino: "AB518777A",
+  taxYear: "2024-25",
+  calculationId: "59a33b1a-797e-4bb4-945f-072261e4e79e",
+  requestedAt: "2026-11-18T07:59:42.601Z",
+  acknowledgedAt: "2026-11-18T08:00:10.000Z",
+  presentedLanguage: "cy",
+};
+
+const VAT_ASSIST_RECEIPT = {
+  kind: "vat-assist-report",
+  reportId: "5d0f1c1e-1b8a-4d2c-9a4b-2f5e8c3d7a10",
+  messages: [{ title: "Check box 1", body: "Box 1 looks high." }],
+  figures: { vatDueSales: 1250.5, totalVatDue: 1250.5 },
+  periodKey: "24A1",
+  vrn: "123456789",
+  requestedAt: "2026-11-18T07:59:42.601Z",
+};
+
 test.describe("Receipts page - receipt details", () => {
   let htmlContent;
 
@@ -301,6 +324,72 @@ test.describe("Receipts page - receipt details", () => {
     });
 
     await expect(page.locator("#assistMessages .assist-acknowledgement")).toHaveText("Acknowledged to HMRC on —");
+  });
+
+  test("names every field of an Income Tax Assist report, and the boxes of a VAT one", async ({ page }) => {
+    await showReceipt(page, "itsa-assist", ITSA_ASSIST_RECEIPT);
+    const content = page.locator("#receiptContent");
+    for (const [field, name] of [
+      ["kind", "Record type"],
+      ["reportId", "Report ID"],
+      ["nino", "National Insurance number"],
+      ["requestedAt", "Requested"],
+      ["acknowledgedAt", "Acknowledged to HMRC"],
+      ["presentedLanguage", "Language of HMRC feedback"],
+    ]) {
+      await expect(content.locator(`[data-hmrc-field="${field}"] .field-name`)).toHaveText(name);
+    }
+
+    await showReceipt(page, "vat-assist", VAT_ASSIST_RECEIPT);
+    await expect(content.locator('[data-hmrc-field="figures.vatDueSales"] .field-name')).toContainText(
+      "VAT due in the period on sales and other outputs",
+    );
+    await expect(content.locator('[data-hmrc-field="vrn"] .field-name')).toHaveText("VAT registration number");
+    await expect(content.locator('[data-hmrc-field="periodKey"] .field-name')).toHaveText("Period key");
+  });
+
+  test("names the fields of an Income Tax Assist report in Welsh on the Welsh copy", async ({ page }) => {
+    const welshHtml = fs.readFileSync(path.join(process.cwd(), "web/public/cy/hmrc/receipt/receipts.html"), "utf-8");
+    await page.addInitScript(() => localStorage.setItem("siteLanguage", "cy"));
+    await page.route("**/*.js", async (route) => {
+      if (route.request().resourceType() === "script") {
+        await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
+      } else {
+        await route.continue();
+      }
+    });
+    await servePageScripts(page);
+    await serveHmrcFieldTableAssets(page);
+    await serveSubmissionRecordAssets(page);
+    for (const file of ["widgets/page-chrome.js", "lib/welsh-text.js"]) {
+      await page.route(`**/${file}`, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/javascript",
+          body: fs.readFileSync(path.join(process.cwd(), "web/public", file), "utf-8"),
+        }),
+      );
+    }
+    await page.route("**/cy/hmrc/receipt/receipts.html", (route) =>
+      route.fulfill({ status: 200, contentType: "text/html", body: welshHtml }),
+    );
+    await page.goto("http://localhost:3000/cy/hmrc/receipt/receipts.html", { waitUntil: "domcontentloaded" });
+    await delay(200);
+    await page.evaluate(async (body) => {
+      window.fetchWithIdToken = async () => ({ ok: true, text: async () => JSON.stringify(body) });
+      await window.viewReceipt("itsa-assist");
+    }, ITSA_ASSIST_RECEIPT);
+
+    const content = page.locator("#receiptContent");
+    for (const [field, name] of [
+      ["kind", "Math o gofnod"],
+      ["reportId", "ID yr adroddiad"],
+      ["nino", "Rhif Yswiriant Gwladol"],
+      ["requestedAt", "Gofynnwyd amdano"],
+      ["acknowledgedAt", "Rhoddwyd gwybod i CThEF"],
+    ]) {
+      await expect(content.locator(`[data-hmrc-field="${field}"] .field-name`)).toHaveText(name);
+    }
   });
 
   test("shows a receipt that is not an object as one content row", async ({ page }) => {

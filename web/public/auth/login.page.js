@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the chosen language; without it the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 // Sign in with one identity provider via Cognito. A ?provider= value on the address, when it
 // is on the allow list, replaces the button's provider.
 async function loginWithProvider(buttonProvider) {
@@ -39,7 +45,10 @@ async function loginWithProvider(buttonProvider) {
   } catch (err) {
     console.error("Failed to build Cognito auth URL:", err);
     if (typeof window.showStatus === "function") {
-      window.showStatus("Sign-in is unavailable because the site configuration failed to load. Please reload the page.", "error");
+      window.showStatus(
+        siteText("login.config-failed", "Sign-in is unavailable because the site configuration failed to load. Please reload the page."),
+        "error",
+      );
     }
     return;
   }
@@ -69,6 +78,34 @@ try {
   if (sessionStorage.getItem("passAddOnReturn")) document.getElementById("pendingPassNote").hidden = false;
 } catch {}
 
+// A page that sent the visitor here names itself in ?next=. The callback returns to it, and the
+// page names the activity the visitor chose.
+async function noteDestination() {
+  const next = new URLSearchParams(window.location.search).get("next");
+  if (!next) return;
+  const target = window.postLoginRedirectTarget(next);
+  if (target === "/") return;
+  try {
+    sessionStorage.setItem("postLoginRedirect", target);
+  } catch {}
+  try {
+    const catalogService = await import("/lib/services/catalog-service.js");
+    const catalog = catalogService.parseCatalogueText(await catalogService.fetchCatalogText());
+    // A Welsh copy's address names the same activity as its English page.
+    const page = new URL(target, window.location.origin).pathname.replace(/^\/(cy\/)?/, "");
+    const activity = (catalog.activities || []).find((candidate) => catalogService.activityPagePath(candidate) === page);
+    if (!activity) return;
+    const note = document.getElementById("signInDestination");
+    note.textContent = siteText("login.continue-to", "Sign in to continue to {name}.", {
+      name: catalogService.activityName(activity, window.siteLanguage?.chrome?.()),
+    });
+    note.hidden = false;
+  } catch (err) {
+    console.warn("Could not name the page the sign-in returns to:", err);
+  }
+}
+noteDestination();
+
 sessionStorage.removeItem("currentActivity");
 console.log("Current activity cleared");
 
@@ -82,6 +119,6 @@ if (
   window.location.hostname === "local.submit.diyaccounting.co.uk"
 ) {
   const script = document.createElement("script");
-  script.src = "./login-mock-addon.js";
+  script.src = "/auth/login-mock-addon.js";
   document.body.appendChild(script);
 }

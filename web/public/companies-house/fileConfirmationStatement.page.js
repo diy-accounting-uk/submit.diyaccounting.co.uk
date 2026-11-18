@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives window.siteText, the text in the chosen language. Without it (a test that
+// stubs the chrome) the English stands.
+window.siteText =
+  window.siteText ||
+  ((id, english, values) => english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole)));
+
 // File confirmation statement: companyView -> authView -> reviewView -> previewView ->
 // resultView. No Companies House OAuth token: the filing goes through the XML Gateway with
 // the operator's presenter credentials, so only the Cognito id token is needed to reach the
@@ -37,8 +43,12 @@ function readOwnPresenterInputs() {
   const id = idInput.value.trim();
   const code = codeInput.value.trim();
   const problems = [];
-  if (!id) problems.push({ input: idInput, message: "Enter your presenter id" });
-  if (!code) problems.push({ input: codeInput, message: "Enter your presenter authentication code" });
+  if (!id) problems.push({ input: idInput, message: window.siteText("ch.accounts.enter-presenter-id", "Enter your presenter id") });
+  if (!code)
+    problems.push({
+      input: codeInput,
+      message: window.siteText("ch.accounts.enter-presenter-code", "Enter your presenter authentication code"),
+    });
   return problems.length > 0 ? { problems } : { presenter: { id, code } };
 }
 
@@ -71,10 +81,13 @@ let shareClassRowCount = 0;
 let shareholdingRowCount = 0;
 
 function feeMessageText(feePaid) {
-  if (feePaid) return "No fee: this payment period is already paid.";
+  if (feePaid) return window.siteText("ch.cs.fee-paid", "No fee: this payment period is already paid.");
   return ownPresenter
-    ? "Companies House charges its fee to the credit account behind your presenter. Submit takes no fee of its own."
-    : "A fee applies for this payment period - the amount is shown before you submit.";
+    ? window.siteText(
+        "ch.cs.fee-own-presenter",
+        "Companies House charges its fee to the credit account behind your presenter. Submit takes no fee of its own.",
+      )
+    : window.siteText("ch.cs.fee-applies", "A fee applies for this payment period - the amount is shown before you submit.");
 }
 
 function views() {
@@ -139,7 +152,9 @@ function renderPublicOfficers(officers) {
           officerDisplayName(officer),
           slugOrDash(officer.officerRole),
           textOrDash(window.companiesHouseLabels.formatCompanyDate(officer.appointedOn)),
-          officer.identityVerificationDetails ? "Verified" : "Not verified",
+          officer.identityVerificationDetails
+            ? window.siteText("ch.cs.verified", "Verified")
+            : window.siteText("ch.cs.not-verified", "Not verified"),
         ),
       ),
   );
@@ -173,7 +188,13 @@ async function lookUpCompany(companyNumber) {
   try {
     const profile = await window.getCompanyProfile(companyNumber);
     if (profile.companyStatus !== "active" || profile.companyType !== "ltd") {
-      showStatus("Only an active private company limited by shares can file a confirmation statement here.", "error");
+      showStatus(
+        window.siteText(
+          "ch.cs.only-active-ltd",
+          "Only an active private company limited by shares can file a confirmation statement here.",
+        ),
+        "error",
+      );
       return;
     }
 
@@ -197,7 +218,7 @@ async function lookUpCompany(companyNumber) {
     showView("authView");
   } catch (error) {
     console.error("Failed to look up the company:", error);
-    showStatus(error.message || "Failed to look up the company.", "error");
+    showStatus(error.message || window.siteText("ch.accounts.lookup-failed", "Failed to look up the company."), "error");
   } finally {
     hideLoading();
   }
@@ -207,15 +228,23 @@ function buildShareClassRow(index, share = {}) {
   return element(
     "fieldset",
     { "class": "form-group", "data-share-class-row": index },
-    element("legend", {}, `Share class ${index + 1}`),
-    element("label", { for: `shareClass-${index}` }, "Share class"),
+    element("legend", {}, window.siteText("ch.cs.share-class-n", "Share class {n}", { n: index + 1 })),
+    element("label", { for: `shareClass-${index}` }, window.siteText("ch.cs.share-class", "Share class")),
     textInput(`shareClass-${index}`, share.shareClass),
-    element("label", { for: `prescribedParticulars-${index}` }, "Prescribed particulars"),
+    element("label", { for: `prescribedParticulars-${index}` }, window.siteText("ch.cs.prescribed-particulars", "Prescribed particulars")),
     textInput(`prescribedParticulars-${index}`, share.prescribedParticulars),
-    element("label", { for: `numShares-${index}` }, "Number of shares"),
+    element("label", { for: `numShares-${index}` }, window.siteText("ch.cs.number-of-shares", "Number of shares")),
     element("input", { type: "number", id: `numShares-${index}`, step: "1", min: "0", value: share.numShares || "" }),
-    element("label", { for: `aggregateNominalValue-${index}` }, "Aggregate nominal value"),
-    element("p", { id: `aggregateNominalValue-${index}-money-hint`, class: "hint" }, "For example, 600 or 1,200.50"),
+    element(
+      "label",
+      { for: `aggregateNominalValue-${index}` },
+      window.siteText("ch.cs.aggregate-nominal-value", "Aggregate nominal value"),
+    ),
+    element(
+      "p",
+      { id: `aggregateNominalValue-${index}-money-hint`, class: "hint" },
+      window.siteText("ch.cs.money-example", "For example, 600 or 1,200.50"),
+    ),
     element(
       "div",
       { class: "input-prefix" },
@@ -227,7 +256,7 @@ function buildShareClassRow(index, share = {}) {
         "data-money-min": "0",
       }),
     ),
-    element("button", { type: "button", class: "btn-small remove-share-class-row" }, "Remove"),
+    element("button", { type: "button", class: "btn-small remove-share-class-row" }, window.siteText("ch.cs.remove", "Remove")),
   );
 }
 
@@ -257,9 +286,17 @@ function buildTransferRow(holdingIndex, transferIndex, transfer = {}) {
   return element(
     "div",
     { "class": "form-group", "data-transfer-row": suffix },
-    element("label", { for: `transferDate-${suffix}` }, `Transfer ${transferIndex + 1} date`),
+    element(
+      "label",
+      { for: `transferDate-${suffix}` },
+      window.siteText("ch.cs.transfer-date", "Transfer {n} date", { n: transferIndex + 1 }),
+    ),
     element("input", { type: "date", id: `transferDate-${suffix}`, value: transfer.dateOfTransfer || "" }),
-    element("label", { for: `transferShares-${suffix}` }, `Transfer ${transferIndex + 1} number of shares`),
+    element(
+      "label",
+      { for: `transferShares-${suffix}` },
+      window.siteText("ch.cs.transfer-shares", "Transfer {n} number of shares", { n: transferIndex + 1 }),
+    ),
     element("input", {
       type: "number",
       id: `transferShares-${suffix}`,
@@ -270,7 +307,7 @@ function buildTransferRow(holdingIndex, transferIndex, transfer = {}) {
     element(
       "button",
       { "type": "button", "class": "btn-small remove-transfer-row", "data-holding-index": holdingIndex },
-      "Remove transfer",
+      window.siteText("ch.cs.remove-transfer", "Remove transfer"),
     ),
   );
 }
@@ -279,16 +316,20 @@ function buildJointHolderRow(holdingIndex, shareholderIndex, shareholder = {}) {
   const address = shareholder.address || {};
   const suffix = `${holdingIndex}-${shareholderIndex}`;
   const fieldRows = [
-    ["holderSurname", "Shareholder surname", shareholder.surname],
-    ["holderForename", "Shareholder forename", shareholder.forename],
-    ["holderAmalgamatedName", "Or amalgamated name (used instead of surname/forename)", shareholder.amalgamatedName],
-    ["holderPremise", "Premise", address.premise],
-    ["holderStreet", "Street", address.street],
-    ["holderThoroughfare", "Thoroughfare", address.thoroughfare],
-    ["holderPostTown", "Post town", address.postTown],
-    ["holderCounty", "County", address.county],
-    ["holderPostcode", "Postcode", address.postcode],
-    ["holderCountry", "Country", address.country],
+    ["holderSurname", window.siteText("ch.cs.holder-surname", "Shareholder surname"), shareholder.surname],
+    ["holderForename", window.siteText("ch.cs.holder-forename", "Shareholder forename"), shareholder.forename],
+    [
+      "holderAmalgamatedName",
+      window.siteText("ch.cs.holder-amalgamated", "Or amalgamated name (used instead of surname/forename)"),
+      shareholder.amalgamatedName,
+    ],
+    ["holderPremise", window.siteText("ch.cs.holder-premise", "Premise"), address.premise],
+    ["holderStreet", window.siteText("ch.cs.holder-street", "Street"), address.street],
+    ["holderThoroughfare", window.siteText("ch.cs.holder-thoroughfare", "Thoroughfare"), address.thoroughfare],
+    ["holderPostTown", window.siteText("ch.cs.holder-post-town", "Post town"), address.postTown],
+    ["holderCounty", window.siteText("ch.address.county", "County"), address.county],
+    ["holderPostcode", window.siteText("ch.address.postcode", "Postcode"), address.postcode],
+    ["holderCountry", window.siteText("ch.address.country", "Country"), address.country],
   ].flatMap(([idPrefix, labelText, value]) => [
     element("label", { for: `${idPrefix}-${suffix}` }, labelText),
     textInput(`${idPrefix}-${suffix}`, value),
@@ -296,12 +337,12 @@ function buildJointHolderRow(holdingIndex, shareholderIndex, shareholder = {}) {
   return element(
     "fieldset",
     { "class": "form-group", "data-shareholder-row": suffix },
-    element("legend", {}, `Joint holder ${shareholderIndex + 1}`),
+    element("legend", {}, window.siteText("ch.cs.joint-holder-n", "Joint holder {n}", { n: shareholderIndex + 1 })),
     ...fieldRows,
     element(
       "button",
       { "type": "button", "class": "btn-small remove-joint-holder-row", "data-holding-index": holdingIndex },
-      "Remove joint holder",
+      window.siteText("ch.cs.remove-joint-holder", "Remove joint holder"),
     ),
   );
 }
@@ -311,35 +352,55 @@ function buildShareholdingRow(index, holding = {}) {
   return element(
     "fieldset",
     { "class": "form-group", "data-shareholding-row": index },
-    element("legend", {}, `Shareholding ${index + 1}`),
-    element("label", { for: `holdingShareClass-${index}` }, "Share class"),
+    element("legend", {}, window.siteText("ch.cs.shareholding-n", "Shareholding {n}", { n: index + 1 })),
+    element("label", { for: `holdingShareClass-${index}` }, window.siteText("ch.cs.share-class", "Share class")),
     textInput(`holdingShareClass-${index}`, holding.shareClass),
-    element("label", { for: `holdingNumberHeld-${index}` }, "Number held"),
+    element("label", { for: `holdingNumberHeld-${index}` }, window.siteText("ch.cs.number-held", "Number held")),
     element("input", { type: "number", id: `holdingNumberHeld-${index}`, step: "1", min: "0", value: holding.numberHeld || "" }),
     element(
       "p",
       { class: "hint" },
-      `A holding held jointly carries every joint holder below, up to ${MAX_JOINT_HOLDERS_PER_SHAREHOLDING}.`,
+      window.siteText("ch.cs.joint-hint", "A holding held jointly carries every joint holder below, up to {max}.", {
+        max: MAX_JOINT_HOLDERS_PER_SHAREHOLDING,
+      }),
     ),
-    element("h4", {}, "Share transfers"),
+    element("h4", {}, window.siteText("ch.cs.share-transfers", "Share transfers")),
     element(
       "p",
       { class: "hint" },
-      `Each transfer of shares since the last statement: its date and the number of shares, up to ${MAX_TRANSFERS_PER_SHAREHOLDING}.`,
+      window.siteText(
+        "ch.cs.transfers-hint",
+        "Each transfer of shares since the last statement: its date and the number of shares, up to {max}.",
+        {
+          max: MAX_TRANSFERS_PER_SHAREHOLDING,
+        },
+      ),
     ),
     element(
       "div",
       { "class": "transfers-container", "data-holding-index": index },
       ...(holding.transfers || []).map((transfer, transferIndex) => buildTransferRow(index, transferIndex, transfer)),
     ),
-    element("button", { "type": "button", "class": "btn-small add-transfer-row", "data-holding-index": index }, "Add transfer"),
+    element(
+      "button",
+      { "type": "button", "class": "btn-small add-transfer-row", "data-holding-index": index },
+      window.siteText("ch.cs.add-transfer", "Add transfer"),
+    ),
     element(
       "div",
       { "class": "joint-holders-container", "data-holding-index": index },
       ...shareholders.map((shareholder, shareholderIndex) => buildJointHolderRow(index, shareholderIndex, shareholder)),
     ),
-    element("button", { "type": "button", "class": "btn-small add-joint-holder-row", "data-holding-index": index }, "Add joint holder"),
-    element("button", { type: "button", class: "btn-small remove-shareholding-row" }, "Remove shareholding"),
+    element(
+      "button",
+      { "type": "button", "class": "btn-small add-joint-holder-row", "data-holding-index": index },
+      window.siteText("ch.cs.add-joint-holder", "Add joint holder"),
+    ),
+    element(
+      "button",
+      { type: "button", class: "btn-small remove-shareholding-row" },
+      window.siteText("ch.cs.remove-shareholding", "Remove shareholding"),
+    ),
   );
 }
 
@@ -356,18 +417,29 @@ function buildDirectorRow(index, director) {
   return element(
     "fieldset",
     { "class": "form-group", "data-director-row": index },
-    element("legend", {}, `${director.forename || ""} ${director.surname || ""} (${director.dob || "no date of birth on record"})`),
-    element("label", { for: `directorOtherForenames-${index}` }, "Other forenames"),
+    element(
+      "legend",
+      {},
+      `${director.forename || ""} ${director.surname || ""} (${director.dob || window.siteText("ch.cs.no-dob", "no date of birth on record")})`,
+    ),
+    element("label", { for: `directorOtherForenames-${index}` }, window.siteText("ch.cs.other-forenames", "Other forenames")),
     element(
       "p",
       { class: "hint" },
-      "Every middle name on the register. Companies House matches the director by the full name - leaving one out rejects the filing.",
+      window.siteText(
+        "ch.cs.other-forenames-hint",
+        "Every middle name on the register. Companies House matches the director by the full name - leaving one out rejects the filing.",
+      ),
     ),
     textInput(`directorOtherForenames-${index}`, director.otherForenames, { spellcheck: "false" }),
-    element("label", { for: `directorPersonalCode-${index}` }, "Companies House personal code"),
+    element("label", { for: `directorPersonalCode-${index}` }, window.siteText("ch.cs.personal-code", "Companies House personal code")),
     textInput(`directorPersonalCode-${index}`, "", { maxlength: "13", spellcheck: "false" }),
-    element("label", { for: `directorNameMismatchReason-${index}` }, "Name mismatch reason"),
-    element("p", { class: "hint" }, "Only when the name this director verified under differs from the register name above."),
+    element("label", { for: `directorNameMismatchReason-${index}` }, window.siteText("ch.cs.mismatch-reason", "Name mismatch reason")),
+    element(
+      "p",
+      { class: "hint" },
+      window.siteText("ch.cs.mismatch-hint", "Only when the name this director verified under differs from the register name above."),
+    ),
     textInput(`directorNameMismatchReason-${index}`, "", { spellcheck: "false" }),
   );
 }
@@ -395,7 +467,12 @@ async function handleAuthSubmit(event) {
   const codeInput = document.getElementById("companyAuthCode");
   const enteredCode = codeInput.value.trim();
   if (enteredCode.length < 6 || enteredCode.length > 8) {
-    window.formErrors.showFormErrors([{ input: codeInput, message: "Enter the 6 to 8 character company authentication code" }]);
+    window.formErrors.showFormErrors([
+      {
+        input: codeInput,
+        message: window.siteText("ch.accounts.enter-auth-code", "Enter the 6 to 8 character company authentication code"),
+      },
+    ]);
     return;
   }
   const ownPresenterInputs = readOwnPresenterInputs();
@@ -406,7 +483,10 @@ async function handleAuthSubmit(event) {
   window.formErrors.clearFormErrors();
   const madeUpDate = company.confirmationStatementNextMadeUpTo;
   if (!madeUpDate) {
-    showStatus("Companies House has not published a next confirmation statement date for this company.", "error");
+    showStatus(
+      window.siteText("ch.cs.no-next-date", "Companies House has not published a next confirmation statement date for this company."),
+      "error",
+    );
     return;
   }
 
@@ -453,7 +533,7 @@ async function handleAuthSubmit(event) {
       window.formErrors.showFormErrors([{ input: codeInput, message: error.message }]);
       return;
     }
-    showStatus(error.message || "Failed to read the confirmation statement filing data.", "error");
+    showStatus(error.message || window.siteText("ch.cs.read-failed", "Failed to read the confirmation statement filing data."), "error");
   } finally {
     hideLoading();
   }
@@ -587,25 +667,32 @@ function buildStatementPayload() {
 
 function validateReviewForm(payload) {
   if (!payload.reviewDate) {
-    showStatus("Enter the confirmation statement date.", "error");
+    showStatus(window.siteText("ch.cs.enter-date", "Enter the confirmation statement date."), "error");
     return false;
   }
   if (!payload.lawfulPurposeStatementAccepted) {
-    showStatus("The lawful purpose statement must be accepted before previewing.", "error");
+    showStatus(window.siteText("ch.cs.lawful-required", "The lawful purpose statement must be accepted before previewing."), "error");
     return false;
   }
   if (!payload.stateConfirmationAccepted) {
-    showStatus("The statement of confirmation must be accepted before previewing.", "error");
+    showStatus(
+      window.siteText("ch.cs.confirmation-required", "The statement of confirmation must be accepted before previewing."),
+      "error",
+    );
     return false;
   }
   if (payload.directors.length === 0) {
-    showStatus("At least one current director's verification statement is required.", "error");
+    showStatus(window.siteText("ch.cs.director-required", "At least one current director's verification statement is required."), "error");
     return false;
   }
   const blankRow = payload.directors.find((director) => !isValidPersonalCode(director.personalCode) || !director.otherForenames);
   if (blankRow) {
     showStatus(
-      `${blankRow.forename || ""} ${blankRow.surname || ""} must verify their identity with Companies House, and this statement needs their other forenames and their 11-character personal code (letters and digits) before it can be submitted.`,
+      window.siteText(
+        "ch.cs.director-blank",
+        "{name} must verify their identity with Companies House, and this statement needs their other forenames and their 11-character personal code (letters and digits) before it can be submitted.",
+        { name: `${blankRow.forename || ""} ${blankRow.surname || ""}`.trim() },
+      ),
       "error",
     );
     return false;
@@ -616,7 +703,7 @@ function validateReviewForm(payload) {
 function longDate(isoDate) {
   const date = new Date(`${isoDate}T00:00:00Z`);
   if (Number.isNaN(date.getTime())) return isoDate;
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+  return window.companiesHouseLabels.formatCompanyDate(isoDate);
 }
 
 function describeShareholder(shareholder) {
@@ -638,28 +725,45 @@ function describeShareholder(shareholder) {
 
 function renderPreviewSummary(payload) {
   const rows = [
-    ["Company", `${payload.companyName} (${payload.companyNumber})`],
-    ["Confirmation statement date", longDate(payload.reviewDate)],
-    ["Lawful purpose statement", "Accepted"],
-    ["Statement of confirmation", "Accepted"],
+    [window.siteText("ch.search.column-company", "Company"), `${payload.companyName} (${payload.companyNumber})`],
+    [window.siteText("ch.cs.summary-date", "Confirmation statement date"), longDate(payload.reviewDate)],
+    [window.siteText("ch.cs.summary-lawful", "Lawful purpose statement"), window.siteText("ch.cs.accepted", "Accepted")],
+    [window.siteText("ch.cs.summary-confirmation", "Statement of confirmation"), window.siteText("ch.cs.accepted", "Accepted")],
     [
-      "Directors verifying their identity",
+      window.siteText("ch.cs.summary-directors", "Directors verifying their identity"),
       payload.directors.map((d) => [d.forename, d.otherForenames, d.surname].filter(Boolean).join(" ")).join(", "),
     ],
   ];
-  if (payload.sicCodes) rows.push(["Nature of business (SIC codes)", payload.sicCodes.join(", ")]);
-  if (payload.registeredEmailAddress) rows.push(["Registered email address", payload.registeredEmailAddress]);
-  if (payload.statementOfCapital) rows.push(["Statement of capital", "Changed from the register"]);
+  if (payload.sicCodes) rows.push([window.siteText("ch.cs.summary-sic", "Nature of business (SIC codes)"), payload.sicCodes.join(", ")]);
+  if (payload.registeredEmailAddress)
+    rows.push([window.siteText("ch.cs.summary-email", "Registered email address"), payload.registeredEmailAddress]);
+  if (payload.statementOfCapital)
+    rows.push([
+      window.siteText("ch.cs.summary-capital", "Statement of capital"),
+      window.siteText("ch.cs.changed", "Changed from the register"),
+    ]);
   if (payload.shareholdings) {
-    rows.push(["Shareholders", "Changed from the register"]);
+    rows.push([
+      window.siteText("ch.cs.summary-shareholders", "Shareholders"),
+      window.siteText("ch.cs.changed", "Changed from the register"),
+    ]);
     payload.shareholdings.forEach((holding, index) => {
       const holders = (holding.shareholders || []).map(describeShareholder).join("; ");
       const holdersSuffix = holders ? ": " + holders : "";
-      rows.push([`Shareholding ${index + 1}`, `${holding.shareClass}, ${holding.numberHeld} held${holdersSuffix}`]);
+      rows.push([
+        window.siteText("ch.cs.shareholding-n", "Shareholding {n}", { n: index + 1 }),
+        window.siteText("ch.cs.holding-summary", "{shareClass}, {number} held", {
+          shareClass: holding.shareClass,
+          number: holding.numberHeld,
+        }) + holdersSuffix,
+      ]);
       (holding.transfers || []).forEach((transfer, transferIndex) => {
         rows.push([
-          `Shareholding ${index + 1} transfer ${transferIndex + 1}`,
-          `${transfer.numberSharesTransferred} shares on ${longDate(transfer.dateOfTransfer)}`,
+          window.siteText("ch.cs.transfer-label", "Shareholding {n} transfer {m}", { n: index + 1, m: transferIndex + 1 }),
+          window.siteText("ch.cs.transfer-summary", "{number} shares on {date}", {
+            number: transfer.numberSharesTransferred,
+            date: longDate(transfer.dateOfTransfer),
+          }),
         ]);
       });
     });
@@ -681,8 +785,8 @@ async function handleReviewFormSubmit(event) {
   if (!window.formErrors.requireFormFields(form)) return;
   if (window.formErrors.reportMoneyProblems(form)) return;
   const confirmed = window.formErrors.requireChecked({
-    lawfulPurposeStatement: "Confirm the lawful purpose statement",
-    stateConfirmation: "Confirm the statement of confirmation",
+    lawfulPurposeStatement: window.siteText("ch.cs.confirm-lawful", "Confirm the lawful purpose statement"),
+    stateConfirmation: window.siteText("ch.cs.confirm-confirmation", "Confirm the statement of confirmation"),
   });
   if (!confirmed) return;
   const payload = buildStatementPayload();
@@ -705,14 +809,18 @@ async function handleReviewFormSubmit(event) {
     const previewFeeMessage = document.getElementById("previewFeeMessage");
     previewFeeMessage.style.display = feeDue ? "block" : "none";
     previewFeeMessage.textContent = submitFee
-      ? `${CONFIRMATION_STATEMENT_FEE_DISPLAY} will be charged before this is submitted to Companies House.`
+      ? window.siteText("ch.cs.fee-charged", "{fee} will be charged before this is submitted to Companies House.", {
+          fee: CONFIRMATION_STATEMENT_FEE_DISPLAY,
+        })
       : feeMessageText(!feeDue);
-    document.getElementById("submitFilingBtn").textContent = submitFee ? "Pay and submit" : "Submit to Companies House";
+    document.getElementById("submitFilingBtn").textContent = submitFee
+      ? window.siteText("ch.cs.pay-and-submit", "Pay and submit")
+      : window.siteText("ch.cs.submit", "Submit to Companies House");
 
     showView("previewView");
   } catch (error) {
     console.error("Failed to render the confirmation statement preview:", error);
-    showStatus(error.message || "Failed to render the confirmation statement preview.", "error");
+    showStatus(error.message || window.siteText("ch.cs.preview-failed", "Failed to render the confirmation statement preview."), "error");
   } finally {
     hideLoading();
   }
@@ -778,12 +886,12 @@ function renderPscFollowUp() {
   }
   container.style.display = "block";
   const heading = document.createElement("h3");
-  heading.textContent = "PSC verification";
+  heading.textContent = window.siteText("ch.cs.psc-heading", "PSC verification");
   const explanation = document.createElement("p");
-  explanation.textContent =
-    "Companies House verifies a person with significant control separately from the confirmation " +
-    "statement, through a PSC verification statement filed after this one, inside the window starting the day after the " +
-    "review date. Enter each person's own PSC personal code below to file theirs now.";
+  explanation.textContent = window.siteText(
+    "ch.cs.psc-explanation",
+    "Companies House verifies a person with significant control separately from the confirmation statement, through a PSC verification statement filed after this one, inside the window starting the day after the review date. Enter each person's own PSC personal code below to file theirs now.",
+  );
   container.replaceChildren(heading, explanation, ...matches.map((match) => buildPscFollowUpRow(match, matches)));
 }
 
@@ -795,7 +903,7 @@ function buildPscFollowUpRow({ director, index, psc }, matches) {
   legend.textContent = [director.forename, director.surname].filter(Boolean).join(" ") || psc.name;
   const label = document.createElement("label");
   label.htmlFor = `pscPersonalCode-${index}`;
-  label.textContent = "PSC personal code";
+  label.textContent = window.siteText("ch.cs.psc-code", "PSC personal code");
   const input = document.createElement("input");
   input.type = "text";
   input.id = `pscPersonalCode-${index}`;
@@ -807,13 +915,21 @@ function buildPscFollowUpRow({ director, index, psc }, matches) {
   button.type = "button";
   button.className = "secondary-button";
   button.dataset.pscVerifyIndex = String(index);
-  button.textContent = "Submit PSC verification statement";
+  button.textContent = window.siteText("ch.cs.psc-submit", "Submit PSC verification statement");
   button.addEventListener("click", () => handlePscVerificationSubmit(index, matches));
   buttonGroup.append(button);
   const result = document.createElement("div");
   result.id = `pscVerifyResult-${index}`;
   fieldset.append(legend, label, input, buttonGroup, result);
   return fieldset;
+}
+
+// The parts of a text with {name} places, for buildParagraph: each place holds its value in bold.
+function valueParts(text, values) {
+  return text
+    .split(/\{([a-z]+)\}/)
+    .map((part, index) => (index % 2 === 1 ? { strong: values[part] } : part))
+    .filter((part) => part !== "");
 }
 
 // Each part is plain text or { strong: text }; built with text nodes so nothing is parsed as HTML.
@@ -834,15 +950,12 @@ function buildParagraph(parts, className) {
   return paragraph;
 }
 
-async function pollPscVerificationUntilSettled(submissionNumber) {
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const result = await window.pollPscVerificationStatement(submissionNumber, ownPresenterHeaders());
-    if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") {
-      return result;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  }
-  return window.pollPscVerificationStatement(submissionNumber, ownPresenterHeaders());
+function pollPscVerificationUntilSettled(submission) {
+  return window.companiesHouseGatewayPoll.pollGatewayUntilSettled({
+    submissionNumber: submission.submissionNumber,
+    pollIntervalSeconds: submission.pollInterval,
+    poll: () => window.pollPscVerificationStatement(submission.submissionNumber, ownPresenterHeaders()),
+  });
 }
 
 async function handlePscVerificationSubmit(index, matches) {
@@ -854,7 +967,15 @@ async function handlePscVerificationSubmit(index, matches) {
   const personalCode = normalisePersonalCode(document.getElementById(`pscPersonalCode-${index}`).value);
   if (!isValidPersonalCode(personalCode)) {
     resultContainer.replaceChildren(
-      buildParagraph(["The PSC personal code must be the 11-character Companies House personal code, letters and digits."], "error"),
+      buildParagraph(
+        [
+          window.siteText(
+            "ch.cs.psc-code-invalid",
+            "The PSC personal code must be the 11-character Companies House personal code, letters and digits.",
+          ),
+        ],
+        "error",
+      ),
     );
     return;
   }
@@ -876,46 +997,102 @@ async function handlePscVerificationSubmit(index, matches) {
     };
     const submission = await window.submitPscVerificationStatement(ownPresenter ? { ...payload, ownPresenter } : payload);
     resultContainer.replaceChildren(
-      buildParagraph(["Submission ", { strong: submission.submissionNumber }, " accepted by the gateway. Waiting for Companies House..."]),
+      buildParagraph(
+        valueParts(
+          window.siteText("ch.cs.psc-gateway-accepted", "Submission {number} accepted by the gateway. Waiting for Companies House..."),
+          {
+            number: submission.submissionNumber,
+          },
+        ),
+      ),
     );
-    const outcome = await pollPscVerificationUntilSettled(submission.submissionNumber);
+    const outcome = await pollPscVerificationUntilSettled(submission);
+    if (!window.companiesHouseGatewayPoll.isSettled(outcome)) {
+      // A PSC row has no Check again, so its note never offers one.
+      resultContainer.replaceChildren(buildParagraph([window.companiesHouseGatewayPoll.pendingNote({ ...submission, pollInterval: 0 })]));
+      return;
+    }
     resultContainer.replaceChildren(
-      buildParagraph(["Submission ", { strong: outcome.submissionNumber }, " was ", { strong: outcome.statusCode }, "."]),
+      buildParagraph(
+        valueParts(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
+          number: outcome.submissionNumber,
+          status: outcome.statusCode,
+        }),
+      ),
       ...(outcome.rejections || []).map((rejection) => buildParagraph([`${rejection.rejectCode}: ${rejection.description}`])),
     );
   } catch (error) {
     console.error("PSC verification statement filing failed:", error);
     resultContainer.replaceChildren(
-      buildParagraph([describeSubmissionError(error, "Failed to file the PSC verification statement.")], "error"),
+      buildParagraph(
+        [describeSubmissionError(error, window.siteText("ch.cs.psc-failed", "Failed to file the PSC verification statement."))],
+        "error",
+      ),
     );
   } finally {
     hideLoading();
   }
 }
 
-function showSubmissionProgress(lead, submissionNumber, middle, statusCode, tail) {
-  document
-    .getElementById("filingResult")
-    .replaceChildren(element("p", {}, lead, element("strong", {}, submissionNumber), middle, element("strong", {}, statusCode), tail));
+// The result line from a text with {name} places: each place holds its value in bold.
+function showSubmissionProgress(text, values) {
+  const parts = text.split(/\{([a-z]+)\}/).map((part, index) => (index % 2 === 1 ? element("strong", {}, String(values[part])) : part));
+  document.getElementById("filingResult").replaceChildren(element("p", {}, ...parts.filter((part) => part !== "")));
 }
 
-async function pollUntilSettled(submissionNumber, extraHeaders = {}) {
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const result = await window.pollConfirmationStatement(submissionNumber, extraHeaders);
-    if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") {
-      return result;
-    }
-    showSubmissionProgress("Submission ", submissionNumber, " is ", result.statusCode, ". Checking again...");
-    await new Promise((resolve) => setTimeout(resolve, 500));
+function pollUntilSettled(submission, extraHeaders) {
+  const { submissionNumber } = submission;
+  return window.companiesHouseGatewayPoll.pollGatewayUntilSettled({
+    submissionNumber,
+    pollIntervalSeconds: submission.pollInterval,
+    poll: () => window.pollConfirmationStatement(submissionNumber, extraHeaders),
+    onPending: (result) =>
+      showSubmissionProgress(window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again..."), {
+        number: submissionNumber,
+        status: result.statusCode,
+      }),
+  });
+}
+
+// Polls for the outcome and shows it with the filing record. Pending after the last poll, the page
+// says so and offers Check again.
+async function checkOutcome(submission, headers, payload) {
+  const checkAgain = document.getElementById("checkAgainBtn");
+  checkAgain.style.display = "none";
+  checkAgain.onclick = null;
+  const outcome = await pollUntilSettled(submission, headers);
+  const result = document.getElementById("filingResult");
+  if (!window.companiesHouseGatewayPoll.isSettled(outcome)) {
+    result.replaceChildren(element("p", {}, window.companiesHouseGatewayPoll.pendingNote(submission)));
+    result.className = "outcome";
+    if (!window.companiesHouseGatewayPoll.mayCheckAgain(submission)) return;
+    checkAgain.onclick = () =>
+      checkOutcome(submission, headers, payload).catch((error) => {
+        console.error("Companies House confirmation statement status check failed:", error);
+        showStatus(error.message, "error");
+      });
+    checkAgain.style.display = "inline-block";
+    return;
   }
-  return window.pollConfirmationStatement(submissionNumber, extraHeaders);
+  showSubmissionProgress(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
+    number: outcome.submissionNumber,
+    status: outcome.statusCode,
+  });
+  result.className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
+  renderRejections(outcome.rejections);
+  await renderFilingRecord(payload, outcome);
+  if (outcome.statusCode === "ACCEPT") {
+    renderPscFollowUp();
+  }
 }
 
 function confirmedOfficers() {
   return currentOfficers.map((officer) => ({
     name: textOrDash(officerDisplayName(officer)),
     role: slugOrDash(officer.officerRole),
-    verification: officer.identityVerificationDetails ? "Identity verified" : "Identity not verified",
+    verification: officer.identityVerificationDetails
+      ? window.siteText("ch.cs.identity-verified", "Identity verified")
+      : window.siteText("ch.cs.identity-not-verified", "Identity not verified"),
   }));
 }
 
@@ -941,6 +1118,11 @@ async function renderFilingRecord(payload, outcome) {
   document.getElementById("filingRecord").replaceChildren(...parsed.body.childNodes);
 }
 
+// The reader's language choice goes with a filing, so the receipt email of an accepted filing is in it.
+function languageHeaders() {
+  return window.siteLanguage && window.siteLanguage.current() === "cy" ? { "X-Site-Language": "cy" } : {};
+}
+
 async function handleSubmitFiling() {
   showLoading();
   hideStatus();
@@ -951,31 +1133,20 @@ async function handleSubmitFiling() {
     const govTestScenarioHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
     // The own presenter rides in the submit request alone. The record rendered afterwards is built from payload,
     // so it is kept off payload and sent separately.
-    const submission = await window.submitConfirmationStatement(
-      ownPresenter ? { ...payload, ownPresenter } : payload,
-      govTestScenarioHeaders,
+    const submission = await window.submitConfirmationStatement(ownPresenter ? { ...payload, ownPresenter } : payload, {
+      ...govTestScenarioHeaders,
+      ...languageHeaders(),
+    });
+    showSubmissionProgress(
+      window.siteText(
+        "ch.accounts.gateway-accepted",
+        "Submission {number} accepted by the gateway at {time}. Waiting for Companies House...",
+      ),
+      { number: submission.submissionNumber, time: submission.gatewayTimestamp },
     );
-    document
-      .getElementById("filingResult")
-      .replaceChildren(
-        element(
-          "p",
-          {},
-          "Submission ",
-          element("strong", {}, submission.submissionNumber),
-          ` accepted by the gateway at ${submission.gatewayTimestamp}. Waiting for Companies House...`,
-        ),
-      );
     showView("resultView");
 
-    const outcome = await pollUntilSettled(submission.submissionNumber, { ...govTestScenarioHeaders, ...ownPresenterHeaders() });
-    showSubmissionProgress("Submission ", outcome.submissionNumber, " was ", outcome.statusCode, ".");
-    document.getElementById("filingResult").className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
-    renderRejections(outcome.rejections);
-    await renderFilingRecord(payload, outcome);
-    if (outcome.statusCode === "ACCEPT") {
-      renderPscFollowUp();
-    }
+    await checkOutcome(submission, { ...govTestScenarioHeaders, ...ownPresenterHeaders() }, payload);
     document.getElementById("startAgainBtn").style.display = "inline-block";
   } catch (error) {
     // A fresh 402 from the submit route (the payment period is unpaid and no activity
@@ -987,7 +1158,13 @@ async function handleSubmitFiling() {
       return;
     }
     console.error("Companies House confirmation statement filing failed:", error);
-    showStatus(describeSubmissionError(error, "Failed to file the confirmation statement with Companies House."), "error");
+    showStatus(
+      describeSubmissionError(
+        error,
+        window.siteText("ch.cs.file-failed", "Failed to file the confirmation statement with Companies House."),
+      ),
+      "error",
+    );
   } finally {
     hideLoading();
   }
@@ -1010,14 +1187,19 @@ async function startActivityCheckout(companyNumber, reviewDate) {
     });
     const body = await response.json().catch(() => ({}));
     if (!response.ok || !body.checkoutUrl) {
-      showStatus(`Failed to start payment: ${body.message || body.error || "Unknown error"}`, "error");
+      showStatus(
+        window.siteText("ch.cs.payment-failed-reason", "Failed to start payment: {reason}", {
+          reason: body.message || body.error || window.siteText("ch.cs.unknown-error", "Unknown error"),
+        }),
+        "error",
+      );
       return;
     }
     sessionStorage.setItem(CHECKOUT_RESUME_KEY, companyNumber);
     window.location.href = body.checkoutUrl;
   } catch (error) {
     console.error("Failed to start the confirmation statement payment:", error);
-    showStatus(error.message || "Failed to start payment.", "error");
+    showStatus(error.message || window.siteText("ch.cs.payment-failed", "Failed to start payment."), "error");
   } finally {
     hideLoading();
   }
@@ -1026,7 +1208,10 @@ async function startActivityCheckout(companyNumber, reviewDate) {
 async function resumeAfterActivityCheckout(companyNumber) {
   await lookUpCompany(companyNumber);
   if (company) {
-    showStatus("Payment received for this filing. Enter the company authentication code to finish it.", "success");
+    showStatus(
+      window.siteText("ch.cs.payment-received", "Payment received for this filing. Enter the company authentication code to finish it."),
+      "success",
+    );
   }
 }
 
@@ -1056,8 +1241,9 @@ function startAgain() {
   document.getElementById("filingRecord").replaceChildren();
   document.getElementById("pscFollowUp").style.display = "none";
   document.getElementById("startAgainBtn").style.display = "none";
+  document.getElementById("checkAgainBtn").style.display = "none";
   document.getElementById("previewFeeMessage").style.display = "none";
-  document.getElementById("submitFilingBtn").textContent = "Submit to Companies House";
+  document.getElementById("submitFilingBtn").textContent = window.siteText("ch.cs.submit", "Submit to Companies House");
   hideStatus();
   showView("companyView");
 }
@@ -1079,7 +1265,10 @@ function resumeAfterCheckoutIfReady() {
   window.history.replaceState({}, "", url);
 
   if (checkoutResult !== "success") {
-    showStatus("Payment was not completed. Choose Pay and submit again when ready.", "warning");
+    showStatus(
+      window.siteText("ch.cs.payment-not-completed", "Payment was not completed. Choose Pay and submit again when ready."),
+      "warning",
+    );
     return;
   }
 
@@ -1108,7 +1297,12 @@ document.getElementById("shareholdingsContainer").addEventListener("click", (eve
     const transfersContainer = document.querySelector(`.transfers-container[data-holding-index="${holdingIndex}"]`);
     const nextTransferIndex = transfersContainer.querySelectorAll("[data-transfer-row]").length;
     if (nextTransferIndex >= MAX_TRANSFERS_PER_SHAREHOLDING) {
-      showStatus(`A shareholding may carry at most ${MAX_TRANSFERS_PER_SHAREHOLDING} transfers.`, "error");
+      showStatus(
+        window.siteText("ch.cs.max-transfers", "A shareholding may carry at most {max} transfers.", {
+          max: MAX_TRANSFERS_PER_SHAREHOLDING,
+        }),
+        "error",
+      );
       return;
     }
     transfersContainer.append(buildTransferRow(holdingIndex, nextTransferIndex));
@@ -1122,7 +1316,12 @@ document.getElementById("shareholdingsContainer").addEventListener("click", (eve
     const jointHoldersContainer = document.querySelector(`.joint-holders-container[data-holding-index="${holdingIndex}"]`);
     const nextShareholderIndex = jointHoldersContainer.querySelectorAll("[data-shareholder-row]").length;
     if (nextShareholderIndex >= MAX_JOINT_HOLDERS_PER_SHAREHOLDING) {
-      showStatus(`A shareholding may carry at most ${MAX_JOINT_HOLDERS_PER_SHAREHOLDING} joint holders.`, "error");
+      showStatus(
+        window.siteText("ch.cs.max-joint-holders", "A shareholding may carry at most {max} joint holders.", {
+          max: MAX_JOINT_HOLDERS_PER_SHAREHOLDING,
+        }),
+        "error",
+      );
       return;
     }
     jointHoldersContainer.append(buildJointHolderRow(holdingIndex, nextShareholderIndex));

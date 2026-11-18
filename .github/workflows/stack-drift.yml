@@ -203,18 +203,32 @@ jobs:
             echo "  $STACK ($REGION): $DRIFT_STATUS"
 
             if [ "$DRIFT_STATUS" = "DRIFTED" ]; then
-              # Three property paths are excluded as structural noise, not configuration
+              # Four differences are excluded as structural noise, not configuration
               # change: Lambda URL CORS AllowHeaders (AWS lowercases them on read-back),
               # ApiGatewayV2 stage AccessLogSettings DestinationArn (AWS strips the trailing
-              # :*), and CloudFront Aliases (the blue/green promotion moves the live domains
-              # between deployments outside CloudFormation by design).
+              # :*), CloudFront Aliases (the blue/green promotion moves the live domains
+              # between deployments outside CloudFormation by design), and the rotated-at
+              # tag on a Secrets Manager secret (put-secret-with-rotation-tag.sh stamps it
+              # at each key rotation). A first rotation is an ADD with the key in
+              # ActualValue; a later one is NOT_EQUAL on /Tags/<n>/Value, and the key is
+              # read from ActualProperties. Any other tag difference still counts.
               local DRIFT_JSON REAL_COUNT
               DRIFT_JSON=$(aws cloudformation describe-stack-resource-drifts \
                 --stack-name "$STACK" \
                 --region "$REGION" \
                 --stack-resource-drift-status-filters MODIFIED DELETED \
                 --output json 2>/dev/null)
-              REAL_COUNT=$(printf '%s' "$DRIFT_JSON" | jq '[.StackResourceDrifts[]
+              REAL_COUNT=$(printf '%s' "$DRIFT_JSON" | jq 'def rotation_tag($r; $d):
+                  ($d.PropertyPath | startswith("/Tags/"))
+                  and (
+                    ($d.DifferenceType == "ADD" and ((try ($d.ActualValue | fromjson | .Key) catch "") == "rotated-at"))
+                    or (
+                      $d.DifferenceType == "NOT_EQUAL"
+                      and ($d.PropertyPath | test("^/Tags/[0-9]+/Value$"))
+                      and ((try ($r.ActualProperties | fromjson | .Tags[($d.PropertyPath | capture("^/Tags/(?<n>[0-9]+)/Value$").n | tonumber)].Key) catch "") == "rotated-at")
+                    )
+                  );
+                [.StackResourceDrifts[]
                 | . as $r
                 | select(
                     ($r.StackResourceDriftStatus == "DELETED")
@@ -223,6 +237,7 @@ jobs:
                             (($r.ResourceType == "AWS::Lambda::Url") and (.PropertyPath | startswith("/Cors/AllowHeaders")))
                             or (($r.ResourceType == "AWS::ApiGatewayV2::Stage") and (.PropertyPath == "/AccessLogSettings/DestinationArn"))
                             or (($r.ResourceType == "AWS::CloudFront::Distribution") and (.PropertyPath | startswith("/DistributionConfig/Aliases")))
+                            or (($r.ResourceType == "AWS::SecretsManager::Secret") and rotation_tag($r; .))
                           ) | not
                         ))) | length) > 0
                   )

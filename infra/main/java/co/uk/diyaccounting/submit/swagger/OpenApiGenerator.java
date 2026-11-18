@@ -265,20 +265,15 @@ public class OpenApiGenerator {
                         vatDue.put("type", "number");
                         vatDue.put("format", "float");
                         vatDue.put("example", 2400.00);
-                        ObjectNode accessToken = mapper.createObjectNode();
-                        accessToken.put("type", "string");
-                        accessToken.put("example", "HMRC_ACCESS_TOKEN");
                         props.set("vatNumber", vatNumber);
                         props.set("periodKey", periodKey);
                         props.set("vatDue", vatDue);
-                        props.set("accessToken", accessToken);
                         schema.set("properties", props);
                         media.set("schema", schema);
                         ObjectNode exam = mapper.createObjectNode();
                         exam.put("vatNumber", "983238295");
                         exam.put("periodKey", "24A1");
                         exam.put("vatDue", 2400.00);
-                        exam.put("accessToken", "HMRC_ACCESS_TOKEN");
                         media.set("example", exam);
                         content.set("application/json", media);
                     } else if (pl.urlPath.endsWith("/hmrc/receipt")) {
@@ -364,6 +359,8 @@ public class OpenApiGenerator {
                 enrichHmrcEndpoints(pathItem, path, mapper);
             } else if (path.matches("/(catalog|bundle).*")) {
                 enrichAccountEndpoints(pathItem, path, mapper);
+            } else if (path.equals("/commission/mine")) {
+                enrichCommissionMineEndpoint(pathItem, mapper);
             }
         });
     }
@@ -453,6 +450,78 @@ public class OpenApiGenerator {
 
             operation.set("responses", responses);
         });
+    }
+
+    /**
+     * Enriches GET /commission/mine with its tag, security and the shape of the totals it returns
+     */
+    private static void enrichCommissionMineEndpoint(ObjectNode pathItem, ObjectMapper mapper) {
+        ObjectNode operation = (ObjectNode) pathItem.get("get");
+        ArrayNode tags = mapper.createArrayNode();
+        tags.add("Account");
+        operation.set("tags", tags);
+        operation.set("security", createSecurityRequirement(mapper, "CognitoAuth"));
+
+        ObjectNode currency = mapper.createObjectNode();
+        currency.put("type", "string");
+        currency.put("example", "gbp");
+
+        ObjectNode releaseDate = mapper.createObjectNode();
+        releaseDate.put("type", "string");
+        releaseDate.put("example", "2026-12-01");
+        ObjectNode releaseProps = mapper.createObjectNode();
+        releaseProps.set("releaseDate", releaseDate);
+        releaseProps.set("amountPence", integerSchema(mapper));
+        ObjectNode release = mapper.createObjectNode();
+        release.put("type", "object");
+        release.set("properties", releaseProps);
+        ObjectNode releases = mapper.createObjectNode();
+        releases.put("type", "array");
+        releases.set("items", release);
+        ObjectNode heldProps = mapper.createObjectNode();
+        heldProps.set("totalPence", integerSchema(mapper));
+        heldProps.set("releases", releases);
+        ObjectNode held = mapper.createObjectNode();
+        held.put("type", "object");
+        held.set("properties", heldProps);
+
+        ObjectNode props = mapper.createObjectNode();
+        props.set("currency", currency);
+        props.set("held", held);
+        props.set("payable", totalPenceSchema(mapper));
+        props.set("paid", totalPenceSchema(mapper));
+        ObjectNode schema = mapper.createObjectNode();
+        schema.put("type", "object");
+        schema.set("properties", props);
+        ObjectNode media = mapper.createObjectNode();
+        media.set("schema", schema);
+        ObjectNode content = mapper.createObjectNode();
+        content.set("application/json", media);
+        ObjectNode response200 = mapper.createObjectNode();
+        response200.put("description", "Commission totals retrieved successfully");
+        response200.set("content", content);
+        ObjectNode response403 = mapper.createObjectNode();
+        response403.put("description", "Authentication required");
+
+        ObjectNode responses = mapper.createObjectNode();
+        responses.set(SubmitSharedNames.Responses.OK, response200);
+        responses.set("403", response403);
+        operation.set("responses", responses);
+    }
+
+    private static ObjectNode integerSchema(ObjectMapper mapper) {
+        ObjectNode schema = mapper.createObjectNode();
+        schema.put("type", "integer");
+        return schema;
+    }
+
+    private static ObjectNode totalPenceSchema(ObjectMapper mapper) {
+        ObjectNode props = mapper.createObjectNode();
+        props.set("totalPence", integerSchema(mapper));
+        ObjectNode schema = mapper.createObjectNode();
+        schema.put("type", "object");
+        schema.set("properties", props);
+        return schema;
     }
 
     /**

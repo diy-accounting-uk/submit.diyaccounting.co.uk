@@ -3,16 +3,12 @@
 
 /* About */
 .about-intro,
-.about-features,
-.about-benefits,
-.about-start {
+.about-features {
   margin-bottom: var(--space-6);
 }
 
 .about-intro h2,
-.about-features h2,
-.about-benefits h2,
-.about-start h2 {
+.about-features h2 {
   margin-top: 0;
 }
 
@@ -35,24 +31,6 @@
 
 .about-feature p {
   margin: 0;
-}
-
-.about-benefit-list {
-  display: block;
-}
-
-.about-benefit {
-  border-top: 1px solid var(--c-rule-subtle);
-  padding: var(--space-3) 0;
-}
-
-.about-benefit dt {
-  font-weight: var(--weight-strong);
-}
-
-.about-benefit dd {
-  margin: 0;
-  max-width: var(--measure);
 }
 
 .about-actions {

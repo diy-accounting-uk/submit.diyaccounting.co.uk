@@ -3,12 +3,18 @@
 
 // DOM utility functions for status messages and UI helpers
 
+// page-chrome.js gives the text in the chosen language; without it the English stands.
+function siteText(id, english, values) {
+  if (typeof window !== "undefined" && window.siteText) return window.siteText(id, english, values);
+  return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+}
+
 /**
  * Show a status message in the status container
  * @param {string} message - Message to display
  * @param {string} type - Message type: "info", "success", "warning", "error"
  */
-export function showStatus(message, type = "info") {
+export function showStatus(message, type = "info", options = {}) {
   console.log("Status message:", message, "Type:", type);
   const statusMessagesContainer = document.getElementById("statusMessagesContainer");
   if (!statusMessagesContainer) {
@@ -17,9 +23,11 @@ export function showStatus(message, type = "info") {
   }
 
   clearSupersededMessages(statusMessagesContainer, message, type);
+  if (options.requestId) dismissStatus(options.requestId);
 
   const msgDiv = document.createElement("div");
   msgDiv.className = `status-message status-${type}`;
+  if (options.requestId) msgDiv.dataset.requestId = options.requestId;
 
   // Create message content container
   const messageContent = document.createElement("span");
@@ -30,7 +38,7 @@ export function showStatus(message, type = "info") {
   const closeButton = document.createElement("button");
   closeButton.textContent = "\u00d7";
   closeButton.className = "status-close-button";
-  closeButton.setAttribute("aria-label", "Close message");
+  closeButton.setAttribute("aria-label", siteText("widget.close-message", "Close message"));
   closeButton.addEventListener("click", () => {
     removeStatusMessage(msgDiv);
   });
@@ -64,6 +72,19 @@ function clearSupersededMessages(container, message, type) {
 }
 
 /**
+ * Remove the messages shown with this requestId, and no others: a request's own progress message
+ * when the request ends.
+ * @param {string} requestId - The requestId the messages were shown with
+ */
+export function dismissStatus(requestId) {
+  const container = document.getElementById("statusMessagesContainer");
+  if (!container || !requestId) return;
+  for (const message of Array.from(container.querySelectorAll(".status-message[data-request-id]"))) {
+    if (message.dataset.requestId === requestId) removeStatusMessage(message);
+  }
+}
+
+/**
  * Remove a specific status message element
  * @param {HTMLElement} msgDiv - Message element to remove
  */
@@ -92,38 +113,53 @@ function failureCause(error) {
   const status = error?.status;
   const code = error?.code || "";
   if (status === 401)
-    return { cause: "Your HMRC connection has expired.", next: { label: "Connect to HMRC again", href: window.location.pathname } };
+    return {
+      cause: siteText("widget.failure-hmrc-expired", "Your HMRC connection has expired."),
+      next: { label: siteText("widget.connect-hmrc-again", "Connect to HMRC again"), href: window.location.pathname },
+    };
   if (code.endsWith("INSOLVENT_TRADER")) {
-    return { cause: "HMRC will not release records for a trader it lists as insolvent.", next: { label: "Back to activities", href: "/" } };
+    return {
+      cause: siteText("widget.failure-insolvent", "HMRC will not release records for a trader it lists as insolvent."),
+      next: { label: siteText("widget.back-to-activities", "Back to activities"), href: "/" },
+    };
   }
   if (code === "tokens_exhausted") {
-    return { cause: "You have no tokens left.", next: { label: "Add a bundle", href: "/bundles.html" } };
+    return {
+      cause: siteText("widget.failure-no-tokens", "You have no tokens left."),
+      next: { label: siteText("widget.add-a-bundle", "Add a bundle"), href: "/bundles.html" },
+    };
   }
   if (code === "BUNDLE_ENTITLEMENT_REQUIRED" || (status === 403 && /bundle/i.test(error.message))) {
-    return { cause: "Your account has no bundle that allows this.", next: { label: "Add a bundle", href: "/bundles.html" } };
+    return {
+      cause: siteText("widget.failure-no-bundle", "Your account has no bundle that allows this."),
+      next: { label: siteText("widget.add-a-bundle", "Add a bundle"), href: "/bundles.html" },
+    };
   }
   if (status === 403) {
     return {
-      cause: "HMRC did not allow access to these records.",
-      next: { label: "Connect to HMRC again", href: window.location.pathname },
+      cause: siteText("widget.failure-hmrc-forbidden", "HMRC did not allow access to these records."),
+      next: { label: siteText("widget.connect-hmrc-again", "Connect to HMRC again"), href: window.location.pathname },
     };
   }
   if (status === 404) {
     return {
-      cause: "HMRC holds nothing for these details.",
-      next: { label: "Check the details and try again", href: window.location.pathname },
+      cause: siteText("widget.failure-hmrc-not-found", "HMRC holds nothing for these details."),
+      next: { label: siteText("widget.check-and-try-again", "Check the details and try again"), href: window.location.pathname },
     };
   }
   if (status >= 500 || status === undefined) {
-    return { cause: "HMRC could not complete the request.", next: { label: "Try again", href: window.location.pathname } };
+    return {
+      cause: siteText("widget.failure-hmrc-server", "HMRC could not complete the request."),
+      next: { label: siteText("widget.try-again", "Try again"), href: window.location.pathname },
+    };
   }
   const detail = String(error?.message || "")
     .replace(/ ?\(HTTP \d{3}\)\.?/g, "")
     .replace(/^Failed to [^.:]*[.:]\s*/, "")
     .trim();
   return {
-    cause: detail || "HMRC refused the request.",
-    next: { label: "Check the details and try again", href: window.location.pathname },
+    cause: detail || siteText("widget.failure-hmrc-refused", "HMRC refused the request."),
+    next: { label: siteText("widget.check-and-try-again", "Check the details and try again"), href: window.location.pathname },
   };
 }
 
@@ -163,7 +199,7 @@ export function showFailure(error, title) {
   const closeButton = document.createElement("button");
   closeButton.textContent = "\u00d7";
   closeButton.className = "status-close-button";
-  closeButton.setAttribute("aria-label", "Close message");
+  closeButton.setAttribute("aria-label", siteText("widget.close-message", "Close message"));
   closeButton.addEventListener("click", () => removeStatusMessage(msgDiv));
 
   msgDiv.append(content, closeButton);
@@ -207,6 +243,7 @@ export function readMeta(name) {
 if (typeof window !== "undefined") {
   window.showStatus = showStatus;
   window.hideStatus = hideStatus;
+  window.dismissStatus = dismissStatus;
   window.showFailure = showFailure;
   window.requestError = requestError;
   window.removeStatusMessage = removeStatusMessage;

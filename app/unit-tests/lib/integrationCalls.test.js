@@ -10,6 +10,7 @@ import { putIntegrationCall } from "@app/data/dynamoDbIntegrationCallRepository.
 import {
   recordedFetch,
   recordIntegrationCall,
+  callActorClass,
   integrationApi,
   integrationApiForGovTalk,
   INTEGRATION_CALL_RECORD_FAILED_METRIC,
@@ -104,6 +105,14 @@ describe("lib/integrationCalls", () => {
       expect(item.ttl).toBe(Math.floor(Date.parse("2026-11-04T10:15:30.123Z") / 1000) + 90 * 86400);
     });
 
+    it.each(["test-user", "probe"])("sets the record of a %s call to expire 2 days after the call", async (actor) => {
+      vi.useFakeTimers({ now: new Date("2026-11-04T10:15:30.123Z"), toFake: ["Date"] });
+
+      await recordedFetch(URL_WITH_VRN, INIT, { ...CALL, actor, fetchImplementation: async () => new Response("{}") });
+
+      expect(recordedItem().ttl).toBe(Math.floor(Date.parse("2026-11-04T10:15:30.123Z") / 1000) + 2 * 86400);
+    });
+
     it("uses global fetch when no implementation is given", async () => {
       const mockFetch = vi.fn().mockResolvedValue(new Response("{}"));
       vi.stubGlobal("fetch", mockFetch);
@@ -184,6 +193,31 @@ describe("lib/integrationCalls", () => {
 
       await expect(sent).resolves.toBe(response);
       expect(failedMetricCount(consoleSpy)).toBe(1);
+    });
+  });
+
+  describe("actor of the caller", () => {
+    it("writes the actor the caller passes on the record", async () => {
+      await recordedFetch(URL_WITH_VRN, INIT, { ...CALL, actor: "test-user", fetchImplementation: async () => new Response("{}") });
+
+      expect(recordedItem().actor).toBe("test-user");
+    });
+
+    it("leaves a call with no actor without one, so the lake reads it unknown", async () => {
+      await recordedFetch(URL_WITH_VRN, INIT, { ...CALL, fetchImplementation: async () => new Response("{}") });
+
+      expect(recordedItem().actor).toBeUndefined();
+    });
+
+    it("reads a call with no request id as system, and a request as the class of its user", () => {
+      expect(callActorClass()).toBe("system");
+      const request = new Map([
+        ["requestId", "req-1"],
+        ["userEmail", "synthetic-local@test.diyaccounting.co.uk"],
+      ]);
+      expect(context.run(request, () => callActorClass())).toBe("test-user");
+      expect(context.run(new Map([["requestId", "test_req-2"]]), () => callActorClass())).toBe("test-user");
+      expect(context.run(new Map([["requestId", "req-3"]]), () => callActorClass())).toBe("customer");
     });
   });
 

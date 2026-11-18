@@ -1,0 +1,117 @@
+<!-- account/receipts.html -->
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from hmrc/receipt/receipts.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Eich derbynebau - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/hmrc/receipt/receipts.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/receipt/receipts.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/receipt/receipts.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/receipt/receipts.html" />
+    <link rel="stylesheet" href="../../../submit.css" />
+    <link rel="stylesheet" href="../../../lib/hmrc-field-table.css" />
+    <link rel="stylesheet" href="../../../submission-record.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../../lib/analytics.js"></script>
+    <!-- HEAD-prefetch to help mitigate API cold starts for this page's calls -->
+    <!--script async src="../../../prefetch/prefetch-hmrc-receipt-head.js"></script-->
+    <!--script async src="../../../prefetch/prefetch-hmrc-receipt-name-head.js"></script-->
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="receipts.your-receipts-28d5f7">Eich derbynebau</h1>
+      <p data-i18n="receipts.the-receipts-hmrc-and-companies-house-ae44cc" class="subtitle">
+        Y derbynebau a anfonodd CThEF a Thŷ’r Cwmnïau yn ôl ar gyfer eich cyflwyniadau
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <div
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i weld eich derbynebau"
+        data-sign-in-text="Mewngofnodwch i weld y derbynebau ar gyfer eich cyflwyniadau ac i’w lawrlwytho."
+        data-i18n-data-sign-in-title="receipts.sign-in-to-see-your-receipts-ab5e0b"
+        data-i18n-data-sign-in-text="receipts.sign-in-to-see-the-receipts-b844ae"
+      >
+        <div class="table-scroll">
+          <table id="receiptsTable" class="results-table" style="display: none">
+            <thead>
+              <tr>
+                <th data-i18n="receipts.date-99c40a">Dyddiad</th>
+                <th data-i18n="receipts.receipt-dad5a9">Derbynneb</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p data-i18n="receipts.no-receipts-yet-3d93a3" id="emptyState" class="hint" style="display: none">Dim derbynebau eto.</p>
+
+        <div class="export-controls" id="exportControls" style="display: none">
+          <button data-i18n="receipts.export-csv-91f71c" class="btn-small" id="exportCsvBtn" data-activity-start="my-receipts">
+            Allforio CSV
+          </button>
+        </div>
+      </div>
+
+      <div id="receiptDisplay" class="receipt-panel" style="display: none">
+        <h2 data-i18n="receipts.receipt-details-02f7cc" id="receiptHeading">Manylion y dderbynneb</h2>
+        <div id="assistMessages"></div>
+        <div id="receiptContent"></div>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../../lib/welsh-text.js"></script>
+    <script src="../../../widgets/page-chrome.js"></script>
+    <script src="../../../lib/env-loader.js"></script>
+    <script type="module" src="../../../submit.js"></script>
+    <script src="../../../developer-mode.js"></script>
+    <script src="../../../lib/request-cache.js"></script>
+    <script src="../../../lib/toml-parser.js"></script>
+    <script src="../../../lib/money-format.js"></script>
+    <script src="../../../lib/hmrc-display-format.js"></script>
+    <script src="../../../lib/hmrc-field-table.js"></script>
+    <script src="../../../widgets/entitlement-status.js"></script>
+    <script src="../../../widgets/auth-status.js"></script>
+    <script src="../../../widgets/signed-out-panel.js"></script>
+    <script type="module" src="../../../widgets/view-source-link.js"></script>
+    <script src="../../../hmrc/receipt/receipts.page.js"></script>
+  </body>
+</html>

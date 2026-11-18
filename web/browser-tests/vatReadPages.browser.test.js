@@ -145,6 +145,42 @@ test.describe("VAT read pages - fields HMRC leaves out", () => {
     expect(text.join("\n")).not.toContain("Invalid Date");
   });
 
+  test("penalties: HMRC's status and category codes read in Welsh for a Welsh reader", async ({ page }) => {
+    const { loadCatalogue } = await import("../../scripts/build-welsh-pages.mjs");
+    const strings = loadCatalogue().strings;
+    const welsh = Object.fromEntries(
+      Object.entries(strings)
+        .filter(([id]) => id.startsWith("vat-penalties.status-") || id.startsWith("vat-penalties.category-"))
+        .map(([id, entry]) => [id, entry.cy]),
+    );
+    await page.addInitScript((text) => {
+      window.siteText = (id, english) => text[id] ?? english;
+    }, welsh);
+    await openPage(page, "vatPenalties");
+    await page.evaluate(() => {
+      window.displayPenalties({
+        lateSubmissionPenalty: {
+          summary: {},
+          details: [
+            { penaltyCategory: "point", penaltyStatus: "active" },
+            { penaltyCategory: "threshold", penaltyStatus: "inactive" },
+          ],
+        },
+        latePaymentPenalty: { details: [{ penaltyStatus: "posted" }, { penaltyStatus: "accruing" }] },
+        totalisations: {},
+      });
+    });
+
+    const lateSubmission = page.locator("#lateSubmissionPenaltiesTable tbody tr");
+    await expect(lateSubmission.nth(0).locator("td").nth(0)).toHaveText("Pwynt");
+    await expect(lateSubmission.nth(0).locator("td").nth(1)).toHaveText("Gweithredol");
+    await expect(lateSubmission.nth(1).locator("td").nth(0)).toHaveText("Trothwy");
+    await expect(lateSubmission.nth(1).locator("td").nth(1)).toHaveText("Anweithredol");
+    const latePayment = page.locator("#latePaymentPenaltiesTable tbody tr");
+    await expect(latePayment.nth(0).locator("td").nth(2)).toHaveText("Wedi’i godi");
+    await expect(latePayment.nth(1).locator("td").nth(2)).toHaveText("Yn cronni");
+  });
+
   test("a table wider than its card scrolls inside itself at phone width", async ({ page }) => {
     await openPage(page, "vatPenalties", 390);
     await page.evaluate(() => {

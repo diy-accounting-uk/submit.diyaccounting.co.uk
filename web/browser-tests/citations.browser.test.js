@@ -3,7 +3,7 @@
 
 // web/browser-tests/citations.browser.test.js
 // mtd-calendar.html and rates.html: page-chrome renders the site footer once and leaves each
-// citation's own gov.uk link and "Retrieved" date in place.
+// citation's own gov.uk link and check date in place.
 
 import { test, expect } from "@playwright/test";
 import fs from "fs";
@@ -51,14 +51,14 @@ async function serveRealSite(page) {
 
 for (const pageName of ["mtd-calendar.html", "rates.html"]) {
   test.describe(pageName, () => {
-    test("the first citation keeps its gov.uk link and Retrieved date and the site footer renders once", async ({ page }) => {
+    test("the first citation keeps its gov.uk link and check date and the site footer renders once", async ({ page }) => {
       await serveRealSite(page);
       await page.goto(`http://localhost:3000/${pageName}`, { waitUntil: "load" });
       await expect(page.locator("body > footer .footer-links")).toHaveCount(1);
 
       const firstCitation = page.locator("blockquote.source-quote > footer").first();
       await expect(firstCitation.locator("a[href^='https://www.gov.uk/']")).toHaveCount(1);
-      await expect(firstCitation.locator(".retrieved")).toHaveText(/^Retrieved \d{1,2} \w+ \d{4}$/);
+      await expect(firstCitation).toHaveText(/^\s*Source:\s+GOV\.UK, .+\s+\(checked \d{1,2} \w+ \d{4}\)\s*$/);
       await expect(firstCitation.locator(".footer-links")).toHaveCount(0);
 
       await expect(page.locator("footer .footer-links")).toHaveCount(1);

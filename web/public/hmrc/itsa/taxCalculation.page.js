@@ -3,6 +3,12 @@
 
 import { calculationCopyHtml, mountCopy } from "../../lib/itsa-calculation-record.js";
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("taxYear", document.getElementById("taxYear"));
@@ -28,7 +34,10 @@ function initializePage() {
     kind: "itsa",
     container: document.getElementById("hmrcAssistCheck"),
     describeDraft: describeHmrcAssistDraft,
-    unavailableText: "HMRC Assist feedback is unavailable at the moment. You can still continue to your final declaration.",
+    unavailableText: siteText(
+      "itsa-calculation.assist-unavailable",
+      "HMRC Assist feedback is unavailable at the moment. You can still continue to your final declaration.",
+    ),
   });
   const hmrcAccount = sessionStorage.getItem("hmrcAccount");
   if (hmrcAccount === "synthetic") {
@@ -64,8 +73,8 @@ const TAX_BREAKDOWN_VALUE_IDS = {
 };
 
 const JOURNEY_LINKS = [
-  { href: "dashboard.html", text: "Back to Income Tax" },
-  { href: "lossesAndClaims.html", text: "Check your losses and claims" },
+  { href: "dashboard.html", text: siteText("itsa.link-back", "Back to Income Tax") },
+  { href: "lossesAndClaims.html", text: siteText("itsa.link-losses", "Check your losses and claims") },
 ];
 
 function messageList(value) {
@@ -136,7 +145,7 @@ function displayCalculation(calculation, nino, taxYear, calculationType) {
       item.append(text);
       list.append(item);
     });
-    messagesContainer.replaceChildren(el("h3", "", "Messages"), list);
+    messagesContainer.replaceChildren(el("h3", "", siteText("itsa-calculation.messages", "Messages")), list);
   }
 }
 
@@ -149,7 +158,7 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
   if (!scopeSufficient) {
     if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     showLoading();
-    showStatus("Initiating HMRC authentication...", "info");
+    showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
     const state = generateRandomState();
     const hmrcAccount = sessionStorage.getItem("hmrcAccount");
     sessionStorage.setItem("oauth_state", state);
@@ -169,7 +178,7 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
 async function runTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   showLoading();
   hideStatus();
-  showStatus("Calculating... this can take a few seconds.", "info");
+  showStatus(siteText("itsa-calculation.calculating", "Calculating... this can take a few seconds."), "info");
   const calculation = await runCalculationTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
   displayCalculation(calculation, calculationDetails.nino, calculationDetails.taxYear, calculationDetails.calculationType);
   document.getElementById("triggerForm").style.display = "none";
@@ -196,7 +205,7 @@ async function handleTriggerFormSubmission(event) {
       try {
         await runTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
       } catch (error) {
-        showStatus(`Failed to calculate: ${error.message}`, "error");
+        showStatus(siteText("itsa-calculation.failed", "Failed to calculate: {reason}", { reason: error.message }), "error");
       } finally {
         hideLoading();
       }
@@ -219,7 +228,7 @@ async function continueAfterOAuth() {
     sessionStorage.removeItem("currentActivity");
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
-    showStatus(`Failed: ${error.message}`, "error");
+    showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
     sessionStorage.removeItem("pendingCalculationTriggerRequest");
     window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("hmrcTokenScope");

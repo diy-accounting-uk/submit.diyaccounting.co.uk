@@ -9,9 +9,20 @@ const CATEGORY_LABELS = {
   "submission": "Submission",
   "bundles": "Bundles",
   "receipts": "Receipts",
-  "vat-basics": "VAT Basics",
+  "vat-basics": "VAT basics",
   "errors": "Errors",
 };
+
+// The order the help page lists its categories in when there is no query.
+export const FAQ_CATEGORY_ORDER = ["submission", "vat-basics", "bundles", "connection", "errors", "receipts"];
+
+export function sortFaqsByCategory(faqs) {
+  const rank = (faq) => {
+    const index = FAQ_CATEGORY_ORDER.indexOf(faq.category);
+    return index === -1 ? FAQ_CATEGORY_ORDER.length : index;
+  };
+  return faqs.slice().sort((a, b) => rank(a) - rank(b) || a.priority - b.priority);
+}
 
 export function formatFaqCategory(category) {
   return CATEGORY_LABELS[category] || category;
@@ -47,6 +58,9 @@ export function renderFaqInline(text) {
   return output;
 }
 
+// A cell that is only a number or an amount, such as a box number or a rate, keeps the figures font.
+const FIGURE_CELL = /^[£$€]?-?\d[\d,.]*[%p]?$/;
+
 function renderFaqTable(rows) {
   if (rows.length === 0) return "";
   const parseRow = (row) =>
@@ -58,10 +72,10 @@ function renderFaqTable(rows) {
   const body = rows.slice(1).map(
     (row) =>
       `<tr>${parseRow(row)
-        .map((cell) => `<td>${renderFaqInline(cell)}</td>`)
+        .map((cell) => `<td${FIGURE_CELL.test(cell) ? ' class="cell-figure"' : ""}>${renderFaqInline(cell)}</td>`)
         .join("")}</tr>`,
   );
-  return `<table class="faq-table"><thead><tr>${header.join("")}</tr></thead><tbody>${body.join("")}</tbody></table>`;
+  return `<table class="faq-table table-words"><thead><tr>${header.join("")}</tr></thead><tbody>${body.join("")}</tbody></table>`;
 }
 
 export function renderFaqMarkdown(text) {
@@ -114,10 +128,10 @@ export function renderFaqMarkdown(text) {
 
 // One entry as the help page shows it: the question is a heading that holds the accordion button,
 // the answer follows hidden until the button opens it.
-export function renderFaqItem(faq) {
+export function renderFaqItem(faq, headingLevel = 2) {
   return `
       <div class="faq-item" data-id="${faq.id}">
-        <h2 class="faq-heading">
+        <h${headingLevel} class="faq-heading">
           <button class="faq-question" aria-expanded="false">
             <span class="faq-category-badge">${formatFaqCategory(faq.category)}</span>
             <span class="faq-question-text">${escapeFaqHtml(faq.question)}</span>
@@ -125,10 +139,31 @@ export function renderFaqItem(faq) {
               <path d="M6 9l6 6 6-6"/>
             </svg>
           </button>
-        </h2>
+        </h${headingLevel}>
         <div class="faq-answer" hidden>
           ${renderFaqMarkdown(faq.answer)}
         </div>
       </div>
     `;
+}
+
+// Every question, grouped under its category in FAQ_CATEGORY_ORDER, each question collapsed.
+export function renderFaqGroups(faqs) {
+  const groups = [];
+  for (const faq of sortFaqsByCategory(faqs)) {
+    const last = groups[groups.length - 1];
+    if (last && last.category === faq.category) last.items.push(faq);
+    else groups.push({ category: faq.category, items: [faq] });
+  }
+  return groups
+    .map(
+      (group) => `
+      <section class="faq-group" aria-labelledby="faq-group-${group.category}">
+        <h2 class="faq-group-title" id="faq-group-${group.category}">${formatFaqCategory(group.category)}</h2>${group.items
+          .map((faq) => renderFaqItem(faq, 3))
+          .join("")}
+      </section>
+    `,
+    )
+    .join("");
 }

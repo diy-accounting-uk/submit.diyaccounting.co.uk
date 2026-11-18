@@ -1,18 +1,36 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives window.siteText, the text in the chosen language. Without it (a test that
+// stubs the chrome) the English stands.
+window.siteText =
+  window.siteText ||
+  ((id, english, values) => english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole)));
+
 function renderSearchResults(results) {
   const container = document.getElementById("searchResults");
   container.innerHTML = "";
 
   if (!results.items || results.items.length === 0) {
-    container.textContent = "No companies matched that search.";
+    container.textContent = window.siteText("ch.search.no-match", "No companies matched that search.");
     return;
   }
 
   const table = document.createElement("table");
   table.className = "data-table";
-  table.innerHTML = "<thead><tr><th>Company</th><th>Number</th><th>Status</th><th>Incorporated</th><th>Address</th></tr></thead>";
+  const headings = [
+    window.siteText("ch.search.column-company", "Company"),
+    window.siteText("ch.search.column-number", "Number"),
+    window.siteText("ch.search.column-status", "Status"),
+    window.siteText("ch.search.column-incorporated", "Incorporated"),
+    window.siteText("ch.search.column-address", "Address"),
+  ];
+  const thead = table.createTHead().insertRow();
+  headings.forEach((heading) => {
+    const th = document.createElement("th");
+    th.textContent = heading;
+    thead.appendChild(th);
+  });
   const tbody = document.createElement("tbody");
 
   results.items.forEach((item) => {
@@ -71,10 +89,14 @@ async function submitCompanySearch(event) {
 
 function showSearchError(error) {
   if (error && error.status === 429) {
-    const wait = error.retryAfterSeconds ? `in ${error.retryAfterSeconds} seconds` : "in a few minutes";
-    window.showStatus(`Companies House is rate limiting our lookups. Try again ${wait}.`, "error");
+    const message = error.retryAfterSeconds
+      ? window.siteText("ch.search.rate-limited-seconds", "Companies House is rate limiting our lookups. Try again in {seconds} seconds.", {
+          seconds: error.retryAfterSeconds,
+        })
+      : window.siteText("ch.search.rate-limited", "Companies House is rate limiting our lookups. Try again in a few minutes.");
+    window.showStatus(message, "error");
   } else {
-    window.showStatus((error && error.message) || "Failed to search Companies House.", "error");
+    window.showStatus((error && error.message) || window.siteText("ch.search.failed", "Failed to search Companies House."), "error");
   }
 }
 
@@ -87,16 +109,19 @@ function renderCompanyProfile(profile) {
 
   const labels = window.companiesHouseLabels;
   const fields = [
-    ["Name", profile.companyName],
-    ["Number", profile.companyNumber],
-    ["Status", labels.companyStatusLabel(profile.companyStatus)],
-    ["Type", labels.companyTypeLabel(profile.companyType)],
-    ["Incorporated", labels.formatCompanyDate(profile.dateOfCreation)],
-    ["Jurisdiction", labels.jurisdictionLabel(profile.jurisdiction)],
-    ["Registered office", addressParts.join(", ")],
-    ["SIC codes", labels.formatSicCodes(profile.sicCodes)],
-    ["Next accounts due", labels.formatCompanyDate(profile.accountsNextDue)],
-    ["Next confirmation statement due", labels.formatCompanyDate(profile.confirmationStatementNextDue)],
+    [window.siteText("ch.profile.name", "Name"), profile.companyName],
+    [window.siteText("ch.profile.number", "Number"), profile.companyNumber],
+    [window.siteText("ch.profile.status", "Status"), labels.companyStatusLabel(profile.companyStatus)],
+    [window.siteText("ch.profile.type", "Type"), labels.companyTypeLabel(profile.companyType)],
+    [window.siteText("ch.profile.incorporated", "Incorporated"), labels.formatCompanyDate(profile.dateOfCreation)],
+    [window.siteText("ch.profile.jurisdiction", "Jurisdiction"), labels.jurisdictionLabel(profile.jurisdiction)],
+    [window.siteText("ch.profile.registered-office", "Registered office"), addressParts.join(", ")],
+    [window.siteText("ch.profile.sic-codes", "SIC codes"), labels.formatSicCodes(profile.sicCodes)],
+    [window.siteText("ch.profile.accounts-due", "Next accounts due"), labels.formatCompanyDate(profile.accountsNextDue)],
+    [
+      window.siteText("ch.profile.confirmation-due", "Next confirmation statement due"),
+      labels.formatCompanyDate(profile.confirmationStatementNextDue),
+    ],
   ];
 
   fields.forEach(([label, value]) => {

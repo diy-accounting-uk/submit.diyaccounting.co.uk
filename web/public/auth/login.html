@@ -7,6 +7,10 @@
     <meta charset="UTF-8" />
     <title>Sign in - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/auth/login.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/auth/login.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/auth/login.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/auth/login.html" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
@@ -34,6 +38,7 @@
 
       <div class="form-container auth-panel">
         <h2>Choose how to sign in</h2>
+        <p class="hint" id="signInDestination" hidden></p>
         <p class="hint" id="pendingPassNote" hidden>
           Your free pass is waiting. Sign in with a Google or Microsoft account to add it. No card needed.
         </p>
@@ -54,6 +59,10 @@
           <p class="hint" id="providerAccountNote">
             Use the account you already have. We receive your email address and name, and nothing else.
           </p>
+          <p class="hint" id="firstSignInNote">The first time you sign in, we create your account. It is free until you choose a bundle.</p>
+          <p class="hint" id="noAccountNote">
+            Cannot sign in with either account? <a href="../help.html#lost-sign-in-account">See what to do</a>.
+          </p>
 
           <!-- Mock auth button injected by login-mock-addon.js in dev environments only -->
           <div id="mock-auth-container"></div>
@@ -66,6 +75,7 @@
     <script src="../widgets/page-chrome.js"></script>
     <script src="../lib/env-loader.js"></script>
     <script src="../lib/auth-url-builder.js"></script>
+    <script src="../lib/post-login-redirect.js"></script>
     <script type="module" src="../lib/utils/crypto-utils.js"></script>
     <script type="module" src="../submit.js"></script>
     <script src="../developer-mode.js"></script>

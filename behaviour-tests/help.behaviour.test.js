@@ -169,7 +169,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     console.log(" Help link is visible on About page");
 
     // Check for User Guide link
-    const guideLink = page.locator("a.about-nav-link:has-text('User Guide')");
+    const guideLink = page.locator("a.about-nav-link:has-text('User guide')");
     await expect(guideLink).toBeVisible({ timeout: 10000 });
     console.log(" User Guide link is visible on About page");
 
@@ -306,7 +306,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     console.log("STEP 8: Navigate to User Guide from About");
     console.log("=".repeat(60));
 
-    const guideLinkAgain = page.locator("a.about-nav-link:has-text('User Guide')");
+    const guideLinkAgain = page.locator("a.about-nav-link:has-text('User guide')");
     await expect(guideLinkAgain).toBeVisible({ timeout: 10000 });
     console.log(" Clicking User Guide link...");
 
@@ -431,12 +431,14 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     console.log(" Support modal is now visible");
 
     // Verify form elements are present
+    const emailInput = page.locator("#support-email");
     const subjectInput = page.locator("#support-subject");
     const descriptionTextarea = page.locator("#support-description");
     const categorySelect = page.locator("#support-category");
     const submitBtn = page.locator('#support-form button[type="submit"]');
     const cancelBtn = page.locator("#cancel-support");
 
+    await expect(emailInput).toBeVisible();
     await expect(subjectInput).toBeVisible();
     await expect(descriptionTextarea).toBeVisible();
     await expect(categorySelect).toBeVisible();
@@ -446,6 +448,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
 
     // Fill form fields
     console.log(" Filling form fields...");
+    await emailInput.fill("test@example.com");
     await subjectInput.fill("Cannot see my VAT obligations");
     await descriptionTextarea.fill(
       "My quarterly VAT obligations list is empty after I connected to HMRC. The page shows no error message.",
@@ -502,5 +505,22 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     console.log("   User Guide navigation buttons work");
     console.log("   Support modal opens and closes correctly");
     console.log("   Main navigation returns to home page\n");
+  });
+
+  test("An unknown address shows the Page not found page with status 404, and an unknown API path answers JSON", async ({ page }) => {
+    addOnPageLogging(page);
+
+    const pageResponse = await page.goto(`${baseUrl}/nonexistent-page.html`, { waitUntil: "domcontentloaded" });
+    expect(pageResponse.status()).toBe(404);
+    expect(pageResponse.headers()["content-type"]).toMatch(/^text\/html/);
+    await expect(page.locator("h1")).toHaveText("Page not found");
+    await expect(page.locator("main a[href='/']")).toBeVisible();
+    await expect(page.locator("main a[href='/help.html']")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-19-page-not-found.png`, readerView: true });
+
+    const apiResponse = await page.request.get(`${baseUrl}/api/v1/nonexistent`);
+    expect(apiResponse.status()).toBe(404);
+    expect(apiResponse.headers()["content-type"]).toMatch(/^application\/json/);
+    expect(await apiResponse.json()).toBeTruthy();
   });
 });

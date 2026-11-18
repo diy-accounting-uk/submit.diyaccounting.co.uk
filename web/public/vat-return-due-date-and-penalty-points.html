@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Work out the due date of a VAT return and your late submission penalty points. The thresholds, the £200 penalty and what removes the points, each with its gov.uk source."
+      content="Work out the due date of a VAT return and your late submission penalty points: the thresholds, the £200 penalty and what removes points, with gov.uk sources."
     />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/vat-return-due-date-and-penalty-points.html" />
@@ -19,7 +19,7 @@
     <meta property="og:title" content="VAT return due date and penalty points calculator - DIY Accounting Submit" />
     <meta
       property="og:description"
-      content="Work out the due date of a VAT return and your late submission penalty points. The thresholds, the £200 penalty and what removes the points, each with its gov.uk source."
+      content="Work out the due date of a VAT return and your late submission penalty points: the thresholds, the £200 penalty and what removes points, with gov.uk sources."
     />
     <meta property="og:image" content="https://submit.diyaccounting.co.uk/images/social/og-submit.png" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -68,9 +68,19 @@
           until you reach the threshold, then a £200 penalty. Pick your period end and how often you file, and tick the late returns.
         </p>
         <p><a class="btn" href="vat-return-from-a-spreadsheet.html">File a VAT return</a></p>
+        <nav class="page-toc" aria-label="On this page">
+          <p class="page-toc-title">On this page</p>
+          <ul>
+            <li><a href="#work-it-out">Work it out</a></li>
+            <li><a href="#when-a-vat-return-is-due">When a VAT return is due</a></li>
+            <li><a href="#penalty-points-and-the-threshold">Penalty points and the threshold</a></li>
+            <li><a href="#what-removes-points">What removes points</a></li>
+            <li><a href="#what-submit-files">What Submit files</a></li>
+          </ul>
+        </nav>
       </div>
       <div class="form-container">
-        <h2>Work it out</h2>
+        <h2 id="work-it-out">Work it out</h2>
         <p>The date is a calculation from the rule below. Your VAT online account shows the date HMRC holds for each return.</p>
         <noscript><p>The calculator needs JavaScript. The rules on this page give the same answer.</p></noscript>
         <div id="vatCalculator" hidden>
@@ -87,6 +97,9 @@
           </div>
           <fieldset class="form-group">
             <legend>Tick each return that was late</legend>
+            <p id="vatReturnTicksHint" class="hint">
+              Your returns of the last 24 months show here once you enter the last day of the accounting period.
+            </p>
             <div id="vatReturnTicks"></div>
           </fieldset>
           <div id="vatResult" role="status" aria-live="polite" hidden>
@@ -99,7 +112,7 @@
         </div>
       </div>
       <div class="form-container">
-        <h2>When a VAT return is due</h2>
+        <h2 id="when-a-vat-return-is-due">When a VAT return is due</h2>
         <p>
           A period that ends on the last day of a month is due on the 7th of the month after next. A quarter that ends on 31 March is due on
           7 May.
@@ -109,16 +122,20 @@
             The deadline for submitting your return online is usually one calendar month and 7 days after the end of an accounting period.
           </p>
           <footer>
-            <a href="https://www.gov.uk/vat-returns/deadlines" rel="noopener">gov.uk/vat-returns/deadlines</a>
-            <span class="retrieved">Retrieved 13 November 2026</span>
+            Source:
+            <a href="https://www.gov.uk/vat-returns/deadlines" rel="noopener">GOV.UK, Sending a VAT Return: When to do a VAT Return</a>
+            (checked 13 November 2026)
           </footer>
         </blockquote>
       </div>
       <div class="form-container">
-        <h2>Penalty points and the threshold</h2>
+        <h2 id="penalty-points-and-the-threshold">Penalty points and the threshold</h2>
         <p>Each late return adds one point until you reach the threshold of your accounting period.</p>
-        <div class="table-scroll">
+        <div class="table-scroll" role="region" tabindex="0" aria-labelledby="penalty-rules-caption">
           <table class="deadline-table">
+            <caption id="penalty-rules-caption" class="calendar-date">
+              Penalty points by return frequency
+            </caption>
             <thead>
               <tr>
                 <th scope="col">Return</th>
@@ -149,77 +166,49 @@
             </tbody>
           </table>
         </div>
-        <blockquote class="source-quote source-citation">
-          <footer>
-            Source: the table on
-            <a href="https://www.gov.uk/guidance/penalty-points-and-penalties-if-you-submit-your-vat-return-late" rel="noopener"
-              >gov.uk/guidance/penalty-points-and-penalties-if-you-submit-your-vat-return-late</a
-            >
-            <span class="retrieved">Retrieved 13 November 2026</span>
-          </footer>
-        </blockquote>
         <blockquote class="source-quote">
           <p>
             When you reach the threshold, you’ll receive a £200 penalty. You’ll also receive a further £200 penalty for each subsequent late
             submission while you’re at the threshold.
           </p>
           <footer>
+            Source:
             <a href="https://www.gov.uk/guidance/penalty-points-and-penalties-if-you-submit-your-vat-return-late" rel="noopener"
-              >gov.uk/guidance/penalty-points-and-penalties-if-you-submit-your-vat-return-late</a
+              >GOV.UK, Penalty points and penalties if you submit your VAT Return late</a
             >
-            <span class="retrieved">Retrieved 13 November 2026</span>
+            (checked 13 November 2026)
           </footer>
         </blockquote>
       </div>
       <div class="form-container">
-        <h2>What removes points</h2>
+        <h2 id="what-removes-points">What removes points</h2>
         <p>Below the threshold, points expire on their own.</p>
         <p>
           At the threshold, you remove the points when you meet both conditions: a period of compliance, and every outstanding return of the
           previous 24 months.
         </p>
-        <blockquote class="source-quote source-citation">
-          <footer>
-            Source: the table on
-            <a href="https://www.gov.uk/guidance/remove-penalty-points-youve-received-after-submitting-your-vat-return-late" rel="noopener"
-              >gov.uk/guidance/remove-penalty-points-youve-received-after-submitting-your-vat-return-late</a
-            >
-            <span class="retrieved">Retrieved 13 November 2026</span>
-          </footer>
-        </blockquote>
         <blockquote class="source-quote">
           <p>
             A: complete a period of compliance, submitting all returns by the deadline. B: submit all outstanding returns for the previous
             24 months.
           </p>
           <footer>
+            Source:
             <a href="https://www.gov.uk/guidance/remove-penalty-points-youve-received-after-submitting-your-vat-return-late" rel="noopener"
-              >gov.uk/guidance/remove-penalty-points-youve-received-after-submitting-your-vat-return-late</a
+              >GOV.UK, Remove penalty points you’ve received after submitting your VAT Return late</a
             >
-            <span class="retrieved">Retrieved 13 November 2026</span>
-          </footer>
-        </blockquote>
-        <blockquote class="source-quote source-citation">
-          <footer>
-            Source: the table on
-            <a href="https://www.gov.uk/guidance/remove-penalty-points-youve-received-after-submitting-your-vat-return-late" rel="noopener"
-              >gov.uk/guidance/remove-penalty-points-youve-received-after-submitting-your-vat-return-late</a
-            >
-            <span class="retrieved">Retrieved 13 November 2026</span>
+            (checked 13 November 2026)
           </footer>
         </blockquote>
       </div>
       <div class="form-container">
-        <h2>What Submit files</h2>
+        <h2 id="what-submit-files">What Submit files</h2>
         <p>See <a href="vat-return-from-a-spreadsheet.html">VAT return from a spreadsheet</a>.</p>
         <p>Every date is on the <a href="mtd-calendar.html">MTD calendar</a>.</p>
         <p>Submit files VAT returns.</p>
-      </div>
-      <div class="form-container">
-        <h2>Ready to file</h2>
         <p><a class="btn" href="vat-return-from-a-spreadsheet.html">File a VAT return</a></p>
-        <p>See every date on the <a href="mtd-calendar.html">MTD calendar</a>.</p>
       </div>
+      <p class="tools-link">More free tools are on the <a href="tools.html">Tools</a> page.</p>
     </main>
 
     <footer></footer>

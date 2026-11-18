@@ -1,0 +1,364 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "short-submit-return",
+  "title": "Submit a VAT return to HMRC in two minutes",
+  "description": "A short signed-in walk through submitting a VAT return: find the open period HMRC holds, fill in the nine boxes and get HMRC's receipt.",
+  "auth": "user",
+  "pages": [
+    "web/public/index.html",
+    "web/public/auth/login.html",
+    "web/public/bundles.html",
+    "web/public/hmrc/vat/vatObligations.html",
+    "web/public/hmrc/vat/submitVat.html"
+  ],
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+  "pacing": {
+    "perCharMs": 90,
+    "betweenActionsMs": 700,
+    "aroundMotionMs": 600,
+    "minResidualMs": 150,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 15,
+    "minMs": 1500,
+    "fadeMs": 250,
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
+  },
+  "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
+  "finalHoldMs": 2000,
+  "scenes": [
+    {
+      "id": "setup",
+      "chapter": "Setup",
+      "offCamera": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "#mainContent"
+        }
+      ]
+    },
+    {
+      "id": "home",
+      "chapter": "Home",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "caption",
+          "text": "You can send a VAT return straight to HMRC.",
+          "headline": "Submit your VAT return",
+          "keyWord": "Submit"
+        },
+        {
+          "action": "caption",
+          "text": "See the full sign-in and day pass walkthrough in our sign-in video.",
+          "holdMs": 1200,
+          "headline": "Sign in and day pass, faster",
+          "keyWord": "faster"
+        }
+      ]
+    },
+    {
+      "id": "sign-in",
+      "chapter": "Sign in",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "a.login-link",
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
+        },
+        {
+          "action": "login",
+          "caption": "Your account keeps your submissions in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
+        },
+        {
+          "action": "consent"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        }
+      ]
+    },
+    {
+      "id": "day-pass",
+      "chapter": "Day pass",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          },
+          "caption": "Bundles decide which activities you can run.",
+          "headline": "Open your bundles",
+          "keyWord": "bundles"
+        },
+        {
+          "action": "ensureBundle",
+          "bundle": "Day pass",
+          "testPass": true,
+          "caption": "A day pass opens the VAT activities for a day.",
+          "headline": "Get a day pass",
+          "keyWord": "pass"
+        },
+        {
+          "action": "hold",
+          "ms": 700
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Activities"
+          },
+          "caption": "Every activity starts from the home page.",
+          "headline": "Go to activities",
+          "keyWord": "activities"
+        },
+        {
+          "action": "await",
+          "until": "button:has-text('VAT Obligations (HMRC)')",
+          "label": "Waiting for the day pass to unlock the activity"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        }
+      ]
+    },
+    {
+      "id": "obligations-form",
+      "chapter": "Ask HMRC",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "button:has-text('VAT Obligations (HMRC)')"
+        },
+        {
+          "action": "await",
+          "until": "#vatObligationsForm",
+          "label": "Opening the obligations form"
+        },
+        {
+          "action": "type",
+          "target": "#vrn",
+          "text": "{{hmrcVatNumber}}",
+          "clear": true,
+          "caption": "Ask HMRC which periods are open.",
+          "instruction": "Enter your VAT registration number and the dates to search between, then choose Retrieve obligations.",
+          "headline": "Find your open period",
+          "keyWord": "open"
+        },
+        {
+          "action": "fill",
+          "target": "#fromDate",
+          "value": "{{monthsAgo:11}}"
+        },
+        {
+          "action": "fill",
+          "target": "#toDate",
+          "value": "{{today}}"
+        },
+        {
+          "action": "click",
+          "target": "#retrieveBtn"
+        },
+        {
+          "action": "hmrcAuthorise",
+          "fastForward": true,
+          "caption": "See the full HMRC access walkthrough in our HMRC authorisation video.",
+          "headline": "Grant access, faster",
+          "keyWord": "faster",
+          "timeoutMs": 60000
+        }
+      ]
+    },
+    {
+      "id": "results",
+      "chapter": "The open period",
+      "still": true,
+      "steps": [
+        {
+          "action": "await",
+          "until": "#obligationsResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 180000
+        },
+        {
+          "action": "point",
+          "target": "#obligationsTable",
+          "caption": "An open period needs a return.",
+          "instruction": "Read the periods HMRC holds for you: a Fulfilled period already has its return, and an Open period is waiting for one.",
+          "headline": "Find the open period",
+          "keyWord": "open",
+          "dwellMs": 500
+        }
+      ]
+    },
+    {
+      "id": "submit-form",
+      "chapter": "Fill in the return",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Submit return"
+          },
+          "caption": "Start a return for it.",
+          "instruction": "Choose Submit return beside the open period.",
+          "headline": "Start the return",
+          "keyWord": "Start"
+        },
+        {
+          "action": "await",
+          "until": "#vatSubmissionForm",
+          "label": "Opening the submission form"
+        },
+        {
+          "action": "type",
+          "target": "#vatDueSales",
+          "text": "1000.00",
+          "clear": true,
+          "caption": "Type the nine boxes from your records.",
+          "instruction": "Enter boxes 1 and 2: the VAT due on sales, and the VAT due on acquisitions from EU member states (0 if you have none).",
+          "headline": "Fill in the nine boxes",
+          "keyWord": "nine"
+        },
+        {
+          "action": "type",
+          "target": "#vatDueAcquisitions",
+          "text": "0.00",
+          "clear": true,
+          "instruction": "Enter box 2, the VAT due on acquisitions of goods made in Northern Ireland from EU member states. Enter 0 if you have none."
+        },
+        {
+          "action": "type",
+          "target": "#vatReclaimedCurrPeriod",
+          "text": "200.00",
+          "clear": true,
+          "instruction": "Enter box 4, the VAT you reclaim on purchases. Submit works out boxes 3 and 5 for you."
+        },
+        {
+          "action": "type",
+          "target": "#totalValueSalesExVAT",
+          "text": "5000",
+          "clear": true,
+          "instruction": "Enter boxes 6 to 9: your total sales and purchases, and the goods supplied to and acquired from EU member states, all excluding VAT."
+        },
+        {
+          "action": "type",
+          "target": "#totalValuePurchasesExVAT",
+          "text": "1000",
+          "clear": true,
+          "instruction": "Enter box 7, the total value of your purchases and other inputs, excluding VAT."
+        },
+        {
+          "scrollTo": "tr:has(#totalVatDue)",
+          "action": "type",
+          "target": "#totalValueGoodsSuppliedExVAT",
+          "text": "0",
+          "clear": true
+        },
+        {
+          "action": "type",
+          "target": "#totalAcquisitionsExVAT",
+          "text": "0",
+          "clear": true
+        },
+        {
+          "scrollTo": "tr:has(#totalVatDue)",
+          "action": "click",
+          "target": "#declaration",
+          "caption": "Tick the declaration.",
+          "instruction": "Tick the declaration that the information is true and complete.",
+          "headline": "Confirm the declaration",
+          "keyWord": "declaration"
+        }
+      ]
+    },
+    {
+      "id": "submit",
+      "chapter": "Submit",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "#submitBtn",
+          "caption": "Then submit it to HMRC.",
+          "headline": "Submit to HMRC",
+          "keyWord": "Submit",
+          "instruction": "Choose Submit VAT return, then sign in to HMRC and give permission again, because sending a return needs a wider grant than reading obligations."
+        },
+        {
+          "action": "hmrcAuthorise",
+          "fastForward": true,
+          "timeoutMs": 60000,
+          "caption": "See the full HMRC access walkthrough in our HMRC authorisation video.",
+          "headline": "Grant access again, faster",
+          "keyWord": "faster"
+        }
+      ]
+    },
+    {
+      "id": "receipt",
+      "chapter": "Submitted",
+      "still": true,
+      "steps": [
+        {
+          "action": "await",
+          "until": "#receiptDisplay",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000
+        },
+        {
+          "action": "point",
+          "target": "#receiptDisplay",
+          "caption": "HMRC's receipt is your record.",
+          "instruction": "Read the receipt that HMRC returns, with its Form Bundle Number, and keep it as your record.",
+          "headline": "Keep your receipt",
+          "keyWord": "receipt",
+          "dwellMs": 600
+        },
+        {
+          "action": "still",
+          "name": "receipt"
+        },
+        {
+          "action": "hold",
+          "ms": 2500
+        }
+      ]
+    }
+  ]
+}

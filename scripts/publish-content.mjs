@@ -19,12 +19,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  isActivityListedInEnvironment,
-  isBundleListedInEnvironment,
-  parseCatalog,
-  getBundlePrices,
-} from "../app/services/productCatalog.js";
+import { isActivityListedInEnvironment, parseCatalog } from "../app/services/productCatalog.js";
 import {
   activityArea,
   activityName,
@@ -34,7 +29,9 @@ import {
   tokenCostLabel,
 } from "../web/public/lib/services/catalog-service.js";
 import { AREA_PAGES, FEATURED_IDS } from "../web/public/widgets/video-pages.js";
+import { videoHeading } from "../web/public/lib/guide-journeys.js";
 import { escapeHtml, replaceBetweenMarkers } from "./page-markers.mjs";
+import { bundleSummary, listedBundles, priceSentence, tokenSentence } from "../web/public/lib/bundle-listing.js";
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SITE_ORIGIN = "https://submit.diyaccounting.co.uk";
@@ -75,10 +72,6 @@ function areaPageOf(video) {
   return AREA_PAGES[video.group] ?? INDEX_PAGE;
 }
 
-function shortTitle(video) {
-  return video.title.replace(/ \| DIY Accounting Submit$/, "");
-}
-
 function trimTrailingPunctuation(url) {
   const trailing = /[.,;:!?)]+$/.exec(url)?.[0] ?? "";
   return { url: url.slice(0, url.length - trailing.length), trailing };
@@ -105,7 +98,9 @@ export function resolveDescription(description, videosById) {
     last = match.index + match[0].length;
     if (match[1]) {
       const target = videosById.get(match[1]);
-      pieces.push(target ? { text: shortTitle(target), href: `${areaPageOf(target)}#${target.id}` } : { text: "the related video" });
+      pieces.push(
+        target ? { text: videoHeading(target.title), href: `${areaPageOf(target)}#${target.id}` } : { text: "the related video" },
+      );
     } else {
       const { url, trailing } = trimTrailingPunctuation(match[0]);
       const shown = withoutQueryOnOwnSite(url);
@@ -169,40 +164,9 @@ export function renderVideoPageBlock(pageVideos, videosById, uploadDateOf) {
       const paragraphs = paragraphsOf(description.html)
         .map((paragraph) => `<p>${paragraph}</p>`)
         .join("");
-      return `<section class="video-section" id="${escapeHtml(video.id)}" data-video-id="${escapeHtml(video.videoId)}"><h2>${escapeHtml(video.title)}</h2>${paragraphs}<p><a href="${WATCH_BASE}${encodeURIComponent(video.videoId)}"><img src="${thumbnailUrl(video)}" alt="Thumbnail of the video: ${escapeHtml(shortTitle(video))}" width="480" height="360" loading="lazy" /></a></p>${jsonLd}</section>`;
+      return `<section class="video-section" id="${escapeHtml(video.id)}" data-video-id="${escapeHtml(video.videoId)}"><h2>${escapeHtml(videoHeading(video.title))}</h2>${paragraphs}<p><a href="${WATCH_BASE}${encodeURIComponent(video.videoId)}"><img src="${thumbnailUrl(video)}" alt="Thumbnail of the video: ${escapeHtml(videoHeading(video.title))}" width="480" height="360" loading="lazy" /></a></p>${jsonLd}</section>`;
     })
     .join("");
-}
-
-function formatPounds(pence) {
-  return `£${(pence / 100).toFixed(2)}`;
-}
-
-export function priceSentence(bundle) {
-  const prices = getBundlePrices(bundle);
-  if (prices.length === 0) return "Free.";
-  const ordered = [...prices.filter((price) => price.default), ...prices.filter((price) => !price.default)];
-  const words = { year: "a year", month: "a month" };
-  return `${ordered.map((price) => `${formatPounds(price.amount)} ${words[price.interval] ?? `each ${price.interval}`}`).join(" or ")}.`;
-}
-
-/** The bundles the bundles page script lists to a visitor with no pass and no preview setting in an environment. */
-export function listedBundles(catalog, environmentName) {
-  return (catalog.bundles ?? [])
-    .filter((bundle) => bundle.allocation && bundle.allocation !== "automatic")
-    .filter((bundle) => bundle.enable !== "never")
-    .filter((bundle) => !bundle.hidden)
-    .filter((bundle) => isBundleListedInEnvironment(bundle, environmentName))
-    .sort((a, b) => (a.allocation === "on-request") - (b.allocation === "on-request"));
-}
-
-function bundleSummary(bundle) {
-  const summary = typeof bundle.passSummary === "string" ? bundle.passSummary.trim() : "";
-  if (summary) return `You can ${summary}.`;
-  // The catalogue description can end with the price; the card shows the price on its own line.
-  const description = bundle.description ?? "";
-  const priceStart = description.indexOf(". £");
-  return priceStart === -1 ? description : description.slice(0, priceStart + 1);
 }
 
 /** The HTML that fills the marked block of the bundles page. */
@@ -219,9 +183,9 @@ export function renderBundlesBlock(catalog, environmentName) {
     ];
     const activities =
       activityNames.length > 0 ? `<p>It covers:</p><ul>${activityNames.map((name) => `<li>${escapeHtml(name)}</li>`).join("")}</ul>` : "";
-    return `<div class="service-item" data-bundle-id="${escapeHtml(bundle.id)}"><h3>${escapeHtml(bundle.name)}</h3><p><strong>${priceSentence(bundle)}</strong></p><p>${escapeHtml(bundleSummary(bundle))}</p>${activities}</div>`;
+    return `<div class="service-item" data-bundle-id="${escapeHtml(bundle.id)}"><h3>${escapeHtml(bundle.name)}</h3><p><strong>${priceSentence(bundle)}</strong></p><p>${escapeHtml(tokenSentence(bundle))}</p><p>${escapeHtml(bundleSummary(bundle))}</p>${activities}</div>`;
   });
-  return `<h2>Bundles</h2>${cards.join("")}`;
+  return cards.join("");
 }
 
 const HOME_AREA_ORDER = ["VAT", "Income Tax", "Companies House", "Passes", "More"];
@@ -231,7 +195,7 @@ const SIGNED_OUT_VIEWER = { preview: false, operatorFeatures: true, account: {} 
  * The activities the home page lists to a signed-out visitor in an environment, as the page script
  * lists them: shown by the catalogue, with a page, and not display "never". A signed-out visitor
  * holds no bundle, so an activity that shows only on entitlement is left out, a display "always"
- * activity opens its page and an upsell activity opens the sign-in page.
+ * activity opens its page and an upsell activity opens the sign-in page, which returns to the page.
  * @param {string} [language] "cy" gives the Welsh names; the area stays the English key
  * @returns {{area: string, name: string, href: string}[]} in catalogue order
  */
@@ -249,7 +213,7 @@ export function homeActivities(catalog, environmentName, language) {
         {
           area: activityArea(page),
           name: `${activityName(activity, language)}${tokenLabel}`,
-          href: activity.display === "always" ? page : "auth/login.html",
+          href: activity.display === "always" ? page : `auth/login.html?next=${encodeURIComponent(`/${page}`)}`,
         },
       ];
     });

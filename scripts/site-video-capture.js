@@ -59,6 +59,10 @@ import { substituteValues } from "./lib/video/values.js";
 import { buildCaptureManifest, writeCaptureManifest } from "./lib/video/pipelineVersion.js";
 import { collectSecrets, assertNoSecrets } from "./lib/video/secrets.js";
 import { writeCardFreeStill } from "./lib/video/stepStill.js";
+import { captureOverlayConfig } from "./lib/video/captureOverlayConfig.js";
+import { captureBrowserEnv } from "./lib/video/browserLocale.js";
+import { consentAnswerFor } from "./lib/video/consentAnswer.js";
+import TOML from "@iarna/toml";
 import { synthesizeSpeech, audioDurationMs } from "./lib/video/narration.js";
 
 const ANALYTICS_URL_FRAGMENTS = ["google-analytics", "googletagmanager", "analytics.js", "gtag/js", "client.rum"];
@@ -66,7 +70,7 @@ const ANALYTICS_URL_FRAGMENTS = ["google-analytics", "googletagmanager", "analyt
 function parseArgs(argv) {
   const args = {
     script: null,
-    baseUrl: process.env.DIY_SUBMIT_BASE_URL || null,
+    baseUrl: null,
     out: null,
     fps: null,
     speed: 1,
@@ -329,12 +333,14 @@ async function main() {
   // ready, and a pattern to match against the command's own output before treating it as ready.
   // Its url becomes this run's base url when --base-url was not given explicitly, exactly like
   // journey.js's startLocalServices does for a logged-in submit scene, generalised to any command.
+  // A lane's DIY_SUBMIT_BASE_URL names the submit site, which such a script does not record.
   let localApp = { stop: async () => {} };
   if (script.localApp) {
     const { startLocalApp } = await import("./lib/video/localApp.js");
     localApp = await startLocalApp(script.localApp);
     args.baseUrl = args.baseUrl || localApp.url;
   }
+  args.baseUrl = args.baseUrl || process.env.DIY_SUBMIT_BASE_URL || null;
   if (!args.baseUrl) {
     throw new Error('--base-url <url> is required (or set DIY_SUBMIT_BASE_URL, or declare "localApp" in the scene script)');
   }
@@ -418,13 +424,17 @@ async function main() {
     journey = {
       authProvider: journeyModule.authProviderFrom(process.env),
       authUsername: journeyModule.authUsernameFrom(process.env),
+      signedInAddress: journeyModule.signedInAddressFrom(
+        journeyModule.authProviderFrom(process.env),
+        journeyModule.authUsernameFrom(process.env),
+      ),
       authPassword: process.env.TEST_AUTH_PASSWORD || null,
       hmrcUser: usesHmrcTestUser ? await journeyModule.resolveHmrcTestUser(process.env, script.hmrcServices || ["mtd-vat"]) : null,
     };
     console.log(`Signing in with the ${journey.authProvider} identity provider as ${journey.authUsername}`);
   }
 
-  const browser = await chromium.launch({ headless: !args.headed });
+  const browser = await chromium.launch({ headless: !args.headed, env: captureBrowserEnv(process.env) });
   const context = await browser.newContext({
     viewport: script.viewport,
     locale: "en-GB",
@@ -436,7 +446,8 @@ async function main() {
     userAgent:
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 DIYAccountingProbe/1",
   });
-  if (script.consentAnswer) {
+  const consentAnswer = consentAnswerFor(script);
+  if (consentAnswer) {
     await context.addInitScript((answer) => {
       try {
         localStorage.setItem("consent.rum", answer);
@@ -444,7 +455,7 @@ async function main() {
       } catch {
         // A document that denies storage has no consent banner to hide either.
       }
-    }, script.consentAnswer);
+    }, consentAnswer);
   }
   await context.route("**/*", (route) => {
     const url = route.request().url();
@@ -464,7 +475,9 @@ async function main() {
   // verifyLoggedInStatus on the ci itsa-year capture.
   page.setDefaultTimeout(60000);
   if (addOnPageLogging) addOnPageLogging(page);
-  await installOverlay(page);
+  const catalogue = TOML.parse(fs.readFileSync(path.resolve("web/public/submit.catalogue.toml"), "utf8"));
+  const overlayConfig = captureOverlayConfig(script, catalogue, journey ? journey.signedInAddress : null);
+  await installOverlay(page, overlayConfig);
   if (installCredentialFieldMask) await installCredentialFieldMask(page, args.baseUrl);
 
   const captureEnabled = !args.stillsOnly;
@@ -556,7 +569,10 @@ async function main() {
         // scene that otherwise plays at full pace), so the pacing is chosen per step.
         const fastForward = isFastForward(scene, step, selectedSceneIds);
         const pacing = offCamera || fastForward ? scalePacing(script.pacing, 0) : scaledPacing;
-        const waitPhaseCtl = createWaitPhase(page, step, unscaledPacing, capture, WAIT_CAPABLE_ACTIONS.has(step.action));
+        // The first load leaves a blank page with no overlay to wait on screen, and the pill that
+        // load arms is redrawn on the new document and fades out over the opening frames.
+        const opensFirstPage = page.url() === "about:blank";
+        const waitPhaseCtl = createWaitPhase(page, step, unscaledPacing, capture, WAIT_CAPABLE_ACTIONS.has(step.action) && !opensFirstPage);
         const ctx = {
           baseUrl: args.baseUrl,
           pacing,
@@ -605,7 +621,7 @@ async function main() {
         const holdHeadline = (text, keyWord, rect) => {
           const minMs = fastForward ? 0 : captionMinMs(text, script.captions);
           headlineHideAt = () => elapsed() + minMs;
-          return overlayHeadline(page, text, keyWord, rect, script.viewport);
+          return overlayHeadline(page, text, keyWord, rect, script.viewport, { beside: step.headlineBeside === true });
         };
         const showHeadlineBeforeAction = !offCamera && step.headline && step.action !== "goto" && !TARGET_RECT_ACTIONS.has(step.action);
         if (showHeadlineBeforeAction) {
@@ -663,7 +679,7 @@ async function main() {
             lastReadEventCount = 0;
             if (!offCamera) {
               await overlayChapter(page, scene.chapter);
-              if (script.suppress?.length) await overlaySuppress(page, script.suppress);
+              await overlaySuppress(page, overlayConfig.suppress);
               if (step.caption) {
                 if (!captionHideAt) {
                   const hold = fastForward ? { minMs: 0, audioPath: null } : await resolveCaptionHold(step.caption, scene.id);
@@ -764,7 +780,7 @@ async function main() {
       if (offCamera) {
         // An off-camera scene's navigations reinstall the overlay without its suppress rules, and the
         // next on-camera scene may start on that document with no navigation of its own.
-        if (script.suppress?.length) await overlaySuppress(page, script.suppress);
+        await overlaySuppress(page, overlayConfig.suppress);
         if (capture) capture.resume();
         pausedMs += Date.now() - offCameraStartedAt;
       }

@@ -1,7 +1,9 @@
 {
   "url": "https://www.gov.uk/vat-registration/when-to-register",
+  "title": "Register for VAT: When to register for VAT",
   "retrieved": "2026-11-13",
-  "quote": "your total taxable turnover for the last 12 months goes over £90,000 (the VAT threshold)",
+  "quote": "You must register if either: your total taxable turnover for the last 12 months goes over £90,000 (the VAT threshold) you expect your taxable turnover to go over £90,000 in the next 30 days",
+  "table": true,
   "facts": [
     "vat-registration-threshold-2025-26",
     "vat-registration-threshold-2026-27"

@@ -5,12 +5,14 @@
 // one chart per objective, one point per day, a line per component and a total line where the
 // parts add up. A legend button hides or shows a line, a double-click on it shows only that line (again, all lines), Show all and Hide all set every line at once, and a legend button's tooltip says what the line is; moving over the chart reads one point.
 // A chart mode whose source has an hourly grain carries mode.hourly, and a switch beside Show all
-// and Hide all moves it between 90 days by day and 7 days by hour (snapshot.dailyCharts.hours).
+// and Hide all moves it between 90 days by day and 14 days by hour (snapshot.dailyCharts.hours).
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 const CHART_HEIGHT = 220;
 const MARGIN = { top: 10, right: 10, bottom: 24, left: 46 };
 const COLOUR_COUNT = 8;
+// The width of one character of an axis label, in pixels, for sizing the left margin.
+const AXIS_CHARACTER_WIDTH = 6.5;
 const DASH_BY_CYCLE = ["", "6 3", "2 3"];
 
 const dayFormat = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
@@ -36,13 +38,24 @@ function formatHour(isoHour) {
 
 const RANGES = [
   ["daily", "90 days, by day"],
-  ["hourly", "7 days, by hour"],
+  ["hourly", "14 days, by hour"],
 ];
 
-// The series the chart draws now: the mode's hourly series when the switch is on 7 days and the
+// The series the chart draws now: the mode's hourly series when the switch is on 14 days and the
 // mode has them, otherwise its daily series.
 function isHourly(state) {
   return state.range === "hourly" && Boolean(state.chart.modes[state.modeIndex].hourly);
+}
+
+// The 14 days range of a mode whose source reports by day: its last 14 daily points.
+const DAILY_SOURCE_DAYS = 14;
+
+function isDailySourceRange(state) {
+  return state.range === "hourly" && !state.chart.modes[state.modeIndex].hourly;
+}
+
+function lastDays(series) {
+  return series.map((line) => ({ ...line, values: line.values.slice(-DAILY_SOURCE_DAYS) }));
 }
 
 // Lines that start hidden, by chart id and mode id; the legend still shows them.
@@ -53,15 +66,37 @@ const INITIALLY_HIDDEN_SERIES = {
     "completed": ["total", "bundle"],
     "api-calls": { showOnly: ["all"] },
   },
+  "integration-requests": {
+    "all": { showOnlySuffix: "@customer" },
+    "hmrc": { showOnlySuffix: "@customer" },
+    "companies-house": { showOnlySuffix: "@customer" },
+    "stripe": { showOnlySuffix: "@customer" },
+  },
+  "integration-duration": { organisation: { showOnlySuffix: "@customer" } },
   "conversion-to-submission": { funnel: ["sessions-from-spreadsheets", "sessions-from-www", "sessions-from-elsewhere"] },
+  "data-totals": { transactional: { hideSuffix: "@synthetic" } },
+  "retention": {
+    totals: ["accounts-total-test", "accounts-total-synthetic", "accounts-total-other", "accounts-total-unknown"],
+    events: ["new-accounts-test", "new-accounts-synthetic", "new-accounts-other", "new-accounts-unknown"],
+  },
 };
 
 // An entry is a list of hidden line ids, or { showOnly: [ids] } for a mode whose lines are not
-// known in advance: every other line, daily or hourly, starts hidden.
+// known in advance: every other line, daily or hourly, starts hidden. { showOnlySuffix } hides
+// every line whose id does not end with the suffix, as the lines of a caller class do, and
+// { hideSuffix } hides every line whose id ends with it.
 function initiallyHidden(chart, modeIndex) {
   const byMode = INITIALLY_HIDDEN_SERIES[chart.id];
   const mode = chart.modes[modeIndex];
   const entry = byMode && byMode[mode.id];
+  if (entry && entry.hideSuffix) {
+    const lines = [...mode.series, ...(mode.hourly ? mode.hourly.series : [])];
+    return new Set(lines.map((series) => series.id).filter((id) => id.endsWith(entry.hideSuffix)));
+  }
+  if (entry && entry.showOnlySuffix) {
+    const lines = [...mode.series, ...(mode.hourly ? mode.hourly.series : [])];
+    return new Set(lines.map((series) => series.id).filter((id) => !id.endsWith(entry.showOnlySuffix)));
+  }
   if (entry && entry.showOnly) {
     const lines = [...mode.series, ...(mode.hourly ? mode.hourly.series : [])];
     return new Set(lines.map((series) => series.id).filter((id) => !entry.showOnly.includes(id)));
@@ -71,7 +106,9 @@ function initiallyHidden(chart, modeIndex) {
 
 function activeSeries(state) {
   const mode = state.chart.modes[state.modeIndex];
-  return isHourly(state) ? mode.hourly.series : mode.series;
+  if (isHourly(state)) return mode.hourly.series;
+  if (isDailySourceRange(state)) return lastDays(mode.series);
+  return mode.series;
 }
 
 // A duration at or above 1,000 ms reads in seconds.
@@ -79,14 +116,29 @@ function formatDuration(value) {
   return value >= 1000 ? readoutNumberFormat.format(value / 1000) + " s" : readoutNumberFormat.format(value) + " ms";
 }
 
+// Bytes read in the largest unit of 1,000 that keeps the figure at 1 or more.
+const BYTE_UNITS = ["B", "kB", "MB", "GB", "TB"];
+
+function formatBytes(value, numberFormat) {
+  let scaled = value;
+  let index = 0;
+  while (Math.abs(scaled) >= 1000 && index < BYTE_UNITS.length - 1) {
+    scaled /= 1000;
+    index += 1;
+  }
+  return numberFormat.format(scaled) + " " + BYTE_UNITS[index];
+}
+
 function formatAxisValue(unit, value) {
   if (unit === "ms") return formatDuration(value);
+  if (unit === "bytes") return formatBytes(value, axisNumberFormat);
   if (unit === "ratio") return axisNumberFormat.format(value * 100) + "%";
   return (UNIT_PREFIX[unit] || "") + axisNumberFormat.format(value);
 }
 
 function formatReadoutValue(unit, value) {
   if (unit === "ms") return formatDuration(value);
+  if (unit === "bytes") return formatBytes(value, readoutNumberFormat);
   if (unit === "ratio") return readoutNumberFormat.format(value * 100) + "%";
   return (UNIT_PREFIX[unit] || "") + readoutNumberFormat.format(value);
 }
@@ -141,11 +193,38 @@ function lineRuns(values) {
   return runs.filter(Boolean);
 }
 
+// The value axis: from 0, or below 0 when a line falls below it, to a nice ceiling, in four
+// steps. Below 0 the step is a nice number and the lowest value a whole number of steps, so 0 is
+// a grid line.
+function valueAxis(values) {
+  const highest = Math.max(0, ...values);
+  const lowest = Math.min(0, ...values);
+  if (lowest >= 0) return { minValue: 0, maxValue: niceCeiling(highest) };
+  let step = niceCeiling((highest - lowest) / 4);
+  let minValue = Math.floor(lowest / step) * step;
+  while (minValue + 4 * step < highest) {
+    step = niceCeiling(step * 1.01);
+    minValue = Math.floor(lowest / step) * step;
+  }
+  return { minValue, maxValue: minValue + 4 * step };
+}
+
+function axisTicks({ minValue, maxValue }) {
+  return [0, 1, 2, 3, 4].map((tick) => minValue + ((maxValue - minValue) / 4) * tick);
+}
+
+// The left margin that holds the widest value label, at least MARGIN.left.
+function leftMarginFor(unit, axis) {
+  const widest = Math.max(...axisTicks(axis).map((value) => formatAxisValue(unit, value).length));
+  return Math.max(MARGIN.left, 12 + widest * AXIS_CHARACTER_WIDTH);
+}
+
 function drawChart(state) {
   const { chart, svg, readout } = state;
   const mode = chart.modes[state.modeIndex];
   const hourly = isHourly(state);
-  const days = hourly ? state.hours : state.days;
+  let days = hourly ? state.hours : state.days;
+  if (isDailySourceRange(state)) days = state.days.slice(-DAILY_SOURCE_DAYS);
   const formatPoint = hourly ? formatHour : formatDay;
   const seriesList = activeSeries(state);
   const unit = mode.unit || chart.unit;
@@ -153,21 +232,21 @@ function drawChart(state) {
   const styles = lineStylesFor(seriesList);
 
   const width = Math.max(state.card.clientWidth - 2, 240);
-  const plotWidth = width - MARGIN.left - MARGIN.right;
+  const axis = valueAxis(visible.flatMap((series) => series.values.filter((value) => value !== null)));
+  const left = leftMarginFor(unit, axis);
+  const plotWidth = width - left - MARGIN.right;
   const plotHeight = CHART_HEIGHT - MARGIN.top - MARGIN.bottom;
   svg.setAttribute("viewBox", "0 0 " + width + " " + CHART_HEIGHT);
   svg.setAttribute("width", width);
   svg.setAttribute("height", CHART_HEIGHT);
   svg.replaceChildren();
 
-  const maxValue = niceCeiling(Math.max(0, ...visible.flatMap((series) => series.values.filter((value) => value !== null))));
-  const xAt = (index) => MARGIN.left + (days.length === 1 ? 0 : (index / (days.length - 1)) * plotWidth);
-  const yAt = (value) => MARGIN.top + plotHeight - (value / maxValue) * plotHeight;
+  const xAt = (index) => left + (days.length === 1 ? 0 : (index / (days.length - 1)) * plotWidth);
+  const yAt = (value) => MARGIN.top + plotHeight - ((value - axis.minValue) / (axis.maxValue - axis.minValue)) * plotHeight;
 
-  for (let tick = 0; tick <= 4; tick += 1) {
-    const value = (maxValue / 4) * tick;
-    svg.appendChild(svgElement("line", { x1: MARGIN.left, x2: width - MARGIN.right, y1: yAt(value), y2: yAt(value), class: "chart-grid" }));
-    const label = svgElement("text", { "x": MARGIN.left - 6, "y": yAt(value) + 4, "text-anchor": "end", "class": "chart-axis" });
+  for (const value of axisTicks(axis)) {
+    svg.appendChild(svgElement("line", { x1: left, x2: width - MARGIN.right, y1: yAt(value), y2: yAt(value), class: "chart-grid" }));
+    const label = svgElement("text", { "x": left - 6, "y": yAt(value) + 4, "text-anchor": "end", "class": "chart-axis" });
     label.textContent = formatAxisValue(unit, value);
     svg.appendChild(label);
   }
@@ -211,7 +290,7 @@ function drawChart(state) {
   const guide = svgElement("line", { y1: MARGIN.top, y2: MARGIN.top + plotHeight, class: "chart-guide", visibility: "hidden" });
   svg.appendChild(guide);
   const overlay = svgElement("rect", {
-    x: MARGIN.left,
+    x: left,
     y: MARGIN.top,
     width: plotWidth,
     height: plotHeight,
@@ -325,12 +404,13 @@ function legendControls(state) {
     });
     controls.appendChild(button);
   });
-  controls.appendChild(rangeSwitch(state));
+  if (!state.chart.standalone || state.chart.rangeSwitch) controls.appendChild(rangeSwitch(state));
   return controls;
 }
 
-// The switch between 90 days by day and 7 days by hour. It shows only while the chart's current
-// mode has an hourly series.
+// The switch between 90 days by day and 14 days. Every graph has it and it keeps its place and its
+// state when the reader changes tab. A tab with an hourly series draws the 14 days by hour; a tab
+// whose source reports whole days draws its last 14 daily points and says so.
 function rangeSwitch(state) {
   const group = document.createElement("span");
   group.className = "chart-range";
@@ -356,10 +436,12 @@ function rangeSwitch(state) {
 }
 
 function syncRangeSwitch(state) {
-  state.rangeSwitch.hidden = !state.chart.modes[state.modeIndex].hourly;
+  if (!state.rangeSwitch) return;
   state.rangeSwitch.querySelectorAll("button").forEach((button) => {
-    button.setAttribute("aria-pressed", String(button.dataset.range === (isHourly(state) ? "hourly" : "daily")));
+    button.setAttribute("aria-pressed", String(button.dataset.range === state.range));
   });
+  const shortRange = state.rangeSwitch.querySelector('[data-range="hourly"]');
+  shortRange.textContent = state.chart.modes[state.modeIndex].hourly ? "14 days, by hour" : "14 days, by day";
 }
 
 const DEFAULT_REFRESH_MINUTES = 15;
@@ -504,6 +586,8 @@ function renderChartCard(chart, days, hours) {
     card.appendChild(reconciliation);
   }
 
+  if (chart.cohort) card.appendChild(renderCohortTable(chart.cohort));
+
   if (chart.note) {
     const note = document.createElement("p");
     note.className = "chart-note";
@@ -514,6 +598,66 @@ function renderChartCard(chart, days, hours) {
   state.draw = () => drawChart(state);
   drawLegend(state);
   return state;
+}
+
+const cohortMonthFormat = new Intl.DateTimeFormat("en-GB", { month: "short", year: "numeric", timeZone: "UTC" });
+const cohortShareFormat = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 0 });
+
+// The cohort table under a graph: a row per signup month, the cohort's accounts, then for each
+// month since signup the accounts that submitted in it and their share of the cohort. A month the
+// cohort has not reached yet is empty.
+function renderCohortTable(cohort) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "chart-cohort";
+  const table = document.createElement("table");
+  table.className = "observations data-table chart-cohort-table";
+  const caption = document.createElement("caption");
+  caption.textContent = "Accounts that submitted, by signup month and month since signup";
+  table.appendChild(caption);
+  const head = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  ["Signup month", "Accounts", ...Array.from({ length: cohort.months }, (_, month) => "Month " + month)].forEach((text) => {
+    const cell = document.createElement("th");
+    cell.scope = "col";
+    cell.textContent = text;
+    headRow.appendChild(cell);
+  });
+  head.appendChild(headRow);
+  table.appendChild(head);
+  const body = document.createElement("tbody");
+  cohort.rows.forEach((row) => {
+    const tableRow = document.createElement("tr");
+    tableRow.className = "chart-cohort-row";
+    tableRow.dataset.signupMonth = row.signupMonth;
+    const month = document.createElement("th");
+    month.scope = "row";
+    month.textContent = cohortMonthFormat.format(new Date(row.signupMonth + "-01T00:00:00Z"));
+    tableRow.appendChild(month);
+    const accounts = document.createElement("td");
+    accounts.textContent = String(row.accounts);
+    tableRow.appendChild(accounts);
+    for (let index = 0; index < cohort.months; index += 1) {
+      const cell = document.createElement("td");
+      const submitters = row.submitters[index];
+      if (submitters !== undefined) {
+        const share = row.accounts > 0 ? " (" + cohortShareFormat.format((submitters / row.accounts) * 100) + "%)" : "";
+        cell.textContent = submitters + share;
+      }
+      tableRow.appendChild(cell);
+    }
+    body.appendChild(tableRow);
+  });
+  if (cohort.rows.length === 0) {
+    const empty = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = cohort.months + 2;
+    cell.textContent = "No accounts opened in the months the table covers.";
+    empty.appendChild(cell);
+    body.appendChild(empty);
+  }
+  table.appendChild(body);
+  wrapper.appendChild(table);
+  return wrapper;
 }
 
 let renderedCharts = [];
@@ -545,9 +689,9 @@ function renderDailyCharts(snapshot) {
     grid.appendChild(state.card);
     renderedCharts.push(state);
   });
-  // The stored-data chart holds its own days, so it is drawn beside the daily charts.
+  // The stored-data chart holds its own days and hours, so it is drawn beside the daily charts.
   if (snapshot.data && snapshot.data.chart) {
-    const state = renderChartCard(snapshot.data.chart, snapshot.data.chart.days, []);
+    const state = renderChartCard(snapshot.data.chart, snapshot.data.chart.days, snapshot.data.chart.hours || []);
     grid.appendChild(state.card);
     renderedCharts.push(state);
   }

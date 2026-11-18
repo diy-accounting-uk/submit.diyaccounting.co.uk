@@ -42,7 +42,7 @@ describe("recordFiledReceipt", () => {
 
   test("stores the receipt with the same arguments, then requests the email", async () => {
     await recordFiledReceipt(filing);
-    expect(mockPutReceipt).toHaveBeenCalledWith(filing.userSub, filing.receiptId, filing.receipt, "customer", "client-1", true);
+    expect(mockPutReceipt).toHaveBeenCalledWith(filing.userSub, filing.receiptId, filing.receipt, "customer", "client-1");
     expect(calls).toEqual(["putReceipt", "requestCustomerEmail"]);
     expect(mockRequestCustomerEmail).toHaveBeenCalledWith({
       kind: "submission-receipt",
@@ -50,6 +50,20 @@ describe("recordFiledReceipt", () => {
       synthetic: true,
       data: { receiptId: filing.receiptId, receiptKind: "vat-return", clientId: "client-1" },
     });
+  });
+
+  test("passes a Welsh reader's language to the email request", async () => {
+    await recordFiledReceipt({ ...filing, language: "cy" });
+    expect(mockRequestCustomerEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { receiptId: filing.receiptId, receiptKind: "vat-return", clientId: "client-1", language: "cy" } }),
+    );
+  });
+
+  test("carries the Welsh language choice into the email request", async () => {
+    await recordFiledReceipt({ ...filing, receiptKind: "accounts", language: "cy" });
+    expect(mockRequestCustomerEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { receiptId: filing.receiptId, receiptKind: "accounts", clientId: "client-1", language: "cy" } }),
+    );
   });
 
   test("rejects and requests nothing when the receipt write fails", async () => {

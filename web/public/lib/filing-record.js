@@ -14,6 +14,45 @@ export const ACCOUNTS_KIND = "companies-house-accounts";
 export const CT_RETURN_KIND = "company-tax-return";
 
 export const ABSENT = "—";
+
+// page-chrome.js gives the text in the chosen language; without it (under Node, or a test that stubs
+// the chrome) the English stands.
+function siteText(id, english, values) {
+  if (globalThis.siteText) return globalThis.siteText(id, english, values);
+  return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+}
+
+// Chromium's Intl has no Welsh, so a Welsh date is written from the month names here.
+const WELSH_MONTHS = [
+  "Ionawr",
+  "Chwefror",
+  "Mawrth",
+  "Ebrill",
+  "Mai",
+  "Mehefin",
+  "Gorffennaf",
+  "Awst",
+  "Medi",
+  "Hydref",
+  "Tachwedd",
+  "Rhagfyr",
+];
+
+/**
+ * A date as the customer reads it in the chrome's language, e.g. "24 October 2026" or "24 Hydref 2026".
+ * @param {Date} date
+ * @param {{utc?: boolean}} [options] - read the day in UTC
+ * @returns {string}
+ */
+export function longDateText(date, { utc = false } = {}) {
+  if (globalThis.siteLanguage && globalThis.siteLanguage.chrome() === "cy") {
+    const [day, month, year] = utc
+      ? [date.getUTCDate(), date.getUTCMonth(), date.getUTCFullYear()]
+      : [date.getDate(), date.getMonth(), date.getFullYear()];
+    return `${day} ${WELSH_MONTHS[month]} ${year}`;
+  }
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", ...(utc ? { timeZone: "UTC" } : {}) });
+}
 const RECEIPT_TIMESTAMP = /^(\d{4}-\d{2}-\d{2}T[\d:.]+Z)-/;
 
 /** The filing kinds this module draws a customer copy for. */
@@ -30,7 +69,7 @@ export function filingDateText(receiptName) {
   const match = RECEIPT_TIMESTAMP.exec(String(receiptName ?? ""));
   const date = match ? new Date(match[1]) : null;
   if (!date || Number.isNaN(date.getTime())) return ABSENT;
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+  return longDateText(date, { utc: true });
 }
 
 export function page(html) {
@@ -53,7 +92,12 @@ function base64OfText(text) {
 function documentFrame(title, document, fileName) {
   const frame = `<iframe class="filed-document" title="${escapeRecordAttribute(title)}" sandbox="allow-same-origin" srcdoc="${escapeRecordAttribute(document)}"></iframe>`;
   const href = `data:application/xhtml+xml;charset=utf-8;base64,${base64OfText(document)}`;
-  const download = `<p class="filed-document-download"><a download="${escapeRecordAttribute(fileName)}" href="${href}">Download ${escapeRecordText(title.toLowerCase())}</a>. Save this file with your records. Do not save the document from your browser's page, because a browser changes it.</p>`;
+  const linkText = siteText("ch.record.download", "Download {title}", { title: title.charAt(0).toLowerCase() + title.slice(1) });
+  const advice = siteText(
+    "ch.record.download-advice",
+    "Save this file with your records. Do not save the document from your browser's page, because a browser changes it.",
+  );
+  const download = `<p class="filed-document-download"><a download="${escapeRecordAttribute(fileName)}" href="${href}">${escapeRecordText(linkText)}</a>. ${escapeRecordText(advice)}</p>`;
   return frame + download;
 }
 
@@ -61,24 +105,31 @@ function missingDocumentRecord(name) {
   return page(
     recordHeading({
       nameHtml: escapeRecordText(name),
-      title: "Not kept",
-      subtitleHtml: "This filing was made before the site kept a copy of the filed document.",
+      title: siteText("ch.record.not-kept", "Not kept"),
+      subtitleHtml: escapeRecordText(
+        siteText("ch.record.not-kept-why", "This filing was made before the site kept a copy of the filed document."),
+      ),
     }),
   );
 }
 
 function accountsReceiptRecord(receipt, dateText) {
   const heading = recordHeading({
-    nameHtml: "Companies House receipt",
-    referenceHtml: receipt.submissionNumber ? [`Submission number ${escapeRecordText(receipt.submissionNumber)}`] : [],
-    title: "Receipt from Companies House",
-    subtitleHtml: `Filed ${escapeRecordText(dateText)}`,
+    nameHtml: escapeRecordText(siteText("ch.record.receipt-name", "Companies House receipt")),
+    referenceHtml: receipt.submissionNumber
+      ? [escapeRecordText(siteText("ch.record.submission-number-line", "Submission number {number}", { number: receipt.submissionNumber }))]
+      : [],
+    title: siteText("ch.record.receipt-title", "Receipt from Companies House"),
+    subtitleHtml: escapeRecordText(siteText("ch.record.filed-on-line", "Filed {date}", { date: dateText })),
   });
   const lines = [
-    textLine("Submission number", receipt.submissionNumber),
-    textLine("Company number", receipt.companyNumber),
-    textLine("Status", receipt.statusCode === "ACCEPT" ? "Accepted by Companies House" : receipt.statusCode),
-    textLine("Filed on", dateText),
+    textLine(siteText("ch.record.submission-number", "Submission number"), receipt.submissionNumber),
+    textLine(siteText("ch.record.company-number", "Company number"), receipt.companyNumber),
+    textLine(
+      siteText("ch.record.status", "Status"),
+      receipt.statusCode === "ACCEPT" ? siteText("ch.record.accepted", "Accepted by Companies House") : receipt.statusCode,
+    ),
+    textLine(siteText("ch.record.filed-on", "Filed on"), dateText),
   ].join("\n");
   return page(`${heading}<table class="statement">\n<tbody>\n${lines}\n</tbody>\n</table>`);
 }
@@ -93,30 +144,41 @@ export function accountsFilingCopyHtml(receipt, { receiptName, linksTo = {} }) {
   const dateText = filingDateText(receiptName);
   const sections = [
     {
-      heading: "The accounts as filed",
-      explanation:
+      heading: siteText("ch.record.accounts-as-filed", "The accounts as filed"),
+      explanation: siteText(
+        "ch.record.accounts-explanation",
         "This is the document Companies House received, exactly as we sent it. It holds your balance sheet and the notes you filed. Companies House puts filed accounts on the public register, where anyone can read them.",
+      ),
       recordHtml: receipt.filedDocument
-        ? documentFrame("The accounts as they were filed", receipt.filedDocument, `accounts-${receipt.submissionNumber ?? "filed"}.xhtml`)
-        : missingDocumentRecord("The accounts as filed"),
+        ? documentFrame(
+            siteText("ch.record.accounts-frame", "The accounts as they were filed"),
+            receipt.filedDocument,
+            `accounts-${receipt.submissionNumber ?? "filed"}.xhtml`,
+          )
+        : missingDocumentRecord(siteText("ch.record.accounts-as-filed", "The accounts as filed")),
     },
     {
-      heading: "Receipt from Companies House",
-      explanation:
+      heading: siteText("ch.record.receipt-title", "Receipt from Companies House"),
+      explanation: siteText(
+        "ch.record.accounts-receipt-explanation",
         "Companies House gave this filing a submission number. Quote it if you write to Companies House about these accounts. Accepted means the accounts are on the register.",
+      ),
       recordHtml: accountsReceiptRecord(receipt, dateText),
     },
   ];
   return customerCopyHtml({
-    title: "Your copy of the accounts filed at Companies House",
-    reference: { label: "Submission number", value: String(receipt.submissionNumber ?? ABSENT) },
-    status: { kind: "accepted", text: "Accepted by Companies House" },
+    title: siteText("ch.record.accounts-copy-title", "Your copy of the accounts filed at Companies House"),
+    reference: { label: siteText("ch.record.submission-number", "Submission number"), value: String(receipt.submissionNumber ?? ABSENT) },
+    status: { kind: "accepted", text: siteText("ch.record.accepted", "Accepted by Companies House") },
     date: dateText,
     sections,
     links: [
-      { href: linksTo.correct ?? "fileMicroEntityAccounts.html", text: "File accounts again with corrected figures" },
-      { href: linksTo.again ?? "companySearch.html", text: "Look up another company" },
-      { href: "../hmrc/receipt/receipts.html", text: "All your receipts" },
+      {
+        href: linksTo.correct ?? "fileMicroEntityAccounts.html",
+        text: siteText("ch.record.file-again", "File accounts again with corrected figures"),
+      },
+      { href: linksTo.again ?? "companySearch.html", text: siteText("ch.record.look-up-another", "Look up another company") },
+      { href: "../hmrc/receipt/receipts.html", text: siteText("ch.record.all-receipts", "All your receipts") },
     ],
   });
 }
@@ -125,7 +187,7 @@ function boxValueCell(box, value) {
   if (TEXT_BOXES.has(box)) {
     let text = value;
     if (box === 340 || box === 390) text = `${value}%`;
-    if (box === 329) text = "Yes";
+    if (box === 329) text = siteText("ch.ct.yes", "Yes");
     return `<td class="label text-value">${escapeRecordText(text ?? ABSENT)}</td>`;
   }
   const amount = Number(value);
@@ -136,26 +198,28 @@ function boxValueCell(box, value) {
 
 // " 1 of 2" for one of the two returns of a period of account over 12 months.
 function longPeriodTitleSuffix(receipt) {
-  return receipt.longPeriod ? ` ${receipt.longPeriod.part} of ${receipt.longPeriod.parts}` : "";
+  return receipt.longPeriod ? siteText("ch.ct.record-of-parts", " {part} of {parts}", receipt.longPeriod) : "";
 }
 
 function ct600Record(receipt, dateText) {
   const heading = recordHeading({
-    nameHtml: escapeRecordText(receipt.filed?.boxes?.[1] ?? "Company Tax Return"),
+    nameHtml: escapeRecordText(receipt.filed?.boxes?.[1] ?? siteText("ch.ct.record-name", "Company Tax Return")),
     referenceHtml: [
-      receipt.utr ? `Unique Taxpayer Reference ${escapeRecordText(receipt.utr)}` : "",
-      receipt.filed?.boxes?.[2] ? `Company number ${escapeRecordText(receipt.filed.boxes[2])}` : "",
+      receipt.utr ? escapeRecordText(siteText("ch.ct.record-utr-line", "Unique Taxpayer Reference {utr}", { utr: receipt.utr })) : "",
+      receipt.filed?.boxes?.[2]
+        ? escapeRecordText(siteText("ch.record.company-number-line", "Company number {number}", { number: receipt.filed.boxes[2] }))
+        : "",
     ].filter(Boolean),
-    title: `Company Tax Return (CT600)${longPeriodTitleSuffix(receipt)}`,
-    subtitleHtml: `Filed ${escapeRecordText(dateText)}`,
+    title: siteText("ch.ct.record-title", "Company Tax Return (CT600){parts}", { parts: longPeriodTitleSuffix(receipt) }),
+    subtitleHtml: escapeRecordText(siteText("ch.record.filed-on-line", "Filed {date}", { date: dateText })),
   });
   const boxes = receipt.filed?.boxes ?? {};
   const rows = Object.keys(boxes)
     .sort((a, b) => parseInt(a, 10) - parseInt(b, 10) || a.localeCompare(b))
     .map((key) => {
       const box = /^\d+$/.test(key) ? Number(key) : key;
-      const label = CT600_BOX_ROWS.find((row) => row.box === box)?.label ?? "Box";
-      const boxLabel = escapeRecordText("Box " + box + ": " + label);
+      const label = CT600_BOX_ROWS.find((row) => row.box === box)?.label ?? siteText("ch.ct.column-box", "Box");
+      const boxLabel = escapeRecordText(siteText("ch.ct.box-label", "Box {box}: {label}", { box, label }));
       return `<tr id="ct600Box${box}"><td class="label">${boxLabel}</td>${boxValueCell(box, boxes[box])}</tr>`;
     })
     .join("\n");
@@ -164,18 +228,20 @@ function ct600Record(receipt, dateText) {
 
 export function ctReceiptRecord(receipt, dateText) {
   const heading = recordHeading({
-    nameHtml: "HMRC receipt for a Company Tax Return",
-    referenceHtml: receipt.correlationId ? [`Correlation ID ${escapeRecordText(receipt.correlationId)}`] : [],
-    title: "Receipt from HMRC",
-    subtitleHtml: `Filed ${escapeRecordText(dateText)}`,
+    nameHtml: escapeRecordText(siteText("ch.ct.record-receipt-name", "HMRC receipt for a Company Tax Return")),
+    referenceHtml: receipt.correlationId
+      ? [escapeRecordText(siteText("ch.ct.record-correlation-line", "Correlation ID {id}", { id: receipt.correlationId }))]
+      : [],
+    title: siteText("ch.ct.record-receipt-title", "Receipt from HMRC"),
+    subtitleHtml: escapeRecordText(siteText("ch.record.filed-on-line", "Filed {date}", { date: dateText })),
   });
   const lines = [
-    textLine("IRmark receipt", receipt.irmarkReceipt),
-    textLine("IRmark we sent", receipt.irmark),
-    textLine("Correlation ID", receipt.correlationId),
-    textLine("Unique Taxpayer Reference", receipt.utr),
-    textLine("HMRC's message", receipt.successMessage),
-    textLine("Filed on", dateText),
+    textLine(siteText("ch.ct.record-irmark-receipt", "IRmark receipt"), receipt.irmarkReceipt),
+    textLine(siteText("ch.ct.record-irmark-sent", "IRmark we sent"), receipt.irmark),
+    textLine(siteText("ch.ct.record-correlation", "Correlation ID"), receipt.correlationId),
+    textLine(siteText("ch.ct.record-utr", "Unique Taxpayer Reference"), receipt.utr),
+    textLine(siteText("ch.ct.record-hmrc-message", "HMRC's message"), receipt.successMessage),
+    textLine(siteText("ch.record.filed-on", "Filed on"), dateText),
   ].join("\n");
   return page(`${heading}<table class="statement">\n<tbody>\n${lines}\n</tbody>\n</table>`);
 }
@@ -191,49 +257,67 @@ export function ctFilingCopyHtml(receipt, { receiptName, linksTo = {} }) {
   const filed = receipt.filed;
   const sections = [
     {
-      heading: "The return as filed",
-      explanation:
+      heading: siteText("ch.ct.record-as-filed", "The return as filed"),
+      explanation: siteText(
+        "ch.ct.record-boxes-explanation",
         "These are the boxes of the CT600 that HMRC received. Each box has the number it has on the HMRC form. Check the figures against your records.",
-      recordHtml: filed?.boxes ? ct600Record(receipt, dateText) : missingDocumentRecord("The return as filed"),
+      ),
+      recordHtml: filed?.boxes
+        ? ct600Record(receipt, dateText)
+        : missingDocumentRecord(siteText("ch.ct.record-as-filed", "The return as filed")),
     },
     {
-      heading: "The tax computations as filed",
-      explanation: "This is the document that works out your taxable profit. HMRC reads it with the return.",
+      heading: siteText("ch.ct.record-computations-as-filed", "The tax computations as filed"),
+      explanation: siteText(
+        "ch.ct.record-computations-explanation",
+        "This is the document that works out your taxable profit. HMRC reads it with the return.",
+      ),
       recordHtml: filed?.computationsIxbrl
         ? documentFrame(
-            "The tax computations as they were filed",
+            siteText("ch.ct.record-computations-frame", "The tax computations as they were filed"),
             filed.computationsIxbrl,
             `computations-${receipt.correlationId ?? "filed"}.xhtml`,
           )
-        : missingDocumentRecord("The tax computations as filed"),
+        : missingDocumentRecord(siteText("ch.ct.record-computations-as-filed", "The tax computations as filed")),
     },
     {
-      heading: "The accounts filed with the return",
-      explanation: "HMRC takes the company's accounts with the return. They are the same figures you filed at Companies House.",
+      heading: siteText("ch.ct.record-accounts-with-return", "The accounts filed with the return"),
+      explanation: siteText(
+        "ch.ct.record-accounts-explanation",
+        "HMRC takes the company's accounts with the return. They are the same figures you filed at Companies House.",
+      ),
       recordHtml: filed?.accountsIxbrl
         ? documentFrame(
-            "The accounts as they were filed with the return",
+            siteText("ch.ct.record-accounts-frame", "The accounts as they were filed with the return"),
             filed.accountsIxbrl,
             `accounts-${receipt.correlationId ?? "filed"}.xhtml`,
           )
-        : missingDocumentRecord("The accounts filed with the return"),
+        : missingDocumentRecord(siteText("ch.ct.record-accounts-with-return", "The accounts filed with the return")),
     },
     {
-      heading: "Receipt from HMRC",
-      explanation:
+      heading: siteText("ch.ct.record-receipt-title", "Receipt from HMRC"),
+      explanation: siteText(
+        "ch.ct.record-receipt-explanation",
         "This receipt is the company's proof that it filed the return. Keep it with the company's records. The IRmark receipt shows HMRC received the return unchanged. The correlation ID is the reference to quote if you ask HMRC about this filing.",
+      ),
       recordHtml: ctReceiptRecord(receipt, dateText),
     },
   ];
   return customerCopyHtml({
-    title: `Your copy of the Company Tax Return${longPeriodTitleSuffix(receipt)}`,
-    reference: { label: "IRmark receipt", value: String(receipt.irmarkReceipt ?? receipt.irmark ?? ABSENT) },
-    status: { kind: "accepted", text: "Accepted by HMRC" },
+    title: siteText("ch.ct.record-copy-title", "Your copy of the Company Tax Return{parts}", { parts: longPeriodTitleSuffix(receipt) }),
+    reference: {
+      label: siteText("ch.ct.record-irmark-receipt", "IRmark receipt"),
+      value: String(receipt.irmarkReceipt ?? receipt.irmark ?? ABSENT),
+    },
+    status: { kind: "accepted", text: siteText("ch.ct.record-accepted", "Accepted by HMRC") },
     date: dateText,
     sections,
     links: [
-      { href: linksTo.correct ?? "fileCompanyTaxReturn.html", text: "View the CT600 page to file another return" },
-      { href: "../hmrc/receipt/receipts.html", text: "All your receipts" },
+      {
+        href: linksTo.correct ?? "fileCompanyTaxReturn.html",
+        text: siteText("ch.ct.record-file-another", "View the CT600 page to file another return"),
+      },
+      { href: "../hmrc/receipt/receipts.html", text: siteText("ch.record.all-receipts", "All your receipts") },
     ],
   });
 }

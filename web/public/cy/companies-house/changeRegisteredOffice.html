@@ -1,0 +1,205 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from companies-house/changeRegisteredOffice.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Newid cyfeiriad swyddfa gofrestredig - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/companies-house/changeRegisteredOffice.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/changeRegisteredOffice.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/changeRegisteredOffice.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/changeRegisteredOffice.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <link rel="stylesheet" href="../../submission-record.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="ch-registered-office.change-registered-office-address-337a43">Newid cyfeiriad swyddfa gofrestredig</h1>
+      <p data-i18n="ch-registered-office.file-a-change-of-registered-office-9172d6" class="subtitle">
+        Ffeilio newid cyfeiriad swyddfa gofrestredig gyda Thŷ’r Cwmnïau
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p data-i18n="ch-registered-office.status-production-a-change-you-file-7e9990" class="hint" data-feature-status="production">
+        <strong>Statws: cynhyrchu (production).</strong> Mae newid rydych yn ei ffeilio yma yn cyrraedd cofrestr fyw Tŷ’r Cwmnïau.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau"
+        data-sign-in-text="Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif."
+        data-i18n-data-sign-in-title="ch-registered-office.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-registered-office.sign-in-to-look-up-your-eb0bf2"
+        data-i18n-data-sign-in-title="ch-registered-office.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-registered-office.sign-in-to-look-up-your-eb0bf2"
+      >
+        <h2 data-i18n="ch-registered-office.which-company-d9aae4">Pa gwmni?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="ch-registered-office.company-number-8b121b" for="companyNumber">Rhif y cwmni</label>
+            <p data-i18n="ch-registered-office.8-characters-for-example-00000001-do-090062" id="companyNumber-hint" class="hint">
+              8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button
+            data-i18n="ch-registered-office.look-up-current-address-4c82b1"
+            type="submit"
+            id="companyLookupBtn"
+            class="btn"
+            data-activity-start="change-registered-office"
+          >
+            Chwilio am y cyfeiriad presennol
+          </button>
+        </form>
+      </div>
+
+      <!-- Address form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2 data-i18n="ch-registered-office.registered-office-address-a1537a">Cyfeiriad swyddfa gofrestredig</h2>
+        <div id="currentAddress" class="results-container">
+          <h3 data-i18n="ch-registered-office.current-address-71a304">Cyfeiriad presennol</h3>
+          <dl id="currentAddressList"></dl>
+        </div>
+        <form id="officeAddressForm" novalidate>
+          <h3 data-i18n="ch-registered-office.new-address-b71b5d">Cyfeiriad newydd</h3>
+          <div class="form-group">
+            <label data-i18n="ch-registered-office.premises-26b995" for="premises">Adeilad</label>
+            <p data-i18n="ch-registered-office.the-building-number-or-name-for-f96c52" id="premises-hint" class="hint">
+              Rhif neu enw’r adeilad, er enghraifft 13 neu Yr Hen Reithordy.
+            </p>
+            <input type="text" id="premises" name="premises" required value="" aria-describedby="premises-hint" />
+          </div>
+          <div class="form-group">
+            <label data-i18n="ch-registered-office.address-line-1-ee760b" for="addressLine1">Llinell 1 y cyfeiriad</label>
+            <input type="text" id="addressLine1" name="addressLine1" required value="" autocomplete="address-line1" />
+          </div>
+          <div class="form-group">
+            <label data-i18n="ch-registered-office.address-line-2-optional-9ada76" for="addressLine2"
+              >Llinell 2 y cyfeiriad (dewisol)</label
+            >
+            <input type="text" id="addressLine2" name="addressLine2" value="" autocomplete="address-line2" />
+          </div>
+          <div class="form-group">
+            <label data-i18n="ch-registered-office.town-or-city-9ce565" for="locality">Tref neu ddinas</label>
+            <input type="text" id="locality" name="locality" required value="" autocomplete="address-level2" />
+          </div>
+          <div class="form-group">
+            <label data-i18n="ch-registered-office.county-optional-25a6e2" for="region">Sir (dewisol)</label>
+            <input type="text" id="region" name="region" value="" />
+          </div>
+          <div class="form-group">
+            <label data-i18n="ch-registered-office.postcode-0a4387" for="postalCode">Cod post</label>
+            <input type="text" id="postalCode" name="postalCode" required value="" spellcheck="false" autocomplete="postal-code" />
+          </div>
+          <div class="form-group">
+            <label data-i18n="ch-registered-office.country-701d02" for="country">Gwlad</label>
+            <select id="country" name="country" required autocomplete="country-name">
+              <option data-i18n="ch-registered-office.england-c0ea96" value="England">Lloegr</option>
+              <option data-i18n="ch-registered-office.wales-0cf387" value="Wales">Cymru</option>
+              <option data-i18n="ch-registered-office.scotland-a24667" value="Scotland">Yr Alban</option>
+              <option data-i18n="ch-registered-office.northern-ireland-304a7e" value="Northern Ireland">Gogledd Iwerddon</option>
+              <option data-i18n="ch-registered-office.great-britain-b5cbec" value="Great Britain">Prydain Fawr</option>
+              <option data-i18n="ch-registered-office.united-kingdom-8d23a6" value="United Kingdom" selected>Y Deyrnas Unedig</option>
+              <option data-i18n="ch-registered-office.not-specified-dc12be" value="Not specified">Heb ei nodi</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <div class="choice">
+              <input type="checkbox" id="acceptOfficeStatement" name="acceptOfficeStatement" /><label
+                data-i18n="ch-registered-office.i-confirm-this-is-an-appropriate-89ef3b"
+                for="acceptOfficeStatement"
+                >Mae’r cwmni’n cadarnhau bod y cyfeiriad swyddfa gofrestredig newydd yn gyfeiriad priodol fel yr amlinellir yn adran 86(2) o
+                Ddeddf Cwmnïau 2006 - rhywle y gellir cysylltu â swyddogion y cwmni a lle y gellir cofnodi dogfennau a ddanfonir
+                iddynt.</label
+              >
+            </div>
+          </div>
+          <button data-i18n="ch-registered-office.continue-31fbef" type="submit" id="continueBtn" class="btn">Parhau</button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="reviewView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-registered-office.review-the-filing-769b96">Adolygu’r ffeilio</h2>
+        <p data-i18n="ch-registered-office.company-number-will-have-its-registered-83b929">
+          Bydd cyfeiriad swyddfa gofrestredig rhif cwmni <strong id="reviewCompanyNumber"></strong> yn newid i:
+        </p>
+        <dl id="reviewAddress"></dl>
+        <div class="button-group">
+          <button data-i18n="ch-registered-office.file-with-companies-house-327c43" type="button" id="submitFilingBtn" class="btn">
+            Ffeilio gyda Thŷ’r Cwmnïau
+          </button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-registered-office.filing-result-0ecbf7">Canlyniad y ffeilio</h2>
+        <div id="filingResult"></div>
+        <div id="filingRecord"></div>
+        <div id="validationErrors" class="error-message" style="display: none"></div>
+        <div class="button-group">
+          <button
+            data-i18n="ch-registered-office.start-a-new-filing-0a9f24"
+            type="button"
+            id="startAgainBtn"
+            class="secondary-button"
+            style="display: none"
+          >
+            Dechrau ffeilio newydd
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../lib/welsh-text.js"></script>
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script src="../../lib/companies-house-lane.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../lib/form-errors.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
+    <script src="../../companies-house/changeRegisteredOffice.page.js"></script>
+  </body>
+</html>

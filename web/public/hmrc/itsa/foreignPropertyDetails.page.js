@@ -1,13 +1,22 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId"));
 window.CarriedIdentifiers.bind("taxYear", document.getElementById("taxYear"));
 
 const PENDING_KEY = "pendingForeignPropertyDetailsRequest";
-const END_REASON_TEXT = { "disposal": "Sold or given away", "no-longer-renting-property-out": "No longer let" };
+const END_REASON_TEXT = {
+  "disposal": siteText("itsa-fp-details.reason-disposal", "Sold or given away"),
+  "no-longer-renting-property-out": siteText("itsa-fp-details.reason-no-longer-let", "No longer let"),
+};
 const PROPERTY_NAME_MAX_LENGTH = 105;
 
 let loaded = { nino: "", businessId: "", taxYear: "" };
@@ -34,7 +43,7 @@ function initializePage() {
   window.addEventListener("developer-mode-changed", updateDeveloperSectionVisibility);
 
   const country = document.getElementById("propertyCountry");
-  country.append(el("option", "", "Choose the country or territory"));
+  country.append(el("option", "", siteText("itsa.fp-choose-country", "Choose the country or territory")));
   country.firstChild.value = "";
   window.countryCodes.countriesByName().forEach(({ code, name }) => {
     const option = el("option", "", name);
@@ -57,25 +66,41 @@ function readCriteria() {
 function taxYearProblem(taxYear) {
   const input = document.getElementById("taxYear");
   if (window.itsaSubmissionModel.resolveForeignPropertyEntryKey(taxYear) !== "propertyId") {
-    return { input, message: "Property details start with the 2026-27 tax year. Choose 2026-27 or later." };
+    return {
+      input,
+      message: siteText("itsa-fp-details.year-too-early", "Property details start with the 2026-27 tax year. Choose 2026-27 or later."),
+    };
   }
   return null;
 }
 
 function statusText(property) {
-  if (!property.endDate) return "Letting";
+  if (!property.endDate) return siteText("itsa-fp-details.letting", "Letting");
   const reason = END_REASON_TEXT[property.endReason] || property.endReason;
-  return reason ? `Ended on ${property.endDate} (${reason})` : `Ended on ${property.endDate}`;
+  return reason
+    ? siteText("itsa-fp-details.ended-reason", "Ended on {date} ({reason})", { date: property.endDate, reason })
+    : siteText("itsa-fp-details.ended", "Ended on {date}", { date: property.endDate });
 }
 
 function showPropertyList() {
   document.getElementById("propertiesTaxYear").textContent = loaded.taxYear;
   const container = document.getElementById("propertiesTable");
   if (properties.length === 0) {
-    container.replaceChildren(el("p", "no-data", "HMRC holds no foreign properties for this tax year. Add one to report its income."));
+    container.replaceChildren(
+      el(
+        "p",
+        "no-data",
+        siteText("itsa-fp-details.none", "HMRC holds no foreign properties for this tax year. Add one to report its income."),
+      ),
+    );
   } else {
     const head = document.createElement("tr");
-    ["Property", "Country or territory", "Status", ""].forEach((heading) => {
+    [
+      siteText("itsa-fp-details.property", "Property"),
+      siteText("itsa.fp-country", "Country or territory"),
+      siteText("itsa.status", "Status"),
+      "",
+    ].forEach((heading) => {
       const th = el("th", "", heading);
       th.scope = "col";
       head.append(th);
@@ -84,15 +109,15 @@ function showPropertyList() {
     thead.append(head);
     const tbody = document.createElement("tbody");
     properties.forEach((property) => {
-      const change = el("button", "secondary-button", "Change");
+      const change = el("button", "secondary-button", siteText("itsa-fp-details.change", "Change"));
       change.type = "button";
-      change.setAttribute("aria-label", `Change ${property.propertyName}`);
+      change.setAttribute("aria-label", siteText("itsa-fp-details.change-name", "Change {name}", { name: property.propertyName }));
       change.addEventListener("click", () => openPropertyForm(property));
       const status = statusText(property);
       const cells = [
-        ["Property", property.propertyName],
-        ["Country or territory", window.countryCodes.countryName(property.countryCode)],
-        ["Status", status],
+        [siteText("itsa-fp-details.property", "Property"), property.propertyName],
+        [siteText("itsa.fp-country", "Country or territory"), window.countryCodes.countryName(property.countryCode)],
+        [siteText("itsa.status", "Status"), status],
       ].map(([label, text]) => {
         const td = el("td", "", text);
         td.dataset.label = label;
@@ -125,7 +150,9 @@ function setEndFieldsVisible(visible) {
 function openPropertyForm(property) {
   window.formErrors.clearFormErrors();
   editingPropertyId = property ? property.propertyId : null;
-  document.getElementById("propertyFormTitle").textContent = property ? `Change ${property.propertyName}` : "Add a property";
+  document.getElementById("propertyFormTitle").textContent = property
+    ? siteText("itsa-fp-details.change-name", "Change {name}", { name: property.propertyName })
+    : siteText("itsa-fp-details.add-property", "Add a property");
   document.getElementById("propertyName").value = property?.propertyName || "";
   const country = document.getElementById("propertyCountry");
   country.value = property?.countryCode || "";
@@ -190,16 +217,16 @@ async function runRequest(request, hmrcGrantId) {
     showLoading();
     hideStatus();
     if (request.action === "save") {
-      showStatus("Saving the property...", "info");
+      showStatus(siteText("itsa-fp-details.saving", "Saving the property..."), "info");
       await saveProperty(request, hmrcGrantId);
-      showStatus("Property saved.", "success");
+      showStatus(siteText("itsa-fp-details.saved", "Property saved."), "success");
     } else {
-      showStatus("Loading your foreign properties...", "info");
+      showStatus(siteText("itsa.fp-loading-properties", "Loading your foreign properties..."), "info");
       await loadProperties(request.criteria, hmrcGrantId);
       hideStatus();
     }
   } catch (error) {
-    showStatus(`Failed: ${error.message}`, "error");
+    showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
   } finally {
     hideLoading();
   }
@@ -212,7 +239,7 @@ async function ensureAuthorizedThen(request) {
   if (!scopeSufficient) {
     if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     showLoading();
-    showStatus("Initiating HMRC authentication...", "info");
+    showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
     const state = generateRandomState();
     const hmrcAccount = sessionStorage.getItem("hmrcAccount");
     sessionStorage.setItem("oauth_state", state);
@@ -256,17 +283,31 @@ function propertyFormProblems() {
   const problems = [];
   const name = document.getElementById("propertyName");
   const trimmed = name.value.trim();
-  if (trimmed === "") problems.push({ input: name, message: "Enter the property name" });
+  if (trimmed === "") problems.push({ input: name, message: siteText("itsa-fp-details.enter-name", "Enter the property name") });
   else if (trimmed.length > PROPERTY_NAME_MAX_LENGTH) {
-    problems.push({ input: name, message: `The property name must be ${PROPERTY_NAME_MAX_LENGTH} characters or fewer` });
+    problems.push({
+      input: name,
+      message: siteText("itsa-fp-details.name-too-long", "The property name must be {max} characters or fewer", {
+        max: PROPERTY_NAME_MAX_LENGTH,
+      }),
+    });
   }
   const country = document.getElementById("propertyCountry");
-  if (!editingPropertyId && country.value === "") problems.push({ input: country, message: "Choose the country or territory" });
+  if (!editingPropertyId && country.value === "")
+    problems.push({ input: country, message: siteText("itsa.fp-choose-country", "Choose the country or territory") });
   if (document.getElementById("propertyEnded").checked) {
     const date = document.getElementById("propertyEndDate");
     const reason = document.getElementById("propertyEndReason");
-    if (date.value === "") problems.push({ input: date, message: "Enter the date you stopped letting the property" });
-    if (reason.value === "") problems.push({ input: reason, message: "Choose why you stopped letting the property" });
+    if (date.value === "")
+      problems.push({
+        input: date,
+        message: siteText("itsa-fp-details.enter-end-date", "Enter the date you stopped letting the property"),
+      });
+    if (reason.value === "")
+      problems.push({
+        input: reason,
+        message: siteText("itsa-fp-details.choose-end-reason", "Choose why you stopped letting the property"),
+      });
   }
   return problems;
 }

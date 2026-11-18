@@ -1,0 +1,1006 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from companies-house/fileMicroEntityAccounts.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ffeilio cyfrifon micro-endid - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/companies-house/fileMicroEntityAccounts.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/fileMicroEntityAccounts.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/fileMicroEntityAccounts.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/fileMicroEntityAccounts.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="ch-micro-entity.file-micro-entity-accounts-d7e856">Ffeilio cyfrifon micro-endid</h1>
+      <p data-i18n="ch-micro-entity.file-a-company-s-frs-105-ab5ace" class="subtitle">
+        Ffeilio cyfrifon blynyddol micro-endid FRS 105 cwmni gyda Thŷ’r Cwmnïau
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p
+        data-i18n="ch-micro-entity.status-production-accounts-you-file-here-1775a4"
+        class="hint"
+        data-feature-status="production"
+        data-companies-house-service="xml-gateway"
+      >
+        <strong>Statws: cynhyrchu (production).</strong> Mae’r cyfrifon rydych yn eu ffeilio yma yn cyrraedd cofrestr fyw Tŷ’r Cwmnïau.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau"
+        data-sign-in-text="Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif."
+        data-i18n-data-sign-in-title="ch-micro-entity.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-micro-entity.sign-in-to-look-up-your-eb0bf2"
+        data-i18n-data-sign-in-title="ch-micro-entity.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-micro-entity.sign-in-to-look-up-your-eb0bf2"
+      >
+        <h2 data-i18n="ch-micro-entity.which-company-d9aae4">Pa gwmni?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="ch-micro-entity.company-number-8b121b" for="companyNumber">Rhif y cwmni</label>
+            <p data-i18n="ch-micro-entity.8-characters-for-example-00000001-do-090062" id="companyNumber-hint" class="hint">
+              8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button data-i18n="ch-micro-entity.look-up-company-e9e4a8" type="submit" id="companyLookupBtn" class="btn">
+            Chwilio am y cwmni
+          </button>
+        </form>
+      </div>
+
+      <!-- Balance sheet form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2 data-i18n="ch-micro-entity.micro-entity-accounts-b8156d">Cyfrifon micro-endid</h2>
+        <p data-i18n="ch-micro-entity.company-change-company-dd2fd9">
+          Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).
+          <a href="#" id="changeCompanyLink">Newid y cwmni</a>.
+        </p>
+        <div id="booksImport"></div>
+        <form id="accountsForm" novalidate>
+          <section id="documentLanguageSection" class="form-section" hidden>
+            <h3 data-i18n="ch-micro-entity.language-of-the-accounts-8aae0f">Iaith y cyfrifon</h3>
+            <p data-i18n="ch-micro-entity.the-company-s-registered-office-is-01369a" id="documentLanguage-hint" class="hint">
+              Mae swyddfa gofrestredig y cwmni yng Nghymru, felly gall gyflwyno ei gyfrifon yn Gymraeg. Mae Tŷ’r Cwmnïau yn eu cyfieithu i’r
+              Saesneg ar gyfer y gofrestr. Nid yw iaith y dudalen yn newid y dewis hwn. Mae Tŷ’r Cwmnïau yn anfon ei ateb yn Saesneg.
+            </p>
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="radio"
+                  id="documentLanguageEn"
+                  name="documentLanguage"
+                  value="en"
+                  checked
+                  aria-describedby="documentLanguage-hint"
+                /><label data-i18n="ch-micro-entity.english-ba118b" for="documentLanguageEn">Saesneg</label>
+              </div>
+              <div class="choice">
+                <input
+                  type="radio"
+                  id="documentLanguageCy"
+                  name="documentLanguage"
+                  value="cy"
+                  aria-describedby="documentLanguage-hint"
+                /><label data-i18n="ch-micro-entity.welsh-cymraeg-0ae24c" for="documentLanguageCy">Cymraeg</label>
+              </div>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-micro-entity.period-6e795d">Cyfnod</h3>
+            <div class="form-group">
+              <label data-i18n="ch-micro-entity.period-start-32d302" for="periodStart">Dechrau’r cyfnod</label>
+              <input type="date" id="periodStart" name="periodStart" required />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-micro-entity.period-end-eeae9f" for="periodEnd">Diwedd y cyfnod</label>
+              <input type="date" id="periodEnd" name="periodEnd" required />
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-micro-entity.registered-office-bc395e">Swyddfa gofrestredig</h3>
+            <p data-i18n="ch-micro-entity.filled-in-from-the-company-s-1bca2e" id="officeHint" class="hint">
+              Wedi’i llenwi o gofnod y cwmni yn Nhŷ’r Cwmnïau. Newidiwch ran i’w chywiro.
+            </p>
+            <div class="form-group">
+              <label data-i18n="ch-micro-entity.address-line-1-ee760b" for="officeAddressLine1">Llinell 1 y cyfeiriad</label>
+              <input type="text" id="officeAddressLine1" name="officeAddressLine1" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-micro-entity.address-line-2-optional-9ada76" for="officeAddressLine2"
+                >Llinell 2 y cyfeiriad (dewisol)</label
+              >
+              <input type="text" id="officeAddressLine2" name="officeAddressLine2" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-micro-entity.address-line-3-optional-39373e" for="officeAddressLine3"
+                >Llinell 3 y cyfeiriad (dewisol)</label
+              >
+              <input type="text" id="officeAddressLine3" name="officeAddressLine3" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-micro-entity.town-or-city-9ce565" for="officeCityOrTown">Tref neu ddinas</label>
+              <input type="text" id="officeCityOrTown" name="officeCityOrTown" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-micro-entity.county-or-region-optional-8c5d96" for="officeCountyRegion"
+                >Sir neu ranbarth (dewisol)</label
+              >
+              <input type="text" id="officeCountyRegion" name="officeCountyRegion" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-micro-entity.postcode-0a4387" for="officePostalCode">Cod post</label>
+              <input type="text" id="officePostalCode" name="officePostalCode" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-micro-entity.country-optional-e54c63" for="officeCountry">Gwlad (dewisol)</label>
+              <input type="text" id="officeCountry" name="officeCountry" autocomplete="off" />
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-micro-entity.balance-sheet-659a65">Mantolen</h3>
+            <p data-i18n="ch-micro-entity.whole-pounds-for-example-600-or-3d55fd" id="ledgerHint1" class="hint">
+              Punnoedd cyfan. Er enghraifft, £600 neu £1,200. Mae angen y ddwy flynedd.
+            </p>
+            <table class="ledger">
+              <thead>
+                <tr>
+                  <th data-i18n="ch-micro-entity.line-d7852c" scope="col">Llinell</th>
+                  <th data-i18n="ch-micro-entity.this-year-251996" scope="col" class="ledger__figure">Eleni (£)</th>
+                  <th data-i18n="ch-micro-entity.prior-year-9ca024" scope="col" class="ledger__figure">Y flwyddyn flaenorol (£)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th data-i18n="ch-micro-entity.called-up-share-capital-not-paid-30e7aa" scope="row">
+                    Cyfalaf cyfrannau wedi’i alw heb ei dalu (dewisol)
+                  </th>
+                  <td class="ledger__figure" data-column="Eleni" data-i18n-data-column="ch-micro-entity.this-year-985971">
+                    <label
+                      data-i18n="ch-micro-entity.called-up-share-capital-not-paid-9f0c82"
+                      for="currentCalledUpShareCapitalNotPaid"
+                      class="visually-hidden"
+                      >Cyfalaf cyfrannau wedi’i alw heb ei dalu, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentCalledUpShareCapitalNotPaid"
+                        name="currentCalledUpShareCapitalNotPaid"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                    <label
+                      data-i18n="ch-micro-entity.called-up-share-capital-not-paid-c1f41d"
+                      for="priorCalledUpShareCapitalNotPaid"
+                      class="visually-hidden"
+                      >Cyfalaf cyfrannau wedi’i alw heb ei dalu, y llynedd</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorCalledUpShareCapitalNotPaid"
+                        name="priorCalledUpShareCapitalNotPaid"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-micro-entity.fixed-assets-959c37" scope="row">Asedion sefydlog</th>
+                  <td class="ledger__figure" data-column="Eleni" data-i18n-data-column="ch-micro-entity.this-year-985971">
+                    <label data-i18n="ch-micro-entity.fixed-assets-this-year-9cdb81" for="currentFixedAssets" class="visually-hidden"
+                      >Asedion sefydlog, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentFixedAssets"
+                        name="currentFixedAssets"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch yr asedion sefydlog ar gyfer eleni"
+                        data-i18n-data-required-message="ch-micro-entity.enter-fixed-assets-for-this-year-8a7559"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                    <label data-i18n="ch-micro-entity.fixed-assets-last-year-7a8f8c" for="priorFixedAssets" class="visually-hidden"
+                      >Asedion sefydlog, y llynedd</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorFixedAssets"
+                        name="priorFixedAssets"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch yr asedion sefydlog ar gyfer y llynedd"
+                        data-i18n-data-required-message="ch-micro-entity.enter-fixed-assets-for-last-year-734c37"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-micro-entity.current-assets-ccafff" scope="row">Asedion cyfredol</th>
+                  <td class="ledger__figure" data-column="Eleni" data-i18n-data-column="ch-micro-entity.this-year-985971">
+                    <label data-i18n="ch-micro-entity.current-assets-this-year-168bc4" for="currentCurrentAssets" class="visually-hidden"
+                      >Asedion cyfredol, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentCurrentAssets"
+                        name="currentCurrentAssets"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch yr asedion cyfredol ar gyfer eleni"
+                        data-i18n-data-required-message="ch-micro-entity.enter-current-assets-for-this-year-31782e"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                    <label data-i18n="ch-micro-entity.current-assets-last-year-d3e6ca" for="priorCurrentAssets" class="visually-hidden"
+                      >Asedion cyfredol, y llynedd</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorCurrentAssets"
+                        name="priorCurrentAssets"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch yr asedion cyfredol ar gyfer y llynedd"
+                        data-i18n-data-required-message="ch-micro-entity.enter-current-assets-for-last-year-b6359d"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-micro-entity.prepayments-and-accrued-income-optional-c42ba6" scope="row">
+                    Rhagdaliadau ac incwm cronedig (dewisol)
+                  </th>
+                  <td class="ledger__figure" data-column="Eleni" data-i18n-data-column="ch-micro-entity.this-year-985971">
+                    <label
+                      data-i18n="ch-micro-entity.prepayments-and-accrued-income-this-year-93988f"
+                      for="currentPrepaymentsAccruedIncome"
+                      class="visually-hidden"
+                      >Rhagdaliadau ac incwm cronedig, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentPrepaymentsAccruedIncome"
+                        name="currentPrepaymentsAccruedIncome"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                    <label
+                      data-i18n="ch-micro-entity.prepayments-and-accrued-income-last-year-6c802c"
+                      for="priorPrepaymentsAccruedIncome"
+                      class="visually-hidden"
+                      >Rhagdaliadau ac incwm cronedig, y llynedd</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorPrepaymentsAccruedIncome"
+                        name="priorPrepaymentsAccruedIncome"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-micro-entity.creditors-amounts-falling-due-within-one-e33d88" scope="row">
+                    Credydwyr: symiau sy’n ddyledus o fewn blwyddyn
+                  </th>
+                  <td class="ledger__figure" data-column="Eleni" data-i18n-data-column="ch-micro-entity.this-year-985971">
+                    <label
+                      data-i18n="ch-micro-entity.creditors-amounts-falling-due-within-one-d2bb3c"
+                      for="currentCreditorsWithinOneYear"
+                      class="visually-hidden"
+                      >Credydwyr: symiau sy’n ddyledus o fewn blwyddyn, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentCreditorsWithinOneYear"
+                        name="currentCreditorsWithinOneYear"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch y credydwyr: symiau sy’n ddyledus o fewn blwyddyn ar gyfer eleni"
+                        data-i18n-data-required-message="ch-micro-entity.enter-creditors-amounts-falling-due-within-a8546c"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                    <label
+                      data-i18n="ch-micro-entity.creditors-amounts-falling-due-within-one-8b2d0a"
+                      for="priorCreditorsWithinOneYear"
+                      class="visually-hidden"
+                      >Credydwyr: symiau sy’n ddyledus o fewn blwyddyn, y llynedd</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorCreditorsWithinOneYear"
+                        name="priorCreditorsWithinOneYear"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch y credydwyr: symiau sy’n ddyledus o fewn blwyddyn ar gyfer y llynedd"
+                        data-i18n-data-required-message="ch-micro-entity.enter-creditors-amounts-falling-due-within-3258e1"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-micro-entity.creditors-amounts-falling-due-after-more-a35994" scope="row">
+                    Credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn
+                  </th>
+                  <td class="ledger__figure" data-column="Eleni" data-i18n-data-column="ch-micro-entity.this-year-985971">
+                    <label
+                      data-i18n="ch-micro-entity.creditors-amounts-falling-due-after-more-d5e45f"
+                      for="currentCreditorsAfterOneYear"
+                      class="visually-hidden"
+                      >Credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentCreditorsAfterOneYear"
+                        name="currentCreditorsAfterOneYear"
+                        required
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch y credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn ar gyfer eleni"
+                        data-i18n-data-required-message="ch-micro-entity.enter-creditors-amounts-falling-due-after-76fa36"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                    <label
+                      data-i18n="ch-micro-entity.creditors-amounts-falling-due-after-more-dafc98"
+                      for="priorCreditorsAfterOneYear"
+                      class="visually-hidden"
+                      >Credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn, y llynedd</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorCreditorsAfterOneYear"
+                        name="priorCreditorsAfterOneYear"
+                        required
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch y credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn ar gyfer y llynedd"
+                        data-i18n-data-required-message="ch-micro-entity.enter-creditors-amounts-falling-due-after-c35bef"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-micro-entity.provisions-for-liabilities-optional-318955" scope="row">
+                    Darpariaethau ar gyfer rhwymedigaethau (dewisol)
+                  </th>
+                  <td class="ledger__figure" data-column="Eleni" data-i18n-data-column="ch-micro-entity.this-year-985971">
+                    <label
+                      data-i18n="ch-micro-entity.provisions-for-liabilities-this-year-f784ac"
+                      for="currentProvisionsForLiabilities"
+                      class="visually-hidden"
+                      >Darpariaethau ar gyfer rhwymedigaethau, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentProvisionsForLiabilities"
+                        name="currentProvisionsForLiabilities"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                    <label
+                      data-i18n="ch-micro-entity.provisions-for-liabilities-last-year-495eaa"
+                      for="priorProvisionsForLiabilities"
+                      class="visually-hidden"
+                      >Darpariaethau ar gyfer rhwymedigaethau, y llynedd</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorProvisionsForLiabilities"
+                        name="priorProvisionsForLiabilities"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-micro-entity.accruals-and-deferred-income-optional-254a3e" scope="row">
+                    Croniadau ac incwm gohiriedig (dewisol)
+                  </th>
+                  <td class="ledger__figure" data-column="Eleni" data-i18n-data-column="ch-micro-entity.this-year-985971">
+                    <label
+                      data-i18n="ch-micro-entity.accruals-and-deferred-income-this-year-549a72"
+                      for="currentAccrualsDeferredIncome"
+                      class="visually-hidden"
+                      >Croniadau ac incwm gohiriedig, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentAccrualsDeferredIncome"
+                        name="currentAccrualsDeferredIncome"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                    <label
+                      data-i18n="ch-micro-entity.accruals-and-deferred-income-last-year-25f04e"
+                      for="priorAccrualsDeferredIncome"
+                      class="visually-hidden"
+                      >Croniadau ac incwm gohiriedig, y llynedd</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorAccrualsDeferredIncome"
+                        name="priorAccrualsDeferredIncome"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-micro-entity.called-up-share-capital-4473b4" scope="row">Cyfalaf cyfrannau wedi’i alw</th>
+                  <td class="ledger__figure" data-column="Eleni" data-i18n-data-column="ch-micro-entity.this-year-985971">
+                    <label
+                      data-i18n="ch-micro-entity.called-up-share-capital-this-year-4381cb"
+                      for="currentCalledUpShareCapital"
+                      class="visually-hidden"
+                      >Cyfalaf cyfrannau wedi’i alw, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentCalledUpShareCapital"
+                        name="currentCalledUpShareCapital"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch y cyfalaf cyfrannau wedi’i alw ar gyfer eleni"
+                        data-i18n-data-required-message="ch-micro-entity.enter-called-up-share-capital-for-5d8ace"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                    <label
+                      data-i18n="ch-micro-entity.called-up-share-capital-last-year-74c14f"
+                      for="priorCalledUpShareCapital"
+                      class="visually-hidden"
+                      >Cyfalaf cyfrannau wedi’i alw, y llynedd</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorCalledUpShareCapital"
+                        name="priorCalledUpShareCapital"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch y cyfalaf cyfrannau wedi’i alw ar gyfer y llynedd"
+                        data-i18n-data-required-message="ch-micro-entity.enter-called-up-share-capital-for-a6cf0f"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-micro-entity.profit-and-loss-account-dd8ab0" scope="row">Cyfrif elw a cholled</th>
+                  <td class="ledger__figure" data-column="Eleni" data-i18n-data-column="ch-micro-entity.this-year-985971">
+                    <label
+                      data-i18n="ch-micro-entity.profit-and-loss-account-this-year-f12556"
+                      for="currentProfitAndLossAccount"
+                      class="visually-hidden"
+                      >Cyfrif elw a cholled, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentProfitAndLossAccount"
+                        name="currentProfitAndLossAccount"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch y cyfrif elw a cholled ar gyfer eleni"
+                        data-i18n-data-required-message="ch-micro-entity.enter-profit-and-loss-account-for-b19176"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                    <label
+                      data-i18n="ch-micro-entity.profit-and-loss-account-last-year-96e336"
+                      for="priorProfitAndLossAccount"
+                      class="visually-hidden"
+                      >Cyfrif elw a cholled, y llynedd</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorProfitAndLossAccount"
+                        name="priorProfitAndLossAccount"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch y cyfrif elw a cholled ar gyfer y llynedd"
+                        data-i18n-data-required-message="ch-micro-entity.enter-profit-and-loss-account-for-4c4a29"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th data-i18n="ch-micro-entity.capital-and-reserves-2853bb" scope="row">Cyfalaf a chronfeydd wrth gefn</th>
+                  <td class="ledger__figure" data-column="Eleni" data-i18n-data-column="ch-micro-entity.this-year-985971">
+                    <label
+                      data-i18n="ch-micro-entity.capital-and-reserves-this-year-ed8dfb"
+                      for="currentCapitalAndReserves"
+                      class="visually-hidden"
+                      >Cyfalaf a chronfeydd wrth gefn, eleni</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentCapitalAndReserves"
+                        name="currentCapitalAndReserves"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch y cyfalaf a’r cronfeydd wrth gefn ar gyfer eleni"
+                        data-i18n-data-required-message="ch-micro-entity.enter-capital-and-reserves-for-this-3f655f"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                    <label
+                      data-i18n="ch-micro-entity.capital-and-reserves-last-year-3cced7"
+                      for="priorCapitalAndReserves"
+                      class="visually-hidden"
+                      >Cyfalaf a chronfeydd wrth gefn, y llynedd</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorCapitalAndReserves"
+                        name="priorCapitalAndReserves"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Rhowch y cyfalaf a’r cronfeydd wrth gefn ar gyfer y llynedd"
+                        data-i18n-data-required-message="ch-micro-entity.enter-capital-and-reserves-for-last-119e3e"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p id="yearTotals" class="hint"></p>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-micro-entity.employees-and-director-048bfc">Gweithwyr a chyfarwyddwr</h3>
+            <div class="form-group">
+              <label data-i18n="ch-micro-entity.average-number-of-employees-during-the-6d5b2b" for="averageEmployees"
+                >Nifer cyfartalog y gweithwyr yn ystod y cyfnod</label
+              >
+              <input type="number" id="averageEmployees" name="averageEmployees" required step="1" min="0" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-micro-entity.director-approving-the-balance-sheet-30d266" for="directorName"
+                >Y cyfarwyddwr sy’n cymeradwyo’r fantolen</label
+              >
+              <input type="text" id="directorName" name="directorName" required />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-micro-entity.date-approved-0410b4" for="directorDateApproved">Dyddiad cymeradwyo</label>
+              <input type="date" id="directorDateApproved" name="directorDateApproved" required />
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-micro-entity.dormant-company-462c3c">Cwmni segur</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="dormant" name="dormant" aria-describedby="dormant-hint" /><label
+                  data-i18n="ch-micro-entity.the-company-was-dormant-throughout-the-e565ae"
+                  for="dormant"
+                  >Roedd y cwmni’n segur drwy gydol y cyfnod</label
+                >
+              </div>
+              <p data-i18n="ch-micro-entity.under-the-companies-act-2006-a-5ad40f" id="dormant-hint" class="hint">
+                O dan Ddeddf Cwmnïau 2006, mae cwmni’n segur pan na chafodd unrhyw drafodiad cyfrifyddu sylweddol yn y cyfnod. Nid yw
+                ffioedd ffeilio i Dŷ’r Cwmnïau a chyfrannau a glustnodwyd wrth gorffori yn cyfrif fel rhai sylweddol. Rhaid i’w gyfrif elw a
+                cholled orffen y cyfnod lle y dechreuodd.
+              </p>
+            </div>
+            <div id="dormantFields" style="display: none">
+              <div class="form-group">
+                <label data-i18n="ch-micro-entity.trading-history-c3cb58" for="dormantTradingStatus">Hanes masnachu</label>
+                <select id="dormantTradingStatus" name="dormantTradingStatus">
+                  <option data-i18n="ch-micro-entity.the-company-has-never-traded-943968" value="neverTraded">
+                    Nid yw’r cwmni erioed wedi masnachu
+                  </option>
+                  <option data-i18n="ch-micro-entity.the-company-traded-in-the-past-f3e5ff" value="noLongerTrading">
+                    Roedd y cwmni’n masnachu yn y gorffennol ac nid yw’n masnachu mwyach
+                  </option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-micro-entity.share-class-acf5ea" for="shareClass">Dosbarth cyfrannau</label>
+                <select id="shareClass" name="shareClass">
+                  <option data-i18n="ch-micro-entity.ordinary-f46f36" value="ordinaryShares">Cyffredin</option>
+                  <option data-i18n="ch-micro-entity.preference-a0dc19" value="preferenceShares">Blaengyfrannau</option>
+                  <option data-i18n="ch-micro-entity.deferred-1fc4d2" value="deferredShares">Gohiriedig</option>
+                  <option data-i18n="ch-micro-entity.other-f97e9d" value="otherShares">Arall</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-micro-entity.nominal-value-of-each-share-in-06c00d" for="nominalValue"
+                  >Gwerth nominal pob cyfran, mewn punnoedd</label
+                >
+                <div class="input-prefix">
+                  <span class="prefix">£</span>
+                  <input type="text" id="nominalValue" name="nominalValue" inputmode="decimal" aria-describedby="nominalValue-hint" />
+                </div>
+                <p data-i18n="ch-micro-entity.for-example-1-or-0-01-509697" id="nominalValue-hint" class="hint">
+                  Er enghraifft, 1 neu 0.01. Y cyfalaf cyfrannau wedi’i alw wedi’i rannu â hwn yw nifer y cyfrannau.
+                </p>
+              </div>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-micro-entity.accountants-report-ab913e">Adroddiad y cyfrifwyr</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="checkbox"
+                  id="includeAccountantsReport"
+                  name="includeAccountantsReport"
+                  aria-describedby="includeAccountantsReport-hint"
+                /><label data-i18n="ch-micro-entity.an-accountant-compiled-these-accounts-b82a97" for="includeAccountantsReport"
+                  >Lluniodd cyfrifydd y cyfrifon hyn</label
+                >
+              </div>
+              <p data-i18n="ch-micro-entity.the-accounts-gain-a-page-for-ed45c6" id="includeAccountantsReport-hint" class="hint">
+                Mae’r cyfrifon yn cael tudalen ar gyfer adroddiad y cyfrifwyr, ac mae Tŷ’r Cwmnïau yn eu gweld fel rhai wedi eu heithrio
+                rhag archwilio ariannol gydag adroddiad cyfrifydd.
+              </p>
+            </div>
+            <div id="accountantsReportFields" style="display: none">
+              <div class="form-group">
+                <label data-i18n="ch-micro-entity.name-of-the-accountancy-firm-eb9e0e" for="accountantsName">Enw’r cwmni cyfrifyddu</label>
+                <input type="text" id="accountantsName" name="accountantsName" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-micro-entity.statement-of-the-scope-of-the-451332" for="accountantsStatement"
+                  >Datganiad o gwmpas yr adroddiad</label
+                >
+                <textarea id="accountantsStatement" name="accountantsStatement" rows="6">
+In accordance with your instructions, we have compiled these unaudited financial statements from the accounting records and from information and explanations you have given us.</textarea>
+              </div>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-micro-entity.statements-85f86d">Datganiadau</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="statementSection477Exemption" name="statementSection477Exemption" /><label
+                  data-i18n="ch-micro-entity.the-company-is-entitled-to-exemption-f30d0a"
+                  for="statementSection477Exemption"
+                  id="statementSection477ExemptionLabel"
+                  >Mae gan y cwmni hawl i eithriad rhag archwiliad o dan adran 477 o Ddeddf Cwmnïau 2006 sy’n ymwneud â chwmnïau
+                  bach.</label
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="statementMembersNotRequiredAudit" name="statementMembersNotRequiredAudit" /><label
+                  data-i18n="ch-micro-entity.the-members-have-not-required-the-303cb8"
+                  for="statementMembersNotRequiredAudit"
+                  >Nid yw’r aelodau wedi ei gwneud yn ofynnol i’r cwmni gael archwiliad ar gyfer y flwyddyn dan sylw.</label
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="statementDirectorsResponsibilities" name="statementDirectorsResponsibilities" /><label
+                  data-i18n="ch-micro-entity.the-directors-acknowledge-their-responsibilities-for-f16963"
+                  for="statementDirectorsResponsibilities"
+                  >Mae’r cyfarwyddwyr yn cydnabod eu cyfrifoldebau am gydymffurfio â gofynion Deddf Cwmnïau 2006 o ran cofnodion cyfrifyddu
+                  a pharatoi cyfrifon.</label
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="statementMicroEntityProvisions" name="statementMicroEntityProvisions" /><label
+                  data-i18n="ch-micro-entity.these-accounts-have-been-prepared-in-4b6856"
+                  for="statementMicroEntityProvisions"
+                  >Paratowyd y cyfrifon hyn yn unol â’r darpariaethau sy’n berthnasol i gwmnïau sy’n ddarostyngedig i’r drefn cwmnïau bach
+                  ac yn unol â’r darpariaethau sydd ar gael i ficro-endidau.</label
+                >
+              </div>
+            </div>
+            <div class="form-group calculated-field">
+              <label data-i18n="ch-micro-entity.directors-report-consistent-with-the-accounts-0b34a1" for="directorsReportConsistent"
+                >Adroddiad y cyfarwyddwyr yn gyson â’r cyfrifon</label
+              >
+              <input
+                type="text"
+                id="directorsReportConsistent"
+                name="directorsReportConsistent"
+                value="Not applicable"
+                readonly
+                aria-describedby="directorsReportConsistent-hint"
+              />
+              <p data-i18n="ch-micro-entity.these-accounts-are-unaudited-so-this-3ccf4d" id="directorsReportConsistent-hint" class="hint">
+                Nid yw’r cyfrifon hyn wedi eu harchwilio, felly nid yw’r datganiad hwn yn berthnasol. Nid oes dim yn cael ei anfon.
+              </p>
+            </div>
+          </section>
+
+          <button data-i18n="ch-micro-entity.preview-accounts-3a09e0" type="submit" id="previewBtn" class="btn">
+            Rhagolwg o’r cyfrifon
+          </button>
+        </form>
+      </div>
+
+      <!-- Preview view -->
+      <div id="previewView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-micro-entity.preview-324b13">Rhagolwg</h2>
+        <p data-i18n="ch-micro-entity.these-are-the-accounts-as-they-56ba87">
+          Dyma’r cyfrifon fel y byddant yn cael eu ffeilio. Nid oes dim wedi’i gyflwyno i Dŷ’r Cwmnïau eto.
+        </p>
+        <iframe
+          id="previewRendered"
+          class="accounts-preview-frame"
+          title="Y cyfrifon fel y byddant yn cael eu ffeilio"
+          sandbox=""
+          data-i18n-title="ch-micro-entity.the-accounts-as-they-will-be-40a0c4"
+        ></iframe>
+        <pre id="previewIxbrl" class="ixbrl-preview developer-only-section"></pre>
+        <div class="send-step">
+          <h3 data-i18n="ch-micro-entity.send-to-companies-house-6257b0">Anfon i Dŷ’r Cwmnïau</h3>
+          <div class="form-group">
+            <label data-i18n="ch-micro-entity.company-authentication-code-56d0e6" for="companyAuthCode">Cod dilysu’r cwmni</label>
+            <p data-i18n="ch-micro-entity.the-6-to-8-character-code-48646a" id="companyAuthCode-hint" class="hint">
+              Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei
+              ddefnyddio.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <div class="form-group">
+            <div class="choice">
+              <input type="checkbox" id="useOwnPresenter" name="useOwnPresenter" aria-controls="ownPresenterFields" /><label
+                data-i18n="ch-micro-entity.file-under-my-own-companies-house-33fa3f"
+                for="useOwnPresenter"
+                >Ffeilio o dan fy nghyflwynydd Tŷ’r Cwmnïau fy hun</label
+              >
+            </div>
+          </div>
+          <div id="ownPresenterFields" class="form-section" hidden>
+            <p data-i18n="ch-micro-entity.micro-entity-accounts-carry-no-companies-39aab3" id="ownPresenter-hint" class="hint">
+              Nid oes ffi Tŷ’r Cwmnïau ar gyfrifon micro-endid, felly dim ond cyflwynydd pwy sy’n ymddangos ar y ffeilio y mae hyn yn ei
+              newid. Mae arnoch angen ID cyflwynydd Tŷ’r Cwmnïau a chod dilysu cyflwynydd. Mae Submit yn eu defnyddio ar gyfer y ffeilio hwn
+              yn unig ac nid yw’n cadw copi o’r naill na’r llall.
+            </p>
+            <div class="form-group">
+              <label data-i18n="ch-micro-entity.presenter-id-71f500" for="ownPresenterId">ID cyflwynydd</label>
+              <input
+                type="text"
+                id="ownPresenterId"
+                class="input--code"
+                name="ownPresenterId"
+                autocomplete="off"
+                maxlength="32"
+                spellcheck="false"
+                aria-describedby="ownPresenter-hint"
+              />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-micro-entity.presenter-authentication-code-f8bbc9" for="ownPresenterCode">Cod dilysu’r cyflwynydd</label>
+              <input
+                type="password"
+                id="ownPresenterCode"
+                class="input--code"
+                name="ownPresenterCode"
+                autocomplete="off"
+                maxlength="32"
+                spellcheck="false"
+                aria-describedby="ownPresenter-hint"
+              />
+            </div>
+          </div>
+          <div class="form-group" id="govTestScenarioGroup" style="display: none">
+            <label data-i18n="ch-micro-entity.gov-test-scenario-dab532" for="govTestScenario">Gov-Test-Scenario</label>
+            <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+          </div>
+          <div id="submissionCost" class="submission-cost" data-submit-button="submitFilingBtn"></div>
+          <div class="button-group">
+            <button data-i18n="ch-micro-entity.back-76900f" type="button" id="backToFormBtn" class="secondary-button">Yn ôl</button>
+            <button
+              data-i18n="ch-micro-entity.submit-to-companies-house-31272e"
+              type="button"
+              id="submitFilingBtn"
+              class="btn"
+              aria-describedby="submissionCost"
+            >
+              Cyflwyno i Dŷ’r Cwmnïau
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-micro-entity.filing-result-0ecbf7">Canlyniad y ffeilio</h2>
+        <div id="filingResult"></div>
+        <div id="rejections" style="display: none"></div>
+        <p data-i18n="ch-micro-entity.see-your-copy-of-this-filing-03d016">
+          <a id="filingCopyLink" href="filings.html" style="display: none">Gweld eich copi o’r ffeilio hwn</a>
+        </p>
+        <div class="button-group">
+          <button
+            data-i18n="ch-micro-entity.check-again-fb7099"
+            type="button"
+            id="checkAgainBtn"
+            class="secondary-button"
+            style="display: none"
+          >
+            Gwirio eto
+          </button>
+          <button
+            data-i18n="ch-micro-entity.start-a-new-filing-0a9f24"
+            type="button"
+            id="startAgainBtn"
+            class="secondary-button"
+            style="display: none"
+          >
+            Dechrau ffeilio newydd
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../lib/welsh-text.js"></script>
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/companies-house-lane.js"></script>
+    <script src="../../lib/companies-house-gateway-poll.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/money-input.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/submission-cost.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../lib/form-errors.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
+    <script src="../../lib/accounts-form-sections.js"></script>
+    <script src="../../widgets/books-import.js"></script>
+    <script src="../../companies-house/fileMicroEntityAccounts.page.js"></script>
+  </body>
+</html>

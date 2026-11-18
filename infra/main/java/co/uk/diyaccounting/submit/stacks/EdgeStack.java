@@ -5,12 +5,12 @@
 
 // spotless:off
 // @capability OPS-115 Provision the Edge/CloudFront stack
-// - **Use when:** CloudFront distributions, edge Lambdas or caching behaviours for the web app and API need synthesizing.
-// - **Does:** EdgeStack creates the CloudFront distributions, edge Lambdas, including the wafScanDetect subscription to the WAF log group, caching policies and custom behaviors for the web app and API.
+// - **Use when:** CloudFront distributions, edge functions or caching behaviours for the web app and API need synthesizing.
+// - **Does:** EdgeStack creates the CloudFront distribution, the page router CloudFront Function on the default behaviour, the wafScanDetect subscription to the WAF log group, caching policies and custom behaviors for the web app and API.
 // - **Run:** `npm run cdk:synth-environment`
 // - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java`
 // - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java
-// - **Keywords:** cloudfront, edge lambda, caching policy, waf log subscription, edge stack
+// - **Keywords:** cloudfront, cloudfront function, caching policy, waf log subscription, edge stack
 // - **Related:** OPS-74, OPS-131
 // @end-capability
 // spotless:on
@@ -24,7 +24,9 @@ import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.utils.OriginVerifyHelper;
+import co.uk.diyaccounting.submit.utils.PageRouterFunctionCode;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -44,6 +46,10 @@ import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.Distribution;
+import software.amazon.awscdk.services.cloudfront.FunctionAssociation;
+import software.amazon.awscdk.services.cloudfront.FunctionCode;
+import software.amazon.awscdk.services.cloudfront.FunctionEventType;
+import software.amazon.awscdk.services.cloudfront.FunctionRuntime;
 import software.amazon.awscdk.services.cloudfront.HeadersFrameOption;
 import software.amazon.awscdk.services.cloudfront.IOrigin;
 import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
@@ -127,6 +133,13 @@ public class EdgeStack extends Stack {
      */
     static final long PUBLIC_DEADLINES_RATE_LIMIT_PER_FIVE_MINUTES = 60L;
 
+    /**
+     * Requests in five minutes from one address to the MCP paths with no Authorization header: the
+     * tool list, the discovery documents and the OAuth facade before a token exists. Every Claude
+     * user reaches these from the same address block, so the allowance equals the site-wide rule.
+     */
+    static final long MCP_ANONYMOUS_RATE_LIMIT_PER_FIVE_MINUTES = 2000L;
+
     /** The longest CloudFront keeps a public lookup answer, whatever the origin's Cache-Control asks. */
     static final int PUBLIC_DEADLINES_CACHE_MAX_TTL_SECONDS = 600;
 
@@ -167,6 +180,12 @@ public class EdgeStack extends Stack {
         String certificateArn();
 
         String apiGatewayUrl();
+
+        // The web pages that the publish step deploys; the page router lists their .html files.
+        String docRootPath();
+
+        // The directory that holds the page router CloudFront Function, pageRouter.js.
+        String edgeFunctionAssetPath();
 
         // The AWSCURRENT version of the origin verify secret in us-east-1, from the deploy
         // workflow. Blank until the secret exists, and then no origin header is sent.
@@ -685,15 +704,36 @@ public class EdgeStack extends Stack {
                         .build())
                 .build();
 
-        // Custom error pages are served as static files via CloudFront error responses
-        // This replaces Lambda@Edge which has problematic deletion behavior in CI/CD
-        // API routes (/api/*) return JSON errors - CloudFront error responses only apply to S3 origin errors
+        // The page router answers /about with 301 to /about.html, serves /cy/ from /cy/index.html,
+        // and answers an address with no page with status 404 and the site's 404 page. It runs on
+        // the viewer request of the default behaviour only: the API, MCP and OAuth behaviours
+        // never reach it, and the distribution has no error responses, so their JSON errors pass
+        // unchanged. A CloudFront Function has no regional replicas, so a set's stack deletes at
+        // once. scripts/deploy-app.js updates the same function name on a lean deploy.
+        software.amazon.awscdk.services.cloudfront.Function pageRouterFunction =
+                software.amazon.awscdk.services.cloudfront.Function.Builder.create(
+                                this, props.resourceNamePrefix() + "-PageRouter")
+                        .functionName(props.resourceNamePrefix() + "-page-router")
+                        .comment("Redirects extensionless page paths and answers a miss with the 404 page")
+                        .runtime(FunctionRuntime.JS_2_0)
+                        .code(FunctionCode.fromInline(PageRouterFunctionCode.fromDisk(
+                                Paths.get(props.docRootPath()).toAbsolutePath().normalize(),
+                                Paths.get(props.edgeFunctionAssetPath())
+                                        .toAbsolutePath()
+                                        .normalize())))
+                        .autoPublish(true)
+                        .build();
+
         BehaviorOptions localBehaviorOptions = BehaviorOptions.builder()
                 .origin(localOrigin)
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                 .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
                 .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
                 .responseHeadersPolicy(webResponseHeadersPolicy)
+                .functionAssociations(List.of(FunctionAssociation.builder()
+                        .function(pageRouterFunction)
+                        .eventType(FunctionEventType.VIEWER_REQUEST)
+                        .build()))
                 .compress(true)
                 .build();
 
@@ -864,7 +904,7 @@ public class EdgeStack extends Stack {
                 // IMPORTANT: Do NOT configure errorResponses here!
                 // CloudFront error responses apply GLOBALLY to ALL origins (S3 AND API Gateway).
                 // This breaks API routes which must return JSON errors, not HTML error pages.
-                // For static content (S3), accept default CloudFront error behavior.
+                // The page router on the default behaviour answers a web page miss with the 404 page.
                 // For API routes (/api/*), Lambda functions return proper JSON error responses.
                 .build();
         Tags.of(this.distribution).add("OriginFor", props.sharedNames().deploymentDomainName);
@@ -1028,6 +1068,58 @@ public class EdgeStack extends Stack {
                 .build();
     }
 
+    /**
+     * Counts the requests to the MCP paths that carry no Authorization header, per address. The
+     * bearer-keyed McpRateLimitRule cannot count a request without its key, and the per-IP
+     * RateLimitRule leaves the MCP paths out, so without this rule the tool list, the discovery
+     * documents and the OAuth facade answer an anonymous caller with no limit.
+     */
+    private static CfnWebACL.RuleProperty mcpAnonymousRateLimitRule() {
+        CfnWebACL.StatementProperty hasAuthorizationHeader = CfnWebACL.StatementProperty.builder()
+                .sizeConstraintStatement(CfnWebACL.SizeConstraintStatementProperty.builder()
+                        .fieldToMatch(CfnWebACL.FieldToMatchProperty.builder()
+                                .singleHeader(Map.of("Name", "authorization"))
+                                .build())
+                        .comparisonOperator("GT")
+                        .size(0)
+                        .textTransformations(List.of(CfnWebACL.TextTransformationProperty.builder()
+                                .priority(0)
+                                .type("NONE")
+                                .build()))
+                        .build())
+                .build();
+        return CfnWebACL.RuleProperty.builder()
+                .name("McpAnonymousRateLimitRule")
+                .priority(10)
+                .statement(CfnWebACL.StatementProperty.builder()
+                        .rateBasedStatement(CfnWebACL.RateBasedStatementProperty.builder()
+                                .limit(MCP_ANONYMOUS_RATE_LIMIT_PER_FIVE_MINUTES)
+                                .evaluationWindowSec(300)
+                                .aggregateKeyType("IP")
+                                .scopeDownStatement(CfnWebACL.StatementProperty.builder()
+                                        .andStatement(CfnWebACL.AndStatementProperty.builder()
+                                                .statements(List.of(
+                                                        mcpRouteUriPrefixStatement(),
+                                                        CfnWebACL.StatementProperty.builder()
+                                                                .notStatement(CfnWebACL.NotStatementProperty.builder()
+                                                                        .statement(hasAuthorizationHeader)
+                                                                        .build())
+                                                                .build()))
+                                                .build())
+                                        .build())
+                                .build())
+                        .build())
+                .action(CfnWebACL.RuleActionProperty.builder()
+                        .block(CfnWebACL.BlockActionProperty.builder().build())
+                        .build())
+                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                        .cloudWatchMetricsEnabled(true)
+                        .metricName("McpAnonymousRateLimitRule")
+                        .sampledRequestsEnabled(true)
+                        .build())
+                .build();
+    }
+
     /** Matches a request the common rule set labelled with the named rule's label. */
     private static CfnWebACL.StatementProperty coreRuleSetLabelStatement(String ruleName) {
         return CfnWebACL.StatementProperty.builder()
@@ -1117,9 +1209,9 @@ public class EdgeStack extends Stack {
         // ============================================================================
         // Sensitive-path scan detection (issue #9 phase 9.1) - regex pattern set
         // ============================================================================
-        // Anchored patterns only: "^/\.env" must never match "/submit.env", which the publish
-        // step writes as a real asset (see the SubmitApplicationCdkResourceTest verification of
-        // this and scripts/verify-waf-false-positives.sh for the deployed check).
+        // A pattern must never match "/submit.env", which the publish step writes as a real
+        // asset, nor a served page or API path: SubmitApplicationCdkResourceTest applies every
+        // pattern to those, and scripts/verify-waf-false-positives.sh is the deployed check.
         CfnRegexPatternSet sensitivePathsRegexSet = CfnRegexPatternSet.Builder.create(
                         this, props.resourceNamePrefix() + "-SensitivePathsRegexSet")
                 .name(props.resourceNamePrefix() + "-sensitive-paths")
@@ -1129,12 +1221,17 @@ public class EdgeStack extends Stack {
                 // Consolidated via alternation, not one entry per path: WAFv2 caps a
                 // RegexPatternSet at 10 patterns (NUM_PATTERNS_IN_REGEX_PATTERN_SET), and the
                 // original one-entry-per-path list of 13 exceeded it, failing CREATE for this
-                // resource on every deploy. Four entries here, matching the same paths, with
-                // headroom for more.
+                // resource on every deploy. Seven entries here, with headroom for more. A secrets
+                // file is blocked at any depth: scanners request "/app/.env.local" and
+                // "/api/config.json" as often as the root forms. The rule lower-cases the path
+                // before it matches, so every pattern is lower case.
                 .regularExpressionList(List.of(
-                        "^/\\.(env|git/|aws/|ssh/)",
+                        "/\\.(env|git/|aws/|ssh/)",
                         "^/(wp-admin|wp-login|xmlrpc\\.php|phpmyadmin|vendor/|actuator|server-status)",
-                        "^/config\\.(json|php|yml|yaml)$",
+                        "/(config|credentials)(\\.(json|js|php|ya?ml))?$",
+                        "/(settings|secrets?|parameters|appsettings[^/]*)\\.(json|ya?ml)$",
+                        "/(terraform\\.(tfstate|tfvars)|docker-compose\\.ya?ml|backup\\.sql)$",
+                        "/\\.(npmrc|boto|netrc|pypirc|git-credentials)$",
                         "\\.php$"))
                 .build();
 
@@ -1594,7 +1691,8 @@ public class EdgeStack extends Stack {
                                         .metricName("PublicDeadlinesRateLimitRule")
                                         .sampledRequestsEnabled(true)
                                         .build())
-                                .build()))
+                                .build(),
+                        mcpAnonymousRateLimitRule()))
                 .description(
                         "WAF WebACL for OIDC provider CloudFront distribution - provides rate limiting and protection against common attacks")
                 .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()

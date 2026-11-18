@@ -77,6 +77,8 @@ describe("fetchWithIdToken polling", () => {
     // Mock document for DOM-related code
     const mockElement = {
       appendChild: vi.fn(),
+      querySelectorAll: vi.fn(() => []),
+      dataset: {},
       setAttribute: vi.fn(),
       getAttribute: vi.fn(),
       style: {},
@@ -89,6 +91,7 @@ describe("fetchWithIdToken polling", () => {
       readyState: "complete",
       querySelector: vi.fn(() => null),
       querySelectorAll: vi.fn(() => []),
+      dataset: {},
       getElementById: vi.fn(() => mockElement),
       createElement: vi.fn(() => ({ ...mockElement })),
       addEventListener: vi.fn(),
@@ -467,6 +470,8 @@ describe("fetchWithIdToken AbortController", () => {
     // Mock document for DOM-related code
     const mockElement = {
       appendChild: vi.fn(),
+      querySelectorAll: vi.fn(() => []),
+      dataset: {},
       setAttribute: vi.fn(),
       getAttribute: vi.fn(),
       style: {},
@@ -479,6 +484,7 @@ describe("fetchWithIdToken AbortController", () => {
       readyState: "complete",
       querySelector: vi.fn(() => null),
       querySelectorAll: vi.fn(() => []),
+      dataset: {},
       getElementById: vi.fn(() => mockElement),
       createElement: vi.fn(() => ({ ...mockElement })),
       addEventListener: vi.fn(),

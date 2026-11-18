@@ -174,6 +174,35 @@ test.describe("Layout shift while data loads on a phone", () => {
     });
   }
 
+  for (const { pagePath, storage, label } of [
+    { pagePath: "index.html", storage: {}, label: "" },
+    { pagePath: "cy/index.html", storage: {}, label: " in Welsh" },
+    { pagePath: "index.html", storage: { siteLanguage: "cy" }, label: " with the Welsh choice" },
+  ])
+    for (const width of [320, 375, 390, 600, 601, 700, 760, 761, 1280]) {
+      test(`${pagePath} reserves the height the built navigation takes at ${width}px wide${label}`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await serveRealSiteWithSlowData(page, { storage });
+        await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "load" });
+        await expect(page.locator("#homeIntro")).toContainText(/Companies House|Thŷ’r Cwmnïau/);
+        await expect(page.locator(".main-nav a:visible").first()).toBeVisible();
+
+        const sizes = await page.evaluate(() => {
+          const header = document.querySelector("header");
+          const nav = document.querySelector(".main-nav");
+          const fallback = document.createElement("p");
+          fallback.className = "chrome-fallback";
+          header.prepend(fallback);
+          const reserved = parseFloat(getComputedStyle(header).paddingTop);
+          const bandHeight = fallback.getBoundingClientRect().height;
+          fallback.remove();
+          const navBox = nav.getBoundingClientRect();
+          return { reserved, bandHeight, navHeight: navBox.height + parseFloat(getComputedStyle(nav).marginTop) };
+        });
+        expect(Math.abs(sizes.reserved - sizes.navHeight), JSON.stringify(sizes)).toBeLessThan(1.5);
+      });
+    }
+
   for (const [width, height] of [
     [375, 800],
     [1280, 900],
@@ -329,12 +358,51 @@ test.describe("Layout shift while data loads on a phone", () => {
     await serveRealSiteWithSlowData(page, { apiAnswers: operatorAnswers(), storage: { operatorDashboardTab: "data" } });
     await page.goto("http://localhost:3000/operator/dashboard.html", { waitUntil: "load" });
     const bundles = page.locator('#dataTablesBody tr[data-table="bundles"] td');
-    await expect(bundles).toHaveText(["bundles", "1,296", "1,290", "1,250", "900", "no figure", "On, ttl"]);
-    await expect(page.locator('#dataSplitBody tr[data-table="bundles"] td')).toHaveText(["bundles", "410", "724", "96", "6", "60"]);
-    await expect(page.locator("#dataBucketsBody .data-bucket-row")).toHaveCount(5);
+    await expect(bundles).toHaveText(["bundles", "1,296", "410", "1,290", "1,250", "900", "no figure", "On, ttl"]);
+    await expect(page.locator('#dataTablesBody tr[data-table="security-state"] td').nth(2)).toHaveText("n/a");
+    await expect(page.locator('#dataSplitBody tr[data-table="bundles"] td')).toHaveText(["bundles", "410", "724", "96", "6", "60", "0"]);
+    await expect(page.locator('#dataSplitBody tr[data-table="integration-calls"] td')).toHaveText([
+      "integration-calls",
+      "6,100",
+      "11,900",
+      "300",
+      "20",
+      "0",
+      "100",
+    ]);
+    await expect(page.locator('#dataSplitBody tr[data-table="security-state"]')).toHaveCount(0);
+    await expect(page.locator("#dataBucketsBody .data-bucket-row")).toHaveCount(3);
+    await expect(page.locator("#dataAnalyticsBody .data-bucket-row")).toHaveCount(2);
+    await expect(page.locator('#dataBucketsSplitBody tr[data-name="diya-gl books"] td')).toHaveText([
+      "diya-gl books",
+      "2",
+      "7",
+      "1",
+      "0",
+      "1",
+    ]);
+    await expect(page.locator('#dataBucketsSplitBody tr[data-name="diya-gl"] td')).toHaveText(["diya-gl", "4", "14", "2", "0", "2"]);
+    for (const table of ["dataBucketsTable", "dataBucketsSplitTable", "dataAnalyticsTable"]) {
+      await expect(page.locator(`#${table} tbody tr:first-child td:nth-child(2)`)).toHaveCSS("text-align", "right");
+    }
+    const tablesGap = await page.evaluate(() => {
+      const first = document.getElementById("dataBucketsTable").getBoundingClientRect();
+      const second = document.getElementById("dataBucketsSplitTable").getBoundingClientRect();
+      return second.top - first.bottom;
+    });
+    expect(tablesGap).toBeGreaterThanOrEqual(8);
+    await page.locator("#dataTablesPanel").screenshot({ path: "target/screenshots/operator-dashboard-data-tables.png" });
+    await page.locator("#dataSplitPanel").screenshot({ path: "target/screenshots/operator-dashboard-data-split.png" });
+    await page.locator("#dataBucketsPanel").screenshot({ path: "target/screenshots/operator-dashboard-data-buckets.png" });
+    await page.locator("#dataAnalyticsPanel").screenshot({ path: "target/screenshots/operator-dashboard-data-analytics.png" });
     await expect(page.locator("#chart-data-totals")).toBeHidden();
     await page.locator('.dashboard-tab[data-tab-id="main"]').click();
-    await expect(page.locator("#chart-data-totals .chart-line")).toHaveCount(3);
+    await expect(page.locator("#chart-data-totals .chart-legend-item")).toHaveText([
+      "All",
+      "DynamoDB items",
+      "S3 objects",
+      "diya-gl objects",
+    ]);
   });
 
   test("operator/dashboard.html draws no block over the line above it at 375 wide", async ({ page }) => {

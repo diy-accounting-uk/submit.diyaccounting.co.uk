@@ -35,19 +35,8 @@ describe("home page preloads", () => {
     expect(linkHrefs("modulepreload").sort()).toEqual(staticImportGraph("submit.js"));
   });
 
-  it("preloads only fonts that tokens.css declares and that exist", () => {
-    const tokensCss = fs.readFileSync(path.join(publicDir, "css/tokens.css"), "utf-8");
-    const fonts = linkHrefs("preload").filter((href) => href.endsWith(".woff2"));
-    expect(fonts.length).toBeGreaterThan(0);
-    for (const font of fonts) {
-      expect(tokensCss).toContain(`url("../${font}")`);
-      expect(fs.existsSync(path.join(publicDir, font))).toBe(true);
-    }
-  });
-
-  it("marks every font preload as crossorigin so the browser reuses it", () => {
-    for (const tag of homeHtml.match(/<link rel="preload"[^>]*as="font"[^>]*>/g) || []) {
-      expect(tag).toContain("crossorigin");
-    }
+  it("preloads no font file, because running text uses a system font first", () => {
+    expect(homeHtml).not.toMatch(/<link rel="preload"[^>]*as="font"/);
+    expect(linkHrefs("preload").filter((href) => href.endsWith(".woff2"))).toEqual([]);
   });
 });

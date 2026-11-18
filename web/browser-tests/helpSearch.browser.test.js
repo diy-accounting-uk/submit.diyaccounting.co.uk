@@ -58,11 +58,12 @@ test.describe("Help search", () => {
         await page.setViewportSize({ width, height: 900 });
         await page.goto("http://localhost:3000/help.html", { waitUntil: "domcontentloaded" });
         await page.locator("#faq-search").fill(query);
+        await expect(page.locator("#search-hint")).toContainText(/result/);
         const result = page.locator(`.faq-item[data-id="${faqId}"]`);
         await expect(result).toBeVisible();
         await result.locator(".faq-question").click();
         await expect(result.locator(".faq-answer")).toBeVisible();
-        await expect(result.locator(".faq-answer")).toContainText(query === "Self Assessment" ? "sandbox" : "Companies House");
+        await expect(result.locator(".faq-answer")).toContainText(query === "Self Assessment" ? "Sandbox" : "Companies House");
       });
     }
   }

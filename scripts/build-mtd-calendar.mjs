@@ -19,7 +19,8 @@ import { writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import prettier from "prettier";
-import { loadSources, formatIsoDate, escapeHtml, sourceQuoteHtml } from "./tax-sources.mjs";
+import { loadSources, formatIsoDate, escapeHtml, sourcesQuoteHtml } from "./tax-sources.mjs";
+import { alternateLinksHtml } from "./build-welsh-pages.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const PAGE_PATH = join(ROOT, "web", "public", "mtd-calendar.html");
@@ -313,7 +314,9 @@ function relevantHtml(factId) {
 }
 
 function businessTypesHtml() {
-  const cell = (items) => items.map((i) => (i.href ? `<a href="${i.href}">${escapeHtml(i.text)}</a>` : escapeHtml(i.text))).join("<br />");
+  const link = (i) => (i.href ? `<a href="${i.href}">${escapeHtml(i.text)}</a>` : escapeHtml(i.text));
+  const cell = (items) =>
+    items.length > 1 ? `<ul class="cell-links">${items.map((i) => `<li>${link(i)}</li>`).join("")}</ul>` : link(items[0]);
   const groups = [...new Set(BUSINESS_TYPES.map((t) => t.group))];
   const body = groups
     .map(
@@ -331,7 +334,7 @@ function businessTypesHtml() {
   return (
     `<div class="form-container" id="business-types"><h2>Which dates apply to your business</h2>` +
     `<p>Find your business type, then follow the link in each column to its dates. Making Tax Digital for Income Tax covers sole traders and landlords registered for Self Assessment, so a limited company is outside it. Partnerships have no date yet. A taxi or private hire driver, and a sole trader with employees, follow the sole trader rules.</p>` +
-    `<div class="table-scroll"><table class="deadline-table stacked-table"><caption class="calendar-date">Business type against what applies</caption>` +
+    `<div class="table-scroll" role="region" tabindex="0" aria-labelledby="business-types-caption"><table class="deadline-table stacked-table table-words"><caption id="business-types-caption" class="calendar-date">Business type against what applies</caption>` +
     `<thead><tr><th scope="col">Business type</th>${BUSINESS_COLUMNS.map((c) => `<th scope="col">${c}</th>`).join("")}</tr></thead>${body}</table></div></div>`
   );
 }
@@ -362,9 +365,9 @@ function availabilityHtml() {
   }).join("");
   return (
     `<div class="form-container" id="availability"><h2>What you can file, and how</h2>` +
-    `<p>Production means you can use it for real. Sandbox means it runs against a test service and files nothing real. Preview means it runs on our simulator only.</p>` +
-    `<!-- A change to what a business can file, or through which channel, or whether a feature is production, sandbox or preview, updates this table in the same change. -->` +
-    `<div class="table-scroll"><table class="deadline-table stacked-table availability-table"><caption class="calendar-date">Availability by filing and channel</caption>` +
+    `<p>Each filing can be made in the ways listed below: on this website, or through an AI assistant. Production means you can use it for real. Sandbox means it runs against a test service and files nothing real. Preview means you can try the screens, and nothing is sent.</p>` +
+    `<!-- A change to what a business can file, or in which way to file, or whether a feature is production, sandbox or preview, updates this table in the same change. -->` +
+    `<div class="table-scroll" role="region" tabindex="0" aria-labelledby="availability-caption"><table class="deadline-table stacked-table availability-table table-words"><caption id="availability-caption" class="calendar-date">Availability by filing and way to file</caption>` +
     `<thead><tr><th scope="col">Filing</th>${CHANNELS.map((c) => `<th scope="col">${c}</th>`).join("")}<th scope="col">Docs and video</th></tr></thead>` +
     `<tbody>${rows}</tbody></table></div></div>`
   );
@@ -373,7 +376,7 @@ function availabilityHtml() {
 function sourcesHtml(factId, sources) {
   const supporting = sources.filter((s) => s.facts.includes(factId));
   if (supporting.length === 0) throw new Error(`Fact ${factId} has no source file`);
-  return supporting.map(sourceQuoteHtml).join("");
+  return sourcesQuoteHtml(supporting);
 }
 
 function entryHtml(fact, sources, heading, extraHtml = "") {
@@ -402,10 +405,10 @@ export function renderCalendarHtml(sources) {
     )
     .join("");
   const deadlineTable =
-    `<table class="deadline-table"><caption class="calendar-date">Standard update periods and deadlines</caption>` +
+    `<div class="table-scroll" role="region" tabindex="0" aria-labelledby="update-periods-caption"><table class="deadline-table"><caption id="update-periods-caption" class="calendar-date">Standard update periods and deadlines</caption>` +
     `<thead><tr><th scope="col">Update period</th><th scope="col">Deadline</th></tr></thead><tbody>` +
     QUARTERLY_FACT.rows.map(([period, deadline]) => `<tr><td>${period}</td><td>${deadline}</td></tr>`).join("") +
-    `</tbody></table>`;
+    `</tbody></table></div>`;
   const yearly =
     entryHtml(
       QUARTERLY_FACT,
@@ -430,14 +433,14 @@ export function renderCalendarHtml(sources) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="What you can file and how, and when Making Tax Digital applies: VAT from April 2022, Income Tax from April 2026 by income level, quarterly updates, the final declaration and the Companies House and Corporation Tax dates. Each date links to its gov.uk source."
+      content="What you can file and how, and when Making Tax Digital applies: VAT, Income Tax by income level, quarterly updates and Companies House dates, with sources."
     />
-    <link rel="canonical" href="https://submit.diyaccounting.co.uk/mtd-calendar.html" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/mtd-calendar.html" />${alternateLinksHtml("mtd-calendar.html")}
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="DIY Accounting" />
     <meta property="og:url" content="https://submit.diyaccounting.co.uk/mtd-calendar.html" />
     <meta property="og:title" content="MTD calendar - DIY Accounting Submit" />
-    <meta property="og:description" content="What you can file and how, and when Making Tax Digital applies: VAT from April 2022, Income Tax from April 2026 by income level, quarterly updates, the final declaration and the Companies House and Corporation Tax dates. Each date links to its gov.uk source." />
+    <meta property="og:description" content="What you can file and how, and when Making Tax Digital applies: VAT, Income Tax by income level, quarterly updates and Companies House dates, with sources." />
     <meta property="og:image" content="https://submit.diyaccounting.co.uk/images/social/og-submit.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <script type="application/ld+json">
@@ -461,7 +464,7 @@ export function renderCalendarHtml(sources) {
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
       <h1>MTD calendar</h1>
-      <p class="subtitle">MTD calendar: when Making Tax Digital applies to you</p>
+      <p class="subtitle">When Making Tax Digital applies to you</p>
     </header>
 
     <main id="mainContent">
@@ -486,6 +489,7 @@ export function renderCalendarHtml(sources) {
         <h2>No date yet</h2>
         <ol class="calendar">${undated}</ol>
       </div>
+      <p class="tools-link">More free tools are on the <a href="tools.html">Tools</a> page.</p>
     </main>
 
     <footer></footer>

@@ -23,7 +23,7 @@ import { fileURLToPath } from "node:url";
 import TOML from "@iarna/toml";
 import { Window } from "happy-dom";
 import { isActivityListedInEnvironment, parseCatalog } from "../app/services/productCatalog.js";
-import { listedBundles, priceSentence } from "./publish-content.mjs";
+import { bundlePriceList, fillBundlePrices, listedBundles, priceSentence } from "../web/public/lib/bundle-listing.js";
 
 const SKIPPED_TAGS = new Set(["script", "style", "noscript", "template", "svg", "iframe", "button", "input", "select", "textarea"]);
 const BLOCK_TAGS = new Set([
@@ -274,7 +274,10 @@ export function renderLlmsFullTxt(pages, faqs) {
  */
 export function publishLlms(webRoot, environmentName) {
   const catalog = parseCatalog(readFileSync(join(webRoot, "submit.catalogue.toml"), "utf8"));
-  const faqs = listedFaqs(TOML.parse(readFileSync(join(webRoot, "faqs.toml"), "utf8")).faq, catalog, environmentName);
+  const priceList = bundlePriceList(catalog, environmentName);
+  const faqs = listedFaqs(TOML.parse(readFileSync(join(webRoot, "faqs.toml"), "utf8")).faq, catalog, environmentName).map((faq) =>
+    fillBundlePrices(faq, priceList),
+  );
   const urls = sitemapUrls(readFileSync(join(webRoot, "sitemap.xml"), "utf8"));
   const pages = urls.map((url) => {
     const pageFile = pageFileOf(url);

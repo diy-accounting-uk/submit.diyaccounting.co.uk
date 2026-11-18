@@ -51,16 +51,41 @@ export function quoteAppearsIn(quote, pageHtml) {
   return normaliseText(pageHtml).includes(normaliseText(quote));
 }
 
-function sourceFooterHtml(source, lead = "") {
-  return (
-    `<footer>${lead}<a href="${escapeHtml(source.url)}" rel="noopener">${escapeHtml(source.url.replace("https://www.gov.uk", "gov.uk"))}</a>` +
-    ` <span class="retrieved">Retrieved ${formatIsoDate(source.retrieved)}</span></footer>`
-  );
+/** The title of a GOV.UK page as the page names it, without the site suffix, the entities or the padding. */
+export function pageTitle(pageHtml) {
+  const raw = (pageHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i) ?? [])[1];
+  if (raw === undefined) return null;
+  return normaliseText(raw.replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"'))
+    .replace(/\s+-\s+GOV\.UK$/, "")
+    .trim();
 }
 
-/** A source whose words are a table or a list read as noise in a quote, so it prints as a citation line only. */
+function sourceFooterHtml(source) {
+  if (!source.title) throw new Error(`${source.name ?? source.url}: the source file has no title`);
+  return `<footer>Source: <a href="${escapeHtml(source.url)}" rel="noopener">GOV.UK, ${escapeHtml(source.title)}</a> (checked ${formatIsoDate(source.retrieved)})</footer>`;
+}
+
+/**
+ * The sources a section cites, as one block per GOV.UK page: each quote of that page as a paragraph and
+ * one link line. A page cited by several sources, or twice, prints its link once. A source whose words are
+ * a table or a list prints no quote; a page with only such sources prints the link line alone.
+ */
+export function sourcesQuoteHtml(sources) {
+  const pages = new Map();
+  for (const source of sources) {
+    if (!pages.has(source.url)) pages.set(source.url, []);
+    pages.get(source.url).push(source);
+  }
+  return [...pages.values()]
+    .map((group) => {
+      const quotes = [...new Set(group.filter((s) => !s.table).map((s) => s.quote))];
+      const newest = group.reduce((a, b) => (b.retrieved > a.retrieved ? b : a));
+      const className = quotes.length === 0 ? "source-quote source-citation" : "source-quote";
+      return `<blockquote class="${className}">${quotes.map((q) => `<p>${escapeHtml(q)}</p>`).join("")}${sourceFooterHtml({ ...group[0], retrieved: newest.retrieved })}</blockquote>`;
+    })
+    .join("");
+}
+
 export function sourceQuoteHtml(source) {
-  if (source.table)
-    return `<blockquote class="source-quote source-citation">${sourceFooterHtml(source, "Source: the table on ")}</blockquote>`;
-  return `<blockquote class="source-quote"><p>${escapeHtml(source.quote)}</p>${sourceFooterHtml(source)}</blockquote>`;
+  return sourcesQuoteHtml([source]);
 }

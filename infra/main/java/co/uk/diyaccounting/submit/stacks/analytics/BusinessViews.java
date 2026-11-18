@@ -108,6 +108,16 @@ public class BusinessViews extends Construct {
                     "stripe_charges with each hash read through hash_aliases, stable across a salt rotation",
                     List.of("stripe_charges", "hash_aliases")),
             new ViewDefinition(
+                    "v_account_class",
+                    "The class of each account (customer, test, synthetic, other or unknown) from every record"
+                            + " that names an actor for it",
+                    List.of(
+                            "activity_events_all",
+                            "aliased_dynamo_receipts",
+                            "aliased_dynamo_bundles",
+                            "aliased_dynamo_subscriptions",
+                            "aliased_dynamo_passes")),
+            new ViewDefinition(
                     "v_active_users_daily", "Distinct customers active each day", List.of("activity_events_all")),
             new ViewDefinition(
                     "v_submissions_daily",
@@ -135,8 +145,23 @@ public class BusinessViews extends Construct {
                     List.of("activity_events_all")),
             new ViewDefinition(
                     "v_signup_to_first_submission",
-                    "Time from a new account's first bundle grant to its first submission",
-                    List.of("aliased_dynamo_bundles", "aliased_dynamo_receipts", "activity_events_all")),
+                    "Time from a new account's first bundle grant to its first submission, by account class",
+                    List.of("aliased_dynamo_bundles", "aliased_dynamo_receipts", "v_account_class")),
+            new ViewDefinition(
+                    "v_account_lifecycle_daily",
+                    "Each day and account class: accounts in total, first and second submissions, subscriptions"
+                            + " started, ended and active, and passes open to redeem",
+                    List.of(
+                            "activity_events_all",
+                            "aliased_dynamo_bundles",
+                            "aliased_dynamo_receipts",
+                            "aliased_dynamo_subscriptions",
+                            "aliased_dynamo_passes",
+                            "v_account_class")),
+            new ViewDefinition(
+                    "v_retention_cohorts_monthly",
+                    "Of the accounts opened in a month, how many submitted in each month since, by account class",
+                    List.of("aliased_dynamo_bundles", "aliased_dynamo_receipts", "v_account_class")),
             new ViewDefinition(
                     "v_traffic_by_country_daily", "Sessions each day, by country", List.of("activity_events_all")),
             new ViewDefinition(
@@ -228,8 +253,9 @@ public class BusinessViews extends Construct {
                     List.of("aliased_dynamo_receipts")),
             new ViewDefinition(
                     "v_returning_submitters_rolling_daily",
-                    "Each day, the customers who submitted in the last 90 days and how many also submitted in the 90 days before",
-                    List.of("aliased_dynamo_receipts")),
+                    "Each day, the customers who submitted in the last 90 and 7 days: new, returning, resurrected,"
+                            + " due and dormant",
+                    List.of("aliased_dynamo_receipts", "v_account_class")),
             new ViewDefinition(
                     "v_vat_submissions_by_actor_daily",
                     "VAT submissions each day and account, customers apart from test accounts",
@@ -240,12 +266,12 @@ public class BusinessViews extends Construct {
                     List.of("cloudfront_requests")),
             new ViewDefinition(
                     "v_subscription_renewals_daily",
-                    "Subscriptions that renewed each day, by bundle",
-                    List.of("activity_events_all")),
+                    "Subscriptions that renewed each day, by bundle and account class",
+                    List.of("activity_events_all", "v_account_class")),
             new ViewDefinition(
                     "v_subscription_cancellations_daily",
-                    "Subscriptions cancelled each day, by bundle",
-                    List.of("aliased_dynamo_subscriptions", "activity_events_all")),
+                    "Subscriptions cancelled each day, by bundle and account class",
+                    List.of("aliased_dynamo_subscriptions", "activity_events_all", "v_account_class")),
             new ViewDefinition(
                     "v_operator_interventions_daily",
                     "Operator interventions each day, by kind: dispatches, issue comments and commits",
@@ -357,7 +383,8 @@ public class BusinessViews extends Construct {
                     List.of("sessions_by_host_source_daily")),
             new ViewDefinition(
                     "v_active_customers_7d_daily",
-                    "Distinct customers active each day and over the 7 days to it, by app client and for all clients",
+                    "Distinct customers active each day and over the 7 and 90 days to it, by app client and for all"
+                            + " clients",
                     List.of("activity_events_all")),
             new ViewDefinition(
                     "v_ga4_landing_pages_daily",
@@ -385,8 +412,29 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_integration_calls_hourly",
                     "Outbound calls and their total duration each UTC hour, by organisation, target, api, outcome"
-                            + " and HTTP status, for the last 9 days",
-                    List.of("dynamo_calls")));
+                            + " and HTTP status, for the last 15 days",
+                    List.of("dynamo_calls")),
+            new ViewDefinition(
+                    "v_hmrc_failures_by_class_hourly",
+                    "HMRC failures each hour by class and HMRC status, for the last 15 days",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
+                    "v_submission_failure_rate_hourly",
+                    "VAT returns each hour, how many failed and the share that failed, for the last 15 days",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
+                    "v_active_customers_hourly",
+                    "Distinct signed-in customers each hour, by app client and for all clients, for the last 15 days",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
+                    "v_sign_ins_hourly",
+                    "Sign-ins and refreshes each hour, by app client, event, actor and sign-in provider, for the last"
+                            + " 15 days",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
+                    "v_traffic_by_country_hourly",
+                    "Sessions each hour by country, with AI agents apart, for the last 15 days",
+                    List.of("activity_events_all")));
 
     public final List<CfnNamedQuery> namedQueries = new ArrayList<>();
     public final List<CustomResource> viewResources = new ArrayList<>();

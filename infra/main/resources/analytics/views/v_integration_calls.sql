@@ -7,6 +7,9 @@
 -- day is the UK calendar date of started_at. target is live or test (sandbox host, test key,
 -- simulator). status is the HTTP status and is null for a timeout, a network error or a refusal;
 -- status_label is the status as text or the outcome. api is a path template with no identifier.
+-- actor is the class of the caller: customer, operator, test-user, probe or system (a scheduled
+-- job). A record written before the column existed has none: the scheduled jobs read system by
+-- function_name and every other record reads unknown, which is never counted as a customer.
 -- The raw request and response skeletons stay in the table and never reach the lake.
 CREATE OR REPLACE VIEW v_integration_calls AS
 SELECT CAST(at_timezone(with_timezone(started_at, 'UTC'), 'Europe/London') AS date) AS day,
@@ -14,6 +17,9 @@ SELECT CAST(at_timezone(with_timezone(started_at, 'UTC'), 'Europe/London') AS da
        call_id,
        org,
        target,
+       coalesce(actor,
+                CASE WHEN regexp_like(function_name, '-env-(stripe-reconcile|trusted-event-to-github-issue)$')
+                     THEN 'system' ELSE 'unknown' END) AS actor,
        api,
        method,
        duration_ms,

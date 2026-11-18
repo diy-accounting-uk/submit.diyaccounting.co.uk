@@ -6,6 +6,10 @@
     <meta charset="UTF-8" />
     <title>File Small Company Accounts - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/companies-house/fileSmallCompanyAccounts.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/fileSmallCompanyAccounts.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/fileSmallCompanyAccounts.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/fileSmallCompanyAccounts.html" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
@@ -27,7 +31,7 @@
     </header>
 
     <main id="mainContent">
-      <p class="hint" data-feature-status="production">
+      <p class="hint" data-feature-status="production" data-companies-house-service="xml-gateway">
         <strong>Status: production.</strong> Accounts you file here reach the live Companies House register.
       </p>
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
@@ -39,8 +43,8 @@
         id="companyView"
         class="form-container"
         data-requires-sign-in
-        data-sign-in-title="Log in to file with Companies House"
-        data-sign-in-text="Log in to look up your company and file with Companies House. The filing is made from your account."
+        data-sign-in-title="Sign in to file with Companies House"
+        data-sign-in-text="Sign in to look up your company and file with Companies House. The filing is made from your account."
       >
         <h2>Which company?</h2>
         <form id="companyForm" novalidate>
@@ -74,6 +78,34 @@
         </p>
         <div id="booksImport"></div>
         <form id="accountsForm" novalidate>
+          <section id="documentLanguageSection" class="form-section" hidden>
+            <h3>Language of the accounts</h3>
+            <p id="documentLanguage-hint" class="hint">
+              The company's registered office is in Wales, so it can deliver its accounts in Welsh. Companies House gets them translated
+              into English for the register. The page language does not change this choice. Companies House sends its answer in English.
+            </p>
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="radio"
+                  id="documentLanguageEn"
+                  name="documentLanguage"
+                  value="en"
+                  checked
+                  aria-describedby="documentLanguage-hint"
+                /><label for="documentLanguageEn">English</label>
+              </div>
+              <div class="choice">
+                <input
+                  type="radio"
+                  id="documentLanguageCy"
+                  name="documentLanguage"
+                  value="cy"
+                  aria-describedby="documentLanguage-hint"
+                /><label for="documentLanguageCy">Welsh (Cymraeg)</label>
+              </div>
+            </div>
+          </section>
           <section class="form-section">
             <h3>Period</h3>
             <div class="form-group">
@@ -2733,6 +2765,7 @@ In accordance with your instructions, we have compiled these unaudited financial
         <div id="rejections" style="display: none"></div>
         <p><a id="filingCopyLink" href="filings.html" style="display: none">See your copy of this filing</a></p>
         <div class="button-group">
+          <button type="button" id="checkAgainBtn" class="secondary-button" style="display: none">Check again</button>
           <button type="button" id="startAgainBtn" class="secondary-button" style="display: none">Start a new filing</button>
         </div>
       </div>
@@ -2742,6 +2775,8 @@ In accordance with your instructions, we have compiled these unaudited financial
 
     <script src="../widgets/page-chrome.js"></script>
     <script src="../lib/env-loader.js"></script>
+    <script src="../lib/companies-house-lane.js"></script>
+    <script src="../lib/companies-house-gateway-poll.js"></script>
     <script src="../lib/auth-url-builder.js"></script>
     <script type="module" src="../submit.js"></script>
     <script src="../developer-mode.js"></script>

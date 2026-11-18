@@ -1,0 +1,565 @@
+<!-- submitVat.html -->
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from hmrc/vat/submitVat.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cyflwyno Ffurflen TAW - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/hmrc/vat/submitVat.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/vat/submitVat.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html" />
+    <link rel="stylesheet" href="../../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../../lib/analytics.js"></script>
+    <!-- HEAD-prefetch to help mitigate API cold starts for this page's calls -->
+    <!--script async src="../../../prefetch/prefetch-hmrc-vat-return-head.js"></script-->
+    <!--script async src="../../../prefetch/prefetch-hmrc-receipt-head.js"></script-->
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="vat-submit.submit-vat-return-734379">Cyflwyno Ffurflen TAW</h1>
+      <p data-i18n="vat-submit.submit-uk-vat-returns-to-hmrc-863e14" class="subtitle">
+        Cyflwyno Ffurflenni TAW y DU i CThEF o dan Troi Treth yn Ddigidol (MTD)
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p data-i18n="vat-submit.status-production-returns-you-submit-here-5961c5" class="hint" data-feature-status="production">
+        <strong>Statws: cynhyrchu (production).</strong> Mae’r Ffurflenni TAW y byddwch yn eu cyflwyno yma yn cyrraedd CThEF.
+        <span id="hmrcAssistStatusNote" hidden
+          >Rhagolwg (preview) yw’r gwiriad HMRC Assist ar y dudalen hon: gallwch roi cynnig ar y sgriniau, ac nid oes dim yn cael ei
+          anfon.</span
+        >
+      </p>
+      <div id="syntheticIndicator" class="synthetic-indicator">
+        <span data-i18n="vat-submit.synthetic-mode-calls-go-to-hmrc-efa44d"
+          >Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF</span
+        >
+      </div>
+
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- VAT Submission Form -->
+      <div class="form-toggle-buttons">
+        <button
+          data-i18n="vat-submit.show-submission-form-f17097"
+          type="button"
+          id="toggleFormBtn"
+          class="secondary-button"
+          style="display: none"
+        >
+          Dangos y ffurflen gyflwyno
+        </button>
+        <button
+          data-i18n="vat-submit.cancel-request-561966"
+          type="button"
+          id="cancelRequestBtn"
+          class="cancel-button"
+          style="display: none"
+        >
+          Canslo’r cais
+        </button>
+      </div>
+      <div
+        id="vatForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i gyflwyno Ffurflen TAW"
+        data-sign-in-text="Mewngofnodwch i gyflwyno’ch Ffurflen TAW i CThEF. Mae eich llyfrau, eich cysylltiad â CThEF a’ch derbynebau yn cael eu cadw gyda’ch cyfrif."
+        data-i18n-data-sign-in-title="vat-submit.sign-in-to-submit-a-vat-57f235"
+        data-i18n-data-sign-in-text="vat-submit.sign-in-to-submit-your-vat-723188"
+      >
+        <div id="booksImport"></div>
+        <form id="vatSubmissionForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="vat-submit.vat-registration-number-873ba7" for="vatNumber">Rhif cofrestru TAW</label>
+            <p data-i18n="vat-submit.this-is-9-numbers-sometimes-with-b921f3" id="vatNumber-hint" class="hint">
+              Mae hwn yn 9 rhif, weithiau gyda ‘GB’ ar y dechrau, er enghraifft 123456789 neu GB123456789. Mae i’w weld ar eich tystysgrif
+              cofrestru TAW.
+            </p>
+            <input
+              type="text"
+              id="vatNumber"
+              name="vatNumber"
+              required
+              value=""
+              maxlength="9"
+              pattern="[0-9]{9}"
+              aria-describedby="vatNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+
+          <div class="form-group" role="group" aria-labelledby="vatPeriod-label">
+            <p data-i18n="vat-submit.vat-period-14cb33" id="vatPeriod-label" class="field-label">Cyfnod TAW</p>
+            <div id="obligationChoiceGroup" hidden>
+              <p data-i18n="vat-submit.choose-a-period-hmrc-is-expecting-9820cc" id="obligationChoice-hint" class="hint">
+                Dewiswch gyfnod y mae CThEF yn disgwyl Ffurflen TAW ar ei gyfer
+              </p>
+              <select
+                id="obligationChoice"
+                aria-label="Y cyfnod TAW i’w gyflwyno"
+                aria-describedby="obligationChoice-hint"
+                data-i18n-aria-label="vat-submit.vat-period-to-submit-236d4c"
+              ></select>
+            </div>
+            <p id="obligationStatus" class="hint" role="status"></p>
+            <button
+              data-i18n="vat-submit.connect-to-hmrc-to-list-your-345255"
+              type="button"
+              id="connectHmrcBtn"
+              class="secondary-button"
+              style="display: none"
+            >
+              Cysylltu â CThEF i restru’ch cyfnodau agored
+            </button>
+            <div id="periodDates">
+              <p data-i18n="vat-submit.enter-the-start-and-end-dates-422250" id="periodDates-hint" class="hint">
+                Nodwch ddyddiadau dechrau a diwedd eich cyfnod TAW
+              </p>
+              <div class="period-date-inputs">
+                <div>
+                  <label data-i18n="vat-submit.period-start-32d302" for="periodStart">Dechrau’r cyfnod</label>
+                  <input type="date" id="periodStart" name="periodStart" required aria-describedby="periodDates-hint" />
+                </div>
+                <div>
+                  <label data-i18n="vat-submit.period-end-eeae9f" for="periodEnd">Diwedd y cyfnod</label>
+                  <input type="date" id="periodEnd" name="periodEnd" required aria-describedby="periodDates-hint" />
+                </div>
+              </div>
+            </div>
+            <input type="hidden" id="periodKey" name="periodKey" value="" />
+          </div>
+
+          <section class="form-section">
+            <h3 data-i18n="vat-submit.vat-return-details-a7d1b0">Manylion y Ffurflen TAW</h3>
+            <table class="ledger ledger--one-year">
+              <thead>
+                <tr>
+                  <th data-i18n="vat-submit.box-512fd3" scope="col">Blwch</th>
+                  <th data-i18n="vat-submit.amount-2d7841" scope="col" class="ledger__figure">Swm (£)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">
+                    <label data-i18n="vat-submit.box-1-vat-due-in-the-50f77d" for="vatDueSales"
+                      >Blwch 1: TAW sy’n ddyledus yn y cyfnod ar werthiannau ac allbynnau eraill</label
+                    >
+                    <p data-i18n="vat-submit.enter-an-amount-with-up-to-1be124" id="vatDueSales-hint" class="hint">
+                      Nodwch swm gyda hyd at 2 le degol, er enghraifft £600 neu £193.54
+                    </p>
+                  </th>
+                  <td class="ledger__figure">
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        type="text"
+                        id="vatDueSales"
+                        name="vatDueSales"
+                        required
+                        value=""
+                        inputmode="decimal"
+                        aria-describedby="vatDueSales-hint"
+                        autocomplete="off"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">
+                    <label data-i18n="vat-submit.box-2-vat-due-in-the-194b1d" for="vatDueAcquisitions"
+                      >Blwch 2: TAW sy’n ddyledus yn y cyfnod ar gaffael nwyddau a wneir yng Ngogledd Iwerddon o Aelod-wladwriaethau’r
+                      UE</label
+                    >
+                    <p data-i18n="vat-submit.enter-an-amount-with-up-to-c102eb" id="vatDueAcquisitions-hint" class="hint">
+                      Nodwch swm gyda hyd at 2 le degol, er enghraifft £600 neu £193.54. Fel arfer 0 ers Brexit.
+                    </p>
+                  </th>
+                  <td class="ledger__figure">
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        type="text"
+                        id="vatDueAcquisitions"
+                        name="vatDueAcquisitions"
+                        required
+                        value="0"
+                        inputmode="decimal"
+                        aria-describedby="vatDueAcquisitions-hint"
+                        autocomplete="off"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr class="calculated-field">
+                  <th scope="row">
+                    <label data-i18n="vat-submit.box-3-total-vat-due-f077f5" for="totalVatDue">Blwch 3: Cyfanswm y TAW sy’n ddyledus</label>
+                    <p data-i18n="vat-submit.calculated-the-sum-of-boxes-1-a0486a" id="totalVatDue-hint" class="hint">
+                      Wedi’i gyfrifo: cyfanswm blychau 1 a 2
+                    </p>
+                  </th>
+                  <td class="ledger__figure">
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        type="text"
+                        id="totalVatDue"
+                        name="totalVatDue"
+                        required
+                        value=""
+                        inputmode="decimal"
+                        aria-describedby="totalVatDue-hint"
+                        readonly
+                        autocomplete="off"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">
+                    <label data-i18n="vat-submit.box-4-vat-reclaimed-in-the-58efa3" for="vatReclaimedCurrPeriod"
+                      >Blwch 4: TAW a adenillwyd yn y cyfnod ar bryniadau a mewnbynnau eraill (gan gynnwys caffaeliadau yng Ngogledd
+                      Iwerddon o Aelod-wladwriaethau’r UE)</label
+                    >
+                    <p data-i18n="vat-submit.enter-an-amount-with-up-to-1be124" id="vatReclaimedCurrPeriod-hint" class="hint">
+                      Nodwch swm gyda hyd at 2 le degol, er enghraifft £600 neu £193.54
+                    </p>
+                  </th>
+                  <td class="ledger__figure">
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        type="text"
+                        id="vatReclaimedCurrPeriod"
+                        name="vatReclaimedCurrPeriod"
+                        required
+                        value=""
+                        inputmode="decimal"
+                        aria-describedby="vatReclaimedCurrPeriod-hint"
+                        autocomplete="off"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr class="calculated-field">
+                  <th scope="row">
+                    <label data-i18n="vat-submit.box-5-net-vat-to-pay-fc79f7" for="netVatDue"
+                      >Blwch 5: TAW net i dalu i CThEF neu ei hadennill</label
+                    >
+                    <p data-i18n="vat-submit.calculated-the-difference-between-boxes-3-3af40b" id="netVatDue-hint" class="hint">
+                      Wedi’i gyfrifo: y gwahaniaeth rhwng blychau 3 a 4, bob amser yn swm positif
+                    </p>
+                  </th>
+                  <td class="ledger__figure">
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        type="text"
+                        id="netVatDue"
+                        name="netVatDue"
+                        required
+                        value=""
+                        inputmode="decimal"
+                        aria-describedby="netVatDue-hint"
+                        readonly
+                        autocomplete="off"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">
+                    <label data-i18n="vat-submit.box-6-total-value-of-sales-d1656e" for="totalValueSalesExVAT"
+                      >Blwch 6: Cyfanswm gwerth y gwerthiannau a chyflenwadau eraill, ac eithrio TAW</label
+                    >
+                    <p data-i18n="vat-submit.enter-a-whole-number-without-pence-c5339d" id="totalValueSalesExVAT-hint" class="hint">
+                      Nodwch rif cyfan heb geiniogau, er enghraifft £15000
+                    </p>
+                  </th>
+                  <td class="ledger__figure">
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        type="text"
+                        id="totalValueSalesExVAT"
+                        name="totalValueSalesExVAT"
+                        required
+                        value=""
+                        inputmode="numeric"
+                        aria-describedby="totalValueSalesExVAT-hint"
+                        autocomplete="off"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">
+                    <label data-i18n="vat-submit.box-7-total-value-of-purchases-1ee58e" for="totalValuePurchasesExVAT"
+                      >Blwch 7: Cyfanswm gwerth y pryniadau a’r holl fewnbynnau eraill, heb gynnwys TAW</label
+                    >
+                    <p data-i18n="vat-submit.enter-a-whole-number-without-pence-c5339d" id="totalValuePurchasesExVAT-hint" class="hint">
+                      Nodwch rif cyfan heb geiniogau, er enghraifft £15000
+                    </p>
+                  </th>
+                  <td class="ledger__figure">
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        type="text"
+                        id="totalValuePurchasesExVAT"
+                        name="totalValuePurchasesExVAT"
+                        required
+                        value=""
+                        inputmode="numeric"
+                        aria-describedby="totalValuePurchasesExVAT-hint"
+                        autocomplete="off"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">
+                    <label data-i18n="vat-submit.box-8-total-value-of-all-2b4f8e" for="totalValueGoodsSuppliedExVAT"
+                      >Blwch 8: Cyfanswm gwerth anfon y nwyddau a’r costau cysylltiedig (ac eithrio TAW) o Ogledd Iwerddon i
+                      Aelod-wladwriaethau’r UE</label
+                    >
+                    <p data-i18n="vat-submit.enter-a-whole-number-without-pence-fb06e5" id="totalValueGoodsSuppliedExVAT-hint" class="hint">
+                      Nodwch rif cyfan heb geiniogau. Fel arfer 0 ers Brexit.
+                    </p>
+                  </th>
+                  <td class="ledger__figure">
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        type="text"
+                        id="totalValueGoodsSuppliedExVAT"
+                        name="totalValueGoodsSuppliedExVAT"
+                        required
+                        value="0"
+                        inputmode="numeric"
+                        aria-describedby="totalValueGoodsSuppliedExVAT-hint"
+                        autocomplete="off"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">
+                    <label data-i18n="vat-submit.box-9-total-value-of-all-c20913" for="totalAcquisitionsExVAT"
+                      >Blwch 9: Cyfanswm gwerth caffael y nwyddau a’r costau cysylltiedig (ac eithrio TAW) a wneir yng Ngogledd Iwerddon o
+                      Aelod-wladwriaethau’r UE</label
+                    >
+                    <p data-i18n="vat-submit.enter-a-whole-number-without-pence-fb06e5" id="totalAcquisitionsExVAT-hint" class="hint">
+                      Nodwch rif cyfan heb geiniogau. Fel arfer 0 ers Brexit.
+                    </p>
+                  </th>
+                  <td class="ledger__figure">
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        type="text"
+                        id="totalAcquisitionsExVAT"
+                        name="totalAcquisitionsExVAT"
+                        required
+                        value="0"
+                        inputmode="numeric"
+                        aria-describedby="totalAcquisitionsExVAT-hint"
+                        autocomplete="off"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <!-- Legal Declaration -->
+          <section class="form-section">
+            <h3 data-i18n="vat-submit.declaration-760934">Datganiad</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="declaration" name="declaration" required aria-describedby="declaration-hint" /><label
+                  data-i18n="vat-submit.when-you-submit-this-vat-information-540c7c"
+                  for="declaration"
+                  >Drwy gyflwyno’r Ffurflen TAW hon, rydych yn gwneud datganiad cyfreithiol bod yr wybodaeth yn gywir ac yn gyflawn hyd
+                  eithaf eich gwybodaeth a’ch cred. Gall datganiad ffug arwain at erlyniad.</label
+                >
+              </div>
+              <p data-i18n="vat-submit.tick-this-box-to-confirm-you-3a13b5" id="declaration-hint" class="hint">
+                Ticiwch y blwch hwn i gadarnhau eich bod yn deall cyn cyflwyno.
+              </p>
+            </div>
+          </section>
+
+          <!-- Developer Test Scenario Section -->
+          <div id="developerSection" class="form-group" style="display: none">
+            <div id="testDataLink" class="test-data-link">
+              <a data-i18n="vat-submit.add-test-data-28908b" href="#" id="addTestDataLink">ychwanegu data prawf</a>
+            </div>
+            <label data-i18n="vat-submit.test-scenario-developer-synthetic-only-bc20fe" for="testScenario"
+              >Senario prawf (datblygwr neu synthetig yn unig)</label
+            >
+            <p data-i18n="vat-submit.test-different-hmrc-sandbox-error-scenarios-679bff" id="testScenario-hint" class="hint">
+              Profi senarios gwall gwahanol yn amgylchedd prawf (sandbox) CThEF
+            </p>
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint" translate="no">
+              <option value="">Default</option>
+              <!-- Values aligned with reference/hmrc-mtd-vat-api-1.0.yaml (POST /organisations/vat/{vrn}/returns) -->
+              <option value="INVALID_VRN">Invalid VAT registration number</option>
+              <option value="INVALID_PERIODKEY">Invalid Period Key</option>
+              <option value="INVALID_PAYLOAD">Invalid Payload</option>
+              <option value="DUPLICATE_SUBMISSION">Duplicate Submission</option>
+              <option value="TAX_PERIOD_NOT_ENDED">Tax Period Not Ended</option>
+              <option value="INSOLVENT_TRADER">Insolvent Trader</option>
+              <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
+              <option value="SUBMIT_HMRC_API_HTTP_500">HMRC API responds with 500</option>
+              <option value="SUBMIT_HMRC_API_HTTP_503">HMRC API responds with 503</option>
+              <option value="SUBMIT_HMRC_API_HTTP_SLOW_10S">HMRC API responds slowly</option>
+            </select>
+            <div class="choice">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                data-i18n="vat-submit.validate-fraud-prevention-headers-ea7c94"
+                for="runFraudPreventionHeaderValidation"
+                >Dilysu’r penawdau atal twyll</label
+              >
+            </div>
+            <div id="syntheticObligationsOption" class="choice" style="display: none">
+              <input type="checkbox" id="allowSyntheticObligations" name="allowSyntheticObligations" /><label
+                data-i18n="vat-submit.allow-any-open-obligation-synthetic-only-d49472"
+                for="allowSyntheticObligations"
+                >Caniatáu unrhyw rwymedigaeth agored (synthetig yn unig: mae’n defnyddio’r cyfnod cyntaf sydd ar gael os nad yw’r
+                dyddiadau’n cyfateb)</label
+              >
+            </div>
+          </div>
+
+          <div id="hmrcAssistCheck"></div>
+
+          <p id="tokenCostInfo" class="hint" style="display: none"></p>
+          <button data-i18n="vat-submit.submit-vat-return-734379" type="submit" class="btn" id="submitBtn" data-activity-start="submit-vat">
+            Cyflwyno Ffurflen TAW
+          </button>
+        </form>
+      </div>
+
+      <!-- Receipt Display -->
+      <div id="receiptDisplay" class="receipt" style="display: none">
+        <h3>
+          <svg
+            class="icon-inline"
+            viewBox="0 0 24 24"
+            width="24"
+            height="24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M8 12.5l3 3 5-6" />
+          </svg>
+          <span data-i18n="vat-submit.vat-return-submitted-successfully-89c74a">Rydych wedi cyflwyno Ffurflen TAW</span>
+        </h3>
+        <div class="receipt-details">
+          <div class="receipt-item">
+            <span data-i18n="vat-submit.processing-date-2d3ed7"><strong>Dyddiad prosesu</strong></span>
+            <span id="processingDate"></span>
+          </div>
+          <div class="receipt-item">
+            <span data-i18n="vat-submit.form-bundle-number-ba0637"><strong>Rhif bwndel y ffurflen (Form bundle number)</strong></span>
+            <span id="formBundleNumber"></span>
+          </div>
+          <div class="receipt-item">
+            <span data-i18n="vat-submit.charge-reference-a5b172"><strong>Cyfeirnod y tâl</strong></span>
+            <span id="chargeRefNumber"></span>
+          </div>
+        </div>
+        <div id="filedReturn" class="receipt-details" style="display: none">
+          <div class="receipt-item">
+            <span data-i18n="vat-submit.vat-registration-number-fc811f"><strong>Rhif cofrestru TAW</strong></span>
+            <span id="filedVrn"></span>
+          </div>
+          <div class="receipt-item" id="filedPeriodItem">
+            <span data-i18n="vat-submit.period-35a97c"><strong>Cyfnod</strong></span>
+            <span id="filedPeriod"></span>
+          </div>
+          <div id="filedFigures"></div>
+        </div>
+        <p data-i18n="vat-submit.keep-this-receipt-for-your-records-a1fdec" class="hint">
+          Cadwch y dderbynneb hon ar gyfer eich cofnodion.
+        </p>
+        <nav class="next-steps" aria-label="Beth i’w wneud nesaf" data-i18n-aria-label="vat-submit.what-to-do-next-6164ad">
+          <a data-i18n="vat-submit.see-your-receipts-ab780d" href="../receipt/receipts.html">Gweld eich derbynebau</a>
+          <a data-i18n="vat-submit.see-your-vat-obligations-f9042f" href="vatObligations.html">Gweld eich rhwymedigaethau TAW</a>
+        </nav>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../../lib/welsh-text.js"></script>
+    <script src="../../../widgets/page-chrome.js"></script>
+    <script src="../../../lib/env-loader.js"></script>
+    <script src="../../../lib/auth-url-builder.js"></script>
+    <script src="../../../lib/test-data-generator.js"></script>
+    <script type="module" src="../../../submit.js"></script>
+    <script src="../../../developer-mode.js"></script>
+    <script src="../../../lib/request-cache.js"></script>
+    <script src="../../../lib/carried-identifiers.js"></script>
+    <script src="../../../lib/toml-parser.js"></script>
+    <script src="../../../lib/hmrc-scope-check.js"></script>
+    <script src="../../../lib/vat-period-choice.js"></script>
+    <script src="../../../widgets/hmrc-assist-messages.js"></script>
+    <script src="../../../widgets/entitlement-status.js"></script>
+    <script src="../../../widgets/auth-status.js"></script>
+    <script src="../../../lib/form-errors.js"></script>
+    <script src="../../../widgets/status-messages.js"></script>
+    <script src="../../../widgets/signed-out-panel.js"></script>
+    <script src="../../../widgets/pass-redeemer.js"></script>
+    <script src="../../../widgets/books-import.js"></script>
+    <script src="../../../lib/money-format.js"></script>
+    <script src="../../../lib/hmrc-display-format.js"></script>
+    <script src="../../../lib/hmrc-sandbox-status.js"></script>
+    <script src="../../../hmrc/vat/submitVat.page.js"></script>
+  </body>
+</html>

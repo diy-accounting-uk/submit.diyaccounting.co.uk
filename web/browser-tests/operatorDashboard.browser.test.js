@@ -21,6 +21,7 @@ import {
   FIXTURE_PAID_SUBSCRIBERS,
   FIXTURE_PAGE_VISITORS,
   FIXTURE_SNAPSHOT_WITH_CHARTS,
+  FIXTURE_DATA,
   FIXTURE_AFFILIATE_SECTIONS,
   fullShapeSnapshot,
   PIXEL_PNG,
@@ -472,7 +473,7 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     await expect(page.locator("#objectivesContainer > .objective, #objectivesContainer > [data-objective-slot] > .objective")).toHaveCount(
-      25,
+      26,
     );
     const ids = await page.evaluate(() => [...document.querySelectorAll("#objectivesContainer .objective")].map((section) => section.id));
     expect(ids).toEqual([
@@ -490,6 +491,7 @@ test.describe("Operator Dashboard", () => {
       "dataTablesPanel",
       "dataSplitPanel",
       "dataBucketsPanel",
+      "dataAnalyticsPanel",
       "table-low-running-cost",
       "table-uptime",
       "table-compliance",
@@ -523,7 +525,7 @@ test.describe("Operator Dashboard", () => {
         refresh: section.querySelector(".refresh-link")?.getAttribute("href"),
       })),
     );
-    expect(sections).toHaveLength(25);
+    expect(sections).toHaveLength(26);
     for (const section of sections) {
       expect(section.anchor).toBe("#" + section.id);
       expect(section.refresh).toBe("?refresh=15#" + section.id);
@@ -818,6 +820,28 @@ test.describe("Operator Dashboard", () => {
     await expect(row.locator("td").nth(0)).toHaveAttribute("title", "Cost for the month.");
   });
 
+  test("hides the rows for test, synthetic, operator and unknown accounts until the reader asks for them", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+    await openTab(page, "adoption");
+
+    const section = page.locator('.objective[data-objective-id="retention"]');
+    await expect(section.locator('tr.observation[data-observation-id="retention-new-accounts"]')).toBeVisible();
+    const others = section.locator("tr.observation-not-customer");
+    await expect(others).toHaveCount(2);
+    await expect(others.first()).toBeHidden();
+    const toggle = section.locator("button.observation-class-toggle");
+    await expect(toggle).toHaveText("Show the 2 rows for test, synthetic, operator and unknown accounts");
+    await toggle.click();
+    await expect(others.first()).toBeVisible();
+    await expect(section.locator('tr.observation[data-actor-class="unknown"]')).toContainText("New accounts, unknown accounts");
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await section.screenshot({ path: "target/screenshots/operator-dashboard-retention-classes.png" });
+    await toggle.click();
+    await expect(others.first()).toBeHidden();
+    await expect(page.locator('.objective[data-objective-id="uptime"] button.observation-class-toggle')).toHaveCount(0);
+  });
+
   test("shows a placeholder for an objective with no observations yet", async ({ page }) => {
     await setupRoutes(page);
     await loadDashboard(page);
@@ -1021,7 +1045,7 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     const tables = page.locator("table.observations:has(tr.last-updated)");
-    await expect(tables).toHaveCount(5);
+    await expect(tables).toHaveCount(6);
     const uptime = page.locator('section[data-objective-id="uptime"] tr.last-updated');
     await expect(uptime.locator('[data-reading="hourly"]')).toHaveText("Last updated 03:15 UTC");
     await expect(uptime.locator('[data-reading="hourly"]')).toHaveAttribute("colspan", "2");
@@ -1130,9 +1154,11 @@ test.describe("Operator Dashboard", () => {
     await openTab(page, "integrations");
 
     const summary = page.locator("#integrationsSummaryPanel tr.integrations-summary-row");
-    await expect(summary).toHaveCount(7);
-    await expect(summary.nth(0).locator("td")).toHaveText(["HMRC", "200", "212", "215", "1,272", "5,512", "↑ 12.0%", "14,840"]);
+    await expect(summary).toHaveCount(8);
+    await expect(summary.nth(0).locator("td")).toHaveText(["HMRC", "200", "customer", "212", "215", "1,272", "5,512", "↑ 12.0%", "14,840"]);
     await expect(summary.nth(3).locator("td").nth(1)).toHaveText("timeout");
+    await expect(summary.nth(7).locator("td").nth(2)).toHaveText("other");
+    await expect(summary.nth(7).locator("td").nth(3)).toHaveText("192");
     await expect(page.locator("#integrationsAccountNote")).toContainText("Sign in to submit-prod 972912397388");
 
     const hmrc = page.locator("#integrationsHmrcPanel tr.integrations-call-row");
@@ -1226,7 +1252,28 @@ test.describe("Operator Dashboard", () => {
     await expect(requests.getByRole("button", { name: "HMRC", exact: true })).toBeVisible();
     const duration = page.locator('.chart-card[data-chart-id="integration-duration"]');
     await expect(duration.locator("h3")).toContainText("Average API request duration");
-    await expect(duration.locator(".chart-legend-item")).toHaveText(["HMRC", "Stripe", "Companies House"]);
+    await expect(duration.locator(".chart-legend-item")).toHaveText([
+      "HMRC, customer",
+      "Stripe, customer",
+      "Companies House, customer",
+      "Stripe, other",
+    ]);
+    await expect(duration.locator(".chart-legend-item[aria-pressed='true']")).toHaveCount(3);
+    await expect(requests.locator(".chart-legend-item[aria-pressed='true']")).toHaveText([
+      "All requests, customer",
+      "HMRC 2xx, customer",
+      "HMRC 4xx, customer",
+      "HMRC failed, customer",
+      "Stripe 2xx, customer",
+      "Stripe 4xx, customer",
+      "Companies House 2xx, customer",
+    ]);
+    await expect(requests.locator(".chart-legend-item[aria-pressed='false']")).toHaveText([
+      "All requests, test",
+      "HMRC 2xx, test",
+      "All requests, other",
+      "Stripe 2xx, other",
+    ]);
     await duration.locator("svg.chart-svg").hover({ position: { x: 300, y: 80 } });
     await expect(duration).toContainText(/\d(\.\d+)? (ms|s)/);
     await page.locator("#chartsPanel").screenshot({ path: "target/int3-screens/main-charts-1280.png" });
@@ -1397,11 +1444,11 @@ test.describe("Operator Dashboard", () => {
       await loadDashboard(page);
 
       const retention = page.locator('.chart-card[data-chart-id="retention"]');
-      await retention.locator('.chart-legend-item[data-series-id="retention-0"]').click();
-      await expect(retention.locator("polyline.chart-line")).toHaveCount(5);
-      await expect(retention.locator('.chart-legend-item[data-series-id="retention-0"]')).toHaveAttribute("aria-pressed", "false");
-      await retention.locator('.chart-legend-item[data-series-id="retention-0"]').click();
-      await expect(retention.locator("polyline.chart-line")).toHaveCount(6);
+      await retention.locator('.chart-legend-item[data-series-id="submitters-90d"]').click();
+      await expect(retention.locator("polyline.chart-line")).toHaveCount(9);
+      await expect(retention.locator('.chart-legend-item[data-series-id="submitters-90d"]')).toHaveAttribute("aria-pressed", "false");
+      await retention.locator('.chart-legend-item[data-series-id="submitters-90d"]').click();
+      await expect(retention.locator("polyline.chart-line")).toHaveCount(10);
     });
 
     test("switches the activities chart between started and completed", async ({ page }) => {
@@ -1452,7 +1499,7 @@ test.describe("Operator Dashboard", () => {
       await expect(funnel.locator("polyline.chart-line")).toHaveCount(3);
     });
 
-    test("switches a chart with hourly data between 90 days by day and 7 days by hour", async ({ page }) => {
+    test("switches a chart with hourly data between 90 days by day and 14 days by hour", async ({ page }) => {
       await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
       await loadDashboard(page);
 
@@ -1460,7 +1507,7 @@ test.describe("Operator Dashboard", () => {
       const daily = visitors.locator('.chart-range-option[data-range="daily"]');
       const hourly = visitors.locator('.chart-range-option[data-range="hourly"]');
       await expect(daily).toHaveText("90 days, by day");
-      await expect(hourly).toHaveText("7 days, by hour");
+      await expect(hourly).toHaveText("14 days, by hour");
       await expect(daily).toHaveAttribute("aria-pressed", "true");
       await expect(visitors.locator("polyline.chart-line")).toHaveCount(4);
 
@@ -1468,10 +1515,10 @@ test.describe("Operator Dashboard", () => {
       await expect(hourly).toHaveAttribute("aria-pressed", "true");
       await expect(visitors.locator("polyline.chart-line")).toHaveCount(3);
       const points = await visitors.locator("polyline.chart-line").first().getAttribute("points");
-      expect(points.trim().split(" ")).toHaveLength(168);
+      expect(points.trim().split(" ")).toHaveLength(336);
       await expect(visitors.locator(".chart-readout")).toContainText("8 Sept 03:00");
       await expect(visitors.locator(".chart-legend-item")).toHaveText(["Operator", "Authenticated user", "Human"]);
-      await expect(visitors.locator("svg")).toHaveAttribute("aria-label", /hourly over the last 168 hours/);
+      await expect(visitors.locator("svg")).toHaveAttribute("aria-label", /hourly over the last 336 hours/);
 
       await visitors.locator('.chart-legend-control[data-action="hide-all"]').click();
       await expect(visitors.locator("polyline.chart-line")).toHaveCount(0);
@@ -1483,24 +1530,126 @@ test.describe("Operator Dashboard", () => {
       await expect(visitors.locator(".chart-readout")).toContainText("8 Sept");
     });
 
-    test("shows the range switch only on a mode with an hourly source", async ({ page }) => {
+    test("shows the range switch on every graph and keeps its state when the tab changes", async ({ page }) => {
       await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
       await loadDashboard(page);
 
       const activities = page.locator('.chart-card[data-chart-id="activity-started-and-completed"]');
       await expect(activities.locator(".chart-range")).toBeVisible();
+      await expect(activities.locator('.chart-range-option[data-range="hourly"]')).toHaveText("14 days, by hour");
       await activities.locator('.chart-range-option[data-range="hourly"]').click();
       await expect(activities.locator("polyline.chart-line")).toHaveCount(1);
       await activities.locator('.chart-mode[data-mode-id="completed"]').click();
-      await expect(activities.locator(".chart-range")).toBeHidden();
+      await expect(activities.locator(".chart-range")).toBeVisible();
+      await expect(activities.locator('.chart-range-option[data-range="hourly"]')).toHaveAttribute("aria-pressed", "true");
+      await expect(activities.locator('.chart-range-option[data-range="hourly"]')).toHaveText("14 days, by day");
       await expect(activities.locator("polyline.chart-line")).toHaveCount(1);
       const points = await activities.locator("polyline.chart-line").first().getAttribute("points");
-      expect(points.trim().split(" ")).toHaveLength(90);
+      expect(points.trim().split(" ")).toHaveLength(14);
+      await expect(activities.locator("svg")).toHaveAttribute("aria-label", /daily over the last 14 days/);
+      await activities.locator('.chart-range-option[data-range="daily"]').click();
+      const dailyPoints = await activities.locator("polyline.chart-line").first().getAttribute("points");
+      expect(dailyPoints.trim().split(" ")).toHaveLength(90);
 
       for (const id of ["retention", "low-running-cost", "conversion-to-paid", "conversion-to-submission"]) {
-        await expect(page.locator(`.chart-card[data-chart-id="${id}"] .chart-range`)).toBeHidden();
+        await expect(page.locator(`.chart-card[data-chart-id="${id}"] .chart-range`)).toBeVisible();
         await expect(page.locator(`.chart-card[data-chart-id="${id}"] .chart-range-option`)).toHaveCount(2);
       }
+      await page.screenshot({ path: "target/screenshots/operator-dashboard-range-switch.png", fullPage: false });
+    });
+
+    test("draws the stored-data graph in six tabs, each with an All line, to scale and with the range switch", async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT_WITH_CHARTS, data: FIXTURE_DATA } });
+      await loadDashboard(page);
+
+      const stored = page.locator("#chart-data-totals");
+      await expect(stored.locator("h3")).toHaveText("Stored data");
+      await expect(stored.locator(".chart-mode[data-mode-id]")).toHaveText([
+        "By platform",
+        "By application",
+        "Reads and writes",
+        "Transactional",
+        "Observability",
+        "CI/CD",
+      ]);
+      await expect(stored.locator(".chart-legend-item")).toHaveText(["All", "DynamoDB items", "S3 objects", "diya-gl objects"]);
+      await expect(stored.locator(".chart-readout")).toHaveText(
+        "7 Nov: All 80,152, DynamoDB items 22,800, S3 objects 57,330, diya-gl objects 22",
+      );
+      await expect(stored.locator("svg")).toHaveAttribute("aria-label", /daily over the last 90 days/);
+      // A day with no history file breaks the DynamoDB line, so it and the All line draw two runs each.
+      await expect(stored.locator("polyline.chart-line")).toHaveCount(6);
+      await stored.scrollIntoViewIfNeeded();
+      await stored.screenshot({ path: "target/screenshots/operator-dashboard-stored-data-platform.png" });
+
+      const shortRange = stored.locator('.chart-range-option[data-range="hourly"]');
+      await expect(shortRange).toHaveText("14 days, by day");
+      await shortRange.click();
+      await expect(stored.locator("svg")).toHaveAttribute("aria-label", /daily over the last 14 days/);
+
+      await stored.locator('.chart-mode[data-mode-id="reads-and-writes"]').click();
+      await expect(shortRange).toHaveText("14 days, by hour");
+      await expect(stored.locator("svg")).toHaveAttribute("aria-label", /hourly over the last 336 hours/);
+      const hourlyPoints = await stored.locator("polyline.chart-line").first().getAttribute("points");
+      expect(hourlyPoints.trim().split(" ")).toHaveLength(336);
+      await stored.screenshot({ path: "target/screenshots/operator-dashboard-stored-data-reads-and-writes.png" });
+      await stored.locator('.chart-range-option[data-range="daily"]').click();
+
+      await stored.locator('.chart-mode[data-mode-id="transactional"]').click();
+      const synthetic = stored.locator('.chart-legend-item[data-series-id$="@synthetic"]');
+      await expect(synthetic).toHaveCount(5);
+      for (const button of await synthetic.all()) await expect(button).toHaveAttribute("aria-pressed", "false");
+      await expect(stored.locator('.chart-legend-item[data-series-id="bundles@customer"]')).toHaveAttribute("aria-pressed", "true");
+      await expect(stored.locator('.chart-legend-item[data-series-id="bundles@synthetic"]')).toHaveText("Bundles, test and synthetic");
+      await stored.screenshot({ path: "target/screenshots/operator-dashboard-stored-data-transactional.png" });
+
+      await stored.locator('.chart-mode[data-mode-id="observability"]').click();
+      await expect(stored.locator(".chart-readout")).toContainText("All 35.17 GB");
+      await expect(stored.locator("svg .chart-axis").first()).toHaveText("0 B");
+
+      for (const mode of ["application", "observability", "cicd"]) {
+        await stored.locator(`.chart-mode[data-mode-id="${mode}"]`).click();
+        await expect(stored.locator(".chart-legend-item").first()).toHaveText("All");
+        await stored.screenshot({ path: `target/screenshots/operator-dashboard-stored-data-${mode}.png` });
+      }
+    });
+
+    test("draws the Retention graph in three tabs, other classes hidden, net change below zero and the cohort table", async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const retention = page.locator("#chart-retention");
+      await expect(retention.locator(".chart-mode[data-mode-id]")).toHaveText(["Totals", "Daily events", "Submitters by kind"]);
+      await expect(retention.locator(".chart-range-option")).toHaveText(["90 days, by day", "14 days, by day"]);
+      for (const name of ["test", "synthetic", "other", "unknown"]) {
+        await expect(retention.locator(`.chart-legend-item[data-series-id="accounts-total-${name}"]`)).toHaveAttribute(
+          "aria-pressed",
+          "false",
+        );
+      }
+      await expect(retention.locator('.chart-legend-item[data-series-id="accounts-total"]')).toHaveAttribute("aria-pressed", "true");
+      await expect(retention.locator(".chart-readout")).toContainText("Accounts in total 41");
+      await retention.scrollIntoViewIfNeeded();
+      await retention.screenshot({ path: "target/screenshots/operator-dashboard-retention-totals.png" });
+
+      await retention.locator('.chart-mode[data-mode-id="events"]').click();
+      await expect(retention.locator('.chart-legend-item[data-series-id="new-accounts-test"]')).toHaveText("New accounts, test accounts");
+      await expect(retention.locator('.chart-legend-item[data-series-id="new-accounts-test"]')).toHaveAttribute("aria-pressed", "false");
+      await expect(retention.locator("svg .chart-axis").first()).toHaveText("-1");
+      await retention.screenshot({ path: "target/screenshots/operator-dashboard-retention-events.png" });
+
+      await retention.locator('.chart-mode[data-mode-id="submitters"]').click();
+      await expect(retention.locator(".chart-legend-item").first()).toHaveText("All submitters, 90 days to this day");
+      await expect(retention.locator(".chart-readout")).toContainText("All submitters, 90 days to this day 13");
+      await retention.screenshot({ path: "target/screenshots/operator-dashboard-retention-submitters.png" });
+
+      const cohort = retention.locator(".chart-cohort-table");
+      await expect(cohort.locator("thead th")).toHaveText(["Signup month", "Accounts", "Month 0", "Month 1", "Month 2"]);
+      await expect(cohort.locator('tr[data-signup-month="2026-10"] td')).toHaveText(["11", "7 (64%)", "0 (0%)", ""]);
+      await expect(cohort.locator('tr[data-signup-month="2026-09"] th')).toHaveText("Sept 2026");
+      await cohort.screenshot({ path: "target/screenshots/operator-dashboard-retention-cohorts.png" });
     });
 
     test("reads a ratio mode as a percentage", async ({ page }) => {
@@ -1523,23 +1672,23 @@ test.describe("Operator Dashboard", () => {
 
       const card = page.locator('.chart-card[data-chart-id="retention"]');
       const lines = card.locator("polyline.chart-line");
-      await expect(lines).toHaveCount(6);
+      await expect(lines).toHaveCount(10);
 
       await card.locator('[data-action="hide-all"]').click();
       await expect(lines).toHaveCount(0);
       await card.locator('[data-action="show-all"]').click();
-      await expect(lines).toHaveCount(6);
+      await expect(lines).toHaveCount(14);
 
-      await card.locator(".chart-legend-item", { hasText: "Renewals" }).click();
-      await expect(lines).toHaveCount(5);
-      await card.locator(".chart-legend-item", { hasText: "Renewals" }).click();
-      await expect(lines).toHaveCount(6);
+      await card.locator(".chart-legend-item", { hasText: "Active subscriptions" }).click();
+      await expect(lines).toHaveCount(13);
+      await card.locator(".chart-legend-item", { hasText: "Active subscriptions" }).click();
+      await expect(lines).toHaveCount(14);
 
-      await card.locator(".chart-legend-item", { hasText: "Cancellations" }).dblclick();
+      await card.locator(".chart-legend-item", { hasText: "Active passes" }).dblclick();
       await expect(lines).toHaveCount(1);
       await expect(card.locator('.chart-legend-item[aria-pressed="true"]')).toHaveCount(1);
-      await card.locator(".chart-legend-item", { hasText: "Cancellations" }).dblclick();
-      await expect(lines).toHaveCount(6);
+      await card.locator(".chart-legend-item", { hasText: "Active passes" }).dblclick();
+      await expect(lines).toHaveCount(14);
     });
 
     test("shows the retention reconciliation line and counts Passes issued without a pound sign", async ({ page }) => {
@@ -1548,6 +1697,7 @@ test.describe("Operator Dashboard", () => {
 
       const retention = page.locator('.chart-card[data-chart-id="retention"]');
       await expect(retention.locator(".chart-reconciliation")).toContainText("12 distinct submitters");
+      await retention.locator('.chart-mode[data-mode-id="events"]').click();
       await expect(retention.locator(".chart-legend-item", { hasText: "Passes issued" })).toBeVisible();
 
       const paid = page.locator('.chart-card[data-chart-id="conversion-to-paid"]');
@@ -1562,7 +1712,10 @@ test.describe("Operator Dashboard", () => {
       await loadDashboard(page);
 
       const card = page.locator('.chart-card[data-chart-id="retention"]');
-      await expect(card.locator(".chart-legend-item", { hasText: "Renewals" })).toHaveAttribute("title", "What Renewals measures.");
+      await expect(card.locator(".chart-legend-item", { hasText: "Active subscriptions" })).toHaveAttribute(
+        "title",
+        "Customer subscriptions active at the end of the day.",
+      );
     });
 
     test("reads one day under the chart as the pointer moves over it", async ({ page }) => {
@@ -1753,9 +1906,9 @@ test.describe("Operator Dashboard", () => {
       await setupRoutes(page, { snapshotStatus: 403, snapshotBody: FORBIDDEN_BODY });
       await loadDashboard(page);
 
-      await expect(page.locator(".login-status")).toHaveText("Not logged in");
-      await expect(page.locator(".login-link")).toHaveText("Log in");
-      await expect(page.locator(".login-link")).toHaveAttribute("href", "/auth/login.html");
+      await expect(page.locator(".login-status")).toHaveText("Not signed in");
+      await expect(page.locator(".login-link")).toHaveText("Sign in");
+      await expect(page.locator(".login-link")).toHaveAttribute("href", "/auth/login.html?next=%2Foperator%2Fdashboard.html");
     });
 
     test("carries a return-to the dashboard when a signed-out visitor logs in", async ({ page }) => {
@@ -1774,7 +1927,7 @@ test.describe("Operator Dashboard", () => {
 
       await expect(page.locator(".login-status")).toHaveText("Operator");
       await expect(page.locator(".login-status")).toHaveAttribute("aria-label", "Signed in as Operator");
-      await expect(page.locator(".login-link")).toHaveText("Logout");
+      await expect(page.locator(".login-link")).toHaveText("Sign out");
       await expect(page.locator(".objective[data-objective-id]")).toHaveCount(8);
     });
   });

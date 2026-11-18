@@ -146,7 +146,7 @@
 
   async function connectToHmrc() {
     if (!getIdToken()) {
-      notify("Please log in first.", "warning");
+      notify("Please sign in first.", "warning");
       return;
     }
     try {
@@ -458,7 +458,7 @@
 
     const idToken = getIdToken();
     if (!idToken) {
-      notify("Please log in first to add a client.", "warning");
+      notify("Please sign in first to add a client.", "warning");
       return;
     }
 
@@ -499,7 +499,7 @@
   async function archiveClient(clientId) {
     const idToken = getIdToken();
     if (!idToken) {
-      notify("Please log in first.", "warning");
+      notify("Please sign in first.", "warning");
       return;
     }
     try {
@@ -536,7 +536,7 @@
   async function sendInvite(clientId, service) {
     const idToken = getIdToken();
     if (!idToken) {
-      notify("Please log in first.", "warning");
+      notify("Please sign in first.", "warning");
       return;
     }
 

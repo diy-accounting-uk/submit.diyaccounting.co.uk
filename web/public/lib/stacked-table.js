@@ -22,6 +22,20 @@
     return labels;
   }
 
+  // A stacked cell is a two-column grid, label then value, and every text run and element in it
+  // is a grid item of its own. Text with an inline element in it ("From <code>x</code> and ...")
+  // would scatter across both columns, so it moves into one span that fills the value column.
+  function wrapMixedContent(cell) {
+    const nodes = [...cell.childNodes];
+    const hasText = nodes.some((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== "");
+    const hasElement = nodes.some((node) => node.nodeType === Node.ELEMENT_NODE);
+    if (!hasText || !hasElement) return;
+    const value = document.createElement("span");
+    value.className = "stacked-value";
+    value.append(...nodes);
+    cell.append(value);
+  }
+
   function labelTable(table) {
     const labels = columnLabels(table);
     for (const body of table.tBodies) {
@@ -30,6 +44,7 @@
         for (const cell of row.cells) {
           if (cell.tagName === "TD" && cell.colSpan === 1 && labels[column] && !cell.hasAttribute("data-label")) {
             cell.setAttribute("data-label", labels[column]);
+            wrapMixedContent(cell);
           }
           column += cell.colSpan;
         }

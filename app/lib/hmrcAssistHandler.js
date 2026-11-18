@@ -7,7 +7,7 @@
 // else (bundle enforcement, fraud prevention headers, the async request lifecycle, HMRC error
 // mapping) is here once.
 
-import { createLogger } from "./logger.js";
+import { createLogger, context } from "./logger.js";
 import {
   extractRequest,
   http200OkResponse,
@@ -236,6 +236,7 @@ export function createAssistHandlers({ sourceName, route, asyncTableEnvName, ope
       testScenario: govTestScenarioHeader,
       hmrcAccount,
       userSub,
+      userEmail: context.get("userEmail") || null,
       runFraudPreventionHeaderValidation,
       requestId,
       traceparent,

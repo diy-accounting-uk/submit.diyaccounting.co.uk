@@ -244,6 +244,24 @@ describe("resolveAlarmEvidence", () => {
     expect(evidence.extraLinks.some((link) => /Web ACL/i.test(link.label))).toBe(true);
   });
 
+  test("rule 11: a web ACL alarm reads the web ACL log group first, counted by rule, address and country", () => {
+    const evidence = resolveAlarmEvidence({
+      alarmName: "prod-0f68ed8-app-waf-rate-limit",
+      familyKey: alarmFamilyKey("prod-0f68ed8-app-waf-rate-limit"),
+      env: "prod",
+      deployment: "prod-0f68ed8",
+      namespace: "AWS/WAFV2",
+      metricName: "BlockedRequests",
+      dimensions: {},
+      compositeChildFunctionNames: [],
+    });
+
+    expect(evidence.logGroupNamePrefixes).toEqual(["aws-waf-logs-prod-0f68ed8-app", "/aws/lambda/prod-0f68ed8-app-waf-scan-detect"]);
+    expect(evidence.insightsQuery).toContain("'aws-waf-logs-prod-0f68ed8-app'");
+    expect(evidence.insightsQuery).not.toContain("waf-scan-detect");
+    expect(evidence.insightsQuery).toContain("stats count() by terminatingRuleId, httpRequest.clientIp, httpRequest.country");
+  });
+
   test("rule 12: prod-0f68ed8-app-cert-expiring has no log group and no X-Ray", () => {
     const evidence = resolveAlarmEvidence({
       alarmName: "prod-0f68ed8-app-cert-expiring",

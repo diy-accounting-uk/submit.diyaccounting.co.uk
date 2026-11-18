@@ -3,17 +3,18 @@
 
 // @capability DATA-04 Stream DynamoDB table changes into the lake
 // - **Use when:** a DynamoDB table's inserts/updates/deletes must be redacted and streamed into the lake.
-// - **Does:** dynamoStreamToFirehose.js serves six DynamoDB Streams event source mappings for receipts, bundles, subscriptions, passes, commissions and integration calls. Its handler redacts each record through a per-table field whitelist and forwards it by Firehose PutRecordBatch. A record that fails to project or deliver returns a batchItemFailure by sequence number.
+// - **Does:** dynamoStreamToFirehose.js serves ten DynamoDB Streams event source mappings for receipts, bundles, subscriptions, passes, commissions, integration calls, HMRC API requests, practice clients, activity charges and MCP sessions. Its handler redacts each record through a per-table field whitelist and forwards it by Firehose PutRecordBatch. A record that fails to project or deliver returns a batchItemFailure by sequence number.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/analytics/dynamoStreamToFirehose.js:handler`
 // - **Files:** app/functions/analytics/dynamoStreamToFirehose.js, app/unit-tests/analytics/dynamoStreamToFirehose.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/TableChangeDelivery.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/TableChangeDeliveryTest.java
-// - **Keywords:** dynamodb streams, table change, firehose putrecordbatch, redaction, field whitelist, batchitemfailure, receipts, bundles, subscriptions, passes, commissions, integration calls, calls projector
+// - **Keywords:** dynamodb streams, table change, firehose putrecordbatch, redaction, field whitelist, batchitemfailure, receipts, bundles, subscriptions, passes, commissions, integration calls, calls projector, hmrc api requests, practice clients, activity charges, mcp sessions, change sequence
 // @end-capability
 
 // app/functions/analytics/dynamoStreamToFirehose.js
 //
-// One Lambda, six DynamoDB Streams event source mappings (receipts, bundles, subscriptions,
-// passes, commissions, calls). Each stream record is redacted down to a per-table whitelist and forwarded to that
+// One Lambda, ten DynamoDB Streams event source mappings (receipts, bundles, subscriptions,
+// passes, commissions, calls, HMRC API requests, practice clients, activity charges and MCP
+// sessions). Each stream record is redacted down to a per-table whitelist and forwarded to that
 // table's own Firehose delivery stream.
 //
 // This is a whitelist, not a blacklist: only the fields named in PROJECTORS below leave the
@@ -125,6 +126,8 @@ function projectPass(image) {
     created_at: image.createdAt ?? null,
     updated_at: image.updatedAt ?? null,
     use_count: image.useCount ?? null,
+    max_uses: image.maxUses ?? null,
+    valid_until: image.validUntil ?? null,
     revoked_at: image.revokedAt ?? null,
     actor: image.actor ?? null,
     redeemed_by: isRedemption ? (image.redeemedBy ?? null) : null,
@@ -196,6 +199,7 @@ function projectCall(image, eventName) {
     record_type: image.recordType ?? null,
     org: image.org ?? null,
     target: image.target ?? null,
+    actor: image.actor ?? null,
     api: image.api ?? null,
     method: image.method ?? null,
     started_at: typeof image.startedAt === "string" ? toParquetTimestamp(image.startedAt) : null,
@@ -212,6 +216,61 @@ function projectCall(image, eventName) {
     fph_rules: fph.rules ?? null,
     fph_rules_failed: Array.isArray(fph.rulesFailed) && fph.rulesFailed.length > 0 ? fph.rulesFailed.join(",") : null,
     fph_shape_hash: fph.shapeHash ?? null,
+    ttl: numberOrNull(image.ttl),
+  };
+}
+
+/**
+ * An HMRC API request record holds the masked request and response of one call to HMRC. Only
+ * the owner, the record's id, the method and the times leave the table: the URL can carry a VRN
+ * and the bodies carry the return.
+ */
+function projectHmrcApiRequest(image) {
+  return {
+    hashed_sub: image.hashedSub ?? null,
+    request_record_id: image.id ?? null,
+    method: image.method ?? null,
+    created_at: image.createdAt ?? null,
+    actor: image.actor ?? null,
+    ttl: numberOrNull(image.ttl),
+  };
+}
+
+/** A practice's client: the practice's hashed sub and the client id only, never the client's name or identifiers. */
+function projectPracticeClient(image) {
+  return {
+    hashed_sub: image.hashedSub ?? null,
+    client_id: image.clientId ?? null,
+    created_at: image.createdAt ?? null,
+    archived_at: image.archivedAt ?? null,
+    actor: image.actor ?? null,
+  };
+}
+
+/**
+ * A charge for one activity. The charge key holds the subject the charge covers (a VAT number or
+ * a company number), so it leaves the table only as its salted hash.
+ */
+function projectActivityCharge(image) {
+  return {
+    hashed_sub: image.hashedSub ?? null,
+    charge_hash: typeof image.chargeKey === "string" ? hashSub(image.chargeKey) : null,
+    activity_id: image.activityId ?? null,
+    status: image.status ?? null,
+    created_at: image.createdAt ?? null,
+    actor: image.actor ?? null,
+  };
+}
+
+/**
+ * An MCP session. The session id is what a connector sends to use the session, so it leaves the
+ * table only as its salted hash; the cloud book pointer and the grant id stay in the table.
+ */
+function projectMcpSession(image) {
+  return {
+    hashed_sub: image.hashedSub ?? null,
+    session_hash: typeof image.sessionId === "string" ? hashSub(image.sessionId) : null,
+    ttl: numberOrNull(image.ttl),
   };
 }
 
@@ -222,6 +281,24 @@ const PROJECTORS = {
   passes: projectPass,
   commissions: projectCommission,
   calls: projectCall,
+  hmrc_api_requests: projectHmrcApiRequest,
+  practice_clients: projectPracticeClient,
+  activity_charges: projectActivityCharge,
+  mcp_sessions: projectMcpSession,
+};
+
+// The table-name suffix of each kind: "ci-env-hmrc-api-requests" is the kind hmrc_api_requests.
+const TABLE_SUFFIX_BY_KIND = {
+  receipts: "receipts",
+  bundles: "bundles",
+  subscriptions: "subscriptions",
+  passes: "passes",
+  commissions: "commissions",
+  calls: "integration-calls",
+  hmrc_api_requests: "hmrc-api-requests",
+  practice_clients: "practice-clients",
+  activity_charges: "activity-charges",
+  mcp_sessions: "mcp-sessions",
 };
 
 /**
@@ -233,7 +310,7 @@ const PROJECTORS = {
  * @returns {string}
  */
 export function resolveTableKind(tableName) {
-  const kind = Object.keys(PROJECTORS).find((candidate) => tableName?.endsWith(`-${candidate}`));
+  const kind = Object.keys(TABLE_SUFFIX_BY_KIND).find((candidate) => tableName?.endsWith(`-env-${TABLE_SUFFIX_BY_KIND[candidate]}`));
   if (!kind) {
     throw new Error(`No redaction whitelist for DynamoDB table: ${tableName}`);
   }
@@ -317,6 +394,9 @@ export function buildRow(tableKind, record) {
   return {
     change_ts: changeTs,
     change_type: eventName ?? null,
+    // ApproximateCreationDateTime is in whole seconds, so an insert and a delete of one item in the
+    // same second tie on change_ts; the stream's sequence number orders them.
+    change_seq: record.dynamodb?.SequenceNumber ?? null,
     source_table: tableKind,
     env: process.env.ENVIRONMENT_NAME ?? null,
     ...projected,
@@ -362,10 +442,10 @@ async function putRecordBatch(deliveryStreamName, entries) {
 }
 
 /**
- * DynamoDB Streams handler: six event source mappings share this one function.
+ * DynamoDB Streams handler: ten event source mappings share this one function.
  *
  * `STREAM_TARGETS` is a JSON map of physical table name to delivery stream name, so the same
- * code serves all six tables without a table-specific Lambda each.
+ * code serves all ten tables without a table-specific Lambda each.
  *
  * A record that fails to project (unrecognised table, bad image) or fails to deliver comes back
  * in `batchItemFailures` by its stream sequence number, which tells the event source mapping to

@@ -20,7 +20,7 @@ export async function goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPat
     // Home page has a welcome message and clickable login link
     console.log("Checking home page...");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-home-page.png`, readerView: true });
-    await expect(page.getByText("Log in")).toBeVisible({ timeout: 15000 });
+    await expect(page.locator("a.login-link", { hasText: "Sign in" })).toBeVisible({ timeout: 15000 });
   });
 }
 

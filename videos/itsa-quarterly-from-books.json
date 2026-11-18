@@ -61,10 +61,7 @@
         },
         {
           "action": "point",
-          "target": {
-            "role": "heading",
-            "name": "Activities"
-          },
+          "target": "#dynamicActivities",
           "dwellMs": 300
         },
         {
@@ -142,7 +139,8 @@
           "waitFor": "#itsaSelfEmploymentPeriodForm",
           "caption": "This is the form a quarterly update is filed on.",
           "headline": "The quarterly form",
-          "keyWord": "quarterly"
+          "keyWord": "quarterly",
+          "instruction": "Choose Go to file a quarterly update on the Self Assessment dashboard."
         },
         {
           "action": "type",
@@ -152,7 +150,8 @@
           "secret": true,
           "caption": "Type the National Insurance number.",
           "headline": "Enter your NI number",
-          "keyWord": "National"
+          "keyWord": "National",
+          "instruction": "Enter your National Insurance number."
         },
         {
           "action": "fill",
@@ -160,7 +159,8 @@
           "value": "XBIS00000000001",
           "caption": "Then the business the update is for.",
           "headline": "Choose the business",
-          "keyWord": "business"
+          "keyWord": "business",
+          "instruction": "Enter the Business ID of the business the update is for."
         },
         {
           "action": "fill",
@@ -168,7 +168,8 @@
           "value": "2025-10-05",
           "caption": "Choose the date the quarter ends.",
           "headline": "Choose the quarter end",
-          "keyWord": "ends"
+          "keyWord": "ends",
+          "instruction": "Enter the Period end date of the quarter."
         },
         {
           "action": "hold",
@@ -188,7 +189,8 @@
           "file": "videos/books/brickwork-pro-se-vat.json",
           "caption": "Drop your diya-gl book on the form.",
           "headline": "Drop your book",
-          "keyWord": "book"
+          "keyWord": "book",
+          "instruction": "Drop your diya-gl book on the box that says Drop a book here."
         },
         {
           "scrollTo": "h1",
@@ -198,7 +200,8 @@
           "timeoutMs": 30000,
           "caption": "The quarter's figures fill from the book.",
           "headline": "The figures fill",
-          "keyWord": "fill"
+          "keyWord": "fill",
+          "instruction": "Read the status line that says the figures are filled from the book."
         },
         {
           "action": "scroll",
@@ -214,7 +217,8 @@
           "dwellMs": 500,
           "caption": "The tax year and quarter start come from the book.",
           "headline": "Tax year from the book",
-          "keyWord": "tax"
+          "keyWord": "tax",
+          "instruction": "Check that the Tax year matches the book."
         },
         {
           "action": "point",
@@ -222,7 +226,8 @@
           "dwellMs": 500,
           "caption": "Turnover is the quarter's sales.",
           "headline": "Turnover from the book",
-          "keyWord": "Turnover"
+          "keyWord": "Turnover",
+          "instruction": "Check that Turnover is the quarter's sales in your book."
         },
         {
           "action": "point",
@@ -230,7 +235,8 @@
           "dwellMs": 500,
           "caption": "Costs come from the book's expense accounts.",
           "headline": "Costs from the book",
-          "keyWord": "Costs"
+          "keyWord": "Costs",
+          "instruction": "Check Cost of goods and the other expenses against your book's expense accounts."
         },
         {
           "action": "point",
@@ -238,7 +244,8 @@
           "dwellMs": 500,
           "caption": "Check every figure before you submit.",
           "headline": "Check the figures",
-          "keyWord": "Check"
+          "keyWord": "Check",
+          "instruction": "Check every figure on the form against your records before you submit."
         },
         {
           "action": "hold",
@@ -260,14 +267,16 @@
           "target": "#submitBtn",
           "caption": "Submitting sends you to HMRC to grant access.",
           "headline": "Submit the update",
-          "keyWord": "Submit"
+          "keyWord": "Submit",
+          "instruction": "Choose File quarterly update; the first filing sends you to HMRC to give permission."
         },
         {
           "action": "hmrcAuthorise",
           "timeoutMs": 60000,
           "caption": "Sign in to HMRC and say yes.",
           "headline": "Grant HMRC access",
-          "keyWord": "HMRC"
+          "keyWord": "HMRC",
+          "instruction": "Sign in to HMRC and give permission."
         },
         {
           "action": "await",
@@ -276,7 +285,8 @@
           "timeoutMs": 60000,
           "caption": "HMRC accepts the quarterly update.",
           "headline": "HMRC accepts it",
-          "keyWord": "accepts"
+          "keyWord": "accepts",
+          "instruction": "Read the result to check that HMRC accepted the quarterly update."
         },
         {
           "action": "scroll",
@@ -292,7 +302,8 @@
           "dwellMs": 600,
           "caption": "The result is your record that it went through.",
           "headline": "Keep the result",
-          "keyWord": "result"
+          "keyWord": "result",
+          "instruction": "Read the result and keep it as your record."
         },
         {
           "action": "hold",
@@ -319,7 +330,8 @@
           "waitFor": "#itsaSelfEmploymentPeriodViewForm",
           "caption": "Open the tax year to read the record of what you filed.",
           "headline": "Read the record back",
-          "keyWord": "record"
+          "keyWord": "record",
+          "instruction": "Choose Go to view a period summary, then look up the tax year you filed."
         },
         {
           "action": "type",
@@ -347,7 +359,8 @@
           "target": "#retrieveBtn",
           "caption": "Retrieve the year to date from HMRC.",
           "headline": "Retrieve the record",
-          "keyWord": "Retrieve"
+          "keyWord": "Retrieve",
+          "instruction": "Choose Retrieve period summary."
         },
         {
           "action": "await",
@@ -362,7 +375,8 @@
           "caption": "The record shows the reporting basis, its status and the date it was retrieved.",
           "headline": "Reporting, status and date",
           "keyWord": "status",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read the reporting basis, status and date retrieved at the top of the record."
         },
         {
           "action": "hold",
@@ -375,9 +389,13 @@
           "caption": "Below it, the income and expenses from your book, as HMRC holds them.",
           "headline": "The totals HMRC holds",
           "keyWord": "totals",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Check the income and expenses in the record against your book."
         },
-        { "action": "hold", "ms": 2500 },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
         {
           "action": "hold",
           "ms": 800

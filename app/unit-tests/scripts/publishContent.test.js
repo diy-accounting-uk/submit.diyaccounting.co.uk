@@ -8,9 +8,9 @@ import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseCatalog } from "../../services/productCatalog.js";
+import { bundlePriceList, listedBundles } from "../../../web/public/lib/bundle-listing.js";
 import {
   addVideoEntries,
-  listedBundles,
   listedVideos,
   publishContent,
   homeActivities,
@@ -60,6 +60,23 @@ describe("publish-content videos", () => {
     const html = renderVideoPageBlock(videosOfPage("videos-ch.html", videos), new Map(), () => undefined);
     expect(html).toContain("<h2>");
     expect(html).not.toContain("VideoObject");
+  });
+
+  test("a page heading drops the channel prefix and suffix and starts with a capital", () => {
+    const videos = [
+      {
+        id: "a",
+        videoId: "AAAAAAAAAAA",
+        group: "vat",
+        title: "How to submit a VAT return under MTD | DIY Accounting Submit",
+        description: "x",
+      },
+      { id: "b", videoId: "BBBBBBBBBBB", group: "vat", title: "DIY Accounting Submit: sign in and take out a day pass", description: "x" },
+    ];
+    const html = renderVideoPageBlock(videos, new Map(), () => undefined);
+    expect(html).toContain("<h2>How to submit a VAT return under MTD</h2>");
+    expect(html).toContain("<h2>Sign in and take out a day pass</h2>");
+    expect(html).not.toContain(" | ");
   });
 
   test("a link to one of our own sites loses its query string and a video link names the video", () => {
@@ -145,6 +162,23 @@ describe("publish-content bundles", () => {
   test("ci shows the tax agent price", () => {
     expect(renderBundlesBlock(CATALOG, "ci")).toContain("£199.99 a year or £19.99 a month.");
   });
+
+  test("each card gives the bundle's tokens from the catalogue", () => {
+    const html = renderBundlesBlock(CATALOG, "prod");
+    expect(html).toContain("3 tokens for 24 hours.");
+    expect(html).toContain("100 tokens each month.");
+    expect(renderBundlesBlock(CATALOG, "ci")).toContain("No limit on tokens.");
+  });
+
+  test("the help answer on prices lists the bundles the environment lists, with price and tokens", () => {
+    const prod = bundlePriceList(CATALOG, "prod");
+    expect(prod).toContain("- **Day pass** is free and gives 3 tokens for 24 hours.");
+    expect(prod).toContain("- **Resident Pro** costs £39.99 a year or £3.99 a month and gives 100 tokens each month.");
+    expect(prod).not.toContain("Tax Agent");
+    expect(bundlePriceList(CATALOG, "ci")).toContain(
+      "- **Resident Tax Agent** costs £199.99 a year or £19.99 a month and has no limit on tokens.",
+    );
+  });
 });
 
 describe("publish-content home activities", () => {
@@ -155,18 +189,32 @@ describe("publish-content home activities", () => {
     expect(names.join(" ")).not.toMatch(/Assist|PSC|Company Tax Return/);
   });
 
+  test("prod lists each production Companies House filing to a signed-out visitor, and not a lookup or a preview filing", () => {
+    const entries = homeActivities(CATALOG, "prod").filter((entry) => entry.area === "Companies House");
+    expect(entries.map((entry) => entry.name)).toEqual([
+      "Change Registered Office Address (Companies House)",
+      "Change Registered Email Address (Companies House)",
+      "File Micro-entity Accounts (Companies House)",
+      "File Small Company Accounts (Companies House)",
+      "File Confirmation Statement (Companies House)",
+    ]);
+    expect(homeActivities(CATALOG, "prod").some((entry) => /Company Tax Return/.test(entry.name))).toBe(false);
+  });
+
   test("an activity that shows only on entitlement is left out for a signed-out visitor", () => {
-    expect(homeActivities(CATALOG, "prod").some((entry) => entry.area === "Companies House")).toBe(false);
+    expect(homeActivities(CATALOG, "prod").some((entry) => /Lookup|Receipts/.test(entry.name))).toBe(false);
   });
 
   test("ci lists Income Tax and prod does not", () => {
     expect(homeActivities(CATALOG, "ci").some((entry) => entry.area === "Income Tax")).toBe(true);
   });
 
-  test("an upsell activity opens the sign-in page and every entry has a page link", () => {
+  test("an upsell activity opens the sign-in page, which returns to the activity's page", () => {
     const vat = homeActivities(CATALOG, "prod").find((entry) => entry.name === "Submit VAT (HMRC)");
-    expect(vat.href).toBe("auth/login.html");
-    expect(homeActivities(CATALOG, "ci").every((entry) => entry.href.endsWith(".html"))).toBe(true);
+    expect(vat.href).toBe("auth/login.html?next=%2Fhmrc%2Fvat%2FsubmitVat.html");
+    const filing = homeActivities(CATALOG, "prod").find((entry) => entry.name.startsWith("File Micro-entity"));
+    expect(filing.href).toBe("auth/login.html?next=%2Fcompanies-house%2FfileMicroEntityAccounts.html");
+    expect(homeActivities(CATALOG, "ci").every((entry) => /\.html(\?next=.+)?$/.test(entry.href))).toBe(true);
   });
 
   test("the Welsh block holds the Welsh area heading and activity names", () => {
@@ -212,7 +260,7 @@ describe("publishContent", () => {
       expect(bundles).toContain('data-bundle-id="resident-pro"');
       expect(bundles).not.toContain('data-bundle-id="resident-tax-agent"');
       expect(readFileSync(join(webRoot, "index.html"), "utf8")).toContain('<section class="activity-group" aria-label="VAT">');
-      expect(readFileSync(join(webRoot, "cy/index.html"), "utf8")).toContain('href="../auth/login.html"');
+      expect(readFileSync(join(webRoot, "cy/index.html"), "utf8")).toContain('href="../auth/login.html?next=');
       expect(readFileSync(join(webRoot, "videos-ch.html"), "utf8")).toContain("VideoObject");
       expect(readFileSync(join(webRoot, "sitemap.xml"), "utf8")).toContain("<video:video>");
     } finally {

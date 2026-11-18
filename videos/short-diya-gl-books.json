@@ -1,0 +1,261 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "short-diya-gl-books",
+  "title": "Start a book, add a sale and a purchase, see your profit",
+  "description": "A sole trader starts a new Basic Sole Trader book in diya-gl, enters one sale and one purchase, and reads the profit from the year table and the P&L, in under two minutes.",
+  "auth": "none",
+  "pages": ["videos/short-diya-gl-books.json"],
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+  "localApp": {
+    "command": "curl -fsS -o /dev/null -w 'diya-gl.co.uk answered %{http_code}\\n' https://diya-gl.co.uk/bst.html",
+    "url": "https://diya-gl.co.uk",
+    "readyPattern": "diya-gl.co.uk answered 200",
+    "readyTimeoutMs": 30000
+  },
+  "pacing": {
+    "perCharMs": 90,
+    "betweenActionsMs": 700,
+    "aroundMotionMs": 600,
+    "minResidualMs": 150,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 15,
+    "minMs": 1500,
+    "fadeMs": 250,
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
+  },
+  "finalHoldMs": 4000,
+  "chapterPosition": "top-center",
+  "scenes": [
+    {
+      "id": "setup",
+      "chapter": "Setup",
+      "offCamera": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/bst.html?example=bst-scenario-basic",
+          "waitFor": "#donation-prompt-figures",
+          "note": "diya-gl shows a donation card once per browser, the first time the year view holds figures, and a cookie banner until the visitor answers it. Opening an example book off camera uses up the card, and declining the banner answers it, so neither covers the recording. The example is opened by deep link, which the page never autosaves, so the next page load starts empty."
+        },
+        {
+          "action": "click",
+          "target": "#consent-decline"
+        }
+      ]
+    },
+    {
+      "id": "new-book",
+      "chapter": "Start a new book",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/bst.html",
+          "waitFor": "#new-book-btn"
+        },
+        {
+          "action": "point",
+          "target": {
+            "role": "heading",
+            "name": "View your books in DIYA-GL"
+          },
+          "caption": "diya-gl keeps a sole trader's books, free, in your browser.",
+          "headline": "A sole trader's books",
+          "keyWord": "books",
+          "dwellMs": 600,
+          "instruction": "Open the Basic Sole Trader book at diya-gl.co.uk/bst.html."
+        },
+        {
+          "action": "click",
+          "target": "#new-book-btn",
+          "caption": "Start a new book.",
+          "headline": "Start a new book",
+          "keyWord": "new",
+          "instruction": "Choose Start a new book."
+        },
+        {
+          "action": "type",
+          "target": "#new-book-name",
+          "text": "Sam Green Gardening",
+          "caption": "Type your business name.",
+          "headline": "Your business name",
+          "keyWord": "name",
+          "instruction": "Enter your business name in the name box."
+        },
+        {
+          "action": "fill",
+          "target": "#new-book-year-end",
+          "value": "2027-03-31",
+          "caption": "Set the year end, then create the book.",
+          "headline": "Set the year end",
+          "keyWord": "year",
+          "instruction": "Enter 31 March 2027 as the year end for the 2026 to 2027 tax year, then choose Create book."
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Create book"
+          }
+        },
+        {
+          "action": "await",
+          "until": "tr.entry-add-row[data-add-journal=\"sales\"]",
+          "label": "the new book to open",
+          "caption": "Sales go on the left, purchases on the right.",
+          "headline": "Sales left, purchases right",
+          "keyWord": "Sales",
+          "instruction": "Find the new sales entry row on the left and the new purchases entry row on the right."
+        }
+      ]
+    },
+    {
+      "id": "entries",
+      "chapter": "A sale and a purchase",
+      "still": true,
+      "steps": [
+        {
+          "action": "fill",
+          "target": "input[aria-label=\"Date for the new sales entry\"]",
+          "value": "2026-04-10",
+          "caption": "A sale: the date, the invoice number, the job and the £500 paid.",
+          "headline": "Record a sale",
+          "keyWord": "sale",
+          "instruction": "Enter the date the customer paid, the invoice or receipt number, what the job was in Detail and the amount in the new sales entry, then choose Add."
+        },
+        {
+          "action": "type",
+          "target": {
+            "role": "textbox",
+            "name": "Invoice or receipt reference for the new sales entry"
+          },
+          "text": "INV-001"
+        },
+        {
+          "action": "type",
+          "target": {
+            "role": "textbox",
+            "name": "Detail for the new sales entry"
+          },
+          "text": "Lawn and hedges"
+        },
+        {
+          "action": "type",
+          "target": {
+            "role": "textbox",
+            "name": "Amount for the new sales entry"
+          },
+          "text": "500"
+        },
+        {
+          "action": "click",
+          "target": "[data-add-entry=\"sales\"]"
+        },
+        {
+          "action": "fill",
+          "target": "input[aria-label=\"Date for the new purchases entry\"]",
+          "value": "2026-04-15",
+          "caption": "A purchase: plants for the job, £200, under cost of sales.",
+          "headline": "Record a purchase",
+          "keyWord": "purchase",
+          "instruction": "Enter the date of the purchase in the new purchases entry, choose its Account (Materials, under cost of sales), enter the detail and the amount, then choose Add."
+        },
+        {
+          "action": "select",
+          "target": {
+            "role": "combobox",
+            "name": "Account for the new purchases entry"
+          },
+          "value": "5000"
+        },
+        {
+          "action": "type",
+          "target": {
+            "role": "textbox",
+            "name": "Detail for the new purchases entry"
+          },
+          "text": "Plants"
+        },
+        {
+          "action": "type",
+          "target": {
+            "role": "textbox",
+            "name": "Amount for the new purchases entry"
+          },
+          "text": "200"
+        },
+        {
+          "action": "click",
+          "target": "[data-add-entry=\"purchases\"]"
+        },
+        {
+          "action": "point",
+          "target": "tr.year-row[data-month=\"2026-04\"]",
+          "caption": "The book adds up as you go: April shows £300 profit.",
+          "headline": "April's profit: £300",
+          "keyWord": "profit",
+          "dwellMs": 600,
+          "instruction": "Read April's row in the year table for its sales, costs and profit."
+        }
+      ]
+    },
+    {
+      "id": "profit",
+      "chapter": "See the profit",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "tab",
+            "name": "P&L"
+          },
+          "caption": "The P&L tab sets it out as a profit and loss account.",
+          "headline": "Open the P&L",
+          "keyWord": "P&L",
+          "instruction": "Choose the P&L tab."
+        },
+        {
+          "action": "await",
+          "until": "h2:text-is(\"Profit & Loss Account\")",
+          "label": "the profit and loss account to show"
+        },
+        {
+          "action": "scroll",
+          "target": ".panel-card [data-r-key^=\"cell/Profit & Loss Acc!C24 \"]"
+        },
+        {
+          "action": "point",
+          "target": ".panel-card [data-r-key^=\"cell/Profit & Loss Acc!C24 \"]",
+          "caption": "Net profit: £300. Try it free at diya-gl.co.uk.",
+          "headline": "Net profit: £300",
+          "keyWord": "300",
+          "dwellMs": 600,
+          "instruction": "Read Net profit at the foot of the profit and loss account."
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        }
+      ]
+    }
+  ]
+}

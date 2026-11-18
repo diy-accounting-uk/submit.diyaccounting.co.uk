@@ -77,6 +77,7 @@ function formatValue(unit, value) {
   if (unit === "gbp") return gbpFormat.format(value);
   if (unit === "usd") return usdFormat.format(value);
   if (unit === "hours") return numberFormat.format(value) + " h";
+  if (unit === "days") return numberFormat.format(value) + (value === 1 ? " day" : " days");
   if (unit === "months") return numberFormat.format(value) + (value === 1 ? " month" : " months");
   if (unit === "runs") return numberFormat.format(value) + (value === 1 ? " run" : " runs");
   if (unit === "count" && value === 0) return NONE;
@@ -163,10 +164,19 @@ function linkLabel(observation) {
   return "Source console";
 }
 
+// A row for accounts that are not customers (test, synthetic, operator or unknown) starts hidden;
+// the button under its table shows it.
+const isNotCustomerRow = (observation) => Boolean(observation.actorClass) && observation.actorClass !== "customer";
+
 function renderObservationRow(observation) {
   const row = document.createElement("tr");
   row.className = "observation";
   row.dataset.observationId = observation.id;
+  if (isNotCustomerRow(observation)) {
+    row.classList.add("observation-not-customer");
+    row.dataset.actorClass = observation.actorClass;
+    row.hidden = true;
+  }
 
   const label = document.createElement("td");
   label.textContent = observation.label;
@@ -260,7 +270,27 @@ function renderObjective(objective, generatedAt) {
   table.appendChild(tbody);
 
   section.appendChild(table);
+  const notCustomerRows = objective.observations.filter(isNotCustomerRow).length;
+  if (notCustomerRows > 0) section.appendChild(notCustomerToggle(tbody, notCustomerRows));
   return section;
+}
+
+function notCustomerToggle(tbody, count) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "chart-mode observation-class-toggle";
+  button.setAttribute("aria-expanded", "false");
+  const label = (shown) => (shown ? "Hide" : "Show") + " the " + count + " rows for test, synthetic, operator and unknown accounts";
+  button.textContent = label(false);
+  button.addEventListener("click", () => {
+    const shown = button.getAttribute("aria-expanded") !== "true";
+    tbody.querySelectorAll("tr.observation-not-customer").forEach((row) => {
+      row.hidden = !shown;
+    });
+    button.setAttribute("aria-expanded", String(shown));
+    button.textContent = label(shown);
+  });
+  return button;
 }
 
 // Operator, authenticated user and human come from GA4 sessions; synthetic and bot from the
@@ -652,6 +682,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const SUMMARY_COLUMN_LABELS = [
   "Organisation",
   "Status",
+  "Caller",
   "Today",
   "Previous day",
   "Last 7 days",
@@ -710,7 +741,8 @@ function renderIntegrationsSummary(integrations) {
     row.className = "integrations-summary-row";
     row.dataset.org = observation.org;
     row.dataset.status = observation.status;
-    [INTEGRATION_ORG_NAMES[observation.org] || observation.org, observation.status].forEach((text) => {
+    row.dataset.caller = observation.caller;
+    [INTEGRATION_ORG_NAMES[observation.org] || observation.org, observation.status, observation.caller].forEach((text) => {
       const cell = document.createElement("td");
       cell.textContent = text;
       row.appendChild(cell);
@@ -822,6 +854,14 @@ function dataTtlText(ttl) {
   return ttl.enabled ? "On, " + ttl.attribute : "Off";
 }
 
+// The customer items of a table the lake holds; n/a for a table that holds no customer items.
+function dataCustomerCell(table) {
+  if (table.split) return dataCountCell(table.split.customer);
+  const cell = dataTextCell(NOT_APPLICABLE);
+  cell.title = "The lake holds no change records of this table: it holds no customer items.";
+  return cell;
+}
+
 function renderDataTables(data) {
   const body = document.getElementById("dataTablesBody");
   body.innerHTML = "";
@@ -834,7 +874,9 @@ function renderDataTables(data) {
     row.className = "data-table-row";
     row.dataset.table = table.name;
     row.appendChild(dataTextCell(table.name));
-    DATA_WINDOW_KEYS.forEach((key) => row.appendChild(dataCountCell(table.items[key])));
+    row.appendChild(dataCountCell(table.items.today));
+    row.appendChild(dataCustomerCell(table));
+    DATA_WINDOW_KEYS.filter((key) => key !== "today").forEach((key) => row.appendChild(dataCountCell(table.items[key])));
     row.appendChild(dataTextCell(dataTtlText(table.ttl)));
     body.appendChild(row);
   });
@@ -852,31 +894,60 @@ function renderDataSplit(data) {
     row.className = "data-split-row";
     row.dataset.table = table.name;
     row.appendChild(dataTextCell(table.name));
-    ["customer", "test", "synthetic", "other", "unknown"].forEach((key) => row.appendChild(dataCountCell(table.split[key])));
+    DATA_TABLE_SPLIT_KEYS.forEach((key) => row.appendChild(dataCountCell(table.split[key])));
     body.appendChild(row);
   });
 }
 
+const DATA_SPLIT_KEYS = ["customer", "test", "synthetic", "other", "unknown"];
+const DATA_TABLE_SPLIT_KEYS = [...DATA_SPLIT_KEYS, "notInLake"];
+
 function renderDataBuckets(data) {
   const body = document.getElementById("dataBucketsBody");
-  body.innerHTML = "";
-  const rows = data
+  const splitBody = document.getElementById("dataBucketsSplitBody");
+  const analyticsBody = document.getElementById("dataAnalyticsBody");
+  [body, splitBody, analyticsBody].forEach((element) => {
+    element.innerHTML = "";
+  });
+  const customerRows = data
     ? [
-        ...data.buckets.map((bucket) => [bucket.name, bucket.objects]),
-        ...data.books.map((entry) => ["diya-gl " + entry.type.toLowerCase(), entry.count]),
+        ...data.buckets.filter((bucket) => bucket.group !== "analytics").map((bucket) => [bucket.name, bucket.objects, bucket.split]),
+        ...data.books.map((entry) => ["diya-gl " + entry.type.toLowerCase(), entry.count, entry.split]),
       ]
     : [];
+  const analyticsRows = data ? data.buckets.filter((bucket) => bucket.group === "analytics") : [];
+  const splitRows = customerRows.filter(([, , split]) => split);
   document.getElementById("dataBucketsPanel").hidden = false;
-  document.getElementById("dataBucketsEmpty").hidden = rows.length > 0;
-  document.getElementById("dataBucketsTable").hidden = rows.length === 0;
+  document.getElementById("dataBucketsEmpty").hidden = customerRows.length > 0;
+  document.getElementById("dataBucketsTable").hidden = customerRows.length === 0;
+  document.getElementById("dataBucketsSplitTable").hidden = splitRows.length === 0;
   document.getElementById("dataBooksNote").hidden = !(data && data.booksTruncated);
-  rows.forEach(([name, figures]) => {
+  customerRows.forEach(([name, figures]) => {
     const row = document.createElement("tr");
     row.className = "data-bucket-row";
     row.dataset.name = name;
     row.appendChild(dataTextCell(name));
     DATA_WINDOW_KEYS.forEach((key) => row.appendChild(dataCountCell(figures[key])));
     body.appendChild(row);
+  });
+  splitRows.forEach(([name, , split]) => {
+    const row = document.createElement("tr");
+    row.className = "data-bucket-split-row";
+    row.dataset.name = name;
+    row.appendChild(dataTextCell(name));
+    DATA_SPLIT_KEYS.forEach((key) => row.appendChild(dataCountCell(split[key])));
+    splitBody.appendChild(row);
+  });
+  document.getElementById("dataAnalyticsPanel").hidden = false;
+  document.getElementById("dataAnalyticsEmpty").hidden = analyticsRows.length > 0;
+  document.getElementById("dataAnalyticsTable").hidden = analyticsRows.length === 0;
+  analyticsRows.forEach((bucket) => {
+    const row = document.createElement("tr");
+    row.className = "data-bucket-row";
+    row.dataset.name = bucket.name;
+    row.appendChild(dataTextCell(bucket.name));
+    DATA_WINDOW_KEYS.forEach((key) => row.appendChild(dataCountCell(bucket.objects[key])));
+    analyticsBody.appendChild(row);
   });
 }
 
@@ -1194,6 +1265,7 @@ const STATIC_TABLE_PANELS = [
   "dataTablesPanel",
   "dataSplitPanel",
   "dataBucketsPanel",
+  "dataAnalyticsPanel",
   "companyAccountsPanel",
   "reservePanel",
   "monthlyMarketingBudgetPanel",

@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId"));
@@ -110,14 +116,16 @@ async function fetchPeriod(nino, businessId, taxYear, periodId, testScenario, ru
       ...requestHeaders,
       "x-wait-time-ms": "0",
     },
-    pollPendingMessage: "Still processing...",
-    pollSuccessMessage: "Period summary retrieved.",
-    pollErrorMessage: "Failed to retrieve the period summary.",
+    pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+    pollSuccessMessage: siteText("itsa.period-retrieved", "Period summary retrieved."),
+    pollErrorMessage: siteText("itsa.period-retrieve-failed", "Failed to retrieve the period summary."),
   });
 
   const result = await response.json();
   if (!response.ok) {
-    const error = new Error(hmrcErrorMessage(result, "Failed to retrieve the period summary"));
+    const error = new Error(
+      hmrcErrorMessage(result, siteText("itsa.period-retrieve-failed-fallback", "Failed to retrieve the period summary")),
+    );
     error.status = response.status;
     throw error;
   }
@@ -134,7 +142,7 @@ async function continuePeriodViewRetrieval() {
     hideSearchCriteria();
     showLoading();
     hideStatus();
-    showStatus("Retrieving period summary...", "info");
+    showStatus(siteText("itsa.period-retrieving", "Retrieving period summary..."), "info");
 
     const result = await fetchPeriod(
       pendingRequest.nino,
@@ -156,9 +164,12 @@ async function continuePeriodViewRetrieval() {
   } catch (error) {
     if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
-      showStatus("Access token expired. Please re-authenticate.", "error");
+      showStatus(siteText("itsa.token-expired-reauth", "Access token expired. Please re-authenticate."), "error");
     } else {
-      showStatus(`Failed to retrieve the period summary: ${error.message}`, "error");
+      showStatus(
+        siteText("itsa.period-retrieve-failed-reason", "Failed to retrieve the period summary: {reason}", { reason: error.message }),
+        "error",
+      );
     }
     showSearchCriteria();
     sessionStorage.removeItem("pendingSelfEmploymentPeriodViewRequest");
@@ -198,7 +209,7 @@ async function handleFormSubmission(event) {
     }
     try {
       showLoading();
-      showStatus("Initiating HMRC authentication...", "info");
+      showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
 
       const state = generateRandomState();
       const requestData = { nino, businessId, taxYear, periodId, testScenario, runFraudPreventionHeaderValidation };
@@ -214,21 +225,24 @@ async function handleFormSubmission(event) {
 
       const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
 
-      showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+      showStatus(
+        siteText("widget.hmrc-auth-redirecting", "Redirecting to HMRC for authentication at {url}...", { url: authResponseUrl }),
+        "info",
+      );
 
       try {
         window.__correlation?.prepareRedirect?.();
       } catch {}
       window.location.href = authResponseUrl;
     } catch (error) {
-      showStatus(`Authentication failed: ${error.message}`, "error");
+      showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
       hideLoading();
     }
   } else {
     try {
       showLoading();
       hideStatus();
-      showStatus("Retrieving period summary...", "info");
+      showStatus(siteText("itsa.period-retrieving", "Retrieving period summary..."), "info");
 
       const result = await fetchPeriod(nino, businessId, taxYear, periodId, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
 
@@ -238,9 +252,12 @@ async function handleFormSubmission(event) {
     } catch (error) {
       if (error.status === 401) {
         window.hmrcScopeCheck.clearHmrcToken();
-        showStatus("Access token expired. Please try again.", "error");
+        showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
       } else {
-        showStatus(`Failed to retrieve the period summary: ${error.message}`, "error");
+        showStatus(
+          siteText("itsa.period-retrieve-failed-reason", "Failed to retrieve the period summary: {reason}", { reason: error.message }),
+          "error",
+        );
       }
     } finally {
       hideLoading();
@@ -249,8 +266,8 @@ async function handleFormSubmission(event) {
 }
 
 const JOURNEY_LINKS = [
-  { href: "selfEmploymentPeriods.html", text: "See the other period summaries" },
-  { href: "dashboard.html", text: "Back to Income Tax" },
+  { href: "selfEmploymentPeriods.html", text: siteText("itsa.link-other-periods", "See the other period summaries") },
+  { href: "dashboard.html", text: siteText("itsa.link-back", "Back to Income Tax") },
 ];
 
 async function displayPeriod(period, query = {}) {

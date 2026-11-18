@@ -119,14 +119,12 @@ test.describe("Prod surface", () => {
   });
 
   for (const pagePath of ["bundles.html", "mcp.html", "about.html", "guide.html", "help.html", "videos.html", "videos-hmrc-itsa.html"]) {
-    test(`${pagePath} lists only production features in its status box in prod`, async ({ page }) => {
+    test(`${pagePath} shows no status box in prod`, async ({ page }) => {
       await serveSite(page, "prod");
       await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "networkidle" });
       const box = page.locator('[data-feature-status="summary"]');
-      await expect(box).toContainText("HMRC VAT");
-      await expect(box.locator('.status-tag[data-status="production"]')).toHaveCount(1);
-      await expect(box.locator('.status-tag[data-status="sandbox"]')).toHaveCount(0);
-      await expect(box).not.toContainText("Income Tax");
+      await expect(box).toBeHidden();
+      await expect(box).toHaveAttribute("hidden", "");
       await shoot(page, `${pagePath.replace(".html", "")}-status-prod`);
     });
 

@@ -60,6 +60,12 @@
 (function () {
   "use strict";
 
+  // page-chrome.js gives the text in the chosen language; without it the English stands.
+  function siteText(id, english, values) {
+    if (window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
+
   const ACCEPTED_FILES = ".zip,.xlsx,.xls,.json,application/zip,application/json";
   const ACCEPTED_ACCOUNTS_FILES = `${ACCEPTED_FILES},.xhtml,.html,.htm,.xml,application/xhtml+xml,text/html,text/xml,application/xml`;
   const IXBRL_FILE_NAME = /\.(xhtml|html|htm|xml)$/i;
@@ -135,7 +141,7 @@
   }
 
   function coveredSentence(covered) {
-    return covered ? " This book covers " + covered + "." : "";
+    return covered ? " " + siteText("widget.books-covers", "This book covers {covered}.", { covered }) : "";
   }
 
   // The periods a company book answers, in the words of the package's own refusal for an end date
@@ -167,14 +173,19 @@
     const periodStart = fieldValue("periodStart");
     if (!periodEnd) {
       const covered = await vatPeriodsCovered(bundle, source.book, source.lines);
-      throw new Refusal(`Choose the VAT period first and the boxes fill from ${fileName}.${coveredSentence(covered)}`);
+      throw new Refusal(
+        siteText("vat.books-choose-period", "Choose the VAT period first and the boxes fill from {file}.", { file: fileName }) +
+          coveredSentence(covered),
+      );
     }
     let derived;
     try {
       derived = await bundle.deriveVatReturn(source.book, source.lines, { periodEnd, ...(periodStart ? { periodStart } : {}) });
     } catch (error) {
       const covered = error.message.includes("it answers periods ending") ? "" : await vatPeriodsCovered(bundle, source.book, source.lines);
-      throw new Refusal(`${withoutFinalStop(error.message)}. Nothing filled.${coveredSentence(covered)}`);
+      throw new Refusal(
+        `${withoutFinalStop(error.message)}. ${siteText("widget.books-nothing-filled", "Nothing filled.")}${coveredSentence(covered)}`,
+      );
     }
     VAT_BOX_FIELDS.forEach((id) => setField(id, figureText(derived.hmrc[id])));
     if (!periodStart) setField("periodStart", derived.periodStart);
@@ -182,7 +193,11 @@
     if (vatNumberField && !vatNumberField.value.trim() && /^\d{9}$/.test(derived.vatRegistrationNumber || "")) {
       setField("vatNumber", derived.vatRegistrationNumber);
     }
-    return `Filled the nine boxes from ${fileName} for the period ${derived.periodStart} to ${derived.periodEnd}. Check them, then submit.`;
+    return siteText("vat.books-filled", "Filled the nine boxes from {file} for the period {start} to {end}. Check them, then submit.", {
+      file: fileName,
+      start: derived.periodStart,
+      end: derived.periodEnd,
+    });
   }
 
   function figuresTheFormLacks(period) {
@@ -842,7 +857,11 @@
     VAT_BOX_FIELDS.forEach((id) => setField(id, figureText(handoff.figures[id])));
     setField("periodStart", handoff.period.periodStart);
     setField("periodEnd", handoff.period.periodEnd);
-    return `Filled the nine boxes from ${handoff.sourceFileName} for the period ${handoff.period.periodStart} to ${handoff.period.periodEnd}. Check them, then submit.`;
+    return siteText("vat.books-filled", "Filled the nine boxes from {file} for the period {start} to {end}. Check them, then submit.", {
+      file: handoff.sourceFileName,
+      start: handoff.period.periodStart,
+      end: handoff.period.periodEnd,
+    });
   }
 
   function applyQuarterlyHandoff(handoff) {
@@ -894,25 +913,35 @@
     const filler = FILLERS[kind];
     if (!container || !filler) throw new Error(`booksImport.mount: unknown kind ${kind}`);
 
-    const heading = element("h2", { id: "booksImportHeading" }, "Fill from your books");
+    const heading = element("h2", { id: "booksImportHeading" }, siteText("widget.books-heading", "Fill from your books"));
     const hint = element(
       "p",
       { id: "booksImportHint", class: "hint" },
-      "Drop your DIYA-GL book, spreadsheets workbook or package zip here, or choose a file. It is read in this browser and never uploaded; " +
-        "only the figures you file are sent." +
+      siteText(
+        "widget.books-hint",
+        "Drop your DIYA-GL book, spreadsheets workbook or package zip here, or choose a file. It is read in this browser and never uploaded; only the figures you file are sent.",
+      ) +
         (takesIxbrl(kind)
-          ? " An iXBRL accounts document (.xhtml) fills the same form. A set of iXBRL documents fills it too: choose all its files together, or one zip."
+          ? " " +
+            siteText(
+              "widget.books-hint-ixbrl",
+              "An iXBRL accounts document (.xhtml) fills the same form. A set of iXBRL documents fills it too: choose all its files together, or one zip.",
+            )
           : ""),
     );
     const dropZone = element("div", { "id": "booksImportDrop", "class": "books-import-drop", "aria-describedby": "booksImportHint" });
-    const chooseButton = element("button", { type: "button", id: "booksImportChoose", class: "secondary-button" }, "Choose a file");
-    const dropText = element("span", {}, "Drop a book here");
+    const chooseButton = element(
+      "button",
+      { type: "button", id: "booksImportChoose", class: "secondary-button" },
+      siteText("widget.books-choose", "Choose a file"),
+    );
+    const dropText = element("span", {}, siteText("widget.books-drop", "Drop a book here"));
     dropZone.append(dropText, chooseButton);
     const fileInput = element("input", {
       "type": "file",
       "id": "booksImportFile",
       "name": "booksImportFile",
-      "aria-label": "Book file to import",
+      "aria-label": siteText("widget.books-file-label", "Book file to import"),
       "accept": takesIxbrl(kind) ? ACCEPTED_ACCOUNTS_FILES : ACCEPTED_FILES,
       ...(takesIxbrl(kind) ? { multiple: "" } : {}),
       "class": "books-import-file",
@@ -928,9 +957,17 @@
     const section = element("section", { "class": "books-import", "aria-labelledby": "booksImportHeading" });
     const savedBooks = element("div", { id: "savedBooks", class: "form-group" });
     savedBooks.hidden = true;
-    const savedBooksLabel = element("label", { for: "savedBooksSelect" }, "Or use one of the client's saved books");
+    const savedBooksLabel = element(
+      "label",
+      { for: "savedBooksSelect" },
+      siteText("widget.books-saved-label", "Or use one of the client's saved books"),
+    );
     const savedBooksSelect = element("select", { id: "savedBooksSelect", name: "savedBooksSelect" });
-    const savedBooksUse = element("button", { type: "button", id: "savedBooksUse", class: "secondary-button" }, "Fill from this book");
+    const savedBooksUse = element(
+      "button",
+      { type: "button", id: "savedBooksUse", class: "secondary-button" },
+      siteText("widget.books-saved-use", "Fill from this book"),
+    );
     savedBooks.append(savedBooksLabel, savedBooksSelect, savedBooksUse);
     section.append(heading, hint, dropZone, savedBooks, fileInput, statusLine);
     container.replaceChildren(section);
@@ -953,7 +990,14 @@
       try {
         say(await fillFromLoaded());
       } catch (error) {
-        say(error instanceof Refusal ? error.message : `Could not fill from ${loaded.fileName}: ${withoutFinalStop(error.message)}.`);
+        say(
+          error instanceof Refusal
+            ? error.message
+            : siteText("widget.books-could-not-fill", "Could not fill from {file}: {reason}.", {
+                file: loaded.fileName,
+                reason: withoutFinalStop(error.message),
+              }),
+        );
       } finally {
         working = false;
       }
@@ -1018,7 +1062,7 @@
       const file = { name: namesOf(files) };
       working = true;
       loaded = null;
-      say(`Reading ${file.name}...`);
+      say(siteText("widget.books-reading", "Reading {file}...", { file: file.name }));
       try {
         const read = await readFiles(files);
         if (read.figures) {
@@ -1030,7 +1074,14 @@
           say(await fillFromLoaded());
         }
       } catch (error) {
-        say(error instanceof Refusal ? error.message : `Could not import ${file.name}: ${withoutFinalStop(error.message)}.`);
+        say(
+          error instanceof Refusal
+            ? error.message
+            : siteText("widget.books-could-not-import", "Could not import {file}: {reason}.", {
+                file: file.name,
+                reason: withoutFinalStop(error.message),
+              }),
+        );
       } finally {
         working = false;
         fileInput.value = "";
@@ -1050,12 +1101,18 @@
       } catch (error) {
         if (!(error instanceof HandoffProblem)) throw error;
         sessionStorage.removeItem(HANDOFF_KEY);
-        say(`The figures sent from your books could not be used: ${error.message}. Nothing filled.`);
+        say(
+          siteText("widget.books-handoff-unusable", "The figures sent from your books could not be used: {reason}. Nothing filled.", {
+            reason: error.message,
+          }),
+        );
         return;
       }
       if (handoff.kind !== kind) return;
       if (!localStorage.getItem("cognitoIdToken")) {
-        say(`Sign in and the figures from ${handoff.sourceFileName} fill this form.`);
+        say(
+          siteText("widget.books-handoff-sign-in", "Sign in and the figures from {file} fill this form.", { file: handoff.sourceFileName }),
+        );
         return;
       }
       if (kind === "itsa-annual" && !options.taxYear()) {
@@ -1082,7 +1139,14 @@
         const body = await response.json();
         const books = Array.isArray(body.books) ? body.books : [];
         for (const book of books) {
-          const option = element("option", { value: book.bookId }, `${book.title || book.bookId} (version ${book.latestVersion})`);
+          const option = element(
+            "option",
+            { value: book.bookId },
+            siteText("widget.books-saved-option", "{title} (version {version})", {
+              title: book.title || book.bookId,
+              version: book.latestVersion,
+            }),
+          );
           savedBooksSelect.append(option);
         }
         savedBooks.hidden = books.length === 0;
@@ -1097,7 +1161,7 @@
       const bookId = savedBooksSelect.value;
       working = true;
       loaded = null;
-      say("Reading the saved book...");
+      say(siteText("widget.books-reading-saved", "Reading the saved book..."));
       try {
         const response = await window.fetchWithIdToken(
           `/api/v1/diya-gl/${encodeURIComponent(bookId)}/versions/latest?clientId=${encodeURIComponent(clientId)}`,
@@ -1111,7 +1175,11 @@
         loaded = { source: await bundle.readBookSource(bytes, fileName), fileName };
         say(await fillFromLoaded());
       } catch (error) {
-        say(error instanceof Refusal ? error.message : `Could not use the saved book: ${withoutFinalStop(error.message)}.`);
+        say(
+          error instanceof Refusal
+            ? error.message
+            : siteText("widget.books-saved-failed", "Could not use the saved book: {reason}.", { reason: withoutFinalStop(error.message) }),
+        );
       } finally {
         working = false;
       }
@@ -1137,7 +1205,7 @@
       const driveButton = element(
         "button",
         { type: "button", id: "booksImportDrive", class: "secondary-button" },
-        "Choose from Google Drive",
+        siteText("widget.books-drive", "Choose from Google Drive"),
       );
       dropZone.append(driveButton);
       let choosing = false;
@@ -1147,7 +1215,7 @@
         if (choosing || working) return;
         choosing = true;
         driveButton.disabled = true;
-        say("Waiting for Google Drive...");
+        say(siteText("widget.books-drive-waiting", "Waiting for Google Drive..."));
         try {
           const token = await drivePicker.connect(driveConfig);
           const picked = await drivePicker.pick(driveConfig, token);
@@ -1157,14 +1225,18 @@
           }
           if (picked.mimeType === drivePicker.GOOGLE_SHEET_MIME_TYPE) {
             say(
-              `Could not import ${picked.name}: it is a Google Sheet. Choose the DIYA-GL book, the spreadsheets workbook (.xlsx) or the package zip instead.`,
+              siteText(
+                "widget.books-drive-sheet",
+                "Could not import {file}: it is a Google Sheet. Choose the DIYA-GL book, the spreadsheets workbook (.xlsx) or the package zip instead.",
+                { file: picked.name },
+              ),
             );
             return;
           }
-          say(`Reading ${picked.name}...`);
+          say(siteText("widget.books-reading", "Reading {file}...", { file: picked.name }));
           await handleFiles([await drivePicker.download(picked, token)]);
         } catch (error) {
-          say(`Could not open Google Drive: ${withoutFinalStop(error.message)}.`);
+          say(siteText("widget.books-drive-failed", "Could not open Google Drive: {reason}.", { reason: withoutFinalStop(error.message) }));
         } finally {
           choosing = false;
           driveButton.disabled = false;

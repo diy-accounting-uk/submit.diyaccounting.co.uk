@@ -125,6 +125,19 @@ test("the VAT penalty calculator shows the due date, the points, the threshold a
   await expect(page.locator("main a[href='vat-return-from-a-spreadsheet.html']").first()).toBeVisible();
 });
 
+test("the VAT penalty calculator says where the returns appear until a period end is entered", async ({ page }) => {
+  await serveRealSite(page);
+  await page.goto("http://localhost:3000/vat-return-due-date-and-penalty-points.html", { waitUntil: "load" });
+  const hint = page.locator("#vatReturnTicks").locator("xpath=..").locator("#vatReturnTicksHint");
+  await expect(hint).toBeVisible();
+  await expect(hint).toContainText("once you enter the last day of the accounting period");
+  await page.locator("#vatPeriodEnd").fill("2026-09-30");
+  await expect(hint).toBeHidden();
+  await expect(page.locator("#vatReturnTicks input").first()).toBeVisible();
+  await page.locator("#vatPeriodEnd").fill("");
+  await expect(hint).toBeVisible();
+});
+
 test("the VAT penalty page holds the rules as text without a script", async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
@@ -276,7 +289,7 @@ test("the Income Tax page holds the rules as text and the embed snippet without 
   await page.goto(CHECKER_PAGE, { waitUntil: "load" });
   await expect(page.locator("#itsaChecker")).toBeHidden();
   await expect(page.locator("main")).toContainText("6 April 2028");
-  await expect(page.locator("main")).toContainText("awaits HMRC recognition");
+  await expect(page.locator("main")).toContainText("You cannot file Income Tax with Submit yet");
   await expect(page.locator("pre code")).toContainText("/embed/mtd-income-tax-checker.js");
   await context.close();
 });
@@ -298,4 +311,17 @@ test("the embed script puts the framed checker and a link to the full page on an
   await inner.locator("#itsaSelfEmployment-2024-to-2025").fill("60000");
   await inner.getByRole("button", { name: "Check" }).click();
   await expect(inner.locator("#itsaCheckerResult")).toContainText("6 April 2026");
+});
+
+test("a how-to step with no picture takes its own height beside a step with one at 1280", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await serveRealSite(page);
+  await page.goto("http://localhost:3000/dormant-company-accounts.html", { waitUntil: "load" });
+  const textOnly = page.locator("#step-1");
+  const withPicture = page.locator("#step-2");
+  await expect(textOnly.locator("img")).toHaveCount(0);
+  await expect(withPicture.locator("img")).toHaveCount(1);
+  const [textBox, pictureBox] = [await textOnly.boundingBox(), await withPicture.boundingBox()];
+  expect(Math.abs(textBox.y - pictureBox.y)).toBeLessThan(2);
+  expect(textBox.height).toBeLessThan(pictureBox.height / 2);
 });

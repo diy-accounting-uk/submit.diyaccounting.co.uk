@@ -124,21 +124,24 @@
           "text": "HMRC keeps a record of the VAT payments it has received.",
           "holdMs": 1200,
           "headline": "See your VAT payments",
-          "keyWord": "payments"
+          "keyWord": "payments",
+          "instruction": "Read what this page does: it shows the VAT payments HMRC has received."
         },
         {
           "action": "caption",
           "text": "You are already signed in. See the full sign-in walkthrough in our sign-in video.",
           "holdMs": 1200,
           "headline": "Already signed in",
-          "keyWord": "signed"
+          "keyWord": "signed",
+          "instruction": "Check that the header shows you signed in; if it does not, choose Sign in first."
         },
         {
           "action": "click",
           "target": "button:has-text('VAT Payments (HMRC)')",
           "caption": "Open VAT Payments to ask what HMRC has recorded.",
           "headline": "Open VAT Payments",
-          "keyWord": "Payments"
+          "keyWord": "Payments",
+          "instruction": "Choose VAT Payments (HMRC) on the Activities page."
         },
         {
           "action": "await",
@@ -152,7 +155,8 @@
           "clear": true,
           "caption": "Type the VAT registration number.",
           "headline": "Enter your VAT number",
-          "keyWord": "number"
+          "keyWord": "number",
+          "instruction": "Enter your VAT registration number."
         },
         {
           "action": "fill",
@@ -160,7 +164,8 @@
           "value": "2018-02-27",
           "caption": "Then the stretch of time to check.",
           "headline": "Choose the start date",
-          "keyWord": "start"
+          "keyWord": "start",
+          "instruction": "Enter a From date and a To date to check between."
         },
         {
           "action": "fill",
@@ -180,7 +185,8 @@
           "target": "#retrieveBtn",
           "caption": "The first request sends you to HMRC to grant access.",
           "headline": "Ask HMRC for access",
-          "keyWord": "access"
+          "keyWord": "access",
+          "instruction": "Choose Retrieve payments; the first request sends you to HMRC to give permission."
         }
       ]
     },
@@ -230,7 +236,8 @@
           "caption": "Any payment against the account shows here, with its date.",
           "headline": "Read each payment",
           "keyWord": "payment",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read each payment and its date in the payments table."
         },
         {
           "action": "hold",

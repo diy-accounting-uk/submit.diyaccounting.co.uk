@@ -44,8 +44,14 @@ describe("the help page", () => {
     expect(html).toContain("<ol>\n<li><strong>One</strong> first</li>\n<li>Two</li>\n</ol>");
     expect(html).toContain("<ul>\n<li>a</li>\n<li>b</li>\n</ul>");
     expect(html).toContain(
-      '<table class="faq-table"><thead><tr><th>H1</th><th>H2</th></tr></thead><tbody><tr><td>x</td><td>y</td></tr></tbody></table>',
+      '<table class="faq-table table-words"><thead><tr><th>H1</th><th>H2</th></tr></thead><tbody><tr><td>x</td><td>y</td></tr></tbody></table>',
     );
+  });
+
+  test("a table cell that is only a number or an amount is marked as a figure", () => {
+    const html = renderFaqMarkdown("| Box | Description |\n|---|---|\n| 1 | VAT due on sales |\n| £600 | 20% |");
+    expect(html).toContain('<tr><td class="cell-figure">1</td><td>VAT due on sales</td></tr>');
+    expect(html).toContain('<tr><td class="cell-figure">£600</td><td class="cell-figure">20%</td></tr>');
   });
 });
 
@@ -67,6 +73,15 @@ describe("the guide page", () => {
     const html = readFileSync(GUIDE_PAGE_PATH, "utf8");
     expect(html).not.toContain("| DIY Accounting Submit</summary>");
     expect(html).not.toContain("| DIY Accounting Submit</a>");
+  });
+
+  test("a journey whose frames show periods carries the line about HMRC's test periods, and hmrc-authorise does not", () => {
+    const html = renderGuideJourneys(loadManifest(), catalog);
+    const journey = (id) => html.slice(html.indexOf(`<details class="guide-journey" id="${id}"`)).split("</details>")[0];
+    expect(journey("hmrc-authorise")).not.toContain("guide-test-note");
+    expect(journey("view-obligations")).toContain("guide-test-note");
+    expect(journey("submit-return")).toContain("guide-test-note");
+    expect(html.indexOf("guide-test-note")).toBeGreaterThan(html.indexOf('id="hmrc-authorise"'));
   });
 
   test("a journey whose video names an activity that prod does not list is left out", () => {

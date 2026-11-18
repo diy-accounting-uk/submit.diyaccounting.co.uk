@@ -45,13 +45,13 @@ export function catalogPriceText(bundleId, catalogue = TOML.parse(fs.readFileSyn
 /**
  * The listing register with the copy pack: `{ groups, products, listings }`. A product's descriptions
  * carry the catalogue price text where its template holds {price}, and `priceText` is that text
- * (empty for a product with no catalogue bundle).
+ * (the product's own priceText when it has no catalogue bundle).
  */
 export function readListings(options = {}) {
   const marketing = options.marketing ?? TOML.parse(fs.readFileSync(MARKETING_TOML, "utf8"));
   const catalogue = options.catalogue ?? TOML.parse(fs.readFileSync(CATALOGUE_TOML, "utf8"));
   const products = (marketing.listingProduct ?? []).map((product) => {
-    const priceText = product.priceBundle ? catalogPriceText(product.priceBundle, catalogue) : "";
+    const priceText = product.priceBundle ? catalogPriceText(product.priceBundle, catalogue) : (product.priceText ?? "");
     return {
       ...product,
       priceText,

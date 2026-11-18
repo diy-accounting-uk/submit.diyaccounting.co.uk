@@ -28,6 +28,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { parseArgs } from "node:util";
 import { pathToFileURL } from "node:url";
 import { BedrockRuntimeClient, ConverseCommand } from "@aws-sdk/client-bedrock-runtime";
+import { BEDROCK_MODEL_IDS, DEFAULT_BEDROCK_MODEL_ID } from "../app/lib/bedrockModels.js";
 import {
   DEFAULT_FINAL_SCHEMA,
   DEFAULT_TOOLS,
@@ -52,8 +53,8 @@ export function withContextFiles(prompt, contextFiles, read = (path) => readFile
   return blocks.length === 0 ? prompt : `${prompt.trimEnd()}\n\n${blocks.join("\n\n")}\n`;
 }
 
-export const DEFAULT_MODEL_ID = "amazon.nova-pro-v1:0";
-export const ALLOWED_MODEL_IDS = [DEFAULT_MODEL_ID, "global.amazon.nova-2-lite-v1:0"];
+export const DEFAULT_MODEL_ID = DEFAULT_BEDROCK_MODEL_ID;
+export const ALLOWED_MODEL_IDS = BEDROCK_MODEL_IDS;
 export const REASONING_EFFORTS = ["low", "medium", "high"];
 export const MAX_REQUEST_INPUT_TOKENS = 200000;
 export const DEFAULT_MAX_TOTAL_TOKENS = 1000000;

@@ -1,0 +1,128 @@
+<!-- cy/auth/login.html -->
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from auth/login.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Mewngofnodi - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/auth/login.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/auth/login.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/auth/login.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/auth/login.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../lib/analytics.js"></script>
+    <!-- HEAD-prefetch to help mitigate API cold starts for this page's calls -->
+    <!--script async src="../../prefetch/prefetch-cognito-token-head.js"></script-->
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="login.sign-in-bfd402">Mewngofnodi</h1>
+      <p data-i18n="login.sign-in-to-file-with-hmrc-0b1578" class="subtitle">Mewngofnodwch i ffeilio gyda CThEF a Thŷ’r Cwmnïau</p>
+    </header>
+
+    <main id="mainContent">
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div class="form-container auth-panel">
+        <h2 data-i18n="login.choose-how-to-sign-in-581869">Dewiswch sut i fewngofnodi</h2>
+        <p class="hint" id="signInDestination" hidden></p>
+        <p data-i18n="login.your-free-pass-is-waiting-sign-27746c" class="hint" id="pendingPassNote" hidden>
+          Mae eich tocyn am ddim yn aros amdanoch. Mewngofnodwch gyda chyfrif Google neu Microsoft i’w ychwanegu. Nid oes angen cerdyn.
+        </p>
+
+        <div class="auth-providers">
+          <div class="auth-provider">
+            <button
+              data-i18n="login.sign-in-with-your-google-account-5cfef4"
+              type="button"
+              class="btn auth-btn google-btn"
+              id="loginWithCognito"
+              disabled
+            >
+              <img src="../../images/g-logo.png" alt="" class="provider-logo" /> Mewngofnodi gyda’ch cyfrif Google
+            </button>
+          </div>
+
+          <div class="auth-provider">
+            <button
+              data-i18n="login.sign-in-with-your-microsoft-account-836e6a"
+              type="button"
+              class="btn auth-btn microsoft-btn"
+              id="loginWithMicrosoft"
+              disabled
+            >
+              <img src="../../images/microsoft-logo.svg" alt="" class="provider-logo" /> Mewngofnodi gyda’ch cyfrif Microsoft
+            </button>
+          </div>
+
+          <p data-i18n="login.use-the-account-you-already-have-6cd9cb" class="hint" id="providerAccountNote">
+            Defnyddiwch y cyfrif sydd gennych eisoes. Rydym yn cael eich cyfeiriad e-bost a’ch enw, a dim byd arall.
+          </p>
+          <p data-i18n="login.the-first-time-you-sign-in-7c5281" class="hint" id="firstSignInNote">
+            Y tro cyntaf y byddwch yn mewngofnodi, rydym yn creu eich cyfrif. Mae am ddim nes i chi ddewis Bundle.
+          </p>
+          <p data-i18n="login.cannot-sign-in-with-either-account-faebfa" class="hint" id="noAccountNote">
+            Methu mewngofnodi gyda’r naill gyfrif na’r llall? <a href="../../help.html#lost-sign-in-account">Gweld beth i’w wneud</a> (yn
+            Saesneg).
+          </p>
+
+          <!-- Mock auth button injected by login-mock-addon.js in dev environments only -->
+          <div id="mock-auth-container"></div>
+        </div>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../lib/welsh-text.js"></script>
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script src="../../lib/post-login-redirect.js"></script>
+    <script type="module" src="../../lib/utils/crypto-utils.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script type="module" src="../../widgets/view-source-link.js"></script>
+    <!-- Mock auth addon - only loaded in local development environments -->
+    <script src="../../auth/login.page.js"></script>
+  </body>
+</html>

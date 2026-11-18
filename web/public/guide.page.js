@@ -6,9 +6,23 @@
 // without frames lists text steps. A frame opens full size in the lightbox.
 
 import { fetchActivityListing } from "./lib/services/content-listing.js";
-import { GROUPS, splitTitle } from "./lib/guide-journeys.js";
+import { GROUPS, splitTitle, TEST_PERIODS_NOTE } from "./lib/guide-journeys.js";
 
 const MANIFEST_URL = "videos/publish.json";
+
+// The width a thumbnail shows at, so a browser picks the 480px file for it and the full file only
+// for the lightbox.
+const THUMB_SIZES = "(min-width: 700px) 480px, 92vw";
+
+// A journey's pictures get their address when the journey opens, so a closed journey costs no bytes.
+function loadPictures(journey) {
+  for (const image of journey.querySelectorAll("img[data-src]")) {
+    image.srcset = image.dataset.srcset;
+    image.src = image.dataset.src;
+    image.removeAttribute("data-src");
+    image.removeAttribute("data-srcset");
+  }
+}
 
 function el(tag, className, text) {
   const element = document.createElement(tag);
@@ -54,15 +68,15 @@ function frameStep(scene, stepId) {
   open.dataset.fullHeight = scene.fullHeight;
   open.setAttribute("aria-label", `View full size: ${scene.headline}`);
   const image = document.createElement("img");
-  image.src = scene.thumb;
-  image.srcset = `${scene.thumb} ${scene.thumbWidth}w, ${scene.full} ${scene.fullWidth}w`;
-  image.sizes = "(min-width: 700px) 45vw, 92vw";
+  image.dataset.src = scene.thumb;
+  image.dataset.srcset = `${scene.thumb} ${scene.thumbWidth}w, ${scene.full} ${scene.fullWidth}w`;
+  image.sizes = THUMB_SIZES;
   image.width = scene.thumbWidth;
   image.height = scene.thumbHeight;
   image.alt = `Screenshot: ${scene.headline}`;
   image.loading = "lazy";
   open.append(image);
-  item.append(open, el("p", "guide-caption", scene.caption));
+  item.append(open, el("p", "guide-caption", scene.instruction ?? scene.caption));
   return item;
 }
 
@@ -74,14 +88,19 @@ function textStep([headline, caption], stepId) {
   return item;
 }
 
-function journeyElement(id, title, note, steps) {
+function journeyElement(id, title, note, steps, leadText = "") {
   const details = el("details", "guide-journey");
   details.id = id;
   const summary = el("summary", "", title);
   if (note) summary.append(el("span", "guide-journey-note", note));
   const list = el("ol", "guide-steps-list");
   list.append(...steps);
-  details.append(summary, list);
+  details.append(summary);
+  if (leadText) details.append(el("p", "guide-test-note", leadText));
+  details.append(list);
+  details.addEventListener("toggle", () => {
+    if (details.open) loadPictures(details);
+  });
   return details;
 }
 
@@ -115,6 +134,7 @@ function render(container, videos, isListed) {
             title,
             note,
             video.walkthrough.map((scene, index) => frameStep(scene, `${video.id}-step-${index + 1}`)),
+            journey.showsPeriods ? TEST_PERIODS_NOTE : "",
           ),
         );
         addJump(jumpList, video.id, title);
@@ -141,6 +161,7 @@ function openFromHash() {
   const journey = target.closest("details");
   if (journey) {
     journey.open = true;
+    loadPictures(journey);
     target.scrollIntoView();
   }
 }

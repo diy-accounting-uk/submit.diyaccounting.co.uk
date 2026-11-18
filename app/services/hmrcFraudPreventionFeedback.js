@@ -8,7 +8,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { createLogger } from "../lib/logger.js";
 import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
-import { integrationApi, recordedFetch } from "../lib/integrationCalls.js";
+import { callActorClass, integrationApi, recordedFetch } from "../lib/integrationCalls.js";
 
 const logger = createLogger({ source: "app/services/hmrcFraudPreventionFeedback.js" });
 
@@ -60,7 +60,7 @@ export async function getFraudPreventionHeadersFeedback(
     const response = await recordedFetch(
       feedbackUrl,
       { method: "GET", headers, signal: controller.signal },
-      { org: "hmrc", target: "test", api: integrationApi("GET", feedbackUrl) },
+      { org: "hmrc", target: "test", api: integrationApi("GET", feedbackUrl), actor: callActorClass() },
     );
     duration = Date.now() - startTime;
 

@@ -14,6 +14,7 @@ import {
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
+  runStripeListen,
 } from "../helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePage, goToHomePageExpectNotLoggedIn } from "../steps/behaviour-steps.js";
 import {
@@ -75,6 +76,7 @@ const simulatorLane = isCompaniesHouseSimulatorLane(envFilePath);
 
 let mockOAuth2Process;
 let serverProcess;
+let stripeListenProcess;
 let dynamoControl;
 
 test.setTimeout(300_000);
@@ -103,6 +105,12 @@ test.beforeAll(async () => {
 
   dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
+  // A subscription bundle is granted by Stripe's webhook, so a local server with real Stripe
+  // prices needs stripe listen, started before the server reads its signing secret.
+  stripeListenProcess = await runStripeListen(new URL("api/v1/billing/webhook", baseUrl).href);
+  if (stripeListenProcess) {
+    process.env.STRIPE_TEST_WEBHOOK_SECRET = stripeListenProcess.secret;
+  }
   serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
 
   console.log("beforeAll hook completed successfully");
@@ -111,6 +119,9 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   if (serverProcess) {
     serverProcess.kill();
+  }
+  if (stripeListenProcess) {
+    stripeListenProcess.kill();
   }
   if (mockOAuth2Process) {
     mockOAuth2Process.kill();

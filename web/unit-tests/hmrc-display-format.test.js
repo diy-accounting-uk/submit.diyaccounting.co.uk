@@ -26,6 +26,19 @@ describe("hmrc-display-format", () => {
     expect(format.formatDate("2026-08-31")).toBe("31 Aug 2026");
   });
 
+  it("writes dates in Welsh with HMRC's month names when the site reads in Welsh", () => {
+    window.siteLanguage = { chrome: () => "cy" };
+    window.siteText = (id, english, values) => english.replace("to", "hyd at").replace(/\{([a-z]+)\}/g, (whole, name) => values[name]);
+    try {
+      expect(format.formatDate("2026-11-05")).toBe("5 Tach 2026");
+      expect(format.formatDateRange("2026-07-01", "2026-09-30")).toBe("1 Gorff 2026 hyd at 30 Medi 2026");
+      expect(format.dateText(new Date(Date.UTC(2026, 10, 5, 9, 30)), { utc: true, time: true })).toBe("5 Tachwedd 2026 am 09:30");
+    } finally {
+      delete window.siteLanguage;
+      delete window.siteText;
+    }
+  });
+
   it("shows a date range only when both ends are readable", () => {
     expect(format.formatDateRange("2026-07-01", "2026-08-31")).toBe("1 Jul 2026 to 31 Aug 2026");
     expect(format.formatDateRange("2026-07-01", undefined)).toBe("—");

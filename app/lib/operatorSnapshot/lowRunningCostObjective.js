@@ -7,6 +7,7 @@
 
 import { buildAthenaSavedQueryLink } from "../consoleLinks.js";
 import { AWS_ACCOUNT_IDS_BY_NAME } from "./awsAccounts.js";
+import { BEDROCK_MODELS, bedrockModelCondition, bedrockModelObservationId, bedrockOtherCondition } from "../bedrockModels.js";
 
 export const lowRunningCostObjective = {
   id: "low-running-cost",
@@ -42,7 +43,7 @@ export const lowRunningCostObjective = {
       id: "bedrock-cost-per-posted-run-usd",
       label: "Bedrock cost per agent run that posted",
       description:
-        "The day's Claude on Bedrock cost divided by the agent runs that posted a result that day, averaged over the days. The cost export lands a day or two late.",
+        "The day's Bedrock cost divided by the agent runs that posted a result that day, averaged over the days. The cost export lands a day or two late.",
       unit: "usd",
       view: "v_agent_cost_daily",
       dayColumn: "day",
@@ -53,7 +54,7 @@ export const lowRunningCostObjective = {
     {
       id: "bedrock-cost-per-accepted-pr-usd",
       label: "Bedrock cost per accepted agent pull request",
-      description: "The day's Claude on Bedrock cost divided by the agent pull requests a person merged that day, averaged over the days.",
+      description: "The day's Bedrock cost divided by the agent pull requests a person merged that day, averaged over the days.",
       unit: "usd",
       view: "v_agent_cost_daily",
       dayColumn: "day",
@@ -106,13 +107,38 @@ export const lowRunningCostObjective = {
     },
     {
       id: "cost-bedrock-usd",
-      label: "Claude on Bedrock, all models",
+      label: "Bedrock, all models",
       unit: "usd",
       view: "v_cost_daily",
       dayColumn: "day",
       valueExpr: "billed_cost_usd",
       aggregation: "sum",
       where: "service_name LIKE '%Bedrock%'",
+      deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+    },
+    ...BEDROCK_MODELS.map((model) => ({
+      id: bedrockModelObservationId(model),
+      label: `Bedrock, ${model.label}`,
+      description: `Billed cost of the ${model.label} model (${model.modelId}), found by its name in the charge description.`,
+      unit: "usd",
+      view: "v_cost_by_resource_daily",
+      dayColumn: "day",
+      valueExpr: "billed_cost_usd",
+      aggregation: "sum",
+      where: bedrockModelCondition(model),
+      deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+    })),
+    {
+      id: "cost-bedrock-other-usd",
+      label: "Bedrock, other",
+      description:
+        "Billed cost of every Bedrock charge that is not one of the models above: the Claude models, the other Amazon models, the guardrail units and the tax on Bedrock.",
+      unit: "usd",
+      view: "v_cost_by_resource_daily",
+      dayColumn: "day",
+      valueExpr: "billed_cost_usd",
+      aggregation: "sum",
+      where: bedrockOtherCondition(),
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {

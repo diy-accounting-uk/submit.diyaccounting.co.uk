@@ -14,7 +14,7 @@ export const operatorEffortObjective = {
     {
       id: "agent-cost-per-posted-run-usd",
       label: "Agent cost per run that posted",
-      description: "The day's Claude on Bedrock cost divided by the agent runs that posted a result that day, averaged over the days.",
+      description: "The day's Bedrock cost divided by the agent runs that posted a result that day, averaged over the days.",
       unit: "usd",
       view: "v_agent_cost_daily",
       dayColumn: "day",
@@ -25,7 +25,7 @@ export const operatorEffortObjective = {
     {
       id: "agent-cost-per-accepted-pr-usd",
       label: "Agent cost per accepted pull request",
-      description: "The day's Claude on Bedrock cost divided by the agent pull requests a person merged that day, averaged over the days.",
+      description: "The day's Bedrock cost divided by the agent pull requests a person merged that day, averaged over the days.",
       unit: "usd",
       view: "v_agent_cost_daily",
       dayColumn: "day",

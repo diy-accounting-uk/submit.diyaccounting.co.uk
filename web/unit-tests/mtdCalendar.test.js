@@ -21,16 +21,18 @@ describe("MTD calendar page", () => {
   });
 
   test("each fact shows its quote, source link and retrieval date", () => {
-    const html = readFileSync(PAGE_PATH, "utf8");
+    const html = readFileSync(PAGE_PATH, "utf8")
+      .replace(/\s+/g, " ")
+      .replace(/<\/a >/g, "</a>");
     for (const s of calendarSources) {
       expect(html).toContain(s.url);
-      expect(html).toContain(`Retrieved ${formatIsoDate(s.retrieved)}`);
+      expect(html).toContain(`GOV.UK, ${s.title}</a> (checked ${formatIsoDate(s.retrieved)})`);
     }
   });
 
   test("the main nav links to the page", () => {
     const chrome = readFileSync("web/public/widgets/page-chrome.js", "utf8");
-    expect(chrome).toContain('{ label: "MTD calendar", target: "mtd-calendar.html" }');
+    expect(chrome).toContain('{ label: siteText("chrome.nav-mtd-calendar", "MTD calendar"), target: "mtd-calendar.html" }');
   });
 
   test("both wide tables stack their rows on a phone and label every cell", () => {

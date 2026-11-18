@@ -167,6 +167,7 @@
           "action": "click",
           "target": "#companyLookupBtn",
           "caption": "Companies House confirms the next statement due.",
+          "instruction": "Enter your company number and choose Look up company. Companies House confirms when the next statement is due.",
           "headline": "Confirm the next statement",
           "keyWord": "statement"
         },
@@ -202,6 +203,7 @@
           "action": "point",
           "target": "#publicPscsTable",
           "caption": "And its people with significant control.",
+          "instruction": "Check the current directors and the persons with significant control against what you know of the company.",
           "headline": "People with significant control",
           "keyWord": "control",
           "dwellMs": 500
@@ -229,6 +231,7 @@
           "action": "click",
           "target": "#useOwnPresenter",
           "caption": "File under your own presenter. Companies House bills its fee to you.",
+          "instruction": "Tick File under my own Companies House presenter to use your own presenter. Companies House then bills its fee to you.",
           "headline": "Use your own presenter",
           "keyWord": "presenter"
         },
@@ -239,6 +242,7 @@
           "clear": true,
           "secret": true,
           "caption": "Type your presenter id.",
+          "instruction": "Enter your Presenter id.",
           "headline": "Enter the presenter id",
           "keyWord": "id"
         },
@@ -249,6 +253,7 @@
           "clear": true,
           "secret": true,
           "caption": "Type your presenter authentication code.",
+          "instruction": "Enter your Presenter authentication code.",
           "headline": "Enter the presenter code",
           "keyWord": "code"
         },
@@ -259,6 +264,7 @@
           "clear": true,
           "secret": true,
           "caption": "Type the company's authentication code.",
+          "instruction": "Enter the Company authentication code, the 6 to 8 character code that Companies House issued for the company.",
           "headline": "Enter the auth code",
           "keyWord": "code"
         },
@@ -266,6 +272,7 @@
           "action": "click",
           "target": "#authSubmitBtn",
           "caption": "Companies House's register fills in the statement.",
+          "instruction": "Choose Read register data to fill in the statement from the register.",
           "headline": "Read the register data",
           "keyWord": "register"
         },
@@ -279,6 +286,7 @@
           "target": "#reviewDate",
           "scrollTo": "#reviewView h2",
           "caption": "The statement is filled in from the register. Change anything that is out of date.",
+          "instruction": "Check each section, starting with the confirmation statement date, and change anything that is out of date.",
           "headline": "Review and change",
           "keyWord": "Review",
           "dwellMs": 600
@@ -335,6 +343,7 @@
             "name": "Lawful purpose statement"
           },
           "caption": "Confirm the company's future activities are lawful.",
+          "instruction": "Enter each director's other forenames and Companies House personal code, then tick the lawful purpose statement and the statement of confirmation.",
           "headline": "Confirm lawful purpose",
           "keyWord": "lawful"
         },
@@ -374,6 +383,7 @@
           "target": "#previewSummary",
           "scrollTo": "#previewView h2",
           "caption": "Nothing has gone to Companies House yet.",
+          "instruction": "Choose Preview confirmation statement and read it as it will be filed. Nothing is sent to Companies House yet.",
           "headline": "Nothing filed yet",
           "keyWord": "yet",
           "dwellMs": 600
@@ -411,6 +421,7 @@
           "action": "point",
           "scrollTo": "#filingRecord",
           "caption": "Your copy shows the number, status, date and statement. It stays on your receipts.",
+          "instruction": "Choose Submit to Companies House, wait for the outcome, then read your copy with its submission number, status, date and statement.",
           "headline": "Your copy of the filing",
           "keyWord": "copy",
           "target": "#filingRecord h2.customer-copy-title",

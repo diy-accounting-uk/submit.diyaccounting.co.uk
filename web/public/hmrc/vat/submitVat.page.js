@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 // Strip commas from numeric input (thousands separators like "1,234.56" → "1234.56")
 function stripCommas(value) {
   return String(value).replace(/,/g, "");
@@ -59,7 +65,7 @@ function showFieldError(fieldId, message) {
   errorEl.className = "error-message";
   const hiddenLabel = document.createElement("span");
   hiddenLabel.className = "visually-hidden";
-  hiddenLabel.textContent = "Error:";
+  hiddenLabel.textContent = siteText("vat-submit.error-prefix", "Error:");
   errorEl.append(hiddenLabel, ` ${message}`);
 
   // Update aria-describedby
@@ -90,28 +96,54 @@ function clearFieldError(fieldId) {
   field.setAttribute("aria-describedby", describedBy.replace(errorId, "").trim());
 }
 
+// The name of each box that a validation message gives.
+const BOX_NAMES = {
+  vatDueSales: siteText("vat-submit.box-name-1", "VAT due on sales"),
+  vatDueAcquisitions: siteText("vat-submit.box-name-2", "VAT due on acquisitions"),
+  vatReclaimedCurrPeriod: siteText("vat-submit.box-name-4", "VAT reclaimed"),
+  totalValueSalesExVAT: siteText("vat-submit.box-name-6", "total value of sales"),
+  totalValuePurchasesExVAT: siteText("vat-submit.box-name-7", "total value of purchases"),
+  totalValueGoodsSuppliedExVAT: siteText("vat-submit.box-name-8", "total value of goods supplied to EU"),
+  totalAcquisitionsExVAT: siteText("vat-submit.box-name-9", "total acquisitions from EU"),
+};
+
+// The message for an empty box, one whole sentence a box, because the Welsh object after "Nodwch"
+// takes a soft mutation ("Nodwch gyfanswm") that the box name keeps after "ar gyfer".
+const ENTER_BOX = {
+  vatDueSales: () => siteText("vat-submit.enter-box-1", "Enter the VAT due on sales"),
+  vatDueAcquisitions: () => siteText("vat-submit.enter-box-2", "Enter the VAT due on acquisitions"),
+  vatReclaimedCurrPeriod: () => siteText("vat-submit.enter-box-4", "Enter the VAT reclaimed"),
+  totalValueSalesExVAT: () => siteText("vat-submit.enter-box-6", "Enter the total value of sales"),
+  totalValuePurchasesExVAT: () => siteText("vat-submit.enter-box-7", "Enter the total value of purchases"),
+  totalValueGoodsSuppliedExVAT: () => siteText("vat-submit.enter-box-8", "Enter the total value of goods supplied to EU"),
+  totalAcquisitionsExVAT: () => siteText("vat-submit.enter-box-9", "Enter the total acquisitions from EU"),
+};
+
 // Validate VAT monetary amount (boxes 1-4)
 function validateVatMonetaryAmount(value, fieldId, fieldLabel) {
   const strValue = stripCommas(String(value).trim());
   if (strValue === "") {
-    showFieldError(fieldId, `Enter the ${fieldLabel}`);
+    showFieldError(fieldId, ENTER_BOX[fieldId]());
     return false;
   }
 
   const num = parseFloat(strValue);
   if (isNaN(num)) {
-    showFieldError(fieldId, `Enter a valid number for ${fieldLabel}`);
+    showFieldError(fieldId, siteText("vat-submit.valid-number", "Enter a valid number for {label}", { label: fieldLabel }));
     return false;
   }
 
   if (num < VAT_MONETARY_MIN || num > VAT_MONETARY_MAX) {
-    showFieldError(fieldId, `${fieldLabel} must be between £-9,999,999,999,999.99 and £9,999,999,999,999.99`);
+    showFieldError(
+      fieldId,
+      siteText("vat-submit.range-pence", "{label} must be between £-9,999,999,999,999.99 and £9,999,999,999,999.99", { label: fieldLabel }),
+    );
     return false;
   }
 
   const decimalParts = strValue.split(".");
   if (decimalParts[1] && decimalParts[1].length > 2) {
-    showFieldError(fieldId, `${fieldLabel} must have no more than 2 decimal places`);
+    showFieldError(fieldId, siteText("vat-submit.two-decimals", "{label} must have no more than 2 decimal places", { label: fieldLabel }));
     return false;
   }
 
@@ -123,17 +155,20 @@ function validateVatMonetaryAmount(value, fieldId, fieldLabel) {
 function validateNetVatDue(value, fieldId) {
   const num = parseFloat(stripCommas(value));
   if (isNaN(num)) {
-    showFieldError(fieldId, "Net VAT due must be a valid number");
+    showFieldError(fieldId, siteText("vat-submit.net-valid", "Net VAT due must be a valid number"));
     return false;
   }
 
   if (num < NET_VAT_DUE_MIN) {
-    showFieldError(fieldId, "Net VAT due must be a positive value (calculated as absolute difference)");
+    showFieldError(
+      fieldId,
+      siteText("vat-submit.net-positive", "Net VAT due must be a positive value (calculated as absolute difference)"),
+    );
     return false;
   }
 
   if (num > NET_VAT_DUE_MAX) {
-    showFieldError(fieldId, "Net VAT due must be £99,999,999,999.99 or less");
+    showFieldError(fieldId, siteText("vat-submit.net-max", "Net VAT due must be £99,999,999,999.99 or less"));
     return false;
   }
 
@@ -145,23 +180,26 @@ function validateNetVatDue(value, fieldId) {
 function validateVatWholeAmount(value, fieldId, fieldLabel) {
   const strValue = stripCommas(String(value).trim());
   if (strValue === "") {
-    showFieldError(fieldId, `Enter the ${fieldLabel}`);
+    showFieldError(fieldId, ENTER_BOX[fieldId]());
     return false;
   }
 
   const num = parseFloat(strValue);
   if (isNaN(num)) {
-    showFieldError(fieldId, `Enter a valid number for ${fieldLabel}`);
+    showFieldError(fieldId, siteText("vat-submit.valid-number", "Enter a valid number for {label}", { label: fieldLabel }));
     return false;
   }
 
   if (!Number.isInteger(num)) {
-    showFieldError(fieldId, `${fieldLabel} must be a whole number without pence`);
+    showFieldError(fieldId, siteText("vat-submit.whole-pounds", "{label} must be a whole number without pence", { label: fieldLabel }));
     return false;
   }
 
   if (num < VAT_WHOLE_MIN || num > VAT_WHOLE_MAX) {
-    showFieldError(fieldId, `${fieldLabel} must be between £-9,999,999,999,999 and £9,999,999,999,999`);
+    showFieldError(
+      fieldId,
+      siteText("vat-submit.range-whole", "{label} must be between £-9,999,999,999,999 and £9,999,999,999,999", { label: fieldLabel }),
+    );
     return false;
   }
 
@@ -174,43 +212,46 @@ function validateAll9BoxFields() {
   let isValid = true;
 
   // Boxes 1-4: monetary amounts with 2 decimal places
-  isValid = validateVatMonetaryAmount(document.getElementById("vatDueSales").value, "vatDueSales", "VAT due on sales") && isValid;
+  isValid = validateVatMonetaryAmount(document.getElementById("vatDueSales").value, "vatDueSales", BOX_NAMES.vatDueSales) && isValid;
 
   isValid =
-    validateVatMonetaryAmount(document.getElementById("vatDueAcquisitions").value, "vatDueAcquisitions", "VAT due on acquisitions") &&
+    validateVatMonetaryAmount(document.getElementById("vatDueAcquisitions").value, "vatDueAcquisitions", BOX_NAMES.vatDueAcquisitions) &&
     isValid;
 
   isValid =
-    validateVatMonetaryAmount(document.getElementById("vatReclaimedCurrPeriod").value, "vatReclaimedCurrPeriod", "VAT reclaimed") &&
-    isValid;
+    validateVatMonetaryAmount(
+      document.getElementById("vatReclaimedCurrPeriod").value,
+      "vatReclaimedCurrPeriod",
+      BOX_NAMES.vatReclaimedCurrPeriod,
+    ) && isValid;
 
   // Box 5: net VAT due (calculated, but validate anyway)
   isValid = validateNetVatDue(document.getElementById("netVatDue").value, "netVatDue") && isValid;
 
   // Boxes 6-9: whole pound amounts
   isValid =
-    validateVatWholeAmount(document.getElementById("totalValueSalesExVAT").value, "totalValueSalesExVAT", "total value of sales") &&
+    validateVatWholeAmount(document.getElementById("totalValueSalesExVAT").value, "totalValueSalesExVAT", BOX_NAMES.totalValueSalesExVAT) &&
     isValid;
 
   isValid =
     validateVatWholeAmount(
       document.getElementById("totalValuePurchasesExVAT").value,
       "totalValuePurchasesExVAT",
-      "total value of purchases",
+      BOX_NAMES.totalValuePurchasesExVAT,
     ) && isValid;
 
   isValid =
     validateVatWholeAmount(
       document.getElementById("totalValueGoodsSuppliedExVAT").value,
       "totalValueGoodsSuppliedExVAT",
-      "total value of goods supplied to EU",
+      BOX_NAMES.totalValueGoodsSuppliedExVAT,
     ) && isValid;
 
   isValid =
     validateVatWholeAmount(
       document.getElementById("totalAcquisitionsExVAT").value,
       "totalAcquisitionsExVAT",
-      "total acquisitions from EU",
+      BOX_NAMES.totalAcquisitionsExVAT,
     ) && isValid;
 
   return isValid;
@@ -259,12 +300,26 @@ async function handleFormSubmission(event) {
 
   const errors = [];
   if (!vatNumber) {
-    errors.push({ input: document.getElementById("vatNumber"), message: "Enter your VAT registration number" });
+    errors.push({
+      input: document.getElementById("vatNumber"),
+      message: siteText("widget.required-vrn", "Enter your VAT registration number"),
+    });
   } else if (!/^\d{9}$/.test(vatNumber)) {
-    errors.push({ input: document.getElementById("vatNumber"), message: "The VAT registration number must be 9 numbers" });
+    errors.push({
+      input: document.getElementById("vatNumber"),
+      message: siteText("widget.vrn-nine-numbers", "The VAT registration number must be 9 numbers"),
+    });
   }
-  if (!periodStart) errors.push({ input: document.getElementById("periodStart"), message: "Enter the period start date" });
-  if (!periodEnd) errors.push({ input: document.getElementById("periodEnd"), message: "Enter the period end date" });
+  if (!periodStart)
+    errors.push({
+      input: document.getElementById("periodStart"),
+      message: siteText("widget.required-period-start", "Enter the period start date"),
+    });
+  if (!periodEnd)
+    errors.push({
+      input: document.getElementById("periodEnd"),
+      message: siteText("widget.required-period-end", "Enter the period end date"),
+    });
 
   errorSink = errors;
   try {
@@ -281,7 +336,10 @@ async function handleFormSubmission(event) {
   }
 
   if (!declaration) {
-    errors.push({ input: document.getElementById("declaration"), message: "Tick the box to confirm the declaration" });
+    errors.push({
+      input: document.getElementById("declaration"),
+      message: siteText("vat-submit.tick-declaration", "Tick the box to confirm the declaration"),
+    });
   }
   window.formErrors.showFormErrors(errors);
   if (errors.length > 0) return;
@@ -318,7 +376,7 @@ async function handleFormSubmission(event) {
     }
     try {
       showLoading();
-      showStatus("Initiating HMRC authentication...", "info");
+      showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
 
       const state = generateRandomState();
       const currentActivity = `${location.pathname}`;
@@ -337,7 +395,10 @@ async function handleFormSubmission(event) {
       sessionStorage.setItem("currentActivity", location.pathname);
       console.log("Current activity set to:", location.pathname);
 
-      showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+      showStatus(
+        siteText("widget.hmrc-auth-redirecting", "Redirecting to HMRC for authentication at {url}...", { url: authResponseUrl }),
+        "info",
+      );
 
       // Redirect to HMRC OAuth
       console.log(`Page transition initiated: Redirecting to HMRC OAuth URL ${authResponseUrl}`);
@@ -347,7 +408,7 @@ async function handleFormSubmission(event) {
       window.location.href = authResponseUrl;
     } catch (error) {
       console.error("Authentication error:", error);
-      showStatus(`Authentication failed: ${error.message}`, "error");
+      showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
       hideLoading();
     }
   }
@@ -425,7 +486,7 @@ async function continueVatSubmission() {
     hideForm();
     showLoading();
     hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
-    showStatus("Submitting VAT return to HMRC...", "info");
+    showStatus(siteText("vat-submit.submitting", "Submitting VAT return to HMRC..."), "info");
 
     // Submit VAT return with 9-box data
     const submitResponse = await submitVatWithCalculatedHeaders(submissionData.vatNumber, submissionData, hmrcGrantId);
@@ -449,7 +510,7 @@ async function continueVatSubmission() {
     console.log("Continue submission handler (success, session storage cleared)");
   } catch (error) {
     console.error("Submission error:", error);
-    showFailure(error, "Could not submit the VAT return");
+    showFailure(error, siteText("vat-submit.could-not-submit", "Could not submit the VAT return"));
     // Auto-expand form on error so user can retry. A submission only starts once the
     // declaration is ticked, so the box stays ticked after the page reload of the HMRC sign-in.
     showForm();
@@ -494,21 +555,21 @@ function setReceiptReference(elementId, value) {
 }
 
 const RECEIPT_FIGURES = [
-  ["vatDueSales", "Box 1: VAT due on sales", true],
-  ["vatDueAcquisitions", "Box 2: VAT due on acquisitions", true],
-  ["totalVatDue", "Box 3: Total VAT due", true],
-  ["vatReclaimedCurrPeriod", "Box 4: VAT reclaimed", true],
-  ["netVatDue", "Box 5: Net VAT to pay or reclaim", true],
-  ["totalValueSalesExVAT", "Box 6: Total sales excluding VAT", false],
-  ["totalValuePurchasesExVAT", "Box 7: Total purchases excluding VAT", false],
-  ["totalValueGoodsSuppliedExVAT", "Box 8: Goods supplied to the EU", false],
-  ["totalAcquisitionsExVAT", "Box 9: Acquisitions from the EU", false],
+  ["vatDueSales", siteText("vat-submit.receipt-box-1", "Box 1: VAT due on sales"), true],
+  ["vatDueAcquisitions", siteText("vat-submit.receipt-box-2", "Box 2: VAT due on acquisitions"), true],
+  ["totalVatDue", siteText("vat-submit.receipt-box-3", "Box 3: Total VAT due"), true],
+  ["vatReclaimedCurrPeriod", siteText("vat-submit.receipt-box-4", "Box 4: VAT reclaimed"), true],
+  ["netVatDue", siteText("vat-submit.receipt-box-5", "Box 5: Net VAT to pay or reclaim"), true],
+  ["totalValueSalesExVAT", siteText("vat-submit.receipt-box-6", "Box 6: Total sales excluding VAT"), false],
+  ["totalValuePurchasesExVAT", siteText("vat-submit.receipt-box-7", "Box 7: Total purchases excluding VAT"), false],
+  ["totalValueGoodsSuppliedExVAT", siteText("vat-submit.receipt-box-8", "Box 8: Goods supplied to the EU"), false],
+  ["totalAcquisitionsExVAT", siteText("vat-submit.receipt-box-9", "Box 9: Acquisitions from the EU"), false],
 ];
 
 function formatReceiptDate(isoDate) {
   const parsed = new Date(`${isoDate}T00:00:00Z`);
   if (!isoDate || Number.isNaN(parsed.getTime())) return isoDate || "";
-  return parsed.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+  return HmrcDisplayFormat.dateText(parsed, { utc: true });
 }
 
 // The period and the figures filed, from what the customer submitted, so the receipt answers
@@ -517,7 +578,12 @@ function showFiledReturn(filed) {
   const filedSection = document.getElementById("filedReturn");
   if (!filedSection || !filed) return;
   const period =
-    filed.periodStart && filed.periodEnd ? `${formatReceiptDate(filed.periodStart)} to ${formatReceiptDate(filed.periodEnd)}` : "";
+    filed.periodStart && filed.periodEnd
+      ? siteText("widget.date-range", "{start} to {end}", {
+          start: formatReceiptDate(filed.periodStart),
+          end: formatReceiptDate(filed.periodEnd),
+        })
+      : "";
   document.getElementById("filedPeriod").textContent = period;
   document.getElementById("filedPeriodItem").style.display = period ? "" : "none";
   document.getElementById("filedVrn").textContent = filed.vatNumber || "";
@@ -533,9 +599,10 @@ function showFiledReturn(filed) {
     name.textContent = label;
     const value = document.createElement("span");
     value.className = "receipt-figure";
+    const locale = HmrcDisplayFormat.locale();
     value.textContent = isMoney
-      ? `£${amount.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-      : `£${amount.toLocaleString("en-GB")}`;
+      ? `£${amount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      : `£${amount.toLocaleString(locale)}`;
     row.append(name, value);
     rows.appendChild(row);
   }
@@ -639,7 +706,9 @@ async function loadOpenObligations() {
   if (!canReadObligations) {
     obligationsLoadedForVrn = null;
     connectBtn.style.display = "";
-    showObligationStatus("Connect to HMRC to choose from your open VAT periods, or enter the dates below.");
+    showObligationStatus(
+      siteText("vat-submit.connect-for-periods", "Connect to HMRC to choose from your open VAT periods, or enter the dates below."),
+    );
     return;
   }
   connectBtn.style.display = "none";
@@ -665,7 +734,9 @@ async function loadOpenObligations() {
     const result = await response.json();
     const open = window.vatPeriodChoice.openObligations(result.obligations);
     if (open.length === 0) {
-      showObligationStatus("HMRC lists no open VAT periods for this number. Enter the dates below.");
+      showObligationStatus(
+        siteText("vat-submit.no-open-periods", "HMRC lists no open VAT periods for this number. Enter the dates below."),
+      );
       return;
     }
     window.vatPeriodChoice.bindChoice(
@@ -683,21 +754,10 @@ async function loadOpenObligations() {
   } catch (error) {
     console.warn("Could not read open obligations:", error);
     obligationsLoadedForVrn = null;
-    showObligationStatus("HMRC's list of open VAT periods could not be read. Enter the dates below.");
+    showObligationStatus(
+      siteText("vat-submit.periods-unreadable", "HMRC's list of open VAT periods could not be read. Enter the dates below."),
+    );
   }
-}
-
-// A synthetic account sends nothing to HMRC's live records, so the status line says sandbox in place of production.
-function showSandboxStatus() {
-  const banner = document.querySelector("p.hint[data-feature-status]");
-  if (!banner) return;
-  banner.setAttribute("data-feature-status", "sandbox");
-  const assistNote = document.getElementById("hmrcAssistStatusNote");
-  banner.replaceChildren();
-  const strong = document.createElement("strong");
-  strong.textContent = "Status: sandbox.";
-  banner.append(strong, " Returns you submit here go to HMRC's test service and reach no real record. ");
-  if (assistNote) banner.append(assistNote);
 }
 
 async function connectHmrc() {
@@ -714,7 +774,7 @@ async function connectHmrc() {
     window.location.href = authResponseUrl;
   } catch (error) {
     console.error("Authentication error:", error);
-    showStatus(`Authentication failed: ${error.message}`, "error");
+    showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
   }
 }
 
@@ -752,7 +812,10 @@ async function initializePage() {
 
   // Show synthetic indicator if in synthetic mode (determined by bundle qualifiers via sessionStorage)
   if (hmrcAccount === "synthetic") {
-    showSandboxStatus();
+    window.showHmrcSandboxStatus(
+      siteText("vat-submit.status-sandbox-text", "Returns you submit here go to HMRC's test service and reach no real record."),
+      document.getElementById("hmrcAssistStatusNote"),
+    );
     const syntheticIndicator = document.getElementById("syntheticIndicator");
     if (syntheticIndicator) {
       syntheticIndicator.classList.add("visible");
@@ -827,13 +890,15 @@ async function updateTokenInfo() {
     const refreshDate = bundlesWithTokens[0]?.tokenResetAt;
 
     if (totalRemaining > 0) {
-      tokenInfoEl.textContent = `This submission will use 1 token (${totalRemaining} remaining)`;
+      tokenInfoEl.textContent = siteText("vat-submit.token-use", "This submission will use 1 token ({remaining} remaining)", {
+        remaining: totalRemaining,
+      });
       tokenInfoEl.style.display = "";
     } else {
-      let msg = "No tokens remaining.";
+      let msg = siteText("vat-submit.no-tokens", "No tokens remaining.");
       if (refreshDate) {
         const d = new Date(refreshDate);
-        msg += ` Tokens refresh on ${d.toLocaleDateString()}.`;
+        msg += " " + siteText("vat-submit.tokens-refresh", "Tokens refresh on {date}.", { date: HmrcDisplayFormat.dateText(d) });
       }
       tokenInfoEl.textContent = msg;
       tokenInfoEl.style.display = "";
@@ -899,39 +964,39 @@ onDOMReady(async function () {
   if (vatDueSalesInput) {
     vatDueSalesInput.addEventListener("input", calculateTotalVatDue);
     vatDueSalesInput.addEventListener("blur", function () {
-      validateVatMonetaryAmount(this.value, "vatDueSales", "VAT due on sales");
+      validateVatMonetaryAmount(this.value, "vatDueSales", BOX_NAMES.vatDueSales);
     });
   }
   if (vatDueAcquisitionsInput) {
     vatDueAcquisitionsInput.addEventListener("input", calculateTotalVatDue);
     vatDueAcquisitionsInput.addEventListener("blur", function () {
-      validateVatMonetaryAmount(this.value, "vatDueAcquisitions", "VAT due on acquisitions");
+      validateVatMonetaryAmount(this.value, "vatDueAcquisitions", BOX_NAMES.vatDueAcquisitions);
     });
   }
   if (vatReclaimedInput) {
     vatReclaimedInput.addEventListener("input", calculateNetVatDue);
     vatReclaimedInput.addEventListener("blur", function () {
-      validateVatMonetaryAmount(this.value, "vatReclaimedCurrPeriod", "VAT reclaimed");
+      validateVatMonetaryAmount(this.value, "vatReclaimedCurrPeriod", BOX_NAMES.vatReclaimedCurrPeriod);
     });
   }
   if (totalValueSalesInput) {
     totalValueSalesInput.addEventListener("blur", function () {
-      validateVatWholeAmount(this.value, "totalValueSalesExVAT", "total value of sales");
+      validateVatWholeAmount(this.value, "totalValueSalesExVAT", BOX_NAMES.totalValueSalesExVAT);
     });
   }
   if (totalValuePurchasesInput) {
     totalValuePurchasesInput.addEventListener("blur", function () {
-      validateVatWholeAmount(this.value, "totalValuePurchasesExVAT", "total value of purchases");
+      validateVatWholeAmount(this.value, "totalValuePurchasesExVAT", BOX_NAMES.totalValuePurchasesExVAT);
     });
   }
   if (totalValueGoodsSuppliedInput) {
     totalValueGoodsSuppliedInput.addEventListener("blur", function () {
-      validateVatWholeAmount(this.value, "totalValueGoodsSuppliedExVAT", "total value of goods supplied to EU");
+      validateVatWholeAmount(this.value, "totalValueGoodsSuppliedExVAT", BOX_NAMES.totalValueGoodsSuppliedExVAT);
     });
   }
   if (totalAcquisitionsInput) {
     totalAcquisitionsInput.addEventListener("blur", function () {
-      validateVatWholeAmount(this.value, "totalAcquisitionsExVAT", "total acquisitions from EU");
+      validateVatWholeAmount(this.value, "totalAcquisitionsExVAT", BOX_NAMES.totalAcquisitionsExVAT);
     });
   }
 
@@ -957,7 +1022,10 @@ onDOMReady(async function () {
       ].map((id) => document.getElementById(id)),
       submitButton: document.getElementById("submitBtn"),
       highlightIds: HMRC_ASSIST_BOX_IDS,
-      unavailableText: "HMRC Assist feedback is unavailable at the moment. You can still submit your return.",
+      unavailableText: siteText(
+        "vat-submit.assist-unavailable",
+        "HMRC Assist feedback is unavailable at the moment. You can still submit your return.",
+      ),
     });
   }
 

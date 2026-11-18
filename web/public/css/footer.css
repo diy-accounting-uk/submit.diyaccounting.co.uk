@@ -31,6 +31,11 @@ body > footer {
   font-size: var(--step-0);
 }
 
+/* The link is a flex box, which drops the space before its "(yn Saesneg)" mark, so the mark keeps its own gap. */
+.footer-links .lang-mark {
+  margin-left: 0.3em;
+}
+
 .footer-links a:hover {
   color: var(--c-brand);
   text-decoration-color: currentColor;

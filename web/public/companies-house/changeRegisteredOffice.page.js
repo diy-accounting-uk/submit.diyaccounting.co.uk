@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives window.siteText, the text in the chosen language. Without it (a test that
+// stubs the chrome) the English stands.
+window.siteText =
+  window.siteText ||
+  ((id, english, values) => english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole)));
+
 // Change registered office address: companyView -> formView -> reviewView -> resultView,
 // with an authorise round trip through filingCallback.html between reviewView and the
 // filing calls whenever no usable Companies House token is already held.
@@ -41,17 +47,22 @@ function clearPendingFiling() {
   sessionStorage.removeItem(PENDING_KEY);
 }
 
+// The address's parts with their labels, in the chrome's language.
+function addressFields(address) {
+  return [
+    [window.siteText("ch.address.premises", "Premises"), address.premises],
+    [window.siteText("ch.address.line-1", "Address line 1"), address.addressLine1],
+    [window.siteText("ch.address.line-2", "Address line 2"), address.addressLine2],
+    [window.siteText("ch.address.town", "Town or city"), address.locality],
+    [window.siteText("ch.address.county", "County"), address.region],
+    [window.siteText("ch.address.postcode", "Postcode"), address.postalCode],
+    [window.siteText("ch.address.country", "Country"), address.country],
+  ];
+}
+
 function renderAddressList(target, address) {
   target.innerHTML = "";
-  const fields = [
-    ["Premises", address.premises],
-    ["Address line 1", address.addressLine1],
-    ["Address line 2", address.addressLine2],
-    ["Town or city", address.locality],
-    ["County", address.region],
-    ["Postcode", address.postalCode],
-    ["Country", address.country],
-  ];
+  const fields = addressFields(address);
   fields.forEach(([label, value]) => {
     if (!value) return;
     const dt = document.createElement("dt");
@@ -77,7 +88,7 @@ async function handleCompanySubmit(event) {
     showView("formView");
   } catch (error) {
     console.error("Failed to read the current registered office address:", error);
-    showStatus(error.message || "Failed to read the current registered office address.", "error");
+    showStatus(error.message || window.siteText("ch.office.read-failed", "Failed to read the current registered office address."), "error");
   } finally {
     hideLoading();
   }
@@ -86,7 +97,12 @@ async function handleCompanySubmit(event) {
 function handleFormSubmit(event) {
   event.preventDefault();
   if (!window.formErrors.requireFormFields(event.currentTarget)) return;
-  if (!window.formErrors.requireChecked({ acceptOfficeStatement: "Confirm the section 86(2) appropriate address statement" })) return;
+  if (
+    !window.formErrors.requireChecked({
+      acceptOfficeStatement: window.siteText("ch.office.confirm-statement", "Confirm the section 86(2) appropriate address statement"),
+    })
+  )
+    return;
 
   filing = {
     ...filing,
@@ -120,13 +136,16 @@ function newAddressFromFiling() {
   };
 }
 
+// Each poll reads the transaction from Companies House's filing API, so polls are two seconds apart.
+const TRANSACTION_POLL_MS = 2000;
+
 async function pollTransactionUntilSettled(transactionId) {
   let transaction;
   for (let attempt = 0; attempt < 5; attempt++) {
     transaction = await window.getCompaniesHouseTransaction(transactionId);
     const stillProcessing = (transaction.filings || []).some((entry) => entry.status === "processing");
     if (!stillProcessing) break;
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await new Promise((resolve) => setTimeout(resolve, TRANSACTION_POLL_MS));
   }
   return transaction;
 }
@@ -145,41 +164,37 @@ function renderFilingResult(transaction) {
   headlineParagraph.className = "outcome__title";
   const strong = document.createElement("strong");
   if (filings.some((entry) => entry.status === "rejected")) {
-    strong.textContent = "Companies House rejected the change.";
+    strong.textContent = window.siteText("ch.change.rejected", "Companies House rejected the change.");
     container.className = "outcome outcome--error";
   } else if (filings.length > 0 && filings.every((entry) => entry.status === "accepted")) {
-    strong.textContent = "Companies House accepted the change.";
+    strong.textContent = window.siteText("ch.change.accepted", "Companies House accepted the change.");
     container.className = "outcome outcome--ok";
   } else {
-    strong.textContent = "Companies House is still processing the change.";
+    strong.textContent = window.siteText("ch.change.processing", "Companies House is still processing the change.");
     container.className = "outcome";
   }
   headlineParagraph.append(strong);
   const paragraphs = [headlineParagraph];
   filings.forEach((entry) => {
     if (entry.rejectReasons && entry.rejectReasons.length > 0) {
-      paragraphs.push(paragraph(`Rejected: ${entry.rejectReasons.join(", ")}`));
+      paragraphs.push(
+        paragraph(window.siteText("ch.change.rejected-reasons", "Rejected: {reasons}", { reasons: entry.rejectReasons.join(", ") })),
+      );
     }
   });
-  paragraphs.push(paragraph(`Reference: ${transaction.transactionId}`, "hint"));
+  paragraphs.push(
+    paragraph(window.siteText("ch.change.reference", "Reference: {reference}", { reference: transaction.transactionId }), "hint"),
+  );
   container.replaceChildren(...paragraphs);
 }
 
 async function renderFilingRecord(transaction) {
   const { registeredChangeCopyHtml, todayText } = await import("../lib/filing-result-record.js");
   const html = registeredChangeCopyHtml({
-    title: "Change of registered office address",
+    title: window.siteText("ch.office.record-title", "Change of registered office address"),
     companyNumber: filing.companyNumber,
     transaction,
-    details: [
-      ["Premises", filing.premises],
-      ["Address line 1", filing.addressLine1],
-      ["Address line 2", filing.addressLine2],
-      ["Town or city", filing.locality],
-      ["County", filing.region],
-      ["Postcode", filing.postalCode],
-      ["Country", filing.country],
-    ],
+    details: addressFields(filing),
     dateText: todayText(),
   });
   const parsed = new DOMParser().parseFromString(html, "text/html");
@@ -189,7 +204,11 @@ async function renderFilingRecord(transaction) {
 function renderValidationErrors(errors) {
   const container = document.getElementById("validationErrors");
   container.style.display = "block";
-  container.replaceChildren(...(errors || []).map((entry) => paragraph(`${entry.location || ""}: ${entry.error || "invalid value"}`)));
+  container.replaceChildren(
+    ...(errors || []).map((entry) =>
+      paragraph(`${entry.location || ""}: ${entry.error || window.siteText("ch.change.invalid-value", "invalid value")}`),
+    ),
+  );
 }
 
 function redirectToAuthorise(scope) {
@@ -259,7 +278,7 @@ async function runFilingSequence() {
       return;
     }
     console.error("Companies House filing failed:", error);
-    showStatus(error.message || "Failed to file the change with Companies House.", "error");
+    showStatus(error.message || window.siteText("ch.change.file-failed", "Failed to file the change with Companies House."), "error");
   } finally {
     hideLoading();
   }

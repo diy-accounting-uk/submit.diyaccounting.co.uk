@@ -23,6 +23,11 @@
   text-align: left;
 }
 
+/* base.css gives every td the figures font; an error in a figure cell is words. */
+.ledger .error-message {
+  font-family: var(--font-text);
+}
+
 .ledger thead th {
   padding-bottom: var(--space-2);
   border-bottom: 2px solid var(--c-rule);

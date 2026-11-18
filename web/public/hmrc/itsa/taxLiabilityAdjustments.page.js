@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("taxYear", document.getElementById("taxYear"));
@@ -9,8 +15,8 @@ let loadedNino = "";
 let loadedTaxYear = "";
 
 const JOURNEY_LINKS = [
-  { href: "dashboard.html", text: "Back to Income Tax" },
-  { href: "obligations.html", text: "See your obligations" },
+  { href: "dashboard.html", text: siteText("itsa.link-back", "Back to Income Tax") },
+  { href: "obligations.html", text: siteText("itsa.link-obligations", "See your obligations") },
 ];
 
 async function showSavedRecord(adjustmentsDetails, correlationId) {
@@ -96,7 +102,7 @@ async function showEarlierYearFigure() {
 
   try {
     button.disabled = true;
-    figureEl.textContent = "Retrieving from HMRC...";
+    figureEl.textContent = siteText("itsa-tla.retrieving-figure", "Retrieving from HMRC...");
     const govClientHeaders = await getGovClientHeaders();
     const result = await triggerCalculation(
       { nino, taxYear, calculationType: "in-year" },
@@ -108,7 +114,7 @@ async function showEarlierYearFigure() {
     const totalIncomeTaxAndNicsDue = result?.calculation?.taxCalculation?.totalIncomeTaxAndNicsDue;
     figureEl.textContent = HmrcFieldTable.formatMoney(totalIncomeTaxAndNicsDue);
   } catch (error) {
-    figureEl.textContent = "Could not retrieve HMRC's calculation for that year.";
+    figureEl.textContent = siteText("itsa-tla.figure-failed", "Could not retrieve HMRC's calculation for that year.");
     console.error(error);
   } finally {
     button.disabled = false;
@@ -123,7 +129,7 @@ async function continueAfterOAuth() {
 
     if (pendingLoad) {
       showLoading();
-      showStatus("Loading tax liability adjustments...", "info");
+      showStatus(siteText("itsa-tla.loading", "Loading tax liability adjustments..."), "info");
       const result = await loadAdjustments(
         pendingLoad.nino,
         pendingLoad.taxYear,
@@ -140,7 +146,7 @@ async function continueAfterOAuth() {
       sessionStorage.removeItem("pendingAdjustmentsLoadRequest");
     } else if (pendingSave) {
       showLoading();
-      showStatus("Saving tax liability adjustments...", "info");
+      showStatus(siteText("itsa-tla.saving", "Saving tax liability adjustments..."), "info");
       const saved = await saveAdjustments(
         pendingSave.adjustmentsDetails,
         pendingSave.testScenario,
@@ -156,7 +162,7 @@ async function continueAfterOAuth() {
     sessionStorage.removeItem("currentActivity");
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
-    showStatus(`Failed: ${error.message}`, "error");
+    showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
     sessionStorage.removeItem("pendingAdjustmentsLoadRequest");
     sessionStorage.removeItem("pendingAdjustmentsSaveRequest");
     window.hmrcScopeCheck.clearHmrcToken();
@@ -179,7 +185,7 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
   if (!scopeSufficient) {
     if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     showLoading();
-    showStatus("Initiating HMRC authentication...", "info");
+    showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
     const state = generateRandomState();
     const hmrcAccount = sessionStorage.getItem("hmrcAccount");
     sessionStorage.setItem("oauth_state", state);
@@ -212,7 +218,7 @@ async function handleLoadFormSubmission(event) {
       try {
         showLoading();
         hideStatus();
-        showStatus("Loading tax liability adjustments...", "info");
+        showStatus(siteText("itsa-tla.loading", "Loading tax liability adjustments..."), "info");
         const result = await loadAdjustments(nino, taxYear, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         loadedNino = nino;
         loadedTaxYear = taxYear;
@@ -229,7 +235,10 @@ async function handleLoadFormSubmission(event) {
           document.getElementById("adjustmentsEditForm").style.display = "block";
           showStatus("HMRC has no tax liability adjustments on file yet for this tax year.", "info");
         } else {
-          showStatus(`Failed to load tax liability adjustments: ${error.message}`, "error");
+          showStatus(
+            siteText("itsa-tla.load-failed", "Failed to load tax liability adjustments: {reason}", { reason: error.message }),
+            "error",
+          );
         }
       } finally {
         hideLoading();
@@ -256,12 +265,15 @@ async function handleSaveClick() {
       try {
         showLoading();
         hideStatus();
-        showStatus("Saving tax liability adjustments...", "info");
+        showStatus(siteText("itsa-tla.saving", "Saving tax liability adjustments..."), "info");
         const saved = await saveAdjustments(adjustmentsDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         await showSavedRecord(adjustmentsDetails, saved?.correlationId);
         hideStatus();
       } catch (error) {
-        showStatus(`Failed to save tax liability adjustments: ${error.message}`, "error");
+        showStatus(
+          siteText("itsa-tla.save-failed", "Failed to save tax liability adjustments: {reason}", { reason: error.message }),
+          "error",
+        );
       } finally {
         hideLoading();
       }

@@ -1,0 +1,266 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from hmrc/vat/vatObligations.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Rhwymedigaethau TAW - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/hmrc/vat/vatObligations.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/vat/vatObligations.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html" />
+    <link rel="stylesheet" href="../../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../../lib/analytics.js"></script>
+    <!-- HEAD-prefetch to help mitigate API cold starts for this page's calls -->
+    <!--script async src="../../../prefetch/prefetch-hmrc-vat-obligation-head.js"></script-->
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="vat-obligations.vat-obligations-353db3">Rhwymedigaethau TAW</h1>
+      <p data-i18n="vat-obligations.retrieve-vat-obligations-from-hmrc-77933d" class="subtitle">Cael eich rhwymedigaethau TAW gan CThEF</p>
+    </header>
+
+    <main id="mainContent">
+      <p data-i18n="vat-obligations.status-production-this-reads-your-real-8ae5ea" class="hint" data-feature-status="production">
+        <strong>Statws: cynhyrchu (production).</strong> Mae hyn yn darllen eich cofnodion go iawn yn CThEF.
+      </p>
+      <div id="syntheticIndicator" class="synthetic-indicator">
+        <span data-i18n="vat-obligations.synthetic-mode-calls-go-to-hmrc-efa44d"
+          >Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF</span
+        >
+      </div>
+
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- VAT Obligations Form -->
+      <div
+        id="obligationsForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i weld eich rhwymedigaethau TAW"
+        data-sign-in-text="Mewngofnodwch i gael eich rhwymedigaethau TAW gan CThEF. Maen nhw’n dangos pa Ffurflenni TAW y mae CThEF yn aros amdanynt."
+        data-i18n-data-sign-in-title="vat-obligations.sign-in-to-see-your-vat-8d9ce8"
+        data-i18n-data-sign-in-text="vat-obligations.sign-in-to-retrieve-your-vat-9a159f"
+      >
+        <div class="form-toggle-buttons">
+          <button
+            data-i18n="vat-obligations.show-obligation-search-criteria-fd272b"
+            type="button"
+            id="toggleSearchCriteriaBtn"
+            class="secondary-button"
+            style="display: none"
+          >
+            Dangos meini prawf chwilio’r rhwymedigaethau
+          </button>
+          <button
+            data-i18n="vat-obligations.cancel-request-561966"
+            type="button"
+            id="cancelRequestBtn"
+            class="cancel-button"
+            style="display: none"
+          >
+            Canslo’r cais
+          </button>
+        </div>
+        <div id="searchCriteriaContainer">
+          <h2 data-i18n="vat-obligations.retrieve-vat-obligations-9fc891">Cael rhwymedigaethau TAW</h2>
+          <form id="vatObligationsForm" novalidate>
+            <div class="form-group">
+              <label data-i18n="vat-obligations.vat-registration-number-873ba7" for="vrn">Rhif cofrestru TAW</label>
+              <p data-i18n="vat-obligations.this-is-9-numbers-sometimes-with-b921f3" id="vrn-hint" class="hint">
+                Mae hwn yn 9 rhif, weithiau gyda ‘GB’ ar y dechrau, er enghraifft 123456789 neu GB123456789. Mae i’w weld ar eich tystysgrif
+                cofrestru TAW.
+              </p>
+              <input
+                type="text"
+                id="vrn"
+                name="vrn"
+                required
+                value=""
+                maxlength="9"
+                pattern="[0-9]{9}"
+                aria-describedby="vrn-hint"
+                spellcheck="false"
+              />
+            </div>
+
+            <div class="form-group">
+              <label data-i18n="vat-obligations.from-date-optional-f40f4c" for="fromDate">O’r dyddiad (dewisol)</label>
+              <p data-i18n="vat-obligations.start-date-for-obligation-search-defaults-e59845" id="fromDate-hint" class="hint">
+                Dyddiad dechrau’r chwiliad am rwymedigaethau. Os na fyddwch yn ei nodi, dechrau’r flwyddyn galendr bresennol fydd hwn.
+              </p>
+              <input type="date" id="fromDate" name="fromDate" value="" aria-describedby="fromDate-hint" />
+            </div>
+
+            <div class="form-group">
+              <label data-i18n="vat-obligations.to-date-optional-e1b0ad" for="toDate">Hyd at y dyddiad (dewisol)</label>
+              <p data-i18n="vat-obligations.end-date-for-obligation-search-defaults-32cf86" id="toDate-hint" class="hint">
+                Dyddiad diwedd y chwiliad am rwymedigaethau. Os na fyddwch yn ei nodi, dyddiad heddiw fydd hwn. Yr ystod hwyaf yw 366
+                diwrnod.
+              </p>
+              <input type="date" id="toDate" name="toDate" value="" aria-describedby="toDate-hint" />
+            </div>
+
+            <div class="form-group">
+              <label data-i18n="vat-obligations.status-optional-02bab6" for="status">Statws (dewisol)</label>
+              <p data-i18n="vat-obligations.open-obligations-require-a-vat-return-39ae7f" id="status-hint" class="hint">
+                Mae angen cyflwyno Ffurflen TAW ar gyfer rhwymedigaethau agored. Mae Ffurflenni ar gyfer rhwymedigaethau wedi’u cyflawni
+                eisoes wedi’u cyflwyno.
+              </p>
+              <select id="status" name="status" aria-describedby="status-hint">
+                <option data-i18n="vat-obligations.all-statuses-8ee573" value="">Pob statws</option>
+                <option data-i18n="vat-obligations.open-awaiting-submission-8761ce" value="O">Agored (yn aros i gael ei chyflwyno)</option>
+                <option data-i18n="vat-obligations.fulfilled-already-submitted-b3fe58" value="F">
+                  Wedi’i chyflawni (wedi’i chyflwyno eisoes)
+                </option>
+              </select>
+            </div>
+
+            <!-- Developer Test Scenario Section -->
+            <div id="developerSection" class="form-group" style="display: none">
+              <div id="testDataLink" class="test-data-link">
+                <a data-i18n="vat-obligations.add-test-data-28908b" href="#" id="addTestDataLink">ychwanegu data prawf</a>
+              </div>
+              <label data-i18n="vat-obligations.test-scenario-developer-synthetic-only-bc20fe" for="testScenario"
+                >Senario prawf (datblygwr neu synthetig yn unig)</label
+              >
+              <p data-i18n="vat-obligations.test-different-hmrc-sandbox-scenarios-39d913" id="testScenario-hint" class="hint">
+                Profi senarios gwahanol yn amgylchedd prawf (sandbox) CThEF
+              </p>
+              <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint" translate="no">
+                <option value="">Default (One Quarterly Met)</option>
+                <option value="QUARTERLY_NONE_MET">Quarterly - None Met</option>
+                <option value="QUARTERLY_ONE_MET">Quarterly - One Met</option>
+                <option value="QUARTERLY_TWO_MET">Quarterly - Two Met</option>
+                <option value="QUARTERLY_THREE_MET">Quarterly - Three Met</option>
+                <option value="QUARTERLY_FOUR_MET">Quarterly - Four Met</option>
+                <option value="MONTHLY_NONE_MET">Monthly - None Met</option>
+                <option value="MONTHLY_ONE_MET">Monthly - One Met</option>
+                <option value="MONTHLY_TWO_MET">Monthly - Two Met</option>
+                <option value="MONTHLY_THREE_MET">Monthly - Three Met</option>
+                <option value="MONTHLY_OBS_01_OPEN">Monthly - Jan Open</option>
+                <option value="MONTHLY_OBS_02_OPEN">Monthly - Feb Open</option>
+                <option value="MONTHLY_OBS_03_OPEN">Monthly - Mar Open</option>
+                <option value="MONTHLY_OBS_04_OPEN">Monthly - Apr Open</option>
+                <option value="MONTHLY_OBS_05_OPEN">Monthly - May Open</option>
+                <option value="MONTHLY_OBS_06_OPEN">Monthly - Jun Open</option>
+                <option value="MONTHLY_OBS_07_OPEN">Monthly - Jul Open</option>
+                <option value="MONTHLY_OBS_08_OPEN">Monthly - Aug Open</option>
+                <option value="MONTHLY_OBS_09_OPEN">Monthly - Sep Open</option>
+                <option value="MONTHLY_OBS_10_OPEN">Monthly - Oct Open</option>
+                <option value="MONTHLY_OBS_11_OPEN">Monthly - Nov Open</option>
+                <option value="MONTHLY_OBS_12_OPEN">Monthly - Dec Open</option>
+                <option value="MONTHLY_OBS_12_FULFILLED">Monthly - All Fulfilled</option>
+                <option value="QUARTERLY_OBS_01_OPEN">Quarterly - Q1 Open</option>
+                <option value="QUARTERLY_OBS_02_OPEN">Quarterly - Q2 Open</option>
+                <option value="QUARTERLY_OBS_03_OPEN">Quarterly - Q3 Open</option>
+                <option value="QUARTERLY_OBS_04_OPEN">Quarterly - Q4 Open</option>
+                <option value="QUARTERLY_OBS_04_FULFILLED">Quarterly - All Fulfilled</option>
+                <option value="MULTIPLE_OPEN_MONTHLY">Multiple Open Monthly</option>
+                <option value="MULTIPLE_OPEN_QUARTERLY">Multiple Open Quarterly</option>
+                <option value="OBS_SPANS_MULTIPLE_YEARS">Across Multiple Years - Open</option>
+                <option value="INSOLVENT_TRADER">Insolvent Trader</option>
+                <option value="NOT_FOUND">Not Found</option>
+                <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
+                <option value="SUBMIT_HMRC_API_HTTP_500">HMRC API responds with 500</option>
+                <option value="SUBMIT_HMRC_API_HTTP_503">HMRC API responds with 503</option>
+                <option value="SUBMIT_HMRC_API_HTTP_SLOW_10S">HMRC API responds slowly</option>
+              </select>
+              <div class="choice">
+                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                  data-i18n="vat-obligations.validate-fraud-prevention-headers-ea7c94"
+                  for="runFraudPreventionHeaderValidation"
+                  >Dilysu’r penawdau atal twyll</label
+                >
+              </div>
+            </div>
+
+            <button
+              data-i18n="vat-obligations.retrieve-obligations-63a80e"
+              type="submit"
+              id="retrieveBtn"
+              class="btn"
+              data-activity-start="vat-obligations"
+            >
+              Cael rhwymedigaethau
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Results Display -->
+      <div id="obligationsResults" class="results-container" style="display: none">
+        <h3 data-i18n="vat-obligations.vat-obligations-353db3">Rhwymedigaethau TAW</h3>
+        <div id="obligationsTable"></div>
+        <p data-i18n="vat-obligations.view-the-chosen-period-s-return-fd6ecc" id="periodNextSteps" class="next-steps" hidden>
+          <a href="viewVatReturn.html">Bwrw golwg dros Ffurflen TAW y cyfnod a ddewiswyd</a>
+        </p>
+        <div class="button-group">
+          <button data-i18n="vat-obligations.new-search-4587eb" type="button" id="newSearchBtn" class="secondary-button">
+            Chwiliad newydd
+          </button>
+        </div>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../../lib/welsh-text.js"></script>
+    <script src="../../../widgets/page-chrome.js"></script>
+    <script src="../../../lib/env-loader.js"></script>
+    <script src="../../../lib/auth-url-builder.js"></script>
+    <script src="../../../lib/test-data-generator.js"></script>
+    <script type="module" src="../../../submit.js"></script>
+    <script src="../../../developer-mode.js"></script>
+    <script src="../../../lib/request-cache.js"></script>
+    <script src="../../../lib/carried-identifiers.js"></script>
+    <script src="../../../lib/pending-request.js"></script>
+    <script src="../../../lib/toml-parser.js"></script>
+    <script src="../../../lib/hmrc-scope-check.js"></script>
+    <script src="../../../widgets/entitlement-status.js"></script>
+    <script src="../../../widgets/auth-status.js"></script>
+    <script src="../../../lib/form-errors.js"></script>
+    <script src="../../../widgets/status-messages.js"></script>
+    <script src="../../../widgets/signed-out-panel.js"></script>
+    <script src="../../../widgets/pass-redeemer.js"></script>
+    <script src="../../../lib/hmrc-display-format.js"></script>
+    <script src="../../../lib/hmrc-sandbox-status.js"></script>
+    <script src="../../../hmrc/vat/vatObligations.page.js"></script>
+  </body>
+</html>

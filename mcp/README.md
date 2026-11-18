@@ -40,7 +40,9 @@ Cowork), or in Claude Code:
 claude mcp add --transport http diya-submit https://submit.diyaccounting.co.uk/mcp
 ```
 
-The client finds the sign-in through `/.well-known/oauth-protected-resource/mcp`, registers itself, and
+The endpoint answers `initialize`, `ping` and `tools/list` without a token, so a client or a catalogue
+can read the tools first. The first tool call without a token gets 401 with a `WWW-Authenticate`
+challenge. The client finds the sign-in through `/.well-known/oauth-protected-resource/mcp`, registers itself, and
 the user signs in with their Submit account. The ci form of the URL is
 `https://ci-submit.diyaccounting.co.uk/mcp`. The hosted tool set is `HOSTED_TOOL_NAMES` in
 `lib/hosted-tools.js`: `open_book` reads the DIYA cloud only. The sign-in pair, the filesystem tools,
@@ -64,7 +66,7 @@ HMRC requires data about the device behind each request. The two surfaces send d
 | `request_hmrc_authorisation` | HMRC's sign-in link for this session. `services` is `vat` (the default) and `itsa`; `hmrcAccount` is `live` (the default) or `synthetic`. Answers `url`, `expiresAt`, `scope`, `hmrcAccount`. The user grants access on HMRC's pages; Submit keeps HMRC's tokens and renews the access token for the rest of the session. No token reaches the chat. |
 | `list_vat_obligations` | VAT obligations for `vrn` (or `clientId`), filtered by `from`, `to`, `status`. Uses the session's HMRC authorisation; optional `hmrcAccount` (the authorisation's own by default), `govTestScenario`. |
 | `submit_vat_return` | Files the seven confirmed boxes (`vatDueSales`, `vatDueAcquisitions`, `vatReclaimedCurrPeriod`, `totalValueSalesExVAT`, `totalValuePurchasesExVAT`, `totalValueGoodsSuppliedExVAT`, `totalAcquisitionsExVAT`) for `periodStart` to `periodEnd`, for `vatNumber` or `clientId`. Uses the session's HMRC authorisation. Answers `receipt`, `periodKey`, `receiptId`. |
-| `get_vat_receipt` | A stored receipt by `name` (`<receiptId>.json`); optional `clientId`. |
+| `get_vat_receipt` | A stored VAT return receipt by `name` (`<receiptId>.json`); optional `clientId`. Answers HMRC's `processingDate`, `formBundleNumber`, `paymentIndicator` and `chargeRefNumber`. |
 | `render_micro_entity_accounts_sandbox` | The rendered micro-entity iXBRL for confirmed figures, without reaching the Companies House gateway. Inputs: `companyNumber`, `companyName`, `periodStart`, `periodEnd`, `balanceSheet`, `averageEmployees`, `director`, `statementsAccepted`. |
 | `render_small_company_accounts_sandbox` | The rendered small-company (FRS 102 section 1A) iXBRL for confirmed figures, without reaching the gateway. Inputs: `companyNumber`, `companyName`, `periodStart`, `periodEnd`, `averageEmployees`, `director`, `statementsAccepted` (four small-company statements) and `smallCompany` (`filleted`, `principalActivity`, `accountingPolicies`, `directors`, `balanceSheet`, `profitAndLoss`, `fixedAssetNote`). |
 | `request_companies_house_codes` | A link where the user types the Companies House codes instead of the chat. `kind` is `accounts`, `confirmation-statement` (with `directors` in filing order) or `confirmation-statement-data`; answers `entryId`, `url`, `expiresAt`. The entry lasts ten minutes and one filing call uses it up. With `clientIds` (no `companyNumber`) the page asks for one code per practice client and each client's filing call, including through `run_for_clients`, takes only its own. |

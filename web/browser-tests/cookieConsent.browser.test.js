@@ -132,6 +132,7 @@ test.describe("Cookie consent banner", () => {
     await expect(banner.locator('a[href="/privacy.html"]')).toBeVisible();
     await expect(banner.locator("#consent-accept")).toBeVisible();
     await expect(banner.locator("#consent-decline")).toBeVisible();
+    await expect(banner.locator("#consent-decline")).toHaveText("Reject");
 
     // Consent starts denied.
     const calls = await gtagConsentCalls(page);
@@ -317,5 +318,71 @@ test.describe("Cookie consent banner", () => {
 
     await page.locator("[data-cookie-choices]").first().click();
     await expect(page.locator("#consent-dialog")).toBeVisible();
+  });
+
+  test("the banner and the reopened dialog say the same words and show the stored choice", async ({ page }) => {
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
+    const bannerText = await page.locator("#consent-banner .consent-banner-text").innerText();
+    await page.locator("#consent-decline").click();
+
+    await page.locator("[data-cookie-choices]").first().click();
+    const dialog = page.locator("#consent-dialog");
+    await expect(dialog).toContainText(bannerText);
+    await expect(dialog).not.toContainText("advert");
+    await expect(dialog.locator("#consent-current-choice")).toHaveText("You chose: reject");
+    await expect(page.locator("#consent-decline")).toHaveText("Reject");
+  });
+
+  test("Escape closes the reopened dialog and leaves the choice unchanged", async ({ page }) => {
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
+    await page.locator("#consent-accept").click();
+    await page.locator("[data-cookie-choices]").first().click();
+    await expect(page.locator("#consent-dialog #consent-current-choice")).toHaveText("You chose: accept");
+
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#consent-dialog")).toHaveCount(0);
+    expect(await page.evaluate(() => localStorage.getItem("consent.rum"))).toBe("granted");
+  });
+
+  test("the banner is the second Tab stop, after the skip link", async ({ page }) => {
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#consent-banner")).toBeVisible({ timeout: 5000 });
+    await page.evaluate(() => document.activeElement?.blur());
+
+    await page.keyboard.press("Tab");
+    await expect(page.locator(".skip-link")).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.locator("#consent-banner").locator(":focus")).toHaveCount(1);
+    const box = await page.locator("#consent-banner").boundingBox();
+    expect(box.y + box.height).toBeGreaterThanOrEqual(page.viewportSize().height - 1);
+  });
+
+  test("a utm_ visit with no click id says a link brought the visitor, not an advert", async ({ page }) => {
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/index.html?utm_source=spreadsheets&utm_medium=article", { waitUntil: "domcontentloaded" });
+    const dialog = page.locator("#consent-dialog");
+    await expect(dialog).toBeVisible({ timeout: 5000 });
+    await expect(dialog).toContainText("A link brought you here");
+    await expect(dialog).not.toContainText("advert");
+  });
+
+  test("on a phone the text takes two lines and the page scrolls clear of the banner", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
+    const banner = page.locator("#consent-banner");
+    await expect(banner).toBeVisible({ timeout: 5000 });
+
+    const lines = await page
+      .locator(".consent-banner-text")
+      .evaluate((el) => el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight));
+    expect(Math.round(lines)).toBeLessThanOrEqual(2);
+
+    const bannerHeight = (await banner.boundingBox()).height;
+    const padding = await page.evaluate(() => parseFloat(getComputedStyle(document.body, "::after").height));
+    expect(Math.round(padding)).toBe(Math.round(bannerHeight));
   });
 });

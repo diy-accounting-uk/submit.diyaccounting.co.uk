@@ -42,7 +42,7 @@ export default defineConfig(({ mode }) => {
       environment: "node",
       // One forked process per worker; half the cores leave headroom so import-heavy files stay inside their timeouts on a busy machine.
       pool: "forks",
-      maxWorkers: "50%",
+      maxWorkers: process.env.VITEST_MAX_WORKERS || "50%",
 
       // Disable file-level parallelism and concurrent tests
       // fileParallelism: false, // run test files sequentially

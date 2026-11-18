@@ -127,6 +127,16 @@ main ol.calendar {
   padding: var(--space-1);
 }
 
+/* The Welsh cells carry HMRC's Welsh term with the English after it ("cynhyrchu (production)") and run
+   longer than the English, so at desktop width the Welsh table takes the smaller step to keep its eight
+   columns to a few words a line. The English table keeps the body size. */
+@media (min-width: 601px) {
+  html[lang="cy"] .availability-table th,
+  html[lang="cy"] .availability-table td {
+    font-size: var(--step--1);
+  }
+}
+
 /* Availability cells: the state shades the cell; a production cell also carries a tick after its text. */
 .avail-production {
   background-color: var(--c-ok-tint);
@@ -226,6 +236,11 @@ main ol.calendar {
   padding: 0;
 }
 
+/* A step with no picture keeps its own height, at the top of its row, beside a step with one. */
+.filing-page .guide-step:not(:has(img)) {
+  align-self: start;
+}
+
 .filing-page .guide-step img {
   display: block;
   max-width: 100%;
@@ -277,4 +292,91 @@ main ol.calendar {
 
 .filing-page pre {
   white-space: pre;
+}
+
+/* The tools page: one card for each tool */
+.tool-cards {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  list-style: none;
+  margin: var(--space-4) 0;
+  padding: 0;
+}
+
+.tool-cards li {
+  border: 1px solid var(--c-rule);
+  border-radius: var(--radius-cell);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+}
+
+.tool-cards h3 {
+  font-size: var(--step-1);
+  margin: 0 0 var(--space-2);
+}
+
+.tool-cards p {
+  margin: 0;
+}
+
+/* The price and due date at the top of a how-to page, and the links to its sections */
+.page-facts {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-3) 0 0;
+}
+
+.page-facts li {
+  margin: 0 0 var(--space-1);
+}
+
+.page-toc {
+  margin-top: var(--space-3);
+  font-size: var(--step--1);
+}
+
+.page-toc-title {
+  margin: 0 0 var(--space-1);
+  font-weight: var(--weight-strong);
+}
+
+.page-toc ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+}
+
+/* The links of one calendar cell are a list; on a phone each link has a press area 44px tall. */
+.cell-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (max-width: 600px) {
+  .cell-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+}
+
+/* The box around a wide table scrolls and takes focus, so the table inside it does not scroll again. */
+.table-scroll > table:not(.stacked-table) {
+  display: table;
+  overflow: visible;
+  background: none;
+}
+
+/* Under 40rem the rates tables stack (operator-dashboard.css); wider, they keep their table layout. */
+@media (min-width: 40.01rem) {
+  .rates-table-scroll > table {
+    display: table;
+    overflow: visible;
+    background: none;
+  }
 }

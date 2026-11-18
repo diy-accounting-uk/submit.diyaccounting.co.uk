@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 // Global variables
 let searchCriteriaHidden = false;
 
@@ -57,6 +63,7 @@ function initializePage() {
 
   // Show synthetic indicator if in synthetic mode (determined by bundle qualifiers via sessionStorage)
   if (hmrcAccount === "synthetic") {
+    window.showHmrcSandboxStatus(siteText("vat-read.status-sandbox-text", "This reads HMRC's test service, not your real records."));
     const syntheticIndicator = document.getElementById("syntheticIndicator");
     if (syntheticIndicator) {
       syntheticIndicator.classList.add("visible");
@@ -113,7 +120,7 @@ async function continuePenaltiesRetrieval() {
     hideSearchCriteria(); // Hide the form when retrieving penalties after auth
     showLoading();
     hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
-    showStatus("Retrieving VAT penalties...", "info");
+    showStatus(siteText("vat-penalties.retrieving", "Retrieving VAT penalties..."), "info");
 
     // Restore form values
     if (pendingRequest.vrn) document.getElementById("vrn").value = pendingRequest.vrn;
@@ -147,9 +154,9 @@ async function continuePenaltiesRetrieval() {
         ...requestHeaders,
         "x-wait-time-ms": "0",
       },
-      pollPendingMessage: "Still processing...",
-      pollSuccessMessage: "VAT penalties retrieved.",
-      pollErrorMessage: "Failed to retrieve VAT penalties.",
+      pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+      pollSuccessMessage: siteText("vat-penalties.retrieved", "VAT penalties retrieved."),
+      pollErrorMessage: siteText("vat-penalties.retrieve-failed", "Failed to retrieve VAT penalties."),
     });
 
     const result = await response.json();
@@ -159,7 +166,7 @@ async function continuePenaltiesRetrieval() {
       if (response.status === 401) {
         sessionStorage.removeItem("hmrcGrantId");
         sessionStorage.removeItem("hmrcTokenScope");
-        showFailure({ status: 401 }, "Could not retrieve VAT penalties");
+        showFailure({ status: 401 }, siteText("vat-penalties.could-not-retrieve", "Could not retrieve VAT penalties"));
         showSearchCriteria(); // Show form on error
         return;
       }
@@ -181,7 +188,7 @@ async function continuePenaltiesRetrieval() {
     console.log("Penalties retrieval completed successfully");
   } catch (error) {
     console.error("Error retrieving penalties:", error);
-    showFailure(error, "Could not retrieve VAT penalties");
+    showFailure(error, siteText("vat-penalties.could-not-retrieve", "Could not retrieve VAT penalties"));
     showSearchCriteria(); // Show form on error
     // Clear pending request data to prevent auto-retry loop on next page load
     sessionStorage.removeItem("pendingPenaltiesRequest");
@@ -218,7 +225,7 @@ async function handleFormSubmission(event) {
     }
     try {
       showLoading();
-      showStatus("Initiating HMRC authentication...", "info");
+      showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
 
       // Store request parameters and generate state
       const state = generateRandomState();
@@ -243,7 +250,10 @@ async function handleFormSubmission(event) {
       const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
       console.log("Generated HMRC Auth URL:", authResponseUrl);
 
-      showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+      showStatus(
+        siteText("widget.hmrc-auth-redirecting", "Redirecting to HMRC for authentication at {url}...", { url: authResponseUrl }),
+        "info",
+      );
 
       // Redirect to HMRC OAuth
       console.log(`Page transition initiated: Redirecting to HMRC OAuth URL ${authResponseUrl}`);
@@ -253,7 +263,7 @@ async function handleFormSubmission(event) {
       window.location.href = authResponseUrl;
     } catch (error) {
       console.error("Authentication error:", error);
-      showStatus(`Authentication failed: ${error.message}`, "error");
+      showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
       hideLoading();
     }
   } else {
@@ -261,7 +271,7 @@ async function handleFormSubmission(event) {
     try {
       showLoading();
       hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
-      showStatus("Retrieving VAT penalties...", "info");
+      showStatus(siteText("vat-penalties.retrieving", "Retrieving VAT penalties..."), "info");
 
       // Build query parameters - no from/to on this endpoint
       const params = new URLSearchParams({ vrn });
@@ -289,9 +299,9 @@ async function handleFormSubmission(event) {
           ...requestHeaders,
           "x-wait-time-ms": "0",
         },
-        pollPendingMessage: "Still processing...",
-        pollSuccessMessage: "VAT penalties retrieved.",
-        pollErrorMessage: "Failed to retrieve VAT penalties.",
+        pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+        pollSuccessMessage: siteText("vat-penalties.retrieved", "VAT penalties retrieved."),
+        pollErrorMessage: siteText("vat-penalties.retrieve-failed", "Failed to retrieve VAT penalties."),
       });
 
       const result = await response.json();
@@ -301,7 +311,7 @@ async function handleFormSubmission(event) {
         if (response.status === 401) {
           sessionStorage.removeItem("hmrcGrantId");
           sessionStorage.removeItem("hmrcTokenScope");
-          showFailure({ status: 401 }, "Could not retrieve VAT penalties");
+          showFailure({ status: 401 }, siteText("vat-penalties.could-not-retrieve", "Could not retrieve VAT penalties"));
           return;
         }
         throw requestError(response, result, "Failed to retrieve penalties");
@@ -314,7 +324,7 @@ async function handleFormSubmission(event) {
       hideStatus();
     } catch (error) {
       console.error("Error retrieving penalties:", error);
-      showFailure(error, "Could not retrieve VAT penalties");
+      showFailure(error, siteText("vat-penalties.could-not-retrieve", "Could not retrieve VAT penalties"));
     } finally {
       hideLoading();
     }
@@ -363,7 +373,9 @@ function displayPenalties(penalties) {
   // than one.
   if (!penalties || (lateSubmissionDetails.length === 0 && latePaymentDetails.length === 0)) {
     summaryContainer.replaceChildren();
-    lateSubmissionContainer.replaceChildren(noDataMessage("No penalties found for the last 24 months."));
+    lateSubmissionContainer.replaceChildren(
+      noDataMessage(siteText("vat-penalties.none-found", "No penalties found for the last 24 months.")),
+    );
     latePaymentContainer.replaceChildren();
     return;
   }
@@ -372,14 +384,23 @@ function displayPenalties(penalties) {
   const summary = penalties.lateSubmissionPenalty?.summary || {};
   const totalisations = penalties.totalisations || {};
   const summaryRows = [
-    ["Active penalty points", String(summary.activePenaltyPoints ?? "—")],
-    ["Inactive penalty points", String(summary.inactivePenaltyPoints ?? "—")],
-    ["Compliance achieved by", formatDate(summary.periodOfComplianceAchievement)],
-    ["Regime threshold", String(summary.regimeThreshold ?? "—")],
-    ["Late submission penalty charge total", formatCurrency(totalisations.lateSubmissionPenaltyTotalValue)],
-    ["Penalised principal total", formatCurrency(totalisations.penalisedPrincipalTotal)],
-    ["Late payment penalty (posted)", formatCurrency(totalisations.latePaymentPenaltyPostedTotal)],
-    ["Late payment penalty (estimated)", formatCurrency(totalisations.latePaymentPenaltyEstimateTotal)],
+    [siteText("vat-penalties.active-points", "Active penalty points"), String(summary.activePenaltyPoints ?? "—")],
+    [siteText("vat-penalties.inactive-points", "Inactive penalty points"), String(summary.inactivePenaltyPoints ?? "—")],
+    [siteText("vat-penalties.compliance-by", "Compliance achieved by"), formatDate(summary.periodOfComplianceAchievement)],
+    [siteText("vat-penalties.threshold", "Regime threshold"), String(summary.regimeThreshold ?? "—")],
+    [
+      siteText("vat-penalties.late-submission-total", "Late submission penalty charge total"),
+      formatCurrency(totalisations.lateSubmissionPenaltyTotalValue),
+    ],
+    [siteText("vat-penalties.penalised-principal", "Penalised principal total"), formatCurrency(totalisations.penalisedPrincipalTotal)],
+    [
+      siteText("vat-penalties.late-payment-posted", "Late payment penalty (posted)"),
+      formatCurrency(totalisations.latePaymentPenaltyPostedTotal),
+    ],
+    [
+      siteText("vat-penalties.late-payment-estimated", "Late payment penalty (estimated)"),
+      formatCurrency(totalisations.latePaymentPenaltyEstimateTotal),
+    ],
   ];
   summaryContainer.replaceChildren(
     HmrcDisplayFormat.scrollable(
@@ -398,35 +419,44 @@ function displayPenalties(penalties) {
   // Late submission penalties table
   if (lateSubmissionDetails.length === 0) {
     lateSubmissionContainer.replaceChildren(
-      element("h4", {}, "Late submission penalties"),
-      noDataMessage("No late submission penalties in the last 24 months."),
+      element("h4", {}, siteText("vat-penalties.late-submission", "Late submission penalties")),
+      noDataMessage(siteText("vat-penalties.none-late-submission", "No late submission penalties in the last 24 months.")),
     );
   } else {
     const rows = lateSubmissionDetails.map((detail) => {
-      const category = capitalize(detail.penaltyCategory);
-      const status = capitalize(detail.penaltyStatus);
+      const category = penaltyCategoryText(detail.penaltyCategory);
+      const status = penaltyStatusText(detail.penaltyStatus);
       const created = formatDate(detail.penaltyCreationDate);
       const expires = formatDate(detail.penaltyExpiryDate);
       const chargeAmount = formatCurrency(detail.chargeAmount);
       return dataRow(category, status, created, expires, chargeAmount);
     });
     lateSubmissionContainer.replaceChildren(
-      element("h4", {}, "Late submission penalties"),
-      resultsTable(["Category", "Status", "Created", "Expires", ["Charge Amount", "money-column"]], rows),
+      element("h4", {}, siteText("vat-penalties.late-submission", "Late submission penalties")),
+      resultsTable(
+        [
+          siteText("vat-penalties.col-category", "Category"),
+          siteText("vat-penalties.col-status", "Status"),
+          siteText("vat-penalties.col-created", "Created"),
+          siteText("vat-penalties.col-expires", "Expires"),
+          [siteText("vat-penalties.col-charge-amount", "Charge Amount"), "money-column"],
+        ],
+        rows,
+      ),
     );
   }
 
   // Late payment penalties table
   if (latePaymentDetails.length === 0) {
     latePaymentContainer.replaceChildren(
-      element("h4", {}, "Late payment penalties"),
-      noDataMessage("No late payment penalties in the last 24 months."),
+      element("h4", {}, siteText("vat-penalties.late-payment", "Late payment penalties")),
+      noDataMessage(siteText("vat-penalties.none-late-payment", "No late payment penalties in the last 24 months.")),
     );
   } else {
     const rows = latePaymentDetails.map((detail) => {
       const chargeReference = detail.principalChargeReference;
       const category = detail.penaltyCategory;
-      const status = capitalize(detail.penaltyStatus);
+      const status = penaltyStatusText(detail.penaltyStatus);
       const period = formatDateRange(detail.principalChargeBillingFrom, detail.principalChargeBillingTo);
       const amount =
         detail.penaltyStatus === "posted" ? formatCurrency(detail.penaltyAmountPosted) : formatCurrency(detail.penaltyAmountAccruing);
@@ -434,13 +464,45 @@ function displayPenalties(penalties) {
       return dataRow(chargeReference, category, status, period, amount, dueDate);
     });
     latePaymentContainer.replaceChildren(
-      element("h4", {}, "Late payment penalties"),
-      resultsTable(["Charge Reference", "Category", "Status", "Period", ["Penalty Amount", "money-column"], "Due Date"], rows),
+      element("h4", {}, siteText("vat-penalties.late-payment", "Late payment penalties")),
+      resultsTable(
+        [
+          siteText("vat-penalties.col-charge-reference", "Charge Reference"),
+          siteText("vat-penalties.col-category", "Category"),
+          siteText("vat-penalties.col-status", "Status"),
+          siteText("vat-penalties.col-period", "Period"),
+          [siteText("vat-penalties.col-penalty-amount", "Penalty Amount"), "money-column"],
+          siteText("vat-penalties.col-due", "Due Date"),
+        ],
+        rows,
+      ),
     );
   }
 }
 
 const capitalize = HmrcDisplayFormat.sentenceCase;
+
+// HMRC's penalty codes as words in the chosen language. A code HMRC adds later shows as it sent it.
+const penaltyStatuses = () => ({
+  active: siteText("vat-penalties.status-active", "Active"),
+  inactive: siteText("vat-penalties.status-inactive", "Inactive"),
+  accruing: siteText("vat-penalties.status-accruing", "Accruing"),
+  posted: siteText("vat-penalties.status-posted", "Posted"),
+});
+
+const penaltyCategories = () => ({
+  point: siteText("vat-penalties.category-point", "Point"),
+  threshold: siteText("vat-penalties.category-threshold", "Threshold"),
+  charge: siteText("vat-penalties.category-charge", "Charge"),
+});
+
+function penaltyStatusText(code) {
+  return penaltyStatuses()[String(code ?? "").toLowerCase()] ?? capitalize(code);
+}
+
+function penaltyCategoryText(code) {
+  return penaltyCategories()[String(code ?? "").toLowerCase()] ?? capitalize(code);
+}
 const formatDate = HmrcDisplayFormat.formatDate;
 const formatDateRange = HmrcDisplayFormat.formatDateRange;
 const formatCurrency = HmrcDisplayFormat.formatAmount;

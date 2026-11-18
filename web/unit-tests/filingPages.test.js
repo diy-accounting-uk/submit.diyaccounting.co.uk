@@ -17,11 +17,14 @@ import {
   loadPages,
   renderArticlePages,
   renderComparisonPages,
+  renderToolsPageFile,
+  loadToolsPage,
+  toolCards,
   comparisonTools,
   yearPence,
   renderFilingPages,
 } from "../../scripts/build-filing-pages.mjs";
-import { loadSources } from "../../scripts/tax-sources.mjs";
+import { formatIsoDate, loadSources } from "../../scripts/tax-sources.mjs";
 
 const catalog = loadCatalog();
 const pages = loadPages();
@@ -59,8 +62,18 @@ describe("filing pages", () => {
       const source = sources.find((candidate) => candidate.name === page.deadline.source);
       const html = read(filingPagePath(page));
       expect(html, page.file).toContain(source.url);
-      expect(html, page.file).toContain(source.quote.replace(/’/g, "’"));
+      expect(html.replace(/\s+/g, " "), page.file).toContain(source.quote);
+      expect(html.replace(/\s+/g, " ").replace(/<\/a >/g, "</a>"), page.file).toContain(
+        `GOV.UK, ${source.title}</a> (checked ${formatIsoDate(source.retrieved)})`,
+      );
+      expect(html, page.file).not.toContain("Retrieved");
     }
+  });
+
+  test("a section that cites one GOV.UK page twice prints its link once", () => {
+    const html = read("web/public/vat-return-due-date-and-penalty-points.html");
+    const links = html.match(/<a href="https:\/\/www\.gov\.uk\/[^"]+"/g);
+    expect(links.length).toBe(new Set(links).size);
   });
 
   test("the price of each page is the catalogue price of its bundle", () => {
@@ -70,6 +83,12 @@ describe("filing pages", () => {
     expect(read("web/public/vat-return-from-a-spreadsheet.html")).toContain(bundlePriceText(vat));
     expect(read("web/public/micro-entity-accounts.html")).toContain(bundlePriceText(ltd));
     expect(read("web/public/confirmation-statement.html")).toContain("£61.35");
+  });
+
+  test("the VAT page says its pictures use HMRC's test periods and the other pages do not", () => {
+    const note = "These pictures come from HMRC's test service, which uses periods from 2017. Your screen shows your own periods.";
+    expect(read("web/public/vat-return-from-a-spreadsheet.html")).toContain(note);
+    expect(read("web/public/micro-entity-accounts.html")).not.toContain("test service");
   });
 
   test("the VAT page offers the free day pass and the accounts pages do not", () => {
@@ -141,12 +160,12 @@ describe("article pages", () => {
     }
   });
 
-  test("an article that names a filing that is not production says its filing awaits HMRC recognition", () => {
+  test("an article that names a filing that is not production says what the reader cannot yet file", () => {
     for (const article of articles) {
       const html = read(join("web/public", article.file));
       for (const section of article.section) {
         for (const { activity } of section.status ?? []) {
-          if (!isProductionOnProd(catalog, activity)) expect(html, activity).toContain("awaits HMRC recognition");
+          if (!isProductionOnProd(catalog, activity)) expect(html, activity).toContain("with Submit yet. This page will say when you can.");
         }
       }
     }
@@ -224,7 +243,7 @@ describe("comparison pages", () => {
       expect(html.match(/<h1>/g), comparison.file).toHaveLength(1);
       expect(html).toContain(comparison.list_url);
       expect(html).toContain("<strong>(our own product)</strong>");
-      expect(html).toContain('<div class="table-scroll">');
+      expect(html).toContain('<div class="table-scroll" role="region" tabindex="0" aria-labelledby="compare-caption">');
       expect(html).toContain("The vendor's own page is the authority");
       for (const tool of tools.filter((candidate) => candidate.compares === comparison.compares && !candidate.ours)) {
         expect(html, tool.name).toContain(`href="${tool.price_url}"`);
@@ -243,5 +262,40 @@ describe("comparison pages", () => {
       expect(linkedFrom.length, comparison.file).toBeGreaterThan(0);
       for (const page of linkedFrom) expect(read(join("web/public", page.file)), page.file).toContain(`href="${comparison.file}"`);
     }
+  });
+});
+
+describe("tools page", () => {
+  const toolsPage = loadToolsPage();
+  const cards = toolCards();
+
+  test("the committed page equals what the build script renders", async () => {
+    const rendered = await renderToolsPageFile();
+    for (const [file, html] of rendered) expect(read(join("web/public", file))).toBe(html);
+  });
+
+  test("each card is a page of this site that exists, or an external link", () => {
+    for (const card of cards) {
+      if (/^https?:/.test(card.href)) continue;
+      expect(existsSync(join("web/public", card.href)), card.href).toBe(true);
+    }
+  });
+
+  test("each article or comparison with a tools card is on the page", () => {
+    const html = read(join("web/public", toolsPage.file));
+    const tagged = [...loadArticles(), ...loadComparisons()].filter((entry) => entry.tools_card);
+    expect(tagged.length).toBeGreaterThan(0);
+    for (const entry of tagged) expect(html).toContain(`href="${entry.file}"`);
+  });
+
+  test("each generated page links back to the tools page", () => {
+    for (const entry of [...loadArticles(), ...loadComparisons()]) {
+      expect(read(join("web/public", entry.file)), entry.file).toContain('href="tools.html"');
+    }
+  });
+
+  test("the sitemap lists the tools page and the navigation links to it", () => {
+    expect(read("web/public/sitemap.xml")).toContain("https://submit.diyaccounting.co.uk/tools.html");
+    expect(read("web/public/widgets/page-chrome.js")).toContain('{ label: siteText("chrome.nav-tools", "Tools"), target: "tools.html" }');
   });
 });

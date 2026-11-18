@@ -1,11 +1,30 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives window.siteText, the text in the chosen language. Without it (a test that
+// stubs the chrome) the English stands.
+window.siteText =
+  window.siteText ||
+  ((id, english, values) => english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole)));
+
 // OAuth callback handling for Companies House. Mirrors activities/submitVatCallback.html:
 // same state check, same token exchange shape, same "stay on the page so the error is
 // visible" behaviour on failure - only the storage keys, endpoint and state key differ.
 
 let navigationTarget = "../";
+
+// The page's own text, in the stored language choice.
+function writePageText() {
+  document.title = window.siteText("ch.callback.title", "Companies House callback - DIY Accounting Submit");
+  document.querySelector("header h1").textContent = window.siteText("ch.callback.heading", "Connecting to Companies House");
+  document.querySelector("header .subtitle").textContent = window.siteText(
+    "ch.callback.subtitle",
+    "Finishing your sign-in with Companies House",
+  );
+  document.getElementById("navigationBtn").textContent = window.siteText("ch.callback.return-home", "Return home");
+}
+
+writePageText();
 
 async function handleOAuthCallback() {
   const code = getValidatedAuthorisationCode();
@@ -13,20 +32,25 @@ async function handleOAuthCallback() {
 
   if (!code) {
     console.error("No valid authorisation code found in URL parameters.");
-    showStatus("No valid authorisation code found. Please try again.", "error");
+    showStatus(window.siteText("ch.callback.no-code", "No valid authorisation code found. Please try again."), "error");
   } else {
     try {
       showLoading();
-      showStatus("Exchanging authorisation code for access token...", "info");
+      showStatus(window.siteText("ch.callback.exchanging", "Exchanging authorisation code for access token..."), "info");
 
       const requestedScope = sessionStorage.getItem("ch_oauth_scope");
       if (!requestedScope) {
-        throw new Error("No pending Companies House authorisation scope was found. Please start the filing again.");
+        throw new Error(
+          window.siteText(
+            "ch.callback.no-scope",
+            "No pending Companies House authorisation scope was found. Please start the filing again.",
+          ),
+        );
       }
 
       const tokenResponse = await exchangeToken(code, requestedScope);
 
-      showStatus("Obtained access token from Companies House...", "info");
+      showStatus(window.siteText("ch.callback.obtained", "Obtained access token from Companies House..."), "info");
 
       // Companies House's token response names no scope, so the grant is recorded against
       // the scope the filing page requested: the filing page compares that exact string
@@ -40,7 +64,10 @@ async function handleOAuthCallback() {
       succeeded = true;
     } catch (error) {
       console.error("Companies House token exchange error:", error);
-      showStatus(`Companies House sign-in failed: ${error.message}`, "error");
+      showStatus(
+        window.siteText("ch.callback.sign-in-failed", "Companies House sign-in failed: {message}", { message: error.message }),
+        "error",
+      );
     } finally {
       hideLoading();
     }
@@ -62,7 +89,7 @@ function offerReturnToActivity() {
   const currentActivity = sessionStorage.getItem("currentActivity");
   const navigationBtn = document.getElementById("navigationBtn");
   if (currentActivity && navigationBtn) {
-    navigationBtn.textContent = "Back to Companies House filing";
+    navigationBtn.textContent = window.siteText("ch.callback.back-to-filing", "Back to Companies House filing");
     navigationTarget = currentActivity;
   }
 }
@@ -75,7 +102,7 @@ function getValidatedAuthorisationCode() {
   const error = urlParams.get("error");
 
   if (error) {
-    showStatus(`Companies House OAuth error: ${error}`, "error");
+    showStatus(window.siteText("ch.callback.oauth-error", "Companies House OAuth error: {error}", { error }), "error");
     console.error("Companies House OAuth callback handler (error exit)");
     return null;
   }
@@ -84,7 +111,7 @@ function getValidatedAuthorisationCode() {
     const storedState = sessionStorage.getItem("ch_oauth_state");
 
     if (state !== storedState) {
-      showStatus("Invalid OAuth state. Please try again.", "error");
+      showStatus(window.siteText("ch.callback.invalid-state", "Invalid OAuth state. Please try again."), "error");
       console.error("Companies House OAuth callback handler (invalid state exit)");
       return null;
     }

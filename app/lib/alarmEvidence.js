@@ -101,6 +101,20 @@ function genericInsightsQuery(logGroupNamePrefixes) {
   ].join("\n");
 }
 
+// A web ACL log record holds the request that a rule acted on, so the rows that explain a WAF
+// alarm are counts of the blocked requests by rule, client address and country.
+function wafBlockedRequestsInsightsQuery(logGroupNamePrefixes) {
+  if (!logGroupNamePrefixes.length) return null;
+  const source = logGroupNamePrefixes.map((prefix) => `'${prefix}'`).join(", ");
+  return [
+    `SOURCE logGroups(namePrefix: [${source}])`,
+    '| filter action = "BLOCK"',
+    "| stats count() by terminatingRuleId, httpRequest.clientIp, httpRequest.country",
+    "| sort count() desc",
+    "| limit 200",
+  ].join("\n");
+}
+
 function cloudTrailInsightsQuery(logGroupNamePrefixes, eventName) {
   if (!logGroupNamePrefixes.length) return null;
   const source = logGroupNamePrefixes.map((prefix) => `'${prefix}'`).join(", ");
@@ -257,10 +271,10 @@ const EVIDENCE_RULES = [
     id: 11,
     match: (ctx) => ctx.namespace === "AWS/WAFV2",
     build: (ctx) => {
-      const prefixes = [`/aws/lambda/${ctx.deployment}-app-waf-scan-detect`];
+      const prefixes = [`aws-waf-logs-${ctx.deployment}-app`, `/aws/lambda/${ctx.deployment}-app-waf-scan-detect`];
       return {
         logGroupNamePrefixes: prefixes,
-        insightsQuery: genericInsightsQuery(prefixes),
+        insightsQuery: wafBlockedRequestsInsightsQuery([prefixes[0]]),
         extraLinks: [
           {
             label: "Web ACL sampled requests",

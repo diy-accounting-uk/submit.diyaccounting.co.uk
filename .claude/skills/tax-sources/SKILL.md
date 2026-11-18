@@ -24,8 +24,9 @@ field, so rates, allowances and any other tax figure use it unchanged.
 ```json
 {
   "url": "https://www.gov.uk/guidance/...",
+  "title": "The page title without the GOV.UK suffix",
   "retrieved": "2026-09-30",
-  "quote": "Text copied from the page, short, unbroken.",
+  "quote": "A whole sentence copied from the page.",
   "facts": ["stable-fact-id"]
 }
 ```
@@ -33,15 +34,20 @@ field, so rates, allowances and any other tax figure use it unchanged.
 | Field | Rule |
 |---|---|
 | `url` | A gov.uk page. No other host. |
+| `title` | The GOV.UK page's title without " - GOV.UK". `scripts/verify-tax-sources.mjs` reads it from the page and fails on a difference. |
 | `retrieved` | ISO date (`YYYY-MM-DD`) of the day the page was read. Maximum age 30 days. |
-| `quote` | Verbatim page text, one or two sentences. Whitespace differences are ignored; wording is not. Table cells read left to right, row by row, as flat text. |
-| `table` | Optional. `true` when the quote is a table or a list that gov.uk states only that way. The page prints a citation line and not the words. |
+| `quote` | Verbatim page text: whole sentences, so it starts with a capital letter and ends at the end of a sentence. Whitespace differences are ignored; wording is not. Table cells read left to right, row by row, as flat text. |
+| `table` | Optional. `true` when the quote is a table or a list that gov.uk states only that way. The page prints the link line and not the words. |
 | `facts` | Stable fact ids the quote supports. An id never changes once a page uses it. |
 
 Fact ids are kebab-case and carry the subject and the date or year they apply to
 (`itsa-mtd-over-30k-2027-04`, `itsa-quarterly-update-deadlines`). The text, date and wording of a
 fact live in the page that shows it (`scripts/build-mtd-calendar.mjs` for the calendar, `scripts/build-rates-page.mjs` for the rates page), never in the
 source file. One page can need several files, one per quote. A fact can list in several files.
+
+Two rules govern how a page prints a source. The line under a quote is one link in words:
+"Source: GOV.UK, <title> (checked <date>)", never the bare address or "Retrieved". A section that cites
+one GOV.UK page more than once prints the link once (`sourcesQuoteHtml` in `scripts/tax-sources.mjs`).
 
 A fact with no gov.uk page that states it stays off the site. Say so in the report instead of
 sourcing it elsewhere.
@@ -53,8 +59,8 @@ sourcing it elsewhere.
 2. Fetch it with the session's WebFetch, or `claude -p` with web search.
 3. Copy the sentence that states the fact. A summary from a fetch tool can paraphrase, so the check
    below is the authority on whether the quote is verbatim.
-4. Write the file with today's date and the fact ids.
-5. Run `node scripts/verify-tax-sources.mjs <name>`. It fetches the page and exits 1 when the quote is absent.
+4. Write the file with the page title, today's date and the fact ids.
+5. Run `node scripts/verify-tax-sources.mjs <name>`. It fetches the page and exits 1 when the quote or the title is absent.
 
 ## Refresh one source
 

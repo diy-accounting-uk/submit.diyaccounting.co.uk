@@ -9,6 +9,11 @@
 (function () {
   "use strict";
 
+  function siteText(id, english, values) {
+    if (typeof window !== "undefined" && window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
+
   const WHOLE_OR_GROUPED_POUNDS = "(?:\\d+|\\d{1,3}(?:,\\d{3})+)";
   const POUNDS_AND_PENCE = new RegExp(`^(-?)£?(-?)(${WHOLE_OR_GROUPED_POUNDS}(?:\\.\\d{1,2})?)$`);
   const WHOLE_POUNDS = new RegExp(`^(-?)£?(-?)(${WHOLE_OR_GROUPED_POUNDS})$`);
@@ -48,11 +53,23 @@
     });
     const messages = [];
     if (invalidLabels.length > 0) {
-      const example = wantsWholePounds ? "a whole number of pounds, like £600 or £1,200" : "pounds and pence, like £600 or £193.54";
-      messages.push(`Enter an amount in ${example}. Check: ${invalidLabels.join("; ")}.`);
+      const labels = invalidLabels.join("; ");
+      messages.push(
+        wantsWholePounds
+          ? siteText(
+              "widget.money-check-whole-pounds",
+              "Enter an amount in a whole number of pounds, like £600 or £1,200. Check: {labels}.",
+              { labels },
+            )
+          : siteText("widget.money-check-pounds-pence", "Enter an amount in pounds and pence, like £600 or £193.54. Check: {labels}.", {
+              labels,
+            }),
+      );
     }
     if (negativeLabels.length > 0) {
-      messages.push(`The amount cannot be negative. Check: ${negativeLabels.join("; ")}.`);
+      messages.push(
+        siteText("widget.money-check-negative", "The amount cannot be negative. Check: {labels}.", { labels: negativeLabels.join("; ") }),
+      );
     }
     return messages.length > 0 ? messages.join(" ") : null;
   }

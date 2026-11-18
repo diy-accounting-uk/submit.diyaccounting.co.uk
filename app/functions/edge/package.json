@@ -1,7 +1,0 @@
-{
-  "name": "submit-edge-functions",
-  "version": "1.0.0",
-  "description": "Lambda@Edge functions for CloudFront custom error pages - enables ES module syntax",
-  "type": "module",
-  "private": true
-}

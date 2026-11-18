@@ -1,0 +1,243 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from hmrc/itsa/foreignPropertyDetails.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Manylion eiddo tramor - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/foreignPropertyDetails.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/itsa/foreignPropertyDetails.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/foreignPropertyDetails.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/itsa/foreignPropertyDetails.html" />
+    <link rel="stylesheet" href="../../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="itsa-fp-details.foreign-property-details-cdc246">Manylion eiddo tramor</h1>
+      <p data-i18n="itsa-fp-details.add-rename-and-end-the-properties-c52f65" class="subtitle">
+        Ychwanegu, ailenwi a dod â’r eiddo rydych yn eu gosod dramor i ben
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p data-i18n="itsa-fp-details.status-sandbox-this-runs-against-hmrc-e3e7dd" class="hint" data-feature-status="sandbox">
+        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a
+        anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei
+        ddiweddariad yn 2027.
+      </p>
+      <div id="syntheticIndicator" class="synthetic-indicator">
+        <span data-i18n="itsa-fp-details.synthetic-mode-calls-go-to-hmrc-efa44d"
+          >Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF</span
+        >
+      </div>
+
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Load criteria -->
+      <div
+        id="loadCriteriaForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i reoli eich eiddo tramor"
+        data-sign-in-text="Mewngofnodwch i restru’r eiddo tramor y mae CThEF yn eu cadw ar gyfer blwyddyn dreth, ychwanegu eiddo, newid ei enw, neu ddod ag ef i ben."
+        data-i18n-data-sign-in-title="itsa-fp-details.sign-in-to-manage-your-foreign-a506d3"
+        data-i18n-data-sign-in-text="itsa-fp-details.sign-in-to-list-the-foreign-e3509a"
+      >
+        <h2 data-i18n="itsa-fp-details.show-your-foreign-properties-1ff8db">Dangos eich eiddo tramor</h2>
+        <p data-i18n="itsa-fp-details.from-the-2026-27-tax-year-e46dd2" class="hint">
+          O flwyddyn dreth 2026-27 ymlaen, mae CThEF yn cadw cofnod o bob eiddo tramor. Rydych yn rhoi gwybod am incwm a threuliau pob eiddo
+          wrth yr enw a roddwch iddo yma.
+        </p>
+        <form id="foreignPropertyLoadForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="itsa-fp-details.national-insurance-number-21829e" for="nino">Rhif Yswiriant Gwladol</label>
+            <p data-i18n="itsa-fp-details.this-is-two-letters-six-numbers-795a8f" id="nino-hint" class="hint">
+              Mae hwn yn ddwy lythyren, chwe rhif a llythyren olaf, er enghraifft QQ 12 34 56 C. Mae i’w weld ar eich cerdyn Yswiriant
+              Gwladol, eich slip cyflog neu’ch P60.
+            </p>
+            <input
+              type="text"
+              id="nino"
+              name="nino"
+              required
+              value=""
+              maxlength="13"
+              spellcheck="false"
+              autocapitalize="characters"
+              aria-describedby="nino-hint"
+            />
+          </div>
+
+          <div class="form-group">
+            <label data-i18n="itsa-fp-details.business-id-85b211" for="businessId">ID y busnes</label>
+            <p data-i18n="itsa-fp-details.filled-in-when-you-pick-a-96de5c" id="businessId-hint" class="hint">
+              Caiff ei lenwi pan fyddwch yn dewis busnes ar y dangosfwrdd Treth Incwm. Fel arall, copïwch ef o Manylion y busnes, er
+              enghraifft XAIS12345678910.
+            </p>
+            <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
+          </div>
+
+          <div class="form-group">
+            <label data-i18n="itsa-fp-details.tax-year-09a6de" for="taxYear">Blwyddyn dreth</label>
+            <p data-i18n="itsa-fp-details.choose-2026-27-or-a-later-89f800" id="taxYear-hint" class="hint">
+              Dewiswch 2026-27 neu flwyddyn dreth ddiweddarach.
+            </p>
+            <select id="taxYear" name="taxYear" required aria-describedby="taxYear-hint"></select>
+          </div>
+
+          <!-- Developer Test Scenario Section -->
+          <div id="developerSection" class="form-group" style="display: none">
+            <label data-i18n="itsa-fp-details.test-scenario-developer-sandbox-only-966c72" for="testScenario"
+              >Senario prawf (Datblygwr/amgylchedd prawf yn unig)</label
+            >
+            <p data-i18n="itsa-fp-details.test-different-hmrc-sandbox-scenarios-39d913" id="testScenario-hint" class="hint">
+              Profi senarios gwahanol yn amgylchedd prawf (sandbox) CThEF
+            </p>
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint" translate="no">
+              <option value="">Default</option>
+              <option value="STATEFUL">Stateful (a property you add is listed)</option>
+              <option value="NOT_FOUND">Not Found</option>
+              <option value="DUPLICATE_PROPERTY_NAME">Duplicate property name</option>
+              <option value="PROPERTY_BUSINESS_CEASED">Property business ceased</option>
+              <option value="OUTSIDE_AMENDMENT_WINDOW">Outside the amendment window</option>
+            </select>
+            <div class="choice">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                data-i18n="itsa-fp-details.validate-fraud-prevention-headers-ea7c94"
+                for="runFraudPreventionHeaderValidation"
+                >Dilysu’r penawdau atal twyll</label
+              >
+            </div>
+          </div>
+
+          <button data-i18n="itsa-fp-details.show-properties-ae4293" type="submit" id="loadBtn" class="btn">Dangos yr eiddo</button>
+        </form>
+      </div>
+
+      <!-- The property list and the add or change form, shown once the list has loaded -->
+      <div id="propertiesPanel" class="results-container" style="display: none">
+        <h2 data-i18n="itsa-fp-details.your-foreign-properties-for-2148a9">
+          Eich eiddo tramor ar gyfer <span id="propertiesTaxYear"></span>
+        </h2>
+        <div id="propertiesTable"></div>
+        <div class="button-group">
+          <button data-i18n="itsa-fp-details.add-a-property-5be714" type="button" id="addPropertyBtn" class="btn">Ychwanegu eiddo</button>
+          <button data-i18n="itsa-fp-details.choose-another-tax-year-088902" type="button" id="newSearchBtn" class="secondary-button">
+            Dewis blwyddyn dreth arall
+          </button>
+        </div>
+
+        <form id="propertyForm" class="form-container" novalidate style="display: none">
+          <h2 data-i18n="itsa-fp-details.add-a-property-5be714" id="propertyFormTitle" tabindex="-1">Ychwanegu eiddo</h2>
+          <div class="form-group">
+            <label data-i18n="itsa-fp-details.property-name-366e5f" for="propertyName">Enw’r eiddo</label>
+            <p data-i18n="itsa-fp-details.up-to-105-characters-for-example-3cb76f" id="propertyName-hint" class="hint">
+              Hyd at 105 o gymeriadau, er enghraifft Fflat Lyon. Mae angen ei enw ei hun ar bob eiddo mewn gwlad.
+            </p>
+            <input type="text" id="propertyName" name="propertyName" required maxlength="105" aria-describedby="propertyName-hint" />
+          </div>
+
+          <div class="form-group" id="propertyCountryGroup">
+            <label data-i18n="itsa-fp-details.country-or-territory-8132af" for="propertyCountry">Gwlad neu diriogaeth</label>
+            <p data-i18n="itsa-fp-details.where-the-property-is-you-cannot-84b432" id="propertyCountry-hint" class="hint">
+              Ble mae’r eiddo. Ni allwch newid hyn ar ôl i chi ychwanegu’r eiddo.
+            </p>
+            <select id="propertyCountry" name="propertyCountry" required aria-describedby="propertyCountry-hint"></select>
+          </div>
+
+          <div class="choice">
+            <input type="checkbox" id="propertyEnded" name="propertyEnded" aria-controls="propertyEndFields" />
+            <label data-i18n="itsa-fp-details.i-have-stopped-letting-this-property-843ffc" for="propertyEnded"
+              >Rwyf wedi rhoi’r gorau i osod yr eiddo hwn</label
+            >
+          </div>
+          <div id="propertyEndFields" hidden>
+            <div class="form-group">
+              <label data-i18n="itsa-fp-details.date-you-stopped-letting-it-b82800" for="propertyEndDate"
+                >Y dyddiad y gwnaethoch roi’r gorau i’w osod</label
+              >
+              <p data-i18n="itsa-fp-details.for-example-31-12-2026-75f75a" id="propertyEndDate-hint" class="hint">
+                Er enghraifft, 31 12 2026.
+              </p>
+              <input type="date" id="propertyEndDate" name="propertyEndDate" aria-describedby="propertyEndDate-hint" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="itsa-fp-details.why-you-stopped-b401cd" for="propertyEndReason">Pam y gwnaethoch roi’r gorau iddi</label>
+              <select id="propertyEndReason" name="propertyEndReason">
+                <option data-i18n="itsa-fp-details.choose-a-reason-f9479b" value="">Dewiswch reswm</option>
+                <option data-i18n="itsa-fp-details.i-sold-it-or-gave-it-2fe218" value="disposal">Gwerthais ef neu ei roi i ffwrdd</option>
+                <option data-i18n="itsa-fp-details.i-no-longer-let-it-9e1173" value="no-longer-renting-property-out">
+                  Nid wyf yn ei osod mwyach
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="button-group">
+            <button data-i18n="itsa-fp-details.save-property-a9f1bf" type="submit" id="savePropertyBtn" class="btn">Cadw’r eiddo</button>
+            <button data-i18n="itsa-fp-details.cancel-19766e" type="button" id="cancelPropertyBtn" class="secondary-button">Canslo</button>
+          </div>
+        </form>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../../lib/welsh-text.js"></script>
+    <script src="../../../widgets/page-chrome.js"></script>
+    <script src="../../../lib/env-loader.js"></script>
+    <script src="../../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../../submit.js"></script>
+    <script src="../../../developer-mode.js"></script>
+    <script src="../../../lib/request-cache.js"></script>
+    <script src="../../../lib/carried-identifiers.js"></script>
+    <script src="../../../lib/toml-parser.js"></script>
+    <script src="../../../lib/form-errors.js"></script>
+    <script src="../../../lib/itsaSubmissionModel.js"></script>
+    <script src="../../../lib/country-codes.js"></script>
+    <script src="../../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../../lib/services/hmrc-service.js"></script>
+    <script src="../../../widgets/entitlement-status.js"></script>
+    <script src="../../../widgets/auth-status.js"></script>
+    <script src="../../../widgets/status-messages.js"></script>
+    <script src="../../../widgets/signed-out-panel.js"></script>
+    <script src="../../../widgets/pass-redeemer.js"></script>
+    <script src="../../../hmrc/itsa/foreignPropertyDetails.page.js"></script>
+  </body>
+</html>

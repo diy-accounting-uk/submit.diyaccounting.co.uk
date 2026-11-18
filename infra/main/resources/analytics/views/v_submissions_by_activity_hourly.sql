@@ -3,7 +3,7 @@
 
 -- Same rows as v_submissions_by_activity_daily, grouped by hour instead of day: see
 -- v_activity_started_hourly.sql for why the dashboard's Today column
--- cannot read that day-grain view's own "day" column, and for its 8-day partition predicate.
+-- cannot read that day-grain view's own "day" column, and for its 15-day partition predicate.
 CREATE OR REPLACE VIEW v_submissions_by_activity_hourly AS
 SELECT hour, activity, outcome, client_id,
        count(*)                   AS completions,
@@ -29,6 +29,6 @@ FROM  (SELECT date_trunc('hour', event_ts) AS hour, hashed_sub, client_id,
               END AS activity
        FROM   activity_events_all
        WHERE  (actor = 'customer' OR (actor = 'operator' AND activity_id = 'operator-dashboard'))
-              AND dt >= current_date - interval '8' day)
+              AND dt >= current_date - interval '15' day)
 WHERE  activity IS NOT NULL
 GROUP  BY 1, 2, 3, 4

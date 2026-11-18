@@ -14,7 +14,7 @@ import {
   isSyntheticMode,
   takeScreenshot,
 } from "../helpers/behaviour-helpers.js";
-import { waitForSuccessOrError } from "../helpers/waitForSuccessOrError.js";
+import { waitForScenarioError, waitForSuccessOrError } from "../helpers/waitForSuccessOrError.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-hmrc-vat-steps";
 
@@ -736,7 +736,7 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
       switch (testScenario) {
         case "INSOLVENT_TRADER":
         case "NOT_FOUND":
-          await page.waitForTimeout(500);
+          await waitForScenarioError(page);
           const obligationsResults = page.locator("#obligationsResults");
           await expect(obligationsResults).toBeHidden();
           break;
@@ -1154,7 +1154,7 @@ export async function verifyVatLiabilitiesResults(page, liabilitiesQuery, screen
     if (hasScenario) {
       switch (testScenario) {
         case "INSOLVENT_TRADER":
-          await page.waitForTimeout(500);
+          await waitForScenarioError(page);
           await expect(page.locator("#liabilitiesResults")).toBeHidden();
           break;
         case "SUBMIT_API_HTTP_500":
@@ -1358,7 +1358,7 @@ export async function verifyVatPaymentsResults(page, paymentsQuery, screenshotPa
     if (hasScenario) {
       switch (testScenario) {
         case "INSOLVENT_TRADER":
-          await page.waitForTimeout(500);
+          await waitForScenarioError(page);
           await expect(page.locator("#paymentsResults")).toBeHidden();
           break;
         case "SUBMIT_API_HTTP_500":
@@ -1758,15 +1758,13 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
       await page.waitForLoadState("networkidle");
       await page.waitForTimeout(500);
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-results-error.png`, readerView: sideBySideDatesReaderView });
+      // The request goes out only after the fraud prevention headers are gathered, and the public IP
+      // lookup there can take several seconds, so the error is waited for rather than read at once.
       const statusContainer = page.locator("#statusMessagesContainer");
-      let statusText;
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        await expect(statusContainer).toBeVisible();
-        statusText = (await statusContainer.innerText()).toLowerCase();
-        if (/failed|error|not found|could not/i.test(statusText)) break;
-        if (attempt < 3) await page.waitForTimeout(500);
-      }
-      expect(statusText).toMatch(/failed|error|not found|could not/i);
+      await expect(statusContainer).toBeVisible();
+      await expect
+        .poll(async () => (await statusContainer.innerText()).toLowerCase(), { timeout: 60_000, intervals: [500] })
+        .toMatch(/failed|error|not found|could not/i);
       console.log("View VAT return expected error for the HMRC sandbox scenario successfully");
     });
   } else {

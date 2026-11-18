@@ -1,0 +1,389 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "short-file-micro-entity-accounts",
+  "title": "File micro-entity accounts with Companies House in under two minutes",
+  "description": "A short demo for listing sites: look up a company, fill in the micro-entity balance sheet, preview the iXBRL, and file it with Companies House. Sign-in and the Resident Ltd subscription happen off camera.",
+  "auth": "user",
+  "pages": [
+    "web/public/index.html",
+    "web/public/auth/login.html",
+    "web/public/bundles.html",
+    "web/public/companies-house/fileMicroEntityAccounts.html"
+  ],
+  "environments": ["simulator"],
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+  "pacing": {
+    "perCharMs": 70,
+    "betweenActionsMs": 400,
+    "aroundMotionMs": 400,
+    "minResidualMs": 150,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 15,
+    "minMs": 1500,
+    "fadeMs": 250,
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
+  },
+  "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
+  "finalHoldMs": 3500,
+  "scenes": [
+    {
+      "id": "setup",
+      "chapter": "Setup",
+      "offCamera": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "#mainContent"
+        },
+        {
+          "action": "click",
+          "target": "a.login-link"
+        },
+        {
+          "action": "login"
+        },
+        {
+          "action": "consent"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          }
+        },
+        {
+          "action": "ensureBundle",
+          "bundle": "Resident Ltd",
+          "testPass": true
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Activities"
+          }
+        },
+        {
+          "action": "await",
+          "until": "button:has-text('File Micro-entity Accounts (Companies House)')",
+          "label": "Waiting for the subscription to unlock the activity"
+        }
+      ]
+    },
+    {
+      "id": "company-lookup",
+      "chapter": "Which company?",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "File Micro-entity Accounts (Companies House)"
+          },
+          "expectsNavigation": true,
+          "caption": "File a company's micro-entity accounts with Companies House.",
+          "instruction": "Choose File Micro-entity Accounts (Companies House) on the activities page.",
+          "headline": "File micro-entity accounts",
+          "keyWord": "micro-entity"
+        },
+        {
+          "action": "await",
+          "until": "#companyForm",
+          "label": "Opening the company lookup form"
+        },
+        {
+          "action": "type",
+          "target": "#companyNumber",
+          "text": "00000003",
+          "clear": true,
+          "caption": "Type the company number and look it up.",
+          "instruction": "Enter your company number, then choose Look up company.",
+          "headline": "Enter the company number",
+          "keyWord": "number"
+        },
+        {
+          "action": "click",
+          "target": "#companyLookupBtn"
+        },
+        {
+          "action": "await",
+          "until": "#formView",
+          "label": "Looking up the company"
+        }
+      ]
+    },
+    {
+      "id": "last-year",
+      "chapter": "Last year",
+      "offCamera": true,
+      "steps": [
+        {
+          "action": "fill",
+          "target": "#priorFixedAssets",
+          "value": "900"
+        },
+        {
+          "action": "fill",
+          "target": "#priorCurrentAssets",
+          "value": "3500"
+        },
+        {
+          "action": "fill",
+          "target": "#priorCreditorsWithinOneYear",
+          "value": "1500"
+        },
+        {
+          "action": "fill",
+          "target": "#priorCalledUpShareCapital",
+          "value": "100"
+        },
+        {
+          "action": "fill",
+          "target": "#priorProfitAndLossAccount",
+          "value": "1900"
+        },
+        {
+          "action": "fill",
+          "target": "#priorCapitalAndReserves",
+          "value": "2900"
+        },
+        {
+          "action": "fill",
+          "target": "#averageEmployees",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "id": "accounts-form",
+      "chapter": "The accounts",
+      "still": true,
+      "steps": [
+        {
+          "action": "fill",
+          "target": "#periodStart",
+          "value": "{{yearsAgo:1}}",
+          "caption": "Set the period and enter the balance sheet.",
+          "instruction": "Enter the period start and end, then each balance sheet line for this year and for last year.",
+          "headline": "Period and balance sheet",
+          "keyWord": "balance"
+        },
+        {
+          "action": "fill",
+          "target": "#periodEnd",
+          "value": "{{daysAgo:1}}"
+        },
+        {
+          "action": "fill",
+          "target": "#currentFixedAssets",
+          "value": "1000"
+        },
+        {
+          "action": "fill",
+          "target": "#currentCurrentAssets",
+          "value": "5000"
+        },
+        {
+          "action": "fill",
+          "target": "#currentCreditorsWithinOneYear",
+          "value": "2000"
+        },
+        {
+          "action": "fill",
+          "target": "#currentCalledUpShareCapital",
+          "value": "100"
+        },
+        {
+          "action": "fill",
+          "target": "#currentProfitAndLossAccount",
+          "value": "3900"
+        },
+        {
+          "action": "fill",
+          "target": "#currentCapitalAndReserves",
+          "value": "4000"
+        }
+      ]
+    },
+    {
+      "id": "director",
+      "chapter": "Approval",
+      "still": true,
+      "steps": [
+        {
+          "action": "type",
+          "target": "#directorName",
+          "text": "Joanna Hale",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Employees and director"
+          }
+        },
+        {
+          "action": "fill",
+          "target": "#directorDateApproved",
+          "value": "{{today}}",
+          "caption": "Name the director who approves the accounts.",
+          "instruction": "Enter the average number of employees, the approving director's name and the date of approval.",
+          "headline": "Name the approving director",
+          "keyWord": "director"
+        },
+        {
+          "action": "click",
+          "target": "#statementSection477Exemption",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Statements"
+          }
+        },
+        {
+          "action": "click",
+          "target": "#statementMembersNotRequiredAudit"
+        },
+        {
+          "action": "click",
+          "target": "#statementDirectorsResponsibilities"
+        },
+        {
+          "action": "click",
+          "target": "#statementMicroEntityProvisions",
+          "caption": "Accept the four statutory statements.",
+          "instruction": "Tick the four statements under Statements to accept each one.",
+          "headline": "Accept the statements",
+          "keyWord": "statements"
+        }
+      ]
+    },
+    {
+      "id": "preview",
+      "chapter": "Preview",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "#previewBtn"
+        },
+        {
+          "action": "await",
+          "until": "#previewView",
+          "label": "Rendering the preview"
+        },
+        {
+          "action": "point",
+          "target": "#previewRendered",
+          "scrollTo": "#previewRendered",
+          "caption": "Preview the accounts as they will be filed. Nothing is sent yet.",
+          "instruction": "Choose Preview accounts, then read the accounts as they will be filed.",
+          "headline": "Preview the iXBRL",
+          "keyWord": "iXBRL",
+          "dwellMs": 500
+        }
+      ]
+    },
+    {
+      "id": "submit",
+      "chapter": "File it",
+      "still": true,
+      "steps": [
+        {
+          "action": "type",
+          "target": "#companyAuthCode",
+          "text": "AB12CD",
+          "clear": true,
+          "secret": true
+        },
+        {
+          "action": "point",
+          "target": "#submissionCost",
+          "scrollTo": "#submissionCost",
+          "dwellMs": 400,
+          "caption": "Enter the authentication code and file for one token.",
+          "instruction": "Enter the company's authentication code, check the cost of one token, then choose Submit to Companies House.",
+          "headline": "File for one token",
+          "keyWord": "token"
+        },
+        {
+          "action": "click",
+          "target": "#submitFilingBtn"
+        },
+        {
+          "action": "await",
+          "until": "#resultView",
+          "label": "Submitting the filing"
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "chapter": "The outcome",
+      "still": true,
+      "steps": [
+        {
+          "action": "await",
+          "until": "#filingResult:has-text('Status:')",
+          "label": "Waiting for Companies House",
+          "timeoutMs": 180000
+        },
+        {
+          "action": "point",
+          "target": "#filingResult",
+          "caption": "Companies House has the filing and reports the outcome here.",
+          "instruction": "Read the status that Companies House reports for the filing.",
+          "headline": "Companies House has it",
+          "keyWord": "Companies House",
+          "dwellMs": 500
+        },
+        {
+          "action": "click",
+          "target": "#filingCopyLink",
+          "expectsNavigation": true
+        },
+        {
+          "action": "await",
+          "until": "#filingContent iframe.filed-document",
+          "label": "Loading your copy"
+        },
+        {
+          "action": "scroll",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Your copy of the accounts filed at Companies House"
+          },
+          "caption": "Your copy of the filed accounts stays on your receipts page.",
+          "instruction": "Choose See your copy of this filing, and find it again on the Receipts page.",
+          "headline": "Your filed copy",
+          "keyWord": "copy"
+        },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "still",
+          "name": "short-file-micro-entity-accounts-result"
+        }
+      ]
+    }
+  ]
+}

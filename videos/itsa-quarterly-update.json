@@ -133,14 +133,16 @@
           "text": "This is a sandbox preview against HMRC's test service, not a live filing.",
           "holdMs": 1200,
           "headline": "A sandbox preview",
-          "keyWord": "sandbox"
+          "keyWord": "sandbox",
+          "instruction": "Read the sandbox notice: this page talks to HMRC's test service and files nothing live."
         },
         {
           "action": "caption",
           "text": "You are already signed in. See the full sign-in walkthrough in our sign-in video.",
           "holdMs": 1200,
           "headline": "Already signed in",
-          "keyWord": "signed"
+          "keyWord": "signed",
+          "instruction": "Check that the header shows you signed in; if it does not, choose Sign in first."
         },
         {
           "action": "click",
@@ -151,7 +153,8 @@
           "expectsNavigation": true,
           "caption": "Making Tax Digital for Income Tax starts from one dashboard.",
           "headline": "One dashboard for MTD",
-          "keyWord": "dashboard"
+          "keyWord": "dashboard",
+          "instruction": "Choose Self Assessment (HMRC, sandbox) on the Activities page."
         },
         {
           "action": "await",
@@ -166,14 +169,16 @@
           "secret": true,
           "caption": "Type the National Insurance number HMRC asks for.",
           "headline": "Enter your NI number",
-          "keyWord": "NI"
+          "keyWord": "NI",
+          "instruction": "Enter your National Insurance number."
         },
         {
           "action": "click",
           "target": "#findBusinessesBtn",
           "caption": "Ask HMRC which businesses it holds against that number.",
           "headline": "Ask HMRC for businesses",
-          "keyWord": "businesses"
+          "keyWord": "businesses",
+          "instruction": "Choose Find my businesses to ask HMRC for the businesses behind that number."
         },
         {
           "action": "hmrcAuthorise",
@@ -190,7 +195,8 @@
           "timeoutMs": 60000,
           "caption": "HMRC answers with every business behind this Self Assessment.",
           "headline": "HMRC lists your businesses",
-          "keyWord": "businesses"
+          "keyWord": "businesses",
+          "instruction": "Read the businesses that HMRC lists."
         },
         {
           "action": "point",
@@ -198,7 +204,8 @@
           "caption": "Each business carries an ID. Every later filing needs it.",
           "headline": "Note each business ID",
           "keyWord": "ID",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Note the business ID beside each business; every later filing needs it."
         },
         {
           "action": "hold",
@@ -227,7 +234,8 @@
           },
           "caption": "Obligations groups the open and fulfilled quarters by business.",
           "headline": "See quarters by business",
-          "keyWord": "quarters"
+          "keyWord": "quarters",
+          "instruction": "Choose Go to obligations."
         },
         {
           "action": "await",
@@ -242,14 +250,16 @@
           "secret": true,
           "caption": "The same National Insurance number, every business.",
           "headline": "Same NI number",
-          "keyWord": "NI"
+          "keyWord": "NI",
+          "instruction": "Enter the same National Insurance number."
         },
         {
           "action": "click",
           "target": "#retrieveBtn",
           "caption": "The read:self-assessment access from before still counts.",
           "headline": "Same access still counts",
-          "keyWord": "access"
+          "keyWord": "access",
+          "instruction": "Choose Retrieve obligations; the permission you gave already covers it."
         },
         {
           "action": "await",
@@ -258,7 +268,8 @@
           "timeoutMs": 60000,
           "caption": "HMRC answers with each quarter's due date and status.",
           "headline": "Due dates and status",
-          "keyWord": "status"
+          "keyWord": "status",
+          "instruction": "Read each quarter's due date and status in the obligations table."
         },
         {
           "action": "scroll",
@@ -274,7 +285,8 @@
           "caption": "Open means a quarterly update is still owed.",
           "headline": "Open means still owed",
           "keyWord": "Open",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Find the quarters with status Open; each is a quarterly update you still owe."
         },
         {
           "action": "hold",
@@ -301,7 +313,8 @@
           "waitFor": "#businessPickerForm",
           "caption": "Back to the dashboard to open the filing form.",
           "headline": "Back to the dashboard",
-          "keyWord": "dashboard"
+          "keyWord": "dashboard",
+          "instruction": "Choose Go to file a quarterly update on the Self Assessment dashboard."
         },
         {
           "action": "click",
@@ -311,7 +324,8 @@
           },
           "caption": "This is the form an open quarter is filed on.",
           "headline": "File the open quarter",
-          "keyWord": "quarter"
+          "keyWord": "quarter",
+          "instruction": "Check that this is the form that files the open quarter."
         },
         {
           "action": "await",
@@ -326,7 +340,8 @@
           "secret": true,
           "caption": "The National Insurance number carries over.",
           "headline": "NI number carries over",
-          "keyWord": "NI"
+          "keyWord": "NI",
+          "instruction": "Check that the National Insurance number is the one you entered before."
         },
         {
           "action": "fill",
@@ -334,7 +349,8 @@
           "value": "XBIS12345678901",
           "caption": "The business ID from a moment ago goes here.",
           "headline": "Same business ID",
-          "keyWord": "ID"
+          "keyWord": "ID",
+          "instruction": "Enter the business ID that HMRC listed."
         },
         {
           "action": "select",
@@ -342,7 +358,8 @@
           "value": "2024-25",
           "caption": "Then the tax year this quarter falls in.",
           "headline": "Choose the tax year",
-          "keyWord": "year"
+          "keyWord": "year",
+          "instruction": "Choose the Tax year of the quarter."
         },
         {
           "action": "fill",
@@ -360,7 +377,8 @@
           "value": "1000",
           "caption": "And the quarter's income and expenses.",
           "headline": "Income and expenses",
-          "keyWord": "expenses"
+          "keyWord": "expenses",
+          "instruction": "Enter the quarter's Turnover and the expenses beside it."
         },
         {
           "action": "fill",
@@ -380,7 +398,8 @@
           "target": "#submitBtn",
           "caption": "File the quarter with HMRC.",
           "headline": "File the quarter",
-          "keyWord": "File"
+          "keyWord": "File",
+          "instruction": "Choose File quarterly update."
         },
         {
           "action": "await",
@@ -389,7 +408,8 @@
           "timeoutMs": 60000,
           "caption": "HMRC accepts the quarterly update.",
           "headline": "HMRC accepts the quarter",
-          "keyWord": "accepts"
+          "keyWord": "accepts",
+          "instruction": "Read the result to check that HMRC accepted the quarterly update."
         },
         {
           "action": "scroll",
@@ -405,7 +425,8 @@
           "caption": "Filed. HMRC's answer carries the period ID.",
           "headline": "Quarterly update filed",
           "keyWord": "filed",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read the result for the period ID that HMRC returns, and note it."
         },
         {
           "action": "hold",
@@ -432,7 +453,8 @@
           "waitFor": "#itsaSelfEmploymentPeriodViewForm",
           "caption": "Open the quarter you filed to read its record.",
           "headline": "Read the record back",
-          "keyWord": "record"
+          "keyWord": "record",
+          "instruction": "Choose Go to view a period summary, then look up the quarter you filed."
         },
         {
           "action": "type",
@@ -465,7 +487,8 @@
           "target": "#retrieveBtn",
           "caption": "Retrieve the period summary from HMRC.",
           "headline": "Retrieve the record",
-          "keyWord": "Retrieve"
+          "keyWord": "Retrieve",
+          "instruction": "Choose Retrieve period summary."
         },
         {
           "action": "await",
@@ -480,7 +503,8 @@
           "caption": "The record shows its period ID, its status and the date it was retrieved.",
           "headline": "Number, status and date",
           "keyWord": "status",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read the period ID, status and date retrieved at the top of the record."
         },
         {
           "action": "hold",
@@ -493,9 +517,13 @@
           "caption": "Below it, the income and expenses HMRC holds for the quarter.",
           "headline": "The totals HMRC holds",
           "keyWord": "totals",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Check the quarter's income and expenses in the record below its heading."
         },
-        { "action": "hold", "ms": 2500 },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
         {
           "action": "hold",
           "ms": 800

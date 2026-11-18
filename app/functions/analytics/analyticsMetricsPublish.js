@@ -146,7 +146,7 @@ export const METRIC_DEFINITIONS = [
     unit: "Count",
     valueColumn: "new_accounts",
     dimension: null,
-    sql: (day) => `SELECT new_accounts FROM v_signup_to_first_submission WHERE signup_day = DATE '${day}'`,
+    sql: (day) => `SELECT new_accounts FROM v_signup_to_first_submission WHERE signup_day = DATE '${day}' AND actor_class = 'customer'`,
   },
   {
     metricName: "Sessions",

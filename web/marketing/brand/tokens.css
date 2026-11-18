@@ -44,7 +44,7 @@
   --chart-7: #b5487f;
   --chart-8: #5f6b7d;
 
-  --font-text: "Plain Zero", "Atkinson Hyperlegible", "Atkinson Fallback", system-ui, sans-serif;
+  --font-text: Arial, Arimo, sans-serif;
   --font-figures: "Atkinson Hyperlegible", "Atkinson Fallback", system-ui, sans-serif;
   --font-code: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   --step--1: 0.875rem; /* captions only, never body */

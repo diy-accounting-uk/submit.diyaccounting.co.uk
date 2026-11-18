@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId"));
@@ -36,8 +42,11 @@ function updateSubmissionModelUI() {
   document.getElementById("fromDate").required = !cumulative;
   document.getElementById("toDate").required = !cumulative;
   document.getElementById("periodDates-hint").textContent = cumulative
-    ? "Leave both dates blank if this business reports annually. Fill them in only if you are reporting a quarter."
-    : "HMRC identifies this quarter by its start and end date.";
+    ? siteText(
+        "itsa.se-period-dates-hint-cumulative",
+        "Leave both dates blank if this business reports annually. Fill them in only if you are reporting a quarter.",
+      )
+    : siteText("itsa.se-period-dates-hint", "HMRC identifies this quarter by its start and end date.");
   document.getElementById("cumulativeMoneyNote").style.display = cumulative ? "block" : "none";
   document.getElementById("loadCurrentTotalGroup").style.display = cumulative ? "block" : "none";
   document.getElementById("loadPropertiesGroup").style.display = isPropertyYear(taxYear) ? "block" : "none";
@@ -139,8 +148,12 @@ async function sendPeriod(request, hmrcGrantId) {
 function displayResult(result) {
   // HMRC's cumulative model answers 204 with no submission ID: the year's running total is the one resource.
   const hasSubmissionId = Boolean(result?.submissionId);
-  document.getElementById("submissionIdLabel").textContent = hasSubmissionId ? "Submission ID" : "Reporting";
-  document.getElementById("submissionIdResult").textContent = hasSubmissionId ? result.submissionId : "Year to date";
+  document.getElementById("submissionIdLabel").textContent = hasSubmissionId
+    ? siteText("itsa.submission-id", "Submission ID")
+    : siteText("itsa.record-reporting", "Reporting");
+  document.getElementById("submissionIdResult").textContent = hasSubmissionId
+    ? result.submissionId
+    : siteText("itsa.record-year-to-date", "Year to date");
 }
 
 async function runRequest(request, hmrcGrantId) {
@@ -148,25 +161,40 @@ async function runRequest(request, hmrcGrantId) {
     showLoading();
     hideStatus();
     if (request.action === "loadProperties") {
-      showStatus("Loading your foreign properties...", "info");
+      showStatus(siteText("itsa.fp-loading-properties", "Loading your foreign properties..."), "info");
       const properties = await loadProperties(request.criteria, hmrcGrantId);
       if (properties.length === 0) {
-        showStatus("HMRC holds no foreign properties for this tax year. Add one on the foreign property details page first.", "info");
+        showStatus(
+          siteText(
+            "itsa-fp-period.no-properties",
+            "HMRC holds no foreign properties for this tax year. Add one on the foreign property details page first.",
+          ),
+          "info",
+        );
       } else {
-        showStatus("Loaded your properties from HMRC. Enter the figures for each one.", "info");
+        showStatus(
+          siteText("itsa-fp-period.properties-loaded", "Loaded your properties from HMRC. Enter the figures for each one."),
+          "info",
+        );
       }
     } else if (request.action === "loadTotal") {
-      showStatus("Loading the current total...", "info");
+      showStatus(siteText("itsa.fp-loading-total", "Loading the current total..."), "info");
       const unknown = await loadCurrentTotal(request.criteria, hmrcGrantId);
       showStatus(
         unknown.length > 0
-          ? "Loaded the current total. HMRC holds figures for a property that is not in your list; check the foreign property details page."
-          : "Loaded your current year-to-date total from HMRC. Edit the figures below to the new total.",
+          ? siteText(
+              "itsa.fp-total-unknown-property",
+              "Loaded the current total. HMRC holds figures for a property that is not in your list; check the foreign property details page.",
+            )
+          : siteText(
+              "itsa.current-total-applied",
+              "Loaded your current year-to-date total from HMRC. Edit the figures below to the new total.",
+            ),
         "info",
       );
     } else {
       hideSearchCriteria();
-      showStatus("Filing quarterly update...", "info");
+      showStatus(siteText("itsa.quarterly-filing", "Filing quarterly update..."), "info");
       const result = await sendPeriod(request, hmrcGrantId);
       displayResult(result);
       document.getElementById("foreignPropertyPeriodResults").style.display = "block";
@@ -178,14 +206,17 @@ async function runRequest(request, hmrcGrantId) {
     if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
       sessionStorage.removeItem("hmrcTokenScope");
-      showStatus("Access token expired. Please try again.", "error");
+      showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
     } else if (error.status === 404 && request.action === "loadTotal") {
-      showStatus("HMRC has no total on file yet for this tax year. Enter the figures for the year so far.", "info");
+      showStatus(
+        siteText("itsa.current-total-none", "HMRC has no total on file yet for this tax year. Enter the figures for the year so far."),
+        "info",
+      );
     } else if (error.status === 403 && error.reason === "tokens_exhausted") {
       hideStatus();
       window.SubmissionCost?.refresh();
     } else {
-      showStatus(`Failed: ${error.message}`, "error");
+      showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
     }
     if (request.action === "submit") showSearchCriteria();
   } finally {
@@ -201,7 +232,7 @@ async function ensureAuthorizedThen(request) {
     if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     try {
       showLoading();
-      showStatus("Initiating HMRC authentication...", "info");
+      showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
       const state = generateRandomState();
       sessionStorage.setItem("oauth_state", state);
       sessionStorage.setItem(PENDING_KEY, JSON.stringify(request));
@@ -217,7 +248,7 @@ async function ensureAuthorizedThen(request) {
       } catch {}
       window.location.href = authResponseUrl;
     } catch (error) {
-      showStatus(`Authentication failed: ${error.message}`, "error");
+      showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
       hideLoading();
     }
     return;

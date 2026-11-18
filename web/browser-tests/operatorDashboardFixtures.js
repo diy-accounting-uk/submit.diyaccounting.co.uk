@@ -122,7 +122,41 @@ export const FIXTURE_SNAPSHOT = {
     { id: "conversion-to-paid", name: "Conversion to paid", observations: [] },
     { id: "low-running-cost", name: "AWS costs", observations: [] },
     { id: "security", name: "Security", observations: [] },
-    { id: "retention", name: "Retention", observations: [] },
+    {
+      id: "retention",
+      name: "Retention",
+      observations: [
+        {
+          id: "retention-new-accounts",
+          label: "New accounts",
+          unit: "count",
+          last30: { value: 9, trend: 0.1 },
+          last90: { value: 27, trend: 0 },
+          deepLink:
+            "https://eu-west-2.console.aws.amazon.com/athena/home?region=eu-west-2#/query-editor/saved-queries?workgroup=prod-env-analytics",
+        },
+        {
+          id: "retention-new-accounts-not-customers",
+          label: "New accounts, test, synthetic and operator accounts",
+          actorClass: "not-customer",
+          unit: "count",
+          last30: { value: 120, trend: 0.2 },
+          last90: { value: 342, trend: 0 },
+          deepLink:
+            "https://eu-west-2.console.aws.amazon.com/athena/home?region=eu-west-2#/query-editor/saved-queries?workgroup=prod-env-analytics",
+        },
+        {
+          id: "retention-new-accounts-unknown",
+          label: "New accounts, unknown accounts",
+          actorClass: "unknown",
+          unit: "count",
+          last30: { value: 0, trend: 0 },
+          last90: { value: 9, trend: 0 },
+          deepLink:
+            "https://eu-west-2.console.aws.amazon.com/athena/home?region=eu-west-2#/query-editor/saved-queries?workgroup=prod-env-analytics",
+        },
+      ],
+    },
     { id: "operator-effort", name: "Operator effort", observations: [] },
     { id: "compliance", name: "Compliance", observations: [] },
     {
@@ -296,8 +330,8 @@ export const CHART_DAYS = Array.from({ length: 90 }, (_, index) => {
 });
 
 export const CHART_HOURS = Array.from(
-  { length: 168 },
-  (_, index) => new Date(Date.UTC(2026, 8, 8, 3) - (167 - index) * 3600000).toISOString().slice(0, 13) + ":00:00Z",
+  { length: 336 },
+  (_, index) => new Date(Date.UTC(2026, 8, 8, 3) - (335 - index) * 3600000).toISOString().slice(0, 13) + ":00:00Z",
 );
 
 export function hourlySeries(id, label, scale, extra = {}) {
@@ -319,6 +353,187 @@ export function chartWithSeries(id, objectiveId, title, unit, seriesLabels, extr
     values: CHART_DAYS.map((_, day) => components.reduce((sum, series) => sum + series.values[day], 0)),
   };
   return { id, objectiveId, title, unit, modes: [{ id: "main", label: "Main", series: [total, ...components] }], ...extra };
+}
+
+// A line that rises from `from` to `to` over the days, so a total reads as a total and an event
+// line as a count of a few a day.
+function rampSeries(id, label, from, to, description) {
+  const last = CHART_DAYS.length - 1;
+  return { id, label, description, values: CHART_DAYS.map((_, index) => Math.round(from + ((to - from) * index) / last)) };
+}
+
+// A line of a few events a day, 0 on most days.
+function eventSeries(id, label, every, size, description, offset = 0) {
+  return { id, label, description, values: CHART_DAYS.map((_, index) => ((index + offset) % every === 0 ? size : 0)) };
+}
+
+const OTHER_CLASS_WORDS = [
+  ["test", "test accounts"],
+  ["synthetic", "synthetic accounts"],
+  ["other", "operator accounts"],
+  ["unknown", "unknown accounts"],
+];
+
+// The Retention graph as the publisher writes it: a Totals tab, a Daily events tab and a
+// Submitters by kind tab, the other classes' lines last, and the cohort table.
+export function retentionChart() {
+  const net = CHART_DAYS.map((_, index) => (index % 17 === 0 ? 1 : index % 29 === 0 ? -1 : 0));
+  const newSubmitters = rampSeries(
+    "new-submitters-90d",
+    "New submitters, 90 days to this day",
+    0,
+    9,
+    "Customers whose first VAT submission is in the 90 days to the day.",
+  );
+  const returning = rampSeries(
+    "returning-submitters-90d",
+    "Returning submitters, 90 days to this day",
+    0,
+    3,
+    "Of the submitters due, the customers who submitted in the 90 days to the day too.",
+  );
+  const resurrected = rampSeries(
+    "resurrected-submitters-90d",
+    "Resurrected submitters, 90 days to this day",
+    0,
+    1,
+    "Customers who came back after more than 90 days.",
+  );
+  return {
+    id: "retention",
+    objectiveId: "retention",
+    title: "Retention",
+    unit: "count",
+    note: "Days are UTC. Totals reads a figure on each day; Daily events counts the events of each day. The 90 and 7 day windows roll.",
+    reconciliation: "Last 90 days, customers: 12 distinct submitters made 90 completions.",
+    cohort: {
+      months: 3,
+      rows: [
+        { signupMonth: "2026-09", accounts: 9, submitters: [0, 1, 0] },
+        { signupMonth: "2026-10", accounts: 11, submitters: [7, 0] },
+        { signupMonth: "2026-11", accounts: 7, submitters: [4] },
+      ],
+    },
+    modes: [
+      {
+        id: "totals",
+        label: "Totals",
+        series: [
+          rampSeries("accounts-total", "Accounts in total", 3, 41, "Accounts with a record on or before the day. Customer accounts only."),
+          rampSeries(
+            "active-customers-90d",
+            "Active customers, 90 days to this day",
+            2,
+            36,
+            "Distinct signed-in customers who made a call in the 90 days to the day.",
+          ),
+          chartSeries("active-customers-7d", "Active customers, 7 days to this day", 4, {
+            description: "Distinct signed-in customers who made a call in the 7 days to the day.",
+          }),
+          rampSeries(
+            "submitters-90d",
+            "Submitters, 90 days to this day",
+            0,
+            13,
+            "Distinct customers with a VAT submission in the 90 days to the day.",
+          ),
+          chartSeries("submitters-7d", "Submitters, 7 days to this day", 1, {
+            description: "Distinct customers with a VAT submission in the 7 days to the day.",
+          }),
+          rampSeries(
+            "due-submitters-90d",
+            "Submitters due, 90 days to this day",
+            0,
+            4,
+            "Customers who submitted in the 90 days before the window.",
+          ),
+          rampSeries(
+            "returning-submitters-90d",
+            "Returning submitters, 90 days to this day",
+            0,
+            3,
+            "Of the submitters due, the customers who submitted in the 90 days to the day too.",
+          ),
+          rampSeries(
+            "returning-submitters-7d",
+            "Returning submitters, 7 days to this day",
+            0,
+            1,
+            "Of the submitters in the 7 days to the day, the customers who had also submitted before them.",
+          ),
+          rampSeries("active-subscriptions", "Active subscriptions", 0, 8, "Customer subscriptions active at the end of the day."),
+          rampSeries("active-passes", "Active passes", 0, 2, "Passes issued by customers that are open to redeem at the end of the day."),
+          ...OTHER_CLASS_WORDS.map(([name, words], index) =>
+            rampSeries(
+              `accounts-total-${name}`,
+              `Accounts in total, ${words}`,
+              index === 0 ? 200 : 0,
+              index === 0 ? 350 : 1,
+              `Accounts with a record on or before the day. Only ${words}.`,
+            ),
+          ),
+        ],
+      },
+      {
+        id: "events",
+        label: "Daily events",
+        series: [
+          eventSeries(
+            "new-accounts",
+            "New accounts",
+            3,
+            1,
+            "Accounts opened on the day, by their first bundle grant. Customer accounts only.",
+          ),
+          eventSeries("first-submissions", "First submissions", 7, 1, "Customers who made their first VAT submission on the day.", 2),
+          eventSeries("subscriptions-started", "Subscriptions started", 11, 1, "Customer subscriptions that became active on the day.", 4),
+          eventSeries("renewals", "Subscription renewals", 30, 2, "Customer subscriptions renewed on the day.", 5),
+          eventSeries(
+            "cancellations",
+            "Subscription cancellations",
+            29,
+            1,
+            "Customer subscriptions cancelled on the day, now or at the period end.",
+            6,
+          ),
+          eventSeries("subscriptions-ended", "Subscriptions ended", 29, 1, "Customer subscriptions that stopped being active on the day."),
+          {
+            id: "subscriptions-net-change",
+            label: "Net change in subscriptions",
+            description: "Subscriptions started less subscriptions ended on the day.",
+            values: net,
+          },
+          eventSeries("passes-issued", "Passes issued", 5, 2, "Passes issued on the day, of every pass type.", 1),
+          eventSeries("passes-redeemed", "Passes redeemed", 9, 1, "Redemptions on the day of passes that customers issued.", 3),
+          ...OTHER_CLASS_WORDS.map(([name, words], index) =>
+            eventSeries(
+              `new-accounts-${name}`,
+              `New accounts, ${words}`,
+              index === 0 ? 2 : 45,
+              index === 0 ? 40 : 1,
+              `Accounts opened on the day. Only ${words}.`,
+            ),
+          ),
+        ],
+      },
+      {
+        id: "submitters",
+        label: "Submitters by kind",
+        series: [
+          {
+            id: "total",
+            label: "All submitters, 90 days to this day",
+            isTotal: true,
+            description: "Distinct customers with a VAT submission in the 90 days to the day: new, returning and resurrected together.",
+            values: CHART_DAYS.map((_, day) => newSubmitters.values[day] + returning.values[day] + resurrected.values[day]),
+          },
+          newSubmitters,
+          returning,
+          resurrected,
+        ],
+      },
+    ],
+  };
 }
 
 export const FIXTURE_DAILY_CHARTS = {
@@ -391,24 +606,37 @@ export const FIXTURE_DAILY_CHARTS = {
         {
           id: "all",
           label: "All",
-          hourly: { series: [hourlySeries("total", "All requests", 12, { isTotal: true }), hourlySeries("hmrc 2xx", "HMRC 2xx", 8)] },
+          hourly: {
+            series: [
+              hourlySeries("total@customer", "All requests, customer", 12, { isTotal: true }),
+              hourlySeries("hmrc 2xx@customer", "HMRC 2xx, customer", 8),
+              hourlySeries("total@other", "All requests, other", 8, { isTotal: true }),
+              hourlySeries("stripe 2xx@other", "Stripe 2xx, other", 8),
+            ],
+          },
           series: [
-            chartSeries("total", "All requests", 40, { isTotal: true }),
-            chartSeries("hmrc 2xx", "HMRC 2xx", 20),
-            chartSeries("hmrc 4xx", "HMRC 4xx", 3),
-            chartSeries("hmrc failed", "HMRC failed", 1),
-            chartSeries("stripe 2xx", "Stripe 2xx", 14),
-            chartSeries("stripe 4xx", "Stripe 4xx", 2),
-            chartSeries("companies-house 2xx", "Companies House 2xx", 4),
+            chartSeries("total@customer", "All requests, customer", 40, { isTotal: true }),
+            chartSeries("hmrc 2xx@customer", "HMRC 2xx, customer", 20),
+            chartSeries("hmrc 4xx@customer", "HMRC 4xx, customer", 3),
+            chartSeries("hmrc failed@customer", "HMRC failed, customer", 1),
+            chartSeries("stripe 2xx@customer", "Stripe 2xx, customer", 14),
+            chartSeries("stripe 4xx@customer", "Stripe 4xx, customer", 2),
+            chartSeries("companies-house 2xx@customer", "Companies House 2xx, customer", 4),
+            chartSeries("total@test", "All requests, test", 30, { isTotal: true }),
+            chartSeries("hmrc 2xx@test", "HMRC 2xx, test", 30),
+            chartSeries("total@other", "All requests, other", 8, { isTotal: true }),
+            chartSeries("stripe 2xx@other", "Stripe 2xx, other", 8),
           ],
         },
         {
           id: "hmrc",
           label: "HMRC",
           series: [
-            chartSeries("total", "All requests", 24, { isTotal: true }),
-            chartSeries("200", "200", 20),
-            chartSeries("400", "400", 3),
+            chartSeries("total@customer", "All requests, customer", 24, { isTotal: true }),
+            chartSeries("200@customer", "200, customer", 20),
+            chartSeries("400@customer", "400, customer", 3),
+            chartSeries("total@test", "All requests, test", 9, { isTotal: true }),
+            chartSeries("200@test", "200, test", 9),
           ],
         },
       ],
@@ -423,11 +651,14 @@ export const FIXTURE_DAILY_CHARTS = {
         {
           id: "organisation",
           label: "By organisation",
-          hourly: { series: [hourlySeries("hmrc", "HMRC", 600), hourlySeries("stripe", "Stripe", 250)] },
+          hourly: {
+            series: [hourlySeries("hmrc@customer", "HMRC, customer", 600), hourlySeries("stripe@customer", "Stripe, customer", 250)],
+          },
           series: [
-            chartSeries("hmrc", "HMRC", 700),
-            chartSeries("stripe", "Stripe", 280),
-            chartSeries("companies-house", "Companies House", 1400),
+            chartSeries("hmrc@customer", "HMRC, customer", 700),
+            chartSeries("stripe@customer", "Stripe, customer", 280),
+            chartSeries("companies-house@customer", "Companies House, customer", 1400),
+            chartSeries("stripe@other", "Stripe, other", 320),
           ],
         },
       ],
@@ -489,14 +720,7 @@ export const FIXTURE_DAILY_CHARTS = {
       "Amazon DynamoDB",
       "Other services",
     ]),
-    chartWithSeries(
-      "retention",
-      "retention",
-      "Retention",
-      "count",
-      ["Submitters", "Returning submitters", "Renewals", "Cancellations", "Passes issued"],
-      { note: "The 90-day windows roll.", reconciliation: "Last 90 days, customers: 12 distinct submitters made 90 completions." },
-    ),
+    retentionChart(),
     (() => {
       const visitors = chartWithSeries("visitors", "conversion-to-submission", "Visitors", "count", [
         "Operator",
@@ -577,44 +801,152 @@ export const integrationCall = (id, api, ms, status, rules = null, rulesFailed =
   rulesFailed,
 });
 
-// The Data tab's section as the publisher shapes it: a history of 30 and 7 days for some tables,
-// none yet for 90 days, and a split for the tables the lake holds.
+// The Data tab's section as the publisher shapes it: history files for the last 30 days but two,
+// none before, the actor split from 20 days ago, and a split today for the tables the lake holds.
+const DATA_NOW = new Date("2026-11-07T10:00:00Z");
+const DATA_DAY_MS = 24 * 60 * 60 * 1000;
+const dataDay = (daysAgo) => new Date(DATA_NOW.getTime() - daysAgo * DATA_DAY_MS).toISOString().slice(0, 10);
+
+// The figure on a day from the figures on given days ago, joined by straight lines.
+function figureBetween(anchors, daysAgo) {
+  const points = Object.entries(anchors)
+    .map(([ago, value]) => [Number(ago), value])
+    .sort((a, b) => b[0] - a[0]);
+  if (daysAgo > points[0][0]) return null;
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const [olderAgo, older] = points[index];
+    const [newerAgo, newer] = points[index + 1];
+    if (daysAgo <= olderAgo && daysAgo >= newerAgo) {
+      return Math.round(older + ((newer - older) * (olderAgo - daysAgo)) / (olderAgo - newerAgo));
+    }
+  }
+  return points.at(-1)[1];
+}
+
+const DATA_TABLE_ANCHORS = {
+  "receipts": { 30: 300, 7: 400, 1: 410, 0: 412 },
+  "bundles": { 30: 900, 7: 1250, 1: 1290, 0: 1296 },
+  "subscriptions": { 30: 120, 7: 180, 1: 187, 0: 188 },
+  "passes": { 30: 1800, 7: 2380, 1: 2425, 0: 2431 },
+  "integration-calls": { 30: 9100, 7: 17800, 1: 18300, 0: 18420 },
+  "mcp-sessions": { 30: 4, 7: 6, 1: 7, 0: 7 },
+  "security-state": { 30: 38, 7: 44, 1: 46, 0: 46 },
+};
+const DATA_BOOK_ANCHORS = { 30: 7, 7: 10, 1: 11, 0: 11 };
+const DATA_ACTOR_SPLIT = {
+  "receipts": { customer: 59, test: 330, synthetic: 12, other: 3, unknown: 8 },
+  "bundles": { customer: 410, test: 724, synthetic: 96, other: 6, unknown: 60 },
+  "subscriptions": { customer: 31, test: 120, synthetic: 30, other: 0, unknown: 7 },
+  "passes": { customer: 140, test: 2131, synthetic: 0, other: 0, unknown: 160 },
+  "integration-calls": { customer: 6100, test: 11900, synthetic: 300, other: 20, unknown: 0 },
+  "mcp-sessions": { customer: 3, test: 2, synthetic: 0, other: 0, unknown: 0 },
+};
+const DATA_DIYA_GL_SPLIT = {
+  objects: { customer: 4, test: 14, synthetic: 2, other: 0, unknown: 2 },
+  books: { customer: 2, test: 7, synthetic: 1, other: 0, unknown: 1 },
+  versions: { customer: 2, test: 7, synthetic: 1, other: 0, unknown: 1 },
+};
+const scaledSplit = (split, ratio) => Object.fromEntries(Object.entries(split).map(([name, value]) => [name, Math.round(value * ratio)]));
+
+const DATA_HISTORIES = Object.fromEntries(
+  Array.from({ length: 90 }, (_, index) => index + 1).map((ago) => {
+    if (ago > 30 || ago === 12 || ago === 13) return [dataDay(ago), null];
+    const tables = Object.fromEntries(Object.entries(DATA_TABLE_ANCHORS).map(([label, anchors]) => [label, figureBetween(anchors, ago)]));
+    const books = figureBetween(DATA_BOOK_ANCHORS, ago);
+    const ratio = 1 - ago / 60;
+    return [
+      dataDay(ago),
+      {
+        tables,
+        tableBytes: Object.fromEntries(Object.entries(tables).map(([label, items]) => [label, items * 900])),
+        books: { books, versions: books },
+        logGroupBytes: ago <= 10 ? Math.round(16e9 * (1 - ago / 100)) : null,
+        actorSplit:
+          ago <= 20 ? Object.fromEntries(Object.entries(DATA_ACTOR_SPLIT).map(([kind, split]) => [kind, scaledSplit(split, ratio)])) : null,
+        diyaGlSplit:
+          ago <= 20
+            ? { objects: scaledSplit(DATA_DIYA_GL_SPLIT.objects, ratio), books: scaledSplit(DATA_DIYA_GL_SPLIT.books, ratio) }
+            : null,
+      },
+    ];
+  }),
+);
+
+// A bucket's daily metric for the last 60 days, the newest two days not yet published.
+function metricByDay(anchors, { from = 60, lag = 0 } = {}) {
+  return Object.fromEntries(
+    Array.from({ length: from + 1 }, (_, ago) => ago)
+      .filter((ago) => ago >= lag)
+      .map((ago) => [dataDay(ago), figureBetween(anchors, ago)])
+      .filter(([, value]) => value !== null),
+  );
+}
+
+const DATA_CAPACITY_HOURS = Array.from(
+  { length: 336 },
+  (_, index) => new Date(Date.UTC(2026, 10, 7, 10) - (335 - index) * 3600000).toISOString().slice(0, 13) + ":00:00Z",
+);
+const capacityByDay = (scale) =>
+  Object.fromEntries(Array.from({ length: 90 }, (_, ago) => [dataDay(ago), Math.round(scale * (2 + Math.sin(ago / 4)))]));
+const capacityByHour = (scale) =>
+  Object.fromEntries(DATA_CAPACITY_HOURS.map((hour, index) => [hour, Math.round(scale * (1 + Math.sin(index / 6)))]));
+
 export const FIXTURE_DATA = shapeDataSection({
   envName: "prod",
-  now: new Date("2026-11-07T10:00:00Z"),
+  now: DATA_NOW,
   tables: [
-    { name: "prod-env-receipts", items: 412, ttl: { enabled: false, attribute: null } },
-    { name: "prod-env-bundles", items: 1296, ttl: { enabled: true, attribute: "ttl" } },
-    { name: "prod-env-subscriptions", items: 188, ttl: { enabled: false, attribute: null } },
-    { name: "prod-env-passes", items: 2431, ttl: { enabled: false, attribute: null } },
-    { name: "prod-env-integration-calls", items: 18420, ttl: { enabled: true, attribute: "ttl" } },
-    { name: "prod-env-mcp-sessions", items: 7, ttl: { enabled: true, attribute: "expiresAt" } },
+    { name: "prod-env-receipts", items: 412, bytes: 412 * 900, ttl: { enabled: false, attribute: null } },
+    { name: "prod-env-bundles", items: 1296, bytes: 1296 * 900, ttl: { enabled: true, attribute: "ttl" } },
+    { name: "prod-env-subscriptions", items: 188, bytes: 188 * 900, ttl: { enabled: false, attribute: null } },
+    { name: "prod-env-passes", items: 2431, bytes: 2431 * 900, ttl: { enabled: false, attribute: null } },
+    { name: "prod-env-integration-calls", items: 18420, bytes: 18420 * 900, ttl: { enabled: true, attribute: "ttl" } },
+    { name: "prod-env-mcp-sessions", items: 7, bytes: 7 * 900, ttl: { enabled: true, attribute: "expiresAt" } },
+    { name: "prod-env-security-state", items: 46, bytes: 46 * 900, ttl: { enabled: true, attribute: "ttl" } },
   ],
-  actorSplit: {
-    receipts: { customer: 59, test: 330, synthetic: 12, other: 3, unknown: 8 },
-    bundles: { customer: 410, test: 724, synthetic: 96, other: 6, unknown: 60 },
-    subscriptions: { customer: 31, test: 120, synthetic: 30, other: 0, unknown: 7 },
-    passes: { customer: 140, test: 2131, synthetic: 0, other: 0, unknown: 160 },
-  },
+  actorSplit: DATA_ACTOR_SPLIT,
   buckets: [
-    { name: "prod-env-analytics-lake-972912397388", objects: 48210, history: { 90: null, 30: 31200, 7: 46100, 1: 47900 } },
-    { name: "prod-env-analytics-results-972912397388", objects: 9120, history: { 90: null, 30: 6400, 7: 8800, 1: 9050 } },
-    { name: "prod-env-diya-gl-972912397388", objects: 22, history: { 90: null, 30: 14, 7: 20, 1: 22 } },
+    {
+      name: "prod-env-analytics-lake-972912397388",
+      objectsByDay: metricByDay({ 60: 20000, 30: 31200, 7: 46100, 1: 47900, 0: 48210 }),
+      bytesByDay: metricByDay({ 60: 9e9, 30: 12e9, 7: 15e9, 0: 15.4e9 }, { lag: 2 }),
+    },
+    {
+      name: "prod-env-analytics-results-972912397388",
+      objectsByDay: metricByDay({ 60: 3000, 30: 6400, 7: 8800, 1: 9050, 0: 9120 }),
+      bytesByDay: metricByDay({ 60: 2e9, 30: 3e9, 7: 3.8e9, 0: 3.9e9 }, { lag: 2 }),
+    },
+    { name: "prod-env-diya-gl-972912397388", objectsByDay: metricByDay({ 30: 14, 7: 20, 1: 22, 0: 22 }) },
   ],
+  artefactBuckets: [
+    {
+      name: "cdk-hnb659fds-assets-972912397388-eu-west-2",
+      kind: "deployment",
+      objectsByDay: metricByDay({ 90: 400, 0: 1300 }, { from: 90 }),
+    },
+    {
+      name: "prod-0e924d9-app-edgestac-prod0e924d9apporiginbuck-q9xjts2nywoe",
+      kind: "deployment",
+      objectsByDay: metricByDay({ 20: 300, 0: 320 }, { from: 20 }),
+    },
+    {
+      name: "prod-3ae340a-app-opsstack-canaryartifacts16b34762-fj08ayjlefkg",
+      kind: "test-reports",
+      objectsByDay: metricByDay({ 90: 2000, 0: 5200 }, { from: 90 }),
+    },
+  ],
+  diyaGlBucketName: "prod-env-diya-gl-972912397388",
+  diyaGlSplit: DATA_DIYA_GL_SPLIT,
   books: { books: 11, versions: 11, truncated: false },
-  histories: {
-    90: null,
-    30: {
-      tables: { "receipts": 300, "bundles": 900, "subscriptions": 120, "passes": 1800, "integration-calls": 9100, "mcp-sessions": 4 },
-      books: { books: 7, versions: 7 },
+  histories: DATA_HISTORIES,
+  logGroupBytes: 16e9,
+  capacity: {
+    daily: {
+      "prod-env-bundles": { read: capacityByDay(900), write: capacityByDay(120) },
+      "prod-env-receipts": { read: capacityByDay(400), write: capacityByDay(60) },
     },
-    7: {
-      tables: { "receipts": 400, "bundles": 1250, "subscriptions": 180, "passes": 2380, "integration-calls": 17800, "mcp-sessions": 6 },
-      books: { books: 10, versions: 10 },
-    },
-    1: {
-      tables: { "receipts": 410, "bundles": 1290, "subscriptions": 187, "passes": 2425, "integration-calls": 18300, "mcp-sessions": 7 },
-      books: { books: 11, versions: 11 },
+    hourly: {
+      "prod-env-bundles": { read: capacityByHour(40), write: capacityByHour(6) },
+      "prod-env-receipts": { read: capacityByHour(15), write: capacityByHour(3) },
     },
   },
 });
@@ -623,13 +955,14 @@ export const FIXTURE_INTEGRATIONS = {
   table: "prod-env-integration-calls",
   region: "eu-west-2",
   summary: [
-    { org: "hmrc", status: "200", ...sampleWindowsWithTrend(212, 0.12) },
-    { org: "hmrc", status: "201", ...sampleWindowsWithTrend(41, 0.05) },
-    { org: "hmrc", status: "400", ...sampleWindowsWithTrend(6, -0.2) },
-    { org: "hmrc", status: "timeout", ...sampleWindowsWithTrend(2, null) },
-    { org: "companies-house", status: "200", ...sampleWindowsWithTrend(9, 0.3) },
-    { org: "stripe", status: "200", ...sampleWindowsWithTrend(64, 0.08) },
-    { org: "stripe", status: "402", ...sampleWindowsWithTrend(3, null) },
+    { org: "hmrc", status: "200", caller: "customer", ...sampleWindowsWithTrend(212, 0.12) },
+    { org: "hmrc", status: "201", caller: "customer", ...sampleWindowsWithTrend(41, 0.05) },
+    { org: "hmrc", status: "400", caller: "customer", ...sampleWindowsWithTrend(6, -0.2) },
+    { org: "hmrc", status: "timeout", caller: "customer", ...sampleWindowsWithTrend(2, null) },
+    { org: "companies-house", status: "200", caller: "customer", ...sampleWindowsWithTrend(9, 0.3) },
+    { org: "stripe", status: "200", caller: "customer", ...sampleWindowsWithTrend(64, 0.08) },
+    { org: "stripe", status: "402", caller: "customer", ...sampleWindowsWithTrend(3, null) },
+    { org: "stripe", status: "200", caller: "other", ...sampleWindowsWithTrend(192, 0) },
   ].map((row) => ({ unit: "count", ...row })),
   calls: {
     "hmrc": [

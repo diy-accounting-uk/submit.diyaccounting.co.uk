@@ -3,8 +3,8 @@
 
 // behaviour-tests/mcpHosted.behaviour.test.js
 //
-// The hosted MCP connector as a chat client meets it: an unauthenticated POST to /mcp, the 401
-// challenge, the protected resource and authorization server metadata, dynamic client
+// The hosted MCP connector as a chat client meets it: the tool list without a token, then the 401
+// challenge to a tools/call, the protected resource and authorization server metadata, dynamic client
 // registration, the consent page, sign-in through the Cognito Hosted UI, the code caught on a
 // loopback redirect, the token exchange and one refresh, then tools/list and a derivation over a
 // book saved to the signed-in user's cloud storage. Every URL derives from DIY_SUBMIT_BASE_URL.
@@ -110,10 +110,20 @@ async function postForm(url, fields) {
 async function discoverRegisterAndConsent(page) {
   const mcpUrl = siteUrl("mcp");
 
-  const unauthenticated = await fetch(mcpUrl, {
+  const anonymousList = await fetch(mcpUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json", "Accept": "application/json, text/event-stream" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+  });
+  expect(anonymousList.status).toBe(200);
+  const anonymousTools = (await anonymousList.json()).result.tools.map((tool) => tool.name);
+  expect(anonymousTools.length).toBeGreaterThan(0);
+  expect(HOSTED_TOOL_NAMES).toEqual(expect.arrayContaining(anonymousTools));
+
+  const unauthenticated = await fetch(mcpUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json, text/event-stream" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "list_books", arguments: {} } }),
   });
   expect(unauthenticated.status).toBe(401);
   const challenge = unauthenticated.headers.get("www-authenticate");

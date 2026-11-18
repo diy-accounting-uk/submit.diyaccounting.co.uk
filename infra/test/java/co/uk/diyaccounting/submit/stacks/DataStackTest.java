@@ -65,14 +65,18 @@ class DataStackTest {
         DataStack dataStack = synthDataStack();
         Template template = Template.fromStack(dataStack);
 
-        // The five tables usage analytics reads from: receipts, bundles, subscriptions, passes,
-        // commissions.
+        // The tables the lake reads from: receipts, bundles, subscriptions, passes, commissions,
+        // HMRC API requests, practice clients, activity charges and MCP sessions.
         for (String tableName : new String[] {
             dataStack.receiptsTable.getTableName(),
             dataStack.bundlesTable.getTableName(),
             dataStack.subscriptionsTable.getTableName(),
             dataStack.passesTable.getTableName(),
             dataStack.commissionsTable.getTableName(),
+            dataStack.hmrcApiRequestsTable.getTableName(),
+            dataStack.practiceClientsTable.getTableName(),
+            dataStack.activityChargesTable.getTableName(),
+            dataStack.mcpSessionsTable.getTableName(),
         }) {
             template.hasResourceProperties(
                     "Custom::AWS",
@@ -88,9 +92,8 @@ class DataStackTest {
         DataStack dataStack = synthDataStack();
         Template template = Template.fromStack(dataStack);
 
-        // Async request tables, bundle capacity, the HMRC audit trail, and the security state
-        // table are excluded: no updateTable call mentions StreamSpecification for any of their
-        // table names.
+        // Async request tables, bundle capacity and the security state table are excluded: no
+        // updateTable call mentions StreamSpecification for any of their table names.
         for (String tableName : new String[] {
             dataStack.bundlePostAsyncRequestsTable.getTableName(),
             dataStack.bundleDeleteAsyncRequestsTable.getTableName(),
@@ -145,7 +148,6 @@ class DataStackTest {
             dataStack.hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTable.getTableName(),
             dataStack.hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTable.getTableName(),
             dataStack.companiesHouseAccountsAsyncRequestsTable.getTableName(),
-            dataStack.hmrcApiRequestsTable.getTableName(),
             dataStack.bundleCapacityTable.getTableName(),
             dataStack.securityStateTable.getTableName(),
         }) {

@@ -11,6 +11,8 @@
 // - **Related:** SITE-05, SITE-19
 // @end-capability
 
+import { sortFaqsByCategory } from "./faq-markdown.js";
+
 /**
  * FAQ Search Module
  *
@@ -18,9 +20,40 @@
  * - Loads FAQs from pre-parsed JSON (converted from TOML at build time)
  * - Fuzzy matching using bigram similarity + keyword boost
  * - Debounced input for snappy feel
- * - Shows top 7 by priority when no search term
+ * - Lists every question by category when there is no search term
  * - Filters to matching results as user types
  */
+
+const STOP_WORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "are",
+  "can",
+  "do",
+  "does",
+  "for",
+  "how",
+  "i",
+  "if",
+  "in",
+  "is",
+  "it",
+  "me",
+  "my",
+  "of",
+  "on",
+  "or",
+  "the",
+  "to",
+  "what",
+  "when",
+  "where",
+  "why",
+  "with",
+  "you",
+  "your",
+]);
 
 /**
  * FAQ Search class for fuzzy matching FAQ entries
@@ -29,15 +62,13 @@ export class FAQSearch {
   /**
    * @param {Array} faqs - Array of FAQ objects
    * @param {Object} options - Search options
-   * @param {number} options.defaultCount - Number of FAQs to show when no search (default: 7)
    * @param {number} options.maxResults - Maximum results to return (default: 15)
-   * @param {number} options.minScore - Minimum score threshold (default: 0.2)
+   * @param {number} options.minScore - Minimum score threshold (default: 0.3)
    */
   constructor(faqs, options = {}) {
     this.faqs = faqs;
-    this.defaultCount = options.defaultCount || 7;
     this.maxResults = options.maxResults || 15;
-    this.minScore = options.minScore || 0.2;
+    this.minScore = options.minScore || 0.3;
 
     // Pre-compute bigrams for all FAQ questions + keywords
     this.faqIndex = this.buildIndex(faqs);
@@ -89,53 +120,52 @@ export class FAQSearch {
   /**
    * Search FAQs with fuzzy matching
    * @param {string} query - Search query
-   * @returns {Array} Matching FAQ entries sorted by relevance
+   * @returns {Array} Matching FAQ entries, best match first; the priority orders ties only
    */
   search(query) {
     const trimmed = query.trim().toLowerCase();
 
-    // No query = return top by priority
-    if (!trimmed) {
-      return this.faqs
-        .slice()
-        .sort((a, b) => a.priority - b.priority)
-        .slice(0, this.defaultCount);
-    }
+    // No query = every question, by category
+    if (!trimmed) return sortFaqsByCategory(this.faqs);
 
     const queryBigrams = this.getBigrams(trimmed);
-    const queryWords = trimmed.split(/\s+/);
+    const queryWords = trimmed.split(/[^a-z0-9']+/).filter((word) => word && !STOP_WORDS.has(word));
+    if (queryWords.length === 0) return [];
 
     const scored = this.faqIndex.map((faq) => {
-      // Bigram similarity to question
-      let score = this.bigramSimilarity(queryBigrams, faq.questionBigrams);
+      const similarity = this.bigramSimilarity(queryBigrams, faq.questionBigrams);
+      let score = similarity;
+      let matchedWords = 0;
 
-      // Keyword exact match boost (significant)
       for (const word of queryWords) {
+        let matched = false;
         if (faq.keywordSet.has(word)) {
           score += 0.4;
+          matched = true;
         }
-        // Partial keyword match
-        for (const keyword of faq.keywordSet) {
-          if (keyword.includes(word) || word.includes(keyword)) {
-            score += 0.15;
+        if (word.length >= 4) {
+          for (const keyword of faq.keywordSet) {
+            if (keyword.includes(word) || word.includes(keyword)) {
+              score += 0.15;
+              matched = true;
+            }
           }
         }
+        if (word.length >= 3 && faq.allText.includes(word)) matched = true;
+        if (matched) matchedWords++;
       }
 
-      // Substring match in full text
-      if (faq.allText.includes(trimmed)) {
-        score += 0.3;
-      }
+      if (faq.allText.includes(trimmed)) score += 0.3;
 
-      // Small priority boost for high-priority items
-      score += (20 - faq.priority) * 0.01;
-
-      return { faq, score };
+      // More than half of the words that carry meaning must match, or the query must nearly equal the question.
+      const coverage = matchedWords / queryWords.length;
+      const related = coverage > 0.5 || similarity >= 0.6;
+      return { faq, score: score + coverage * 0.5, related };
     });
 
     return scored
-      .filter((s) => s.score >= this.minScore)
-      .sort((a, b) => b.score - a.score)
+      .filter((s) => s.related && s.score >= this.minScore)
+      .sort((a, b) => b.score - a.score || a.faq.priority - b.faq.priority)
       .slice(0, this.maxResults)
       .map((s) => s.faq);
   }

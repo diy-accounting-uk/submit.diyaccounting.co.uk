@@ -9,6 +9,7 @@ import {
   credentialFieldMaskInitScript,
   provisionSceneCompany,
   ONE_TIME_CODE_FIELDS,
+  signedInAddressFrom,
 } from "../../../scripts/lib/video/journey.js";
 
 const baseEnv = {
@@ -16,6 +17,18 @@ const baseEnv = {
   TEST_HMRC_PASSWORD: "correcthorsebatterystaple",
   TEST_HMRC_VAT_NUMBER: "193054661",
 };
+
+describe("signedInAddressFrom", () => {
+  test.each(["mock", "simulator"])("is the synthetic email claim for the %s provider", (provider) => {
+    expect(signedInAddressFrom(provider, "user")).toBe("synthetic-user@test.diyaccounting.co.uk");
+  });
+
+  test("is the username itself for Cognito", () => {
+    expect(signedInAddressFrom("cognito-native", "synthetic-local@test.diyaccounting.co.uk")).toBe(
+      "synthetic-local@test.diyaccounting.co.uk",
+    );
+  });
+});
 
 describe("resolveHmrcTestUser", () => {
   test("defaults hmrcServices to mtd-vat when the script names none, and resolves no nino", async () => {

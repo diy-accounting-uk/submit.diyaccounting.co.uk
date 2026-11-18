@@ -100,13 +100,16 @@ export function serveCarriedIdentifiers(page) {
 // The real page script of any page under web/public, for a test that serves the page HTML from disk.
 export async function servePageScripts(page) {
   await serveFile(page, "**/lib/hmrc-display-format.js", "lib/hmrc-display-format.js", "application/javascript");
+  await serveFile(page, "**/lib/hmrc-sandbox-status.js", "lib/hmrc-sandbox-status.js", "application/javascript");
   await serveFile(page, "**/lib/pending-request.js", "lib/pending-request.js", "application/javascript");
+  await serveFile(page, "**/lib/companies-house-gateway-poll.js", "lib/companies-house-gateway-poll.js", "application/javascript");
   await serveFile(page, "**/lib/accounts-form-sections.js", "lib/accounts-form-sections.js", "application/javascript");
   await serveFile(page, "**/lib/companies-house-labels.js", "lib/companies-house-labels.js", "application/javascript");
   await serveFile(page, "**/lib/stacked-table.js", "lib/stacked-table.js", "application/javascript");
   await serveFile(page, "**/lib/services/viewer-settings.js", "lib/services/viewer-settings.js", "application/javascript");
   await serveFile(page, "**/lib/services/catalog-service.js", "lib/services/catalog-service.js", "application/javascript");
   await serveFile(page, "**/lib/services/catalogue-aggregates.js", "lib/services/catalogue-aggregates.js", "application/javascript");
+  await serveFile(page, "**/lib/bundle-listing.js", "lib/bundle-listing.js", "application/javascript");
   await serveFormErrors(page);
   return page.route("**/*.page.js", async (route) => {
     const pathname = decodeURIComponent(new URL(route.request().url()).pathname);

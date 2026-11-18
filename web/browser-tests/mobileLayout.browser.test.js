@@ -111,7 +111,7 @@ test.describe("Mobile layout - no page-level horizontal scroll", () => {
 });
 
 test.describe("Mobile layout - spreadsheet pages at 390px", () => {
-  for (const pagePath of ["spreadsheets.html", "diy-accounting-spreadsheets.html"]) {
+  for (const pagePath of ["spreadsheets.html"]) {
     test(`${pagePath} is no wider than the viewport at 390px`, async ({ page }) => {
       await page.setViewportSize({ width: 390, height: 800 });
       await serveRealSite(page);
@@ -133,7 +133,7 @@ test.describe("Mobile layout - spreadsheet pages at 390px", () => {
 });
 
 test.describe("Mobile layout - specific findings", () => {
-  test("header auth section wraps instead of clipping the Logout link at 375px", async ({ page }) => {
+  test("header auth section wraps instead of clipping the Sign out link at 375px", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await serveRealSite(page);
     await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
@@ -158,6 +158,33 @@ test.describe("Mobile layout - specific findings", () => {
     const firstCell = table.locator("tbody td").first();
     await expect(firstCell).toHaveAttribute("data-label", /\S/);
 
+    expect(await hasRealHorizontalScroll(page)).toBe(false);
+  });
+
+  test("privacy.html keeps a stacked cell's text and code together in the value column at 390px", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/privacy.html", { waitUntil: "domcontentloaded" });
+
+    const cell = page.locator("td:has(code)", { hasText: "From window.innerWidth" }).first();
+    await expect(cell.locator(".stacked-value")).toHaveCount(1);
+    const layout = await cell.evaluate((td) => {
+      const label = parseFloat(getComputedStyle(td, "::before").width);
+      const tdLeft = td.getBoundingClientRect().left;
+      return [...td.querySelectorAll("code")].map((code) => code.getBoundingClientRect().left - tdLeft - label);
+    });
+    expect(layout.length).toBe(2);
+    for (const offsetPastLabel of layout) expect(offsetPastLabel).toBeGreaterThan(0);
+  });
+
+  test("terms.html labels every cell of its bundle table at 390px", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/terms.html", { waitUntil: "domcontentloaded" });
+
+    const table = page.locator("table.data-table").first();
+    await expect(table.locator("tbody td").first()).toHaveAttribute("data-label", "Who it is for");
+    expect(await table.locator("tbody td:not([data-label])").count()).toBe(0);
     expect(await hasRealHorizontalScroll(page)).toBe(false);
   });
 });
@@ -210,7 +237,7 @@ test.describe("Header account line truncates, the brand stays whole", () => {
         await openHeader(page, width, signedIn);
 
         const status = page.locator(".login-status");
-        await expect(status).toHaveText(signedIn ? LONG_ADDRESS : "Not logged in");
+        await expect(status).toHaveText(signedIn ? LONG_ADDRESS : "Not signed in");
         const measured = await page.evaluate(() => {
           const brand = document.querySelector(".brand-name");
           const login = document.querySelector(".login-status");
@@ -285,6 +312,53 @@ test.describe("Header account line truncates, the brand stays whole", () => {
 
       await page.locator(".header-nav").screenshot({ path: `target/header-text/header-long-${width}.png` });
     });
+  }
+});
+
+test.describe("Header account line reads in full between the phone and desktop layouts", () => {
+  const NAME = "Alex Morgan";
+
+  async function openHeaderIn(page, width, signedIn, language) {
+    await page.setViewportSize({ width, height: 700 });
+    await serveRealSite(page);
+    await page.addInitScript(
+      ({ signedIn, name }) => {
+        try {
+          if (signedIn) localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", given_name: name }));
+          else {
+            localStorage.removeItem("userInfo");
+            localStorage.removeItem("cognitoIdToken");
+          }
+        } catch {}
+      },
+      { signedIn, name: NAME },
+    );
+    await page.goto(`http://localhost:3000/${language === "cy" ? "cy/" : ""}index.html`, { waitUntil: "domcontentloaded" });
+    await delay(500);
+  }
+
+  for (const language of ["en", "cy"]) {
+    for (const width of [360, 420, 465, 520, 640]) {
+      for (const signedIn of [false, true]) {
+        const state = signedIn ? "signed in" : "signed out";
+        test(`the account line and Sign in read in full at ${width}px, ${state}, ${language}`, async ({ page }) => {
+          await openHeaderIn(page, width, signedIn, language);
+          await page.locator(".header-nav").screenshot({
+            path: `target/header-text/header-gap-${language}-${width}-${signedIn ? "signed-in" : "signed-out"}.png`,
+          });
+          const status = page.locator(".login-status");
+          if (signedIn) await expect(status).toHaveText(NAME);
+          else await expect(status).toHaveText(language === "cy" ? "Heb fewngofnodi" : "Not signed in");
+          const measured = await status.evaluate((login) => ({
+            clipped: login.scrollWidth > login.clientWidth || login.scrollHeight - login.clientHeight > 1,
+          }));
+          expect(measured.clipped, ".login-status is clipped").toBe(false);
+          await expect(status).toBeInViewport({ ratio: 1 });
+          await expect(page.locator(".login-link")).toBeInViewport({ ratio: 1 });
+          expect(await hasRealHorizontalScroll(page)).toBe(false);
+        });
+      }
+    }
   }
 });
 
@@ -364,6 +438,19 @@ test.describe("Wide tables read at 390px and 1280px without sideways scroll", ()
     expect(unlabelled).toBe(0);
   });
 
+  test("rates.html keeps a row's two source links and their comma on one line at 390px", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 900 });
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/rates.html", { waitUntil: "domcontentloaded" });
+
+    const cell = page.locator("td.rate-source:has(a[href='#source-capital-allowances-writing-down-rates'])").first();
+    await expect(cell.locator(".stacked-value")).toHaveCount(1);
+    await expect(cell.locator(".stacked-value")).toHaveText("3, 4");
+    const tops = await cell.locator("a").evaluateAll((links) => links.map((link) => Math.round(link.getBoundingClientRect().top)));
+    expect(tops.length).toBe(2);
+    expect(tops[0]).toBe(tops[1]);
+  });
+
   test("the calendar's deadline caption is a block inside a stacked table at 390px", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 900 });
     await serveRealSite(page);
@@ -375,4 +462,47 @@ test.describe("Wide tables read at 390px and 1280px without sideways scroll", ()
     );
     for (const display of captionDisplays) expect(display).toBe("block");
   });
+});
+
+test.describe("Main navigation shows every item on a phone", () => {
+  for (const width of [320, 390]) {
+    test(`each navigation item is inside the viewport at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await serveRealSite(page);
+      await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
+      await expect(page.locator("nav.main-nav a:visible")).not.toHaveCount(0);
+      const boxes = await page.locator("nav.main-nav a:visible").evaluateAll((links) =>
+        links.map((link) => {
+          const box = link.getBoundingClientRect();
+          return { text: link.textContent, left: box.left, right: box.right, top: box.top };
+        }),
+      );
+      for (const box of boxes) {
+        expect(box.left, `${box.text} starts inside the viewport`).toBeGreaterThanOrEqual(0);
+        expect(box.right, `${box.text} ends inside the viewport`).toBeLessThanOrEqual(width);
+      }
+      const header = await page.locator("header").evaluate((el) => el.getBoundingClientRect().bottom);
+      const nav = await page.locator("nav.main-nav").evaluate((el) => el.getBoundingClientRect().bottom);
+      expect(nav).toBeLessThanOrEqual(header + 1);
+      expect(await hasRealHorizontalScroll(page)).toBe(false);
+    });
+  }
+});
+
+test.describe("The PolicyBee logo reads in both colour schemes", () => {
+  for (const [colorScheme, background] of [
+    ["dark", "rgb(255, 255, 255)"],
+    ["light", "rgba(0, 0, 0, 0)"],
+  ]) {
+    test(`sits on ${colorScheme === "dark" ? "a white plate" : "the card"} in the ${colorScheme} scheme at 390px`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.setViewportSize({ width: 390, height: 800 });
+      await serveRealSite(page);
+      await page.goto("http://localhost:3000/policybee.html", { waitUntil: "domcontentloaded" });
+
+      const logo = page.locator(".policybee-logo");
+      await expect(logo).toBeVisible();
+      expect(await logo.evaluate((img) => getComputedStyle(img).backgroundColor)).toBe(background);
+    });
+  }
 });

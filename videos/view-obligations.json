@@ -124,21 +124,24 @@
           "text": "HMRC keeps a list of the VAT periods you owe.",
           "holdMs": 1200,
           "headline": "See your VAT periods",
-          "keyWord": "periods"
+          "keyWord": "periods",
+          "instruction": "Read what this page does: it lists the VAT periods HMRC expects a return for."
         },
         {
           "action": "caption",
           "text": "You are already signed in. See the full sign-in walkthrough in our sign-in video.",
           "holdMs": 1200,
           "headline": "Already signed in",
-          "keyWord": "signed"
+          "keyWord": "signed",
+          "instruction": "Check that the header shows you signed in; if it does not, choose Sign in first."
         },
         {
           "action": "click",
           "target": "button:has-text('VAT Obligations (HMRC)')",
           "caption": "Open VAT Obligations to ask HMRC what is due.",
           "headline": "Open VAT Obligations",
-          "keyWord": "Obligations"
+          "keyWord": "Obligations",
+          "instruction": "Choose VAT Obligations (HMRC) on the Activities page."
         },
         {
           "action": "await",
@@ -152,7 +155,8 @@
           "clear": true,
           "caption": "Type the VAT registration number.",
           "headline": "Enter your VAT number",
-          "keyWord": "number"
+          "keyWord": "number",
+          "instruction": "Enter your VAT registration number."
         },
         {
           "action": "fill",
@@ -160,7 +164,8 @@
           "value": "{{monthsAgo:11}}",
           "caption": "Then the stretch of time to look at.",
           "headline": "Choose the start date",
-          "keyWord": "start"
+          "keyWord": "start",
+          "instruction": "Enter a From date and a To date to search between; both are optional."
         },
         {
           "action": "fill",
@@ -176,7 +181,8 @@
           "target": "#retrieveBtn",
           "caption": "The first request sends you to HMRC to grant access.",
           "headline": "Ask HMRC for access",
-          "keyWord": "access"
+          "keyWord": "access",
+          "instruction": "Choose Retrieve obligations; the first request sends you to HMRC to give permission."
         }
       ]
     },
@@ -226,7 +232,8 @@
           "caption": "Each row is a period, its due date and its status.",
           "headline": "Read each VAT period",
           "keyWord": "period",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read each period's due date and status in the obligations table."
         },
         {
           "action": "hold",

@@ -28,6 +28,7 @@ import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { publishActivityEvent, classifyActor, maskEmail } from "../../lib/activityAlert.js";
+import { warmOperators } from "../../lib/operators.js";
 import { resolveAllowedReturnTo } from "./billingReturnUrl.js";
 import { buildAcquisitionMap, acquisitionToStripeMetadata } from "../../lib/acquisition.js";
 import {
@@ -186,6 +187,7 @@ export async function ingestHandler(event) {
 
     logger.info({ message: "Creating checkout session", isSynthetic, bundleId, priceId: priceId.substring(0, 20) + "..." });
 
+    await warmOperators();
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       ...customerParams,

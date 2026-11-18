@@ -10,27 +10,54 @@
 (function () {
   "use strict";
 
+  // page-chrome.js gives the text in the chosen language; without it the English stands.
+  function siteText(id, english, values) {
+    if (window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
+
   const CONSOLIDATED_FIELD = "consolidatedExpenses";
 
   // costOfGoods and otherExpenses are always sent, as the form has always sent them.
   const ALWAYS_SENT = ["costOfGoods", "otherExpenses"];
 
   const ITEMISED_FIELDS = [
-    { id: "costOfGoods", label: "Cost of goods" },
-    { id: "paymentsToSubcontractors", label: "Payments to subcontractors" },
-    { id: "wagesAndStaffCosts", label: "Wages, salaries and other staff costs" },
-    { id: "carVanTravelExpenses", label: "Car, van and travel expenses" },
-    { id: "premisesRunningCosts", label: "Rent, rates, power and insurance costs" },
-    { id: "maintenanceCosts", label: "Repairs and renewals of property and equipment" },
-    { id: "adminCosts", label: "Phone, fax, stationery and other office costs" },
-    { id: "businessEntertainmentCosts", label: "Business entertainment costs" },
-    { id: "advertisingCosts", label: "Advertising costs" },
-    { id: "interestOnBankOtherLoans", label: "Interest on bank and other loans" },
-    { id: "financeCharges", label: "Bank, credit card and other financial charges" },
-    { id: "irrecoverableDebts", label: "Irrecoverable debts written off" },
-    { id: "professionalFees", label: "Accountancy, legal and other professional fees" },
-    { id: "depreciation", label: "Depreciation and loss/profit on sales of assets" },
-    { id: "otherExpenses", label: "Other expenses" },
+    { id: "costOfGoods", label: siteText("itsa.field-cost-of-goods", "Cost of goods") },
+    { id: "paymentsToSubcontractors", label: siteText("itsa.field-payments-to-subcontractors", "Payments to subcontractors") },
+    {
+      id: "wagesAndStaffCosts",
+      label: siteText("itsa.field-wages-salaries-and-other-staff-costs", "Wages, salaries and other staff costs"),
+    },
+    { id: "carVanTravelExpenses", label: siteText("itsa.field-car-van-and-travel-expenses", "Car, van and travel expenses") },
+    {
+      id: "premisesRunningCosts",
+      label: siteText("itsa.field-rent-rates-power-and-insurance-costs", "Rent, rates, power and insurance costs"),
+    },
+    {
+      id: "maintenanceCosts",
+      label: siteText("itsa.field-repairs-and-renewals-of-property-and", "Repairs and renewals of property and equipment"),
+    },
+    {
+      id: "adminCosts",
+      label: siteText("itsa.field-phone-fax-stationery-and-other-office", "Phone, fax, stationery and other office costs"),
+    },
+    { id: "businessEntertainmentCosts", label: siteText("itsa.field-business-entertainment-costs", "Business entertainment costs") },
+    { id: "advertisingCosts", label: siteText("itsa.field-advertising-costs", "Advertising costs") },
+    { id: "interestOnBankOtherLoans", label: siteText("itsa.field-interest-on-bank-and-other-loans", "Interest on bank and other loans") },
+    {
+      id: "financeCharges",
+      label: siteText("itsa.field-bank-credit-card-and-other-financial", "Bank, credit card and other financial charges"),
+    },
+    { id: "irrecoverableDebts", label: siteText("itsa.field-irrecoverable-debts-written-off", "Irrecoverable debts written off") },
+    {
+      id: "professionalFees",
+      label: siteText("itsa.field-accountancy-legal-and-other-professional-fees", "Accountancy, legal and other professional fees"),
+    },
+    {
+      id: "depreciation",
+      label: siteText("itsa.field-depreciation-and-loss-profit-on-sales", "Depreciation and loss/profit on sales of assets"),
+    },
+    { id: "otherExpenses", label: siteText("itsa.field-other-expenses", "Other expenses") },
   ];
 
   const ITEMISED_IDS = ITEMISED_FIELDS.map((field) => field.id);
@@ -40,7 +67,7 @@
   const DISALLOWABLE_FIELDS = ITEMISED_FIELDS.map((field) => ({
     id: `${field.id}Disallowable`,
     itemisedId: field.id,
-    label: `${field.label}: part that cannot be claimed`,
+    label: siteText("itsa.se-disallowable-part", "{label}: part that cannot be claimed", { label: field.label }),
   }));
   const DISALLOWABLE_IDS = DISALLOWABLE_FIELDS.map((field) => field.id);
 
@@ -57,12 +84,19 @@
     const disallowableFilled = DISALLOWABLE_IDS.filter(isNonZero);
     if (isFilled(consolidatedText)) {
       if (itemisedFilled.length > 0) {
-        return { problem: "Enter either the total expenses or the itemised expenses, not both. Clear one of them." };
+        return {
+          problem: siteText(
+            "itsa.se-total-or-itemised",
+            "Enter either the total expenses or the itemised expenses, not both. Clear one of them.",
+          ),
+        };
       }
       if (disallowableFilled.length > 0) {
         return {
-          problem:
+          problem: siteText(
+            "itsa.se-disallowable-with-itemised",
             "The disallowable expenses go with the itemised expenses, not with the total expenses. Clear them or itemise the expenses.",
+          ),
         };
       }
       return { periodExpenses: { [CONSOLIDATED_FIELD]: parse(consolidatedText) ?? 0 }, periodDisallowableExpenses: {} };
@@ -131,11 +165,11 @@
     const headRow = document.createElement("tr");
     const nameHead = document.createElement("th");
     nameHead.scope = "col";
-    nameHead.textContent = "Expense";
+    nameHead.textContent = siteText("itsa.se-expense", "Expense");
     const amountHead = document.createElement("th");
     amountHead.scope = "col";
     amountHead.className = "ledger__figure";
-    amountHead.textContent = "Amount (£)";
+    amountHead.textContent = siteText("itsa.amount-pounds", "Amount (£)");
     headRow.append(nameHead, amountHead);
     head.append(headRow);
     const body = document.createElement("tbody");
@@ -170,22 +204,28 @@
   // Fills the container with the total-expenses field, a section of itemised expenses and a
   // section of disallowable expenses.
   function mountFields(container) {
-    const total = { id: CONSOLIDATED_FIELD, label: "Total expenses (instead of itemising)" };
-    const totalGroup = moneyGroup(total, "Leave blank if you itemise the expenses below. Cannot be used with the itemised expenses.");
-    const exampleHint = "For example, £600 or £193.54. Amounts are in pounds and pence.";
+    const total = { id: CONSOLIDATED_FIELD, label: siteText("itsa.se-total-expenses-instead", "Total expenses (instead of itemising)") };
+    const totalGroup = moneyGroup(
+      total,
+      siteText("itsa.se-total-expenses-hint", "Leave blank if you itemise the expenses below. Cannot be used with the itemised expenses."),
+    );
+    const exampleHint = siteText("itsa.money-example-hint", "For example, £600 or £193.54. Amounts are in pounds and pence.");
     container.replaceChildren(
       totalGroup,
       fieldSection({
         id: "itemisedExpenses",
-        title: "Itemised expenses",
-        intro: `${exampleHint} Cost of goods and other expenses are sent even when they are 0.`,
+        title: siteText("itsa.se-itemised-expenses", "Itemised expenses"),
+        intro: `${exampleHint} ${siteText("itsa.se-itemised-hint", "Cost of goods and other expenses are sent even when they are 0.")}`,
         fields: ITEMISED_FIELDS.map((field) => ({ ...field, defaultValue: ALWAYS_SENT.includes(field.id) ? "0" : "" })),
         open: true,
       }),
       fieldSection({
         id: "disallowableExpenses",
-        title: "Disallowable expenses",
-        intro: `${exampleHint} The part of each itemised expense that cannot be claimed for tax. Leave blank if none. Cannot be used with the total expenses.`,
+        title: siteText("itsa.se-disallowable-expenses", "Disallowable expenses"),
+        intro: `${exampleHint} ${siteText(
+          "itsa.se-disallowable-hint",
+          "The part of each itemised expense that cannot be claimed for tax. Leave blank if none. Cannot be used with the total expenses.",
+        )}`,
         fields: DISALLOWABLE_FIELDS,
         open: false,
       }),

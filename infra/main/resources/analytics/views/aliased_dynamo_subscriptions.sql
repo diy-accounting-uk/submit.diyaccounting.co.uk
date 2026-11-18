@@ -6,6 +6,7 @@
 CREATE OR REPLACE VIEW aliased_dynamo_subscriptions AS
 SELECT t.change_ts,
        t.change_type,
+       t.change_seq,
        t.source_table,
        t.env,
        coalesce(a_hashed_sub.current_hash, t.hashed_sub) AS hashed_sub,

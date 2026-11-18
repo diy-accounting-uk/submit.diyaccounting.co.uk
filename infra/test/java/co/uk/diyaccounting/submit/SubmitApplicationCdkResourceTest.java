@@ -8,13 +8,19 @@ package co.uk.diyaccounting.submit;
 import static co.uk.diyaccounting.submit.SubmitApplicationCdkSupport.*;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import org.opentest4j.AssertionFailedError;
@@ -565,6 +571,10 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         infof("Created stack:", submitApplication.edgeStack.getStackName());
         Template edgeStackTemplate = Template.fromStack(submitApplication.edgeStack);
         edgeStackTemplate.resourceCountIs("AWS::CloudFront::Distribution", 1);
+        // The page router is a CloudFront Function, which has no regional replicas to delay a
+        // set's deletion; the stack holds no Lambda@Edge function.
+        edgeStackTemplate.resourceCountIs("AWS::CloudFront::Function", 1);
+        assertFalse(edgeStackTemplate.toJSON().toString().contains("LambdaFunctionAssociations"));
         // The WAF scan-detect Lambda is this stack's only Lambda construct.
         assertGroupedStackHealthAlarm(edgeStackTemplate, List.of("waf-scan-detect"), List.of(), routedPrefixes);
 
@@ -629,7 +639,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         edgeStackTemplate.hasResourceProperties(
                 "AWS::WAFv2::RegexPatternSet",
                 Match.objectLike(
-                        Map.of("RegularExpressionList", Match.arrayWith(List.of("^/\\.(env|git/|aws/|ssh/)")))));
+                        Map.of("RegularExpressionList", Match.arrayWith(List.of("/\\.(env|git/|aws/|ssh/)")))));
 
         // Blocks-only WAF logging, feeding the scan-detect Lambda through a subscription filter.
         edgeStackTemplate.resourceCountIs("AWS::WAFv2::LoggingConfiguration", 1);
@@ -706,6 +716,110 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         if (submitApplication.selfDestructStack != null) {
             assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(submitApplication.selfDestructStack));
         }
+    }
+
+    @Test
+    void sensitivePathPatternsBlockScannerPathsAndNoServedPath() throws Exception {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template edgeStackTemplate = Template.fromStack(submitApplication.edgeStack);
+
+        List<Pattern> patterns = new ArrayList<>();
+        edgeStackTemplate.findResources("AWS::WAFv2::RegexPatternSet").values().forEach(resource -> {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) resource.get("Properties");
+            @SuppressWarnings("unchecked")
+            var regularExpressions = (List<String>) properties.get("RegularExpressionList");
+            assertTrue(regularExpressions.size() <= 10, "WAFv2 allows 10 patterns in a set");
+            regularExpressions.forEach(regularExpression -> {
+                assertTrue(regularExpression.length() <= 200, "WAFv2 allows 200 characters in a pattern");
+                patterns.add(Pattern.compile(regularExpression));
+            });
+        });
+        assertTrue(!patterns.isEmpty(), "the web ACL has a sensitive-path regex pattern set");
+
+        // The rule applies URL_DECODE then LOWERCASE before it matches.
+        List<String> servedPaths = new ArrayList<>();
+        for (String file : trackedFilesUnder("web/public")) {
+            servedPaths.add(file.substring("web/public".length()));
+        }
+        assertTrue(servedPaths.size() > 100, "the tracked web/public files were listed");
+        servedPaths.add("/submit.env");
+        Path namesDirectory = Path.of("infra/main/java/co/uk/diyaccounting/submit/names");
+        Matcher stringLiteral = Pattern.compile("\"(/[^\"%\\\\]*)\"").matcher("");
+        try (Stream<Path> nameFiles = Files.list(namesDirectory)) {
+            for (Path nameFile : nameFiles.toList()) {
+                stringLiteral.reset(Files.readString(nameFile));
+                while (stringLiteral.find()) {
+                    servedPaths.add(stringLiteral.group(1).replaceAll("\\{([^}]*)}", "$1"));
+                }
+            }
+        }
+        assertTrue(servedPaths.contains("/api/v1/account/settings"), "the API path constants were read");
+
+        List<String> falsePositives = new ArrayList<>();
+        for (String servedPath : servedPaths) {
+            String decided = servedPath.toLowerCase();
+            for (Pattern pattern : patterns) {
+                if (pattern.matcher(decided).find()) {
+                    falsePositives.add(servedPath + " matches " + pattern.pattern());
+                }
+            }
+        }
+        assertEquals(List.of(), falsePositives, "a served path must not match a sensitive-path pattern");
+
+        List<String> scannerPaths = List.of(
+                "/.env",
+                "/app/.env.local",
+                "/api/.env.staging",
+                "/backend/.env.dev",
+                "/.git/config",
+                "/site/.git/HEAD",
+                "/.aws/credentials",
+                "/home/.aws/credentials",
+                "/.ssh/id_rsa",
+                "/config",
+                "/config.json",
+                "/api/config.json",
+                "/app/config.yml",
+                "/config.yaml",
+                "/static/config.js",
+                "/credentials",
+                "/aws/credentials",
+                "/credentials.json",
+                "/settings.json",
+                "/app/settings.json",
+                "/terraform.tfstate",
+                "/infra/terraform.tfvars",
+                "/parameters.yml",
+                "/app/config/parameters.yml",
+                "/secrets.yml",
+                "/secrets.json",
+                "/appsettings.json",
+                "/appsettings.production.json",
+                "/.npmrc",
+                "/.boto",
+                "/.netrc",
+                "/.pypirc",
+                "/.git-credentials",
+                "/docker-compose.yml",
+                "/backup.sql");
+        List<String> missed = scannerPaths.stream()
+                .filter(scannerPath -> patterns.stream().noneMatch(pattern -> pattern.matcher(scannerPath.toLowerCase())
+                        .find()))
+                .toList();
+        assertEquals(List.of(), missed, "every scanner path matches a sensitive-path pattern");
+    }
+
+    private static List<String> trackedFilesUnder(String directory) throws IOException, InterruptedException {
+        Process git = new ProcessBuilder("git", "ls-files", directory).start();
+        List<String> lines =
+                new String(git.getInputStream().readAllBytes()).lines().toList();
+        assertEquals(0, git.waitFor(), "git ls-files " + directory);
+        return lines;
     }
 
     @Test

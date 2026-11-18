@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 
 // Global variables
@@ -122,14 +128,14 @@ async function retrieveObligations(nino, filters, testScenario, runFraudPreventi
       ...requestHeaders,
       "x-wait-time-ms": "0",
     },
-    pollPendingMessage: "Still processing...",
-    pollSuccessMessage: "Obligations retrieved.",
-    pollErrorMessage: "Failed to retrieve obligations.",
+    pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+    pollSuccessMessage: siteText("itsa-obligations.retrieved", "Obligations retrieved."),
+    pollErrorMessage: siteText("itsa-obligations.retrieve-failed", "Failed to retrieve obligations."),
   });
 
   const result = await response.json();
   if (!response.ok) {
-    throw requestError(response, result, "Failed to retrieve obligations");
+    throw requestError(response, result, siteText("itsa-obligations.could-not-retrieve-fallback", "Failed to retrieve obligations"));
   }
   return result;
 }
@@ -148,7 +154,7 @@ async function continueObligationsRetrieval() {
     hideSearchCriteria();
     showLoading();
     hideStatus();
-    showStatus("Retrieving obligations...", "info");
+    showStatus(siteText("itsa-obligations.retrieving", "Retrieving obligations..."), "info");
 
     if (pendingRequest.nino) document.getElementById("nino").value = pendingRequest.nino;
     if (pendingRequest.typeOfBusiness) document.getElementById("typeOfBusiness").value = pendingRequest.typeOfBusiness;
@@ -179,9 +185,9 @@ async function continueObligationsRetrieval() {
     console.error("Error retrieving obligations:", error);
     if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
-      showFailure({ status: 401 }, "Could not retrieve obligations");
+      showFailure({ status: 401 }, siteText("itsa-obligations.could-not-retrieve", "Could not retrieve obligations"));
     } else {
-      showFailure(error, "Could not retrieve obligations");
+      showFailure(error, siteText("itsa-obligations.could-not-retrieve", "Could not retrieve obligations"));
     }
     showSearchCriteria();
     sessionStorage.removeItem("pendingObligationsRequest");
@@ -220,7 +226,7 @@ async function handleFormSubmission(event) {
     }
     try {
       showLoading();
-      showStatus("Initiating HMRC authentication...", "info");
+      showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
 
       const state = generateRandomState();
       const requestData = { nino, ...filters, testScenario, runFraudPreventionHeaderValidation };
@@ -238,7 +244,10 @@ async function handleFormSubmission(event) {
       const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
       console.log("Generated HMRC Auth URL:", authResponseUrl);
 
-      showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+      showStatus(
+        siteText("widget.hmrc-auth-redirecting", "Redirecting to HMRC for authentication at {url}...", { url: authResponseUrl }),
+        "info",
+      );
 
       try {
         window.__correlation?.prepareRedirect?.();
@@ -246,14 +255,14 @@ async function handleFormSubmission(event) {
       window.location.href = authResponseUrl;
     } catch (error) {
       console.error("Authentication error:", error);
-      showStatus(`Authentication failed: ${error.message}`, "error");
+      showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
       hideLoading();
     }
   } else {
     try {
       showLoading();
       hideStatus();
-      showStatus("Retrieving obligations...", "info");
+      showStatus(siteText("itsa-obligations.retrieving", "Retrieving obligations..."), "info");
 
       const result = await retrieveObligations(nino, filters, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
 
@@ -265,9 +274,9 @@ async function handleFormSubmission(event) {
       console.error("Error retrieving obligations:", error);
       if (error.status === 401) {
         window.hmrcScopeCheck.clearHmrcToken();
-        showFailure({ status: 401 }, "Could not retrieve obligations");
+        showFailure({ status: 401 }, siteText("itsa-obligations.could-not-retrieve", "Could not retrieve obligations"));
       } else {
-        showFailure(error, "Could not retrieve obligations");
+        showFailure(error, siteText("itsa-obligations.could-not-retrieve", "Could not retrieve obligations"));
       }
     } finally {
       hideLoading();
@@ -285,28 +294,35 @@ function displayObligations(obligations) {
   const businessesWithObligations = (obligations || []).filter((business) => (business.obligationDetails || []).length > 0);
 
   if (businessesWithObligations.length === 0) {
-    tableContainer.replaceChildren(el("p", "no-data", "No obligations found for the specified National Insurance number."));
+    tableContainer.replaceChildren(
+      el("p", "no-data", siteText("itsa-obligations.none-found", "No obligations found for the specified National Insurance number.")),
+    );
     return;
   }
 
+  const periodStart = siteText("itsa.period-start", "Period start");
+  const periodEnd = siteText("itsa.period-end", "Period end");
+  const dueDate = siteText("itsa.due-date", "Due date");
+  const status = siteText("itsa.status", "Status");
+  const received = siteText("itsa-obligations.received", "Received");
   const nodes = businessesWithObligations.flatMap((business) => {
     const headerRow = document.createElement("tr");
-    ["Period start", "Period end", "Due date", "Status", "Received"].forEach((heading) => headerRow.append(el("th", "", heading)));
+    [periodStart, periodEnd, dueDate, status, received].forEach((heading) => headerRow.append(el("th", "", heading)));
     const thead = document.createElement("thead");
     thead.append(headerRow);
 
     const tbody = document.createElement("tbody");
     business.obligationDetails.forEach((detail) => {
       const statusCell = document.createElement("td");
-      statusCell.setAttribute("data-label", "Status");
+      statusCell.setAttribute("data-label", status);
       statusCell.append(el("span", detail.status === "fulfilled" ? "status-fulfilled" : "status-open", detail.status || ""));
       const row = document.createElement("tr");
       row.append(
-        labelled(el("td", "date-column", detail.periodStartDate || ""), "Period start"),
-        labelled(el("td", "date-column", detail.periodEndDate || ""), "Period end"),
-        labelled(el("td", "date-column", detail.dueDate || ""), "Due date"),
+        labelled(el("td", "date-column", detail.periodStartDate || ""), periodStart),
+        labelled(el("td", "date-column", detail.periodEndDate || ""), periodEnd),
+        labelled(el("td", "date-column", detail.dueDate || ""), dueDate),
         statusCell,
-        labelled(el("td", "date-column", detail.receivedDate || "-"), "Received"),
+        labelled(el("td", "date-column", detail.receivedDate || "-"), received),
       );
       tbody.append(row);
     });

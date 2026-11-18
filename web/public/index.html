@@ -36,9 +36,6 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="./submit.css" />
-    <!-- submit.css names the fonts only through its imports, one round trip later. -->
-    <link rel="preload" href="./fonts/atkinson-hyperlegible-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="./fonts/atkinson-hyperlegible-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin />
     <!-- The cookie banner, the largest paint on a first visit, waits for submit.js and every module it imports. -->
     <link rel="modulepreload" href="./submit.js" />
     <link rel="modulepreload" href="./lib/utils/jwt-utils.js" />
@@ -75,7 +72,7 @@
           "@type": "Offer",
           "price": "0",
           "priceCurrency": "GBP",
-          "description": "Free Day Guest access with 3 VAT submissions"
+          "description": "Try it free: sign in and request a day pass on the Bundles page. It gives you 3 tokens for 24 hours, enough for 3 VAT returns."
         },
         "author": {
           "@type": "Organization",
@@ -126,7 +123,8 @@
       <h1 data-i18n="index.heading">File VAT returns and company accounts from your spreadsheet</h1>
       <p class="subtitle" id="homeIntro" data-i18n="index.intro">
         File VAT returns with HMRC, and accounts and confirmation statements with Companies House, from your own spreadsheet. VAT returns
-        cost £0.99 a month or £9.99 a year. A pass link gives you 3 VAT submissions free for 7 days first.
+        cost £0.99 a month or £9.99 a year. Try it free: sign in and request a day pass on the <a href="bundles.html">Bundles</a> page. It
+        gives you 3 tokens for 24 hours, enough for 3 VAT returns. Each filing uses one token.
       </p>
     </header>
 
@@ -163,20 +161,23 @@
         </div>
       </div>
 
-      <nav class="filing-guides" aria-label="How to file" lang="en-GB">
-        <h2>How to file</h2>
+      <nav class="filing-guides" aria-label="How to file" data-i18n-aria-label="index.how-label">
+        <h2 data-i18n="index.how-heading">How to file</h2>
         <ul>
-          <li><a href="vat-return-from-a-spreadsheet.html">VAT return from a spreadsheet</a></li>
-          <li><a href="micro-entity-accounts.html">Micro-entity accounts</a></li>
-          <li><a href="small-company-accounts.html">Small company accounts</a></li>
-          <li><a href="dormant-company-accounts.html">Dormant company accounts</a></li>
-          <li><a href="confirmation-statement.html">Confirmation statement</a></li>
+          <li data-i18n="index.how-vat"><a href="vat-return-from-a-spreadsheet.html">VAT return from a spreadsheet</a></li>
+          <li data-i18n="index.how-micro"><a href="micro-entity-accounts.html">Micro-entity accounts</a></li>
+          <li data-i18n="index.how-small"><a href="small-company-accounts.html">Small company accounts</a></li>
+          <li data-i18n="index.how-dormant"><a href="dormant-company-accounts.html">Dormant company accounts</a></li>
+          <li data-i18n="index.how-confirmation"><a href="confirmation-statement.html">Confirmation statement</a></li>
         </ul>
+        <p class="tools-link" data-i18n="index.how-tools">
+          Checkers, calculators and tables are on the <a href="tools.html">Tools</a> page.
+        </p>
       </nav>
 
       <p class="hint" data-i18n="index.get-started"><a href="get-started.html">New to Submit? Read how to get started.</a></p>
 
-      <div class="feature-status-summary" data-feature-status="summary">
+      <div class="feature-status-summary" data-feature-status="summary" hidden>
         <p data-i18n="index.status">
           <strong>Status of each feature.</strong> Sandbox and preview features file nothing real.
           <a href="mtd-calendar.html#availability">See the availability table</a>.
@@ -184,24 +185,21 @@
         <ul id="featureStatusList"></ul>
       </div>
 
-      <aside class="proof-note" aria-label="Reviews and listing" data-i18n-aria-label="index.reviews-label">
+      <aside
+        class="proof-note"
+        aria-label="DIY Accounting, the company behind Submit, rated 5.0 from 9 Google reviews"
+        data-i18n-aria-label="index.reviews-label"
+      >
         <p data-i18n="index.reviews">
           <span class="proof-stars" role="img" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
           <strong>5.0</strong>
-          <a href="https://maps.app.goo.gl/a9vQaci6xLU6v2Gr7" target="_blank" rel="noopener">9 reviews on Google</a>
+          <a href="https://maps.app.goo.gl/a9vQaci6xLU6v2Gr7" target="_blank" rel="noopener">9 reviews of DIY Accounting on Google</a>
         </p>
         <p data-i18n="index.reviews-featuredcustomers">
           <a href="https://www.featuredcustomers.com/vendor/diy-accounting" target="_blank" rel="noopener"
-            >4.8 out of 5 on FeaturedCustomers</a
+            >4.8 out of 5 for DIY Accounting on FeaturedCustomers</a
           >
         </p>
-        <blockquote lang="en-GB">
-          <p>
-            &ldquo;I highly recommend the DIY Accounting accounts packages: far better value and much simpler than expensive subscription
-            accounting packages.&rdquo;
-          </p>
-          <footer>Steve Walsh</footer>
-        </blockquote>
       </aside>
 
       <aside class="proof-note" aria-label="HMRC software finder" data-i18n-aria-label="index.finder-label">
@@ -232,7 +230,7 @@
       <span data-i18n="index.rt-status-preview">Preview</span>
       <span data-i18n="index.rt-meaning-production">for real use</span>
       <span data-i18n="index.rt-meaning-sandbox">against a test service</span>
-      <span data-i18n="index.rt-meaning-preview">on our simulator only</span>
+      <span data-i18n="index.rt-meaning-preview">you can try the screens, and nothing is sent</span>
       <span data-i18n="index.rt-and">and</span>
       <span data-i18n="index.rt-and-vowel">and</span>
     </template>

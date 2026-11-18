@@ -8,7 +8,7 @@
 // client is created on first use.
 
 import Stripe from "stripe";
-import { recordIntegrationCall } from "./integrationCalls.js";
+import { callActorClass, recordIntegrationCall } from "./integrationCalls.js";
 import { stripePathTemplate } from "./dataMasking.js";
 
 const STRIPE_TIMEOUT_ERROR_CODE = "ETIMEDOUT";
@@ -88,6 +88,7 @@ export class StripeRecordingHttpClient {
       org: "stripe",
       target: this.target,
       api: `${method} ${stripePathTemplate(new URL(url).pathname)}`,
+      actor: callActorClass(),
       url,
       method,
       startedAt: new Date(),

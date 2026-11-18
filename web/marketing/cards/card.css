@@ -5,14 +5,14 @@
    one hundredth of the shorter side, so every size is the same design scaled. */
 
 @font-face {
-  font-family: "Plain Zero";
-  src: url("../brand/fonts/plain-zero-400-normal.woff2") format("woff2");
+  font-family: "Arimo";
+  src: url("../brand/fonts/arimo-latin-400-normal.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
 }
 @font-face {
-  font-family: "Plain Zero";
-  src: url("../brand/fonts/plain-zero-700-normal.woff2") format("woff2");
+  font-family: "Arimo";
+  src: url("../brand/fonts/arimo-latin-700-normal.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
 }

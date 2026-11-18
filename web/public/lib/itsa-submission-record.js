@@ -13,139 +13,204 @@ import { ABSENT, formatLongDate, formatNino, formatTimestamp } from "./itsa-calc
 
 export { mountCopy } from "./itsa-calculation-record.js";
 
+// page-chrome.js gives the text in the reader's language; under Node, and without it, the English stands.
+function siteText(id, english, values) {
+  if (globalThis.siteText) return globalThis.siteText(id, english, values);
+  return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+}
+
 const KIND_NAMES = {
-  "self-employment": "Self-employment",
-  "uk-property": "UK property",
-  "foreign-property": "Foreign property",
+  "self-employment": siteText("itsa.self-employment", "Self-employment"),
+  "uk-property": siteText("itsa.uk-property", "UK property"),
+  "foreign-property": siteText("itsa.foreign-property", "Foreign property"),
+};
+
+// The kind of business as it reads mid-sentence.
+const KIND_PHRASES = {
+  "self-employment": siteText("itsa.kind-phrase-self-employment", "self-employment"),
+  "uk-property": siteText("itsa.kind-phrase-uk-property", "UK property"),
+  "foreign-property": siteText("itsa.kind-phrase-foreign-property", "foreign property"),
 };
 
 const FIELD_LABELS = {
   // Annual adjustments
-  "includedNonTaxableProfits": "Included non-taxable profits",
-  "basisAdjustment": "Basis period adjustment",
-  "accountingAdjustment": "Accounting adjustment",
-  "outstandingBusinessIncome": "Outstanding business income",
-  "balancingChargeBpra": "Balancing charge (business premises renovation allowance)",
-  "balancingChargeOther": "Balancing charge (other)",
-  "goodsAndServicesOwnUse": "Goods and services for own use",
-  "transitionProfitAmount": "Transition profit amount",
-  "transitionProfitAccelerationAmount": "Transition profit acceleration amount",
-  "balancingCharge": "Balancing charge",
-  "privateUseAdjustment": "Private use adjustment",
-  "businessPremisesRenovationAllowanceBalancingCharges": "Business premises renovation allowance balancing charges",
-  "nonResidentLandlord": "Non-resident landlord",
-  "rentARoom: jointlyLet": "Rent a room: jointly let",
+  "includedNonTaxableProfits": siteText("itsa.field-included-non-taxable-profits", "Included non-taxable profits"),
+  "basisAdjustment": siteText("itsa.field-basis-period-adjustment", "Basis period adjustment"),
+  "accountingAdjustment": siteText("itsa.field-accounting-adjustment", "Accounting adjustment"),
+  "outstandingBusinessIncome": siteText("itsa.field-outstanding-business-income", "Outstanding business income"),
+  "balancingChargeBpra": siteText(
+    "itsa.field-balancing-charge-business-premises-renovation-allowance",
+    "Balancing charge (business premises renovation allowance)",
+  ),
+  "balancingChargeOther": siteText("itsa.field-balancing-charge-other", "Balancing charge (other)"),
+  "goodsAndServicesOwnUse": siteText("itsa.field-goods-and-services-for-own-use", "Goods and services for own use"),
+  "transitionProfitAmount": siteText("itsa.field-transition-profit-amount", "Transition profit amount"),
+  "transitionProfitAccelerationAmount": siteText(
+    "itsa.field-transition-profit-acceleration-amount",
+    "Transition profit acceleration amount",
+  ),
+  "balancingCharge": siteText("itsa.field-balancing-charge", "Balancing charge"),
+  "privateUseAdjustment": siteText("itsa.field-private-use-adjustment", "Private use adjustment"),
+  "businessPremisesRenovationAllowanceBalancingCharges": siteText(
+    "itsa.field-business-premises-renovation-allowance-balancing-charges",
+    "Business premises renovation allowance balancing charges",
+  ),
+  "nonResidentLandlord": siteText("itsa.field-non-resident-landlord", "Non-resident landlord"),
+  "rentARoom: jointlyLet": siteText("itsa.field-rent-a-room-jointly-let", "Rent a room: jointly let"),
   // Annual allowances
-  "tradingIncomeAllowance": "Trading income allowance",
-  "propertyIncomeAllowance": "Property income allowance",
-  "annualInvestmentAllowance": "Annual investment allowance",
-  "capitalAllowanceMainPool": "Capital allowance, main pool",
-  "capitalAllowanceSpecialRatePool": "Capital allowance, special rate pool",
-  "businessPremisesRenovationAllowance": "Business premises renovation allowance",
-  "enhancedCapitalAllowance": "Enhanced capital allowance",
-  "allowanceOnSales": "Allowance on sales",
-  "capitalAllowanceSingleAssetPool": "Capital allowance, single asset pool",
-  "zeroEmissionsCarAllowance": "Zero emissions car allowance",
-  "otherCapitalAllowance": "Other capital allowance",
-  "costOfReplacingDomesticItems": "Cost of replacing domestic items",
-  "zeroEmissionsGoodsVehicleAllowance": "Zero emissions goods vehicle allowance",
-  "electricChargePointAllowance": "Electric charge point allowance",
-  "periodOfGraceAdjustment": "Period of grace adjustment",
-  "structuredBuildingAllowance": "Structures and Buildings Allowance",
-  "enhancedStructuredBuildingAllowance": "Freeport Structures and Buildings Allowance",
-  "firstYear: qualifyingDate": "Date the building first qualified",
-  "firstYear: qualifyingAmountExpenditure": "Qualifying expenditure",
+  "tradingIncomeAllowance": siteText("itsa.field-trading-income-allowance", "Trading income allowance"),
+  "propertyIncomeAllowance": siteText("itsa.field-property-income-allowance", "Property income allowance"),
+  "annualInvestmentAllowance": siteText("itsa.field-annual-investment-allowance", "Annual investment allowance"),
+  "capitalAllowanceMainPool": siteText("itsa.field-capital-allowance-main-pool", "Capital allowance, main pool"),
+  "capitalAllowanceSpecialRatePool": siteText("itsa.field-capital-allowance-special-rate-pool", "Capital allowance, special rate pool"),
+  "businessPremisesRenovationAllowance": siteText(
+    "itsa.field-business-premises-renovation-allowance",
+    "Business premises renovation allowance",
+  ),
+  "enhancedCapitalAllowance": siteText("itsa.field-enhanced-capital-allowance", "Enhanced capital allowance"),
+  "allowanceOnSales": siteText("itsa.field-allowance-on-sales", "Allowance on sales"),
+  "capitalAllowanceSingleAssetPool": siteText("itsa.field-capital-allowance-single-asset-pool", "Capital allowance, single asset pool"),
+  "zeroEmissionsCarAllowance": siteText("itsa.field-zero-emissions-car-allowance", "Zero emissions car allowance"),
+  "otherCapitalAllowance": siteText("itsa.field-other-capital-allowance", "Other capital allowance"),
+  "costOfReplacingDomesticItems": siteText("itsa.field-cost-of-replacing-domestic-items", "Cost of replacing domestic items"),
+  "zeroEmissionsGoodsVehicleAllowance": siteText(
+    "itsa.field-zero-emissions-goods-vehicle-allowance",
+    "Zero emissions goods vehicle allowance",
+  ),
+  "electricChargePointAllowance": siteText("itsa.field-electric-charge-point-allowance", "Electric charge point allowance"),
+  "periodOfGraceAdjustment": siteText("itsa.field-period-of-grace-adjustment", "Period of grace adjustment"),
+  "structuredBuildingAllowance": siteText("itsa.field-structures-and-buildings-allowance", "Structures and Buildings Allowance"),
+  "enhancedStructuredBuildingAllowance": siteText(
+    "itsa.field-freeport-structures-and-buildings-allowance",
+    "Freeport Structures and Buildings Allowance",
+  ),
+  "firstYear: qualifyingDate": siteText("itsa.field-date-the-building-first-qualified", "Date the building first qualified"),
+  "firstYear: qualifyingAmountExpenditure": siteText("itsa.field-qualifying-expenditure", "Qualifying expenditure"),
   // Non-financial details
-  "class4NicsExemptionReason": "Class 4 National Insurance exemption reason",
+  "class4NicsExemptionReason": siteText(
+    "itsa.field-class-4-national-insurance-exemption-reason",
+    "Class 4 National Insurance exemption reason",
+  ),
   // Period income
-  "turnover": "Turnover",
-  "periodAmount": "Rental income",
-  "otherIncome": "Other property income",
+  "turnover": siteText("itsa.field-turnover", "Turnover"),
+  "periodAmount": siteText("itsa.field-rental-income", "Rental income"),
+  "otherIncome": siteText("itsa.field-other-property-income", "Other property income"),
   // Foreign property period income
-  "rentIncome: rentAmount": "Rental income",
-  "rentAmount": "Rental income",
-  "otherPropertyIncome": "Other property income",
-  "premiumsOfLeaseGrant": "Premiums for the grant of a lease",
-  "foreignTaxPaidOrDeducted": "Foreign tax taken off or paid",
-  "specialWithholdingTaxOrUkTaxPaid": "UK tax taken off",
-  "foreignTaxCreditRelief": "Claim foreign tax credit relief",
-  "broughtFwdResidentialFinancialCost": "Unused residential finance costs brought forward",
+  "rentIncome: rentAmount": siteText("itsa.field-rental-income", "Rental income"),
+  "rentAmount": siteText("itsa.field-rental-income", "Rental income"),
+  "otherPropertyIncome": siteText("itsa.field-other-property-income", "Other property income"),
+  "premiumsOfLeaseGrant": siteText("itsa.field-premiums-for-the-grant-of-a", "Premiums for the grant of a lease"),
+  "foreignTaxPaidOrDeducted": siteText("itsa.field-foreign-tax-taken-off-or-paid", "Foreign tax taken off or paid"),
+  "specialWithholdingTaxOrUkTaxPaid": siteText("itsa.field-uk-tax-taken-off", "UK tax taken off"),
+  "foreignTaxCreditRelief": siteText("itsa.field-claim-foreign-tax-credit-relief", "Claim foreign tax credit relief"),
+  "broughtFwdResidentialFinancialCost": siteText(
+    "itsa.field-unused-residential-finance-costs-brought-forward",
+    "Unused residential finance costs brought forward",
+  ),
   // Period expenses
-  "consolidatedExpenses": "Total expenses",
-  "costOfGoods": "Cost of goods",
-  "paymentsToSubcontractors": "Payments to subcontractors",
-  "wagesAndStaffCosts": "Wages, salaries and other staff costs",
-  "carVanTravelExpenses": "Car, van and travel expenses",
-  "premisesRunningCosts": "Rent, rates, power and insurance costs",
-  "maintenanceCosts": "Repairs and renewals of property and equipment",
-  "adminCosts": "Phone, fax, stationery and other office costs",
-  "businessEntertainmentCosts": "Business entertainment costs",
-  "advertisingCosts": "Advertising costs",
-  "interestOnBankOtherLoans": "Interest on bank and other loans",
-  "financeCharges": "Bank, credit card and other financial charges",
-  "irrecoverableDebts": "Irrecoverable debts written off",
-  "professionalFees": "Accountancy, legal and other professional fees",
-  "depreciation": "Depreciation and loss/profit on sales of assets",
-  "otherExpenses": "Other expenses",
-  "repairsAndMaintenance": "Repairs and maintenance",
-  "financialCosts": "Financial costs",
-  "costOfServices": "Cost of services",
-  "residentialFinancialCost": "Residential financial costs",
-  "residentialFinancialCostsCarriedForward": "Residential financial costs carried forward",
-  "travelCosts": "Travel costs",
+  "consolidatedExpenses": siteText("itsa.field-total-expenses", "Total expenses"),
+  "costOfGoods": siteText("itsa.field-cost-of-goods", "Cost of goods"),
+  "paymentsToSubcontractors": siteText("itsa.field-payments-to-subcontractors", "Payments to subcontractors"),
+  "wagesAndStaffCosts": siteText("itsa.field-wages-salaries-and-other-staff-costs", "Wages, salaries and other staff costs"),
+  "carVanTravelExpenses": siteText("itsa.field-car-van-and-travel-expenses", "Car, van and travel expenses"),
+  "premisesRunningCosts": siteText("itsa.field-rent-rates-power-and-insurance-costs", "Rent, rates, power and insurance costs"),
+  "maintenanceCosts": siteText("itsa.field-repairs-and-renewals-of-property-and", "Repairs and renewals of property and equipment"),
+  "adminCosts": siteText("itsa.field-phone-fax-stationery-and-other-office", "Phone, fax, stationery and other office costs"),
+  "businessEntertainmentCosts": siteText("itsa.field-business-entertainment-costs", "Business entertainment costs"),
+  "advertisingCosts": siteText("itsa.field-advertising-costs", "Advertising costs"),
+  "interestOnBankOtherLoans": siteText("itsa.field-interest-on-bank-and-other-loans", "Interest on bank and other loans"),
+  "financeCharges": siteText("itsa.field-bank-credit-card-and-other-financial", "Bank, credit card and other financial charges"),
+  "irrecoverableDebts": siteText("itsa.field-irrecoverable-debts-written-off", "Irrecoverable debts written off"),
+  "professionalFees": siteText(
+    "itsa.field-accountancy-legal-and-other-professional-fees",
+    "Accountancy, legal and other professional fees",
+  ),
+  "depreciation": siteText("itsa.field-depreciation-and-loss-profit-on-sales", "Depreciation and loss/profit on sales of assets"),
+  "otherExpenses": siteText("itsa.field-other-expenses", "Other expenses"),
+  "repairsAndMaintenance": siteText("itsa.field-repairs-and-maintenance", "Repairs and maintenance"),
+  "financialCosts": siteText("itsa.field-financial-costs", "Financial costs"),
+  "costOfServices": siteText("itsa.field-cost-of-services", "Cost of services"),
+  "residentialFinancialCost": siteText("itsa.field-residential-financial-costs", "Residential financial costs"),
+  "residentialFinancialCostsCarriedForward": siteText(
+    "itsa.field-residential-financial-costs-carried-forward",
+    "Residential financial costs carried forward",
+  ),
+  "travelCosts": siteText("itsa.field-travel-costs", "Travel costs"),
   // Losses and claims
-  "broughtForwardLosses": "Losses brought forward",
-  "carryForward: currentYearLosses": "This year's loss carried forward",
-  "carryForward: previousYearsLosses": "Earlier years' losses carried forward",
-  "carrySideways: currentYearGeneralIncome": "Set against this year's other income",
-  "carryBack: previousYearGeneralIncome": "Carried back against the previous year's income",
-  "carryBack: earlyYearLosses": "Early year losses carried back",
-  "carryBack: terminalLosses": "Terminal losses carried back",
-  "preferenceOrder: applyFirst": "Applies first",
+  "broughtForwardLosses": siteText("itsa.field-losses-brought-forward", "Losses brought forward"),
+  "carryForward: currentYearLosses": siteText("itsa.field-this-year-s-loss-carried-forward", "This year's loss carried forward"),
+  "carryForward: previousYearsLosses": siteText("itsa.field-earlier-years-losses-carried-forward", "Earlier years' losses carried forward"),
+  "carrySideways: currentYearGeneralIncome": siteText("itsa.field-set-against-this-year-s-other", "Set against this year's other income"),
+  "carryBack: previousYearGeneralIncome": siteText(
+    "itsa.field-carried-back-against-the-previous-year",
+    "Carried back against the previous year's income",
+  ),
+  "carryBack: earlyYearLosses": siteText("itsa.field-early-year-losses-carried-back", "Early year losses carried back"),
+  "carryBack: terminalLosses": siteText("itsa.field-terminal-losses-carried-back", "Terminal losses carried back"),
+  "preferenceOrder: applyFirst": siteText("itsa.field-applies-first", "Applies first"),
   // Tax liability adjustments
-  "carryBackLossesDecrease: incomeTax": "Income tax decreased",
-  "carryBackLossesDecrease: class4": "Class 4 National Insurance decreased",
-  "carryBackLossesDecrease: capitalGainsTax": "Capital gains tax decreased",
+  "carryBackLossesDecrease: incomeTax": siteText("itsa.field-income-tax-decreased", "Income tax decreased"),
+  "carryBackLossesDecrease: class4": siteText("itsa.field-class-4-national-insurance-decreased", "Class 4 National Insurance decreased"),
+  "carryBackLossesDecrease: capitalGainsTax": siteText("itsa.field-capital-gains-tax-decreased", "Capital gains tax decreased"),
 };
 
 // The building a Structures and Buildings Allowance claim names: text, not a figure.
 const BUILDING_TEXT_KEYS = ["name", "number", "postcode"];
 
 const CLAIM_ORDER_LABELS = {
-  "carry-sideways": "Carry sideways first",
-  "carry-back": "Carry back first",
+  "carry-sideways": siteText("itsa.field-carry-sideways-first", "Carry sideways first"),
+  "carry-back": siteText("itsa.field-carry-back-first", "Carry back first"),
 };
 
 const EXEMPTION_REASON_LABELS = {
-  "non-resident": "Non-resident",
-  "trustee": "Trustee",
-  "diver": "Diver",
-  "over-state-pension-age": "Over State Pension age",
+  "non-resident": siteText("itsa.field-non-resident", "Non-resident"),
+  "trustee": siteText("itsa.field-trustee", "Trustee"),
+  "diver": siteText("itsa.field-diver", "Diver"),
+  "over-state-pension-age": siteText("itsa.field-over-state-pension-age", "Over State Pension age"),
 };
 
 const ANNUAL_SECTIONS = [
   {
     key: "adjustments",
-    heading: "Adjustments",
-    explanation:
+    heading: siteText("itsa.adjustments", "Adjustments"),
+    explanation: siteText(
+      "itsa.record-explain-adjustments",
       "These are the adjustments to the year's profit that you sent. A figure you left at 0 was not sent, so it does not appear.",
+    ),
+    none: siteText("itsa.record-no-adjustments", "You sent no adjustments for this year."),
   },
   {
     key: "allowances",
-    heading: "Allowances",
-    explanation:
+    heading: siteText("itsa.allowances", "Allowances"),
+    explanation: siteText(
+      "itsa.record-explain-allowances-claimed",
       "These are the allowances you claimed for the year. HMRC accepts the trading or property income allowance, or the itemised allowances, but not both.",
+    ),
+    none: siteText("itsa.record-no-allowances-sent", "You sent no allowances for this year."),
   },
   {
     key: "nonFinancials",
-    heading: "Other details",
-    explanation: "These details do not change the amounts. HMRC uses them to apply the right rules to the year.",
+    heading: siteText("itsa.other-details", "Other details"),
+    explanation: siteText(
+      "itsa.record-explain-other-details",
+      "These details do not change the amounts. HMRC uses them to apply the right rules to the year.",
+    ),
+    none: siteText("itsa.record-no-other-details", "You sent no other details for this year."),
   },
 ];
 
-// "Self-employment" reads in lower case mid-sentence; "UK property" keeps its capitals.
-function kindPhrase(kindName) {
-  return kindName.startsWith("UK") ? kindName : kindName.toLowerCase();
+function kindPhrase(kind) {
+  return KIND_PHRASES[kind] || siteText("itsa.kind-phrase-business", "business");
+}
+
+function taxYearTitle(year) {
+  return year ? siteText("itsa.record-tax-year", "Tax year {year}", { year }) : siteText("itsa.tax-year", "Tax year");
+}
+
+function savedLine(saved) {
+  return saved
+    ? siteText("itsa.record-saved-on", "Saved with HMRC on {date}", { date: saved })
+    : siteText("itsa.record-saved", "Saved with HMRC");
 }
 
 function isAmount(value) {
@@ -184,7 +249,9 @@ function collectEntries(group, path = []) {
     if (value === undefined) return [];
     if (isRecordObject(value)) return collectEntries(value, [...path, key]);
     if (Array.isArray(value) && value.length > 0 && value.every(isRecordObject)) {
-      return value.flatMap((item, index) => collectEntries(item, [...path, key, `Claim ${index + 1}`]));
+      return value.flatMap((item, index) =>
+        collectEntries(item, [...path, key, siteText("itsa.record-claim-n", "Claim {n}", { n: index + 1 })]),
+      );
     }
     return [{ path: [...path, key], value }];
   });
@@ -198,7 +265,7 @@ function valueCell(entry) {
   const { value } = entry;
   const leaf = entry.path[entry.path.length - 1];
   if (isAmount(value)) return recordAmount(value, { decimals: 2 });
-  if (typeof value === "boolean") return textCell(value ? "Yes" : "No");
+  if (typeof value === "boolean") return textCell(value ? siteText("widget.yes", "Yes") : siteText("widget.no", "No"));
   if (leaf === "class4NicsExemptionReason" && nonEmptyText(value)) {
     return textCell(EXEMPTION_REASON_LABELS[value.trim()] || humanise(value));
   }
@@ -225,11 +292,14 @@ function entriesTable(columnHeading, entries, idPrefix) {
 function referenceLines({ nino, businessId, correlationId }) {
   const lines = [];
   const formattedNino = formatNino(nino);
-  if (formattedNino) lines.push(`National Insurance number ${escapeRecordText(formattedNino)}`);
+  if (formattedNino)
+    lines.push(siteText("itsa.record-nino", "National Insurance number {nino}", { nino: escapeRecordText(formattedNino) }));
   const id = nonEmptyText(businessId);
-  if (id) lines.push(`Business ID ${escapeRecordText(id)}`);
+  if (id) lines.push(siteText("itsa.record-business-id", "Business ID {id}", { id: escapeRecordText(id) }));
   const hmrcCorrelationId = nonEmptyText(correlationId);
-  if (hmrcCorrelationId) lines.push(`HMRC correlation ID ${escapeRecordText(hmrcCorrelationId)}`);
+  if (hmrcCorrelationId) {
+    lines.push(siteText("itsa.record-correlation-id", "HMRC correlation ID {id}", { id: escapeRecordText(hmrcCorrelationId) }));
+  }
   return lines;
 }
 
@@ -239,9 +309,9 @@ function foreignAnnualSections(entries, columnHeading, recordHead) {
   if (entries.length === 0) {
     return [
       {
-        heading: "Adjustments and allowances",
-        explanation: "These are the adjustments and allowances you sent.",
-        recordHtml: `${recordHead}<p class="no-data">You sent no adjustments or allowances for this year.</p>`,
+        heading: siteText("itsa.record-adjustments-and-allowances", "Adjustments and allowances"),
+        explanation: siteText("itsa.record-explain-adjustments-and-allowances", "These are the adjustments and allowances you sent."),
+        recordHtml: `${recordHead}<p class="no-data">${siteText("itsa.record-no-adjustments-or-allowances", "You sent no adjustments or allowances for this year.")}</p>`,
       },
     ];
   }
@@ -253,22 +323,36 @@ function foreignAnnualSections(entries, columnHeading, recordHead) {
     const name = entry.name;
     return [
       {
-        heading: `${name}: adjustments`,
+        heading: siteText("itsa.record-entry-adjustments", "{name}: adjustments", { name }),
         explanation:
           index === 0
-            ? "These are the adjustments to the year's profit that you sent, one table for each country or property. A figure you left at 0 was not sent, so it does not appear."
+            ? siteText(
+                "itsa.record-explain-foreign-adjustments",
+                "These are the adjustments to the year's profit that you sent, one table for each country or property. A figure you left at 0 was not sent, so it does not appear.",
+              )
             : "",
         recordHtml:
           (index === 0 ? recordHead : "") +
-          table(entry.adjustments, `annual-${entry.id}-adjustments`, `You sent no adjustments for ${name}.`),
+          table(
+            entry.adjustments,
+            `annual-${entry.id}-adjustments`,
+            siteText("itsa.record-no-adjustments-for", "You sent no adjustments for {name}.", { name }),
+          ),
       },
       {
-        heading: `${name}: allowances`,
+        heading: siteText("itsa.record-entry-allowances", "{name}: allowances", { name }),
         explanation:
           index === 0
-            ? "These are the allowances you claimed for the year. HMRC accepts the property income allowance or the itemised allowances, but not both."
+            ? siteText(
+                "itsa.record-explain-foreign-allowances",
+                "These are the allowances you claimed for the year. HMRC accepts the property income allowance or the itemised allowances, but not both.",
+              )
             : "",
-        recordHtml: table(entry.allowances, `annual-${entry.id}-allowances`, `You sent no allowances for ${name}.`),
+        recordHtml: table(
+          entry.allowances,
+          `annual-${entry.id}-allowances`,
+          siteText("itsa.record-no-allowances-for", "You sent no allowances for {name}.", { name }),
+        ),
       },
     ];
   });
@@ -295,15 +379,15 @@ function foreignAnnualSections(entries, columnHeading, recordHead) {
 export function annualCopyHtml({ kind, nino, businessId, taxYear, savedAt, correlationId, sent, links = [] }) {
   const year = nonEmptyText(taxYear);
   const saved = formatTimestamp(savedAt);
-  const kindName = KIND_NAMES[kind] || "Business";
+  const kindName = KIND_NAMES[kind] || siteText("itsa.business", "Business");
   const groups = isRecordObject(sent) ? sent : {};
-  const columnHeading = year || "Amount";
+  const columnHeading = year || siteText("widget.field-amount", "Amount");
 
   const recordHead = recordHeading({
-    nameHtml: escapeRecordText(`${kindName} annual submission`),
+    nameHtml: escapeRecordText(siteText("itsa.record-annual-name", "{kind} annual submission", { kind: kindName })),
     referenceHtml: referenceLines({ nino, businessId, correlationId }),
-    title: year ? `Tax year ${year}` : "Tax year",
-    subtitleHtml: escapeRecordText(saved ? `Saved with HMRC on ${saved}` : "Saved with HMRC"),
+    title: taxYearTitle(year),
+    subtitleHtml: escapeRecordText(savedLine(saved)),
   });
 
   const foreignEntries = Array.isArray(groups.entries) ? groups.entries : [];
@@ -315,7 +399,7 @@ export function annualCopyHtml({ kind, nino, businessId, taxYear, savedAt, corre
           const body =
             entries.length > 0
               ? entriesTable(columnHeading, entries, `annual-${section.key}`)
-              : `<p class="no-data">You sent no ${section.heading.toLowerCase()} for this year.</p>`;
+              : `<p class="no-data">${escapeRecordText(section.none)}</p>`;
           return {
             heading: section.heading,
             explanation: section.explanation,
@@ -325,11 +409,11 @@ export function annualCopyHtml({ kind, nino, businessId, taxYear, savedAt, corre
 
   return customerCopyHtml({
     title: year
-      ? `Your copy of the ${kindPhrase(kindName)} annual submission for ${year}`
-      : `Your copy of the ${kindPhrase(kindName)} annual submission`,
-    reference: { label: "Business ID", value: nonEmptyText(businessId) || ABSENT },
-    status: { kind: "accepted", text: "Accepted by HMRC" },
-    date: saved || "Not recorded",
+      ? siteText("itsa.record-annual-copy-year", "Your copy of the {kind} annual submission for {year}", { kind: kindPhrase(kind), year })
+      : siteText("itsa.record-annual-copy", "Your copy of the {kind} annual submission", { kind: kindPhrase(kind) }),
+    reference: { label: siteText("itsa.business-id", "Business ID"), value: nonEmptyText(businessId) || ABSENT },
+    status: { kind: "accepted", text: siteText("itsa.accepted-by-hmrc", "Accepted by HMRC") },
+    date: saved || siteText("itsa.record-not-recorded", "Not recorded"),
     sections,
     links,
   });
@@ -347,13 +431,25 @@ function periodDates(period) {
 function periodGroups(period) {
   if (!isRecordObject(period)) return { income: {}, expenses: {}, propertyType: null };
   if (isRecordObject(period.ukProperty)) {
-    return { income: period.ukProperty.income, expenses: period.ukProperty.expenses, propertyType: "UK property" };
+    return {
+      income: period.ukProperty.income,
+      expenses: period.ukProperty.expenses,
+      propertyType: siteText("itsa.uk-property", "UK property"),
+    };
   }
   if (isRecordObject(period.ukFhlProperty)) {
-    return { income: period.ukFhlProperty.income, expenses: period.ukFhlProperty.expenses, propertyType: "Furnished holiday letting" };
+    return {
+      income: period.ukFhlProperty.income,
+      expenses: period.ukFhlProperty.expenses,
+      propertyType: siteText("itsa.furnished-holiday-letting", "Furnished holiday letting"),
+    };
   }
   if (isRecordObject(period.ukNonFhlProperty)) {
-    return { income: period.ukNonFhlProperty.income, expenses: period.ukNonFhlProperty.expenses, propertyType: "UK property" };
+    return {
+      income: period.ukNonFhlProperty.income,
+      expenses: period.ukNonFhlProperty.expenses,
+      propertyType: siteText("itsa.uk-property", "UK property"),
+    };
   }
   return { income: period.periodIncome, expenses: period.periodExpenses, propertyType: null };
 }
@@ -364,16 +460,16 @@ const KNOWN_INCOME_KEYS = {
 };
 
 const INCOME_LABEL_OVERRIDES = {
-  "self-employment": { other: "Other income" },
+  "self-employment": { other: siteText("itsa.field-other-income", "Other income") },
   "uk-property": {},
 };
 
 const PROPERTY_EXPENSE_LABELS = {
-  premisesRunningCosts: "Rent, rates, insurance and ground rent",
-  financialCosts: "Loan interest and other financial costs",
-  professionalFees: "Legal, management and other professional fees",
-  costOfServices: "Costs of services provided, including wages",
-  other: "Other property expenses",
+  premisesRunningCosts: siteText("itsa.field-rent-rates-insurance-and-ground-rent", "Rent, rates, insurance and ground rent"),
+  financialCosts: siteText("itsa.field-loan-interest-and-other-financial-costs", "Loan interest and other financial costs"),
+  professionalFees: siteText("itsa.field-legal-management-and-other-professional-fees", "Legal, management and other professional fees"),
+  costOfServices: siteText("itsa.field-costs-of-services-provided-including-wages", "Costs of services provided, including wages"),
+  other: siteText("itsa.field-other-property-expenses", "Other property expenses"),
 };
 
 const EXPENSE_LABEL_OVERRIDES = {
@@ -389,14 +485,14 @@ function foreignPeriodEntries(period) {
   if (!isRecordObject(period)) return [];
   const entries = [];
   if (isRecordObject(period.foreignFhlEea)) {
-    entries.push({ id: "fhl", name: "Furnished holiday lettings in the EEA", ...period.foreignFhlEea });
+    entries.push({ id: "fhl", name: siteText("itsa.fhl-eea", "Furnished holiday lettings in the EEA"), ...period.foreignFhlEea });
   }
   const list = [period.foreignNonFhlProperty, period.foreignProperty].find(Array.isArray) || [];
   list.forEach((entry, index) => {
     if (!isRecordObject(entry)) return;
-    let name = `Entry ${index + 1}`;
+    let name = siteText("itsa.record-entry-n", "Entry {n}", { n: index + 1 });
     if (nonEmptyText(entry.countryCode)) name = globalThis.countryCodes?.countryName(entry.countryCode) ?? entry.countryCode;
-    else if (nonEmptyText(entry.propertyId)) name = `Property ${entry.propertyId}`;
+    else if (nonEmptyText(entry.propertyId)) name = siteText("itsa.record-property-id", "Property {id}", { id: entry.propertyId });
     entries.push({ id: String(index + 1), name, income: entry.income, expenses: entry.expenses });
   });
   return entries;
@@ -408,9 +504,9 @@ function foreignPeriodSections(period, columnHeading, firstSectionPrefix) {
   if (entries.length === 0) {
     return [
       {
-        heading: "Income",
-        explanation: "This is the income and expenses HMRC holds for the period.",
-        recordHtml: `${firstSectionPrefix}<p class="no-data">HMRC holds no figures for this period.</p>`,
+        heading: siteText("itsa.income", "Income"),
+        explanation: siteText("itsa.record-explain-income-and-expenses", "This is the income and expenses HMRC holds for the period."),
+        recordHtml: `${firstSectionPrefix}<p class="no-data">${siteText("itsa.record-no-figures", "HMRC holds no figures for this period.")}</p>`,
       },
     ];
   }
@@ -419,24 +515,33 @@ function foreignPeriodSections(period, columnHeading, firstSectionPrefix) {
     const expenseEntries = collectEntries(entry.expenses);
     return [
       {
-        heading: `${entry.name}: income`,
+        heading: siteText("itsa.record-entry-income", "{name}: income", { name: entry.name }),
         explanation:
           index === 0
-            ? "This is the income HMRC holds for the period, one table for each country or property. A cumulative year shows the running total from the start of the tax year."
+            ? siteText(
+                "itsa.record-explain-foreign-income",
+                "This is the income HMRC holds for the period, one table for each country or property. A cumulative year shows the running total from the start of the tax year.",
+              )
             : "",
         recordHtml:
           (index === 0 ? firstSectionPrefix : "") +
           (incomeEntries.length > 0
             ? periodTable(columnHeading, incomeEntries, `period-${entry.id}-income`, {})
-            : `<p class="no-data">HMRC holds no income for ${escapeRecordText(entry.name)}.</p>`),
+            : `<p class="no-data">${siteText("itsa.record-no-income-for", "HMRC holds no income for {name}.", { name: escapeRecordText(entry.name) })}</p>`),
       },
       {
-        heading: `${entry.name}: expenses`,
-        explanation: index === 0 ? "HMRC holds either one total or the itemised costs for each country or property." : "",
+        heading: siteText("itsa.record-entry-expenses", "{name}: expenses", { name: entry.name }),
+        explanation:
+          index === 0
+            ? siteText(
+                "itsa.record-explain-foreign-expenses",
+                "HMRC holds either one total or the itemised costs for each country or property.",
+              )
+            : "",
         recordHtml:
           expenseEntries.length > 0
             ? periodTable(columnHeading, expenseEntries, `period-${entry.id}-expenses`, PROPERTY_EXPENSE_LABELS)
-            : `<p class="no-data">HMRC holds no expenses for ${escapeRecordText(entry.name)}.</p>`,
+            : `<p class="no-data">${siteText("itsa.record-no-expenses-for", "HMRC holds no expenses for {name}.", { name: escapeRecordText(entry.name) })}</p>`,
       },
     ];
   });
@@ -479,35 +584,50 @@ function periodTable(columnHeading, entries, idPrefix, overrides) {
  * @param {{href: string, text: string}[]} [input.links]
  * @returns {string}
  */
-export function periodCopyHtml({ kind, period, nino, businessId, taxYear, periodId, idLabel = "Period ID", retrievedAt, links = [] }) {
-  const kindName = KIND_NAMES[kind] || "Business";
+export function periodCopyHtml({ kind, period, nino, businessId, taxYear, periodId, idLabel, retrievedAt, links = [] }) {
+  const kindName = KIND_NAMES[kind] || siteText("itsa.business", "Business");
   const year = nonEmptyText(taxYear);
   const retrieved = formatTimestamp(retrievedAt);
   const { from, to } = periodDates(period);
   const { income, expenses, propertyType } = periodGroups(period);
   let periodLine = null;
-  if (from && to) periodLine = `${from} to ${to}`;
-  else if (to) periodLine = `Year to ${to}`;
-  const reference = nonEmptyText(periodId) || "Year to date";
+  if (from && to) periodLine = siteText("widget.date-range", "{start} to {end}", { start: from, end: to });
+  else if (to) periodLine = siteText("itsa.record-year-to", "Year to {date}", { date: to });
+  const reference = nonEmptyText(periodId) || siteText("itsa.record-year-to-date", "Year to date");
+  const referenceLabel = nonEmptyText(periodId)
+    ? idLabel || siteText("itsa.period-id", "Period ID")
+    : siteText("itsa.record-reporting", "Reporting");
 
   const referenceHtml = referenceLines({ nino, businessId });
-  referenceHtml.push(`${nonEmptyText(periodId) ? idLabel : "Reporting"} ${escapeRecordText(reference)}`);
+  referenceHtml.push(`${referenceLabel} ${escapeRecordText(reference)}`);
 
   const recordHead = recordHeading({
-    nameHtml: escapeRecordText(`${kindName} quarterly update`),
+    nameHtml: escapeRecordText(siteText("itsa.record-quarterly-name", "{kind} quarterly update", { kind: kindName })),
     referenceHtml,
-    title: year ? `Tax year ${year}` : "Tax year",
-    subtitleHtml: escapeRecordText([periodLine, propertyType].filter(Boolean).join(". ") || "Period summary held by HMRC"),
+    title: taxYearTitle(year),
+    subtitleHtml: escapeRecordText(
+      [periodLine, propertyType].filter(Boolean).join(". ") || siteText("itsa.record-period-held", "Period summary held by HMRC"),
+    ),
   });
 
-  const columnHeading = periodLine || year || "Amount";
+  const columnHeading = periodLine || year || siteText("widget.field-amount", "Amount");
+  const heldBy = { kind: "held", text: siteText("itsa.record-held-by-hmrc", "Held by HMRC") };
+  const retrievedLine = retrieved
+    ? siteText("itsa.record-retrieved", "Retrieved {date}", { date: retrieved })
+    : siteText("itsa.record-not-recorded", "Not recorded");
+  const title = periodLine
+    ? siteText("itsa.record-update-copy-period", "Your copy of the {kind} update for {period}", {
+        kind: kindPhrase(kind),
+        period: periodLine,
+      })
+    : siteText("itsa.record-update-copy", "Your copy of the {kind} update", { kind: kindPhrase(kind) });
 
   if (kind === "foreign-property") {
     return customerCopyHtml({
-      title: periodLine ? `Your copy of the foreign property update for ${periodLine}` : "Your copy of the foreign property update",
-      reference: { label: nonEmptyText(periodId) ? idLabel : "Reporting", value: reference },
-      status: { kind: "accepted", text: "Held by HMRC" },
-      date: retrieved ? `Retrieved ${retrieved}` : "Not recorded",
+      title,
+      reference: { label: referenceLabel, value: reference },
+      status: heldBy,
+      date: retrievedLine,
       sections: foreignPeriodSections(period, columnHeading, recordHead),
       links,
     });
@@ -516,17 +636,17 @@ export function periodCopyHtml({ kind, period, nino, businessId, taxYear, period
   const expenseEntries = collectEntries(expenses);
 
   return customerCopyHtml({
-    title: periodLine
-      ? `Your copy of the ${kindPhrase(kindName)} update for ${periodLine}`
-      : `Your copy of the ${kindPhrase(kindName)} update`,
-    reference: { label: nonEmptyText(periodId) ? idLabel : "Reporting", value: reference },
-    status: { kind: "accepted", text: "Held by HMRC" },
-    date: retrieved ? `Retrieved ${retrieved}` : "Not recorded",
+    title,
+    reference: { label: referenceLabel, value: reference },
+    status: heldBy,
+    date: retrievedLine,
     sections: [
       {
-        heading: "Income",
-        explanation:
+        heading: siteText("itsa.income", "Income"),
+        explanation: siteText(
+          "itsa.record-explain-income",
           "This is the income HMRC holds for the period. A dash means HMRC holds no figure. A cumulative year shows the running total from the start of the tax year.",
+        ),
         recordHtml:
           recordHead +
           periodTable(
@@ -537,12 +657,15 @@ export function periodCopyHtml({ kind, period, nino, businessId, taxYear, period
           ),
       },
       {
-        heading: "Expenses",
-        explanation: "These are the expenses HMRC holds for the period. HMRC holds either one total or the itemised costs.",
+        heading: siteText("itsa.expenses", "Expenses"),
+        explanation: siteText(
+          "itsa.record-explain-expenses",
+          "These are the expenses HMRC holds for the period. HMRC holds either one total or the itemised costs.",
+        ),
         recordHtml:
           expenseEntries.length > 0
             ? periodTable(columnHeading, expenseEntries, "period-expenses", EXPENSE_LABEL_OVERRIDES[kind] || {})
-            : `<p class="no-data">HMRC holds no expenses for this period.</p>`,
+            : `<p class="no-data">${siteText("itsa.record-no-expenses", "HMRC holds no expenses for this period.")}</p>`,
       },
     ],
     links,
@@ -551,14 +674,21 @@ export function periodCopyHtml({ kind, period, nino, businessId, taxYear, period
 
 const LOSSES_SECTIONS = [
   {
-    heading: "Losses",
-    explanation: "These are the losses you told HMRC about for the year. A figure you left at 0 was not sent, so it does not appear.",
+    heading: siteText("itsa.losses", "Losses"),
+    explanation: siteText(
+      "itsa.record-explain-losses",
+      "These are the losses you told HMRC about for the year. A figure you left at 0 was not sent, so it does not appear.",
+    ),
+    none: siteText("itsa.record-no-losses", "You sent no losses for this year."),
     prefix: "losses",
   },
   {
-    heading: "Claims",
-    explanation:
+    heading: siteText("itsa.claims", "Claims"),
+    explanation: siteText(
+      "itsa.record-explain-claims",
       "These are the claims you made for the year. A loss can carry forward, be set against this year's other income, or be carried back to an earlier year.",
+    ),
+    none: siteText("itsa.record-no-claims", "You sent no claims for this year."),
     prefix: "claims",
   },
 ];
@@ -583,15 +713,15 @@ const LOSSES_SECTIONS = [
 export function lossesCopyHtml({ kind, nino, businessId, taxYear, savedAt, correlationId, sent, links = [] }) {
   const year = nonEmptyText(taxYear);
   const saved = formatTimestamp(savedAt);
-  const kindName = KIND_NAMES[kind] || "Business";
+  const kindName = KIND_NAMES[kind] || siteText("itsa.business", "Business");
   const groups = isRecordObject(sent) ? sent : {};
-  const columnHeading = year || "Amount";
+  const columnHeading = year || siteText("widget.field-amount", "Amount");
 
   const recordHead = recordHeading({
-    nameHtml: escapeRecordText(`${kindName} losses and claims`),
+    nameHtml: escapeRecordText(siteText("itsa.record-losses-name", "{kind} losses and claims", { kind: kindName })),
     referenceHtml: referenceLines({ nino, businessId, correlationId }),
-    title: year ? `Tax year ${year}` : "Tax year",
-    subtitleHtml: escapeRecordText(saved ? `Saved with HMRC on ${saved}` : "Saved with HMRC"),
+    title: taxYearTitle(year),
+    subtitleHtml: escapeRecordText(savedLine(saved)),
   });
 
   const sections = LOSSES_SECTIONS.map((section, index) => {
@@ -600,7 +730,7 @@ export function lossesCopyHtml({ kind, nino, businessId, taxYear, savedAt, corre
     const body =
       entries.length > 0
         ? entriesTable(columnHeading, entries, `losses-${section.prefix}`)
-        : `<p class="no-data">You sent no ${section.heading.toLowerCase()} for this year.</p>`;
+        : `<p class="no-data">${escapeRecordText(section.none)}</p>`;
     return {
       heading: section.heading,
       explanation: section.explanation,
@@ -610,11 +740,11 @@ export function lossesCopyHtml({ kind, nino, businessId, taxYear, savedAt, corre
 
   return customerCopyHtml({
     title: year
-      ? `Your copy of the ${kindPhrase(kindName)} losses and claims for ${year}`
-      : `Your copy of the ${kindPhrase(kindName)} losses and claims`,
-    reference: { label: "Business ID", value: nonEmptyText(businessId) || ABSENT },
-    status: { kind: "accepted", text: "Accepted by HMRC" },
-    date: saved || "Not recorded",
+      ? siteText("itsa.record-losses-copy-year", "Your copy of the {kind} losses and claims for {year}", { kind: kindPhrase(kind), year })
+      : siteText("itsa.record-losses-copy", "Your copy of the {kind} losses and claims", { kind: kindPhrase(kind) }),
+    reference: { label: siteText("itsa.business-id", "Business ID"), value: nonEmptyText(businessId) || ABSENT },
+    status: { kind: "accepted", text: siteText("itsa.accepted-by-hmrc", "Accepted by HMRC") },
+    date: saved || siteText("itsa.record-not-recorded", "Not recorded"),
     sections,
     links,
   });
@@ -638,31 +768,35 @@ export function lossesCopyHtml({ kind, nino, businessId, taxYear, savedAt, corre
 export function adjustmentsCopyHtml({ nino, taxYear, savedAt, correlationId, carryBackLossesDecrease, links = [] }) {
   const year = nonEmptyText(taxYear);
   const saved = formatTimestamp(savedAt);
-  const columnHeading = year || "Amount";
+  const columnHeading = year || siteText("widget.field-amount", "Amount");
   const entries = collectEntries({ carryBackLossesDecrease }).filter((entry) => entry.value !== undefined);
 
   const recordHead = recordHeading({
-    nameHtml: escapeRecordText("Tax liability adjustments"),
+    nameHtml: escapeRecordText(siteText("itsa.tax-liability-adjustments", "Tax liability adjustments")),
     referenceHtml: referenceLines({ nino, correlationId }),
-    title: year ? `Tax year ${year}` : "Tax year",
-    subtitleHtml: escapeRecordText(saved ? `Saved with HMRC on ${saved}` : "Saved with HMRC"),
+    title: taxYearTitle(year),
+    subtitleHtml: escapeRecordText(savedLine(saved)),
   });
 
   const body =
     entries.length > 0
       ? entriesTable(columnHeading, entries, "adjustments")
-      : `<p class="no-data">You sent no carry-back decrease for this year.</p>`;
+      : `<p class="no-data">${siteText("itsa.record-no-carry-back", "You sent no carry-back decrease for this year.")}</p>`;
 
   return customerCopyHtml({
-    title: year ? `Your copy of the tax liability adjustments for ${year}` : "Your copy of the tax liability adjustments",
-    reference: { label: "Tax year", value: year || ABSENT },
-    status: { kind: "accepted", text: "Accepted by HMRC" },
-    date: saved || "Not recorded",
+    title: year
+      ? siteText("itsa.record-adjustments-copy-year", "Your copy of the tax liability adjustments for {year}", { year })
+      : siteText("itsa.record-adjustments-copy", "Your copy of the tax liability adjustments"),
+    reference: { label: siteText("itsa.tax-year", "Tax year"), value: year || ABSENT },
+    status: { kind: "accepted", text: siteText("itsa.accepted-by-hmrc", "Accepted by HMRC") },
+    date: saved || siteText("itsa.record-not-recorded", "Not recorded"),
     sections: [
       {
-        heading: "Carry-back decrease",
-        explanation:
+        heading: siteText("itsa.record-carry-back-decrease", "Carry-back decrease"),
+        explanation: siteText(
+          "itsa.record-explain-carry-back",
           "These are the amounts by which your carry-back claim decreases the tax due for this earlier year. A figure you left at 0 was not sent, so it does not appear.",
+        ),
         recordHtml: recordHead + body,
       },
     ],

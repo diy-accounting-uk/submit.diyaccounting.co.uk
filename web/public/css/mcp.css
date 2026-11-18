@@ -61,20 +61,21 @@
   color: var(--c-ok);
 }
 
-/* MCP harness */
-body.page-wide {
-  max-width: none;
-}
-
+/* MCP harness: the conversation, then the browser step, in the site's column. At desktop width the
+   two panels sit side by side in a band wider than the column, centred on it, so the browser step a
+   tool opens is on screen beside the turn that opened it; the header and nav stay in the column. */
 .harness-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
 }
 
-@media (max-width: 900px) {
+@media (min-width: 1200px) {
   .harness-grid {
-    grid-template-columns: minmax(0, 1fr);
+    --harness-band: min(75rem, calc(100vw - 2 * var(--gutter)));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    width: var(--harness-band);
+    margin-left: calc((100% - var(--harness-band)) / 2);
   }
 }
 
@@ -95,6 +96,11 @@ body.page-wide {
   font-size: var(--step-1);
 }
 
+/* The browser step names the link a tool handed back, which can be one long unbroken URL. */
+#browserStatus {
+  overflow-wrap: anywhere;
+}
+
 .harness-chat {
   display: flex;
   flex-direction: column;
@@ -102,6 +108,11 @@ body.page-wide {
   min-height: 18rem;
   max-height: 32rem;
   overflow-y: auto;
+}
+
+/* Before the first turn the log holds no space, so the buttons sit under the script choice. */
+.harness-chat:empty {
+  min-height: 0;
 }
 
 .harness-turn {

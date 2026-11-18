@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives window.siteText, the text in the chosen language. Without it (a test that
+// stubs the chrome) the English stands.
+window.siteText =
+  window.siteText ||
+  ((id, english, values) => english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole)));
+
 // The page a tool's codes link opens: the user types the Companies House codes here instead of in
 // the chat. The entry id in the address names what to ask for and where to store the answer.
 
@@ -28,7 +34,7 @@
     const expires = new Date(entry.expiresAt);
     if (Number.isNaN(expires.getTime())) return;
     const time = expires.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-    document.getElementById("codesExpiry").textContent = `This link works until ${time}.`;
+    document.getElementById("codesExpiry").textContent = window.siteText("ch.codes.expiry", "This link works until {time}.", { time });
   }
 
   function clientLabel(client) {
@@ -36,11 +42,21 @@
   }
 
   function showClientRows() {
-    document.getElementById("codesUse").textContent = entry.clients.length === 1 ? "this filing" : "each client's filing";
+    document.getElementById("codesUse").textContent =
+      entry.clients.length === 1
+        ? window.siteText("ch.codes.use-one", "this filing")
+        : window.siteText("ch.codes.use-each", "each client's filing");
     document.getElementById("codesIntro").textContent =
       entry.clients.length === 1
-        ? "Companies House filing for 1 client. Type the client's company authentication code below to let DIY Accounting Submit make the filing."
-        : `Companies House filings for ${entry.clients.length} clients. Type each client's company authentication code below to let DIY Accounting Submit make the filings.`;
+        ? window.siteText(
+            "ch.codes.intro-one-client",
+            "Companies House filing for 1 client. Type the client's company authentication code below to let DIY Accounting Submit make the filing.",
+          )
+        : window.siteText(
+            "ch.codes.intro-clients",
+            "Companies House filings for {count} clients. Type each client's company authentication code below to let DIY Accounting Submit make the filings.",
+            { count: entry.clients.length },
+          );
     const companyGroup = document.getElementById("companyAuthCodeGroup");
     companyGroup.style.display = "none";
     document.getElementById("companyAuthCode").required = false;
@@ -49,7 +65,9 @@
       group.className = "form-group";
       const label = document.createElement("label");
       label.htmlFor = `clientCode${index}`;
-      label.textContent = `Company authentication code for ${clientLabel(client)}`;
+      label.textContent = window.siteText("ch.codes.client-code", "Company authentication code for {client}", {
+        client: clientLabel(client),
+      });
       const input = document.createElement("input");
       input.type = "password";
       input.id = `clientCode${index}`;
@@ -67,14 +85,19 @@
   function showForm() {
     showExpiry();
     if (entry.clients && entry.clients.length > 0) return showClientRows();
-    document.getElementById("codesIntro").textContent =
-      `Companies House company ${entry.companyNumber}. Type the codes below to let DIY Accounting Submit make the filing.`;
+    document.getElementById("codesIntro").textContent = window.siteText(
+      "ch.codes.intro-company",
+      "Companies House company {number}. Type the codes below to let DIY Accounting Submit make the filing.",
+      {
+        number: entry.companyNumber,
+      },
+    );
     entry.directors.forEach((director, index) => {
       const group = document.createElement("div");
       group.className = "form-group";
       const label = document.createElement("label");
       label.htmlFor = `personalCode${index}`;
-      label.textContent = `Personal code for ${directorLabel(director)}`;
+      label.textContent = window.siteText("ch.codes.personal-code", "Personal code for {director}", { director: directorLabel(director) });
       const input = document.createElement("input");
       input.type = "password";
       input.id = `personalCode${index}`;
@@ -90,9 +113,14 @@
   }
 
   async function load() {
-    if (!entryId) return say("This link has no codes entry in it. Ask for a new link in your chat.", true);
+    if (!entryId)
+      return say(window.siteText("ch.codes.no-entry", "This link has no codes entry in it. Ask for a new link in your chat."), true);
     const response = await fetch(entryUrl, { headers: { Accept: "application/json" } });
-    if (!response.ok) return say("This codes link has expired or does not exist. Ask for a new link in your chat.", true);
+    if (!response.ok)
+      return say(
+        window.siteText("ch.codes.expired", "This codes link has expired or does not exist. Ask for a new link in your chat."),
+        true,
+      );
     entry = await response.json();
     if (entry.state !== "pending") {
       doneView.style.display = "";
@@ -130,9 +158,9 @@
       return say("");
     }
     const answer = await response.json().catch(() => ({}));
-    say(answer.message || "The codes were not saved. Ask for a new link in your chat.", true);
+    say(answer.message || window.siteText("ch.codes.not-saved", "The codes were not saved. Ask for a new link in your chat."), true);
     button.disabled = false;
   });
 
-  load().catch(() => say("The codes page could not be reached. Try the link again.", true));
+  load().catch(() => say(window.siteText("ch.codes.unreachable", "The codes page could not be reached. Try the link again."), true));
 })();

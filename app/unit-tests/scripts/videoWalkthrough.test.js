@@ -11,8 +11,11 @@ import {
   parseArgs,
   planWalkthrough,
   buildWalkthroughEntries,
+  untimedTimeline,
+  walkthroughWithScriptText,
   SETTLE_BACK_MS,
 } from "../../../scripts/video-walkthrough.js";
+import { GROUPS } from "../../../web/public/lib/guide-journeys.js";
 
 function step(sceneId, stepIndex, startMs, endMs) {
   return { sceneId, stepIndex, startMs, endMs };
@@ -205,11 +208,16 @@ describe("buildWalkthroughEntries", () => {
 
 describe("parseArgs", () => {
   it("collects every --id", () => {
-    expect(parseArgs(["--id", "a", "--id", "b"])).toEqual({ ids: ["a", "b"], sizesOnly: false });
+    expect(parseArgs(["--id", "a", "--id", "b"])).toEqual({ ids: ["a", "b"], sizesOnly: false, textOnly: false });
   });
 
   it("reads --sizes", () => {
-    expect(parseArgs(["--sizes"])).toEqual({ ids: [], sizesOnly: true });
+    expect(parseArgs(["--sizes"])).toEqual({ ids: [], sizesOnly: true, textOnly: false });
+  });
+
+  it("reads --text and refuses it with --sizes", () => {
+    expect(parseArgs(["--text"])).toEqual({ ids: [], sizesOnly: false, textOnly: true });
+    expect(() => parseArgs(["--sizes", "--text"])).toThrow(/cannot be used together/);
   });
 
   it("rejects an unknown argument and a bare --id", () => {
@@ -247,4 +255,107 @@ describe("columnCropFilter", () => {
   it("keeps the whole frame of a site page that declares fullWidthFrames", () => {
     expect(columnCropFilter({ viewport: { width: 1920, height: 1080 }, fullWidthFrames: true })).toBe("");
   });
+});
+
+describe("a step's instruction", () => {
+  const instructed = {
+    scenes: [
+      {
+        id: "form",
+        chapter: "The form",
+        steps: [
+          { action: "type", caption: "Type the number.", instruction: "Enter your number." },
+          { action: "fill", caption: "Then the dates.", instruction: "Enter the dates, then choose Go." },
+        ],
+      },
+      { id: "one", steps: [{ action: "click", caption: "Open it.", instruction: "Choose Open." }] },
+      { id: "plain", steps: [{ action: "click", caption: "Plain." }] },
+    ],
+  };
+
+  it("goes to the entry, one for a scene that joins several captions, and an entry without one has none", () => {
+    const plan = planWalkthrough({ script: instructed, timeline: untimedTimeline(instructed) });
+    expect(plan.map((item) => item.instruction)).toEqual(["Enter the dates, then choose Go.", "Choose Open.", undefined]);
+    const entries = buildWalkthroughEntries("v", plan);
+    expect(entries[0].caption).toBe("Type the number. Then the dates.");
+    expect(entries[0].instruction).toBe("Enter the dates, then choose Go.");
+    expect("instruction" in entries[2]).toBe(false);
+  });
+
+  it("text mode rewrites headline, caption and instruction and keeps times, images and sizes", () => {
+    const entry = {
+      id: "v",
+      walkthrough: [
+        {
+          scene: "form",
+          headline: "Old",
+          caption: "Old.",
+          instruction: "Old instruction.",
+          startSeconds: 4,
+          thumb: "t",
+          full: "f",
+          thumbWidth: 480,
+        },
+        { scene: "one", headline: "Old", caption: "Old.", startSeconds: 9, thumb: "t2", full: "f2", thumbWidth: 480 },
+        {
+          scene: "plain",
+          headline: "Old",
+          caption: "Old.",
+          instruction: "Gone.",
+          startSeconds: 12,
+          thumb: "t3",
+          full: "f3",
+          thumbWidth: 480,
+        },
+      ],
+    };
+    const [form, one, plain] = walkthroughWithScriptText(entry, instructed);
+    expect(form).toMatchObject({
+      headline: "The form",
+      caption: "Type the number. Then the dates.",
+      instruction: "Enter the dates, then choose Go.",
+      startSeconds: 4,
+      thumbWidth: 480,
+    });
+    expect(Object.keys(form).slice(0, 4)).toEqual(["scene", "headline", "caption", "instruction"]);
+    expect(one.instruction).toBe("Choose Open.");
+    expect("instruction" in plain).toBe(false);
+  });
+
+  it("text mode fails a script that plans other frames than the entry holds", () => {
+    const entry = { id: "v", walkthrough: [{ scene: "form" }] };
+    expect(() => walkthroughWithScriptText(entry, instructed)).toThrow(/record it again/);
+  });
+});
+
+describe("the instructions of every scene file that the guide shows", () => {
+  const ids = GROUPS.flatMap((group) => group.journeys.map((journey) => journey.video)).filter(Boolean);
+  const words = (text) =>
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9 ]/g, "")
+      .trim();
+
+  for (const id of ids) {
+    const scriptOfId = JSON.parse(fs.readFileSync(path.resolve("videos", `${id}.json`), "utf8"));
+    const manifest = JSON.parse(fs.readFileSync(path.resolve("videos/publish.json"), "utf8"));
+    const walkthrough = manifest.videos.find((video) => video.id === id).walkthrough;
+    const plan = planWalkthrough({ script: scriptOfId, timeline: untimedTimeline(scriptOfId) });
+
+    it(`${id}: every step has one sentence that starts with a verb and is not its heading`, () => {
+      expect(plan.length).toBe(walkthrough.length);
+      for (const item of plan) {
+        const label = `${item.scene} ${item.step ?? ""}`;
+        expect(item.instruction, label).toBeTruthy();
+        expect(item.instruction, label).toMatch(/^[A-Z][a-z]+ /);
+        expect(item.instruction, label).toMatch(/[.]$/);
+        expect(words(item.instruction), label).not.toBe(words(item.headline));
+        expect(words(item.instruction), label).not.toBe(words(item.caption));
+      }
+    });
+
+    it(`${id}: publish.json holds the instructions of the scene file`, () => {
+      expect(walkthrough.map((entry) => entry.instruction)).toEqual(plan.map((item) => item.instruction));
+    });
+  }
 });

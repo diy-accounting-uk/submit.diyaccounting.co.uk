@@ -464,7 +464,7 @@ See the shared conventions section at the end of this file for shared rules. Add
 | ci | `.env.ci` | CI with real AWS |
 | prod | `.env.prod` | Production |
 
-**Secrets in `.env` (gitignored):** The root `.env` file contains real API keys and secrets (Telegram, Google, Cognito). HMRC and Stripe secrets for the proxy variant come from AWS Secrets Manager via `scripts/proxy-secrets.sh`, not from `.env`. Environment-specific `.env.*` files reference price IDs and ARNs but NOT secret keys — those come from `.env` (local) or AWS Secrets Manager (deployed). When CI and prod need different webhook secrets, each resolves its own from Secrets Manager ARNs.
+**Secrets in `.env` (gitignored):** The root `.env` file contains real API keys and secrets (Telegram, Google, Cognito). HMRC, Stripe and Companies House API keys for the proxy variant come from AWS Secrets Manager via `scripts/proxy-secrets.sh`, not from `.env`. Environment-specific `.env.*` files reference price IDs and ARNs but NOT secret keys — those come from `.env` (local) or AWS Secrets Manager (deployed). When CI and prod need different webhook secrets, each resolves its own from Secrets Manager ARNs.
 
 **Stripe webhook setup:** Run `node infra/stripe/stripe-sync.js --environment ci --mode test --apply` to create/verify webhook endpoints for CI and prod. Local dev registers no endpoint: `stripe listen` forwards events directly and prints a per-session signing secret.
 

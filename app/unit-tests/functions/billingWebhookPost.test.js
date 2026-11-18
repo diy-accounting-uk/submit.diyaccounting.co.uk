@@ -815,7 +815,11 @@ describe("billingWebhookPost", () => {
       subscriptionStatus: "past_due",
       cancelAtPeriodEnd: false,
     });
-    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "past_due", cancelAtPeriodEnd: false });
+    expect(mockUpdateSubscription).toHaveBeenCalledWith(
+      "stripe#sub_test_456",
+      { status: "past_due", cancelAtPeriodEnd: false },
+      { test: false },
+    );
   });
 
   test("customer.subscription.updated active with a later period end extends expiry and period end without resetting tokens", async () => {
@@ -848,7 +852,7 @@ describe("billingWebhookPost", () => {
       currentPeriodEnd: expectedEnd,
       expiry: expectedEnd,
     });
-    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { currentPeriodEnd: expectedEnd });
+    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { currentPeriodEnd: expectedEnd }, { test: false });
   });
 
   test("customer.subscription.updated past_due with a later period end extends nothing", async () => {
@@ -943,12 +947,16 @@ describe("billingWebhookPost", () => {
       subscriptionStatus: "canceled",
       cancelAtPeriodEnd: false,
     });
-    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", {
-      status: "canceled",
-      canceledAt: new Date(1_700_000_000 * 1000).toISOString(),
-      ttl: 1_700_000_000 + 180 * 86400,
-      ttl_datestamp: new Date((1_700_000_000 + 180 * 86400) * 1000).toISOString(),
-    });
+    expect(mockUpdateSubscription).toHaveBeenCalledWith(
+      "stripe#sub_test_456",
+      {
+        status: "canceled",
+        canceledAt: new Date(1_700_000_000 * 1000).toISOString(),
+        ttl: 1_700_000_000 + 180 * 86400,
+        ttl_datestamp: new Date((1_700_000_000 + 180 * 86400) * 1000).toISOString(),
+      },
+      { test: false },
+    );
   });
 
   test("customer.subscription.deleted of a test-mode subscription sets a ttl 2 days from now", async () => {
@@ -1254,7 +1262,7 @@ describe("billingWebhookPost", () => {
     expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", {
       subscriptionStatus: "past_due",
     });
-    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "past_due" });
+    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "past_due" }, { test: false });
   });
 
   test("invoice.payment_failed updates bundle when the subscription is an expanded object", async () => {
@@ -1281,7 +1289,7 @@ describe("billingWebhookPost", () => {
 
     expect(result.statusCode).toBe(200);
     expect(mockGetSubscription).toHaveBeenCalledWith("stripe#sub_test_456");
-    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "past_due" });
+    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "past_due" }, { test: false });
   });
 
   test("invoice.payment_failed skips when no subscription record found", async () => {
@@ -1355,6 +1363,7 @@ describe("billingWebhookPost", () => {
       expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", {
         currentPeriodEnd: new Date(periodEnd * 1000).toISOString(),
         expiry: new Date(periodEnd * 1000).toISOString(),
+        actor: "customer",
         stripeSubscriptionId: "sub_test_456",
         stripeCustomerId: "cus_test_1",
         subscriptionStatus: "active",
@@ -1460,10 +1469,14 @@ describe("billingWebhookPost", () => {
       subscriptionStatus: "active",
       cancelAtPeriodEnd: true,
     });
-    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", {
-      status: "active",
-      cancelAtPeriodEnd: true,
-    });
+    expect(mockUpdateSubscription).toHaveBeenCalledWith(
+      "stripe#sub_test_456",
+      {
+        status: "active",
+        cancelAtPeriodEnd: true,
+      },
+      { test: false },
+    );
   });
 
   describe("a cancellation that Stripe schedules with cancel_at", () => {
@@ -1502,7 +1515,11 @@ describe("billingWebhookPost", () => {
         subscriptionStatus: "active",
         cancelAtPeriodEnd: true,
       });
-      expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "active", cancelAtPeriodEnd: true });
+      expect(mockUpdateSubscription).toHaveBeenCalledWith(
+        "stripe#sub_test_456",
+        { status: "active", cancelAtPeriodEnd: true },
+        { test: false },
+      );
       expect(activityEventsNamed("subscription-cancellation-scheduled")).toHaveLength(1);
     });
 
@@ -1519,14 +1536,22 @@ describe("billingWebhookPost", () => {
     test("cancel_at after the period end is stored as no cancellation at this period end", async () => {
       await ingestHandler(subscriptionEvent({ cancel_at: periodEnd + 40 * 24 * 60 * 60 }));
 
-      expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "active", cancelAtPeriodEnd: false });
+      expect(mockUpdateSubscription).toHaveBeenCalledWith(
+        "stripe#sub_test_456",
+        { status: "active", cancelAtPeriodEnd: false },
+        { test: false },
+      );
       expect(activityEventsNamed("subscription-cancellation-scheduled")).toHaveLength(0);
     });
 
     test("cancel_at_period_end true still schedules the cancellation", async () => {
       await ingestHandler(subscriptionEvent({ cancel_at_period_end: true }));
 
-      expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "active", cancelAtPeriodEnd: true });
+      expect(mockUpdateSubscription).toHaveBeenCalledWith(
+        "stripe#sub_test_456",
+        { status: "active", cancelAtPeriodEnd: true },
+        { test: false },
+      );
       expect(activityEventsNamed("subscription-cancellation-scheduled")).toHaveLength(1);
     });
   });
@@ -1596,10 +1621,14 @@ describe("billingWebhookPost", () => {
     expect(result.statusCode).toBe(200);
 
     // Verify subscription record was flagged
-    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_dispute_456", {
-      disputed: true,
-      disputeId: "dp_test_dispute_789",
-    });
+    expect(mockUpdateSubscription).toHaveBeenCalledWith(
+      "stripe#sub_test_dispute_456",
+      {
+        disputed: true,
+        disputeId: "dp_test_dispute_789",
+      },
+      { test: false },
+    );
 
     // Verify bundle record was flagged
     expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_dispute", "resident-pro", {

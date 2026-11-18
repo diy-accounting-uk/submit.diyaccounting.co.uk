@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives window.siteText, the text in the chosen language. Without it (a test that
+// stubs the chrome) the English stands.
+window.siteText =
+  window.siteText ||
+  ((id, english, values) => english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole)));
+
 // Your copy of one Companies House accounts filing or Company Tax Return: the stored receipt,
 // drawn as the customer copy. The list of filings is the receipts page; its rows link here.
 
@@ -41,13 +47,18 @@ function showAmendLink(receipt, receiptName) {
 async function showFiling(receiptName) {
   const res = await window.fetchWithIdToken(`/api/v1/hmrc/receipt/${encodeURIComponent(receiptName)}`, {});
   if (!res.ok) {
-    showNotice("We could not load this filing. Go back to your receipts and try again.");
+    showNotice(window.siteText("ch.filing.load-failed", "We could not load this filing. Go back to your receipts and try again."));
     return;
   }
   const receipt = await res.json();
   const { isFilingReceipt } = await import("../lib/filing-record.js");
   if (!isFilingReceipt(receipt)) {
-    showNotice("This receipt is not an accounts or Company Tax Return filing. Open it from your receipts.");
+    showNotice(
+      window.siteText(
+        "ch.filing.not-a-filing",
+        "This receipt is not an accounts or Company Tax Return filing. Open it from your receipts.",
+      ),
+    );
     return;
   }
   await mountFilingCopy(element("filingContent"), receipt, receiptName);
@@ -61,7 +72,7 @@ function start() {
     return;
   }
   if (!receiptName) {
-    showNotice("Choose a filing from your receipts to see your copy of it.");
+    showNotice(window.siteText("ch.filing.choose", "Choose a filing from your receipts to see your copy of it."));
     return;
   }
   return showFiling(receiptName);

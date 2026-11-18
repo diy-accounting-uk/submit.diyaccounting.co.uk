@@ -12,6 +12,10 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/hmrc/itsa/dashboard.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/itsa/dashboard.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/dashboard.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/itsa/dashboard.html" />
     <link rel="stylesheet" href="../../submit.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
@@ -19,7 +23,7 @@
     <script src="../../lib/analytics.js"></script>
   </head>
   <body>
-    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
       <h1>Making Tax Digital for Income Tax</h1>
@@ -31,7 +35,7 @@
         <strong>Status: sandbox.</strong> This runs against HMRC's sandbox. Nothing you send reaches your real HMRC record. Production waits
         on HMRC's recognition of our software after its 2027 update.
       </p>
-      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator"><span>Synthetic mode - calls go to HMRC's sandbox API</span></div>
 
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
@@ -50,8 +54,8 @@
         id="businessPickerContainer"
         class="form-container"
         data-requires-sign-in
-        data-sign-in-title="Log in to find your businesses"
-        data-sign-in-text="Log in to look up the self-employment and property businesses HMRC holds against your National Insurance number, then work through the steps below."
+        data-sign-in-title="Sign in to find your businesses"
+        data-sign-in-text="Sign in to look up the self-employment and property businesses HMRC holds against your National Insurance number, then work through the steps below."
       >
         <h2>Pick a business</h2>
         <p class="hint">
@@ -82,14 +86,16 @@
         <div id="businessPickerResults" style="display: none">
           <div id="businessPickerList" class="business-picker-list"></div>
           <div id="otherBusinessDiversionNote" class="status-message status-warning" style="display: none" role="alert">
-            This service does not yet handle this type of business. Finish that part of your return with other MTD-compatible software or
-            HMRC's online service - see
-            <a
-              href="https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-income-tax"
-              target="_blank"
-              rel="noopener"
-              >HMRC's software finder</a
-            >.
+            <span
+              >This service does not yet handle this type of business. Finish that part of your return with other MTD-compatible software or
+              HMRC's online service - see
+              <a
+                href="https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-income-tax"
+                target="_blank"
+                rel="noopener"
+                >HMRC's software finder</a
+              >.</span
+            >
           </div>
           <p id="yearTokenCost" class="hint"></p>
         </div>
@@ -128,7 +134,7 @@
             <a href="selfEmploymentPeriodAmend.html" id="step6Link" class="secondary-button">Go to amend a period summary</a>
           </div>
 
-          <div class="dashboard-divider">Year end</div>
+          <div class="dashboard-divider"><span>Year end</span></div>
 
           <div class="dashboard-step">
             <h2>7. Annual submission</h2>

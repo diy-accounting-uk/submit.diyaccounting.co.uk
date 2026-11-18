@@ -18,7 +18,8 @@ import { hashSub, getSaltVersion } from "../services/subHasher.js";
 import { maskHttpData } from "../lib/dataMasking.js";
 import { v4 as uuidv4 } from "uuid";
 import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
-import { calculateTwentyEightDayTtl } from "../lib/dateUtils.js";
+import { hmrcApiRequestRetention } from "../lib/recordRetention.js";
+import { resolveActorClass } from "../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbHmrcApiRequestRepository.js" });
 
@@ -78,8 +79,9 @@ export async function putHmrcApiRequest(userSub, { url, httpRequest, httpRespons
       createdAt: now.toISOString(),
     };
 
-    // Calculate TTL as 28 days
-    const { ttl, ttl_datestamp } = calculateTwentyEightDayTtl(now);
+    // 28 days, or 2 days when a test or synthetic caller made the request
+    item.actor = resolveActorClass(undefined, hashedSub);
+    const { ttl, ttl_datestamp } = hmrcApiRequestRetention(item.actor, now);
     item.ttl = ttl;
     item.ttl_datestamp = ttl_datestamp;
 

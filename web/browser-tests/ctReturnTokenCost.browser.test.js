@@ -262,6 +262,7 @@ async function typeShortForm(page) {
   await expect(page.locator("#booksImportStatus")).toContainText("Filled", { timeout: 60_000 });
   await page.locator("#regimeSmall").check();
   await page.locator("#utr").fill("8596148860");
+  await page.locator("#directorDateApproved").fill("2026-09-15");
   for (const id of [
     "statementSection477Exemption",
     "statementMembersNotRequiredAudit",

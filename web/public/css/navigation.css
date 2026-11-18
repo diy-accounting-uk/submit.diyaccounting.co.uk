@@ -2,33 +2,26 @@
 /* Copyright (C) 2006-2026 DIY Accounting Limited */
 
 /* ============================================
-   Main navigation: text links in one row under the band. The current page
-   carries an underline in the brand colour and aria-current="page". When
-   the row is wider than the screen it scrolls sideways, and a fade on the
-   right edge shows that more links follow.
+   Main navigation: text links under the band. The current page carries an
+   underline in the brand colour and aria-current="page". When the links
+   are wider than the screen they wrap onto further rows, so each one shows.
    ============================================ */
 
 .main-nav {
   display: flex;
-  flex-wrap: nowrap;
-  gap: var(--space-5);
-  height: var(--nav-height);
+  flex-wrap: wrap;
+  column-gap: var(--space-5);
+  min-height: var(--nav-height);
   margin-top: var(--space-1);
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
   border-bottom: 1px solid var(--c-rule-subtle);
-}
-
-.main-nav::-webkit-scrollbar {
-  display: none;
 }
 
 .main-nav a {
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
-  height: 100%;
+  min-height: var(--nav-height);
+  box-sizing: border-box;
   color: var(--c-ink);
   text-decoration: none;
   font-size: var(--step-0);
@@ -53,6 +46,59 @@
   font-weight: var(--weight-strong);
   color: var(--c-ink);
   border-bottom-color: var(--c-brand);
+}
+
+/* Between phone and desktop widths the links take two rows. Four equal columns
+   keep that count fixed, so header.css can reserve the height. */
+@media (min-width: 601px) and (max-width: 760px) {
+  .main-nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: var(--space-3);
+  }
+
+  /* The band stays one row here, so the brand and the gaps step down to leave the account line
+     its full width beside them. */
+  .brand-name {
+    font-size: 0.9rem;
+  }
+
+  .header-nav,
+  .auth-section {
+    gap: var(--space-2);
+  }
+
+  .language-switch {
+    margin-left: var(--space-1);
+  }
+
+  .login-link {
+    padding: 0 var(--space-2);
+  }
+}
+
+/* The Welsh labels are wider than the 48rem content column takes in one row, so from 601px wide
+   the Welsh nav keeps the two-row grid. The selector matches before page-chrome.js runs on a Welsh
+   page and, once it has run, wherever the chrome reads in Welsh; header.css reserves the same rows. */
+@media (min-width: 761px) {
+  :root:is([data-chrome-language="cy"], [lang="cy"]:not([data-chrome-language])) .main-nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: var(--space-3);
+  }
+}
+
+/* A tab to a page with no Welsh copy carries its "(yn Saesneg)" mark on a second line, inside the
+   tab's height, so the mark adds no width and no row. */
+.main-nav a:has(.lang-mark) {
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  line-height: 1.15;
+}
+
+.main-nav .lang-mark {
+  font-size: 0.75em;
 }
 
 /* About page navigation links (Help / User Guide) */
@@ -128,6 +174,14 @@ dd {
     flex-basis: 0;
   }
 
+  /* The account row keeps room for the account line and Sign in (15rem holds the longest pair,
+     the Welsh "Heb fewngofnodi" and "Mewngofnodi"), so where the language switch fits beside the
+     brand the account line moves to the second row rather than shrinking beside it. A signed-in
+     name longer than the row still ends in its ellipsis. */
+  .auth-section {
+    min-width: min(100%, 15rem);
+  }
+
   .language-switch {
     margin-left: 0;
   }
@@ -169,6 +223,12 @@ dd {
     text-align: left;
   }
 
+  /* The signed-out line may take two lines ("Heb fewngofnodi" on the narrowest phones); a signed-in
+     name keeps one line and its ellipsis. */
+  .login-status:not([role="group"]) {
+    white-space: normal;
+  }
+
   .auth-section {
     justify-content: space-between;
   }
@@ -186,27 +246,18 @@ dd {
     font-size: var(--step--1);
   }
 
+  /* Three equal columns give the same number of rows at every phone width, so
+     header.css can reserve the nav's height before page-chrome.js builds it. */
   .main-nav {
-    --nav-fade: var(--space-7);
-    gap: var(--space-3);
-    --fade-before: #000;
-    --fade-after: #000;
-    padding-right: var(--nav-fade);
-    mask-image: linear-gradient(to right, var(--fade-before), #000 var(--nav-fade), #000 calc(100% - var(--nav-fade)), var(--fade-after));
-    -webkit-mask-image: linear-gradient(
-      to right,
-      var(--fade-before),
-      #000 var(--nav-fade),
-      #000 calc(100% - var(--nav-fade)),
-      var(--fade-after)
-    );
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: var(--space-2);
   }
 
-  .main-nav.has-more-before {
-    --fade-before: transparent;
-  }
-
-  .main-nav.has-more-after {
-    --fade-after: transparent;
+  /* A label that wraps takes two lines inside the cell's height. */
+  .main-nav a {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.15;
   }
 }

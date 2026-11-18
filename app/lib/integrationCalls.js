@@ -16,9 +16,10 @@
 import { randomBytes } from "node:crypto";
 import { createLogger, context } from "./logger.js";
 import { emitMetric } from "./emfMetrics.js";
-import { calculateTtl, TTL_PRESETS } from "./dateUtils.js";
+import { callRecordRetention } from "./recordRetention.js";
 import { govTalkSummary, integrationPathTemplate, maskIntegrationRaw } from "./dataMasking.js";
 import { normalizeHeaders } from "./httpFetch.js";
+import { resolveActorClass } from "./activityAlert.js";
 import { putIntegrationCall } from "../data/dynamoDbIntegrationCallRepository.js";
 
 const logger = createLogger({ source: "app/lib/integrationCalls.js" });
@@ -77,7 +78,7 @@ function providerRequestIdOf(responseHeaders) {
   return typeof id === "string" && /^[\w.-]{1,100}$/.test(id) ? id : undefined;
 }
 
-function buildItem({ org, target, api, url, method, startedAt, durationMs, outcome, status, fph, ...exchange }) {
+function buildItem({ org, target, api, actor, url, method, startedAt, durationMs, outcome, status, fph, ...exchange }) {
   const startedAtIso = startedAt.toISOString();
   const raw = maskIntegrationRaw({ method, host: hostOf(url), api, status, ...exchange });
   return {
@@ -87,6 +88,7 @@ function buildItem({ org, target, api, url, method, startedAt, durationMs, outco
     org,
     target,
     api,
+    actor,
     method,
     startedAt: startedAtIso,
     durationMs,
@@ -101,8 +103,18 @@ function buildItem({ org, target, api, url, method, startedAt, durationMs, outco
     deployment: process.env.DEPLOYMENT_NAME,
     fph,
     raw,
-    ttl: calculateTtl(startedAt, TTL_PRESETS.NINETY_DAYS).ttl,
+    ttl: callRecordRetention(actor, startedAt).ttl,
   };
+}
+
+/**
+ * The actor class of the caller of an outbound call. A request, which carries a request id, has
+ * the class of the signed-in user. A scheduled job has no request id and is `system`.
+ *
+ * @returns {"customer"|"operator"|"test-user"|"probe"|"system"}
+ */
+export function callActorClass() {
+  return context.get("requestId") ? resolveActorClass() : "system";
 }
 
 /**
@@ -113,6 +125,7 @@ function buildItem({ org, target, api, url, method, startedAt, durationMs, outco
  * @param {string} call.org - hmrc, companies-house or stripe
  * @param {string} call.target - live or test
  * @param {string} call.api - The template of the call
+ * @param {string} [call.actor] - The actor class of the caller; a record without one reads unknown in the lake
  * @param {string} call.url
  * @param {string} call.method
  * @param {Date} call.startedAt
@@ -159,16 +172,18 @@ async function responseBodyOf(response) {
  * @param {string} call.org - hmrc, companies-house or stripe
  * @param {string} call.target - live or test
  * @param {string} call.api - The template of the call
+ * @param {string} call.actor - The actor class of the caller (`callActorClass()`, or `system` for a worker)
  * @param {Object} [call.fph] - The fraud prevention header result, on an HMRC API call
  * @param {function(string, Object): Promise<Response>} [call.fetchImplementation] - The send, when it is not plain fetch
  * @returns {Promise<Response>}
  */
-export async function recordedFetch(url, init = {}, { org, target, api, fph, fetchImplementation = (...args) => fetch(...args) }) {
+export async function recordedFetch(url, init = {}, { org, target, api, actor, fph, fetchImplementation = (...args) => fetch(...args) }) {
   const startedAt = new Date();
   const attempt = {
     org,
     target,
     api,
+    actor,
     fph,
     url,
     method: init.method || "GET",

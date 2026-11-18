@@ -9,8 +9,6 @@
           "requestParam": "code",
           "match": ".*",
           "claims": {
-            "sub": "user",
-            "email": "user@example.com",
             "aud": ["debugger"],
             "scope": "openid somescope",
             "nonce": "5678",

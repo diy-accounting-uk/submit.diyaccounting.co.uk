@@ -21,8 +21,9 @@ import prettier from "prettier";
 import TOML from "@iarna/toml";
 import { isActivityListedInEnvironment } from "../app/services/productCatalog.js";
 import { escapeHtml, replaceBetweenMarkers } from "./page-markers.mjs";
-import { renderFaqItem } from "../web/public/lib/faq-markdown.js";
-import { GROUPS, splitTitle } from "../web/public/lib/guide-journeys.js";
+import { renderFaqGroups } from "../web/public/lib/faq-markdown.js";
+import { bundlePriceList, fillBundlePrices } from "../web/public/lib/bundle-listing.js";
+import { GROUPS, splitTitle, TEST_PERIODS_NOTE } from "../web/public/lib/guide-journeys.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PUBLIC_DIRECTORY = join(ROOT, "web", "public");
@@ -56,10 +57,8 @@ export function loadManifest() {
 }
 
 export function renderFaqEntries(faqs, catalog) {
-  return faqs
-    .filter((faq) => isListedEverywhere(catalog, faq.activity))
-    .map(renderFaqItem)
-    .join("");
+  const priceList = bundlePriceList(catalog, PUBLIC_ENVIRONMENT);
+  return renderFaqGroups(faqs.filter((faq) => isListedEverywhere(catalog, faq.activity)).map((faq) => fillBundlePrices(faq, priceList)));
 }
 
 export async function renderHelpPage(html = readFileSync(HELP_PAGE_PATH, "utf8"), faqs = loadFaqs(), catalog = loadCatalog()) {
@@ -68,18 +67,19 @@ export async function renderHelpPage(html = readFileSync(HELP_PAGE_PATH, "utf8")
 
 function guideStepHtml(scene, stepId) {
   const image = scene.thumb
-    ? `<img src="${escapeHtml(scene.thumb)}" srcset="${escapeHtml(scene.thumb)} ${scene.thumbWidth}w, ${escapeHtml(scene.full)} ${scene.fullWidth}w" sizes="(min-width: 700px) 45vw, 92vw" width="${scene.thumbWidth}" height="${scene.thumbHeight}" alt="Screenshot: ${escapeHtml(scene.headline)}" loading="lazy" />`
+    ? `<img src="${escapeHtml(scene.thumb)}" srcset="${escapeHtml(scene.thumb)} ${scene.thumbWidth}w, ${escapeHtml(scene.full)} ${scene.fullWidth}w" sizes="(min-width: 700px) 480px, 92vw" width="${scene.thumbWidth}" height="${scene.thumbHeight}" alt="Screenshot: ${escapeHtml(scene.headline)}" loading="lazy" />`
     : "";
-  return `<li class="guide-step" id="${escapeHtml(stepId)}"><div class="guide-step-header"><h3 class="guide-step-title">${escapeHtml(scene.headline)}</h3></div>${image}<p class="guide-caption">${escapeHtml(scene.caption)}</p></li>`;
+  return `<li class="guide-step" id="${escapeHtml(stepId)}"><div class="guide-step-header"><h3 class="guide-step-title">${escapeHtml(scene.headline)}</h3></div>${image}<p class="guide-caption">${escapeHtml(scene.instruction ?? scene.caption)}</p></li>`;
 }
 
 function guideTextStepHtml([headline, caption], stepId) {
   return guideStepHtml({ headline, caption }, stepId);
 }
 
-function guideJourneyHtml(id, title, note, stepsHtml) {
+function guideJourneyHtml(id, title, note, stepsHtml, leadText = "") {
   const noteHtml = note ? `<span class="guide-journey-note">${escapeHtml(note)}</span>` : "";
-  return `<details class="guide-journey" id="${escapeHtml(id)}"><summary>${escapeHtml(title)}${noteHtml}</summary><ol class="guide-steps-list">${stepsHtml.join("")}</ol></details>`;
+  const leadHtml = leadText ? `<p class="guide-test-note">${escapeHtml(leadText)}</p>` : "";
+  return `<details class="guide-journey" id="${escapeHtml(id)}"><summary>${escapeHtml(title)}${noteHtml}</summary>${leadHtml}<ol class="guide-steps-list">${stepsHtml.join("")}</ol></details>`;
 }
 
 export function renderGuideJourneys(manifest, catalog) {
@@ -93,7 +93,11 @@ export function renderGuideJourneys(manifest, catalog) {
         if (!Array.isArray(video.walkthrough) || video.walkthrough.length === 0) continue;
         const { title, note } = splitTitle(video.title);
         const steps = video.walkthrough.map((scene, index) => guideStepHtml(scene, `${video.id}-step-${index + 1}`));
-        journeys.push({ id: video.id, title, html: guideJourneyHtml(video.id, title, note, steps) });
+        journeys.push({
+          id: video.id,
+          title,
+          html: guideJourneyHtml(video.id, title, note, steps, journey.showsPeriods ? TEST_PERIODS_NOTE : ""),
+        });
       } else {
         if (!isListedEverywhere(catalog, journey.catalogueActivity)) continue;
         const steps = journey.steps.map((step, index) => guideTextStepHtml(step, `${journey.id}-step-${index + 1}`));

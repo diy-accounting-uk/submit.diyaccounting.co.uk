@@ -54,7 +54,8 @@
           "waitFor": "text=diya-submit-hosted",
           "caption": "Chat apps reach the submission server at one web address. This tool tries it.",
           "headline": "A developer's view",
-          "keyWord": "developer's"
+          "keyWord": "developer's",
+          "instruction": "Open the MCP Inspector page; it connects to the hosted submission server's web address."
         },
         {
           "action": "click",
@@ -62,7 +63,8 @@
           "caption": "Switching it on asks the hosted server for its tools.",
           "headline": "Connect to the server",
           "keyWord": "Connect",
-          "note": "The accessible switch sits under its own track span, which intercepts a direct click; the enclosing .mantine-Switch-root label does not."
+          "note": "The accessible switch sits under its own track span, which intercepts a direct click; the enclosing .mantine-Switch-root label does not.",
+          "instruction": "Switch on the connection to ask the hosted server for its tools."
         },
         {
           "action": "await",
@@ -70,7 +72,8 @@
           "label": "the sign-in page",
           "caption": "The server asks who is using it. Nothing opens until you sign in.",
           "headline": "It asks you to sign in",
-          "keyWord": "sign"
+          "keyWord": "sign",
+          "instruction": "Read the Allow access prompt: the server asks you to sign in before it opens."
         },
         {
           "action": "click",
@@ -80,13 +83,15 @@
           },
           "caption": "Continue goes to the same sign-in page the web app uses.",
           "headline": "Continue to sign in",
-          "keyWord": "sign"
+          "keyWord": "sign",
+          "instruction": "Choose Continue to go to the same sign-in page as the web app."
         },
         {
           "action": "hostedUiLogin",
           "caption": "The test account signs in with its password and a one-time code.",
           "headline": "Sign in",
-          "keyWord": "Sign"
+          "keyWord": "Sign",
+          "instruction": "Sign in with your email, password and one-time code."
         },
         {
           "action": "await",
@@ -95,7 +100,8 @@
           "label": "the connection to come up",
           "caption": "Signed in and connected. The server just listed the tools it offers.",
           "headline": "Now connected",
-          "keyWord": "connected"
+          "keyWord": "connected",
+          "instruction": "Check that the inspector shows Connected."
         }
       ]
     },
@@ -121,7 +127,8 @@
           },
           "caption": "Each tool is listed by name, ready for a chat app to use.",
           "headline": "The tool list",
-          "keyWord": "tool"
+          "keyWord": "tool",
+          "instruction": "Choose Tools, then read the list of tools the server offers."
         },
         {
           "action": "hold",

@@ -3,10 +3,11 @@
 
 // app/data/dynamoDbBundleRepository.js
 
-import { createLogger } from "../lib/logger.js";
+import { createLogger, context } from "../lib/logger.js";
 import { hashSub, getSaltVersion, subHashCandidates } from "../services/subHasher.js";
 import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
-import { calculateOneMonthTtl } from "../lib/dateUtils.js";
+import { bundleRetention, isTestActor } from "../lib/recordRetention.js";
+import { resolveActorClass } from "../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbBundleRepository.js" });
 
@@ -32,6 +33,40 @@ async function locateBundleOwner(userId, bundleId) {
 // The sort key is not a bundle id, so a read of the user's bundles leaves the item out.
 export const ACCOUNT_SETTINGS_ITEM_ID = "#account-settings";
 
+/**
+ * Set ttl on a new bundle item: two days for a test or synthetic owner, one month after the expiry
+ * for any other owner, and none for another owner's bundle with no expiry.
+ * The owner's class is the bundle's own actor, else the class of the current request.
+ */
+function stampBundleRetention(item, now) {
+  const actor = item.actor || resolveActorClass(undefined, item.hashedSub);
+  if (!item.expiry && !isTestActor(actor)) return;
+  const expiry = item.expiry ? new Date(item.expiry) : now;
+  const { ttl, ttl_datestamp } = bundleRetention({ actor }, expiry, now);
+  item.ttl = ttl;
+  item.ttl_datestamp = ttl_datestamp;
+}
+
+// The class of the signed-in caller, when the request carries the caller's email; null when it
+// carries none, so a write made with no caller never names a class it cannot prove.
+function signedInActorClass(hashedSub) {
+  const email = context.get("userEmail");
+  return email ? resolveActorClass(undefined, hashedSub, email) : null;
+}
+
+// Every new bundle item names its actor: the one the caller gave, else the signed-in caller's
+// class, else "system" for a write that no signed-in caller made (a script or a scheduled job).
+function stampBundleActor(item) {
+  if (!item.actor) item.actor = signedInActorClass(item.hashedSub) || "system";
+}
+
+// An update fills the actor of an item written before items carried one, from the signed-in
+// caller's class, and never changes an actor the item already has.
+function actorFill(hashedSub) {
+  const actor = signedInActorClass(hashedSub);
+  return actor ? { expression: ", actor = if_not_exists(actor, :actor)", values: { ":actor": actor } } : { expression: "", values: {} };
+}
+
 export async function putBundle(userId, bundle) {
   logger.info({ message: `putBundle [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
 
@@ -53,17 +88,15 @@ export async function putBundle(userId, bundle) {
     if (bundle.expiry) {
       const expiryDate = new Date(bundle.expiry);
       item.expiry = expiryDate.toISOString();
-
-      // Calculate TTL as 1 month after expiry
-      const { ttl, ttl_datestamp } = calculateOneMonthTtl(expiryDate);
-      item.ttl = ttl;
-      item.ttl_datestamp = ttl_datestamp;
     } else {
       // A bundle with no expiry carries no expiry attribute at all: expiry is a key of the
       // bundleId-expiry-index and DynamoDB rejects an empty string in an index key, and a
       // missing key simply leaves the item out of that sparse index.
       delete item.expiry;
     }
+
+    stampBundleActor(item);
+    stampBundleRetention(item, now);
 
     logger.info({
       message: "Storing bundle in DynamoDB as item",
@@ -111,15 +144,15 @@ export async function putBundleByHashedSub(hashedSub, bundle) {
     if (bundle.expiry) {
       const expiryDate = new Date(bundle.expiry);
       item.expiry = expiryDate.toISOString();
-      const { ttl, ttl_datestamp } = calculateOneMonthTtl(expiryDate);
-      item.ttl = ttl;
-      item.ttl_datestamp = ttl_datestamp;
     } else {
       // A bundle with no expiry carries no expiry attribute at all: expiry is a key of the
       // bundleId-expiry-index and DynamoDB rejects an empty string in an index key, and a
       // missing key simply leaves the item out of that sparse index.
       delete item.expiry;
     }
+
+    stampBundleActor(item);
+    stampBundleRetention(item, now);
 
     logger.info({ message: "Storing bundle in DynamoDB by hashedSub", hashedSub, item });
     await executeDynamoDbCommand(
@@ -245,6 +278,7 @@ export async function resetTokens(userId, bundleId, tokensGranted, nextResetAt) 
   try {
     const { hashedSub, version } = await locateBundleOwner(userId, bundleId);
     const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
+    const fill = actorFill(hashedSub);
 
     await executeDynamoDbCommand(
       (module) =>
@@ -252,12 +286,14 @@ export async function resetTokens(userId, bundleId, tokensGranted, nextResetAt) 
           TableName: tableName,
           Key: { hashedSub, bundleId },
           ConditionExpression: "attribute_exists(hashedSub)",
-          UpdateExpression: "SET tokensConsumed = :zero, tokensGranted = :granted, tokenResetAt = :resetAt, saltVersion = :saltVersion",
+          UpdateExpression:
+            "SET tokensConsumed = :zero, tokensGranted = :granted, tokenResetAt = :resetAt, saltVersion = :saltVersion" + fill.expression,
           ExpressionAttributeValues: {
             ":zero": 0,
             ":granted": tokensGranted,
             ":resetAt": nextResetAt,
             ":saltVersion": version,
+            ...fill.values,
           },
         }),
     );
@@ -318,18 +354,21 @@ export async function consumeToken(userId, bundleId, count = 1) {
   try {
     const { hashedSub, version } = await locateBundleOwner(userId, bundleId);
     const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
+    const fill = actorFill(hashedSub);
 
     const result = await executeDynamoDbCommand(
       (module) =>
         new module.UpdateCommand({
           TableName: tableName,
           Key: { hashedSub, bundleId },
-          UpdateExpression: "SET tokensConsumed = if_not_exists(tokensConsumed, :zero) + :inc, saltVersion = :saltVersion",
+          UpdateExpression:
+            "SET tokensConsumed = if_not_exists(tokensConsumed, :zero) + :inc, saltVersion = :saltVersion" + fill.expression,
           ConditionExpression: "attribute_exists(hashedSub) AND (attribute_not_exists(tokensConsumed) OR tokensConsumed < tokensGranted)",
           ExpressionAttributeValues: {
             ":zero": 0,
             ":inc": count,
             ":saltVersion": version,
+            ...fill.values,
           },
           ReturnValues: "ALL_NEW",
         }),
@@ -374,6 +413,7 @@ export async function recordTokenEvent(userId, bundleId, event) {
       ...event,
       timestamp: new Date().toISOString(),
     };
+    const fill = actorFill(hashedSub);
 
     await executeDynamoDbCommand(
       (module) =>
@@ -381,11 +421,13 @@ export async function recordTokenEvent(userId, bundleId, event) {
           TableName: tableName,
           Key: { hashedSub, bundleId },
           ConditionExpression: "attribute_exists(hashedSub)",
-          UpdateExpression: "SET tokenEvents = list_append(if_not_exists(tokenEvents, :empty), :event), saltVersion = :saltVersion",
+          UpdateExpression:
+            "SET tokenEvents = list_append(if_not_exists(tokenEvents, :empty), :event), saltVersion = :saltVersion" + fill.expression,
           ExpressionAttributeValues: {
             ":empty": [],
             ":event": [tokenEvent],
             ":saltVersion": version,
+            ...fill.values,
           },
         }),
     );
@@ -419,7 +461,7 @@ export async function updateBundleSubscriptionFields(hashedSub, bundleId, fields
 
     const written = { ...fields };
     if (fields.expiry) {
-      const { ttl, ttl_datestamp } = calculateOneMonthTtl(new Date(fields.expiry));
+      const { ttl, ttl_datestamp } = bundleRetention({ actor: fields.actor }, new Date(fields.expiry), new Date());
       written.ttl = ttl;
       written.ttl_datestamp = ttl_datestamp;
     }

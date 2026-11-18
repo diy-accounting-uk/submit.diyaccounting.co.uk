@@ -32,7 +32,7 @@ window.onload = function() {
                 // Show a notice that the user is authenticated
                 const authNotice = document.createElement('div');
                 authNotice.style.cssText = 'background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 10px; margin: 10px; border-radius: 4px;';
-                authNotice.textContent = "✓ You appear to be logged in. API calls will use your existing session.";
+                authNotice.textContent = "✓ You appear to be signed in. API calls will use your existing session.";
                 document.querySelector('.swagger-ui').prepend(authNotice);
             }
         }

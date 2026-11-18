@@ -68,10 +68,7 @@
         },
         {
           "action": "point",
-          "target": {
-            "role": "heading",
-            "name": "Activities"
-          },
+          "target": "#dynamicActivities",
           "dwellMs": 300
         },
         {
@@ -171,7 +168,8 @@
           "expectsNavigation": true,
           "caption": "Open File Company Tax Return to find the company.",
           "headline": "Find the company",
-          "keyWord": "company"
+          "keyWord": "company",
+          "instruction": "Choose File Company Tax Return (HMRC, preview) on the activities page."
         },
         {
           "action": "await",
@@ -181,18 +179,20 @@
         {
           "action": "type",
           "target": "#companyNumber",
-          "text": "00000001",
+          "text": "12345678",
           "clear": true,
           "caption": "Type the company number.",
           "headline": "Enter the company number",
-          "keyWord": "number"
+          "keyWord": "number",
+          "instruction": "Enter your company number."
         },
         {
           "action": "click",
           "target": "#companyLookupBtn",
           "caption": "Look up the company with Companies House.",
           "headline": "Look up the company",
-          "keyWord": "company"
+          "keyWord": "company",
+          "instruction": "Choose Look up company."
         },
         {
           "action": "await",
@@ -205,7 +205,8 @@
           "caption": "Companies House confirms the company name.",
           "headline": "Confirm the company name",
           "keyWord": "name",
-          "dwellMs": 400
+          "dwellMs": 400,
+          "instruction": "Check that the company name Companies House shows is the company you mean."
         },
         {
           "action": "hold",
@@ -224,7 +225,8 @@
           "file": "videos/books/precision-code-ltd-ct600.diya-gl.zip",
           "caption": "Drop the company's diya-gl book on the form.",
           "headline": "Drop your book",
-          "keyWord": "book"
+          "keyWord": "book",
+          "instruction": "Drop the company's diya-gl book on the box that says Drop a book here."
         },
         {
           "action": "await",
@@ -234,7 +236,8 @@
           "timeoutMs": 60000,
           "caption": "The accounts and the tax figures fill from the book.",
           "headline": "The form fills itself",
-          "keyWord": "fills"
+          "keyWord": "fills",
+          "instruction": "Read the status line that says the accounts and tax figures are filled from the book."
         },
         {
           "action": "scroll",
@@ -246,7 +249,14 @@
           "dwellMs": 500,
           "caption": "Turnover comes straight from the book.",
           "headline": "Turnover from the book",
-          "keyWord": "Turnover"
+          "keyWord": "Turnover",
+          "instruction": "Check Turnover against your book."
+        },
+        {
+          "action": "fill",
+          "target": "#directorDateApproved",
+          "value": "2026-09-15",
+          "note": "A book holds no approval date; the step has no caption so the guide keeps the published video's frames."
         },
         {
           "action": "scroll",
@@ -259,7 +269,8 @@
           "dwellMs": 700,
           "caption": "The tax is worked out beside your answers.",
           "headline": "The tax is worked out",
-          "keyWord": "tax"
+          "keyWord": "tax",
+          "instruction": "Read the tax that is worked out beside your answers."
         },
         {
           "action": "hold",
@@ -290,7 +301,8 @@
           "dwellMs": 500,
           "caption": "The accounts can go to HMRC alone, or to Companies House and HMRC together.",
           "headline": "Choose where they go",
-          "keyWord": "where"
+          "keyWord": "where",
+          "instruction": "Read the Send to choice: HMRC alone, or Companies House and HMRC together."
         },
         {
           "action": "click",
@@ -301,7 +313,8 @@
           },
           "caption": "Choose to send to Companies House and to HMRC.",
           "headline": "Send to both",
-          "keyWord": "both"
+          "keyWord": "both",
+          "instruction": "Choose Send to Companies House and to HMRC."
         },
         {
           "action": "hold",
@@ -317,7 +330,8 @@
           "dwellMs": 600,
           "caption": "Companies House gets the accounts first. HMRC follows when it accepts them.",
           "headline": "Companies House first",
-          "keyWord": "first"
+          "keyWord": "first",
+          "instruction": "Read the hint under the send choice: Companies House gets the accounts first."
         },
         {
           "action": "point",
@@ -326,7 +340,8 @@
           "dwellMs": 600,
           "caption": "Companies House gets the balance sheet and notes. HMRC also gets the profit and loss.",
           "headline": "What Companies House gets",
-          "keyWord": "Companies"
+          "keyWord": "Companies",
+          "instruction": "Read the note that lists what each recipient receives."
         },
         {
           "action": "hold",
@@ -353,7 +368,8 @@
           "dwellMs": 500,
           "caption": "The director's name comes from the book.",
           "headline": "Director from the book",
-          "keyWord": "book"
+          "keyWord": "book",
+          "instruction": "Check the name of the person signing the declaration against your book."
         },
         {
           "action": "type",
@@ -365,7 +381,8 @@
           "keyWord": "UTR",
           "scrollTo": {
             "text": "Box 3: Tax reference (Unique Taxpayer Reference)"
-          }
+          },
+          "instruction": "Enter the Tax reference (Unique Taxpayer Reference)."
         },
         {
           "action": "click",
@@ -388,7 +405,8 @@
           "scrollTo": {
             "role": "heading",
             "name": "Statements"
-          }
+          },
+          "instruction": "Tick each of the four statements under Statements to accept."
         },
         {
           "action": "click",
@@ -399,7 +417,8 @@
           "scrollTo": {
             "role": "heading",
             "name": "Statements"
-          }
+          },
+          "instruction": "Tick the declaration that the return is correct and complete."
         },
         {
           "action": "hold",
@@ -429,7 +448,8 @@
           "dwellMs": 500,
           "caption": "Preview the return before anything is sent.",
           "headline": "Preview the return",
-          "keyWord": "Preview"
+          "keyWord": "Preview",
+          "instruction": "Choose Preview the return, then read it before anything is sent."
         },
         {
           "action": "scroll",
@@ -446,7 +466,8 @@
           "dwellMs": 700,
           "caption": "The review says Companies House gets the accounts first, then HMRC.",
           "headline": "Companies House first",
-          "keyWord": "first"
+          "keyWord": "first",
+          "instruction": "Read the review row that says Companies House gets the accounts first."
         },
         {
           "action": "point",
@@ -454,7 +475,8 @@
           "dwellMs": 700,
           "caption": "HMRC receives the full accounts with the return.",
           "headline": "What HMRC receives",
-          "keyWord": "HMRC"
+          "keyWord": "HMRC",
+          "instruction": "Read the review row that lists the accounts HMRC receives."
         },
         {
           "action": "point",
@@ -463,7 +485,8 @@
           "headline": "The CT600 boxes",
           "keyWord": "CT600",
           "dwellMs": 600,
-          "scrollTo": "#ct600Table"
+          "scrollTo": "#ct600Table",
+          "instruction": "Check the CT600 boxes as HMRC will receive them."
         },
         {
           "action": "scroll",
@@ -479,7 +502,8 @@
           "caption": "The tax computation sits beside the return.",
           "headline": "The tax computation",
           "keyWord": "computation",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read the tax computation under the CT600 boxes."
         },
         {
           "action": "hold",
@@ -504,7 +528,8 @@
           "secret": true,
           "caption": "Type the company's Companies House authentication code.",
           "headline": "Enter the auth code",
-          "keyWord": "code"
+          "keyWord": "code",
+          "instruction": "Enter the Company authentication code that Companies House issued."
         },
         {
           "action": "type",
@@ -514,7 +539,8 @@
           "secret": true,
           "caption": "Type the company's Government Gateway user ID.",
           "headline": "Enter the Gateway user ID",
-          "keyWord": "Gateway"
+          "keyWord": "Gateway",
+          "instruction": "Enter the Government Gateway user ID."
         },
         {
           "action": "type",
@@ -524,7 +550,8 @@
           "secret": true,
           "caption": "Type the Government Gateway password.",
           "headline": "Enter the password",
-          "keyWord": "password"
+          "keyWord": "password",
+          "instruction": "Enter the Government Gateway password."
         },
         {
           "action": "point",
@@ -532,7 +559,8 @@
           "dwellMs": 500,
           "caption": "Send the accounts to Companies House, then the return to HMRC.",
           "headline": "Send to both",
-          "keyWord": "both"
+          "keyWord": "both",
+          "instruction": "Choose Submit to HMRC to send the accounts and then the return."
         },
         {
           "action": "click",
@@ -566,7 +594,8 @@
           "scrollTo": "#companiesHouseHeading",
           "caption": "Companies House accepts the accounts first.",
           "headline": "Companies House accepts",
-          "keyWord": "accepts"
+          "keyWord": "accepts",
+          "instruction": "Read the Companies House outcome to check it accepted the accounts."
         },
         {
           "action": "await",
@@ -575,7 +604,8 @@
           "timeoutMs": 120000,
           "caption": "Then HMRC accepts the Company Tax Return.",
           "headline": "HMRC accepts the return",
-          "keyWord": "HMRC"
+          "keyWord": "HMRC",
+          "instruction": "Read the result to check that HMRC accepted the Company Tax Return."
         },
         {
           "action": "point",
@@ -583,7 +613,8 @@
           "caption": "The IRmark proves the return arrived unchanged.",
           "headline": "The IRmark",
           "keyWord": "IRmark",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read the IRmark in the result and keep it with your record."
         },
         {
           "action": "point",
@@ -595,7 +626,8 @@
           "dwellMs": 800,
           "caption": "Both filings are accepted under one entry.",
           "headline": "Both filings accepted",
-          "keyWord": "Both"
+          "keyWord": "Both",
+          "instruction": "Read the result that shows both filings as accepted under one entry."
         },
         {
           "action": "hold",
@@ -608,7 +640,8 @@
           "scrollTo": "#receiptsTable",
           "caption": "Your receipts page lists the accounts and the return as one filing.",
           "headline": "One filing, two receipts",
-          "keyWord": "two"
+          "keyWord": "two",
+          "instruction": "Choose Receipts to find the accounts and the return listed as one filing."
         },
         {
           "action": "hold",
@@ -620,7 +653,8 @@
           "expectsNavigation": true,
           "caption": "Open your copy of the Company Tax Return.",
           "headline": "Open your copy",
-          "keyWord": "copy"
+          "keyWord": "copy",
+          "instruction": "Choose the first receipt to open your copy of the Company Tax Return."
         },
         {
           "action": "await",
@@ -636,7 +670,8 @@
           "to": "bottom",
           "caption": "It ends with the status and the date filed.",
           "headline": "Status and date filed",
-          "keyWord": "filed"
+          "keyWord": "filed",
+          "instruction": "Scroll to the end of the filing to read the status and the date filed."
         },
         {
           "action": "hold",

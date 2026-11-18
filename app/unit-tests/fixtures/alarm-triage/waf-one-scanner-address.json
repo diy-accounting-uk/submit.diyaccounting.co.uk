@@ -1,0 +1,106 @@
+{
+  "description": "A WAF alarm whose blocked requests all come from one scanner address and match no run of ours; the alarm is back to OK.",
+  "alarm": {
+    "name": "prod-zz8quince-app-waf-attack-signatures",
+    "environment": "prod",
+    "deployment": "zz8quince",
+    "region": "us-east-1",
+    "window": "2026-01-15T08:50:00Z to 2026-01-15T09:20:00Z",
+    "issueNumber": 9120
+  },
+  "remedyRow": {
+    "family": "prod-app-waf-attack-signatures",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  "evidence": {
+    "alarmFound": true,
+    "deploymentLive": true,
+    "liveDeployment": "zz8quince",
+    "logGroupNamePrefixes": ["aws-waf-logs-prod-zz8quince-app", "/aws/lambda/prod-zz8quince-app-waf-scan-detect"],
+    "triggeringLogGroupNamePrefixes": [],
+    "credentialProof": {
+      "identity": {
+        "Account": "000000000000",
+        "Arn": "arn:aws:sts::000000000000:assumed-role/example-triage-role/replay"
+      },
+      "logGroups": [
+        {
+          "logGroupName": "aws-waf-logs-prod-zz8quince-app",
+          "retentionInDays": 30
+        }
+      ],
+      "alarmHistory": [
+        {
+          "at": "2026-01-15T09:12:00Z",
+          "summary": "Alarm updated from ALARM to OK",
+          "newState": {
+            "value": "OK",
+            "stateReason": "Threshold Crossed: no datapoints were received for 1 period and 1 missing datapoint was treated as [NonBreaching]."
+          }
+        }
+      ],
+      "wafBlocks": {
+        "rules": [
+          {
+            "terminatingRuleId": "SensitivePathScan",
+            "count": 814
+          }
+        ],
+        "clients": [
+          {
+            "clientIp": "203.0.113.7",
+            "country": "NL",
+            "count": 814
+          }
+        ],
+        "userAgents": [
+          {
+            "userAgent": "Mozilla/5.0 (compatible; scanner-example)",
+            "count": 814
+          }
+        ],
+        "topPaths": [
+          {
+            "path": "/config.json",
+            "count": 36
+          },
+          {
+            "path": "/app/.env.local",
+            "count": 10
+          },
+          {
+            "path": "/credentials",
+            "count": 18
+          }
+        ]
+      },
+      "ourRuns": []
+    }
+  },
+  "frozenResults": [
+    {
+      "command": "cloudwatch describe-alarm-history",
+      "result": "{\"AlarmHistoryItems\": [{\"at\": \"2026-01-15T09:12:00Z\", \"summary\": \"Alarm updated from ALARM to OK\", \"newState\": {\"value\": \"OK\", \"stateReason\": \"Threshold Crossed: no datapoints were received for 1 period and 1 missing datapoint was treated as [NonBreaching].\"}}]}"
+    },
+    {
+      "command": "cloudwatch describe-alarms",
+      "result": "{\"MetricAlarms\": [{\"AlarmName\": \"prod-zz8quince-app-waf-attack-signatures\", \"StateValue\": \"OK\", \"StateReason\": \"Threshold Crossed: no datapoints were received for 1 period and 1 missing datapoint was treated as [NonBreaching].\"}]}"
+    },
+    {
+      "command": "logs describe-log-groups",
+      "result": "{\"logGroups\": [{\"logGroupName\": \"aws-waf-logs-prod-zz8quince-app\", \"retentionInDays\": 30}]}"
+    },
+    {
+      "command": "logs filter-log-events",
+      "result": "{\"events\": [{\"timestamp\": 1768467900000, \"message\": \"INFO blocked request on rule SensitivePathScan\"}]}"
+    }
+  ],
+  "expect": {
+    "stillBroken": false,
+    "whatBroke": [["203.0.113.7"], ["SensitivePathScan", "scanner", "scan"]],
+    "nextAction": [["close", "no action", "no further action", "watch", "monitor"]],
+    "remedy": "close-when-gone"
+  }
+}

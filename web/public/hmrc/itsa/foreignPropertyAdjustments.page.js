@@ -1,39 +1,60 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId"));
 window.CarriedIdentifiers.bind("taxYear", document.getElementById("taxYear"));
 
 const PENDING_KEY = "pendingForeignPropertyBsasRequest";
-const MONEY_HINT = "For example, £600 or £193.54";
+const MONEY_HINT = siteText("itsa.money-example", "For example, £600 or £193.54");
 
 // The figures HMRC lets a person adjust in one entry: the same names as the UK property adjustment,
 // with the premium for a lease grant, the other expense lines and one total for all expenses.
 const INCOME_FIELDS = [
-  { id: "totalRentsReceived", label: "Total rents received" },
-  { id: "premiumsOfLeaseGrant", label: "Premiums for the grant of a lease" },
-  { id: "otherPropertyIncome", label: "Other property income" },
+  { id: "totalRentsReceived", label: siteText("itsa.field-total-rents-received", "Total rents received") },
+  { id: "premiumsOfLeaseGrant", label: siteText("itsa.field-premiums-for-the-grant-of-a", "Premiums for the grant of a lease") },
+  { id: "otherPropertyIncome", label: siteText("itsa.field-other-property-income", "Other property income") },
 ];
 
 const ITEMISED_EXPENSE_FIELDS = [
-  { id: "premisesRunningCosts", label: "Rent, rates, insurance and ground rents" },
-  { id: "repairsAndMaintenance", label: "Repairs and maintenance" },
-  { id: "financialCosts", label: "Loan interest and other financial costs" },
-  { id: "professionalFees", label: "Legal, management and other professional fees" },
-  { id: "costOfServices", label: "Costs of services provided, including wages" },
-  { id: "travelCosts", label: "Travel costs" },
-  { id: "other", label: "Other property expenses" },
-  { id: "residentialFinancialCost", label: "Residential property finance costs" },
+  {
+    id: "premisesRunningCosts",
+    label: siteText("itsa.field-rent-rates-insurance-and-ground-rents", "Rent, rates, insurance and ground rents"),
+  },
+  { id: "repairsAndMaintenance", label: siteText("itsa.field-repairs-and-maintenance", "Repairs and maintenance") },
+  {
+    id: "financialCosts",
+    label: siteText("itsa.field-loan-interest-and-other-financial-costs", "Loan interest and other financial costs"),
+  },
+  {
+    id: "professionalFees",
+    label: siteText("itsa.field-legal-management-and-other-professional-fees", "Legal, management and other professional fees"),
+  },
+  {
+    id: "costOfServices",
+    label: siteText("itsa.field-costs-of-services-provided-including-wages", "Costs of services provided, including wages"),
+  },
+  { id: "travelCosts", label: siteText("itsa.field-travel-costs", "Travel costs") },
+  { id: "other", label: siteText("itsa.field-other-property-expenses", "Other property expenses") },
+  {
+    id: "residentialFinancialCost",
+    label: siteText("itsa.field-residential-property-finance-costs", "Residential property finance costs"),
+  },
 ];
 
-const CONSOLIDATED_FIELD = { id: "consolidatedExpenses", label: "Expenses as one total" };
+const CONSOLIDATED_FIELD = { id: "consolidatedExpenses", label: siteText("itsa-fp-adjustments.one-total", "Expenses as one total") };
 
 // Furnished holiday lettings in the EEA, adjusted up to 2024-25: rents only, and no residential
 // finance costs.
 const FHL_PREFIX = "adjust-fhl";
-const FHL_NAME = "Furnished holiday lettings in the EEA";
+const FHL_NAME = siteText("itsa.fhl-eea", "Furnished holiday lettings in the EEA");
 const FHL_INCOME_FIELDS = [INCOME_FIELDS[0]];
 const FHL_ITEMISED_EXPENSE_FIELDS = ITEMISED_EXPENSE_FIELDS.filter((field) => field.id !== "residentialFinancialCost");
 
@@ -128,7 +149,10 @@ function mountAdjustmentFields() {
     container.replaceChildren(
       el("p", {
         className: "no-data",
-        textContent: "HMRC returned no country or property to adjust. Choose Nothing to adjust to confirm the summary as it stands.",
+        textContent: siteText(
+          "itsa-fp-adjustments.nothing-returned",
+          "HMRC returned no country or property to adjust. Choose Nothing to adjust to confirm the summary as it stands.",
+        ),
       }),
     );
     return;
@@ -138,11 +162,14 @@ function mountAdjustmentFields() {
       const prefix = `adjust-${index + 1}`;
       return el("fieldset", { className: "form-group foreign-property-entry", id: prefix }, [
         el("legend", { textContent: entry.name }),
-        el("h4", { textContent: "Income" }),
+        el("h4", { textContent: siteText("itsa.income", "Income") }),
         ...INCOME_FIELDS.map((field) => moneyGroup(prefix, field)),
         el("details", { className: "field-group", id: `${prefix}-expenses` }, [
-          el("summary", { textContent: "Expenses" }),
-          el("p", { className: "hint", textContent: "Enter the itemised expenses or one total, not both." }),
+          el("summary", { textContent: siteText("itsa.expenses", "Expenses") }),
+          el("p", {
+            className: "hint",
+            textContent: siteText("itsa.itemised-or-total", "Enter the itemised expenses or one total, not both."),
+          }),
           ...ITEMISED_EXPENSE_FIELDS.map((field) => moneyGroup(prefix, field)),
           moneyGroup(prefix, CONSOLIDATED_FIELD),
         ]),
@@ -164,12 +191,18 @@ function mountFhlFields(taxYear) {
   container.replaceChildren(
     el("fieldset", { className: "form-group foreign-property-entry", id: FHL_PREFIX }, [
       el("legend", { textContent: FHL_NAME }),
-      el("p", { className: "hint", textContent: "Only for tax years up to 2024-25. Leave blank if you had none." }),
-      el("h4", { textContent: "Income" }),
+      el("p", {
+        className: "hint",
+        textContent: siteText("itsa-fp-adjustments.fhl-hint", "Only for tax years up to 2024-25. Leave blank if you had none."),
+      }),
+      el("h4", { textContent: siteText("itsa.income", "Income") }),
       ...FHL_INCOME_FIELDS.map((field) => moneyGroup(FHL_PREFIX, field)),
       el("details", { className: "field-group", id: `${FHL_PREFIX}-expenses` }, [
-        el("summary", { textContent: "Expenses" }),
-        el("p", { className: "hint", textContent: "Enter the itemised expenses or one total, not both." }),
+        el("summary", { textContent: siteText("itsa.expenses", "Expenses") }),
+        el("p", {
+          className: "hint",
+          textContent: siteText("itsa.itemised-or-total", "Enter the itemised expenses or one total, not both."),
+        }),
         ...FHL_ITEMISED_EXPENSE_FIELDS.map((field) => moneyGroup(FHL_PREFIX, field)),
         moneyGroup(FHL_PREFIX, CONSOLIDATED_FIELD),
       ]),
@@ -180,7 +213,7 @@ function mountFhlFields(taxYear) {
 function displaySummary(bsas, taxYear) {
   const calculation = bsas?.adjustableSummaryCalculation;
   HmrcFieldTable.mountFieldTable(document.getElementById("summaryDetails"), HmrcFieldTable.foreignPropertySummaryRows(calculation), {
-    caption: "Year-end summary",
+    caption: siteText("itsa.year-end-summary", "Year-end summary"),
   });
   summaryCalculation = calculation;
   adjustableEntries = adjustableEntriesOf(bsas, taxYear);
@@ -191,7 +224,7 @@ function displaySummary(bsas, taxYear) {
         tableContainer,
         HmrcFieldTable.foreignPropertySummaryRows(entry.detail).map((row) => ({ ...row, definition: undefined, source: undefined })),
         {
-          caption: `Year-end summary for ${entry.name}`,
+          caption: siteText("itsa-fp-adjustments.summary-for", "Year-end summary for {name}", { name: entry.name }),
         },
       );
       return el("section", { className: "foreign-summary-entry" }, [el("h4", { textContent: entry.name }), tableContainer]);
@@ -202,7 +235,7 @@ function displaySummary(bsas, taxYear) {
 }
 
 async function runTriggerAndRetrieve(criteria, hmrcGrantId) {
-  showStatus("Requesting the year-end summary...", "info");
+  showStatus(siteText("itsa.year-end-requesting", "Requesting the year-end summary..."), "info");
   const govClientHeaders = await getGovClientHeaders();
   const triggerResult = await triggerBsas(
     {
@@ -218,7 +251,7 @@ async function runTriggerAndRetrieve(criteria, hmrcGrantId) {
     criteria.testScenario,
   );
   triggered = { nino: criteria.nino, taxYear: criteria.taxYear, calculationId: triggerResult.calculationId };
-  showStatus("Retrieving year-end summary...", "info");
+  showStatus(siteText("itsa.year-end-retrieving", "Retrieving year-end summary..."), "info");
   const bsas = await retrieveSummary(criteria, triggered.calculationId, hmrcGrantId);
   displaySummary(bsas, criteria.taxYear);
   document.getElementById("triggerForm").style.display = "none";
@@ -269,32 +302,48 @@ function totalsAfterAdjustment(calculation, adjustDetails) {
   const income = { before: calculation.totalIncome ?? 0, after: (calculation.totalIncome ?? 0) + incomeChange };
   const expenses = { before: calculation.totalExpenses ?? 0, after: (calculation.totalExpenses ?? 0) + expensesChange };
   return [
-    ["Total income", income.before, income.after],
-    ["Total expenses", expenses.before, expenses.after],
-    ["Net profit or loss", income.before - expenses.before, income.after - expenses.after],
+    [siteText("itsa.field-total-income", "Total income"), income.before, income.after],
+    [siteText("itsa.field-total-expenses", "Total expenses"), expenses.before, expenses.after],
+    [
+      siteText("itsa-fp-adjustments.net-profit-or-loss", "Net profit or loss"),
+      income.before - expenses.before,
+      income.after - expenses.after,
+    ],
   ];
 }
 
 function showAdjustmentResult(adjustDetails) {
   const container = document.getElementById("adjustmentSummary");
-  const columns = [{ label: "Item" }, { label: "HMRC calculated", kind: "money" }, { label: "Now held", kind: "money" }];
+  const columns = [
+    { label: siteText("widget.field-item", "Item") },
+    { label: siteText("itsa-fp-adjustments.hmrc-calculated", "HMRC calculated"), kind: "money" },
+    { label: siteText("itsa-fp-adjustments.now-held", "Now held"), kind: "money" },
+  ];
   const figures = adjustedFigureRows(adjustDetails);
   const parts = [];
   if (adjustDetails.zeroAdjustments) {
-    parts.push(el("p", { textContent: "You confirmed the summary as it stands. No figure changed." }));
+    parts.push(
+      el("p", {
+        textContent: siteText("itsa-fp-adjustments.confirmed-as-is", "You confirmed the summary as it stands. No figure changed."),
+      }),
+    );
   } else if (figures.length > 0) {
     const adjusted = el("div", { id: "adjustedFigures" });
     HmrcFieldTable.mountResultsTable(adjusted, columns, figures);
-    parts.push(el("h4", { textContent: "What you adjusted" }), adjusted);
+    parts.push(el("h4", { textContent: siteText("itsa-fp-adjustments.what-you-adjusted", "What you adjusted") }), adjusted);
   }
   if (summaryCalculation) {
     const totals = el("div", { id: "adjustedTotals" });
     HmrcFieldTable.mountResultsTable(
       totals,
-      [{ label: "Total" }, { label: "Before", kind: "money" }, { label: "After", kind: "money" }],
+      [
+        { label: siteText("itsa-fp-adjustments.total", "Total") },
+        { label: siteText("itsa-fp-adjustments.before", "Before"), kind: "money" },
+        { label: siteText("itsa-fp-adjustments.after", "After"), kind: "money" },
+      ],
       totalsAfterAdjustment(summaryCalculation, adjustDetails),
     );
-    parts.push(el("h4", { textContent: "Your year-end totals" }), totals);
+    parts.push(el("h4", { textContent: siteText("itsa-fp-adjustments.year-end-totals", "Your year-end totals") }), totals);
   }
   container.replaceChildren(...parts);
 }
@@ -315,7 +364,7 @@ async function runRequest(request, hmrcGrantId) {
     if (request.action === "trigger") {
       await runTriggerAndRetrieve(request.criteria, hmrcGrantId);
     } else {
-      showStatus("Submitting adjustment...", "info");
+      showStatus(siteText("itsa.adjustment-submitting", "Submitting adjustment..."), "info");
       await sendAdjustment(request, hmrcGrantId);
       hideStatus();
     }
@@ -323,10 +372,12 @@ async function runRequest(request, hmrcGrantId) {
     if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
       sessionStorage.removeItem("hmrcTokenScope");
-      showStatus("Access token expired. Please try again.", "error");
+      showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
     } else {
       showStatus(
-        `${request.action === "trigger" ? "Failed to request the year-end summary" : "Failed to submit the adjustment"}: ${error.message}`,
+        request.action === "trigger"
+          ? siteText("itsa.year-end-request-failed", "Failed to request the year-end summary: {reason}", { reason: error.message })
+          : siteText("itsa.adjustment-failed", "Failed to submit the adjustment: {reason}", { reason: error.message }),
         "error",
       );
     }
@@ -343,7 +394,7 @@ async function ensureAuthorizedThen(request) {
     if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     try {
       showLoading();
-      showStatus("Initiating HMRC authentication...", "info");
+      showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
       const state = generateRandomState();
       sessionStorage.setItem("oauth_state", state);
       sessionStorage.setItem(PENDING_KEY, JSON.stringify(request));
@@ -359,7 +410,7 @@ async function ensureAuthorizedThen(request) {
       } catch {}
       window.location.href = authResponseUrl;
     } catch (error) {
-      showStatus(`Authentication failed: ${error.message}`, "error");
+      showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
       hideLoading();
     }
     return;
@@ -390,7 +441,11 @@ async function handleTriggerFormSubmission(event) {
       const openObligations = await checkOpenObligations(criteria.nino, criteria.businessId, hmrcGrantIdForCheck);
       const warning = document.getElementById("obligationsWarning");
       if (openObligations.length > 0) {
-        warning.textContent = `${openObligations.length} quarterly obligation(s) for this business are still open. File every quarterly update for the year before requesting the year-end summary.`;
+        warning.textContent = siteText(
+          "itsa.open-obligations-warning",
+          "{count} quarterly obligation(s) for this business are still open. File every quarterly update for the year before requesting the year-end summary.",
+          { count: openObligations.length },
+        );
         warning.style.display = "block";
         return;
       }
@@ -426,7 +481,13 @@ function adjustmentProblems(figuresByEntry, fhlFigures) {
     .filter(({ figures }) => figures.expenses.consolidatedExpenses !== undefined && Object.keys(figures.expenses).length > 1)
     .map(({ name, prefix }) => ({
       input: document.getElementById(`${prefix}-${CONSOLIDATED_FIELD.id}`),
-      message: `${name}: enter either the total expenses or the itemised expenses, not both`,
+      message: siteText(
+        "itsa-fp-adjustments.total-or-itemised",
+        "{name}: enter either the total expenses or the itemised expenses, not both",
+        {
+          name,
+        },
+      ),
     }));
 }
 
@@ -469,7 +530,7 @@ async function handleAdjustmentSubmit(zeroAdjustments) {
       window.formErrors.showFormErrors([
         {
           input: document.querySelector("#adjustEntries input") || document.getElementById("adjustEntries"),
-          message: "Enter at least one adjustment, or choose Nothing to adjust",
+          message: siteText("itsa-fp-adjustments.enter-one", "Enter at least one adjustment, or choose Nothing to adjust"),
         },
       ]);
       return;

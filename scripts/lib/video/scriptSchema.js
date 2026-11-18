@@ -24,6 +24,7 @@ const REQUIRED_TOP_LEVEL = ["name", "title", "description", "auth", "pages", "vi
 // against the simulator and records against a deployment through the Cognito Hosted UI.
 const AUTH_VALUES = new Set(["none", "user"]);
 const CONSENT_ANSWERS = new Set(["granted", "declined"]);
+const CHAPTER_POSITIONS = new Set(["top-left", "top-center"]);
 
 const REQUIRED_PACING_KEYS = [
   "perCharMs",
@@ -142,6 +143,7 @@ function validateStep(step, scenePath, sceneId, stepIndex, auth) {
   if (!(step.action in STEP_REQUIRED_FIELDS)) fail(path, `unknown action "${step.action}"`);
   requireKeys(step, STEP_REQUIRED_FIELDS[step.action], path);
   if ("target" in step) validateTarget(step.target, `${path}.target`);
+  if ("headlineBeside" in step && typeof step.headlineBeside !== "boolean") fail(`${path}.headlineBeside`, "must be true or false");
   if ("scrollTo" in step) {
     if (NO_SCROLL_TO_ACTIONS.has(step.action)) fail(`${path}.scrollTo`, `a "${step.action}" step has no page to scroll`);
     validateTarget(step.scrollTo, `${path}.scrollTo`);
@@ -213,6 +215,9 @@ export function validateScript(script) {
     }
   }
 
+  if ("chapterPosition" in script && !CHAPTER_POSITIONS.has(script.chapterPosition)) {
+    fail("chapterPosition", `must be one of ${[...CHAPTER_POSITIONS].join(", ")}`);
+  }
   if ("consentAnswer" in script && !CONSENT_ANSWERS.has(script.consentAnswer)) {
     fail("consentAnswer", `must be one of ${[...CONSENT_ANSWERS].join(", ")}`);
   }

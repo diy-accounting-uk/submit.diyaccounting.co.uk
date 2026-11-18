@@ -9,35 +9,41 @@
 (function () {
   "use strict";
 
+  // page-chrome.js gives the text in the chosen language; without it the English stands.
+  function siteText(id, english, values) {
+    if (window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
+
   const SUMMARY_ID = "form-error-summary";
   const ERROR_CLASS = "error-message";
 
   const REQUIRED_MESSAGES = {
-    nino: "Enter your National Insurance number",
-    vrn: "Enter your VAT registration number",
-    vatNumber: "Enter your VAT registration number",
-    businessId: "Enter the business ID",
-    taxYear: "Enter the tax year",
-    periodId: "Enter the period ID",
-    submissionId: "Enter the submission ID",
-    calculationId: "Enter the calculation ID",
-    calculationType: "Select the calculation type",
-    periodStart: "Enter the period start date",
-    periodEnd: "Enter the period end date",
-    averageEmployees: "Enter the average number of employees",
-    directorName: "Enter the name of the director approving the balance sheet",
-    directorDateApproved: "Enter the date the balance sheet was approved",
-    reviewDate: "Enter the confirmation statement date",
-    periodStartDate: "Enter the period start date",
-    periodEndDate: "Enter the period end date",
-    fromDate: "Enter the period start date",
-    toDate: "Enter the period end date",
-    accountingPeriodStartDate: "Enter the accounting period start date",
-    accountingPeriodEndDate: "Enter the accounting period end date",
-    companyNumber: "Enter the company number",
-    companyQuery: "Enter a company name or number",
-    companyAuthCode: "Enter the company authentication code",
-    registeredEmailAddress: "Enter the new registered email address",
+    nino: siteText("widget.required-nino", "Enter your National Insurance number"),
+    vrn: siteText("widget.required-vrn", "Enter your VAT registration number"),
+    vatNumber: siteText("widget.required-vrn", "Enter your VAT registration number"),
+    businessId: siteText("widget.required-business-id", "Enter the business ID"),
+    taxYear: siteText("widget.required-tax-year", "Enter the tax year"),
+    periodId: siteText("widget.required-period-id", "Enter the period ID"),
+    submissionId: siteText("widget.required-submission-id", "Enter the submission ID"),
+    calculationId: siteText("widget.required-calculation-id", "Enter the calculation ID"),
+    calculationType: siteText("widget.required-calculation-type", "Select the calculation type"),
+    periodStart: siteText("widget.required-period-start", "Enter the period start date"),
+    periodEnd: siteText("widget.required-period-end", "Enter the period end date"),
+    averageEmployees: siteText("widget.required-average-employees", "Enter the average number of employees"),
+    directorName: siteText("widget.required-director-name", "Enter the name of the director approving the balance sheet"),
+    directorDateApproved: siteText("widget.required-director-date-approved", "Enter the date the balance sheet was approved"),
+    reviewDate: siteText("widget.required-review-date", "Enter the confirmation statement date"),
+    periodStartDate: siteText("widget.required-period-start", "Enter the period start date"),
+    periodEndDate: siteText("widget.required-period-end", "Enter the period end date"),
+    fromDate: siteText("widget.required-period-start", "Enter the period start date"),
+    toDate: siteText("widget.required-period-end", "Enter the period end date"),
+    accountingPeriodStartDate: siteText("widget.required-accounting-period-start", "Enter the accounting period start date"),
+    accountingPeriodEndDate: siteText("widget.required-accounting-period-end", "Enter the accounting period end date"),
+    companyNumber: siteText("widget.required-company-number", "Enter the company number"),
+    companyQuery: siteText("widget.required-company-query", "Enter a company name or number"),
+    companyAuthCode: siteText("widget.required-company-auth-code", "Enter the company authentication code"),
+    registeredEmailAddress: siteText("widget.required-registered-email", "Enter the new registered email address"),
   };
 
   function labelOf(input) {
@@ -45,7 +51,11 @@
   }
 
   function requiredMessage(input) {
-    return input.dataset.requiredMessage || REQUIRED_MESSAGES[input.id] || `Enter ${labelOf(input)}`;
+    return (
+      input.dataset.requiredMessage ||
+      REQUIRED_MESSAGES[input.id] ||
+      siteText("widget.required-field", "Enter {label}", { label: labelOf(input) })
+    );
   }
 
   function errorIdOf(input) {
@@ -85,7 +95,7 @@
     text.className = ERROR_CLASS;
     const hidden = document.createElement("span");
     hidden.className = "visually-hidden";
-    hidden.textContent = "Error: ";
+    hidden.textContent = siteText("widget.error-prefix", "Error: ");
     text.append(hidden, message);
     const folded = input.closest("details");
     if (folded) folded.open = true;
@@ -117,7 +127,7 @@
     summary.setAttribute("tabindex", "-1");
     const heading = document.createElement("h2");
     heading.className = "error-summary__title";
-    heading.textContent = "There is a problem";
+    heading.textContent = siteText("widget.error-summary", "There is a problem");
     const list = document.createElement("ul");
     list.className = "error-summary__list";
     errors.forEach(({ input, message }) => {
@@ -155,7 +165,7 @@
       .map((input) => ({ input, message: requiredMessage(input) }));
     const vrn = document.getElementById(vrnId);
     if (vrn && vrn.value.trim() !== "" && !/^\d{9}$/.test(vrn.value.trim())) {
-      errors.unshift({ input: vrn, message: "The VAT registration number must be 9 numbers" });
+      errors.unshift({ input: vrn, message: siteText("widget.vrn-nine-numbers", "The VAT registration number must be 9 numbers") });
     }
     showFormErrors(errors);
     return errors.length === 0;
@@ -179,10 +189,15 @@
   }
 
   function moneyMessage(input) {
-    if (window.readMoneyInput(input) !== null) return `The amount cannot be negative. Check ${labelOf(input)}.`;
-    const example =
-      input.dataset.money === "whole-pounds" ? "a whole number of pounds, like £600 or £1,200" : "pounds and pence, like £600 or £193.54";
-    return `Enter an amount in ${example}. Check ${labelOf(input)}.`;
+    const label = labelOf(input);
+    if (window.readMoneyInput(input) !== null)
+      return siteText("widget.money-negative", "The amount cannot be negative. Check {label}.", { label });
+    if (input.dataset.money === "whole-pounds") {
+      return siteText("widget.money-whole-pounds", "Enter an amount in a whole number of pounds, like £600 or £1,200. Check {label}.", {
+        label,
+      });
+    }
+    return siteText("widget.money-pounds-pence", "Enter an amount in pounds and pence, like £600 or £193.54. Check {label}.", { label });
   }
 
   // Runs the money parser, which marks aria-invalid on bad pounds boxes, and turns what it marked

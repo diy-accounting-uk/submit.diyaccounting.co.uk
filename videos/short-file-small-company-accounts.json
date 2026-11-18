@@ -1,0 +1,460 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "short-file-small-company-accounts",
+  "title": "File small company accounts in under two minutes",
+  "description": "A short walk through filing small company accounts with Companies House: look up the company, enter the profit and loss and the balance sheet, preview the iXBRL, and file it. It ends on your copy of the filing.",
+  "auth": "user",
+  "pages": [
+    "web/public/index.html",
+    "web/public/auth/login.html",
+    "web/public/bundles.html",
+    "web/public/companies-house/fileSmallCompanyAccounts.html"
+  ],
+  "environments": ["simulator"],
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+  "pacing": {
+    "perCharMs": 50,
+    "betweenActionsMs": 300,
+    "aroundMotionMs": 300,
+    "minResidualMs": 150,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 15,
+    "minMs": 1500,
+    "fadeMs": 250,
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
+  },
+  "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
+  "finalHoldMs": 2000,
+  "scenes": [
+    {
+      "id": "home",
+      "chapter": "Home",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "#mainContent",
+          "caption": "See the full sign-in walkthrough in our sign-in video.",
+          "headline": "Sign in, faster",
+          "keyWord": "faster"
+        }
+      ]
+    },
+    {
+      "id": "sign-in",
+      "chapter": "Sign in",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "a.login-link",
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
+        },
+        {
+          "action": "login",
+          "caption": "Your account keeps your filings in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
+        },
+        {
+          "action": "consent"
+        }
+      ]
+    },
+    {
+      "id": "subscription",
+      "chapter": "Resident Ltd",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          },
+          "caption": "Bundles decide which activities you can run.",
+          "headline": "Open your bundles",
+          "keyWord": "bundles"
+        },
+        {
+          "action": "ensureBundle",
+          "bundle": "Resident Ltd",
+          "testPass": true,
+          "caption": "Resident Ltd opens the small company accounts filing.",
+          "headline": "Unlock small company filing",
+          "keyWord": "small"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Activities"
+          },
+          "caption": "Every activity starts from the home page.",
+          "headline": "Go to activities",
+          "keyWord": "activities"
+        },
+        {
+          "action": "await",
+          "until": "button:has-text('File Small Company Accounts (Companies House)')",
+          "label": "Waiting for the subscription to unlock the activity"
+        }
+      ]
+    },
+    {
+      "id": "company-lookup",
+      "chapter": "Which company?",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "File Small Company Accounts (Companies House)"
+          },
+          "expectsNavigation": true,
+          "caption": "Open File Small Company Accounts.",
+          "instruction": "Choose File Small Company Accounts (Companies House) on the activities page.",
+          "headline": "Find the company",
+          "keyWord": "company"
+        },
+        {
+          "action": "await",
+          "until": "#companyForm",
+          "label": "Opening the company lookup form"
+        },
+        {
+          "action": "type",
+          "target": "#companyNumber",
+          "text": "00000003",
+          "clear": true,
+          "caption": "Type the company number and look it up.",
+          "instruction": "Enter your company number, then choose Look up company.",
+          "headline": "Enter the company number",
+          "keyWord": "number"
+        },
+        {
+          "action": "click",
+          "target": "#companyLookupBtn"
+        },
+        {
+          "action": "await",
+          "until": "#formView",
+          "label": "Looking up the company"
+        },
+        {
+          "action": "point",
+          "target": "#changeCompanyLink",
+          "dwellMs": 300,
+          "caption": "Companies House confirms the name.",
+          "instruction": "Check that the company name Companies House shows is yours.",
+          "headline": "Check the name",
+          "keyWord": "name",
+          "note": "Points at the Change company link, right of the name: a short headline above it sits in the empty space beside the form's heading, clear of both headings."
+        }
+      ]
+    },
+    {
+      "id": "profit-and-loss",
+      "chapter": "The accounts",
+      "still": true,
+      "steps": [
+        {
+          "action": "fill",
+          "target": "#periodStart",
+          "value": "{{yearsAgo:1}}",
+          "caption": "Enter the period and the profit and loss.",
+          "instruction": "Enter the first and last day of the accounting period, then this year's profit and loss figures, starting with turnover.",
+          "headline": "Period and profit and loss",
+          "keyWord": "profit"
+        },
+        {
+          "action": "fill",
+          "target": "#periodEnd",
+          "value": "{{daysAgo:1}}"
+        },
+        {
+          "action": "fill",
+          "target": "#currentTurnover",
+          "value": "20000"
+        },
+        {
+          "action": "fill",
+          "target": "#currentCostOfSales",
+          "value": "5000"
+        },
+        {
+          "action": "fill",
+          "target": "#currentAdministrativeExpenses",
+          "value": "12000"
+        },
+        {
+          "action": "fill",
+          "target": "#currentInterestReceivable",
+          "value": "0"
+        },
+        {
+          "action": "fill",
+          "target": "#currentTax",
+          "value": "600"
+        },
+        {
+          "action": "point",
+          "target": "#currentProfitAndLossTotals",
+          "dwellMs": 300,
+          "caption": "Submit works out the profit.",
+          "instruction": "Check the gross profit, operating profit and profit for the year that Submit works out.",
+          "headline": "Profit worked out",
+          "keyWord": "Profit"
+        }
+      ]
+    },
+    {
+      "id": "rest-of-form",
+      "chapter": "The rest of the form",
+      "offCamera": true,
+      "steps": [
+        {
+          "action": "fill",
+          "target": "#currentFixedAssets",
+          "value": "1000"
+        },
+        {
+          "action": "fill",
+          "target": "#currentStocks",
+          "value": "500"
+        },
+        {
+          "action": "fill",
+          "target": "#currentDebtors",
+          "value": "2500"
+        },
+        {
+          "action": "fill",
+          "target": "#currentCashAtBank",
+          "value": "2000"
+        },
+        {
+          "action": "fill",
+          "target": "#currentTradeCreditors",
+          "value": "1000"
+        },
+        {
+          "action": "fill",
+          "target": "#currentCorporationTax",
+          "value": "700"
+        },
+        {
+          "action": "fill",
+          "target": "#currentOtherCreditors",
+          "value": "300"
+        },
+        {
+          "action": "fill",
+          "target": "#currentCreditorsAfterOneYear",
+          "value": "0"
+        },
+        {
+          "action": "fill",
+          "target": "#currentCalledUpShareCapital",
+          "value": "100"
+        },
+        {
+          "action": "fill",
+          "target": "#currentProfitAndLossAccount",
+          "value": "3900"
+        },
+        {
+          "action": "type",
+          "target": "#principalActivity",
+          "text": "Software consultancy"
+        },
+        {
+          "action": "type",
+          "target": "#accountingPolicies",
+          "text": "Historical cost convention."
+        },
+        {
+          "action": "fill",
+          "target": "#averageEmployees",
+          "value": "4"
+        },
+        {
+          "action": "type",
+          "target": "#directors",
+          "text": "Joanna Hale"
+        },
+        {
+          "action": "type",
+          "target": "#directorName",
+          "text": "Joanna Hale"
+        },
+        {
+          "action": "fill",
+          "target": "#directorDateApproved",
+          "value": "{{today}}"
+        },
+        {
+          "action": "click",
+          "target": "#statementSection477Exemption"
+        },
+        {
+          "action": "click",
+          "target": "#statementMembersNotRequiredAudit"
+        },
+        {
+          "action": "click",
+          "target": "#statementDirectorsResponsibilities"
+        },
+        {
+          "action": "click",
+          "target": "#statementSmallCompaniesRegime"
+        }
+      ]
+    },
+    {
+      "id": "balance-sheet",
+      "chapter": "The balance sheet",
+      "still": true,
+      "steps": [
+        {
+          "action": "point",
+          "target": "#currentBalanceSheetTotals",
+          "scrollTo": "#currentCalledUpShareCapital",
+          "dwellMs": 400,
+          "caption": "The balance sheet must balance.",
+          "instruction": "Enter this year's balance sheet, the directors and the statutory statements, then check that the net assets equal your capital and reserves.",
+          "headline": "Net assets must balance",
+          "keyWord": "balance",
+          "headlineBeside": true,
+          "note": "Starts the frame two rows above the totals, so the headline beside the totals sits clear of the chapter label, the table rows above and the comparatives choice below."
+        }
+      ]
+    },
+    {
+      "id": "preview",
+      "chapter": "Preview",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "#previewBtn",
+          "caption": "Preview the iXBRL. Nothing is filed yet.",
+          "instruction": "Choose Preview accounts and read the accounts as they will be filed. Nothing is sent to Companies House yet.",
+          "headline": "Nothing filed yet",
+          "keyWord": "yet"
+        },
+        {
+          "action": "await",
+          "until": "#previewView",
+          "label": "Rendering the preview"
+        },
+        {
+          "action": "point",
+          "target": "#previewRendered",
+          "scrollTo": "#previewRendered",
+          "dwellMs": 800
+        }
+      ]
+    },
+    {
+      "id": "submit",
+      "chapter": "File it",
+      "still": true,
+      "steps": [
+        {
+          "action": "type",
+          "target": "#companyAuthCode",
+          "text": "AB12CD",
+          "clear": true,
+          "secret": true,
+          "caption": "Enter the auth code. Filing costs one token.",
+          "instruction": "Enter the company's authentication code, check the cost of one token, then choose Submit to Companies House.",
+          "headline": "Submit for one token",
+          "keyWord": "token"
+        },
+        {
+          "action": "click",
+          "target": "#submitFilingBtn"
+        },
+        {
+          "action": "await",
+          "until": "#resultView",
+          "label": "Submitting the filing"
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "chapter": "The outcome",
+      "still": true,
+      "steps": [
+        {
+          "action": "await",
+          "until": "#filingResult:has-text('ACCEPT')",
+          "label": "Waiting for Companies House",
+          "timeoutMs": 180000
+        },
+        {
+          "action": "point",
+          "target": "#filingResult",
+          "dwellMs": 400,
+          "caption": "Companies House accepts the filing.",
+          "instruction": "Read the status that Companies House reports for the filing.",
+          "headline": "Companies House has the filing",
+          "keyWord": "filing"
+        },
+        {
+          "action": "click",
+          "target": "#filingCopyLink",
+          "expectsNavigation": true
+        },
+        {
+          "action": "await",
+          "until": "#filingContent iframe.filed-document",
+          "label": "Loading your copy"
+        },
+        {
+          "action": "scroll",
+          "to": "bottom",
+          "caption": "Your copy stays on your receipts page.",
+          "instruction": "Choose See your copy of this filing; it stays on the Receipts page.",
+          "headline": "Kept on your receipts",
+          "keyWord": "receipts"
+        },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "still",
+          "name": "short-file-small-company-accounts-result"
+        }
+      ]
+    }
+  ]
+}

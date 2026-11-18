@@ -1,0 +1,227 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from hmrc/itsa/foreignPropertyAdjustments.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Addasiadau diwedd blwyddyn eiddo tramor - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/foreignPropertyAdjustments.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/itsa/foreignPropertyAdjustments.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/foreignPropertyAdjustments.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/itsa/foreignPropertyAdjustments.html" />
+    <link rel="stylesheet" href="../../../submit.css" />
+    <link rel="stylesheet" href="../../../lib/hmrc-field-table.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="itsa-fp-adjustments.foreign-property-year-end-adjustments-bd25d5">Addasiadau diwedd blwyddyn eiddo tramor</h1>
+      <p data-i18n="itsa-fp-adjustments.request-the-year-end-summary-review-9bc305" class="subtitle">
+        Gofyn am y crynodeb diwedd blwyddyn, adolygu’r ffigurau a gyfrifodd CThEF, a’u haddasu os oes angen
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p data-i18n="itsa-fp-adjustments.status-sandbox-this-runs-against-hmrc-e3e7dd" class="hint" data-feature-status="sandbox">
+        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a
+        anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei
+        ddiweddariad yn 2027.
+      </p>
+      <div id="syntheticIndicator" class="synthetic-indicator">
+        <span data-i18n="itsa-fp-adjustments.synthetic-mode-calls-go-to-hmrc-efa44d"
+          >Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF</span
+        >
+      </div>
+
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Trigger form -->
+      <div
+        id="triggerForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i weld addasiadau diwedd blwyddyn eich eiddo tramor"
+        data-sign-in-text="Mewngofnodwch i ofyn am y crynodeb diwedd blwyddyn ar gyfer busnes eiddo tramor, darllen y ffigurau a gyfrifodd CThEF a’u haddasu."
+        data-i18n-data-sign-in-title="itsa-fp-adjustments.sign-in-to-see-your-foreign-25b4dc"
+        data-i18n-data-sign-in-text="itsa-fp-adjustments.sign-in-to-trigger-the-year-cef5b6"
+      >
+        <h2 data-i18n="itsa-fp-adjustments.request-the-year-end-summary-a9fb32">Gofyn am y crynodeb diwedd blwyddyn</h2>
+        <div id="obligationsWarning" class="status-message status-error" style="display: none" role="alert"></div>
+        <form id="itsaForeignBsasTriggerForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="itsa-fp-adjustments.national-insurance-number-21829e" for="nino">Rhif Yswiriant Gwladol</label>
+            <p data-i18n="itsa-fp-adjustments.this-is-two-letters-six-numbers-795a8f" id="nino-hint" class="hint">
+              Mae hwn yn ddwy lythyren, chwe rhif a llythyren olaf, er enghraifft QQ 12 34 56 C. Mae i’w weld ar eich cerdyn Yswiriant
+              Gwladol, eich slip cyflog neu’ch P60.
+            </p>
+            <input
+              type="text"
+              id="nino"
+              name="nino"
+              required
+              value=""
+              maxlength="13"
+              spellcheck="false"
+              autocapitalize="characters"
+              aria-describedby="nino-hint"
+            />
+          </div>
+
+          <div class="form-group">
+            <label data-i18n="itsa-fp-adjustments.business-id-85b211" for="businessId">ID y busnes</label>
+            <p data-i18n="itsa-fp-adjustments.filled-in-when-you-pick-a-96de5c" id="businessId-hint" class="hint">
+              Caiff ei lenwi pan fyddwch yn dewis busnes ar y dangosfwrdd Treth Incwm. Fel arall, copïwch ef o Manylion y busnes, er
+              enghraifft XAIS12345678910.
+            </p>
+            <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
+          </div>
+
+          <div class="form-group">
+            <label data-i18n="itsa-fp-adjustments.tax-year-09a6de" for="taxYear">Blwyddyn dreth</label>
+            <p data-i18n="itsa-fp-adjustments.choose-the-tax-year-fae5ed" id="taxYear-hint" class="hint">Dewiswch y flwyddyn dreth.</p>
+            <select id="taxYear" name="taxYear" required aria-describedby="taxYear-hint"></select>
+          </div>
+
+          <div class="form-group">
+            <label data-i18n="itsa-fp-adjustments.accounting-period-start-date-87f842" for="accountingPeriodStartDate"
+              >Dyddiad dechrau’r cyfnod cyfrifyddu</label
+            >
+            <input type="date" id="accountingPeriodStartDate" name="accountingPeriodStartDate" required />
+          </div>
+
+          <div class="form-group">
+            <label data-i18n="itsa-fp-adjustments.accounting-period-end-date-8eebec" for="accountingPeriodEndDate"
+              >Dyddiad gorffen y cyfnod cyfrifyddu</label
+            >
+            <input type="date" id="accountingPeriodEndDate" name="accountingPeriodEndDate" required />
+          </div>
+
+          <!-- Developer Test Scenario Section -->
+          <div id="developerSection" class="form-group" style="display: none">
+            <label data-i18n="itsa-fp-adjustments.test-scenario-developer-sandbox-only-966c72" for="testScenario"
+              >Senario prawf (Datblygwr/amgylchedd prawf yn unig)</label
+            >
+            <p data-i18n="itsa-fp-adjustments.test-different-hmrc-sandbox-scenarios-for-a97064" id="testScenario-hint" class="hint">
+              Profi senarios gwahanol yn amgylchedd prawf (sandbox) CThEF wrth ofyn am grynodeb
+            </p>
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint" translate="no">
+              <option value="">Default (request succeeds)</option>
+              <option value="OBLIGATIONS_NOT_MET">Obligations not met</option>
+              <option value="ACCOUNTING_PERIOD_NOT_ENDED">Accounting period not ended</option>
+              <option value="NOT_FOUND">Not Found</option>
+            </select>
+            <div class="choice">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                data-i18n="itsa-fp-adjustments.validate-fraud-prevention-headers-ea7c94"
+                for="runFraudPreventionHeaderValidation"
+                >Dilysu’r penawdau atal twyll</label
+              >
+            </div>
+          </div>
+
+          <button data-i18n="itsa-fp-adjustments.request-year-end-summary-d8d157" type="submit" id="triggerBtn" class="btn">
+            Gofyn am y crynodeb diwedd blwyddyn
+          </button>
+        </form>
+      </div>
+
+      <!-- Summary and adjustment form, shown after a successful trigger and retrieve -->
+      <div id="summaryContainer" class="results-container" style="display: none">
+        <h3 data-i18n="itsa-fp-adjustments.year-end-summary-96b1f7">Crynodeb diwedd blwyddyn</h3>
+        <div id="summaryDetails"></div>
+        <div id="summaryEntries"></div>
+
+        <h3 data-i18n="itsa-fp-adjustments.submit-an-adjustment-16f39a">Cyflwyno addasiad</h3>
+        <p data-i18n="itsa-fp-adjustments.change-a-figure-if-hmrc-s-d0b1c1" class="hint">
+          Newidiwch ffigur os yw cyfrifiad CThEF yn anghywir, neu cadarnhewch nad oes angen newid. Mae’r ffigurau hyn yn addasu’r crynodeb
+          diwedd blwyddyn uchod, nid eich diweddariadau chwarterol. Mae’r symiau mewn punnoedd sterling; trosiwch ar gyfradd y dydd neu
+          gyfradd gyfartalog.
+        </p>
+        <div id="adjustEntries"></div>
+        <div id="adjustFhl"></div>
+        <div class="button-group">
+          <button data-i18n="itsa-fp-adjustments.submit-adjustment-22f47f" type="button" id="submitAdjustmentBtn" class="btn">
+            Cyflwyno’r addasiad
+          </button>
+          <button data-i18n="itsa-fp-adjustments.nothing-to-adjust-fafd77" type="button" id="zeroAdjustmentsBtn" class="secondary-button">
+            Dim byd i’w addasu
+          </button>
+        </div>
+      </div>
+
+      <!-- Results Display -->
+      <div id="adjustmentResults" class="results-container" style="display: none">
+        <h3 data-i18n="itsa-fp-adjustments.adjustment-submitted-f990ee">Addasiad wedi’i gyflwyno</h3>
+        <p data-i18n="itsa-fp-adjustments.hmrc-has-accepted-the-adjustment-01ee22">Mae CThEF wedi derbyn yr addasiad.</p>
+        <div id="adjustmentSummary"></div>
+        <div class="button-group">
+          <button data-i18n="itsa-fp-adjustments.start-again-962e64" type="button" id="newSearchBtn" class="secondary-button">
+            Dechrau eto
+          </button>
+        </div>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../../lib/welsh-text.js"></script>
+    <script src="../../../widgets/page-chrome.js"></script>
+    <script src="../../../lib/env-loader.js"></script>
+    <script src="../../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../../submit.js"></script>
+    <script src="../../../developer-mode.js"></script>
+    <script src="../../../lib/request-cache.js"></script>
+    <script src="../../../lib/carried-identifiers.js"></script>
+    <script src="../../../lib/toml-parser.js"></script>
+    <script src="../../../lib/form-errors.js"></script>
+    <script src="../../../lib/self-employment-expenses.js"></script>
+    <script src="../../../lib/itsaSubmissionModel.js"></script>
+    <script src="../../../lib/country-codes.js"></script>
+    <script src="../../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../../lib/services/hmrc-service.js"></script>
+    <script src="../../../widgets/entitlement-status.js"></script>
+    <script src="../../../widgets/auth-status.js"></script>
+    <script src="../../../widgets/status-messages.js"></script>
+    <script src="../../../widgets/signed-out-panel.js"></script>
+    <script src="../../../widgets/pass-redeemer.js"></script>
+    <script src="../../../lib/money-format.js"></script>
+    <script src="../../../lib/money-input.js"></script>
+    <script src="../../../lib/hmrc-field-table.js"></script>
+    <script src="../../../hmrc/itsa/foreignPropertyAdjustments.page.js"></script>
+  </body>
+</html>

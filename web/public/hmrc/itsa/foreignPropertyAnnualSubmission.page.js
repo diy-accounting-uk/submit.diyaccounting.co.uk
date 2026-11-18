@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId"));
@@ -9,47 +15,53 @@ window.CarriedIdentifiers.bind("taxYear", document.getElementById("taxYear"));
 const PENDING_KEY = "pendingForeignPropertyAnnualRequest";
 const FHL_PREFIX = "fhl";
 const ENTRY_ID_PREFIX = "fa";
-const FHL_NAME = "Furnished holiday lettings in the EEA";
-const MONEY_HINT = "For example, £600 or £193.54";
+const FHL_NAME = siteText("itsa.fhl-eea", "Furnished holiday lettings in the EEA");
+const MONEY_HINT = siteText("itsa.money-example", "For example, £600 or £193.54");
 
 const JOURNEY_LINKS = [
-  { href: "dashboard.html", text: "Back to Income Tax" },
-  { href: "obligations.html", text: "See your obligations" },
+  { href: "dashboard.html", text: siteText("itsa.link-back", "Back to Income Tax") },
+  { href: "obligations.html", text: siteText("itsa.link-obligations", "See your obligations") },
 ];
 
 const ADJUSTMENT_FIELDS = [
-  { id: "balancingCharge", label: "Balancing charge" },
+  { id: "balancingCharge", label: siteText("itsa.field-balancing-charge", "Balancing charge") },
   {
     id: "privateUseAdjustment",
-    label: "Private use adjustment",
-    hint: `${MONEY_HINT}. Cannot be entered with the property income allowance; HMRC rejects the combination.`,
+    label: siteText("itsa.field-private-use-adjustment", "Private use adjustment"),
+    hint: `${MONEY_HINT}. ${siteText("itsa-fp-annual.private-use-hint", "Cannot be entered with the property income allowance; HMRC rejects the combination.")}`,
   },
 ];
 
 const PROPERTY_INCOME_ALLOWANCE_FIELD = {
   id: "propertyIncomeAllowance",
-  label: "Property income allowance",
-  hint: `${MONEY_HINT}. At most £1,000.`,
+  label: siteText("itsa.field-property-income-allowance", "Property income allowance"),
+  hint: `${MONEY_HINT}. ${siteText("itsa-fp-annual.pia-hint", "At most £1,000.")}`,
 };
 
 const ENTRY_ALLOWANCE_FIELDS = [
-  { id: "annualInvestmentAllowance", label: "Annual investment allowance" },
-  { id: "costOfReplacingDomesticItems", label: "Cost of replacing domestic items" },
-  { id: "otherCapitalAllowance", label: "Other capital allowance" },
-  { id: "zeroEmissionsCarAllowance", label: "Zero emissions car allowance" },
+  { id: "annualInvestmentAllowance", label: siteText("itsa.field-annual-investment-allowance", "Annual investment allowance") },
+  {
+    id: "costOfReplacingDomesticItems",
+    label: siteText("itsa.field-cost-of-replacing-domestic-items", "Cost of replacing domestic items"),
+  },
+  { id: "otherCapitalAllowance", label: siteText("itsa.field-other-capital-allowance", "Other capital allowance") },
+  { id: "zeroEmissionsCarAllowance", label: siteText("itsa.field-zero-emissions-car-allowance", "Zero emissions car allowance") },
 ];
 
 // HMRC takes these two allowances for 2024-25 and before only.
 const DATED_ENTRY_ALLOWANCE_FIELDS = [
-  { id: "zeroEmissionsGoodsVehicleAllowance", label: "Zero emissions goods vehicle allowance" },
-  { id: "electricChargePointAllowance", label: "Electric charge point allowance" },
+  {
+    id: "zeroEmissionsGoodsVehicleAllowance",
+    label: siteText("itsa.field-zero-emissions-goods-vehicle-allowance", "Zero emissions goods vehicle allowance"),
+  },
+  { id: "electricChargePointAllowance", label: siteText("itsa.field-electric-charge-point-allowance", "Electric charge point allowance") },
 ];
 
 const FHL_ALLOWANCE_FIELDS = [
-  { id: "annualInvestmentAllowance", label: "Annual investment allowance" },
-  { id: "otherCapitalAllowance", label: "Other capital allowance" },
-  { id: "zeroEmissionsCarAllowance", label: "Zero emissions car allowance" },
-  { id: "electricChargePointAllowance", label: "Electric charge point allowance" },
+  { id: "annualInvestmentAllowance", label: siteText("itsa.field-annual-investment-allowance", "Annual investment allowance") },
+  { id: "otherCapitalAllowance", label: siteText("itsa.field-other-capital-allowance", "Other capital allowance") },
+  { id: "zeroEmissionsCarAllowance", label: siteText("itsa.field-zero-emissions-car-allowance", "Zero emissions car allowance") },
+  { id: "electricChargePointAllowance", label: siteText("itsa.field-electric-charge-point-allowance", "Electric charge point allowance") },
 ];
 
 let loaded = { nino: "", businessId: "", taxYear: "" };
@@ -92,16 +104,25 @@ function mountSection(container, prefix, { fhl, dated }) {
     adjustments.push(
       el("div", { className: "choice" }, [
         el("input", { type: "checkbox", id: `${prefix}-periodOfGraceAdjustment`, name: `${prefix}-periodOfGraceAdjustment` }),
-        el("label", { htmlFor: `${prefix}-periodOfGraceAdjustment`, textContent: "Period of grace adjustment" }),
+        el("label", {
+          htmlFor: `${prefix}-periodOfGraceAdjustment`,
+          textContent: siteText("itsa.field-period-of-grace-adjustment", "Period of grace adjustment"),
+        }),
       ]),
     );
   }
   const itemisedFields = fhl ? FHL_ALLOWANCE_FIELDS : [...ENTRY_ALLOWANCE_FIELDS, ...(dated ? DATED_ENTRY_ALLOWANCE_FIELDS : [])];
   const choices = el("fieldset", { className: "form-group" }, [
-    el("legend", { textContent: "Which allowances do you claim?" }),
-    allowanceChoice(prefix, "", "None", "Neither", true),
-    allowanceChoice(prefix, "propertyIncome", "PropertyIncome", "Property income allowance", false),
-    allowanceChoice(prefix, "itemised", "Itemised", "Itemised allowances", false),
+    el("legend", { textContent: siteText("itsa.allowances-which", "Which allowances do you claim?") }),
+    allowanceChoice(prefix, "", "None", siteText("itsa.allowances-neither", "Neither"), true),
+    allowanceChoice(
+      prefix,
+      "propertyIncome",
+      "PropertyIncome",
+      siteText("itsa.field-property-income-allowance", "Property income allowance"),
+      false,
+    ),
+    allowanceChoice(prefix, "itemised", "Itemised", siteText("itsa.allowances-itemised", "Itemised allowances"), false),
   ]);
   const incomeBlock = el("div", { id: `${prefix}-propertyIncomeAllowanceFields` }, [moneyGroup(prefix, PROPERTY_INCOME_ALLOWANCE_FIELD)]);
   const itemisedBlock = el(
@@ -116,15 +137,15 @@ function mountSection(container, prefix, { fhl, dated }) {
       prefix,
       window.structuredBuildingAllowanceRows.create(rowsContainer, {
         idPrefix: `${prefix}-sba`,
-        title: "Structures and Buildings Allowance",
-        intro: "One claim for each building. Cannot be used with the property income allowance.",
+        title: siteText("itsa.field-structures-and-buildings-allowance", "Structures and Buildings Allowance"),
+        intro: siteText("itsa-uk-annual.sba-intro", "One claim for each building. Cannot be used with the property income allowance."),
       }),
     );
   }
   container.replaceChildren(
-    el("h3", { textContent: "Adjustments" }),
+    el("h3", { textContent: siteText("itsa.adjustments", "Adjustments") }),
     ...adjustments,
-    el("h3", { textContent: "Allowances" }),
+    el("h3", { textContent: siteText("itsa.allowances", "Allowances") }),
     choices,
     incomeBlock,
     itemisedBlock,
@@ -215,11 +236,13 @@ function mountEntries(taxYear) {
     const section = el("div");
     fhlContainer.replaceChildren(
       el("fieldset", { className: "form-group foreign-property-entry", id: "fhlEea" }, [
-        el("legend", { textContent: "Furnished holiday lettings in the European Economic Area" }),
+        el("legend", { textContent: siteText("itsa.fhl-eea-long", "Furnished holiday lettings in the European Economic Area") }),
         el("p", {
           className: "hint",
-          textContent:
+          textContent: siteText(
+            "itsa-fp-annual.fhl-hint",
             "Furnished holiday lettings ended on 5 April 2025. Fill this in only for a year before then, with every such letting in the EEA added together.",
+          ),
         }),
         section,
       ]),
@@ -292,8 +315,8 @@ async function loadAnnual(criteria, hmrcGrantId) {
     entries.setProperties(properties);
     if (properties.length === 0) {
       notes.push({
-        text: "HMRC holds no foreign properties for this tax year. Add one on",
-        linkText: "the foreign property details page first",
+        text: siteText("itsa-fp-annual.no-properties", "HMRC holds no foreign properties for this tax year. Add one on"),
+        linkText: siteText("itsa-fp-annual.no-properties-link", "the foreign property details page first"),
       });
     }
   }
@@ -313,12 +336,17 @@ async function loadAnnual(criteria, hmrcGrantId) {
     );
   } catch (error) {
     if (error.status !== 404) throw error;
-    notes.push({ text: "HMRC holds no annual submission yet for this tax year. Enter the figures below." });
+    notes.push({
+      text: siteText("itsa-fp-annual.no-submission", "HMRC holds no annual submission yet for this tax year. Enter the figures below."),
+    });
   }
   const unknown = applySubmission(submission, mode);
   if (unknown.length > 0) {
     notes.push({
-      text: "HMRC holds figures for a property that is not in your list. Check the foreign property details page before you save, or those figures are lost.",
+      text: siteText(
+        "itsa-fp-annual.unknown-property",
+        "HMRC holds figures for a property that is not in your list. Check the foreign property details page before you save, or those figures are lost.",
+      ),
     });
   }
   showLoadNotes(notes);
@@ -392,11 +420,11 @@ async function runRequest(request, hmrcGrantId) {
     showLoading();
     hideStatus();
     if (request.action === "load") {
-      showStatus("Loading annual submission...", "info");
+      showStatus(siteText("itsa.annual-loading", "Loading annual submission..."), "info");
       await loadAnnual(request.criteria, hmrcGrantId);
       hideStatus();
     } else {
-      showStatus("Saving annual submission...", "info");
+      showStatus(siteText("itsa.annual-saving", "Saving annual submission..."), "info");
       await saveAnnual(request, hmrcGrantId);
       hideStatus();
     }
@@ -404,13 +432,15 @@ async function runRequest(request, hmrcGrantId) {
     if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
       sessionStorage.removeItem("hmrcTokenScope");
-      showStatus("Access token expired. Please try again.", "error");
+      showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
     } else if (error.status === 403 && error.reason === "tokens_exhausted") {
       hideStatus();
       window.SubmissionCost?.refresh();
     } else {
       showStatus(
-        `${request.action === "load" ? "Failed to load the annual submission" : "Failed to save the annual submission"}: ${error.message}`,
+        request.action === "load"
+          ? siteText("itsa.annual-load-failed", "Failed to load the annual submission: {reason}", { reason: error.message })
+          : siteText("itsa.annual-save-failed", "Failed to save the annual submission: {reason}", { reason: error.message }),
         "error",
       );
     }
@@ -427,7 +457,7 @@ async function ensureAuthorizedThen(request) {
     if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     try {
       showLoading();
-      showStatus("Initiating HMRC authentication...", "info");
+      showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
       const state = generateRandomState();
       sessionStorage.setItem("oauth_state", state);
       sessionStorage.setItem(PENDING_KEY, JSON.stringify(request));
@@ -443,7 +473,7 @@ async function ensureAuthorizedThen(request) {
       } catch {}
       window.location.href = authResponseUrl;
     } catch (error) {
-      showStatus(`Authentication failed: ${error.message}`, "error");
+      showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
       hideLoading();
     }
     return;

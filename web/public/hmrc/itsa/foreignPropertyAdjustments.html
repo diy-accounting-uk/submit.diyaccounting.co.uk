@@ -12,6 +12,10 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/hmrc/itsa/foreignPropertyAdjustments.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/itsa/foreignPropertyAdjustments.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/foreignPropertyAdjustments.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/itsa/foreignPropertyAdjustments.html" />
     <link rel="stylesheet" href="../../submit.css" />
     <link rel="stylesheet" href="../../lib/hmrc-field-table.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
@@ -20,7 +24,7 @@
     <script src="../../lib/analytics.js"></script>
   </head>
   <body>
-    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
       <h1>Foreign property year-end adjustments</h1>
@@ -32,7 +36,7 @@
         <strong>Status: sandbox.</strong> This runs against HMRC's sandbox. Nothing you send reaches your real HMRC record. Production waits
         on HMRC's recognition of our software after its 2027 update.
       </p>
-      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator"><span>Synthetic mode - calls go to HMRC's sandbox API</span></div>
 
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
@@ -43,8 +47,8 @@
         id="triggerForm"
         class="form-container"
         data-requires-sign-in
-        data-sign-in-title="Log in to see your foreign property year-end adjustments"
-        data-sign-in-text="Log in to trigger the year-end summary for a foreign property business, read the figures HMRC calculated and adjust them."
+        data-sign-in-title="Sign in to see your foreign property year-end adjustments"
+        data-sign-in-text="Sign in to trigger the year-end summary for a foreign property business, read the figures HMRC calculated and adjust them."
       >
         <h2>Request the year-end summary</h2>
         <div id="obligationsWarning" class="status-message status-error" style="display: none" role="alert"></div>
@@ -97,7 +101,7 @@
           <div id="developerSection" class="form-group" style="display: none">
             <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
             <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios for requesting a summary</p>
-            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint" translate="no">
               <option value="">Default (request succeeds)</option>
               <option value="OBLIGATIONS_NOT_MET">Obligations not met</option>
               <option value="ACCOUNTING_PERIOD_NOT_ENDED">Accounting period not ended</option>

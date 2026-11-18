@@ -5,6 +5,63 @@
 const passForward = new URLSearchParams(window.location.search).get("pass") ? "/pass.html" + window.location.search : null;
 if (passForward) window.location.replace(passForward);
 
+// page-chrome.js gives the text in the chosen language; without it the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
+const unknownError = () => siteText("bundles.unknown-error", "Unknown error");
+const manageSubscriptionText = () => siteText("bundles.manage-subscription", "Manage Subscription");
+
+// The Welsh of each listed bundle's catalogue description, keyed by the catalogue's English. A
+// description the catalogue has since changed is not in this map and shows as the catalogue writes it.
+const BUNDLE_DESCRIPTIONS = {
+  "Submit VAT returns to HMRC. £9.99/yr / £0.99/mo, cancel anytime.": () =>
+    siteText("bundles.description-resident-vat", "Submit VAT returns to HMRC. £9.99/yr / £0.99/mo, cancel anytime."),
+  "File accounts and confirmation statements to Companies House. £9.99/yr / £0.99/mo, cancel anytime.": () =>
+    siteText(
+      "bundles.description-resident-ltd",
+      "File accounts and confirmation statements to Companies House. £9.99/yr / £0.99/mo, cancel anytime.",
+    ),
+  "Submit VAT returns to HMRC and Accounts to Companies House. £39.99/yr / £3.99/mo, cancel anytime.": () =>
+    siteText(
+      "bundles.description-resident-pro",
+      "Submit VAT returns to HMRC and Accounts to Companies House. £39.99/yr / £3.99/mo, cancel anytime.",
+    ),
+  "Manage a practice's clients and file for them, with everything in Resident Pro and no token limit. £199.99/yr / £19.99/mo, cancel anytime.":
+    () =>
+      siteText(
+        "bundles.description-resident-tax-agent",
+        "Manage a practice's clients and file for them, with everything in Resident Pro and no token limit. £199.99/yr / £19.99/mo, cancel anytime.",
+      ),
+};
+
+const bundleDescription = (b, fallback) => {
+  if (!b.description) return fallback;
+  return Object.hasOwn(BUNDLE_DESCRIPTIONS, b.description) ? BUNDLE_DESCRIPTIONS[b.description]() : b.description;
+};
+
+// The token note in the reader's language: the English sentence the catalogue gives, matched by its shape.
+const tokenSentenceText = (sentence) => {
+  if (sentence === "No limit on tokens.") return siteText("bundles.tokens-unlimited", "No limit on tokens.");
+  const match = /^(\d+) (tokens? .*)$/.exec(sentence);
+  if (!match) return sentence;
+  const count = match[1];
+  switch (match[2].replace(/^token /, "tokens ")) {
+    case "tokens for 24 hours.":
+      return siteText("bundles.tokens-for-24-hours", "{count} tokens for 24 hours.", { count });
+    case "tokens for 7 days.":
+      return siteText("bundles.tokens-for-7-days", "{count} tokens for 7 days.", { count });
+    case "tokens each month.":
+      return siteText("bundles.tokens-each-month", "{count} tokens each month.", { count });
+    case "tokens each year.":
+      return siteText("bundles.tokens-each-year", "{count} tokens each year.", { count });
+    default:
+      return sentence;
+  }
+};
+
 // --- helpers
 const getIdToken = () => {
   try {
@@ -51,6 +108,7 @@ const invalidate = (prefix) => {
 let __userBundles = [];
 let __fullBundleData = []; // Full bundle objects from API (with token info, allocated flag, etc.)
 let __fetchBundlesController = null;
+let __bundleListing = null; // lib/bundle-listing.js, loaded with the catalogue
 let __catalogueData = null; // Catalogue TOML data (stored for re-renders)
 let __userBundlesLoaded = false; // True once the first answer about held bundles has arrived
 let __catalogueSettled = false; // True once the catalogue has loaded or failed to load
@@ -130,18 +188,21 @@ const hasBundle = (bundles, id) =>
 
 // The suffix after "Request <name>": a free bundle says "free", the others state their token count.
 const requestLabelSuffix = (free, tokens) => {
-  if (free) return " (free)";
-  return tokens ? ` (${tokens} token${String(tokens) !== "1" ? "s" : ""})` : "";
+  if (free) return ` (${siteText("bundles.request-free", "free")})`;
+  if (!tokens) return "";
+  return String(tokens) === "1"
+    ? ` (${siteText("bundles.request-one-token", "{count} token", { count: tokens })})`
+    : ` (${siteText("bundles.request-tokens", "{count} tokens", { count: tokens })})`;
 };
 
-const markToRequest = (btn, message = "Request bundle") => {
+const markToRequest = (btn, message = siteText("bundles.request-bundle", "Request bundle")) => {
   const free = btn.getAttribute("data-free") === "true";
   btn.textContent = message + requestLabelSuffix(free, btn.getAttribute("data-tokens-granted"));
   btn.disabled = false;
   btn.classList.remove("btn-ok");
 };
 
-const markGranted = (btn, message = "Added ✓") => {
+const markGranted = (btn, message = siteText("bundles.added", "Added ✓")) => {
   btn.textContent = message;
   btn.disabled = true;
   btn.classList.add("btn-ok");
@@ -160,15 +221,11 @@ function readStoredLandingAttribution() {
 
 // --- request individual bundle
 async function requestBundle(bundleId, bundleName, qualifiers = {}) {
+  if (!(await window.requireSession())) return false;
   const idToken = getIdToken();
-  if (!idToken) {
-    showStatus("Please log in first to request bundles.", "warning");
-    window.location.href = "auth/login.html";
-    return false;
-  }
 
   // Show status immediately before making the request
-  showStatus(`Requesting bundle "${bundleName}"...`, "info");
+  showStatus(siteText("bundles.requesting-bundle", "Requesting bundle “{name}”...", { name: bundleName }), "info");
 
   try {
     const r = await window.fetchWithIdToken("/api/v1/bundle", {
@@ -182,7 +239,7 @@ async function requestBundle(bundleId, bundleName, qualifiers = {}) {
 
     if (r.ok) {
       if (r.status === 202 || body.status === "granted" || body.status === "already_granted") {
-        showStatus(`Bundle "${bundleName}" added successfully.`, "success");
+        showStatus(siteText("bundles.bundle-added", "Bundle “{name}” added successfully.", { name: bundleName }), "success");
         // Update local state and write through to persistent cache
         if (!hasBundle(__userBundles, bundleId)) {
           __userBundles.push(bundleId);
@@ -208,13 +265,16 @@ async function requestBundle(bundleId, bundleName, qualifiers = {}) {
         window.dispatchEvent(new CustomEvent("bundle-changed"));
         return true;
       } else {
-        showStatus(`Bundle ${bundleId} request failed: unexpected response`, "error");
+        showStatus(siteText("bundles.request-unexpected", "Bundle {id} request failed: unexpected response", { id: bundleId }), "error");
       }
     } else {
-      showStatus(`Failed to request bundle: ${body.error || "Unknown error"}`, "error");
+      showStatus(
+        siteText("bundles.request-failed", "Failed to request bundle: {reason}", { reason: body.error || unknownError() }),
+        "error",
+      );
     }
   } catch (err) {
-    showStatus(`Failed to request bundle. Error: ${err?.message || err}.`, "error");
+    showStatus(siteText("bundles.request-error", "Failed to request bundle. Error: {reason}.", { reason: err?.message || err }), "error");
   }
   return false;
 }
@@ -231,6 +291,12 @@ function domEl(tag, attrs, ...children) {
 }
 
 const noteEl = (kind, text) => domEl("p", { class: `bundle-note bundle-note--${kind}` }, text);
+
+// The bundle's token allowance from the catalogue, as a card note; nothing when the catalogue names none.
+const tokenNoteEl = (b) => {
+  const sentence = __bundleListing?.tokenSentence(b);
+  return sentence ? noteEl("plain", tokenSentenceText(sentence)) : null;
+};
 
 const serviceItemEl = (...children) => domEl("div", { class: "service-item" }, ...children);
 
@@ -271,8 +337,12 @@ const cardEl = (b) => {
   const allocation = b.allocation || "";
   const manageCard = () =>
     serviceItemEl(
-      bundleButton("btn btn-outline service-btn", { "data-manage-subscription": "true" }, `Manage Subscription — ${name}`),
-      noteEl("ok", "Active subscription"),
+      bundleButton(
+        "btn btn-outline service-btn",
+        { "data-manage-subscription": "true" },
+        siteText("bundles.manage-subscription-name", "Manage Subscription — {name}", { name }),
+      ),
+      noteEl("ok", siteText("bundles.active-subscription", "Active subscription")),
     );
   const hasActiveSubscription = () => __fullBundleData.some((fb) => fb.bundleId === b.id && fb.allocated && fb.stripeSubscriptionId);
   const holdsThisBundle = () => __fullBundleData.some((fb) => fb.bundleId === b.id && fb.allocated);
@@ -288,9 +358,14 @@ const cardEl = (b) => {
   };
   const heldCard = () => {
     if (hasActiveSubscription()) return manageCard();
-    if (holdsThisBundle()) return serviceItemEl(domEl("strong", {}, name), noteEl("ok", "You hold this bundle"));
+    if (holdsThisBundle())
+      return serviceItemEl(domEl("strong", {}, name), noteEl("ok", siteText("bundles.you-hold", "You hold this bundle")));
     const holderName = holderIncludingThis();
-    if (holderName) return serviceItemEl(domEl("strong", {}, name), noteEl("ok", `Included in ${holderName}`));
+    if (holderName)
+      return serviceItemEl(
+        domEl("strong", {}, name),
+        noteEl("ok", siteText("bundles.included-in", "Included in {name}", { name: holderName })),
+      );
     return null;
   };
 
@@ -300,10 +375,10 @@ const cardEl = (b) => {
       bundleButton(
         "btn service-btn",
         { "data-requires-pass": "true", "data-disabled-reason": "on-pass", "disabled": "" },
-        `Pass required — ${name}`,
+        siteText("bundles.pass-required", "Pass required — {name}", { name }),
         true,
       ),
-      noteEl("warn", "Enter a pass invitation above to unlock this bundle"),
+      noteEl("warn", siteText("bundles.pass-required-note", "Enter a pass invitation above to unlock this bundle")),
     );
   }
 
@@ -311,8 +386,12 @@ const cardEl = (b) => {
   if (allocation === "on-pass-on-subscription" && passCode) {
     if (hasActiveSubscription()) return manageCard();
     return serviceItemEl(
-      bundleButton("btn service-btn", { "data-subscribe": "true" }, `Subscribe £9.99/mo — ${name}`),
-      noteEl("plain", "Monthly subscription via Stripe"),
+      bundleButton(
+        "btn service-btn",
+        { "data-subscribe": "true" },
+        siteText("bundles.subscribe-month", "Subscribe {price}/mo — {name}", { price: "£9.99", name }),
+      ),
+      noteEl("plain", siteText("bundles.monthly-via-stripe", "Monthly subscription via Stripe")),
     );
   }
 
@@ -331,7 +410,7 @@ const cardEl = (b) => {
         bundleButton(
           "btn service-btn",
           { "data-subscribe": "true", "data-interval": "annual" },
-          `Subscribe ${formatGbp(annual.amount / 100)}/yr — ${name}`,
+          siteText("bundles.subscribe-year", "Subscribe {price}/yr — {name}", { price: formatGbp(annual.amount / 100), name }),
         ),
         monthly
           ? domEl(
@@ -343,19 +422,25 @@ const cardEl = (b) => {
                   "data-subscribe": "true",
                   "data-interval": "monthly",
                 },
-                `or ${formatGbp(monthly.amount / 100)}/month`,
+                siteText("bundles.or-per-month", "or {price}/month", { price: formatGbp(monthly.amount / 100) }),
               ),
             )
           : null,
-        noteEl("plain", b.description || "Subscription via Stripe"),
+        noteEl("plain", bundleDescription(b, siteText("bundles.via-stripe", "Subscription via Stripe"))),
+        tokenNoteEl(b),
       );
     }
 
-    const singlePriceLabel =
-      prices.length === 1 ? ` ${formatGbp(prices[0].amount / 100)}/${prices[0].interval === "year" ? "yr" : "mo"}` : "";
+    const singlePrice = prices.length === 1 ? formatGbp(prices[0].amount / 100) : null;
+    const subscribeLabel = !singlePrice
+      ? siteText("bundles.subscribe", "Subscribe — {name}", { name })
+      : prices[0].interval === "year"
+        ? siteText("bundles.subscribe-year", "Subscribe {price}/yr — {name}", { price: singlePrice, name })
+        : siteText("bundles.subscribe-month", "Subscribe {price}/mo — {name}", { price: singlePrice, name });
     return serviceItemEl(
-      bundleButton("btn service-btn", { "data-subscribe": "true" }, `Subscribe${singlePriceLabel} — ${name}`),
-      noteEl("plain", b.description || "Monthly subscription via Stripe"),
+      bundleButton("btn service-btn", { "data-subscribe": "true" }, subscribeLabel),
+      noteEl("plain", bundleDescription(b, siteText("bundles.monthly-via-stripe", "Monthly subscription via Stripe"))),
+      tokenNoteEl(b),
     );
   }
 
@@ -365,26 +450,40 @@ const cardEl = (b) => {
       bundleButton(
         "btn service-btn",
         { "data-disabled-reason": "on-subscription", "disabled": "" },
-        `Subscription required — ${name}`,
+        siteText("bundles.subscription-required", "Subscription required — {name}", { name }),
         true,
       ),
-      noteEl("warn", "A subscription is needed for this bundle"),
+      noteEl("warn", siteText("bundles.subscription-required-note", "A subscription is needed for this bundle")),
     );
   }
 
   // Capacity full: disabled with reason on button (pass bypasses cap)
   if (!capacityAvailable && !passCode) {
     return serviceItemEl(
-      bundleButton("btn service-btn", { "data-disabled-reason": "capacity", "disabled": "" }, `Limit reached — ${name}`, true),
-      noteEl("warn", "Global user limit reached, please try again tomorrow"),
+      bundleButton(
+        "btn service-btn",
+        { "data-disabled-reason": "capacity", "disabled": "" },
+        siteText("bundles.limit-reached", "Limit reached — {name}", { name }),
+        true,
+      ),
+      noteEl("warn", siteText("bundles.limit-reached-note", "All day passes are in use. Try again tomorrow, or choose a bundle.")),
+      tokenNoteEl(b),
     );
   }
 
   // enable = "always": normal enabled button
   const isFree = allocation === "on-request" && !(Array.isArray(b.prices) && b.prices.length > 0);
   return serviceItemEl(
-    bundleButton("btn service-btn", isFree ? { "data-free": "true" } : {}, `Request ${name}${requestLabelSuffix(isFree, tg)}`, true),
-    isFree ? noteEl("plain", "One day, no card. To keep filing after today, choose a plan above.") : null,
+    bundleButton(
+      "btn service-btn",
+      isFree ? { "data-free": "true" } : {},
+      siteText("bundles.request", "Request {name}", { name }) + requestLabelSuffix(isFree, tg),
+      true,
+    ),
+    tokenNoteEl(b),
+    isFree
+      ? noteEl("plain", siteText("bundles.day-pass-note", "One day, no card. To keep filing after today, choose a plan above."))
+      : null,
   );
 };
 
@@ -407,12 +506,12 @@ document.addEventListener("click", async (e) => {
   const tier = card?.querySelector('input[name="subscriptionTier"]');
   if (tier?.value) qualifiers.subscriptionTier = tier.value;
 
-  btn.textContent = "Requesting...";
+  btn.textContent = siteText("bundles.requesting", "Requesting...");
   btn.disabled = true;
 
   const success = await requestBundle(bundleId, bundleName, qualifiers);
   if (success) {
-    markGranted(btn, `Added ✓ ${bundleName}`);
+    markGranted(btn, siteText("bundles.added-name", "Added ✓ {name}", { name: bundleName }));
   } else {
     btn.textContent = original;
     btn.disabled = false;
@@ -424,15 +523,11 @@ document.addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-subscribe]");
   if (!btn || btn.disabled) return;
 
+  if (!(await window.requireSession())) return;
   const idToken = getIdToken();
-  if (!idToken) {
-    showStatus("Please log in first to subscribe.", "warning");
-    window.location.href = "auth/login.html";
-    return;
-  }
 
   const original = btn.textContent;
-  btn.textContent = "Redirecting to checkout...";
+  btn.textContent = siteText("bundles.redirecting", "Redirecting to checkout...");
   btn.disabled = true;
 
   try {
@@ -458,12 +553,15 @@ document.addEventListener("click", async (e) => {
     if (response.ok && body.checkoutUrl) {
       window.location.href = body.checkoutUrl;
     } else {
-      showStatus(`Failed to start checkout: ${body.error || body.message || "Unknown error"}`, "error");
+      showStatus(
+        siteText("bundles.checkout-failed", "Failed to start checkout: {reason}", { reason: body.error || body.message || unknownError() }),
+        "error",
+      );
       btn.textContent = original;
       btn.disabled = false;
     }
   } catch (err) {
-    showStatus(`Failed to start checkout: ${err?.message || err}`, "error");
+    showStatus(siteText("bundles.checkout-failed", "Failed to start checkout: {reason}", { reason: err?.message || err }), "error");
     btn.textContent = original;
     btn.disabled = false;
   }
@@ -476,11 +574,11 @@ document.addEventListener("click", async (e) => {
 
   const idToken = getIdToken();
   if (!idToken) {
-    showStatus("Please log in first.", "warning");
+    showStatus(siteText("bundles.sign-in-first", "Please sign in first."), "warning");
     return;
   }
 
-  btn.textContent = "Loading portal...";
+  btn.textContent = siteText("bundles.loading-portal", "Loading portal...");
   btn.disabled = true;
 
   try {
@@ -492,13 +590,18 @@ document.addEventListener("click", async (e) => {
     if (response.ok && body.portalUrl) {
       window.location.href = body.portalUrl;
     } else {
-      showStatus(`Failed to open subscription portal: ${body.error || body.message || "Unknown error"}`, "error");
-      btn.textContent = "Manage Subscription";
+      showStatus(
+        siteText("bundles.portal-failed", "Failed to open subscription portal: {reason}", {
+          reason: body.error || body.message || unknownError(),
+        }),
+        "error",
+      );
+      btn.textContent = manageSubscriptionText();
       btn.disabled = false;
     }
   } catch (err) {
-    showStatus(`Failed to open subscription portal: ${err?.message || err}`, "error");
-    btn.textContent = "Manage Subscription";
+    showStatus(siteText("bundles.portal-failed", "Failed to open subscription portal: {reason}", { reason: err?.message || err }), "error");
+    btn.textContent = manageSubscriptionText();
     btn.disabled = false;
   }
 });
@@ -512,10 +615,10 @@ function updateBundleStatus() {
     const id = btn.getAttribute("data-bundle-id");
     const name = btn.getAttribute("data-bundle-name") || id;
     if (hasBundle(bundles, id)) {
-      markGranted(btn, `Added ✓ ${name}`);
+      markGranted(btn, siteText("bundles.added-name", "Added ✓ {name}", { name }));
     } else if (!btn.hasAttribute("data-disabled-reason")) {
       // Re-enable buttons that are not structurally disabled (on-pass/on-subscription/capacity)
-      markToRequest(btn, `Request ${name}`);
+      markToRequest(btn, siteText("bundles.request", "Request {name}", { name }));
     }
   });
 }
@@ -530,7 +633,7 @@ function isListedInCurrentEnvironment(b) {
 function renderCatalogueBundles() {
   const container = document.getElementById("catalogBundles");
   if (!__catalogueData || !__catalogueData.bundles) {
-    container.replaceChildren(messageEl("Catalog unavailable."));
+    container.replaceChildren(messageEl(siteText("bundles.catalog-unavailable", "Catalog unavailable.")));
     return;
   }
   const cards = (__catalogueData.bundles || [])
@@ -551,13 +654,13 @@ function renderCatalogueBundles() {
     .filter(isListedInCurrentEnvironment)
     .sort((a, b) => (a.allocation === "on-request") - (b.allocation === "on-request"))
     .map(cardEl);
-  container.replaceChildren(...(cards.length > 0 ? cards : [messageEl("No bundles available.")]));
+  container.replaceChildren(...(cards.length > 0 ? cards : [messageEl(siteText("bundles.no-bundles", "No bundles available."))]));
   updateBundleStatus();
 }
 
 // Read current environment from submit.environment-name.txt
 async function readEnvironment() {
-  return (await import("/lib/services/catalog-service.js")).fetchCurrentEnvironmentName("submit.environment-name.txt");
+  return (await import("/lib/services/catalog-service.js")).fetchCurrentEnvironmentName();
 }
 
 // The block holds room for the cards while they load; once both lists have arrived it hands the room back.
@@ -582,7 +685,7 @@ const __catalogueReady = (async function () {
       init: headers ? { headers } : undefined,
     });
     if (!__catalogueData || !__catalogueData.bundles) {
-      container.replaceChildren(messageEl("Catalog unavailable."));
+      container.replaceChildren(messageEl(siteText("bundles.catalog-unavailable", "Catalog unavailable.")));
       __catalogueSettled = true;
       renderCurrentBundles();
       releaseReservedHeight();
@@ -592,6 +695,7 @@ const __catalogueReady = (async function () {
     __currentEnv = await readEnvironment();
     __viewer = await (await import("/lib/services/viewer-settings.js")).fetchViewer();
     __catalogService = await import("/lib/services/catalog-service.js");
+    __bundleListing = await import("/lib/bundle-listing.js");
     __aggregates = await import("/lib/services/catalogue-aggregates.js");
     renderCatalogueBundles();
     __catalogueSettled = true;
@@ -602,14 +706,14 @@ const __catalogueReady = (async function () {
     try {
       console.error("[bundles.html] Catalog bootstrap error:", err && (err.stack || err.message || err));
     } catch {}
-    container.replaceChildren(messageEl("Failed to load catalog."));
+    container.replaceChildren(messageEl(siteText("bundles.catalog-failed", "Failed to load catalog.")));
     __catalogueSettled = true;
     renderCurrentBundles();
     releaseReservedHeight();
   }
 })();
 
-const CONFIG_SET_NOTE = "Set for your account by DIY Accounting";
+const configSetNote = () => siteText("bundles.config-set-note", "Set for your account by DIY Accounting");
 
 // The catalogue phrase follows "you can"; shown alone it starts with a capital and ends with a full stop.
 function passSummarySentence(passSummary) {
@@ -621,8 +725,8 @@ function passSummarySentence(passSummary) {
 // configuration sets. A group with no row has no heading.
 function groupedBundleRows(rows) {
   const groups = [
-    ["From your plan or passes", rows.filter((entry) => !entry.configDriven)],
-    ["Set for your account", rows.filter((entry) => entry.configDriven)],
+    [siteText("bundles.group-plan-or-passes", "From your plan or passes"), rows.filter((entry) => !entry.configDriven)],
+    [siteText("bundles.group-set-for-account", "Set for your account"), rows.filter((entry) => entry.configDriven)],
   ];
   return groups.flatMap(([title, members]) =>
     members.length === 0 ? [] : [domEl("h3", { class: "bundle-group-heading" }, title), ...members.map((entry) => entry.row)],
@@ -651,26 +755,37 @@ function renderCurrentBundles() {
     // Build info fragments
     const fragments = [];
     if (tokensGranted !== undefined) {
-      fragments.push(`${tokensGranted} token${tokensGranted !== 1 ? "s" : ""} allocated`);
+      fragments.push(
+        tokensGranted === 1
+          ? siteText("bundles.held-one-token", "1 token allocated")
+          : siteText("bundles.held-tokens", "{count} tokens allocated", { count: tokensGranted }),
+      );
     }
     if (tokensRemaining !== undefined) {
-      fragments.push(`${tokensRemaining} remaining`);
+      fragments.push(siteText("bundles.held-remaining", "{count} remaining", { count: tokensRemaining }));
     }
     if (tokenResetAt) {
       const resetDate = new Date(tokenResetAt);
       if (!isNaN(resetDate.getTime())) {
-        fragments.push(`refreshes ${resetDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`);
+        fragments.push(siteText("bundles.held-refreshes", "refreshes {date}", { date: dateInReaderLanguage(resetDate) }));
       }
     }
     const expiryStr = fullData?.expiry;
     if (expiryStr) {
       const expiryDate = new Date(expiryStr);
       if (!isNaN(expiryDate.getTime())) {
-        fragments.push(`expires ${expiryDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`);
+        const shortLived = /^P[01]D$/.test(catBundle?.timeout || "");
+        const day = dateInReaderLanguage(expiryDate);
+        const time = expiryDate.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZoneName: "short" });
+        fragments.push(
+          shortLived
+            ? siteText("bundles.held-expires-at", "expires {date} at {time}", { date: day, time })
+            : siteText("bundles.held-expires", "expires {date}", { date: day }),
+        );
       }
     }
 
-    if (fullData?.configDriven) fragments.push(CONFIG_SET_NOTE);
+    if (fullData?.configDriven) fragments.push(configSetNote());
 
     const summary = passSummarySentence(catBundle?.passSummary);
     const summaryLine = summary ? domEl("div", { class: "bundle-note bundle-summary" }, summary) : null;
@@ -681,7 +796,7 @@ function renderCurrentBundles() {
       ? domEl(
           "button",
           { "type": "button", "class": "btn btn-outline bundle-row-btn", "data-manage-subscription": "true", "data-bundle-id": bundleId },
-          "Manage Subscription",
+          manageSubscriptionText(),
         )
       : null;
 
@@ -700,7 +815,7 @@ function renderCurrentBundles() {
           : domEl(
               "button",
               { "type": "button", "class": "btn btn-danger-outline bundle-row-btn", "data-remove-bundle-id": bundleId },
-              "Remove",
+              siteText("bundles.remove", "Remove"),
             ),
       ),
       summaryLine,
@@ -728,21 +843,25 @@ function renderCurrentBundles() {
 function affiliateRowEl() {
   const application = __affiliateApplication;
   if (!application || !(application.state === "approved" || application.configDriven)) return null;
-  const approvedNote = ["approved", application.terms?.name].filter(Boolean).join(" · ");
-  const note = application.configDriven ? CONFIG_SET_NOTE : approvedNote;
+  const approvedNote = [siteText("bundles.affiliate-approved", "approved"), application.terms?.name].filter(Boolean).join(" · ");
+  const note = application.configDriven ? configSetNote() : approvedNote;
   return domEl(
     "div",
     { "class": "service-item bundle-row", "data-affiliate-row": "true" },
     domEl(
       "span",
       { class: "bundle-row-line" },
-      domEl("span", { class: "bundle-row-name" }, application.configDriven ? "Family affiliate" : "Affiliate"),
+      domEl(
+        "span",
+        { class: "bundle-row-name" },
+        application.configDriven ? siteText("bundles.family-affiliate", "Family affiliate") : siteText("bundles.affiliate", "Affiliate"),
+      ),
       application.configDriven
         ? null
         : domEl(
             "button",
             { "type": "button", "class": "btn btn-danger-outline bundle-row-btn", "data-withdraw-affiliate": "true" },
-            "Remove",
+            siteText("bundles.remove", "Remove"),
           ),
     ),
     domEl("div", { class: "bundle-note" }, note),
@@ -751,9 +870,11 @@ function affiliateRowEl() {
 
 // Commission lines already earned at a cash tier stay held while the affiliate is not approved, and the
 // referrer earns the customer credit tier on new referrals.
-const AFFILIATE_WITHDRAW_TEXT =
-  "Remove your approved affiliate status? Commission you have earned stays held and is not paid while you are not approved. " +
-  "New referrals earn credit on your own subscription instead. To become an affiliate again, contact support.";
+const affiliateWithdrawText = () =>
+  siteText(
+    "bundles.affiliate-withdraw-confirm",
+    "Remove your approved affiliate status? Commission you have earned stays held and is not paid while you are not approved. New referrals earn credit on your own subscription instead. To become an affiliate again, contact support.",
+  );
 
 function showAffiliateWithdrawConfirm(anchor) {
   document.getElementById("affiliateWithdrawConfirm")?.remove();
@@ -763,14 +884,22 @@ function showAffiliateWithdrawConfirm(anchor) {
       "id": "affiliateWithdrawConfirm",
       "class": "pass-delete-confirm",
       "role": "group",
-      "aria-label": "Confirm removal of affiliate status",
+      "aria-label": siteText("bundles.affiliate-withdraw-label", "Confirm removal of affiliate status"),
     },
-    domEl("p", { class: "pass-delete-confirm-text" }, AFFILIATE_WITHDRAW_TEXT),
+    domEl("p", { class: "pass-delete-confirm-text" }, affiliateWithdrawText()),
     domEl(
       "div",
       { class: "bundle-row-line" },
-      domEl("button", { type: "button", class: "btn btn-small btn-danger-outline affiliate-withdraw-confirm-yes" }, "Yes, remove"),
-      domEl("button", { type: "button", class: "btn btn-small btn-secondary affiliate-withdraw-confirm-keep" }, "Keep"),
+      domEl(
+        "button",
+        { type: "button", class: "btn btn-small btn-danger-outline affiliate-withdraw-confirm-yes" },
+        siteText("bundles.affiliate-withdraw-yes", "Yes, remove"),
+      ),
+      domEl(
+        "button",
+        { type: "button", class: "btn btn-small btn-secondary affiliate-withdraw-confirm-keep" },
+        siteText("bundles.affiliate-withdraw-keep", "Keep"),
+      ),
     ),
   );
   anchor.insertAdjacentElement("beforeend", panel);
@@ -792,10 +921,13 @@ async function withdrawAffiliate() {
     document.getElementById("affiliateWithdrawConfirm")?.remove();
     renderCurrentBundles();
     renderAffiliateApplyState();
-    showStatus("Your affiliate status is removed.", "success");
+    showStatus(siteText("bundles.affiliate-removed", "Your affiliate status is removed."), "success");
   } catch (err) {
     if (yes) yes.disabled = false;
-    showStatus(`Your affiliate status was not removed (${err.message})`, "error");
+    showStatus(
+      siteText("bundles.affiliate-not-removed", "Your affiliate status was not removed ({message})", { message: err.message }),
+      "error",
+    );
   }
 }
 
@@ -826,15 +958,11 @@ document.addEventListener("click", async (e) => {
 // --- remove individual bundle
 async function removeBundle(bundleId, fireAndForget = true) {
   const bundleName = __catalogueData?.bundles?.find((cb) => cb.id === bundleId)?.name || bundleId;
+  if (!(await window.requireSession())) return;
   const idToken = getIdToken();
-  if (!idToken) {
-    showStatus("Please log in first to remove bundles.", "warning");
-    window.location.href = "auth/login.html";
-    return;
-  }
 
   // Show status immediately before making the request
-  showStatus(`Removing bundle "${bundleName}"...`, "info");
+  showStatus(siteText("bundles.removing", "Removing bundle “{name}”...", { name: bundleName }), "info");
 
   try {
     const response = await window.fetchWithIdToken("/api/v1/bundle", {
@@ -865,12 +993,15 @@ async function removeBundle(bundleId, fireAndForget = true) {
       updateBundleStatus(); // Update the request buttons
       // Notify developer mode toggle to refresh
       window.dispatchEvent(new CustomEvent("bundle-changed"));
-      showStatus(`Bundle "${bundleName}" removed successfully.`, "success");
+      showStatus(siteText("bundles.removed", "Bundle “{name}” removed successfully.", { name: bundleName }), "success");
     } else {
-      showStatus(`Failed to remove bundle: ${result.error || "Unknown error"}`, "error");
+      showStatus(
+        siteText("bundles.remove-failed", "Failed to remove bundle: {reason}", { reason: result.error || unknownError() }),
+        "error",
+      );
     }
   } catch (error) {
-    showStatus("Failed to remove bundle. Please try again.", "error");
+    showStatus(siteText("bundles.remove-error", "Failed to remove bundle. Please try again."), "error");
     console.error("Remove bundle error:", error);
   }
 }
@@ -899,7 +1030,7 @@ async function initFeedbackEngagementSection() {
   if (joinBtn) {
     // If already registered, update button state
     if (alreadyRegistered) {
-      joinBtn.textContent = "Thanks! We'll be in touch soon.";
+      joinBtn.textContent = siteText("bundles.feedback-thanks", "Thanks! We'll be in touch soon.");
       joinBtn.classList.add("btn-ok");
       joinBtn.disabled = true;
       return;
@@ -907,22 +1038,22 @@ async function initFeedbackEngagementSection() {
 
     joinBtn.addEventListener("click", async function () {
       joinBtn.disabled = true;
-      joinBtn.textContent = "Sending...";
+      joinBtn.textContent = siteText("bundles.feedback-sending", "Sending...");
       try {
         const response = await window.fetchWithIdToken("/api/v1/interest", { method: "POST" });
         if (response.ok) {
-          joinBtn.textContent = "Thanks! We'll be in touch soon.";
+          joinBtn.textContent = siteText("bundles.feedback-thanks", "Thanks! We'll be in touch soon.");
           joinBtn.classList.add("btn-ok");
           try {
             localStorage.setItem("feedbackEngagementRegistered", "true");
           } catch {}
         } else {
-          joinBtn.textContent = "Try again";
+          joinBtn.textContent = siteText("bundles.feedback-try-again", "Try again");
           joinBtn.disabled = false;
         }
       } catch (err) {
         console.error("Feedback engagement failed:", err);
-        joinBtn.textContent = "Try again";
+        joinBtn.textContent = siteText("bundles.feedback-try-again", "Try again");
         joinBtn.disabled = false;
       }
     });
@@ -932,33 +1063,53 @@ async function initFeedbackEngagementSection() {
 // --- My Generated Passes ---
 let __myPassesNextPageKey = null;
 
-const FEWER_THAN_THREE = "fewer than 3";
+const fewerThanThree = () => siteText("bundles.fewer-than-three", "fewer than 3");
 
-function figureCell(label, value, { count = true } = {}) {
-  const shown = value === null || value === undefined ? (count ? FEWER_THAN_THREE : "—") : String(value);
-  return domEl(
-    "div",
-    { "class": "pass-figure", "data-figure": label.toLowerCase().replace(/ /g, "-") },
-    domEl("dt", {}, label),
-    domEl("dd", {}, shown),
-  );
+// Chromium's Intl has no Welsh dates, so a Welsh date is written here with HMRC's Welsh month names.
+const WELSH_MONTHS = [
+  "Ionawr",
+  "Chwefror",
+  "Mawrth",
+  "Ebrill",
+  "Mai",
+  "Mehefin",
+  "Gorffennaf",
+  "Awst",
+  "Medi",
+  "Hydref",
+  "Tachwedd",
+  "Rhagfyr",
+];
+const WELSH_SHORT_MONTHS = ["Ion", "Chwef", "Maw", "Ebr", "Mai", "Meh", "Gorff", "Awst", "Medi", "Hyd", "Tach", "Rhag"];
+
+function dateInReaderLanguage(date, { month = "long", utc = false } = {}) {
+  if (window.siteLanguage?.chrome?.() !== "cy") {
+    return date.toLocaleDateString("en-GB", { day: "numeric", month, year: "numeric", ...(utc ? { timeZone: "UTC" } : {}) });
+  }
+  const part = (name) => (utc ? date[`getUTC${name}`]() : date[`get${name}`]());
+  return `${part("Date")} ${(month === "short" ? WELSH_SHORT_MONTHS : WELSH_MONTHS)[part("Month")]} ${part("FullYear")}`;
+}
+
+function figureCell(key, label, value, { count = true } = {}) {
+  const shown = value === null || value === undefined ? (count ? fewerThanThree() : "—") : String(value);
+  return domEl("div", { "class": "pass-figure", "data-figure": key }, domEl("dt", {}, label), domEl("dd", {}, shown));
 }
 
 function lastUsedLabel(lastUsed) {
-  if (!lastUsed) return "Not used yet";
-  return new Date(lastUsed).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  if (!lastUsed) return siteText("bundles.not-used-yet", "Not used yet");
+  return dateInReaderLanguage(new Date(lastUsed), { month: "short" });
 }
 
 function passFiguresEl(figures, className) {
   return domEl(
     "dl",
     { class: className },
-    figureCell("Uses", figures.uses, { count: false }),
-    figureCell("New accounts", figures.newAccounts),
-    figureCell("Filed", figures.filed),
-    figureCell("Subscribers", figures.subscribers),
-    figureCell("Paid charges", figures.paidCharges),
-    figureCell("Last used", lastUsedLabel(figures.lastUsed), { count: false }),
+    figureCell("uses", siteText("bundles.figure-uses", "Uses"), figures.uses, { count: false }),
+    figureCell("new-accounts", siteText("bundles.figure-new-accounts", "New accounts"), figures.newAccounts),
+    figureCell("filed", siteText("bundles.figure-filed", "Filed"), figures.filed),
+    figureCell("subscribers", siteText("bundles.figure-subscribers", "Subscribers"), figures.subscribers),
+    figureCell("paid-charges", siteText("bundles.figure-paid-charges", "Paid charges"), figures.paidCharges),
+    figureCell("last-used", siteText("bundles.figure-last-used", "Last used"), lastUsedLabel(figures.lastUsed), { count: false }),
   );
 }
 let __noGeneratedPasses = false;
@@ -974,16 +1125,21 @@ function renderGeneratedPassesEmptyText() {
   const passActivities = (__catalogueData.activities || []).filter((a) => PASS_ACTIVITY_IDS.includes(a.id));
   const allowedIds = new Set(passActivities.flatMap((a) => a.bundles || []));
   const heldAllowed = parseUserBundles().some((entry) => allowedIds.has(typeof entry === "string" ? entry : entry.bundleId));
-  const prefix = "You haven't generated any passes yet. ";
   if (heldAllowed) {
-    const names = passActivities.map((a) => a.name).join(" or ");
-    emptyMsg.textContent = `${prefix}Use ${names} in the activities list.`;
+    const names = passActivities.map((a) => a.name).join(` ${siteText("bundles.or", "or")} `);
+    emptyMsg.textContent = siteText("bundles.no-passes-use", "You haven't generated any passes yet. Use {names} in the activities list.", {
+      names,
+    });
   } else {
     const offered = __catalogueData.bundles
       .filter((b) => allowedIds.has(b.id) && !b.hidden && b.enable === "always")
       .filter(isListedInCurrentEnvironment);
     const names = offered.map((b) => b.name).join(", ");
-    emptyMsg.textContent = `${prefix}A pass is generated from a bundle that allows it: ${names}.`;
+    emptyMsg.textContent = siteText(
+      "bundles.no-passes-bundles",
+      "You haven't generated any passes yet. A pass is generated from a bundle that allows it: {names}.",
+      { names },
+    );
   }
   emptyMsg.style.display = "block";
 }
@@ -1002,7 +1158,10 @@ function focusNewlyGeneratedPass() {
   card.setAttribute("tabindex", "-1");
   card.scrollIntoView({ block: "center" });
   card.focus();
-  showStatus(`Pass ${newCode} generated. Track what this link earns under My generated passes`, "success");
+  showStatus(
+    siteText("bundles.pass-generated", "Pass {code} generated. Track what this link earns under My generated passes", { code: newCode }),
+    "success",
+  );
 }
 
 // The caller's own commission totals: held (with the day each part releases), payable and paid.
@@ -1021,20 +1180,36 @@ async function fetchCommissionEarnings() {
       return;
     }
     const pounds = (pence) => formatGbp(pence / 100);
-    const day = (isoDay) =>
-      new Date(`${isoDay}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
-    const rows = [domEl("li", { "data-earnings": "held" }, `Held: ${pounds(held.totalPence)}`)];
+    const day = (isoDay) => dateInReaderLanguage(new Date(`${isoDay}T00:00:00Z`), { utc: true });
+    const rows = [
+      domEl("li", { "data-earnings": "held" }, siteText("bundles.earnings-held", "Held: {amount}", { amount: pounds(held.totalPence) })),
+    ];
     if (held.releases.length > 0) {
       rows.push(
         domEl(
           "li",
           { "data-earnings": "releases" },
-          held.releases.map((release) => `${pounds(release.amountPence)} releases on ${day(release.releaseDate)}`).join("; "),
+          held.releases
+            .map((release) =>
+              siteText("bundles.earnings-release", "{amount} releases on {date}", {
+                amount: pounds(release.amountPence),
+                date: day(release.releaseDate),
+              }),
+            )
+            .join("; "),
         ),
       );
     }
-    rows.push(domEl("li", { "data-earnings": "payable" }, `Payable: ${pounds(payable.totalPence)}`));
-    rows.push(domEl("li", { "data-earnings": "paid" }, `Paid: ${pounds(paid.totalPence)}`));
+    rows.push(
+      domEl(
+        "li",
+        { "data-earnings": "payable" },
+        siteText("bundles.earnings-payable", "Payable: {amount}", { amount: pounds(payable.totalPence) }),
+      ),
+    );
+    rows.push(
+      domEl("li", { "data-earnings": "paid" }, siteText("bundles.earnings-paid", "Paid: {amount}", { amount: pounds(paid.totalPence) })),
+    );
     list.replaceChildren(...rows);
     block.hidden = false;
   } catch (err) {
@@ -1087,15 +1262,16 @@ async function fetchMyGeneratedPasses(append) {
     document.getElementById("passDeleteConfirm")?.remove();
 
     data.passes.forEach((pass) => {
-      const typeLabel = pass.passTypeId === "digital-pass" ? "Digital" : "Physical";
+      const typeLabel =
+        pass.passTypeId === "digital-pass" ? siteText("bundles.pass-digital", "Digital") : siteText("bundles.pass-physical", "Physical");
       const expiryLabel = pass.validUntil
-        ? `Expires ${new Date(pass.validUntil).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`
-        : "No expiry";
+        ? siteText("bundles.pass-expires", "Expires {date}", { date: dateInReaderLanguage(new Date(pass.validUntil)) })
+        : siteText("bundles.pass-no-expiry", "No expiry");
       const usageLabel =
         pass.maxUses === undefined || pass.maxUses === null
-          ? `${pass.useCount || 0} uses`
-          : `${pass.useCount || 0} of ${pass.maxUses} uses`;
-      const heldLabel = pass.heldForReview ? " · on hold for review" : "";
+          ? siteText("bundles.pass-uses", "{count} uses", { count: pass.useCount || 0 })
+          : siteText("bundles.pass-uses-of", "{count} of {max} uses", { count: pass.useCount || 0, max: pass.maxUses });
+      const heldLabel = pass.heldForReview ? ` · ${siteText("bundles.pass-on-hold", "on hold for review")}` : "";
       const passUrl = `${window.location.origin}/pass.html?pass=${encodeURIComponent(pass.code)}`;
       const qrPage = pass.passTypeId === "digital-pass" ? "generate-digital.html" : "generate-physical.html";
       const qrUrl = `${window.location.origin}/passes/${qrPage}?code=${encodeURIComponent(pass.code)}`;
@@ -1112,7 +1288,7 @@ async function fetchMyGeneratedPasses(append) {
             "type": "checkbox",
             "class": "pass-select",
             "data-select-code": pass.code,
-            "aria-label": `Select pass ${pass.code}`,
+            "aria-label": siteText("bundles.pass-select", "Select pass {code}", { code: pass.code }),
           }),
           domEl("span", { class: "pass-code" }, pass.code),
           domEl("span", { class: "status-tag" }, typeLabel),
@@ -1130,7 +1306,7 @@ async function fetchMyGeneratedPasses(append) {
               "class": "btn btn-small btn-secondary pass-copy-link",
               "data-pass-url": passUrl,
             },
-            "Copy Link",
+            siteText("bundles.pass-copy-link", "Copy Link"),
           ),
           domEl(
             "a",
@@ -1138,7 +1314,7 @@ async function fetchMyGeneratedPasses(append) {
               href: qrUrl,
               class: "btn btn-small btn-secondary",
             },
-            "View QR",
+            siteText("bundles.pass-view-qr", "View QR"),
           ),
           domEl(
             "a",
@@ -1148,7 +1324,7 @@ async function fetchMyGeneratedPasses(append) {
               target: "_blank",
               rel: "noopener",
             },
-            "Post",
+            siteText("bundles.pass-post", "Post"),
           ),
           pass.heldForReview && viewerIsOperator
             ? domEl(
@@ -1158,7 +1334,7 @@ async function fetchMyGeneratedPasses(append) {
                   "class": "btn btn-small btn-primary pass-release",
                   "data-pass-code": pass.code,
                 },
-                "Release",
+                siteText("bundles.pass-release", "Release"),
               )
             : null,
           domEl(
@@ -1167,8 +1343,8 @@ async function fetchMyGeneratedPasses(append) {
               "type": "button",
               "class": "btn btn-small btn-danger-outline pass-delete",
               "data-delete-code": pass.code,
-              "aria-label": `Delete pass ${pass.code}`,
-              "title": "Delete this pass",
+              "aria-label": siteText("bundles.pass-delete", "Delete pass {code}", { code: pass.code }),
+              "title": siteText("bundles.pass-delete-title", "Delete this pass"),
             },
             trashIconEl(),
           ),
@@ -1189,8 +1365,11 @@ async function fetchMyGeneratedPasses(append) {
               "span",
               { class: "pass-code" },
               data.totals.countedPasses === data.totals.passes
-                ? `All ${data.totals.passes} passes`
-                : `${data.totals.countedPasses} of ${data.totals.passes} passes (the others are under 3 new accounts together)`,
+                ? siteText("bundles.totals-all", "All {count} passes", { count: data.totals.passes })
+                : siteText("bundles.totals-some", "{counted} of {count} passes (the others are under 3 new accounts together)", {
+                    counted: data.totals.countedPasses,
+                    count: data.totals.passes,
+                  }),
             ),
           ),
           passFiguresEl(data.totals, "pass-figures"),
@@ -1229,9 +1408,9 @@ document.addEventListener("click", async (e) => {
   const url = btn.getAttribute("data-pass-url");
   try {
     await navigator.clipboard.writeText(url);
-    btn.textContent = "Copied!";
+    btn.textContent = siteText("bundles.pass-copied", "Copied!");
     setTimeout(() => {
-      btn.textContent = "Copy Link";
+      btn.textContent = siteText("bundles.pass-copy-link", "Copy Link");
     }, 2000);
   } catch {}
 });
@@ -1249,11 +1428,11 @@ document.addEventListener("click", async (e) => {
       body: JSON.stringify({ code: btn.getAttribute("data-pass-code"), raiseBy: RELEASE_RAISE_BY }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    showStatus(`Pass ${btn.getAttribute("data-pass-code")} released`, "success");
+    showStatus(siteText("bundles.pass-released", "Pass {code} released", { code: btn.getAttribute("data-pass-code") }), "success");
     fetchMyGeneratedPasses(false);
   } catch (err) {
     btn.disabled = false;
-    showStatus(`The pass was not released (${err.message})`, "error");
+    showStatus(siteText("bundles.pass-not-released", "The pass was not released ({message})", { message: err.message }), "error");
   }
 });
 
@@ -1295,19 +1474,41 @@ function updatePassSelection() {
   selectAll.checked = boxes.length > 0 && ticked.length === boxes.length;
   selectAll.indeterminate = ticked.length > 0 && ticked.length < boxes.length;
   deleteSelected.disabled = ticked.length === 0;
-  deleteSelected.textContent = ticked.length > 0 ? `Delete selected (${ticked.length})` : "Delete selected";
+  deleteSelected.textContent =
+    ticked.length > 0
+      ? siteText("bundles.delete-selected-count", "Delete selected ({count})", { count: ticked.length })
+      : siteText("bundles.delete-selected-d2ab5d", "Delete selected");
 }
 
 function showPassDeleteConfirm(codes, anchor, placement) {
   document.getElementById("passDeleteConfirm")?.remove();
-  const noun = codes.length === 1 ? `pass ${codes[0]}` : `${codes.length} passes`;
+  const one = codes.length === 1;
   const panel = domEl(
     "div",
-    { "id": "passDeleteConfirm", "class": "pass-delete-confirm", "role": "group", "aria-label": `Confirm delete of ${noun}` },
+    {
+      "id": "passDeleteConfirm",
+      "class": "pass-delete-confirm",
+      "role": "group",
+      "aria-label": one
+        ? siteText("bundles.pass-delete-confirm-one-label", "Confirm delete of pass {code}", { code: codes[0] })
+        : siteText("bundles.pass-delete-confirm-many-label", "Confirm delete of {count} passes", { count: codes.length }),
+    },
     domEl(
       "p",
       { class: "pass-delete-confirm-text" },
-      `Delete ${noun}? ${codes.length === 1 ? "The link stops working at once." : "The links stop working at once."} Their figures stay in your totals.`,
+      one
+        ? siteText(
+            "bundles.pass-delete-confirm-one",
+            "Delete pass {code}? The link stops working at once. Their figures stay in your totals.",
+            {
+              code: codes[0],
+            },
+          )
+        : siteText(
+            "bundles.pass-delete-confirm-many",
+            "Delete {count} passes? The links stop working at once. Their figures stay in your totals.",
+            { count: codes.length },
+          ),
     ),
     domEl(
       "div",
@@ -1315,9 +1516,13 @@ function showPassDeleteConfirm(codes, anchor, placement) {
       domEl(
         "button",
         { "type": "button", "class": "btn btn-small btn-danger-outline pass-delete-confirm-yes", "data-pass-codes": codes.join(",") },
-        "Yes, delete",
+        siteText("bundles.pass-delete-yes", "Yes, delete"),
       ),
-      domEl("button", { type: "button", class: "btn btn-small btn-secondary pass-delete-confirm-keep" }, "Keep"),
+      domEl(
+        "button",
+        { type: "button", class: "btn btn-small btn-secondary pass-delete-confirm-keep" },
+        siteText("bundles.affiliate-withdraw-keep", "Keep"),
+      ),
     ),
   );
   anchor.insertAdjacentElement(placement, panel);
@@ -1338,13 +1543,18 @@ async function deletePasses(codes) {
     const results = body.results || [];
     const deleted = results.filter((result) => result.status === "deleted").length;
     const skipped = results.length - deleted;
-    const skippedText = skipped > 0 ? `, ${skipped} not deleted (already deleted or not yours)` : "";
-    showStatus(`Deleted ${deleted} ${deleted === 1 ? "pass" : "passes"}${skippedText}`, deleted > 0 ? "success" : "warning");
+    const deletedText =
+      deleted === 1
+        ? siteText("bundles.deleted-one", "Deleted 1 pass")
+        : siteText("bundles.deleted-many", "Deleted {count} passes", { count: deleted });
+    const skippedText =
+      skipped > 0 ? siteText("bundles.deleted-skipped", ", {count} not deleted (already deleted or not yours)", { count: skipped }) : "";
+    showStatus(`${deletedText}${skippedText}`, deleted > 0 ? "success" : "warning");
     document.getElementById("passDeleteConfirm")?.remove();
     await fetchMyGeneratedPasses(false);
   } catch (err) {
     if (yes) yes.disabled = false;
-    showStatus(`The passes were not deleted (${err.message})`, "error");
+    showStatus(siteText("bundles.passes-not-deleted", "The passes were not deleted ({message})", { message: err.message }), "error");
   }
 }
 
@@ -1380,20 +1590,29 @@ document.addEventListener("change", (e) => {
 
 // Affiliates: a signed-in user applies through Stripe Connect onboarding
 const AFFILIATE_APPLY_TEXT = {
-  none: { text: "You have not applied.", button: "Apply with Stripe" },
-  started: { text: "Your application is started. Finish the Stripe steps to send it.", button: "Continue with Stripe" },
-  submitted: { text: "Stripe has your details. We review the application and tell you our decision by email.", button: null },
-  approved: { text: "You are an approved affiliate.", button: null },
-  ended: { text: "This affiliate has ended.", button: null },
+  none: () => ({
+    text: siteText("bundles.apply-none", "You have not applied."),
+    button: siteText("bundles.apply-button", "Apply with Stripe"),
+  }),
+  started: () => ({
+    text: siteText("bundles.apply-started", "Your application is started. Finish the Stripe steps to send it."),
+    button: siteText("bundles.apply-continue", "Continue with Stripe"),
+  }),
+  submitted: () => ({
+    text: siteText("bundles.apply-submitted", "Stripe has your details. We review the application and tell you our decision by email."),
+    button: null,
+  }),
+  approved: () => ({ text: siteText("bundles.apply-approved", "You are an approved affiliate."), button: null }),
+  ended: () => ({ text: siteText("bundles.apply-ended", "This affiliate has ended."), button: null }),
 };
 
 function affiliateApplyView(application) {
-  if (application.state === "approved") return AFFILIATE_APPLY_TEXT.approved;
-  if (application.state === "ended") return AFFILIATE_APPLY_TEXT.ended;
+  if (application.state === "approved") return AFFILIATE_APPLY_TEXT.approved();
+  if (application.state === "ended") return AFFILIATE_APPLY_TEXT.ended();
   if (application.state === "applied") {
-    return application.detailsSubmitted ? AFFILIATE_APPLY_TEXT.submitted : AFFILIATE_APPLY_TEXT.started;
+    return application.detailsSubmitted ? AFFILIATE_APPLY_TEXT.submitted() : AFFILIATE_APPLY_TEXT.started();
   }
-  return AFFILIATE_APPLY_TEXT.none;
+  return AFFILIATE_APPLY_TEXT.none();
 }
 
 function renderAffiliateApplyState() {
@@ -1415,7 +1634,9 @@ async function initAffiliateApplySection() {
     renderAffiliateApplyState();
     renderCurrentBundles();
   } catch (err) {
-    stateEl.textContent = `Your application could not be read (${err.message}). Reload the page.`;
+    stateEl.textContent = siteText("bundles.apply-read-failed", "Your application could not be read ({message}). Reload the page.", {
+      message: err.message,
+    });
   }
 }
 
@@ -1429,7 +1650,7 @@ document.getElementById("affiliateApplyBtn")?.addEventListener("click", async ()
     if (typeof body.url !== "string" || !body.url.startsWith("https://")) throw new Error("Stripe sent no onboarding link");
     window.location.assign(body.url);
   } catch (err) {
-    showStatus(`The application was not started (${err.message})`, "error");
+    showStatus(siteText("bundles.apply-not-started", "The application was not started ({message})", { message: err.message }), "error");
     button.disabled = false;
   }
 });
@@ -1449,11 +1670,16 @@ function showAffiliate(affiliate) {
   document.getElementById("affiliateTier").value = affiliate.tier;
   document.getElementById("affiliateState").value = affiliate.state;
   document.getElementById("affiliateResult").textContent =
-    `Tier ${affiliate.tier}, state ${affiliate.state}` +
-    (affiliate.approvedAt ? `, approved ${affiliate.approvedAt}` : "") +
+    siteText("bundles.affiliate-tier-state", "Tier {tier}, state {state}", { tier: affiliate.tier, state: affiliate.state }) +
+    (affiliate.approvedAt ? siteText("bundles.affiliate-approved-at", ", approved {date}", { date: affiliate.approvedAt }) : "") +
     (affiliate.hasConnectAccount
-      ? `, Stripe details ${affiliate.detailsSubmitted ? "submitted" : "not submitted"}, transfers ${affiliate.transfersActive ? "active" : "not active"}`
-      : ", no Stripe account");
+      ? (affiliate.detailsSubmitted
+          ? siteText("bundles.affiliate-details-submitted", ", Stripe details submitted")
+          : siteText("bundles.affiliate-details-not-submitted", ", Stripe details not submitted")) +
+        (affiliate.transfersActive
+          ? siteText("bundles.affiliate-transfers-active", ", transfers active")
+          : siteText("bundles.affiliate-transfers-not-active", ", transfers not active"))
+      : siteText("bundles.affiliate-no-stripe", ", no Stripe account"));
 }
 
 document.getElementById("affiliateLookupBtn")?.addEventListener("click", async () => {
@@ -1462,13 +1688,13 @@ document.getElementById("affiliateLookupBtn")?.addEventListener("click", async (
   try {
     const res = await window.fetchWithIdToken(`/api/v1/affiliate?referrerHash=${encodeURIComponent(referrerHash)}`);
     if (res.status === 404) {
-      result.textContent = "No affiliate for that referrer";
+      result.textContent = siteText("bundles.affiliate-none-for-referrer", "No affiliate for that referrer");
       return;
     }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     showAffiliate(await res.json());
   } catch (err) {
-    result.textContent = `The lookup failed (${err.message})`;
+    result.textContent = siteText("bundles.affiliate-lookup-failed", "The lookup failed ({message})", { message: err.message });
   }
 });
 
@@ -1489,9 +1715,9 @@ document.getElementById("affiliateSaveBtn")?.addEventListener("click", async () 
       throw new Error(body.message || `HTTP ${res.status}`);
     }
     showAffiliate(await res.json());
-    showStatus("Affiliate saved", "success");
+    showStatus(siteText("bundles.affiliate-saved", "Affiliate saved"), "success");
   } catch (err) {
-    showStatus(`The affiliate was not saved (${err.message})`, "error");
+    showStatus(siteText("bundles.affiliate-not-saved", "The affiliate was not saved ({message})", { message: err.message }), "error");
   } finally {
     saveButton.disabled = false;
   }
@@ -1520,7 +1746,7 @@ function initPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const checkoutResult = urlParams.get("checkout");
   if (checkoutResult === "success") {
-    showStatus("Subscription activated! Your bundle has been added.", "success");
+    showStatus(siteText("bundles.checkout-success", "Subscription activated! Your bundle has been added."), "success");
     const sessionId = urlParams.get("session_id");
     // Clear URL params without reload
     const url = new URL(window.location);
@@ -1570,7 +1796,7 @@ function initPage() {
       setTimeout(refreshBundles, 3000);
     });
   } else if (checkoutResult === "canceled") {
-    showStatus("Checkout was canceled. You can try again when you're ready.", "info");
+    showStatus(siteText("bundles.checkout-canceled", "Checkout was canceled. You can try again when you're ready."), "info");
     const url = new URL(window.location);
     url.searchParams.delete("checkout");
     window.history.replaceState({}, "", url);

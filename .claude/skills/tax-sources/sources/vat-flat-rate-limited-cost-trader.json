@@ -1,7 +1,9 @@
 {
   "url": "https://www.gov.uk/vat-flat-rate-scheme/how-much-you-pay",
+  "title": "VAT Flat Rate Scheme: Work out your flat rate",
   "retrieved": "2026-11-13",
-  "quote": "2% of your turnover £1,000 a year (if your costs are more than 2%) This means you pay a higher rate of 16.5%.",
+  "quote": "You’re classed as a ‘limited cost business’ if your goods cost less than either: 2% of your turnover £1,000 a year (if your costs are more than 2%) This means you pay a higher rate of 16.5%.",
+  "table": true,
   "facts": [
     "vat-flat-rate-limited-cost-trader-2025-26",
     "vat-flat-rate-limited-cost-trader-2026-27"

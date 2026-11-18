@@ -9,7 +9,12 @@
 // A row holds the api template, the timing, the status and the header rule result, so it holds no
 // customer identifier and no request content.
 
+import { actorClassSql } from "./dataSection.js";
+
 export const INTEGRATION_ORGS = ["hmrc", "companies-house", "stripe"];
+
+// The classes of the caller of a call, in the order a summary lists them under one status.
+export const INTEGRATION_CALLER_CLASSES = ["customer", "test", "synthetic", "other", "unknown"];
 
 // The newest calls of each organisation, and the newest calls with a status outside 2xx.
 const INTEGRATION_RECENT_CALLS = 100;
@@ -19,7 +24,7 @@ const INTEGRATION_FAILED_DAYS = 30;
 const SUMMARY_WINDOW_ALIASES = ["today", "prev_1", "last_7", "last_30", "prev_30", "last_90", "prev_90"];
 
 /**
- * One query: for each organisation and status, the live call counts in every standard window.
+ * One query: for each organisation, status and class of caller, the live call counts in every standard window.
  * The windows are the dashboard's own (`windowedColumns`), so Today starts at UK midnight as in
  * every other table.
  *
@@ -31,11 +36,11 @@ export function buildIntegrationSummarySql(windowedColumns) {
     .filter(([alias]) => SUMMARY_WINDOW_ALIASES.includes(alias))
     .map(([alias, condition]) => `cast(sum(CASE WHEN ${condition("day")} THEN calls END) AS double) AS ${alias}`);
   return (
-    `SELECT org, status_label AS status,\n       ${columns.join(",\n       ")},\n` +
+    `SELECT org, status_label AS status, ${actorClassSql("actor")} AS caller,\n       ${columns.join(",\n       ")},\n` +
     `       cast(min(day) AS varchar) AS first_day\n` +
     `FROM   v_integration_calls_daily\n` +
     `WHERE  target = 'live' AND day > date_add('day', -180, current_date)\n` +
-    `GROUP  BY 1, 2\nORDER  BY 1, 2`
+    `GROUP  BY 1, 2, 3\nORDER  BY 1, 2, 3`
   );
 }
 
@@ -137,8 +142,13 @@ export function shapeHeaderChecks(items) {
 export function shapeIntegrationsSection({ summaryRows, callRows, headerCheckItems = [], tableName, region, toWindows, now = new Date() }) {
   const summary = summaryRows
     .filter((row) => INTEGRATION_ORGS.includes(row.org) && row.status)
-    .sort((a, b) => INTEGRATION_ORGS.indexOf(a.org) - INTEGRATION_ORGS.indexOf(b.org) || compareStatus(a.status, b.status))
-    .map((row) => ({ org: row.org, status: row.status, unit: "count", ...toWindows(row, "sum", now) }));
+    .sort(
+      (a, b) =>
+        INTEGRATION_ORGS.indexOf(a.org) - INTEGRATION_ORGS.indexOf(b.org) ||
+        compareStatus(a.status, b.status) ||
+        INTEGRATION_CALLER_CLASSES.indexOf(a.caller) - INTEGRATION_CALLER_CLASSES.indexOf(b.caller),
+    )
+    .map((row) => ({ org: row.org, status: row.status, caller: row.caller, unit: "count", ...toWindows(row, "sum", now) }));
   const calls = Object.fromEntries(INTEGRATION_ORGS.map((org) => [org, []]));
   callRows
     .filter((row) => INTEGRATION_ORGS.includes(row.org))

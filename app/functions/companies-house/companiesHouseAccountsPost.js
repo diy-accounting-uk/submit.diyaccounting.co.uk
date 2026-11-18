@@ -47,6 +47,8 @@ import {
 import { buildSmallCompanyAccounts } from "../../services/smallCompanyAccountsIxbrl.js";
 import { REGISTERED_OFFICE_FIELDS, readDirectorsAdvances } from "../../services/accountsIxbrlCommon.js";
 import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
+import { checkWelshCompany, inAccountsLanguage, readDocumentLanguage } from "../../services/accountsLanguage.js";
+import { getCompanyProfile } from "./companiesHouseCompanyGet.js";
 import { extractAndValidateSmallCompany } from "../../services/smallCompanyAccountsRequest.js";
 import {
   buildAccountsSubmission,
@@ -108,9 +110,12 @@ export function apiEndpoint(app) {
 }
 /* v8 ignore stop */
 
-// The iXBRL document for a validated request: the regime the request named picks the builder.
+// The iXBRL document for a validated request: the regime the request named picks the builder, and
+// the request's documentLanguage the language it is written in.
 export function buildAccountsIxbrl(accounts) {
-  return accounts.regime === "small-company" ? buildSmallCompanyAccounts(accounts) : buildMicroEntityAccounts(accounts);
+  return inAccountsLanguage(accounts.documentLanguage, () =>
+    accounts.regime === "small-company" ? buildSmallCompanyAccounts(accounts) : buildMicroEntityAccounts(accounts),
+  );
 }
 
 // The registered office is an object of address parts. Absent is allowed: the profile fills it.
@@ -172,6 +177,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     nominalValue,
     smallCompany,
     directorsAdvances,
+    documentLanguage,
   } = parsedBody;
 
   // A client-scoped request resolves its company number from the client row instead, so the
@@ -208,6 +214,8 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
   }
 
   const isSmallCompany = smallCompany !== undefined && smallCompany !== null;
+  const language = readDocumentLanguage(documentLanguage, errorMessages);
+  const languageField = language === "cy" ? { documentLanguage: "cy" } : {};
   if (isSmallCompany && dormant === true) {
     errorMessages.push("A dormant company files micro-entity accounts: dormant cannot be combined with smallCompany");
   }
@@ -259,6 +267,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
       directorName,
       dateOfApproval: dateApproved,
       ...revisionField,
+      ...languageField,
       ...small,
     };
   }
@@ -297,6 +306,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     directorName,
     dateOfApproval: dateApproved,
     ...revisionField,
+    ...languageField,
     statementsAccepted: statements,
     ...(validDirectorsAdvances?.length ? { directorsAdvances: validDirectorsAdvances } : {}),
     ...(isDormant ? { dormant: true, dormantTradingStatus, shareClass, nominalValue: numericNominalValue } : {}),
@@ -470,6 +480,10 @@ export async function ingestHandler(event) {
     accounts.companyNumber = client.identifiers?.companyNumber;
   }
   await fillRegisteredOffice(accounts, errorMessages);
+  if (accounts.documentLanguage === "cy") {
+    const { profile } = await getCompanyProfile(accounts.companyNumber);
+    checkWelshCompany(profile?.jurisdiction, errorMessages);
+  }
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }
@@ -520,6 +534,10 @@ export async function ingestHandler(event) {
         ...jointFilingFields(jointFilingId),
         ...amendedFields(Boolean(accounts.revision)),
         ...formRequestFields(formRequest),
+        // The document's own language, which the filing keeps; it does not follow the page language.
+        ...(accounts.documentLanguage === "cy" ? { documentLanguage: "cy" } : {}),
+        // The reader's language choice, so the receipt email of an accepted filing is in it.
+        ...(getHeader(event.headers, "X-Site-Language") === "cy" ? { language: "cy" } : {}),
       },
       asyncRequestsTableName,
     );
@@ -535,6 +553,7 @@ export async function ingestHandler(event) {
       dateSigned: accounts.dateOfApproval,
       ixbrl,
       gatewayTest,
+      language: accounts.documentLanguage === "cy" ? "CY" : undefined,
     });
 
     const gatewayResponse = await postToGateway(submissionXml, govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {});

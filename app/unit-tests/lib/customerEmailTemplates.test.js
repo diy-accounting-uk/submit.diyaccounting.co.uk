@@ -114,6 +114,52 @@ describe("lib/customerEmailTemplates", () => {
     expect(itsa.text).toContain("6 April 2026 to 5 July 2026");
   });
 
+  test("the receipt email of a VAT return reads in Welsh for a reader whose choice is Welsh, with HMRC's data as returned", () => {
+    const m = buildCustomerEmail({
+      kind: "submission-receipt",
+      data: { receiptKind: "vat-return", language: "cy" },
+      baseUrl,
+      catalog,
+      receipt: {
+        formBundleNumber: "FB1",
+        processingDate: "2026-11-05T09:30:00.000Z",
+        paymentIndicator: "DD",
+        chargeRefNumber: "XM002610011594",
+      },
+    });
+    expect(m.subject).toBe("Eich derbynneb: Ffurflen TAW");
+    expect(m.html).toContain('<html lang="cy">');
+    expect(m.text).toContain("Rhif bwndel y ffurflen (Form bundle number): FB1");
+    expect(m.text).toContain("5 Tachwedd 2026");
+    expect(m.text).toContain("Ystyr DD yw Debyd Uniongyrchol.");
+    expect(m.text).toContain("XM002610011594");
+    expect(m.text).toContain("cy/hmrc/receipt/receipts.html");
+    expect(m.text).not.toContain("Reply to this email");
+  });
+
+  test("submission-receipt is in Welsh when the filing was made with the Welsh choice", () => {
+    const m = buildCustomerEmail({
+      kind: "submission-receipt",
+      data: { receiptKind: "accounts", language: "cy" },
+      baseUrl,
+      catalog,
+      receipt: {
+        kind: "companies-house-accounts",
+        submissionNumber: "AB1234",
+        statusCode: "ACCEPT",
+        processingDate: "2026-11-05T09:30:00.000Z",
+      },
+    });
+    expect(m.subject).toBe("Eich derbynneb: Cyfrifon blynyddol");
+    expect(m.text).toContain("Rhif cyflwyno: AB1234");
+    expect(m.text).toContain("Statws: ACCEPT");
+    expect(m.text).toContain("5 Tachwedd 2026");
+    expect(m.text).toContain("Atebwch yr e-bost hwn neu ysgrifennwch at support@diyaccounting.co.uk");
+    expect(m.html).toContain('<html lang="cy">');
+    expect(m.html).toContain("Gweld eich derbynebau");
+    expect(m.text).not.toContain("Your receipt");
+  });
+
   test("a pass with no end date says so", () => {
     const m = buildCustomerEmail({ kind: "pass-generated", data: { code: "a-b-c-d", bundleId: "day-guest" }, baseUrl, catalog });
     expect(m.text).toContain("No end date");

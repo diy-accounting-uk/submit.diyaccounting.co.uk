@@ -358,7 +358,8 @@ export const TOOLS = {
     annotations: READS,
     description:
       "List the books saved in the DIYA cloud, most recently updated first, signed in as the session's credentials. Each " +
-      "row carries the bookId open_book takes. With clientId, lists that practice client's books instead of the practice's own.",
+      "row carries the bookId open_book takes, the book's title, its product and the period it covers. With clientId, " +
+      "lists that practice client's books instead of the practice's own.",
     inputSchema: {
       clientId: z.string().optional().describe("A practice client's id, to list that client's books instead of the practice's own"),
     },
@@ -605,9 +606,9 @@ export const TOOLS = {
     title: "Get a VAT receipt",
     annotations: READS,
     description:
-      "A stored HMRC VAT receipt by its file name, over the deployed API: Submit's own copy of what it filed. " +
-      "clientId, when given, narrows the fetch to " +
-      "one of the practice's clients but does not change which receipt is read.",
+      "A stored VAT return receipt by its file name, over the deployed API: what HMRC answered when it accepted the " +
+      "return (the processing date, the form bundle number, the payment indicator and the charge reference). " +
+      "clientId, when given, narrows the fetch to one of the practice's clients but does not change which receipt is read.",
     inputSchema: {
       name: z.string().describe("The receipt file name, including .json (submit_vat_return answers receiptId without the suffix)"),
       clientId: z.string().optional().describe("A practice client's id, to check the receipt belongs to that client"),
@@ -618,9 +619,9 @@ export const TOOLS = {
     title: "List VAT receipts",
     annotations: READS,
     description:
-      "The receipts Submit has stored for the signed-in account, the list its receipts page shows: each row carries the " +
-      "name get_vat_receipt takes. clientId narrows the list to one of the " +
-      "practice's clients.",
+      "The VAT return receipts Submit has stored for the signed-in account, newest first: each row carries the name " +
+      "get_vat_receipt takes, HMRC's form bundle number and the day the return was filed. clientId narrows the list to " +
+      "one of the practice's clients.",
     inputSchema: {
       clientId: z.string().optional().describe("A practice client's id, to list that client's receipts"),
     },

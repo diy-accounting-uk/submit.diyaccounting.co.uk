@@ -2,8 +2,9 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // web/browser-tests/signInLink.browser.test.js
-// A signed-out visitor on a page two directories deep follows the header's Log in link and lands
-// on /auth/login.html, not on a path nested under the page's own directory.
+// A signed-out visitor on a page two directories deep follows the header's Sign in link and lands
+// on /auth/login.html, not on a path nested under the page's own directory. The link carries the
+// page in ?next=, and the sign-in page names it and keeps it as the address to return to.
 
 import { test, expect } from "@playwright/test";
 import fs from "fs";
@@ -43,7 +44,7 @@ async function serveRealSite(page) {
 }
 
 for (const pagePath of ["hmrc/vat/vatObligations.html", "hmrc/itsa/dashboard.html"]) {
-  test(`${pagePath} Log in link leads to /auth/login.html with nothing missing and no console error`, async ({ page }) => {
+  test(`${pagePath} Sign in link leads to /auth/login.html with nothing missing and no console error`, async ({ page }) => {
     const failedRequests = [];
     const consoleErrors = [];
     page.on("response", (response) => {
@@ -55,12 +56,57 @@ for (const pagePath of ["hmrc/vat/vatObligations.html", "hmrc/itsa/dashboard.htm
     await serveRealSite(page);
     await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "domcontentloaded" });
     const loginLink = page.locator("a.login-link");
-    await expect(loginLink).toHaveAttribute("href", "/auth/login.html");
+    await expect(loginLink).toHaveAttribute("href", `/auth/login.html?next=${encodeURIComponent(`/${pagePath}`)}`);
     await loginLink.click();
-    await page.waitForURL("**/auth/login.html");
+    await page.waitForURL("**/auth/login.html?next=*");
     expect(new URL(page.url()).pathname).toBe("/auth/login.html");
     await page.waitForLoadState("networkidle");
     expect(failedRequests).toEqual([]);
     expect(consoleErrors).toEqual([]);
   });
 }
+
+test("the sign-in page names the activity in ?next= and keeps its page as the return address", async ({ page }) => {
+  await serveRealSite(page);
+  await page.goto("http://localhost:3000/auth/login.html?next=%2Fhmrc%2Fvat%2FvatObligations.html", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#signInDestination")).toContainText("Sign in to continue to VAT Obligations");
+  expect(await page.evaluate(() => sessionStorage.getItem("postLoginRedirect"))).toBe("/hmrc/vat/vatObligations.html");
+  await expect(page.locator("#firstSignInNote")).toContainText(
+    "The first time you sign in, we create your account. It is free until you choose a bundle.",
+  );
+  await expect(page.locator("#noAccountNote a")).toHaveAttribute("href", "../help.html#lost-sign-in-account");
+});
+
+test("the sign-in page ignores a ?next= that leaves the site", async ({ page }) => {
+  await serveRealSite(page);
+  await page.goto("http://localhost:3000/auth/login.html?next=%2F%2Fevil.example%2Fx", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#signInDestination")).toBeHidden();
+  expect(await page.evaluate(() => sessionStorage.getItem("postLoginRedirect"))).toBeNull();
+});
+
+test("a Welsh page's Sign in link leads to the Welsh sign-in page, which reads in Welsh and returns to the Welsh page", async ({
+  page,
+}) => {
+  const failedRequests = [];
+  const consoleErrors = [];
+  page.on("response", (response) => {
+    if (response.status() >= 400) failedRequests.push(`${response.status()} ${response.url()}`);
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  await serveRealSite(page);
+  await page.goto("http://localhost:3000/cy/hmrc/vat/vatObligations.html", { waitUntil: "domcontentloaded" });
+  const loginLink = page.locator("a.login-link");
+  await expect(loginLink).toHaveAttribute("href", `/cy/auth/login.html?next=${encodeURIComponent("/cy/hmrc/vat/vatObligations.html")}`);
+  await loginLink.click();
+  await page.waitForURL("**/cy/auth/login.html?next=*");
+  await expect(page.locator("h1")).toHaveText("Mewngofnodi");
+  await expect(page.locator("#loginWithCognito")).toContainText("Mewngofnodi gyda’ch cyfrif Google");
+  await expect(page.locator("#signInDestination")).toContainText("Mewngofnodwch i barhau i");
+  await expect(page.locator("main")).not.toContainText("Sign in with your");
+  expect(await page.evaluate(() => sessionStorage.getItem("postLoginRedirect"))).toBe("/cy/hmrc/vat/vatObligations.html");
+  await page.waitForLoadState("networkidle");
+  expect(failedRequests).toEqual([]);
+  expect(consoleErrors).toEqual([]);
+});

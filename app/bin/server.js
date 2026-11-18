@@ -291,6 +291,7 @@ app.get("/submit.env", (req, res) => {
     "HMRC_SANDBOX_BASE_URI",
     "COMPANIES_HOUSE_CLIENT_ID",
     "COMPANIES_HOUSE_IDENTITY_BASE_URI",
+    "COMPANIES_HOUSE_GATEWAY_TEST",
     "DIY_SUBMIT_BASE_URL",
     "GA4_MEASUREMENT_ID",
     "UET_TAG_ID",
@@ -463,6 +464,11 @@ billingCheckoutSessionGetApiEndpoint(app);
 billingPortalGetApiEndpoint(app);
 billingRecoverPostApiEndpoint(app);
 billingWebhookPostApiEndpoint(app);
+
+// An API path with no route answers JSON with status 404, as API Gateway does on the deployed site.
+app.all(/^\/api\//, (req, res) => {
+  res.status(404).json({ message: "Not Found" });
+});
 
 // A path with no file answers with the site's 404 page and status 404, as the deployed site does.
 const notFoundPage = fs.readFileSync(path.join(__dirname, "../../web/public/errors/404.html"), "utf8");

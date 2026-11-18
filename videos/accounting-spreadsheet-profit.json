@@ -79,7 +79,8 @@
           "caption": "There's a sheet for each month's sales, and one for its purchases.",
           "headline": "A sheet for every month",
           "keyWord": "month",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Download the Basic Sole Trader workbook from the spreadsheets site and open it; each month has a sheet for sales and one for purchases."
         }
       ]
     },
@@ -93,7 +94,8 @@
           "target": "#spreadsheet-tab8",
           "caption": "Open April's sales.",
           "headline": "April's sales",
-          "keyWord": "April"
+          "keyWord": "April",
+          "instruction": "Choose the sheet for April's sales."
         },
         {
           "action": "sheetCell",
@@ -105,7 +107,8 @@
           "then": "Tab",
           "caption": "Type the date the customer paid you.",
           "headline": "Date of the sale",
-          "keyWord": "Date"
+          "keyWord": "Date",
+          "instruction": "Enter the date the customer paid you in the first empty row."
         },
         {
           "action": "sheetType",
@@ -113,7 +116,8 @@
           "then": "Tab",
           "caption": "Then the customer and the job.",
           "headline": "The customer and the job",
-          "keyWord": "customer"
+          "keyWord": "customer",
+          "instruction": "Enter the customer and the job in the next column."
         },
         {
           "action": "sheetType",
@@ -126,7 +130,8 @@
           "then": "Tab",
           "caption": "How they paid. Leave this blank if they still owe you.",
           "headline": "How they paid",
-          "keyWord": "paid"
+          "keyWord": "paid",
+          "instruction": "Enter Bank in the paid column; leave it blank if the customer still owes you."
         },
         {
           "action": "sheetType",
@@ -139,14 +144,16 @@
           "then": "Enter",
           "caption": "And the amount: £500.",
           "headline": "Amount: £500",
-          "keyWord": "500"
+          "keyWord": "500",
+          "instruction": "Enter the amount of the sale."
         },
         {
           "action": "sheetCell",
           "cell": "SalesApr!A5",
           "caption": "A second job in April: a garden tidy for £300.",
           "headline": "A second sale",
-          "keyWord": "second"
+          "keyWord": "second",
+          "instruction": "Enter a second sale in the next row."
         },
         {
           "action": "sheetType",
@@ -183,7 +190,8 @@
           "cell": "SalesApr!F1",
           "caption": "The month's total updates as you type: £800.",
           "headline": "April's sales: £800",
-          "keyWord": "800"
+          "keyWord": "800",
+          "instruction": "Read the month's total, which updates as you type."
         },
         {
           "action": "still",
@@ -194,7 +202,8 @@
           "target": "#spreadsheet-tab9",
           "caption": "Now April's purchases: plants and compost for a job.",
           "headline": "A purchase",
-          "keyWord": "purchase"
+          "keyWord": "purchase",
+          "instruction": "Choose the sheet for April's purchases."
         },
         {
           "action": "sheetCell",
@@ -226,7 +235,8 @@
           "then": "Tab",
           "caption": "The expense letter sorts it. S is for stock and materials you use on jobs.",
           "headline": "Letter S: materials",
-          "keyWord": "S"
+          "keyWord": "S",
+          "instruction": "Enter the expense letter, such as s for stock and materials."
         },
         {
           "action": "sheetType",
@@ -239,7 +249,8 @@
           "then": "Enter",
           "caption": "They cost £200.",
           "headline": "Amount: £200",
-          "keyWord": "200"
+          "keyWord": "200",
+          "instruction": "Enter the amount of the purchase."
         }
       ]
     },
@@ -336,7 +347,8 @@
           "then": "Enter",
           "caption": "They cost £100.",
           "headline": "Amount: £100",
-          "keyWord": "100"
+          "keyWord": "100",
+          "instruction": "Enter May's sale and each purchase on May's sheets, using a for advertising."
         }
       ]
     },
@@ -372,7 +384,8 @@
           "cell": "Profit & Loss Acc!C24",
           "caption": "The year so far: £1,500 of sales, £300 of costs, £1,200 profit.",
           "headline": "Net profit: £1,200",
-          "keyWord": "1,200"
+          "keyWord": "1,200",
+          "instruction": "Choose the Profit & Loss sheet, then read each month's profit and the year so far."
         },
         {
           "action": "hold",

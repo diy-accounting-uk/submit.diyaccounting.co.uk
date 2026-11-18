@@ -12,6 +12,9 @@ import {
   subscriptionRetention,
   endedSubscriptionRetention,
   receiptRetention,
+  bundleRetention,
+  hmrcApiRequestRetention,
+  callRecordRetention,
   figuresRetention,
 } from "@app/lib/recordRetention.js";
 
@@ -130,8 +133,40 @@ describe("receiptRetention", () => {
     expect(receiptRetention({ synthetic: true }, NOW).ttl).toBe(NOW_SECONDS + 2555 * DAY);
   });
 
-  test("a test actor with no synthetic flag keeps the 7-year ttl", () => {
-    expect(receiptRetention({ actor: "probe" }, NOW).ttl).toBe(NOW_SECONDS + 2555 * DAY);
+  test.each(["test-user", "probe"])("a %s receipt lives 2 days whether or not the flow is synthetic", (actor) => {
+    expect(receiptRetention({ actor }, NOW).ttl).toBe(NOW_SECONDS + 2 * DAY);
+  });
+});
+
+describe("bundleRetention", () => {
+  const expiry = new Date("2026-12-01T00:00:00.000Z");
+
+  test.each(["test-user", "probe"])("a %s bundle lives 2 days from now, whatever its expiry", (actor) => {
+    expect(bundleRetention({ actor }, expiry, NOW).ttl).toBe(NOW_SECONDS + 2 * DAY);
+  });
+
+  test.each(["customer", "operator", undefined])("a bundle of %s lives a month past its expiry", (actor) => {
+    expect(bundleRetention({ actor }, expiry, NOW).ttl_datestamp.slice(0, 10)).toBe("2027-01-01");
+  });
+});
+
+describe("hmrcApiRequestRetention", () => {
+  test.each(["test-user", "probe"])("a %s request lives 2 days", (actor) => {
+    expect(hmrcApiRequestRetention(actor, NOW).ttl).toBe(NOW_SECONDS + 2 * DAY);
+  });
+
+  test.each(["customer", "system", undefined])("a request of %s lives 28 days", (actor) => {
+    expect(hmrcApiRequestRetention(actor, NOW).ttl).toBe(NOW_SECONDS + 28 * DAY);
+  });
+});
+
+describe("callRecordRetention", () => {
+  test.each(["test-user", "probe"])("a %s call record lives 2 days", (actor) => {
+    expect(callRecordRetention(actor, NOW).ttl).toBe(NOW_SECONDS + 2 * DAY);
+  });
+
+  test.each(["customer", "system", undefined])("a call record of %s lives 90 days", (actor) => {
+    expect(callRecordRetention(actor, NOW).ttl).toBe(NOW_SECONDS + 90 * DAY);
   });
 });
 

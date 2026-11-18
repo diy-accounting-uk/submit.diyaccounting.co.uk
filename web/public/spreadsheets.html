@@ -1,6 +1,16 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
+<!-- @capability SITE-11 Promote sibling products and partners
+- **Use when:** adding or changing a cross-sell page for a sibling product or an affiliate.
+- **Does:** Cross-sell pages sit outside the VAT-filing product. They cover the company background, the spreadsheets product, and a PolicyBee business-insurance affiliate page.
+- **Run:** no command; see Does and Entry
+- **Entry:** `web/public/spreadsheets.html`; `web/public/policybee.html`
+- **Files:** web/public/diy-accounting-limited.html, web/public/policybee.html, web/public/spreadsheets.html
+- **Keywords:** cross-sell, spreadsheets product, policybee, affiliate, company background page
+- **Related:** SITE-10, SS-21
+@end-capability -->
 <html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
@@ -8,15 +18,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="DIY Accounting spreadsheet products - Excel bookkeeping and accounting spreadsheets for UK small businesses. Sole trader, self employed, company accounts, payroll and taxi driver software."
+      content="Excel bookkeeping and accounting spreadsheets for UK small businesses: sole trader, self employed, company accounts, payroll and taxi driver software."
     />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/spreadsheets.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/spreadsheets.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/spreadsheets.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/spreadsheets.html" />
     <!-- Open Graph / Social -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Spreadsheets - DIY Accounting Submit" />
     <meta
       property="og:description"
-      content="DIY Accounting spreadsheet products - Excel bookkeeping and accounting spreadsheets for UK small businesses. Sole trader, self employed, company accounts, payroll and taxi driver software."
+      content="Excel bookkeeping and accounting spreadsheets for UK small businesses: sole trader, self employed, company accounts, payroll and taxi driver software."
     />
     <meta property="og:url" content="https://submit.diyaccounting.co.uk/spreadsheets.html" />
     <meta property="og:site_name" content="DIY Accounting" />
@@ -65,7 +78,7 @@
 
       <div class="spreadsheets-page">
         <div class="spreadsheets-intro">
-          <h2>DIY Accounting Products</h2>
+          <h2>DIY Accounting products</h2>
           <p>
             DIY Accounting provides Excel bookkeeping and accounting spreadsheets for the UK small business market. Designed by a Chartered
             Management Accountant, each product is a self-contained set of Excel workbooks covering sales, purchases, profit and loss, and
@@ -292,6 +305,7 @@
           </p>
         </div>
       </div>
+      <p class="tools-link">More free tools are on the <a href="tools.html">Tools</a> page.</p>
     </main>
 
     <footer></footer>

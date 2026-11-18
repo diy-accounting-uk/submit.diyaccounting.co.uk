@@ -53,6 +53,8 @@ class EdgeStackTest {
                         .certificateArn(
                                 "arn:aws:acm:us-east-1:111111111111:certificate/00000000-0000-0000-0000-000000000000")
                         .apiGatewayUrl("https://abc123def.execute-api.eu-west-2.amazonaws.com")
+                        .docRootPath("web/public")
+                        .edgeFunctionAssetPath("app/functions/edge")
                         .originVerifySecretVersionId(originVerifySecretVersionId)
                         .baseImageTag("latest")
                         .build());
@@ -547,6 +549,60 @@ class EdgeStackTest {
     }
 
     @Test
+    void mcpRequestsWithNoAuthorizationHeaderAreCountedPerAddress() {
+        Template template = Template.fromStack(synthEdgeStack());
+        Map<String, Object> noAuthorizationHeader = Map.of(
+                "NotStatement",
+                Map.of(
+                        "Statement",
+                        Map.of(
+                                "SizeConstraintStatement",
+                                Match.objectLike(Map.of(
+                                        "FieldToMatch",
+                                        Map.of("SingleHeader", Map.of("Name", "authorization")),
+                                        "ComparisonOperator",
+                                        "GT",
+                                        "Size",
+                                        0)))));
+        Map<String, Object> rateStatement = Map.of(
+                "Limit",
+                (int) EdgeStack.MCP_ANONYMOUS_RATE_LIMIT_PER_FIVE_MINUTES,
+                "EvaluationWindowSec",
+                300,
+                "AggregateKeyType",
+                "IP",
+                "ScopeDownStatement",
+                Map.of(
+                        "AndStatement",
+                        Map.of(
+                                "Statements",
+                                List.of(
+                                        Match.objectLike(Map.of("OrStatement", Match.anyValue())),
+                                        Match.objectLike(noAuthorizationHeader)))));
+        Map<String, Object> rule = Map.of(
+                "Name",
+                "McpAnonymousRateLimitRule",
+                "Action",
+                Match.objectLike(Map.of("Block", Match.anyValue())),
+                "Statement",
+                Map.of("RateBasedStatement", Match.objectLike(rateStatement)));
+        template.hasResourceProperties(
+                "AWS::WAFv2::WebACL",
+                Match.objectLike(Map.of("Rules", Match.arrayWith(List.of(Match.objectLike(rule))))));
+    }
+
+    @Test
+    void everyWebAclRuleHasItsOwnPriority() {
+        Template template = Template.fromStack(synthEdgeStack());
+        template.findResources("AWS::WAFv2::WebACL").values().forEach(webAcl -> {
+            @SuppressWarnings("unchecked")
+            var rules = (List<Map<String, Object>>) ((Map<String, Object>) webAcl.get("Properties")).get("Rules");
+            var priorities = rules.stream().map(rule -> rule.get("Priority")).toList();
+            assertEquals(priorities.size(), new java.util.HashSet<>(priorities).size(), "priorities " + priorities);
+        });
+    }
+
+    @Test
     void reviewerSignInPostsAreCountedPerAddressAndBlockedPastTenInFiveMinutes() {
         Template template = Template.fromStack(synthEdgeStack());
         Map<String, Object> rateStatement = Map.of(
@@ -691,5 +747,85 @@ class EdgeStackTest {
                         Map.of(
                                 "CorsConfig",
                                 Map.of("AccessControlAllowOrigins", Map.of("Items", List.of(ownOrigin)))))));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> distributionConfig(final Template template) {
+        Map<String, Map<String, Object>> distributions = template.findResources("AWS::CloudFront::Distribution");
+        assertEquals(1, distributions.size());
+        Map<String, Object> properties =
+                (Map<String, Object>) distributions.values().iterator().next().get("Properties");
+        return (Map<String, Object>) properties.get("DistributionConfig");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void pageRouterRunsOnTheViewerRequestOfTheDefaultBehaviourAndOnNoOtherBehaviour() {
+        Template template = Template.fromStack(synthEdgeStack());
+
+        template.resourceCountIs("AWS::CloudFront::Function", 1);
+        template.hasResourceProperties(
+                "AWS::CloudFront::Function",
+                Match.objectLike(Map.of(
+                        "Name",
+                        SubmitSharedNames.forDocs().appResourceNamePrefix + "-page-router",
+                        "AutoPublish",
+                        true,
+                        "FunctionConfig",
+                        Match.objectLike(Map.of("Runtime", "cloudfront-js-2.0")))));
+        Map<String, Object> config = distributionConfig(template);
+        Map<String, Object> defaultBehaviour = (Map<String, Object>) config.get("DefaultCacheBehavior");
+        List<Map<String, Object>> associations =
+                (List<Map<String, Object>>) defaultBehaviour.get("FunctionAssociations");
+        assertEquals(1, associations.size());
+        assertEquals("viewer-request", associations.get(0).get("EventType"));
+        for (Map<String, Object> behaviour : (List<Map<String, Object>>) config.get("CacheBehaviors")) {
+            assertFalse(
+                    behaviour.containsKey("FunctionAssociations"),
+                    behaviour.get("PathPattern") + " runs a CloudFront Function");
+            assertFalse(
+                    behaviour.containsKey("LambdaFunctionAssociations"),
+                    behaviour.get("PathPattern") + " runs a Lambda@Edge function");
+        }
+        assertFalse(defaultBehaviour.containsKey("LambdaFunctionAssociations"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void apiMcpAndOauthPathsReachTheApiOriginWithNoFunctionAndNoErrorResponseSoTheirErrorsStayJson() {
+        Template template = Template.fromStack(synthEdgeStack("prod"));
+        Map<String, Object> config = distributionConfig(template);
+
+        assertFalse(config.containsKey("CustomErrorResponses"));
+        String webOriginId = (String) ((Map<String, Object>) config.get("DefaultCacheBehavior")).get("TargetOriginId");
+        List<String> apiPatterns =
+                List.of("/api/v1/*", "/api/v1/diya-gl/*", "/api/v1/books/*", "/mcp", "/mcp/*", "/.well-known/oauth-*");
+        List<String> seen = new java.util.ArrayList<>();
+        for (Map<String, Object> behaviour : (List<Map<String, Object>>) config.get("CacheBehaviors")) {
+            String pathPattern = (String) behaviour.get("PathPattern");
+            if (apiPatterns.contains(pathPattern)) {
+                seen.add(pathPattern);
+                assertNotEquals(webOriginId, behaviour.get("TargetOriginId"), pathPattern);
+                assertFalse(behaviour.containsKey("FunctionAssociations"), pathPattern);
+            }
+        }
+        assertEquals(apiPatterns.size(), seen.size(), "missing API behaviours: " + seen);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void pageRouterCodeIsWrittenFromThePublishedPagesAndThe404Page() {
+        Template template = Template.fromStack(synthEdgeStack());
+        Map<String, Object> properties = (Map<String, Object>) template.findResources("AWS::CloudFront::Function")
+                .values()
+                .iterator()
+                .next()
+                .get("Properties");
+        String expected = co.uk.diyaccounting.submit.utils.PageRouterFunctionCode.fromDisk(
+                java.nio.file.Path.of("web/public").toAbsolutePath(),
+                java.nio.file.Path.of("app/functions/edge").toAbsolutePath());
+
+        assertEquals(expected, properties.get("FunctionCode"));
+        assertTrue(expected.contains("<h1>Page not found</h1>"), "the 404 page body");
     }
 }

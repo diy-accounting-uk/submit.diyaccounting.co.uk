@@ -1,6 +1,22 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
+// The page's address is registered with Cognito, so it has no Welsh copy: its static text is written here.
+document.title = siteText("login.callback-title", "Signing you in - DIY Accounting Submit");
+document.querySelector("header h1").textContent = siteText("login.callback-heading", "Signing you in");
+document.querySelector("header .subtitle").textContent = siteText("login.callback-subtitle", "This takes a few seconds.");
+document.querySelector(".auth-panel p").textContent = siteText(
+  "login.callback-note",
+  "This page sends you on when you are signed in. If nothing happens, go to the home page.",
+);
+document.getElementById("homeBtn").textContent = siteText("widget.callback-home", "Go to the home page");
+
 // Check for authentication callback
 function checkAuthCallback() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -20,7 +36,7 @@ function checkAuthCallback() {
       return;
     }
     sessionStorage.removeItem("cognito_link_retry");
-    showStatus(`Authentication error: ${errorDescription || error}`, "error");
+    showStatus(siteText("login.callback-auth-error", "Authentication error: {reason}", { reason: errorDescription || error }), "error");
   }
 }
 
@@ -41,7 +57,7 @@ function shouldRetryAfterLink(errorDescription) {
 async function restartSignInAfterLink() {
   const identityProvider = sessionStorage.getItem("cognito_identity_provider");
   sessionStorage.setItem("cognito_link_retry", "1");
-  showStatus("Linking your sign-in to your existing account...", "info");
+  showStatus(siteText("login.callback-linking", "Linking your sign-in to your existing account..."), "info");
   try {
     // crypto-utils.js is a module script, so it has run only once the document has loaded.
     if (document.readyState === "loading") {
@@ -61,7 +77,7 @@ async function restartSignInAfterLink() {
     window.location.replace(authUrl);
   } catch (err) {
     console.error("Failed to restart sign-in after an account link:", err);
-    showStatus("Sign-in could not be completed. Please try logging in again.", "error");
+    showStatus(siteText("login.callback-not-completed", "Sign-in could not be completed. Please try logging in again."), "error");
   }
 }
 
@@ -104,7 +120,7 @@ async function handleAuthCallback(code, state) {
         receivedState: state ? state.substring(0, 8) + "..." : "none",
         hasStoredState: !!storedState,
       });
-      showStatus("Security validation failed. Please try logging in again.", "error");
+      showStatus(siteText("login.callback-security-failed", "Security validation failed. Please try logging in again."), "error");
       sessionStorage.removeItem("cognito_oauth_state");
       hideLoading();
       return;
@@ -118,7 +134,7 @@ async function handleAuthCallback(code, state) {
     sessionStorage.removeItem("cognito_pkce_verifier");
     if (!codeVerifier) {
       console.error("PKCE code verifier missing from sessionStorage");
-      showStatus("Security validation failed. Please try logging in again.", "error");
+      showStatus(siteText("login.callback-security-failed", "Security validation failed. Please try logging in again."), "error");
       hideLoading();
       return;
     }
@@ -128,12 +144,12 @@ async function handleAuthCallback(code, state) {
     sessionStorage.removeItem("cognito_redirect_uri");
     if (!redirectUri) {
       console.error("Redirect URI missing from sessionStorage");
-      showStatus("Security validation failed. Please try logging in again.", "error");
+      showStatus(siteText("login.callback-security-failed", "Security validation failed. Please try logging in again."), "error");
       hideLoading();
       return;
     }
 
-    showStatus("Exchanging authorization code for access token...", "info");
+    showStatus(siteText("login.callback-exchanging", "Exchanging authorization code for access token..."), "info");
 
     const url = `/api/v1/cognito/token`;
     const body = {
@@ -185,7 +201,10 @@ async function handleAuthCallback(code, state) {
           hasStoredNonce: !!storedNonce,
         });
         sessionStorage.removeItem("cognito_oauth_nonce");
-        showStatus("Security validation failed (nonce mismatch). Please try logging in again.", "error");
+        showStatus(
+          siteText("login.callback-nonce-failed", "Security validation failed (nonce mismatch). Please try logging in again."),
+          "error",
+        );
         hideLoading();
         return;
       }
@@ -224,7 +243,7 @@ async function handleAuthCallback(code, state) {
     if (typeof gtag === "function") {
       gtag("event", "login", { method: loginProvider });
     }
-    showStatus("Authenticated successfully. Fetching bundles...", "info");
+    showStatus(siteText("login.callback-fetching-bundles", "Authenticated successfully. Fetching bundles..."), "info");
 
     // Extract MFA status from the ID token
     // 1. Check amr (Authentication Methods Reference) claim — standard OIDC, provided by some IdPs
@@ -294,7 +313,7 @@ async function handleAuthCallback(code, state) {
     localStorage.setItem("loginProvider", loginProvider);
 
     // No longer store bundles in localStorage; bundles will be fetched by pages as needed from /api/v1/bundle
-    showStatus("Authenticated successfully. Redirecting...", "info");
+    showStatus(siteText("login.callback-redirecting", "Authenticated successfully. Redirecting..."), "info");
 
     // Clear URL parameters
     window.history.replaceState({}, document.title, window.location.pathname);
@@ -312,7 +331,7 @@ async function handleAuthCallback(code, state) {
     window.location.replace(redirectUrl);
   } catch (error) {
     console.error("Authentication callback error:", error);
-    showStatus(`Authentication failed: ${error.message}`, "error");
+    showStatus(siteText("login.callback-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
   } finally {
     hideLoading();
   }

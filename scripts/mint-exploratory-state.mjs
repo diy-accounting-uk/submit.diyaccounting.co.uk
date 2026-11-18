@@ -129,7 +129,7 @@ export async function signIn(page, baseUrl, credentials) {
     await answerTotpChallenge(page, credentials.totpSecret);
   }
   await page.waitForURL((url) => url.origin === appOrigin && !url.pathname.includes("loginWithCognitoCallback"), { timeout: 60000 });
-  await page.getByText("Logged in as").waitFor({ state: "visible", timeout: 30000 });
+  await page.locator("a.login-link", { hasText: "Sign out" }).waitFor({ state: "visible", timeout: 30000 });
 }
 
 export async function main(argv = process.argv.slice(2)) {

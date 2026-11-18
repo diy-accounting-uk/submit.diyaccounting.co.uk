@@ -32,6 +32,10 @@ body.page-dashboard {
   font-style: italic;
 }
 
+.observation-class-toggle {
+  margin-top: 0.5rem;
+}
+
 table.observations {
   margin: 0;
 }
@@ -213,12 +217,20 @@ table.observations thead tr.last-updated th.last-updated-cell,
   overflow-x: auto;
 }
 
+.data-scroll + .data-scroll {
+  margin-top: var(--space-4);
+}
+
 #dataTablesTable th:nth-child(n + 2):not(:last-child),
 #dataTablesTable td:nth-child(n + 2):not(:last-child),
 #dataSplitTable th:nth-child(n + 2),
 #dataSplitTable td:nth-child(n + 2),
 #dataBucketsTable th:nth-child(n + 2),
-#dataBucketsTable td:nth-child(n + 2) {
+#dataBucketsTable td:nth-child(n + 2),
+#dataBucketsSplitTable th:nth-child(n + 2),
+#dataBucketsSplitTable td:nth-child(n + 2),
+#dataAnalyticsTable th:nth-child(n + 2),
+#dataAnalyticsTable td:nth-child(n + 2) {
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -451,6 +463,30 @@ body.page-dashboard #mainContent {
 }
 
 .chart-empty,
+/* The cohort table under the Retention graph scrolls inside its card when its months are wider. */
+.chart-cohort {
+  margin: var(--space-2) 0;
+  overflow-x: auto;
+}
+
+.chart-cohort-table caption {
+  text-align: left;
+  font-size: var(--step--1);
+  color: var(--c-ink-muted);
+}
+
+.chart-cohort-table td,
+.chart-cohort-table th[scope="col"] {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.chart-cohort-table th[scope="col"]:first-child,
+.chart-cohort-table th[scope="row"] {
+  text-align: left;
+  white-space: nowrap;
+}
+
 .chart-note {
   margin: var(--space-2) 0;
   color: var(--c-ink-muted);

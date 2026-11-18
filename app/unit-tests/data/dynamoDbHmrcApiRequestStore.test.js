@@ -113,6 +113,33 @@ describe("dynamoDbHmrcApiRequestStore", () => {
     expect(mockSend).toHaveBeenCalledTimes(1);
   });
 
+  test.each([
+    ["synthetic-local@test.diyaccounting.co.uk", 2],
+    ["someone@example.com", 28],
+  ])("a request signed in as %s expires after %i days", async (email, days) => {
+    process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = "unit-test-hmrc-requests";
+    process.env.AWS_REGION = process.env.AWS_REGION || "eu-west-2";
+    const { putHmrcApiRequest } = await import("@app/data/dynamoDbHmrcApiRequestRepository.js");
+    let item;
+    mockSend.mockImplementation(async (cmd) => {
+      item = cmd.input.Item;
+      return {};
+    });
+
+    await context.run(new Map(), async () => {
+      context.set("userEmail", email);
+      await putHmrcApiRequest(`sub-of-${email}`, {
+        url: "https://hmrc.example/api",
+        httpRequest: { method: "GET", headers: {}, body: {} },
+        httpResponse: { statusCode: 200, headers: {}, body: {} },
+        duration: 1,
+      });
+    });
+
+    const span = item.ttl - Math.floor(new Date(item.createdAt).getTime() / 1000);
+    expect(span).toBe(days * 86400);
+  });
+
   test("masks sensitive data in httpRequest and httpResponse before storing", async () => {
     // Arrange
     process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = "unit-test-hmrc-requests";

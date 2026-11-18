@@ -7,6 +7,13 @@
 // ID and password are read from the page when the return is submitted, sent once and held nowhere
 // else.
 
+// page-chrome.js gives window.siteText, the text in the chosen language. Without it (a test that
+// stubs the chrome) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 import {
   ACCOUNTS_REGIMES,
   ACCOUNTS_TEXT_FIELDS,
@@ -73,21 +80,33 @@ const PLACEHOLDER_TEXT = "Placeholder";
 // Each computation line in the order HMRC's computation prints it: a deduction shows in
 // brackets, a subtotal has a rule above it and the total a double rule below it.
 const COMPUTATION_LINES = [
-  { field: "profitLossPerAccounts", meaning: "Profit or loss per the accounts" },
-  { field: "nonTradingLoanRelationshipCredits", meaning: "Less: non-trading loan relationship credits", deduction: true },
-  { field: "depreciation", meaning: "Add: depreciation" },
-  { field: "amortisation", meaning: "Add: amortisation" },
-  { field: "entertaining", meaning: "Add: entertaining" },
-  { field: "donations", meaning: "Add: donations" },
-  { field: "adjustedProfitBeforeAccountingPeriodAdjustments", meaning: "Adjusted profit before the time apportionment", style: "subtotal" },
-  { field: "timeApportionment", meaning: "Time apportionment", deduction: false },
-  { field: "adjustedProfitBeforeCapitalAllowances", meaning: "Adjusted profit before capital allowances", style: "subtotal" },
-  { field: "totalCapitalAllowances", meaning: "Less: total capital allowances", deduction: true },
-  { field: "adjustedProfit", meaning: "Adjusted profit", style: "total" },
+  { field: "profitLossPerAccounts", meaning: siteText("ch.ct.line-profit-per-accounts", "Profit or loss per the accounts") },
+  {
+    field: "nonTradingLoanRelationshipCredits",
+    meaning: siteText("ch.ct.line-loan-credits", "Less: non-trading loan relationship credits"),
+    deduction: true,
+  },
+  { field: "depreciation", meaning: siteText("ch.ct.line-depreciation", "Add: depreciation") },
+  { field: "amortisation", meaning: siteText("ch.ct.line-amortisation", "Add: amortisation") },
+  { field: "entertaining", meaning: siteText("ch.ct.line-entertaining", "Add: entertaining") },
+  { field: "donations", meaning: siteText("ch.ct.line-donations", "Add: donations") },
+  {
+    field: "adjustedProfitBeforeAccountingPeriodAdjustments",
+    meaning: siteText("ch.ct.line-before-apportionment", "Adjusted profit before the time apportionment"),
+    style: "subtotal",
+  },
+  { field: "timeApportionment", meaning: siteText("ch.ct.line-time-apportionment", "Time apportionment"), deduction: false },
+  {
+    field: "adjustedProfitBeforeCapitalAllowances",
+    meaning: siteText("ch.ct.line-before-allowances", "Adjusted profit before capital allowances"),
+    style: "subtotal",
+  },
+  { field: "totalCapitalAllowances", meaning: siteText("ch.ct.line-total-allowances", "Less: total capital allowances"), deduction: true },
+  { field: "adjustedProfit", meaning: siteText("ch.ct.line-adjusted-profit", "Adjusted profit"), style: "total" },
 ];
 
-const RETURN_TO_REVIEW = "Return to the review";
-const PREVIEW_THE_RETURN = "Preview the return";
+const RETURN_TO_REVIEW = siteText("ch.ct.return-to-review", "Return to the review");
+const PREVIEW_THE_RETURN = siteText("ch.ct.preview-the-return", "Preview the return");
 const VIEW_HASH = { companyView: "company", formView: "form", previewView: "review", resultView: "result" };
 
 let company = null;
@@ -226,8 +245,14 @@ function hintOf(field) {
   const anchor = guideAnchorOf(field);
   if (!field.hint && !anchor) hint.hidden = true;
   if (anchor) {
-    const link = create("a", { href: guideUrl(anchor), target: "_blank", rel: "noopener" }, "Company Tax Return guide");
-    hint.append(field.hint ? " " : "", link, ".");
+    const link = create(
+      "a",
+      { href: guideUrl(anchor), target: "_blank", rel: "noopener" },
+      siteText("ch.ct.guide-link", "Company Tax Return guide"),
+    );
+    // GOV.UK's guide is in English only, so a Welsh reader is told before following the link.
+    const inEnglish = window.siteLanguage?.chrome?.() === "cy" ? [" ", create("span", { class: "lang-mark" }, "(yn Saesneg)")] : [];
+    hint.append(field.hint ? " " : "", link, ...inEnglish, ".");
   }
   return hint;
 }
@@ -297,8 +322,8 @@ function choiceGroup(field) {
     create("p", { id: field.id, class: "field-label", tabindex: "-1" }, field.label),
     hint,
     errorHost(field.id),
-    radio("no", "No", field.default !== "yes"),
-    radio("yes", "Yes", field.default === "yes"),
+    radio("no", siteText("ch.ct.no", "No"), field.default !== "yes"),
+    radio("yes", siteText("ch.ct.yes", "Yes"), field.default === "yes"),
   );
 }
 
@@ -311,8 +336,8 @@ function datesGroup(field) {
     create("p", { id: `${field.id}-label`, class: "field-label" }, field.label),
     hintOf(field),
     errorHost(field.id),
-    dateField("periodStart", "Period start"),
-    dateField("periodEnd", "Period end"),
+    dateField("periodStart", siteText("ch.ct.period-start", "Period start")),
+    dateField("periodEnd", siteText("ch.ct.period-end", "Period end")),
   );
 }
 
@@ -340,7 +365,7 @@ const PERIOD_HINT_FIELDS = new Set(["annualInvestmentAllowance", "mainPoolAllowa
 
 function returnTag(group, part) {
   const label = group.querySelector("label, p.field-label");
-  label?.append(create("span", { class: "long-only", hidden: "" }, ` (return ${part})`));
+  label?.append(create("span", { class: "long-only", hidden: "" }, siteText("ch.ct.return-tag", " (return {part})", { part })));
 }
 
 function withPeriodHint(group, id, part) {
@@ -379,7 +404,7 @@ function ledger({ caption, columns, rows, className }) {
   const head = create(
     "tr",
     {},
-    create("th", { scope: "col" }, caption ? visuallyHidden("Line") : "Line"),
+    create("th", { scope: "col" }, caption ? visuallyHidden(siteText("ch.ct.column-line", "Line")) : siteText("ch.ct.column-line", "Line")),
     ...columns.map((column) =>
       create("th", { scope: "col", class: ["ledger__figure", column.className].filter(Boolean).join(" ") }, column.title),
     ),
@@ -402,8 +427,13 @@ function ledger({ caption, columns, rows, className }) {
 }
 
 const YEAR_COLUMNS = [
-  { key: "current", title: "This year", when: "this year" },
-  { key: "prior", title: "Last year", when: "last year", className: "ledger__prior" },
+  { key: "current", title: siteText("ch.ct.this-year-title", "This year"), when: siteText("ch.ct.this-year", "this year") },
+  {
+    key: "prior",
+    title: siteText("ch.ct.last-year-title", "Last year"),
+    when: siteText("ch.ct.last-year", "last year"),
+    className: "ledger__prior",
+  },
 ];
 
 function yearLedger(fields, idOf) {
@@ -412,17 +442,20 @@ function yearLedger(fields, idOf) {
     columns: YEAR_COLUMNS,
     rows: fields.map(([field, label]) => ({
       label,
-      cells: YEAR_COLUMNS.map(({ key, when }) => ({ id: idOf(key, field), label: `${label}, ${when}` })),
+      cells: YEAR_COLUMNS.map(({ key, when }) => ({
+        id: idOf(key, field),
+        label: siteText("ch.ct.cell-label", "{label}, {when}", { label, when }),
+      })),
     })),
   });
 }
 
 // The note's six movements as two columns, cost and depreciation, in three rows.
-const NOTE_COLUMNS = [{ title: "Cost" }, { title: "Depreciation" }];
+const NOTE_COLUMNS = [{ title: siteText("ch.ct.note-cost", "Cost") }, { title: siteText("ch.ct.note-depreciation", "Depreciation") }];
 const NOTE_ROWS = [
-  ["At the start of the period", "costAtStart", "depreciationAtStart"],
-  ["Added in the period", "additions", "depreciationCharge"],
-  ["Taken out on disposals", "disposals", "depreciationOnDisposals"],
+  [siteText("ch.ct.note-at-start", "At the start of the period"), "costAtStart", "depreciationAtStart"],
+  [siteText("ch.ct.note-added", "Added in the period"), "additions", "depreciationCharge"],
+  [siteText("ch.ct.note-disposals", "Taken out on disposals"), "disposals", "depreciationOnDisposals"],
 ];
 
 function noteLedger(className, title) {
@@ -450,9 +483,11 @@ function accountsTextGroup({ id, label, type }) {
   return textGroup({ id, label, type, hint: "" });
 }
 
-const SEND_TO_HMRC_ONLY_HINT = "The accounts go to HMRC with the Company Tax Return.";
-const SEND_TO_BOTH_HINT =
-  "To file at both, Companies House gets the accounts first. When it accepts them, the Company Tax Return goes to HMRC with the same figures.";
+const SEND_TO_HMRC_ONLY_HINT = siteText("ch.ct.send-hmrc-only-hint", "The accounts go to HMRC with the Company Tax Return.");
+const SEND_TO_BOTH_HINT = siteText(
+  "ch.ct.send-both-hint",
+  "To file at both, Companies House gets the accounts first. When it accepts them, the Company Tax Return goes to HMRC with the same figures.",
+);
 
 // Where the accounts go: HMRC with the return, or Companies House first and then HMRC. The joint
 // choice stays hidden and disabled until the catalogue says it is offered in this environment.
@@ -473,15 +508,19 @@ function sendToSection() {
   return create(
     "section",
     { id: "section-sendTo", class: "form-section" },
-    create("h3", {}, "Where the accounts go"),
+    create("h3", {}, siteText("ch.ct.where-accounts-go", "Where the accounts go")),
     create(
       "div",
       { class: "form-group" },
-      create("p", { id: "sendTo", class: "field-label", tabindex: "-1" }, "Where are you sending these accounts?"),
+      create(
+        "p",
+        { id: "sendTo", class: "field-label", tabindex: "-1" },
+        siteText("ch.ct.where-sending", "Where are you sending these accounts?"),
+      ),
       create("p", { id: "sendTo-hint", class: "hint" }, SEND_TO_HMRC_ONLY_HINT),
       errorHost("sendTo"),
-      radio("sendToHmrc", "hmrc", "To HMRC with the Company Tax Return", true),
-      radio("sendToBoth", "both", "To Companies House and to HMRC with the Company Tax Return", false),
+      radio("sendToHmrc", "hmrc", siteText("ch.ct.send-to-hmrc", "To HMRC with the Company Tax Return"), true),
+      radio("sendToBoth", "both", siteText("ch.ct.send-to-both", "To Companies House and to HMRC with the Company Tax Return"), false),
     ),
   );
 }
@@ -537,15 +576,22 @@ function companiesHouseCopyGroup() {
   return create(
     "div",
     { id: "companiesHouseCopyGroup", class: "form-group", hidden: "" },
-    create("p", { id: "companiesHouseCopy", class: "field-label", tabindex: "-1" }, "Which copy goes to Companies House?"),
+    create(
+      "p",
+      { id: "companiesHouseCopy", class: "field-label", tabindex: "-1" },
+      siteText("ch.ct.which-copy", "Which copy goes to Companies House?"),
+    ),
     create(
       "p",
       { id: "companiesHouseCopy-hint", class: "hint" },
-      "Companies House publishes what it receives. Filleted accounts leave the profit and loss account and the directors' report out of the public copy. HMRC gets the full accounts either way.",
+      siteText(
+        "ch.ct.which-copy-hint",
+        "Companies House publishes what it receives. Filleted accounts leave the profit and loss account and the directors' report out of the public copy. HMRC gets the full accounts either way.",
+      ),
     ),
     errorHost("companiesHouseCopy"),
-    radio("copyFull", "full", "Full accounts", true),
-    radio("copyFilleted", "filleted", "Filleted accounts", false),
+    radio("copyFull", "full", siteText("ch.ct.full-accounts", "Full accounts"), true),
+    radio("copyFilleted", "filleted", siteText("ch.ct.filleted-accounts", "Filleted accounts"), false),
   );
 }
 
@@ -553,7 +599,10 @@ function companiesHouseMicroNote() {
   return create(
     "p",
     { id: "companiesHouseMicroNote", class: "hint", hidden: "" },
-    "Companies House receives the micro-entity balance sheet and notes. The profit and loss account goes to HMRC only.",
+    siteText(
+      "ch.ct.micro-note",
+      "Companies House receives the micro-entity balance sheet and notes. The profit and loss account goes to HMRC only.",
+    ),
   );
 }
 
@@ -562,11 +611,18 @@ function regimeGroup() {
   return create(
     "div",
     { class: "form-group" },
-    create("p", { id: "accountsRegime", class: "field-label", tabindex: "-1" }, "Which accounts does the company prepare?"),
+    create(
+      "p",
+      { id: "accountsRegime", class: "field-label", tabindex: "-1" },
+      siteText("ch.ct.which-accounts", "Which accounts does the company prepare?"),
+    ),
     create(
       "p",
       { id: "accountsRegime-hint", class: "hint" },
-      "A micro-entity meets two of these: turnover up to £1 million, a balance sheet total up to £500,000, and 10 employees or fewer. A book picks this for you.",
+      siteText(
+        "ch.ct.which-accounts-hint",
+        "A micro-entity meets two of these: turnover up to £1 million, a balance sheet total up to £500,000, and 10 employees or fewer. A book picks this for you.",
+      ),
     ),
     errorHost("accountsRegime"),
     ...ACCOUNTS_REGIMES.map(({ value, id, label }) =>
@@ -596,7 +652,10 @@ function microLedger(fields, className) {
     columns: YEAR_COLUMNS,
     rows: fields.map(([field, label]) => ({
       label,
-      cells: YEAR_COLUMNS.map(({ key, when }) => ({ id: microId(key, field), label: `${label}, ${when}` })),
+      cells: YEAR_COLUMNS.map(({ key, when }) => ({
+        id: microId(key, field),
+        label: siteText("ch.ct.cell-label", "{label}, {when}", { label, when }),
+      })),
     })),
   });
 }
@@ -606,20 +665,23 @@ function accountsSection() {
     create(
       "p",
       { class: "hint" },
-      "HMRC takes the full accounts with the return, so they are part of this form. Enter whole pounds, for example 600 or 1,200.",
+      siteText(
+        "ch.ct.accounts-intro",
+        "HMRC takes the full accounts with the return, so they are part of this form. Enter whole pounds, for example 600 or 1,200.",
+      ),
     ),
     regimeGroup(),
     companiesHouseCopyGroup(),
     companiesHouseMicroNote(),
-    checkboxGroup("includeComparatives", "Include last year's figures"),
+    checkboxGroup("includeComparatives", siteText("ch.ct.include-comparatives", "Include last year's figures")),
     forRegime(
       "small",
-      create("h4", {}, "Profit and loss account"),
+      create("h4", {}, siteText("ch.ct.profit-and-loss", "Profit and loss account")),
       yearLedger(PROFIT_AND_LOSS_FIELDS, profitAndLossId),
-      create("h4", {}, "Balance sheet"),
+      create("h4", {}, siteText("ch.ct.balance-sheet", "Balance sheet")),
       yearLedger(BALANCE_SHEET_FIELDS, balanceSheetId),
-      create("h4", {}, "Tangible fixed assets note"),
-      checkboxGroup("includeFixedAssetNote", "Include the tangible fixed assets note"),
+      create("h4", {}, siteText("ch.ct.fixed-assets-note", "Tangible fixed assets note")),
+      checkboxGroup("includeFixedAssetNote", siteText("ch.ct.include-fixed-assets-note", "Include the tangible fixed assets note")),
       create(
         "div",
         { id: "fixedAssetNoteFields", style: "display: none" },
@@ -628,14 +690,22 @@ function accountsSection() {
     ),
     forRegime(
       "micro",
-      create("h4", {}, "Profit and loss account"),
-      create("p", { class: "hint" }, "Profit before tax and the profit for the year are worked out from these lines."),
+      create("h4", {}, siteText("ch.ct.profit-and-loss", "Profit and loss account")),
+      create(
+        "p",
+        { class: "hint" },
+        siteText("ch.ct.micro-profit-hint", "Profit before tax and the profit for the year are worked out from these lines."),
+      ),
       microLedger(MICRO_PROFIT_AND_LOSS_FIELDS, "ledger--years ledger--one-year"),
-      create("h4", {}, "Balance sheet"),
-      create("p", { class: "hint" }, "Micro-entity accounts always show last year's balance sheet beside this year's."),
+      create("h4", {}, siteText("ch.ct.balance-sheet", "Balance sheet")),
+      create(
+        "p",
+        { class: "hint" },
+        siteText("ch.ct.micro-balance-hint", "Micro-entity accounts always show last year's balance sheet beside this year's."),
+      ),
       microLedger(MICRO_BALANCE_SHEET_FIELDS),
     ),
-    create("h4", {}, "About the accounts"),
+    create("h4", {}, siteText("ch.ct.about-accounts", "About the accounts")),
     ...ACCOUNTS_TEXT_FIELDS.map((field) => (field.smallOnly ? forRegime("small", accountsTextGroup(field)) : accountsTextGroup(field))),
   ];
 }
@@ -644,10 +714,18 @@ function workedTaxPanel() {
   return create(
     "section",
     { "id": WORKED_TAX_ID, "class": "worked-tax", "aria-labelledby": "workedTaxHeading", "tabindex": "-1" },
-    create("h3", { id: "workedTaxHeading" }, "Tax worked out from your answers"),
-    create("p", { class: "hint" }, "These boxes are worked out and cannot be typed. Each shows the rule that gives it."),
+    create("h3", { id: "workedTaxHeading" }, siteText("ch.ct.worked-heading", "Tax worked out from your answers")),
+    create(
+      "p",
+      { class: "hint" },
+      siteText("ch.ct.worked-hint", "These boxes are worked out and cannot be typed. Each shows the rule that gives it."),
+    ),
     errorHost(WORKED_TAX_ID),
-    create("p", { id: "workedTaxEmpty", class: "hint" }, "Fill in the period and the accounts and the tax appears here."),
+    create(
+      "p",
+      { id: "workedTaxEmpty", class: "hint" },
+      siteText("ch.ct.worked-empty", "Fill in the period and the accounts and the tax appears here."),
+    ),
     create("dl", { id: "workedTaxRows", class: "worked-tax__list" }),
     create("div", { id: "workedTaxLong", class: "worked-tax__returns", hidden: "" }),
   );
@@ -655,18 +733,24 @@ function workedTaxPanel() {
 
 // The capital allowance boxes in the order of the CT600, grouped by the class of asset they claim for.
 const ALLOWANCE_CLASSES = [
-  { title: "Annual investment allowance", ids: ["annualInvestmentAllowance", "annualInvestmentAllowanceOutsideTrade"] },
-  { title: "Main pool", ids: ["mainPoolAllowances", "mainPoolBalancingCharges"] },
-  { title: "Full expensing", ids: ["fullExpensingAllowances", "fullExpensingBalancingCharges"] },
   {
-    title: "Special rate allowance",
+    title: siteText("ch.ct.class-aia", "Annual investment allowance"),
+    ids: ["annualInvestmentAllowance", "annualInvestmentAllowanceOutsideTrade"],
+  },
+  { title: siteText("ch.ct.class-main-pool", "Main pool"), ids: ["mainPoolAllowances", "mainPoolBalancingCharges"] },
+  { title: siteText("ch.ct.class-full-expensing", "Full expensing"), ids: ["fullExpensingAllowances", "fullExpensingBalancingCharges"] },
+  {
+    title: siteText("ch.ct.class-special-rate", "Special rate allowance"),
     ids: ["specialRateAllowances", "specialRateBalancingCharges", "specialRateAllowanceExpenditure"],
   },
   {
-    title: "Special rate pool",
+    title: siteText("ch.ct.class-special-rate-pool", "Special rate pool"),
     ids: ["specialRatePoolAllowances", "specialRatePoolAnnualInvestmentAllowance", "specialRatePoolBalancingCharges"],
   },
-  { title: "First year allowance and other plant", ids: ["firstYearAllowanceExpenditure", "otherMachineryAndPlantExpenditure"] },
+  {
+    title: siteText("ch.ct.class-first-year", "First year allowance and other plant"),
+    ids: ["firstYearAllowanceExpenditure", "otherMachineryAndPlantExpenditure"],
+  },
 ];
 
 // Each class gets a heading and its boxes side by side where the width allows, so the section reads as six groups.
@@ -710,25 +794,37 @@ function loanRow(row, part) {
   const group = create(
     "div",
     { "class": "loan-row", "data-loan-row": String(row), "data-part": String(part) },
-    textGroup({ id: loanId("Name", row, part), label: "Name of participator or associate", type: "text", maxlength: 56 }),
-    moneyGroup(loanId("Amount", row, part), "Amount still owed at the end of the period", "For example, £12,000"),
+    textGroup({
+      id: loanId("Name", row, part),
+      label: siteText("ch.ct.loan-name", "Name of participator or associate"),
+      type: "text",
+      maxlength: 56,
+    }),
+    moneyGroup(
+      loanId("Amount", row, part),
+      siteText("ch.ct.loan-amount", "Amount still owed at the end of the period"),
+      siteText("ch.ct.loan-amount-hint", "For example, £12,000"),
+    ),
     create(
       "div",
       { "class": "loan-row__lent", "data-loan-lent": String(row), "hidden": "" },
       moneyGroup(
         loanId("Lent", row, part),
-        "Of this, the amount lent on or after the rate change",
-        "Leave it empty when none was lent after the change",
+        siteText("ch.ct.loan-lent", "Of this, the amount lent on or after the rate change"),
+        siteText("ch.ct.loan-lent-hint", "Leave it empty when none was lent after the change"),
       ),
     ),
     textGroup({
       id: loanId("Rate", row, part),
-      label: "Section 455 rate for this loan, if you want to use another (%)",
+      label: siteText("ch.ct.loan-rate", "Section 455 rate for this loan, if you want to use another (%)"),
       type: "text",
-      hint: "Leave it empty to use the rate shown with the worked tax. A rate you enter is not checked against the tax data.",
+      hint: siteText(
+        "ch.ct.loan-rate-hint",
+        "Leave it empty to use the rate shown with the worked tax. A rate you enter is not checked against the tax data.",
+      ),
       inputmode: "decimal",
     }),
-    removeButton("loan", row, part, "Remove this loan"),
+    removeButton("loan", row, part, siteText("ch.ct.remove-loan", "Remove this loan")),
   );
   registerTargets(group);
   return group;
@@ -740,15 +836,25 @@ function repaymentRow(row, part) {
   const group = create(
     "div",
     { "class": "loan-row", "data-repayment-row": String(row), "data-part": String(part) },
-    create("div", { class: "form-group" }, create("label", { for: nameId }, "Participator"), errorHost(nameId), select),
-    textGroup({ id: repaymentId("Date", row, part), label: "Date", type: "date" }),
-    moneyGroup(repaymentId("Repaid", row, part), "Amount repaid", "Leave it empty when none was repaid"),
+    create(
+      "div",
+      { class: "form-group" },
+      create("label", { for: nameId }, siteText("ch.ct.participator", "Participator")),
+      errorHost(nameId),
+      select,
+    ),
+    textGroup({ id: repaymentId("Date", row, part), label: siteText("ch.ct.date", "Date"), type: "date" }),
+    moneyGroup(
+      repaymentId("Repaid", row, part),
+      siteText("ch.ct.amount-repaid", "Amount repaid"),
+      siteText("ch.ct.amount-repaid-hint", "Leave it empty when none was repaid"),
+    ),
     moneyGroup(
       repaymentId("Released", row, part),
-      "Amount released or written off",
-      "Leave it empty when none was released or written off",
+      siteText("ch.ct.amount-released", "Amount released or written off"),
+      siteText("ch.ct.amount-released-hint", "Leave it empty when none was released or written off"),
     ),
-    removeButton("repayment", row, part, "Remove this repayment"),
+    removeButton("repayment", row, part, siteText("ch.ct.remove-repayment", "Remove this repayment")),
   );
   registerTargets(group);
   return group;
@@ -778,29 +884,32 @@ function loansPartBody(part, questions) {
     create(
       "div",
       { id: id("loansDetail"), hidden: "" },
-      create("h4", {}, "Loans still owed at the end of the period"),
+      create("h4", {}, siteText("ch.ct.loans-owed", "Loans still owed at the end of the period")),
       create("div", { id: id("loanRows") }),
       create(
         "button",
         { "type": "button", "id": id("addLoanBtn"), "class": "secondary", "data-part": String(part) },
-        "Add another participator",
+        siteText("ch.ct.add-participator", "Add another participator"),
       ),
       releasedBeforeEnd,
       repaidSince,
       create(
         "div",
         { id: id("repaymentsDetail"), hidden: "" },
-        create("h4", {}, "Repayments, releases and write-offs since the period end"),
+        create("h4", {}, siteText("ch.ct.repayments-heading", "Repayments, releases and write-offs since the period end")),
         create(
           "p",
           { class: "hint" },
-          "Enter what was repaid up to today. You claim relief on later repayments from HMRC after they are made.",
+          siteText(
+            "ch.ct.repayments-hint",
+            "Enter what was repaid up to today. You claim relief on later repayments from HMRC after they are made.",
+          ),
         ),
         create("div", { id: id("repaymentRows") }),
         create(
           "button",
           { "type": "button", "id": id("addRepaymentBtn"), "class": "secondary", "data-part": String(part) },
-          "Add another repayment",
+          siteText("ch.ct.add-repayment", "Add another repayment"),
         ),
       ),
     ),
@@ -816,7 +925,7 @@ function loansSection(fields) {
     create(
       "div",
       { id: "loansPart2", hidden: "" },
-      create("h4", { id: "loansPart2Heading" }, "Return 2 of 2: the second accounting period"),
+      create("h4", { id: "loansPart2Heading" }, siteText("ch.ct.loans-part-2", "Return 2 of 2: the second accounting period")),
       ...loansPartBody(2, second),
     ),
   ];
@@ -831,7 +940,7 @@ function syncRepaymentNames() {
     for (const select of element(periodFieldId("repaymentRows", part)).querySelectorAll("select")) {
       const chosen = select.value;
       select.replaceChildren(
-        create("option", { value: "" }, "Choose a participator"),
+        create("option", { value: "" }, siteText("ch.ct.choose-participator", "Choose a participator")),
         ...[...new Set(names)].map((name) => create("option", { value: name }, name)),
       );
       select.value = names.includes(chosen) ? chosen : "";
@@ -899,8 +1008,11 @@ function growRowsFor(entries) {
 function periodStartQuestion() {
   const group = choiceGroup({
     id: FIRST_PERIOD_START_FIELD,
-    label: "Does the first accounting period start on the first day of the accounts?",
-    hint: "Answer Yes when the company's accounting period began on the first day of these accounts. Submit files a long period only from there.",
+    label: siteText("ch.ct.first-period-start", "Does the first accounting period start on the first day of the accounts?"),
+    hint: siteText(
+      "ch.ct.first-period-start-hint",
+      "Answer Yes when the company's accounting period began on the first day of these accounts. Submit files a long period only from there.",
+    ),
     default: "yes",
   });
   group.id = "firstPeriodStartGroup";
@@ -933,11 +1045,11 @@ function sectionBody(sectionId) {
   if (sectionId === "declaration") {
     return [
       ...fields.slice(0, 2),
-      create("h4", {}, "Statements"),
+      create("h4", {}, siteText("ch.ct.statements", "Statements")),
       ...STATEMENT_FIELDS.slice(0, 3).map(({ id, label }) => checkboxGroup(id, label)),
       forRegime("small", checkboxGroup(STATEMENT_FIELDS[3].id, STATEMENT_FIELDS[3].label)),
       forRegime("micro", checkboxGroup(MICRO_STATEMENT_FIELD.id, MICRO_STATEMENT_FIELD.label)),
-      create("h4", {}, "Declaration"),
+      create("h4", {}, siteText("ch.ct.declaration", "Declaration")),
       ...fields.slice(2),
     ];
   }
@@ -1083,7 +1195,9 @@ function modelProblem(problem, part = 1) {
   const partTarget = part === 2 && isSecondColumnTarget(target) ? periodFieldId(target, 2) : target;
   return {
     target: state.targets.has(partTarget) ? partTarget : target,
-    message: isSecondColumnTarget(target) ? `Return ${part} of 2: ${problem.message}` : problem.message,
+    message: isSecondColumnTarget(target)
+      ? siteText("ch.ct.return-of-2-message", "Return {part} of 2: {message}", { part, message: problem.message })
+      : problem.message,
     refusal: problem.refusal,
   };
 }
@@ -1151,15 +1265,15 @@ function evaluate(values) {
 
 function workedValue(box, value) {
   if (box === 340 || box === 390) return `${value}%`;
-  if (box === 329) return "Yes";
+  if (box === 329) return siteText("ch.ct.yes", "Yes");
   if (box === 330 || box === 380) return String(value);
   return `£${formatPounds(value)}`;
 }
 
 const RATE_SOURCE_TEXT = {
-  "tax-data": "from the tax data for the tax year of the loan",
-  "online-rules": "the rate HMRC's online rules accept",
-  "customer-entered": "the rate you entered",
+  "tax-data": siteText("ch.ct.rate-tax-data", "from the tax data for the tax year of the loan"),
+  "online-rules": siteText("ch.ct.rate-online-rules", "the rate HMRC's online rules accept"),
+  "customer-entered": siteText("ch.ct.rate-customer", "the rate you entered"),
 };
 
 function percentText(rate) {
@@ -1170,29 +1284,50 @@ function percentText(rate) {
 function loansWorkedRows(page) {
   const row = workedRow;
   const rows = [
-    row("Box A15: total of the loans still owed", `£${formatPounds(page.totalLoans)}`, "The loans you entered"),
-    row("Box A20: tax on the loans", `£${formatPounds(page.taxChargeable)}`, "Each loan at its section 455 rate, to the penny"),
+    row(
+      siteText("ch.ct.a15", "Box A15: total of the loans still owed"),
+      `£${formatPounds(page.totalLoans)}`,
+      siteText("ch.ct.a15-rule", "The loans you entered"),
+    ),
+    row(
+      siteText("ch.ct.a20", "Box A20: tax on the loans"),
+      `£${formatPounds(page.taxChargeable)}`,
+      siteText("ch.ct.a20-rule", "Each loan at its section 455 rate, to the penny"),
+    ),
   ];
   if (page.partTwo) {
     rows.push(
       row(
-        "Box A45: relief for loans repaid within nine months",
+        siteText("ch.ct.a45", "Box A45: relief for loans repaid within nine months"),
         `£${formatPounds(page.partTwo.relief)}`,
-        "The amount repaid, released or written off, at the rate of the loan",
+        siteText("ch.ct.a45-rule", "The amount repaid, released or written off, at the rate of the loan"),
       ),
     );
   }
   if (page.partThree) {
-    rows.push(row("Box A70: relief for later repayments", `£${formatPounds(page.partThree.relief)}`, "Relief that is already due"));
+    rows.push(
+      row(
+        siteText("ch.ct.a70", "Box A70: relief for later repayments"),
+        `£${formatPounds(page.partThree.relief)}`,
+        siteText("ch.ct.a70-rule", "Relief that is already due"),
+      ),
+    );
   }
   rows.push(
-    row("Box A80: tax payable on loans to participators", `£${formatPounds(page.taxPayable)}`, "Carried to box 480", "workedLoanTax"),
+    row(
+      siteText("ch.ct.a80", "Box A80: tax payable on loans to participators"),
+      `£${formatPounds(page.taxPayable)}`,
+      siteText("ch.ct.a80-rule", "Carried to box 480"),
+      "workedLoanTax",
+    ),
   );
   for (const loan of page.rates) {
     for (const part of loan.parts) {
       rows.push(
         row(
-          loan.parts.length > 1 ? `Section 455 rate for ${loan.name} (lent from ${part.from})` : `Section 455 rate for ${loan.name}`,
+          loan.parts.length > 1
+            ? siteText("ch.ct.loan-rate-from", "Section 455 rate for {name} (lent from {from})", { name: loan.name, from: part.from })
+            : siteText("ch.ct.loan-rate-for", "Section 455 rate for {name}", { name: loan.name }),
           percentText(part.rate),
           RATE_SOURCE_TEXT[part.source],
           undefined,
@@ -1201,7 +1336,14 @@ function loansWorkedRows(page) {
     }
   }
   for (const warning of page.warnings) {
-    rows.push(create("div", { class: "worked-tax__row", role: "note" }, create("dt", {}, "Warning"), create("dd", {}, warning)));
+    rows.push(
+      create(
+        "div",
+        { class: "worked-tax__row", role: "note" },
+        create("dt", {}, siteText("ch.ct.warning", "Warning")),
+        create("dd", {}, warning),
+      ),
+    );
   }
   return rows;
 }
@@ -1220,23 +1362,32 @@ function workedRow(term, value, hint, id) {
 function workedItems(derived) {
   const items = [
     workedRow(
-      "Adjusted profit or loss in the computation",
+      siteText("ch.ct.worked-adjusted", "Adjusted profit or loss in the computation"),
       `£${formatPounds(derived.computationLines.adjustedProfit)}`,
-      "Profit per the accounts, less bank interest, plus depreciation, amortisation, entertaining and donations, less capital allowances. A loss shows in brackets.",
+      siteText(
+        "ch.ct.worked-adjusted-rule",
+        "Profit per the accounts, less bank interest, plus depreciation, amortisation, entertaining and donations, less capital allowances. A loss shows in brackets.",
+      ),
     ),
   ];
   for (const row of CT600_BOX_ROWS.filter(
     (candidate) => candidate.kind === "worked" && candidate.box in derived.boxes && candidate.box > 145,
   )) {
-    items.push(workedRow(`Box ${row.box}: ${row.label}`, workedValue(row.box, derived.boxes[row.box]), row.rule));
+    items.push(
+      workedRow(
+        siteText("ch.ct.box-label", "Box {box}: {label}", { box: row.box, label: row.label }),
+        workedValue(row.box, derived.boxes[row.box]),
+        row.rule,
+      ),
+    );
   }
   if (derived.ct600a) items.push(...loansWorkedRows(derived.ct600a));
   if (derived.losses.totalCarriedForward > 0) {
     items.push(
       workedRow(
-        "Trading losses carried forward",
+        siteText("ch.ct.losses-carried", "Trading losses carried forward"),
         `£${formatPounds(derived.losses.totalCarriedForward)}`,
-        "The loss of this period and the losses brought forward that no claim uses",
+        siteText("ch.ct.losses-carried-rule", "The loss of this period and the losses brought forward that no claim uses"),
         "workedCarriedForward",
       ),
     );
@@ -1244,9 +1395,13 @@ function workedItems(derived) {
   if (derived.carryBack) {
     items.push(
       workedRow(
-        "Corporation Tax repayable on the carry-back claim",
+        siteText("ch.ct.carry-back", "Corporation Tax repayable on the carry-back claim"),
         `£${formatPounds(derived.carryBack.taxRepayable)}`,
-        `Claimed against the period ${derived.carryBack.priorPeriodStart} to ${derived.carryBack.priorPeriodEnd}. That return carries the loss in box 275 with box 280 ticked.`,
+        siteText(
+          "ch.ct.carry-back-rule",
+          "Claimed against the period {start} to {end}. That return carries the loss in box 275 with box 280 ticked.",
+          { start: derived.carryBack.priorPeriodStart, end: derived.carryBack.priorPeriodEnd },
+        ),
         "workedCarryBack",
       ),
     );
@@ -1280,9 +1435,18 @@ function longPeriodWorkedTax(values, derivedReturns, periods) {
       const scale = period.days / Math.max(yearDays, period.days);
       return [
         workedRow(
-          `Limits for the financial year ${year}`,
-          `£${formatPounds(Math.round(rates.small_profits_limit * scale * 100) / 100)} and £${formatPounds(Math.round(rates.main_rate_limit * scale * 100) / 100)}`,
-          `The small profits limit and the upper limit, scaled to the ${period.days} days of this accounting period`,
+          siteText("ch.ct.limits", "Limits for the financial year {year}", { year }),
+          siteText("ch.ct.limits-value", "£{small} and £{upper}", {
+            small: formatPounds(Math.round(rates.small_profits_limit * scale * 100) / 100),
+            upper: formatPounds(Math.round(rates.main_rate_limit * scale * 100) / 100),
+          }),
+          siteText(
+            "ch.ct.limits-rule",
+            "The small profits limit and the upper limit, scaled to the {days} days of this accounting period",
+            {
+              days: period.days,
+            },
+          ),
         ),
       ];
     });
@@ -1292,27 +1456,37 @@ function longPeriodWorkedTax(values, derivedReturns, periods) {
       create(
         "h4",
         { id: `workedReturn${index + 1}Heading` },
-        `Return ${index + 1} of 2: ${longDateText(period.periodStart)} to ${longDateText(period.periodEnd)}`,
+        siteText("ch.ct.return-range", "Return {part} of 2: {start} to {end}", {
+          part: index + 1,
+          start: longDateText(period.periodStart),
+          end: longDateText(period.periodEnd),
+        }),
       ),
       create(
         "dl",
         { class: "worked-tax__list" },
         workedRow(
-          "Days in this accounting period",
-          `${period.days} of ${wholeDays} days`,
-          `Turnover, bank interest and the adjusted profit are shared by days: ${Math.round(proportion * 10000) / 100}% of the period of account.`,
+          siteText("ch.ct.days", "Days in this accounting period"),
+          siteText("ch.ct.days-value", "{days} of {whole} days", { days: period.days, whole: wholeDays }),
+          siteText(
+            "ch.ct.days-rule",
+            "Turnover, bank interest and the adjusted profit are shared by days: {percent}% of the period of account.",
+            {
+              percent: Math.round(proportion * 10000) / 100,
+            },
+          ),
         ),
         ...workedItems(derived),
         ...limits,
         workedRow(
-          "Tax due",
+          siteText("ch.ct.tax-due", "Tax due"),
           longDateText(taxDueDate(period.periodEnd)),
-          "The day after nine months from the end of this accounting period",
+          siteText("ch.ct.tax-due-rule", "The day after nine months from the end of this accounting period"),
         ),
         workedRow(
-          "Return due",
+          siteText("ch.ct.return-due", "Return due"),
           longDateText(returnDueDate(periods.periods[1].periodEnd)),
-          "Both returns are due 12 months after the period of account ends",
+          siteText("ch.ct.return-due-rule", "Both returns are due 12 months after the period of account ends"),
         ),
       ),
     );
@@ -1371,7 +1545,12 @@ function showError(problem) {
   const host = element(`${target}-errors`);
   if (!host) return;
   host.append(
-    create("p", { id: `${target}-error`, class: "error-message" }, create("span", { class: "visually-hidden" }, "Error: "), message),
+    create(
+      "p",
+      { id: `${target}-error`, class: "error-message" },
+      create("span", { class: "visually-hidden" }, siteText("ch.ct.error-prefix", "Error: ")),
+      message,
+    ),
   );
   const controls = [...document.querySelectorAll(`[data-error-target="${target}"]`)];
   if (target === WORKED_TAX_ID) controls.push(element(WORKED_TAX_ID));
@@ -1413,7 +1592,7 @@ function showSummary(problems) {
   const summary = create(
     "div",
     { id: SUMMARY_ID, class: "error-summary", role: "alert", tabindex: "-1" },
-    create("h2", { class: "error-summary__title" }, "There is a problem"),
+    create("h2", { class: "error-summary__title" }, siteText("ch.ct.problem", "There is a problem")),
     list,
   );
   element("returnForm").prepend(summary);
@@ -1431,34 +1610,64 @@ function updateSummary() {
 const TAX_ACCOUNTING_PERIOD_GUIDE = "https://www.gov.uk/corporation-tax-accounting-period";
 
 function periodRangeText(period) {
-  return `${longDateText(period.periodStart)} to ${longDateText(period.periodEnd)}`;
+  return siteText("ch.ct.range", "{start} to {end}", { start: longDateText(period.periodStart), end: longDateText(period.periodEnd) });
 }
 
 function longPeriodPanelContent(long) {
   const [first, second] = long.periods;
   return [
-    create("h3", { id: "longPeriodHeading" }, "This period of account files as two returns"),
+    create("h3", { id: "longPeriodHeading" }, siteText("ch.ct.long-heading", "This period of account files as two returns")),
     paragraph(
-      `A Company Tax Return covers at most 12 months, so HMRC takes these ${long.days} days as two accounting periods. Both returns carry the same accounts.`,
+      siteText(
+        "ch.ct.long-intro",
+        "A Company Tax Return covers at most 12 months, so HMRC takes these {days} days as two accounting periods. Both returns carry the same accounts.",
+        { days: long.days },
+      ),
     ),
     create(
       "ul",
       {},
-      create("li", {}, paragraph({ strong: "Return 1 of 2: " }, `${periodRangeText(first)} (${first.days} days)`)),
-      create("li", {}, paragraph({ strong: "Return 2 of 2: " }, `${periodRangeText(second)} (${second.days} days)`)),
+      create(
+        "li",
+        {},
+        paragraph(
+          { strong: siteText("ch.ct.return-1-of-2", "Return 1 of 2: ") },
+          siteText("ch.ct.range-days", "{range} ({days} days)", { range: periodRangeText(first), days: first.days }),
+        ),
+      ),
+      create(
+        "li",
+        {},
+        paragraph(
+          { strong: siteText("ch.ct.return-2-of-2", "Return 2 of 2: ") },
+          siteText("ch.ct.range-days", "{range} ({days} days)", { range: periodRangeText(second), days: second.days }),
+        ),
+      ),
     ),
-    paragraph("You send return 1 first. HMRC must accept it before you send return 2. The two returns cost one token between them."),
+    paragraph(
+      siteText(
+        "ch.ct.long-order",
+        "You send return 1 first. HMRC must accept it before you send return 2. The two returns cost one token between them.",
+      ),
+    ),
     create(
       "p",
       {},
-      "Before the original filing date, tell HMRC the company's new accounting period dates. ",
-      create("a", { href: TAX_ACCOUNTING_PERIOD_GUIDE, target: "_blank", rel: "noopener" }, "How to update the dates on GOV.UK"),
-      ".",
+      siteText("ch.ct.long-tell-hmrc", "Before the original filing date, tell HMRC the company's new accounting period dates. "),
+      create(
+        "a",
+        { href: TAX_ACCOUNTING_PERIOD_GUIDE, target: "_blank", rel: "noopener" },
+        siteText("ch.ct.long-guide-link", "How to update the dates on GOV.UK"),
+      ),
+      siteText("ch.ct.long-guide-after", "."),
     ),
     ...(state.workingSheet
       ? [
           paragraph(
-            "The book covers 12 months, so its own tax working is not checked against a longer period. Type the figures for the whole period of account.",
+            siteText(
+              "ch.ct.long-book",
+              "The book covers 12 months, so its own tax working is not checked against a longer period. Type the figures for the whole period of account.",
+            ),
           ),
         ]
       : []),
@@ -1469,7 +1678,10 @@ function longPeriodPanelContent(long) {
 function periodHintText(id, period) {
   if (id === "annualInvestmentAllowance") {
     const maximum = Math.floor(state.bundle.annualInvestmentAllowanceMaximum(period.periodStart, period.periodEnd));
-    return ` The most for ${periodRangeText(period)} is £${maximum.toLocaleString("en-GB")}.`;
+    return siteText("ch.ct.aia-most", " The most for {range} is £{amount}.", {
+      range: periodRangeText(period),
+      amount: maximum.toLocaleString("en-GB"),
+    });
   }
   const data = taxDataByYear();
   const years = new Map();
@@ -1478,10 +1690,18 @@ function periodHintText(id, period) {
   const rates = [...years].map(([year, days]) => ({ year, days, rate: data[year]?.capital_allowances?.writing_down_allowance_main }));
   if (rates.some(({ rate }) => rate === undefined)) return "";
   const distinct = [...new Set(rates.map(({ rate }) => rate))];
-  if (distinct.length === 1) return ` The main pool rate for this period is ${percentText(distinct[0])}.`;
+  if (distinct.length === 1)
+    return siteText("ch.ct.main-pool-rate", " The main pool rate for this period is {rate}.", { rate: percentText(distinct[0]) });
   const days = rates.reduce((total, { days: count }) => total + count, 0);
   const hybrid = rates.reduce((total, { days: count, rate }) => total + rate * count, 0) / days;
-  return ` The period spans a change of the main pool rate (${distinct.map(percentText).join(" then ")}), so the rate is a hybrid of ${percentText(hybrid)}.`;
+  return siteText(
+    "ch.ct.main-pool-hybrid",
+    " The period spans a change of the main pool rate ({rates}), so the rate is a hybrid of {rate}.",
+    {
+      rates: distinct.map(percentText).join(siteText("ch.ct.then", " then ")),
+      rate: percentText(hybrid),
+    },
+  );
 }
 
 function addDay(isoDate) {
@@ -1510,8 +1730,10 @@ function updateLongPeriod(values) {
     panel.replaceChildren(...(panelShown ? longPeriodPanelContent(long) : []));
   }
   element("firstPeriodStart").textContent = long
-    ? `Does the first accounting period start on ${longDateText(values.periodStart)}?`
-    : "Does the first accounting period start on the first day of the accounts?";
+    ? siteText("ch.ct.first-period-start-on", "Does the first accounting period start on {date}?", {
+        date: longDateText(values.periodStart),
+      })
+    : siteText("ch.ct.first-period-start", "Does the first accounting period start on the first day of the accounts?");
   const donations = form.querySelector('label[for="donations"]');
   if (donations)
     donations.textContent = showing ? LONG_PERIOD_DONATIONS_LABEL : CT600_FORM_FIELDS.find((field) => field.id === "donations").label;
@@ -1587,9 +1809,11 @@ function mountBooksCard() {
 
 async function loadPracticeClients() {
   if (practiceClients) return;
+  // A signed-out visitor has no practice; asking the API without a session only earns a 401.
+  const idToken = localStorage.getItem("cognitoIdToken");
+  if (!idToken) return;
   try {
-    const idToken = localStorage.getItem("cognitoIdToken");
-    const response = await fetch("/api/v1/practice/clients", idToken ? { headers: { Authorization: `Bearer ${idToken}` } } : {});
+    const response = await fetch("/api/v1/practice/clients", { headers: { Authorization: `Bearer ${idToken}` } });
     if (!response.ok) return;
     const body = await response.json();
     if (!Array.isArray(body.clients)) return;
@@ -1620,7 +1844,7 @@ function renderClientChoice() {
   const choices = clientChoices(practiceClients);
   element("clientChoice").style.display = choices.length > 0 ? "block" : "none";
   element("clientChoiceOptions").replaceChildren(
-    clientRadio("", "My own company", !agentClient),
+    clientRadio("", siteText("ch.ct.own-company", "My own company"), !agentClient),
     ...choices.map((choice) => clientRadio(choice.clientId, choice.label, agentClient?.clientId === choice.clientId)),
   );
 }
@@ -1630,7 +1854,9 @@ function chooseClient(clientId) {
   const stop = agentClient ? clientFilingStop(agentClient) : null;
   const stopNode = element("clientStop");
   stopNode.style.display = stop ? "block" : "none";
-  stopNode.replaceChildren(...(stop ? [stop, " ", create("a", { href: "../practice.html" }, "Open Practice clients"), "."] : []));
+  stopNode.replaceChildren(
+    ...(stop ? [stop, " ", create("a", { href: "../practice.html" }, siteText("ch.ct.open-practice", "Open Practice clients")), "."] : []),
+  );
   element("practiceNameGroup").style.display = agentClient ? "block" : "none";
   if (agentClient && !element("practiceName").value) element("practiceName").value = rememberedPracticeName();
   const companyNumber = element("companyNumber");
@@ -1657,8 +1883,14 @@ function applyClientToForm() {
   }
   applyJointFilingOffer();
   element("gatewayWhose").textContent = filingAsAgent
-    ? "Sign in with the practice's own agent Government Gateway user ID and password, with Corporation Tax enrolled."
-    : "Sign in with the Government Gateway user ID and password for the company's Corporation Tax enrolment.";
+    ? siteText(
+        "ch.ct.gateway-agent",
+        "Sign in with the practice's own agent Government Gateway user ID and password, with Corporation Tax enrolled.",
+      )
+    : siteText(
+        "ch.ct.gateway-company",
+        "Sign in with the Government Gateway user ID and password for the company's Corporation Tax enrolment.",
+      );
   refresh();
 }
 
@@ -1666,7 +1898,10 @@ function renderAgentAuthorisation() {
   element("agentAuthorisedHost").replaceChildren(
     checkboxGroup(
       "agentAuthorised",
-      "The company has authorised this practice to act for it for Corporation Tax (form 64-8 or online), and has approved this return.",
+      siteText(
+        "ch.ct.agent-authorised",
+        "The company has authorised this practice to act for it for Corporation Tax (form 64-8 or online), and has approved this return.",
+      ),
     ),
   );
 }
@@ -1680,9 +1915,12 @@ function agentFields() {
 
 function agentProblem() {
   if (!agentClient) return null;
-  if (!element("practiceName").value.trim()) return "Enter the practice name for HMRC's records.";
+  if (!element("practiceName").value.trim()) return siteText("ch.ct.enter-practice", "Enter the practice name for HMRC's records.");
   if (!element("agentAuthorised").checked)
-    return "Confirm that the company has authorised the practice for Corporation Tax and has approved this return.";
+    return siteText(
+      "ch.ct.confirm-authorised",
+      "Confirm that the company has authorised the practice for Corporation Tax and has approved this return.",
+    );
   return null;
 }
 
@@ -1704,21 +1942,21 @@ async function handleCompanySubmit(event) {
     applyClientToForm();
   } catch (error) {
     console.error("Failed to look up the company:", error);
-    window.showStatus(error.message || "Failed to look up the company.", "error");
+    window.showStatus(error.message || siteText("ch.accounts.lookup-failed", "Failed to look up the company."), "error");
   } finally {
     window.hideLoading();
   }
 }
 
 function changeLink(fieldId, label) {
-  const link = create("a", { "href": `#${fieldId}`, "class": "review-change", "data-field": fieldId }, "Change");
+  const link = create("a", { "href": `#${fieldId}`, "class": "review-change", "data-field": fieldId }, siteText("ch.ct.change", "Change"));
   link.append(visuallyHidden(` ${label}`));
   return link;
 }
 
 function companyChangeLink() {
-  const link = create("a", { "href": "#company", "class": "review-change", "data-field": "company" }, "Change");
-  link.append(visuallyHidden(" company"));
+  const link = create("a", { "href": "#company", "class": "review-change", "data-field": "company" }, siteText("ch.ct.change", "Change"));
+  link.append(visuallyHidden(siteText("ch.ct.change-company", " company")));
   return link;
 }
 
@@ -1737,7 +1975,19 @@ function reviewTable(id, title, rows) {
       "table",
       { class: "results-table review-table" },
       create("colgroup", {}, ...["question", "answer", "change"].map((name) => create("col", { class: `review-table__${name}` }))),
-      create("thead", {}, create("tr", {}, ...["Question", "Answer", "Change"].map((text) => create("th", { scope: "col" }, text)))),
+      create(
+        "thead",
+        {},
+        create(
+          "tr",
+          {},
+          ...[
+            siteText("ch.ct.column-question", "Question"),
+            siteText("ch.ct.column-answer", "Answer"),
+            siteText("ch.ct.change", "Change"),
+          ].map((text) => create("th", { scope: "col" }, text)),
+        ),
+      ),
       create("tbody", {}, ...body),
     ),
   );
@@ -1748,11 +1998,18 @@ function renderAnswers(values) {
 }
 
 function companiesHouseCopyText(values) {
-  if (regimeOf(values) === "micro") return "The micro-entity balance sheet and notes. The profit and loss account goes to HMRC only.";
+  if (regimeOf(values) === "micro")
+    return siteText("ch.ct.ch-gets-micro", "The micro-entity balance sheet and notes. The profit and loss account goes to HMRC only.");
   if (copyOf(values) === "filleted") {
-    return "Filleted accounts. The profit and loss account and the directors' report are left out of the copy on the public register.";
+    return siteText(
+      "ch.ct.ch-gets-filleted",
+      "Filleted accounts. The profit and loss account and the directors' report are left out of the copy on the public register.",
+    );
   }
-  return "The full accounts, including the profit and loss account and the directors' report. Companies House publishes them.";
+  return siteText(
+    "ch.ct.ch-gets-full",
+    "The full accounts, including the profit and loss account and the directors' report. Companies House publishes them.",
+  );
 }
 
 function renderSendTo(values) {
@@ -1760,21 +2017,27 @@ function renderSendTo(values) {
   const rows = [
     {
       id: "sendTo",
-      label: "Sending the accounts to",
-      value: both ? "Companies House first, then HMRC with the Company Tax Return" : "HMRC with the Company Tax Return",
+      label: siteText("ch.ct.sending-to", "Sending the accounts to"),
+      value: both
+        ? siteText("ch.ct.sending-both", "Companies House first, then HMRC with the Company Tax Return")
+        : siteText("ch.ct.sending-hmrc", "HMRC with the Company Tax Return"),
     },
   ];
   if (both) {
     rows.push(
       {
         id: regimeOf(values) === "small" ? "companiesHouseCopy" : "sendTo",
-        label: "What Companies House receives",
+        label: siteText("ch.ct.ch-receives", "What Companies House receives"),
         value: companiesHouseCopyText(values),
       },
-      { id: "sendTo", label: "What HMRC receives", value: "The full accounts, with the Company Tax Return" },
+      {
+        id: "sendTo",
+        label: siteText("ch.ct.hmrc-receives", "What HMRC receives"),
+        value: siteText("ch.ct.hmrc-receives-value", "The full accounts, with the Company Tax Return"),
+      },
     );
   }
-  const table = reviewTable("sendTo", "Where the accounts go", rows);
+  const table = reviewTable("sendTo", siteText("ch.ct.where-accounts-go", "Where the accounts go"), rows);
   // The review rows share one id scheme, so a second row for the same answer carries a distinct id.
   const [, , hmrcRow] = table.querySelectorAll("tbody tr");
   if (hmrcRow) hmrcRow.id = "review-row-hmrcAccounts";
@@ -1789,10 +2052,10 @@ function boxTableRows(boxes, values, part, idSuffix) {
   return sortBoxes(Object.keys(boxes)).map((box) => {
     const label = boxRow(box).label;
     const target = boxChangeTarget(box, values, part);
-    const change = target ? changeLink(target, `box ${box}, ${label}`) : companyChangeLink();
+    const change = target ? changeLink(target, siteText("ch.ct.change-box", "box {box}, {label}", { box, label })) : companyChangeLink();
     const row = tableRow(box, label, "", change);
     if (box === "340" || box === "390") amountCell(row.children[2], `${boxes[box]}%`);
-    else if (box === "329") row.children[2].textContent = "Yes";
+    else if (box === "329") row.children[2].textContent = siteText("ch.ct.yes", "Yes");
     else if (TEXT_BOXES.has(Number(box)) || TEXT_BOXES.has(box)) row.children[2].textContent = boxes[box];
     else amountCell(row.children[2], formatPounds(boxes[box]));
     row.children[2].classList.add("review-table__value-cell");
@@ -1853,10 +2116,10 @@ function reviewTables(index) {
       create(
         "tr",
         {},
-        create("th", { scope: "col" }, "Box"),
-        create("th", { scope: "col" }, "Meaning"),
-        create("th", { scope: "col", class: "amount" }, "Value (amounts in £)"),
-        create("th", { scope: "col" }, "Change"),
+        create("th", { scope: "col" }, siteText("ch.ct.column-box", "Box")),
+        create("th", { scope: "col" }, siteText("ch.ct.column-meaning", "Meaning")),
+        create("th", { scope: "col", class: "amount" }, siteText("ch.ct.column-value", "Value (amounts in £)")),
+        create("th", { scope: "col" }, siteText("ch.ct.change", "Change")),
       ),
     ),
     create("tbody"),
@@ -1877,9 +2140,9 @@ function reviewTables(index) {
       create(
         "tr",
         {},
-        create("th", { scope: "col" }, "Line"),
+        create("th", { scope: "col" }, siteText("ch.ct.column-line", "Line")),
         create("th", { scope: "col", class: "amount" }, "£"),
-        create("th", { scope: "col" }, "Change"),
+        create("th", { scope: "col" }, siteText("ch.ct.change", "Change")),
       ),
     ),
     create("tbody"),
@@ -1899,22 +2162,36 @@ function renderLongReviews(preview, values) {
     boxes.querySelector("tbody").replaceChildren(...boxTableRows(part.boxes, values, part.part, suffix));
     computations.querySelector("tbody").replaceChildren(
       ...computationTableRows(part.computationLines, values, part.part, suffix, {
-        adjustedProfitBeforeAccountingPeriodAdjustments: `Adjusted profit for the ${periodDays} days of the period of account`,
-        timeApportionment: `Time apportionment: ${days} of ${periodDays} days`,
+        adjustedProfitBeforeAccountingPeriodAdjustments: siteText(
+          "ch.ct.line-long-adjusted",
+          "Adjusted profit for the {days} days of the period of account",
+          { days: periodDays },
+        ),
+        timeApportionment: siteText("ch.ct.line-long-apportionment", "Time apportionment: {days} of {whole} days", {
+          days,
+          whole: periodDays,
+        }),
       }),
     );
     return create(
       "section",
       { "id": `review-return-${part.part}`, "class": "return-review", "aria-labelledby": `reviewReturn${part.part}Heading` },
-      create("h3", { id: `reviewReturn${part.part}Heading` }, `Return ${part.part} of 2: ${periodRangeText(part)}`),
+      create(
+        "h3",
+        { id: `reviewReturn${part.part}Heading` },
+        siteText("ch.ct.return-of-2-range", "Return {part} of 2: {range}", { part: part.part, range: periodRangeText(part) }),
+      ),
       create(
         "p",
         { class: "hint" },
-        `Tax is due on ${longDateText(part.taxDueDate)}. The return is due on ${longDateText(part.returnDueDate)}.`,
+        siteText("ch.ct.long-due", "Tax is due on {tax}. The return is due on {return}.", {
+          tax: longDateText(part.taxDueDate),
+          return: longDateText(part.returnDueDate),
+        }),
       ),
-      create("h4", {}, `CT600 boxes, return ${part.part}`),
+      create("h4", {}, siteText("ch.ct.boxes-return", "CT600 boxes, return {part}", { part: part.part })),
       boxes,
-      create("h4", {}, `Computations, return ${part.part}`),
+      create("h4", {}, siteText("ch.ct.computations-return", "Computations, return {part}", { part: part.part })),
       computations,
     );
   });
@@ -1957,7 +2234,7 @@ async function handleReturnFormSubmit(event) {
     }
   } catch (error) {
     console.error("Failed to preview the Company Tax Return:", error);
-    window.showStatus(error.message || "Failed to preview the Company Tax Return.", "error");
+    window.showStatus(error.message || siteText("ch.ct.preview-failed", "Failed to preview the Company Tax Return."), "error");
   } finally {
     window.hideLoading();
   }
@@ -1995,8 +2272,18 @@ function renderErrors(outcome) {
   container.style.display = "block";
   container.replaceChildren(
     ...(outcome.message ? [create("p", { role: "alert" }, outcome.message)] : []),
-    create("ul", {}, ...entries.map((entry) => create("li", {}, `Error ${entry.number}: ${entry.text}`))),
-    create("p", {}, "Check the answers these errors name, change them in the review, and send the return again."),
+    create(
+      "ul",
+      {},
+      ...entries.map((entry) =>
+        create("li", {}, siteText("ch.ct.error-line", "Error {number}: {text}", { number: entry.number, text: entry.text })),
+      ),
+    ),
+    create(
+      "p",
+      {},
+      siteText("ch.ct.check-errors", "Check the answers these errors name, change them in the review, and send the return again."),
+    ),
   );
 }
 
@@ -2012,7 +2299,13 @@ async function pollUntilSettled(correlationId, firstWaitSeconds, extraHeaders) {
     result = await window.pollCtReturn(correlationId, extraHeaders, previewRequest?.clientId);
     if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") return result;
     element("returnResult").replaceChildren(
-      paragraph("Return ", { strong: correlationId }, " is ", { strong: result.statusCode }, ". Checking again..."),
+      paragraph(
+        siteText("ch.ct.return-word", "Return "),
+        { strong: correlationId },
+        siteText("ch.ct.is", " is "),
+        { strong: result.statusCode },
+        siteText("ch.ct.checking-again", ". Checking again..."),
+      ),
     );
     waitFor = result.pollIntervalSeconds;
   }
@@ -2065,7 +2358,11 @@ async function showOutcome(outcome) {
   if (outcome.statusCode === "ACCEPT") {
     setOutcome("ok");
     element("returnResult").replaceChildren(
-      outcomeTitle(sending.amendment ? "HMRC accepted the amended Company Tax Return" : "HMRC accepted the Company Tax Return"),
+      outcomeTitle(
+        sending.amendment
+          ? siteText("ch.ct.hmrc-accepted-amended", "HMRC accepted the amended Company Tax Return")
+          : siteText("ch.ct.hmrc-accepted", "HMRC accepted the Company Tax Return"),
+      ),
     );
     const { IRMARK_MISMATCH_WARNING } = await import("../lib/filing-result-record.js");
     element("returnIrmark").replaceChildren(
@@ -2079,11 +2376,14 @@ async function showOutcome(outcome) {
             ),
           ]
         : []),
-      create("p", {}, "Keep the IRmark. It is HMRC's record of exactly what you sent."),
+      create("p", {}, siteText("ch.ct.keep-irmark", "Keep the IRmark. It is HMRC's record of exactly what you sent.")),
       create(
         "p",
         { id: "receiptProof" },
-        "The receipt below is the company's proof that it filed this return. Keep it with the company's records.",
+        siteText(
+          "ch.ct.receipt-proof",
+          "The receipt below is the company's proof that it filed this return. Keep it with the company's records.",
+        ),
       ),
     );
     element("returnIrmark").style.display = "block";
@@ -2099,7 +2399,11 @@ async function showOutcome(outcome) {
   if (outcome.statusCode === "REJECT") {
     setOutcome("error");
     element("returnResult").replaceChildren(
-      outcomeTitle(sending.amendment ? "HMRC rejected the amended Company Tax Return" : "HMRC rejected the Company Tax Return"),
+      outcomeTitle(
+        sending.amendment
+          ? siteText("ch.ct.hmrc-rejected-amended", "HMRC rejected the amended Company Tax Return")
+          : siteText("ch.ct.hmrc-rejected", "HMRC rejected the Company Tax Return"),
+      ),
     );
     renderErrors(outcome);
     element("tryAgainBtn").style.display = "inline-block";
@@ -2110,11 +2414,11 @@ async function showOutcome(outcome) {
   setOutcome();
   element("returnResult").replaceChildren(
     paragraph(
-      "HMRC has not settled the return yet. Return ",
+      siteText("ch.ct.not-settled", "HMRC has not settled the return yet. Return "),
       { strong: outcome.correlationId },
-      " is still ",
+      siteText("ch.ct.is-still", " is still "),
       { strong: outcome.statusCode },
-      ".",
+      siteText("ch.ct.full-stop", "."),
     ),
   );
 }
@@ -2148,31 +2452,33 @@ function accountsStillToSend() {
   return sending.mode === "both" && (!sending.companiesHouse || sending.companiesHouse.statusCode === "REJECT");
 }
 
-const GATEWAY_STORED_ONCE = "They are sent once with this return and never stored.";
+const GATEWAY_STORED_ONCE = siteText("ch.ct.gateway-stored-once", "They are sent once with this return and never stored.");
 
 function configureSendStep() {
   const accountsFirst = accountsStillToSend();
   const amending = Boolean(sending.amendment);
-  const sendsToHmrc = amending ? "Send the amended return to HMRC" : "Send to HMRC";
+  const sendsToHmrc = amending
+    ? siteText("ch.ct.send-amended-heading", "Send the amended return to HMRC")
+    : siteText("ch.ct.send-hmrc-heading", "Send to HMRC");
   element("sendStepHeading").textContent = accountsFirst
     ? amending
-      ? "Send the revised accounts to Companies House and the amended return to HMRC"
-      : "Send to Companies House and HMRC"
+      ? siteText("ch.ct.send-revised-heading", "Send the revised accounts to Companies House and the amended return to HMRC")
+      : siteText("ch.ct.send-both-heading", "Send to Companies House and HMRC")
     : sendsToHmrc;
   const order = element("sendStepOrder");
   order.style.display = sending.mode === "both" ? "block" : "none";
   order.textContent = accountsFirst
-    ? "Companies House gets the accounts first. When it accepts them, the Company Tax Return goes to HMRC."
-    : "Companies House accepted the accounts. The Company Tax Return is the one filing left to send.";
+    ? siteText("ch.ct.order-first", "Companies House gets the accounts first. When it accepts them, the Company Tax Return goes to HMRC.")
+    : siteText("ch.ct.order-left", "Companies House accepted the accounts. The Company Tax Return is the one filing left to send.");
   element("companyAuthCodeGroup").style.display = accountsFirst ? "block" : "none";
   element("revisionGroup").style.display = accountsFirst && sending.amendment?.accounts ? "block" : "none";
   element("submitReturnBtn").textContent = accountsFirst
     ? amending
-      ? "Send the revised accounts, then the amended return"
-      : "Send to Companies House, then HMRC"
+      ? siteText("ch.ct.button-revised", "Send the revised accounts, then the amended return")
+      : siteText("ch.ct.button-both", "Send to Companies House, then HMRC")
     : amending
-      ? "Submit the amended return to HMRC"
-      : "Submit to HMRC";
+      ? siteText("ch.ct.button-amended", "Submit the amended return to HMRC")
+      : siteText("ch.ct.button-hmrc", "Submit to HMRC");
   configureLongSendStep({ accountsFirst, amending });
   showSendCost(accountsFirst);
 }
@@ -2185,12 +2491,22 @@ function sendCostOf(accountsFirst) {
   const returnsCost = sending.longPeriod && !queue.includes(1) ? 0 : 1;
   const cost = (accountsFirst ? 1 : 0) + returnsCost;
   if (accountsFirst) {
-    const returns = sending.longPeriod ? (queue.length === 2 ? "the two returns" : `return ${queue[0]} of 2`) : "the return";
-    return { cost, lead: `The accounts and ${returns} cost ${cost} ${cost === 1 ? "token" : "tokens"}.` };
+    const returns = sending.longPeriod
+      ? queue.length === 2
+        ? siteText("ch.ct.cost-two-returns", "the two returns")
+        : siteText("ch.ct.cost-return-of-2", "return {part} of 2", { part: queue[0] })
+      : siteText("ch.ct.cost-the-return", "the return");
+    return {
+      cost,
+      lead:
+        cost === 1
+          ? siteText("ch.ct.cost-accounts-one", "The accounts and {returns} cost {cost} token.", { returns, cost })
+          : siteText("ch.ct.cost-accounts", "The accounts and {returns} cost {cost} tokens.", { returns, cost }),
+    };
   }
-  if (cost === 0) return { cost, lead: "Return 2 of 2 costs no token. Return 1 used the token for both." };
-  if (queue.length === 2) return { cost, lead: "The two returns cost 1 token between them." };
-  return { cost, lead: "This return costs 1 token." };
+  if (cost === 0) return { cost, lead: siteText("ch.ct.cost-none", "Return 2 of 2 costs no token. Return 1 used the token for both.") };
+  if (queue.length === 2) return { cost, lead: siteText("ch.ct.cost-two", "The two returns cost 1 token between them.") };
+  return { cost, lead: siteText("ch.ct.cost-one", "This return costs 1 token.") };
 }
 
 function showSendCost(accountsFirst) {
@@ -2218,25 +2534,40 @@ function configureLongSendStep({ accountsFirst, amending }) {
   note.style.display = sending.longPeriod ? "block" : "none";
   element("gatewayStored").textContent = GATEWAY_STORED_ONCE;
   if (!sending.longPeriod) return;
-  const amended = amending ? "amended " : "";
-  const order = accountsFirst ? "the accounts, then " : "";
-  const returnWord = amending ? "the amended return" : "return";
-  const leftWord = amending ? "The amended return" : "Return";
+  const order = accountsFirst ? siteText("ch.ct.order-accounts-then", "the accounts, then ") : "";
+  const returnWord = amending ? siteText("ch.ct.the-amended-return", "the amended return") : siteText("ch.ct.return-lower", "return");
+  const leftWord = amending ? siteText("ch.ct.the-amended-return-start", "The amended return") : siteText("ch.ct.return-start", "Return");
   note.textContent =
     queue.length === 2
-      ? `You send ${order}${returnWord} 1 of 2, then ${returnWord} 2 of 2. Each waits for the one before to be accepted. You type the Government Gateway user ID and password once for both.`
-      : `${leftWord} ${queue[0] ?? 2} of 2 is the one left to send. You type the Government Gateway password again.`;
+      ? siteText(
+          "ch.ct.long-send-both",
+          "You send {order}{word} 1 of 2, then {word} 2 of 2. Each waits for the one before to be accepted. You type the Government Gateway user ID and password once for both.",
+          { order, word: returnWord },
+        )
+      : siteText("ch.ct.long-send-left", "{word} {part} of 2 is the one left to send. You type the Government Gateway password again.", {
+          word: leftWord,
+          part: queue[0] ?? 2,
+        });
   element("gatewayStored").textContent =
-    queue.length === 2 ? "They are sent with each of the two returns and never stored." : GATEWAY_STORED_ONCE;
+    queue.length === 2
+      ? siteText("ch.ct.gateway-stored-each", "They are sent with each of the two returns and never stored.")
+      : GATEWAY_STORED_ONCE;
   if (queue.length === 0) return;
-  const heading = amending ? "amended return" : "return";
+  const heading = amending ? siteText("ch.ct.amended-return", "amended return") : siteText("ch.ct.return-lower", "return");
   if (!accountsFirst) {
     element("sendStepHeading").textContent =
       queue.length === 2
-        ? `Send ${amending ? "the amended returns" : "two returns"} to HMRC`
-        : `Send ${amending ? "the amended return" : "return"} ${queue[0]} of 2 to HMRC`;
+        ? amending
+          ? siteText("ch.ct.send-amended-returns", "Send the amended returns to HMRC")
+          : siteText("ch.ct.send-two-returns", "Send two returns to HMRC")
+        : siteText("ch.ct.send-return-of-2", "Send {word} {part} of 2 to HMRC", {
+            word: amending ? siteText("ch.ct.the-amended-return", "the amended return") : siteText("ch.ct.return-lower", "return"),
+            part: queue[0],
+          });
     element("submitReturnBtn").textContent =
-      queue.length === 2 ? `Submit ${heading} 1 of 2, then ${heading} 2 of 2` : `Submit ${heading} ${queue[0]} of 2 to HMRC`;
+      queue.length === 2
+        ? siteText("ch.ct.submit-both-of-2", "Submit {word} 1 of 2, then {word} 2 of 2", { word: heading })
+        : siteText("ch.ct.submit-one-of-2", "Submit {word} {part} of 2 to HMRC", { word: heading, part: queue[0] });
   }
 }
 
@@ -2300,7 +2631,11 @@ function lockAccounts() {
       create(
         "p",
         { id: "accountsLockNote", class: "hint", role: "status" },
-        `Filed at Companies House on ${todayText()}, submission ${submissionNumber}. The accounts cannot change here. Change the tax answers only.`,
+        siteText(
+          "ch.ct.accounts-locked",
+          "Filed at Companies House on {date}, submission {number}. The accounts cannot change here. Change the tax answers only.",
+          { date: todayText(), number: submissionNumber },
+        ),
       ),
     );
 }
@@ -2323,13 +2658,16 @@ function unlockAccounts() {
       create(
         "p",
         { id: "accountsLockNote", class: "hint", role: "status" },
-        "You are revising the accounts filed at Companies House. Change the figures and the date the directors approve the revised accounts.",
+        siteText(
+          "ch.ct.accounts-revising",
+          "You are revising the accounts filed at Companies House. Change the figures and the date the directors approve the revised accounts.",
+        ),
       ),
     );
 }
 
 function todayText() {
-  return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  return longDateText(today());
 }
 
 // --- Amending an accepted filing -------------------------------------------------------------
@@ -2348,7 +2686,10 @@ function chooseAmendedReturns(preview) {
   );
   if (changed.length === 0) {
     window.showStatus(
-      "Neither return changes with these answers, so there is nothing to amend. Change an answer and preview again.",
+      siteText(
+        "ch.ct.nothing-to-amend",
+        "Neither return changes with these answers, so there is nothing to amend. Change an answer and preview again.",
+      ),
       "error",
     );
     return false;
@@ -2409,7 +2750,7 @@ function startAmendment({ accounts }) {
 function revisionDifferencesProblem() {
   const input = element("revisionDifferences");
   if (input.value.trim()) return null;
-  return { input, message: "Say what the revised accounts change" };
+  return { input, message: siteText("ch.ct.say-differences", "Say what the revised accounts change") };
 }
 
 // What a reload needs of the two returns: which each has reached, never a code or a password.
@@ -2519,7 +2860,7 @@ async function resumeJoint() {
     if (sending.companiesHouse.statusCode === "REJECT") element("tryAgainBtn").style.display = "inline-block";
   } catch (error) {
     console.error("Failed to resume the filing:", error);
-    window.showStatus(error.message || "Failed to resume the filing.", "error");
+    window.showStatus(error.message || siteText("ch.ct.resume-failed", "Failed to resume the filing."), "error");
     showView("formView", { push: false });
   } finally {
     window.hideLoading();
@@ -2569,12 +2910,16 @@ function renderCompaniesHouse() {
       ? create(
           "a",
           { href: "filings.html?receipt=" + encodeURIComponent(receiptId + ".json"), id: "companiesHouseCopyLink" },
-          "See your copy",
+          siteText("ch.ct.see-copy", "See your copy"),
         )
       : "";
     outcome.replaceChildren(
-      outcomeTitle(sending.amendment?.accounts ? "Companies House accepted the revised accounts" : "Companies House accepted the accounts"),
-      paragraph("Submission ", { strong: submissionNumber }, ". "),
+      outcomeTitle(
+        sending.amendment?.accounts
+          ? siteText("ch.ct.ch-accepted-revised", "Companies House accepted the revised accounts")
+          : siteText("ch.ct.ch-accepted", "Companies House accepted the accounts"),
+      ),
+      paragraph(siteText("ch.ct.submission", "Submission "), { strong: submissionNumber }, siteText("ch.ct.full-stop-space", ". ")),
       ...(copyLink ? [copyLink] : []),
       ...(sending.taxReturnAccepted
         ? [
@@ -2582,12 +2927,23 @@ function renderCompaniesHouse() {
               "p",
               { id: "jointAccepted" },
               sending.longPeriod
-                ? `The accounts and ${sending.amendment ? "both amended Company Tax Returns are" : "both Company Tax Returns are"} accepted. Your receipts show them as one filing: `
+                ? sending.amendment
+                  ? siteText(
+                      "ch.ct.joint-long-amended",
+                      "The accounts and both amended Company Tax Returns are accepted. Your receipts show them as one filing: ",
+                    )
+                  : siteText(
+                      "ch.ct.joint-long",
+                      "The accounts and both Company Tax Returns are accepted. Your receipts show them as one filing: ",
+                    )
                 : sending.amendment
-                  ? "Both amended filings are accepted. Your receipts show them under the filing they amend: "
-                  : "Both filings are accepted. Your receipts show them as one filing: ",
-              create("a", { href: "../hmrc/receipt/receipts.html" }, "Your receipts"),
-              ".",
+                  ? siteText(
+                      "ch.ct.joint-amended",
+                      "Both amended filings are accepted. Your receipts show them under the filing they amend: ",
+                    )
+                  : siteText("ch.ct.joint", "Both filings are accepted. Your receipts show them as one filing: "),
+              create("a", { href: "../hmrc/receipt/receipts.html" }, siteText("ch.ct.your-receipts", "Your receipts")),
+              siteText("ch.ct.full-stop", "."),
             ),
           ]
         : []),
@@ -2597,30 +2953,44 @@ function renderCompaniesHouse() {
   if (statusCode === "REJECT") {
     outcome.className = "outcome outcome--error";
     outcome.replaceChildren(
-      outcomeTitle(sending.amendment?.accounts ? "Companies House rejected the revised accounts" : "Companies House rejected the accounts"),
-      paragraph("Submission ", { strong: submissionNumber }, "."),
+      outcomeTitle(
+        sending.amendment?.accounts
+          ? siteText("ch.ct.ch-rejected-revised", "Companies House rejected the revised accounts")
+          : siteText("ch.ct.ch-rejected", "Companies House rejected the accounts"),
+      ),
+      paragraph(siteText("ch.ct.submission", "Submission "), { strong: submissionNumber }, siteText("ch.ct.full-stop", ".")),
     );
     errors.style.display = "block";
     errors.replaceChildren(
       create("ul", {}, ...(rejections ?? []).map((entry) => create("li", {}, `${entry.rejectCode}: ${entry.description}`))),
-      create("p", {}, "Check the accounts, change them in the review, and send again. The Company Tax Return has not been sent."),
+      create(
+        "p",
+        {},
+        siteText(
+          "ch.ct.check-accounts",
+          "Check the accounts, change them in the review, and send again. The Company Tax Return has not been sent.",
+        ),
+      ),
     );
     return;
   }
   outcome.className = "outcome";
   outcome.replaceChildren(
     paragraph(
-      "Companies House has not settled the accounts yet. Submission ",
+      siteText("ch.ct.ch-not-settled", "Companies House has not settled the accounts yet. Submission "),
       { strong: submissionNumber },
-      " is ",
+      siteText("ch.ct.is", " is "),
       { strong: statusCode },
-      ".",
+      siteText("ch.ct.full-stop", "."),
     ),
     ...(sending.taxReturnSent
       ? []
       : [
           paragraph(
-            "You can send the Company Tax Return now, or wait for Companies House. If Companies House then rejects the accounts, a changed figure needs an amended return.",
+            siteText(
+              "ch.ct.send-now-or-wait",
+              "You can send the Company Tax Return now, or wait for Companies House. If Companies House then rejects the accounts, a changed figure needs an amended return.",
+            ),
           ),
         ]),
   );
@@ -2682,7 +3052,9 @@ async function sendAccountsToCompaniesHouse(headers, companyAuthCode) {
 function companiesHouseErrorText(error) {
   const gatewayErrors = error.body?.error?.errors;
   const text = gatewayErrors?.length ? window.describeGovTalkErrors(gatewayErrors).join(" ") : error.message;
-  return `${text || "Failed to file the accounts with Companies House."} Nothing was filed. Check the answers and send again.`;
+  return siteText("ch.ct.ch-file-failed", "{text} Nothing was filed. Check the answers and send again.", {
+    text: text || siteText("ch.accounts.file-failed", "Failed to file the accounts with Companies House."),
+  });
 }
 
 function readGatewayCredentials() {
@@ -2690,7 +3062,7 @@ function readGatewayCredentials() {
   const gatewayPassword = element("gatewayPassword").value;
   if (gatewayUserId && gatewayPassword) return { gatewayUserId, gatewayPassword };
   showView("previewView");
-  window.showStatus("Enter the Government Gateway user ID and password.", "error");
+  window.showStatus(siteText("ch.ct.enter-gateway", "Enter the Government Gateway user ID and password."), "error");
   return null;
 }
 
@@ -2704,7 +3076,11 @@ async function sendCompanyTaxReturn(headers) {
   persistJoint();
   setOutcome();
   element("returnResult").replaceChildren(
-    paragraph("Return ", { strong: submission.correlationId }, " accepted by the gateway. Waiting for HMRC..."),
+    paragraph(
+      siteText("ch.ct.return-word", "Return "),
+      { strong: submission.correlationId },
+      siteText("ch.ct.gateway-waiting", " accepted by the gateway. Waiting for HMRC..."),
+    ),
   );
   element("returnErrors").style.display = "none";
   element("returnIrmark").style.display = "none";
@@ -2771,12 +3147,11 @@ async function settleLongReturn(part, outcome) {
 }
 
 function returnTitle(part) {
-  return `Company Tax Return ${part} of 2`;
+  return siteText("ch.ct.return-title", "Company Tax Return {part} of 2", { part });
 }
 
 function renderLongOutcome() {
   const parts = sending.longPeriod.parts;
-  const amended = sending.amendment ? "amended " : "";
   element("returnErrors").replaceChildren();
   element("returnIrmark").replaceChildren();
   const blocks = [];
@@ -2786,20 +3161,56 @@ function renderLongOutcome() {
     const entry = parts[part - 1];
     if (!entry) continue;
     if (entry.statusCode === "ACCEPT") {
-      blocks.push(outcomeTitle(`HMRC accepted the ${amended}${returnTitle(part)}`));
-      irmarks.push(create("p", {}, `Return ${part} of 2 IRmark: `, create("code", {}, entry.irmark)));
+      blocks.push(
+        outcomeTitle(
+          sending.amendment
+            ? siteText("ch.ct.hmrc-accepted-amended-part", "HMRC accepted the amended {title}", { title: returnTitle(part) })
+            : siteText("ch.ct.hmrc-accepted-part", "HMRC accepted the {title}", { title: returnTitle(part) }),
+        ),
+      );
+      irmarks.push(
+        create("p", {}, siteText("ch.ct.irmark-part", "Return {part} of 2 IRmark: ", { part }), create("code", {}, entry.irmark)),
+      );
     } else if (entry.statusCode === "REJECT") {
-      blocks.push(outcomeTitle(`HMRC rejected the ${amended}${returnTitle(part)}`));
+      blocks.push(
+        outcomeTitle(
+          sending.amendment
+            ? siteText("ch.ct.hmrc-rejected-amended-part", "HMRC rejected the amended {title}", { title: returnTitle(part) })
+            : siteText("ch.ct.hmrc-rejected-part", "HMRC rejected the {title}", { title: returnTitle(part) }),
+        ),
+      );
       const outcome = longErrors[part - 1];
       const entries = [...(outcome?.errors ?? []), ...(outcome?.businessErrors ?? [])];
       errors.push(
-        create("p", { role: "alert" }, `Return ${part} of 2 was not accepted.`),
-        create("ul", {}, ...entries.map((item) => create("li", {}, `Error ${item.number}: ${item.text}`))),
-        create("p", {}, `Check the answers these errors name, change them in the review, and send return ${part} of 2 again.`),
+        create("p", { role: "alert" }, siteText("ch.ct.part-not-accepted", "Return {part} of 2 was not accepted.", { part })),
+        create(
+          "ul",
+          {},
+          ...entries.map((item) =>
+            create("li", {}, siteText("ch.ct.error-line", "Error {number}: {text}", { number: item.number, text: item.text })),
+          ),
+        ),
+        create(
+          "p",
+          {},
+          siteText(
+            "ch.ct.check-errors-part",
+            "Check the answers these errors name, change them in the review, and send return {part} of 2 again.",
+            {
+              part,
+            },
+          ),
+        ),
       );
     } else {
       blocks.push(
-        paragraph(`Return ${part} of 2 `, { strong: entry.correlationId }, " is ", { strong: entry.statusCode }, ". Checking again..."),
+        paragraph(
+          siteText("ch.ct.return-part-word", "Return {part} of 2 ", { part }),
+          { strong: entry.correlationId },
+          siteText("ch.ct.is", " is "),
+          { strong: entry.statusCode },
+          siteText("ch.ct.checking-again", ". Checking again..."),
+        ),
       );
     }
   }
@@ -2816,11 +3227,14 @@ function renderLongOutcome() {
   if (irmarks.length > 0) {
     element("returnIrmark").replaceChildren(
       ...irmarks,
-      create("p", {}, "Keep the IRmarks. They are HMRC's record of exactly what you sent."),
+      create("p", {}, siteText("ch.ct.keep-irmarks", "Keep the IRmarks. They are HMRC's record of exactly what you sent.")),
       create(
         "p",
         { id: "receiptProof" },
-        "The receipts below are the company's proof that it filed these returns. Keep them with the company's records.",
+        siteText(
+          "ch.ct.receipts-proof",
+          "The receipts below are the company's proof that it filed these returns. Keep them with the company's records.",
+        ),
       ),
     );
     element("returnIrmark").style.display = "block";
@@ -2885,7 +3299,10 @@ function firstColumnControls() {
   return [...named, ...accountsControls()];
 }
 
-const FIRST_RETURN_LOCK_NOTE = "Return 1 is filed with HMRC. Send return 2 first, then amend return 1 from its receipt.";
+const FIRST_RETURN_LOCK_NOTE = siteText(
+  "ch.ct.first-return-locked",
+  "Return 1 is filed with HMRC. Send return 2 first, then amend return 1 from its receipt.",
+);
 
 function lockFirstReturn() {
   for (const control of firstColumnControls()) control.disabled = true;
@@ -2903,7 +3320,7 @@ function companyAuthCodeProblem() {
   const input = element("companyAuthCode");
   const length = input.value.trim().length;
   if (length >= COMPANY_AUTH_CODE_LENGTH.min && length <= COMPANY_AUTH_CODE_LENGTH.max) return null;
-  return { input, message: "Enter the 6 to 8 character company authentication code" };
+  return { input, message: siteText("ch.accounts.enter-auth-code", "Enter the 6 to 8 character company authentication code") };
 }
 
 async function runSend(send) {
@@ -2916,11 +3333,15 @@ async function runSend(send) {
     console.error("Filing failed:", error);
     if (error.reason === "tokens_exhausted") {
       const accountsFiled = sending.companiesHouse?.statusCode === "ACCEPT";
-      showTokensExhausted(accountsFiled ? `The accounts are filed with Companies House. ${error.message}` : error.message);
+      showTokensExhausted(
+        accountsFiled
+          ? siteText("ch.ct.accounts-filed-then", "The accounts are filed with Companies House. {message}", { message: error.message })
+          : error.message,
+      );
       return;
     }
     if (error.status === 409) showView("previewView");
-    window.showStatus(error.message || "Failed to file with HMRC.", "error");
+    window.showStatus(error.message || siteText("ch.ct.hmrc-file-failed", "Failed to file with HMRC."), "error");
   } finally {
     window.hideLoading();
   }
@@ -2928,7 +3349,7 @@ async function runSend(send) {
 
 async function handleSubmitReturn() {
   if (!element("gatewayUserId").value.trim() || !element("gatewayPassword").value) {
-    window.showStatus("Enter the Government Gateway user ID and password.", "error");
+    window.showStatus(siteText("ch.ct.enter-gateway", "Enter the Government Gateway user ID and password."), "error");
     return;
   }
   const accountsFirst = accountsStillToSend();
@@ -3068,7 +3489,10 @@ async function loadFiledLongReturns(receipt) {
   }
   if (!filed[0] || !filed[1]) {
     refuseAmendment(
-      "Only one of the two returns of this filing has an accepted receipt. Send the other return first, then amend from its receipt.",
+      siteText(
+        "ch.ct.refuse-one-receipt",
+        "Only one of the two returns of this filing has an accepted receipt. Send the other return first, then amend from its receipt.",
+      ),
     );
     return false;
   }
@@ -3085,35 +3509,51 @@ async function loadAmendment(receiptName) {
   try {
     const res = await window.fetchWithIdToken(`/api/v1/hmrc/receipt/${encodeURIComponent(receiptName)}`, {});
     if (!res.ok) {
-      refuseAmendment("We could not load that receipt, so there is nothing to amend. Open it again from your receipts.");
+      refuseAmendment(
+        siteText("ch.ct.refuse-load", "We could not load that receipt, so there is nothing to amend. Open it again from your receipts."),
+      );
       return;
     }
     const receipt = await res.json();
     if (!AMENDABLE_KINDS.has(receipt?.kind)) {
       refuseAmendment(
-        "That receipt is not an accounts or Company Tax Return filing, so it cannot be amended. Open the filing from your receipts.",
+        siteText(
+          "ch.ct.refuse-kind",
+          "That receipt is not an accounts or Company Tax Return filing, so it cannot be amended. Open the filing from your receipts.",
+        ),
       );
       return;
     }
     if (receipt.statusCode !== "ACCEPT") {
-      refuseAmendment("That filing was not accepted, so there is nothing to amend. File it again from the start.");
+      refuseAmendment(
+        siteText("ch.ct.refuse-not-accepted", "That filing was not accepted, so there is nothing to amend. File it again from the start."),
+      );
       return;
     }
     if (!receipt.formRequest?.company || !receipt.formRequest.values) {
       refuseAmendment(
-        "This filing was made before amending from a receipt was possible, so its answers were not kept. File the amended return from the start.",
+        siteText(
+          "ch.ct.refuse-old",
+          "This filing was made before amending from a receipt was possible, so its answers were not kept. File the amended return from the start.",
+        ),
       );
       return;
     }
     if (receipt.jointFilingId && !(await jointFilingOffered)) {
       refuseAmendment(
-        "Filing the accounts and the Company Tax Return together is not available here, so this joint filing cannot be amended.",
+        siteText(
+          "ch.ct.refuse-joint",
+          "Filing the accounts and the Company Tax Return together is not available here, so this joint filing cannot be amended.",
+        ),
       );
       return;
     }
     if (receipt.kind === "companies-house-accounts" && !receipt.jointFilingId) {
       refuseAmendment(
-        "These accounts were filed on their own. Amend the Company Tax Return filed with them, or file revised accounts from the start.",
+        siteText(
+          "ch.ct.refuse-accounts-alone",
+          "These accounts were filed on their own. Amend the Company Tax Return filed with them, or file revised accounts from the start.",
+        ),
       );
       return;
     }
@@ -3133,7 +3573,7 @@ async function loadAmendment(receiptName) {
     startAmendment({ accounts: Boolean(receipt.jointFilingId) });
   } catch (error) {
     console.error("Failed to load the filing to amend:", error);
-    refuseAmendment(error.message || "Failed to load the filing to amend.");
+    refuseAmendment(error.message || siteText("ch.ct.amend-load-failed", "Failed to load the filing to amend."));
   } finally {
     window.hideLoading();
   }

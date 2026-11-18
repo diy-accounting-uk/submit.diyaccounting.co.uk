@@ -14,6 +14,7 @@ import {
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
+  runStripeListen,
 } from "../helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePage, goToHomePageExpectNotLoggedIn } from "../steps/behaviour-steps.js";
 import {
@@ -38,6 +39,7 @@ import {
   verifyFilingAccepted,
   openFilingCustomerCopy,
   verifyFilingRejected,
+  filesThroughRealCompaniesHouseGateway,
   writeFixtureBookZip,
   writeBuiltIxbrlFile,
   fillAccountsFormFromBook,
@@ -191,6 +193,7 @@ const companyAuthCode = "AB12CD";
 
 let mockOAuth2Process;
 let serverProcess;
+let stripeListenProcess;
 let dynamoControl;
 
 test.setTimeout(300_000);
@@ -212,6 +215,12 @@ test.beforeAll(async () => {
 
   dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
+  // A subscription bundle is granted by Stripe's webhook, so a local server with real Stripe
+  // prices needs stripe listen, started before the server reads its signing secret.
+  stripeListenProcess = await runStripeListen(new URL("api/v1/billing/webhook", baseUrl).href);
+  if (stripeListenProcess) {
+    process.env.STRIPE_TEST_WEBHOOK_SECRET = stripeListenProcess.secret;
+  }
   serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
 
   console.log("beforeAll hook completed successfully");
@@ -220,6 +229,9 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   if (serverProcess) {
     serverProcess.kill();
+  }
+  if (stripeListenProcess) {
+    stripeListenProcess.kill();
   }
   if (mockOAuth2Process) {
     mockOAuth2Process.kill();
@@ -263,6 +275,9 @@ test("Click through: file micro-entity accounts end to end and see the filing ac
 });
 
 test("Click through: file micro-entity accounts shows the reject reason Companies House returns", async ({ page }, testInfo) => {
+  // The reject comes from the simulator's ACCOUNTS_REJECTED scenario; the real gateway has no such
+  // scenario and answers a valid test filing PENDING.
+  test.skip(filesThroughRealCompaniesHouseGateway(), "the simulator's reject scenario has no counterpart on the real gateway");
   const testUrl = baseUrl;
 
   addOnPageLogging(page);

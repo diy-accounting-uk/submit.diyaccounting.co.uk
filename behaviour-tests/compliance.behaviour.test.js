@@ -198,14 +198,14 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     expect(privacyContent).toContain("Right to data portability");
     console.log("✅ GDPR user rights documented");
 
-    expect(privacyContent).toContain("admin@diyaccounting.co.uk");
+    expect(privacyContent).toContain("support@diyaccounting.co.uk");
     console.log("✅ Contact information present");
 
     expect(privacyContent).toContain("Security incidents");
     expect(privacyContent).toContain("72 hours");
     console.log("✅ Security incident notification process documented");
 
-    expect(privacyContent).toContain("ICO Registration Disclosure");
+    expect(privacyContent).toContain("ICO registration disclosure");
     expect(privacyContent).toContain("Amazon Web Services");
     console.log("✅ Data processors disclosed");
 
@@ -254,30 +254,30 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     expect(termsContent).toContain("Making Tax Digital");
     console.log("✅ Service description present");
 
-    expect(termsContent).toContain("HMRC Integration");
+    expect(termsContent).toContain("HMRC integration");
     expect(termsContent).toContain("OAuth");
     console.log("✅ HMRC OAuth integration documented");
 
-    expect(termsContent).toContain("Data Processing and Privacy");
+    expect(termsContent).toContain("Data processing and privacy");
     expect(termsContent).toContain("UK GDPR");
     expect(termsContent).toContain("encrypted");
     console.log("✅ Data processing and encryption documented");
 
-    expect(termsContent).toContain("Fraud Prevention Headers");
+    expect(termsContent).toContain("Fraud prevention headers");
     console.log("✅ Fraud prevention headers explained");
 
-    expect(termsContent).toContain("Data Retention");
+    expect(termsContent).toContain("Data retention");
     expect(termsContent).toContain("7 years");
     console.log("✅ Data retention policy documented");
 
-    expect(termsContent).toContain("Security Incidents");
+    expect(termsContent).toContain("Security incidents");
     expect(termsContent).toContain("72 hours");
     console.log("✅ Security incident notification in terms");
 
-    expect(termsContent).toContain("admin@diyaccounting.co.uk");
+    expect(termsContent).toContain("support@diyaccounting.co.uk");
     console.log("✅ Contact information in terms");
 
-    expect(termsContent).toContain("Governing Law");
+    expect(termsContent).toContain("Governing law");
     expect(termsContent).toContain("England and Wales");
     console.log("✅ Governing law specified");
 
@@ -348,24 +348,24 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     expect(accessibilityContent).toContain("WCAG 2.2 Level AA");
     console.log("✅ WCAG 2.2 Level AA conformance declared");
 
-    expect(accessibilityContent).toContain("Conformance Status");
-    expect(accessibilityContent).toContain("Known Limitations");
+    expect(accessibilityContent).toContain("Conformance status");
+    expect(accessibilityContent).toContain("Known limitations");
     console.log("✅ Conformance status documented");
 
-    expect(accessibilityContent).toContain("Assessment Methods");
+    expect(accessibilityContent).toContain("Assessment methods");
     expect(accessibilityContent).toContain("Pa11y");
     expect(accessibilityContent).toContain("axe-core");
     expect(accessibilityContent).toContain("Lighthouse");
     console.log("✅ Assessment methods documented");
 
-    expect(accessibilityContent).toContain("Accessibility Features");
+    expect(accessibilityContent).toContain("Accessibility features");
     expect(accessibilityContent).toContain("Keyboard navigation");
     console.log("✅ Accessibility features listed");
 
-    expect(accessibilityContent).toContain("admin@diyaccounting.co.uk");
+    expect(accessibilityContent).toContain("support@diyaccounting.co.uk");
     console.log("✅ Contact information present");
 
-    expect(accessibilityContent).toContain("Enforcement Procedure");
+    expect(accessibilityContent).toContain("Enforcement procedure");
     console.log("✅ Enforcement procedure documented");
 
     // Check Last Updated date

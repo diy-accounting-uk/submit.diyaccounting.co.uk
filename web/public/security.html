@@ -5,7 +5,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Security statement – DIY Accounting Submit</title>
+    <title>Security statement - DIY Accounting Submit</title>
     <meta
       name="description"
       content="How DIY Accounting Submit protects data in transit and at rest, handles sign-in and HMRC tokens, and tests its own security."
@@ -13,7 +13,7 @@
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/security.html" />
     <!-- Open Graph / Social -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Security statement – DIY Accounting Submit" />
+    <meta property="og:title" content="Security statement - DIY Accounting Submit" />
     <meta
       property="og:description"
       content="How DIY Accounting Submit protects data in transit and at rest, handles sign-in and HMRC tokens, and tests its own security."
@@ -59,7 +59,7 @@
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
       <h1>Security statement</h1>
-      <p class="legal-meta">Last updated: 3 November 2026</p>
+      <p class="legal-meta">Last updated: 17 November 2026</p>
     </header>
 
     <main id="mainContent" class="legal">
@@ -68,6 +68,23 @@
           This page answers the security questions customers ask. Each statement below matches how the service is built and run. For how we
           handle personal data, read the <a href="privacy.html">privacy notice</a>.
         </p>
+      </section>
+
+      <section id="in-brief">
+        <h2>In brief</h2>
+        <ul>
+          <li>Your data is kept in London, on Amazon Web Services.</li>
+          <li>We never see your Government Gateway password. You type it on HMRC's own page.</li>
+          <li>
+            To report a problem, email <a href="mailto:admin@diyaccounting.co.uk">admin@diyaccounting.co.uk</a> or use the
+            <a href="#report">details at the end of this page</a>.
+          </li>
+        </ul>
+      </section>
+
+      <section id="technical-detail">
+        <h2>Technical detail</h2>
+        <p>The sections below say how the service is built and run.</p>
       </section>
 
       <section id="hosting">
@@ -146,7 +163,7 @@
       <section id="testing">
         <h2>Security testing</h2>
         <p>Automated checks run on a schedule and on code changes.</p>
-        <table class="data-table">
+        <table class="data-table table-words">
           <thead>
             <tr>
               <th>Check</th>

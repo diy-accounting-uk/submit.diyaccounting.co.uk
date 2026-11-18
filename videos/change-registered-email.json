@@ -108,7 +108,8 @@
           "expectsNavigation": true,
           "caption": "Open Change Registered Email Address to find the company.",
           "headline": "Open the activity",
-          "keyWord": "email"
+          "keyWord": "email",
+          "instruction": "Choose Change Registered Email Address (Companies House) on the activities page."
         },
         {
           "action": "await",
@@ -122,21 +123,24 @@
           "clear": true,
           "caption": "Type the company number.",
           "headline": "Enter the company number",
-          "keyWord": "number"
+          "keyWord": "number",
+          "instruction": "Enter your company number."
         },
         {
           "action": "click",
           "target": "#companyLookupBtn",
           "caption": "This checks eligibility at Companies House.",
           "headline": "Check eligibility first",
-          "keyWord": "eligibility"
+          "keyWord": "eligibility",
+          "instruction": "Choose Check eligibility."
         },
         {
           "action": "companiesHouseAuthorise",
           "caption": "Sign in to Companies House and say yes once.",
           "headline": "Grant Companies House access",
           "keyWord": "Grant",
-          "timeoutMs": 60000
+          "timeoutMs": 60000,
+          "instruction": "Sign in to Companies House and give permission once."
         },
         {
           "action": "await",
@@ -174,7 +178,8 @@
           "target": "#continueBtn",
           "caption": "Review before anything is filed.",
           "headline": "Review before filing",
-          "keyWord": "Review"
+          "keyWord": "Review",
+          "instruction": "Tick the statement that the company is likely to notice mail sent there, then choose Continue."
         },
         {
           "action": "hold",
@@ -205,7 +210,8 @@
           "target": "#submitFilingBtn",
           "caption": "File the change with Companies House.",
           "headline": "File the change",
-          "keyWord": "File"
+          "keyWord": "File",
+          "instruction": "Read the review, then choose File with Companies House; nothing is filed before this."
         },
         {
           "action": "hold",
@@ -253,7 +259,8 @@
           "ms": 6500,
           "caption": "The record shows the submission number, the status, the date and the change as submitted.",
           "headline": "The filing record",
-          "keyWord": "record"
+          "keyWord": "record",
+          "instruction": "Wait for the outcome, then read your copy with its submission number, status, date and the change you filed."
         }
       ]
     }

@@ -4,7 +4,7 @@
 -- Same rows as v_activity_started_daily, grouped by hour instead of day. The operator
 -- dashboard's Today column starts at UK midnight, which a day-grain "day" column cannot
 -- answer, so its Today, Previous day and Last 7 days activity columns read from this view.
--- The partition predicate keeps it to the last 8 days: the dashboard reads at most 7, and
+-- The partition predicate keeps it to the last 15 days: the dashboard's graphs read at most 14, and
 -- without it every query lists every projected dt prefix the base table carries.
 CREATE OR REPLACE VIEW v_activity_started_hourly AS
 SELECT date_trunc('hour', event_ts) AS hour, activity_id AS activity, app_client,
@@ -13,5 +13,5 @@ SELECT date_trunc('hour', event_ts) AS hour, activity_id AS activity, app_client
 FROM   activity_events_all
 WHERE  (actor = 'customer' OR (actor = 'operator' AND activity_id = 'operator-dashboard'))
        AND event = 'activity-started' AND activity_id IS NOT NULL
-       AND dt >= current_date - interval '8' day
+       AND dt >= current_date - interval '15' day
 GROUP  BY 1, 2, 3

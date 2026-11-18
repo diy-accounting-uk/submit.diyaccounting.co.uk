@@ -8,20 +8,22 @@
 (function () {
   "use strict";
 
-  const twoDecimals = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
-  const wholePounds = new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: "GBP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  });
+  // Amounts follow the language of the site's text: cy-GB when it reads in Welsh.
+  function locale() {
+    return window.siteLanguage?.chrome?.() === "cy" ? "cy-GB" : "en-GB";
+  }
 
   function formatGbp(amount) {
-    return twoDecimals.format(Number(amount));
+    return new Intl.NumberFormat(locale(), { style: "currency", currency: "GBP" }).format(Number(amount));
   }
 
   function formatGbpWhole(amount) {
-    return wholePounds.format(Number(amount));
+    return new Intl.NumberFormat(locale(), {
+      style: "currency",
+      currency: "GBP",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(Number(amount));
   }
 
   window.formatGbp = formatGbp;

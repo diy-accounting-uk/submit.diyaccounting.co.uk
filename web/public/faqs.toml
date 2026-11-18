@@ -10,17 +10,13 @@ id = "how-to-submit-vat-return"
 category = "submission"
 question = "How do I submit my VAT return?"
 answer = """
-To submit your VAT return:
-
-1. **Log in** using your Google or Microsoft account
-2. **Check your obligations** to see which VAT periods need returns
-3. **Click Submit VAT Return** from the home page
-4. **Enter your figures** in Boxes 1-9 (Boxes 3 and 5 calculate automatically)
-5. **Tick the declaration** confirming the information is true and complete
-6. **Click Submit** - you'll be redirected to HMRC to authorise the submission
-7. **Save your receipt** showing the HMRC Form Bundle Number
-
-Keep your receipt as proof of submission.
+1. Sign in with your Google or Microsoft account.
+2. Open **Check VAT obligations** to see which periods need a return.
+3. Click **Submit VAT Return** on the home page.
+4. Enter your figures in Boxes 1 to 9. Boxes 3 and 5 calculate for you.
+5. Tick the declaration that the information is true and complete.
+6. Click **Submit**. HMRC asks you to authorise the submission.
+7. Save your receipt. It shows the HMRC Form Bundle Number.
 """
 keywords = ["submit", "how to", "vat return", "send", "file", "make submission"]
 priority = 1
@@ -30,14 +26,13 @@ id = "what-are-vat-obligations"
 category = "submission"
 question = "What are VAT obligations?"
 answer = """
-VAT obligations are the periods for which HMRC expects you to submit a VAT return.
+An obligation is a period for which HMRC expects a VAT return. Each one shows three things.
 
-Each obligation shows:
-- **VAT period** - The date range (e.g., 1 January to 31 March 2026)
-- **Due date** - When the return must be submitted by
-- **Status** - Open (not yet submitted) or Fulfilled (submitted)
+- **VAT period** is the range of dates the return covers, for example 1 January to 31 March 2026.
+- **Due date** is the day the return must reach HMRC.
+- **Status** is Open until you submit the return, and Fulfilled after.
 
-Use **Check VAT Obligations** to see your upcoming and past obligations. You can only submit a return for an Open obligation.
+You can submit a return only for an Open obligation. Use **Check VAT obligations** to see yours.
 """
 keywords = ["obligations", "periods", "due date", "when", "deadline"]
 priority = 2
@@ -51,15 +46,15 @@ answer = """
 |-----|-------------|
 | 1 | VAT due on sales and other outputs |
 | 2 | VAT due on acquisitions from EU (usually £0 post-Brexit) |
-| 3 | Total VAT due (Box 1 + Box 2) - **calculated automatically** |
+| 3 | Total VAT due (Box 1 plus Box 2), calculated automatically |
 | 4 | VAT reclaimed on purchases and other inputs |
-| 5 | Net VAT to pay or reclaim (Box 3 - Box 4) - **calculated automatically** |
+| 5 | Net VAT to pay or reclaim (Box 3 minus Box 4), calculated automatically |
 | 6 | Total value of sales excluding VAT (whole pounds) |
 | 7 | Total value of purchases excluding VAT (whole pounds) |
 | 8 | Total value of supplies to EU excluding VAT (usually £0 post-Brexit) |
 | 9 | Total value of acquisitions from EU excluding VAT (usually £0 post-Brexit) |
 
-You enter Boxes 1, 2, 4, 6, 7, 8, and 9. Boxes 3 and 5 are calculated for you.
+You enter Boxes 1, 2, 4, 6, 7, 8 and 9. Boxes 3 and 5 are calculated for you.
 """
 keywords = ["box", "boxes", "box 1", "box 2", "box 3", "box 4", "box 5", "box 6", "box 7", "box 8", "box 9", "what goes", "which box", "vat return", "fields"]
 priority = 3
@@ -69,14 +64,11 @@ id = "hmrc-connect-fail"
 category = "connection"
 question = "Why can't I connect to HMRC?"
 answer = """
-The most common causes are:
+Submit sends you to HMRC's page in the same tab and brings you back after you authorise. If that fails:
 
-1. **Pop-up blocker** - HMRC authentication opens in a new window. Allow pop-ups for submit.diyaccounting.co.uk
-2. **Browser cookies** - HMRC requires cookies. Ensure third-party cookies aren't blocked for tax.service.gov.uk
-3. **Session expired** - If you've been on the page a while, refresh and try again
-4. **HMRC service down** - Check [HMRC service availability](https://www.gov.uk/government/collections/hm-revenue-and-customs-service-availability-and-issues) for outages
-
-If problems persist, try a different browser or clear your cookies for this site.
+1. Refresh the page and try again. Your sign-in may have expired while the page was open.
+2. Check [HMRC service availability](https://www.gov.uk/government/collections/hm-revenue-and-customs-service-availability-and-issues) for a fault.
+3. Try a different browser, or clear the cookies for this site.
 """
 keywords = ["connect", "hmrc", "login", "authorise", "authorize", "popup", "blocked", "won't connect", "can't connect", "failed", "connection"]
 priority = 4
@@ -86,13 +78,11 @@ id = "where-is-receipt"
 category = "receipts"
 question = "Where can I find my submission receipt?"
 answer = """
-After a successful submission:
+1. A receipt appears when the submission succeeds. It shows your **Form Bundle Number**. Save or print it.
+2. Click **Receipts** in the navigation bar to see all your submissions.
+3. Each receipt shows the date, the VAT registration number, the period and the HMRC reference.
 
-1. A receipt appears immediately showing your **Form Bundle Number** - save or print this
-2. Click **Receipts** from the navigation bar to see all your submissions
-3. Each receipt shows the date, VAT registration number, period, and HMRC reference
-
-**Note:** Receipts are stored securely in your account and accessible from any device when logged in.
+Receipts are stored in your account. You can open them from any device when you are signed in.
 """
 keywords = ["receipt", "receipts", "where", "find", "confirmation", "proof", "submitted", "form bundle number"]
 priority = 5
@@ -100,18 +90,14 @@ priority = 5
 [[faq]]
 id = "submitted-wrong-figures"
 category = "submission"
-question = "I submitted the wrong figures - what do I do?"
+question = "I submitted the wrong figures. What do I do?"
 answer = """
-**You cannot amend a submitted VAT return through this app.**
+You cannot amend a submitted VAT return in Submit. How you correct it depends on the size of the error.
 
-To correct errors:
+- A small error goes on your next VAT return. It is small when its net value is £10,000 or less, or up to £50,000 if it is no more than 1% of your Box 6 figure for the return period in which you find it. It must be inside the 4-year time limit and not deliberate.
+- Any other error goes to HMRC on form VAT652, or in a letter.
 
-- **Small errors** - Correct them on your next VAT return when the net value of the errors is £10,000 or less, or up to £50,000 if it is no more than 1% of your Box 6 figure for the return period in which you find them. The error must be within the 4-year time limit and not deliberate.
-- **Any other errors** - Submit form VAT652 to HMRC or write to them
-
-See [HMRC guidance on correcting VAT errors](https://www.gov.uk/vat-corrections)
-
-Keep your receipt from DIY Accounting Submit as a record of what was originally submitted.
+See [HMRC guidance on correcting VAT errors](https://www.gov.uk/vat-corrections). Keep your Submit receipt as a record of what you first submitted.
 """
 keywords = ["wrong figures", "mistake", "error", "submitted wrong", "amend", "correct", "change", "fix submission"]
 priority = 6
@@ -119,18 +105,17 @@ priority = 6
 [[faq]]
 id = "first-time-mtd"
 category = "connection"
-question = "I've never submitted digitally before - where do I start?"
+question = "I've never submitted digitally before. Where do I start?"
 answer = """
-First-time Making Tax Digital setup:
+1. Sign up for Making Tax Digital for VAT at [gov.uk/vat-record-keeping](https://www.gov.uk/vat-record-keeping/sign-up-for-making-tax-digital-for-vat), if you have not already.
+2. Wait 24 to 48 hours. HMRC needs time to start your Making Tax Digital access.
+3. Sign in to DIY Accounting Submit with your Google or Microsoft account.
+4. Request a day pass or choose a bundle on the [Bundles](bundles.html) page.
+5. Check your obligations to see which VAT periods HMRC expects returns for.
+6. Enter your 9-digit VAT registration number and your figures on the VAT form.
+7. Submit your return.
 
-1. **Sign up for Making Tax Digital** - Register at [gov.uk/vat-record-keeping](https://www.gov.uk/vat-record-keeping/sign-up-for-making-tax-digital-for-vat) if you haven't already
-2. **Wait 24-48 hours** - HMRC needs time to activate your Making Tax Digital access
-3. **Log in** to DIY Accounting Submit using your Google or Microsoft account
-4. **Add a bundle** - Enter your 9-digit VAT registration number
-5. **Check obligations** - See which VAT periods HMRC expects returns for
-6. **Submit** - Enter your figures and submit your return
-
-Keep your Government Gateway login details handy - you'll need them when authorising submissions.
+Keep your Government Gateway user ID and password ready. HMRC asks for them when you authorise.
 """
 keywords = ["first time", "never", "new", "start", "begin", "how do i", "getting started", "setup", "making tax digital", "mtd"]
 priority = 7
@@ -140,18 +125,14 @@ id = "vat-registration-number-format"
 category = "vat-basics"
 question = "What format should my VAT registration number be in?"
 answer = """
-Your VAT registration number should be:
+Your VAT registration number is 9 digits, with no spaces, letters or GB prefix. It is on your VAT registration certificate from HMRC.
 
-- **Exactly 9 digits** (e.g., 123456789)
-- **No spaces, letters, or GB prefix**
-- Found on your VAT registration certificate from HMRC
+If your certificate shows "GB 123 456 789", enter 123456789.
 
-If you have it written as "GB 123 456 789", just enter the 9 digits: 123456789
-
-The system will reject formats like:
-- GB123456789 (has GB prefix)
-- 123 456 789 (has spaces)
-- 12345678 (only 8 digits)
+Submit rejects these forms:
+- GB123456789, which has a GB prefix.
+- 123 456 789, which has spaces.
+- 12345678, which has 8 digits.
 """
 keywords = ["vat registration number", "format", "9 digits", "gb", "how to enter", "invalid"]
 priority = 8
@@ -163,12 +144,10 @@ question = "My VAT obligations aren't showing"
 answer = """
 If no obligations appear:
 
-1. **Expand the date range** - Obligations only show for periods HMRC expects a return. Try a wider date range.
-2. **Check the status filter** - By default, only Open obligations show. Change to "All statuses" to see Fulfilled ones too.
-3. **New registration** - HMRC may take 24-48 hours to create your first obligation after Making Tax Digital registration
-4. **Check your VAT registration number** - Make sure you're using the correct 9-digit number
-
-If you've just registered for Making Tax Digital, wait 24-48 hours and try again.
+1. Widen the date range. Obligations show only for periods in which HMRC expects a return.
+2. Check the status filter. It shows only Open obligations until you choose "All statuses".
+3. Wait after a new registration. HMRC can take 24 to 48 hours to create your first obligation after you register for Making Tax Digital.
+4. Check that the 9-digit VAT registration number is correct.
 """
 keywords = ["obligations", "not showing", "no obligations", "empty", "can't see", "missing", "periods"]
 priority = 9
@@ -178,15 +157,9 @@ id = "what-is-bundle"
 category = "bundles"
 question = "What is a bundle?"
 answer = """
-A bundle saves your VAT submission settings:
+A bundle is what your account can file and how many tokens it gets. It holds no VAT registration number and no HMRC connection. You enter the number on the VAT form, and HMRC asks you to authorise each submission.
 
-- Your **VAT registration number**
-- Whether to use **synthetic** (testing — calls go to HMRC's sandbox) or **production** (real HMRC)
-- Your **HMRC authorisation** for submitting returns
-
-If you submit VAT for multiple businesses, create a separate bundle for each. Each bundle maintains its own HMRC connection.
-
-Most users only need one bundle for their business.
+To get a bundle, request a day pass or choose one on the [Bundles](bundles.html) page.
 """
 keywords = ["bundle", "what is", "bundles", "configuration", "setup"]
 priority = 10
@@ -196,13 +169,13 @@ id = "figures-dont-match"
 category = "submission"
 question = "My figures don't match my spreadsheet"
 answer = """
-Common causes of mismatches:
+These causes explain most mismatches:
 
-1. **Rounding** - HMRC accepts figures to 2 decimal places for Boxes 1-5. Check your spreadsheet rounds correctly.
-2. **Box 3 and 5** - These are calculated automatically (Box 3 = Box 1 + Box 2, Box 5 = |Box 3 - Box 4|). Don't calculate them yourself.
-3. **VAT vs Net amounts** - Boxes 1-5 are VAT amounts. Boxes 6-9 are net values excluding VAT.
-4. **Whole pounds** - Boxes 6-9 must be whole numbers with no pence.
-5. **Period dates** - Ensure your spreadsheet covers exactly the same dates as the obligation.
+1. Rounding can differ. HMRC accepts figures to 2 decimal places for Boxes 1 to 5. Check that your spreadsheet rounds the same way.
+2. Boxes 3 and 5 calculate for you. Box 3 is Box 1 plus Box 2. Box 5 is the difference between Box 3 and Box 4, shown as a positive number. Do not calculate them yourself.
+3. Boxes 1 to 5 hold VAT amounts. Boxes 6 to 9 hold net values that exclude VAT.
+4. Boxes 6 to 9 are whole pounds with no pence.
+5. The period dates must match the obligation exactly. Check that your spreadsheet covers the same dates.
 """
 keywords = ["figures", "don't match", "doesn't match", "wrong", "different", "spreadsheet", "mismatch", "numbers", "calculation"]
 priority = 11
@@ -210,16 +183,13 @@ priority = 11
 [[faq]]
 id = "flat-rate-scheme"
 category = "vat-basics"
-question = "I'm on the Flat Rate Scheme - can I use this app?"
+question = "I'm on the Flat Rate Scheme. Can I use this app?"
 answer = """
-Yes. The Flat Rate Scheme changes how you calculate your VAT, not how you submit it.
+Yes. The Flat Rate Scheme changes how you work out your VAT, not how you submit it. Enter these figures:
 
-When using DIY Accounting Submit with Flat Rate:
-- **Box 1** = Your flat rate VAT (gross turnover x your flat rate percentage)
-- **Box 6** = Your gross turnover including VAT
-- **Boxes 2, 4, 7, 8, 9** are typically £0 (check HMRC guidance for exceptions)
-
-Calculate your figures using your flat rate percentage, then submit as normal.
+- **Box 1** is your flat rate VAT: your gross turnover multiplied by your flat rate percentage.
+- **Box 6** is your gross turnover including VAT.
+- **Boxes 2, 4, 7, 8 and 9** are usually £0. Check HMRC guidance for exceptions.
 """
 keywords = ["flat rate", "flat rate scheme", "frs", "simplified"]
 priority = 12
@@ -227,15 +197,9 @@ priority = 12
 [[faq]]
 id = "annual-accounting"
 category = "vat-basics"
-question = "I'm on Annual Accounting - how does this work?"
+question = "I'm on Annual Accounting. How does this work?"
 answer = """
-Annual Accounting means you submit one VAT return per year instead of quarterly.
-
-In DIY Accounting Submit:
-1. You'll see **one obligation** covering your annual period
-2. Submit as normal - the process is identical to quarterly returns
-
-Your interim payments to HMRC throughout the year are separate from your return submission.
+Annual Accounting means you submit one VAT return a year instead of one a quarter. You see one obligation for the year, and you submit it in the same way as a quarterly return. Your interim payments to HMRC during the year are separate from the return.
 """
 keywords = ["annual", "annual accounting", "yearly", "once a year"]
 priority = 13
@@ -245,14 +209,14 @@ id = "authorisation-expired"
 category = "connection"
 question = "My HMRC authorisation has expired"
 answer = """
-HMRC authorisations expire after 18 months or if you revoke access.
+An HMRC authorisation lasts 18 months, or ends when you remove the software's authority.
 
-To re-authorise:
-1. When you try to submit, you'll be redirected to HMRC automatically
-2. Log in with your **Government Gateway** credentials
-3. Grant permission for DIY Accounting Submit to act on your behalf
+To authorise again:
+1. Start a submission. Submit sends you to HMRC.
+2. Enter your **Government Gateway** user ID and password on HMRC's page.
+3. Give DIY Accounting Submit permission to act for you.
 
-You can also check or revoke authorisations at [tax.service.gov.uk/agent-services-account](https://www.tax.service.gov.uk/agent-services-account)
+A business checks or removes the software's authority at [tax.service.gov.uk/applications-manage-authority](https://www.tax.service.gov.uk/applications-manage-authority). An agent uses the [agent services account](https://www.tax.service.gov.uk/agent-services-account).
 """
 keywords = ["expired", "authorisation", "authorization", "renew", "re-authorise", "token", "18 months"]
 priority = 14
@@ -262,13 +226,13 @@ id = "hmrc-not-received"
 category = "receipts"
 question = "HMRC says they haven't received my return but I got a success message"
 answer = """
-If DIY Accounting Submit showed a success message with a Form Bundle Number, HMRC received it. Discrepancies usually mean:
+If Submit showed a success message with a Form Bundle Number, HMRC received the return. A difference between the two usually has one of these causes:
 
-1. **Timing** - HMRC's own systems can take a few hours to update. Check again later.
-2. **Wrong period** - You may have submitted for a different period than you're checking
-3. **Different VAT registration number** - Ensure you're checking the same business in HMRC's portal
+1. HMRC's systems can take a few hours to show a new return. Check again later.
+2. You may be checking a different period from the one you submitted.
+3. You may be checking a different VAT registration number. Check that you look at the same business in HMRC's portal.
 
-Your receipt includes the **Form Bundle Number** (e.g., 425379263134). Quote this to HMRC if you need to prove submission.
+Your receipt shows the **Form Bundle Number**, for example 425379263134. Quote it to HMRC to prove the submission.
 """
 keywords = ["hmrc", "not received", "haven't received", "didn't get", "missing submission", "success but", "form bundle number"]
 priority = 15
@@ -278,15 +242,11 @@ id = "error-invalid-vat-registration-number"
 category = "errors"
 question = "Error: Invalid VAT registration number"
 answer = """
-This error means the VAT registration number format is incorrect:
+This error means the VAT registration number has the wrong form. It must be 9 digits with no spaces, letters or GB prefix: 123456789, not GB123456789 or 123 456 789.
 
-- Must be **exactly 9 digits**
-- **No spaces, letters, or GB prefix**
-- Example: 123456789 (not GB123456789 or 123 456 789)
-
-If your number is correct but still rejected:
-- Check the business is registered for **Making Tax Digital for VAT** (not just standard VAT)
-- New registrations can take 24-48 hours to activate
+If your number is correct and Submit still rejects it:
+- Check that the business is registered for **Making Tax Digital for VAT**, not only for VAT.
+- Wait 24 to 48 hours after a new registration.
 """
 keywords = ["invalid", "vat registration number", "error", "wrong format", "9 digits", "gb"]
 priority = 16
@@ -296,13 +256,7 @@ id = "error-duplicate-submission"
 category = "errors"
 question = "Error: Duplicate submission"
 answer = """
-HMRC rejected the submission because a return for this period already exists.
-
-This happens if:
-- You already submitted for this period (check your receipts)
-- Someone else submitted for this VAT registration number (e.g., an accountant)
-
-Check the period status in **VAT Obligations** - it should show as **Fulfilled** with a received date.
+HMRC rejected the submission because a return for this period already exists. This happens when you already submitted for the period, or when someone else, such as an accountant, submitted for the same VAT registration number. Check your receipts. In **VAT obligations** the period shows as **Fulfilled** with a received date.
 """
 keywords = ["duplicate", "already submitted", "exists", "period already"]
 priority = 17
@@ -312,14 +266,11 @@ id = "error-obligation-not-found"
 category = "errors"
 question = "Error: Obligation not found for this period"
 answer = """
-You're trying to submit for a period HMRC isn't expecting a return for.
+You are submitting for a period that HMRC does not expect a return for. Use **Check VAT obligations** to see which periods are open. Then:
 
-Check:
-1. The VAT period matches an **Open** obligation exactly
-2. You haven't already submitted for this period (would show as Fulfilled)
-3. The VAT registration number is correct
-
-Use **Check VAT Obligations** to see which periods are open and need returns.
+1. Match the VAT period to an **Open** obligation exactly.
+2. Check that you have not already submitted for this period. It would show as Fulfilled.
+3. Check that the VAT registration number is correct.
 """
 keywords = ["obligation not found", "period not found", "no obligation", "can't submit"]
 priority = 18
@@ -327,20 +278,15 @@ priority = 18
 [[faq]]
 id = "sandbox-vs-production"
 category = "connection"
-question = "What's the difference between synthetic and production?"
+question = "What is the difference between Sandbox, Preview and Production?"
 answer = """
-Our mode is called **synthetic**. In synthetic mode, calls go to HMRC's sandbox, its test
-environment:
-- Uses test credentials (any VAT registration number works)
-- Submissions don't affect real tax records
-- Useful for learning how the app works
+Production sends your filing to HMRC for real. Sandbox sends it to HMRC's test service, and nothing real is filed. Preview lets you try the screens, and nothing is sent.
 
-**Production** is the real HMRC system:
-- Requires your actual Government Gateway login
-- Submissions are legally binding VAT returns
-- This is what you use for real submissions
+- **Production** needs your Government Gateway user ID and password. A submission is a legally binding VAT return.
+- **Sandbox** uses test credentials, and any VAT registration number works. A submission does not affect real tax records.
+- **Preview** shows the screens of a filing that is not yet available. Nothing goes to HMRC or Companies House.
 
-Most users should use **Production** for their actual VAT returns.
+The [availability table](mtd-calendar.html#availability) gives the status of each filing.
 """
 keywords = ["synthetic", "sandbox", "production", "test", "live", "real", "difference"]
 priority = 19
@@ -348,20 +294,15 @@ priority = 19
 [[faq]]
 id = "clear-browser-data"
 category = "errors"
-question = "Something's not working - should I clear my browser data?"
+question = "Something's not working. Should I clear my browser data?"
 answer = """
-Clearing browser data can help with some issues but **will delete your saved receipts**.
+Clearing browser data signs you out and removes the settings this site keeps in your browser. Your receipts stay in your account. Try these first:
 
-Before clearing:
-1. Go to **My Receipts**
-2. Save or print any receipts you need
+- Open a private or incognito window.
+- Try a different browser.
+- Clear the cookies for submit.diyaccounting.co.uk only.
 
-Safer alternatives to try first:
-- Open a private/incognito window
-- Try a different browser
-- Clear cookies just for submit.diyaccounting.co.uk
-
-If issues persist after clearing data, [send us a support request](/help.html) or email support@diyaccounting.co.uk.
+If the problem stays, [send us a support request](/help.html) or email support@diyaccounting.co.uk.
 """
 keywords = ["clear", "browser", "cache", "cookies", "not working", "stuck", "frozen", "reset"]
 priority = 20
@@ -395,32 +336,24 @@ priority = 21
 
 [[faq]]
 id = "multiple-businesses"
-category = "bundles"
+category = "submission"
 question = "Can I submit VAT for multiple businesses?"
 answer = """
-Yes. Create a separate bundle for each VAT registration number:
+Yes. A bundle holds no VAT registration number, so one bundle covers every business you submit for.
 
-1. Click **Add Bundle**
-2. Enter the VAT registration number for that business
-3. Authorise with HMRC using that business's Government Gateway credentials
-
-Each bundle maintains its own HMRC connection. Switch between them from the home screen.
+1. Open the VAT form.
+2. Enter the VAT registration number of the business.
+3. Submit your figures. HMRC asks you to authorise with that business's Government Gateway user ID and password.
 """
 keywords = ["multiple", "businesses", "companies", "more than one", "several", "different"]
 priority = 22
 
 [[faq]]
 id = "wrong-vat-registration-number"
-category = "bundles"
-question = "I added the wrong VAT registration number - how do I fix it?"
+category = "submission"
+question = "I entered the wrong VAT registration number. How do I fix it?"
 answer = """
-You cannot edit a bundle's VAT registration number after creation. Instead:
-
-1. Go to **Bundles** from the menu
-2. Remove the incorrect bundle
-3. Click **Add Bundle** and enter the correct VAT registration number
-
-Your submission receipts are stored separately and won't be lost.
+A bundle holds no VAT registration number, so there is nothing to remove or edit. Enter the correct 9-digit number on the VAT form before you submit. Nothing goes to HMRC until you submit.
 """
 keywords = ["wrong", "incorrect", "change", "edit bundle", "fix", "mistake", "vat registration number"]
 priority = 23
@@ -430,20 +363,20 @@ id = "data-security"
 category = "vat-basics"
 question = "Where is my data stored? Is it secure?"
 answer = """
-DIY Accounting Submit takes data security seriously:
+Submit stores your data in the AWS eu-west-2 (London) region. See [Security](security.html) for the hosting and the protections.
 
-**What we store:**
-- Your bundle settings (VAT registration number, environment preference)
-- Submission receipts (stored securely in your account)
+We store:
+- Your bundles and token balances.
+- Your submission receipts, in your account.
 
-**What we don't store:**
-- Your VAT figures - these go directly to HMRC and are not stored on our servers
-- Your Government Gateway credentials - you enter these on HMRC's own website
+We do not store:
+- Your VAT figures. They go directly to HMRC and are not kept on our servers.
+- Your Government Gateway credentials. You enter them on HMRC's own website.
 
-**Security measures:**
-- All connections use HTTPS encryption
-- HMRC authorisation uses OAuth 2.0 (the same standard banks use)
-- Your HMRC access tokens are stored securely and never exposed to JavaScript
+Protections:
+- Every connection uses HTTPS encryption.
+- HMRC authorisation uses OAuth 2.0.
+- Your HMRC access tokens are stored securely and are never exposed to JavaScript.
 
 See our [privacy policy](https://submit.diyaccounting.co.uk/privacy.html) for full details.
 """
@@ -455,15 +388,9 @@ id = "mobile-compatibility"
 category = "vat-basics"
 question = "Can I use this on my phone or tablet?"
 answer = """
-Yes. DIY Accounting Submit works on:
+Yes. DIY Accounting Submit works in a browser on a desktop, a tablet or a phone. Use Chrome, Firefox, Safari or Edge. The page adapts to your screen size, and a larger screen is easier for entering VAT figures.
 
-- **Desktop browsers** - Chrome, Firefox, Safari, Edge
-- **Tablets** - iPad, Android tablets
-- **Mobile phones** - iPhone, Android phones
-
-The interface is responsive and adapts to your screen size. For entering VAT figures, a larger screen (tablet or desktop) may be easier to use, but mobile works fine.
-
-**Note:** You'll need to complete the HMRC authorisation step, which opens in a new browser window. Make sure pop-ups are allowed.
+HMRC's authorisation page opens in the same tab and brings you back to Submit.
 """
 keywords = ["mobile", "phone", "tablet", "ipad", "iphone", "android", "browser", "device", "responsive"]
 priority = 25
@@ -473,17 +400,9 @@ id = "vat-refund"
 category = "submission"
 question = "What if Box 5 shows a negative amount (refund)?"
 answer = """
-A negative Box 5 means HMRC owes you a refund. This happens when your Box 4 (VAT reclaimed) is greater than Box 3 (VAT due).
+A negative Box 5 means HMRC owes you a refund. It happens when Box 4 (VAT reclaimed) is more than Box 3 (VAT due). Submit shows Box 5 as a positive amount, the difference between Box 3 and Box 4, and HMRC knows from the figures whether it is a payment or a refund.
 
-**The system handles this automatically:**
-- Box 5 displays as a positive number representing the refund amount
-- The calculation is |Box 3 - Box 4| (absolute value)
-- HMRC knows from the figures whether it's a payment or refund
-
-**After submission:**
-- HMRC will process the refund according to their normal procedures
-- Refunds typically appear in your bank account within 10 working days
-- Check your HMRC online account for refund status
+HMRC then processes the refund by its normal procedure. Refunds usually reach your bank account within 10 working days. Your HMRC online account shows the status.
 """
 keywords = ["refund", "negative", "box 5", "owed", "repayment", "claim back", "hmrc owes me"]
 priority = 26
@@ -493,19 +412,12 @@ id = "payment-to-hmrc"
 category = "submission"
 question = "How do I pay HMRC after submitting my return?"
 answer = """
-**DIY Accounting Submit only handles the VAT return submission - not payment.**
+Submit sends your VAT return. It does not take payment. If you owe VAT, pay HMRC separately:
 
-After submitting your return, you need to pay HMRC separately if you owe VAT:
+1. Open [HMRC's page for paying VAT](https://www.gov.uk/pay-vat).
+2. Choose a payment method: Direct Debit, bank transfer (use your VAT registration number as the reference), or debit or credit card.
 
-1. Log in to your [HMRC online account](https://www.gov.uk/pay-vat)
-2. Choose your payment method:
-   - Direct Debit (can be set up for automatic payment)
-   - Bank transfer (use your VAT registration number as the reference)
-   - Debit or credit card
-
-**Payment deadline:** Usually the same as your return deadline (shown in your obligations).
-
-**Important:** Submitting your return on time and paying on time are separate obligations. Late payment incurs different penalties than late submission.
+The payment deadline is usually the same as the return deadline, and your obligations show it. A late payment and a late submission carry different penalties.
 """
 keywords = ["pay", "payment", "bank", "direct debit", "how to pay", "owe", "money", "transfer"]
 priority = 27
@@ -515,17 +427,9 @@ id = "period-key-format"
 category = "submission"
 question = "What do the period codes like '26AF' mean?"
 answer = """
-Period codes (like 26AF, 26AG) are HMRC's internal reference for VAT periods. You don't need to understand them - they're shown for reference only.
+Period codes such as 26AF and 26AG are HMRC's own references for VAT periods. You do not need to read them.
 
-**The format:**
-- First two digits = year (26 = 2026)
-- Letters = quarter or month (varies by scheme)
-
-**What matters to you:**
-- The **period dates** shown (e.g., 1 January to 31 March 2026)
-- The **due date** for submission
-
-When selecting a period to submit, use the date range to identify the correct one - ignore the period code.
+The first two digits are the year (26 is 2026). The letters show the quarter or month, and they change with the scheme. Choose a period by its dates and its due date, and ignore the code.
 """
 keywords = ["period key", "period code", "26af", "format", "meaning", "what does", "letters", "reference"]
 priority = 28
@@ -535,20 +439,15 @@ id = "lost-sign-in-account"
 category = "connection"
 question = "What if I can't access my Google or Microsoft account?"
 answer = """
-If you lose access to the account you sign in with:
+If you lose access to the account you sign in with, nothing is lost at HMRC. Your HMRC authorisation belongs to your Government Gateway, not to your sign-in provider, and HMRC keeps its record of every VAT return you submitted.
 
-**Your data is still safe:**
-- Receipts are stored in your browser (not tied to your sign-in account)
-- Your HMRC authorisation is tied to your Government Gateway, not to your sign-in provider
-- Your VAT returns are recorded at HMRC regardless of your sign-in account status
+To carry on:
+1. Recover the account with its provider: Google's account recovery process for a Google account, or Microsoft's account recovery process for a Microsoft account.
+2. Or sign in with a new Google or Microsoft account.
+3. Request a day pass or choose a bundle on the Bundles page.
+4. Authorise with HMRC again the next time you submit.
 
-**To continue using DIY Accounting Submit:**
-1. Recover your account with its provider: Google's account recovery process for a Google account, or Microsoft's account recovery process for a Microsoft account
-2. Or create a new Google or Microsoft account and log in with that
-3. Re-add your bundle (VAT registration number)
-4. The next time you submit, you'll re-authorise with HMRC
-
-**Note:** Previous receipts stored in your browser will still be visible as they're stored locally, not with your account.
+Receipts stay with the account you signed in with. If you cannot recover that account, write to support@diyaccounting.co.uk.
 """
 keywords = ["google account", "microsoft account", "microsoft", "locked out", "can't login", "forgot", "account access", "lost access"]
 priority = 29
@@ -559,9 +458,9 @@ activity = "self-employed"
 category = "submission"
 question = "Can I file Income Tax Self Assessment (ITSA)?"
 answer = """
-Not yet for real returns. Income Tax Self Assessment through Making Tax Digital is in **sandbox**: it runs against HMRC's test service and files nothing real.
+Not yet for real returns. Income Tax Self Assessment through Making Tax Digital is in **Sandbox**: it runs against HMRC's test service and files nothing real.
 
-In the sandbox you can:
+In Sandbox you can:
 - See your business details and obligations
 - Send quarterly updates for self-employment and UK property
 - Make annual submissions, adjustments, losses and claims
@@ -579,7 +478,7 @@ id = "companies-house-filings"
 category = "submission"
 question = "Can I file with Companies House?"
 answer = """
-Yes. These Companies House services are in **production**: company lookup, change of registered office address, change of registered email address, micro-entity accounts, small company accounts and confirmation statement.
+Yes. These Companies House services are in **Production**: company lookup, change of registered office address, change of registered email address, micro-entity accounts, small company accounts and confirmation statement.
 
 See the [availability table](mtd-calendar.html#availability) for the current status.
 """
@@ -592,11 +491,11 @@ activity = "file-confirmation-statement"
 category = "submission"
 question = "Can I file accounts or a confirmation statement with Companies House?"
 answer = """
-Yes. Micro-entity accounts, small company accounts and the confirmation statement are in **production**. A filing goes to Companies House.
+Yes. Micro-entity accounts, small company accounts and the confirmation statement are in **Production**. A filing goes to Companies House.
 
 Each filing needs the **Resident Ltd**, **Resident Pro** or **Resident Tax Agent** bundle. An accounts filing costs one token. A confirmation statement costs no token and carries a £61.35 charge for each filing.
 
-The PSC verification statement is in **sandbox**: it goes to the Companies House test service and files nothing real.
+The PSC verification statement is in **Sandbox**: it goes to the Companies House test service and files nothing real.
 
 See the [availability table](mtd-calendar.html#availability) for the current status.
 """
@@ -609,7 +508,7 @@ activity = "file-company-tax-return"
 category = "submission"
 question = "Can I file a Company Tax Return (CT600)?"
 answer = """
-Not yet. The Company Tax Return (CT600) is a **preview** on our simulator. It prepares the return from a diya-gl book export and sends nothing to HMRC.
+Not yet. The Company Tax Return (CT600) is in **Preview**: you can try the screens, and nothing is sent to HMRC. It prepares the return from a diya-gl book export.
 
 Filing it needs the **Resident Ltd**, **Resident Pro** or **Resident Tax Agent** bundle.
 
@@ -626,7 +525,7 @@ activity = "file-company-tax-return-with-accounts"
 category = "submission"
 question = "Can I file my accounts and Company Tax Return together?"
 answer = """
-Not yet. Filing both together is a **preview** on our simulator. Nothing goes to Companies House or HMRC for real.
+Not yet. Filing both together is in **Preview**. Nothing goes to Companies House or HMRC for real.
 
 On the Company Tax Return form, choose **To Companies House and to HMRC with the Company Tax Return**. You fill in one form. The accounts go to Companies House first. When Companies House accepts them, the Company Tax Return goes to HMRC with the same figures. While Companies House has not answered, you can send the Company Tax Return now or wait. If Companies House then rejects the accounts, a changed figure needs an amended return.
 
@@ -665,13 +564,35 @@ id = "bundle-prices"
 category = "bundles"
 question = "What do the bundles cost?"
 answer = """
-- **Day pass:** free. Three tokens, valid for one day.
-- **Resident VAT:** £9.99 a year, or £0.99 a month. Submit VAT returns.
-- **Resident Ltd:** £9.99 a year, or £0.99 a month. File accounts and confirmation statements to Companies House.
-- **Resident Pro:** £39.99 a year, or £3.99 a month. Everything in Resident VAT and Resident Ltd, plus Income Tax Self Assessment and saving diya-gl books.
-- **Resident Tax Agent:** £199.99 a year, or £19.99 a month. Everything in Resident Pro with no token limit, for accountants and bookkeepers filing for clients.
+{{bundle-prices}}
 
-Cancel any time. See the [Bundles](bundles.html) page to subscribe.
+Each filing uses one token. Cancel any time. See the [Bundles](bundles.html) page to subscribe.
 """
 keywords = ["price", "cost", "how much", "subscription", "resident vat", "resident ltd", "resident pro", "resident tax agent", "day pass", "cancel", "pay"]
 priority = 34
+
+[[faq]]
+id = "cancel-subscription"
+category = "bundles"
+question = "How do I cancel my subscription?"
+answer = """
+1. Sign in and open the [Bundles](bundles.html) page.
+2. Click **Manage Subscription** on the bundle. This opens Stripe's billing portal.
+3. Cancel the subscription in the portal.
+
+**Remove** takes a bundle off your account. It does not cancel the subscription, and the Manage Subscription button is on the bundle's row. Cancel in the portal before you remove the bundle.
+"""
+keywords = ["cancel", "subscription", "unsubscribe", "stop paying", "billing", "stripe", "monthly"]
+priority = 36
+
+[[faq]]
+id = "delete-account"
+category = "bundles"
+question = "How do I delete my account?"
+answer = """
+No page deletes an account. Write to support@diyaccounting.co.uk from the email address of your account and ask for it to be deleted. Cancel any subscription first.
+
+We delete your bundles, sign-in data and audit logs within 30 days. The law makes us keep HMRC submission receipts for 7 years, and we anonymise them where we can. See the [privacy policy](https://submit.diyaccounting.co.uk/privacy.html) for what is kept.
+"""
+keywords = ["delete", "delete account", "close account", "remove account", "erase", "gdpr", "right to be forgotten", "data deletion"]
+priority = 37

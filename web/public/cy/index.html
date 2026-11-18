@@ -10,7 +10,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Ffeiliwch Ffurflenni TAW Troi Treth yn Ddigidol gyda CThEF a chyfrifon cwmni gyda Thŷ’r Cwmnïau o’ch taenlen. Mae Ffurflenni TAW yn costio £0.99 y mis neu £9.99 y flwyddyn."
+      content="Ffeiliwch Ffurflenni TAW gyda CThEF a chyfrifon cwmni gyda Thŷ’r Cwmnïau o’ch taenlen. Mae Ffurflenni TAW yn costio £0.99 y mis neu £9.99 y flwyddyn."
       data-i18n-content="index.description"
     />
     <meta name="robots" content="index, follow" />
@@ -23,7 +23,7 @@
     <meta property="og:title" content="Ffeilio Ffurflenni TAW a Chyfrifon Cwmni - DIY Accounting Submit" data-i18n-content="index.title" />
     <meta
       property="og:description"
-      content="Ffeiliwch Ffurflenni TAW Troi Treth yn Ddigidol gyda CThEF a chyfrifon cwmni gyda Thŷ’r Cwmnïau o’ch taenlen. Mae Ffurflenni TAW yn costio £0.99 y mis neu £9.99 y flwyddyn."
+      content="Ffeiliwch Ffurflenni TAW gyda CThEF a chyfrifon cwmni gyda Thŷ’r Cwmnïau o’ch taenlen. Mae Ffurflenni TAW yn costio £0.99 y mis neu £9.99 y flwyddyn."
       data-i18n-content="index.description"
     />
     <meta property="og:url" content="https://submit.diyaccounting.co.uk/cy/index.html" />
@@ -37,9 +37,6 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../submit.css" />
-    <!-- submit.css names the fonts only through its imports, one round trip later. -->
-    <link rel="preload" href="../fonts/atkinson-hyperlegible-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="../fonts/atkinson-hyperlegible-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin />
     <!-- The cookie banner, the largest paint on a first visit, waits for submit.js and every module it imports. -->
     <link rel="modulepreload" href="../submit.js" />
     <link rel="modulepreload" href="../lib/utils/jwt-utils.js" />
@@ -76,7 +73,7 @@
           "@type": "Offer",
           "price": "0",
           "priceCurrency": "GBP",
-          "description": "Free Day Guest access with 3 VAT submissions"
+          "description": "Try it free: sign in and request a day pass on the Bundles page. It gives you 3 tokens for 24 hours, enough for 3 VAT returns."
         },
         "author": {
           "@type": "Organization",
@@ -127,7 +124,9 @@
       <h1 data-i18n="index.heading">Ffeiliwch Ffurflenni TAW a chyfrifon cwmni o’ch taenlen</h1>
       <p class="subtitle" id="homeIntro" data-i18n="index.intro">
         Ffeiliwch Ffurflenni TAW gyda CThEF, a chyfrifon a datganiadau cadarnhau gyda Thŷ’r Cwmnïau, o’ch taenlen eich hun. Mae Ffurflenni
-        TAW yn costio £0.99 y mis neu £9.99 y flwyddyn. Mae dolen tocyn yn rhoi 3 chyflwyniad TAW i chi am ddim am 7 diwrnod yn gyntaf.
+        TAW yn costio £0.99 y mis neu £9.99 y flwyddyn. Rhowch gynnig arni am ddim: mewngofnodwch a gofynnwch am docyn diwrnod ar y dudalen
+        <a href="bundles.html">Bundles</a>. Mae’n rhoi 3 chredyd (tokens) i chi am 24 awr, digon ar gyfer 3 Ffurflen TAW. Mae pob ffeilio yn
+        defnyddio 1 credyd.
       </p>
     </header>
 
@@ -164,44 +163,45 @@
         </div>
       </div>
 
-      <nav class="filing-guides" aria-label="How to file" lang="en-GB">
-        <h2>How to file</h2>
+      <nav class="filing-guides" aria-label="Sut i ffeilio" data-i18n-aria-label="index.how-label">
+        <h2 data-i18n="index.how-heading">Sut i ffeilio</h2>
         <ul>
-          <li><a href="../vat-return-from-a-spreadsheet.html">VAT return from a spreadsheet</a></li>
-          <li><a href="../micro-entity-accounts.html">Micro-entity accounts</a></li>
-          <li><a href="../small-company-accounts.html">Small company accounts</a></li>
-          <li><a href="../dormant-company-accounts.html">Dormant company accounts</a></li>
-          <li><a href="../confirmation-statement.html">Confirmation statement</a></li>
+          <li data-i18n="index.how-vat"><a href="../vat-return-from-a-spreadsheet.html">Ffurflen TAW o daenlen</a> (yn Saesneg)</li>
+          <li data-i18n="index.how-micro"><a href="../micro-entity-accounts.html">Cyfrifon micro-endid</a> (yn Saesneg)</li>
+          <li data-i18n="index.how-small"><a href="../small-company-accounts.html">Cyfrifon cwmni bach</a> (yn Saesneg)</li>
+          <li data-i18n="index.how-dormant"><a href="../dormant-company-accounts.html">Cyfrifon cwmni segur</a> (yn Saesneg)</li>
+          <li data-i18n="index.how-confirmation"><a href="../confirmation-statement.html">Datganiad cadarnhau</a> (yn Saesneg)</li>
         </ul>
+        <p class="tools-link" data-i18n="index.how-tools">
+          Mae gwirwyr, cyfrifianellau a thablau ar y dudalen <a href="tools.html">Offer</a>.
+        </p>
       </nav>
 
       <p class="hint" data-i18n="index.get-started"><a href="get-started.html">Newydd i Submit? Darllenwch sut i ddechrau arni.</a></p>
 
-      <div class="feature-status-summary" data-feature-status="summary">
+      <div class="feature-status-summary" data-feature-status="summary" hidden>
         <p data-i18n="index.status">
           <strong>Statws pob nodwedd.</strong> Nid yw nodweddion prawf (sandbox) a rhagolwg (preview) yn cyflwyno dim byd go iawn.
-          <a href="../mtd-calendar.html#availability">Gweld y tabl argaeledd</a> (yn Saesneg).
+          <a href="mtd-calendar.html#availability">Gweld y tabl argaeledd</a>.
         </p>
         <ul id="featureStatusList"></ul>
       </div>
 
-      <aside class="proof-note" aria-label="Adolygiadau a rhestriad" data-i18n-aria-label="index.reviews-label">
+      <aside
+        class="proof-note"
+        aria-label="DIY Accounting, y cwmni y tu ôl i Submit, wedi’i raddio’n 5.0 o 9 adolygiad Google"
+        data-i18n-aria-label="index.reviews-label"
+      >
         <p data-i18n="index.reviews">
           <span class="proof-stars" role="img" aria-label="5 allan o 5 seren">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
-          <strong>5.0</strong> <a href="https://maps.app.goo.gl/a9vQaci6xLU6v2Gr7" target="_blank" rel="noopener">9 adolygiad ar Google</a>
+          <strong>5.0</strong>
+          <a href="https://maps.app.goo.gl/a9vQaci6xLU6v2Gr7" target="_blank" rel="noopener">9 adolygiad o DIY Accounting ar Google</a>
         </p>
         <p data-i18n="index.reviews-featuredcustomers">
           <a href="https://www.featuredcustomers.com/vendor/diy-accounting" target="_blank" rel="noopener"
-            >4.8 allan o 5 ar FeaturedCustomers</a
+            >4.8 allan o 5 i DIY Accounting ar FeaturedCustomers</a
           >
         </p>
-        <blockquote lang="en-GB">
-          <p>
-            &ldquo;I highly recommend the DIY Accounting accounts packages: far better value and much simpler than expensive subscription
-            accounting packages.&rdquo;
-          </p>
-          <footer>Steve Walsh</footer>
-        </blockquote>
       </aside>
 
       <aside class="proof-note" aria-label="Teclyn chwilio meddalwedd CThEF" data-i18n-aria-label="index.finder-label">
@@ -219,7 +219,6 @@
           Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
           ar dudalen CThEF.
         </p>
-        <p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
         <p>
           Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
           <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
@@ -255,13 +254,14 @@
       <span data-i18n="index.rt-status-preview">Rhagolwg</span>
       <span data-i18n="index.rt-meaning-production">at ddefnydd go iawn</span>
       <span data-i18n="index.rt-meaning-sandbox">yn erbyn gwasanaeth prawf</span>
-      <span data-i18n="index.rt-meaning-preview">ar ein hefelychydd yn unig</span>
+      <span data-i18n="index.rt-meaning-preview">gallwch roi cynnig ar y sgriniau, ac nid oes dim yn cael ei anfon</span>
       <span data-i18n="index.rt-and">a</span>
       <span data-i18n="index.rt-and-vowel">ac</span>
     </template>
 
     <footer></footer>
 
+    <script src="../lib/welsh-text.js"></script>
     <script src="../widgets/page-chrome.js"></script>
     <script src="../lib/env-loader.js"></script>
     <script type="module" src="../submit.js"></script>

@@ -60,7 +60,8 @@
           "dwellMs": 600,
           "caption": "This is the command for Claude Code.",
           "headline": "The Claude Code command",
-          "keyWord": "command"
+          "keyWord": "command",
+          "instruction": "Copy the command or web address that connects a chat app to the submission server."
         }
       ]
     },
@@ -77,7 +78,8 @@
           },
           "caption": "The person asks for this quarter's VAT return and the year's accounts.",
           "headline": "The request",
-          "keyWord": "request"
+          "keyWord": "request",
+          "instruction": "Choose Next turn to show the person's request."
         },
         {
           "action": "click",
@@ -87,7 +89,8 @@
           },
           "caption": "Claude says what it will do.",
           "headline": "Claude plans the calls",
-          "keyWord": "plans"
+          "keyWord": "plans",
+          "instruction": "Choose Next turn to show what Claude plans to do."
         },
         {
           "action": "click",
@@ -97,7 +100,8 @@
           },
           "caption": "Claude opens the company's book on disk.",
           "headline": "Open the book",
-          "keyWord": "book"
+          "keyWord": "book",
+          "instruction": "Choose Next turn to let Claude open the company's book."
         },
         {
           "action": "await",
@@ -105,7 +109,8 @@
           "label": "book",
           "caption": "The server reports the book it opened.",
           "headline": "The book is open",
-          "keyWord": "open"
+          "keyWord": "open",
+          "instruction": "Wait for the server to report the book it opened."
         },
         {
           "action": "point",
@@ -113,7 +118,8 @@
           "dwellMs": 600,
           "caption": "The book is Precision Code Ltd's year, 736 lines.",
           "headline": "The company's book",
-          "keyWord": "book"
+          "keyWord": "book",
+          "instruction": "Read the book that the server opened."
         },
         {
           "action": "click",
@@ -123,7 +129,8 @@
           },
           "caption": "Claude works out the VAT boxes from the book.",
           "headline": "Work out the boxes",
-          "keyWord": "boxes"
+          "keyWord": "boxes",
+          "instruction": "Choose Next turn to let Claude work out the VAT boxes."
         },
         {
           "action": "await",
@@ -131,7 +138,8 @@
           "label": "derived",
           "caption": "The nine boxes come from the book's own figures.",
           "headline": "The nine boxes",
-          "keyWord": "nine"
+          "keyWord": "nine",
+          "instruction": "Wait for the server to return the nine boxes."
         },
         {
           "action": "point",
@@ -139,7 +147,8 @@
           "dwellMs": 600,
           "caption": "Box 5 is the net VAT due, worked out by the accounting engine.",
           "headline": "Net VAT due",
-          "keyWord": "due"
+          "keyWord": "due",
+          "instruction": "Read box 5, the net VAT due, in the answer."
         }
       ]
     },
@@ -156,7 +165,8 @@
           },
           "caption": "Claude asks for HMRC's permission link.",
           "headline": "Ask for permission",
-          "keyWord": "permission"
+          "keyWord": "permission",
+          "instruction": "Choose Next turn to let Claude ask for HMRC's permission link."
         },
         {
           "action": "await",
@@ -164,7 +174,8 @@
           "label": "authorise",
           "caption": "The server answers with a link, not a token.",
           "headline": "A link, not a token",
-          "keyWord": "link"
+          "keyWord": "link",
+          "instruction": "Read the answer: a link, not a token."
         },
         {
           "action": "click",
@@ -174,7 +185,8 @@
           },
           "caption": "Claude tells the person what to do.",
           "headline": "Claude explains",
-          "keyWord": "explains"
+          "keyWord": "explains",
+          "instruction": "Choose Next turn to show what Claude tells the person."
         },
         {
           "action": "click",
@@ -185,7 +197,8 @@
           },
           "caption": "The link opens HMRC's permission page beside the chat.",
           "headline": "HMRC's page opens",
-          "keyWord": "page"
+          "keyWord": "page",
+          "instruction": "Choose Continue on the page that the link opens beside the chat."
         },
         {
           "action": "click",
@@ -196,7 +209,8 @@
           },
           "caption": "The person signs in to the HMRC online service.",
           "headline": "Sign in to HMRC",
-          "keyWord": "Sign"
+          "keyWord": "Sign",
+          "instruction": "Choose Sign in to the HMRC online service."
         },
         {
           "action": "fill",
@@ -208,7 +222,8 @@
           "secret": true,
           "caption": "The sandbox user id.",
           "headline": "HMRC user id",
-          "keyWord": "user"
+          "keyWord": "user",
+          "instruction": "Enter the sandbox user ID."
         },
         {
           "action": "fill",
@@ -220,7 +235,8 @@
           "secret": true,
           "caption": "The sandbox password.",
           "headline": "HMRC password",
-          "keyWord": "password"
+          "keyWord": "password",
+          "instruction": "Enter the sandbox password."
         },
         {
           "action": "click",
@@ -231,7 +247,8 @@
           },
           "caption": "HMRC asks whether to give Submit permission.",
           "headline": "Sign in",
-          "keyWord": "Sign"
+          "keyWord": "Sign",
+          "instruction": "Choose Sign in."
         },
         {
           "action": "click",
@@ -241,7 +258,8 @@
           },
           "caption": "The person gives permission.",
           "headline": "Give permission",
-          "keyWord": "permission"
+          "keyWord": "permission",
+          "instruction": "Choose Give permission to let Submit use your HMRC account."
         },
         {
           "action": "await",
@@ -249,7 +267,8 @@
           "label": "the frame",
           "caption": "Submit keeps HMRC's token. It never passes through the chat.",
           "headline": "The token stays put",
-          "keyWord": "token"
+          "keyWord": "token",
+          "instruction": "Read the note: Submit keeps HMRC's token and it never passes through the chat."
         }
       ]
     },
@@ -266,7 +285,8 @@
           },
           "caption": "Claude lists the obligations HMRC holds.",
           "headline": "List the obligations",
-          "keyWord": "obligations"
+          "keyWord": "obligations",
+          "instruction": "Choose Next turn to let Claude list the obligations."
         },
         {
           "action": "await",
@@ -274,7 +294,8 @@
           "label": "obligations",
           "caption": "HMRC lists the open obligations.",
           "headline": "Open obligations",
-          "keyWord": "open"
+          "keyWord": "open",
+          "instruction": "Wait for HMRC's open obligations in the answer."
         },
         {
           "action": "click",
@@ -284,7 +305,8 @@
           },
           "caption": "Claude shows the boxes and asks for a yes.",
           "headline": "Claude asks first",
-          "keyWord": "asks"
+          "keyWord": "asks",
+          "instruction": "Choose Next turn to show the boxes that Claude asks you to confirm."
         },
         {
           "action": "click",
@@ -294,7 +316,8 @@
           },
           "caption": "Once the person says yes, Claude files the return.",
           "headline": "File the return",
-          "keyWord": "file"
+          "keyWord": "file",
+          "instruction": "Choose Next turn to let Claude file the return after your yes."
         },
         {
           "action": "await",
@@ -302,7 +325,8 @@
           "label": "filed",
           "caption": "HMRC accepts the return and the server answers with its receipt.",
           "headline": "HMRC accepts it",
-          "keyWord": "accepts"
+          "keyWord": "accepts",
+          "instruction": "Wait for HMRC to accept the return and for the server to answer with its receipt."
         },
         {
           "action": "point",
@@ -310,7 +334,8 @@
           "dwellMs": 600,
           "caption": "The receipt id and period key come back in the answer.",
           "headline": "The receipt",
-          "keyWord": "receipt"
+          "keyWord": "receipt",
+          "instruction": "Read the receipt ID and period key in the answer."
         },
         {
           "action": "click",
@@ -320,7 +345,8 @@
           },
           "caption": "Claude fetches the stored receipt.",
           "headline": "Fetch the receipt",
-          "keyWord": "receipt"
+          "keyWord": "receipt",
+          "instruction": "Choose Next turn to let Claude fetch the stored receipt."
         },
         {
           "action": "await",
@@ -328,7 +354,8 @@
           "label": "receipt",
           "caption": "The stored receipt is the record of the filing.",
           "headline": "The stored receipt",
-          "keyWord": "stored"
+          "keyWord": "stored",
+          "instruction": "Read the stored receipt, which is the record of the filing."
         }
       ]
     },
@@ -345,7 +372,8 @@
           },
           "caption": "Next the person wants to know where the account stands.",
           "headline": "The account",
-          "keyWord": "account"
+          "keyWord": "account",
+          "instruction": "Choose Next turn to ask where the account stands."
         },
         {
           "action": "click",
@@ -355,7 +383,8 @@
           },
           "caption": "What does HMRC say the business owes?",
           "headline": "What is owed",
-          "keyWord": "owed"
+          "keyWord": "owed",
+          "instruction": "Choose Next turn to ask what HMRC says the business owes."
         },
         {
           "action": "await",
@@ -363,7 +392,8 @@
           "label": "liabilities",
           "caption": "HMRC lists the liabilities.",
           "headline": "The liabilities",
-          "keyWord": "liabilities"
+          "keyWord": "liabilities",
+          "instruction": "Read the liabilities that HMRC lists."
         },
         {
           "action": "click",
@@ -373,7 +403,8 @@
           },
           "caption": "What has been paid?",
           "headline": "What is paid",
-          "keyWord": "paid"
+          "keyWord": "paid",
+          "instruction": "Choose Next turn to ask what has been paid."
         },
         {
           "action": "await",
@@ -381,7 +412,8 @@
           "label": "payments",
           "caption": "HMRC lists the payments it has received.",
           "headline": "The payments",
-          "keyWord": "payments"
+          "keyWord": "payments",
+          "instruction": "Read the payments that HMRC lists."
         },
         {
           "action": "click",
@@ -391,7 +423,8 @@
           },
           "caption": "What did an earlier return say?",
           "headline": "A past return",
-          "keyWord": "return"
+          "keyWord": "return",
+          "instruction": "Choose Next turn to ask what an earlier return said."
         },
         {
           "action": "await",
@@ -399,7 +432,8 @@
           "label": "pastReturn",
           "caption": "HMRC gives back the filed return.",
           "headline": "The return, as filed",
-          "keyWord": "filed"
+          "keyWord": "filed",
+          "instruction": "Wait for HMRC to give back the filed return."
         },
         {
           "action": "point",
@@ -407,7 +441,8 @@
           "dwellMs": 600,
           "caption": "The return is read back from HMRC, not from our own copy.",
           "headline": "Read back from HMRC",
-          "keyWord": "HMRC"
+          "keyWord": "HMRC",
+          "instruction": "Read the return that HMRC holds, not a copy from Submit."
         }
       ]
     },
@@ -424,7 +459,8 @@
           },
           "caption": "Then the year's accounts, from the same book.",
           "headline": "The accounts",
-          "keyWord": "accounts"
+          "keyWord": "accounts",
+          "instruction": "Choose Next turn to move to the year's accounts."
         },
         {
           "action": "click",
@@ -434,7 +470,8 @@
           },
           "caption": "Claude works out the balance sheet lines.",
           "headline": "The balance sheet",
-          "keyWord": "balance"
+          "keyWord": "balance",
+          "instruction": "Choose Next turn to let Claude work out the balance sheet lines."
         },
         {
           "action": "await",
@@ -442,7 +479,8 @@
           "label": "accountsFigures",
           "caption": "The seven balance sheet lines, this year and last.",
           "headline": "The seven lines",
-          "keyWord": "seven"
+          "keyWord": "seven",
+          "instruction": "Read the seven balance sheet lines for this year and last."
         },
         {
           "action": "click",
@@ -452,7 +490,8 @@
           },
           "caption": "Claude asks for a link to type the Companies House code.",
           "headline": "Ask for the code link",
-          "keyWord": "code"
+          "keyWord": "code",
+          "instruction": "Choose Next turn to let Claude ask for a link to enter the Companies House code."
         },
         {
           "action": "await",
@@ -460,7 +499,8 @@
           "label": "codes",
           "caption": "The server answers with a link.",
           "headline": "A link for the code",
-          "keyWord": "link"
+          "keyWord": "link",
+          "instruction": "Read the link in the server's answer."
         },
         {
           "action": "click",
@@ -470,7 +510,8 @@
           },
           "caption": "Claude tells the person what to do.",
           "headline": "Claude explains",
-          "keyWord": "explains"
+          "keyWord": "explains",
+          "instruction": "Choose Next turn to show what Claude tells the person."
         },
         {
           "action": "fill",
@@ -482,7 +523,8 @@
           "secret": true,
           "caption": "The person types the company's authentication code on the page, not in the chat.",
           "headline": "The code goes on the page",
-          "keyWord": "page"
+          "keyWord": "page",
+          "instruction": "Enter the company's authentication code on the page, not in the chat."
         },
         {
           "action": "click",
@@ -492,7 +534,8 @@
           },
           "caption": "Saving the code puts it behind the link.",
           "headline": "Save the code",
-          "keyWord": "Save"
+          "keyWord": "Save",
+          "instruction": "Choose Save codes to put the code behind the link."
         },
         {
           "action": "click",
@@ -502,7 +545,8 @@
           },
           "caption": "Claude files the accounts with the Companies House test service.",
           "headline": "File the accounts",
-          "keyWord": "accounts"
+          "keyWord": "accounts",
+          "instruction": "Choose Next turn to let Claude file the accounts."
         },
         {
           "action": "await",
@@ -510,7 +554,8 @@
           "label": "accountsFiled",
           "caption": "The gateway gives a submission number.",
           "headline": "A submission number",
-          "keyWord": "number"
+          "keyWord": "number",
+          "instruction": "Read the submission number that the gateway returns."
         },
         {
           "action": "click",
@@ -520,7 +565,8 @@
           },
           "caption": "Claude asks whether Companies House accepted them.",
           "headline": "Were they accepted",
-          "keyWord": "accepted"
+          "keyWord": "accepted",
+          "instruction": "Choose Next turn to ask whether Companies House accepted the accounts."
         },
         {
           "action": "await",
@@ -528,15 +574,18 @@
           "label": "accountsOutcome",
           "caption": "Companies House reports the outcome.",
           "headline": "The outcome",
-          "keyWord": "outcome"
+          "keyWord": "outcome",
+          "instruction": "Wait for Companies House to report the outcome."
         },
         {
           "action": "point",
           "target": ".harness-turn[data-turn-id='accountsOutcome'] pre",
           "dwellMs": 600,
           "caption": "Companies House's test service reports the filing as pending.",
-          "headline": "Pending at Companies House",
-          "keyWord": "Pending"
+          "headline": "Filing pending",
+          "keyWord": "pending",
+          "headlineBeside": true,
+          "instruction": "Read the outcome: the test service reports the filing as pending."
         },
         {
           "action": "click",
@@ -546,7 +595,8 @@
           },
           "caption": "Claude sums up.",
           "headline": "The summary",
-          "keyWord": "summary"
+          "keyWord": "summary",
+          "instruction": "Choose Next turn to read Claude's summary."
         },
         {
           "action": "hold",

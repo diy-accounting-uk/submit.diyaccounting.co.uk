@@ -33,6 +33,7 @@ import co.uk.diyaccounting.submit.utils.RumWebVitalsAlarm;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.IntStream;
 import org.immutables.value.Value;
 import software.amazon.awscdk.ArnComponents;
 import software.amazon.awscdk.Duration;
@@ -70,6 +71,13 @@ import software.amazon.awscdk.services.rum.CfnAppMonitor;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
+import software.amazon.awscdk.services.securityhub.CfnAutomationRule;
+import software.amazon.awscdk.services.securityhub.CfnAutomationRule.AutomationRulesActionProperty;
+import software.amazon.awscdk.services.securityhub.CfnAutomationRule.AutomationRulesFindingFieldsUpdateProperty;
+import software.amazon.awscdk.services.securityhub.CfnAutomationRule.AutomationRulesFindingFiltersProperty;
+import software.amazon.awscdk.services.securityhub.CfnAutomationRule.NoteUpdateProperty;
+import software.amazon.awscdk.services.securityhub.CfnAutomationRule.StringFilterProperty;
+import software.amazon.awscdk.services.securityhub.CfnAutomationRule.WorkflowUpdateProperty;
 import software.amazon.awscdk.services.securityhub.CfnHub;
 import software.amazon.awscdk.services.sns.Topic;
 import software.amazon.awscdk.services.sns.subscriptions.LambdaSubscription;
@@ -594,6 +602,8 @@ public class ObservabilityStack extends Stack {
                     .build();
 
             securityHubRule.addTarget(new SnsTopic(securityFindingsTopic));
+
+            addSecurityHubSuppressionRules(props, securityHub);
 
             cfnOutput(this, "SecurityHubArn", securityHub.getAttrArn());
 
@@ -1379,5 +1389,103 @@ public class ObservabilityStack extends Stack {
 
         cfnOutput(this, "TrustedEventFunctionArn", trustedEventLambda.getFunctionArn());
         cfnOutput(this, "TrustedEventRoleArn", trustedEventRole.getRoleArn());
+    }
+
+    /**
+     * Suppression rules for Security Hub findings that this estate has decided not to act on.
+     * An automation rule sets the workflow status of a new or updated finding to SUPPRESSED,
+     * which the operator snapshot leaves out of "Security Hub open findings". A decision is
+     * recorded here with its reason and nowhere as a console action.
+     */
+    private void addSecurityHubSuppressionRules(ObservabilityStackProps props, CfnHub securityHub) {
+        // CIS v5 CloudWatch.1 to CloudWatch.14 each ask for a log metric filter and an alarm on
+        // one CloudTrail event. This is a workload account behind IAM Identity Center with no
+        // IAM users, and GuardDuty, the EventBridge rules to the security topic and the trusted
+        // event function report these events. Fourteen more alarms cost US$1.40 a month and
+        // give no new signal.
+        List<StringFilterProperty> cloudWatchControls = IntStream.rangeClosed(1, 14)
+                .mapToObj(n -> StringFilterProperty.builder()
+                        .comparison("EQUALS")
+                        .value("CloudWatch." + n)
+                        .build())
+                .toList();
+        CfnAutomationRule cloudWatchRule = suppressionRule(
+                props,
+                "SuppressCisCloudWatchControls",
+                1,
+                "Suppress CIS CloudWatch.1 to CloudWatch.14 (metric filter and alarm per CloudTrail event)",
+                "Workload account behind IAM Identity Center; GuardDuty and the security topic rules cover these events",
+                AutomationRulesFindingFiltersProperty.builder()
+                        .complianceSecurityControlId(cloudWatchControls)
+                        .build());
+        cloudWatchRule.addDependency(securityHub);
+
+        // A GuardDuty finding archived in GuardDuty does not reach Security Hub: GuardDuty does
+        // not send an archive. The finding is the guest role of the RUM identity pool, which no
+        // longer exists, so its Security Hub copy is suppressed.
+        CfnAutomationRule guestRoleRule = suppressionRule(
+                props,
+                "SuppressRetiredRumGuestRoleFinding",
+                2,
+                "Suppress the GuardDuty finding for the retired RUM identity pool guest role",
+                "The identity pool and its guest role were removed; no call by it read or changed a resource",
+                AutomationRulesFindingFiltersProperty.builder()
+                        .productName(List.of(StringFilterProperty.builder()
+                                .comparison("EQUALS")
+                                .value("GuardDuty")
+                                .build()))
+                        .title(List.of(StringFilterProperty.builder()
+                                .comparison("PREFIX")
+                                .value("The user AssumedRole : prod-env-ObservabilitySta-prodenvRumGuestRole")
+                                .build()))
+                        .build());
+        guestRoleRule.addDependency(securityHub);
+
+        // AWS Health tells us that a DKIM check of the mail domain passed. It needs no action.
+        CfnAutomationRule dkimRule = suppressionRule(
+                props,
+                "SuppressSesDkimVerifiedNotice",
+                3,
+                "Suppress the AWS Health notice that the SES DKIM check went from pending to verified",
+                "Informational notice of a passed check; nothing to act on",
+                AutomationRulesFindingFiltersProperty.builder()
+                        .productName(List.of(StringFilterProperty.builder()
+                                .comparison("EQUALS")
+                                .value("Health")
+                                .build()))
+                        .title(List.of(StringFilterProperty.builder()
+                                .comparison("EQUALS")
+                                .value("AWS Health - AWS_SES_DKIM_PENDING_TO_VERIFIED")
+                                .build()))
+                        .build());
+        dkimRule.addDependency(securityHub);
+    }
+
+    private CfnAutomationRule suppressionRule(
+            ObservabilityStackProps props,
+            String idSuffix,
+            int order,
+            String description,
+            String reason,
+            AutomationRulesFindingFiltersProperty criteria) {
+        return CfnAutomationRule.Builder.create(this, props.resourceNamePrefix() + "-" + idSuffix)
+                .ruleName(props.resourceNamePrefix() + "-" + idSuffix)
+                .description(description)
+                .ruleOrder(order)
+                .ruleStatus("ENABLED")
+                .criteria(criteria)
+                .actions(List.of(AutomationRulesActionProperty.builder()
+                        .type("FINDING_FIELDS_UPDATE")
+                        .findingFieldsUpdate(AutomationRulesFindingFieldsUpdateProperty.builder()
+                                .workflow(WorkflowUpdateProperty.builder()
+                                        .status("SUPPRESSED")
+                                        .build())
+                                .note(NoteUpdateProperty.builder()
+                                        .text(reason)
+                                        .updatedBy("ObservabilityStack")
+                                        .build())
+                                .build())
+                        .build()))
+                .build();
     }
 }

@@ -12,19 +12,40 @@
 (function () {
   "use strict";
 
+  // page-chrome.js gives the text in the chosen language; without it the English stands.
+  function siteText(id, english, values) {
+    if (window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
+
   const FHL_PREFIX = "fhl";
-  const EXAMPLE_HINT = "For example, £600 or £193.54. Amounts are in pounds sterling; convert at the rate of the day or an average rate.";
-  const FHL_RENT_FIELD = { id: "rentAmount", label: "Rental income", min: 0 };
+  const EXAMPLE_HINT = siteText(
+    "itsa.fp-money-hint",
+    "For example, £600 or £193.54. Amounts are in pounds sterling; convert at the rate of the day or an average rate.",
+  );
+  const FHL_RENT_FIELD = { id: "rentAmount", label: siteText("itsa.field-rental-income", "Rental income"), min: 0 };
   const FHL_EXPENSE_FIELDS = [
-    { id: "premisesRunningCosts", label: "Rent, rates, insurance and ground rents" },
-    { id: "repairsAndMaintenance", label: "Repairs and maintenance" },
-    { id: "financialCosts", label: "Loan interest and other financial costs" },
-    { id: "professionalFees", label: "Legal, management and other professional fees" },
-    { id: "costOfServices", label: "Costs of services provided, including wages" },
-    { id: "travelCosts", label: "Travel costs" },
-    { id: "other", label: "Other property expenses" },
+    {
+      id: "premisesRunningCosts",
+      label: siteText("itsa.field-rent-rates-insurance-and-ground-rents", "Rent, rates, insurance and ground rents"),
+    },
+    { id: "repairsAndMaintenance", label: siteText("itsa.field-repairs-and-maintenance", "Repairs and maintenance") },
+    {
+      id: "financialCosts",
+      label: siteText("itsa.field-loan-interest-and-other-financial-costs", "Loan interest and other financial costs"),
+    },
+    {
+      id: "professionalFees",
+      label: siteText("itsa.field-legal-management-and-other-professional-fees", "Legal, management and other professional fees"),
+    },
+    {
+      id: "costOfServices",
+      label: siteText("itsa.field-costs-of-services-provided-including-wages", "Costs of services provided, including wages"),
+    },
+    { id: "travelCosts", label: siteText("itsa.field-travel-costs", "Travel costs") },
+    { id: "other", label: siteText("itsa.field-other-property-expenses", "Other property expenses") },
   ];
-  const FHL_TOTAL_FIELD = { id: "consolidatedExpenses", label: "Total expenses" };
+  const FHL_TOTAL_FIELD = { id: "consolidatedExpenses", label: siteText("itsa.field-total-expenses", "Total expenses") };
 
   const fhlId = (id) => `${FHL_PREFIX}-${id}`;
   const fhlInput = (id) => document.getElementById(fhlId(id));
@@ -62,9 +83,9 @@
 
   function mountFhl(container) {
     const basis = el("fieldset", { className: "form-group", id: fhlId("expenseBasisGroup") }, [
-      el("legend", { textContent: "How do you report expenses?" }),
-      fhlChoice("itemised", "Itemise the expenses", true),
-      fhlChoice("total", "One total for all expenses", false),
+      el("legend", { textContent: siteText("itsa.expense-basis", "How do you report expenses?") }),
+      fhlChoice("itemised", siteText("itsa.expense-basis-itemised", "Itemise the expenses"), true),
+      fhlChoice("total", siteText("itsa.expense-basis-total", "One total for all expenses"), false),
     ]);
     const itemised = el(
       "div",
@@ -74,11 +95,13 @@
     const total = el("div", { id: fhlId("totalExpensesBlock"), hidden: true }, [moneyGroup(FHL_TOTAL_FIELD)]);
     container.replaceChildren(
       el("fieldset", { className: "form-group foreign-property-entry", id: "fhlEea" }, [
-        el("legend", { textContent: "Furnished holiday lettings in the European Economic Area" }),
+        el("legend", { textContent: siteText("itsa.fhl-eea-long", "Furnished holiday lettings in the European Economic Area") }),
         el("p", {
           className: "hint",
-          textContent:
+          textContent: siteText(
+            "itsa.fp-fhl-period-hint",
             "Furnished holiday lettings ended on 5 April 2025. Fill this in only for a period before then, with every such letting in the EEA added together.",
+          ),
         }),
         moneyGroup(FHL_RENT_FIELD),
         basis,
@@ -194,8 +217,11 @@
           input: target || entriesContainer,
           message:
             mode === "country"
-              ? "Add a country and enter its figures"
-              : "Load your properties from HMRC and enter the figures for at least one of them",
+              ? siteText("itsa.fp-add-country-figures", "Add a country and enter its figures")
+              : siteText(
+                  "itsa.fp-load-properties-figures",
+                  "Load your properties from HMRC and enter the figures for at least one of them",
+                ),
         });
       }
       return { problems, foreignFhlEea, entries };

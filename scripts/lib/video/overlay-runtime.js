@@ -452,6 +452,51 @@
 
   ready(ensureDom);
 
+  // The capture's own configuration (overlay.js writes window.__svcConfig before this script runs):
+  // the selectors to hide and the text to swap on every document from its first paint, so a
+  // navigation the capture does not notice (a click whose URL changes after the check) still
+  // shows the clean page.
+  //   suppress: selectors for the stylesheet rule of suppress()
+  //   replaceText: {from, to} - the capture's sign-in address is shown as one plain example address
+  function swapText(from, to) {
+    const walker = document.createTreeWalker(document.documentElement, 4 /* NodeFilter.SHOW_TEXT */);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (node.nodeValue.includes(from)) node.nodeValue = node.nodeValue.split(from).join(to);
+    }
+    for (const element of document.querySelectorAll("[title],[aria-label]")) {
+      for (const name of ["title", "aria-label"]) {
+        const value = element.getAttribute(name);
+        if (value && value.includes(from)) element.setAttribute(name, value.split(from).join(to));
+      }
+    }
+  }
+
+  function applyConfig() {
+    const config = window.__svcConfig;
+    if (!config) return;
+    if (config.suppress && config.suppress.length > 0) suppress(config.suppress);
+    // A site whose own logo and title fill the top-left corner takes the label in the middle of
+    // its header bar instead.
+    if (config.chapterPosition === "top-center" && chapterLabel) {
+      chapterLabel.style.top = "7px";
+      chapterLabel.style.left = "50%";
+      chapterLabel.style.transform = "translateX(-50%)";
+    }
+    if (config.replaceText && config.replaceText.from && typeof MutationObserver === "function") {
+      const { from, to } = config.replaceText;
+      swapText(from, to);
+      new MutationObserver(() => swapText(from, to)).observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ["title", "aria-label"],
+      });
+    }
+  }
+
+  ready(applyConfig);
+
   window.__svc = {
     pointTo,
     click,

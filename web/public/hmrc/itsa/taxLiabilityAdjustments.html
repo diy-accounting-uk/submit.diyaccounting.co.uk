@@ -12,6 +12,10 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/hmrc/itsa/taxLiabilityAdjustments.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/itsa/taxLiabilityAdjustments.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/taxLiabilityAdjustments.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/itsa/taxLiabilityAdjustments.html" />
     <link rel="stylesheet" href="../../submit.css" />
     <link rel="stylesheet" href="../../submission-record.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
@@ -20,7 +24,7 @@
     <script src="../../lib/analytics.js"></script>
   </head>
   <body>
-    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
       <h1>Tax liability adjustments</h1>
@@ -32,7 +36,7 @@
         <strong>Status: sandbox.</strong> This runs against HMRC's sandbox. Nothing you send reaches your real HMRC record. Production waits
         on HMRC's recognition of our software after its 2027 update.
       </p>
-      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator"><span>Synthetic mode - calls go to HMRC's sandbox API</span></div>
 
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
@@ -43,8 +47,8 @@
         id="loadCriteriaForm"
         class="form-container"
         data-requires-sign-in
-        data-sign-in-title="Log in to adjust your tax liability"
-        data-sign-in-text="Log in to tell HMRC what a carry-back claim saves, so this year's liability is credited."
+        data-sign-in-title="Sign in to adjust your tax liability"
+        data-sign-in-text="Sign in to tell HMRC what a carry-back claim saves, so this year's liability is credited."
       >
         <h2>Load a year's tax liability adjustments</h2>
         <p class="hint">
@@ -81,14 +85,19 @@
           <div id="developerSection" class="form-group" style="display: none">
             <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
             <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios for loading tax liability adjustments</p>
-            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint" translate="no">
               <option value="">Default (loads an adjustment)</option>
               <option value="NOT_FOUND">Not Found</option>
             </select>
             <div class="form-group">
               <label for="calculationTestScenario">Calculation test scenario (Developer/Sandbox only)</label>
               <p id="calculationTestScenario-hint" class="hint">The HMRC sandbox example used for that year's calculated liability</p>
-              <select id="calculationTestScenario" name="calculationTestScenario" aria-describedby="calculationTestScenario-hint">
+              <select
+                id="calculationTestScenario"
+                name="calculationTestScenario"
+                aria-describedby="calculationTestScenario-hint"
+                translate="no"
+              >
                 <option value="">Default (a UK self-employment example)</option>
                 <option value="UK_SE_GIFTAID_EXAMPLE">UK self-employment with Gift Aid</option>
                 <option value="SCOT_SE_DIVIDENDS_EXAMPLE">Scottish self-employment with dividends</option>

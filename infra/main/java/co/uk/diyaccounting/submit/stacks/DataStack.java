@@ -173,7 +173,8 @@ public class DataStack extends Stack {
         // exist, so data protection comes from a 35-day PITR window rather than CloudFormation RETAIN.
 
         // Receipts table for storing VAT submission receipts
-        // CRITICAL: 7-year HMRC retention requirement
+        // CRITICAL: 7-year HMRC retention requirement for a customer's receipt (ttl 2555 days).
+        // A test or synthetic actor's receipt lives 2 days (app/lib/recordRetention.js).
         this.receiptsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-ReceiptsTable",
@@ -188,6 +189,7 @@ public class DataStack extends Stack {
 
         // Bundles table for bundle storage
         // HIGH priority - contains user subscription data
+        // ttl: 1 month after the bundle's expiry; 2 days for a test or synthetic owner.
         this.bundlesTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-BundlesTable",
@@ -1065,7 +1067,7 @@ public class DataStack extends Stack {
                 props.sharedNames().data.companiesHouseAccountsAsyncRequestsTableName);
 
         // HMRC API requests storage - audit trail for HMRC interactions
-        // 28-day retention via TTL on "ttl" attribute
+        // 28-day retention via TTL on "ttl" attribute; 2 days for a test or synthetic caller
         this.hmrcApiRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcApiRequestsTable",
@@ -1077,6 +1079,8 @@ public class DataStack extends Stack {
                 props.resourceNamePrefix() + "-HmrcApiRequestsTTL",
                 props.sharedNames().data.hmrcApiRequestsTableName,
                 "ttl");
+        ensureTableStream(
+                props.resourceNamePrefix() + "-HmrcApiRequests", props.sharedNames().data.hmrcApiRequestsTableName);
         infof(
                 "Ensured HMRC API Requests DynamoDB table with name %s",
                 props.sharedNames().data.hmrcApiRequestsTableName);
@@ -1084,12 +1088,16 @@ public class DataStack extends Stack {
         // Passes table for storing invitation pass codes
         // Pass codes are four-word passphrases that grant bundle access when redeemed.
         // PK-only table (no sort key) - passes are looked up by code.
+        // ttl: a test pass or test actor's pass 2 days; a pass with an end date 30 days after it; a pass
+        // with no end date 30 days after its last use; a held pointer by its release time; figures 13 months.
         this.passesTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-PassesTable",
                 props.sharedNames().data.passesTableName,
                 "pk",
                 null);
+        ensureTimeToLive(
+                this, props.resourceNamePrefix() + "-PassesTTL", props.sharedNames().data.passesTableName, "ttl");
         infof("Ensured passes DynamoDB table with name %s", props.sharedNames().data.passesTableName);
 
         // GSI for querying passes by issuer (user-generated pass listing)
@@ -1110,6 +1118,7 @@ public class DataStack extends Stack {
         // PK-only table (no sort key) - counters are looked up by bundleId.
         // Reconciliation Lambda overwrites with correct count every 5 minutes, so the bundles table
         // is the source of truth if this one is ever lost.
+        // No ttl: one item per capped bundle id, so the table does not grow with use.
         this.bundleCapacityTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-BundleCapacityTable",
@@ -1119,12 +1128,19 @@ public class DataStack extends Stack {
         infof("Ensured bundle capacity DynamoDB table with name %s", props.sharedNames().data.bundleCapacityTableName);
 
         // Subscriptions table (subscription data)
+        // ttl: a test-mode Stripe row 2 days; a live row has none while it is active and 180 days
+        // after it ends.
         this.subscriptionsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-SubscriptionsTable",
                 props.sharedNames().data.subscriptionsTableName,
                 "pk",
                 null);
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-SubscriptionsTTL",
+                props.sharedNames().data.subscriptionsTableName,
+                "ttl");
         String subscriptionsStreamArn = ensureTableStream(
                 props.resourceNamePrefix() + "-Subscriptions", props.sharedNames().data.subscriptionsTableName);
         infof("Ensured subscriptions DynamoDB table with name %s", props.sharedNames().data.subscriptionsTableName);
@@ -1135,12 +1151,16 @@ public class DataStack extends Stack {
         // the bundles table rather than a sort-key-prefixed row there: a charge is a different item
         // shape (no bundleId, no tokensGranted) and the bundles table's bundleId-expiry-index GSI
         // and getUserBundles() both assume every item under a hashedSub is a bundle.
+        // No ttl: an item is a payment record that a filing consumes, one per paid filing of a customer,
+        // so the table grows with revenue and its items are billing evidence.
         this.activityChargesTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-ActivityChargesTable",
                 props.sharedNames().data.activityChargesTableName,
                 "hashedSub",
                 "chargeKey");
+        ensureTableStream(
+                props.resourceNamePrefix() + "-ActivityCharges", props.sharedNames().data.activityChargesTableName);
         infof(
                 "Ensured activity charges DynamoDB table with name %s",
                 props.sharedNames().data.activityChargesTableName);
@@ -1148,12 +1168,16 @@ public class DataStack extends Stack {
         // Practice clients table: partition key is the practice's hashed sub, sort key is the
         // client's ULID. No index reads clientId on its own, so a client is reachable only
         // through the practice that owns it.
+        // No ttl: an item is a client the practice maintains, deleted by the practice (archive) or by the
+        // customer's account deletion, never by age.
         this.practiceClientsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-PracticeClientsTable",
                 props.sharedNames().data.practiceClientsTableName,
                 "hashedSub",
                 "clientId");
+        ensureTableStream(
+                props.resourceNamePrefix() + "-PracticeClients", props.sharedNames().data.practiceClientsTableName);
         infof(
                 "Ensured practice clients DynamoDB table with name %s",
                 props.sharedNames().data.practiceClientsTableName);
@@ -1161,6 +1185,8 @@ public class DataStack extends Stack {
         // Commissions table: partition key names the owner of the item (commission#<referrerHash>,
         // held, charge#<chargeId>, card#<fingerprint>), sort key names the item within it. Pointer
         // items do the work of indexes, so the table has no secondary index.
+        // No ttl: lines, payouts and anchors are the commission ledger that payouts and tax records rest on;
+        // only held pointers are removed, by the release job.
         this.commissionsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-CommissionsTable",
@@ -1242,11 +1268,12 @@ public class DataStack extends Stack {
                 props.resourceNamePrefix() + "-McpSessionsTTL",
                 props.sharedNames().data.mcpSessionsTableName,
                 "ttl");
+        ensureTableStream(props.resourceNamePrefix() + "-McpSessions", props.sharedNames().data.mcpSessionsTableName);
         infof("Ensured MCP sessions DynamoDB table with name %s", props.sharedNames().data.mcpSessionsTableName);
 
         // Outbound call records: one item per attempt to reach HMRC, Companies House or Stripe,
         // under pk "call#<org>#<day>" and sk "<iso time>#<id>". Items hold masked skeletons and no
-        // customer key, and expire after 90 days.
+        // customer key, and expire after 90 days (2 days for a test or synthetic caller).
         this.integrationCallsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-IntegrationCallsTable",

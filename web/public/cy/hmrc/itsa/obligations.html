@@ -1,0 +1,226 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from hmrc/itsa/obligations.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Rhwymedigaethau Treth Incwm - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/obligations.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/itsa/obligations.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/obligations.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/itsa/obligations.html" />
+    <link rel="stylesheet" href="../../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="itsa-obligations.income-tax-obligations-3fd9b3">Rhwymedigaethau Treth Incwm</h1>
+      <p data-i18n="itsa-obligations.retrieve-your-quarterly-update-obligations-from-a11c74" class="subtitle">
+        Adalwch eich rhwymedigaethau diweddaru chwarterol gan CThEF
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p data-i18n="itsa-obligations.status-sandbox-this-runs-against-hmrc-e3e7dd" class="hint" data-feature-status="sandbox">
+        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a
+        anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei
+        ddiweddariad yn 2027.
+      </p>
+      <div id="syntheticIndicator" class="synthetic-indicator">
+        <span data-i18n="itsa-obligations.synthetic-mode-calls-go-to-hmrc-efa44d"
+          >Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF</span
+        >
+      </div>
+
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Obligations Form -->
+      <div
+        id="obligationsForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i weld eich rhwymedigaethau Treth Incwm"
+        data-sign-in-text="Mewngofnodwch i adalw’ch rhwymedigaethau diweddaru chwarterol gan CThEF. Maent yn dangos pa ddiweddariadau y mae CThEF yn aros amdanynt."
+        data-i18n-data-sign-in-title="itsa-obligations.sign-in-to-see-your-income-f389b9"
+        data-i18n-data-sign-in-text="itsa-obligations.sign-in-to-retrieve-your-quarterly-6ec478"
+      >
+        <div class="form-toggle-buttons">
+          <button
+            data-i18n="itsa-obligations.show-search-criteria-8c1d25"
+            type="button"
+            id="toggleSearchCriteriaBtn"
+            class="secondary-button"
+            style="display: none"
+          >
+            Dangos y meini prawf chwilio
+          </button>
+          <button
+            data-i18n="itsa-obligations.cancel-request-561966"
+            type="button"
+            id="cancelRequestBtn"
+            class="cancel-button"
+            style="display: none"
+          >
+            Canslo’r cais
+          </button>
+        </div>
+        <div id="searchCriteriaContainer">
+          <h2 data-i18n="itsa-obligations.retrieve-obligations-63a80e">Cael rhwymedigaethau</h2>
+          <form id="itsaObligationsForm" novalidate>
+            <div class="form-group">
+              <label data-i18n="itsa-obligations.national-insurance-number-21829e" for="nino">Rhif Yswiriant Gwladol</label>
+              <p data-i18n="itsa-obligations.this-is-two-letters-six-numbers-795a8f" id="nino-hint" class="hint">
+                Mae hwn yn ddwy lythyren, chwe rhif a llythyren olaf, er enghraifft QQ 12 34 56 C. Mae i’w weld ar eich cerdyn Yswiriant
+                Gwladol, eich slip cyflog neu’ch P60.
+              </p>
+              <input
+                type="text"
+                id="nino"
+                name="nino"
+                required
+                value=""
+                maxlength="13"
+                aria-describedby="nino-hint"
+                spellcheck="false"
+                autocapitalize="characters"
+              />
+            </div>
+
+            <div class="form-group">
+              <label data-i18n="itsa-obligations.business-type-optional-9f78e0" for="typeOfBusiness">Math o fusnes (dewisol)</label>
+              <p data-i18n="itsa-obligations.leave-blank-to-return-obligations-for-87ff60" id="typeOfBusiness-hint" class="hint">
+                Gadewch yn wag i gael rhwymedigaethau ar gyfer pob busnes.
+              </p>
+              <select id="typeOfBusiness" name="typeOfBusiness" aria-describedby="typeOfBusiness-hint">
+                <option data-i18n="itsa-obligations.all-business-types-af20f5" value="">Pob math o fusnes</option>
+                <option data-i18n="itsa-obligations.self-employment-1904e1" value="self-employment">Hunangyflogaeth</option>
+                <option data-i18n="itsa-obligations.uk-property-e6602b" value="uk-property">Eiddo yn y DU</option>
+                <option data-i18n="itsa-obligations.foreign-property-8a5245" value="foreign-property">Eiddo tramor</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label data-i18n="itsa-obligations.business-id-optional-78db8d" for="businessId">ID y busnes (dewisol)</label>
+              <p data-i18n="itsa-obligations.the-business-id-from-business-details-9917bc" id="businessId-hint" class="hint">
+                ID y busnes o Manylion y Busnes. Mae angen math o fusnes uchod.
+              </p>
+              <input type="text" id="businessId" name="businessId" aria-describedby="businessId-hint" />
+            </div>
+
+            <div class="form-group">
+              <label data-i18n="itsa-obligations.status-optional-02bab6" for="status">Statws (dewisol)</label>
+              <select id="status" name="status">
+                <option data-i18n="itsa-obligations.open-and-fulfilled-957605" value="">Agored ac wedi’u cyflawni</option>
+                <option data-i18n="itsa-obligations.open-only-2989fc" value="open">Agored yn unig</option>
+                <option data-i18n="itsa-obligations.fulfilled-only-e9631f" value="fulfilled">Wedi’u cyflawni yn unig</option>
+              </select>
+            </div>
+
+            <!-- Developer Test Scenario Section -->
+            <div id="developerSection" class="form-group" style="display: none">
+              <div id="testDataLink" class="test-data-link">
+                <a data-i18n="itsa-obligations.add-test-data-28908b" href="#" id="addTestDataLink">ychwanegu data prawf</a>
+              </div>
+              <label data-i18n="itsa-obligations.test-scenario-developer-sandbox-only-966c72" for="testScenario"
+                >Senario prawf (Datblygwr/amgylchedd prawf yn unig)</label
+              >
+              <p data-i18n="itsa-obligations.test-different-hmrc-sandbox-scenarios-39d913" id="testScenario-hint" class="hint">
+                Profi senarios gwahanol yn amgylchedd prawf (sandbox) CThEF
+              </p>
+              <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint" translate="no">
+                <option value="">Default (one open, one fulfilled)</option>
+                <option value="OPEN">Open obligation only</option>
+                <option value="FULFILLED">Fulfilled obligation only</option>
+                <option value="INSOLVENT_TRADER">Insolvent trader</option>
+                <option value="NOT_FOUND">Not Found</option>
+                <option value="NO_OBLIGATIONS_FOUND">No obligations found</option>
+                <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
+                <option value="SUBMIT_HMRC_API_HTTP_500">HMRC API responds with 500</option>
+              </select>
+              <div class="choice">
+                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                  data-i18n="itsa-obligations.validate-fraud-prevention-headers-ea7c94"
+                  for="runFraudPreventionHeaderValidation"
+                  >Dilysu’r penawdau atal twyll</label
+                >
+              </div>
+            </div>
+
+            <button data-i18n="itsa-obligations.retrieve-obligations-63a80e" type="submit" id="retrieveBtn" class="btn">
+              Cael rhwymedigaethau
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Results Display -->
+      <div id="obligationsResults" class="results-container" style="display: none">
+        <h3 data-i18n="itsa-obligations.obligations-500015">Rhwymedigaethau</h3>
+        <div id="obligationsTable"></div>
+        <div class="button-group">
+          <button data-i18n="itsa-obligations.new-search-4587eb" type="button" id="newSearchBtn" class="secondary-button">
+            Chwiliad newydd
+          </button>
+        </div>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../../lib/welsh-text.js"></script>
+    <script src="../../../widgets/page-chrome.js"></script>
+    <script src="../../../lib/env-loader.js"></script>
+    <script src="../../../lib/auth-url-builder.js"></script>
+    <script src="../../../lib/test-data-generator.js"></script>
+    <script type="module" src="../../../submit.js"></script>
+    <script src="../../../developer-mode.js"></script>
+    <script src="../../../lib/request-cache.js"></script>
+    <script src="../../../lib/carried-identifiers.js"></script>
+    <script src="../../../lib/pending-request.js"></script>
+    <script src="../../../lib/toml-parser.js"></script>
+    <script src="../../../lib/form-errors.js"></script>
+    <script src="../../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../../lib/services/hmrc-service.js"></script>
+    <script src="../../../widgets/entitlement-status.js"></script>
+    <script src="../../../widgets/auth-status.js"></script>
+    <script src="../../../widgets/status-messages.js"></script>
+    <script src="../../../widgets/signed-out-panel.js"></script>
+    <script src="../../../widgets/pass-redeemer.js"></script>
+    <script src="../../../hmrc/itsa/obligations.page.js"></script>
+  </body>
+</html>

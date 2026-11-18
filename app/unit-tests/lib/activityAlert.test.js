@@ -80,6 +80,15 @@ describe("lib/activityAlert", () => {
         });
       });
 
+      test("publishActivityEvent loads the operator list only when the caller gives no actor", async () => {
+        process.env.ACTIVITY_BUS_NAME = "bus";
+        await publishActivityEvent({ event: "waf-scan", summary: "s", actor: "system" });
+        expect(classifyActor("boss@example.com")).toBe("customer");
+        await publishActivityEvent({ event: "vat-return-submitted", summary: "s" });
+        expect(classifyActor("boss@example.com")).toBe("operator");
+        delete process.env.ACTIVITY_BUS_NAME;
+      });
+
       test("publishActivityEvent carries the operator class on the event", async () => {
         process.env.ACTIVITY_BUS_NAME = "bus";
         mockSend.mockClear();

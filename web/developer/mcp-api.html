@@ -20,8 +20,11 @@
     <main id="mainContent">
       <section class="panel">
         <h2>Server</h2>
-        <p>Server name <code>diya-submit</code>, version <code>0.1.3</code>.</p>
-        <p>The hosted endpoint speaks streamable HTTP and signs in with OAuth:</p>
+        <p>Server name <code>diya-submit</code>, version <code>0.1.4</code>.</p>
+        <p>
+          The hosted endpoint speaks streamable HTTP. It answers <code>initialize</code>, <code>ping</code> and <code>tools/list</code>
+          without sign-in; a tool call needs an OAuth sign-in:
+        </p>
         <pre><code>https://submit.diyaccounting.co.uk/mcp</code></pre>
         <p>
           The same tools run locally over stdio from the npm package
@@ -367,7 +370,7 @@
       </details>
       <details class="tool" id="tool-get_vat_receipt">
         <summary><code>get_vat_receipt</code> <span class="tag">hosted, production</span></summary>
-        <p>A stored HMRC VAT receipt by its file name, over the deployed API: Submit's own copy of what it filed. clientId, when given, narrows the fetch to one of the practice's clients but does not change which receipt is read.</p>
+        <p>A stored VAT return receipt by its file name, over the deployed API: what HMRC answered when it accepted the return (the processing date, the form bundle number, the payment indicator and the charge reference). clientId, when given, narrows the fetch to one of the practice's clients but does not change which receipt is read.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
           <tbody>
@@ -491,7 +494,7 @@
       </details>
       <details class="tool" id="tool-list_books">
         <summary><code>list_books</code> <span class="tag">hosted, production</span></summary>
-        <p>List the books saved in the DIYA cloud, most recently updated first, signed in as the session's credentials. Each row carries the bookId open_book takes. With clientId, lists that practice client's books instead of the practice's own.</p>
+        <p>List the books saved in the DIYA cloud, most recently updated first, signed in as the session's credentials. Each row carries the bookId open_book takes, the book's title, its product and the period it covers. With clientId, lists that practice client's books instead of the practice's own.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
           <tbody>
@@ -738,7 +741,7 @@
       </details>
       <details class="tool" id="tool-list_vat_receipts">
         <summary><code>list_vat_receipts</code> <span class="tag">hosted, production</span></summary>
-        <p>The receipts Submit has stored for the signed-in account, the list its receipts page shows: each row carries the name get_vat_receipt takes. clientId narrows the list to one of the practice's clients.</p>
+        <p>The VAT return receipts Submit has stored for the signed-in account, newest first: each row carries the name get_vat_receipt takes, HMRC's form bundle number and the day the return was filed. clientId narrows the list to one of the practice's clients.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
           <tbody>

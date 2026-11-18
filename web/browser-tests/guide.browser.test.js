@@ -163,6 +163,24 @@ test.describe("guide.html", () => {
     expect(result.unsized).toBe(0);
   });
 
+  test("on arrival the page requests under 20 pictures, and a journey's pictures load when it opens", async ({ page }) => {
+    const pictureRequests = [];
+    page.on("request", (request) => {
+      if (/\.webp(\?|$)/.test(request.url())) pictureRequests.push(request.url());
+    });
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/guide.html", { waitUntil: "networkidle" });
+    await expect(page.locator("details.guide-journey").first()).toBeVisible();
+    expect(pictureRequests.length).toBeLessThan(20);
+
+    const journey = page.locator("details.guide-journey#submit-return");
+    await expect(journey.locator(".guide-thumb img[src]")).toHaveCount(0);
+    await journey.locator("summary").click();
+    const first = journey.locator(".guide-thumb img").first();
+    await expect.poll(() => first.evaluate((image) => image.complete && image.naturalWidth > 0)).toBe(true);
+    expect(await first.evaluate((image) => image.currentSrc)).toContain("-thumb.webp");
+  });
+
   test("changing the link hash to a journey opens it", async ({ page }) => {
     await serveRealSite(page);
     await page.goto("http://localhost:3000/guide.html", { waitUntil: "load" });

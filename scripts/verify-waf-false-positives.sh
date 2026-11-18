@@ -18,12 +18,20 @@ MINUTES="${2:-30}"
 # WAF metrics for CloudFront are always in us-east-1, regardless of where the CLI's own region
 # defaults to.
 REGION="us-east-1"
-WEB_ACL="${ENV_NAME}-app-waf"
+
+# The web ACL is named for the live deployment, not the environment: <deployment>-app-waf.
+DEPLOYMENT="$(aws ssm get-parameter \
+  --region eu-west-2 \
+  --name "/submit/${ENV_NAME}/last-known-good-deployment" \
+  --query 'Parameter.Value' \
+  --output text)"
+WEB_ACL="${DEPLOYMENT}-app-waf"
 
 END_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 START_TIME="$(date -u -v-"${MINUTES}"M +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d "-${MINUTES} minutes" +%Y-%m-%dT%H:%M:%SZ)"
 
 echo "Environment:  ${ENV_NAME}"
+echo "Deployment:   ${DEPLOYMENT}"
 echo "Web ACL:      ${WEB_ACL}"
 echo "Window:       ${START_TIME} to ${END_TIME}"
 echo ""
@@ -43,7 +51,7 @@ for RULE in "${RULES[@]}"; do
     --region "${REGION}" \
     --namespace AWS/WAFV2 \
     --metric-name BlockedRequests \
-    --dimensions Name=WebACL,Value="${WEB_ACL}" Name=Region,Value=Global Name=Rule,Value="${RULE}" \
+    --dimensions Name=WebACL,Value="${WEB_ACL}" Name=Rule,Value="${RULE}" \
     --start-time "${START_TIME}" \
     --end-time "${END_TIME}" \
     --period "$((MINUTES * 60))" \

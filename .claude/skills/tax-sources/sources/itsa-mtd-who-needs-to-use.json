@@ -1,7 +1,9 @@
 {
   "url": "https://www.gov.uk/guidance/find-out-if-and-when-you-need-to-use-making-tax-digital-for-income-tax",
+  "title": "Find out if and when you need to use Making Tax Digital for Income Tax",
   "retrieved": "2026-11-13",
-  "quote": "you’re a sole trader or a landlord registered for Self Assessment",
+  "quote": "You need to use Making Tax Digital for Income Tax if all of the following apply: you’re a sole trader or a landlord registered for Self Assessment you get income from self-employment or property, or both your qualifying income is more than the relevant threshold for the tax year — work out your qualifying income",
+  "table": true,
   "facts": [
     "itsa-mtd-over-50k-2026-04",
     "itsa-mtd-over-30k-2027-04",

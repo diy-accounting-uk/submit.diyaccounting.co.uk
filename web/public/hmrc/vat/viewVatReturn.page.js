@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 // Check if we're in synthetic/test mode to show developer options
 async function initializePage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -31,6 +37,7 @@ async function initializePage() {
 
   // Show synthetic indicator if hmrcAccount=synthetic
   if (hmrcAccount === "synthetic") {
+    window.showHmrcSandboxStatus(siteText("vat-read.status-sandbox-text", "This reads HMRC's test service, not your real records."));
     const syntheticIndicator = document.getElementById("syntheticIndicator");
     if (syntheticIndicator) {
       syntheticIndicator.classList.add("visible");
@@ -136,7 +143,7 @@ async function continueReturnRetrieval() {
     hideForm();
     showLoading();
     hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
-    showStatus("Retrieving VAT return...", "info");
+    showStatus(siteText("vat-view-return.retrieving", "Retrieving VAT return..."), "info");
 
     // Restore form values
     if (pendingRequest.vrn) document.getElementById("vrn").value = pendingRequest.vrn;
@@ -177,9 +184,9 @@ async function continueReturnRetrieval() {
         ...requestHeaders,
         "x-wait-time-ms": "0",
       },
-      pollPendingMessage: "Still processing...",
-      pollSuccessMessage: "VAT return retrieved.",
-      pollErrorMessage: "Failed to retrieve VAT return.",
+      pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+      pollSuccessMessage: siteText("vat-view-return.retrieved", "VAT return retrieved."),
+      pollErrorMessage: siteText("vat-view-return.retrieve-failed", "Failed to retrieve VAT return."),
     });
 
     const result = await response.json();
@@ -189,7 +196,7 @@ async function continueReturnRetrieval() {
       if (response.status === 401) {
         sessionStorage.removeItem("hmrcGrantId");
         sessionStorage.removeItem("hmrcTokenScope");
-        showFailure({ status: 401 }, "Could not retrieve the VAT return");
+        showFailure({ status: 401 }, siteText("vat-view-return.could-not-retrieve", "Could not retrieve the VAT return"));
         return;
       }
       throw requestError(response, result, "Failed to retrieve VAT return");
@@ -213,7 +220,7 @@ async function continueReturnRetrieval() {
     console.log("Return retrieval completed successfully");
   } catch (error) {
     console.error("Error retrieving VAT return:", error);
-    showFailure(error, "Could not retrieve the VAT return");
+    showFailure(error, siteText("vat-view-return.could-not-retrieve", "Could not retrieve the VAT return"));
     // Auto-expand form on error so user can retry
     showForm();
     // Clear pending request data to prevent auto-retry loop on next page load
@@ -257,7 +264,7 @@ async function handleFormSubmission(event) {
     }
     try {
       showLoading();
-      showStatus("Initiating HMRC authentication...", "info");
+      showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
 
       // Store request parameters and generate state
       const state = generateRandomState();
@@ -284,14 +291,17 @@ async function handleFormSubmission(event) {
       const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
       console.log("Generated HMRC Auth URL:", authResponseUrl);
 
-      showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+      showStatus(
+        siteText("widget.hmrc-auth-redirecting", "Redirecting to HMRC for authentication at {url}...", { url: authResponseUrl }),
+        "info",
+      );
 
       // Redirect to HMRC OAuth
       console.log(`Page transition initiated: Redirecting to HMRC OAuth URL ${authResponseUrl}`);
       window.location.href = authResponseUrl;
     } catch (error) {
       console.error("Authentication error:", error);
-      showStatus(`Authentication failed: ${error.message}`, "error");
+      showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
       hideLoading();
     }
   } else {
@@ -299,7 +309,7 @@ async function handleFormSubmission(event) {
     try {
       showLoading();
       hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
-      showStatus("Retrieving VAT return...", "info");
+      showStatus(siteText("vat-view-return.retrieving", "Retrieving VAT return..."), "info");
 
       // Build query parameters — use periodKey directly if available (e.g., from prior submission)
       const urlPeriodKey = new URLSearchParams(window.location.search).get("periodKey");
@@ -329,9 +339,9 @@ async function handleFormSubmission(event) {
           ...requestHeaders,
           "x-wait-time-ms": "0",
         },
-        pollPendingMessage: "Still processing...",
-        pollSuccessMessage: "VAT return retrieved.",
-        pollErrorMessage: "Failed to retrieve VAT return.",
+        pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+        pollSuccessMessage: siteText("vat-view-return.retrieved", "VAT return retrieved."),
+        pollErrorMessage: siteText("vat-view-return.retrieve-failed", "Failed to retrieve VAT return."),
       });
 
       const result = await response.json();
@@ -341,7 +351,7 @@ async function handleFormSubmission(event) {
         if (response.status === 401) {
           sessionStorage.removeItem("hmrcGrantId");
           sessionStorage.removeItem("hmrcTokenScope");
-          showFailure({ status: 401 }, "Could not retrieve the VAT return");
+          showFailure({ status: 401 }, siteText("vat-view-return.could-not-retrieve", "Could not retrieve the VAT return"));
           return;
         }
         throw requestError(response, result, "Failed to retrieve VAT return");
@@ -357,7 +367,7 @@ async function handleFormSubmission(event) {
       hideStatus();
     } catch (error) {
       console.error("Error retrieving VAT return:", error);
-      showFailure(error, "Could not retrieve the VAT return");
+      showFailure(error, siteText("vat-view-return.could-not-retrieve", "Could not retrieve the VAT return"));
     } finally {
       hideLoading();
     }
@@ -378,12 +388,18 @@ function sourceAnchor(sourceKey, { anchor, text } = {}) {
 }
 
 const RETURN_EXPLANATIONS = {
-  amounts:
+  amounts: siteText(
+    "vat-view-return.explain-amounts",
     "Boxes 1 to 5 show the VAT due on your sales, the VAT you can reclaim on purchases, and the net amount. Box 5 is box 3 less box 4: the VAT you pay HMRC or reclaim. Amounts are in pounds and pence.",
-  turnover:
+  ),
+  turnover: siteText(
+    "vat-view-return.explain-turnover",
     "Boxes 6 to 9 show the value of your sales and purchases without VAT, in whole pounds. They are separate from the VAT in boxes 1 to 5.",
-  declaration:
+  ),
+  declaration: siteText(
+    "vat-view-return.explain-declaration",
     "Finalised shows whether the return was confirmed as complete when it was sent. The declaration is the statement that the information in the return is true and complete.",
+  ),
 };
 
 function periodText(returnData) {
@@ -393,9 +409,9 @@ function periodText(returnData) {
 }
 
 function copyStatus(finalised) {
-  if (finalised === true) return { kind: "accepted", text: "Accepted by HMRC" };
-  if (finalised === false) return { kind: "pending", text: "Held by HMRC, not yet final" };
-  return { kind: "sent", text: "Retrieved from HMRC" };
+  if (finalised === true) return { kind: "accepted", text: siteText("vat.status-accepted", "Accepted by HMRC") };
+  if (finalised === false) return { kind: "pending", text: siteText("vat-view-return.status-held", "Held by HMRC, not yet final") };
+  return { kind: "sent", text: siteText("vat-view-return.status-retrieved", "Retrieved from HMRC") };
 }
 
 // What each box means: HMRC's guidance for the box, with a link to it. Outside the record.
@@ -404,21 +420,33 @@ function boxDefinitions() {
     element(
       "div",
       { class: "box-definition-item" },
-      element("dt", {}, `Box ${box.box}: ${box.label}`),
+      element("dt", {}, siteText("vat.box-row", "Box {box}: {label}", { box: box.box, label: box.label })),
       element(
         "dd",
         {},
         element(
           "p",
-          { class: "box-definition", id: `vatReturnBox${box.box}Definition` },
+          {
+            class: "box-definition",
+            id: `vatReturnBox${box.box}Definition`,
+            ...(HmrcDisplayFormat.locale() === "cy-GB" ? { lang: "en-GB" } : {}),
+          },
           `“${box.definition}”`,
           " ",
-          sourceAnchor(box.source, { anchor: box.anchor, text: `VAT Notice 700/12, box ${box.box}` }),
+          sourceAnchor(box.source, {
+            anchor: box.anchor,
+            text: siteText("vat-view-return.notice-box", "VAT Notice 700/12, box {box}", { box: box.box }),
+          }),
         ),
       ),
     ),
   );
-  return element("details", { class: "box-definitions" }, element("summary", {}, "What each box means"), element("dl", {}, ...items));
+  return element(
+    "details",
+    { class: "box-definitions" },
+    element("summary", {}, siteText("vat-view-return.what-each-box-means", "What each box means")),
+    element("dl", {}, ...items),
+  );
 }
 
 async function displayReturn(returnData) {
@@ -429,28 +457,44 @@ async function displayReturn(returnData) {
   ]);
 
   const period = periodText(returnData);
-  const finalisedText = returnData.finalised === true ? "Yes" : returnData.finalised === false ? "No" : "—";
+  const finalisedText =
+    returnData.finalised === true ? siteText("widget.yes", "Yes") : returnData.finalised === false ? siteText("widget.no", "No") : "—";
   const sections = vatReturnRecordSections({
     data: returnData,
     boxes: HmrcFieldTable.VAT_RETURN_BOXES,
     vatNumber: document.getElementById("vrn").value,
     periodHtml: `<strong>${HmrcFieldTable.escapeHtml(period)}</strong>`,
-    declarationHtml: `Finalised: <strong>${finalisedText}</strong>. The information in this return was declared true and complete when it was sent to HMRC.`,
+    declarationHtml: siteText(
+      "vat-view-return.declaration-line",
+      "Finalised: <strong>{finalised}</strong>. The information in this return was declared true and complete when it was sent to HMRC.",
+      { finalised: finalisedText },
+    ),
   });
   const html = customerCopyHtml({
-    title: period === "—" ? "Your copy of a VAT return" : `Your copy of the VAT return for ${period}`,
-    reference: { label: "VAT registration number", value: document.getElementById("vrn").value || "—" },
+    title:
+      period === "—"
+        ? siteText("vat-view-return.copy-title", "Your copy of a VAT return")
+        : siteText("vat-view-return.copy-title-period", "Your copy of the VAT return for {period}", { period }),
+    reference: { label: siteText("vat.vrn", "VAT registration number"), value: document.getElementById("vrn").value || "—" },
     status: copyStatus(returnData.finalised),
-    date: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }),
+    date: HmrcDisplayFormat.dateText(new Date()),
     sections: [
-      { heading: "VAT due", explanation: RETURN_EXPLANATIONS.amounts, recordHtml: sections.moneyHtml },
-      { heading: "Turnover", explanation: RETURN_EXPLANATIONS.turnover, recordHtml: sections.turnoverHtml },
-      { heading: "Declaration", explanation: RETURN_EXPLANATIONS.declaration, recordHtml: sections.declarationHtml },
+      { heading: siteText("vat.record-vat-due", "VAT due"), explanation: RETURN_EXPLANATIONS.amounts, recordHtml: sections.moneyHtml },
+      {
+        heading: siteText("vat-view-return.turnover", "Turnover"),
+        explanation: RETURN_EXPLANATIONS.turnover,
+        recordHtml: sections.turnoverHtml,
+      },
+      {
+        heading: siteText("vat-view-return.declaration", "Declaration"),
+        explanation: RETURN_EXPLANATIONS.declaration,
+        recordHtml: sections.declarationHtml,
+      },
     ],
     links: [
-      { href: "../receipt/receipts.html", text: "See your receipts" },
-      { href: "vatLiabilities.html", text: "See what you owe HMRC" },
-      { href: "vatPayments.html", text: "See your payments" },
+      { href: "../receipt/receipts.html", text: siteText("vat.see-receipts", "See your receipts") },
+      { href: "vatLiabilities.html", text: siteText("vat-view-return.see-owe", "See what you owe HMRC") },
+      { href: "vatPayments.html", text: siteText("vat-view-return.see-payments", "See your payments") },
     ],
   });
   const parsed = new DOMParser().parseFromString(html, "text/html");
@@ -460,9 +504,12 @@ async function displayReturn(returnData) {
     element(
       "p",
       { class: "field-table-source" },
-      "Box definitions quoted from ",
+      siteText("vat-view-return.definitions-from", "Box definitions quoted from") + " ",
       sourceAnchor("vatNotice70012"),
-      `, retrieved ${HmrcFieldTable.formatIsoDate(HmrcFieldTable.SOURCES.vatNotice70012.retrieved)}.`,
+      HmrcDisplayFormat.locale() === "cy-GB" ? ` ${siteText("chrome.in-english", "(in English)")}` : "",
+      siteText("vat-view-return.definitions-retrieved", ", retrieved {date}.", {
+        date: HmrcFieldTable.formatIsoDate(HmrcFieldTable.SOURCES.vatNotice70012.retrieved),
+      }),
     ),
   );
 }

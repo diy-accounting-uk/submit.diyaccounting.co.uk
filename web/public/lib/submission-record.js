@@ -15,7 +15,14 @@
 
 import { reviewLinks as defaultReviewLinks } from "./review-links.js";
 
-const STATUS_KINDS = new Set(["accepted", "sent", "pending", "rejected"]);
+// In a browser, page-chrome.js gives the frame's words in the reader's language; under Node, and
+// without it, the English stands. The record a builder writes for a filing is always English.
+function siteText(id, english, values) {
+  if (globalThis.siteText) return globalThis.siteText(id, english, values);
+  return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+}
+
+const STATUS_KINDS = new Set(["accepted", "held", "sent", "pending", "rejected"]);
 
 /**
  * Text made safe to place in XHTML element content.
@@ -71,11 +78,12 @@ export function recordAmount(value, { decimals = 0, deduction = false } = {}) {
  * @param {object} table
  * @param {string[]} table.columns - the heading of each figure column, e.g. ["2025", "2024"]
  * @param {boolean} [table.notes] - whether the table carries a note column
+ * @param {string} [table.noteHeading] - the heading of the note column, in the document's language
  * @param {object[]} table.rows
  * @returns {string}
  */
-export function recordTable({ columns, notes = false, rows }) {
-  const noteHeading = notes ? '<th class="note">Note</th>' : "";
+export function recordTable({ columns, notes = false, noteHeading = "Note", rows }) {
+  const noteHeadingHtml = notes ? `<th class="note">${escapeRecordText(noteHeading)}</th>` : "";
   const headings = columns.map((heading) => `<th class="figure">${escapeRecordText(heading)}</th>`).join("");
   const pounds = columns.map(() => '<th class="figure">£</th>').join("");
   const body = rows
@@ -94,7 +102,7 @@ export function recordTable({ columns, notes = false, rows }) {
     })
     .join("\n");
   return `<table class="statement">
-<thead><tr><th class="label"></th>${noteHeading}${headings}</tr><tr><th class="label"></th>${notes ? '<th class="note"></th>' : ""}${pounds}</tr></thead>
+<thead><tr><th class="label"></th>${noteHeadingHtml}${headings}</tr><tr><th class="label"></th>${notes ? '<th class="note"></th>' : ""}${pounds}</tr></thead>
 <tbody>
 ${body}
 </tbody>
@@ -128,7 +136,7 @@ ${references}<h2>${escapeRecordText(title)}</h2>
  * @param {object} copy
  * @param {string} copy.title - e.g. "Your copy of the VAT return for July to September 2026"
  * @param {{label: string, value: string}} copy.reference - e.g. {label: "Form bundle number", value: "123456789012"}
- * @param {{kind: "accepted"|"sent"|"pending"|"rejected", text: string}} copy.status
+ * @param {{kind: "accepted"|"held"|"sent"|"pending"|"rejected", text: string}} copy.status - "held" is data the authority holds that a view retrieved, not a filing
  * @param {string} copy.date - the date as the customer reads it, e.g. "24 October 2026"
  * @param {{heading?: string, explanation?: string, warning?: string, recordHtml: string}[]} copy.sections
  * @param {{href: string, text: string}[]} [copy.links]
@@ -145,7 +153,7 @@ export function customerCopyHtml({ title, reference, status, date, sections, lin
         ? `<div class="status-message status-warning customer-copy-warning"><div class="status-message-content">${escapeRecordText(section.warning)}</div></div>\n`
         : "";
       return `<section class="customer-copy-section" aria-label="${escapeRecordAttribute(label)}">
-${heading}${explanation}${warning}<div class="customer-copy-sheet" role="region" tabindex="0" aria-label="${escapeRecordAttribute(`The record: ${label}`)}"><div class="submission-record">
+${heading}${explanation}${warning}<div class="customer-copy-sheet" role="region" tabindex="0" aria-label="${escapeRecordAttribute(siteText("widget.record-region", "The record: {label}", { label }))}"><div class="submission-record">
 ${section.recordHtml}
 </div></div>
 </section>`;
@@ -154,15 +162,17 @@ ${section.recordHtml}
   const linkItems = links
     .map((link) => `<li><a href="${escapeRecordAttribute(link.href)}">${escapeRecordText(link.text)}</a></li>`)
     .join("");
-  const linksHtml = links.length ? `\n<nav class="customer-copy-links" aria-label="What to do next"><ul>${linkItems}</ul></nav>` : "";
+  const linksHtml = links.length
+    ? `\n<nav class="customer-copy-links" aria-label="${escapeRecordAttribute(siteText("widget.record-next", "What to do next"))}"><ul>${linkItems}</ul></nav>`
+    : "";
   return `<article class="customer-copy">
 <header class="customer-copy-header">
 <p class="customer-copy-brand">DIY Accounting Submit</p>
 <h2 class="customer-copy-title">${escapeRecordText(title)}</h2>
 <dl class="customer-copy-submission">
 <div><dt>${escapeRecordText(reference.label)}</dt><dd>${escapeRecordText(reference.value)}</dd></div>
-<div><dt>Status</dt><dd class="customer-copy-status" data-status="${status.kind}">${escapeRecordText(status.text)}</dd></div>
-<div><dt>Date</dt><dd>${escapeRecordText(date)}</dd></div>
+<div><dt>${escapeRecordText(siteText("widget.record-status", "Status"))}</dt><dd class="customer-copy-status" data-status="${status.kind}">${escapeRecordText(status.text)}</dd></div>
+<div><dt>${escapeRecordText(siteText("widget.record-date", "Date"))}</dt><dd>${escapeRecordText(date)}</dd></div>
 </dl>
 </header>
 ${sectionHtml}${linksHtml}${reviewLineHtml(status, reviewLinks)}
@@ -171,18 +181,20 @@ ${sectionHtml}${linksHtml}${reviewLineHtml(status, reviewLinks)}
 
 /**
  * The one line that invites a review, shown to every customer whose filing the authority accepted.
- * It is empty for any other status, and while no review profile is live.
+ * It is empty for any other status kind, and while no review profile is live. The kind decides, so
+ * the line shows whatever the language of the status text.
  * @param {{kind: string, text: string}} status
  * @param {{site: string, url: string}[]} reviewLinks - Trustpilot first
  * @returns {string}
  */
 export function reviewLineHtml(status, reviewLinks) {
-  if (status.kind !== "accepted" || !status.text.startsWith("Accepted") || reviewLinks.length === 0) return "";
+  if (status.kind !== "accepted" || reviewLinks.length === 0) return "";
   const anchors = reviewLinks.map(
     (link) =>
       `<a href="${escapeRecordAttribute(link.url)}" data-review-site="${escapeRecordAttribute(link.site)}" target="_blank" rel="noopener noreferrer">${escapeRecordText(link.site)}</a>`,
   );
-  return `\n<p class="customer-copy-review">Leave a review of DIY Accounting Submit on ${anchors.join(" or ")}.</p>`;
+  const sites = anchors.join(` ${siteText("widget.record-or", "or")} `);
+  return `\n<p class="customer-copy-review">${siteText("widget.record-review", "Leave a review of DIY Accounting Submit on {sites}.", { sites })}</p>`;
 }
 
 if (globalThis.document) {

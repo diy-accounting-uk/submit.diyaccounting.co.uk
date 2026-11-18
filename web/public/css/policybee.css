@@ -43,6 +43,21 @@
   margin: var(--space-1) 0 var(--space-3);
 }
 
+/* The logo is dark purple on a transparent ground, so on the dark card it sits on a white plate. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .policybee-logo {
+    background: #fff;
+    padding: var(--space-2);
+    border-radius: var(--radius-control);
+  }
+}
+
+:root[data-theme="dark"] .policybee-logo {
+  background: #fff;
+  padding: var(--space-2);
+  border-radius: var(--radius-control);
+}
+
 /* A list whose items each carry a tick drawn in CSS, so the glyph is not read aloud. */
 .check-list {
   list-style: none;

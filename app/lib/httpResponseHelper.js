@@ -18,7 +18,7 @@ import { createLogger, context, sanitiseString, sanitiseData } from "./logger.js
 import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
 import { fetchWithTimeout } from "./httpFetch.js";
 import { hmrcCallTarget } from "./hmrcHosts.js";
-import { integrationApi, recordedFetch } from "./integrationCalls.js";
+import { callActorClass, integrationApi, recordedFetch } from "./integrationCalls.js";
 import { warmOperators } from "./operators.js";
 
 const logger = createLogger({ source: "app/lib/httpResponseHelper.js" });
@@ -467,6 +467,7 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub, {
         org,
         target: hmrcCallTarget(providerUrl),
         api: integrationApi("POST", providerUrl),
+        actor: callActorClass(),
         fetchImplementation: fetchWithinLimit,
       })
     : await fetchWithinLimit(providerUrl, httpRequest);

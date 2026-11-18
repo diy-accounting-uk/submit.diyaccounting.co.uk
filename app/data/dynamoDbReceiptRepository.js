@@ -11,7 +11,7 @@ import { receiptRetention } from "../lib/recordRetention.js";
 const logger = createLogger({ source: "app/data/dynamoDbReceiptRepository.js" });
 
 /**
- * Store a receipt in DynamoDB with 7-year retention (2555 days)
+ * Store a receipt in DynamoDB with 7-year retention (2555 days); a test or synthetic actor's receipt lives 2 days
  * @param {string} userSub - The user's subject identifier
  * @param {string} receiptId - Unique receipt identifier (timestamp-formBundleNumber)
  * @param {object} receipt - The receipt data to store
@@ -19,10 +19,8 @@ const logger = createLogger({ source: "app/data/dynamoDbReceiptRepository.js" })
  *   so real filings can be counted apart from CI and behaviour-test submissions
  * @param {string} [clientId] - The practice's client id when the filing was client-scoped;
  *   omitted for the practice's own filings, so existing receipts with no client id stay readable
- * @param {boolean} [synthetic] - True when a test or sandbox flow caused the filing. A receipt gets a short
- *   ttl only when this is true and the actor is "test-user" or "probe"; every other receipt keeps 7 years
  */
-export async function putReceipt(userSub, receiptId, receipt, actor, clientId, synthetic) {
+export async function putReceipt(userSub, receiptId, receipt, actor, clientId) {
   logger.info({ message: `DynamoDB enabled, proceeding with putReceipt [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]` });
 
   try {
@@ -42,8 +40,8 @@ export async function putReceipt(userSub, receiptId, receipt, actor, clientId, s
       createdAt: now.toISOString(),
     };
 
-    // TTL is 7 years (2555 days) after creation for HMRC tax record requirements, unless a test actor filed it
-    const { ttl, ttl_datestamp } = receiptRetention({ actor, synthetic }, now);
+    // TTL is 7 years (2555 days) after creation for HMRC tax record requirements, unless a test or synthetic actor filed it
+    const { ttl, ttl_datestamp } = receiptRetention({ actor }, now);
     item.ttl = ttl;
     item.ttl_datestamp = ttl_datestamp;
 

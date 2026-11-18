@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId"));
@@ -32,8 +38,11 @@ function updateSubmissionModelUI() {
   periodStartDateInput.required = !isCumulative;
   periodEndDateInput.required = !isCumulative;
   periodDatesHint.textContent = isCumulative
-    ? "Leave both dates blank if this business reports annually. Fill them in only if you are reporting a quarter."
-    : "HMRC identifies this quarter by its start and end date.";
+    ? siteText(
+        "itsa.se-period-dates-hint-cumulative",
+        "Leave both dates blank if this business reports annually. Fill them in only if you are reporting a quarter.",
+      )
+    : siteText("itsa.se-period-dates-hint", "HMRC identifies this quarter by its start and end date.");
 
   cumulativeMoneyNote.style.display = isCumulative ? "block" : "none";
   const moneyFieldIds = [
@@ -48,11 +57,14 @@ function updateSubmissionModelUI() {
     if (!label) return;
     const baseText = label.dataset.baseLabel || label.textContent;
     label.dataset.baseLabel = baseText;
-    label.textContent = isCumulative ? `${baseText} (year to date)` : baseText;
+    label.textContent = isCumulative ? siteText("itsa.year-to-date-label", "{label} (year to date)", { label: baseText }) : baseText;
   });
   turnoverHint.textContent = isCumulative
-    ? "The total turnover for the tax year so far, up to the period end date above. Enter 0 if none yet."
-    : "The takings, fees, sales or money earned by the business for this period. Enter 0 if none.";
+    ? siteText(
+        "itsa.se-turnover-hint-cumulative",
+        "The total turnover for the tax year so far, up to the period end date above. Enter 0 if none yet.",
+      )
+    : siteText("itsa.se-turnover-hint", "The takings, fees, sales or money earned by the business for this period. Enter 0 if none.");
 
   loadCurrentTotalGroup.style.display = isCumulative ? "block" : "none";
 }
@@ -163,14 +175,14 @@ async function fetchCurrentTotal(nino, businessId, taxYear, hmrcGrantId) {
       ...requestHeaders,
       "x-wait-time-ms": "0",
     },
-    pollPendingMessage: "Still processing...",
-    pollSuccessMessage: "Current total loaded.",
-    pollErrorMessage: "Failed to load the current total.",
+    pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+    pollSuccessMessage: siteText("itsa.current-total-loaded", "Current total loaded."),
+    pollErrorMessage: siteText("itsa.current-total-failed", "Failed to load the current total."),
   });
 
   const result = await response.json();
   if (!response.ok) {
-    const error = new Error(hmrcErrorMessage(result, "Failed to load the current total"));
+    const error = new Error(hmrcErrorMessage(result, siteText("itsa.current-total-failed-fallback", "Failed to load the current total")));
     error.status = response.status;
     throw error;
   }
@@ -193,7 +205,10 @@ function applyCurrentTotal(periodSummary) {
     if (disallowable[id] !== undefined) document.getElementById(id).value = disallowable[id];
   });
   window.selfEmploymentExpenses.revealFilledSections();
-  showStatus("Loaded your current year-to-date total from HMRC. Edit the figures below to the new total.", "info");
+  showStatus(
+    siteText("itsa.current-total-applied", "Loaded your current year-to-date total from HMRC. Edit the figures below to the new total."),
+    "info",
+  );
 }
 
 async function continueLoadCurrentTotal() {
@@ -213,12 +228,18 @@ async function continueLoadCurrentTotal() {
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
     if (error.status === 404) {
-      showStatus("HMRC has no total on file yet for this tax year. Enter the figures for the year so far.", "info");
+      showStatus(
+        siteText("itsa.current-total-none", "HMRC has no total on file yet for this tax year. Enter the figures for the year so far."),
+        "info",
+      );
     } else if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
-      showStatus("Access token expired. Please try loading the total again.", "error");
+      showStatus(siteText("itsa.current-total-token-expired", "Access token expired. Please try loading the total again."), "error");
     } else {
-      showStatus(`Failed to load the current total: ${error.message}`, "error");
+      showStatus(
+        siteText("itsa.current-total-failed-reason", "Failed to load the current total: {reason}", { reason: error.message }),
+        "error",
+      );
     }
     sessionStorage.removeItem("pendingSelfEmploymentLoadTotalRequest");
     sessionStorage.removeItem("oauth_state");
@@ -241,7 +262,7 @@ async function handleLoadCurrentTotal() {
     if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     try {
       showLoading();
-      showStatus("Initiating HMRC authentication...", "info");
+      showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
 
       const state = generateRandomState();
       sessionStorage.setItem("oauth_state", state);
@@ -252,13 +273,16 @@ async function handleLoadCurrentTotal() {
       const hmrcAccount = sessionStorage.getItem("hmrcAccount");
       const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
 
-      showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+      showStatus(
+        siteText("widget.hmrc-auth-redirecting", "Redirecting to HMRC for authentication at {url}...", { url: authResponseUrl }),
+        "info",
+      );
       try {
         window.__correlation?.prepareRedirect?.();
       } catch {}
       window.location.href = authResponseUrl;
     } catch (error) {
-      showStatus(`Authentication failed: ${error.message}`, "error");
+      showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
       hideLoading();
     }
   } else {
@@ -269,9 +293,15 @@ async function handleLoadCurrentTotal() {
       applyCurrentTotal(result);
     } catch (error) {
       if (error.status === 404) {
-        showStatus("HMRC has no total on file yet for this tax year. Enter the figures for the year so far.", "info");
+        showStatus(
+          siteText("itsa.current-total-none", "HMRC has no total on file yet for this tax year. Enter the figures for the year so far."),
+          "info",
+        );
       } else {
-        showStatus(`Failed to load the current total: ${error.message}`, "error");
+        showStatus(
+          siteText("itsa.current-total-failed-reason", "Failed to load the current total: {reason}", { reason: error.message }),
+          "error",
+        );
       }
     } finally {
       hideLoading();
@@ -323,14 +353,16 @@ async function submitPeriod(periodData, testScenario, runFraudPreventionHeaderVa
       "x-wait-time-ms": "0",
     },
     body: JSON.stringify({ ...periodData, runFraudPreventionHeaderValidation }),
-    pollPendingMessage: "Still processing...",
-    pollSuccessMessage: "Quarterly update filed.",
-    pollErrorMessage: "Failed to file the quarterly update.",
+    pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+    pollSuccessMessage: siteText("itsa.quarterly-filed", "Quarterly update filed."),
+    pollErrorMessage: siteText("itsa.quarterly-file-failed", "Failed to file the quarterly update."),
   });
 
   const result = await response.json();
   if (!response.ok) {
-    const error = new Error(hmrcErrorMessage(result, "Failed to file the quarterly update"));
+    const error = new Error(
+      hmrcErrorMessage(result, siteText("itsa.quarterly-file-failed-fallback", "Failed to file the quarterly update")),
+    );
     error.status = response.status;
     error.reason = result.reason;
     throw error;
@@ -351,7 +383,7 @@ async function continuePeriodSubmission() {
     hideSearchCriteria();
     showLoading();
     hideStatus();
-    showStatus("Filing quarterly update...", "info");
+    showStatus(siteText("itsa.quarterly-filing", "Filing quarterly update..."), "info");
 
     const result = await submitPeriod(
       pendingRequest.periodData,
@@ -374,12 +406,15 @@ async function continuePeriodSubmission() {
     console.error("Error filing quarterly update:", error);
     if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
-      showStatus("Access token expired. Please re-authenticate.", "error");
+      showStatus(siteText("itsa.token-expired-reauth", "Access token expired. Please re-authenticate."), "error");
     } else if (error.status === 403 && error.reason === "tokens_exhausted") {
       hideStatus();
       window.SubmissionCost?.refresh();
     } else {
-      showStatus(`Failed to file the quarterly update: ${error.message}`, "error");
+      showStatus(
+        siteText("itsa.quarterly-file-failed-reason", "Failed to file the quarterly update: {reason}", { reason: error.message }),
+        "error",
+      );
     }
     showSearchCriteria();
     sessionStorage.removeItem("pendingSelfEmploymentPeriodRequest");
@@ -442,7 +477,7 @@ async function handleFormSubmission(event) {
     }
     try {
       showLoading();
-      showStatus("Initiating HMRC authentication...", "info");
+      showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
 
       const state = generateRandomState();
       const requestData = { periodData, testScenario, runFraudPreventionHeaderValidation };
@@ -458,7 +493,10 @@ async function handleFormSubmission(event) {
 
       const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
 
-      showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+      showStatus(
+        siteText("widget.hmrc-auth-redirecting", "Redirecting to HMRC for authentication at {url}...", { url: authResponseUrl }),
+        "info",
+      );
 
       try {
         window.__correlation?.prepareRedirect?.();
@@ -466,14 +504,14 @@ async function handleFormSubmission(event) {
       window.location.href = authResponseUrl;
     } catch (error) {
       console.error("Authentication error:", error);
-      showStatus(`Authentication failed: ${error.message}`, "error");
+      showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
       hideLoading();
     }
   } else {
     try {
       showLoading();
       hideStatus();
-      showStatus("Filing quarterly update...", "info");
+      showStatus(siteText("itsa.quarterly-filing", "Filing quarterly update..."), "info");
 
       const result = await submitPeriod(periodData, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
 
@@ -486,12 +524,15 @@ async function handleFormSubmission(event) {
       console.error("Error filing quarterly update:", error);
       if (error.status === 401) {
         window.hmrcScopeCheck.clearHmrcToken();
-        showStatus("Access token expired. Please try again.", "error");
+        showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
       } else if (error.status === 403 && error.reason === "tokens_exhausted") {
         hideStatus();
         window.SubmissionCost?.refresh();
       } else {
-        showStatus(`Failed to file the quarterly update: ${error.message}`, "error");
+        showStatus(
+          siteText("itsa.quarterly-file-failed-reason", "Failed to file the quarterly update: {reason}", { reason: error.message }),
+          "error",
+        );
       }
     } finally {
       hideLoading();
@@ -504,8 +545,10 @@ function displayResult(result) {
   // HMRC's cumulative model (2025-26 onwards) answers 204 with no period ID: the year's running
   // total is the one resource, so the result reads "Year to date" as the submission record does.
   const hasPeriodId = Boolean(result?.periodId);
-  document.getElementById("periodIdLabel").textContent = hasPeriodId ? "Period ID" : "Reporting";
-  periodIdResult.textContent = hasPeriodId ? result.periodId : "Year to date";
+  document.getElementById("periodIdLabel").textContent = hasPeriodId
+    ? siteText("itsa.period-id", "Period ID")
+    : siteText("itsa.record-reporting", "Reporting");
+  periodIdResult.textContent = hasPeriodId ? result.periodId : siteText("itsa.record-year-to-date", "Year to date");
 }
 
 document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {

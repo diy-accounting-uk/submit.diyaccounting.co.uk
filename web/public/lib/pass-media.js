@@ -29,7 +29,7 @@ export function generateFrontSvg(words) {
   let textElements = "";
   words.forEach((word, i) => {
     const y = padding + (i + 1) * lineHeight - 10;
-    textElements += `  <text x="${width / 2}" y="${y}" text-anchor="middle" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#1a1a2e">${escapeXml(word)}</text>\n`;
+    textElements += `  <text x="${width / 2}" y="${y}" text-anchor="middle" font-family="Arial, Arimo, sans-serif" font-size="${fontSize}" font-weight="bold" fill="#1a1a2e">${escapeXml(word)}</text>\n`;
   });
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">

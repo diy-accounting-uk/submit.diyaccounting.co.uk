@@ -92,12 +92,19 @@ export async function prepareWorkbook(page) {
 }
 
 // ref is LibreOffice's own form: $SalesApr.A4, or $'Profit & Loss Acc'.C24 for a name with spaces.
+// The address box names a merged cell by its range from the top-left cell (B2:E2), so a ref to
+// that cell waits for the range.
 export async function goToCell(page, ref, { timeoutMs = 10000 } = {}) {
   const cell = ref.split(".").pop().replace(/\$/g, "");
   await page.evaluate((point) => window.app.map.sendUnoCommand(".uno:GoToCell", { ToPoint: { type: "string", value: point } }), ref);
-  await page.waitForFunction((want) => document.querySelector("#pos_window-input-address")?.value === want, cell, {
-    timeout: timeoutMs,
-  });
+  await page.waitForFunction(
+    (want) => {
+      const address = document.querySelector("#pos_window-input-address")?.value;
+      return address === want || address?.startsWith(`${want}:`);
+    },
+    cell,
+    { timeout: timeoutMs },
+  );
 }
 
 // The cell cursor's box in page pixels. cellCursorRectangle is in document pixels; the document

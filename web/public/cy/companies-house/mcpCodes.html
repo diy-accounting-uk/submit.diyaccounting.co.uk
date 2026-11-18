@@ -1,0 +1,72 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from companies-house/mcpCodes.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Codau Tŷ’r Cwmnïau - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/companies-house/mcpCodes.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/mcpCodes.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/mcpCodes.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/mcpCodes.html" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="../../submit.css" />
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="ch-mcp-codes.companies-house-codes-d354c4">Codau Tŷ’r Cwmnïau</h1>
+      <p data-i18n="ch-mcp-codes.type-the-codes-for-your-filing-49499d" class="subtitle">
+        Teipiwch y codau ar gyfer eich ffeilio yma, nid yn y sgwrs
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <div id="codesMessage" role="status" aria-live="polite" class="hint"></div>
+
+      <div id="codesFormView" class="form-container" style="display: none">
+        <p id="codesIntro"></p>
+        <p data-i18n="ch-mcp-codes.the-codes-go-straight-to-diy-2973e1" class="hint">
+          Mae’r codau’n mynd yn syth i DIY Accounting Submit, yn cael eu cadw dan sêl am ddeg munud ac yn cael eu defnyddio unwaith, ar
+          gyfer <span id="codesUse">y ffeilio hwn</span>. Nid ydynt yn ymddangos yn eich sgwrs.
+        </p>
+        <p class="hint" id="codesExpiry"></p>
+        <form id="codesForm" autocomplete="off">
+          <div class="form-group" id="companyAuthCodeGroup">
+            <label data-i18n="ch-mcp-codes.company-authentication-code-56d0e6" for="companyAuthCode">Cod dilysu’r cwmni</label>
+            <input
+              type="password"
+              id="companyAuthCode"
+              class="input--code"
+              name="companyAuthCode"
+              minlength="6"
+              maxlength="8"
+              required
+              autocomplete="off"
+            />
+          </div>
+          <div id="clientCodeFields"></div>
+          <div id="personalCodeFields"></div>
+          <button data-i18n="ch-mcp-codes.save-codes-1595ca" type="submit" id="saveCodesBtn" class="btn">Cadw’r codau</button>
+        </form>
+      </div>
+
+      <div id="codesDoneView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-mcp-codes.codes-saved-6eedc5">Codau wedi’u cadw</h2>
+        <p data-i18n="ch-mcp-codes.go-back-to-your-chat-and-375e81">Ewch yn ôl i’ch sgwrs a gofynnwch i’r ffeilio gael ei wneud.</p>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../lib/welsh-text.js"></script>
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../companies-house/mcpCodes.page.js"></script>
+  </body>
+</html>

@@ -47,7 +47,8 @@ vi.mock("@aws-sdk/client-s3", () => ({
 }));
 
 const mockBuildDataSection = vi.fn();
-vi.mock("@app/lib/operatorSnapshot/dataSection.js", () => ({
+vi.mock("@app/lib/operatorSnapshot/dataSection.js", async (importOriginal) => ({
+  ...(await importOriginal()),
   buildDataSection: (...args) => mockBuildDataSection(...args),
 }));
 
@@ -101,6 +102,7 @@ import {
   buildIntegrations,
   shortResourceName,
   vatSubmissionReconciliationText,
+  retentionCohortTable,
   toObservationWindows,
   toActivityFastWindows,
   buildSnapshot,
@@ -111,6 +113,9 @@ import {
   parseResultSet,
   runAthenaQuery,
   OBJECTIVE_DEFINITIONS,
+  metricPoints,
+  consumedCapacity,
+  logGroupStoredBytes,
 } from "@app/functions/analytics/operatorSnapshotPublish.js";
 
 const WINDOWED_QUERY_COUNT = new Set(
@@ -363,8 +368,26 @@ describe("operatorSnapshotPublish", () => {
       expect(sql).toContain(`max(CASE WHEN day <= ${ukToday} AND (sub_account_id = '1') THEN day END) OVER () AS o0_today_newest_day`);
       expect(sql).toContain(`cast(max(day) FILTER (WHERE day <= ${ukToday} AND (sub_account_id = '1')) AS varchar) AS o0_today_as_of`);
       expect(sql).toContain(
-        `sum(CASE WHEN day = date_add('day', -1, ${ukToday}) AND (sub_account_id = '1') THEN cost_usd END) AS o0_prev_1`,
+        `sum(cost_usd) FILTER (WHERE day = date_add('day', -1, o0_today_newest_day) AND (sub_account_id = '1')) AS o0_prev_1`,
       );
+    });
+
+    test("a whole-day source's Previous day is the day before the day Today read, for every aggregation", () => {
+      const sql = buildWindowedBatchSql({
+        view: "v_cost_daily",
+        dayColumn: "day",
+        observations: [
+          { valueExpr: "cost_usd", aggregation: "sum" },
+          { valueExpr: "balance", aggregation: "latest" },
+          { valueExpr: "open_items", aggregation: "latest-total", where: "kind = 'x'" },
+        ],
+      });
+      expect(sql).toContain("sum(cost_usd) FILTER (WHERE day = date_add('day', -1, o0_today_newest_day)) AS o0_prev_1");
+      expect(sql).toContain("max_by(balance, day) FILTER (WHERE day = date_add('day', -1, o1_today_newest_day)) AS o1_prev_1");
+      expect(sql).toContain("sum(open_items) FILTER (WHERE day = date_add('day', -1, o2_today_newest_day) AND (kind = 'x')) AS o2_prev_1");
+      expect(sql.match(/AS o1_today_newest_day/g)).toHaveLength(1);
+      expect(sql.match(/AS o2_today_newest_day/g)).toHaveLength(1);
+      expect(sql).not.toContain("date_add('day', -1, CAST(");
     });
 
     test("a live source's Today counts the rows since UK midnight and carries no reading day", () => {
@@ -547,12 +570,26 @@ describe("operatorSnapshotPublish", () => {
       const chart = buildDailyChartDefinitions().find((definition) => definition.id === "low-running-cost");
 
       expect(chart.title).toBe("AWS costs");
-      expect(chart.modes.map((mode) => mode.id)).toEqual(["cost", "account", "deployment", "charge", "agent"]);
+      expect(chart.modes.map((mode) => mode.id)).toEqual(["cost", "account", "deployment", "charge", "bedrock-model", "agent"]);
       expect(chart.modes[0].maxComponents).toBe(12);
       const account = chart.modes.find((mode) => mode.id === "account");
       expect(account.labelOf("972912397388")).toBe("submit-prod");
       expect(account.labelOf("887764105431")).toBe("management");
       expect(chart.modes.find((mode) => mode.id === "deployment").sql).toContain("deployment AS component");
+    });
+
+    test("the Bedrock by model tab draws All Bedrock, each model in use and Other", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "low-running-cost");
+      const mode = chart.modes.find((m) => m.id === "bedrock-model");
+
+      expect(mode.label).toBe("Bedrock by model");
+      expect(mode.total).toBe("All Bedrock");
+      expect(mode.componentOrder).toEqual(["amazon.nova-pro-v1:0", "global.amazon.nova-2-lite-v1:0", "other"]);
+      expect(mode.labelOf("amazon.nova-pro-v1:0")).toBe("Nova Pro");
+      expect(mode.labelOf("other")).toBe("Other");
+      expect(mode.sql).toContain("FROM   v_cost_by_resource_daily");
+      expect(mode.sql).toContain("service_name LIKE '%Bedrock%'");
+      expect(mode.sql).toContain("ELSE 'other' END AS component");
     });
 
     test("the AWS costs chart offers CloudWatch by charge and Bedrock cost per agent result", () => {
@@ -596,7 +633,7 @@ describe("operatorSnapshotPublish", () => {
       expect(all.hourlySql).toContain("FROM   v_integration_calls_hourly");
       expect(all.maxComponents).toBe(8);
       expect(all.labelOf("companies-house 4xx")).toBe("Companies House 4xx");
-      expect(chart.modes[1].sql).toContain("status_label AS component");
+      expect(chart.modes[1].sql).toContain("status_label || '@' || CASE WHEN actor IS NULL");
       expect(chart.modes[1].sql).toContain("org = 'hmrc'");
       expect(chart.modes[1].maxComponents).toBeUndefined();
     });
@@ -607,7 +644,7 @@ describe("operatorSnapshotPublish", () => {
       expect(chart.unit).toBe("ms");
       expect(chart.modes[0].total).toBeNull();
       expect(chart.modes[0].sql).toContain("sum(total_ms) / nullif(sum(calls), 0)");
-      expect(chart.modes[0].sql).toContain("org AS component");
+      expect(chart.modes[0].sql).toContain("org || '@' || CASE WHEN actor IS NULL");
       expect(chart.modes[0].labelOf("stripe")).toBe("Stripe");
       expect(chart.modes.map((mode) => mode.id)).toEqual(["organisation"]);
     });
@@ -617,33 +654,72 @@ describe("operatorSnapshotPublish", () => {
       const days = dailyChartDays(END_DAY);
       const hours = hourlyChartHours(new Date(`${END_DAY}T10:30:00Z`));
       const dailyRows = [
-        { day: END_DAY, component: "hmrc", value: "300" },
-        { day: END_DAY, component: "stripe", value: "100" },
+        { day: END_DAY, component: "hmrc@customer", value: "300" },
+        { day: END_DAY, component: "stripe@customer", value: "100" },
       ];
       const hourlyRows = [
-        { day: hours.at(-1), component: "stripe", value: "500" },
-        { day: hours.at(-1), component: "hmrc", value: "50" },
+        { day: hours.at(-1), component: "stripe@customer", value: "500" },
+        { day: hours.at(-1), component: "hmrc@customer", value: "50" },
       ];
 
       const daily = buildChartSeries({ days, rows: dailyRows, mode });
       const hourly = buildChartSeries({ days: hours, rows: hourlyRows, mode });
 
-      expect(daily.map((line) => line.id)).toEqual(["hmrc", "companies-house", "stripe"]);
-      expect(hourly.map((line) => line.id)).toEqual(["hmrc", "companies-house", "stripe"]);
+      expect(daily.map((line) => line.id)).toEqual(["hmrc@customer", "companies-house@customer", "stripe@customer"]);
+      expect(hourly.map((line) => line.id)).toEqual(["hmrc@customer", "companies-house@customer", "stripe@customer"]);
     });
 
     test("the requests graph orders its lines by organisation and status in every range", () => {
       const mode = buildDailyChartDefinitions().find((definition) => definition.id === "integration-requests").modes[0];
       const days = dailyChartDays(END_DAY);
       const hours = hourlyChartHours(new Date(`${END_DAY}T10:30:00Z`));
-      const lines = (day, values) => Object.entries(values).map(([component, value]) => ({ day, component, value: String(value) }));
+      const lines = (day, values) =>
+        Object.entries(values).map(([component, value]) => ({ day, component: `${component}@customer`, value: String(value) }));
 
       const daily = buildChartSeries({ days, rows: lines(END_DAY, { "stripe 2xx": 90, "hmrc 4xx": 5, "hmrc 2xx": 40 }), mode });
       const hourly = buildChartSeries({ days: hours, rows: lines(hours.at(-1), { "hmrc 2xx": 1, "stripe 2xx": 9, "hmrc 4xx": 4 }), mode });
 
-      const order = ["total", "hmrc 2xx", "hmrc 4xx", "stripe 2xx"];
+      const order = ["total@customer", "hmrc 2xx@customer", "hmrc 4xx@customer", "stripe 2xx@customer"];
       expect(daily.map((line) => line.id)).toEqual(order);
       expect(hourly.map((line) => line.id)).toEqual(order);
+    });
+
+    test("the requests graph draws each class of caller as its own lines and total, customer first", () => {
+      const mode = buildDailyChartDefinitions().find((definition) => definition.id === "integration-requests").modes[0];
+      const days = dailyChartDays(END_DAY);
+      const row = (component, value) => ({ day: END_DAY, component, value: String(value) });
+      const series = buildChartSeries({
+        days,
+        rows: [row("stripe 2xx@other", 8), row("hmrc 2xx@customer", 3), row("hmrc 2xx@test", 40), row("stripe 2xx@customer", 1)],
+        mode,
+      });
+
+      expect(series.map((line) => line.id)).toEqual([
+        "total@customer",
+        "hmrc 2xx@customer",
+        "stripe 2xx@customer",
+        "total@test",
+        "hmrc 2xx@test",
+        "total@other",
+        "stripe 2xx@other",
+      ]);
+      const byId = Object.fromEntries(series.map((line) => [line.id, line]));
+      expect(byId["total@customer"].label).toBe("All requests, customer");
+      expect(byId["hmrc 2xx@test"].label).toBe("HMRC 2xx, test");
+      expect(byId["total@customer"].values.at(-1)).toBe(4);
+      expect(byId["total@other"].values.at(-1)).toBe(8);
+      expect(byId["stripe 2xx@other"].description).toContain("Only calls made by an operator or a scheduled job.");
+    });
+
+    test("the duration graph keeps a zero line for each organisation in the customer class only", () => {
+      const mode = buildDailyChartDefinitions().find((definition) => definition.id === "integration-duration").modes[0];
+      const series = buildChartSeries({
+        days: dailyChartDays(END_DAY),
+        rows: [{ day: END_DAY, component: "stripe@other", value: "120" }],
+        mode,
+      });
+      expect(series.map((line) => line.id)).toEqual(["hmrc@customer", "companies-house@customer", "stripe@customer", "stripe@other"]);
+      expect(series.at(-1).label).toBe("Stripe, other");
     });
 
     test("the duration graph note holds for the daily and the hourly range", () => {
@@ -1123,6 +1199,9 @@ describe("operatorSnapshotPublish", () => {
           "cost-submit-ci-usd",
           "cost-other-accounts-usd",
           "cost-bedrock-usd",
+          "cost-bedrock-nova-pro-usd",
+          "cost-bedrock-nova-2-lite-usd",
+          "cost-bedrock-other-usd",
           "cost-cloudwatch-usd",
           "cost-cloudfront-usd",
         ]),
@@ -1159,6 +1238,174 @@ describe("operatorSnapshotPublish", () => {
       expect(series.map((line) => line.description)).toEqual(["Everything.", "Line a.", "Line b.", "The 1 smaller lines added together."]);
     });
 
+    test("the Retention graph has a Totals, a Daily events and a Submitters by kind tab", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "retention");
+
+      expect(chart.modes.map((mode) => [mode.id, mode.label])).toEqual([
+        ["totals", "Totals"],
+        ["events", "Daily events"],
+        ["submitters", "Submitters by kind"],
+      ]);
+      const [totals, events, submitters] = chart.modes;
+      expect(totals.total).toBeNull();
+      expect(events.total).toBeNull();
+      expect(submitters.total).toBe("All submitters, 90 days to this day");
+      for (const id of [
+        "accounts-total",
+        "active-customers-90d",
+        "active-customers-7d",
+        "submitters-90d",
+        "submitters-7d",
+        "returning-submitters-90d",
+        "returning-submitters-7d",
+        "due-submitters-90d",
+        "active-subscriptions",
+        "active-passes",
+      ]) {
+        expect(totals.componentOrder).toContain(id);
+        expect(totals.descriptionOf(id), id).toBeTruthy();
+      }
+      for (const id of [
+        "new-accounts",
+        "first-submissions",
+        "subscriptions-started",
+        "renewals",
+        "cancellations",
+        "subscriptions-ended",
+        "subscriptions-net-change",
+        "passes-issued",
+        "passes-redeemed",
+      ]) {
+        expect(events.componentOrder).toContain(id);
+        expect(events.descriptionOf(id), id).toBeTruthy();
+      }
+      expect(submitters.componentOrder).toEqual(["new-submitters-90d", "returning-submitters-90d", "resurrected-submitters-90d"]);
+    });
+
+    test("the Retention graph draws test, synthetic, operator and unknown accounts as lines of their own", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "retention");
+      const [totals, events] = chart.modes;
+
+      for (const name of ["test", "synthetic", "other", "unknown"]) {
+        expect(totals.componentOrder).toContain(`accounts-total-${name}`);
+        expect(events.componentOrder).toContain(`new-accounts-${name}`);
+      }
+      expect(events.labelOf("new-accounts-test")).toBe("New accounts, test accounts");
+      expect(events.labelOf("new-accounts-unknown")).toBe("New accounts, unknown accounts");
+      expect(events.descriptionOf("new-accounts")).toContain("Customer accounts only");
+      expect(totals.sql).toContain("CASE actor_class WHEN 'customer' THEN 'accounts-total' ELSE 'accounts-total-' || actor_class END");
+      expect(events.sql).toContain("CASE actor_class WHEN 'customer' THEN 'new-accounts' ELSE 'new-accounts-' || actor_class END");
+
+      const series = buildChartSeries({
+        days: [END_DAY],
+        rows: [
+          { day: END_DAY, component: "new-accounts", value: "1" },
+          { day: END_DAY, component: "new-accounts-test", value: "69" },
+        ],
+        mode: events,
+      });
+      expect(series.find((line) => line.id === "new-accounts").values).toEqual([1]);
+      expect(series.find((line) => line.id === "new-accounts-test").values).toEqual([69]);
+    });
+
+    test("each Totals line of the Retention graph reads the view and column of its table row", () => {
+      const retention = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "retention");
+      const totals = buildDailyChartDefinitions().find((definition) => definition.id === "retention").modes[0];
+      const rowOf = (id) => retention.observations.find((observation) => observation.id === id);
+
+      for (const [line, rowId] of [
+        ["accounts-total", "retention-accounts-total"],
+        ["active-customers-90d", "retention-active-customers-90d"],
+        ["submitters-90d", "submitters-90d"],
+        ["submitters-7d", "retention-submitters-7d"],
+        ["due-submitters-90d", "retention-submitters-due-90d"],
+        ["returning-submitters-90d", "returning-submitters"],
+        ["active-subscriptions", "retention-active-subscriptions"],
+        ["active-passes", "retention-active-passes"],
+      ]) {
+        const row = rowOf(rowId);
+        expect(row, rowId).toBeDefined();
+        expect(["latest", "latest-total"], rowId).toContain(row.aggregation);
+        expect(totals.sql, line).toContain(`sum(${row.valueExpr})`);
+        expect(totals.sql, line).toContain(`FROM   ${row.view}`);
+      }
+    });
+
+    test("every Retention table row says what it measures", () => {
+      const retention = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "retention");
+      const undescribed = retention.observations
+        .filter((observation) => observation.id.startsWith("retention-") && !observation.description)
+        .map((observation) => observation.id);
+
+      expect(undescribed).toEqual(["retention-passes-issued"]);
+    });
+
+    test("the Submitters by kind total adds up new, returning and resurrected submitters", () => {
+      const mode = buildDailyChartDefinitions()
+        .find((definition) => definition.id === "retention")
+        .modes.find((candidate) => candidate.id === "submitters");
+      const series = buildChartSeries({
+        days: [END_DAY],
+        rows: [
+          { day: END_DAY, component: "new-submitters-90d", value: "5" },
+          { day: END_DAY, component: "returning-submitters-90d", value: "3" },
+          { day: END_DAY, component: "resurrected-submitters-90d", value: "1" },
+        ],
+        mode,
+      });
+
+      expect(series[0]).toMatchObject({ id: "total", label: "All submitters, 90 days to this day", values: [9] });
+      expect(mode.sql).toContain("new_submitters_90d");
+      expect(mode.sql).toContain("resurrected_submitters_90d");
+    });
+
+    test("retentionCohortTable puts the signup months oldest first and fills a month with no row with 0", () => {
+      const table = retentionCohortTable({
+        rows: [
+          { signup_month: "2026-10-01", months_since_signup: "0", accounts: "11", submitters: "7" },
+          { signup_month: "2026-09-01", months_since_signup: "0", accounts: "9", submitters: "0" },
+          { signup_month: "2026-09-01", months_since_signup: "2", accounts: "9", submitters: "1" },
+        ],
+      });
+
+      expect(table).toEqual({
+        months: 3,
+        rows: [
+          { signupMonth: "2026-09", accounts: 9, submitters: [0, 0, 1] },
+          { signupMonth: "2026-10", accounts: 11, submitters: [7] },
+        ],
+      });
+      expect(retentionCohortTable({ rows: [] })).toEqual({ months: 0, rows: [] });
+    });
+
+    test("buildDailyCharts attaches the Retention cohort table from the customer cohorts", async () => {
+      const queries = [];
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            queries.push(command.input.QueryString);
+            return Promise.resolve({ QueryExecutionId: "q" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          default:
+            return Promise.resolve({
+              ResultSet: resultSetOfRows(
+                ["day", "component", "value", "signup_month", "months_since_signup", "accounts", "submitters"],
+                [[END_DAY, "x", "1", "2026-10-01", "0", "4", "2"]],
+              ),
+            });
+        }
+      });
+
+      const { dailyCharts } = await buildDailyCharts({ workGroup: "wg", database: "db", endDay: END_DAY });
+
+      expect(dailyCharts.charts.find((chart) => chart.id === "retention").cohort).toEqual({
+        months: 1,
+        rows: [{ signupMonth: "2026-10", accounts: 4, submitters: [2] }],
+      });
+      expect(queries.find((sql) => sql.includes("FROM   v_retention_cohorts_monthly"))).toContain("actor_class = 'customer'");
+    });
+
     test("the Retention table and graph read the same rolling definition of returning submitters", () => {
       const retention = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "retention");
       const returning = retention.observations.find((observation) => observation.id === "returning-submitters");
@@ -1180,7 +1427,9 @@ describe("operatorSnapshotPublish", () => {
       const passes = paid.modes.find((mode) => mode.id === "passes");
 
       expect(row).toMatchObject({ view: "v_pass_redemptions_daily", valueExpr: "passes_issued", aggregation: "sum" });
-      expect(charts.find((definition) => definition.id === "retention").modes[0].sql).toContain("'passes-issued'");
+      expect(charts.find((definition) => definition.id === "retention").modes.find((mode) => mode.id === "events").sql).toContain(
+        "'passes-issued'",
+      );
       expect(passes.unit).toBe("count");
       expect(passes.sql).toContain("passes_issued");
       expect(passes.descriptionOf("passes-issued")).toBeTruthy();
@@ -1337,14 +1586,14 @@ describe("operatorSnapshotPublish", () => {
       expect(activities.modes.map((mode) => mode.id)).toEqual(["started", "completed", "api-calls"]);
     });
 
-    test("hourlyChartHours lists 168 UTC hours ending on the hour of now, oldest first", () => {
+    test("hourlyChartHours lists 336 UTC hours ending on the hour of now, oldest first", () => {
       const hours = hourlyChartHours(new Date("2026-10-29T14:37:12.000Z"));
-      expect(hours).toHaveLength(168);
-      expect(hours[0]).toBe("2026-10-22T15:00:00Z");
+      expect(hours).toHaveLength(336);
+      expect(hours[0]).toBe("2026-10-15T15:00:00Z");
       expect(hours.at(-1)).toBe("2026-10-29T14:00:00Z");
     });
 
-    test("only the modes read from an hourly view carry an hourly query, one over each view for 168 hours", () => {
+    test("only the modes read from an hourly view carry an hourly query, one over each view for 336 hours", () => {
       const withHourly = buildDailyChartDefinitions().flatMap((definition) =>
         definition.modes.filter((mode) => mode.hourlySql).map((mode) => `${definition.id}/${mode.id}`),
       );
@@ -1352,23 +1601,30 @@ describe("operatorSnapshotPublish", () => {
         "activity-started-and-completed/started",
         "activity-started-and-completed/completed",
         "activity-started-and-completed/api-calls",
+        "hmrc-failures/class",
+        "hmrc-failures/status",
+        "hmrc-failures/rate",
         "integration-requests/all",
         "integration-requests/hmrc",
         "integration-requests/companies-house",
         "integration-requests/stripe",
         "integration-duration/organisation",
+        "conversion-to-submission/active-customers",
         "visitors/sessions",
+        "visitors/sign-in-provider",
+        "visitors/country",
+        "visitors/ai-agent-country",
       ]);
       for (const definition of buildDailyChartDefinitions()) {
         for (const mode of definition.modes.filter((candidate) => candidate.hourlySql)) {
-          expect(mode.hourlySql).toContain("date_add('hour', -168,");
+          expect(mode.hourlySql).toContain("date_add('hour', -336,");
           expect(mode.hourlySql).toMatch(/FROM\s+v_[a-z_]+_hourly/);
           expect(mode.hourlySql).toMatch(/AS day/);
         }
       }
     });
 
-    test("buildDailyCharts publishes 168 hourly points on the hourly modes and none elsewhere, with three extra queries", async () => {
+    test("buildDailyCharts publishes 336 hourly points on the hourly modes and none elsewhere, with three extra queries", async () => {
       const queries = [];
       mockAthenaSend.mockImplementation((command) => {
         switch (command.constructor.name) {
@@ -1388,8 +1644,8 @@ describe("operatorSnapshotPublish", () => {
       const { dailyCharts, failedChartIds } = await buildDailyCharts({ workGroup: "wg", database: "db", endDay: END_DAY, now });
 
       expect(failedChartIds).toEqual([]);
-      expect(dailyCharts.hours).toHaveLength(168);
-      expect(queries.filter((sql) => /_hourly/.test(sql))).toHaveLength(9);
+      expect(dailyCharts.hours).toHaveLength(336);
+      expect(queries.filter((sql) => /_hourly/.test(sql))).toHaveLength(16);
       const hourlyModes = dailyCharts.charts.flatMap((chart) =>
         chart.modes.filter((mode) => mode.hourly).map((mode) => `${chart.id}/${mode.id}`),
       );
@@ -1397,16 +1653,23 @@ describe("operatorSnapshotPublish", () => {
         "activity-started-and-completed/started",
         "activity-started-and-completed/completed",
         "activity-started-and-completed/api-calls",
+        "hmrc-failures/class",
+        "hmrc-failures/status",
+        "hmrc-failures/rate",
         "integration-requests/all",
         "integration-requests/hmrc",
         "integration-requests/companies-house",
         "integration-requests/stripe",
         "integration-duration/organisation",
+        "conversion-to-submission/active-customers",
         "visitors/sessions",
+        "visitors/sign-in-provider",
+        "visitors/country",
+        "visitors/ai-agent-country",
       ]);
       const visitors = dailyCharts.charts.find((chart) => chart.id === "visitors").modes[0];
       expect(visitors.hourly.series.map((line) => line.id)).toEqual(["operator", "human"]);
-      for (const line of visitors.hourly.series) expect(line.values).toHaveLength(168);
+      for (const line of visitors.hourly.series) expect(line.values).toHaveLength(336);
       expect(visitors.hourly.series[1].values.at(-1)).toBe(3);
     });
 
@@ -1446,8 +1709,8 @@ describe("operatorSnapshotPublish", () => {
         previous: first.dailyCharts,
       });
 
-      expect(firstRunQueryCount).toBe(48);
-      expect(queries).toHaveLength(9);
+      expect(firstRunQueryCount).toBe(59);
+      expect(queries).toHaveLength(16);
       expect(queries.every((sql) => /_hourly/.test(sql))).toBe(true);
       expect(second.failedChartIds).toEqual([]);
       expect(second.dailyCharts.dailySeriesQueriedAt).toBe(firstRunAt.toISOString());
@@ -1456,6 +1719,9 @@ describe("operatorSnapshotPublish", () => {
       );
       expect(second.dailyCharts.charts.find((chart) => chart.id === "retention").reconciliation).toBe(
         first.dailyCharts.charts.find((chart) => chart.id === "retention").reconciliation,
+      );
+      expect(second.dailyCharts.charts.find((chart) => chart.id === "retention").cohort).toEqual(
+        first.dailyCharts.charts.find((chart) => chart.id === "retention").cohort,
       );
     });
 
@@ -1848,7 +2114,7 @@ describe("operatorSnapshotPublish", () => {
 
       const startCalls = mockAthenaSend.mock.calls.filter(([command]) => command.constructor.name === "StartQueryExecutionCommand");
       expect(startCalls).toHaveLength(WINDOWED_QUERY_COUNT + FAST_WINDOW_VIEW_COUNT);
-      expect(startCalls).toHaveLength(43);
+      expect(startCalls).toHaveLength(45);
 
       expect(snapshot.environment).toBe("test");
       expect(snapshot.objectives).toHaveLength(10);
@@ -2627,7 +2893,7 @@ describe("operatorSnapshotPublish", () => {
       await handler();
 
       expect(mockS3Send.mock.calls.at(-3)[0].input).toEqual({ Bucket: "test-env-analytics-lake", Key: "snapshots/test/latest.json" });
-      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 39);
+      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 43);
     });
 
     test("a failing cost drivers query publishes the snapshot without them and counts as one failure", async () => {
@@ -2659,6 +2925,65 @@ describe("operatorSnapshotPublish", () => {
 
       await expect(handler()).rejects.toThrow(/1 observation/);
       expect(mockS3Send.mock.calls.filter(([command]) => command.constructor.name === "PutObjectCommand")).toHaveLength(2);
+    });
+  });
+
+  describe("the stored-data graph's reads", () => {
+    test("metric points are read through every page and keyed by day or by hour", async () => {
+      const send = vi
+        .fn()
+        .mockResolvedValueOnce({
+          MetricDataResults: [{ Id: "a", Timestamps: [new Date("2026-11-06T00:00:00Z")], Values: [4] }],
+          NextToken: "next",
+        })
+        .mockResolvedValueOnce({ MetricDataResults: [{ Id: "a", Timestamps: [new Date("2026-11-07T00:00:00Z")], Values: [5] }] });
+      const points = await metricPoints({ send }, [{ id: "a", metric: {}, stat: "Sum" }], {
+        period: 86400,
+        start: new Date("2026-11-01T00:00:00Z"),
+        end: new Date("2026-11-07T10:00:00Z"),
+      });
+      expect(points).toEqual({ a: { "2026-11-06": 4, "2026-11-07": 5 } });
+      expect(send.mock.calls[1][0].input.NextToken).toBe("next");
+      const hourly = vi.fn(async () => ({ MetricDataResults: [{ Id: "a", Timestamps: [new Date("2026-11-07T09:00:00Z")], Values: [2] }] }));
+      const hours = await metricPoints({ send: hourly }, [{ id: "a", metric: {}, stat: "Sum" }], {
+        period: 3600,
+        start: new Date("2026-11-07T00:00:00Z"),
+        end: new Date("2026-11-07T10:00:00Z"),
+      });
+      expect(hours).toEqual({ a: { "2026-11-07T09:00:00Z": 2 } });
+    });
+
+    test("consumed capacity starts on a whole day or hour and reads both directions of each table", async () => {
+      const send = vi.fn(async () => ({
+        MetricDataResults: [
+          { Id: "t0r", Timestamps: [new Date("2026-11-07T00:00:00Z")], Values: [12] },
+          { Id: "t0w", Timestamps: [new Date("2026-11-07T00:00:00Z")], Values: [3] },
+        ],
+      }));
+      const now = new Date("2026-11-07T10:17:00Z");
+      const capacity = await consumedCapacity({ send }, ["prod-env-bundles"], "daily", 90, now);
+      expect(capacity).toEqual({ "prod-env-bundles": { read: { "2026-11-07": 12 }, write: { "2026-11-07": 3 } } });
+      const input = send.mock.calls[0][0].input;
+      expect(input.StartTime.toISOString()).toBe("2026-08-10T00:00:00.000Z");
+      expect(input.MetricDataQueries.map((query) => query.MetricStat.Metric.MetricName)).toEqual([
+        "ConsumedReadCapacityUnits",
+        "ConsumedWriteCapacityUnits",
+      ]);
+      await consumedCapacity({ send }, ["prod-env-bundles"], "hourly", 336, now);
+      expect(send.mock.calls[1][0].input.StartTime.toISOString()).toBe("2026-10-24T11:00:00.000Z");
+      expect(send.mock.calls[1][0].input.MetricDataQueries[0].MetricStat.Period).toBe(3600);
+    });
+
+    test("the log groups' stored bytes add up over every page and region", async () => {
+      const first = {
+        send: vi
+          .fn()
+          .mockResolvedValueOnce({ logGroups: [{ storedBytes: 10 }, { storedBytes: 5 }], nextToken: "more" })
+          .mockResolvedValueOnce({ logGroups: [{}] }),
+      };
+      const second = { send: vi.fn(async () => ({ logGroups: [{ storedBytes: 7 }] })) };
+      expect(await logGroupStoredBytes([first, second])).toBe(22);
+      expect(first.send.mock.calls[1][0].input.nextToken).toBe("more");
     });
   });
 });

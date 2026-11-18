@@ -5,13 +5,13 @@
 <html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
-    <title>DIY Accounting Submit - Bundles</title>
+    <title>Bundles - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="Open this link for 3 VAT returns free for 7 days. Then £0.99 a month or £9.99 a year. Cancel any time."
-    />
+    <meta name="description" content="Open this link to see what your pass gives. Then £0.99 a month or £9.99 a year. Cancel any time." />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/bundles.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/bundles.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/bundles.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/bundles.html" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -28,7 +28,7 @@
     <meta property="og:title" content="VAT returns to HMRC for 99p a month" />
     <meta
       property="og:description"
-      content="Open this link for 3 VAT returns free for 7 days. Then £0.99 a month or £9.99 a year. Cancel any time."
+      content="Open this link to see what your pass gives. Then £0.99 a month or £9.99 a year. Cancel any time."
     />
     <meta property="og:image" content="https://submit.diyaccounting.co.uk/images/social/og-pass.png" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -59,17 +59,20 @@
       <div id="loadingSpinner" class="spinner" hidden></div>
 
       <div class="form-container">
-        <div
-          class="bundles-block"
-          data-requires-sign-in
-          data-sign-in-title="Log in to add bundles"
-          data-sign-in-text="Your bundles and tokens are kept with your account. Log in to see what you hold and to add more. If you have a pass, enter it below first."
-        >
-          <div id="currentBundlesSection" class="bundles-section" hidden>
-            <h2>Your current bundles</h2>
-            <div id="currentBundles"></div>
+        <div class="bundles-block">
+          <div
+            data-requires-sign-in
+            data-sign-in-title="Sign in to see your bundles"
+            data-sign-in-text="Your bundles and tokens are kept with your account. Sign in to see what you hold and to add more. If you have a pass, enter it below first."
+          >
+            <div id="currentBundlesSection" class="bundles-section" hidden>
+              <h2>Your current bundles</h2>
+              <div id="currentBundles"></div>
+            </div>
           </div>
 
+          <h2 class="bundles-catalogue-heading">Choose a bundle</h2>
+          <p class="hint">Each filing uses one token.</p>
           <div class="bundles-list" id="catalogBundles">
             <!-- generated:bundle-list:start -->
             <!-- generated:bundle-list:end -->
@@ -78,10 +81,10 @@
 
         <div class="bundles-section">
           <h2>Have a pass?</h2>
-          <p class="hint">Enter a four-word passphrase to redeem your invitation.</p>
+          <p class="hint">Enter the four words of your pass.</p>
           <form id="passEntryForm" class="pass-entry" action="pass.html" method="get">
-            <label for="passInput">Passphrase</label>
-            <p id="passInput-hint" class="hint">Enter four words separated by hyphens, for example word-word-word-word.</p>
+            <label for="passInput">Pass</label>
+            <p id="passInput-hint" class="hint">Four words with hyphens between them, for example word-word-word-word.</p>
             <input
               type="text"
               id="passInput"
@@ -158,7 +161,7 @@
         </div>
       </div>
 
-      <div class="feature-status-summary" data-feature-status="summary">
+      <div class="feature-status-summary" data-feature-status="summary" hidden>
         <p>
           <strong>Status of each feature.</strong> Sandbox and preview features file nothing real.
           <a href="mtd-calendar.html#availability">See the availability table</a>.

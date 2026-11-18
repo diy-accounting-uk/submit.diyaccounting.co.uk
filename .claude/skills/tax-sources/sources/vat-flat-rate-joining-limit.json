@@ -1,7 +1,9 @@
 {
   "url": "https://www.gov.uk/vat-flat-rate-scheme/who-can-join",
+  "title": "VAT Flat Rate Scheme: Who can join",
   "retrieved": "2026-11-13",
-  "quote": "you expect your VAT taxable turnover to be £150,000 or less (excluding VAT ) in the next 12 months",
+  "quote": "You can join the Flat Rate Scheme if: you’re a VAT -registered business you expect your VAT taxable turnover to be £150,000 or less (excluding VAT ) in the next 12 months",
+  "table": true,
   "facts": [
     "vat-flat-rate-joining-limit-2025-26",
     "vat-flat-rate-joining-limit-2026-27"

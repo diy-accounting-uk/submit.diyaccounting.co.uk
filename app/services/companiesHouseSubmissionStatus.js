@@ -103,7 +103,15 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
     const receipt = filedDocument
       ? { ...status, kind: ACCOUNTS_RECEIPT_KIND, filedDocument, ...jointFiling, ...formRequestFields(persistedRequest.data?.formRequest) }
       : { ...status, ...jointFiling };
-    await recordFiledReceipt({ userSub, receiptId, receipt, actor: resolveActorClass(), receiptKind: kind, synthetic: gatewayTest });
+    await recordFiledReceipt({
+      userSub,
+      receiptId,
+      receipt,
+      actor: resolveActorClass(),
+      receiptKind: kind,
+      synthetic: gatewayTest,
+      language: persistedRequest.data?.language,
+    });
     const data = { ...status, ...jointFiling, receiptId };
     await putAsyncRequest(userSub, submissionNumber, "completed", { ...data, kind }, asyncRequestsTableName);
     await publishActivityEvent({ event: acceptedEvent, summary: acceptedSummary, userSub });

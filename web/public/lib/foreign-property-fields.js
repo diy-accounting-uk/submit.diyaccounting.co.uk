@@ -12,39 +12,100 @@
 (function () {
   "use strict";
 
-  const EXAMPLE_HINT = "For example, £600 or £193.54. Amounts are in pounds sterling; convert at the rate of the day or an average rate.";
+  // page-chrome.js gives the text in the chosen language; without it the English stands.
+  function siteText(id, english, values) {
+    if (window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
+
+  const EXAMPLE_HINT = siteText(
+    "itsa.fp-money-hint",
+    "For example, £600 or £193.54. Amounts are in pounds sterling; convert at the rate of the day or an average rate.",
+  );
 
   // id is the input id suffix; key is the HMRC name; group is the HMRC object that holds it.
   const INCOME_FIELDS = [
-    { id: "rentAmount", key: "rentAmount", group: "rentIncome", label: "Rental income", min: 0 },
-    { id: "otherPropertyIncome", key: "otherPropertyIncome", label: "Other property income", min: 0 },
-  ];
-
-  const MORE_INCOME_FIELDS = [
-    { id: "premiumsOfLeaseGrant", key: "premiumsOfLeaseGrant", label: "Premiums for the grant of a lease", min: 0 },
-    { id: "foreignTaxPaidOrDeducted", key: "foreignTaxPaidOrDeducted", label: "Foreign tax taken off or paid", min: 0 },
-    { id: "specialWithholdingTaxOrUkTaxPaid", key: "specialWithholdingTaxOrUkTaxPaid", label: "UK tax taken off", min: 0 },
-  ];
-
-  const TAX_CREDIT_RELIEF_FIELD = { id: "foreignTaxCreditRelief", key: "foreignTaxCreditRelief", label: "Claim foreign tax credit relief" };
-
-  const ITEMISED_EXPENSE_FIELDS = [
-    { id: "premisesRunningCosts", key: "premisesRunningCosts", label: "Rent, rates, insurance and ground rents" },
-    { id: "repairsAndMaintenance", key: "repairsAndMaintenance", label: "Repairs and maintenance" },
-    { id: "financialCosts", key: "financialCosts", label: "Loan interest and other financial costs" },
-    { id: "professionalFees", key: "professionalFees", label: "Legal, management and other professional fees" },
-    { id: "costOfServices", key: "costOfServices", label: "Costs of services provided, including wages" },
-    { id: "travelCosts", key: "travelCosts", label: "Travel costs" },
-    { id: "other", key: "other", label: "Other property expenses" },
-    { id: "residentialFinancialCost", key: "residentialFinancialCost", label: "Residential property finance costs" },
+    { id: "rentAmount", key: "rentAmount", group: "rentIncome", label: siteText("itsa.field-rental-income", "Rental income"), min: 0 },
     {
-      id: "broughtFwdResidentialFinancialCost",
-      key: "broughtFwdResidentialFinancialCost",
-      label: "Unused residential finance costs brought forward",
+      id: "otherPropertyIncome",
+      key: "otherPropertyIncome",
+      label: siteText("itsa.field-other-property-income", "Other property income"),
+      min: 0,
     },
   ];
 
-  const CONSOLIDATED_FIELD = { id: "consolidatedExpenses", key: "consolidatedExpenses", label: "Total expenses" };
+  const MORE_INCOME_FIELDS = [
+    {
+      id: "premiumsOfLeaseGrant",
+      key: "premiumsOfLeaseGrant",
+      label: siteText("itsa.field-premiums-for-the-grant-of-a", "Premiums for the grant of a lease"),
+      min: 0,
+    },
+    {
+      id: "foreignTaxPaidOrDeducted",
+      key: "foreignTaxPaidOrDeducted",
+      label: siteText("itsa.field-foreign-tax-taken-off-or-paid", "Foreign tax taken off or paid"),
+      min: 0,
+    },
+    {
+      id: "specialWithholdingTaxOrUkTaxPaid",
+      key: "specialWithholdingTaxOrUkTaxPaid",
+      label: siteText("itsa.field-uk-tax-taken-off", "UK tax taken off"),
+      min: 0,
+    },
+  ];
+
+  const TAX_CREDIT_RELIEF_FIELD = {
+    id: "foreignTaxCreditRelief",
+    key: "foreignTaxCreditRelief",
+    label: siteText("itsa.field-claim-foreign-tax-credit-relief", "Claim foreign tax credit relief"),
+  };
+
+  const ITEMISED_EXPENSE_FIELDS = [
+    {
+      id: "premisesRunningCosts",
+      key: "premisesRunningCosts",
+      label: siteText("itsa.field-rent-rates-insurance-and-ground-rents", "Rent, rates, insurance and ground rents"),
+    },
+    {
+      id: "repairsAndMaintenance",
+      key: "repairsAndMaintenance",
+      label: siteText("itsa.field-repairs-and-maintenance", "Repairs and maintenance"),
+    },
+    {
+      id: "financialCosts",
+      key: "financialCosts",
+      label: siteText("itsa.field-loan-interest-and-other-financial-costs", "Loan interest and other financial costs"),
+    },
+    {
+      id: "professionalFees",
+      key: "professionalFees",
+      label: siteText("itsa.field-legal-management-and-other-professional-fees", "Legal, management and other professional fees"),
+    },
+    {
+      id: "costOfServices",
+      key: "costOfServices",
+      label: siteText("itsa.field-costs-of-services-provided-including-wages", "Costs of services provided, including wages"),
+    },
+    { id: "travelCosts", key: "travelCosts", label: siteText("itsa.field-travel-costs", "Travel costs") },
+    { id: "other", key: "other", label: siteText("itsa.field-other-property-expenses", "Other property expenses") },
+    {
+      id: "residentialFinancialCost",
+      key: "residentialFinancialCost",
+      label: siteText("itsa.field-residential-property-finance-costs", "Residential property finance costs"),
+    },
+    {
+      id: "broughtFwdResidentialFinancialCost",
+      key: "broughtFwdResidentialFinancialCost",
+      label: siteText("itsa.field-unused-residential-finance-costs-brought-forward", "Unused residential finance costs brought forward"),
+    },
+  ];
+
+  const CONSOLIDATED_FIELD = {
+    id: "consolidatedExpenses",
+    key: "consolidatedExpenses",
+    label: siteText("itsa.field-total-expenses", "Total expenses"),
+  };
 
   const MONEY_FIELDS = [...INCOME_FIELDS, ...MORE_INCOME_FIELDS, ...ITEMISED_EXPENSE_FIELDS, CONSOLIDATED_FIELD];
   const ITEMISED_IDS = ITEMISED_EXPENSE_FIELDS.map((field) => field.id);
@@ -86,29 +147,29 @@
       el("label", { htmlFor: fieldId(prefix, TAX_CREDIT_RELIEF_FIELD.id), textContent: TAX_CREDIT_RELIEF_FIELD.label }),
     ]);
     const basis = el("fieldset", { className: "form-group", id: fieldId(prefix, "expenseBasisGroup") }, [
-      el("legend", { textContent: "How do you report expenses?" }),
-      choice(prefix, "itemised", "Itemise the expenses", true),
-      choice(prefix, "total", "One total for all expenses", false),
+      el("legend", { textContent: siteText("itsa.expense-basis", "How do you report expenses?") }),
+      choice(prefix, "itemised", siteText("itsa.expense-basis-itemised", "Itemise the expenses"), true),
+      choice(prefix, "total", siteText("itsa.expense-basis-total", "One total for all expenses"), false),
     ]);
     const itemised = el("div", { id: fieldId(prefix, "itemisedExpensesBlock") }, [
       ...ITEMISED_EXPENSE_FIELDS.slice(0, 2).map((field) => group(prefix, field, EXAMPLE_HINT)),
       section(
         prefix,
         "moreExpenses",
-        "More itemised expenses",
+        siteText("itsa.uk-more-expenses", "More itemised expenses"),
         ITEMISED_EXPENSE_FIELDS.slice(2).map((field) => group(prefix, field, EXAMPLE_HINT)),
         false,
       ),
     ]);
     const total = el("div", { id: fieldId(prefix, "totalExpensesBlock"), hidden: true }, [
-      group(prefix, CONSOLIDATED_FIELD, `${EXAMPLE_HINT} Replaces every itemised expense.`),
+      group(prefix, CONSOLIDATED_FIELD, `${EXAMPLE_HINT} ${siteText("itsa.total-replaces-itemised", "Replaces every itemised expense.")}`),
     ]);
     container.replaceChildren(
       ...INCOME_FIELDS.map((field) => group(prefix, field, EXAMPLE_HINT)),
       section(
         prefix,
         "moreIncome",
-        "More property income",
+        siteText("itsa.uk-more-income", "More property income"),
         [...MORE_INCOME_FIELDS.map((field) => group(prefix, field, EXAMPLE_HINT)), taxCredit],
         false,
       ),

@@ -63,7 +63,7 @@ test.describe("Generate digital pass page", () => {
 
     await page.goto(`${SITE}/passes/generate-digital.html`, { waitUntil: "domcontentloaded" });
     const pageText = await page.locator("body").innerText();
-    expect(pageText).toContain("7 days of free VAT submissions");
+    expect(pageText).toContain("3 tokens for 7 days, enough for 3 VAT returns");
     await expect(page.locator("#passTerms")).toContainText(
       "you earn 33% of what they pay for their first 3 months, as cash paid to your bank through Stripe. If they pay for a year, you earn 25% of that payment, once.",
     );

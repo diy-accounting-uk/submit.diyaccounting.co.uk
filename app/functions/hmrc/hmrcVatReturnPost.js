@@ -167,6 +167,8 @@ export function extractAndValidateParameters(event, errorMessages) {
     totalAcquisitionsExVAT,
     // Optional: declaration confirmation (required for new format in Phase 4)
     declarationConfirmed,
+    // The reader's language choice ("cy" or "en"); the receipt email follows it
+    language,
   } = parsedBody || {};
 
   // Detect request format (9-box or legacy)
@@ -298,6 +300,7 @@ export function extractAndValidateParameters(event, errorMessages) {
     runFraudPreventionHeaderValidation: runFraudPreventionHeaderValidationBool,
     allowSyntheticObligations: allowSyntheticObligationsBool,
     declarationConfirmed,
+    language: language === "cy" ? "cy" : "en",
   };
 }
 
@@ -511,6 +514,7 @@ export async function ingestHandler(event) {
     hmrcAccount,
     runFraudPreventionHeaderValidation,
     allowSyntheticObligations,
+    language,
   } = extractAndValidateParameters(event, errorMessages);
   // A request names its HMRC grant in the x-mcp-hmrc-grant header, or as a grant id bearer.
   const hmrcAccessToken = await grantAccessTokenFromEvent(event);
@@ -689,6 +693,7 @@ export async function ingestHandler(event) {
     userEmail,
     govTestScenarioHeader,
     runFraudPreventionHeaderValidation,
+    language,
     requestId,
     traceparent,
     correlationId,
@@ -756,6 +761,7 @@ export async function ingestHandler(event) {
             clientId: payload.clientId,
             receiptKind: "vat-return",
             synthetic: payload.hmrcAccount === "synthetic",
+            language: payload.language,
           });
           resultData.receiptId = receiptId;
         }
@@ -839,11 +845,6 @@ export async function workerHandler(event) {
     logger,
     errorPolicy: "classify",
     processRecord: async (payload, { userId: userSub, requestId }) => {
-      // The SQS worker context carries requestId and userSub (set by processSqsRecords)
-      // but not email, since that came from the ingest Lambda's own authorizer context.
-      // Restore it here so resolveActorClass() inside submitVat classifies this the same
-      // way the ingest Lambda would have.
-      if (payload.userEmail) context.set("userEmail", payload.userEmail);
       const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(
         payload.periodKey,
         payload.vatReturnData,
@@ -903,6 +904,7 @@ export async function workerHandler(event) {
           clientId: payload.clientId,
           receiptKind: "vat-return",
           synthetic: payload.hmrcAccount === "synthetic",
+          language: payload.language,
         });
         result.receiptId = receiptId;
       }

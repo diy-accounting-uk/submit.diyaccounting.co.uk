@@ -20,8 +20,10 @@
 
 import { parseXmlDocument } from "./xmlDom.js";
 
-const ACCEPTED_TRANSFORMS = new Set(["ixt2:numdotdecimal", "ixt2:datedaymonthyearen"]);
+// ixt2:datedaymonthyear reads a date written as numbers, which a Welsh document uses for its tagged dates.
+const ACCEPTED_TRANSFORMS = new Set(["ixt2:numdotdecimal", "ixt2:datedaymonthyearen", "ixt2:datedaymonthyear"]);
 const FORBIDDEN_ELEMENTS = ["script", "a", "img", "iframe", "object", "embed", "link", "base", "form"];
+const NUMERIC_DATE = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
 const ENGLISH_DATE = /^(\d{1,2}) (January|February|March|April|May|June|July|August|September|October|November|December) (\d{4})$/;
 
 function elements(document, name) {
@@ -54,6 +56,9 @@ function transformProblem(fact) {
   }
   if (format === "ixt2:datedaymonthyearen" && !ENGLISH_DATE.test(text)) {
     return `shows "${text}", which ixt2:datedaymonthyearen cannot read`;
+  }
+  if (format === "ixt2:datedaymonthyear" && !NUMERIC_DATE.test(text)) {
+    return `shows "${text}", which ixt2:datedaymonthyear cannot read`;
   }
   return null;
 }

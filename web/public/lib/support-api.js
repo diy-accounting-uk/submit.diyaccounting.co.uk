@@ -9,23 +9,6 @@
  */
 
 /**
- * Get the API base URL from the page configuration
- * @returns {string|null} The API base URL or null if not configured
- */
-function getApiBaseUrl() {
-  if (typeof window !== "undefined") {
-    if (window.config && window.config.apiBaseUrl) {
-      return window.config.apiBaseUrl;
-    }
-    const apiUrl = document.documentElement.dataset.apiUrl;
-    if (apiUrl) {
-      return apiUrl;
-    }
-  }
-  return null;
-}
-
-/**
  * Submit a support ticket via the Lambda API
  * This files the request on behalf of the user; the person never needs a GitHub account.
  *
@@ -33,25 +16,18 @@ function getApiBaseUrl() {
  * @param {string} params.subject - Issue subject/title
  * @param {string} params.description - Issue description
  * @param {string} params.category - Issue category
+ * @param {string} params.email - Address the reply goes to, as typed (not verified)
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-export async function submitSupportTicket({ subject, description, category }) {
-  const apiBaseUrl = getApiBaseUrl();
-
-  if (!apiBaseUrl) {
-    return {
-      success: false,
-      error: "Support API not configured. Please email support@diyaccounting.co.uk instead.",
-    };
-  }
-
+export async function submitSupportTicket({ subject, description, category, email }) {
   try {
-    const response = await fetch(`${apiBaseUrl}/api/v1/support/ticket`, {
+    // The API answers on the page's own origin, as every other call of the site does.
+    const response = await fetch("/api/v1/support/ticket", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ subject, description, category }),
+      body: JSON.stringify({ subject, description, category, email }),
     });
 
     if (!response.ok) {

@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId"));
@@ -38,8 +44,8 @@ function updateSubmissionModelUI() {
   document.getElementById("submissionId").required = !cumulative;
   document.getElementById("cumulativeMoneyNote").style.display = cumulative ? "block" : "none";
   document.getElementById("loadHint").textContent = cumulative
-    ? "Load the current total HMRC holds for the year, then change the figures below."
-    : "Load the period HMRC holds for this submission ID, then change the figures below.";
+    ? siteText("itsa-fp-amend.load-hint-cumulative", "Load the current total HMRC holds for the year, then change the figures below.")
+    : siteText("itsa-fp-amend.load-hint", "Load the period HMRC holds for this submission ID, then change the figures below.");
 }
 
 function hideSearchCriteria() {
@@ -144,17 +150,20 @@ async function runRequest(request, hmrcGrantId) {
     showLoading();
     hideStatus();
     if (request.action === "load") {
-      showStatus("Loading the period summary...", "info");
+      showStatus(siteText("itsa-fp-amend.loading-period", "Loading the period summary..."), "info");
       const unknown = await loadFromHmrc(request.criteria, hmrcGrantId);
       showStatus(
         unknown.length > 0
-          ? "Loaded the period. HMRC holds figures for a property that is not in your list; check the foreign property details page."
-          : "Loaded the period HMRC holds. Edit the figures below.",
+          ? siteText(
+              "itsa-fp-amend.period-unknown-property",
+              "Loaded the period. HMRC holds figures for a property that is not in your list; check the foreign property details page.",
+            )
+          : siteText("itsa-fp-amend.period-loaded", "Loaded the period HMRC holds. Edit the figures below."),
         "info",
       );
     } else {
       hideSearchCriteria();
-      showStatus("Amending period summary...", "info");
+      showStatus(siteText("itsa.period-amending", "Amending period summary..."), "info");
       await sendPeriod(request, hmrcGrantId);
       document.getElementById("periodAmendResults").style.display = "block";
       hideRequestForm();
@@ -165,14 +174,14 @@ async function runRequest(request, hmrcGrantId) {
     if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
       sessionStorage.removeItem("hmrcTokenScope");
-      showStatus("Access token expired. Please try again.", "error");
+      showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
     } else if (error.status === 404 && request.action === "load") {
-      showStatus("HMRC holds no period summary for these details.", "info");
+      showStatus(siteText("itsa-fp-amend.no-period", "HMRC holds no period summary for these details."), "info");
     } else if (error.status === 403 && error.reason === "tokens_exhausted") {
       hideStatus();
       window.SubmissionCost?.refresh();
     } else {
-      showStatus(`Failed: ${error.message}`, "error");
+      showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
     }
     if (request.action === "submit") showSearchCriteria();
   } finally {
@@ -188,7 +197,7 @@ async function ensureAuthorizedThen(request) {
     if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     try {
       showLoading();
-      showStatus("Initiating HMRC authentication...", "info");
+      showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
       const state = generateRandomState();
       sessionStorage.setItem("oauth_state", state);
       sessionStorage.setItem(PENDING_KEY, JSON.stringify(request));
@@ -204,7 +213,7 @@ async function ensureAuthorizedThen(request) {
       } catch {}
       window.location.href = authResponseUrl;
     } catch (error) {
-      showStatus(`Authentication failed: ${error.message}`, "error");
+      showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
       hideLoading();
     }
     return;

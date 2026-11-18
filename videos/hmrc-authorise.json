@@ -191,7 +191,8 @@
           "caption": "Sign in to HMRC and say yes once. Later requests reuse that access.",
           "headline": "Grant HMRC access",
           "keyWord": "Grant",
-          "timeoutMs": 60000
+          "timeoutMs": 60000,
+          "instruction": "Choose Retrieve obligations, then sign in to HMRC and give permission once; later requests reuse that permission."
         },
         {
           "action": "hold",
@@ -227,7 +228,8 @@
           "caption": "Every other activity now runs without asking again.",
           "headline": "No second request",
           "keyWord": "second",
-          "dwellMs": 600
+          "dwellMs": 600,
+          "instruction": "Read the obligations table that HMRC returns straight away, with no second sign-in."
         },
         {
           "action": "hold",

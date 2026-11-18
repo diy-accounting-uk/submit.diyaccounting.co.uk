@@ -398,8 +398,13 @@ export default defineConfig({
     {
       name: "browser-tests",
       testDir: "web/browser-tests",
-      workers: 1, // throttle concurrency to 1
+      // Cloud profile: PW_BROWSER_WORKERS raises the worker count, PW_VIDEO=off and PW_TRACE=off drop the recording cost.
+      workers: Number(process.env.PW_BROWSER_WORKERS || 1),
       outputDir: "./target/browser-test-results/",
+      use: {
+        ...(process.env.PW_VIDEO === "off" ? { video: "off" } : {}),
+        ...(process.env.PW_TRACE === "off" ? { trace: "off" } : {}),
+      },
     },
   ],
 

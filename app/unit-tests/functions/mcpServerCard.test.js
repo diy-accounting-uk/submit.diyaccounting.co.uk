@@ -6,6 +6,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 
 import { SERVER_INFO } from "../../../mcp/lib/server.js";
+import { hostedToolNames } from "../../../mcp/lib/hosted-tools.js";
 
 import { SCOPES } from "@app/functions/mcp/mcpOauth.js";
 
@@ -35,6 +36,14 @@ describe("the MCP Server Card and AI catalog", () => {
     expect(icon.src).toBe("https://submit.diyaccounting.co.uk/images/connector-icon.png");
     expect(file.subarray(1, 4).toString()).toBe("PNG");
     expect([file.readUInt32BE(16), file.readUInt32BE(20)]).toEqual([512, 512]);
+  });
+
+  it("prints on mcp.html the tools that prod lists to a caller with no token", () => {
+    const page = readFileSync(new URL("../../../web/public/mcp.html", import.meta.url), "utf8");
+    const hostedSection = page.split("<h2>The hosted connector</h2>")[1].split("<h2>")[0];
+    const toolsSection = hostedSection.split("<h3>Tools</h3>")[1].split("</dl>")[0];
+    const printed = [...toolsSection.matchAll(/<code>([a-z_]+)<\/code>/g)].map((match) => match[1]);
+    expect(printed.sort()).toEqual([...hostedToolNames("prod")].sort());
   });
 
   it("is listed by the AI catalog at the path the site serves", () => {

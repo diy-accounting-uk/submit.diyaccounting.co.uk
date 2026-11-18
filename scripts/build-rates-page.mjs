@@ -12,6 +12,7 @@ import toml from "@iarna/toml";
 import prettier from "prettier";
 import { loadSources, escapeHtml, sourceQuoteHtml } from "./tax-sources.mjs";
 import { RATES_FACT_IDS, TAX_YEAR_COLUMNS, FINANCIAL_YEAR_COLUMNS } from "./rates-fact-ids.mjs";
+import { alternateLinksHtml } from "./build-welsh-pages.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const ENGINE_PACKAGE_DIR = join(ROOT, "node_modules", "@diy-accounting-uk", "diya-gl");
@@ -413,8 +414,8 @@ function tableHtml(table, sources, listedSources) {
     })
     .join("");
   return (
-    `<div class="rates-table-scroll"><table class="rates-table" id="rates-${table.id}">` +
-    `<caption>${escapeHtml(table.caption)}</caption>` +
+    `<div class="rates-table-scroll" role="region" tabindex="0" aria-labelledby="rates-${table.id}-caption"><table class="rates-table" id="rates-${table.id}">` +
+    `<caption id="rates-${table.id}-caption">${escapeHtml(table.caption)}</caption>` +
     `<thead><tr><th scope="col">Rate or allowance</th>${columns.map((c) => `<th scope="col">${columnHeading(c)}</th>`).join("")}<th scope="col">Source</th></tr></thead>` +
     `<tbody>${rows}</tbody></table></div>`
   );
@@ -511,7 +512,7 @@ function calculatorHtml() {
       `<div class="rates-result"${showFor ? ` data-show="${showFor}"` : ""}><dt id="${id}Label">${label}</dt><dd id="${id}"></dd></div>`,
   ).join("");
   const companyRows =
-    `<div data-show="limited-company" class="rates-table-scroll"><table class="rates-table" id="ratesOutCtRows"><caption>Corporation Tax by financial year</caption>` +
+    `<div data-show="limited-company" class="rates-table-scroll" role="region" tabindex="0" aria-labelledby="ratesOutCtRows-caption"><table class="rates-table" id="ratesOutCtRows"><caption id="ratesOutCtRows-caption">Corporation Tax by financial year</caption>` +
     `<thead><tr><th scope="col">Financial year</th><th scope="col">Days</th><th scope="col">Profit share</th><th scope="col">Rate</th><th scope="col">Tax before relief</th><th scope="col">Marginal relief</th><th scope="col">Tax</th></tr></thead><tbody></tbody></table></div>`;
   return (
     `<noscript><p>The calculator needs JavaScript. The rate tables below work without it.</p></noscript>` +
@@ -542,12 +543,12 @@ export function renderRatesHtml(sources) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="UK tax rates and allowances for the self-employed and limited companies, 2025-26 and 2026-27, each linked to its gov.uk source, with a calculator that works out tax, National Insurance and corporation tax."
+      content="UK tax rates and allowances for the self-employed and limited companies, 2025-26 and 2026-27, each with its gov.uk source, and a tax calculator."
     />
-    <link rel="canonical" href="https://submit.diyaccounting.co.uk/rates.html" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/rates.html" />${alternateLinksHtml("rates.html")}
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Rates and allowances - DIY Accounting Submit" />
-    <meta property="og:description" content="UK tax rates and allowances for the self-employed and limited companies, 2025-26 and 2026-27, each linked to its gov.uk source, with a calculator that works out tax, National Insurance and corporation tax." />
+    <meta property="og:description" content="UK tax rates and allowances for the self-employed and limited companies, 2025-26 and 2026-27, each with its gov.uk source, and a tax calculator." />
     <meta property="og:url" content="https://submit.diyaccounting.co.uk/rates.html" />
     <meta property="og:site_name" content="DIY Accounting" />
     <meta property="og:image" content="https://submit.diyaccounting.co.uk/images/social/og-submit.png" />
@@ -606,6 +607,7 @@ export function renderRatesHtml(sources) {
         <p>Each entry shows the words from the gov.uk page it comes from and the day we read that page.</p>
         <ol class="rate-sources">${sourceItems}</ol>
       </div>
+      <p class="tools-link">More free tools are on the <a href="tools.html">Tools</a> page.</p>
     </main>
 
     <footer></footer>

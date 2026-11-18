@@ -9,6 +9,10 @@
 // into a failing assertion. 06846849 reuses DIY Accounting Limited's own company number so the
 // confirmation statement journey's public register lookup (this file) and its XML Gateway
 // fixture (confirmation-statement.js's FIXTURE_COMPANY) answer for the same company number.
+// 00000003 is a trading company for the simulator's accounts filing demos, named as a plain
+// example so a recording of a filed accounts document reads as one. 12345678 is the company of the
+// Precision Code Ltd book (mcp/test/fixtures/precision-code-ltd-full/book.toml), with the book's
+// address as its registered office, so the MCP harness files that book's accounts for it.
 
 const companies = {
   "00000001": {
@@ -84,6 +88,56 @@ const companies = {
     confirmation_statement: {
       next_due: "2099-04-30",
       next_made_up_to: "2099-04-16",
+    },
+  },
+  "00000003": {
+    company_name: "EXAMPLE TRADING LIMITED",
+    company_number: "00000003",
+    company_status: "active",
+    type: "ltd",
+    date_of_creation: "2018-03-12",
+    jurisdiction: "england-wales",
+    registered_office_address: {
+      address_line_1: "3 Example Street",
+      locality: "Bristol",
+      postal_code: "BS1 4ND",
+      country: "England",
+    },
+    sic_codes: ["47910"],
+    accounts: {
+      next_accounts: {
+        due_on: "2099-12-31",
+        period_end_on: "2099-03-31",
+      },
+    },
+    confirmation_statement: {
+      next_due: "2099-03-26",
+      next_made_up_to: "2099-03-12",
+    },
+  },
+  "12345678": {
+    company_name: "PRECISION CODE LTD",
+    company_number: "12345678",
+    company_status: "active",
+    type: "ltd",
+    date_of_creation: "2020-01-01",
+    jurisdiction: "england-wales",
+    registered_office_address: {
+      address_line_1: "123 High Street",
+      locality: "Manchester",
+      postal_code: "M1 1AA",
+      country: "England",
+    },
+    sic_codes: ["62020"],
+    accounts: {
+      next_accounts: {
+        due_on: "2099-12-31",
+        period_end_on: "2099-03-31",
+      },
+    },
+    confirmation_statement: {
+      next_due: "2099-01-15",
+      next_made_up_to: "2099-01-01",
     },
   },
   "06846849": {

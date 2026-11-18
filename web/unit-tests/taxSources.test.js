@@ -9,6 +9,8 @@ import {
   loadSources,
   sourcesOlderThan,
   sourceQuoteHtml,
+  sourcesQuoteHtml,
+  pageTitle,
   normaliseText,
   quoteAppearsIn,
 } from "../../scripts/tax-sources.mjs";
@@ -34,9 +36,11 @@ describe("tax sources", () => {
     expect(orphaned).toEqual([]);
   });
 
-  test("every source is a gov.uk page with a quote and an ISO retrieval date", () => {
+  test("every source is a gov.uk page with a title, a quote and an ISO retrieval date", () => {
     for (const s of sources) {
       expect(s.url, s.name).toMatch(/^https:\/\/www\.gov\.uk\//);
+      expect(s.title.length, s.name).toBeGreaterThan(5);
+      expect(s.title, s.name).not.toMatch(/GOV\.UK$/);
       expect(s.quote.length, s.name).toBeGreaterThan(20);
       expect(s.retrieved, s.name).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       expect(s.facts.length, s.name).toBeGreaterThan(0);
@@ -86,26 +90,56 @@ describe("tax source helpers", () => {
     expect(quoteAppearsIn("the rate is 25%", "<td>the rate is 20%</td>")).toBe(false);
   });
 
-  test("sourceQuoteHtml escapes the quote and shortens the gov.uk link text", () => {
-    const html = sourceQuoteHtml({ url: "https://www.gov.uk/a?b=1&c=2", retrieved: "2026-09-30", quote: "a < b" });
-    expect(html).toContain("<p>a &lt; b</p>");
-    expect(html).toContain(">gov.uk/a?b=1&amp;c=2</a>");
-    expect(html).toContain("Retrieved 30 September 2026");
+  test("sourceQuoteHtml escapes the quote and prints one link in words with the check date", () => {
+    const html = sourceQuoteHtml({ url: "https://www.gov.uk/a?b=1&c=2", title: "Rates & more", retrieved: "2026-09-30", quote: "A < b." });
+    expect(html).toContain("<p>A &lt; b.</p>");
+    expect(html).toContain(
+      '<a href="https://www.gov.uk/a?b=1&amp;c=2" rel="noopener">GOV.UK, Rates &amp; more</a> (checked 30 September 2026)',
+    );
+    expect(html).toContain("Source: <a");
+    expect(html).not.toContain("Retrieved");
   });
 
-  test("sourceQuoteHtml prints a table source as a citation line without its words", () => {
-    const html = sourceQuoteHtml({ url: "https://www.gov.uk/a", retrieved: "2026-09-30", quote: "Period Rate A 1 B 2", table: true });
-    expect(html).toContain("Source: the table on <a");
-    expect(html).toContain(">gov.uk/a</a>");
-    expect(html).toContain("Retrieved 30 September 2026");
-    expect(html).toContain("<footer>");
+  test("sourceQuoteHtml prints a table source as a link line without its words", () => {
+    const html = sourceQuoteHtml({
+      url: "https://www.gov.uk/a",
+      title: "Rates",
+      retrieved: "2026-09-30",
+      quote: "Period Rate A 1 B 2",
+      table: true,
+    });
+    expect(html).toContain("source-citation");
+    expect(html).toContain(">GOV.UK, Rates</a> (checked 30 September 2026)");
     expect(html).not.toContain("Period Rate");
     expect(html).not.toContain("<p>");
   });
 
-  test("a source with no table flag still prints its quote", () => {
-    const html = sourceQuoteHtml({ url: "https://www.gov.uk/a", retrieved: "2026-09-30", quote: "The rate is 20%." });
-    expect(html).toContain("<p>The rate is 20%.</p>");
-    expect(html).not.toContain("Source: the table on");
+  test("sourceQuoteHtml throws for a source with no title", () => {
+    expect(() => sourceQuoteHtml({ name: "x", url: "https://www.gov.uk/a", retrieved: "2026-09-30", quote: "The rate is 20%." })).toThrow(
+      /no title/,
+    );
+  });
+
+  test("sourcesQuoteHtml prints a page cited by several sources once, with each quote", () => {
+    const a = { url: "https://www.gov.uk/a", title: "Rates", retrieved: "2026-09-30", quote: "The rate is 20%." };
+    const b = { ...a, retrieved: "2026-10-02", quote: "The limit is £5." };
+    const table = { ...a, quote: "Rate A 1", table: true };
+    const html = sourcesQuoteHtml([a, b, table, a]);
+    expect(html.match(/<footer>/g)).toHaveLength(1);
+    expect(html).toContain("<p>The rate is 20%.</p><p>The limit is £5.</p>");
+    expect(html).not.toContain("Rate A 1");
+    expect(html).toContain("(checked 2 October 2026)");
+  });
+
+  test("pageTitle reads the title of a gov.uk page without the site suffix, entities or padding", () => {
+    expect(pageTitle("<title>\n  Filing your company&#39;s confirmation statement - GOV.UK\n</title>")).toBe(
+      "Filing your company's confirmation statement",
+    );
+    expect(pageTitle("<p>no title</p>")).toBeNull();
+  });
+
+  test("a quote that is not a table starts with a capital letter", () => {
+    const bad = sources.filter((s) => !s.table && !/^[A-Z]/.test(s.quote)).map((s) => s.name);
+    expect(bad).toEqual([]);
   });
 });

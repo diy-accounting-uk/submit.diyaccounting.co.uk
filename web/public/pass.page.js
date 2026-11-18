@@ -17,12 +17,18 @@ const SIGN_OUT_RETURN_KEY = "passReturnAfterSignOut";
 
 const el = (id) => document.getElementById(id);
 
-const getIdToken = () => {
+const getStoredIdToken = () => {
   try {
     return localStorage.getItem("cognitoIdToken");
   } catch {
     return null;
   }
+};
+
+// An expired id token is no sign-in.
+const getIdToken = () => {
+  const token = getStoredIdToken();
+  return token && !window.isTokenExpired(token) ? token : null;
 };
 
 const getSignedInEmail = () => {
@@ -62,7 +68,7 @@ const readPassLandingAttribution = () => {
 
 // One sentence and one next step for each refusal. The key is the reason the API answers.
 const ERROR_SENTENCES = {
-  not_found: "We cannot find this pass. Check that the link is complete, or ask the sender for a new one.",
+  not_found: "We cannot find this pass. Check the four words, or the link, or ask the sender for a new one.",
   expired: "This pass has ended. Ask the sender for a new one.",
   exhausted: "This pass has been used. Ask the sender for a new one.",
   revoked: "This pass has been cancelled. Ask the sender for a new one.",
@@ -87,6 +93,17 @@ const formatDate = (iso) => {
   const date = new Date(iso);
   if (isNaN(date.getTime())) return null;
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+};
+
+// A bundle that lasts under two days is shown with its time, because the date alone hides when a day pass ends.
+const formatEnd = (iso, timeout) => {
+  const date = new Date(iso);
+  if (isNaN(date.getTime())) return null;
+  const days = /^P(\d+)D$/.exec(timeout || "");
+  if (!days || Number(days[1]) >= 2) return formatDate(iso);
+  const day = date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  const time = date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZoneName: "short" });
+  return `${day} at ${time}`;
 };
 
 const tokensWords = (tokensGranted) => {
@@ -150,6 +167,7 @@ function render({
   bundles = false,
   after = "",
   form = false,
+  typed = "",
 }) {
   el("passHeading").textContent = heading;
   el("passMessage").textContent = message;
@@ -163,6 +181,7 @@ function render({
   bundleBox.hidden = !card;
 
   el("passForm").hidden = !form;
+  if (form) el("passInput").value = typed;
 
   const redeemBtn = el("passRedeemBtn");
   redeemBtn.hidden = !redeem;
@@ -183,7 +202,9 @@ function render({
     firstRender = false;
     return;
   }
-  el("passHeading").focus();
+  // A pass that was not found leaves nothing to read next, so the focus goes to the box to type again.
+  if (form && error) el("passInput").focus();
+  else el("passHeading").focus();
 }
 
 function bundleCardEl(info, noteParts) {
@@ -203,7 +224,7 @@ function bundleCardEl(info, noteParts) {
 }
 
 function endDateWords(expiry, timeout) {
-  if (expiry) return formatDate(expiry) ? `ends on ${formatDate(expiry)}` : null;
+  if (expiry) return formatEnd(expiry, timeout) ? `ends on ${formatEnd(expiry, timeout)}` : null;
   const lasts = durationWords(timeout);
   return lasts ? `lasts ${lasts}` : "no end date";
 }
@@ -227,6 +248,10 @@ function showError(reason, { email = getSignedInEmail() } = {}) {
     });
     return;
   }
+  if (reason === "not_found") {
+    render({ heading: "This pass did not work", error: sentence, form: true, typed: currentCode, home: true });
+    return;
+  }
   render({ heading: "This pass did not work", error: sentence, home: true });
 }
 
@@ -239,7 +264,7 @@ function showRedeemed(result) {
   const sentences = [`Your pass added ${info.name}.`];
   if (info.summary) sentences.push(`You can now ${info.summary}.`);
   if (tokens) sentences.push(typeof info.tokensGranted === "number" ? `You have ${tokens}.` : "There is no limit on tokens.");
-  if (result.expiry && formatDate(result.expiry)) sentences.push(`It ends on ${formatDate(result.expiry)}.`);
+  if (result.expiry && formatEnd(result.expiry, info.timeout)) sentences.push(`It ends on ${formatEnd(result.expiry, info.timeout)}.`);
   else if (endsWords === "no end date") sentences.push("There is no end date.");
   render({
     heading: "Pass redeemed",
@@ -381,16 +406,21 @@ async function redeem() {
   }
 }
 
-function onRedeemClick() {
+async function onRedeemClick() {
+  if (!getIdToken() && getStoredIdToken() && (await window.ensureSession({ force: true }))) {
+    redeem();
+    return;
+  }
   if (getIdToken()) {
     redeem();
     return;
   }
+  if (getStoredIdToken()) window.clearSession();
   try {
     sessionStorage.setItem("postLoginRedirect", window.location.pathname + window.location.search);
     sessionStorage.setItem(ADD_ON_RETURN_KEY, currentCode);
   } catch {}
-  window.location.href = SIGN_IN_PATH;
+  window.location.href = window.signInHref ? window.signInHref(SIGN_IN_PATH, "/") : SIGN_IN_PATH;
 }
 
 function showEntry() {
