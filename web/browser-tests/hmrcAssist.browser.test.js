@@ -262,7 +262,7 @@ test.describe("HMRC Assist check on the VAT return, in English and Welsh", () =>
       "Drwy gyflwyno’r Ffurflen TAW hon, rydych yn gwneud datganiad cyfreithiol",
     );
     await fillBoxes(page);
-    await expect(page.locator("#hmrcAssistCheckBtn")).toHaveText("Gwirio’r Ffurflen TAW hon gyda HMRC Assist");
+    await expect(page.locator("#hmrcAssistCheckBtn")).toHaveText("Gwirio’r Ffurflen hon gyda HMRC Assist");
     await page.locator("#hmrcAssistCheckBtn").click();
 
     await expect(page.locator("#hmrcAssistFeedbackHeading")).toHaveText("Adborth CThEF");
