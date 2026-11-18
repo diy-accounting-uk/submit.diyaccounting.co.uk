@@ -56,6 +56,25 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
     column-gap: var(--space-3);
   }
+
+  /* The band stays one row here, so the brand and the gaps step down to leave the account line
+     its full width beside them. */
+  .brand-name {
+    font-size: 0.9rem;
+  }
+
+  .header-nav,
+  .auth-section {
+    gap: var(--space-2);
+  }
+
+  .language-switch {
+    margin-left: var(--space-1);
+  }
+
+  .login-link {
+    padding: 0 var(--space-2);
+  }
 }
 
 /* The Welsh labels are wider than the 48rem content column takes in one row, so from 601px wide
@@ -153,6 +172,14 @@ dd {
 
   .header-nav:has(.language-switch) .auth-section {
     flex-basis: 0;
+  }
+
+  /* The account row keeps room for the account line and Sign in (15rem holds the longest pair,
+     the Welsh "Heb fewngofnodi" and "Mewngofnodi"), so where the language switch fits beside the
+     brand the account line moves to the second row rather than shrinking beside it. A signed-in
+     name longer than the row still ends in its ellipsis. */
+  .auth-section {
+    min-width: min(100%, 15rem);
   }
 
   .language-switch {

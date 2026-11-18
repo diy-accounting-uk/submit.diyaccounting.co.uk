@@ -315,6 +315,53 @@ test.describe("Header account line truncates, the brand stays whole", () => {
   }
 });
 
+test.describe("Header account line reads in full between the phone and desktop layouts", () => {
+  const NAME = "Alex Morgan";
+
+  async function openHeaderIn(page, width, signedIn, language) {
+    await page.setViewportSize({ width, height: 700 });
+    await serveRealSite(page);
+    await page.addInitScript(
+      ({ signedIn, name }) => {
+        try {
+          if (signedIn) localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", given_name: name }));
+          else {
+            localStorage.removeItem("userInfo");
+            localStorage.removeItem("cognitoIdToken");
+          }
+        } catch {}
+      },
+      { signedIn, name: NAME },
+    );
+    await page.goto(`http://localhost:3000/${language === "cy" ? "cy/" : ""}index.html`, { waitUntil: "domcontentloaded" });
+    await delay(500);
+  }
+
+  for (const language of ["en", "cy"]) {
+    for (const width of [360, 420, 465, 520, 640]) {
+      for (const signedIn of [false, true]) {
+        const state = signedIn ? "signed in" : "signed out";
+        test(`the account line and Sign in read in full at ${width}px, ${state}, ${language}`, async ({ page }) => {
+          await openHeaderIn(page, width, signedIn, language);
+          await page.locator(".header-nav").screenshot({
+            path: `target/header-text/header-gap-${language}-${width}-${signedIn ? "signed-in" : "signed-out"}.png`,
+          });
+          const status = page.locator(".login-status");
+          if (signedIn) await expect(status).toHaveText(NAME);
+          else await expect(status).toHaveText(language === "cy" ? "Heb fewngofnodi" : "Not signed in");
+          const measured = await status.evaluate((login) => ({
+            clipped: login.scrollWidth > login.clientWidth || login.scrollHeight - login.clientHeight > 1,
+          }));
+          expect(measured.clipped, ".login-status is clipped").toBe(false);
+          await expect(status).toBeInViewport({ ratio: 1 });
+          await expect(page.locator(".login-link")).toBeInViewport({ ratio: 1 });
+          expect(await hasRealHorizontalScroll(page)).toBe(false);
+        });
+      }
+    }
+  }
+});
+
 test.describe("Filing page status banners say what the reader can do", () => {
   const BANNERS = [
     ["companies-house/fileMicroEntityAccounts.html", /Accounts you file here reach the live Companies House register/],

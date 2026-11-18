@@ -582,8 +582,9 @@
           "target": ".harness-turn[data-turn-id='accountsOutcome'] pre",
           "dwellMs": 600,
           "caption": "Companies House's test service reports the filing as pending.",
-          "headline": "Pending at Companies House",
-          "keyWord": "Pending",
+          "headline": "Filing pending",
+          "keyWord": "pending",
+          "headlineBeside": true,
           "instruction": "Read the outcome: the test service reports the filing as pending."
         },
         {
