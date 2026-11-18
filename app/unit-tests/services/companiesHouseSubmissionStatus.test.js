@@ -302,6 +302,38 @@ describe("pollSubmission", () => {
     expect(mockEventBridgeSend).not.toHaveBeenCalled();
   });
 
+  test("answers with the receipt the presenter poll recorded when the page loses the claim to it", async () => {
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    let claimLost = false;
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof lib.GetCommand && cmd.input.TableName === "test-companies-house-accounts-async-requests-table") {
+        return claimLost
+          ? {
+              Item: {
+                requestId: "00001A",
+                status: "completed",
+                data: { statusCode: "ACCEPT", submissionNumber: "00001A", receiptId: "2026-11-18T10:00:00.000Z-00001A" },
+              },
+            }
+          : { Item: { requestId: "00001A", status: "pending" } };
+      }
+      if (cmd instanceof lib.UpdateCommand && cmd.input.ConditionExpression === "attribute_not_exists(claimedAt)") {
+        claimLost = true;
+        throw Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" });
+      }
+      return {};
+    });
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+    });
+
+    const result = await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "accounts" });
+
+    expect(result.data).toMatchObject({ statusCode: "ACCEPT", receiptId: "2026-11-18T10:00:00.000Z-00001A" });
+    expect(mockSend.mock.calls.filter(([cmd]) => cmd instanceof lib.PutCommand)).toHaveLength(0);
+  });
+
   test("gives the claim back when the receipt write fails, so a later poll can record it", async () => {
     const lib = await import("@aws-sdk/lib-dynamodb");
     mockSend.mockImplementation(async (cmd) => {

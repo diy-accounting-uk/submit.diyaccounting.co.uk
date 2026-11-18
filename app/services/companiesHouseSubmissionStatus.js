@@ -127,7 +127,11 @@ export async function recordSubmissionStatus({ userSub, submissionNumber, persis
   }
   if (!(await claimFinalStatus(submissionNumber))) {
     logger.info({ message: "Companies House final status already recorded", submissionNumber, statusCode: status.statusCode });
-    return { data: status, recorded: false };
+    // The other poll holds the claim: answer with what it stored, so the page gets the receipt id.
+    // While that poll is still writing, the stored request is not final yet and the status stands.
+    const stored = await getAsyncRequest(userSub, submissionNumber, process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME);
+    const storedIsFinal = stored?.status === "completed" || stored?.status === "failed";
+    return { data: storedIsFinal ? stored.data : status, recorded: false };
   }
   try {
     return { data: await writeFinalStatus({ userSub, submissionNumber, persistedRequest, status, kind }), recorded: true };
