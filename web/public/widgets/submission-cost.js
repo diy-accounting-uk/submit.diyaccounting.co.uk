@@ -16,6 +16,27 @@
 (function () {
   "use strict";
 
+  function siteText(id, english, values) {
+    if (window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
+
+  // Chromium's Intl has no Welsh dates, so a Welsh date is written here with HMRC's Welsh month names.
+  const WELSH_MONTHS = [
+    "Ionawr",
+    "Chwefror",
+    "Mawrth",
+    "Ebrill",
+    "Mai",
+    "Mehefin",
+    "Gorffennaf",
+    "Awst",
+    "Medi",
+    "Hydref",
+    "Tachwedd",
+    "Rhagfyr",
+  ];
+
   let catalogCache = null;
   let catalogPromise = null;
 
@@ -112,6 +133,7 @@
     if (!isoDate) return null;
     const parsed = new Date(isoDate);
     if (Number.isNaN(parsed.getTime())) return null;
+    if (window.siteLanguage?.chrome?.() === "cy") return `${parsed.getDate()} ${WELSH_MONTHS[parsed.getMonth()]} ${parsed.getFullYear()}`;
     return parsed.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   }
 
@@ -138,7 +160,9 @@
   }
 
   function tokenWord(count) {
-    return `${count} token${count === 1 ? "" : "s"}`;
+    return count === 1
+      ? siteText("widget.cost-one-token", "{count} token", { count })
+      : siteText("widget.cost-tokens", "{count} tokens", { count });
   }
 
   // The cost a page computed for itself, or undefined when the container leaves it to the catalogue.
@@ -149,12 +173,12 @@
   }
 
   function costLead(container, tokenCost) {
-    return container.dataset.costLead || `This submission costs ${tokenWord(tokenCost)}.`;
+    return container.dataset.costLead || siteText("widget.cost-lead", "This submission costs {tokens}.", { tokens: tokenWord(tokenCost) });
   }
 
   function renderFree(container) {
     container.className = "submission-cost hint";
-    container.textContent = "This submission is free. It does not use a token.";
+    container.textContent = siteText("widget.cost-free", "This submission is free. It does not use a token.");
   }
 
   function renderCostOnly(container, tokenCost) {
@@ -164,12 +188,12 @@
 
   function renderCostAndBalance(container, tokenCost, tokensRemaining) {
     container.className = "submission-cost hint";
-    container.textContent = `${costLead(container, tokenCost)} You have ${tokensRemaining} left.`;
+    container.textContent = `${costLead(container, tokenCost)} ${siteText("widget.cost-remaining", "You have {count} left.", { count: tokensRemaining })}`;
   }
 
   function renderUnlimitedBalance(container, tokenCost) {
     container.className = "submission-cost hint";
-    container.textContent = `${costLead(container, tokenCost)} You have unlimited tokens.`;
+    container.textContent = `${costLead(container, tokenCost)} ${siteText("widget.cost-unlimited", "You have unlimited tokens.")}`;
   }
 
   function renderExhausted(container, resetDate, tokensRemaining, tokenCost) {
@@ -178,12 +202,19 @@
     // One span, so the warning's flex layout keeps the sentence and its link in one run of text.
     const message = document.createElement("span");
     const balance =
-      tokensRemaining > 0 ? `You have ${tokenWord(tokensRemaining)} left and this filing costs ${tokenCost}.` : "You have no tokens left.";
-    const lead = resetDate ? `${balance} Your allowance refreshes on ${resetDate}, or you can ` : `${balance} You can `;
+      tokensRemaining > 0
+        ? siteText("widget.cost-short", "You have {tokens} left and this filing costs {cost}.", {
+            tokens: tokenWord(tokensRemaining),
+            cost: tokenCost,
+          })
+        : siteText("widget.cost-none-left", "You have no tokens left.");
+    const lead = resetDate
+      ? `${balance} ${siteText("widget.cost-refresh-or", "Your allowance refreshes on {date}, or you can", { date: resetDate })} `
+      : `${balance} ${siteText("widget.cost-you-can", "You can")} `;
     message.appendChild(document.createTextNode(lead));
     const link = document.createElement("a");
     link.href = "/bundles.html";
-    link.textContent = "add a bundle";
+    link.textContent = siteText("widget.cost-add-bundle", "add a bundle");
     message.appendChild(link);
     message.appendChild(document.createTextNode("."));
     container.appendChild(message);

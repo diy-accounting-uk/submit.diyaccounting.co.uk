@@ -439,10 +439,20 @@ function relocate(url, pages, page) {
   return posix.relative(posix.dirname(page.cy), resolved.replace(/\/$/, "") || ".") + folder + suffix;
 }
 
-function welshServicesBlock(catalogue) {
+// HMRC's Welsh services. The HMRC Assist line names the VAT Return, so only the VAT pages and the
+// receipts page carry it.
+function welshServicesBlock(catalogue, page) {
   const entry = catalogue.shared["hmrc-welsh-services"];
   if (!entry || !entry.cy) throw new Error("shared.hmrc-welsh-services: no Welsh text in i18n/cy.toml");
-  return `<aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>${entry.cy.trim()}</aside>`;
+  let block = entry.cy.trim();
+  if (page.id.startsWith("vat-") || page.id === "receipts") {
+    const vat = catalogue.shared["hmrc-welsh-services-vat"];
+    if (!vat || !vat.cy) throw new Error("shared.hmrc-welsh-services-vat: no Welsh text in i18n/cy.toml");
+    const firstParagraphEnd = block.indexOf("</p>\n") + "</p>\n".length;
+    if (firstParagraphEnd < "</p>\n".length) throw new Error("shared.hmrc-welsh-services: no paragraph to follow");
+    block = `${block.slice(0, firstParagraphEnd)}${vat.cy.trim()}\n${block.slice(firstParagraphEnd)}`;
+  }
+  return `<aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>${block}</aside>`;
 }
 
 export async function renderWelshPage(page, catalogue = loadCatalogue(), pages = WELSH_PAGES) {
@@ -469,7 +479,7 @@ export async function renderWelshPage(page, catalogue = loadCatalogue(), pages =
   });
   html = replaceOnce(html, /(<link rel="canonical" href=")[^"]*(")/, `$1${welshUrl(page)}$2`, `canonical link in ${page.en}`);
   html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${welshUrl(page)}$2`);
-  html = replaceOnce(html, /<\/main>/, `${welshServicesBlock(catalogue)}</main>`, `</main> in ${page.en}`);
+  html = replaceOnce(html, /<\/main>/, `${welshServicesBlock(catalogue, page)}</main>`, `</main> in ${page.en}`);
   html = html.replace(/<blockquote class="source-quote">/g, '<blockquote class="source-quote" lang="en-GB">');
   html = html.replace(/(\s(?:href|src)=")([^"]*)(")/g, (whole, start, url, end) => `${start}${relocate(url, pages, page)}${end}`);
   html = replaceOnce(

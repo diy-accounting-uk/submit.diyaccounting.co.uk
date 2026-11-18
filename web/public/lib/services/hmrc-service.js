@@ -1021,7 +1021,7 @@ export async function putUkPropertyAnnual(
 /**
  * Sends one foreign property request (details or period) and returns HMRC's answer, or throws
  * with a message the page can show.
- * @param {string} action - Words for the failure message, e.g. "retrieve the property list"
+ * @param {string} failure - The sentence a failed request shows, e.g. "Failed to retrieve the properties."
  * @param {string} method - "GET", "POST" or "PUT"
  * @param {string} url - The Submit route, with its query string for a GET
  * @param {object|null} body - The JSON body for a POST or PUT
@@ -1030,7 +1030,7 @@ export async function putUkPropertyAnnual(
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a header
  * @returns {Promise<object>} The response body
  */
-async function foreignPropertyRequest(action, method, url, body, hmrcGrantId, govClientHeaders, testScenario) {
+async function foreignPropertyRequest(failure, method, url, body, hmrcGrantId, govClientHeaders, testScenario) {
   const headers = {
     "x-mcp-hmrc-grant": hmrcGrantId,
     "Content-Type": "application/json",
@@ -1056,9 +1056,9 @@ async function foreignPropertyRequest(action, method, url, body, hmrcGrantId, go
       throw new Error(message);
     }
     console.error(
-      `Failed to ${action}. Remote call failed: ${method} ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+      `${failure} Remote call failed: ${method} ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to ${action}.${failureReason(responseJson)}`, response, responseJson);
+    throw requestFailure(`${failure}${failureReason(responseJson)}`, response, responseJson);
   }
   return responseJson;
 }
@@ -1087,7 +1087,15 @@ export async function getForeignPropertyDetails(
   if (testScenario) params.append("Gov-Test-Scenario", testScenario);
   if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
   const url = `/api/v1/hmrc/itsa/foreign-property/details?${params}`;
-  return foreignPropertyRequest("retrieve the properties", "GET", url, null, hmrcGrantId, govClientHeaders, null);
+  return foreignPropertyRequest(
+    siteText("widget.failed-retrieve-properties", "Failed to retrieve the properties."),
+    "GET",
+    url,
+    null,
+    hmrcGrantId,
+    govClientHeaders,
+    null,
+  );
 }
 
 /**
@@ -1117,7 +1125,7 @@ export async function postForeignPropertyDetails(
     endReason: details.endReason,
   };
   return foreignPropertyRequest(
-    "add the property",
+    siteText("widget.failed-add-property", "Failed to add the property."),
     "POST",
     "/api/v1/hmrc/itsa/foreign-property/details",
     body,
@@ -1153,7 +1161,7 @@ export async function putForeignPropertyDetails(
     endReason: details.endReason,
   };
   return foreignPropertyRequest(
-    "save the property",
+    siteText("widget.failed-save-property", "Failed to save the property."),
     "PUT",
     "/api/v1/hmrc/itsa/foreign-property/details",
     body,
@@ -1202,7 +1210,7 @@ export async function postForeignPropertyPeriod(
   testScenario = null,
 ) {
   return foreignPropertyRequest(
-    "file the quarterly update",
+    siteText("widget.failed-file-quarterly-update", "Failed to file the quarterly update."),
     "POST",
     "/api/v1/hmrc/itsa/foreign-property/period",
     foreignPropertyPeriodBody(period, runFraudPreventionHeaderValidation),
@@ -1230,7 +1238,7 @@ export async function putForeignPropertyPeriod(
   testScenario = null,
 ) {
   return foreignPropertyRequest(
-    "save the period summary",
+    siteText("widget.failed-save-period-summary", "Failed to save the period summary."),
     "PUT",
     "/api/v1/hmrc/itsa/foreign-property/period",
     foreignPropertyPeriodBody(period, runFraudPreventionHeaderValidation),
@@ -1262,7 +1270,7 @@ export async function getForeignPropertyPeriod(
   if (testScenario) params.append("Gov-Test-Scenario", testScenario);
   if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
   return foreignPropertyRequest(
-    "retrieve the period summary",
+    siteText("widget.failed-retrieve-period-summary", "Failed to retrieve the period summary."),
     "GET",
     `/api/v1/hmrc/itsa/foreign-property/period?${params}`,
     null,
@@ -1297,7 +1305,7 @@ export async function getPropertyPeriods(
   if (testScenario) params.append("Gov-Test-Scenario", testScenario);
   if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
   return foreignPropertyRequest(
-    "retrieve the period summaries",
+    siteText("widget.failed-retrieve-period-summaries", "Failed to retrieve the period summaries."),
     "GET",
     `/api/v1/hmrc/itsa/uk-property/periods?${params}`,
     null,
@@ -1452,7 +1460,7 @@ export async function getForeignPropertyAnnual(
   if (testScenario) params.append("Gov-Test-Scenario", testScenario);
   if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
   return foreignPropertyRequest(
-    "retrieve the annual submission",
+    siteText("widget.failed-retrieve-annual-submission", "Failed to retrieve the annual submission."),
     "GET",
     `/api/v1/hmrc/itsa/foreign-property/annual?${params}`,
     null,
@@ -1480,7 +1488,7 @@ export async function putForeignPropertyAnnual(
   testScenario = null,
 ) {
   return foreignPropertyRequest(
-    "save the annual submission",
+    siteText("widget.failed-save-annual-submission", "Failed to save the annual submission."),
     "PUT",
     "/api/v1/hmrc/itsa/foreign-property/annual",
     {
@@ -1522,7 +1530,7 @@ export async function getBsasForeignProperty(
   if (testScenario) params.append("Gov-Test-Scenario", testScenario);
   if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
   return foreignPropertyRequest(
-    "retrieve the year-end summary",
+    siteText("widget.failed-retrieve-year-end-summary", "Failed to retrieve the year-end summary."),
     "GET",
     `/api/v1/hmrc/itsa/bsas/foreign-property?${params}`,
     null,
@@ -1551,7 +1559,7 @@ export async function adjustBsasForeignProperty(
   testScenario = null,
 ) {
   return foreignPropertyRequest(
-    "submit the year-end adjustment",
+    siteText("widget.failed-submit-year-end-adjustment", "Failed to submit the year-end adjustment."),
     "POST",
     "/api/v1/hmrc/itsa/bsas/foreign-property/adjust",
     {

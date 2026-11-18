@@ -113,7 +113,8 @@ describe.each(WELSH_PAGES)("Welsh page $cy", (page) => {
     expect(text).toContain("0300 200 1900");
     expect(text).toContain("0300 200 3705");
     expect(text).toMatch(/sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg/);
-    expect(text).toMatch(/HMRC Assist .* yn Gymraeg/);
+    if (page.id.startsWith("vat-") || page.id === "receipts") expect(text).toMatch(/HMRC Assist .* yn Gymraeg/);
+    else expect(text).not.toMatch(/HMRC Assist|Ffurflen TAW/);
   });
 
   it("leaves no English string marked for translation untranslated", () => {

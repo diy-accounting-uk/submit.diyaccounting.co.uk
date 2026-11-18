@@ -56,10 +56,16 @@
 cy = '''
 <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
 <p>Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’ ar dudalen CThEF.</p>
-<p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
 <p>Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE: <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>. Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.</p>
 <p><a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines">Llinellau cymorth Cymraeg CThEF ar GOV.UK</a></p>
 <p class="welsh-services-note">Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.</p>
+'''
+
+# HMRC Assist reads a VAT Return, so only the VAT pages and the receipts page carry this line; it
+# follows the first paragraph of shared."hmrc-welsh-services".
+[shared."hmrc-welsh-services-vat"]
+cy = '''
+<p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
 '''
 
 [strings."common.skip-link"]
@@ -3654,6 +3660,106 @@ cy = '''Nodwch swm mewn punnoedd cyfan, fel £600 neu £1,200. Gwiriwch {label}.
 [strings."widget.money-pounds-pence"]
 hash = "59df3f43243f"
 cy = '''Nodwch swm mewn punnoedd a cheiniogau, fel £600 neu £193.54. Gwiriwch {label}.'''
+
+[strings."widget.money-check-whole-pounds"]
+hash = "4d8655b9bd0b"
+cy = '''Nodwch swm mewn punnoedd cyfan, fel £600 neu £1,200. Gwiriwch: {labels}.'''
+
+[strings."widget.money-check-pounds-pence"]
+hash = "b09826d81159"
+cy = '''Nodwch swm mewn punnoedd a cheiniogau, fel £600 neu £193.54. Gwiriwch: {labels}.'''
+
+[strings."widget.money-check-negative"]
+hash = "e92f3efb9162"
+cy = '''Ni all y swm fod yn negyddol. Gwiriwch: {labels}.'''
+
+[strings."widget.failed-retrieve-properties"]
+hash = "8136a5143430"
+cy = '''Methu nôl yr eiddo.'''
+
+[strings."widget.failed-add-property"]
+hash = "9a7be839077c"
+cy = '''Methu ychwanegu’r eiddo.'''
+
+[strings."widget.failed-save-property"]
+hash = "a9923924af97"
+cy = '''Methu cadw’r eiddo.'''
+
+[strings."widget.failed-file-quarterly-update"]
+hash = "b1e2b8d212a6"
+cy = '''Methu ffeilio’r diweddariad chwarterol.'''
+
+[strings."widget.failed-save-period-summary"]
+hash = "e57bdce170fb"
+cy = '''Methu cadw crynodeb y cyfnod.'''
+
+[strings."widget.failed-retrieve-period-summary"]
+hash = "1e37bdff0b12"
+cy = '''Methu nôl crynodeb y cyfnod.'''
+
+[strings."widget.failed-retrieve-period-summaries"]
+hash = "5ef3e8788a26"
+cy = '''Methu nôl crynodebau’r cyfnodau.'''
+
+[strings."widget.failed-retrieve-annual-submission"]
+hash = "d3ef73c38f1a"
+cy = '''Methu nôl y cyflwyniad blynyddol.'''
+
+[strings."widget.failed-save-annual-submission"]
+hash = "f328de16d59a"
+cy = '''Methu cadw’r cyflwyniad blynyddol.'''
+
+[strings."widget.failed-retrieve-year-end-summary"]
+hash = "2efdc2def5e7"
+cy = '''Methu nôl crynodeb diwedd y flwyddyn.'''
+
+[strings."widget.failed-submit-year-end-adjustment"]
+hash = "6dfd9f8581ce"
+cy = '''Methu cyflwyno’r addasiad diwedd blwyddyn.'''
+
+[strings."widget.cost-one-token"]
+hash = "bc1131e15dfa"
+cy = '''{count} credyd'''
+
+[strings."widget.cost-tokens"]
+hash = "bc17ff48c052"
+cy = '''{count} credyd'''
+
+[strings."widget.cost-lead"]
+hash = "f562e4704a79"
+cy = '''Mae’r cyflwyniad hwn yn costio {tokens}.'''
+
+[strings."widget.cost-free"]
+hash = "d6ac5a392d47"
+cy = '''Mae’r cyflwyniad hwn am ddim. Nid yw’n defnyddio credyd.'''
+
+[strings."widget.cost-remaining"]
+hash = "73e3a62ee9f0"
+cy = '''Mae gennych {count} ar ôl.'''
+
+[strings."widget.cost-unlimited"]
+hash = "a706a6c809e0"
+cy = '''Mae gennych gredydau diderfyn.'''
+
+[strings."widget.cost-short"]
+hash = "53f30fcec1de"
+cy = '''Mae gennych {tokens} ar ôl ac mae’r ffeilio hwn yn costio {cost}.'''
+
+[strings."widget.cost-none-left"]
+hash = "7e4993fe1577"
+cy = '''Nid oes gennych gredydau ar ôl.'''
+
+[strings."widget.cost-refresh-or"]
+hash = "2a35ae98b4af"
+cy = '''Bydd eich lwfans yn adnewyddu ar {date}, neu gallwch'''
+
+[strings."widget.cost-you-can"]
+hash = "bd5c4d03f407"
+cy = '''Gallwch'''
+
+[strings."widget.cost-add-bundle"]
+hash = "2171cdf3e278"
+cy = '''ychwanegu bwndel'''
 
 [strings."vat.box-1"]
 hash = "fad75272126a"
