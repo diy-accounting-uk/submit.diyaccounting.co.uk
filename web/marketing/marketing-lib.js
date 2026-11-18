@@ -148,8 +148,9 @@ export function listingProducts(listing, data) {
 
 /** Every id the page renders, in page order; the unit test checks they are unique. */
 export function pageAnchors(data) {
-  const anchors = ["affiliate", "affiliates", "listings"];
+  const anchors = ["affiliate", "affiliates", "listings", "packs", "company-facts"];
   for (const listing of data.listings) anchors.push(`listing-${listing.id}`);
+  for (const pack of data.listingProducts) anchors.push(`pack-${pack.id}`);
   for (const section of data.sections) {
     anchors.push(section.id, `${section.id}-brand`);
     for (const product of section.products ?? []) {
@@ -159,4 +160,225 @@ export function pageAnchors(data) {
     for (const set of section.sets) anchors.push(set.id);
   }
   return anchors;
+}
+
+/** The number of words in a text: runs of characters between white space. */
+export function wordCount(text) {
+  const words = String(text).trim().split(/\s+/);
+  return words[0] === "" ? 0 : words.length;
+}
+
+/** The length of a text in a field's unit: words, or characters as a person counts them. */
+export function measure(text, unit) {
+  return unit === "words" ? wordCount(text) : Array.from(String(text)).length;
+}
+
+/**
+ * How a text or a list meets a field's target and each place's limit: the measured length, and one
+ * entry per limit with a number, with fits false when the text is outside it. A list is measured in items.
+ */
+export function limitReport(field, value) {
+  const isList = Array.isArray(value);
+  const unit = isList ? "items" : field.unit;
+  const length = isList ? value.length : measure(value, field.unit);
+  const min = isList ? field.minItems : field.min;
+  const max = isList ? field.maxItems : field.max;
+  const within = (lo, hi) => (lo === undefined || length >= lo) && (hi === undefined || length <= hi);
+  const limits = (field.limits ?? [])
+    .filter((limit) => limit.min !== undefined || limit.max !== undefined)
+    .map((limit) => ({
+      place: limit.place,
+      min: limit.min,
+      max: limit.max,
+      confirmed: limit.confirmed,
+      fits: within(limit.min, limit.max),
+    }));
+  return { unit, length, min, max, fits: within(min, max), limits };
+}
+
+const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+
+/** The CRC-32 of a byte array, as a zip file records it. */
+export function crc32(bytes) {
+  let crc = 0xffffffff;
+  for (const byte of bytes) crc = CRC_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+/**
+ * A zip archive of the entries ({ name, bytes }), stored without compression: the images are PNG and
+ * already compressed, and a stored zip needs no library in the browser. Names are UTF-8.
+ */
+export function zipStore(entries) {
+  const encoder = new TextEncoder();
+  const locals = [];
+  const centrals = [];
+  let offset = 0;
+  for (const entry of entries) {
+    const name = encoder.encode(entry.name);
+    const bytes = entry.bytes;
+    const crc = crc32(bytes);
+    const local = new DataView(new ArrayBuffer(30));
+    local.setUint32(0, 0x04034b50, true);
+    local.setUint16(4, 20, true);
+    local.setUint16(6, 0x0800, true);
+    local.setUint16(8, 0, true);
+    local.setUint16(10, 0, true);
+    local.setUint16(12, 0x0021, true);
+    local.setUint32(14, crc, true);
+    local.setUint32(18, bytes.length, true);
+    local.setUint32(22, bytes.length, true);
+    local.setUint16(26, name.length, true);
+    local.setUint16(28, 0, true);
+    locals.push(new Uint8Array(local.buffer), name, bytes);
+    const central = new DataView(new ArrayBuffer(46));
+    central.setUint32(0, 0x02014b50, true);
+    central.setUint16(4, 20, true);
+    central.setUint16(6, 20, true);
+    central.setUint16(8, 0x0800, true);
+    central.setUint16(10, 0, true);
+    central.setUint16(12, 0, true);
+    central.setUint16(14, 0x0021, true);
+    central.setUint32(16, crc, true);
+    central.setUint32(20, bytes.length, true);
+    central.setUint32(24, bytes.length, true);
+    central.setUint16(28, name.length, true);
+    central.setUint32(42, offset, true);
+    centrals.push(new Uint8Array(central.buffer), name);
+    offset += 30 + name.length + bytes.length;
+  }
+  const centralSize = centrals.reduce((sum, part) => sum + part.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true);
+  end.setUint16(8, entries.length, true);
+  end.setUint16(10, entries.length, true);
+  end.setUint32(12, centralSize, true);
+  end.setUint32(16, offset, true);
+  const parts = [...locals, ...centrals, new Uint8Array(end.buffer)];
+  const out = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
+  let at = 0;
+  for (const part of parts) {
+    out.set(part, at);
+    at += part.length;
+  }
+  return out;
+}
+
+/** The text of a pack as its zip holds it: one block per field, with its length. */
+export function packText(pack) {
+  const block = (label, value) => `${label}\n${value}\n`;
+  const blocks = [
+    block("Name", pack.name),
+    pack.activity ? block("Product activity", pack.activity) : "",
+    block(`Tagline (${measure(pack.tagline)} characters)`, pack.tagline),
+    block(`One line (${measure(pack.oneLine)} characters)`, pack.oneLine),
+    block(`Short description (${measure(pack.description160)} characters)`, pack.description160),
+    block(`Description (${measure(pack.description500)} characters)`, pack.description500),
+    block(`Long description (${wordCount(pack.long)} words)`, pack.long),
+    block("Keywords", pack.keywords.join(", ")),
+    block("Categories", pack.categories.join(", ")),
+    block("Features", pack.features.map((f) => `- ${f}`).join("\n")),
+    block("Integrations", pack.integrations.join(", ")),
+    block("Price", pack.priceText),
+    pack.priceNote ? block("Price note", pack.priceNote) : "",
+    block("Category", pack.category),
+    block("Link", pack.link),
+    pack.videos.length ? block("Videos", pack.videos.map((v) => `${v.title} (${v.seconds} seconds): ${v.url}`).join("\n")) : "",
+    block("Screenshots", pack.screenshots.map((s) => `${s.file.split("/").pop()}: ${s.alt}`).join("\n")),
+  ];
+  return blocks.filter(Boolean).join("\n");
+}
+
+/** The company's facts as each pack's zip holds them. */
+export function companyText(company, liveListings) {
+  const lines = [
+    ["Company name", company.name],
+    ["Company number", company.number],
+    ["Registered office", company.registeredOffice],
+    ["Country", company.country],
+    ["Support email", company.supportEmail],
+    ["Phone", company.phone],
+    ["Phone, international", company.phoneInternational],
+    ["Website", company.website],
+    ["LinkedIn", company.linkedin],
+    ["Founded", company.founded],
+    ["Head count", company.headCount],
+    ["Boilerplate", company.boilerplate],
+    ["Founder", company.founderName],
+    [`Founder, short (${wordCount(company.founderShort)} words)`, company.founderShort],
+    [`Founder, long (${wordCount(company.founderLong)} words)`, company.founderLong],
+    ["Team", company.team],
+    ...company.links.map((link) => [link.label, link.url]),
+    ...liveListings.map((listing) => [`Reviews, ${listing.place}`, listing.url]),
+  ];
+  return lines.map(([label, value]) => `${label}\n${value}\n`).join("\n");
+}
+
+/** Every file a pack's zip holds, as [path in the zip, path on the site]. */
+export function packFiles(pack, company) {
+  const logos = pack.logos;
+  const files = [
+    logos.icon,
+    logos.square.light.svg,
+    logos.square.dark.svg,
+    ...["light", "dark", "transparent"].flatMap((variant) => logos.square[variant].png.map((p) => p.file)),
+    logos.wide.light.svg,
+    logos.wide.light.png,
+    logos.wide.dark.svg,
+    logos.wide.dark.png,
+  ].map((file) => [`logos/${file.split("/").pop()}`, file]);
+  for (const shot of pack.screenshots) files.push([`screenshots/${shot.file.split("/").pop()}`, shot.file]);
+  for (const file of [company.founderPhoto, company.teamPhoto]) files.push([`company/${file.split("/").pop()}`, file]);
+  return files;
+}
+
+const CONTACT_PATTERN = /https?:\/\/|www\.|[\w.+-]+@[\w-]+\.[\w.]+|\b0\d{3}\s?\d{3}\s?\d{4}\b|\+44\s?\d/;
+const CALL_TO_ACTION_PATTERN =
+  /\b(start with|try it|try (it )?free|sign up|download (it )?now|buy now|click here|get started|subscribe now)\b/i;
+
+/**
+ * The problems of the listing packs, one sentence each: a field a pack lacks, a text or list outside
+ * its field's target or a place's limit, a contact detail or a call to action where the field
+ * forbids one, and a screenshot count outside the field's range. An empty list means every pack is whole.
+ */
+export function packProblems(data) {
+  const problems = [];
+  for (const pack of data.listingProducts) {
+    for (const field of data.packFields) {
+      const name = `pack ${pack.id}: ${field.id}`;
+      if (field.kind === "text" || field.kind === "list") {
+        const value = pack[field.id];
+        if (value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) {
+          problems.push(`${name} is missing`);
+          continue;
+        }
+        const report = limitReport(field, value);
+        if (!report.fits) problems.push(`${name} is ${report.length} ${report.unit}, outside its target`);
+        for (const limit of report.limits)
+          if (!limit.fits) problems.push(`${name} is ${report.length} ${report.unit}, outside the limit of ${limit.place}`);
+        if (field.noContact && CONTACT_PATTERN.test(value)) problems.push(`${name} holds a link, an email address or a phone number`);
+        if (field.noCallToAction && CALL_TO_ACTION_PATTERN.test(value)) problems.push(`${name} holds a call to action`);
+      } else if (field.kind === "image" && field.id === "screenshots") {
+        const count = pack.screenshots?.length ?? 0;
+        if (count < field.minItems || count > field.maxItems)
+          problems.push(`${name} has ${count}, outside ${field.minItems} to ${field.maxItems}`);
+      } else if (field.kind === "image") {
+        const logos = pack.logos;
+        const has = { logo: logos?.square?.light?.png?.length, logoWide: logos?.wide?.light?.png, icon: logos?.icon }[field.id];
+        if (!has) problems.push(`${name} is missing`);
+      } else if (field.kind === "link") {
+        if (!/^https:\/\//.test(pack.link ?? "")) problems.push(`${name} is not an https link`);
+      }
+    }
+  }
+  return problems;
+}
+
+/** The live listings where people can read and leave reviews: the review sites and the citation directories. */
+export function reviewListings(data) {
+  return data.listings.filter((listing) => listing.state === "live" && listing.url && ["review", "citation"].includes(listing.group));
 }

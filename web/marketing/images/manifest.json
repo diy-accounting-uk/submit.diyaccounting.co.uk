@@ -288,57 +288,57 @@
     "og": {
       "width": 1200,
       "height": 630,
-      "hash": "0d8c22a35889aafdff5011bc1a8b9d99062a5214ad7aab5a92b91ebcc2b4b2a9"
+      "hash": "3959d9434c8f3b8c226058a6665cdebebe35fa927cc3e48afbabc340d89a6fcc"
     },
     "square": {
       "width": 1080,
       "height": 1080,
-      "hash": "85b183babc09af05e82c756153f610fac6d3ee1d88abf62ac35f080c9834c769"
+      "hash": "bb808e166a8e1a7a9c891a619358d42afe238ea2efefa1e32bac4de2cfefcbcf"
     },
     "portrait": {
       "width": 1080,
       "height": 1350,
-      "hash": "f97374f4dc6292f55b8992a8863ba828f6c11cea582c5888931cd51e6f57a80c"
+      "hash": "f2fe1468be66eb382703372ef5a4a326a325dbfa6c2922ecfd18e0007bdb5895"
     },
     "story": {
       "width": 1080,
       "height": 1920,
-      "hash": "d919a90ea2881a6939e1471fe15dae2dbab1bd9ea488f357f71dbfe480aeef28"
+      "hash": "6e8381b4581ba6725689053d5314e0a5780f985a0cb124023fd86086f11d38c7"
     },
     "x": {
       "width": 1600,
       "height": 900,
-      "hash": "99f904b4e2be2d01a82503a30d38e3282ade8e3df4ec1c21b82bb2579f10bfc0"
+      "hash": "4122632cb12f817bc21f6b06d2d9b7a7f7a16c5289c2c83e0fb6a6e032929228"
     },
     "display-landscape": {
       "width": 1200,
       "height": 628,
-      "hash": "719bdc8a0612ede1f6a282a20eb4ce737705819af31a411e873adcf026da9d36"
+      "hash": "2f5dacafee94e4a53d882131d3d28d8e77c3f4370baaae3f272a897fae880a7d"
     },
     "display-square": {
       "width": 1200,
       "height": 1200,
-      "hash": "9d596a604cc7ba30d3fc12012c6f4f72c5f56f7d477d12a375ac7f558126d9c9"
+      "hash": "eb7fa938909581d453e7475cf8b5f9a9bb529cf09bf464f938d38917b5ab6a55"
     },
     "mrec": {
       "width": 300,
       "height": 250,
-      "hash": "135c0de83ef2ea79c7d097846d5684f4f1e637e6dd295d67c1734692c70806e0"
+      "hash": "01987f8689f2583757c7904731af0555badf55a2e71f9199e5a37c5867b614fd"
     },
     "leaderboard": {
       "width": 728,
       "height": 90,
-      "hash": "a31374aab7b2112da96baa549db863c45a0682910e428c486c05172231356a9a"
+      "hash": "511d4327ccc39312092ac9c456c5d9d642f3d6b0274bbc0bf779d3c98c42f2a8"
     },
     "mobile-banner": {
       "width": 320,
       "height": 50,
-      "hash": "89d77b8daf4ddad1e54c98213b179ee0bb0c5aff08e8c70b8f5a6b23af237579"
+      "hash": "997f42c4dd0869c64aced6b3371d0aaf9b1724bbef0f99b2d9cdef711414bc7d"
     },
     "skyscraper": {
       "width": 160,
       "height": 600,
-      "hash": "8b6e4ec30fe96ba223642a2ea48107c3e8aa82b4037d870edceff02f729877b8"
+      "hash": "730599848818f9464ac23155196d0ff4ae001acab4b1b4013fec755ca7e077be"
     }
   },
   "spreadsheets-basic-sole-trader": {
@@ -573,57 +573,57 @@
     "og": {
       "width": 1200,
       "height": 630,
-      "hash": "15644465cdf237c99730f096336832286779da839ceea044f1ac437526b8e348"
+      "hash": "e3217cae8575fe709ea4eb55e7c2160bb789c2308d26e6ef61aaf27f88be22a3"
     },
     "square": {
       "width": 1080,
       "height": 1080,
-      "hash": "c590879d20faf7ad5e2305291b6f99f84c25fc8440b0a5ddae67d0a98a14de71"
+      "hash": "2ab5e2c88218a1d0a99d5fe99387b46fb35b6d621e59342d08eb272c5f0d5483"
     },
     "portrait": {
       "width": 1080,
       "height": 1350,
-      "hash": "ff98909347729932c0ae6434aeac50e6bc7d7dd674869060102a92cf2e86df5e"
+      "hash": "266e674ff95c98fb85e0b57da3fd831a6a328e6d56f1d9321ae5b435cdf97f6f"
     },
     "story": {
       "width": 1080,
       "height": 1920,
-      "hash": "3b150951d85ff4346a682fe61c32d49ae017bc3e673b4155398fd517dc21b49a"
+      "hash": "7d87d3519bb804c9f86263dbbdee0355bce6973cc1ccfbb1e04e5bbc07f40bdd"
     },
     "x": {
       "width": 1600,
       "height": 900,
-      "hash": "dd1912bab058268c7d29a442cb93f15d6c8fe5ef8f4b42eec20e2670c959a131"
+      "hash": "2da04e4934b4e63543d8e3e847f53fe093c2fa353b30e51de50dfcb1c60ed531"
     },
     "display-landscape": {
       "width": 1200,
       "height": 628,
-      "hash": "976daf248c5e59e9c2a98a7ee696bfb09140dcd2eb5b1921d4b9446c819d5b66"
+      "hash": "40d73bb0ca1f53c24ba06363c9a4bbc197830dfb6bcb7d2385e093e2e6209068"
     },
     "display-square": {
       "width": 1200,
       "height": 1200,
-      "hash": "9cc75ad2570b14710787f418eda1364a560a7b06d383489052d3c1eb90ea4a6f"
+      "hash": "ff6e1bbf665176af51156f6f5d0ea869bc50e1596f882175a9768809bac27031"
     },
     "mrec": {
       "width": 300,
       "height": 250,
-      "hash": "356200095af64f715206e4b6cf6dabed2e55e6feb08736addf727c3c8e621b50"
+      "hash": "175856ca263d1e8f63f42e38bad628bb1bebf121a10629c47cb5366e2aba9523"
     },
     "leaderboard": {
       "width": 728,
       "height": 90,
-      "hash": "648860ad1f692b5ccc7b251b371fa986d4489ac0c38ac36e95ce3096a8b3f46d"
+      "hash": "08d6428885affe281c08063dc54e9a3388d726d6a9208827b820169bde1a3fd0"
     },
     "mobile-banner": {
       "width": 320,
       "height": 50,
-      "hash": "252938e9e5e4f5943be3d425e87e3aa471321d8c1c840bc1b762cb84ce1aed7a"
+      "hash": "8ee69b22779ef9ead123265bd8cee1c7a44942ecce58ec335f42be6b59838bdf"
     },
     "skyscraper": {
       "width": 160,
       "height": 600,
-      "hash": "b350af672a0c286ee0886041e72e4eb5d487e9af5e8377640119286a0b66cdae"
+      "hash": "fbac2f52383209130538eb2f3a175ba245a297c051b86f40d21ef8d4d78f2707"
     }
   },
   "spreadsheets-all": {

@@ -1,0 +1,225 @@
+{
+  "capturedAt": "2026-11-17",
+  "shots": [
+    {
+      "pack": "submit",
+      "shot": "home",
+      "file": "brand/packs/submit/home.png"
+    },
+    {
+      "pack": "submit",
+      "shot": "vat-form",
+      "file": "brand/packs/submit/vat-form.png"
+    },
+    {
+      "pack": "submit",
+      "shot": "micro-entity",
+      "file": "brand/packs/submit/micro-entity.png"
+    },
+    {
+      "pack": "submit",
+      "shot": "bundles",
+      "file": "brand/packs/submit/bundles.png"
+    },
+    {
+      "pack": "submit-vat",
+      "shot": "vat-form",
+      "file": "brand/packs/submit-vat/vat-form.png"
+    },
+    {
+      "pack": "submit-vat",
+      "shot": "nine-boxes",
+      "file": "brand/packs/submit-vat/nine-boxes.png"
+    },
+    {
+      "pack": "submit-vat",
+      "shot": "obligations",
+      "file": "brand/packs/submit-vat/obligations.png"
+    },
+    {
+      "pack": "submit-vat",
+      "shot": "from-a-spreadsheet",
+      "file": "brand/packs/submit-vat/from-a-spreadsheet.png"
+    },
+    {
+      "pack": "submit-ltd",
+      "shot": "lookup",
+      "file": "brand/packs/submit-ltd/lookup.png"
+    },
+    {
+      "pack": "submit-ltd",
+      "shot": "micro-entity",
+      "file": "brand/packs/submit-ltd/micro-entity.png"
+    },
+    {
+      "pack": "submit-ltd",
+      "shot": "small-company",
+      "file": "brand/packs/submit-ltd/small-company.png"
+    },
+    {
+      "pack": "submit-ltd",
+      "shot": "confirmation-statement",
+      "file": "brand/packs/submit-ltd/confirmation-statement.png"
+    },
+    {
+      "pack": "submit-ltd",
+      "shot": "registered-office",
+      "file": "brand/packs/submit-ltd/registered-office.png"
+    },
+    {
+      "pack": "spreadsheets",
+      "shot": "home",
+      "file": "brand/packs/spreadsheets/home.png"
+    },
+    {
+      "pack": "spreadsheets",
+      "shot": "product-grid",
+      "file": "brand/packs/spreadsheets/product-grid.png"
+    },
+    {
+      "pack": "spreadsheets",
+      "shot": "profit-and-loss",
+      "file": "brand/packs/spreadsheets/profit-and-loss.png"
+    },
+    {
+      "pack": "spreadsheets",
+      "shot": "vat-return",
+      "file": "brand/packs/spreadsheets/vat-return.png"
+    },
+    {
+      "pack": "spreadsheets-basic-sole-trader",
+      "shot": "sales",
+      "file": "brand/packs/spreadsheets-basic-sole-trader/sales.png"
+    },
+    {
+      "pack": "spreadsheets-basic-sole-trader",
+      "shot": "purchases",
+      "file": "brand/packs/spreadsheets-basic-sole-trader/purchases.png"
+    },
+    {
+      "pack": "spreadsheets-basic-sole-trader",
+      "shot": "profit-and-loss",
+      "file": "brand/packs/spreadsheets-basic-sole-trader/profit-and-loss.png"
+    },
+    {
+      "pack": "spreadsheets-basic-sole-trader",
+      "shot": "income-tax",
+      "file": "brand/packs/spreadsheets-basic-sole-trader/income-tax.png"
+    },
+    {
+      "pack": "spreadsheets-basic-sole-trader",
+      "shot": "fixed-assets",
+      "file": "brand/packs/spreadsheets-basic-sole-trader/fixed-assets.png"
+    },
+    {
+      "pack": "spreadsheets-self-employed",
+      "shot": "sales",
+      "file": "brand/packs/spreadsheets-self-employed/sales.png"
+    },
+    {
+      "pack": "spreadsheets-self-employed",
+      "shot": "purchases",
+      "file": "brand/packs/spreadsheets-self-employed/purchases.png"
+    },
+    {
+      "pack": "spreadsheets-self-employed",
+      "shot": "cash-and-bank",
+      "file": "brand/packs/spreadsheets-self-employed/cash-and-bank.png"
+    },
+    {
+      "pack": "spreadsheets-self-employed",
+      "shot": "vat-return",
+      "file": "brand/packs/spreadsheets-self-employed/vat-return.png"
+    },
+    {
+      "pack": "spreadsheets-taxi-driver",
+      "shot": "product-page",
+      "file": "brand/packs/spreadsheets-taxi-driver/product-page.png"
+    },
+    {
+      "pack": "spreadsheets-taxi-driver",
+      "shot": "download",
+      "file": "brand/packs/spreadsheets-taxi-driver/download.png"
+    },
+    {
+      "pack": "spreadsheets-taxi-driver",
+      "shot": "actual-cost-book",
+      "file": "brand/packs/spreadsheets-taxi-driver/actual-cost-book.png"
+    },
+    {
+      "pack": "spreadsheets-taxi-driver",
+      "shot": "mileage-book",
+      "file": "brand/packs/spreadsheets-taxi-driver/mileage-book.png"
+    },
+    {
+      "pack": "spreadsheets-company",
+      "shot": "balance-sheet",
+      "file": "brand/packs/spreadsheets-company/balance-sheet.png"
+    },
+    {
+      "pack": "spreadsheets-company",
+      "shot": "profit-and-loss",
+      "file": "brand/packs/spreadsheets-company/profit-and-loss.png"
+    },
+    {
+      "pack": "spreadsheets-company",
+      "shot": "corporation-tax",
+      "file": "brand/packs/spreadsheets-company/corporation-tax.png"
+    },
+    {
+      "pack": "spreadsheets-company",
+      "shot": "cash-and-bank",
+      "file": "brand/packs/spreadsheets-company/cash-and-bank.png"
+    },
+    {
+      "pack": "spreadsheets-payslips",
+      "shot": "payslips",
+      "file": "brand/packs/spreadsheets-payslips/payslips.png"
+    },
+    {
+      "pack": "spreadsheets-payslips",
+      "shot": "payroll-payslips",
+      "file": "brand/packs/spreadsheets-payslips/payroll-payslips.png"
+    },
+    {
+      "pack": "spreadsheets-payslips",
+      "shot": "product-page",
+      "file": "brand/packs/spreadsheets-payslips/product-page.png"
+    },
+    {
+      "pack": "diya-gl",
+      "shot": "home",
+      "file": "brand/packs/diya-gl/home.png"
+    },
+    {
+      "pack": "diya-gl",
+      "shot": "open-a-book",
+      "file": "brand/packs/diya-gl/open-a-book.png"
+    },
+    {
+      "pack": "diya-gl",
+      "shot": "example-book",
+      "file": "brand/packs/diya-gl/example-book.png"
+    },
+    {
+      "pack": "company",
+      "shot": "gateway",
+      "file": "brand/packs/company/gateway.png"
+    },
+    {
+      "pack": "company",
+      "shot": "company-page",
+      "file": "brand/packs/company/company-page.png"
+    },
+    {
+      "pack": "company",
+      "shot": "spreadsheets-home",
+      "file": "brand/packs/company/spreadsheets-home.png"
+    },
+    {
+      "pack": "company",
+      "shot": "submit-home",
+      "file": "brand/packs/company/submit-home.png"
+    }
+  ]
+}

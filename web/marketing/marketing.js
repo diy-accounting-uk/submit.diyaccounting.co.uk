@@ -7,6 +7,13 @@
 
 import {
   codeFromPassUrl,
+  companyText,
+  limitReport,
+  measure,
+  packFiles,
+  packText,
+  reviewListings,
+  zipStore,
   isPassCode,
   listingLink,
   listingProducts,
@@ -449,14 +456,52 @@ function goToHash() {
 // Listings
 // ---------------------------------------------------------------------------------------------
 
-function copyField(label, value, { link = false } = {}) {
+function copyField(label, value, { link = false, note = null } = {}) {
   const status = el("span", { role: "status", class: "copy-status" });
   const button = el("button", { "type": "button", "text": "Copy", "aria-label": `Copy ${label}` });
   button.addEventListener("click", async () => {
     flash(status, (await copyText(value)) ? "Copied" : "Copy failed");
   });
   const text = link ? el("a", { href: value, text: value, rel: "noopener noreferrer", target: "_blank" }) : el("span", { text: value });
-  return [el("dt", { text: label }), el("dd", { class: "listing-field" }, text, " ", button, " ", status)];
+  const dd = el("dd", { class: "listing-field" }, text, " ", button, " ", status);
+  if (note) dd.append(note);
+  return [el("dt", { text: label }), dd];
+}
+
+/** The line under a pack text: its length, the pack's target, and each place's limit with whether the text fits. */
+function limitNote(field, value) {
+  const report = limitReport(field, value);
+  const unit = report.unit === "items" ? "items" : report.unit;
+  const range = (min, max) =>
+    min !== undefined && max !== undefined
+      ? min === max
+        ? `exactly ${max}`
+        : `${min} to ${max}`
+      : max !== undefined
+        ? `up to ${max}`
+        : `at least ${min}`;
+  const note = el("p", { "class": "field-limits", "data-fits": String(report.fits && report.limits.every((l) => l.fits)) });
+  const target = report.min !== undefined || report.max !== undefined ? `, target ${range(report.min, report.max)}` : "";
+  note.append(
+    el("span", { class: "field-length", text: `${report.length} ${unit}${target}${report.fits ? "" : ", outside the target"}.` }),
+  );
+  for (const limit of report.limits) {
+    const mark = limit.fits ? "fits" : "does not fit";
+    const unconfirmed = limit.confirmed === false ? ", not confirmed" : "";
+    note.append(
+      " ",
+      el("span", {
+        "class": "field-limit",
+        "data-fits": String(limit.fits),
+        "text": `${limit.place}, ${range(limit.min, limit.max)}${unconfirmed}: ${mark}.`,
+      }),
+    );
+  }
+  return note;
+}
+
+function fieldOf(data, id) {
+  return data.packFields.find((field) => field.id === id);
 }
 
 function listingProductBlock(listing, product) {
@@ -469,11 +514,12 @@ function listingProductBlock(listing, product) {
   add(copyField("Category", product.category));
   if (product.priceText) add(copyField("Price text", product.priceText));
   add(copyField("Tagged link", listingLink(product, listing), { link: true }));
+  const logo = product.logos.square.light.png.at(-1).file;
   fields.append(
     el("dt", { text: "Logo" }),
-    el("dd", {}, el("a", { href: product.logo, download: "", text: product.logo })),
-    el("dt", { text: "Screenshot" }),
-    el("dd", {}, el("a", { href: product.screenshot, download: "", text: product.screenshot })),
+    el("dd", {}, el("a", { href: logo, download: "", text: logo })),
+    el("dt", { text: "Screenshots" }),
+    el("dd", {}, el("a", { href: `#pack-${product.id}`, text: `${product.screenshots.length} in the ${packTitle(product)} pack` })),
   );
   return el("div", { class: "listing-product" }, el("h5", { text: product.name }), fields);
 }
@@ -515,6 +561,179 @@ function renderListings(data) {
   }
 }
 
+// ---------------------------------------------------------------------------------------------
+// Listing packs
+// ---------------------------------------------------------------------------------------------
+
+function packTitle(pack) {
+  return pack.activity ? `${pack.name}: ${pack.activity}` : pack.name;
+}
+
+function imageLink(file, text) {
+  return el("a", { href: file, download: "", text });
+}
+
+function figure(src, alt, ...caption) {
+  return el("figure", { class: "pack-figure" }, el("img", { loading: "lazy", src, alt }), el("figcaption", {}, ...caption));
+}
+
+function renderCompany(data) {
+  const company = data.company;
+  const root = document.querySelector("[data-company]");
+  const block = el("details", { id: "company-facts", class: "post-set" });
+  block.append(el("summary", {}, el("h3", { tabindex: "-1" }, el("a", { href: "#company-facts", text: "The company's facts" }))));
+  const facts = el("dl", { class: "listing-fields" });
+  const add = (label, value, options) => facts.append(...copyField(label, String(value), options));
+  add("Company name", company.name);
+  add("Company number", company.number);
+  add("Registered office", company.registeredOffice);
+  add("Country", company.country);
+  add("Support email", company.supportEmail);
+  add("Phone", company.phone);
+  add("Phone, international", company.phoneInternational);
+  add("Website", company.website, { link: true });
+  add("LinkedIn", company.linkedin, { link: true });
+  add("Founded", company.founded);
+  add("Head count", company.headCount);
+  add("Boilerplate", company.boilerplate);
+  add("Founder", company.founderName);
+  add("Founder, short", company.founderShort);
+  add("Founder, long", company.founderLong);
+  add("Team", company.team);
+  for (const link of company.links) add(link.label, link.url, { link: true });
+  for (const listing of reviewListings(data)) add(`Reviews, ${listing.place}`, listing.url, { link: true });
+  block.append(facts);
+  block.append(
+    el(
+      "div",
+      { class: "pack-figures" },
+      figure(
+        company.founderPhoto,
+        `${company.founderName}, founder of DIY Accounting`,
+        imageLink(company.founderPhoto, "Founder photograph"),
+      ),
+      figure(company.teamPhoto, company.teamPhotoAlt, imageLink(company.teamPhoto, "Directors photograph")),
+    ),
+  );
+  root.replaceChildren(block);
+}
+
+function packLogos(pack) {
+  const logos = pack.logos;
+  const box = el("div", { class: "pack-figures" });
+  const sizes = (variant) => logos.square[variant].png.map(({ size, file }) => [" ", imageLink(file, `${size} px`)]).flat();
+  box.append(
+    figure(
+      logos.square.light.png.at(-1).file,
+      `${pack.name} logo on a light background`,
+      "Square, light: ",
+      imageLink(logos.square.light.svg, "SVG"),
+      ...sizes("light"),
+    ),
+    figure(
+      logos.square.dark.png.at(-1).file,
+      `${pack.name} logo on a dark background`,
+      "Square, dark: ",
+      imageLink(logos.square.dark.svg, "SVG"),
+      ...sizes("dark"),
+    ),
+    figure(logos.icon, `${pack.name} icon`, "Icon, no background: ", imageLink(logos.icon, "SVG"), ...sizes("transparent")),
+    figure(
+      logos.wide.light.png,
+      `${pack.name} wide logo for a light background`,
+      "Wide, light: ",
+      imageLink(logos.wide.light.svg, "SVG"),
+      " ",
+      imageLink(logos.wide.light.png, "PNG"),
+    ),
+    figure(
+      logos.wide.dark.png,
+      `${pack.name} wide logo for a dark background`,
+      "Wide, dark: ",
+      imageLink(logos.wide.dark.svg, "SVG"),
+      " ",
+      imageLink(logos.wide.dark.png, "PNG"),
+    ),
+  );
+  return box;
+}
+
+async function downloadPack(pack, data, status) {
+  status.textContent = "Making the zip…";
+  try {
+    const encoder = new TextEncoder();
+    const live = reviewListings(data);
+    const entries = [
+      { name: "pack.txt", bytes: encoder.encode(packText(pack)) },
+      { name: "company.txt", bytes: encoder.encode(companyText(data.company, live)) },
+    ];
+    for (const [name, src] of packFiles(pack, data.company)) {
+      const response = await fetch(src);
+      if (!response.ok) throw new Error(`${src}: ${response.status}`);
+      entries.push({ name, bytes: new Uint8Array(await response.arrayBuffer()) });
+    }
+    const url = URL.createObjectURL(new Blob([zipStore(entries)], { type: "application/zip" }));
+    const link = el("a", { href: url, download: `${pack.id}.zip` });
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    flash(status, `Downloaded ${pack.id}.zip, ${entries.length} files`);
+  } catch {
+    flash(status, "The zip could not be made. Reload the page and try again.");
+  }
+}
+
+function packBlock(pack) {
+  const article = el("details", { id: `pack-${pack.id}`, class: "post-set pack" });
+  article.append(el("summary", {}, el("h4", { tabindex: "-1" }, el("a", { href: `#pack-${pack.id}`, text: packTitle(pack) }))));
+  const fields = el("dl", { class: "listing-fields" });
+  const data = state.data;
+  const add = (label, value, options) => fields.append(...copyField(label, value, options));
+  const measured = (label, id, value = pack[id]) =>
+    add(label, Array.isArray(value) ? value.join(id === "features" ? "\n" : ", ") : value, { note: limitNote(fieldOf(data, id), value) });
+  const zipStatus = el("span", { role: "status", class: "copy-status" });
+  const zipButton = el("button", { type: "button", class: "pack-zip", text: `Download the ${packTitle(pack)} pack as one zip` });
+  zipButton.addEventListener("click", () => downloadPack(pack, data, zipStatus));
+  article.append(el("p", { class: "pack-actions" }, zipButton, " ", zipStatus));
+  measured("Name", "name");
+  if (pack.activity) add("Product activity", pack.activity);
+  measured("Tagline", "tagline");
+  add("One line", pack.oneLine, { note: el("p", { class: "field-limits", text: `${measure(pack.oneLine)} characters.` }) });
+  measured("Short description", "description160");
+  measured("Description", "description500");
+  measured("Long description", "long");
+  measured("Keywords", "keywords");
+  measured("Categories", "categories");
+  measured("Features", "features");
+  measured("Integrations", "integrations");
+  measured("Price", "priceText");
+  if (pack.priceNote) add("Price note", pack.priceNote);
+  add("Category", pack.category);
+  add("Link", pack.link, { link: true });
+  article.append(fields);
+  article.append(el("h5", { text: "Logos" }), packLogos(pack));
+  const shots = el("div", { class: "pack-figures pack-shots" });
+  for (const shot of pack.screenshots) shots.append(figure(shot.file, shot.alt, `${shot.alt}. `, imageLink(shot.file, "1270 × 760 PNG")));
+  article.append(el("h5", { text: `Screenshots, ${pack.screenshots.length}` }), shots);
+  if (pack.videos.length) {
+    const list = el("ul", { class: "pack-videos" });
+    for (const video of pack.videos) {
+      const minutes = `${Math.floor(video.seconds / 60)}:${String(video.seconds % 60).padStart(2, "0")}`;
+      list.append(
+        el("li", {}, el("a", { href: video.url, rel: "noopener noreferrer", target: "_blank", text: video.title }), ` (${minutes})`),
+      );
+    }
+    article.append(el("h5", { text: "Videos" }), list);
+  }
+  return article;
+}
+
+function renderPacks(data) {
+  const root = document.querySelector("[data-packs]");
+  root.replaceChildren(...data.listingProducts.map((pack) => packBlock(pack)));
+}
+
 function renderAffiliates(data) {
   const figures = data.affiliates;
   for (const el of document.querySelectorAll("[data-aff]")) {
@@ -543,6 +762,8 @@ async function start() {
   }
   renderAffiliates(state.data);
   renderListings(state.data);
+  renderCompany(state.data);
+  renderPacks(state.data);
   try {
     const response = await fetch("brand/shots/manifest.json");
     if (response.ok) manifest = await response.json();

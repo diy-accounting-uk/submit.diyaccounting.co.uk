@@ -224,7 +224,7 @@ export async function signIn(browser, { pageOrigin }) {
   await page.click('input[type="submit"][value="Sign-in"]');
   await page.waitForLoadState("networkidle");
   await page.goto(`${pageOrigin}/index.html`, { waitUntil: "load" });
-  await page.getByText("Logged in as").waitFor({ timeout: 20000 });
+  await page.locator("a.login-link", { hasText: "Sign out" }).waitFor({ timeout: 20000 });
   const state = await context.storageState();
   await context.close();
   return state;
