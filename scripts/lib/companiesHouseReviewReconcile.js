@@ -129,6 +129,18 @@ export function longDate(iso) {
   return `${day} ${MONTHS[month - 1]} ${year}`;
 }
 
+/**
+ * A date as the accounts tag it: written out for an English document, as day/month/year numbers for
+ * a Welsh one, because transformation registry 2 reads month names in English only.
+ * @param {string} iso
+ * @param {string} [documentLanguage] "cy" for a Welsh document
+ */
+export function taggedDate(iso, documentLanguage) {
+  if (documentLanguage !== "cy") return longDate(iso);
+  const [year, month, day] = iso.split("-");
+  return `${day}/${month}/${year}`;
+}
+
 export function formatFigure(value) {
   return typeof value === "number" && Number.isInteger(value) ? value.toLocaleString("en-GB") : String(value);
 }
@@ -178,13 +190,13 @@ export function reconcile(input, ours) {
 
   check("companyNumber", input.companyNumber, "UKCompaniesHouseRegisteredNumber", `y${current}`, false);
   check("companyName", input.companyName, "EntityCurrentLegalOrRegisteredName", `y${current}`, false);
-  check("periodStart", longDate(input.periodStart), "StartDateForPeriodCoveredByReport", `p${current}`, false);
-  check("periodEnd", longDate(input.periodEnd), "EndDateForPeriodCoveredByReport", `e${current}`, false);
+  check("periodStart", taggedDate(input.periodStart, input.documentLanguage), "StartDateForPeriodCoveredByReport", `p${current}`, false);
+  check("periodEnd", taggedDate(input.periodEnd, input.documentLanguage), "EndDateForPeriodCoveredByReport", `e${current}`, false);
   check("averageEmployees", input.averageEmployees, "AverageNumberEmployeesDuringPeriod", `y${current}`);
   check("director.name", input.director.name, "NameEntityOfficer", `y${current}-director-1`, false);
   check(
     "director.dateApproved",
-    longDate(input.director.dateApproved),
+    taggedDate(input.director.dateApproved, input.documentLanguage),
     "DateAuthorisationFinancialStatementsForIssue",
     `e${current}`,
     false,

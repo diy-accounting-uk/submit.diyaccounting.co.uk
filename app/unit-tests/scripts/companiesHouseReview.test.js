@@ -6,7 +6,13 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "../../functions/companies-house/companiesHouseAccountsPost.js";
-import { parseFigure, longDate, reconcile, reconciliationMarkdown } from "../../../scripts/lib/companiesHouseReviewReconcile.js";
+import {
+  parseFigure,
+  longDate,
+  reconcile,
+  reconciliationMarkdown,
+  taggedDate,
+} from "../../../scripts/lib/companiesHouseReviewReconcile.js";
 import {
   categoryCriterion,
   companyInformationCriterion,
@@ -249,6 +255,39 @@ describe("substance criteria", () => {
       withText(c.ours, (t) => t.replace("private company", "public company")),
     );
     expect(byText.result).toBe("fail");
+  });
+
+  it("reconciles a Welsh document's dates in the day/month/year form it tags", () => {
+    expect(taggedDate("2026-03-31")).toBe("31 March 2026");
+    expect(taggedDate("2026-03-31", "cy")).toBe("31/03/2026");
+    const welshCase = JSON.parse(readFileSync("scripts/fixtures/companies-house-test-service-cases-welsh.json", "utf8")).find(
+      (candidate) => candidate.name === "micro-entity-accounts-welsh",
+    );
+    const { name, type, govTestScenario, expectedOutcome, fictional, ...requestBody } = welshCase;
+    const errors = [];
+    const accounts = extractAndValidateAccountsParameters({ body: JSON.stringify(requestBody) }, errors);
+    const result = reconcile(welshCase, oursFrom(buildAccountsIxbrl(accounts)));
+    expect(result.rows.filter((row) => row.result === "MISMATCH")).toEqual([]);
+  });
+
+  it("reads the s396(A1) statement and the private company in a Welsh document", () => {
+    const welshCase = JSON.parse(readFileSync("scripts/fixtures/companies-house-test-service-cases-welsh.json", "utf8")).find(
+      (candidate) => candidate.name === "micro-entity-accounts-welsh",
+    );
+    const { name, type, govTestScenario, expectedOutcome, fictional, ...requestBody } = welshCase;
+    const errors = [];
+    const accounts = extractAndValidateAccountsParameters({ body: JSON.stringify(requestBody) }, errors);
+    expect(errors).toEqual([]);
+    const ours = oursFrom(buildAccountsIxbrl(accounts));
+    expect(ours.visibleText).toContain("gwmni preifat cyfyngedig gan gyfranddaliadau");
+    expect(companyInformationCriterion(welshCase, ours).result).toBe("pass");
+    expect(categoryCriterion(welshCase, ours).result).toBe("pass");
+    expect(
+      companyInformationCriterion(
+        welshCase,
+        withText(ours, (t) => t.replace(/swyddfa gofrestredig/gi, "swyddfa")),
+      ).result,
+    ).toBe("fail");
   });
 
   it("is unsure when the accounts do not say private", () => {

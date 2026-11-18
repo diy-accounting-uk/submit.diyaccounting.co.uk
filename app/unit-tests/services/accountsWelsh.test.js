@@ -188,6 +188,12 @@ describe("Welsh micro-entity accounts", () => {
     }
   });
 
+  test("the company information note names England and Wales as the part of the UK of registration", () => {
+    const xhtml = welshDocument();
+    expect(xhtml).toContain("wedi’i gofrestru yng Nghymru a Lloegr, rhif cofrestru");
+    expect(xhtml).not.toMatch(/wedi’i gofrestru yng Nghymru,/);
+  });
+
   test("tagged dates are numbers that registry 2 reads in any language", () => {
     const xhtml = welshDocument();
     expect(xhtml).not.toContain("ixt2:datedaymonthyearen");

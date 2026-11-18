@@ -14,10 +14,12 @@ import { registeredOfficeLine } from "../../app/services/accountsIxbrlCommon.js"
 
 const PUBLIC_COMPANY_NAME = /\b(plc|public limited company)\b/i;
 const PUBLIC_COMPANY_TEXT = /\bpublic (limited )?company\b/i;
-const PRIVATE_COMPANY_TEXT = /\bprivate (limited )?company\b/i;
+const PRIVATE_COMPANY_TEXT = /\bprivate (limited )?company\b|\b[cg]wmni preifat\b/i;
 const LEGAL_FORM_TEXT =
-  /\b(private|public) (limited )?company limited by (shares|guarantee)\b|\blimited liability partnership\b|\bunlimited company\b/i;
-const JURISDICTION_TEXT = /\bregistered in (England and Wales|Scotland|Northern Ireland|England|Wales)\b/i;
+  /\b(private|public) (limited )?company limited by (shares|guarantee)\b|\blimited liability partnership\b|\bunlimited company\b|\b[cg]wmni (preifat|cyhoeddus) cyfyngedig gan (gyfranddaliadau|warant)\b/i;
+const JURISDICTION_TEXT =
+  /\bregistered in (England and Wales|Scotland|Northern Ireland|England|Wales)\b|\bwedi[’']i gofrestru yng? (Nghymru a Lloegr|Nghymru|Lloegr|Ngogledd Iwerddon|Yr Alban)\b/i;
+const REGISTERED_OFFICE_TEXT = /registered office|swyddfa gofrestredig/i;
 const PLACEHOLDER_WORD = /\b(test|fictional|example|sample|dummy|placeholder|lorem)\b/i;
 const ZEROS = /0{8}/;
 const NEVER_TRADED_TEXT = /\bhas not traded\b/i;
@@ -145,7 +147,7 @@ export function companyInformationCriterion(input, ours) {
   if (!JURISDICTION_TEXT.test(text)) missing.push("part of the UK of registration");
   if (!text.includes(input.companyNumber)) missing.push("company number");
   if (
-    !/registered office/i.test(text) ||
+    !REGISTERED_OFFICE_TEXT.test(text) ||
     !squash(text)
       .replace(/ ([,.])/g, "$1")
       .includes(registeredOfficeLine(input.registeredOffice))
