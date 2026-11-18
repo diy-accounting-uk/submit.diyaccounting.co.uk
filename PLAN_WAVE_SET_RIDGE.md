@@ -135,7 +135,7 @@ what a person sees, done once.
 4. The `ui-ux-pro-max` review of the guide's screenshots.
 5. Fix each fail on the wave branch, or write it to `NEXT.md` as a row with its screenshots.
 
-State: landed d36a88ef1 on `claude/ridge-w06` from a885bac1a: table headings in the text font; VID1 to VID5 narrated and the capture fixes; the VAT read pages' sandbox line; the English look pass (424 screenshots, 101 pages) and its fixes; the Welsh look pass (556 screenshots, 49 pages) and its fixes; the dormant step; the harness accounts filing and stop-on-failure; the scene targets and headline placement. Gate running on d36a88ef1 (cloud worker epoch, `claude/epoch-w06-gate`; laptop: docker, content scan, 17 simulator suites). Anvil: the harness layout that records and the book approval date, then its blast radius. Guide frames come from the video-capture.yml run after merge.
+State: gated 300ef3e21. Cloud worker epoch on e6bad32f3: npm test 12,727, mcp 426, browser tests 1,442 of 1,459 (the 16 ctReturnTokenCost failures were the empty approval date, fixed in 300ef3e21 and rerun: 73 passed), prettier, both ESLint ratchets, the 8 generators clean; maven verify and spotless on d36a88ef1 (no Java change since). Laptop: docker, the content scan, 17 simulator suites (companyTaxReturn rerun on the settled tip), the header tests.
 
 ## Waves: spreadsheets
 
@@ -159,6 +159,8 @@ rules (`orient-spreadsheets` first). State: gated 4727bd7eb (npm test: unit and 
 3. The simulator behaviour suites that the wave's rows reach (`npm run
    test:<suite>Behaviour-simulator`), one at a time under `/tmp/submit-simulator.lock`.
 4. An Athena type proof on ci for each new or changed view (read-only; no deployment).
+
+Set branch: `claude/ridge-set` at 300ef3e21 (wave 6's gated tip, so its batch-check is wave 6's gate). The 42 simulator suites run split across cloud workers anvil, bugle, cyclone and dusk (`claude/<codename>-set-sim`); the 37 proxy suites run on the laptop in series (log in the session scratchpad).
 
 **The set branch `claude/ridge-set`**, before the push:
 
