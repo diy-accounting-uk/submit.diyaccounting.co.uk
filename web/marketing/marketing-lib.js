@@ -336,7 +336,8 @@ export function packFiles(pack, company) {
   return files;
 }
 
-const CONTACT_PATTERN = /https?:\/\/|www\.|[\w.+-]+@[\w-]+\.[\w.]+|\b0\d{3}\s?\d{3}\s?\d{4}\b|\+44\s?\d/;
+// A link, an email address, a UK phone number or a +44 number.
+const CONTACT_PATTERNS = [/https?:\/\/|www\./, /[\w.+-]@[\w-]+\.[\w.]/, /\b0\d{3}\s?\d{3}\s?\d{4}\b/, /\+44\s?\d/];
 const CALL_TO_ACTION_PATTERN =
   /\b(start with|try it|try (it )?free|sign up|download (it )?now|buy now|click here|get started|subscribe now)\b/i;
 
@@ -348,34 +349,40 @@ const CALL_TO_ACTION_PATTERN =
 export function packProblems(data) {
   const problems = [];
   for (const pack of data.listingProducts) {
-    for (const field of data.packFields) {
-      const name = `pack ${pack.id}: ${field.id}`;
-      if (field.kind === "text" || field.kind === "list") {
-        const value = pack[field.id];
-        if (value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) {
-          problems.push(`${name} is missing`);
-          continue;
-        }
-        const report = limitReport(field, value);
-        if (!report.fits) problems.push(`${name} is ${report.length} ${report.unit}, outside its target`);
-        for (const limit of report.limits)
-          if (!limit.fits) problems.push(`${name} is ${report.length} ${report.unit}, outside the limit of ${limit.place}`);
-        if (field.noContact && CONTACT_PATTERN.test(value)) problems.push(`${name} holds a link, an email address or a phone number`);
-        if (field.noCallToAction && CALL_TO_ACTION_PATTERN.test(value)) problems.push(`${name} holds a call to action`);
-      } else if (field.kind === "image" && field.id === "screenshots") {
-        const count = pack.screenshots?.length ?? 0;
-        if (count < field.minItems || count > field.maxItems)
-          problems.push(`${name} has ${count}, outside ${field.minItems} to ${field.maxItems}`);
-      } else if (field.kind === "image") {
-        const logos = pack.logos;
-        const has = { logo: logos?.square?.light?.png?.length, logoWide: logos?.wide?.light?.png, icon: logos?.icon }[field.id];
-        if (!has) problems.push(`${name} is missing`);
-      } else if (field.kind === "link") {
-        if (!/^https:\/\//.test(pack.link ?? "")) problems.push(`${name} is not an https link`);
-      }
-    }
+    for (const field of data.packFields) problems.push(...fieldProblems(pack, field, `pack ${pack.id}: ${field.id}`));
   }
   return problems;
+}
+
+function fieldProblems(pack, field, name) {
+  if (field.kind === "text" || field.kind === "list") return textProblems(field, pack[field.id], name);
+  if (field.kind === "image" && field.id === "screenshots") return screenshotProblems(field, pack.screenshots?.length ?? 0, name);
+  if (field.kind === "image") return logoProblems(field, pack.logos, name);
+  if (field.kind === "link" && !/^https:\/\//.test(pack.link ?? "")) return [`${name} is not an https link`];
+  return [];
+}
+
+function textProblems(field, value, name) {
+  if (value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) return [`${name} is missing`];
+  const problems = [];
+  const report = limitReport(field, value);
+  if (!report.fits) problems.push(`${name} is ${report.length} ${report.unit}, outside its target`);
+  for (const limit of report.limits)
+    if (!limit.fits) problems.push(`${name} is ${report.length} ${report.unit}, outside the limit of ${limit.place}`);
+  if (field.noContact && CONTACT_PATTERNS.some((pattern) => pattern.test(value)))
+    problems.push(`${name} holds a link, an email address or a phone number`);
+  if (field.noCallToAction && CALL_TO_ACTION_PATTERN.test(value)) problems.push(`${name} holds a call to action`);
+  return problems;
+}
+
+function screenshotProblems(field, count, name) {
+  if (count < field.minItems || count > field.maxItems) return [`${name} has ${count}, outside ${field.minItems} to ${field.maxItems}`];
+  return [];
+}
+
+function logoProblems(field, logos, name) {
+  const has = { logo: logos?.square?.light?.png?.length, logoWide: logos?.wide?.light?.png, icon: logos?.icon }[field.id];
+  return has ? [] : [`${name} is missing`];
 }
 
 /** The live listings where people can read and leave reviews: the review sites and the citation directories. */

@@ -468,20 +468,19 @@ function copyField(label, value, { link = false, note = null } = {}) {
   return [el("dt", { text: label }), dd];
 }
 
+/** A target or a limit in words: "exactly 10", "5 to 10", "up to 10" or "at least 5". */
+function rangeText(min, max) {
+  if (min !== undefined && max !== undefined) return min === max ? `exactly ${max}` : `${min} to ${max}`;
+  if (max !== undefined) return `up to ${max}`;
+  return `at least ${min}`;
+}
+
 /** The line under a pack text: its length, the pack's target, and each place's limit with whether the text fits. */
 function limitNote(field, value) {
   const report = limitReport(field, value);
   const unit = report.unit === "items" ? "items" : report.unit;
-  const range = (min, max) =>
-    min !== undefined && max !== undefined
-      ? min === max
-        ? `exactly ${max}`
-        : `${min} to ${max}`
-      : max !== undefined
-        ? `up to ${max}`
-        : `at least ${min}`;
   const note = el("p", { "class": "field-limits", "data-fits": String(report.fits && report.limits.every((l) => l.fits)) });
-  const target = report.min !== undefined || report.max !== undefined ? `, target ${range(report.min, report.max)}` : "";
+  const target = report.min !== undefined || report.max !== undefined ? `, target ${rangeText(report.min, report.max)}` : "";
   note.append(
     el("span", { class: "field-length", text: `${report.length} ${unit}${target}${report.fits ? "" : ", outside the target"}.` }),
   );
@@ -493,7 +492,7 @@ function limitNote(field, value) {
       el("span", {
         "class": "field-limit",
         "data-fits": String(limit.fits),
-        "text": `${limit.place}, ${range(limit.min, limit.max)}${unconfirmed}: ${mark}.`,
+        "text": `${limit.place}, ${rangeText(limit.min, limit.max)}${unconfirmed}: ${mark}.`,
       }),
     );
   }
@@ -690,8 +689,10 @@ function packBlock(pack) {
   const fields = el("dl", { class: "listing-fields" });
   const data = state.data;
   const add = (label, value, options) => fields.append(...copyField(label, value, options));
-  const measured = (label, id, value = pack[id]) =>
-    add(label, Array.isArray(value) ? value.join(id === "features" ? "\n" : ", ") : value, { note: limitNote(fieldOf(data, id), value) });
+  const measured = (label, id, value = pack[id]) => {
+    const separator = id === "features" ? "\n" : ", ";
+    add(label, Array.isArray(value) ? value.join(separator) : value, { note: limitNote(fieldOf(data, id), value) });
+  };
   const zipStatus = el("span", { role: "status", class: "copy-status" });
   const zipButton = el("button", { type: "button", class: "pack-zip", text: `Download the ${packTitle(pack)} pack as one zip` });
   zipButton.addEventListener("click", () => downloadPack(pack, data, zipStatus));
