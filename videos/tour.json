@@ -61,16 +61,13 @@
         },
         {
           "action": "point",
-          "target": {
-            "role": "heading",
-            "name": "Activities"
-          },
+          "target": "#dynamicActivities",
           "dwellMs": 300
         },
         {
           "action": "scroll",
           "target": {
-            "text": "reviews on Google"
+            "text": "reviews of DIY Accounting on Google"
           },
           "caption": "DIY Accounting has run VAT submissions for years.",
           "headline": "Years of VAT submissions",

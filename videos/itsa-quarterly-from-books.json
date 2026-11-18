@@ -61,10 +61,7 @@
         },
         {
           "action": "point",
-          "target": {
-            "role": "heading",
-            "name": "Activities"
-          },
+          "target": "#dynamicActivities",
           "dwellMs": 300
         },
         {
