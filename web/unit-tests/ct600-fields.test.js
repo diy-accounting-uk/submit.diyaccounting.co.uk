@@ -189,6 +189,7 @@ describe("the precision-code-ltd book filling the form", () => {
     values.companyType = "no";
     values.loansMade = "no";
     values.declarantStatus = "Director";
+    values.directorDateApproved = "2026-09-15";
     values.declarationAccepted = true;
     for (const { id } of STATEMENT_FIELDS) values[id] = true;
     return values;
@@ -209,7 +210,6 @@ describe("the precision-code-ltd book filling the form", () => {
       "directors",
       "averageEmployees",
       "directorName",
-      "directorDateApproved",
       "declarantName",
       "depreciation",
       "annualInvestmentAllowance",
@@ -219,6 +219,16 @@ describe("the precision-code-ltd book filling the form", () => {
     }
     expect(filled.get("periodStart")).toBe("2025-04-01");
     expect(filled.get("includeFixedAssetNote")).toBe(true);
+  });
+
+  test("leaves the approval date empty, since a book holds none, and the form's check asks for it", () => {
+    const filled = new Map(bookEntries);
+    expect(filled.has("directorDateApproved")).toBe(false);
+    const values = valuesFromEntries(bookEntries);
+    delete values.directorDateApproved;
+    expect(formProblems(values)).toContainEqual(
+      expect.objectContaining({ target: "directorDateApproved", message: "Enter the date the accounts were approved" }),
+    );
   });
 
   test("the filled form passes every check and works the same boxes the book does", () => {
@@ -284,6 +294,7 @@ describe("the form's own checks", () => {
   function complete() {
     const values = Object.fromEntries(bookEntries);
     Object.assign(values, {
+      directorDateApproved: "2026-09-15",
       utr: "8596148860",
       companyType: "no",
       loansMade: "no",
@@ -544,6 +555,7 @@ describe("a micro-entity's accounts", () => {
     const values = Object.fromEntries(microBookEntries);
     values.accountsRegime = values.regimeMicro === true ? "micro" : "small";
     Object.assign(values, {
+      directorDateApproved: "2026-09-15",
       utr: "8596148860",
       companyType: "no",
       loansMade: "no",
@@ -647,6 +659,7 @@ describe("a period of account longer than 12 months", () => {
   function longValues(extra = {}) {
     const values = Object.fromEntries(bookEntries);
     Object.assign(values, {
+      directorDateApproved: "2026-09-15",
       utr: "8596148860",
       companyType: "no",
       periodStart: "2025-01-01",

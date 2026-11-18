@@ -242,6 +242,12 @@
           "instruction": "Read the status line that says the accounts and tax figures are filled from the book."
         },
         {
+          "action": "fill",
+          "target": "#directorDateApproved",
+          "value": "2026-09-15",
+          "note": "A book holds no approval date; the step has no caption so the guide keeps the published video's frames."
+        },
+        {
           "action": "scroll",
           "target": "#microCurrentTurnover"
         },

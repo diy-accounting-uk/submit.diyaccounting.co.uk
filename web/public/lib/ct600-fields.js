@@ -2047,8 +2047,8 @@ function accountsEntries(accounts) {
 
 /**
  * Every form value a book supplies, as [element id, value] pairs: the figures the model reads
- * from the book, the accounts, the trade name and the signer. The company's UTR and the
- * statements and declaration stay the customer's to give.
+ * from the book, the accounts, the trade name and the signer. The company's UTR, the date the
+ * accounts were approved, and the statements and declaration stay the customer's to give.
  * The book's micro-entity accounts fill the micro fields too, and the size of the company picks the
  * regime the form opens on.
  * @param {object} figures - ct600FiguresFromBook output
@@ -2072,7 +2072,8 @@ export function formEntriesFromBook(figures, accounts, microAccounts) {
       periodStart: accounts.periodStart,
       periodEnd: accounts.periodEnd,
       averageEmployees: accounts.averageNumberOfEmployees,
-      director: { name: accounts.directorName, dateApproved: accounts.periodEnd },
+      // A book holds no approval date, so the field stays empty and the form's check asks for it.
+      director: { name: accounts.directorName },
       smallCompany: {
         principalActivity: accounts.tradeName,
         accountingPolicies: "The accounts are prepared under FRS 102 section 1A.",

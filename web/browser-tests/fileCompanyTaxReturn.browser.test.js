@@ -247,6 +247,7 @@ test.describe("File Company Tax Return entry form", () => {
 
   async function completeTheAnswersTheBookLeaves(page, { regime = "small" } = {}) {
     await page.locator("#utr").fill("8596148860");
+    await page.locator("#directorDateApproved").fill("2026-09-15");
     for (const id of [
       "statementSection477Exemption",
       "statementMembersNotRequiredAudit",
@@ -332,13 +333,12 @@ test.describe("File Company Tax Return entry form", () => {
       "directors",
       "averageEmployees",
       "directorName",
-      "directorDateApproved",
       "declarantName",
       "declarantStatus",
       ...CT600_FORM_FIELDS.filter((field) => ["whole-pounds", "pounds-and-pence"].includes(field.type) && !field.optional).map((f) => f.id),
       ...accountAmountIds().filter((id) => id.startsWith("current") && !OPTIONAL_CREDITOR_LINES.some((line) => id.endsWith(line))),
       ...FIXED_ASSET_CLASSES.flatMap(([className]) => FIXED_ASSET_FIELDS.map(([field]) => noteId(className, field))),
-      ...ACCOUNTS_TEXT_FIELDS.map((field) => field.id).filter((id) => !id.startsWith("directorsAdvance")),
+      ...ACCOUNTS_TEXT_FIELDS.map((field) => field.id).filter((id) => !id.startsWith("directorsAdvance") && id !== "directorDateApproved"),
     ];
     for (const id of new Set(supplied)) {
       await expect(page.locator(`#${id}`), id).not.toHaveValue("");
@@ -346,6 +346,7 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#periodStart")).toHaveValue("2025-04-01");
     await expect(page.locator("#periodEnd")).toHaveValue("2026-03-31");
     await expect(page.locator("#currentTurnover")).toHaveValue("341283");
+    await expect(page.locator("#directorDateApproved"), "a book holds no approval date").toHaveValue("");
     await expect(page.locator("#includeFixedAssetNote")).toBeChecked();
     await expect(page.locator("#fixedAssetNoteFields")).toBeVisible();
     await expect(page.locator("#workedTaxRows")).toContainText("Box 440");
@@ -1595,6 +1596,7 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#gatewayWhose")).toContainText("practice's own agent");
 
     await dropBook(page);
+    await page.locator("#directorDateApproved").fill("2026-09-15");
     for (const id of [
       "statementSection477Exemption",
       "statementMembersNotRequiredAudit",

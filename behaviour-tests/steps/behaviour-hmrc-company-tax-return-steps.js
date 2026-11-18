@@ -59,7 +59,7 @@ export async function fillInCompanyTaxReturnForm(
   { utr, declarantName, regime = "small", utrIsSecret = false, bookDirectory = FIXTURE_BOOK_DIRECTORY, directorsAdvanceTerms },
   screenshotPath = defaultScreenshotPath,
 ) {
-  await test.step(`The user enters the UTR, drops the company's book, keeps the ${regime} accounts, and enters the declarant, the statements and the declaration`, async () => {
+  await test.step(`The user enters the UTR, drops the company's book, keeps the ${regime} accounts, and enters the approval date, the declarant, the statements and the declaration`, async () => {
     if (utrIsSecret) await page.locator("#utr").fill(utr);
     else await loggedFill(page, "#utr", utr, "UTR");
     await expect(page.locator("#booksImportFile")).toBeAttached();
@@ -71,6 +71,8 @@ export async function fillInCompanyTaxReturnForm(
     await expect(page.locator("#booksImportStatus")).toContainText("Filled", { timeout: 60000 });
     await expect(page.locator("#regimeMicro")).toBeChecked();
     await page.check(regime === "micro" ? "#regimeMicro" : "#regimeSmall");
+    // A book holds no approval date, so the customer gives it.
+    await loggedFill(page, "#directorDateApproved", "2026-09-15", "Date the directors approved the accounts");
     if (directorsAdvanceTerms) await loggedFill(page, "#directorsAdvanceTerms", directorsAdvanceTerms, "Terms of the director's advance");
     await loggedFill(page, "#declarantName", declarantName, "Declarant name");
     await page.check("#statementSection477Exemption");

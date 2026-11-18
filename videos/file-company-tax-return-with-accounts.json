@@ -256,11 +256,7 @@
           "action": "fill",
           "target": "#directorDateApproved",
           "value": "2026-09-15",
-          "scrollTo": "#directorName",
-          "caption": "A book holds no approval date, so give the day the directors approved the accounts.",
-          "headline": "Date the accounts were approved",
-          "keyWord": "approved",
-          "instruction": "Enter the date the directors approved the accounts, after the end of the period."
+          "note": "A book holds no approval date; the step has no caption so the guide keeps the published video's frames."
         },
         {
           "action": "scroll",
