@@ -22,7 +22,7 @@ the set, with no deployment of its own.
 
 ## Status
 
-approved 2026-11-17 (the operator's `/iterate`). Waves 1 to 4 gated; wave 5 building.
+approved 2026-11-17 (the operator's `/iterate`). Waves 1 to 6 gated; `claude/ridge-set` at 300ef3e21, its set gate running.
 
 ## The goal
 

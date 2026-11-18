@@ -26,7 +26,7 @@ only when the operator boards it.
 
 ## Status
 
-Researched 2026-11-17. The first work repository, `diy-accounting-uk/submit-cloud-anvil`, exists with Actions off. The `/new-cloud-session` and `/collaborate` skills are written; steps 3 to 5, 7 to 9 and the first trial are not started.
+Five private work repositories (anvil, bugle, cyclone, dusk, epoch) run as workers, with Actions off, through the `/new-cloud-session` and `/collaborate` skills. They have built rows and run the wave 4 to wave 6 gates and the ridge set gate. CW1 (credentials for a worker) is merged and proved; CW2 (the relay) is built on the ridge set and is proved after its ci deploy.
 
 ## The goal
 
@@ -158,7 +158,7 @@ Rejected for now:
 4. Commit before a long gate. A reclaimed VM loses uncommitted work.
 5. The fallback loop of the channel table, used only when a message does not arrive.
 
-## Signed and encrypted messages without polling (design, not built)
+## Signed and encrypted messages without polling (built as CW2)
 
 The aim: a worker tells the coordinator something the moment it happens, with no approval click
 and no poll, and nobody but the two ends can read or forge it.
@@ -209,7 +209,7 @@ The operator chose the self-hosted relay (2026-11-18), boarded as CW2. Nisshi (a
 Until one is built, the channel is git: the worker pushes, and the coordinator's Monitor polls
 `git ls-remote` every 2 minutes.
 
-## AWS credentials for a worker (design, not built)
+## AWS credentials for a worker (built as CW1)
 
 A worker gets short-lived AWS credentials that only it can read, with no secret stored in the
 environment and nothing readable in a public repository.
