@@ -12588,7 +12588,7 @@ cy = '''Rhowch y cyfeiriad e-bost cofrestredig newydd'''
 
 [strings."ch.email.format"]
 hash = "fd4bf08a7550"
-cy = '''Rhowch gyfeiriad e-bost yn y fformat enw@enghraifft.com'''
+cy = '''Rhowch gyfeiriad e-bost yn y fformat enw@example.com'''
 
 [strings."ch.email.confirm-statement"]
 hash = "434f3ed7d2e7"

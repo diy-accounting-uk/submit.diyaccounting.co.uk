@@ -842,7 +842,7 @@ window.WELSH_TEXT = {
   "ch.email.confirm-statement": "Cadarnhewch y datganiad cyfeiriad e-bost priodol o dan adran 88A(2)",
   "ch.email.eligibility-failed": "Methwyd â gwirio a yw’r cwmni’n gymwys i newid ei gyfeiriad e-bost cofrestredig.",
   "ch.email.enter-address": "Rhowch y cyfeiriad e-bost cofrestredig newydd",
-  "ch.email.format": "Rhowch gyfeiriad e-bost yn y fformat enw@enghraifft.com",
+  "ch.email.format": "Rhowch gyfeiriad e-bost yn y fformat enw@example.com",
   "ch.email.no-address-yet":
     "Nid oes gan y cwmni hwn gyfeiriad e-bost cofrestredig eto. Mae’r ffeilio hwn yn newid cyfeiriad sy’n bodoli; nid yw’n gosod y cyntaf.",
   "ch.email.not-eligible": "Nid yw’r cwmni hwn yn gymwys i newid ei gyfeiriad e-bost cofrestredig ({code}).",
