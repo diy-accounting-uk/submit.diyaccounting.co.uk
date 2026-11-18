@@ -1809,9 +1809,11 @@ function mountBooksCard() {
 
 async function loadPracticeClients() {
   if (practiceClients) return;
+  // A signed-out visitor has no practice; asking the API without a session only earns a 401.
+  const idToken = localStorage.getItem("cognitoIdToken");
+  if (!idToken) return;
   try {
-    const idToken = localStorage.getItem("cognitoIdToken");
-    const response = await fetch("/api/v1/practice/clients", idToken ? { headers: { Authorization: `Bearer ${idToken}` } } : {});
+    const response = await fetch("/api/v1/practice/clients", { headers: { Authorization: `Bearer ${idToken}` } });
     if (!response.ok) return;
     const body = await response.json();
     if (!Array.isArray(body.clients)) return;
