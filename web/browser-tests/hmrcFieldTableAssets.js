@@ -100,6 +100,7 @@ export function serveCarriedIdentifiers(page) {
 // The real page script of any page under web/public, for a test that serves the page HTML from disk.
 export async function servePageScripts(page) {
   await serveFile(page, "**/lib/hmrc-display-format.js", "lib/hmrc-display-format.js", "application/javascript");
+  await serveFile(page, "**/lib/hmrc-sandbox-status.js", "lib/hmrc-sandbox-status.js", "application/javascript");
   await serveFile(page, "**/lib/pending-request.js", "lib/pending-request.js", "application/javascript");
   await serveFile(page, "**/lib/accounts-form-sections.js", "lib/accounts-form-sections.js", "application/javascript");
   await serveFile(page, "**/lib/companies-house-labels.js", "lib/companies-house-labels.js", "application/javascript");

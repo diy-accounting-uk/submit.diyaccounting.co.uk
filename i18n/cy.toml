@@ -3261,6 +3261,11 @@ cy = '''Nid yw CThEF yn rhestru unrhyw gyfnodau TAW agored ar gyfer y rhif hwn. 
 hash = "ca90cd7ba19f"
 cy = '''Nid oedd modd darllen rhestr CThEF o gyfnodau TAW agored. Nodwch y dyddiadau isod.'''
 
+# The VAT read pages' sandbox line; built from the submit page's sandbox line above (no HMRC Welsh found).
+[strings."vat-read.status-sandbox-text"]
+hash = "95aade93fc68"
+cy = '''Mae hyn yn darllen gwasanaeth prawf CThEF, nid eich cofnodion go iawn.'''
+
 [strings."vat-submit.status-sandbox"]
 hash = "983109fd7107"
 cy = '''Statws: amgylchedd prawf (sandbox).'''

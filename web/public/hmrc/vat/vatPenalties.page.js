@@ -63,6 +63,7 @@ function initializePage() {
 
   // Show synthetic indicator if in synthetic mode (determined by bundle qualifiers via sessionStorage)
   if (hmrcAccount === "synthetic") {
+    window.showHmrcSandboxStatus(siteText("vat-read.status-sandbox-text", "This reads HMRC's test service, not your real records."));
     const syntheticIndicator = document.getElementById("syntheticIndicator");
     if (syntheticIndicator) {
       syntheticIndicator.classList.add("visible");

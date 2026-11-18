@@ -748,22 +748,6 @@ async function loadOpenObligations() {
   }
 }
 
-// A synthetic account sends nothing to HMRC's live records, so the status line says sandbox in place of production.
-function showSandboxStatus() {
-  const banner = document.querySelector("p.hint[data-feature-status]");
-  if (!banner) return;
-  banner.setAttribute("data-feature-status", "sandbox");
-  const assistNote = document.getElementById("hmrcAssistStatusNote");
-  banner.replaceChildren();
-  const strong = document.createElement("strong");
-  strong.textContent = siteText("vat-submit.status-sandbox", "Status: sandbox.");
-  banner.append(
-    strong,
-    " " + siteText("vat-submit.status-sandbox-text", "Returns you submit here go to HMRC's test service and reach no real record.") + " ",
-  );
-  if (assistNote) banner.append(assistNote);
-}
-
 async function connectHmrc() {
   try {
     const hmrcAccount = sessionStorage.getItem("hmrcAccount");
@@ -816,7 +800,10 @@ async function initializePage() {
 
   // Show synthetic indicator if in synthetic mode (determined by bundle qualifiers via sessionStorage)
   if (hmrcAccount === "synthetic") {
-    showSandboxStatus();
+    window.showHmrcSandboxStatus(
+      siteText("vat-submit.status-sandbox-text", "Returns you submit here go to HMRC's test service and reach no real record."),
+      document.getElementById("hmrcAssistStatusNote"),
+    );
     const syntheticIndicator = document.getElementById("syntheticIndicator");
     if (syntheticIndicator) {
       syntheticIndicator.classList.add("visible");

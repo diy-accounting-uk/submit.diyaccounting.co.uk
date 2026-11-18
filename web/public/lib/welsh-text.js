@@ -1692,6 +1692,7 @@ window.WELSH_TEXT = {
   "vat-penalties.retrieved": "Cafwyd eich cosbau TAW.",
   "vat-penalties.retrieving": "Yn cael eich cosbau TAW...",
   "vat-penalties.threshold": "Trothwy pwyntiau cosb",
+  "vat-read.status-sandbox-text": "Mae hyn yn darllen gwasanaeth prawf CThEF, nid eich cofnodion go iawn.",
   "vat-submit.assist-unavailable": "Nid yw adborth HMRC Assist ar gael ar hyn o bryd. Gallwch gyflwyno’ch Ffurflen TAW o hyd.",
   "vat-submit.box-name-1": "y TAW sy’n ddyledus ar werthiannau",
   "vat-submit.box-name-2": "y TAW sy’n ddyledus ar gaffaeliadau",
