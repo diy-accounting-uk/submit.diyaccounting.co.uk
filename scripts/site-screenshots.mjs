@@ -20,13 +20,20 @@
 // target/site-screenshots/<page>/<width>-<theme>[-<state>].png with an index.json that lists
 // every file and any console error the page logged.
 //
+// --exclude <substring>[,<substring>] drops every page whose path contains one of the parts
+// (--exclude cy/ for the English pages only). It applies after --only.
+//
+// Before each full-page capture the page scrolls to the bottom, its lazy images are made eager,
+// and the capture waits until every image has loaded or failed, so pictures below the first
+// screen are in the frame.
+//
 // --signed-in captures every selected page after the mock sign-in, not only the ones that redirect.
 //
 // --scene <name>[,<name>] captures only the named signed-in scenes (see SCENES) and writes
 // <out>/<name>/<width>-<theme>.png, in place of the page sweep. A scene answers one API call with a
 // fixed, realistic body, for a state no seeded simulator account reaches.
 //
-// Usage: node scripts/site-screenshots.mjs [--base-url <url>] [--out <dir>] [--only <substring>[,<substring>]] [--signed-in] [--scene <name>[,<name>]]
+// Usage: node scripts/site-screenshots.mjs [--base-url <url>] [--out <dir>] [--only <substring>[,<substring>]] [--exclude <substring>[,<substring>]] [--signed-in] [--scene <name>[,<name>]]
 
 import { chromium } from "playwright";
 import { spawn } from "node:child_process";
@@ -55,6 +62,32 @@ export function discoverPages(publicDir = PUBLIC_DIR) {
   };
   walk(publicDir);
   return pages.sort();
+}
+
+export function selectPages(pages, { only = null, exclude = null } = {}) {
+  const parts = (list) => list.split(",").filter((part) => part !== "");
+  let selected = pages;
+  if (only) selected = selected.filter((p) => parts(only).some((part) => p.includes(part)));
+  if (exclude) selected = selected.filter((p) => !parts(exclude).some((part) => p.includes(part)));
+  return selected;
+}
+
+// Scrolls to the bottom so scroll-driven content renders, makes every lazy image eager, waits
+// until each image has loaded or failed (a failed one is complete too), then returns to the top.
+export async function loadAllImages(page, { timeoutMs = 15000 } = {}) {
+  await page.evaluate(async () => {
+    const step = Math.max(200, Math.floor(window.innerHeight * 0.8));
+    for (let y = 0; y < document.documentElement.scrollHeight; y += step) {
+      window.scrollTo(0, y);
+      await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+    }
+    window.scrollTo(0, document.documentElement.scrollHeight);
+    for (const image of document.querySelectorAll('img[loading="lazy"]')) image.loading = "eager";
+  });
+  await page
+    .waitForFunction(() => [...document.images].every((image) => image.complete), null, { timeout: timeoutMs })
+    .catch(() => {});
+  await page.evaluate(() => window.scrollTo(0, 0));
 }
 
 export function screenshotName(width, theme, state) {
@@ -137,11 +170,12 @@ export const SCENES = {
   },
 };
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const args = {
     baseUrl: process.env.SITE_SCREENSHOTS_BASE_URL || null,
     out: "target/site-screenshots",
     only: null,
+    exclude: null,
     signedIn: false,
     scene: null,
   };
@@ -149,6 +183,7 @@ function parseArgs(argv) {
     if (argv[i] === "--base-url") args.baseUrl = argv[++i];
     else if (argv[i] === "--out") args.out = argv[++i];
     else if (argv[i] === "--only") args.only = argv[++i];
+    else if (argv[i] === "--exclude") args.exclude = argv[++i];
     else if (argv[i] === "--signed-in") args.signedIn = true;
     else if (argv[i] === "--scene") args.scene = argv[++i];
   }
@@ -257,6 +292,7 @@ async function capturePage(browser, { pageOrigin, outDir, page: pagePath, storag
   const shoot = async (state) => {
     const file = path.join(outDir, pagePath, screenshotName(width, theme, state));
     fs.mkdirSync(path.dirname(file), { recursive: true });
+    await loadAllImages(page);
     await page.screenshot({ path: file, fullPage: true });
     entries.push({
       page: pagePath,
@@ -322,8 +358,7 @@ async function captureScene(browser, { pageOrigin, outDir, name, scene, storageS
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const outDir = path.resolve(args.out);
-  let pages = discoverPages();
-  if (args.only) pages = pages.filter((p) => args.only.split(",").some((part) => p.includes(part)));
+  const pages = selectPages(discoverPages(), args);
 
   let simulator = null;
   let browser = null;
