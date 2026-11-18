@@ -1165,7 +1165,7 @@ features = [
   "Keeps each filing and Companies House's answer with the account",
 ]
 integrations = ["Companies House filing", "Companies House public data", "Stripe payments"]
-videos = ["company-lookup", "change-registered-office", "change-registered-email", "file-micro-entity-accounts", "file-small-company-accounts", "file-confirmation-statement"]
+videos = ["company-lookup", "change-registered-office", "change-registered-email", "file-micro-entity-accounts", "short-file-micro-entity-accounts", "file-small-company-accounts", "file-confirmation-statement"]
 
   [[listingProduct.screenshots]]
   id = "lookup"
@@ -1235,7 +1235,7 @@ features = [
   "Free to download, with step-by-step guides",
 ]
 integrations = ["Microsoft Excel", "OpenOffice Calc", "DIY Accounting Submit", "DIYA-GL"]
-videos = ["accounting-spreadsheet-profit"]
+videos = ["accounting-spreadsheet-profit", "short-spreadsheets"]
 
   [[listingProduct.screenshots]]
   id = "home"
@@ -1294,7 +1294,7 @@ features = [
   "Fixed assets sheet",
 ]
 integrations = ["Microsoft Excel", "OpenOffice Calc", "DIYA-GL"]
-videos = ["accounting-spreadsheet-profit"]
+videos = ["accounting-spreadsheet-profit", "short-spreadsheets"]
 
   [[listingProduct.screenshots]]
   id = "sales"
@@ -1697,6 +1697,8 @@ videos = ["tour"]
 "accounting-spreadsheet-profit" = 270
 "accounting-diya-gl-profit" = 223
 "mcp-diya-gl" = 106
+"short-file-micro-entity-accounts" = 101
+"short-spreadsheets" = 113
 
 [[listing]]
 id = "capterra"
