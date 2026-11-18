@@ -1813,7 +1813,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** accounts test or live submissions are about to go to Companies House, or the operator asks for a walk-through of the review results.
 - **Does:** The companies-house-review skill reads the XML team's emails and checks the sources for newer versions. companies-house-review.mjs rebuilds each accounts case in the test-service fixture as filed. It picks the example of the same type from an Accounts Data Product zip. It renders both in Chromium and runs the test validator. It judges each criterion and writes findings.md and walkthrough.md under target/companies-house-review/<date>/.
-- **Run:** `/companies-house-review`; `node scripts/companies-house-review.mjs --adp-zip <Accounts_Bulk_Data-YYYY-MM-DD.zip> --run <case>=<run id>... [--skip-validator]`
+- **Run:** `/companies-house-review`; `node scripts/companies-house-review.mjs --adp-zip <Accounts_Bulk_Data-YYYY-MM-DD.zip> --run <case>=<run id>... [--skip-validator] [--fixture <cases.json>] [--case <name>]...`
 - **Entry:** `.claude/skills/companies-house-review/SKILL.md`; `scripts/companies-house-review.mjs:main`
 - **Files:** .claude/skills/companies-house-review/SKILL.md, scripts/companies-house-review.mjs, scripts/lib/companiesHouseReviewReconcile.js, scripts/lib/companiesHouseReviewCriteria.js, scripts/lib/companiesHouseReviewPage.js, scripts/fixtures/companies-house-test-service-cases.json
 - **Keywords:** companies house, xml gateway, accounts review, ixbrl, accounts data product, example accounts, filleted, micro-entity, dormant, findings, walkthrough
