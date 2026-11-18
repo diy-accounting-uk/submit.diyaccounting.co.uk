@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId"));
@@ -22,7 +28,9 @@ function updateSubmissionModelUI() {
   const taxYearValue = document.getElementById("taxYear").value.trim();
   const isCumulative = isCumulativeTaxYear(taxYearValue);
   document.getElementById("cumulativeListNote").style.display = isCumulative ? "block" : "none";
-  document.getElementById("retrieveBtn").textContent = isCumulative ? "Show current total" : "List period summaries";
+  document.getElementById("retrieveBtn").textContent = isCumulative
+    ? siteText("itsa.show-current-total", "Show current total")
+    : siteText("itsa.list-period-summaries", "List period summaries");
 }
 
 function hideSearchCriteria() {
@@ -115,14 +123,16 @@ async function fetchPeriods(nino, businessId, taxYear, testScenario, runFraudPre
       ...requestHeaders,
       "x-wait-time-ms": "0",
     },
-    pollPendingMessage: "Still processing...",
-    pollSuccessMessage: "Period summaries retrieved.",
-    pollErrorMessage: "Failed to retrieve period summaries.",
+    pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+    pollSuccessMessage: siteText("itsa.periods-retrieved", "Period summaries retrieved."),
+    pollErrorMessage: siteText("itsa.periods-retrieve-failed", "Failed to retrieve period summaries."),
   });
 
   const result = await response.json();
   if (!response.ok) {
-    const error = new Error(hmrcErrorMessage(result, "Failed to retrieve period summaries"));
+    const error = new Error(
+      hmrcErrorMessage(result, siteText("itsa.periods-retrieve-failed-fallback", "Failed to retrieve period summaries")),
+    );
     error.status = response.status;
     throw error;
   }
@@ -154,14 +164,16 @@ async function fetchCurrentTotal(nino, businessId, taxYear, testScenario, runFra
       ...requestHeaders,
       "x-wait-time-ms": "0",
     },
-    pollPendingMessage: "Still processing...",
-    pollSuccessMessage: "Current total retrieved.",
-    pollErrorMessage: "Failed to retrieve the current total.",
+    pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+    pollSuccessMessage: siteText("itsa.current-total-retrieved", "Current total retrieved."),
+    pollErrorMessage: siteText("itsa.current-total-retrieve-failed", "Failed to retrieve the current total."),
   });
 
   const result = await response.json();
   if (!response.ok) {
-    const error = new Error(hmrcErrorMessage(result, "Failed to retrieve the current total"));
+    const error = new Error(
+      hmrcErrorMessage(result, siteText("itsa.current-total-retrieve-failed-fallback", "Failed to retrieve the current total")),
+    );
     error.status = response.status;
     throw error;
   }
@@ -178,7 +190,7 @@ async function continuePeriodsRetrieval() {
     hideSearchCriteria();
     showLoading();
     hideStatus();
-    showStatus("Retrieving period summaries...", "info");
+    showStatus(siteText("itsa.periods-retrieving", "Retrieving period summaries..."), "info");
 
     if (isCumulativeTaxYear(pendingRequest.taxYear)) {
       const result = await fetchCurrentTotal(
@@ -210,9 +222,12 @@ async function continuePeriodsRetrieval() {
   } catch (error) {
     if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
-      showStatus("Access token expired. Please re-authenticate.", "error");
+      showStatus(siteText("itsa.token-expired-reauth", "Access token expired. Please re-authenticate."), "error");
     } else {
-      showStatus(`Failed to retrieve period summaries: ${error.message}`, "error");
+      showStatus(
+        siteText("itsa.periods-retrieve-failed-reason", "Failed to retrieve period summaries: {reason}", { reason: error.message }),
+        "error",
+      );
     }
     showSearchCriteria();
     sessionStorage.removeItem("pendingSelfEmploymentPeriodsRequest");
@@ -246,7 +261,7 @@ async function handleFormSubmission(event) {
     }
     try {
       showLoading();
-      showStatus("Initiating HMRC authentication...", "info");
+      showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
 
       const state = generateRandomState();
       const requestData = { nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation };
@@ -262,21 +277,24 @@ async function handleFormSubmission(event) {
 
       const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
 
-      showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+      showStatus(
+        siteText("widget.hmrc-auth-redirecting", "Redirecting to HMRC for authentication at {url}...", { url: authResponseUrl }),
+        "info",
+      );
 
       try {
         window.__correlation?.prepareRedirect?.();
       } catch {}
       window.location.href = authResponseUrl;
     } catch (error) {
-      showStatus(`Authentication failed: ${error.message}`, "error");
+      showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
       hideLoading();
     }
   } else {
     try {
       showLoading();
       hideStatus();
-      showStatus("Retrieving period summaries...", "info");
+      showStatus(siteText("itsa.periods-retrieving", "Retrieving period summaries..."), "info");
 
       if (isCumulativeTaxYear(taxYear)) {
         const result = await fetchCurrentTotal(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
@@ -290,12 +308,15 @@ async function handleFormSubmission(event) {
     } catch (error) {
       if (error.status === 401) {
         window.hmrcScopeCheck.clearHmrcToken();
-        showStatus("Access token expired. Please try again.", "error");
+        showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
       } else if (error.status === 404 && isCumulativeTaxYear(taxYear)) {
         displayCurrentTotal(null);
         document.getElementById("periodsResults").style.display = "block";
       } else {
-        showStatus(`Failed to retrieve period summaries: ${error.message}`, "error");
+        showStatus(
+          siteText("itsa.periods-retrieve-failed-reason", "Failed to retrieve period summaries: {reason}", { reason: error.message }),
+          "error",
+        );
       }
     } finally {
       hideLoading();
@@ -307,24 +328,41 @@ async function handleFormSubmission(event) {
 function usePeriod(periodId) {
   window.CarriedIdentifiers.remember("periodId", periodId);
   document.getElementById("periodNextSteps").hidden = false;
-  showStatus(`Period ${periodId} is chosen. View it or amend it with the links below the list.`, "info");
+  showStatus(
+    siteText("itsa.period-chosen", "Period {id} is chosen. View it or amend it with the links below the list.", { id: periodId }),
+    "info",
+  );
+}
+
+function noDataLine(text) {
+  const line = document.createElement("p");
+  line.className = "no-data";
+  line.textContent = text;
+  return line;
 }
 
 function displayPeriods(periods) {
   const tableContainer = document.getElementById("periodsTable");
   if (!periods || periods.length === 0) {
-    tableContainer.innerHTML = '<p class="no-data">No period summaries found for the specified business and tax year.</p>';
+    tableContainer.replaceChildren(
+      noDataLine(siteText("itsa.periods-none", "No period summaries found for the specified business and tax year.")),
+    );
     return;
   }
 
   window.HmrcFieldTable.mountResultsTable(
     tableContainer,
-    [{ label: "Period ID" }, { label: "Start date" }, { label: "End date" }, { label: "Next step", kind: "action" }],
+    [
+      { label: siteText("itsa.period-id", "Period ID") },
+      { label: siteText("itsa.start-date", "Start date") },
+      { label: siteText("itsa.end-date", "End date") },
+      { label: siteText("itsa.next-step", "Next step"), kind: "action" },
+    ],
     periods.map((period) => [
       period.periodId,
       period.periodStartDate,
       period.periodEndDate,
-      { label: "Use this period", onClick: () => usePeriod(period.periodId) },
+      { label: siteText("itsa.use-this-period", "Use this period"), onClick: () => usePeriod(period.periodId) },
     ]),
   );
 }
@@ -336,17 +374,19 @@ function displayCurrentTotal(periodSummary) {
   const expenses = periodSummary?.periodExpenses || {};
 
   if (!periodSummary) {
-    tableContainer.innerHTML = '<p class="no-data">HMRC has no total on file yet for this tax year.</p>';
+    tableContainer.replaceChildren(
+      noDataLine(siteText("itsa-se-amend.current-total-none", "HMRC has no total on file yet for this tax year.")),
+    );
     return;
   }
 
   window.HmrcFieldTable.mountResultsTable(
     tableContainer,
     [
-      { label: "Reported to" },
-      { label: "Turnover (year to date)", kind: "money" },
-      { label: "Other income (year to date)", kind: "money" },
-      { label: "Cost of goods (year to date)", kind: "money" },
+      { label: siteText("itsa.reported-to", "Reported to") },
+      { label: siteText("itsa.turnover-ytd", "Turnover (year to date)"), kind: "money" },
+      { label: siteText("itsa.other-income-ytd", "Other income (year to date)"), kind: "money" },
+      { label: siteText("itsa.cost-of-goods-ytd", "Cost of goods (year to date)"), kind: "money" },
     ],
     [[dates.periodEndDate, income.turnover, income.other, expenses.costOfGoods]],
   );

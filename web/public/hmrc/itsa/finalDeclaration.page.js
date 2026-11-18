@@ -3,6 +3,12 @@
 
 import { calculationCopyHtml, declarationCopyHtml, mountCopy, formatLongDate, businessLabel } from "../../lib/itsa-calculation-record.js";
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("taxYear", document.getElementById("taxYear"));
@@ -79,13 +85,13 @@ const TAX_BREAKDOWN_VALUE_IDS = {
 };
 
 const CALCULATION_LINKS = [
-  { href: "taxCalculation.html", text: "Calculate again" },
-  { href: "lossesAndClaims.html", text: "Check your losses and claims" },
+  { href: "taxCalculation.html", text: siteText("itsa-final.calculate-again", "Calculate again") },
+  { href: "lossesAndClaims.html", text: siteText("itsa.link-losses", "Check your losses and claims") },
 ];
 
 const DECLARATION_LINKS = [
-  { href: "../receipt/receipts.html", text: "Your receipts" },
-  { href: "dashboard.html", text: "Back to Income Tax" },
+  { href: "../receipt/receipts.html", text: siteText("itsa-final.your-receipts", "Your receipts") },
+  { href: "dashboard.html", text: siteText("itsa.link-back", "Back to Income Tax") },
 ];
 
 function el(tag, className, text) {
@@ -135,12 +141,23 @@ function displayCalculation(calculation) {
   const notReady = document.getElementById("notReadyForDeclaration");
   const declarationSection = document.getElementById("declarationSection");
   if (effectiveCalculationType !== "intent-to-finalise") {
-    notReady.textContent = `This calculation is a ${effectiveCalculationType || "different"} calculation, not an intent to finalise. Request a final calculation before declaring.`;
+    notReady.textContent = effectiveCalculationType
+      ? siteText(
+          "itsa-final.not-intent",
+          "This calculation is a {type} calculation, not an intent to finalise. Request a final calculation before declaring.",
+          { type: effectiveCalculationType },
+        )
+      : siteText(
+          "itsa-final.not-intent-unknown",
+          "This calculation is a different calculation, not an intent to finalise. Request a final calculation before declaring.",
+        );
     notReady.style.display = "block";
     declarationSection.style.display = "none";
   } else if (!isAmount(calc.taxCalculation?.totalIncomeTaxAndNicsDue)) {
-    notReady.textContent =
-      "HMRC's calculation gives no total for Income Tax and National Insurance, so there is nothing to declare yet. Request a fresh calculation.";
+    notReady.textContent = siteText(
+      "itsa-final.no-total",
+      "HMRC's calculation gives no total for Income Tax and National Insurance, so there is nothing to declare yet. Request a fresh calculation.",
+    );
     notReady.style.display = "block";
     declarationSection.style.display = "none";
   } else {
@@ -175,12 +192,14 @@ async function fetchTaxLiabilityAdjustments(nino, taxYear, hmrcGrantId) {
 }
 
 function describeClaims(claims) {
-  if (!claims) return "No claim recorded";
+  if (!claims) return siteText("itsa-final.no-claim", "No claim recorded");
   const parts = [];
-  if (claims.carryForward) parts.push("carry forward");
-  if (claims.carrySideways) parts.push("carry sideways");
-  if (claims.carryBack) parts.push("carry back");
-  return parts.length > 0 ? `Claimed: ${parts.join(", ")}` : "No claim recorded";
+  if (claims.carryForward) parts.push(siteText("itsa-final.carry-forward", "carry forward"));
+  if (claims.carrySideways) parts.push(siteText("itsa-final.carry-sideways", "carry sideways"));
+  if (claims.carryBack) parts.push(siteText("itsa-final.carry-back", "carry back"));
+  return parts.length > 0
+    ? siteText("itsa-final.claimed", "Claimed: {claims}", { claims: parts.join(", ") })
+    : siteText("itsa-final.no-claim", "No claim recorded");
 }
 
 // Lists every business HMRC counted in this calculation - the gap this page exists to
@@ -195,13 +214,13 @@ async function displayBusinessesAndLossPositions(calculation, nino, taxYear, hmr
   );
 
   if (businesses.length === 0) {
-    container.replaceChildren(el("p", "no-data", "HMRC counted no businesses in this calculation."));
+    container.replaceChildren(el("p", "no-data", siteText("itsa-final.no-businesses", "HMRC counted no businesses in this calculation.")));
     document.getElementById("taxLiabilityAdjustmentLine").textContent = "";
     document.getElementById("unclaimedLossWarning").style.display = "none";
     return;
   }
 
-  container.replaceChildren(el("p", "hint", "Loading the loss position for each business..."));
+  container.replaceChildren(el("p", "hint", siteText("itsa-final.loading-losses", "Loading the loss position for each business...")));
 
   const profitAndLossByBusiness = {};
   (calculation?.calculation?.businessProfitAndLoss || []).forEach((entry) => {
@@ -221,16 +240,20 @@ async function displayBusinessesAndLossPositions(calculation, nino, taxYear, hmr
   const anyUnclaimedLoss = rows.some((row) => row.checkable && row.hasLoss && !row.claims);
 
   const headerRow = document.createElement("tr");
-  ["Business", "Latest period end date", "Loss position"].forEach((heading) => headerRow.append(el("th", "", heading)));
+  [
+    siteText("itsa.business", "Business"),
+    siteText("itsa-final.latest-period-end", "Latest period end date"),
+    siteText("itsa-final.loss-position", "Loss position"),
+  ].forEach((heading) => headerRow.append(el("th", "", heading)));
   const thead = document.createElement("thead");
   thead.append(headerRow);
 
   const tbody = document.createElement("tbody");
   rows.forEach(({ business, hasLoss, claims, checkable }) => {
     const cellText = !checkable
-      ? "Not checked: HMRC gave no business ID"
+      ? siteText("itsa-final.not-checked", "Not checked: HMRC gave no business ID")
       : hasLoss && !claims
-        ? "Loss shown, no claim recorded"
+        ? siteText("itsa-final.loss-no-claim", "Loss shown, no claim recorded")
         : describeClaims(claims);
     const lossCell = document.createElement("td");
     if (checkable && hasLoss && !claims) lossCell.append(el("strong", "", cellText ?? ""));
@@ -252,8 +275,8 @@ async function displayBusinessesAndLossPositions(calculation, nino, taxYear, hmr
 
   const taxLiabilityAdjustments = await fetchTaxLiabilityAdjustments(nino, taxYear, hmrcGrantId);
   document.getElementById("taxLiabilityAdjustmentLine").textContent = taxLiabilityAdjustments
-    ? "A tax liability adjustment is recorded for this tax year."
-    : "No tax liability adjustment is recorded for this tax year.";
+    ? siteText("itsa-final.tla-recorded", "A tax liability adjustment is recorded for this tax year.")
+    : siteText("itsa-final.tla-none", "No tax liability adjustment is recorded for this tax year.");
 }
 
 // The declaration as made: the figures the customer confirmed, the calculation id, and the time
@@ -288,7 +311,7 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, scope, run) {
   if (!scopeSufficient) {
     if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     showLoading();
-    showStatus("Initiating HMRC authentication...", "info");
+    showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
     const state = generateRandomState();
     const hmrcAccount = sessionStorage.getItem("hmrcAccount");
     sessionStorage.setItem("oauth_state", state);
@@ -323,7 +346,7 @@ async function handleRetrieveFormSubmission(event) {
       try {
         showLoading();
         hideStatus();
-        showStatus("Retrieving calculation...", "info");
+        showStatus(siteText("itsa-final.retrieving", "Retrieving calculation..."), "info");
         const calculation = await runRetrieveCalculation(
           nino,
           taxYear,
@@ -342,7 +365,10 @@ async function handleRetrieveFormSubmission(event) {
         hideStatus();
         await displayBusinessesAndLossPositions(calculation, nino, taxYear, hmrcGrantId);
       } catch (error) {
-        showStatus(`Failed to retrieve the calculation: ${error.message}`, "error");
+        showStatus(
+          siteText("itsa-final.retrieve-failed", "Failed to retrieve the calculation: {reason}", { reason: error.message }),
+          "error",
+        );
       } finally {
         hideLoading();
       }
@@ -371,7 +397,7 @@ async function handleSubmitDeclaration() {
       try {
         showLoading();
         hideStatus();
-        showStatus("Submitting final declaration...", "info");
+        showStatus(siteText("itsa-final.submitting", "Submitting final declaration..."), "info");
         const result = await runSubmitDeclaration(declarationDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         showDeclarationCopy(declarationDetails, result);
         document.getElementById("declarationContainer").style.display = "none";
@@ -391,7 +417,10 @@ async function handleSubmitDeclaration() {
           hideStatus();
           window.SubmissionCost?.refresh();
         } else {
-          showStatus(`Failed to submit the final declaration: ${error.message}`, "error");
+          showStatus(
+            siteText("itsa-final.submit-failed", "Failed to submit the final declaration: {reason}", { reason: error.message }),
+            "error",
+          );
         }
       } finally {
         hideLoading();
@@ -408,7 +437,7 @@ async function continueAfterOAuth() {
 
     if (pendingRetrieve) {
       showLoading();
-      showStatus("Retrieving calculation...", "info");
+      showStatus(siteText("itsa-final.retrieving", "Retrieving calculation..."), "info");
       const calculation = await runRetrieveCalculation(
         pendingRetrieve.nino,
         pendingRetrieve.taxYear,
@@ -429,7 +458,7 @@ async function continueAfterOAuth() {
       sessionStorage.removeItem("pendingFinalDeclarationRetrieveRequest");
     } else if (pendingSubmit) {
       showLoading();
-      showStatus("Submitting final declaration...", "info");
+      showStatus(siteText("itsa-final.submitting", "Submitting final declaration..."), "info");
       const result = await runSubmitDeclaration(
         pendingSubmit.declarationDetails,
         pendingSubmit.testScenario,
@@ -452,7 +481,7 @@ async function continueAfterOAuth() {
       hideStatus();
       window.SubmissionCost?.refresh();
     } else {
-      showStatus(`Failed: ${error.message}`, "error");
+      showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
     }
     sessionStorage.removeItem("pendingFinalDeclarationRetrieveRequest");
     sessionStorage.removeItem("pendingFinalDeclarationSubmitRequest");

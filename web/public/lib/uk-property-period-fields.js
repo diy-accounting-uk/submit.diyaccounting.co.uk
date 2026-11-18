@@ -10,38 +10,88 @@
 (function () {
   "use strict";
 
-  const EXAMPLE_HINT = "For example, £600 or £193.54";
+  // page-chrome.js gives the text in the chosen language; without it the English stands.
+  function siteText(id, english, values) {
+    if (window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
+
+  const EXAMPLE_HINT = siteText("itsa.money-example", "For example, £600 or £193.54");
 
   // id is the input id; key is the HMRC name; rentARoom marks a field HMRC nests under rentARoom.
   const INCOME_FIELDS = [
-    { id: "periodAmount", key: "periodAmount", label: "Rental income", min: 0 },
-    { id: "otherIncome", key: "otherIncome", label: "Other property income", min: 0 },
+    { id: "periodAmount", key: "periodAmount", label: siteText("itsa.field-rental-income", "Rental income"), min: 0 },
+    { id: "otherIncome", key: "otherIncome", label: siteText("itsa.field-other-property-income", "Other property income"), min: 0 },
   ];
 
   const MORE_INCOME_FIELDS = [
-    { id: "premiumsOfLeaseGrant", key: "premiumsOfLeaseGrant", label: "Premiums for the grant of a lease", min: 0 },
-    { id: "reversePremiums", key: "reversePremiums", label: "Reverse premiums", min: 0 },
-    { id: "taxDeducted", key: "taxDeducted", label: "Tax deducted from your income", min: 0 },
-    { id: "rentARoomRentsReceived", key: "rentsReceived", rentARoom: true, label: "Rent a room: rents received", min: 0 },
+    {
+      id: "premiumsOfLeaseGrant",
+      key: "premiumsOfLeaseGrant",
+      label: siteText("itsa.field-premiums-for-the-grant-of-a", "Premiums for the grant of a lease"),
+      min: 0,
+    },
+    { id: "reversePremiums", key: "reversePremiums", label: siteText("itsa.field-reverse-premiums", "Reverse premiums"), min: 0 },
+    { id: "taxDeducted", key: "taxDeducted", label: siteText("itsa.field-tax-deducted", "Tax deducted from your income"), min: 0 },
+    {
+      id: "rentARoomRentsReceived",
+      key: "rentsReceived",
+      rentARoom: true,
+      label: siteText("itsa.field-rent-a-room-rents", "Rent a room: rents received"),
+      min: 0,
+    },
   ];
 
   const ITEMISED_EXPENSE_FIELDS = [
-    { id: "repairsAndMaintenance", key: "repairsAndMaintenance", label: "Repairs and maintenance" },
-    { id: "otherExpenses", key: "other", label: "Other property expenses" },
-    { id: "premisesRunningCosts", key: "premisesRunningCosts", label: "Rent, rates, insurance and ground rents" },
-    { id: "financialCosts", key: "financialCosts", label: "Loan interest and other financial costs" },
-    { id: "professionalFees", key: "professionalFees", label: "Legal, management and other professional fees" },
-    { id: "costOfServices", key: "costOfServices", label: "Costs of services provided, including wages" },
-    { id: "travelCosts", key: "travelCosts", label: "Travel costs" },
-    { id: "residentialFinancialCost", key: "residentialFinancialCost", label: "Residential property finance costs" },
-    { id: "rentARoomAmountClaimed", key: "amountClaimed", rentARoom: true, label: "Rent a room: amount claimed" },
+    {
+      id: "repairsAndMaintenance",
+      key: "repairsAndMaintenance",
+      label: siteText("itsa.field-repairs-and-maintenance", "Repairs and maintenance"),
+    },
+    { id: "otherExpenses", key: "other", label: siteText("itsa.field-other-property-expenses", "Other property expenses") },
+    {
+      id: "premisesRunningCosts",
+      key: "premisesRunningCosts",
+      label: siteText("itsa.field-rent-rates-insurance-and-ground-rents", "Rent, rates, insurance and ground rents"),
+    },
+    {
+      id: "financialCosts",
+      key: "financialCosts",
+      label: siteText("itsa.field-loan-interest-and-other-financial-costs", "Loan interest and other financial costs"),
+    },
+    {
+      id: "professionalFees",
+      key: "professionalFees",
+      label: siteText("itsa.field-legal-management-and-other-professional-fees", "Legal, management and other professional fees"),
+    },
+    {
+      id: "costOfServices",
+      key: "costOfServices",
+      label: siteText("itsa.field-costs-of-services-provided-including-wages", "Costs of services provided, including wages"),
+    },
+    { id: "travelCosts", key: "travelCosts", label: siteText("itsa.field-travel-costs", "Travel costs") },
+    {
+      id: "residentialFinancialCost",
+      key: "residentialFinancialCost",
+      label: siteText("itsa.field-residential-property-finance-costs", "Residential property finance costs"),
+    },
+    {
+      id: "rentARoomAmountClaimed",
+      key: "amountClaimed",
+      rentARoom: true,
+      label: siteText("itsa.field-rent-a-room-claimed", "Rent a room: amount claimed"),
+    },
   ];
 
-  const CONSOLIDATED_FIELD = { id: "consolidatedExpenses", key: "consolidatedExpenses", label: "Total expenses" };
+  const CONSOLIDATED_FIELD = {
+    id: "consolidatedExpenses",
+    key: "consolidatedExpenses",
+    label: siteText("itsa.field-total-expenses", "Total expenses"),
+  };
   const CARRIED_FORWARD_FIELD = {
     id: "residentialFinancialCostsCarriedForward",
     key: "residentialFinancialCostsCarriedForward",
-    label: "Residential finance costs carried forward",
+    label: siteText("itsa.field-residential-finance-carried-forward", "Residential finance costs carried forward"),
   };
 
   const ALWAYS_SENT_IDS = ["periodAmount", "otherIncome", "repairsAndMaintenance", "otherExpenses"];
@@ -79,33 +129,36 @@
       ...INCOME_FIELDS.map((field) => group(field, EXAMPLE_HINT, periodAmountRequired)),
       section(
         "moreIncome",
-        "More property income",
+        siteText("itsa.uk-more-income", "More property income"),
         MORE_INCOME_FIELDS.map((field) => group(field, EXAMPLE_HINT)),
         false,
       ),
     );
     const basis = el("fieldset", { className: "form-group", id: "expenseBasisGroup" }, [
-      el("legend", { textContent: "How do you report expenses?" }),
-      choice(BASIS_ITEMISED, "itemised", "Itemise the expenses", true),
-      choice(BASIS_TOTAL, "total", "One total for all expenses", false),
+      el("legend", { textContent: siteText("itsa.expense-basis", "How do you report expenses?") }),
+      choice(BASIS_ITEMISED, "itemised", siteText("itsa.expense-basis-itemised", "Itemise the expenses"), true),
+      choice(BASIS_TOTAL, "total", siteText("itsa.expense-basis-total", "One total for all expenses"), false),
     ]);
     const itemised = el("div", { id: "itemisedExpensesBlock" }, [
       ...ITEMISED_EXPENSE_FIELDS.slice(0, 2).map((field) => group(field, EXAMPLE_HINT)),
       section(
         "moreExpenses",
-        "More itemised expenses",
+        siteText("itsa.uk-more-expenses", "More itemised expenses"),
         ITEMISED_EXPENSE_FIELDS.slice(2).map((field) => group(field, EXAMPLE_HINT)),
         false,
       ),
     ]);
     const total = el("div", { id: "totalExpensesBlock", hidden: true }, [
-      group(CONSOLIDATED_FIELD, `${EXAMPLE_HINT}. Replaces every itemised expense.`),
+      group(CONSOLIDATED_FIELD, `${EXAMPLE_HINT}. ${siteText("itsa.total-replaces-itemised", "Replaces every itemised expense.")}`),
     ]);
     expenseContainer.replaceChildren(
       basis,
       itemised,
       total,
-      group(CARRIED_FORWARD_FIELD, `${EXAMPLE_HINT}. Residential finance costs not yet relieved, carried to the next year.`),
+      group(
+        CARRIED_FORWARD_FIELD,
+        `${EXAMPLE_HINT}. ${siteText("itsa.carried-forward-hint", "Residential finance costs not yet relieved, carried to the next year.")}`,
+      ),
     );
     basis.addEventListener("change", () => setExpenseBasis(document.getElementById(BASIS_TOTAL).checked ? "total" : "itemised"));
     setExpenseBasis("itemised");

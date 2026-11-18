@@ -11,6 +11,12 @@
 (function () {
   "use strict";
 
+  // page-chrome.js gives the text in the chosen language; without it the English stands.
+  function siteText(id, english, values) {
+    if (globalThis.siteText) return globalThis.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
+
   const IDENTIFIERS = {
     vrn: { storageKey: "carriedVrn", pattern: /^\d{9}$/ },
     nino: { storageKey: "carriedNino", pattern: /^[A-Z]{2}\d{6}[A-D]$/ },
@@ -130,7 +136,7 @@
     select.replaceChildren();
     const blank = document.createElement("option");
     blank.value = "";
-    blank.textContent = "Choose the tax year";
+    blank.textContent = siteText("itsa.choose-tax-year", "Choose the tax year");
     select.appendChild(blank);
     for (const year of taxYearOptions(today)) addOption(year);
     Object.defineProperty(select, "value", {

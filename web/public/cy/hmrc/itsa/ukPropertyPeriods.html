@@ -1,0 +1,221 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from hmrc/itsa/ukPropertyPeriods.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Crynodebau o gyfnodau eiddo yn y DU - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/ukPropertyPeriods.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/itsa/ukPropertyPeriods.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/ukPropertyPeriods.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/itsa/ukPropertyPeriods.html" />
+    <link rel="stylesheet" href="../../../submit.css" />
+    <link rel="stylesheet" href="../../../lib/hmrc-field-table.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="itsa-uk-periods.uk-property-period-summaries-fbe1d7">Crynodebau o gyfnodau eiddo yn y DU</h1>
+      <p data-i18n="itsa-uk-periods.list-the-quarterly-updates-filed-for-a34e9c" class="subtitle">
+        Rhestru’r diweddariadau chwarterol a gyflwynwyd ar gyfer busnes eiddo yn y DU
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p data-i18n="itsa-uk-periods.status-sandbox-this-runs-against-hmrc-e3e7dd" class="hint" data-feature-status="sandbox">
+        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a
+        anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei
+        ddiweddariad yn 2027.
+      </p>
+      <div id="syntheticIndicator" class="synthetic-indicator">
+        <span data-i18n="itsa-uk-periods.synthetic-mode-calls-go-to-hmrc-efa44d"
+          >Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF</span
+        >
+      </div>
+
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Search Form -->
+      <div
+        id="periodsForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i weld eich crynodebau o gyfnodau eiddo yn y DU"
+        data-sign-in-text="Mewngofnodwch i restru’r diweddariadau chwarterol a gyflwynwyd ar gyfer busnes eiddo yn y DU."
+        data-i18n-data-sign-in-title="itsa-uk-periods.sign-in-to-see-your-uk-4ad1ca"
+        data-i18n-data-sign-in-text="itsa-uk-periods.sign-in-to-list-the-quarterly-bfb30c"
+      >
+        <div class="form-toggle-buttons">
+          <button
+            data-i18n="itsa-uk-periods.show-search-criteria-8c1d25"
+            type="button"
+            id="toggleSearchCriteriaBtn"
+            class="secondary-button"
+            style="display: none"
+          >
+            Dangos y meini prawf chwilio
+          </button>
+          <button
+            data-i18n="itsa-uk-periods.cancel-request-561966"
+            type="button"
+            id="cancelRequestBtn"
+            class="cancel-button"
+            style="display: none"
+          >
+            Canslo’r cais
+          </button>
+        </div>
+        <div id="searchCriteriaContainer">
+          <h2 data-i18n="itsa-uk-periods.list-period-summaries-660606">Rhestru crynodebau o gyfnodau</h2>
+          <form id="itsaUkPropertyPeriodsForm" novalidate>
+            <div class="form-group">
+              <label data-i18n="itsa-uk-periods.national-insurance-number-21829e" for="nino">Rhif Yswiriant Gwladol</label>
+              <p data-i18n="itsa-uk-periods.this-is-two-letters-six-numbers-795a8f" id="nino-hint" class="hint">
+                Mae hwn yn ddwy lythyren, chwe rhif a llythyren olaf, er enghraifft QQ 12 34 56 C. Mae i’w weld ar eich cerdyn Yswiriant
+                Gwladol, eich slip cyflog neu’ch P60.
+              </p>
+              <input
+                type="text"
+                id="nino"
+                name="nino"
+                required
+                value=""
+                maxlength="13"
+                aria-describedby="nino-hint"
+                spellcheck="false"
+                autocapitalize="characters"
+              />
+            </div>
+
+            <div class="form-group">
+              <label data-i18n="itsa-uk-periods.business-id-85b211" for="businessId">ID y busnes</label>
+              <p data-i18n="itsa-uk-periods.filled-in-when-you-pick-a-96de5c" id="businessId-hint" class="hint">
+                Caiff ei lenwi pan fyddwch yn dewis busnes ar y dangosfwrdd Treth Incwm. Fel arall, copïwch ef o Manylion y busnes, er
+                enghraifft XAIS12345678910.
+              </p>
+              <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
+            </div>
+
+            <div class="form-group">
+              <label data-i18n="itsa-uk-periods.tax-year-09a6de" for="taxYear">Blwyddyn dreth</label>
+              <p data-i18n="itsa-uk-periods.choose-the-tax-year-fae5ed" id="taxYear-hint" class="hint">Dewiswch y flwyddyn dreth.</p>
+              <select id="taxYear" name="taxYear" required aria-describedby="taxYear-hint"></select>
+            </div>
+
+            <p
+              data-i18n="itsa-uk-periods.this-tax-year-reports-one-running-87608b"
+              id="cumulativeListNote"
+              class="hint"
+              style="display: none"
+            >
+              Mae’r flwyddyn dreth hon yn rhoi gwybod am un cyfanswm parhaus yn hytrach na rhestr o gyflwyniadau, felly mae hyn yn dangos y
+              cyfanswm presennol yn lle rhestr.
+            </p>
+
+            <!-- Developer Test Scenario Section -->
+            <div id="developerSection" class="form-group" style="display: none">
+              <label data-i18n="itsa-uk-periods.test-scenario-developer-sandbox-only-966c72" for="testScenario"
+                >Senario prawf (Datblygwr/amgylchedd prawf yn unig)</label
+              >
+              <p data-i18n="itsa-uk-periods.test-different-hmrc-sandbox-scenarios-39d913" id="testScenario-hint" class="hint">
+                Profi senarios gwahanol yn amgylchedd prawf (sandbox) CThEF
+              </p>
+              <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint" translate="no">
+                <option value="">Default (one period summary)</option>
+                <option value="NOT_FOUND">Not Found</option>
+                <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
+                <option value="SUBMIT_HMRC_API_HTTP_500">HMRC API responds with 500</option>
+              </select>
+              <div class="choice">
+                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                  data-i18n="itsa-uk-periods.validate-fraud-prevention-headers-ea7c94"
+                  for="runFraudPreventionHeaderValidation"
+                  >Dilysu’r penawdau atal twyll</label
+                >
+              </div>
+            </div>
+
+            <button data-i18n="itsa-uk-periods.list-period-summaries-660606" type="submit" id="retrieveBtn" class="btn">
+              Rhestru crynodebau o gyfnodau
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Results Display -->
+      <div id="periodsResults" class="results-container" style="display: none">
+        <h3 data-i18n="itsa-uk-periods.period-summaries-9b02c2">Crynodebau o gyfnodau</h3>
+        <div id="periodsTable"></div>
+        <p data-i18n="itsa-uk-periods.view-the-chosen-period-amend-the-13a26f" id="periodNextSteps" class="next-steps" hidden>
+          <a href="ukPropertyPeriodView.html">Bwrw golwg dros y cyfnod a ddewiswyd</a>
+          <a href="ukPropertyPeriodAmend.html">Diwygio’r cyfnod a ddewiswyd</a>
+        </p>
+        <div class="button-group">
+          <button data-i18n="itsa-uk-periods.new-search-4587eb" type="button" id="newSearchBtn" class="secondary-button">
+            Chwiliad newydd
+          </button>
+        </div>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../../lib/welsh-text.js"></script>
+    <script src="../../../widgets/page-chrome.js"></script>
+    <script src="../../../lib/env-loader.js"></script>
+    <script src="../../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../../submit.js"></script>
+    <script src="../../../developer-mode.js"></script>
+    <script src="../../../lib/request-cache.js"></script>
+    <script src="../../../lib/carried-identifiers.js"></script>
+    <script src="../../../lib/toml-parser.js"></script>
+    <script src="../../../lib/form-errors.js"></script>
+    <script src="../../../lib/hmrc-scope-check.js"></script>
+    <script src="../../../lib/money-format.js"></script>
+    <script src="../../../lib/hmrc-field-table.js"></script>
+    <script src="../../../lib/itsaSubmissionModel.js"></script>
+    <script type="module" src="../../../lib/services/hmrc-service.js"></script>
+    <script src="../../../widgets/entitlement-status.js"></script>
+    <script src="../../../widgets/auth-status.js"></script>
+    <script src="../../../widgets/status-messages.js"></script>
+    <script src="../../../widgets/signed-out-panel.js"></script>
+    <script src="../../../widgets/pass-redeemer.js"></script>
+    <script src="../../../hmrc/itsa/ukPropertyPeriods.page.js"></script>
+  </body>
+</html>

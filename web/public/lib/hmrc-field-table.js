@@ -49,109 +49,143 @@
 
   // Keyed by the path of the field in HMRC's calculation response under calculation.
   const TAX_CALCULATION_FIELDS = {
-    "taxCalculation.incomeTax.totalIncomeTaxDue": { label: "Income Tax", definition: "Total income tax due." },
-    "taxCalculation.nics.totalNic": { label: "National Insurance", definition: "Total NIC deductions." },
-    "taxCalculation.totalTaxDeducted": { label: "Tax already deducted", definition: "Total tax deducted." },
+    "taxCalculation.incomeTax.totalIncomeTaxDue": {
+      label: siteText("itsa.field-income-tax", "Income Tax"),
+      definition: "Total income tax due.",
+    },
+    "taxCalculation.nics.totalNic": {
+      label: siteText("itsa.field-national-insurance", "National Insurance"),
+      definition: "Total NIC deductions.",
+    },
+    "taxCalculation.totalTaxDeducted": {
+      label: siteText("itsa.field-tax-already-deducted", "Tax already deducted"),
+      definition: "Total tax deducted.",
+    },
   };
 
   // Keyed by the field's path under calculation.allowancesAndDeductions.
   const ALLOWANCE_FIELDS = {
-    "personalAllowance": { label: "Personal Allowance", definition: "The personal allowance available for the tax year." },
+    "personalAllowance": {
+      label: siteText("itsa.field-personal-allowance", "Personal Allowance"),
+      definition: "The personal allowance available for the tax year.",
+    },
     "reducedPersonalAllowance": {
-      label: "Reduced Personal Allowance",
+      label: siteText("itsa.field-reduced-personal-allowance", "Reduced Personal Allowance"),
       definition: "The amount that the personal allowance has been reduced to.",
     },
     "marriageAllowanceTransferOut.personalAllowanceBeforeTransferOut": {
-      label: "Personal Allowance before Marriage Allowance transfer",
+      label: siteText(
+        "itsa.field-personal-allowance-before-marriage-allowance-transfer",
+        "Personal Allowance before Marriage Allowance transfer",
+      ),
       definition: "The amount of the personal allowance before transferring out.",
     },
     "marriageAllowanceTransferOut.transferredOutAmount": {
-      label: "Marriage Allowance transferred out",
+      label: siteText("itsa.field-marriage-allowance-transferred-out", "Marriage Allowance transferred out"),
       definition: "Marriage Allowance lets you transfer £1,260 of your Personal Allowance to your husband, wife or civil partner.",
       source: "marriageAllowance",
     },
     "blindPersonsAllowance": {
-      label: "Blind Person's Allowance",
+      label: siteText("itsa.field-blind-person-s-allowance", "Blind Person's Allowance"),
       definition: "Blind Person’s Allowance is an extra amount of tax-free allowance.",
       source: "blindPersonsAllowance",
     },
     "giftOfInvestmentsAndPropertyToCharity": {
-      label: "Gifts of investments and property to charity",
+      label: siteText("itsa.field-gifts-of-investments-and-property-to", "Gifts of investments and property to charity"),
       definition: "Investments or property gifts made to charity.",
     },
     "giftAidRelief": {
-      label: "Gift Aid relief",
+      label: siteText("itsa.field-gift-aid-relief", "Gift Aid relief"),
       definition:
         "Donating through Gift Aid means charities and community amateur sports clubs (CASCs) can claim an extra 25p for every £1 you give.",
       source: "giftAid",
     },
     "dividendAllowance": {
-      label: "Dividend allowance",
+      label: siteText("itsa.field-dividend-allowance", "Dividend allowance"),
       definition:
         "You also get a dividend allowance of £500 each year. You only pay tax on any dividend income above the dividend allowance.",
       source: "dividends",
     },
     "lossesAppliedToGeneralIncome": {
-      label: "Losses set against general income",
+      label: siteText("itsa.field-losses-set-against-general-income", "Losses set against general income"),
       definition: "Losses that have been applied to general income.",
     },
     "cgtLossSetAgainstInYearGeneralIncome": {
-      label: "Capital Gains Tax losses set against general income",
+      label: siteText("itsa.field-capital-gains-tax-losses-set-against", "Capital Gains Tax losses set against general income"),
       definition: "CGT losses that have been applied to general income.",
     },
     "qualifyingLoanInterestFromInvestments": {
-      label: "Qualifying loan interest",
+      label: siteText("itsa.field-qualifying-loan-interest", "Qualifying loan interest"),
       definition: "Qualifying loan interest payments made.",
     },
     "postCessationTradeReceipts": {
-      label: "Post-cessation trade relief",
+      label: siteText("itsa.field-post-cessation-trade-relief", "Post-cessation trade relief"),
       definition: "Trade reliefs and other losses post cessation of a business.",
     },
     "paymentsToTradeUnionsForDeathBenefits": {
-      label: "Payments to trade unions for death benefits",
+      label: siteText("itsa.field-payments-to-trade-unions-for-death", "Payments to trade unions for death benefits"),
       definition: "Payments made to a trade union or friendly society for death benefits.",
     },
-    "grossAnnuityPayments": { label: "Gross annuity payments", definition: "The gross value of annuity payments made." },
-    "annuityPayments.reliefClaimed": { label: "Annual payments relief claimed", definition: "The value of annual payments made." },
-    "annuityPayments.rate": { label: "Annual payments tax rate", definition: "The tax rate used in the calculation.", kind: "percent" },
+    "grossAnnuityPayments": {
+      label: siteText("itsa.field-gross-annuity-payments", "Gross annuity payments"),
+      definition: "The gross value of annuity payments made.",
+    },
+    "annuityPayments.reliefClaimed": {
+      label: siteText("itsa.field-annual-payments-relief-claimed", "Annual payments relief claimed"),
+      definition: "The value of annual payments made.",
+    },
+    "annuityPayments.rate": {
+      label: siteText("itsa.field-annual-payments-tax-rate", "Annual payments tax rate"),
+      definition: "The tax rate used in the calculation.",
+      kind: "percent",
+    },
     "pensionContributions": {
-      label: "Pension contributions",
+      label: siteText("itsa.field-pension-contributions", "Pension contributions"),
       definition:
         "Total of 'Retirement Annuity Payments', 'Payment To Employers Scheme No Tax Relief' and 'Overseas Pension Scheme Contributions'.",
     },
     "pensionContributionsDetail.retirementAnnuityPayments": {
-      label: "Retirement annuity payments",
+      label: siteText("itsa.field-retirement-annuity-payments", "Retirement annuity payments"),
       definition: "The value of retirement annuity payments.",
     },
     "pensionContributionsDetail.paymentToEmployersSchemeNoTaxRelief": {
-      label: "Payments to an employer's scheme with no tax relief",
+      label: siteText("itsa.field-payments-to-an-employer-s-scheme", "Payments to an employer's scheme with no tax relief"),
       definition: "Payments to employer's pension scheme with no tax relief.",
     },
     "pensionContributionsDetail.overseasPensionSchemeContributions": {
-      label: "Overseas pension scheme contributions",
+      label: siteText("itsa.field-overseas-pension-scheme-contributions", "Overseas pension scheme contributions"),
       definition: "The value of contributions to an overseas pension scheme.",
     },
   };
 
   const SUMMARY_TOTALS = {
-    totalIncome: { label: "Total income", definition: "The total income for the income source." },
-    totalExpenses: { label: "Total expenses", definition: "The total expenses for the income source." },
-    totalAdditions: { label: "Total additions", definition: "The total additions to net profit (or deduction to net loss)." },
-    totalDeductions: { label: "Total deductions", definition: "The total deductions to net loss (or addition to net profit)." },
-    netProfit: { label: "Net profit", definition: "The net profit of income source.", total: true },
-    netLoss: { label: "Net loss", definition: "The net loss of income source.", total: true },
+    totalIncome: { label: siteText("itsa.field-total-income", "Total income"), definition: "The total income for the income source." },
+    totalExpenses: {
+      label: siteText("itsa.field-total-expenses", "Total expenses"),
+      definition: "The total expenses for the income source.",
+    },
+    totalAdditions: {
+      label: siteText("itsa.field-total-additions", "Total additions"),
+      definition: "The total additions to net profit (or deduction to net loss).",
+    },
+    totalDeductions: {
+      label: siteText("itsa.field-total-deductions", "Total deductions"),
+      definition: "The total deductions to net loss (or addition to net profit).",
+    },
+    netProfit: { label: siteText("itsa.field-net-profit", "Net profit"), definition: "The net profit of income source.", total: true },
+    netLoss: { label: siteText("itsa.field-net-loss", "Net loss"), definition: "The net loss of income source.", total: true },
   };
 
   // Keyed by the field's path under the adjustable summary's adjustableSummaryCalculation.
   const SELF_EMPLOYMENT_SUMMARY_FIELDS = {
     "totalIncome": SUMMARY_TOTALS.totalIncome,
     "income.turnover": {
-      label: "Turnover",
+      label: siteText("itsa.field-turnover", "Turnover"),
       definition: "The takings, fees, sales or money earned by your business Income associated with the running of the business.",
     },
     "totalExpenses": SUMMARY_TOTALS.totalExpenses,
     "expenses.costOfGoods": {
-      label: "Cost of goods",
+      label: siteText("itsa.field-cost-of-goods", "Cost of goods"),
       definition: "Cost of goods bought for resale or goods used. Expenses associated with the running of the business.",
     },
     "totalAdditions": SUMMARY_TOTALS.totalAdditions,
@@ -161,15 +195,18 @@
 
   const UK_PROPERTY_SUMMARY_FIELDS = {
     "totalIncome": SUMMARY_TOTALS.totalIncome,
-    "income.totalRentsReceived": { label: "Total rents received", definition: "The total amount of property rental income." },
+    "income.totalRentsReceived": {
+      label: siteText("itsa.field-total-rents-received", "Total rents received"),
+      definition: "The total amount of property rental income.",
+    },
     "income.otherPropertyIncome": {
-      label: "Other property income",
+      label: siteText("itsa.field-other-property-income", "Other property income"),
       definition:
         "Other income from property, such as rent charges and ground rents, income from letting others tip waste on your land, and income for the use of a caravan or houseboat at a fixed location.",
     },
     "totalDeductions": SUMMARY_TOTALS.totalDeductions,
     "deductions.costOfReplacingDomesticItems": {
-      label: "Cost of replacing domestic items",
+      label: siteText("itsa.field-cost-of-replacing-domestic-items", "Cost of replacing domestic items"),
       definition: "Cost of Replacing Domestic Items - formerly Wear and Tear allowance.",
     },
     "netProfit": SUMMARY_TOTALS.netProfit,
@@ -182,26 +219,56 @@
   const FOREIGN_PROPERTY_SUMMARY_FIELDS = {
     "totalIncome": SUMMARY_TOTALS.totalIncome,
     "income.totalRentsReceived": UK_PROPERTY_SUMMARY_FIELDS["income.totalRentsReceived"],
-    "income.premiumsOfLeaseGrant": { label: "Premiums for the grant of a lease", optional: true },
+    "income.premiumsOfLeaseGrant": {
+      label: siteText("itsa.field-premiums-for-the-grant-of-a", "Premiums for the grant of a lease"),
+      optional: true,
+    },
     "income.otherPropertyIncome": { ...UK_PROPERTY_SUMMARY_FIELDS["income.otherPropertyIncome"], optional: true },
     "totalExpenses": { ...SUMMARY_TOTALS.totalExpenses, optional: true },
-    "expenses.consolidatedExpenses": { label: "Expenses entered as one total", optional: true },
-    "expenses.premisesRunningCosts": { label: "Rent, rates, insurance and ground rents", optional: true },
-    "expenses.repairsAndMaintenance": { label: "Repairs and maintenance", optional: true },
-    "expenses.financialCosts": { label: "Loan interest and other financial costs", optional: true },
-    "expenses.professionalFees": { label: "Legal, management and other professional fees", optional: true },
-    "expenses.costOfServices": { label: "Costs of services provided, including wages", optional: true },
-    "expenses.travelCosts": { label: "Travel costs", optional: true },
-    "expenses.other": { label: "Other property expenses", optional: true },
-    "expenses.residentialFinancialCost": { label: "Residential property finance costs", optional: true },
+    "expenses.consolidatedExpenses": {
+      label: siteText("itsa.field-expenses-entered-as-one-total", "Expenses entered as one total"),
+      optional: true,
+    },
+    "expenses.premisesRunningCosts": {
+      label: siteText("itsa.field-rent-rates-insurance-and-ground-rents", "Rent, rates, insurance and ground rents"),
+      optional: true,
+    },
+    "expenses.repairsAndMaintenance": { label: siteText("itsa.field-repairs-and-maintenance", "Repairs and maintenance"), optional: true },
+    "expenses.financialCosts": {
+      label: siteText("itsa.field-loan-interest-and-other-financial-costs", "Loan interest and other financial costs"),
+      optional: true,
+    },
+    "expenses.professionalFees": {
+      label: siteText("itsa.field-legal-management-and-other-professional-fees", "Legal, management and other professional fees"),
+      optional: true,
+    },
+    "expenses.costOfServices": {
+      label: siteText("itsa.field-costs-of-services-provided-including-wages", "Costs of services provided, including wages"),
+      optional: true,
+    },
+    "expenses.travelCosts": { label: siteText("itsa.field-travel-costs", "Travel costs"), optional: true },
+    "expenses.other": { label: siteText("itsa.field-other-property-expenses", "Other property expenses"), optional: true },
+    "expenses.residentialFinancialCost": {
+      label: siteText("itsa.field-residential-property-finance-costs", "Residential property finance costs"),
+      optional: true,
+    },
     "totalDeductions": { ...SUMMARY_TOTALS.totalDeductions, optional: true },
     "deductions.costOfReplacingDomesticItems": { ...UK_PROPERTY_SUMMARY_FIELDS["deductions.costOfReplacingDomesticItems"], optional: true },
-    "deductions.otherCapitalAllowance": { label: "Other capital allowance", optional: true },
-    "deductions.zeroEmissionsCarAllowance": { label: "Zero emissions car allowance", optional: true },
-    "deductions.propertyAllowance": { label: "Property income allowance", optional: true },
+    "deductions.otherCapitalAllowance": {
+      label: siteText("itsa.field-other-capital-allowance", "Other capital allowance"),
+      optional: true,
+    },
+    "deductions.zeroEmissionsCarAllowance": {
+      label: siteText("itsa.field-zero-emissions-car-allowance", "Zero emissions car allowance"),
+      optional: true,
+    },
+    "deductions.propertyAllowance": {
+      label: siteText("itsa.field-property-income-allowance", "Property income allowance"),
+      optional: true,
+    },
     "netProfit": SUMMARY_TOTALS.netProfit,
     "netLoss": SUMMARY_TOTALS.netLoss,
-    "taxableProfit": { label: "Taxable profit", optional: true },
+    "taxableProfit": { label: siteText("itsa.field-taxable-profit", "Taxable profit"), optional: true },
   };
 
   // The nine boxes of a VAT Return, keyed by HMRC's VAT API field name. Each definition quotes

@@ -1,0 +1,607 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from hmrc/itsa/annualSubmission.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cyflwyniad blynyddol - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/annualSubmission.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/itsa/annualSubmission.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/annualSubmission.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/itsa/annualSubmission.html" />
+    <link rel="stylesheet" href="../../../submit.css" />
+    <link rel="stylesheet" href="../../../submission-record.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="itsa-annual.annual-submission-061f98">Cyflwyniad blynyddol</h1>
+      <p data-i18n="itsa-annual.load-and-save-the-year-s-bb1755" class="subtitle">
+        Llwytho a chadw addasiadau, lwfansau a manylion anariannol y flwyddyn
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p data-i18n="itsa-annual.status-sandbox-this-runs-against-hmrc-e3e7dd" class="hint" data-feature-status="sandbox">
+        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a
+        anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei
+        ddiweddariad yn 2027.
+      </p>
+      <div id="syntheticIndicator" class="synthetic-indicator">
+        <span data-i18n="itsa-annual.synthetic-mode-calls-go-to-hmrc-efa44d"
+          >Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF</span
+        >
+      </div>
+
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Load criteria -->
+      <div
+        id="loadCriteriaForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i anfon eich cyflwyniad blynyddol"
+        data-sign-in-text="Mewngofnodwch i lwytho’r cyflwyniad blynyddol ar gyfer busnes hunangyflogaeth, newid yr addasiadau a’r lwfansau, a’u cadw gyda CThEF."
+        data-i18n-data-sign-in-title="itsa-annual.sign-in-to-send-your-annual-41ae34"
+        data-i18n-data-sign-in-text="itsa-annual.sign-in-to-load-the-annual-c10c0f"
+      >
+        <h2 data-i18n="itsa-annual.load-an-annual-submission-02c710">Llwytho cyflwyniad blynyddol</h2>
+        <form id="itsaAnnualLoadForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="itsa-annual.national-insurance-number-21829e" for="nino">Rhif Yswiriant Gwladol</label>
+            <p data-i18n="itsa-annual.this-is-two-letters-six-numbers-795a8f" id="nino-hint" class="hint">
+              Mae hwn yn ddwy lythyren, chwe rhif a llythyren olaf, er enghraifft QQ 12 34 56 C. Mae i’w weld ar eich cerdyn Yswiriant
+              Gwladol, eich slip cyflog neu’ch P60.
+            </p>
+            <input
+              type="text"
+              id="nino"
+              name="nino"
+              required
+              value=""
+              maxlength="13"
+              spellcheck="false"
+              autocapitalize="characters"
+              aria-describedby="nino-hint"
+            />
+          </div>
+
+          <div class="form-group">
+            <label data-i18n="itsa-annual.business-id-85b211" for="businessId">ID y busnes</label>
+            <p data-i18n="itsa-annual.filled-in-when-you-pick-a-96de5c" id="businessId-hint" class="hint">
+              Caiff ei lenwi pan fyddwch yn dewis busnes ar y dangosfwrdd Treth Incwm. Fel arall, copïwch ef o Manylion y busnes, er
+              enghraifft XAIS12345678910.
+            </p>
+            <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
+          </div>
+
+          <div class="form-group">
+            <label data-i18n="itsa-annual.tax-year-09a6de" for="taxYear">Blwyddyn dreth</label>
+            <p data-i18n="itsa-annual.choose-the-tax-year-fae5ed" id="taxYear-hint" class="hint">Dewiswch y flwyddyn dreth.</p>
+            <select id="taxYear" name="taxYear" required aria-describedby="taxYear-hint"></select>
+          </div>
+
+          <!-- Developer Test Scenario Section -->
+          <div id="developerSection" class="form-group" style="display: none">
+            <label data-i18n="itsa-annual.test-scenario-developer-sandbox-only-966c72" for="testScenario"
+              >Senario prawf (Datblygwr/amgylchedd prawf yn unig)</label
+            >
+            <p data-i18n="itsa-annual.test-different-hmrc-sandbox-scenarios-for-0affc1" id="testScenario-hint" class="hint">
+              Profi senarios gwahanol yn amgylchedd prawf (sandbox) CThEF wrth lwytho cyflwyniad
+            </p>
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint" translate="no">
+              <option value="">Default (loads a stateful submission)</option>
+              <option value="TRADING_ALLOWANCE">Trading income allowance</option>
+              <option value="NOT_FOUND">Not Found</option>
+            </select>
+            <div class="choice">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                data-i18n="itsa-annual.validate-fraud-prevention-headers-ea7c94"
+                for="runFraudPreventionHeaderValidation"
+                >Dilysu’r penawdau atal twyll</label
+              >
+            </div>
+          </div>
+
+          <button data-i18n="itsa-annual.load-annual-submission-e7c98d" type="submit" id="loadBtn" class="btn">
+            Llwytho’r cyflwyniad blynyddol
+          </button>
+        </form>
+      </div>
+
+      <!-- Edit form, shown once a submission has been loaded (or for a first-time entry) -->
+      <div id="annualEditForm" class="form-container" style="display: none">
+        <div id="booksImport"></div>
+
+        <h2 data-i18n="itsa-annual.adjustments-d4c74a">Addasiadau</h2>
+        <p data-i18n="itsa-annual.enter-only-the-figures-that-apply-75e6ae" class="hint">
+          Nodwch y ffigurau sy’n berthnasol yn unig. Gadewch faes ar 0 i’w adael allan o’r hyn a anfonir i CThEF.
+        </p>
+        <div class="form-group">
+          <label data-i18n="itsa-annual.included-non-taxable-profits-bb5638" for="includedNonTaxableProfits"
+            >Elw nad yw’n drethadwy a gynhwyswyd</label
+          >
+          <p data-i18n="itsa-annual.for-example-600-or-193-54-59a197" id="includedNonTaxableProfits-money-hint" class="hint">
+            Er enghraifft, £600 neu £193.54
+          </p>
+          <div class="input-prefix input-prefix--amount">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="includedNonTaxableProfits"
+              name="includedNonTaxableProfits"
+              value="0"
+              aria-describedby="includedNonTaxableProfits-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="itsa-annual.basis-period-adjustment-181c4b" for="basisAdjustment">Addasiad cyfnod sail</label>
+          <p data-i18n="itsa-annual.for-example-600-or-193-54-59a197" id="basisAdjustment-money-hint" class="hint">
+            Er enghraifft, £600 neu £193.54
+          </p>
+          <div class="input-prefix input-prefix--amount">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="basisAdjustment"
+              name="basisAdjustment"
+              value="0"
+              aria-describedby="basisAdjustment-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="itsa-annual.accounting-adjustment-9c03ea" for="accountingAdjustment">Addasiad cyfrifyddu</label>
+          <p data-i18n="itsa-annual.for-example-600-or-193-54-59a197" id="accountingAdjustment-money-hint" class="hint">
+            Er enghraifft, £600 neu £193.54
+          </p>
+          <div class="input-prefix input-prefix--amount">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="accountingAdjustment"
+              name="accountingAdjustment"
+              value="0"
+              aria-describedby="accountingAdjustment-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="itsa-annual.outstanding-business-income-c5d7b7" for="outstandingBusinessIncome"
+            >Incwm busnes sy’n weddill</label
+          >
+          <p data-i18n="itsa-annual.for-example-600-or-193-54-59a197" id="outstandingBusinessIncome-money-hint" class="hint">
+            Er enghraifft, £600 neu £193.54
+          </p>
+          <div class="input-prefix input-prefix--amount">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="outstandingBusinessIncome"
+              name="outstandingBusinessIncome"
+              value="0"
+              aria-describedby="outstandingBusinessIncome-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="itsa-annual.balancing-charge-business-premises-renovation-allowance-b85e65" for="balancingChargeBpra"
+            >Tâl mantoli (lwfans adnewyddu safleoedd busnes)</label
+          >
+          <p data-i18n="itsa-annual.for-example-600-or-193-54-59a197" id="balancingChargeBpra-money-hint" class="hint">
+            Er enghraifft, £600 neu £193.54
+          </p>
+          <div class="input-prefix input-prefix--amount">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="balancingChargeBpra"
+              name="balancingChargeBpra"
+              value="0"
+              aria-describedby="balancingChargeBpra-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="itsa-annual.balancing-charge-other-5afcef" for="balancingChargeOther">Tâl mantoli (arall)</label>
+          <p data-i18n="itsa-annual.for-example-600-or-193-54-59a197" id="balancingChargeOther-money-hint" class="hint">
+            Er enghraifft, £600 neu £193.54
+          </p>
+          <div class="input-prefix input-prefix--amount">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="balancingChargeOther"
+              name="balancingChargeOther"
+              value="0"
+              aria-describedby="balancingChargeOther-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="itsa-annual.goods-and-services-for-own-use-2c71da" for="goodsAndServicesOwnUse"
+            >Nwyddau a gwasanaethau at eich defnydd eich hun</label
+          >
+          <p data-i18n="itsa-annual.for-example-600-or-193-54-59a197" id="goodsAndServicesOwnUse-money-hint" class="hint">
+            Er enghraifft, £600 neu £193.54
+          </p>
+          <div class="input-prefix input-prefix--amount">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="goodsAndServicesOwnUse"
+              name="goodsAndServicesOwnUse"
+              value="0"
+              aria-describedby="goodsAndServicesOwnUse-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="itsa-annual.transition-profit-amount-594564" for="transitionProfitAmount">Swm elw pontio</label>
+          <p data-i18n="itsa-annual.for-example-600-or-193-54-59a197" id="transitionProfitAmount-money-hint" class="hint">
+            Er enghraifft, £600 neu £193.54
+          </p>
+          <div class="input-prefix input-prefix--amount">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="transitionProfitAmount"
+              name="transitionProfitAmount"
+              value="0"
+              aria-describedby="transitionProfitAmount-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="itsa-annual.transition-profit-acceleration-amount-64887d" for="transitionProfitAccelerationAmount"
+            >Swm cyflymiad elw pontio</label
+          >
+          <p data-i18n="itsa-annual.for-example-600-or-193-54-59a197" id="transitionProfitAccelerationAmount-money-hint" class="hint">
+            Er enghraifft, £600 neu £193.54
+          </p>
+          <div class="input-prefix input-prefix--amount">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="transitionProfitAccelerationAmount"
+              name="transitionProfitAccelerationAmount"
+              value="0"
+              aria-describedby="transitionProfitAccelerationAmount-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
+        </div>
+
+        <h2 data-i18n="itsa-annual.allowances-36767c">Lwfansau</h2>
+        <p data-i18n="itsa-annual.claim-the-trading-income-allowance-on-f1dc02" class="hint">
+          Hawliwch y lwfans incwm masnachu ar ei ben ei hun, neu’r lwfansau wedi’u rhestru isod. Nid yw CThEF yn derbyn y ddau.
+        </p>
+        <div class="form-group">
+          <div class="choice">
+            <input type="radio" id="allowanceTypeNone" name="allowanceType" value="" checked /><label
+              data-i18n="itsa-annual.neither-9957d0"
+              for="allowanceTypeNone"
+              >Dim un</label
+            >
+          </div>
+          <div class="choice">
+            <input type="radio" id="allowanceTypeTrading" name="allowanceType" value="trading" /><label
+              data-i18n="itsa-annual.trading-income-allowance-079a0d"
+              for="allowanceTypeTrading"
+              >Lwfans Incwm Masnachu</label
+            >
+          </div>
+          <div class="choice">
+            <input type="radio" id="allowanceTypeItemised" name="allowanceType" value="itemised" /><label
+              data-i18n="itsa-annual.itemised-allowances-9b65a5"
+              for="allowanceTypeItemised"
+              >Lwfansau wedi’u rhestru</label
+            >
+          </div>
+        </div>
+
+        <div id="tradingAllowanceFields">
+          <div class="form-group">
+            <label data-i18n="itsa-annual.trading-income-allowance-079a0d" for="tradingIncomeAllowance">Lwfans Incwm Masnachu</label>
+            <p data-i18n="itsa-annual.for-example-600-or-193-54-59a197" id="tradingIncomeAllowance-money-hint" class="hint">
+              Er enghraifft, £600 neu £193.54
+            </p>
+            <div class="input-prefix input-prefix--amount">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="tradingIncomeAllowance"
+                name="tradingIncomeAllowance"
+                value="0"
+                disabled
+                aria-describedby="tradingIncomeAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div id="itemisedAllowanceFields">
+          <div class="form-group">
+            <label data-i18n="itsa-annual.annual-investment-allowance-146011" for="annualInvestmentAllowance"
+              >Lwfans Buddsoddi Blynyddol</label
+            >
+            <p data-i18n="itsa-annual.for-example-600-or-193-54-59a197" id="annualInvestmentAllowance-money-hint" class="hint">
+              Er enghraifft, £600 neu £193.54
+            </p>
+            <div class="input-prefix input-prefix--amount">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="annualInvestmentAllowance"
+                name="annualInvestmentAllowance"
+                value="0"
+                disabled
+                aria-describedby="annualInvestmentAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="itsa-annual.capital-allowance-main-pool-d980ad" for="capitalAllowanceMainPool"
+              >Lwfans cyfalaf, cronfa brif gyfradd</label
+            >
+            <p data-i18n="itsa-annual.for-example-600-or-193-54-59a197" id="capitalAllowanceMainPool-money-hint" class="hint">
+              Er enghraifft, £600 neu £193.54
+            </p>
+            <div class="input-prefix input-prefix--amount">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="capitalAllowanceMainPool"
+                name="capitalAllowanceMainPool"
+                value="0"
+                disabled
+                aria-describedby="capitalAllowanceMainPool-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="itsa-annual.capital-allowance-special-rate-pool-cf6ba0" for="capitalAllowanceSpecialRatePool"
+              >Lwfans cyfalaf, cronfa gyfradd arbennig</label
+            >
+            <p data-i18n="itsa-annual.for-example-600-or-193-54-59a197" id="capitalAllowanceSpecialRatePool-money-hint" class="hint">
+              Er enghraifft, £600 neu £193.54
+            </p>
+            <div class="input-prefix input-prefix--amount">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="capitalAllowanceSpecialRatePool"
+                name="capitalAllowanceSpecialRatePool"
+                value="0"
+                disabled
+                aria-describedby="capitalAllowanceSpecialRatePool-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="itsa-annual.business-premises-renovation-allowance-9d65ac" for="businessPremisesRenovationAllowance"
+              >Lwfans adnewyddu safleoedd busnes</label
+            >
+            <p data-i18n="itsa-annual.for-example-600-or-193-54-59a197" id="businessPremisesRenovationAllowance-money-hint" class="hint">
+              Er enghraifft, £600 neu £193.54
+            </p>
+            <div class="input-prefix input-prefix--amount">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="businessPremisesRenovationAllowance"
+                name="businessPremisesRenovationAllowance"
+                value="0"
+                disabled
+                aria-describedby="businessPremisesRenovationAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="itsa-annual.enhanced-capital-allowance-0c3d36" for="enhancedCapitalAllowance">Lwfans cyfalaf uwch</label>
+            <p data-i18n="itsa-annual.for-example-600-or-193-54-59a197" id="enhancedCapitalAllowance-money-hint" class="hint">
+              Er enghraifft, £600 neu £193.54
+            </p>
+            <div class="input-prefix input-prefix--amount">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="enhancedCapitalAllowance"
+                name="enhancedCapitalAllowance"
+                value="0"
+                disabled
+                aria-describedby="enhancedCapitalAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="itsa-annual.allowance-on-sales-78d07a" for="allowanceOnSales">Lwfans ar werthiannau</label>
+            <p data-i18n="itsa-annual.for-example-600-or-193-54-59a197" id="allowanceOnSales-money-hint" class="hint">
+              Er enghraifft, £600 neu £193.54
+            </p>
+            <div class="input-prefix input-prefix--amount">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="allowanceOnSales"
+                name="allowanceOnSales"
+                value="0"
+                disabled
+                aria-describedby="allowanceOnSales-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="itsa-annual.capital-allowance-single-asset-pool-762e5e" for="capitalAllowanceSingleAssetPool"
+              >Lwfans cyfalaf, cronfa ased sengl</label
+            >
+            <p data-i18n="itsa-annual.for-example-600-or-193-54-59a197" id="capitalAllowanceSingleAssetPool-money-hint" class="hint">
+              Er enghraifft, £600 neu £193.54
+            </p>
+            <div class="input-prefix input-prefix--amount">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="capitalAllowanceSingleAssetPool"
+                name="capitalAllowanceSingleAssetPool"
+                value="0"
+                disabled
+                aria-describedby="capitalAllowanceSingleAssetPool-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="itsa-annual.zero-emissions-car-allowance-25a1a8" for="zeroEmissionsCarAllowance"
+              >Lwfans car allyriadau sero</label
+            >
+            <p data-i18n="itsa-annual.for-example-600-or-193-54-59a197" id="zeroEmissionsCarAllowance-money-hint" class="hint">
+              Er enghraifft, £600 neu £193.54
+            </p>
+            <div class="input-prefix input-prefix--amount">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="zeroEmissionsCarAllowance"
+                name="zeroEmissionsCarAllowance"
+                value="0"
+                disabled
+                aria-describedby="zeroEmissionsCarAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
+          </div>
+          <div id="structuredBuildingAllowanceRows"></div>
+          <div id="enhancedStructuredBuildingAllowanceRows"></div>
+        </div>
+
+        <h2 data-i18n="itsa-annual.non-financial-details-079b30">Manylion anariannol</h2>
+        <div class="form-group">
+          <label data-i18n="itsa-annual.class-4-national-insurance-exemption-reason-471dd5" for="class4NicsExemptionReason"
+            >Rheswm dros eithriad Yswiriant Gwladol Dosbarth 4</label
+          >
+          <select id="class4NicsExemptionReason" name="class4NicsExemptionReason">
+            <option data-i18n="itsa-annual.not-exempt-254ebe" value="">Heb ei eithrio</option>
+            <option data-i18n="itsa-annual.non-resident-e469e7" value="non-resident">Dibreswyl</option>
+            <option data-i18n="itsa-annual.trustee-a791ba" value="trustee">Ymddiriedolwr</option>
+            <option data-i18n="itsa-annual.diver-efbe4f" value="diver">Deifiwr</option>
+            <option data-i18n="itsa-annual.over-state-pension-age-0f43fa" value="over-state-pension-age">
+              Dros Oedran Pensiwn y Wladwriaeth
+            </option>
+          </select>
+        </div>
+
+        <div id="submissionCost" class="submission-cost"></div>
+        <button data-i18n="itsa-annual.save-annual-submission-426ccf" type="button" id="saveBtn" class="btn">
+          Cadw’r cyflwyniad blynyddol
+        </button>
+      </div>
+
+      <!-- Results Display -->
+      <div id="annualSubmissionResults" class="results-container" style="display: none">
+        <div id="annualSubmissionCopy"></div>
+        <div class="button-group">
+          <button data-i18n="itsa-annual.load-another-ec96cc" type="button" id="newSearchBtn" class="secondary-button">
+            Llwytho un arall
+          </button>
+        </div>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../../lib/welsh-text.js"></script>
+    <script src="../../../widgets/page-chrome.js"></script>
+    <script src="../../../lib/env-loader.js"></script>
+    <script src="../../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../../submit.js"></script>
+    <script src="../../../developer-mode.js"></script>
+    <script src="../../../lib/request-cache.js"></script>
+    <script src="../../../lib/carried-identifiers.js"></script>
+    <script src="../../../lib/toml-parser.js"></script>
+    <script src="../../../lib/money-input.js"></script>
+    <script src="../../../lib/self-employment-expenses.js"></script>
+    <script src="../../../lib/structured-building-allowance-rows.js"></script>
+    <script src="../../../lib/form-errors.js"></script>
+    <script src="../../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../../lib/services/hmrc-service.js"></script>
+    <script src="../../../widgets/entitlement-status.js"></script>
+    <script src="../../../widgets/auth-status.js"></script>
+    <script src="../../../widgets/status-messages.js"></script>
+    <script src="../../../widgets/signed-out-panel.js"></script>
+    <script src="../../../widgets/pass-redeemer.js"></script>
+    <script src="../../../widgets/books-import.js"></script>
+    <script src="../../../widgets/submission-cost.js"></script>
+    <script src="../../../hmrc/itsa/annualSubmission.page.js"></script>
+  </body>
+</html>

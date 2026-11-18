@@ -17,29 +17,54 @@ import {
   recordTable,
 } from "./submission-record.js";
 
+// page-chrome.js gives the text in the reader's language; under Node, and without it, the English stands.
+function siteText(id, english, values) {
+  if (globalThis.siteText) return globalThis.siteText(id, english, values);
+  return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+}
+
+function inWelsh() {
+  return globalThis.siteLanguage?.chrome?.() === "cy";
+}
+
 export const ABSENT = "—";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+// HMRC's Welsh month names; Chromium's Intl has no Welsh dates.
+const WELSH_MONTHS = [
+  "Ionawr",
+  "Chwefror",
+  "Mawrth",
+  "Ebrill",
+  "Mai",
+  "Mehefin",
+  "Gorffennaf",
+  "Awst",
+  "Medi",
+  "Hydref",
+  "Tachwedd",
+  "Rhagfyr",
+];
 
-const CALCULATION_TYPE_LABELS = {
-  "in-year": "In-year estimate",
-  "intent-to-finalise": "Intent to finalise",
-  "final-declaration": "Final declaration",
-};
+const calculationTypeLabels = () => ({
+  "in-year": siteText("itsa.calc-type-in-year", "In-year estimate"),
+  "intent-to-finalise": siteText("itsa.calc-type-intent", "Intent to finalise"),
+  "final-declaration": siteText("itsa.final-declaration", "Final declaration"),
+});
 
-const INCOME_SOURCE_TYPE_LABELS = {
-  "self-employment": "Self-employment",
-  "uk-property": "UK property",
-  "foreign-property": "Foreign property",
-  "uk-property-fhl": "UK furnished holiday letting",
-};
+const incomeSourceTypeLabels = () => ({
+  "self-employment": siteText("itsa.self-employment", "Self-employment"),
+  "uk-property": siteText("itsa.uk-property", "UK property"),
+  "foreign-property": siteText("itsa.foreign-property", "Foreign property"),
+  "uk-property-fhl": siteText("itsa.uk-fhl", "UK furnished holiday letting"),
+});
 
-const BUSINESS_FIGURE_ROWS = [
-  ["taxableProfit", "Taxable profit"],
-  ["totalBroughtForwardIncomeTaxLosses", "Brought forward losses"],
-  ["broughtForwardIncomeTaxLossesUsed", "Brought forward losses used"],
-  ["adjustedIncomeTaxLoss", "Adjusted loss"],
-  ["taxableProfitAfterIncomeTaxLossesDeduction", "Taxable profit after losses deducted"],
+const businessFigureRows = () => [
+  ["taxableProfit", siteText("itsa.field-taxable-profit", "Taxable profit")],
+  ["totalBroughtForwardIncomeTaxLosses", siteText("itsa.brought-forward-losses", "Brought forward losses")],
+  ["broughtForwardIncomeTaxLossesUsed", siteText("itsa.brought-forward-losses-used", "Brought forward losses used")],
+  ["adjustedIncomeTaxLoss", siteText("itsa.adjusted-loss", "Adjusted loss")],
+  ["taxableProfitAfterIncomeTaxLossesDeduction", siteText("itsa.profit-after-losses", "Taxable profit after losses deducted")],
 ];
 
 function isAmount(value) {
@@ -69,7 +94,7 @@ export function formatLongDate(value) {
   if (!match) return null;
   const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
   if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-  return `${day} ${MONTHS[month - 1]} ${year}`;
+  return `${day} ${(inWelsh() ? WELSH_MONTHS : MONTHS)[month - 1]} ${year}`;
 }
 
 /**
@@ -95,6 +120,10 @@ export function formatTimestamp(value) {
       .formatToParts(moment)
       .map((part) => [part.type, part.value]),
   );
+  if (inWelsh()) {
+    const month = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", month: "numeric" }).format(moment));
+    return `${parts.day} ${WELSH_MONTHS[month - 1]} ${parts.year} am ${parts.hour}:${parts.minute}`;
+  }
   return `${parts.day} ${parts.month} ${parts.year} at ${parts.hour}:${parts.minute}`;
 }
 
@@ -119,7 +148,7 @@ export function formatNino(nino) {
 export function calculationTypeLabel(calculationType) {
   const text = nonEmptyText(calculationType);
   if (!text) return null;
-  return CALCULATION_TYPE_LABELS[text] || humanise(text);
+  return calculationTypeLabels()[text] || humanise(text);
 }
 
 /**
@@ -131,7 +160,9 @@ export function calculationTypeLabel(calculationType) {
 export function businessLabel(entry) {
   const source = entry && typeof entry === "object" ? entry : {};
   const type = nonEmptyText(source.incomeSourceType);
-  const name = nonEmptyText(source.incomeSourceName) || (type ? INCOME_SOURCE_TYPE_LABELS[type] || humanise(type) : "Business");
+  const name =
+    nonEmptyText(source.incomeSourceName) ||
+    (type ? incomeSourceTypeLabels()[type] || humanise(type) : siteText("itsa.business", "Business"));
   const id = nonEmptyText(source.incomeSourceId);
   return id ? `${name} (${id})` : name;
 }
@@ -147,7 +178,7 @@ function figureCell(value, kind, valueId) {
 
 function rowsTable(taxYear, rows) {
   return recordTable({
-    columns: [nonEmptyText(taxYear) || "Amount"],
+    columns: [nonEmptyText(taxYear) || siteText("widget.field-amount", "Amount")],
     rows: rows.map((row) => ({
       label: String(row.label ?? ""),
       style: row.total ? "total" : undefined,
@@ -160,7 +191,7 @@ function businessesTable(businesses) {
   const entries = businesses.filter((entry) => entry && typeof entry === "object");
   return recordTable({
     columns: entries.map(businessLabel),
-    rows: BUSINESS_FIGURE_ROWS.map(([key, label]) => ({
+    rows: businessFigureRows().map(([key, label]) => ({
       label,
       cells: entries.map((entry) => figureCell(entry[key], "money")),
     })),
@@ -170,21 +201,23 @@ function businessesTable(businesses) {
 function periodLine(metadata) {
   const from = formatLongDate(metadata.periodFrom);
   const to = formatLongDate(metadata.periodTo);
-  return from && to ? `${from} to ${to}` : null;
+  return from && to ? siteText("widget.date-range", "{start} to {end}", { start: from, end: to }) : null;
 }
 
 function heading({ title, nino, metadata, taxYear, subtitleParts }) {
   const referenceHtml = [];
   const formattedNino = formatNino(nino);
-  if (formattedNino) referenceHtml.push(`National Insurance number ${escapeRecordText(formattedNino)}`);
+  if (formattedNino)
+    referenceHtml.push(siteText("itsa.record-nino", "National Insurance number {nino}", { nino: escapeRecordText(formattedNino) }));
   const calculationId = nonEmptyText(metadata.calculationId);
-  if (calculationId) referenceHtml.push(`Calculation ID ${escapeRecordText(calculationId)}`);
+  if (calculationId)
+    referenceHtml.push(siteText("itsa.record-calculation-id", "Calculation ID {id}", { id: escapeRecordText(calculationId) }));
   const year = nonEmptyText(taxYear) || nonEmptyText(metadata.taxYear);
   return recordHeading({
     nameHtml: escapeRecordText(title),
     referenceHtml,
-    title: year ? `Tax year ${year}` : "Tax year",
-    subtitleHtml: escapeRecordText(subtitleParts.filter(Boolean).join(". ") || "Calculated by HMRC"),
+    title: year ? siteText("itsa.record-tax-year", "Tax year {year}", { year }) : siteText("itsa.tax-year", "Tax year"),
+    subtitleHtml: escapeRecordText(subtitleParts.filter(Boolean).join(". ") || siteText("itsa.calculated-by-hmrc", "Calculated by HMRC")),
   });
 }
 
@@ -198,16 +231,28 @@ function safeCalc(calculation) {
   return calc && typeof calc === "object" ? calc : {};
 }
 
-const TOTAL_LABEL = "Total Income Tax and National Insurance due";
+const totalLabel = () => siteText("itsa.total-due", "Total Income Tax and National Insurance due");
 
-const EXPLAIN_TOTAL =
-  "This is the amount HMRC calculates you owe for the tax year, Income Tax and National Insurance together. It changes when you send HMRC more figures.";
-const EXPLAIN_BREAKDOWN =
-  "Income Tax and National Insurance are shown on their own lines. Tax already deducted is tax that you or others have already paid on this income.";
-const EXPLAIN_ALLOWANCES =
-  "Allowances and deductions reduce the income that HMRC taxes. HMRC chose these lines from the figures you and others have sent. A dash means HMRC gave no figure.";
-const EXPLAIN_BUSINESSES =
-  "There is one column for each business that HMRC counted. A brought forward loss shows where HMRC used a loss from an earlier year against this year's profit.";
+const explainTotal = () =>
+  siteText(
+    "itsa.record-explain-total",
+    "This is the amount HMRC calculates you owe for the tax year, Income Tax and National Insurance together. It changes when you send HMRC more figures.",
+  );
+const explainBreakdown = () =>
+  siteText(
+    "itsa.record-explain-breakdown",
+    "Income Tax and National Insurance are shown on their own lines. Tax already deducted is tax that you or others have already paid on this income.",
+  );
+const explainAllowances = () =>
+  siteText(
+    "itsa.record-explain-allowances",
+    "Allowances and deductions reduce the income that HMRC taxes. HMRC chose these lines from the figures you and others have sent. A dash means HMRC gave no figure.",
+  );
+const explainBusinesses = () =>
+  siteText(
+    "itsa.record-explain-businesses",
+    "There is one column for each business that HMRC counted. A brought forward loss shows where HMRC used a loss from an earlier year against this year's profit.",
+  );
 
 /**
  * The customer copy of HMRC's calculation: a record in four sections, each with a plain
@@ -234,56 +279,74 @@ export function calculationCopyHtml({ calculation, nino, taxYear, calculationTyp
   const totalDue =
     calc.taxCalculation && typeof calc.taxCalculation === "object" ? calc.taxCalculation.totalIncomeTaxAndNicsDue : undefined;
   const recordHead = heading({
-    title: "Income Tax calculation",
+    title: siteText("itsa.income-tax-calculation", "Income Tax calculation"),
     nino,
     metadata,
     taxYear: year,
-    subtitleParts: [calculationTypeLabel(type), periodLine(metadata), timestamp ? `Calculated by HMRC on ${timestamp}` : null],
+    subtitleParts: [
+      calculationTypeLabel(type),
+      periodLine(metadata),
+      timestamp ? siteText("itsa.record-calculated-on", "Calculated by HMRC on {date}", { date: timestamp }) : null,
+    ],
   });
 
   const sections = [
     {
-      heading: "What is due",
-      explanation: EXPLAIN_TOTAL,
+      heading: siteText("itsa.record-what-is-due", "What is due"),
+      explanation: explainTotal(),
       recordHtml:
         recordHead +
-        rowsTable(year, [{ label: TOTAL_LABEL, value: totalDue, total: true, valueId: "totalIncomeTaxAndNicsDue", kind: "money" }]),
+        rowsTable(year, [{ label: totalLabel(), value: totalDue, total: true, valueId: "totalIncomeTaxAndNicsDue", kind: "money" }]),
     },
     {
-      heading: "Income Tax and National Insurance",
-      explanation: EXPLAIN_BREAKDOWN,
+      heading: siteText("itsa.record-tax-and-nics", "Income Tax and National Insurance"),
+      explanation: explainBreakdown(),
       recordHtml: rowsTable(year, breakdownRows),
     },
     {
-      heading: "Allowances and deductions",
-      explanation: EXPLAIN_ALLOWANCES,
+      heading: siteText("itsa.record-allowances", "Allowances and deductions"),
+      explanation: explainAllowances(),
       recordHtml:
         allowanceRows.length > 0
           ? rowsTable(year, allowanceRows)
-          : `<p class="no-data">HMRC's calculation carries no allowances or deductions.</p>`,
+          : `<p class="no-data">${siteText("itsa.record-no-allowances", "HMRC's calculation carries no allowances or deductions.")}</p>`,
     },
   ];
 
   const businesses = Array.isArray(calc.businessProfitAndLoss) ? calc.businessProfitAndLoss : [];
   if (businesses.some((entry) => entry && typeof entry === "object")) {
-    sections.push({ heading: "Your businesses", explanation: EXPLAIN_BUSINESSES, recordHtml: businessesTable(businesses) });
+    sections.push({
+      heading: siteText("itsa.record-your-businesses", "Your businesses"),
+      explanation: explainBusinesses(),
+      recordHtml: businessesTable(businesses),
+    });
   }
 
   return customerCopyHtml({
-    title: year ? `Your copy of the Income Tax calculation for ${year}` : "Your copy of the Income Tax calculation",
-    reference: { label: "Calculation ID", value: nonEmptyText(metadata.calculationId) || ABSENT },
+    title: year
+      ? siteText("itsa.record-calculation-copy-year", "Your copy of the Income Tax calculation for {year}", { year })
+      : siteText("itsa.record-calculation-copy", "Your copy of the Income Tax calculation"),
+    reference: { label: siteText("itsa.calculation-id", "Calculation ID"), value: nonEmptyText(metadata.calculationId) || ABSENT },
     status: {
       kind: "pending",
-      text: isFinalise ? "Calculated by HMRC, not yet declared" : "Estimate calculated by HMRC",
+      text: isFinalise
+        ? siteText("itsa.record-not-yet-declared", "Calculated by HMRC, not yet declared")
+        : siteText("itsa.record-estimate", "Estimate calculated by HMRC"),
     },
-    date: timestamp || "Not given by HMRC",
+    date: timestamp || siteText("itsa.record-not-given", "Not given by HMRC"),
     sections,
     links,
   });
 }
 
-export const DECLARATION_WORDING =
-  "I confirm this information is correct and complete to the best of my knowledge. I understand I may face financial penalties and prosecution if I give false information.";
+// The declaration as the reader made it, in the words of the page's tick box; a Welsh reader made
+// it in HMRC's own Welsh wording.
+function declarationWording() {
+  return siteText(
+    "itsa.declaration-wording",
+    "I confirm this information is correct and complete to the best of my knowledge. I understand I may face financial penalties and prosecution if I give false information.",
+  );
+}
 
 /**
  * The customer copy of the final declaration as made: the figures the customer confirmed, the
@@ -310,41 +373,53 @@ export function declarationCopyHtml({ calculation, nino, taxYear, calculationId,
     calc.taxCalculation && typeof calc.taxCalculation === "object" ? calc.taxCalculation.totalIncomeTaxAndNicsDue : undefined;
 
   const recordHead = heading({
-    title: "Final declaration",
+    title: siteText("itsa.final-declaration", "Final declaration"),
     nino,
     metadata,
     taxYear: year,
     subtitleParts: [
       periodLine(metadata),
-      filed ? `Declared on ${filed}` : null,
-      calculatedAt ? `Based on the calculation HMRC made on ${calculatedAt}` : null,
+      filed ? siteText("itsa.record-declared-on", "Declared on {date}", { date: filed }) : null,
+      calculatedAt ? siteText("itsa.record-based-on", "Based on the calculation HMRC made on {date}", { date: calculatedAt }) : null,
     ],
   });
 
   const breakdown = Array.isArray(breakdownRows) ? breakdownRows : [];
   const breakdownSection = breakdown.some((row) => isAmount(row.value))
-    ? [{ heading: "How the total is made up", explanation: EXPLAIN_BREAKDOWN, recordHtml: rowsTable(year, breakdown) }]
+    ? [
+        {
+          heading: siteText("itsa.record-how-made-up", "How the total is made up"),
+          explanation: explainBreakdown(),
+          recordHtml: rowsTable(year, breakdown),
+        },
+      ]
     : [];
 
   return customerCopyHtml({
-    title: year ? `Your copy of the final declaration for ${year}` : "Your copy of the final declaration",
-    reference: { label: "Calculation ID", value: nonEmptyText(metadata.calculationId) || ABSENT },
-    status: { kind: "accepted", text: "Accepted by HMRC" },
-    date: filed || "Not recorded",
+    title: year
+      ? siteText("itsa.record-declaration-copy-year", "Your copy of the final declaration for {year}", { year })
+      : siteText("itsa.record-declaration-copy", "Your copy of the final declaration"),
+    reference: { label: siteText("itsa.calculation-id", "Calculation ID"), value: nonEmptyText(metadata.calculationId) || ABSENT },
+    status: { kind: "accepted", text: siteText("itsa.accepted-by-hmrc", "Accepted by HMRC") },
+    date: filed || siteText("itsa.record-not-recorded", "Not recorded"),
     sections: [
       {
-        heading: "What you declared",
-        explanation:
+        heading: siteText("itsa.record-what-you-declared", "What you declared"),
+        explanation: siteText(
+          "itsa.record-explain-declared",
           "This is the total that you confirmed. It comes from the calculation HMRC made, which is named by the calculation ID above.",
+        ),
         recordHtml:
-          recordHead + rowsTable(year, [{ label: TOTAL_LABEL, value: totalDue, total: true, valueId: "declaredTotalDue", kind: "money" }]),
+          recordHead + rowsTable(year, [{ label: totalLabel(), value: totalDue, total: true, valueId: "declaredTotalDue", kind: "money" }]),
       },
       ...breakdownSection,
       {
-        heading: "Your confirmation",
-        explanation:
+        heading: siteText("itsa.record-your-confirmation", "Your confirmation"),
+        explanation: siteText(
+          "itsa.record-explain-confirmation",
           "You ticked this statement before you sent the declaration. HMRC holds your Self Assessment return for the year as filed.",
-        recordHtml: `<div class="page"><p class="approval">${escapeRecordText(DECLARATION_WORDING)}</p></div>`,
+        ),
+        recordHtml: `<div class="page"><p class="approval">${escapeRecordText(declarationWording())}</p></div>`,
       },
     ],
     links,

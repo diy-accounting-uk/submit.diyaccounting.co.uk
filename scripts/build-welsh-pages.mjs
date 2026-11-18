@@ -69,6 +69,34 @@ export const WELSH_PAGES = [
   ].map(([id, en]) => ({ id, en, cy: `cy/${en}`, enUrl: `${SITE_ORIGIN}/${en}`, marks: "build" })),
 
   // LANG10b: the Income Tax pages, ids itsa-*.
+  ...[
+    ["itsa-dashboard", "hmrc/itsa/dashboard.html"],
+    ["itsa-business-details", "hmrc/itsa/businessDetails.html"],
+    ["itsa-obligations", "hmrc/itsa/obligations.html"],
+    ["itsa-se-period", "hmrc/itsa/selfEmploymentPeriod.html"],
+    ["itsa-se-periods", "hmrc/itsa/selfEmploymentPeriods.html"],
+    ["itsa-se-view", "hmrc/itsa/selfEmploymentPeriodView.html"],
+    ["itsa-se-amend", "hmrc/itsa/selfEmploymentPeriodAmend.html"],
+    ["itsa-annual", "hmrc/itsa/annualSubmission.html"],
+    ["itsa-calculation", "hmrc/itsa/taxCalculation.html"],
+    ["itsa-uk-period", "hmrc/itsa/ukPropertyPeriod.html"],
+    ["itsa-uk-periods", "hmrc/itsa/ukPropertyPeriods.html"],
+    ["itsa-uk-view", "hmrc/itsa/ukPropertyPeriodView.html"],
+    ["itsa-uk-amend", "hmrc/itsa/ukPropertyPeriodAmend.html"],
+    ["itsa-uk-annual", "hmrc/itsa/ukPropertyAnnualSubmission.html"],
+    ["itsa-uk-adjustments", "hmrc/itsa/ukPropertyAdjustments.html"],
+    ["itsa-fp-details", "hmrc/itsa/foreignPropertyDetails.html"],
+    ["itsa-fp-period", "hmrc/itsa/foreignPropertyPeriod.html"],
+    ["itsa-fp-periods", "hmrc/itsa/foreignPropertyPeriods.html"],
+    ["itsa-fp-view", "hmrc/itsa/foreignPropertyPeriodView.html"],
+    ["itsa-fp-amend", "hmrc/itsa/foreignPropertyPeriodAmend.html"],
+    ["itsa-fp-annual", "hmrc/itsa/foreignPropertyAnnualSubmission.html"],
+    ["itsa-fp-adjustments", "hmrc/itsa/foreignPropertyAdjustments.html"],
+    ["itsa-adjustments", "hmrc/itsa/adjustments.html"],
+    ["itsa-tla", "hmrc/itsa/taxLiabilityAdjustments.html"],
+    ["itsa-losses", "hmrc/itsa/lossesAndClaims.html"],
+    ["itsa-final", "hmrc/itsa/finalDeclaration.html"],
+  ].map(([id, en]) => ({ id, en, cy: `cy/${en}`, enUrl: `${SITE_ORIGIN}/${en}`, marks: "build" })),
 
   // LANG11a, LANG11b: the Companies House pages, ids ch-*.
 ];

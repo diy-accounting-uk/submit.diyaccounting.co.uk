@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 
 // The picked business travels as a businessId/typeOfBusiness pair, stored under this
@@ -116,7 +122,9 @@ function displayBusinessPicker(businesses) {
   const costLine = document.getElementById("yearTokenCost");
 
   if (!businesses || businesses.length === 0) {
-    list.replaceChildren(el("p", "no-data", "No businesses found for the specified National Insurance number."));
+    list.replaceChildren(
+      el("p", "no-data", siteText("itsa.no-businesses-found", "No businesses found for the specified National Insurance number.")),
+    );
     costLine.textContent = "";
     document.getElementById("businessPickerResults").style.display = "block";
     return;
@@ -146,7 +154,19 @@ function displayBusinessPicker(businesses) {
   );
 
   const yearTokens = businesses.length * TOKENS_PER_BUSINESS_YEAR + FINAL_DECLARATION_TOKENS;
-  costLine.textContent = `This year costs ${yearTokens} tokens for the ${businesses.length} business${businesses.length === 1 ? "" : "es"} HMRC listed: ${TOKENS_PER_BUSINESS_YEAR} per business for the quarterly updates, plus ${FINAL_DECLARATION_TOKENS} for the final declaration.`;
+  const costValues = { tokens: yearTokens, count: businesses.length, each: TOKENS_PER_BUSINESS_YEAR, final: FINAL_DECLARATION_TOKENS };
+  costLine.textContent =
+    businesses.length === 1
+      ? siteText(
+          "itsa-dashboard.year-cost-one",
+          "This year costs {tokens} tokens for the {count} business HMRC listed: {each} per business for the quarterly updates, plus {final} for the final declaration.",
+          costValues,
+        )
+      : siteText(
+          "itsa-dashboard.year-cost-many",
+          "This year costs {tokens} tokens for the {count} businesses HMRC listed: {each} per business for the quarterly updates, plus {final} for the final declaration.",
+          costValues,
+        );
 
   // usage.html carries the same figures beside the running total it already shows (D6),
   // so they travel together rather than being computed twice.
@@ -184,7 +204,7 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
   if (!scopeSufficient) {
     if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     showLoading();
-    showStatus("Initiating HMRC authentication...", "info");
+    showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
     const state = generateRandomState();
     const hmrcAccount = sessionStorage.getItem("hmrcAccount");
     sessionStorage.setItem("oauth_state", state);
@@ -211,12 +231,12 @@ async function handleFindBusinessesSubmission(event) {
     try {
       showLoading();
       hideStatus();
-      showStatus("Finding your businesses...", "info");
+      showStatus(siteText("itsa-dashboard.finding", "Finding your businesses..."), "info");
       const result = await runFindBusinesses(nino, hmrcGrantId);
       displayBusinessPicker(result.listOfBusinesses || []);
       hideStatus();
     } catch (error) {
-      showStatus(`Failed to find your businesses: ${error.message}`, "error");
+      showStatus(siteText("itsa-dashboard.find-failed", "Failed to find your businesses: {reason}", { reason: error.message }), "error");
     } finally {
       hideLoading();
     }
@@ -231,7 +251,7 @@ async function continueAfterOAuth() {
 
     document.getElementById("nino").value = pending.nino;
     showLoading();
-    showStatus("Finding your businesses...", "info");
+    showStatus(siteText("itsa-dashboard.finding", "Finding your businesses..."), "info");
     const result = await runFindBusinesses(pending.nino, hmrcGrantId);
     displayBusinessPicker(result.listOfBusinesses || []);
     hideStatus();
@@ -239,7 +259,7 @@ async function continueAfterOAuth() {
     sessionStorage.removeItem("currentActivity");
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
-    showStatus(`Failed: ${error.message}`, "error");
+    showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
     sessionStorage.removeItem("pendingDashboardBusinessPickerRequest");
     window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("hmrcTokenScope");

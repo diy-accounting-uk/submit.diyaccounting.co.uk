@@ -12,6 +12,10 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/hmrc/itsa/finalDeclaration.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/itsa/finalDeclaration.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/finalDeclaration.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/itsa/finalDeclaration.html" />
     <link rel="stylesheet" href="../../submit.css" />
     <link rel="stylesheet" href="../../lib/hmrc-field-table.css" />
     <link rel="stylesheet" href="../../submission-record.css" />
@@ -21,7 +25,7 @@
     <script src="../../lib/analytics.js"></script>
   </head>
   <body>
-    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
       <h1>Final declaration</h1>
@@ -33,7 +37,7 @@
         <strong>Status: sandbox.</strong> This runs against HMRC's sandbox. Nothing you send reaches your real HMRC record. Production waits
         on HMRC's recognition of our software after its 2027 update.
       </p>
-      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator"><span>Synthetic mode - calls go to HMRC's sandbox API</span></div>
 
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
@@ -86,7 +90,7 @@
           <div id="developerSection" class="form-group" style="display: none">
             <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
             <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios for filing the final declaration</p>
-            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint" translate="no">
               <option value="">Default (declaration succeeds)</option>
               <option value="RECENT_SUBMISSIONS_EXIST">Recent submissions exist</option>
               <option value="FINAL_DECLARATION_RECEIVED">Final declaration already received</option>
@@ -94,7 +98,12 @@
             <div class="form-group">
               <label for="calculationTestScenario">Calculation test scenario (Developer/Sandbox only)</label>
               <p id="calculationTestScenario-hint" class="hint">The HMRC sandbox example returned when retrieving the calculation</p>
-              <select id="calculationTestScenario" name="calculationTestScenario" aria-describedby="calculationTestScenario-hint">
+              <select
+                id="calculationTestScenario"
+                name="calculationTestScenario"
+                aria-describedby="calculationTestScenario-hint"
+                translate="no"
+              >
                 <option value="">Default (a UK self-employment example)</option>
                 <option value="UK_SE_GIFTAID_EXAMPLE">UK self-employment with Gift Aid</option>
                 <option value="SCOT_SE_DIVIDENDS_EXAMPLE">Scottish self-employment with dividends</option>
@@ -115,8 +124,10 @@
       <!-- Declaration form, shown after a successful retrieve -->
       <div id="declarationContainer" class="results-container" style="display: none">
         <div id="calculationDisclaimer" class="status-message status-warning">
-          This is an estimate based on the information you've submitted so far. HMRC produced this calculation, and it may change if you
-          submit more information.
+          <span
+            >This is an estimate based on the information you've submitted so far. HMRC produced this calculation, and it may change if you
+            submit more information.</span
+          >
         </div>
 
         <div id="calculationCopy"></div>
@@ -130,8 +141,10 @@
         <div id="businessesList"></div>
         <p id="taxLiabilityAdjustmentLine" class="hint"></p>
         <div id="unclaimedLossWarning" class="status-message status-warning" style="display: none" role="alert">
-          A business above shows a loss with no claim recorded against it. Visit Losses and Claims before declaring if you meant to carry it
-          forward, sideways or back.
+          <span
+            >A business above shows a loss with no claim recorded against it. Visit Losses and Claims before declaring if you meant to carry
+            it forward, sideways or back.</span
+          >
         </div>
 
         <div id="notReadyForDeclaration" class="status-message status-error" style="display: none" role="alert"></div>
@@ -153,7 +166,7 @@
 
         <div id="recentSubmissionsChanged" style="display: none">
           <div class="status-message status-error" role="alert">
-            A figure has changed since this calculation. Request a fresh calculation before declaring again.
+            <span>A figure has changed since this calculation. Request a fresh calculation before declaring again.</span>
           </div>
           <a href="taxCalculation.html" class="btn">Request a fresh calculation</a>
         </div>

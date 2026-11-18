@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId"));
@@ -19,7 +25,9 @@ function isCumulativeTaxYear(taxYear) {
 function updateSubmissionModelUI() {
   const cumulative = isCumulativeTaxYear(document.getElementById("taxYear").value.trim());
   document.getElementById("cumulativeListNote").style.display = cumulative ? "block" : "none";
-  document.getElementById("retrieveBtn").textContent = cumulative ? "Show current total" : "List period summaries";
+  document.getElementById("retrieveBtn").textContent = cumulative
+    ? siteText("itsa.show-current-total", "Show current total")
+    : siteText("itsa.list-period-summaries", "List period summaries");
 }
 
 function hideSearchCriteria() {
@@ -84,7 +92,7 @@ async function runRequest(criteria, hmrcGrantId) {
   try {
     showLoading();
     hideStatus();
-    showStatus("Retrieving period summaries...", "info");
+    showStatus(siteText("itsa.periods-retrieving", "Retrieving period summaries..."), "info");
     const result = await fetchResult(criteria, hmrcGrantId);
     if (isCumulativeTaxYear(criteria.taxYear)) displayCurrentTotal(result);
     else displayPeriods(result.periods || []);
@@ -94,13 +102,16 @@ async function runRequest(criteria, hmrcGrantId) {
     if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
       sessionStorage.removeItem("hmrcTokenScope");
-      showStatus("Access token expired. Please try again.", "error");
+      showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
     } else if (error.status === 404 && isCumulativeTaxYear(criteria.taxYear)) {
       displayCurrentTotal(null);
       document.getElementById("periodsResults").style.display = "block";
       hideStatus();
     } else {
-      showStatus(`Failed to retrieve period summaries: ${error.message}`, "error");
+      showStatus(
+        siteText("itsa.periods-retrieve-failed-reason", "Failed to retrieve period summaries: {reason}", { reason: error.message }),
+        "error",
+      );
     }
   } finally {
     hideLoading();
@@ -132,7 +143,7 @@ async function handleFormSubmission(event) {
   if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
   try {
     showLoading();
-    showStatus("Initiating HMRC authentication...", "info");
+    showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
     const state = generateRandomState();
     sessionStorage.setItem("oauth_state", state);
     sessionStorage.setItem(PENDING_KEY, JSON.stringify(criteria));
@@ -148,7 +159,7 @@ async function handleFormSubmission(event) {
     } catch {}
     window.location.href = authResponseUrl;
   } catch (error) {
-    showStatus(`Authentication failed: ${error.message}`, "error");
+    showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
     hideLoading();
   }
 }
@@ -157,7 +168,10 @@ async function handleFormSubmission(event) {
 function usePeriod(submissionId) {
   window.CarriedIdentifiers.remember("submissionId", submissionId);
   document.getElementById("periodNextSteps").hidden = false;
-  showStatus(`Period ${submissionId} is chosen. View it or amend it with the links below the list.`, "info");
+  showStatus(
+    siteText("itsa.period-chosen", "Period {id} is chosen. View it or amend it with the links below the list.", { id: submissionId }),
+    "info",
+  );
 }
 
 function displayPeriods(periods) {
@@ -166,19 +180,24 @@ function displayPeriods(periods) {
     tableContainer.replaceChildren(
       Object.assign(document.createElement("p"), {
         className: "no-data",
-        textContent: "No period summaries found for the specified business and tax year.",
+        textContent: siteText("itsa.periods-none", "No period summaries found for the specified business and tax year."),
       }),
     );
     return;
   }
   window.HmrcFieldTable.mountResultsTable(
     tableContainer,
-    [{ label: "Submission ID" }, { label: "Start date" }, { label: "End date" }, { label: "Next step", kind: "action" }],
+    [
+      { label: siteText("itsa.submission-id", "Submission ID") },
+      { label: siteText("itsa.start-date", "Start date") },
+      { label: siteText("itsa.end-date", "End date") },
+      { label: siteText("itsa.next-step", "Next step"), kind: "action" },
+    ],
     periods.map((period) => [
       period.submissionId,
       period.fromDate,
       period.toDate,
-      { label: "Use this period", onClick: () => usePeriod(period.submissionId) },
+      { label: siteText("itsa.use-this-period", "Use this period"), onClick: () => usePeriod(period.submissionId) },
     ]),
   );
 }
@@ -191,7 +210,7 @@ function expensesTotal(expenses) {
 
 function entryName(entry) {
   if (entry.countryCode) return window.countryCodes.countryName(entry.countryCode);
-  return entry.propertyId ? `Property ${entry.propertyId}` : undefined;
+  return entry.propertyId ? siteText("itsa.record-property-id", "Property {id}", { id: entry.propertyId }) : undefined;
 }
 
 function displayCurrentTotal(periodSummary) {
@@ -199,18 +218,21 @@ function displayCurrentTotal(periodSummary) {
   const entries = periodSummary?.foreignProperty || [];
   if (!periodSummary || entries.length === 0) {
     tableContainer.replaceChildren(
-      Object.assign(document.createElement("p"), { className: "no-data", textContent: "HMRC has no total on file yet for this tax year." }),
+      Object.assign(document.createElement("p"), {
+        className: "no-data",
+        textContent: siteText("itsa-se-amend.current-total-none", "HMRC has no total on file yet for this tax year."),
+      }),
     );
     return;
   }
   window.HmrcFieldTable.mountResultsTable(
     tableContainer,
     [
-      { label: "Country or property" },
-      { label: "Reported to" },
-      { label: "Rental income (year to date)", kind: "money" },
-      { label: "Other income (year to date)", kind: "money" },
-      { label: "Expenses (year to date)", kind: "money" },
+      { label: siteText("itsa-fp-periods.country-or-property", "Country or property") },
+      { label: siteText("itsa.reported-to", "Reported to") },
+      { label: siteText("itsa.rental-income-ytd", "Rental income (year to date)"), kind: "money" },
+      { label: siteText("itsa.other-income-ytd", "Other income (year to date)"), kind: "money" },
+      { label: siteText("itsa-fp-periods.expenses-ytd", "Expenses (year to date)"), kind: "money" },
     ],
     entries.map((entry) => [
       entryName(entry),

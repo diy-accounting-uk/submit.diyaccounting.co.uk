@@ -1,0 +1,295 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from hmrc/itsa/taxLiabilityAdjustments.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Addasiadau i’r rhwymedigaeth dreth - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/taxLiabilityAdjustments.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/itsa/taxLiabilityAdjustments.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/taxLiabilityAdjustments.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/itsa/taxLiabilityAdjustments.html" />
+    <link rel="stylesheet" href="../../../submit.css" />
+    <link rel="stylesheet" href="../../../submission-record.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="itsa-tla.tax-liability-adjustments-eecfd3">Addasiadau i’r rhwymedigaeth dreth</h1>
+      <p data-i18n="itsa-tla.tell-hmrc-what-a-carry-back-ee4643" class="subtitle">
+        Dweud wrth CThEF beth mae hawliad i gario’n ôl yn ei arbed, fel bod rhwymedigaeth y flwyddyn hon yn cael ei chredydu
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p data-i18n="itsa-tla.status-sandbox-this-runs-against-hmrc-e3e7dd" class="hint" data-feature-status="sandbox">
+        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a
+        anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei
+        ddiweddariad yn 2027.
+      </p>
+      <div id="syntheticIndicator" class="synthetic-indicator">
+        <span data-i18n="itsa-tla.synthetic-mode-calls-go-to-hmrc-efa44d"
+          >Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF</span
+        >
+      </div>
+
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Load criteria -->
+      <div
+        id="loadCriteriaForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i addasu’ch rhwymedigaeth dreth"
+        data-sign-in-text="Mewngofnodwch i ddweud wrth CThEF beth mae hawliad i gario’n ôl yn ei arbed, fel bod rhwymedigaeth y flwyddyn hon yn cael ei chredydu."
+        data-i18n-data-sign-in-title="itsa-tla.sign-in-to-adjust-your-tax-460f65"
+        data-i18n-data-sign-in-text="itsa-tla.sign-in-to-tell-hmrc-what-d5ed73"
+      >
+        <h2 data-i18n="itsa-tla.load-a-year-s-tax-liability-c613af">Llwytho addasiadau blwyddyn i’r rhwymedigaeth dreth</h2>
+        <p data-i18n="itsa-tla.this-is-the-second-half-of-015c06" class="hint">
+          Dyma ail hanner hawliad i gario’n ôl. Cofnodwch y golled ar y dudalen Colledion a Hawliadau yn gyntaf, yna dewch yma i ddweud beth
+          mae’n ei arbed.
+        </p>
+        <form id="itsaAdjustmentsLoadForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="itsa-tla.national-insurance-number-21829e" for="nino">Rhif Yswiriant Gwladol</label>
+            <p data-i18n="itsa-tla.this-is-two-letters-six-numbers-795a8f" id="nino-hint" class="hint">
+              Mae hwn yn ddwy lythyren, chwe rhif a llythyren olaf, er enghraifft QQ 12 34 56 C. Mae i’w weld ar eich cerdyn Yswiriant
+              Gwladol, eich slip cyflog neu’ch P60.
+            </p>
+            <input
+              type="text"
+              id="nino"
+              name="nino"
+              required
+              value=""
+              maxlength="13"
+              spellcheck="false"
+              autocapitalize="characters"
+              aria-describedby="nino-hint"
+            />
+          </div>
+
+          <div class="form-group">
+            <label data-i18n="itsa-tla.tax-year-the-claim-decreases-77c578" for="taxYear"
+              >Y flwyddyn dreth y mae’r hawliad yn ei gostwng</label
+            >
+            <p data-i18n="itsa-tla.the-earlier-tax-year-the-carry-f493d8" id="taxYear-hint" class="hint">
+              Y flwyddyn dreth gynharach y mae’r hawliad i gario’n ôl yn gostwng y rhwymedigaeth ar ei chyfer.
+            </p>
+            <select id="taxYear" name="taxYear" required aria-describedby="taxYear-hint"></select>
+          </div>
+
+          <!-- Developer Test Scenario Section -->
+          <div id="developerSection" class="form-group" style="display: none">
+            <label data-i18n="itsa-tla.test-scenario-developer-sandbox-only-966c72" for="testScenario"
+              >Senario prawf (Datblygwr/amgylchedd prawf yn unig)</label
+            >
+            <p data-i18n="itsa-tla.test-different-hmrc-sandbox-scenarios-for-82c72f" id="testScenario-hint" class="hint">
+              Profi senarios gwahanol yn amgylchedd prawf (sandbox) CThEF wrth lwytho addasiadau i’r rhwymedigaeth dreth
+            </p>
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint" translate="no">
+              <option value="">Default (loads an adjustment)</option>
+              <option value="NOT_FOUND">Not Found</option>
+            </select>
+            <div class="form-group">
+              <label data-i18n="itsa-tla.calculation-test-scenario-developer-sandbox-only-851bbb" for="calculationTestScenario"
+                >Senario prawf y cyfrifiad (Datblygwr/amgylchedd prawf yn unig)</label
+              >
+              <p data-i18n="itsa-tla.the-hmrc-sandbox-example-used-for-1713bc" id="calculationTestScenario-hint" class="hint">
+                Yr enghraifft o amgylchedd prawf (sandbox) CThEF a ddefnyddir ar gyfer rhwymedigaeth gyfrifedig y flwyddyn honno
+              </p>
+              <select
+                id="calculationTestScenario"
+                name="calculationTestScenario"
+                aria-describedby="calculationTestScenario-hint"
+                translate="no"
+              >
+                <option value="">Default (a UK self-employment example)</option>
+                <option value="UK_SE_GIFTAID_EXAMPLE">UK self-employment with Gift Aid</option>
+                <option value="SCOT_SE_DIVIDENDS_EXAMPLE">Scottish self-employment with dividends</option>
+              </select>
+            </div>
+            <div class="choice">
+              <input type="checkbox" id="suspendTemporalValidations" name="suspendTemporalValidations" /><label
+                data-i18n="itsa-tla.suspend-temporal-validations-sandbox-tax-year-a827ba"
+                for="suspendTemporalValidations"
+                >Atal dilysiadau amser (nid yw blwyddyn dreth yr amgylchedd prawf wedi dod i ben mewn gwirionedd)</label
+              >
+            </div>
+            <div class="choice">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                data-i18n="itsa-tla.validate-fraud-prevention-headers-ea7c94"
+                for="runFraudPreventionHeaderValidation"
+                >Dilysu’r penawdau atal twyll</label
+              >
+            </div>
+          </div>
+
+          <button data-i18n="itsa-tla.load-tax-liability-adjustments-d9f4cd" type="submit" id="loadBtn" class="btn">
+            Llwytho’r addasiadau i’r rhwymedigaeth dreth
+          </button>
+        </form>
+      </div>
+
+      <!-- Edit form, shown once adjustments have been loaded (or for a first-time entry) -->
+      <div id="adjustmentsEditForm" class="form-container" style="display: none">
+        <h2 data-i18n="itsa-tla.what-hmrc-calculated-for-that-year-f6e996">Beth a gyfrifodd CThEF ar gyfer y flwyddyn honno</h2>
+        <p data-i18n="itsa-tla.retrieved-fresh-from-hmrc-s-own-696264" class="hint">
+          Wedi’i adalw o’r newydd o gyfrifiad CThEF ei hun, felly’r ffigur o’ch blaen wrth i chi nodi’r gostyngiad yw ffigur CThEF, nid ein
+          ffigur ni. Nid ydym yn ychwanegu dim ato nac yn tynnu dim ohono.
+        </p>
+        <button
+          data-i18n="itsa-tla.show-that-year-s-calculated-liability-02b7de"
+          type="button"
+          id="showEarlierYearBtn"
+          class="secondary-button"
+        >
+          Dangos rhwymedigaeth gyfrifedig y flwyddyn honno
+        </button>
+        <dl>
+          <dt data-i18n="itsa-tla.total-income-tax-and-national-insurance-6eb3e9">
+            Cyfanswm y Dreth Incwm a’r Yswiriant Gwladol sy’n ddyledus, cyn yr hawliad hwn
+          </dt>
+          <dd data-i18n="itsa-tla.not-yet-retrieved-3ed66f" id="earlierYearFigure">Heb ei adalw eto</dd>
+        </dl>
+
+        <h2 data-i18n="itsa-tla.what-the-carry-back-claim-saves-213651">Beth mae’r hawliad i gario’n ôl yn ei arbed</h2>
+        <p data-i18n="itsa-tla.the-amount-by-which-the-carry-42cc5c" class="hint">
+          Y swm y mae’r hawliad i gario’n ôl yn gostwng rhwymedigaeth y flwyddyn hon, o’ch cyfrifiad chi neu gyfrifiad eich cyfrifydd.
+          Gadewch faes ar 0 os nad yw’n berthnasol.
+        </p>
+        <div class="form-group">
+          <label data-i18n="itsa-tla.income-tax-decrease-3afe4b" for="incomeTax">Gostyngiad yn y Dreth Incwm</label>
+          <p data-i18n="itsa-tla.for-example-600-or-193-54-59a197" id="incomeTax-money-hint" class="hint">
+            Er enghraifft, £600 neu £193.54
+          </p>
+          <div class="input-prefix input-prefix--amount">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="incomeTax"
+              name="incomeTax"
+              value="0"
+              aria-describedby="incomeTax-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="itsa-tla.class-4-national-insurance-decrease-d094da" for="class4"
+            >Gostyngiad yn Yswiriant Gwladol Dosbarth 4</label
+          >
+          <p data-i18n="itsa-tla.for-example-600-or-193-54-59a197" id="class4-money-hint" class="hint">Er enghraifft, £600 neu £193.54</p>
+          <div class="input-prefix input-prefix--amount">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="class4"
+              name="class4"
+              value="0"
+              aria-describedby="class4-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="itsa-tla.capital-gains-tax-decrease-545282" for="capitalGainsTax">Gostyngiad yn y Dreth Enillion Cyfalaf</label>
+          <p data-i18n="itsa-tla.for-example-600-or-193-54-59a197" id="capitalGainsTax-money-hint" class="hint">
+            Er enghraifft, £600 neu £193.54
+          </p>
+          <div class="input-prefix input-prefix--amount">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="capitalGainsTax"
+              name="capitalGainsTax"
+              value="0"
+              aria-describedby="capitalGainsTax-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
+        </div>
+
+        <div id="submissionCost" class="submission-cost"></div>
+        <button data-i18n="itsa-tla.save-tax-liability-adjustments-a1f963" type="button" id="saveBtn" class="btn">
+          Cadw’r addasiadau i’r rhwymedigaeth dreth
+        </button>
+      </div>
+
+      <!-- Results Display -->
+      <div id="adjustmentsResults" class="results-container" style="display: none">
+        <div id="adjustmentsCopy"></div>
+        <div class="button-group">
+          <button data-i18n="itsa-tla.load-another-ec96cc" type="button" id="newSearchBtn" class="secondary-button">
+            Llwytho un arall
+          </button>
+        </div>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../../lib/welsh-text.js"></script>
+    <script src="../../../widgets/page-chrome.js"></script>
+    <script src="../../../lib/env-loader.js"></script>
+    <script src="../../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../../submit.js"></script>
+    <script src="../../../developer-mode.js"></script>
+    <script src="../../../lib/request-cache.js"></script>
+    <script src="../../../lib/carried-identifiers.js"></script>
+    <script src="../../../lib/toml-parser.js"></script>
+    <script src="../../../lib/money-input.js"></script>
+    <script src="../../../lib/form-errors.js"></script>
+    <script src="../../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../../lib/services/hmrc-service.js"></script>
+    <script src="../../../widgets/entitlement-status.js"></script>
+    <script src="../../../widgets/auth-status.js"></script>
+    <script src="../../../widgets/status-messages.js"></script>
+    <script src="../../../widgets/signed-out-panel.js"></script>
+    <script src="../../../widgets/pass-redeemer.js"></script>
+    <script src="../../../widgets/submission-cost.js"></script>
+    <script src="../../../lib/money-format.js"></script>
+    <script src="../../../lib/hmrc-field-table.js"></script>
+    <script src="../../../hmrc/itsa/taxLiabilityAdjustments.page.js"></script>
+  </body>
+</html>

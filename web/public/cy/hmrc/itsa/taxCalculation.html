@@ -1,0 +1,211 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from hmrc/itsa/taxCalculation.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cyfrifiad treth - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/taxCalculation.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/itsa/taxCalculation.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/taxCalculation.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/itsa/taxCalculation.html" />
+    <link rel="stylesheet" href="../../../submit.css" />
+    <link rel="stylesheet" href="../../../lib/hmrc-field-table.css" />
+    <link rel="stylesheet" href="../../../submission-record.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="itsa-calculation.tax-calculation-7a443f">Cyfrifiad treth</h1>
+      <p data-i18n="itsa-calculation.see-what-the-tax-year-owes-a7011c" class="subtitle">
+        Gweld beth sy’n ddyledus ar gyfer y flwyddyn dreth, yn seiliedig ar yr hyn rydych wedi’i gyflwyno hyd yma
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p data-i18n="itsa-calculation.status-sandbox-this-runs-against-hmrc-e3e7dd" class="hint" data-feature-status="sandbox">
+        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a
+        anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei
+        ddiweddariad yn 2027.
+      </p>
+      <div id="syntheticIndicator" class="synthetic-indicator">
+        <span data-i18n="itsa-calculation.synthetic-mode-calls-go-to-hmrc-efa44d"
+          >Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF</span
+        >
+      </div>
+
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Trigger form -->
+      <div
+        id="triggerForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i weld eich cyfrifiad treth"
+        data-sign-in-text="Mewngofnodwch i weld beth sy’n ddyledus ar gyfer y flwyddyn dreth, yn seiliedig ar yr hyn rydych wedi’i anfon hyd yma."
+        data-i18n-data-sign-in-title="itsa-calculation.sign-in-to-see-your-tax-f6179d"
+        data-i18n-data-sign-in-text="itsa-calculation.sign-in-to-see-what-the-bf46c3"
+      >
+        <h2 data-i18n="itsa-calculation.calculate-2121cc">Cyfrifo</h2>
+        <form id="itsaCalculationTriggerForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="itsa-calculation.national-insurance-number-21829e" for="nino">Rhif Yswiriant Gwladol</label>
+            <p data-i18n="itsa-calculation.this-is-two-letters-six-numbers-795a8f" id="nino-hint" class="hint">
+              Mae hwn yn ddwy lythyren, chwe rhif a llythyren olaf, er enghraifft QQ 12 34 56 C. Mae i’w weld ar eich cerdyn Yswiriant
+              Gwladol, eich slip cyflog neu’ch P60.
+            </p>
+            <input
+              type="text"
+              id="nino"
+              name="nino"
+              required
+              value=""
+              maxlength="13"
+              spellcheck="false"
+              autocapitalize="characters"
+              aria-describedby="nino-hint"
+            />
+          </div>
+
+          <div class="form-group">
+            <label data-i18n="itsa-calculation.tax-year-09a6de" for="taxYear">Blwyddyn dreth</label>
+            <p data-i18n="itsa-calculation.choose-the-tax-year-fae5ed" id="taxYear-hint" class="hint">Dewiswch y flwyddyn dreth.</p>
+            <select id="taxYear" name="taxYear" required aria-describedby="taxYear-hint"></select>
+          </div>
+
+          <div class="form-group">
+            <label data-i18n="itsa-calculation.calculation-type-6721e3" for="calculationType">Math o gyfrifiad</label>
+            <p data-i18n="itsa-calculation.an-in-year-calculation-is-an-eb7279" id="calculationType-hint" class="hint">
+              Amcangyfrif yw cyfrifiad yn ystod y flwyddyn, a gallwch ei wirio ar unrhyw adeg. Bwriad i gwblhau yw’r cyfrifiad rydych yn ei
+              gadarnhau mewn datganiad terfynol.
+            </p>
+            <select id="calculationType" name="calculationType" required aria-describedby="calculationType-hint">
+              <option data-i18n="itsa-calculation.in-year-estimate-3b3c49" value="in-year">Amcangyfrif yn ystod y flwyddyn</option>
+              <option data-i18n="itsa-calculation.intent-to-finalise-b5eb55" value="intent-to-finalise">Bwriad i gwblhau</option>
+            </select>
+          </div>
+
+          <!-- Developer Test Scenario Section -->
+          <div id="developerSection" class="form-group" style="display: none">
+            <label data-i18n="itsa-calculation.test-scenario-developer-sandbox-only-966c72" for="testScenario"
+              >Senario prawf (Datblygwr/amgylchedd prawf yn unig)</label
+            >
+            <p data-i18n="itsa-calculation.test-different-hmrc-sandbox-scenarios-for-74ea54" id="testScenario-hint" class="hint">
+              Profi senarios gwahanol yn amgylchedd prawf (sandbox) CThEF ar gyfer y cyfrifiad a adalwyd
+            </p>
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint" translate="no">
+              <option value="">Default (a UK self-employment example)</option>
+              <option value="UK_SE_GIFTAID_EXAMPLE">UK self-employment with Gift Aid</option>
+              <option value="SCOT_SE_DIVIDENDS_EXAMPLE">Scottish self-employment with dividends</option>
+              <option value="ERROR_MESSAGES_EXIST">Error messages exist</option>
+              <option value="NO_INCOME_SUBMISSIONS_EXIST">No income submissions exist</option>
+              <option value="RECENT_SUBMISSIONS_EXIST">Recent submissions exist</option>
+            </select>
+            <div class="choice">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                data-i18n="itsa-calculation.validate-fraud-prevention-headers-ea7c94"
+                for="runFraudPreventionHeaderValidation"
+                >Dilysu’r penawdau atal twyll</label
+              >
+            </div>
+          </div>
+
+          <button data-i18n="itsa-calculation.calculate-2121cc" type="submit" id="triggerBtn" class="btn">Cyfrifo</button>
+        </form>
+      </div>
+
+      <!-- Results Display -->
+      <div id="calculationResults" class="results-container" style="display: none">
+        <div id="calculationDisclaimer" class="status-message status-warning">
+          <span data-i18n="itsa-calculation.this-is-an-estimate-based-on-d4764a"
+            >Amcangyfrif yw hwn sy’n seiliedig ar yr wybodaeth rydych wedi’i chyflwyno hyd yma. CThEF a gynhyrchodd y cyfrifiad hwn, a gall
+            newid os byddwch yn cyflwyno rhagor o wybodaeth.</span
+          >
+        </div>
+
+        <div id="calculationFigures" style="display: none">
+          <div id="calculationCopy"></div>
+          <div id="fieldKey"></div>
+          <div id="hmrcAssistCheck"></div>
+          <div id="continueToFinalDeclaration" style="display: none">
+            <a
+              data-i18n="itsa-calculation.continue-to-final-declaration-09db53"
+              href="finalDeclaration.html"
+              id="continueToFinalDeclarationLink"
+              class="btn"
+              >Parhau i’r datganiad terfynol</a
+            >
+          </div>
+        </div>
+
+        <div id="calculationMessages"></div>
+
+        <div class="button-group">
+          <button data-i18n="itsa-calculation.calculate-again-906daf" type="button" id="newSearchBtn" class="secondary-button">
+            Cyfrifo eto
+          </button>
+        </div>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../../lib/welsh-text.js"></script>
+    <script src="../../../widgets/page-chrome.js"></script>
+    <script src="../../../lib/env-loader.js"></script>
+    <script src="../../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../../submit.js"></script>
+    <script src="../../../developer-mode.js"></script>
+    <script src="../../../lib/request-cache.js"></script>
+    <script src="../../../lib/carried-identifiers.js"></script>
+    <script src="../../../lib/toml-parser.js"></script>
+    <script src="../../../lib/form-errors.js"></script>
+    <script src="../../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../../lib/services/hmrc-service.js"></script>
+    <script src="../../../widgets/entitlement-status.js"></script>
+    <script src="../../../widgets/auth-status.js"></script>
+    <script src="../../../widgets/status-messages.js"></script>
+    <script src="../../../widgets/signed-out-panel.js"></script>
+    <script src="../../../widgets/pass-redeemer.js"></script>
+    <script src="../../../widgets/hmrc-assist-messages.js"></script>
+    <script src="../../../lib/money-format.js"></script>
+    <script src="../../../lib/hmrc-field-table.js"></script>
+    <script type="module" src="../../../hmrc/itsa/taxCalculation.page.js"></script>
+  </body>
+</html>

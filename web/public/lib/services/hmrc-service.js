@@ -5,6 +5,12 @@
 
 import { authorizedFetch } from "./api-client.js";
 
+// page-chrome.js gives the text in the reader's language; under Node, and without it, the English stands.
+function siteText(id, english, values) {
+  if (globalThis.siteText) return globalThis.siteText(id, english, values);
+  return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+}
+
 /**
  * HMRC's ITSA cumulative period retrieve (property Business v6.0, and the BSAS retrieve
  * alongside it) is not stateful in the sandbox - its documented default with no Gov-Test-Scenario
@@ -369,7 +375,11 @@ export async function submitVat(
     // customer re-authorizes instead of retrying with the same token.
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -419,7 +429,11 @@ export async function getBusinessDetails(
     // customer re-authorizes instead of retrying with the same token.
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -429,7 +443,11 @@ export async function getBusinessDetails(
     console.error(
       `Failed to retrieve business details. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to retrieve business details.${failureReason(responseJson)}`, response, responseJson);
+    throw requestFailure(
+      `${siteText("itsa.service-retrieve-business-details", "Failed to retrieve business details.")}${failureReason(responseJson)}`,
+      response,
+      responseJson,
+    );
   }
   return responseJson;
 }
@@ -476,7 +494,11 @@ export async function getObligations(
     // customer re-authorizes instead of retrying with the same token.
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -486,7 +508,11 @@ export async function getObligations(
     console.error(
       `Failed to retrieve obligations. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to retrieve obligations.${failureReason(responseJson)}`, response, responseJson);
+    throw requestFailure(
+      `${siteText("itsa.service-retrieve-obligations", "Failed to retrieve obligations.")}${failureReason(responseJson)}`,
+      response,
+      responseJson,
+    );
   }
   return responseJson;
 }
@@ -537,7 +563,11 @@ export async function postSelfEmploymentPeriod(
     // customer re-authorizes instead of retrying with the same token.
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -547,7 +577,11 @@ export async function postSelfEmploymentPeriod(
     console.error(
       `Failed to file the quarterly update. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to file the quarterly update.${failureReason(responseJson)}`, response, responseJson);
+    throw requestFailure(
+      `${siteText("itsa.service-file-the-quarterly-update", "Failed to file the quarterly update.")}${failureReason(responseJson)}`,
+      response,
+      responseJson,
+    );
   }
   return responseJson;
 }
@@ -589,7 +623,11 @@ export async function getSelfEmploymentAnnual(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -599,7 +637,11 @@ export async function getSelfEmploymentAnnual(
     console.error(
       `Failed to retrieve the annual submission. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to retrieve the annual submission.${failureReason(responseJson)}`, response, responseJson);
+    throw requestFailure(
+      `${siteText("itsa.service-retrieve-the-annual-submission", "Failed to retrieve the annual submission.")}${failureReason(responseJson)}`,
+      response,
+      responseJson,
+    );
   }
   return responseJson;
 }
@@ -645,7 +687,11 @@ export async function putSelfEmploymentAnnual(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -655,7 +701,11 @@ export async function putSelfEmploymentAnnual(
     console.error(
       `Failed to save the annual submission. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to save the annual submission.${failureReason(responseJson)}`, response, responseJson);
+    throw requestFailure(
+      `${siteText("itsa.service-save-the-annual-submission", "Failed to save the annual submission.")}${failureReason(responseJson)}`,
+      response,
+      responseJson,
+    );
   }
   return responseJson;
 }
@@ -700,7 +750,11 @@ export async function triggerBsas(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -710,7 +764,11 @@ export async function triggerBsas(
     console.error(
       `Failed to trigger the year-end summary. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to trigger the year-end summary.${failureReason(responseJson)}`, response, responseJson);
+    throw requestFailure(
+      `${siteText("itsa.service-trigger-the-year-end-summary", "Failed to trigger the year-end summary.")}${failureReason(responseJson)}`,
+      response,
+      responseJson,
+    );
   }
   return responseJson;
 }
@@ -752,7 +810,11 @@ export async function getBsasSelfEmployment(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -810,7 +872,11 @@ export async function adjustBsasSelfEmployment(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -820,7 +886,11 @@ export async function adjustBsasSelfEmployment(
     console.error(
       `Failed to submit the year-end adjustment. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to submit the year-end adjustment.${failureReason(responseJson)}`, response, responseJson);
+    throw requestFailure(
+      `${siteText("itsa.service-submit-the-year-end-adjustment", "Failed to submit the year-end adjustment.")}${failureReason(responseJson)}`,
+      response,
+      responseJson,
+    );
   }
   return responseJson;
 }
@@ -862,7 +932,11 @@ export async function getUkPropertyAnnual(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -872,7 +946,11 @@ export async function getUkPropertyAnnual(
     console.error(
       `Failed to retrieve the annual submission. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to retrieve the annual submission.${failureReason(responseJson)}`, response, responseJson);
+    throw requestFailure(
+      `${siteText("itsa.service-retrieve-the-annual-submission", "Failed to retrieve the annual submission.")}${failureReason(responseJson)}`,
+      response,
+      responseJson,
+    );
   }
   return responseJson;
 }
@@ -917,7 +995,11 @@ export async function putUkPropertyAnnual(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -927,7 +1009,11 @@ export async function putUkPropertyAnnual(
     console.error(
       `Failed to save the annual submission. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to save the annual submission.${failureReason(responseJson)}`, response, responseJson);
+    throw requestFailure(
+      `${siteText("itsa.service-save-the-annual-submission", "Failed to save the annual submission.")}${failureReason(responseJson)}`,
+      response,
+      responseJson,
+    );
   }
   return responseJson;
 }
@@ -958,7 +1044,11 @@ async function foreignPropertyRequest(action, method, url, body, hmrcGrantId, go
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -1254,7 +1344,11 @@ export async function getBsasUkProperty(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -1311,7 +1405,11 @@ export async function adjustBsasUkProperty(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -1321,7 +1419,11 @@ export async function adjustBsasUkProperty(
     console.error(
       `Failed to submit the year-end adjustment. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to submit the year-end adjustment.${failureReason(responseJson)}`, response, responseJson);
+    throw requestFailure(
+      `${siteText("itsa.service-submit-the-year-end-adjustment", "Failed to submit the year-end adjustment.")}${failureReason(responseJson)}`,
+      response,
+      responseJson,
+    );
   }
   return responseJson;
 }
@@ -1506,15 +1608,19 @@ export async function triggerCalculation(
     method: "POST",
     headers,
     body,
-    pollPendingMessage: "Calculating...",
-    pollSuccessMessage: "Calculation ready.",
-    pollErrorMessage: "Failed to calculate.",
+    pollPendingMessage: siteText("itsa.calculating", "Calculating..."),
+    pollSuccessMessage: siteText("itsa.calculation-ready", "Calculation ready."),
+    pollErrorMessage: siteText("itsa.calculation-failed", "Failed to calculate."),
   });
   const responseJson = await response.json();
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -1524,7 +1630,11 @@ export async function triggerCalculation(
     console.error(
       `Failed to trigger the tax calculation. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to trigger the tax calculation.${failureReason(responseJson)}`, response, responseJson);
+    throw requestFailure(
+      `${siteText("itsa.service-trigger-the-tax-calculation", "Failed to trigger the tax calculation.")}${failureReason(responseJson)}`,
+      response,
+      responseJson,
+    );
   }
   return responseJson;
 }
@@ -1566,7 +1676,11 @@ export async function getCalculation(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -1576,7 +1690,11 @@ export async function getCalculation(
     console.error(
       `Failed to retrieve the tax calculation. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to retrieve the tax calculation.${failureReason(responseJson)}`, response, responseJson);
+    throw requestFailure(
+      `${siteText("itsa.service-retrieve-the-tax-calculation", "Failed to retrieve the tax calculation.")}${failureReason(responseJson)}`,
+      response,
+      responseJson,
+    );
   }
   return responseJson;
 }
@@ -1622,7 +1740,11 @@ export async function postFinalDeclaration(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -1642,7 +1764,11 @@ export async function postFinalDeclaration(
     console.error(
       `Failed to submit the final declaration. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to submit the final declaration.${failureReason(responseJson)}`, response, responseJson);
+    throw requestFailure(
+      `${siteText("itsa.service-submit-the-final-declaration", "Failed to submit the final declaration.")}${failureReason(responseJson)}`,
+      response,
+      responseJson,
+    );
   }
   return responseJson;
 }
@@ -1684,7 +1810,11 @@ export async function getLossesAndClaims(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -1694,7 +1824,11 @@ export async function getLossesAndClaims(
     console.error(
       `Failed to retrieve losses and claims. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to retrieve losses and claims.${failureReason(responseJson)}`, response, responseJson);
+    throw requestFailure(
+      `${siteText("itsa.service-retrieve-losses-and-claims", "Failed to retrieve losses and claims.")}${failureReason(responseJson)}`,
+      response,
+      responseJson,
+    );
   }
   return responseJson;
 }
@@ -1741,7 +1875,11 @@ export async function putLossesAndClaims(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -1751,7 +1889,11 @@ export async function putLossesAndClaims(
     console.error(
       `Failed to save losses and claims. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to save losses and claims.${failureReason(responseJson)}`, response, responseJson);
+    throw requestFailure(
+      `${siteText("itsa.service-save-losses-and-claims", "Failed to save losses and claims.")}${failureReason(responseJson)}`,
+      response,
+      responseJson,
+    );
   }
   return responseJson;
 }
@@ -1791,7 +1933,11 @@ export async function getTaxLiabilityAdjustments(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -1801,7 +1947,11 @@ export async function getTaxLiabilityAdjustments(
     console.error(
       `Failed to retrieve tax liability adjustments. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to retrieve tax liability adjustments.${failureReason(responseJson)}`, response, responseJson);
+    throw requestFailure(
+      `${siteText("itsa.service-retrieve-tax-liability-adjustments", "Failed to retrieve tax liability adjustments.")}${failureReason(responseJson)}`,
+      response,
+      responseJson,
+    );
   }
   return responseJson;
 }
@@ -1845,7 +1995,11 @@ export async function putTaxLiabilityAdjustments(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage ||
+        siteText(
+          "widget.hmrc-scope-insufficient",
+          "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
+        );
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -1855,7 +2009,11 @@ export async function putTaxLiabilityAdjustments(
     console.error(
       `Failed to save tax liability adjustments. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
     );
-    throw requestFailure(`Failed to save tax liability adjustments.${failureReason(responseJson)}`, response, responseJson);
+    throw requestFailure(
+      `${siteText("itsa.service-save-tax-liability-adjustments", "Failed to save tax liability adjustments.")}${failureReason(responseJson)}`,
+      response,
+      responseJson,
+    );
   }
   return responseJson;
 }

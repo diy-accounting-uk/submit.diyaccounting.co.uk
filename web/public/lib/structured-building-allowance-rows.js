@@ -12,7 +12,13 @@
 (function () {
   "use strict";
 
-  const EXAMPLE_HINT = "For example, £600 or £193.54";
+  // page-chrome.js gives the text in the chosen language; without it the English stands.
+  function siteText(id, english, values) {
+    if (window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
+
+  const EXAMPLE_HINT = siteText("itsa.money-example", "For example, £600 or £193.54");
 
   function el(tag, props = {}, children = []) {
     const node = document.createElement(tag);
@@ -38,12 +44,12 @@
     const filled = (name) => !blank(inputOf(name).value);
     const problems = [];
     const add = (name, message) => problems.push({ input: inputOf(name), message: `${claim}: ${message}` });
-    if (!filled("amount")) add("amount", "enter the allowance claimed");
+    if (!filled("amount")) add("amount", siteText("itsa.sba-enter-amount", "enter the allowance claimed"));
     if (filled("qualifyingDate") && !filled("qualifyingAmountExpenditure"))
-      add("qualifyingAmountExpenditure", "enter the qualifying expenditure");
+      add("qualifyingAmountExpenditure", siteText("itsa.sba-enter-expenditure", "enter the qualifying expenditure"));
     if (filled("qualifyingAmountExpenditure") && !filled("qualifyingDate"))
-      add("qualifyingDate", "enter the date the building first qualified");
-    if (!filled("postcode")) add("postcode", "enter the building postcode");
+      add("qualifyingDate", siteText("itsa.sba-enter-date", "enter the date the building first qualified"));
+    if (!filled("postcode")) add("postcode", siteText("itsa.sba-enter-postcode", "enter the building postcode"));
     return problems;
   }
 
@@ -52,7 +58,12 @@
     let nextRow = 1;
     let disabled = false;
     const rows = el("div", { className: "sba-rows" });
-    const addButton = el("button", { type: "button", id: `${idPrefix}-add`, className: "secondary-button", textContent: "Add a claim" });
+    const addButton = el("button", {
+      type: "button",
+      id: `${idPrefix}-add`,
+      className: "secondary-button",
+      textContent: siteText("itsa.sba-add-claim", "Add a claim"),
+    });
     container.replaceChildren(
       el("fieldset", { className: "form-group sba-claims", id: `${idPrefix}-claims` }, [
         el("legend", { textContent: title }),
@@ -67,7 +78,7 @@
 
     function renumber() {
       claimRows().forEach((row, index) => {
-        row.querySelector("legend").textContent = `Claim ${index + 1}`;
+        row.querySelector("legend").textContent = siteText("itsa.record-claim-n", "Claim {n}", { n: index + 1 });
       });
     }
 
@@ -81,20 +92,39 @@
       const row = nextRow++;
       const money = (name, label) =>
         window.selfEmploymentExpenses.moneyGroup({ id: idOf(row, name), label, min: 0, defaultValue: "" }, EXAMPLE_HINT);
-      const remove = el("button", { type: "button", className: "secondary-button", textContent: "Remove claim" });
+      const remove = el("button", {
+        type: "button",
+        className: "secondary-button",
+        textContent: siteText("itsa.sba-remove-claim", "Remove claim"),
+      });
       const fieldset = el("fieldset", { className: "sba-claim" }, [
         el("legend"),
-        money("amount", "Allowance claimed"),
+        money("amount", siteText("itsa.sba-allowance-claimed", "Allowance claimed")),
         textGroup(
           idOf(row, "qualifyingDate"),
-          "Date the building first qualified",
+          siteText("itsa.field-date-the-building-first-qualified", "Date the building first qualified"),
           "date",
-          "The first day it was used for a qualifying purpose.",
+          siteText("itsa.sba-date-hint", "The first day it was used for a qualifying purpose."),
         ),
-        money("qualifyingAmountExpenditure", "Qualifying expenditure"),
-        textGroup(idOf(row, "buildingName"), "Building name", "text", "A name or a number identifies the building."),
-        textGroup(idOf(row, "buildingNumber"), "Building number", "text", "Leave blank if the building has a name."),
-        textGroup(idOf(row, "postcode"), "Building postcode", "text", "For example, SW1A 2AA."),
+        money("qualifyingAmountExpenditure", siteText("itsa.field-qualifying-expenditure", "Qualifying expenditure")),
+        textGroup(
+          idOf(row, "buildingName"),
+          siteText("itsa.sba-building-name", "Building name"),
+          "text",
+          siteText("itsa.sba-building-name-hint", "A name or a number identifies the building."),
+        ),
+        textGroup(
+          idOf(row, "buildingNumber"),
+          siteText("itsa.sba-building-number", "Building number"),
+          "text",
+          siteText("itsa.sba-building-number-hint", "Leave blank if the building has a name."),
+        ),
+        textGroup(
+          idOf(row, "postcode"),
+          siteText("itsa.sba-postcode", "Building postcode"),
+          "text",
+          siteText("itsa.sba-postcode-hint", "For example, SW1A 2AA."),
+        ),
         remove,
       ]);
       fieldset.dataset.row = String(row);

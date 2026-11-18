@@ -1,0 +1,442 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from hmrc/itsa/ukPropertyAnnualSubmission.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cyflwyniad blynyddol eiddo yn y DU - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/ukPropertyAnnualSubmission.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/itsa/ukPropertyAnnualSubmission.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/ukPropertyAnnualSubmission.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/itsa/ukPropertyAnnualSubmission.html" />
+    <link rel="stylesheet" href="../../../submit.css" />
+    <link rel="stylesheet" href="../../../submission-record.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="itsa-uk-annual.uk-property-annual-submission-eaa0d5">Cyflwyniad blynyddol eiddo yn y DU</h1>
+      <p data-i18n="itsa-uk-annual.load-and-save-the-year-s-4cbc41" class="subtitle">
+        Llwytho a chadw addasiadau a lwfansau eiddo’r flwyddyn
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p data-i18n="itsa-uk-annual.status-sandbox-this-runs-against-hmrc-e3e7dd" class="hint" data-feature-status="sandbox">
+        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a
+        anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei
+        ddiweddariad yn 2027.
+      </p>
+      <div id="syntheticIndicator" class="synthetic-indicator">
+        <span data-i18n="itsa-uk-annual.synthetic-mode-calls-go-to-hmrc-efa44d"
+          >Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF</span
+        >
+      </div>
+
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Load criteria -->
+      <div
+        id="loadCriteriaForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i anfon eich cyflwyniad blynyddol ar gyfer eiddo"
+        data-sign-in-text="Mewngofnodwch i lwytho’r cyflwyniad blynyddol ar gyfer busnes eiddo yn y DU, newid yr addasiadau a’r lwfansau, a’u cadw gyda CThEF."
+        data-i18n-data-sign-in-title="itsa-uk-annual.sign-in-to-send-your-property-ed6234"
+        data-i18n-data-sign-in-text="itsa-uk-annual.sign-in-to-load-the-annual-49a7c7"
+      >
+        <h2 data-i18n="itsa-uk-annual.load-an-annual-submission-02c710">Llwytho cyflwyniad blynyddol</h2>
+        <form id="itsaAnnualLoadForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="itsa-uk-annual.national-insurance-number-21829e" for="nino">Rhif Yswiriant Gwladol</label>
+            <p data-i18n="itsa-uk-annual.this-is-two-letters-six-numbers-795a8f" id="nino-hint" class="hint">
+              Mae hwn yn ddwy lythyren, chwe rhif a llythyren olaf, er enghraifft QQ 12 34 56 C. Mae i’w weld ar eich cerdyn Yswiriant
+              Gwladol, eich slip cyflog neu’ch P60.
+            </p>
+            <input
+              type="text"
+              id="nino"
+              name="nino"
+              required
+              value=""
+              maxlength="13"
+              spellcheck="false"
+              autocapitalize="characters"
+              aria-describedby="nino-hint"
+            />
+          </div>
+
+          <div class="form-group">
+            <label data-i18n="itsa-uk-annual.business-id-85b211" for="businessId">ID y busnes</label>
+            <p data-i18n="itsa-uk-annual.filled-in-when-you-pick-a-96de5c" id="businessId-hint" class="hint">
+              Caiff ei lenwi pan fyddwch yn dewis busnes ar y dangosfwrdd Treth Incwm. Fel arall, copïwch ef o Manylion y busnes, er
+              enghraifft XAIS12345678910.
+            </p>
+            <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
+          </div>
+
+          <div class="form-group">
+            <label data-i18n="itsa-uk-annual.tax-year-09a6de" for="taxYear">Blwyddyn dreth</label>
+            <p data-i18n="itsa-uk-annual.choose-the-tax-year-fae5ed" id="taxYear-hint" class="hint">Dewiswch y flwyddyn dreth.</p>
+            <select id="taxYear" name="taxYear" required aria-describedby="taxYear-hint"></select>
+          </div>
+
+          <!-- Developer Test Scenario Section -->
+          <div id="developerSection" class="form-group" style="display: none">
+            <label data-i18n="itsa-uk-annual.test-scenario-developer-sandbox-only-966c72" for="testScenario"
+              >Senario prawf (Datblygwr/amgylchedd prawf yn unig)</label
+            >
+            <p data-i18n="itsa-uk-annual.hmrc-s-retrieve-defaults-to-not-170fe8" id="testScenario-hint" class="hint">
+              Mae adalw CThEF yn ateb ‘heb ei ganfod’ yn ddiofyn, felly mae’r dudalen hon bob amser yn anfon un.
+            </p>
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint" translate="no">
+              <option value="UK_PROPERTY">Default (loads a UK property submission)</option>
+              <option value="UK_ALL_OTHER_ALLOWANCES">Itemised allowances</option>
+              <option value="UK_PROPERTY_ALLOWANCE">Property income allowance</option>
+              <option value="FOREIGN_PROPERTY">Foreign property (wrong business type)</option>
+              <option value="NOT_FOUND">Not Found</option>
+            </select>
+            <div class="choice">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                data-i18n="itsa-uk-annual.validate-fraud-prevention-headers-ea7c94"
+                for="runFraudPreventionHeaderValidation"
+                >Dilysu’r penawdau atal twyll</label
+              >
+            </div>
+          </div>
+
+          <button data-i18n="itsa-uk-annual.load-annual-submission-e7c98d" type="submit" id="loadBtn" class="btn">
+            Llwytho’r cyflwyniad blynyddol
+          </button>
+        </form>
+      </div>
+
+      <!-- Edit form, shown once a submission has been loaded (or for a first-time entry) -->
+      <div id="annualEditForm" class="form-container" style="display: none">
+        <div id="booksImport"></div>
+
+        <h2 data-i18n="itsa-uk-annual.adjustments-d4c74a">Addasiadau</h2>
+        <p data-i18n="itsa-uk-annual.enter-only-the-figures-that-apply-75e6ae" class="hint">
+          Nodwch y ffigurau sy’n berthnasol yn unig. Gadewch faes ar 0 i’w adael allan o’r hyn a anfonir i CThEF.
+        </p>
+        <div class="form-group">
+          <label data-i18n="itsa-uk-annual.balancing-charge-7e5038" for="balancingCharge">Tâl mantoli</label>
+          <p data-i18n="itsa-uk-annual.for-example-600-or-193-54-59a197" id="balancingCharge-money-hint" class="hint">
+            Er enghraifft, £600 neu £193.54
+          </p>
+          <div class="input-prefix input-prefix--amount">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="balancingCharge"
+              name="balancingCharge"
+              value="0"
+              aria-describedby="balancingCharge-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="itsa-uk-annual.private-use-adjustment-ec69cc" for="privateUseAdjustment"
+            >Addasiad ar gyfer defnydd preifat</label
+          >
+          <p data-i18n="itsa-uk-annual.cannot-be-entered-alongside-the-property-5a2cd2" id="privateUseAdjustment-hint" class="hint">
+            Ni ellir ei nodi ochr yn ochr â’r lwfans incwm o eiddo isod - mae CThEF yn gwrthod y cyfuniad.
+          </p>
+          <p data-i18n="itsa-uk-annual.for-example-600-or-193-54-59a197" id="privateUseAdjustment-money-hint" class="hint">
+            Er enghraifft, £600 neu £193.54
+          </p>
+          <div class="input-prefix input-prefix--amount">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="privateUseAdjustment"
+              name="privateUseAdjustment"
+              value="0"
+              aria-describedby="privateUseAdjustment-hint privateUseAdjustment-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label
+            data-i18n="itsa-uk-annual.business-premises-renovation-allowance-balancing-charges-3d12c9"
+            for="businessPremisesRenovationAllowanceBalancingCharges"
+            >Taliadau mantoli ar gyfer lwfans adnewyddu safleoedd busnes</label
+          >
+          <p
+            data-i18n="itsa-uk-annual.for-example-600-or-193-54-59a197"
+            id="businessPremisesRenovationAllowanceBalancingCharges-money-hint"
+            class="hint"
+          >
+            Er enghraifft, £600 neu £193.54
+          </p>
+          <div class="input-prefix input-prefix--amount">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="businessPremisesRenovationAllowanceBalancingCharges"
+              name="businessPremisesRenovationAllowanceBalancingCharges"
+              value="0"
+              aria-describedby="businessPremisesRenovationAllowanceBalancingCharges-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
+        </div>
+        <div class="choice">
+          <input type="checkbox" id="nonResidentLandlord" name="nonResidentLandlord" /><label
+            data-i18n="itsa-uk-annual.non-resident-landlord-f5674b"
+            for="nonResidentLandlord"
+            >Landlord dibreswyl</label
+          >
+        </div>
+        <div class="choice">
+          <input type="checkbox" id="rentARoomJointlyLet" name="rentARoomJointlyLet" /><label
+            data-i18n="itsa-uk-annual.rent-a-room-jointly-let-201663"
+            for="rentARoomJointlyLet"
+            >Rhentu ystafell: wedi’i gosod ar y cyd</label
+          >
+        </div>
+
+        <h2 data-i18n="itsa-uk-annual.allowances-36767c">Lwfansau</h2>
+        <p data-i18n="itsa-uk-annual.claim-the-property-income-allowance-on-ee1d51" class="hint">
+          Hawliwch y lwfans incwm o eiddo ar ei ben ei hun, neu’r lwfansau wedi’u rhestru isod. Nid yw CThEF yn derbyn y ddau, ac ni all yr
+          un ohonynt fod ochr yn ochr ag addasiad ar gyfer defnydd preifat.
+        </p>
+        <div class="form-group">
+          <div class="choice">
+            <input type="radio" id="allowanceTypeNone" name="allowanceType" value="" checked /><label
+              data-i18n="itsa-uk-annual.neither-9957d0"
+              for="allowanceTypeNone"
+              >Dim un</label
+            >
+          </div>
+          <div class="choice">
+            <input type="radio" id="allowanceTypePropertyIncome" name="allowanceType" value="propertyIncome" /><label
+              data-i18n="itsa-uk-annual.property-income-allowance-ef2a03"
+              for="allowanceTypePropertyIncome"
+              >Lwfans incwm o eiddo</label
+            >
+          </div>
+          <div class="choice">
+            <input type="radio" id="allowanceTypeItemised" name="allowanceType" value="itemised" /><label
+              data-i18n="itsa-uk-annual.itemised-allowances-9b65a5"
+              for="allowanceTypeItemised"
+              >Lwfansau wedi’u rhestru</label
+            >
+          </div>
+        </div>
+
+        <div id="propertyIncomeAllowanceFields">
+          <div class="form-group">
+            <label data-i18n="itsa-uk-annual.property-income-allowance-ef2a03" for="propertyIncomeAllowance">Lwfans incwm o eiddo</label>
+            <p data-i18n="itsa-uk-annual.for-example-600-or-193-54-59a197" id="propertyIncomeAllowance-money-hint" class="hint">
+              Er enghraifft, £600 neu £193.54
+            </p>
+            <div class="input-prefix input-prefix--amount">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="propertyIncomeAllowance"
+                name="propertyIncomeAllowance"
+                value="0"
+                disabled
+                aria-describedby="propertyIncomeAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div id="itemisedAllowanceFields">
+          <div class="form-group">
+            <label data-i18n="itsa-uk-annual.annual-investment-allowance-146011" for="annualInvestmentAllowance"
+              >Lwfans Buddsoddi Blynyddol</label
+            >
+            <p data-i18n="itsa-uk-annual.for-example-600-or-193-54-59a197" id="annualInvestmentAllowance-money-hint" class="hint">
+              Er enghraifft, £600 neu £193.54
+            </p>
+            <div class="input-prefix input-prefix--amount">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="annualInvestmentAllowance"
+                name="annualInvestmentAllowance"
+                value="0"
+                disabled
+                aria-describedby="annualInvestmentAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="itsa-uk-annual.business-premises-renovation-allowance-9d65ac" for="businessPremisesRenovationAllowance"
+              >Lwfans adnewyddu safleoedd busnes</label
+            >
+            <p data-i18n="itsa-uk-annual.for-example-600-or-193-54-59a197" id="businessPremisesRenovationAllowance-money-hint" class="hint">
+              Er enghraifft, £600 neu £193.54
+            </p>
+            <div class="input-prefix input-prefix--amount">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="businessPremisesRenovationAllowance"
+                name="businessPremisesRenovationAllowance"
+                value="0"
+                disabled
+                aria-describedby="businessPremisesRenovationAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="itsa-uk-annual.other-capital-allowance-92d215" for="otherCapitalAllowance">Lwfans cyfalaf arall</label>
+            <p data-i18n="itsa-uk-annual.for-example-600-or-193-54-59a197" id="otherCapitalAllowance-money-hint" class="hint">
+              Er enghraifft, £600 neu £193.54
+            </p>
+            <div class="input-prefix input-prefix--amount">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="otherCapitalAllowance"
+                name="otherCapitalAllowance"
+                value="0"
+                disabled
+                aria-describedby="otherCapitalAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="itsa-uk-annual.cost-of-replacing-domestic-items-c03387" for="costOfReplacingDomesticItems"
+              >Cost amnewid eitemau domestig</label
+            >
+            <p data-i18n="itsa-uk-annual.for-example-600-or-193-54-59a197" id="costOfReplacingDomesticItems-money-hint" class="hint">
+              Er enghraifft, £600 neu £193.54
+            </p>
+            <div class="input-prefix input-prefix--amount">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="costOfReplacingDomesticItems"
+                name="costOfReplacingDomesticItems"
+                value="0"
+                disabled
+                aria-describedby="costOfReplacingDomesticItems-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="itsa-uk-annual.zero-emissions-car-allowance-25a1a8" for="zeroEmissionsCarAllowance"
+              >Lwfans car allyriadau sero</label
+            >
+            <p data-i18n="itsa-uk-annual.for-example-600-or-193-54-59a197" id="zeroEmissionsCarAllowance-money-hint" class="hint">
+              Er enghraifft, £600 neu £193.54
+            </p>
+            <div class="input-prefix input-prefix--amount">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="zeroEmissionsCarAllowance"
+                name="zeroEmissionsCarAllowance"
+                value="0"
+                disabled
+                aria-describedby="zeroEmissionsCarAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
+          </div>
+          <div id="structuredBuildingAllowanceRows"></div>
+          <div id="enhancedStructuredBuildingAllowanceRows"></div>
+        </div>
+
+        <div id="submissionCost" class="submission-cost"></div>
+        <button data-i18n="itsa-uk-annual.save-annual-submission-426ccf" type="button" id="saveBtn" class="btn">
+          Cadw’r cyflwyniad blynyddol
+        </button>
+      </div>
+
+      <!-- Results Display -->
+      <div id="annualSubmissionResults" class="results-container" style="display: none">
+        <div id="annualSubmissionCopy"></div>
+        <div class="button-group">
+          <button data-i18n="itsa-uk-annual.load-another-ec96cc" type="button" id="newSearchBtn" class="secondary-button">
+            Llwytho un arall
+          </button>
+        </div>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../../lib/welsh-text.js"></script>
+    <script src="../../../widgets/page-chrome.js"></script>
+    <script src="../../../lib/env-loader.js"></script>
+    <script src="../../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../../submit.js"></script>
+    <script src="../../../developer-mode.js"></script>
+    <script src="../../../lib/request-cache.js"></script>
+    <script src="../../../lib/carried-identifiers.js"></script>
+    <script src="../../../lib/toml-parser.js"></script>
+    <script src="../../../lib/money-input.js"></script>
+    <script src="../../../lib/self-employment-expenses.js"></script>
+    <script src="../../../lib/structured-building-allowance-rows.js"></script>
+    <script src="../../../lib/form-errors.js"></script>
+    <script src="../../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../../lib/services/hmrc-service.js"></script>
+    <script src="../../../widgets/entitlement-status.js"></script>
+    <script src="../../../widgets/auth-status.js"></script>
+    <script src="../../../widgets/status-messages.js"></script>
+    <script src="../../../widgets/signed-out-panel.js"></script>
+    <script src="../../../widgets/pass-redeemer.js"></script>
+    <script src="../../../widgets/books-import.js"></script>
+    <script src="../../../widgets/submission-cost.js"></script>
+    <script src="../../../hmrc/itsa/ukPropertyAnnualSubmission.page.js"></script>
+  </body>
+</html>

@@ -1,0 +1,299 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from hmrc/itsa/dashboard.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dangosfwrdd Treth Incwm - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/dashboard.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/hmrc/itsa/dashboard.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/hmrc/itsa/dashboard.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/hmrc/itsa/dashboard.html" />
+    <link rel="stylesheet" href="../../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="itsa-dashboard.making-tax-digital-for-income-tax-12444c">Troi Treth yn Ddigidol ar gyfer Treth Incwm</h1>
+      <p data-i18n="itsa-dashboard.quarterly-updates-for-the-self-employed-fc9ee3" class="subtitle">
+        Diweddariadau chwarterol ar gyfer pobl hunangyflogedig a landlordiaid
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p data-i18n="itsa-dashboard.status-sandbox-this-runs-against-hmrc-e3e7dd" class="hint" data-feature-status="sandbox">
+        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a
+        anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei
+        ddiweddariad yn 2027.
+      </p>
+      <div id="syntheticIndicator" class="synthetic-indicator">
+        <span data-i18n="itsa-dashboard.synthetic-mode-calls-go-to-hmrc-efa44d"
+          >Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF</span
+        >
+      </div>
+
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <div class="form-container">
+        <p data-i18n="itsa-dashboard.making-tax-digital-for-income-tax-532d79">
+          Mae Troi Treth yn Ddigidol ar gyfer Treth Incwm yn rhoi cofnod parhaus yn lle’r Ffurflen Dreth Hunanasesiad flynyddol: mae pobl
+          hunangyflogedig a landlordiaid yn anfon crynodeb o’u hincwm a’u treuliau i CThEF bob chwarter yn lle unwaith y flwyddyn. Mae’r
+          rhagolwg hwn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF ym mhob amgylchedd ac eithrio’r gwasanaeth byw (production).
+        </p>
+      </div>
+
+      <!-- Business picker -->
+      <div
+        id="businessPickerContainer"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i ddod o hyd i’ch busnesau"
+        data-sign-in-text="Mewngofnodwch i chwilio am y busnesau hunangyflogaeth ac eiddo y mae CThEF yn eu cadw yn erbyn eich rhif Yswiriant Gwladol, yna gweithiwch drwy’r camau isod."
+        data-i18n-data-sign-in-title="itsa-dashboard.sign-in-to-find-your-businesses-355302"
+        data-i18n-data-sign-in-text="itsa-dashboard.sign-in-to-look-up-the-592a94"
+      >
+        <h2 data-i18n="itsa-dashboard.pick-a-business-976147">Dewiswch fusnes</h2>
+        <p data-i18n="itsa-dashboard.the-steps-below-link-to-the-1e2421" class="hint">
+          Mae’r camau isod yn cysylltu â’r teulu o dudalennau y mae’r busnes a ddewiswyd yn ei ddefnyddio - hunangyflogaeth, eiddo yn y DU
+          neu eiddo tramor - oherwydd bod pwyntiau terfyn CThEF, enwau’r meysydd a hyd yn oed y model chwarterol yn wahanol rhyngddynt.
+        </p>
+        <form id="businessPickerForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="itsa-dashboard.national-insurance-number-21829e" for="nino">Rhif Yswiriant Gwladol</label>
+            <p data-i18n="itsa-dashboard.this-is-two-letters-six-numbers-795a8f" id="nino-hint" class="hint">
+              Mae hwn yn ddwy lythyren, chwe rhif a llythyren olaf, er enghraifft QQ 12 34 56 C. Mae i’w weld ar eich cerdyn Yswiriant
+              Gwladol, eich slip cyflog neu’ch P60.
+            </p>
+            <input
+              type="text"
+              id="nino"
+              name="nino"
+              required
+              value=""
+              maxlength="13"
+              spellcheck="false"
+              autocapitalize="characters"
+              aria-describedby="nino-hint"
+            />
+          </div>
+          <button data-i18n="itsa-dashboard.find-my-businesses-9e3eaf" type="submit" id="findBusinessesBtn" class="btn">
+            Dod o hyd i’m busnesau
+          </button>
+        </form>
+        <div id="businessPickerResults" style="display: none">
+          <div id="businessPickerList" class="business-picker-list"></div>
+          <div id="otherBusinessDiversionNote" class="status-message status-warning" style="display: none" role="alert">
+            <span data-i18n="itsa-dashboard.this-service-does-not-yet-handle-8ef614"
+              >Nid yw’r gwasanaeth hwn yn delio â’r math hwn o fusnes eto. Gorffennwch y rhan honno o’ch Ffurflen Dreth gyda meddalwedd
+              arall sy’n cydweddu â’r cynllun Troi Treth yn Ddigidol neu wasanaeth ar-lein CThEF - gweler
+              <a
+                href="https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-income-tax.cy"
+                target="_blank"
+                rel="noopener"
+                >teclyn chwilio CThEF am feddalwedd</a
+              >.</span
+            >
+          </div>
+          <p id="yearTokenCost" class="hint"></p>
+        </div>
+      </div>
+
+      <div class="form-container" data-requires-sign-in>
+        <div class="dashboard-steps">
+          <div class="dashboard-step">
+            <h2 data-i18n="itsa-dashboard.1-business-details-ac93c7">1. Manylion y busnes</h2>
+            <p data-i18n="itsa-dashboard.look-up-the-self-employment-and-1a424a">
+              Chwiliwch am y busnesau hunangyflogaeth ac eiddo y mae CThEF yn eu cadw yn erbyn eich rhif Yswiriant Gwladol.
+            </p>
+            <a data-i18n="itsa-dashboard.go-to-business-details-5274a1" href="businessDetails.html" class="secondary-button"
+              >Ewch i fanylion y busnes</a
+            >
+          </div>
+          <div class="dashboard-step">
+            <h2 data-i18n="itsa-dashboard.2-obligations-f4e079">2. Rhwymedigaethau</h2>
+            <p data-i18n="itsa-dashboard.check-which-quarterly-updates-are-open-709817">
+              Gwiriwch pa ddiweddariadau chwarterol sy’n agored, yn ddyledus neu wedi’u hanfon yn barod, wedi’u grwpio fesul busnes.
+            </p>
+            <a data-i18n="itsa-dashboard.go-to-obligations-b9f8c9" href="obligations.html" class="secondary-button"
+              >Ewch i’r rhwymedigaethau</a
+            >
+          </div>
+          <div class="dashboard-step">
+            <h2 data-i18n="itsa-dashboard.3-file-a-quarterly-update-34e719">3. Cyflwyno diweddariad chwarterol</h2>
+            <p data-i18n="itsa-dashboard.send-a-period-summary-of-income-60e766">
+              Anfonwch grynodeb o’r cyfnod, sef incwm a threuliau, i CThEF ar gyfer y busnes a ddewiswyd.
+            </p>
+            <a
+              data-i18n="itsa-dashboard.go-to-file-a-quarterly-update-8f1cb1"
+              href="selfEmploymentPeriod.html"
+              id="step3Link"
+              class="secondary-button"
+              >Ewch i gyflwyno diweddariad chwarterol</a
+            >
+          </div>
+          <div class="dashboard-step">
+            <h2 data-i18n="itsa-dashboard.4-period-summaries-0533eb">4. Crynodebau o gyfnodau</h2>
+            <p data-i18n="itsa-dashboard.list-the-quarterly-updates-already-filed-b0d8fe">
+              Rhestrwch y diweddariadau chwarterol sydd wedi’u cyflwyno’n barod ar gyfer y busnes a ddewiswyd.
+            </p>
+            <a
+              data-i18n="itsa-dashboard.go-to-period-summaries-6fdcd3"
+              href="selfEmploymentPeriods.html"
+              id="step4Link"
+              class="secondary-button"
+              >Ewch i’r crynodebau o gyfnodau</a
+            >
+          </div>
+          <div class="dashboard-step">
+            <h2 data-i18n="itsa-dashboard.5-view-a-period-summary-6b9012">5. Bwrw golwg dros grynodeb o gyfnod</h2>
+            <p data-i18n="itsa-dashboard.retrieve-one-filed-quarterly-update-by-be7906">
+              Adalwch un diweddariad chwarterol a gyflwynwyd yn ôl blwyddyn dreth ac ID y cyfnod.
+            </p>
+            <a
+              data-i18n="itsa-dashboard.go-to-view-a-period-summary-6e9856"
+              href="selfEmploymentPeriodView.html"
+              id="step5Link"
+              class="secondary-button"
+              >Ewch i fwrw golwg dros grynodeb o gyfnod</a
+            >
+          </div>
+          <div class="dashboard-step">
+            <h2 data-i18n="itsa-dashboard.6-amend-a-period-summary-0aae0f">6. Diwygio crynodeb o gyfnod</h2>
+            <p data-i18n="itsa-dashboard.correct-the-income-and-expenses-on-82afaf">
+              Cywirwch yr incwm a’r treuliau ar ddiweddariad chwarterol sydd wedi’i gyflwyno i CThEF yn barod.
+            </p>
+            <a
+              data-i18n="itsa-dashboard.go-to-amend-a-period-summary-577b7a"
+              href="selfEmploymentPeriodAmend.html"
+              id="step6Link"
+              class="secondary-button"
+              >Ewch i ddiwygio crynodeb o gyfnod</a
+            >
+          </div>
+
+          <div class="dashboard-divider"><span data-i18n="itsa-dashboard.year-end-cdc8b8">Diwedd y flwyddyn</span></div>
+
+          <div class="dashboard-step">
+            <h2 data-i18n="itsa-dashboard.7-annual-submission-eac3c9">7. Cyflwyniad blynyddol</h2>
+            <p data-i18n="itsa-dashboard.load-the-year-s-annual-submission-365d8b">
+              Llwythwch gyflwyniad blynyddol y flwyddyn ar gyfer y busnes a ddewiswyd, nodwch addasiadau a lwfansau, a’u cadw gyda CThEF.
+            </p>
+            <a
+              data-i18n="itsa-dashboard.go-to-annual-submission-c38a13"
+              href="annualSubmission.html"
+              id="step7Link"
+              class="secondary-button"
+              >Ewch i’r cyflwyniad blynyddol</a
+            >
+          </div>
+          <div class="dashboard-step">
+            <h2 data-i18n="itsa-dashboard.8-year-end-adjustments-38734d">8. Addasiadau diwedd blwyddyn</h2>
+            <p data-i18n="itsa-dashboard.request-the-year-end-summary-read-bf6a66">
+              Gofynnwch am y crynodeb diwedd blwyddyn, darllenwch yr elw net a gyfrifodd CThEF, a newidiwch ffigur os yw’n anghywir.
+            </p>
+            <a data-i18n="itsa-dashboard.go-to-year-end-adjustments-8544b4" href="adjustments.html" id="step8Link" class="secondary-button"
+              >Ewch i’r addasiadau diwedd blwyddyn</a
+            >
+          </div>
+          <div class="dashboard-step">
+            <h2 data-i18n="itsa-dashboard.9-losses-and-claims-40ae6f">9. Colledion a hawliadau</h2>
+            <p data-i18n="itsa-dashboard.applies-if-the-picked-business-made-9d6ccc" class="applicability">
+              Yn berthnasol os gwnaeth y busnes a ddewiswyd golled eleni, neu os yw’n cario un o flwyddyn gynharach. Mae colled pob busnes
+              yn cael ei chario ymlaen yn yr un ffordd; gall unig fasnachwr hefyd ei chario i’r ochr neu’n ôl.
+            </p>
+            <a data-i18n="itsa-dashboard.go-to-losses-and-claims-2fe76f" href="lossesAndClaims.html" class="secondary-button"
+              >Ewch i’r colledion a’r hawliadau</a
+            >
+          </div>
+          <div class="dashboard-step">
+            <h2 data-i18n="itsa-dashboard.10-tax-liability-adjustments-2303e5">10. Addasiadau i’r rhwymedigaeth dreth</h2>
+            <p data-i18n="itsa-dashboard.applies-only-if-a-carry-back-8c0ea9" class="applicability">
+              Yn berthnasol dim ond os gwnaed hawliad i gario’n ôl yn Colledion a Hawliadau. Dyma ail hanner yr hawliad hwnnw - mae’n dweud
+              wrth CThEF beth mae’r cario’n ôl yn ei arbed.
+            </p>
+            <a
+              data-i18n="itsa-dashboard.go-to-tax-liability-adjustments-6d31c6"
+              href="taxLiabilityAdjustments.html"
+              class="secondary-button"
+              >Ewch i’r addasiadau i’r rhwymedigaeth dreth</a
+            >
+          </div>
+          <div class="dashboard-step">
+            <h2 data-i18n="itsa-dashboard.11-tax-calculation-3a7fc0">11. Cyfrifiad treth</h2>
+            <p data-i18n="itsa-dashboard.request-a-calculation-and-see-what-43966a">
+              Gofynnwch am gyfrifiad a gweld beth sy’n ddyledus ar gyfer y flwyddyn dreth, gydag un rhes ar gyfer pob busnes.
+            </p>
+            <a data-i18n="itsa-dashboard.go-to-tax-calculation-47e2ab" href="taxCalculation.html" class="secondary-button"
+              >Ewch i’r cyfrifiad treth</a
+            >
+          </div>
+          <div class="dashboard-step">
+            <h2 data-i18n="itsa-dashboard.12-final-declaration-9559a9">12. Datganiad terfynol</h2>
+            <p data-i18n="itsa-dashboard.read-the-calculation-again-confirm-it-790d63">
+              Darllenwch y cyfrifiad eto, cadarnhewch ei fod yn gyflawn ac yn gywir ar gyfer pob busnes, a chyflwynwch y Ffurflen Dreth.
+            </p>
+            <a data-i18n="itsa-dashboard.go-to-final-declaration-222690" href="finalDeclaration.html" class="secondary-button"
+              >Ewch i’r datganiad terfynol</a
+            >
+          </div>
+        </div>
+      </div>
+      <aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>
+        <h2 id="welshServicesHeading">Gwasanaethau Cymraeg CThEF</h2>
+        <p>
+          Mae sgriniau a negeseuon ar-lein CThEF ar gael yn Gymraeg. Pan fydd Submit yn eich anfon i CThEF i fewngofnodi, dewiswch ‘Cymraeg’
+          ar dudalen CThEF.
+        </p>
+        <p>Gallwch weld adborth HMRC Assist ar eich Ffurflen TAW yn Gymraeg.</p>
+        <p>
+          Llinell gymorth Gymraeg CThEF ar gyfer Treth Incwm, Hunanasesiad, Yswiriant Gwladol a TWE:
+          <a href="tel:+443002001900">0300 200 1900</a>. Ar gyfer TAW, tollau ac ecséis: <a href="tel:+443002003705">0300 200 3705</a>.
+          Mae’r ddwy linell ar agor o ddydd Llun i ddydd Gwener, 8:30am i 5pm, ac ar gau ar wyliau banc.
+        </p>
+        <p>
+          <a href="https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines"
+            >Llinellau cymorth Cymraeg CThEF ar GOV.UK</a
+          >
+        </p>
+        <p class="welsh-services-note">
+          Cyfieithiad o’n tudalen Saesneg yw’r dudalen hon. Mae rhannau o Submit, a’r testun y mae CThEF yn ei anfon yn ôl, yn Saesneg.
+        </p>
+      </aside>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../../lib/welsh-text.js"></script>
+    <script src="../../../widgets/page-chrome.js"></script>
+    <script src="../../../lib/env-loader.js"></script>
+    <script src="../../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../../submit.js"></script>
+    <script src="../../../developer-mode.js"></script>
+    <script src="../../../lib/request-cache.js"></script>
+    <script src="../../../lib/carried-identifiers.js"></script>
+    <script src="../../../lib/toml-parser.js"></script>
+    <script src="../../../lib/form-errors.js"></script>
+    <script src="../../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../../lib/services/hmrc-service.js"></script>
+    <script src="../../../widgets/entitlement-status.js"></script>
+    <script src="../../../widgets/auth-status.js"></script>
+    <script src="../../../widgets/status-messages.js"></script>
+    <script src="../../../widgets/signed-out-panel.js"></script>
+    <script src="../../../hmrc/itsa/dashboard.page.js"></script>
+  </body>
+</html>

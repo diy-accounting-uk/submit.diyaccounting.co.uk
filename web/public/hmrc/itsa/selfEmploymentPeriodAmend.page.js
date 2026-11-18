@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId"));
@@ -33,11 +39,11 @@ function updateSubmissionModelUI() {
     if (!label) return;
     const baseText = label.dataset.baseLabel || label.textContent;
     label.dataset.baseLabel = baseText;
-    label.textContent = isCumulative ? `${baseText} (year to date)` : baseText;
+    label.textContent = isCumulative ? siteText("itsa.year-to-date-label", "{label} (year to date)", { label: baseText }) : baseText;
   });
   turnoverHint.textContent = isCumulative
-    ? "The corrected total turnover for the tax year so far."
-    : "The corrected takings, fees, sales or money earned by the business for this period.";
+    ? siteText("itsa-se-amend.turnover-hint-cumulative", "The corrected total turnover for the tax year so far.")
+    : siteText("itsa-se-amend.turnover-hint", "The corrected takings, fees, sales or money earned by the business for this period.");
 
   loadCurrentTotalGroup.style.display = isCumulative ? "block" : "none";
 }
@@ -131,14 +137,14 @@ async function fetchCurrentTotal(nino, businessId, taxYear, hmrcGrantId) {
       ...requestHeaders,
       "x-wait-time-ms": "0",
     },
-    pollPendingMessage: "Still processing...",
-    pollSuccessMessage: "Current total loaded.",
-    pollErrorMessage: "Failed to load the current total.",
+    pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+    pollSuccessMessage: siteText("itsa.current-total-loaded", "Current total loaded."),
+    pollErrorMessage: siteText("itsa.current-total-failed", "Failed to load the current total."),
   });
 
   const result = await response.json();
   if (!response.ok) {
-    const error = new Error(hmrcErrorMessage(result, "Failed to load the current total"));
+    const error = new Error(hmrcErrorMessage(result, siteText("itsa.current-total-failed-fallback", "Failed to load the current total")));
     error.status = response.status;
     throw error;
   }
@@ -155,7 +161,13 @@ function applyCurrentTotal(periodSummary) {
   }
   if (expenses.costOfGoods !== undefined) document.getElementById("costOfGoods").value = expenses.costOfGoods;
   if (expenses.otherExpenses !== undefined) document.getElementById("otherExpenses").value = expenses.otherExpenses;
-  showStatus("Loaded the current year-to-date total from HMRC. Edit the figures below to the new total.", "info");
+  showStatus(
+    siteText(
+      "itsa-se-amend.current-total-applied",
+      "Loaded the current year-to-date total from HMRC. Edit the figures below to the new total.",
+    ),
+    "info",
+  );
 }
 
 async function continueLoadCurrentTotal() {
@@ -175,12 +187,15 @@ async function continueLoadCurrentTotal() {
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
     if (error.status === 404) {
-      showStatus("HMRC has no total on file yet for this tax year.", "info");
+      showStatus(siteText("itsa-se-amend.current-total-none", "HMRC has no total on file yet for this tax year."), "info");
     } else if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
-      showStatus("Access token expired. Please try loading the total again.", "error");
+      showStatus(siteText("itsa.current-total-token-expired", "Access token expired. Please try loading the total again."), "error");
     } else {
-      showStatus(`Failed to load the current total: ${error.message}`, "error");
+      showStatus(
+        siteText("itsa.current-total-failed-reason", "Failed to load the current total: {reason}", { reason: error.message }),
+        "error",
+      );
     }
     sessionStorage.removeItem("pendingSelfEmploymentLoadTotalRequest");
     sessionStorage.removeItem("oauth_state");
@@ -203,7 +218,7 @@ async function handleLoadCurrentTotal() {
     if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     try {
       showLoading();
-      showStatus("Initiating HMRC authentication...", "info");
+      showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
 
       const state = generateRandomState();
       sessionStorage.setItem("oauth_state", state);
@@ -214,13 +229,16 @@ async function handleLoadCurrentTotal() {
       const hmrcAccount = sessionStorage.getItem("hmrcAccount");
       const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
 
-      showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+      showStatus(
+        siteText("widget.hmrc-auth-redirecting", "Redirecting to HMRC for authentication at {url}...", { url: authResponseUrl }),
+        "info",
+      );
       try {
         window.__correlation?.prepareRedirect?.();
       } catch {}
       window.location.href = authResponseUrl;
     } catch (error) {
-      showStatus(`Authentication failed: ${error.message}`, "error");
+      showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
       hideLoading();
     }
   } else {
@@ -231,9 +249,12 @@ async function handleLoadCurrentTotal() {
       applyCurrentTotal(result);
     } catch (error) {
       if (error.status === 404) {
-        showStatus("HMRC has no total on file yet for this tax year.", "info");
+        showStatus(siteText("itsa-se-amend.current-total-none", "HMRC has no total on file yet for this tax year."), "info");
       } else {
-        showStatus(`Failed to load the current total: ${error.message}`, "error");
+        showStatus(
+          siteText("itsa.current-total-failed-reason", "Failed to load the current total: {reason}", { reason: error.message }),
+          "error",
+        );
       }
     } finally {
       hideLoading();
@@ -285,14 +306,14 @@ async function amendPeriod(amendData, testScenario, runFraudPreventionHeaderVali
       "x-wait-time-ms": "0",
     },
     body: JSON.stringify({ ...amendData, runFraudPreventionHeaderValidation }),
-    pollPendingMessage: "Still processing...",
-    pollSuccessMessage: "Period summary amended.",
-    pollErrorMessage: "Failed to amend the period summary.",
+    pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+    pollSuccessMessage: siteText("itsa.period-amended", "Period summary amended."),
+    pollErrorMessage: siteText("itsa.period-amend-failed", "Failed to amend the period summary."),
   });
 
   const result = await response.json();
   if (!response.ok) {
-    const error = new Error(hmrcErrorMessage(result, "Failed to amend the period summary"));
+    const error = new Error(hmrcErrorMessage(result, siteText("itsa.period-amend-failed-fallback", "Failed to amend the period summary")));
     error.status = response.status;
     error.reason = result.reason;
     throw error;
@@ -310,7 +331,7 @@ async function continuePeriodAmend() {
     hideSearchCriteria();
     showLoading();
     hideStatus();
-    showStatus("Amending period summary...", "info");
+    showStatus(siteText("itsa.period-amending", "Amending period summary..."), "info");
 
     await amendPeriod(
       pendingRequest.amendData,
@@ -329,12 +350,15 @@ async function continuePeriodAmend() {
   } catch (error) {
     if (error.status === 401) {
       window.hmrcScopeCheck.clearHmrcToken();
-      showStatus("Access token expired. Please re-authenticate.", "error");
+      showStatus(siteText("itsa.token-expired-reauth", "Access token expired. Please re-authenticate."), "error");
     } else if (error.status === 403 && error.reason === "tokens_exhausted") {
       hideStatus();
       window.SubmissionCost?.refresh();
     } else {
-      showStatus(`Failed to amend the period summary: ${error.message}`, "error");
+      showStatus(
+        siteText("itsa.period-amend-failed-reason", "Failed to amend the period summary: {reason}", { reason: error.message }),
+        "error",
+      );
     }
     showSearchCriteria();
     sessionStorage.removeItem("pendingSelfEmploymentPeriodAmendRequest");
@@ -385,7 +409,7 @@ async function handleFormSubmission(event) {
     }
     try {
       showLoading();
-      showStatus("Initiating HMRC authentication...", "info");
+      showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
 
       const state = generateRandomState();
       const requestData = { amendData, testScenario, runFraudPreventionHeaderValidation };
@@ -401,21 +425,24 @@ async function handleFormSubmission(event) {
 
       const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
 
-      showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+      showStatus(
+        siteText("widget.hmrc-auth-redirecting", "Redirecting to HMRC for authentication at {url}...", { url: authResponseUrl }),
+        "info",
+      );
 
       try {
         window.__correlation?.prepareRedirect?.();
       } catch {}
       window.location.href = authResponseUrl;
     } catch (error) {
-      showStatus(`Authentication failed: ${error.message}`, "error");
+      showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
       hideLoading();
     }
   } else {
     try {
       showLoading();
       hideStatus();
-      showStatus("Amending period summary...", "info");
+      showStatus(siteText("itsa.period-amending", "Amending period summary..."), "info");
 
       await amendPeriod(amendData, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
 
@@ -425,12 +452,15 @@ async function handleFormSubmission(event) {
     } catch (error) {
       if (error.status === 401) {
         window.hmrcScopeCheck.clearHmrcToken();
-        showStatus("Access token expired. Please try again.", "error");
+        showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
       } else if (error.status === 403 && error.reason === "tokens_exhausted") {
         hideStatus();
         window.SubmissionCost?.refresh();
       } else {
-        showStatus(`Failed to amend the period summary: ${error.message}`, "error");
+        showStatus(
+          siteText("itsa.period-amend-failed-reason", "Failed to amend the period summary: {reason}", { reason: error.message }),
+          "error",
+        );
       }
     } finally {
       hideLoading();

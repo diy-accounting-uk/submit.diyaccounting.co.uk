@@ -4,8 +4,8 @@
 // web/public/widgets/foreign-property-entries.js
 // The list of entries on a foreign property page. HMRC takes one entry for each country (2025-26
 // and before) or for each property (2026-27 on) and refuses a repeat.
-//   mode "country": one fieldset for each country, with a country select, "Remove", and an
-//     "Add another country" button. A country chosen in one fieldset is not offered in the others.
+//   mode "country": one fieldset for each country, with a country select, siteText("itsa.fp-remove", "Remove"), and an
+//     siteText("itsa.fp-add-another-country", "Add another country") button. A country chosen in one fieldset is not offered in the others.
 //   mode "property": one fieldset for each property from HMRC's property list, headed
 //     "<name> (<country>)", with no select and no Remove. The page sets the list with setProperties.
 // renderBody(container, prefix) fills an entry's body; prefix is unique to the entry on the page.
@@ -13,6 +13,12 @@
 
 (function () {
   "use strict";
+
+  // page-chrome.js gives the text in the chosen language; without it the English stands.
+  function siteText(id, english, values) {
+    if (window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
 
   function el(tag, props = {}, children = []) {
     const node = document.createElement(tag);
@@ -34,9 +40,15 @@
       fieldsets().forEach((fieldset, index) => {
         if (mode !== "country") return;
         fieldset.querySelector("legend").textContent = `Country ${index + 1}`;
-        fieldset.querySelector("button.foreign-property-remove").setAttribute("aria-label", `Remove country ${index + 1}`);
+        fieldset
+          .querySelector("button.foreign-property-remove")
+          .setAttribute("aria-label", siteText("itsa.fp-remove-country-n", "Remove country {n}", { n: index + 1 }));
       });
-      if (addButton) addButton.textContent = list.children.length === 0 ? "Add a country" : "Add another country";
+      if (addButton)
+        addButton.textContent =
+          list.children.length === 0
+            ? siteText("itsa.fp-add-country", "Add a country")
+            : siteText("itsa.fp-add-another-country", "Add another country");
     }
 
     // The countries the select may hold: all, less those another select holds.
@@ -56,7 +68,10 @@
           if (other !== select && other.value) taken.add(other.value);
         }
         const chosen = select.value;
-        select.replaceChildren(el("option", { value: "", textContent: "Choose the country or territory" }), ...optionsFor(chosen, taken));
+        select.replaceChildren(
+          el("option", { value: "", textContent: siteText("itsa.fp-choose-country", "Choose the country or territory") }),
+          ...optionsFor(chosen, taken),
+        );
         select.value = chosen;
       }
     }
@@ -78,13 +93,21 @@
       const hint = el("p", {
         id: `${selectId}-hint`,
         className: "hint",
-        textContent: "Put every property in this country in this one entry.",
+        textContent: siteText("itsa.fp-one-entry-hint", "Put every property in this country in this one entry."),
       });
       const select = el("select", { id: selectId, name: selectId, required: true });
       select.setAttribute("aria-describedby", hint.id);
-      const remove = el("button", { type: "button", className: "secondary-button foreign-property-remove", textContent: "Remove" });
+      const remove = el("button", {
+        type: "button",
+        className: "secondary-button foreign-property-remove",
+        textContent: siteText("itsa.fp-remove", "Remove"),
+      });
       fieldset.append(
-        el("div", { className: "form-group" }, [el("label", { htmlFor: selectId, textContent: "Country or territory" }), hint, select]),
+        el("div", { className: "form-group" }, [
+          el("label", { htmlFor: selectId, textContent: siteText("itsa.fp-country", "Country or territory") }),
+          hint,
+          select,
+        ]),
         body,
         remove,
       );
@@ -131,7 +154,10 @@
     function validate() {
       if (mode !== "country") return [];
       return fieldsets()
-        .map((fieldset, index) => ({ input: selectOf(fieldset), message: `Country ${index + 1}: choose the country or territory` }))
+        .map((fieldset, index) => ({
+          input: selectOf(fieldset),
+          message: siteText("itsa.fp-country-n-choose", "Country {n}: choose the country or territory", { n: index + 1 }),
+        }))
         .filter(({ input }) => input.value === "");
     }
 

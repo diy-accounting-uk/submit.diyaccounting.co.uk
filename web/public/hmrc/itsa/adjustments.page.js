@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId"));
@@ -51,7 +57,7 @@ function initializePage() {
 async function checkOpenObligations(nino, businessId, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
   const result = await getObligations(nino, hmrcGrantId, govClientHeaders, false, null, {
-    typeOfBusiness: "self-employment",
+    typeOfBusiness: siteText("itsa.kind-phrase-self-employment", "self-employment"),
     businessId,
     status: "open",
   });
@@ -102,7 +108,7 @@ function displaySummary(bsas) {
   HmrcFieldTable.mountFieldTable(
     document.getElementById("summaryDetails"),
     HmrcFieldTable.selfEmploymentSummaryRows(bsas?.adjustableSummaryCalculation),
-    { caption: "Year-end summary" },
+    { caption: siteText("itsa.year-end-summary", "Year-end summary") },
   );
 }
 
@@ -113,7 +119,7 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
   if (!scopeSufficient) {
     if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     showLoading();
-    showStatus("Initiating HMRC authentication...", "info");
+    showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
     const state = generateRandomState();
     const hmrcAccount = sessionStorage.getItem("hmrcAccount");
     sessionStorage.setItem("oauth_state", state);
@@ -133,13 +139,13 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
 async function runTriggerAndRetrieve(triggerDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
   showLoading();
   hideStatus();
-  showStatus("Requesting the year-end summary...", "info");
+  showStatus(siteText("itsa.year-end-requesting", "Requesting the year-end summary..."), "info");
   const triggerResult = await triggerSummary(triggerDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
   triggeredNino = triggerDetails.nino;
   triggeredTaxYear = document.getElementById("taxYear").value.trim();
   triggeredCalculationId = triggerResult.calculationId;
 
-  showStatus("Retrieving year-end summary...", "info");
+  showStatus(siteText("itsa.year-end-retrieving", "Retrieving year-end summary..."), "info");
   const bsas = await retrieveSummary(triggeredNino, triggeredCalculationId, triggeredTaxYear, hmrcGrantId, testScenario);
   displaySummary(bsas);
   document.getElementById("triggerForm").style.display = "none";
@@ -164,7 +170,7 @@ async function handleTriggerFormSubmission(event) {
     businessId,
     accountingPeriodStartDate,
     accountingPeriodEndDate,
-    typeOfBusiness: "self-employment",
+    typeOfBusiness: siteText("itsa.kind-phrase-self-employment", "self-employment"),
   };
 
   try {
@@ -173,7 +179,11 @@ async function handleTriggerFormSubmission(event) {
       const openObligations = await checkOpenObligations(nino, businessId, hmrcGrantIdForCheck);
       const warning = document.getElementById("obligationsWarning");
       if (openObligations.length > 0) {
-        warning.textContent = `${openObligations.length} quarterly obligation(s) for this business are still open. File every quarterly update for the year before requesting the year-end summary.`;
+        warning.textContent = siteText(
+          "itsa.open-obligations-warning",
+          "{count} quarterly obligation(s) for this business are still open. File every quarterly update for the year before requesting the year-end summary.",
+          { count: openObligations.length },
+        );
         warning.style.display = "block";
         return;
       }
@@ -190,7 +200,10 @@ async function handleTriggerFormSubmission(event) {
       try {
         await runTriggerAndRetrieve(triggerDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
       } catch (error) {
-        showStatus(`Failed to request the year-end summary: ${error.message}`, "error");
+        showStatus(
+          siteText("itsa.year-end-request-failed", "Failed to request the year-end summary: {reason}", { reason: error.message }),
+          "error",
+        );
       } finally {
         hideLoading();
       }
@@ -215,7 +228,7 @@ async function continueAfterOAuth() {
       sessionStorage.removeItem("pendingBsasTriggerRequest");
     } else if (pendingAdjust) {
       showLoading();
-      showStatus("Submitting adjustment...", "info");
+      showStatus(siteText("itsa.adjustment-submitting", "Submitting adjustment..."), "info");
       await submitAdjustment(
         pendingAdjust.adjustDetails,
         pendingAdjust.testScenario,
@@ -232,7 +245,7 @@ async function continueAfterOAuth() {
     sessionStorage.removeItem("currentActivity");
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
-    showStatus(`Failed: ${error.message}`, "error");
+    showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
     sessionStorage.removeItem("pendingBsasTriggerRequest");
     sessionStorage.removeItem("pendingBsasAdjustRequest");
     window.hmrcScopeCheck.clearHmrcToken();
@@ -275,13 +288,13 @@ async function handleAdjustmentSubmit(zeroAdjustments) {
       try {
         showLoading();
         hideStatus();
-        showStatus("Submitting adjustment...", "info");
+        showStatus(siteText("itsa.adjustment-submitting", "Submitting adjustment..."), "info");
         await submitAdjustment(adjustDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         document.getElementById("summaryContainer").style.display = "none";
         document.getElementById("adjustmentResults").style.display = "block";
         hideStatus();
       } catch (error) {
-        showStatus(`Failed to submit the adjustment: ${error.message}`, "error");
+        showStatus(siteText("itsa.adjustment-failed", "Failed to submit the adjustment: {reason}", { reason: error.message }), "error");
       } finally {
         hideLoading();
       }

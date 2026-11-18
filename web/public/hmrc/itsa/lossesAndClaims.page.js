@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId"));
@@ -9,11 +15,11 @@ window.CarriedIdentifiers.bind("taxYear", document.getElementById("taxYear"));
 let loadedNino = "";
 let loadedBusinessId = "";
 let loadedTaxYear = "";
-let loadedTypeOfBusiness = "self-employment";
+let loadedTypeOfBusiness = siteText("itsa.kind-phrase-self-employment", "self-employment");
 
 const JOURNEY_LINKS = [
-  { href: "dashboard.html", text: "Back to Income Tax" },
-  { href: "obligations.html", text: "See your obligations" },
+  { href: "dashboard.html", text: siteText("itsa.link-back", "Back to Income Tax") },
+  { href: "obligations.html", text: siteText("itsa.link-obligations", "See your obligations") },
 ];
 
 async function showSavedRecord(lossesDetails, correlationId) {
@@ -81,7 +87,7 @@ function restoreSuspendTemporalValidations() {
 // business rather than letting the customer fill it in and be turned away.
 function updateCarryBackVisibility() {
   const typeOfBusiness = document.getElementById("typeOfBusiness").value;
-  const isSelfEmployment = typeOfBusiness === "self-employment";
+  const isSelfEmployment = typeOfBusiness === siteText("itsa.kind-phrase-self-employment", "self-employment");
   document.getElementById("carryBackSection").style.display = isSelfEmployment ? "block" : "none";
   if (!isSelfEmployment) {
     document.getElementById("previousYearGeneralIncome").value = 0;
@@ -111,12 +117,15 @@ function updateClaimSummary() {
   if (!(carrySideways && carryBack)) document.getElementById("applyFirst").value = "";
 
   const claims = [];
-  if (carryForward) claims.push("carry the loss forward");
-  if (carrySideways) claims.push("set it sideways against this year's other income");
-  if (carryBack) claims.push("carry it back to an earlier year");
+  if (carryForward) claims.push(siteText("itsa-losses.claim-forward", "carry the loss forward"));
+  if (carrySideways) claims.push(siteText("itsa-losses.claim-sideways", "set it sideways against this year's other income"));
+  if (carryBack) claims.push(siteText("itsa-losses.claim-back", "carry it back to an earlier year"));
 
   const summary = document.getElementById("claimSummary");
-  summary.textContent = claims.length > 0 ? `This save will ${claims.join(", ")}.` : "No claim is entered yet.";
+  summary.textContent =
+    claims.length > 0
+      ? siteText("itsa-losses.claim-summary", "This save will {claims}.", { claims: claims.join(", ") })
+      : siteText("itsa-losses.no-claim", "No claim is entered yet.");
 }
 
 function readLosses() {
@@ -140,7 +149,7 @@ function readClaims() {
     claims.carrySideways = { currentYearGeneralIncome };
   }
 
-  if (document.getElementById("typeOfBusiness").value === "self-employment") {
+  if (document.getElementById("typeOfBusiness").value === siteText("itsa.kind-phrase-self-employment", "self-employment")) {
     const previousYearGeneralIncome = window.parseMoneyInput(document.getElementById("previousYearGeneralIncome").value) ?? 0;
     const earlyYearLosses = window.parseMoneyInput(document.getElementById("earlyYearLosses").value) ?? 0;
     const terminalLosses = window.parseMoneyInput(document.getElementById("terminalLosses").value) ?? 0;
@@ -202,7 +211,7 @@ async function continueAfterOAuth() {
 
     if (pendingLoad) {
       showLoading();
-      showStatus("Loading losses and claims...", "info");
+      showStatus(siteText("itsa-losses.loading", "Loading losses and claims..."), "info");
       const result = await loadLossesAndClaims(
         pendingLoad.nino,
         pendingLoad.businessId,
@@ -222,7 +231,7 @@ async function continueAfterOAuth() {
       sessionStorage.removeItem("pendingLossesLoadRequest");
     } else if (pendingSave) {
       showLoading();
-      showStatus("Saving losses and claims...", "info");
+      showStatus(siteText("itsa-losses.saving", "Saving losses and claims..."), "info");
       const saved = await saveLossesAndClaims(
         pendingSave.lossesDetails,
         pendingSave.testScenario,
@@ -238,7 +247,7 @@ async function continueAfterOAuth() {
     sessionStorage.removeItem("currentActivity");
     sessionStorage.removeItem("oauth_state");
   } catch (error) {
-    showStatus(`Failed: ${error.message}`, "error");
+    showStatus(siteText("itsa.failed", "Failed: {reason}", { reason: error.message }), "error");
     sessionStorage.removeItem("pendingLossesLoadRequest");
     sessionStorage.removeItem("pendingLossesSaveRequest");
     window.hmrcScopeCheck.clearHmrcToken();
@@ -262,7 +271,7 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
   if (!scopeSufficient) {
     if (hmrcGrantId && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
     showLoading();
-    showStatus("Initiating HMRC authentication...", "info");
+    showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
     const state = generateRandomState();
     const hmrcAccount = sessionStorage.getItem("hmrcAccount");
     sessionStorage.setItem("oauth_state", state);
@@ -298,7 +307,7 @@ async function handleLoadFormSubmission(event) {
       try {
         showLoading();
         hideStatus();
-        showStatus("Loading losses and claims...", "info");
+        showStatus(siteText("itsa-losses.loading", "Loading losses and claims..."), "info");
         const result = await loadLossesAndClaims(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         loadedNino = nino;
         loadedBusinessId = businessId;
@@ -319,7 +328,7 @@ async function handleLoadFormSubmission(event) {
           document.getElementById("lossesEditForm").style.display = "block";
           showStatus("HMRC has no losses or claims on file yet for this business and tax year.", "info");
         } else {
-          showStatus(`Failed to load losses and claims: ${error.message}`, "error");
+          showStatus(siteText("itsa-losses.load-failed", "Failed to load losses and claims: {reason}", { reason: error.message }), "error");
         }
       } finally {
         hideLoading();
@@ -349,12 +358,12 @@ async function handleSaveClick() {
       try {
         showLoading();
         hideStatus();
-        showStatus("Saving losses and claims...", "info");
+        showStatus(siteText("itsa-losses.saving", "Saving losses and claims..."), "info");
         const saved = await saveLossesAndClaims(lossesDetails, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId);
         await showSavedRecord(lossesDetails, saved?.correlationId);
         hideStatus();
       } catch (error) {
-        showStatus(`Failed to save losses and claims: ${error.message}`, "error");
+        showStatus(siteText("itsa-losses.save-failed", "Failed to save losses and claims: {reason}", { reason: error.message }), "error");
       } finally {
         hideLoading();
       }

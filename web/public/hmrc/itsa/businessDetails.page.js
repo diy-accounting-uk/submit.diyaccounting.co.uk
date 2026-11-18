@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+// page-chrome.js gives the text in the reader's language; without it (in a unit test) the English stands.
+const siteText = (id, english, values) =>
+  window.siteText
+    ? window.siteText(id, english, values)
+    : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 
 // Global variables
@@ -101,7 +107,7 @@ async function continueBusinessDetailsRetrieval() {
     hideSearchCriteria();
     showLoading();
     hideStatus();
-    showStatus("Retrieving business details...", "info");
+    showStatus(siteText("itsa-business-details.retrieving", "Retrieving business details..."), "info");
 
     if (pendingRequest.nino) document.getElementById("nino").value = pendingRequest.nino;
     if (pendingRequest.testScenario) document.getElementById("testScenario").value = pendingRequest.testScenario;
@@ -131,9 +137,9 @@ async function continueBusinessDetailsRetrieval() {
         ...requestHeaders,
         "x-wait-time-ms": "0",
       },
-      pollPendingMessage: "Still processing...",
-      pollSuccessMessage: "Business details retrieved.",
-      pollErrorMessage: "Failed to retrieve business details.",
+      pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+      pollSuccessMessage: siteText("itsa-business-details.retrieved", "Business details retrieved."),
+      pollErrorMessage: siteText("itsa-business-details.retrieve-failed", "Failed to retrieve business details."),
     });
 
     const result = await response.json();
@@ -141,11 +147,13 @@ async function continueBusinessDetailsRetrieval() {
     if (!response.ok) {
       if (response.status === 401) {
         window.hmrcScopeCheck.clearHmrcToken();
-        showStatus("Access token expired. Please re-authenticate.", "error");
+        showStatus(siteText("itsa.token-expired-reauth", "Access token expired. Please re-authenticate."), "error");
         showSearchCriteria();
         return;
       }
-      throw new Error(hmrcErrorMessage(result, "Failed to retrieve business details"));
+      throw new Error(
+        hmrcErrorMessage(result, siteText("itsa-business-details.could-not-retrieve", "Failed to retrieve business details")),
+      );
     }
 
     displayBusinesses(result.listOfBusinesses || []);
@@ -159,7 +167,10 @@ async function continueBusinessDetailsRetrieval() {
     console.log("Business details retrieval completed successfully");
   } catch (error) {
     console.error("Error retrieving business details:", error);
-    showStatus(`Failed to retrieve business details: ${error.message}`, "error");
+    showStatus(
+      siteText("itsa-business-details.retrieve-failed-reason", "Failed to retrieve business details: {reason}", { reason: error.message }),
+      "error",
+    );
     showSearchCriteria();
     sessionStorage.removeItem("pendingBusinessDetailsRequest");
     window.hmrcScopeCheck.clearHmrcToken();
@@ -192,7 +203,7 @@ async function handleFormSubmission(event) {
     }
     try {
       showLoading();
-      showStatus("Initiating HMRC authentication...", "info");
+      showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
 
       const state = generateRandomState();
       const requestData = { nino, testScenario, runFraudPreventionHeaderValidation };
@@ -210,7 +221,10 @@ async function handleFormSubmission(event) {
       const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
       console.log("Generated HMRC Auth URL:", authResponseUrl);
 
-      showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+      showStatus(
+        siteText("widget.hmrc-auth-redirecting", "Redirecting to HMRC for authentication at {url}...", { url: authResponseUrl }),
+        "info",
+      );
 
       try {
         window.__correlation?.prepareRedirect?.();
@@ -218,14 +232,14 @@ async function handleFormSubmission(event) {
       window.location.href = authResponseUrl;
     } catch (error) {
       console.error("Authentication error:", error);
-      showStatus(`Authentication failed: ${error.message}`, "error");
+      showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
       hideLoading();
     }
   } else {
     try {
       showLoading();
       hideStatus();
-      showStatus("Retrieving business details...", "info");
+      showStatus(siteText("itsa-business-details.retrieving", "Retrieving business details..."), "info");
 
       const params = new URLSearchParams({ nino });
       if (testScenario) params.append("Gov-Test-Scenario", testScenario);
@@ -250,9 +264,9 @@ async function handleFormSubmission(event) {
           ...requestHeaders,
           "x-wait-time-ms": "0",
         },
-        pollPendingMessage: "Still processing...",
-        pollSuccessMessage: "Business details retrieved.",
-        pollErrorMessage: "Failed to retrieve business details.",
+        pollPendingMessage: siteText("widget.still-processing", "Still processing..."),
+        pollSuccessMessage: siteText("itsa-business-details.retrieved", "Business details retrieved."),
+        pollErrorMessage: siteText("itsa-business-details.retrieve-failed", "Failed to retrieve business details."),
       });
 
       const result = await response.json();
@@ -260,10 +274,12 @@ async function handleFormSubmission(event) {
       if (!response.ok) {
         if (response.status === 401) {
           window.hmrcScopeCheck.clearHmrcToken();
-          showStatus("Access token expired. Please try again.", "error");
+          showStatus(siteText("itsa.token-expired-retry", "Access token expired. Please try again."), "error");
           return;
         }
-        throw new Error(hmrcErrorMessage(result, "Failed to retrieve business details"));
+        throw new Error(
+          hmrcErrorMessage(result, siteText("itsa-business-details.could-not-retrieve", "Failed to retrieve business details")),
+        );
       }
 
       displayBusinesses(result.listOfBusinesses || []);
@@ -272,7 +288,12 @@ async function handleFormSubmission(event) {
       hideStatus();
     } catch (error) {
       console.error("Error retrieving business details:", error);
-      showStatus(`Failed to retrieve business details: ${error.message}`, "error");
+      showStatus(
+        siteText("itsa-business-details.retrieve-failed-reason", "Failed to retrieve business details: {reason}", {
+          reason: error.message,
+        }),
+        "error",
+      );
     } finally {
       hideLoading();
     }
@@ -290,12 +311,18 @@ function displayBusinesses(businesses) {
   const tableContainer = document.getElementById("businessDetailsTable");
 
   if (!businesses || businesses.length === 0) {
-    tableContainer.replaceChildren(el("p", "no-data", "No businesses found for the specified National Insurance number."));
+    tableContainer.replaceChildren(
+      el("p", "no-data", siteText("itsa.no-businesses-found", "No businesses found for the specified National Insurance number.")),
+    );
     return;
   }
 
   const headerRow = document.createElement("tr");
-  ["Business type", "Trading name", "Business ID"].forEach((heading) => headerRow.append(el("th", "", heading)));
+  [
+    siteText("itsa.business-type", "Business type"),
+    siteText("itsa.trading-name", "Trading name"),
+    siteText("itsa.business-id", "Business ID"),
+  ].forEach((heading) => headerRow.append(el("th", "", heading)));
   const thead = document.createElement("thead");
   thead.append(headerRow);
 
