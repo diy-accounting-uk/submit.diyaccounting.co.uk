@@ -80,13 +80,13 @@
     },
     "smallCompany": {
       "filleted": false,
-      "principalActivity": "the supply of business software",
-      "accountingPolicies": "The financial statements have been prepared under the historical cost convention.",
-      "goingConcernStatement": "The directors expect the company to have enough resources to continue in operation for the foreseeable future, so the financial statements are prepared on a going concern basis.",
-      "revenueRecognitionPolicy": "Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
-      "tangibleFixedAssetsPolicy": "Tangible fixed assets are measured at cost less accumulated depreciation. Computer equipment is depreciated at 33% a year on cost.",
-      "impairmentPolicy": "At each reporting date the company reviews its assets for signs of impairment. An asset whose carrying value is more than its recoverable amount is written down to that amount.",
-      "financialInstrumentsPolicy": "The company has only basic financial instruments. Debtors, cash and creditors are measured at the undiscounted amount of cash the company expects to receive or pay.",
+      "principalActivity": "cyflenwi meddalwedd busnes",
+      "accountingPolicies": "Mae’r datganiadau ariannol wedi eu paratoi o dan y confensiwn cost hanesyddol.",
+      "goingConcernStatement": "Mae’r cyfarwyddwyr yn disgwyl y bydd gan y cwmni ddigon o adnoddau i barhau i weithredu yn y dyfodol rhagweladwy, felly mae’r datganiadau ariannol wedi eu paratoi ar sail busnes gweithredol.",
+      "revenueRecognitionPolicy": "Trosiant yw’r swm sy’n dderbyniadwy am feddalwedd a gwasanaethau a ddarparwyd yn y flwyddyn, heb gynnwys TAW.",
+      "tangibleFixedAssetsPolicy": "Mae asedau sefydlog diriaethol yn cael eu mesur ar gost llai dibrisiant cronedig. Mae offer cyfrifiadurol yn cael ei ddibrisio ar 33% y flwyddyn ar gost.",
+      "impairmentPolicy": "Ar bob dyddiad adrodd, mae’r cwmni’n adolygu ei asedau am arwyddion o amhariad. Mae ased y mae ei werth cario yn fwy na’i swm adenilladwy yn cael ei leihau i’r swm hwnnw.",
+      "financialInstrumentsPolicy": "Dim ond offerynnau ariannol sylfaenol sydd gan y cwmni. Mae dyledwyr, arian parod a chredydwyr yn cael eu mesur ar y swm heb ei ddisgowntio o arian parod y mae’r cwmni’n disgwyl ei dderbyn neu ei dalu.",
       "directors": ["Rhian Davies", "Owen Thomas Hughes", "Carys Mair Evans"],
       "balanceSheet": {
         "currentYear": {
@@ -150,9 +150,9 @@
           "depreciationOnDisposals": 0
         }
       },
-      "taxPolicy": "The tax expense for the year comprises current tax, recognised in profit or loss.",
-      "currentIncomeTaxPolicy": "The current income tax charge is calculated on the tax rates and laws enacted or substantively enacted by the reporting date.",
-      "dividendPolicy": "Dividends are recognised as a liability in the period in which they are declared.",
+      "taxPolicy": "Mae’r gost treth am y flwyddyn yn cynnwys treth gyfredol, a gydnabyddir yn yr elw neu’r golled.",
+      "currentIncomeTaxPolicy": "Mae’r tâl treth incwm cyfredol yn cael ei gyfrifo ar y cyfraddau treth a’r cyfreithiau a ddeddfwyd, neu a ddeddfwyd yn sylweddol, erbyn y dyddiad adrodd.",
+      "dividendPolicy": "Mae difidendau yn cael eu cydnabod fel rhwymedigaeth yn y cyfnod y maent yn cael eu datgan ynddo.",
       "shareCapital": {
         "shareClass": "ordinaryShares",
         "nominalValue": 0.2

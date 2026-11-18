@@ -46,7 +46,13 @@ import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "../app
 import { ixbrlStructureProblems } from "../app/lib/ixbrlStructure.js";
 import { readReviewFolder } from "./lib/companiesHouseReviewFolder.js";
 import { reconcile, reconciliationMarkdown } from "./lib/companiesHouseReviewReconcile.js";
-import { isoToday, notCarriedFromInput, sameBalanceSheetDateCriterion, substanceCriteria } from "./lib/companiesHouseReviewCriteria.js";
+import {
+  isoToday,
+  notCarriedFromInput,
+  sameBalanceSheetDateCriterion,
+  STATEMENTS,
+  substanceCriteria,
+} from "./lib/companiesHouseReviewCriteria.js";
 import { fixtureLineOf, gatewayState, renderIndex, walkthroughMarkdown } from "./lib/companiesHouseReviewPage.js";
 
 const REPOSITORY_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -96,50 +102,6 @@ const KINDS = {
     },
     dormant: false,
     statements: ["section477", "membersNoAudit", "directorsResponsibilities", "smallCompaniesRegime", "section444-5", "section444-5A"],
-  },
-};
-
-// The phrase rules from the Companies House accounts TIS, "FRS unaudited accounts statements to
-// the Balance sheet". Every inner array is an OR; the outer array is an AND. Case-insensitive. A
-// Welsh document (ReportPrincipalLanguage on the Welsh member) is held to the TIS's Welsh phrases.
-const STATEMENTS = {
-  section477: {
-    label: "Section 477 audit exemption statement",
-    concept: "StatementThatCompanyEntitledToExemptionFromAuditUnderSection477CompaniesAct2006RelatingToSmallCompanies",
-    phrases: [["exempt", "exemption"], ["section 477 of the companies act 2006"]],
-    welshPhrases: [["wedi'i eithrio", "eithriad"], ["adran 477 o ddeddf cwmnïau 2006"]],
-  },
-  section480: {
-    label: "Section 480 dormant audit exemption statement",
-    concept: "StatementThatCompanyEntitledToExemptionFromAuditUnderSection480CompaniesAct2006RelatingToDormantCompanies",
-    phrases: [["exempt", "exemption"], ["section 480 of the companies act 2006"]],
-    welshPhrases: [["wedi'i eithrio", "eithriad"], ["adran 480 o ddeddf cwmnïau 2006"]],
-  },
-  membersNoAudit: {
-    label: "Members have not required an audit (section 476)",
-    concept: "StatementThatMembersHaveNotRequiredCompanyToObtainAnAudit",
-    phrases: [["members have not required the company to obtain an audit", "member has not required the company to obtain an audit"]],
-    welshPhrases: [
-      ["aelodau heb ei gwneud yn ofynnol i'r cwmni gael archwiliad", "aelod heb ei gwneud yn ofynnol i'r cwmni gael archwiliad"],
-    ],
-  },
-  directorsResponsibilities: {
-    label: "Directors acknowledge their responsibilities",
-    concept: "StatementThatDirectorsAcknowledgeTheirResponsibilitiesUnderCompaniesAct",
-    phrases: [["directors acknowledge", "director acknowledges"], ["responsibilities"], ["companies act 2006", "the act"]],
-    welshPhrases: [["cyfarwyddwyryn cydnabod", "cyfarwyddwr yn cydnabod"], ["cyfrifoldebau"], ["ddeddf cwmnïau 2006", "y ddeddf"]],
-  },
-  microProvisions: {
-    label: "Prepared in accordance with the micro-entity provisions",
-    concept: "StatementThatAccountsHaveBeenPreparedInAccordanceWithProvisionsSmallCompaniesRegime",
-    phrases: [["prepared"], ["in accordance with"], ["provisions"], ["micro"]],
-    welshPhrases: [["wedi eu paratoi"], ["yn unol â"], ["darpariaethau"], ["micro"]],
-  },
-  smallCompaniesRegime: {
-    label: "Prepared in accordance with the small companies regime",
-    concept: "StatementThatAccountsHaveBeenPreparedInAccordanceWithProvisionsSmallCompaniesRegime",
-    phrases: [["prepared"], ["in accordance with"], ["provisions"], ["small companies"]],
-    welshPhrases: [["paratowyd yn unol â"], ["darpariaethau"], ["cwmnïau bach"]],
   },
 };
 
