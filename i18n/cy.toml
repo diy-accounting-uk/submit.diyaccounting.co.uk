@@ -37,6 +37,9 @@
 #   Government Gateway user ID    Dynodydd Defnyddiwr (ID) ar gyfer Porth y Llywodraeth
 #   Companies House               Tŷ'r Cwmnïau
 #   confirmation statement        datganiad cadarnhau
+#   marginal relief               rhyddhad ffiniol
+#   full expensing                gwariant llawn
+#   small profits rate            cyfradd elw bychan
 #   helpline                      llinell gymorth
 #   bank holidays                 gwyliau banc
 # Our own terms:
@@ -51,6 +54,7 @@
 #          https://www.gov.uk/government/news/sole-traders-and-landlords-earning-more-than-30000-urged-to-act-now.cy
 #          https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines (updated 19 Rhagfyr 2025)
 #          https://www.gov.uk/government/organisations/hm-revenue-customs/contact/vat-customs-and-excise-and-duties-enquiries-for-welsh-speaking-customers (updated 19 Rhagfyr 2025)
+#          https://assets.publishing.service.gov.uk/media/69c54374cdfd19de13d0f708/ct600_welsh.pdf (CT600(2026) Fersiwn 3: rhyddhad ffiniol, gwariant llawn, cyfradd elw bychan)
 
 [shared."hmrc-welsh-services"]
 cy = '''
@@ -1630,7 +1634,7 @@ cy = '''Cyfnod cyfrifyddu'''
 
 [strings."rates.marginal-relief-7e11b4"]
 hash = "7e11b41987ef"
-cy = '''Rhyddhad ymylol'''
+cy = '''Rhyddhad ffiniol'''
 
 [strings."rates.corporation-tax-2390d7"]
 hash = "2390d7d778d3"
@@ -1846,7 +1850,7 @@ cy = '''Prif gyfradd'''
 
 [strings."rates.small-profits-rate-f3608a"]
 hash = "f3608aa8e362"
-cy = '''Cyfradd elw bach'''
+cy = '''Cyfradd elw bychan'''
 
 [strings."rates.lower-limit-05f510"]
 hash = "05f51010ce64"
@@ -1858,7 +1862,7 @@ cy = '''Terfyn uchaf'''
 
 [strings."rates.marginal-relief-fraction-5a289b"]
 hash = "5a289b2feab7"
-cy = '''Ffracsiwn rhyddhad ymylol'''
+cy = '''Ffracsiwn rhyddhad ffiniol'''
 
 [strings."rates.capital-allowances-for-companies-f82cd2"]
 hash = "f82cd255bc18"
@@ -1866,7 +1870,7 @@ cy = '''Lwfansau cyfalaf ar gyfer cwmnïau'''
 
 [strings."rates.full-expensing-main-pool-plant-and-99aab2"]
 hash = "99aab2cee7d3"
-cy = '''Treulio llawn, peiriannau ac offer y brif gronfa'''
+cy = '''Gwariant llawn, peiriannau ac offer y brif gronfa'''
 
 [strings."rates.sources-caf85b"]
 hash = "caf85b0888d7"
@@ -13286,7 +13290,7 @@ cy = '''Y brif gronfa'''
 
 [strings."ch.ct.class-full-expensing"]
 hash = "f5163c8a8e3f"
-cy = '''Treulio’n llawn'''
+cy = '''Gwariant llawn'''
 
 [strings."ch.ct.class-special-rate"]
 hash = "8337d65d5fb8"
@@ -13510,7 +13514,7 @@ cy = '''£{small} a £{upper}'''
 
 [strings."ch.ct.limits-rule"]
 hash = "f77a7f509416"
-cy = '''Y terfyn elw bach a’r terfyn uchaf, wedi’u graddio i {days} diwrnod y cyfnod cyfrifyddu hwn'''
+cy = '''Y terfyn elw bychan a’r terfyn uchaf, wedi’u graddio i {days} diwrnod y cyfnod cyfrifyddu hwn'''
 
 [strings."ch.ct.return-range"]
 hash = "cc152f9b4f0a"
@@ -14243,6 +14247,1423 @@ cy = '''Saesneg'''
 [strings."ch-micro-entity.welsh-cymraeg-0ae24c"]
 hash = "0ae24c757d03"
 cy = '''Cymraeg'''
+
+# ids ch.ct600.*: web/public/lib/ct600-fields.js, the CT600 form, its checks and the review (LANG11a).
+# HMRC's Welsh CT600: https://www.gov.uk/government/publications/corporation-tax-company-tax-return-ct600-2015-version-3.cy
+#   (form PDF https://assets.publishing.service.gov.uk/media/69c54374cdfd19de13d0f708/ct600_welsh.pdf, CT600(2026) Fersiwn 3, CThEF 04/26)
+# HMRC's Welsh Company Tax Return guide: https://www.gov.uk/guidance/the-company-tax-return-guide.cy (updated 2 Mehefin 2026)
+# HMRC's Welsh Corporation Tax terms: https://github.com/hmrc/corporation-tax-frontend/blob/main/conf/messages.cy
+# HMRC's own words, as the form uses them: cyfraniadau cymhwysol (qualifying donations), costau mantoli (balancing charges).
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-1"]
+hash = "6dfada13d2f4"
+cy = '''Enw’r cwmni'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-1-rule"]
+hash = "899fc470bf73"
+cy = '''Mae chwilio am y cwmni yn rhoi’r enw'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-2"]
+hash = "4cd520c7150d"
+cy = '''Rhif cofrestru’r cwmni'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-2-rule"]
+hash = "6dd1dd3ecb76"
+cy = '''Mae chwilio am y cwmni yn rhoi’r rhif'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-3"]
+hash = "a6c5d46a50c7"
+cy = '''Cyfeirnod treth (Cyfeirnod Unigryw y Trethdalwr)'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-4"]
+hash = "30b97ccb1e8b"
+cy = '''Math o gwmni'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.box-30"]
+hash = "922e339f5e5b"
+cy = '''Dechrau’r cyfnod y mae’r Ffurflen Dreth yn ei gwmpasu'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.box-35"]
+hash = "a95dd934a57a"
+cy = '''Diwedd y cyfnod y mae’r Ffurflen Dreth yn ei gwmpasu'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-50"]
+hash = "c8db97d09e6b"
+cy = '''Cyflwyno mwy nag un Ffurflen Dreth ar gyfer y cwmni hwn nawr'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-50-rule"]
+hash = "311f6e3d3568"
+cy = '''Mae blwch 50 wedi’i dicio ar bob Ffurflen Dreth ar gyfer cyfnod cyfrifon sy’n hirach na 12 mis'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.box-85-a"]
+hash = "a68aba9550b4"
+cy = '''Mae’r cyfrifon atodedig ar gyfer cyfnod gwahanol'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-85-a-rule"]
+hash = "a0316fb4a23a"
+cy = '''Mae blwch 85A wedi’i dicio ar bob Ffurflen Dreth ar gyfer cyfnod cyfrifon sy’n hirach na 12 mis, oherwydd bod y cyfrifon atodedig yn cwmpasu’r cyfnod cyfrifon cyfan'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.box-95"]
+hash = "4dd926e4ac48"
+cy = '''Tudalen atodol CT600A, benthyciadau i gyfranogwyr'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-95-rule"]
+hash = "4f98818f7255"
+cy = '''Mae blwch 95 wedi’i dicio pan roddodd y cwmni fenthyg i gyfranogwyr a bod tudalen atodol CT600A gyda’r Ffurflen Dreth'''
+
+# HMRC Welsh CT600 form and guide
+[strings."ch.ct600.box-145"]
+hash = "f25a36432262"
+cy = '''Cyfanswm y trosiant o fasnachu'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-145-rule"]
+hash = "c4ae6172f24d"
+cy = '''Blwch 145 yw’r trosiant yn y cyfrif elw a cholled'''
+
+# HMRC Welsh CT600 form and guide
+[strings."ch.ct600.box-155"]
+hash = "1bf2d0335bd7"
+cy = '''Elw masnachu'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-155-rule"]
+hash = "2cb65623bd73"
+cy = '''Mae blwch 155 yn hafal i’r elw wedi’i addasu yn y cyfrifiant'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-160"]
+hash = "93c514dd6970"
+cy = '''Colledion masnachu a ddygwyd ymlaen wedi’u gosod yn erbyn elw masnachu'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-275"]
+hash = "6c3f4923ffdf"
+cy = '''Colledion masnachu o’r cyfnod cyfrifyddu hwn neu un hwyrach'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-280"]
+hash = "8f7d389acb4e"
+cy = '''Mae symiau a gariwyd yn ôl o gyfnodau cyfrifyddu hwyrach wedi’u cynnwys ym mlwch 275'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-280-rule"]
+hash = "d836e4f06d7b"
+cy = '''Mae blwch 280 wedi’i dicio pan fydd colled y cyfnod cyfrifyddu nesaf yn cael ei chario’n ôl i flwch 275'''
+
+# HMRC Welsh CT600 form and guide
+[strings."ch.ct600.box-285"]
+hash = "cd8915ee8aa8"
+cy = '''Colledion masnachu a gariwyd ymlaen ac a hawliwyd yn erbyn cyfanswm yr elw'''
+
+# HMRC Welsh CT600 form and guide
+[strings."ch.ct600.box-295"]
+hash = "89fb0930381f"
+cy = '''Cyfanswm y didyniadau a’r rhyddhadau'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-295-rule"]
+hash = "5ed78d963336"
+cy = '''Blwch 295 yw cyfanswm blychau 275 a 285'''
+
+# HMRC Welsh CT600 form and guide
+[strings."ch.ct600.box-305"]
+hash = "d7784ff0234f"
+cy = '''Cyfraniadau cymhwysol'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-305-rule"]
+hash = "22bf23e3aebe"
+cy = '''Mae’r rhoddion a adiwyd yn ôl yn cael eu hawlio yma, hyd at yr elw ym mlwch 300'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-780"]
+hash = "f5b2b03b0cde"
+cy = '''Colledion masnach a gynhaliwyd yn gyfan gwbl neu’n rhannol yn y DU: swm sy’n codi'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-780-rule"]
+hash = "bc8f63b21baf"
+cy = '''Blwch 780 yw’r golled wedi’i haddasu yn y cyfrifiant'''
+
+# HMRC Welsh CT600 form and guide
+[strings."ch.ct600.box-790"]
+hash = "baa8bc530f14"
+cy = '''Colledion masnach a gynhaliwyd yn gyfan gwbl y tu allan i’r DU: swm sy’n codi'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-790-rule"]
+hash = "f8a37120cc44"
+cy = '''Blwch 790 yw’r golled wedi’i haddasu yn y cyfrifiant'''
+
+# HMRC Welsh CT600 form and guide
+[strings."ch.ct600.box-165"]
+hash = "77ec107f1d05"
+cy = '''Elw masnachu net'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-165-rule"]
+hash = "7d02fde27952"
+cy = '''Blwch 165 yw blwch 155 llai blwch 160'''
+
+# HMRC Welsh CT600 form and guide
+[strings."ch.ct600.box-170"]
+hash = "86d2d235c866"
+cy = '''Llog banc, cymdeithas adeiladu neu arall, ac elw o gysylltiadau benthyciadau anfasnachol'''
+
+# HMRC Welsh CT600 form and guide
+[strings."ch.ct600.box-235"]
+hash = "1cd4a3cacea9"
+cy = '''Elw cyn didyniadau a rhyddhadau eraill'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-235-rule"]
+hash = "7e1976fb8022"
+cy = '''Blwch 235 yw blwch 165 adio blwch 170'''
+
+# HMRC Welsh CT600 form and guide
+[strings."ch.ct600.box-300"]
+hash = "4ed49fdc05b8"
+cy = '''Elw cyn cyfraniadau cymhwysol a rhyddhad grŵp'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-300-rule"]
+hash = "d60b4ba4fcc0"
+cy = '''Blwch 300 yw blwch 235 llai blwch 295'''
+
+# HMRC Welsh CT600 form and guide
+[strings."ch.ct600.box-315"]
+hash = "b8d2635a13be"
+cy = '''Elw sy’n agored i Dreth Gorfforaeth'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-315-rule"]
+hash = "6433899c9bdf"
+cy = '''Blwch 315 yw blwch 300 llai blwch 305'''
+
+# HMRC Welsh CT600 form and guide
+[strings."ch.ct600.box-326"]
+hash = "9f6b00d4286a"
+cy = '''Nifer y cwmnïau cysylltiedig yn y cyfnod hwn'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-327"]
+hash = "30d533957ad2"
+cy = '''Nifer y cwmnïau cysylltiedig yn y flwyddyn ariannol gyntaf'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-328"]
+hash = "a572f5edff40"
+cy = '''Nifer y cwmnïau cysylltiedig yn yr ail flwyddyn ariannol'''
+
+# HMRC Welsh Company Tax Return guide
+[strings."ch.ct600.box-329"]
+hash = "e404966c9665"
+cy = '''Hawl i gyfradd elw bychan neu ryddhad ffiniol'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-329-rule"]
+hash = "20218cc0ddf8"
+cy = '''Mae ‘X’ ym mlwch 329 pan fydd cyfran yn agored i’r gyfradd elw bychan neu’n cael rhyddhad ffiniol'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.box-330"]
+hash = "e46bd0e4a42d"
+cy = '''Blwyddyn ariannol y gyfradd dreth gyntaf'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-330-rule"]
+hash = "76e8ce4a0e80"
+cy = '''Rheol 9198: mae’r elw yn cael ei rannu rhwng blynyddoedd ariannol yn ôl diwrnodau'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.box-335"]
+hash = "01656b4106e4"
+cy = '''Swm yr elw sy’n agored i’r gyfradd gyntaf'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-335-rule"]
+hash = "76e8ce4a0e80"
+cy = '''Rheol 9198: mae’r elw yn cael ei rannu rhwng blynyddoedd ariannol yn ôl diwrnodau'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.box-340"]
+hash = "85f53cbe2bff"
+cy = '''Cyfradd dreth gyntaf'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-340-rule"]
+hash = "d6ebd08bd2a4"
+cy = '''Rheol 9204: mae pob cyfran yn cael ei threthu ar gyfradd ei blwyddyn'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.box-345"]
+hash = "998aca0e10e9"
+cy = '''Treth ar y gyfradd gyntaf'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-345-rule"]
+hash = "6714b321b97f"
+cy = '''Rheolau 9204 a 9213: mae pob cyfran yn cael ei threthu ar gyfradd ei blwyddyn, i’r geiniog'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.box-380"]
+hash = "07160f85683c"
+cy = '''Blwyddyn ariannol yr ail gyfradd dreth'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-380-rule"]
+hash = "76e8ce4a0e80"
+cy = '''Rheol 9198: mae’r elw yn cael ei rannu rhwng blynyddoedd ariannol yn ôl diwrnodau'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.box-385"]
+hash = "d2cb74d07fc6"
+cy = '''Swm yr elw sy’n agored i’r ail gyfradd'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-385-rule"]
+hash = "76e8ce4a0e80"
+cy = '''Rheol 9198: mae’r elw yn cael ei rannu rhwng blynyddoedd ariannol yn ôl diwrnodau'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.box-390"]
+hash = "06d98efa6cf1"
+cy = '''Ail gyfradd dreth'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-390-rule"]
+hash = "d6ebd08bd2a4"
+cy = '''Rheol 9204: mae pob cyfran yn cael ei threthu ar gyfradd ei blwyddyn'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.box-395"]
+hash = "b2c6e120cb70"
+cy = '''Treth ar yr ail gyfradd'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-395-rule"]
+hash = "6714b321b97f"
+cy = '''Rheolau 9204 a 9213: mae pob cyfran yn cael ei threthu ar gyfradd ei blwyddyn, i’r geiniog'''
+
+# HMRC Welsh CT600 form and guide
+[strings."ch.ct600.box-430"]
+hash = "2390d7d778d3"
+cy = '''Treth Gorfforaeth'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-430-rule"]
+hash = "a4e1bd386138"
+cy = '''Blwch 430 yw blwch 345 adio blwch 395'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-435"]
+hash = "7e11b41987ef"
+cy = '''Rhyddhad ffiniol'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-435-rule"]
+hash = "95ce8eb2e410"
+cy = '''Blwch 435 yw’r rhyddhad ffiniol ar flwch 315, ar ôl ystyried cwmnïau cysylltiedig a blwch 620'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-440"]
+hash = "74bdc58dbe5d"
+cy = '''Treth Gorfforaeth sy’n daladwy'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-440-rule"]
+hash = "49e8fd0550f7"
+cy = '''Blwch 440 yw blwch 430 llai blwch 435'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-475"]
+hash = "cc0c6accfcd1"
+cy = '''Rhwymedigaeth net Treth Gorfforaeth'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-475-rule"]
+hash = "d3aa62e08224"
+cy = '''Blwch 475 yw blwch 430 llai blwch 435'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.box-480"]
+hash = "c0a8f6cdd9ab"
+cy = '''Treth sy’n daladwy ar fenthyciadau i gyfranogwyr'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-480-rule"]
+hash = "316b962d9d27"
+cy = '''Blwch 480 yw’r dreth ym mlwch A80 ar dudalen atodol CT600A'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.box-485"]
+hash = "5e13ebbf9844"
+cy = '''Rhyddhad sy’n ddyledus ar fenthyciadau a ad-dalwyd ar ôl cyfnod y CT600A'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-485-rule"]
+hash = "e6c141d81ea3"
+cy = '''Mae blwch 485 wedi’i dicio pan fydd blwch A70 ar dudalen atodol CT600A wedi’i lenwi'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-510"]
+hash = "ca859c5cd19d"
+cy = '''Y dreth a godir'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-510-rule"]
+hash = "bc18b9347130"
+cy = '''Blwch 510 yw blwch 475 adio blwch 480'''
+
+# HMRC Welsh CT600 form and guide
+[strings."ch.ct600.box-515"]
+hash = "0ef65dadbc44"
+cy = '''Treth Incwm a ddidynnwyd o incwm gros a gafodd ei gynnwys mewn elw'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-525"]
+hash = "fb9fef2c0293"
+cy = '''Hunanasesiad o’r dreth sy’n daladwy cyn y dreth iawndal a gordaliadau’r cynllun cymorth yn sgil coronafeirws'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-525-rule"]
+hash = "6398a3e6df5c"
+cy = '''Blwch 525 yw blwch 440 llai blwch 515'''
+
+# HMRC Welsh CT600 form and guide
+[strings."ch.ct600.box-528"]
+hash = "3c844143c06f"
+cy = '''Hunanasesiad o’r dreth sy’n daladwy'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-528-rule"]
+hash = "0b9265742957"
+cy = '''Blwch 528 yw blwch 440 llai blwch 515'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-595"]
+hash = "63aba864fa6c"
+cy = '''Treth sydd eisoes wedi’i thalu (a heb ei had-dalu eisoes)'''
+
+# HMRC Welsh CT600 form and guide
+[strings."ch.ct600.box-600"]
+hash = "bd5bf61f9148"
+cy = '''Treth sydd heb ei thalu'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-600-rule"]
+hash = "73facfc86efc"
+cy = '''Blwch 600 yw blwch 525 llai blwch 595'''
+
+# HMRC Welsh Company Tax Return guide
+[strings."ch.ct600.box-620"]
+hash = "7614575d6fda"
+cy = '''Incwm buddsoddiad ffrancedig neu ddosbarthiadau ABGH wedi’u hesemptio'''
+
+# HMRC Welsh CT600 form and guide
+[strings."ch.ct600.box-690"]
+hash = "14601134a94d"
+cy = '''Lwfans buddsoddi blynyddol'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-705"]
+hash = "a47ade9b1f69"
+cy = '''Peiriannau ac offer, prif gronfa: lwfansau'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-705-rule"]
+hash = "c071885e635b"
+cy = '''Mae blwch 705 yn cynnwys y lwfans buddsoddi blynyddol ym mlwch 690'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-710"]
+hash = "a8e88e6c45f6"
+cy = '''Peiriannau ac offer, prif gronfa: costau mantoli'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-688"]
+hash = "d6b8d6554bd0"
+cy = '''Gwariant llawn: lwfansau'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-689"]
+hash = "3afd13181fb0"
+cy = '''Gwariant llawn: costau mantoli'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-693"]
+hash = "5b55ad6c6b60"
+cy = '''Peiriannau ac offer, lwfans cyfradd arbennig: lwfansau'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-694"]
+hash = "690dffb1706d"
+cy = '''Peiriannau ac offer, lwfans cyfradd arbennig: costau mantoli'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-695"]
+hash = "e828fc90bed1"
+cy = '''Peiriannau ac offer, cronfa gyfradd arbennig: lwfansau'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.box-695-rule"]
+hash = "1de4abd7989c"
+cy = '''Mae blwch 695 yn cynnwys y lwfans buddsoddi blynyddol a hawliwyd ar y gronfa gyfradd arbennig'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-700"]
+hash = "3d7075323eba"
+cy = '''Peiriannau ac offer, cronfa gyfradd arbennig: costau mantoli'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-735"]
+hash = "15e487841534"
+cy = '''Lwfans buddsoddi blynyddol heb ei gynnwys wrth gyfrifo elw masnachu'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-760"]
+hash = "eea4c565def6"
+cy = '''Peiriannau ac offer y mae lwfans blwyddyn gyntaf wedi ei hawlio arnynt'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-773"]
+hash = "94cea1385a3d"
+cy = '''Peiriannau ac offer, lwfans cyfradd arbennig: gwariant cymhwysol'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.box-775"]
+hash = "7e1b85419d1a"
+cy = '''Peiriannau ac offer eraill: gwariant cymhwysol'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.box-975"]
+hash = "c9e8ea94b059"
+cy = '''Enw’r person sy’n llofnodi’r datganiad'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.box-985"]
+hash = "2c518813a661"
+cy = '''Statws y person sy’n llofnodi’r datganiad'''
+
+# as ch.search.column-company
+[strings."ch.ct600.section-company"]
+hash = "de4743c87973"
+cy = '''Cwmni'''
+
+# as ch.ct.record-period-column
+[strings."ch.ct600.section-period"]
+hash = "6e795d4d3cc2"
+cy = '''Cyfnod'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.section-accounts"]
+hash = "8a7c8b67fe8b"
+cy = '''Cyfrifon'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.section-computation"]
+hash = "e72390b4f750"
+cy = '''Cyfrifiant'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.section-allowances"]
+hash = "0196ffadf67d"
+cy = '''Lwfansau cyfalaf'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.section-reliefs"]
+hash = "e3ddde9637e0"
+cy = '''Incwm a rhyddhadau'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.section-payments"]
+hash = "632e1c583941"
+cy = '''Taliadau'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.section-loans"]
+hash = "b991de5d0141"
+cy = '''Benthyciadau'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.section-declaration"]
+hash = "7609342dc466"
+cy = '''Datganiad'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.money-hint"]
+hash = "838af56cb297"
+cy = '''Er enghraifft, £600 neu £1,200'''
+
+# as ch.ct.box-label
+[strings."ch.ct600.box-label"]
+hash = "510e5331202a"
+cy = '''Blwch {box}: {label}'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.long-period-donations"]
+hash = "46a6efc6c6cb"
+cy = '''Rhoddion a adiwyd yn ôl (y cyfnod cyfrifon cyfan)'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.first-period-start-refusal"]
+hash = "4cf51156edcd"
+cy = '''Mae Submit yn ffeilio cyfnod hir pan fydd y cyfnod cyfrifyddu cyntaf yn dechrau ar ddiwrnod cyntaf y cyfrifon.'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.utr-hint"]
+hash = "79ea6a403a56"
+cy = '''Y 10 digid ar lythyrau Treth Gorfforaeth CThEF y cwmni.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.company-type"]
+hash = "f13f32a6698b"
+cy = '''A yw’r cwmni yn un o’r mathau a restrir ar gyfer blwch 4?'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.company-type-hint"]
+hash = "f09ea69d2683"
+cy = '''Mae blwch 4 yn rhestru cymdeithasau cydweithredol, clybiau chwaraeon amatur cymunedol, cymdeithasau tai a mathau tebyg. Mae’r rhan fwyaf o gwmnïau’n ateb Na.'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.associated-companies"]
+hash = "e86f6cd4a507"
+cy = '''Blwch 326: Nifer y cwmnïau cysylltiedig yn y cyfnod hwn'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.associated-companies-hint"]
+hash = "281d22caadda"
+cy = '''Cwmnïau o dan reolaeth gyffredin gyda’r cwmni hwn. Rhowch 0 os nad oes rhai. Mae cyfnod sy’n pontio 1 Ebrill yn ffeilio’r un nifer ym mlychau 327 a 328.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.period"]
+hash = "f3e0c95f0252"
+cy = '''Cyfnod cyfrifon'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.period-hint"]
+hash = "92ff9a02452f"
+cy = '''Mae’r cyfrifon yn cwmpasu’r cyfnod hwn. Mae’n dechrau ar 1 Ebrill 2015 neu ar ôl hynny, yn dod i ben cyn heddiw ac yn para hyd at 18 mis. Mae cyfnod dros 12 mis yn cael ei ffeilio fel dwy Ffurflen Dreth.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.trade-name"]
+hash = "c40f40f22e50"
+cy = '''Enw’r fasnach'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.trade-name-hint"]
+hash = "2421be476a3f"
+cy = '''Enw’r fasnach, a ddangosir yn y cyfrifiannau. Mae’n dechrau fel y prif weithgarwch.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.non-trading-loan-relationship-credits-hint"]
+hash = "662c2a268cdb"
+cy = '''Mae’n dechrau fel llog derbyniadwy’r cyfrifon.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.depreciation"]
+hash = "ca9620e79f3f"
+cy = '''Dibrisiant a adiwyd yn ôl'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.depreciation-hint"]
+hash = "a11756a90efe"
+cy = '''Mae’n dechrau fel tâl y nodyn ar gyfer y flwyddyn, pan roddir nodyn.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.amortisation"]
+hash = "b0a2c10ebb79"
+cy = '''Amorteiddiad a adiwyd yn ôl'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.entertaining"]
+hash = "7786da6caeb8"
+cy = '''Adloniant a adiwyd yn ôl'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.entertaining-hint"]
+hash = "0b31c95d8cfa"
+cy = '''Dim mwy na chost gwerthiant adio treuliau gweinyddu.'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.donations"]
+hash = "6fc49413f093"
+cy = '''Blwch 305: Rhoddion a adiwyd yn ôl ac a hawliwyd'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.donations-hint"]
+hash = "1effae2a642d"
+cy = '''Rhoddion cymhwysol i elusennau. Maen nhw’n cael eu hadio’n ôl at yr elw masnachu ac yn cael eu hawlio yn erbyn cyfanswm yr elw. Dim mwy na chost gwerthiant adio treuliau gweinyddu.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.annual-investment-allowance-hint"]
+hash = "b7b1cc315705"
+cy = '''Yr uchafswm yw 1,000,000 am 12 mis, wedi’i leihau’n gymesur ar gyfer cyfnod byrrach.'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.main-pool-allowances"]
+hash = "f922e9ef693d"
+cy = '''Blwch 705: Lwfansau ysgrifennu i lawr a lwfansau mantoli’r brif gronfa'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.main-pool-allowances-hint"]
+hash = "a9a8a7363aa6"
+cy = '''Gadewch y lwfans buddsoddi blynyddol allan: mae blwch 705 yn ei gynnwys.'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.full-expensing-allowances"]
+hash = "0ac038927dc6"
+cy = '''Blwch 688: Lwfansau gwariant llawn'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.full-expensing-allowances-hint"]
+hash = "c1cc0b70fb34"
+cy = '''Lwfansau a hawliwyd yn llawn o dan wariant llawn. Cadwch nhw allan o ffigur y brif gronfa.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.special-rate-allowances-hint"]
+hash = "a8a5551c22ee"
+cy = '''Y lwfans cyfradd arbennig ar asedion cyfradd arbennig newydd.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.special-rate-allowance-expenditure-hint"]
+hash = "20436ef3f3ea"
+cy = '''Mae angen hwn pryd bynnag y caiff blwch 693 ei lenwi.'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.special-rate-pool-allowances"]
+hash = "60e9ac094cf0"
+cy = '''Blwch 695: Lwfansau ysgrifennu i lawr y gronfa gyfradd arbennig'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.special-rate-pool-allowances-hint"]
+hash = "68ee92cbc360"
+cy = '''Gadewch allan y lwfans buddsoddi blynyddol a hawliwyd ar y gronfa hon; rhowch ef isod.'''
+
+# no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
+[strings."ch.ct600.special-rate-pool-annual-investment-allowance"]
+hash = "8b6fc7b7c4ed"
+cy = '''Lwfans buddsoddi blynyddol a hawliwyd ar y gronfa gyfradd arbennig'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.special-rate-pool-annual-investment-allowance-hint"]
+hash = "465ed259f0c7"
+cy = '''Rhan o’r lwfans buddsoddi blynyddol ym mlwch 690. Mae blwch 695 yn ei gynnwys ac mae blwch 705 yn ei adael allan.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.annual-investment-allowance-outside-trade-hint"]
+hash = "3533a53c3acd"
+cy = '''Lwfans buddsoddi blynyddol a hawliwyd y tu allan i’r cyfrifiad o elw masnachu. Nid yw’n newid yr elw masnachu.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.first-year-allowance-expenditure-hint"]
+hash = "c8ae143646e5"
+cy = '''Gwariant cymhwysol. Nid yw’n newid yr elw masnachu.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.other-machinery-and-plant-expenditure-hint"]
+hash = "c8ae143646e5"
+cy = '''Gwariant cymhwysol. Nid yw’n newid yr elw masnachu.'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.losses-brought-forward"]
+hash = "3eb9cacdd853"
+cy = '''Blwch 160: Colledion masnachu a ddygwyd ymlaen'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.losses-brought-forward-hint"]
+hash = "4cd82e57a9bf"
+cy = '''Y colledion sydd ar gael. Mae’r elw masnachu yn cymryd cymaint ag y gall ym mlwch 160 ac mae’r gweddill yn cael ei gario ymlaen.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.loss-against-total-profits-hint"]
+hash = "489a1cc1070d"
+cy = '''Colled fasnachu’r cyfnod hwn wedi’i gosod yn erbyn elw arall y cyfnod hwn, fel llog banc. Gadewch ar 0 i gario’r golled gyfan ymlaen.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.losses-brought-forward-against-total-profits-hint"]
+hash = "93c9be5e9896"
+cy = '''Colledion a ddygwyd ymlaen na chymerodd yr elw masnachu, wedi’u hawlio yn erbyn elw arall y cyfnod.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.loss-carried-back"]
+hash = "aad1d86ead7b"
+cy = '''Colled fasnachu a gariwyd yn ôl i’r cyfnod blaenorol'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.loss-carried-back-hint"]
+hash = "6e3b926c610d"
+cy = '''Hawliad yn erbyn elw’r 12 mis cyn y cyfnod hwn. Mae’n rhoi ad-daliad o Dreth Gorfforaeth, a ddangosir gyda’r dreth a gyfrifwyd. Gadewch ar 0 i gario’r golled ymlaen.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.prior-period-chargeable-profits"]
+hash = "2551afebbedf"
+cy = '''Elw trethadwy’r cyfnod blaenorol (blwch 315 ar ei Ffurflen Dreth)'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.prior-period-chargeable-profits-hint"]
+hash = "e98239912e13"
+cy = '''Dim ond ar gyfer hawliad i gario’n ôl y mae angen hwn.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.loss-outside-uk"]
+hash = "e104a8807dce"
+cy = '''Mae’r fasnach yn cael ei chynnal yn gyfan gwbl y tu allan i’r DU (mae colled yn mynd ym mlwch 790, nid blwch 780)'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.income-tax-deducted-hint"]
+hash = "c60d30d4bd5c"
+cy = '''Er enghraifft, £600 neu £193.54. Dim mwy na’r Dreth Gorfforaeth ym mlwch 440.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.tax-already-paid-hint"]
+hash = "e8503939c072"
+cy = '''Er enghraifft, £600 neu £193.54. Dim mwy na’r dreth sy’n daladwy ym mlwch 525.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.own-corporation-tax"]
+hash = "1a9d1d0ac85e"
+cy = '''Treth Gorfforaeth yn ôl eich cyfrifiad eich hun (dewisol)'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.own-corporation-tax-hint"]
+hash = "d074a70333be"
+cy = '''Gwiriad yn unig. Os yw’n wahanol i flwch 440 o fwy na £5, mae’r adolygiad yn stopio ac yn enwi’r ddau ffigur.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.loans-made"]
+hash = "b6f173c998f1"
+cy = '''A wnaeth y cwmni fenthyg arian i gyfarwyddwr, cyfranddaliwr neu eu cysylltai yn y cyfnod hwn a oedd yn dal yn ddyledus ar ei ddiwedd?'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.released-before-end"]
+hash = "528deb8a525e"
+cy = '''A gafodd unrhyw fenthyciadau a wnaed yn y cyfnod eu had-dalu, eu rhyddhau neu eu dileu cyn diwedd y cyfnod?'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.repaid-since"]
+hash = "e6a96470ca10"
+cy = '''A oes unrhyw ran ohono wedi’i had-dalu, ei rhyddhau neu ei dileu ers diwedd y cyfnod?'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.declaration-accepted"]
+hash = "75860fef2159"
+cy = '''Rwyf yn datgan bod yr wybodaeth yn y Ffurflen Dreth hon ac yn y cyfrifon a’r cyfrifiannau atodedig yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth a’m cred.'''
+
+# HMRC Welsh CT600 form
+[strings."ch.ct600.donations-paid"]
+hash = "3f37fcb94066"
+cy = '''Blwch 305: Cyfraniadau cymhwysol a dalwyd yn y cyfnod cyfrifyddu'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.donations-paid-hint"]
+hash = "891aa53292ff"
+cy = '''Rhoddion cymhwysol i elusennau a dalwyd yn y cyfnod cyfrifyddu hwn. Maen nhw’n cael eu hawlio yn erbyn cyfanswm yr elw ym mlwch 305 y Ffurflen Dreth hon.'''
+
+# as ch-small-company.the-company-is-entitled-to-exemption-f30d0a
+[strings."ch.ct600.statement-section477-exemption"]
+hash = "f30d0a74f6e2"
+cy = '''Mae gan y cwmni hawl i eithriad rhag archwiliad o dan adran 477 o Ddeddf Cwmnïau 2006 sy’n ymwneud â chwmnïau bach.'''
+
+# as ch-small-company.the-members-have-not-required-the-303cb8
+[strings."ch.ct600.statement-members-not-required-audit"]
+hash = "303cb8324c48"
+cy = '''Nid yw’r aelodau wedi ei gwneud yn ofynnol i’r cwmni gael archwiliad ar gyfer y flwyddyn dan sylw.'''
+
+# as ch-small-company.the-directors-acknowledge-their-responsibilities-for-f16963
+[strings."ch.ct600.statement-directors-responsibilities"]
+hash = "f16963f3bf9a"
+cy = '''Mae’r cyfarwyddwyr yn cydnabod eu cyfrifoldebau am gydymffurfio â gofynion Deddf Cwmnïau 2006 o ran cofnodion cyfrifyddu a pharatoi cyfrifon.'''
+
+# as ch-small-company.these-accounts-have-been-prepared-in-481edb
+[strings."ch.ct600.statement-small-companies-regime"]
+hash = "481edbe99dea"
+cy = '''Paratowyd y cyfrifon hyn yn unol â’r darpariaethau sy’n berthnasol i gwmnïau sy’n ddarostyngedig i’r drefn cwmnïau bach.'''
+
+# as ch-micro-entity.these-accounts-have-been-prepared-in-4b6856
+[strings."ch.ct600.statement-micro-entity-provisions"]
+hash = "4b6856bb5834"
+cy = '''Paratowyd y cyfrifon hyn yn unol â’r darpariaethau sy’n berthnasol i gwmnïau sy’n ddarostyngedig i’r drefn cwmnïau bach ac yn unol â’r darpariaethau sydd ar gael i ficro-endidau.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.regime-small"]
+hash = "d28f27f52af8"
+cy = '''Cyfrifon cwmni bach (FRS 102 adran 1A)'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.regime-micro"]
+hash = "452bd4da8efe"
+cy = '''Cyfrifon micro-endid (FRS 105)'''
+
+# as ch-small-company.turnover-8ecaf1
+[strings."ch.ct600.micro-pl-turnover"]
+hash = "8ecaf1d78b2e"
+cy = '''Trosiant'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.micro-pl-other-income"]
+hash = "fc7b7bd5e266"
+cy = '''Incwm arall'''
+
+# as ch-small-company.raw-materials-and-consumables-8471ca
+[strings."ch.ct600.micro-pl-raw-materials"]
+hash = "8471ca9007cb"
+cy = '''Deunyddiau crai a nwyddau traul'''
+
+# as ch-small-company.staff-costs-f64e0c
+[strings."ch.ct600.micro-pl-staff-costs"]
+hash = "f64e0cbf55e8"
+cy = '''Costau staff'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.micro-pl-depreciation"]
+hash = "5094d90b2fb9"
+cy = '''Dibrisiant a symiau eraill a ddilëwyd oddi ar asedion'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.micro-pl-other-charges"]
+hash = "b7f81d4b7bbd"
+cy = '''Taliadau eraill'''
+
+# as rates.tax-47e288
+[strings."ch.ct600.micro-pl-tax"]
+hash = "47e2886ee5d3"
+cy = '''Treth'''
+
+# as ch-small-company.fixed-assets-959c37
+[strings."ch.ct600.micro-bs-fixed-assets"]
+hash = "959c37b4f9bd"
+cy = '''Asedion sefydlog'''
+
+# as ch-micro-entity.current-assets-ccafff
+[strings."ch.ct600.micro-bs-current-assets"]
+hash = "ccafff34606e"
+cy = '''Asedion cyfredol'''
+
+# as ch-micro-entity.creditors-amounts-falling-due-within-one-e33d88
+[strings."ch.ct600.micro-bs-creditors-within-one-year"]
+hash = "e33d886e29d8"
+cy = '''Credydwyr: symiau sy’n ddyledus o fewn blwyddyn'''
+
+# as ch-small-company.creditors-amounts-falling-due-after-more-a35994
+[strings."ch.ct600.micro-bs-creditors-after-one-year"]
+hash = "a3599428629d"
+cy = '''Credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn'''
+
+# as ch-small-company.called-up-share-capital-4473b4
+[strings."ch.ct600.micro-bs-called-up-share-capital"]
+hash = "4473b4128459"
+cy = '''Cyfalaf cyfrannau wedi’i alw'''
+
+# as ch-small-company.profit-and-loss-account-reserve-5ad91d
+[strings."ch.ct600.micro-bs-profit-and-loss-account"]
+hash = "5ad91d2794c5"
+cy = '''Cronfa wrth gefn y cyfrif elw a cholled'''
+
+# as ch-small-company.turnover-8ecaf1
+[strings."ch.ct600.pl-turnover"]
+hash = "8ecaf1d78b2e"
+cy = '''Trosiant'''
+
+# as ch-small-company.cost-of-sales-9bbf71
+[strings."ch.ct600.pl-cost-of-sales"]
+hash = "9bbf71f39d4a"
+cy = '''Cost gwerthiant'''
+
+# as ch-small-company.administrative-expenses-878a5e
+[strings."ch.ct600.pl-administrative-expenses"]
+hash = "878a5ee632f2"
+cy = '''Treuliau gweinyddu'''
+
+# as ch-small-company.interest-receivable-and-similar-income-adb8a3
+[strings."ch.ct600.pl-interest-receivable"]
+hash = "adb8a32010ba"
+cy = '''Llog derbyniadwy ac incwm tebyg'''
+
+# as ch-small-company.tax-on-profit-on-ordinary-activities-929b05
+[strings."ch.ct600.pl-tax"]
+hash = "929b05df8433"
+cy = '''Treth ar elw ar weithgareddau cyffredin'''
+
+# as ch-small-company.fixed-assets-959c37
+[strings."ch.ct600.bs-fixed-assets"]
+hash = "959c37b4f9bd"
+cy = '''Asedion sefydlog'''
+
+# as ch-small-company.stocks-df09c2
+[strings."ch.ct600.bs-stocks"]
+hash = "df09c2fb2400"
+cy = '''Stociau'''
+
+# as ch-small-company.debtors-ac2230
+[strings."ch.ct600.bs-debtors"]
+hash = "ac2230adf999"
+cy = '''Dyledwyr'''
+
+# as ch-small-company.of-which-amounts-owed-by-directors-23911d
+[strings."ch.ct600.bs-amounts-owed-by-directors"]
+hash = "23911d152ec9"
+cy = '''O hynny, symiau dyledus gan gyfarwyddwyr'''
+
+# as ch-small-company.cash-at-bank-and-in-hand-658d88
+[strings."ch.ct600.bs-cash-at-bank"]
+hash = "658d88d6a8a9"
+cy = '''Arian yn y banc a mewn llaw'''
+
+# as ch-small-company.bank-loans-and-overdrafts-due-within-1a8457
+[strings."ch.ct600.bs-bank-loans-overdrafts"]
+hash = "1a84575d9ee7"
+cy = '''Benthyciadau banc a gorddrafftiau (dyledus o fewn blwyddyn)'''
+
+# as ch-small-company.trade-creditors-due-within-one-year-afe765
+[strings."ch.ct600.bs-trade-creditors"]
+hash = "afe7659897ed"
+cy = '''Credydwyr masnach (dyledus o fewn blwyddyn)'''
+
+# as ch-small-company.corporation-tax-due-within-one-year-7f5179
+[strings."ch.ct600.bs-corporation-tax"]
+hash = "7f5179f643ae"
+cy = '''Treth gorfforaeth (dyledus o fewn blwyddyn)'''
+
+# as ch-small-company.taxation-and-social-security-due-within-887bab
+[strings."ch.ct600.bs-taxation-social-security"]
+hash = "887bab4d1dd3"
+cy = '''Trethiant a nawdd cymdeithasol (dyledus o fewn blwyddyn)'''
+
+# as ch-small-company.other-creditors-due-within-one-year-e25519
+[strings."ch.ct600.bs-other-creditors"]
+hash = "e25519e6ab8f"
+cy = '''Credydwyr eraill (dyledus o fewn blwyddyn)'''
+
+# as ch-small-company.creditors-amounts-falling-due-after-more-a35994
+[strings."ch.ct600.bs-creditors-after-one-year"]
+hash = "a3599428629d"
+cy = '''Credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn'''
+
+# as ch-small-company.of-which-bank-loans-e4ae3a
+[strings."ch.ct600.bs-bank-loans-after-one-year"]
+hash = "e4ae3a542ddb"
+cy = '''O hynny, benthyciadau banc'''
+
+# as ch-small-company.called-up-share-capital-4473b4
+[strings."ch.ct600.bs-called-up-share-capital"]
+hash = "4473b4128459"
+cy = '''Cyfalaf cyfrannau wedi’i alw'''
+
+# as ch-small-company.profit-and-loss-account-reserve-5ad91d
+[strings."ch.ct600.bs-profit-and-loss-account"]
+hash = "5ad91d2794c5"
+cy = '''Cronfa wrth gefn y cyfrif elw a cholled'''
+
+# as ch-small-company.land-and-buildings-b6a218
+[strings."ch.ct600.asset-class-land-buildings"]
+hash = "b6a2189d82fc"
+cy = '''Tir ac adeiladau'''
+
+# as ch-small-company.plant-and-machinery-01c1ed
+[strings."ch.ct600.asset-class-plant-machinery"]
+hash = "01c1ed161f68"
+cy = '''Peiriannau ac offer'''
+
+# as ch-small-company.fixtures-and-fittings-b390a0
+[strings."ch.ct600.asset-class-furniture-fittings"]
+hash = "b390a0638b93"
+cy = '''Gosodiadau a ffitiadau'''
+
+# as ch-small-company.computer-equipment-09cc5b
+[strings."ch.ct600.asset-class-computer-equipment"]
+hash = "09cc5bb1675b"
+cy = '''Offer cyfrifiadurol'''
+
+# as ch-small-company.motor-vehicles-602d25
+[strings."ch.ct600.asset-class-motor-vehicles"]
+hash = "602d25f25cca"
+cy = '''Cerbydau modur'''
+
+# as ch-small-company.cost-at-the-start-of-the-266a42
+[strings."ch.ct600.asset-cost-at-start"]
+hash = "266a426b63ee"
+cy = '''Cost ar ddechrau’r cyfnod'''
+
+# as ch-small-company.additions-966ff9
+[strings."ch.ct600.asset-additions"]
+hash = "966ff94170d3"
+cy = '''Ychwanegiadau'''
+
+# as ch-small-company.disposals-cost-c96a28
+[strings."ch.ct600.asset-disposals"]
+hash = "c96a2805a97c"
+cy = '''Gwarediadau (cost)'''
+
+# as ch-small-company.depreciation-at-the-start-of-the-813f88
+[strings."ch.ct600.asset-depreciation-at-start"]
+hash = "813f8807d93c"
+cy = '''Dibrisiant ar ddechrau’r cyfnod'''
+
+# as ch-small-company.depreciation-charge-for-the-period-3be48f
+[strings."ch.ct600.asset-depreciation-charge"]
+hash = "3be48f6f957f"
+cy = '''Tâl dibrisiant ar gyfer y cyfnod'''
+
+# as ch-small-company.depreciation-on-disposals-d10d02
+[strings."ch.ct600.asset-depreciation-on-disposals"]
+hash = "d10d025b58fd"
+cy = '''Dibrisiant ar warediadau'''
+
+# as ch-small-company.principal-activity-72e7d9
+[strings."ch.ct600.principal-activity"]
+hash = "72e7d9d6851e"
+cy = '''Prif weithgarwch'''
+
+# as ch-small-company.accounting-policies-0d09e1
+[strings."ch.ct600.accounting-policies"]
+hash = "0d09e1eeec54"
+cy = '''Polisïau cyfrifyddu'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.directors"]
+hash = "68c49dc6611f"
+cy = '''Cyfarwyddwyr a oedd yn y swydd yn ystod y cyfnod (un enw ar bob llinell)'''
+
+# as ch-small-company.directors-who-held-office-during-the-443f2d
+[strings."ch.ct600.directors-review"]
+hash = "443f2dba251c"
+cy = '''Cyfarwyddwyr a oedd yn y swydd yn ystod y cyfnod'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.directors-advance-name"]
+hash = "eb9e146215e1"
+cy = '''Cyfarwyddwr sydd mewn dyled i’r cwmni (pan fydd y fantolen yn dangos symiau dyledus gan gyfarwyddwyr)'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.directors-advance-terms"]
+hash = "85f3b645c5fd"
+cy = '''Cyfradd llog a phrif amodau blaenswm y cyfarwyddwr hwnnw'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.directors-advance-at-start"]
+hash = "d71ea3a04fbd"
+cy = '''Yn ddyledus gan y cyfarwyddwr hwnnw ar ddechrau’r cyfnod, mewn punnoedd cyfan'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.directors-advance-made"]
+hash = "06b7edfd89e8"
+cy = '''Wedi’i roi ymlaen llaw i’r cyfarwyddwr hwnnw yn y cyfnod, mewn punnoedd cyfan'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.directors-advance-repaid"]
+hash = "2e6b2c7465c4"
+cy = '''Wedi’i ad-dalu gan y cyfarwyddwr hwnnw yn y cyfnod, mewn punnoedd cyfan'''
+
+# as ch-small-company.average-number-of-employees-during-the-6d5b2b
+[strings."ch.ct600.average-employees"]
+hash = "6d5b2b873045"
+cy = '''Nifer cyfartalog y gweithwyr yn ystod y cyfnod'''
+
+# as ch-small-company.director-approving-the-accounts-48329c
+[strings."ch.ct600.director-name"]
+hash = "48329ce10573"
+cy = '''Y cyfarwyddwr sy’n cymeradwyo’r cyfrifon'''
+
+# as ch-small-company.date-approved-0410b4
+[strings."ch.ct600.director-date-approved"]
+hash = "0410b4536f5f"
+cy = '''Dyddiad cymeradwyo'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-loan-name"]
+hash = "295811f3f970"
+cy = '''Rhowch enw’r cyfranogwr, 2 i 56 nod'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-loan-name-twice"]
+hash = "b19878cd1e17"
+cy = '''Mae {name} yn y rhestr eisoes; rhowch un benthyciad ar gyfer pob cyfranogwr'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-loan-amount"]
+hash = "86fe2d4d04cf"
+cy = '''Rhowch y swm sy’n dal yn ddyledus mewn punnoedd cyfan, uwchlaw 0'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-loan-lent"]
+hash = "96c19fb25613"
+cy = '''Rhowch y rhan a fenthycwyd ar ddyddiad newid y gyfradd neu ar ôl hynny mewn punnoedd cyfan, dim mwy na’r swm sy’n ddyledus'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-loan-rate"]
+hash = "7e45bdb68547"
+cy = '''Rhowch y gyfradd fel canran gydag uchafswm o ddau le degol, fel 33.75'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-repayment-name"]
+hash = "4c45a4ac2db1"
+cy = '''Dewiswch gyfranogwr o’r benthyciadau'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-repayment-date"]
+hash = "f56ac04a88d5"
+cy = '''Rhowch ddyddiad yr ad-daliad'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-repayment-in-period"]
+hash = "1169ed5e12ae"
+cy = '''Mae ad-daliad ar ddiwedd y cyfnod neu cyn hynny yn perthyn i lyfrau’r cyfnod ei hun'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-repayment-future"]
+hash = "87efb28340d7"
+cy = '''Ni all ad-daliad gael ei ddyddio ar ôl heddiw'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-repayment-whole"]
+hash = "7c0462ce78b8"
+cy = '''Rhowch bunnoedd cyfan, neu gadewch hwn yn wag os nad oes dim'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-repayment-none"]
+hash = "4bb292d00091"
+cy = '''Rhowch y swm a ad-dalwyd, neu’r swm a ryddhawyd neu a ddilëwyd'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-amount"]
+hash = "25558beea6d3"
+cy = '''Rhowch swm mewn punnoedd, fel £600 neu £1,200'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.return-2-label"]
+hash = "a235e2809651"
+cy = '''{label} (Ffurflen 2)'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-pence"]
+hash = "6f54aa50e4a7"
+cy = '''Rhowch swm mewn punnoedd a cheiniogau, fel £600 neu £193.54'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-labelled"]
+hash = "1a80a7664880"
+cy = '''{label}: {message}'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-micro-unbalanced-this"]
+hash = "60de9d448d82"
+cy = '''Nid yw’r fantolen ar gyfer eleni yn mantoli: asedion net {net}, cyfalaf cyfrannau adio cronfa wrth gefn y cyfrif elw a cholled {reserves}'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-micro-unbalanced-last"]
+hash = "42297bc50911"
+cy = '''Nid yw’r fantolen ar gyfer y llynedd yn mantoli: asedion net {net}, cyfalaf cyfrannau adio cronfa wrth gefn y cyfrif elw a cholled {reserves}'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-unbalanced-current"]
+hash = "ad83f649128d"
+cy = '''Nid yw mantolen y flwyddyn gyfredol yn mantoli: asedion net {net}, cyfalaf cyfrannau adio cronfa wrth gefn y cyfrif elw a cholled {reserves}'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-unbalanced-prior"]
+hash = "2bdb9a86b9b7"
+cy = '''Nid yw mantolen y flwyddyn flaenorol yn mantoli: asedion net {net}, cyfalaf cyfrannau adio cronfa wrth gefn y cyfrif elw a cholled {reserves}'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-advance-name"]
+hash = "f985f278b1ca"
+cy = '''Enwch y cyfarwyddwr sydd mewn dyled i’r cwmni'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-advance-terms"]
+hash = "f27f2977a48d"
+cy = '''Nodwch y gyfradd llog a phrif amodau’r blaenswm'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-advance-whole"]
+hash = "7af609fa3709"
+cy = '''Rhowch nifer cyfan o bunnoedd, neu gadewch hwn yn wag os nad oes dim'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-advance-sum"]
+hash = "fb509861c712"
+cy = '''Rhaid i’r swm dyledus ar y dechrau {start} adio’r swm a roddwyd ymlaen llaw {advanced} llai’r swm a ad-dalwyd {repaid} fod yn hafal i’r {end} sy’n ddyledus gan gyfarwyddwyr ar y diwedd'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-note-value"]
+hash = "1c3da7044802"
+cy = '''Nid yw gwerth llyfr net y nodyn {value} yn hafal i’r asedion sefydlog {assets}'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-note-depreciation"]
+hash = "bbfb6091f7a9"
+cy = '''Rhaid i’r dibrisiant a adiwyd yn ôl fod yn hafal i dâl y nodyn ar gyfer y flwyddyn, {charge}'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-required-principal-activity"]
+hash = "b2b5c31ad967"
+cy = '''Rhowch y prif weithgarwch'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-required-accounting-policies"]
+hash = "4c2bfd94c0ed"
+cy = '''Rhowch y polisïau cyfrifyddu'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-required-directors"]
+hash = "e3b788cf66b3"
+cy = '''Rhowch y cyfarwyddwyr'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-required-director-name"]
+hash = "eb2294fc5eb7"
+cy = '''Rhowch y cyfarwyddwr sy’n cymeradwyo’r cyfrifon'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-turnover"]
+hash = "140e7bcafa95"
+cy = '''Rhowch y trosiant o’r cyfrif elw a cholled'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-trade-name"]
+hash = "b4522fc73a06"
+cy = '''Rhowch enw’r fasnach (o leiaf 2 nod)'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-employees"]
+hash = "64511c2ec292"
+cy = '''Rhowch nifer cyfartalog y gweithwyr fel rhif cyfan'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-date-approved"]
+hash = "6440196db34e"
+cy = '''Rhowch y dyddiad y cafodd y cyfrifon eu cymeradwyo'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-statements"]
+hash = "84fd9654eaa4"
+cy = '''Derbyniwch y pedwar datganiad cyn i chi weld rhagolwg o’r Ffurflen Dreth'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.problem-declaration"]
+hash = "f34d3e4bb309"
+cy = '''Derbyniwch y datganiad cyn i chi weld rhagolwg o’r Ffurflen Dreth'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.book-loan-note"]
+hash = "f9b8d67062bb"
+cy = '''Mae eich llyfr yn dangos cyfrif benthyciad y cyfarwyddwr wedi’i orddrafftio o £{end} ar y diwedd a £{start} ar y dechrau.'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.not-given"]
+hash = "be71c5625260"
+cy = '''Heb ei roi'''
+
+# as ch.ct.yes
+[strings."ch.ct600.yes"]
+hash = "85a39ab345d6"
+cy = '''Ie'''
+
+# as ch.ct.no
+[strings."ch.ct600.no"]
+hash = "1ea442a134b2"
+cy = '''Na'''
+
+# as ch.ct.this-year
+[strings."ch.ct600.this-year"]
+hash = "ee7ca167efc7"
+cy = '''eleni'''
+
+# as ch.ct.last-year
+[strings."ch.ct600.last-year"]
+hash = "2793b49185e3"
+cy = '''y llynedd'''
+
+# as ch.ct.cell-label
+[strings."ch.ct600.year-label"]
+hash = "2aab6990cbcd"
+cy = '''{label}, {when}'''
+
+# as ch.ct.range
+[strings."ch.ct600.dates-answer"]
+hash = "c72e51fdcb01"
+cy = '''{start} i {end}'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.review-accounts"]
+hash = "7139ced10927"
+cy = '''Y cyfrifon'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.return-row-label"]
+hash = "156152bb0103"
+cy = '''Ffurflen {part}, {label}'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.loan-participator"]
+hash = "74cbc03a870c"
+cy = '''Benthyciad {row}: cyfranogwr'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.loan-amount"]
+hash = "d68b1697ba92"
+cy = '''Benthyciad {row}: y swm sy’n dal yn ddyledus'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.loan-lent"]
+hash = "579582ab249d"
+cy = '''Benthyciad {row}: wedi’i fenthyca ar ddyddiad newid y gyfradd neu ar ôl hynny'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.loan-rate"]
+hash = "68279a5fafbb"
+cy = '''Benthyciad {row}: y gyfradd adran 455 a roesoch'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.repayment-participator"]
+hash = "b45db0260f95"
+cy = '''Ad-daliad {row}: cyfranogwr'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.repayment-date"]
+hash = "bb726320c47d"
+cy = '''Ad-daliad {row}: dyddiad'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.repayment-repaid"]
+hash = "13fc64e67b06"
+cy = '''Ad-daliad {row}: y swm a ad-dalwyd'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.repayment-released"]
+hash = "3c9ca63c0c72"
+cy = '''Ad-daliad {row}: y swm a ryddhawyd neu a ddilëwyd'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.note-label"]
+hash = "a14d302264b5"
+cy = '''{title}: {label}'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.return-1-label"]
+hash = "f346093edd4a"
+cy = '''{label} (Ffurflen 1)'''
+
+# no HMRC Welsh found
+[strings."ch.ct600.first-period-start-question"]
+hash = "4bf4a158956f"
+cy = '''A yw’r cyfnod cyfrifyddu cyntaf yn dechrau ar {start}?'''
 
 # == Marketing site (MKT8) ==
 # ids marketing.*; add entries below this line.
