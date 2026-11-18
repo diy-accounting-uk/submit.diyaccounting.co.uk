@@ -1394,7 +1394,10 @@ function updatePassSelection() {
   selectAll.checked = boxes.length > 0 && ticked.length === boxes.length;
   selectAll.indeterminate = ticked.length > 0 && ticked.length < boxes.length;
   deleteSelected.disabled = ticked.length === 0;
-  deleteSelected.textContent = ticked.length > 0 ? `Delete selected (${ticked.length})` : "Delete selected";
+  deleteSelected.textContent =
+    ticked.length > 0
+      ? siteText("bundles.delete-selected-count", "Delete selected ({count})", { count: ticked.length })
+      : siteText("bundles.delete-selected-d2ab5d", "Delete selected");
 }
 
 function showPassDeleteConfirm(codes, anchor, placement) {

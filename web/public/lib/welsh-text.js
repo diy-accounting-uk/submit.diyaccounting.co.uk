@@ -23,6 +23,8 @@ window.WELSH_TEXT = {
     "Mae gan Stripe eich manylion. Rydym yn adolygu’r cais ac yn rhoi gwybod i chi am ein penderfyniad drwy e-bost.",
   "bundles.config-set-note": "Wedi’i osod ar gyfer eich cyfrif gan DIY Accounting",
   "bundles.day-pass-note": "Un diwrnod, dim cerdyn. I ddal ati i ffeilio ar ôl heddiw, dewiswch gynllun uchod.",
+  "bundles.delete-selected-count": "Dileu’r rhai a ddewiswyd ({count})",
+  "bundles.delete-selected-d2ab5d": "Dileu’r rhai a ddewiswyd",
   "bundles.description-resident-ltd":
     "Ffeilio cyfrifon a datganiadau cadarnhau gyda Thŷ’r Cwmnïau. £9.99/yr / £0.99/mo, canslo unrhyw bryd.",
   "bundles.description-resident-pro":

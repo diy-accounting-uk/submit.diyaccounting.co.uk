@@ -554,6 +554,10 @@ cy = '''<input type="checkbox" id="selectAllPasses" /> Dewis y cyfan'''
 hash = "d2ab5d46fed4"
 cy = '''Dileu’r rhai a ddewiswyd'''
 
+[strings."bundles.delete-selected-count"]
+hash = "a84a0a76c974"
+cy = '''Dileu’r rhai a ddewiswyd ({count})'''
+
 [strings."bundles.load-more-ac8991"]
 hash = "ac8991ef0101"
 cy = '''Llwytho mwy'''
