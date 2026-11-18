@@ -569,6 +569,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks: use when a Search Console or Bing Webmaster Tools email names a site, or the operator asks how the sites do in search, what to fix first, or whether a crawl setting, coverage drop or sitemap error is real.
     - [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now) Say whether a /clear or a restart is safe now: use when the operator asks whether a /clear or a restart of Claude Code is safe, and at the end of every /board render.
     - [DEV-64](#dev-64-define-a-wave-set-for-local-delivery) Define a wave set for local delivery: use when the operator wants the board delivered as one pull request per repository, built and tested locally first.
+    - [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session) Lease a cloud work repository and start a worker session: use when the coordinator needs a Claude Code cloud session as a worker, or a pool repository must be leased, re-synced, released or watched.
+    - [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator) Work rows as a cloud worker for the coordinator: use when a Claude Code cloud session on a submit-cloud-<codename> work repository starts, or a task message from the coordinator arrives in it.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -5612,7 +5614,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-60](#dev-60-fetch-the-local-tls-certificate) Fetch the local TLS certificate · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
-- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts) Find unused and duplicated workflows, scripts and npm scripts · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report · [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard · [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt · [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session · [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill · [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board · [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks · [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now) Say whether a /clear or a restart is safe now · [DEV-64](#dev-64-define-a-wave-set-for-local-delivery) Define a wave set for local delivery
+- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts) Find unused and duplicated workflows, scripts and npm scripts · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report · [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard · [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt · [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session · [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill · [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board · [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks · [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now) Say whether a /clear or a restart is safe now · [DEV-64](#dev-64-define-a-wave-set-for-local-delivery) Define a wave set for local delivery · [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session) Lease a cloud work repository and start a worker session · [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator) Work rows as a cloud worker for the coordinator
 <!-- /generated:area DEV -->
 
 ### Simulator server & OAuth mocks (DEV)
@@ -5958,6 +5960,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks
 - [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now) Say whether a /clear or a restart is safe now
 - [DEV-64](#dev-64-define-a-wave-set-for-local-delivery) Define a wave set for local delivery
+- [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session) Lease a cloud work repository and start a worker session
+- [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator) Work rows as a cloud worker for the coordinator
 <!-- /generated:group claude-code-delivery-cycle-skills-dev -->
 
 #### DEV-27 Render the open-work board
@@ -6326,6 +6330,26 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/wave-set/SKILL.md
 - **Keywords:** wave set, waves, batches, local delivery, one pull request, wave branch, set branch, ci cost, local gates
 - **Related:** DEV-27, DEV-28, DEV-29, DEV-30
+
+#### DEV-65 Lease a cloud work repository and start a worker session
+
+- **Use when:** the coordinator needs a Claude Code cloud session as a worker, or a pool repository must be leased, re-synced, released or watched.
+- **Does:** new-cloud-session.sh leases the first free submit-cloud-<codename> repository by a .collab/lease file on its collab branch. It creates the next one with Actions off when none is free. It pushes origin/main and the base branch to it by URL. It starts claude --cloud from a clone in a terminal, or prints the claude.ai/code/new link. Its watch subcommand polls the claude/* branches for the Monitor. Its creds subcommand dispatches cloud-credentials.yml with the worker's public key and pushes the age ciphertext of one-hour ci credentials to the collab branch.
+- **Run:** `/new-cloud-session [codename] [--base <branch>]`; `bash .claude/skills/new-cloud-session/new-cloud-session.sh [codename] [--base <branch>] [--dry-run]`; `... release <codename>`; `... post <codename> <file>`; `... watch <codename>`; `... creds <codename>`
+- **Entry:** `.claude/skills/new-cloud-session/SKILL.md`; `.claude/skills/new-cloud-session/new-cloud-session.sh:cmd_start`
+- **Files:** .claude/skills/new-cloud-session/SKILL.md, .claude/skills/new-cloud-session/new-cloud-session.sh, .claude/skills/new-cloud-session/pool.txt, .claude/skills/new-cloud-session/environment-setup.sh, .github/workflows/cloud-credentials.yml, infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java, PLAN_CLOUD_COLLABORATION.md
+- **Keywords:** cloud session, claude code on the web, claude --cloud, work repository, submit-cloud, pool, lease, collab branch, worker, deep link, remote worker, aws credentials, age, cloud worker role
+- **Related:** DEV-66, DEV-27, DEV-30
+
+#### DEV-66 Work rows as a cloud worker for the coordinator
+
+- **Use when:** a Claude Code cloud session on a submit-cloud-<codename> work repository starts, or a task message from the coordinator arrives in it.
+- **Does:** collaborate checks Node 24, JDK 25, node_modules, a Playwright browser and the timeout variables, and stops when one is missing. It makes an ssh-ed25519 key pair once per VM and pushes the public key to .collab/<codename>.pub on the collab branch, so the coordinator can hand it AWS credentials. On a task it branches claude/<codename>-<row> from the named base, builds the row, runs the named gates, and pushes to its own work repository. The last commit body carries the report and a Collab-Status trailer. The --loop form polls .collab/<codename>.md on the collab branch every 10 minutes.
+- **Run:** `/collaborate <codename>`; `/collaborate <codename> --loop`
+- **Entry:** `.claude/skills/collaborate/SKILL.md`
+- **Files:** .claude/skills/collaborate/SKILL.md, PLAN_CLOUD_COLLABORATION.md
+- **Keywords:** collaborate, cloud worker, claude code on the web, work repository, submit-cloud, report-back contract, collab branch, poll loop, aws credentials, age, aws-handoff
+- **Related:** DEV-65
 
 ## Spreadsheets and diya-gl (SS)
 
@@ -7071,7 +7095,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ads.toml: [DATA-32](#data-32-sync-the-google-ads-account)
 - advertising standards: [SITE-20](#site-20-document-business-governance-and-positioning)
 - affiliate: [SITE-11](#site-11-promote-sibling-products-and-partners), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect), [BILL-53](#bill-53-read-the-callers-affiliate-application), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect), [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events), [DATA-64](#data-64-publish-per-pass-figures-nightly)
-- age: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator)
+- age: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator), [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session), [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
 - agent authorisation: [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client), [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - agent output: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - agent path: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
@@ -7192,13 +7216,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - availability sli: [DATA-31](#data-31-sql-views-dora-and-operations)
 - aws budgets: [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
 - aws config recorder: [OPS-121](#ops-121-provision-the-security-baseline-stack)
-- aws credentials: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
+- aws credentials: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role), [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session), [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
 - aws health: [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events)
 - aws health fixture: [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod)
 - aws sdk: [OPS-82](#ops-82-provide-a-shared-dynamodb-client)
 - aws security credentials supplier: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud)
 - aws sso: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - aws sso login: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
+- aws-handoff: [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
 - aws-jwt-verify: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - aws_read: [OPS-194](#ops-194-run-a-read-only-nova-agent)
 - awscustomresource: [OPS-127](#ops-127-upsert-route53-alias-and-plain-records-via-custom-resource)
@@ -7453,6 +7478,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - claim check: [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks)
 - claim slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - class 4 nic: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments)
+- claude --cloud: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session)
+- claude code on the web: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session), [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
 - claude rules: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - claude-user: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - claudebot: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
@@ -7477,9 +7504,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - clipping: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - close-when-gone: [OPS-195](#ops-195-replay-the-alarm-triage-prompt-over-invented-alarms)
 - cloud book: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
+- cloud session: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session)
 - cloud sign-in: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - cloud sign-in event: [SS-33](#ss-33-send-diya-gl-ga4-events)
-- cloud worker: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator)
+- cloud worker: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator), [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
+- cloud worker role: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session)
 - cloudformation: [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs)
 - cloudformation drift: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3), [OPS-32](#ops-32-detect-cloudformation-drift)
 - cloudfront: [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention), [OPS-115](#ops-115-provision-the-edgecloudfront-stack)
@@ -7525,8 +7554,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cognito user pool: [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention)
 - cognito-registered host: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - cold start: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
+- collab branch: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session), [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
 - collabora: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
-- collaborate: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator)
+- collaborate: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator), [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
 - commission: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-57](#bill-57-show-a-referrer-the-callers-own-commission-totals), [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect), [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events), [DATA-68](#data-68-sql-view-campaign-results-by-place)
 - commissions: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - commit author: [SS-39](#ss-39-guard-commit-author-identity-on-prs)
@@ -7744,7 +7774,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - declared state: [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - dedupe: [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms)
 - deep clean: [DEV-22](#dev-22-clean-and-update-local-build-state)
-- deep link: [OPS-80](#ops-80-build-aws-console-deep-links-for-operators), [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
+- deep link: [OPS-80](#ops-80-build-aws-console-deep-links-for-operators), [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot), [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session)
 - deep links: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - definition of done: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - delegated relationship: [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client)
@@ -8468,6 +8498,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - leading keys proof: [OPS-193](#ops-193-review-the-operator-dashboard-each-night)
 - leaked key: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set)
 - lean deploy: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3)
+- lease: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session)
 - ledger: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events), [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events)
 - ledger book: [BILL-17](#bill-17-upload-a-diya-gl-book), [BILL-18](#bill-18-delete-a-diya-gl-book), [BILL-19](#bill-19-list-a-users-diya-gl-books), [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book)
 - legacy vatdue: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
@@ -8903,11 +8934,13 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - pointer cue: [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video)
 - policybee: [SITE-11](#site-11-promote-sibling-products-and-partners)
 - poll deploy status: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
+- poll loop: [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
 - poll pattern: [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state)
 - poll workflow: [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli)
 - polling: [SITE-09](#site-09-track-and-poll-async-api-requests)
 - polyform: [SITE-20](#site-20-document-business-governance-and-positioning)
 - polyform internal use: [DEV-20](#dev-20-check-spdx-licence-headers)
+- pool: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session)
 - populatedmap: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
 - portal lambda: [BILL-37](#bill-37-cdk-billing-app-stack)
 - post-deploy: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [OPS-16](#ops-16-run-dynamodb-data-migrations)
@@ -9104,6 +9137,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - relief claims: [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims)
 - remedy budget: [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget)
 - remedy row: [OPS-21](#ops-21-auto-close-resolved-alarm-issues), [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope)
+- remote worker: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session)
 - remove bundle: [BILL-03](#bill-03-delete-a-bundle)
 - remove pass: [BILL-56](#bill-56-delete-generated-passes)
 - remove tooling: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
@@ -9117,6 +9151,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - replay nightly: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
 - report: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
 - report a vulnerability: [OPS-65](#ops-65-document-security-policy-and-disclosure)
+- report-back contract: [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
 - report.json: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
 - report_session file: [DEV-37](#dev-37-write-the-session-report)
 - repository contents: [DEV-22](#dev-22-clean-and-update-local-build-state)
@@ -9509,6 +9544,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - submission record: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - submissions daily: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - submit vat: [HMRC-01](#hmrc-01-submit-a-vat-return)
+- submit-cloud: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session), [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
 - submit.bundle.js: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - submit.css: [OPS-162](#ops-162-bundle-submitcss-at-publish-time)
 - submit.env: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries), [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
@@ -9850,8 +9886,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - window globals: [SITE-18](#site-18-bootstrap-the-frontend-module-bundle)
 - withdraw invite: [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite)
 - wopi: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
+- work repository: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session), [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
 - workbook: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
 - workbook set: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set), [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats)
+- worker: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session)
 - worker handler: [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state)
 - workflow lint: [OPS-34](#ops-34-validate-github-actions-workflow-files)
 - workflow permissions: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)

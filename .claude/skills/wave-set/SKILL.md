@@ -182,8 +182,24 @@ This section is the one source for `/iterate` and `/do-next`; they point here.
 5. Gate the wave branch: `scripts/batch-check.sh claude/<name>-w<nn>` in one background command,
    then the simulator behaviour suites that the wave's rows reach, in series under the simulator
    lock. Fix every failure on the wave branch.
+
+   **A long gate reports every 15 minutes.** When a gate starts (`scripts/batch-check.sh` or the
+   simulator suites), arm a background Monitor on its logs that wakes the coordinator every 15
+   minutes. Each wake gives the operator one line: the gates passed, the browser test count (the
+   last `✓ <n>` of `<logdir>/browser-tests.log` against its `Running <n> tests` line), the failures
+   so far and the expected end time. The Monitor stops when the gate ends.
 6. Park the wave: write `gated <tip sha>` in the plan and commit the plan on `main`. The wave
    branch and its worktree stay until the set is on `main`.
+7. The next wave's batches branch from that `gated <tip sha>`. A batch that started earlier, from
+   the wave's tip before its gate fixes, takes the difference before it lands:
+   `git diff <tip it branched from> <gated tip>`, applied as one commit. Wave 5 of ridge branched
+   before wave 4's gate fixes and failed its compliance suite on them (2026-11-18).
+
+**Write the restart state at each wave boundary.** At dispatch, each batch landed, gate start and
+`gated`, the coordinator writes into the wave's state line in `PLAN_WAVE_SET_<NAME>.md`: the
+batches dispatched, the agent on each batch and the row it is on, the batches landed with their
+commit, and the gate running with its log path. It commits the plan on `main`. A fresh session
+restarts from that line and the worktrees' `git log`.
 
 **Never push a wave branch or a batch branch.** A push of a branch that touches `app/`,
 `web/public/`, `infra/` or `package.json` starts `deploy.yml`, which is a ci set. `NEXT.md` never

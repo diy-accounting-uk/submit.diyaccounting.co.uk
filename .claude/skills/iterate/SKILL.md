@@ -161,6 +161,12 @@ every slot is held; `main` deploys to prod and takes no ci slot.
   Then one push, one PR whose body says what each row turned out
   to be, and `/watch`.
 
+  **A long gate reports every 15 minutes.** When a gate starts (`scripts/batch-check.sh` or the
+  simulator suites), arm a background Monitor on its logs that wakes the coordinator every 15
+  minutes. Each wake gives the operator one line: the gates passed, the browser test count (the
+  last `✓ <n>` of `<logdir>/browser-tests.log` against its `Running <n> tests` line), the failures
+  so far and the expected end time. The Monitor stops when the gate ends.
+
 ### 3. Watch
 
 `/watch` arms `scripts/watch-ci.sh` as a Monitor for 30 minutes; re-arm on every expiry notice
@@ -205,10 +211,15 @@ closing comment.
 ## Blocked commands
 
 `git worktree remove`, `git branch -D`, `git push --delete`, a ruleset or Actions-settings write,
-an AWS write outside a workflow, and a Cognito or Step Functions invocation are the operator's.
+an AWS write that the session's permissions deny, an AWS write that needs the operator's own
+identity, and a Cognito or Step Functions invocation are the operator's.
 Print each as one fenced block with the `!` prefix at the moment it arises, collect them again in
 the next board's Part 5, and carry on; nothing waits on them. Never ask another session to run
 one.
+
+An AWS write that the session's permissions allow is not blocked. Present it with what it
+changes. On the operator's yes, run it, read the result back and report it. The approval rule of
+`CLAUDE.md` stays: no AWS write runs before the operator says yes.
 
 When a denied command must fire inside a window (e.g., a `destroy-ci.yml` dispatch with forced
 sweep options during a branch deploy), hand the operator a wait-then-run script rather than the

@@ -389,6 +389,129 @@ class IdentityStackTest {
     }
 
     @Test
+    void ciCloudWorkerRoleTrustsOnlyTheCloudCredentialsWorkflowOnMainForOneHour() {
+        Template template = Template.fromStack(synthIdentityStack("ci"));
+
+        template.hasResourceProperties(
+                "AWS::IAM::Role",
+                Map.of(
+                        "RoleName",
+                        "submit-ci-cloud-worker-role",
+                        "MaxSessionDuration",
+                        3600,
+                        "AssumeRolePolicyDocument",
+                        Map.of(
+                                "Version",
+                                "2012-10-17",
+                                "Statement",
+                                List.of(
+                                        Map.of(
+                                                "Effect",
+                                                "Allow",
+                                                "Action",
+                                                "sts:AssumeRoleWithWebIdentity",
+                                                "Principal",
+                                                Map.of(
+                                                        "Federated",
+                                                        "arn:aws:iam::111111111111:oidc-provider/token.actions.githubusercontent.com"),
+                                                "Condition",
+                                                Match.exact(
+                                                        Map.of(
+                                                                "StringEquals",
+                                                                Map.of(
+                                                                        "token.actions.githubusercontent.com:aud",
+                                                                        "sts.amazonaws.com",
+                                                                        "token.actions.githubusercontent.com:sub",
+                                                                        "repo:diy-accounting-uk/submit.diyaccounting.co.uk:ref:refs/heads/main",
+                                                                        "token.actions.githubusercontent.com:job_workflow_ref",
+                                                                        "diy-accounting-uk/submit.diyaccounting.co.uk/.github/workflows/cloud-credentials.yml@refs/heads/main"))))))));
+    }
+
+    @Test
+    void ciCloudWorkerRoleMaySynthesizeSpeechAndReadOnlyTheProxySecrets() throws IOException {
+        Template template = Template.fromStack(synthIdentityStack("ci"));
+        String roleLogicalId = cloudWorkerRoleLogicalId(template);
+
+        var secretArns = proxySecretNamesFromScript().stream()
+                .map(name -> "arn:aws:secretsmanager:eu-west-2:111111111111:secret:" + name + "-??????")
+                .toList();
+        template.hasResourceProperties(
+                "AWS::IAM::Policy",
+                Map.of(
+                        "Roles",
+                        List.of(Map.of("Ref", roleLogicalId)),
+                        "PolicyDocument",
+                        Map.of(
+                                "Version",
+                                "2012-10-17",
+                                "Statement",
+                                List.of(
+                                        Map.of(
+                                                "Effect",
+                                                "Allow",
+                                                "Action",
+                                                "polly:SynthesizeSpeech",
+                                                "Resource",
+                                                "*",
+                                                "Condition",
+                                                Map.of("StringEquals", Map.of("aws:RequestedRegion", "eu-west-2"))),
+                                        Map.of(
+                                                "Effect",
+                                                "Allow",
+                                                "Action",
+                                                "secretsmanager:GetSecretValue",
+                                                "Resource",
+                                                secretArns))),
+                        "PolicyName",
+                        Match.anyValue()));
+        assertEquals(1, policiesAttachedTo(template, roleLogicalId), "the cloud worker role has one policy");
+        assertFalse(
+                template.toJSON().toString().contains("secret:prod/"), "the ci identity stack names no prod secret");
+    }
+
+    @Test
+    void prodHasNoCloudWorkerRole() {
+        Template template = Template.fromStack(synthIdentityStack("prod"));
+
+        assertTrue(template.findResources(
+                        "AWS::IAM::Role",
+                        Match.objectLike(Map.of("Properties", Map.of("RoleName", "submit-ci-cloud-worker-role"))))
+                .isEmpty());
+        var json = template.toJSON().toString();
+        assertFalse(json.contains("cloud-worker"), "the prod identity stack names no cloud worker resource");
+        assertFalse(json.contains("cloud-credentials.yml"), "no prod role trusts the cloud credentials workflow");
+        assertFalse(json.contains("polly:"), "no prod role in this stack may call Polly");
+    }
+
+    private static String cloudWorkerRoleLogicalId(Template template) {
+        var roles = template.findResources(
+                "AWS::IAM::Role",
+                Match.objectLike(Map.of("Properties", Map.of("RoleName", "submit-ci-cloud-worker-role"))));
+        assertEquals(1, roles.size(), "one cloud worker role");
+        return roles.keySet().iterator().next();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static long policiesAttachedTo(Template template, String roleLogicalId) {
+        return template.findResources("AWS::IAM::Policy").values().stream()
+                .map(resource -> (List<Object>) ((Map<String, Object>) resource.get("Properties")).get("Roles"))
+                .filter(roles -> roles.contains(Map.of("Ref", roleLogicalId)))
+                .count();
+    }
+
+    private static List<String> proxySecretNamesFromScript() throws IOException {
+        String script = Files.readString(Path.of("scripts/proxy-secrets.sh"));
+        Matcher matcher = Pattern.compile("get_secret (ci/[A-Za-z0-9/_-]+)\\)").matcher(script);
+        var names = new java.util.ArrayList<String>();
+        while (matcher.find()) {
+            names.add(matcher.group(1));
+        }
+        assertFalse(names.isEmpty(), "no get_secret call found in scripts/proxy-secrets.sh");
+        assertFalse(script.contains("get_secret prod/"), "scripts/proxy-secrets.sh reads a prod secret");
+        return names;
+    }
+
+    @Test
     void mcpClientRotatesRefreshTokens() {
         IdentityStack stack = synthIdentityStack("ci");
         Template template = Template.fromStack(stack);

@@ -22,7 +22,7 @@ the set, with no deployment of its own.
 
 ## Status
 
-defined 2026-11-17. The operator's `/iterate` is the approval.
+approved 2026-11-17 (the operator's `/iterate`). Waves 1 to 6 gated; `claude/ridge-set` at 237d950c7, its set gate running. Gate fixes on the set: the HMRC error-scenario steps wait for the page's error; the proxy lane's price ids, Companies House keys, gateway test mode, mock sign-in identity and stripe listen; the Welsh journey proofs' findings for LANG10a, LANG10b and LANG11a (the sign-in page, callbacks, bundles, penalties, the Assist widget, receipts, the figures table, the stale processing banner).
 
 ## The goal
 
@@ -46,7 +46,7 @@ each repository. More local waves are cheap. A second push is expensive.
 ## Waves: submit
 
 Wave 1 branches from `origin/main`; each later wave branches from the tip of the wave before it.
-Wave branches are `claude/ridge-w01` to `claude/ridge-w10`; a batch branch is
+Wave branches are `claude/ridge-w01` to `claude/ridge-w06`; a batch branch is
 `claude/ridge-w<nn>-<batch>`. No wave or batch branch is pushed.
 
 ### Wave 1: the heads
@@ -60,7 +60,7 @@ Wave branches are `claude/ridge-w01` to `claude/ridge-w10`; a batch branch is
 | ops | WEB4, SD1, OS24e | Sonnet | `submit.js` consent, `stack-drift.yml`, register |
 | mcp | MCP2 | Opus | `mcpHttp.js`, `mcp/server.json` |
 
-State: pending.
+State: gated 0d8730ca8 (batch-check: every gate PASS after two fixes; 9 simulator suites pass). Extra commits on the wave: the OpenAPI generator reproduces the committed spec; HMRC SQS payloads carry the caller's email (DASH39); the header reserves the wrapped navigation's height (WEB5).
 
 ### Wave 2: the home page, the articles' template, the 404 page
 
@@ -75,7 +75,9 @@ State: pending.
 `articles-a` also makes WEB11's one-line change in `scripts/build-filing-pages.mjs` (the literal
 "3 submissions", line 98) as its own commit, because that file is its own in this wave.
 
-State: pending.
+`AUTH` rides in wave 2 by the operator's answer (2026-11-17): a customer's expired sign-in with no refresh token showed her as signed in while every call returned 401; the fix (64fe014c4) clears such a session before any page script runs and sends a user action to sign in with `next=`. Its ci proof: an expired id token with no refresh token in localStorage, then `bundles.html` shows "Not signed in" and Subscribe opens `auth/login.html?next=%2Fbundles.html`.
+
+State: gated 9a3d9d872 (batch-check: every gate PASS after the fixes below, docker after freeing Docker's disk; 15 simulator suites pass; auth, submitVat and companiesHouse again on the tip). Fixes on the wave: the dashboard test's sign-in link carries next= (WEB8); the pages that load auth-status.js load page-chrome.js (AUTH).
 
 ### Wave 3: help, the guide, the sources
 
@@ -86,7 +88,7 @@ State: pending.
 | sources | WEB20 | Sonnet | `tax-sources.mjs`, the 50 source files |
 | dash-c | DASH43, DASH44 | Opus | stored data graph, retention graph |
 
-State: pending.
+State: gated 4b52926ec (batch-check: every gate PASS; 7 simulator suites pass after the compliance test took WEB24's sentence-case headings). Fixes on the wave: the filing pages ask for the 480px picture (WEB26); terms, accessibility and privacy name support@ for a person's requests (WEB24).
 
 ### Wave 4: the last English copy
 
@@ -94,25 +96,34 @@ State: pending.
 | --- | --- | --- | --- |
 | articles-c | WEB21, WEB22, WEB25, WEB27 | Sonnet, 2 agents | generators, calendar, page titles, the merged spreadsheets page |
 
-State: pending.
+State: gated 705cc9fd9. batch-check ran on the cloud worker anvil (submit-cloud-anvil, `.collab/w04-gate.md`): every gate PASS but one browser test that still expected the VAT form's title before WEB27, fixed in 705cc9fd9; Maven verify 346 s there against 776 s here; the docker gate passed on the laptop (the cloud VM's proxy certificate breaks `npm ci` inside the image). 6 simulator suites pass locally.
 
-### Waves 5 to 9: Welsh, after every English string is final
+### Wave 5: Welsh, after every English string is final
 
-| Wave | Batch | Rows | Model |
+One wave, one gate (operator, 2026-11-17: waves 5 to 9 collapsed into one). The batches start in
+this order:
+
+1. `welsh-chrome` builds LANG9 alone and lands on the wave branch first: the Welsh header, the
+   language choice that persists, and the base of `i18n/cy.toml`.
+2. From that tip, three batches run at once:
+
+| Batch | Rows, in order | Model | Owns |
 | --- | --- | --- | --- |
-| 5 | welsh-chrome | LANG9 | Opus |
-| 6 | welsh-vat | LANG10a | Opus |
-| 6 | marketing | MKT8 | Opus |
-| 7 | welsh-itsa | LANG10b | Opus, 2 agents |
-| 8 | welsh-ch | LANG11a | Opus |
-| 9 | welsh-accounts | LANG11b | Opus |
+| welsh-vat-itsa | LANG10a, then LANG10b | Opus, 3 agents | VAT, receipts and HMRC Assist pages, then the 26 Income Tax pages |
+| welsh-ch | LANG11a, then LANG11b | Opus, 2 agents | the Companies House pages, then the Welsh accounts filing |
+| marketing | MKT8 | Opus | `web/marketing/` only |
 
-MKT8 owns `web/marketing/` only. It follows LANG9 because LANG9 puts the language option in the
-header of every page that MKT8 photographs.
+LANG10b follows the rules LANG10a sets, and LANG11b follows LANG11a's research file, so each pair is
+a chain on one worktree. MKT8 follows LANG9 because LANG9 puts the language option in the header of
+every page that MKT8 photographs. Each batch adds its keys to `i18n/cy.toml` in its own section; a
+conflict there is resolved by keeping both sides' keys, and `npm run build:welsh` writes the `cy/`
+pages after the last batch lands.
 
-State: wave 5 pending; wave 6 pending; wave 7 pending; wave 8 pending; wave 9 pending.
+CW1 (the AWS credential handoff) leaves the set and ships on its own pull request as soon as it is built (operator, 2026-11-18); CW2 (the relay) and CP1 (the cloud profile) stay in wave 5. Wave 6's scene work (VID1 to VID5) runs on the cloud workers before the wave 5 gate (operator, 2026-11-18).
 
-### Wave 10: the look wave
+State: gated a885bac1a. Cloud worker epoch: maven verify 541 tests (397 s), npm test 12,439 (127 s), mcp 426, browser tests 1,399 of 1,400 with 2 workers (562 s), prettier, both ESLint ratchets, ESLint on added files. Laptop: docker, the content scan, 21 simulator suites (compliance, companiesHouse, fileMicroEntityAccounts, postVatReturn rerun on the tip). CW1 left the set: merged in #836.
+
+### Wave 6: the look wave
 
 No row of its own: it is the retake that the definition of done asks of every row that changes
 what a person sees, done once.
@@ -124,7 +135,7 @@ what a person sees, done once.
 4. The `ui-ux-pro-max` review of the guide's screenshots.
 5. Fix each fail on the wave branch, or write it to `NEXT.md` as a row with its screenshots.
 
-State: pending.
+State: gated 300ef3e21. Cloud worker epoch on e6bad32f3: npm test 12,727, mcp 426, browser tests 1,442 of 1,459 (the 16 ctReturnTokenCost failures were the empty approval date, fixed in 300ef3e21 and rerun: 73 passed), prettier, both ESLint ratchets, the 8 generators clean; maven verify and spotless on d36a88ef1 (no Java change since). Laptop: docker, the content scan, 17 simulator suites (companyTaxReturn rerun on the settled tip), the header tests.
 
 ## Waves: spreadsheets
 
@@ -133,7 +144,7 @@ State: pending.
 | 1 | links | SL2 | Sonnet | the "Submit VAT MTD" links and their three writers |
 
 It builds beside submit's wave 1, in `../spreadsheets.diyaccounting.co.uk`, by that repository's
-rules (`orient-spreadsheets` first). State: pending.
+rules (`orient-spreadsheets` first). State: gated 4727bd7eb (npm test: unit and gates pass; the browser files SL2 reaches pass 66 of 66, the other 532 pass).
 
 ## Gates
 
@@ -148,6 +159,8 @@ rules (`orient-spreadsheets` first). State: pending.
 3. The simulator behaviour suites that the wave's rows reach (`npm run
    test:<suite>Behaviour-simulator`), one at a time under `/tmp/submit-simulator.lock`.
 4. An Athena type proof on ci for each new or changed view (read-only; no deployment).
+
+Set branch: `claude/ridge-set` at 300ef3e21 (wave 6's gated tip, so its batch-check is wave 6's gate). The 42 simulator suites run split across cloud workers anvil, bugle, cyclone and dusk (`claude/<codename>-set-sim`); the 37 proxy suites run on the laptop in series (log in the session scratchpad).
 
 **The set branch `claude/ridge-set`**, before the push:
 
@@ -207,5 +220,5 @@ one pull request, `/watch`, `/auto-merge`, and SL2's proof on prod.
 
 The waves are a chain, so a smaller push is a prefix of it. Push the tip of the last wave whose
 gates passed and whose rows need nothing from a later wave: wave 4 carries every English row; wave
-9 adds the Welsh rows; wave 10 adds the retake. The waves after the pushed one start the next set,
+5 adds the Welsh rows; wave 6 adds the retake. The waves after the pushed one start the next set,
 rebased on the new `main`.
