@@ -87,6 +87,34 @@
         </p>
         <div id="booksImport"></div>
         <form id="accountsForm" novalidate>
+          <section id="documentLanguageSection" class="form-section" hidden>
+            <h3 data-i18n="ch-micro-entity.language-of-the-accounts-8aae0f">Iaith y cyfrifon</h3>
+            <p data-i18n="ch-micro-entity.the-company-s-registered-office-is-01369a" id="documentLanguage-hint" class="hint">
+              Mae swyddfa gofrestredig y cwmni yng Nghymru, felly gall gyflwyno ei gyfrifon yn Gymraeg. Mae Tŷ’r Cwmnïau yn eu cyfieithu i’r
+              Saesneg ar gyfer y gofrestr. Nid yw iaith y dudalen yn newid y dewis hwn. Mae Tŷ’r Cwmnïau yn anfon ei ateb yn Saesneg.
+            </p>
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="radio"
+                  id="documentLanguageEn"
+                  name="documentLanguage"
+                  value="en"
+                  checked
+                  aria-describedby="documentLanguage-hint"
+                /><label data-i18n="ch-micro-entity.english-ba118b" for="documentLanguageEn">Saesneg</label>
+              </div>
+              <div class="choice">
+                <input
+                  type="radio"
+                  id="documentLanguageCy"
+                  name="documentLanguage"
+                  value="cy"
+                  aria-describedby="documentLanguage-hint"
+                /><label data-i18n="ch-micro-entity.welsh-cymraeg-0ae24c" for="documentLanguageCy">Cymraeg</label>
+              </div>
+            </div>
+          </section>
           <section class="form-section">
             <h3 data-i18n="ch-micro-entity.period-6e795d">Cyfnod</h3>
             <div class="form-group">

@@ -172,6 +172,22 @@ describe("services/companiesHouseXmlGateway", () => {
       expect(xml.split("\n")[0]).toBe('<?xml version="1.0" encoding="UTF-8"?>');
     });
 
+    test("names Welsh accounts with Language CY between PackageReference and FormIdentifier, and English accounts with none", () => {
+      // FormSubmission-v2-11.xsd's FormHeader sequence: ... PackageReference, Language (optional, EN or CY), FormIdentifier, ...
+      const document = parseXmlDocument(buildAccountsSubmission({ ...baseInput, language: "CY" }));
+      const header = firstElement(document, "FormHeader");
+      const names = Array.from(header.childNodes)
+        .filter((node) => node.nodeType === 1)
+        .map((node) => node.localName ?? node.nodeName);
+      expect(names.slice(names.indexOf("PackageReference"), names.indexOf("FormIdentifier") + 1)).toEqual([
+        "PackageReference",
+        "Language",
+        "FormIdentifier",
+      ]);
+      expect(firstElementText(document, "Language")).toBe("CY");
+      expect(buildAccountsSubmission(baseInput)).not.toContain("<Language>");
+    });
+
     test("carries DateSigned directly after FormHeader, with no Authority wrapper", () => {
       // FormSubmission-v2-11.xsd's FormSubmission sequence is FormHeader, DateSigned, Form,
       // ...; the gateway's test service rejects an Authority element outright ("No element

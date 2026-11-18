@@ -78,11 +78,12 @@ export function recordAmount(value, { decimals = 0, deduction = false } = {}) {
  * @param {object} table
  * @param {string[]} table.columns - the heading of each figure column, e.g. ["2025", "2024"]
  * @param {boolean} [table.notes] - whether the table carries a note column
+ * @param {string} [table.noteHeading] - the heading of the note column, in the document's language
  * @param {object[]} table.rows
  * @returns {string}
  */
-export function recordTable({ columns, notes = false, rows }) {
-  const noteHeading = notes ? '<th class="note">Note</th>' : "";
+export function recordTable({ columns, notes = false, noteHeading = "Note", rows }) {
+  const noteHeadingHtml = notes ? `<th class="note">${escapeRecordText(noteHeading)}</th>` : "";
   const headings = columns.map((heading) => `<th class="figure">${escapeRecordText(heading)}</th>`).join("");
   const pounds = columns.map(() => '<th class="figure">£</th>').join("");
   const body = rows
@@ -101,7 +102,7 @@ export function recordTable({ columns, notes = false, rows }) {
     })
     .join("\n");
   return `<table class="statement">
-<thead><tr><th class="label"></th>${noteHeading}${headings}</tr><tr><th class="label"></th>${notes ? '<th class="note"></th>' : ""}${pounds}</tr></thead>
+<thead><tr><th class="label"></th>${noteHeadingHtml}${headings}</tr><tr><th class="label"></th>${notes ? '<th class="note"></th>' : ""}${pounds}</tr></thead>
 <tbody>
 ${body}
 </tbody>

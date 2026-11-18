@@ -14122,5 +14122,21 @@ cy = '''Derbyniodd Tŷ’r Cwmnïau y cyfrifon'''
 hash = "58ac09fcb859"
 cy = '''Gwrthododd Tŷ’r Cwmnïau y cyfrifon'''
 
+[strings."ch-micro-entity.language-of-the-accounts-8aae0f"]
+hash = "8aae0f8ad626"
+cy = '''Iaith y cyfrifon'''
+
+[strings."ch-micro-entity.the-company-s-registered-office-is-01369a"]
+hash = "01369a6c1e68"
+cy = '''Mae swyddfa gofrestredig y cwmni yng Nghymru, felly gall gyflwyno ei gyfrifon yn Gymraeg. Mae Tŷ’r Cwmnïau yn eu cyfieithu i’r Saesneg ar gyfer y gofrestr. Nid yw iaith y dudalen yn newid y dewis hwn. Mae Tŷ’r Cwmnïau yn anfon ei ateb yn Saesneg.'''
+
+[strings."ch-micro-entity.english-ba118b"]
+hash = "ba118bf7fc9c"
+cy = '''Saesneg'''
+
+[strings."ch-micro-entity.welsh-cymraeg-0ae24c"]
+hash = "0ae24c757d03"
+cy = '''Cymraeg'''
+
 # == Marketing site (MKT8) ==
 # ids marketing.*; add entries below this line.

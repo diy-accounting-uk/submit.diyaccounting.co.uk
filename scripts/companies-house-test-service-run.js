@@ -467,6 +467,7 @@ async function runAccountsCase(caseDef, context) {
     ixbrl,
     transactionId: submitTransactionId,
     gatewayTest,
+    language: accounts.documentLanguage === "cy" ? "CY" : undefined,
   });
 
   const submittedAt = nowIso();

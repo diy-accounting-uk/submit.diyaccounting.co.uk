@@ -136,6 +136,7 @@ function buildEnvelopeXml({ requestClass, transactionId, gatewayTest, presenterI
  *   invalid".
  * @param {string} input.formIdentifier - the form's FormIdentifier and GovTalk Class, e.g.
  *   "Accounts" or "ConfirmationAndVerificationStatement"
+ * @param {"EN"|"CY"} [input.language] - the FormHeader Language, sent only when given
  * @param {string} input.submissionNumber - exactly 6 characters
  * @param {string} input.dateSigned - ISO date the director signed
  * @param {string} [input.formXml] - the form's own XML, sent inside Form
@@ -157,6 +158,7 @@ export function buildFormSubmission({
   companyAuthenticationCode,
   packageReference,
   formIdentifier,
+  language,
   submissionNumber,
   dateSigned,
   formXml = "",
@@ -184,7 +186,12 @@ export function buildFormSubmission({
         <CompanyNumber>${escapeXmlText(companyNumber)}</CompanyNumber>
         <CompanyName>${escapeXmlText(companyName)}</CompanyName>
         <CompanyAuthenticationCode>${escapeXmlText(companyAuthenticationCode)}</CompanyAuthenticationCode>
-        <PackageReference>${escapeXmlText(packageReference)}</PackageReference>
+        <PackageReference>${escapeXmlText(packageReference)}</PackageReference>${
+          language
+            ? `
+        <Language>${escapeXmlText(language)}</Language>`
+            : ""
+        }
         <FormIdentifier>${escapeXmlText(formIdentifier)}</FormIdentifier>
         <SubmissionNumber>${escapeXmlText(submissionNumber)}</SubmissionNumber>
       </FormHeader>
@@ -214,6 +221,7 @@ export function buildFormSubmission({
  * @param {string} [input.filename]
  * @param {string} [input.transactionId] - defaults to the current epoch milliseconds
  * @param {boolean} [input.gatewayTest] - true against the test service
+ * @param {"EN"|"CY"} [input.language] - "CY" for accounts written in Welsh, which FormSubmission v2-11 names in its Language element
  * @returns {string} the envelope XML
  */
 export function buildAccountsSubmission({
@@ -229,6 +237,7 @@ export function buildAccountsSubmission({
   filename = "Accounts.xml",
   transactionId = String(Date.now()),
   gatewayTest = false,
+  language,
 }) {
   const data = Buffer.from(ixbrl, "utf8").toString("base64");
 
@@ -240,6 +249,7 @@ export function buildAccountsSubmission({
     companyAuthenticationCode,
     packageReference,
     formIdentifier: "Accounts",
+    language,
     submissionNumber,
     dateSigned,
     document: { data, date: dateSigned, filename, contentType: "application/xml", category: "ACCOUNTS" },

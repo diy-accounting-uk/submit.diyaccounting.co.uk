@@ -13,6 +13,7 @@ import { dirname, join } from "node:path";
 import { escapeXmlText } from "../lib/xmlDom.js";
 import { recordFigure, recordHeading, recordTable } from "../lib/submissionRecord.js";
 import { RECORD_STYLE } from "../lib/submissionRecordStyle.js";
+import { accountsText, buildingWelshAccounts, welshDisplayDate } from "./accountsLanguage.js";
 
 const FRS_102_ENTRY_POINT = "https://xbrl.frc.org.uk/FRS-102/2026-01-01/FRS-102-2026-01-01.xsd";
 
@@ -33,6 +34,10 @@ const NAMESPACES = {
   // eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
   accrep: "http://xbrl.frc.org.uk/reports/2026-01-01/accrep",
 };
+
+// The languages namespace, declared only on a Welsh document, which names its language with lang:Welsh.
+// eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
+const LANGUAGES_NAMESPACE = "http://xbrl.frc.org.uk/cd/2026-01-01/languages";
 
 // Resolved from the FRS 102 entry point by scripts/generate-frc-taxonomy-concepts.js (see
 // fixtures/frc-taxonomy/frs-102-2026-concepts.json), not guessed from the accounts TIS prose. The
@@ -224,6 +229,7 @@ export const CONCEPTS = {
 };
 
 export const DIMENSIONS = {
+  languages: { prefix: "lang", name: "LanguagesDimension" },
   entityTradingStatus: { prefix: "bus", name: "EntityTradingStatusDimension" },
   entityShareClasses: { prefix: "bus", name: "EntityShareClassesDimension" },
   entityOfficers: { prefix: "bus", name: "EntityOfficersDimension" },
@@ -252,6 +258,7 @@ const CONTROLLING_PARTY_DOMAIN = {
 };
 
 export const MEMBERS = {
+  welsh: { prefix: "lang", name: "Welsh" },
   microEntities: { prefix: "bus", name: "Micro-entities" },
   smallEntities: { prefix: "bus", name: "SmallEntities" },
   privateLimitedCompanyLtd: { prefix: "bus", name: "PrivateLimitedCompanyLtd" },
@@ -385,6 +392,8 @@ export function buildContexts(input, options = {}) {
 export const IXT2_NAMESPACE = "http://www.xbrl.org/inlineXBRL/transformation/2011-07-31";
 export const NUMBER_FORMAT = "ixt2:numdotdecimal";
 export const DATE_FORMAT = "ixt2:datedaymonthyearen";
+// A Welsh document writes a tagged date as numbers, because registry 2 reads month names in English only.
+export const WELSH_DATE_FORMAT = "ixt2:datedaymonthyear";
 
 const MONTH_NAMES = [
   "January",
@@ -430,8 +439,25 @@ export function formatNominalValue(value) {
  * @returns {string} e.g. "31 December 2025"
  */
 export function displayDate(isoDate) {
+  if (buildingWelshAccounts()) return welshDisplayDate(isoDate);
   const [year, month, day] = isoDate.split("-").map(Number);
   return `${day} ${MONTH_NAMES[month - 1]} ${year}`;
+}
+
+function isOneYearPeriod(periodStart, periodEnd) {
+  const start = new Date(`${periodStart}T00:00:00Z`);
+  start.setUTCFullYear(start.getUTCFullYear() + 1);
+  return previousDay(start.toISOString().slice(0, 10)) === periodEnd;
+}
+
+/**
+ * "year" for a period of exactly one year, "period" otherwise, in the document's language.
+ * @param {string} periodStart
+ * @param {string} periodEnd
+ * @returns {string}
+ */
+export function periodSpanWord(periodStart, periodEnd) {
+  return accountsText(isOneYearPeriod(periodStart, periodEnd) ? "year" : "period");
 }
 
 /**
@@ -441,10 +467,9 @@ export function displayDate(isoDate) {
  * @returns {string}
  */
 export function periodEndedPhrase(periodStart, periodEnd) {
-  const start = new Date(`${periodStart}T00:00:00Z`);
-  start.setUTCFullYear(start.getUTCFullYear() + 1);
-  const isOneYear = previousDay(start.toISOString().slice(0, 10)) === periodEnd;
-  return `${isOneYear ? "year" : "period"} ended ${displayDate(periodEnd)}`;
+  return isOneYearPeriod(periodStart, periodEnd)
+    ? accountsText("year ended {date}", { date: displayDate(periodEnd) })
+    : accountsText("period ended {date}", { date: displayDate(periodEnd) });
 }
 
 /**
@@ -457,7 +482,7 @@ export function periodEndedPhrase(periodStart, periodEnd) {
  */
 export function renderStatement(key, contextRef) {
   const concept = CONCEPTS[key];
-  const text = STATEMENT_TEXT[key];
+  const text = accountsText(STATEMENT_TEXT[key]);
   return `<ix:nonNumeric name="${qname(concept)}" contextRef="${contextRef}">${escapeXmlText(text)}</ix:nonNumeric>`;
 }
 
@@ -500,6 +525,17 @@ export function renderProductionSoftwareFacts(contextRef) {
  * @returns {string[]}
  */
 export function renderReportHeaderFacts({ refs, entityIdentifierXml, periodXml, additionalContexts }) {
+  // A Welsh report names its language with the Welsh member, as the accounts TIS requires; an
+  // English report states the language with no dimension, which is English.
+  const languageContextRef = buildingWelshAccounts()
+    ? buildDimensionedContext({
+        additionalContexts,
+        entityIdentifierXml,
+        periodXml: periodXml[refs.current],
+        dimensionXml: dimensionMemberXml(DIMENSIONS.languages, MEMBERS.welsh),
+        id: `${refs.current}-language`,
+      })
+    : refs.current;
   const sterlingContextRef = buildDimensionedContext({
     additionalContexts,
     entityIdentifierXml,
@@ -509,12 +545,16 @@ export function renderReportHeaderFacts({ refs, entityIdentifierXml, periodXml, 
   });
   return [
     renderFixedFact("reportPeriod", refs.current),
-    renderFixedFact("reportPrincipalLanguage", refs.current),
+    renderFixedFact("reportPrincipalLanguage", languageContextRef),
     renderFixedFact("principalCurrencyUsedInBusinessReport", sterlingContextRef),
   ];
 }
 
 export function renderDateFact(conceptKey, contextRef, isoDate) {
+  if (buildingWelshAccounts()) {
+    const [year, month, day] = isoDate.split("-");
+    return `<ix:nonNumeric name="${qname(CONCEPTS[conceptKey])}" contextRef="${contextRef}" format="${WELSH_DATE_FORMAT}">${day}/${month}/${year}</ix:nonNumeric>`;
+  }
   return `<ix:nonNumeric name="${qname(CONCEPTS[conceptKey])}" contextRef="${contextRef}" format="${DATE_FORMAT}">${displayDate(isoDate)}</ix:nonNumeric>`;
 }
 
@@ -698,9 +738,12 @@ export function directorsAdvancesNotes({
   });
   return [
     {
-      title: "Advances and credits to directors",
-      html: `<p>Amounts owed to the company by its directors:</p>
-${recordTable({ columns: ["Owed at start", "Advanced", "Repaid", "Owed at end"], rows })}
+      title: accountsText("Advances and credits to directors"),
+      html: `<p>${escapeXmlText(accountsText("Amounts owed to the company by its directors:"))}</p>
+${recordTable({
+  columns: [accountsText("Owed at start"), accountsText("Advanced"), accountsText("Repaid"), accountsText("Owed at end")],
+  rows,
+})}
 ${termsHtml.join("\n")}`,
     },
   ];
@@ -749,7 +792,7 @@ export function buildDimensionedContext({ additionalContexts, entityIdentifierXm
 export function pageHeading({ companyName, companyNumber, title, subtitleHtml }) {
   return recordHeading({
     nameHtml: escapeXmlText(companyName),
-    referenceHtml: [`Registered number: ${escapeXmlText(companyNumber)}`],
+    referenceHtml: [escapeXmlText(accountsText("Registered number: {number}", { number: companyNumber }))],
     title,
     subtitleHtml,
   });
@@ -762,10 +805,13 @@ export function pageHeading({ companyName, companyNumber, title, subtitleHtml })
 export function coverPage({ refs, companyName, companyNumber, title, periodStart, periodEnd }) {
   return `<div class="page cover">
 <p class="cover-name">${renderTextFact("entityCurrentLegalOrRegisteredName", refs.current, companyName)}</p>
-<p class="cover-line">Registered number: ${renderTextFact("companiesHouseRegisteredNumber", refs.current, companyNumber)}</p>
+<p class="cover-line">${accountsText("Registered number: {number}", { number: renderTextFact("companiesHouseRegisteredNumber", refs.current, companyNumber) })}</p>
 <p class="cover-title">${renderTextFact("reportTitle", refs.current, title)}</p>
-<p class="cover-line">for the ${escapeXmlText(periodEndedPhrase(periodStart, periodEnd))}</p>
-<p class="cover-line">Period from ${renderDateFact("startDateForPeriodCoveredByReport", refs.periodStartInstant, periodStart)} to ${renderDateFact("endDateForPeriodCoveredByReport", refs.currentInstant, periodEnd)}</p>
+<p class="cover-line">${escapeXmlText(accountsText("for the {period}", { period: periodEndedPhrase(periodStart, periodEnd) }))}</p>
+<p class="cover-line">${accountsText("Period from {start} to {end}", {
+    start: renderDateFact("startDateForPeriodCoveredByReport", refs.periodStartInstant, periodStart),
+    end: renderDateFact("endDateForPeriodCoveredByReport", refs.currentInstant, periodEnd),
+  })}</p>
 </div>`;
 }
 
@@ -783,11 +829,24 @@ export function coverPage({ refs, companyName, companyNumber, title, periodStart
 export function revisionPage({ heading, periodEnd, revision }) {
   const originalDate = displayDate(revision.originalDateOfApproval);
   return `<div class="page">
-${heading}<p>These are revised accounts. They replace the original accounts of the company for the financial year ended ${escapeXmlText(displayDate(periodEnd))}, which were approved on ${escapeXmlText(originalDate)}.</p>
-<p>The revised accounts are now the statutory accounts of the company.</p>
-<p>They have been prepared as at the date of the original accounts, not as at the date of the revision, and so they do not deal with events between those dates.</p>
-<p>They have been prepared in accordance with the provisions of the Companies Act 2006 that applied to the original accounts when those were approved.</p>
-<h3>Respects in which the original accounts differ</h3>
+${heading}<p>${escapeXmlText(
+    accountsText(
+      "These are revised accounts. They replace the original accounts of the company for the financial year ended {end}, which were approved on {approved}.",
+      { end: displayDate(periodEnd), approved: originalDate },
+    ),
+  )}</p>
+<p>${escapeXmlText(accountsText("The revised accounts are now the statutory accounts of the company."))}</p>
+<p>${escapeXmlText(
+    accountsText(
+      "They have been prepared as at the date of the original accounts, not as at the date of the revision, and so they do not deal with events between those dates.",
+    ),
+  )}</p>
+<p>${escapeXmlText(
+    accountsText(
+      "They have been prepared in accordance with the provisions of the Companies Act 2006 that applied to the original accounts when those were approved.",
+    ),
+  )}</p>
+<h3>${escapeXmlText(accountsText("Respects in which the original accounts differ"))}</h3>
 <p>${escapeXmlText(revision.differences)}</p>
 </div>`;
 }
@@ -802,8 +861,12 @@ ${heading}<p>These are revised accounts. They replace the original accounts of t
  */
 export function approvalHtml({ refs, dateOfApproval, directorName, officerContextRef }) {
   const signature = officerContextRef ? renderTextFact("nameEntityOfficer", officerContextRef, directorName) : escapeXmlText(directorName);
-  return `<p class="approval">Approved by ${renderTextFact("descriptionBodyAuthorisingFinancialStatements", refs.current, "the board of directors")} on ${renderDateFact("dateAuthorisationFinancialStatementsForIssue", refs.currentInstant, dateOfApproval)} and signed on its behalf by:</p>
-<p class="signature">${signature}<br/>Director</p>`;
+  const approval = accountsText("Approved by {board} on {date} and signed on its behalf by:", {
+    board: renderTextFact("descriptionBodyAuthorisingFinancialStatements", refs.current, accountsText("the board of directors")),
+    date: renderDateFact("dateAuthorisationFinancialStatementsForIssue", refs.currentInstant, dateOfApproval),
+  });
+  return `<p class="approval">${approval}</p>
+<p class="signature">${signature}<br/>${escapeXmlText(accountsText("Director"))}</p>`;
 }
 
 /**
@@ -916,7 +979,9 @@ const COUNTRY_PHRASE = {
  * @returns {string} one paragraph
  */
 export function principalActivitySentence(activity, refs) {
-  return `<p>The company's principal activity is ${renderTextFact("descriptionPrincipalActivities", refs.current, activity)}.</p>`;
+  return `<p>${accountsText("The company's principal activity is {activity}.", {
+    activity: renderTextFact("descriptionPrincipalActivities", refs.current, activity),
+  })}</p>`;
 }
 
 /**
@@ -925,7 +990,7 @@ export function principalActivitySentence(activity, refs) {
  * @returns {string}
  */
 export function shareNoun(count) {
-  return count === 1 ? "share" : "shares";
+  return count === 1 ? accountsText("share") : accountsText("shares");
 }
 
 /**
@@ -960,18 +1025,21 @@ export function companyInformationNote(
       conceptKey ? renderTextFact(conceptKey, officeContextRef, registeredOffice[field]) : escapeXmlText(registeredOffice[field]),
     )
     .join(", ");
-  const country = COUNTRY_PHRASE[countryMemberForCompanyNumber(companyNumber).name];
+  const country = escapeXmlText(accountsText(COUNTRY_PHRASE[countryMemberForCompanyNumber(companyNumber).name]));
   const activity = principalActivityShown ? `\n${principalActivitySentence(principalActivityShown, refs)}` : "";
   const name = renderTextFact("entityCurrentLegalOrRegisteredName", refs.current, companyName);
   const number = renderTextFact("companiesHouseRegisteredNumber", refs.current, companyNumber);
   return {
-    title: "General information",
-    html: `<p>${name} is a private company limited by shares, registered in ${country}, registered number ${number}. Its registered office is ${officeHtml}.</p>${activity}`,
+    title: accountsText("General information"),
+    html: `<p>${accountsText(
+      "{name} is a private company limited by shares, registered in {country}, registered number {number}. Its registered office is {office}.",
+      { name, country, number, office: officeHtml },
+    )}</p>${activity}`,
   };
 }
 
 function netLabel(base, values) {
-  return values.some((value) => value < 0) ? `${base} (liabilities)` : base;
+  return accountsText(values.some((value) => value < 0) ? `${base} (liabilities)` : base);
 }
 
 /**
@@ -1090,41 +1158,44 @@ export function balanceSheetRows({ years, currentAssetLines, creditorLines, cred
   const values = (line) => years.map((year) => year[line].value);
   const optionalRow = (key) => {
     if (!years[0][key]) return [];
-    return [{ label: OPTIONAL_BALANCE_SHEET_HEADINGS.find((heading) => heading.key === key).label, cells: cells(key) }];
+    return [{ label: accountsText(OPTIONAL_BALANCE_SHEET_HEADINGS.find((heading) => heading.key === key).label), cells: cells(key) }];
   };
   const rows = [
     ...optionalRow("calledUpShareCapitalNotPaid"),
-    { label: "Fixed assets", note: notes.fixedAssets, cells: cells("fixedAssets") },
+    { label: accountsText("Fixed assets"), note: notes.fixedAssets, cells: cells("fixedAssets") },
   ];
   if (currentAssetLines) {
-    rows.push({ label: "Current assets", style: "heading" }, ...currentAssetLines.map((line) => ({ ...line, indent: true })));
+    rows.push({ label: accountsText("Current assets"), style: "heading" }, ...currentAssetLines.map((line) => ({ ...line, indent: true })));
     rows.push({ label: "", style: "subtotal", cells: cells("currentAssets") });
   } else {
-    rows.push({ label: "Current assets", cells: cells("currentAssets") });
+    rows.push({ label: accountsText("Current assets"), cells: cells("currentAssets") });
   }
   rows.push(...optionalRow("prepaymentsAccruedIncome"));
   if (creditorLines) {
     rows.push(
-      { label: "Creditors: amounts falling due within one year", style: "heading" },
+      { label: accountsText("Creditors: amounts falling due within one year"), style: "heading" },
       ...creditorLines.map((line) => ({ ...line, indent: true })),
     );
     rows.push({ label: "", style: "subtotal", cells: cells("creditorsWithinOneYear", { deduction: true }) });
   } else {
-    rows.push({ label: "Creditors: amounts falling due within one year", cells: cells("creditorsWithinOneYear", { deduction: true }) });
+    rows.push({
+      label: accountsText("Creditors: amounts falling due within one year"),
+      cells: cells("creditorsWithinOneYear", { deduction: true }),
+    });
   }
   rows.push(
     { label: netLabel("Net current assets", values("netCurrentAssets")), style: "subtotal", cells: cells("netCurrentAssets") },
-    { label: "Total assets less current liabilities", cells: cells("totalAssetsLessCurrentLiabilities") },
+    { label: accountsText("Total assets less current liabilities"), cells: cells("totalAssetsLessCurrentLiabilities") },
   );
   if (creditorAfterOneYearLines) {
     rows.push(
-      { label: "Creditors: amounts falling due after more than one year", style: "heading" },
+      { label: accountsText("Creditors: amounts falling due after more than one year"), style: "heading" },
       ...creditorAfterOneYearLines.map((line) => ({ ...line, indent: true })),
       { label: "", style: "subtotal", cells: cells("creditorsAfterOneYear", { deduction: true }) },
     );
   } else {
     rows.push({
-      label: "Creditors: amounts falling due after more than one year",
+      label: accountsText("Creditors: amounts falling due after more than one year"),
       cells: cells("creditorsAfterOneYear", { deduction: true }),
     });
   }
@@ -1132,10 +1203,15 @@ export function balanceSheetRows({ years, currentAssetLines, creditorLines, cred
     ...optionalRow("provisionsForLiabilities"),
     ...optionalRow("accrualsDeferredIncome"),
     { label: netLabel("Net assets", values("netAssets")), style: "total", cells: cells("netAssets") },
-    { label: "Capital and reserves", style: "heading" },
-    { label: "Called up share capital", note: notes.calledUpShareCapital, indent: true, cells: cells("calledUpShareCapital") },
-    { label: "Profit and loss account", indent: true, cells: cells("profitAndLossAccount") },
-    { label: "Shareholders' funds", style: "total", cells: cells("capitalAndReserves") },
+    { label: accountsText("Capital and reserves"), style: "heading" },
+    {
+      label: accountsText("Called up share capital"),
+      note: notes.calledUpShareCapital,
+      indent: true,
+      cells: cells("calledUpShareCapital"),
+    },
+    { label: accountsText("Profit and loss account"), indent: true, cells: cells("profitAndLossAccount") },
+    { label: accountsText("Shareholders' funds"), style: "total", cells: cells("capitalAndReserves") },
   );
   return rows;
 }
@@ -1151,12 +1227,14 @@ export function balanceSheetRows({ years, currentAssetLines, creditorLines, cred
  * @returns {string}
  */
 export function renderAccountsDocument({ title, contextsXml, hiddenFactsXml, bodyHtml }) {
-  const namespaceAttributes = Object.entries(NAMESPACES)
+  const welsh = buildingWelshAccounts();
+  const namespaceAttributes = Object.entries({ ...NAMESPACES, ...(welsh ? { lang: LANGUAGES_NAMESPACE } : {}) })
     .map(([prefix, uri]) => `xmlns:${prefix}="${uri}"`)
     .join(" ");
+  const languageAttribute = welsh ? ' xml:lang="cy"' : "";
 
   return `<?xml version="1.0"?>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ix="http://www.xbrl.org/2013/inlineXBRL" xmlns:ixt2="${IXT2_NAMESPACE}" xmlns:xbrli="http://www.xbrl.org/2003/instance" xmlns:xbrldi="http://xbrl.org/2006/xbrldi" xmlns:link="http://www.xbrl.org/2003/linkbase" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:iso4217="http://www.xbrl.org/2003/iso4217" ${namespaceAttributes}>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ix="http://www.xbrl.org/2013/inlineXBRL" xmlns:ixt2="${IXT2_NAMESPACE}" xmlns:xbrli="http://www.xbrl.org/2003/instance" xmlns:xbrldi="http://xbrl.org/2006/xbrldi" xmlns:link="http://www.xbrl.org/2003/linkbase" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:iso4217="http://www.xbrl.org/2003/iso4217" ${namespaceAttributes}${languageAttribute}>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 <title>${escapeXmlText(title)}</title>

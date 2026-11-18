@@ -18,6 +18,7 @@ import {
   formatMonetary,
   formatNominalValue,
   periodEndedPhrase,
+  periodSpanWord,
   renderStatement,
   renderFixedFact,
   renderDateFact,
@@ -45,6 +46,7 @@ import {
   shareNoun,
 } from "./accountsIxbrlCommon.js";
 import { recordFigure, recordTable } from "../lib/submissionRecord.js";
+import { accountsText } from "./accountsLanguage.js";
 
 // The FRS 105 micro-entity profit and loss account (Format 2) a Company Tax Return carries.
 export const MICRO_PROFIT_AND_LOSS_LINES = [
@@ -106,7 +108,7 @@ function microProfitAndLossPage({ heading, refs, current, prior, columns }) {
     const fact = (contextRef, value) => renderMonetaryFact(conceptKey, contextRef, "GBP", value);
     const cells = [recordFigure(fact(refs.current, current[line]), current[line], { deduction })];
     if (prior) cells.push(recordFigure(fact(refs.prior, prior[line]), prior[line], { deduction }));
-    return { label, style, cells };
+    return { label: accountsText(label), style, cells };
   });
   return `<div class="page">
 ${heading}${recordTable({ columns: prior ? columns : columns.slice(0, 1), rows })}
@@ -264,7 +266,11 @@ export function buildMicroEntityAccounts(input) {
     );
   }
   hiddenFacts.push(
-    renderTextFact("descriptionPrincipalActivities", refs.current, input.dormant ? "Dormant company" : NO_PRINCIPAL_ACTIVITY_DESCRIPTION),
+    renderTextFact(
+      "descriptionPrincipalActivities",
+      refs.current,
+      accountsText(input.dormant ? "Dormant company" : NO_PRINCIPAL_ACTIVITY_DESCRIPTION),
+    ),
   );
   hiddenFacts.push(
     `<ix:nonNumeric name="${qname(CONCEPTS.entityDormantTruefalse)}" contextRef="${refs.current}">${input.dormant ? "true" : "false"}</ix:nonNumeric>`,
@@ -332,12 +338,21 @@ export function buildMicroEntityAccounts(input) {
   const notes = [
     companyInformationNote(input, refs, { entityIdentifierXml, periodXml, additionalContexts }),
     {
-      title: "Accounting policies",
-      html: `<p>${renderTextFact("statementComplianceWithReportingFramework", refs.current, "These financial statements have been prepared in accordance with FRS 105 The Financial Reporting Standard applicable to the Micro-entities Regime.")}</p>`,
+      title: accountsText("Accounting policies"),
+      html: `<p>${renderTextFact(
+        "statementComplianceWithReportingFramework",
+        refs.current,
+        accountsText(
+          "These financial statements have been prepared in accordance with FRS 105 The Financial Reporting Standard applicable to the Micro-entities Regime.",
+        ),
+      )}</p>`,
     },
     {
-      title: "Employees",
-      html: `<p>The average number of employees during the ${periodEndedPhrase(input.periodStart, input.periodEnd).split(" ")[0]} was <ix:nonFraction name="${qname(CONCEPTS.averageNumberEmployeesDuringPeriod)}" contextRef="${refs.current}" unitRef="pure" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(input.averageNumberOfEmployees)}</ix:nonFraction>.</p>`,
+      title: accountsText("Employees"),
+      html: `<p>${accountsText("The average number of employees during the {span} was {count}.", {
+        span: periodSpanWord(input.periodStart, input.periodEnd),
+        count: `<ix:nonFraction name="${qname(CONCEPTS.averageNumberEmployeesDuringPeriod)}" contextRef="${refs.current}" unitRef="pure" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(input.averageNumberOfEmployees)}</ix:nonFraction>`,
+      })}</p>`,
     },
   ];
 
@@ -360,6 +375,7 @@ export function buildMicroEntityAccounts(input) {
     const sharesIssued = sharesIssuedFor(calledUp - unpaid, input.nominalValue);
     const sharesAllotted = unpaid > 0 ? sharesIssuedFor(calledUp, input.nominalValue) : sharesIssued;
     const paidVerb = sharesIssued === 1 ? "is" : "are";
+    const kind = accountsText(SHARE_CLASS_LABEL[input.shareClass]);
     const shareClassDimensionXml = dimensionMemberXml(DIMENSIONS.entityShareClasses, MEMBERS[input.shareClass]);
     // The number of shares is held at the balance sheet date (an instant); the nominal value is
     // a duration item in the FRC taxonomy, so each fact takes its own share-class context.
@@ -377,12 +393,30 @@ export function buildMicroEntityAccounts(input) {
       dimensionXml: shareClassDimensionXml,
       id: `${refs.current}-share-class`,
     });
+    const nominal = `<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${formatNominalValue(input.nominalValue)}</ix:nonFraction>`;
+    const sharesFact = (conceptKey, count) =>
+      `<ix:nonFraction name="${qname(CONCEPTS[conceptKey])}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(count)}</ix:nonFraction>`;
     notes.push({
-      title: "Called up share capital",
+      title: accountsText("Called up share capital"),
       html:
         unpaid > 0
-          ? `<p>Allotted and called up: <ix:nonFraction name="${qname(CONCEPTS.numberSharesAllotted)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesAllotted)}</ix:nonFraction> ${SHARE_CLASS_LABEL[input.shareClass]} ${shareNoun(sharesAllotted)} of £<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${formatNominalValue(input.nominalValue)}</ix:nonFraction> each, of which <ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction> ${paidVerb} fully paid.</p>`
-          : `<p>Allotted, called up and fully paid: <ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction> ${SHARE_CLASS_LABEL[input.shareClass]} ${shareNoun(sharesIssued)} of £<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${formatNominalValue(input.nominalValue)}</ix:nonFraction> each.</p>`,
+          ? `<p>${accountsText(
+              "Allotted and called up: {allotted} {kind} {allottedNoun} of £{nominal} each, of which {paid} {paidVerb} fully paid.",
+              {
+                allotted: sharesFact("numberSharesAllotted", sharesAllotted),
+                kind,
+                allottedNoun: shareNoun(sharesAllotted),
+                nominal,
+                paid: sharesFact("numberSharesIssuedFullyPaid", sharesIssued),
+                paidVerb,
+              },
+            )}</p>`
+          : `<p>${accountsText("Allotted, called up and fully paid: {shares} {kind} {noun} of £{nominal} each.", {
+              shares: sharesFact("numberSharesIssuedFullyPaid", sharesIssued),
+              kind,
+              noun: shareNoun(sharesIssued),
+              nominal,
+            })}</p>`,
     });
     shareCapitalNote = notes.length;
   }
@@ -390,11 +424,17 @@ export function buildMicroEntityAccounts(input) {
   const heading = (title, subtitleHtml) =>
     pageHeading({ companyName: input.companyName, companyNumber: input.companyNumber, title, subtitleHtml });
   const statementKeys = input.dormant ? DORMANT_STATEMENT_KEYS : STATEMENT_KEYS;
+  const forThePeriod = escapeXmlText(accountsText("for the {period}", { period: periodEndedPhrase(input.periodStart, input.periodEnd) }));
   const accountantsPage = input.accountantsReport
     ? `\n${accountantsReportPage({
         heading: heading(
-          "Accountants' report",
-          `to the board of directors of ${escapeXmlText(input.companyName)} on the unaudited financial statements for the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd))}`,
+          accountsText("Accountants' report"),
+          escapeXmlText(
+            accountsText("to the board of directors of {company} on the unaudited financial statements for the {period}", {
+              company: input.companyName,
+              period: periodEndedPhrase(input.periodStart, input.periodEnd),
+            }),
+          ),
         ),
         accountantsReport: input.accountantsReport,
         refs,
@@ -403,7 +443,7 @@ export function buildMicroEntityAccounts(input) {
 
   const revisionHtml = input.revision
     ? `\n${revisionPage({
-        heading: heading("Revised accounts", `for the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd))}`),
+        heading: heading(accountsText("Revised accounts"), forThePeriod),
         periodEnd: input.periodEnd,
         revision: input.revision,
       })}`
@@ -413,24 +453,28 @@ export function buildMicroEntityAccounts(input) {
     refs,
     companyName: input.companyName,
     companyNumber: input.companyNumber,
-    title: input.dormant ? "Unaudited dormant micro-entity accounts" : "Unaudited micro-entity accounts",
+    title: accountsText(input.dormant ? "Unaudited dormant micro-entity accounts" : "Unaudited micro-entity accounts"),
     periodStart: input.periodStart,
     periodEnd: input.periodEnd,
   })}${revisionHtml}${accountantsPage}
 <div class="page">
-${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.currentInstant, input.periodEnd)}`)}${recordTable({
+${heading(
+  accountsText("Balance sheet"),
+  accountsText("as at {date}", { date: renderDateFact("balanceSheetDate", refs.currentInstant, input.periodEnd) }),
+)}${recordTable({
     columns,
     notes: Boolean(shareCapitalNote),
+    noteHeading: accountsText("Note"),
     rows: balanceSheetRows({ years, notes: { calledUpShareCapital: shareCapitalNote } }),
   })}
 ${statementKeys.map((key) => `<p>${renderStatement(key, refs.current)}</p>`).join("\n")}
-${input.dormant && input.dormantTradingStatus === "neverTraded" ? `<p>${escapeXmlText(DORMANT_NEVER_TRADED_SENTENCE)}</p>` : ""}
+${input.dormant && input.dormantTradingStatus === "neverTraded" ? `<p>${escapeXmlText(accountsText(DORMANT_NEVER_TRADED_SENTENCE))}</p>` : ""}
 ${approvalHtml({ refs, dateOfApproval: input.dateOfApproval, directorName: input.directorName, officerContextRef })}
 </div>
 ${
   profitAndLoss
     ? microProfitAndLossPage({
-        heading: heading("Profit and loss account", `for the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd))}`),
+        heading: heading(accountsText("Profit and loss account"), forThePeriod),
         refs,
         current: profitAndLoss.current,
         prior: profitAndLoss.prior,
@@ -439,13 +483,13 @@ ${
     : ""
 }
 <div class="page">
-${heading("Notes to the financial statements", `for the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd))}`)}${notes
+${heading(accountsText("Notes to the financial statements"), forThePeriod)}${notes
     .map((note, index) => `<h3>${index + 1}. ${escapeXmlText(note.title)}</h3>\n${note.html}`)
     .join("\n")}
 </div>`;
 
   return renderAccountsDocument({
-    title: `${input.companyName} - Accounts`,
+    title: accountsText("{company} - Accounts", { company: input.companyName }),
     contextsXml: `${contextsXml}${additionalContexts.join("")}`,
     hiddenFactsXml: hiddenFacts.join("\n"),
     bodyHtml,

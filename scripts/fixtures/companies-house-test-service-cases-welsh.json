@@ -1,0 +1,54 @@
+[
+  {
+    "name": "micro-entity-accounts-welsh",
+    "type": "accounts",
+    "companyNumber": "06846849",
+    "companyName": "DIY ACCOUNTING LIMITED",
+    "registeredOffice": {
+      "addressLine1": "37 Sutherland Avenue",
+      "cityOrTown": "Leeds",
+      "postalCode": "LS8 1BY",
+      "country": "England"
+    },
+    "companyAuthCode": "AUTH09",
+    "periodStart": "2025-04-01",
+    "periodEnd": "2026-03-31",
+    "balanceSheet": {
+      "currentYear": {
+        "fixedAssets": 800,
+        "currentAssets": 6000,
+        "creditorsWithinOneYear": 1968,
+        "creditorsAfterOneYear": 0,
+        "calledUpShareCapital": 100,
+        "profitAndLossAccount": 4732,
+        "capitalAndReserves": 4832
+      },
+      "priorYear": {
+        "fixedAssets": 0,
+        "currentAssets": 3353,
+        "creditorsWithinOneYear": 3219,
+        "creditorsAfterOneYear": 0,
+        "calledUpShareCapital": 100,
+        "profitAndLossAccount": 34,
+        "capitalAndReserves": 134
+      }
+    },
+    "averageEmployees": 0,
+    "director": {
+      "name": "Antony Christopher Cartwright",
+      "dateApproved": "2026-09-15"
+    },
+    "statementsAccepted": {
+      "section477Exemption": true,
+      "membersNotRequiredAudit": true,
+      "directorsResponsibilities": true,
+      "microEntityProvisions": true
+    },
+    "expectedOutcome": {
+      "status": "POLL_TIMEOUT",
+      "pinned": true,
+      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 500 ordinary shares of £0.20 each (share capital £100) follow the register entry. Prior year equals the filed 2025 accounts; current year figures are synthetic, with the reserve moving from 34 by the year's profit of 4,698 and no 2026 dividend assumed (the 2025 profit of 4,195 against a reserve of 34 implies dividends in 2025)."
+    },
+    "documentLanguage": "cy"
+  }
+]

@@ -96,6 +96,11 @@ vi.mock("@app/services/companiesHouseXmlGateway.js", () => ({
   resolvePresenterCredentials: (...args) => mockResolvePresenterCredentials(...args),
 }));
 
+const mockGetCompanyProfile = vi.fn();
+vi.mock("@app/functions/companies-house/companiesHouseCompanyGet.js", () => ({
+  getCompanyProfile: (...args) => mockGetCompanyProfile(...args),
+}));
+
 import {
   ingestHandler as companiesHouseAccountsPostHandler,
   readRegisteredOffice,
@@ -450,6 +455,39 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     const response = await companiesHouseAccountsPostHandler(buildEvent());
     expect(response.statusCode).toBe(403);
     expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
+  describe("accounts written in Welsh", () => {
+    async function pendingData() {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const updates = mockSend.mock.calls.map(([cmd]) => cmd).filter((cmd) => cmd instanceof lib.UpdateCommand);
+      return updates.find((cmd) => cmd.input.ExpressionAttributeValues[":status"] === "pending").input.ExpressionAttributeValues[":data"];
+    }
+
+    test("a Welsh company's Welsh accounts are built in Welsh, kept with the filing and sent with Language CY", async () => {
+      mockGetCompanyProfile.mockResolvedValue({ profile: { jurisdiction: "wales" } });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ documentLanguage: "cy" }) }));
+      expect(response.statusCode).toBe(201);
+      expect(mockGetCompanyProfile).toHaveBeenCalledWith("00000001");
+      expect(mockBuildMicroEntityAccounts.mock.calls[0][0].documentLanguage).toBe("cy");
+      expect(mockBuildAccountsSubmission.mock.calls[0][0].language).toBe("CY");
+      expect(await pendingData()).toMatchObject({ documentLanguage: "cy" });
+    });
+
+    test("a company whose jurisdiction is england-wales cannot file in Welsh, and nothing is sent", async () => {
+      mockGetCompanyProfile.mockResolvedValue({ profile: { jurisdiction: "england-wales" } });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ documentLanguage: "cy" }) }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("Welsh accounts are for a Welsh company");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("English accounts read no profile and send no Language", async () => {
+      const response = await companiesHouseAccountsPostHandler(buildEvent());
+      expect(response.statusCode).toBe(201);
+      expect(mockGetCompanyProfile).not.toHaveBeenCalled();
+      expect(mockBuildAccountsSubmission.mock.calls[0][0].language).toBeUndefined();
+    });
   });
 
   describe("a filing sent as half of a pair", () => {
