@@ -44,7 +44,7 @@ import {
   parseGatewayResponse,
 } from "../../services/companiesHouseXmlGateway.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
-import { recordSubmissionInProgress } from "../../services/companiesHouseSubmissionInProgress.js";
+import { recordSubmissionInProgress, recordOutcomeUnknown } from "../../services/companiesHouseSubmissionInProgress.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { readOwnPresenterFromBody } from "../../services/companiesHouseOwnPresenter.js";
@@ -128,7 +128,8 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // The envelope left, so Companies House may have it. The filing stays pending with its request
 // data, the page polls it by number, and a late ACCEPT still gets its receipt and email.
-async function submittedWithOutcomeUnknown({ request, responseHeaders, submissionNumber, userSub, error }) {
+async function submittedWithOutcomeUnknown({ request, responseHeaders, submissionNumber, userSub, error, data }) {
+  await recordOutcomeUnknown({ userSub, submissionNumber, kind: "psc-verification-statement", data });
   await recordSubmissionFailure({
     failure: "gateway-outcome-unknown",
     summary: "Companies House PSC verification statement sent with no answer from the gateway; kept pending",
@@ -190,6 +191,7 @@ export async function ingestHandler(event) {
 
   let submissionNumber;
   let envelopeSent = false;
+  const inProgressData = {};
   try {
     const { presenterId, presenterCode } = ownPresenter ?? (await resolvePresenterCredentials());
 
@@ -276,7 +278,7 @@ export async function ingestHandler(event) {
       stack: error.stack,
     });
     if (envelopeSent && !gatewayRequestNotDelivered(error))
-      return submittedWithOutcomeUnknown({ request, responseHeaders, submissionNumber, userSub, error });
+      return submittedWithOutcomeUnknown({ request, responseHeaders, submissionNumber, userSub, error, data: inProgressData });
     if (submissionNumber) {
       await putAsyncRequest(userSub, submissionNumber, "failed", { message: error.message }, asyncRequestsTableName);
     }

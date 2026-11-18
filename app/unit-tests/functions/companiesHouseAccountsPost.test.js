@@ -392,9 +392,10 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     expect(response.statusCode).toBe(201);
     expect(parseResponseBody(response).submissionNumber).toBe("00001A");
     const writes = await asyncRequestWrites();
-    expect(writes.map((values) => values[":status"])).toEqual(["pending"]);
-    expect(writes[0][":data"]).toMatchObject({ kind: "accounts", filedDocument: '<?xml version="1.0"?><html>fake ixbrl</html>' });
-    expect(writes[0][":data"].chargeActivityId).toBeTruthy();
+    expect(writes.map((values) => values[":status"])).toEqual(["pending", "pending"]);
+    const kept = writes.at(-1)[":data"];
+    expect(kept).toMatchObject({ kind: "accounts", outcomeUnknown: true, filedDocument: '<?xml version="1.0"?><html>fake ixbrl</html>' });
+    expect(kept.chargeActivityId).toBeTruthy();
   });
 
   test("marks the filing failed when the connection to the gateway was refused, so nothing was delivered", async () => {

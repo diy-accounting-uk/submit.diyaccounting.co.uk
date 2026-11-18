@@ -186,8 +186,8 @@ describe("companiesHousePscVerificationStatementPost ingestHandler", () => {
       .map(([cmd]) => cmd)
       .filter((cmd) => cmd instanceof lib.UpdateCommand && cmd.input.ExpressionAttributeValues?.[":status"])
       .map((cmd) => cmd.input.ExpressionAttributeValues);
-    expect(writes.map((values) => values[":status"])).toEqual(["pending"]);
-    expect(writes[0][":data"]).toMatchObject({ kind: "psc-verification-statement" });
+    expect(writes.map((values) => values[":status"])).toEqual(["pending", "pending"]);
+    expect(writes.at(-1)[":data"]).toMatchObject({ kind: "psc-verification-statement", outcomeUnknown: true });
   });
 
   test("marks the filing failed when the connection to the gateway was refused, so nothing was delivered", async () => {

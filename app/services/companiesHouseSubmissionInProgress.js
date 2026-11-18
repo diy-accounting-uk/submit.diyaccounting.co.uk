@@ -33,3 +33,24 @@ export async function recordSubmissionInProgress({ userSub, submissionNumber, ki
   );
   if (!underOwnPresenter) await putPendingFiling({ submissionNumber, userSub, kind });
 }
+
+/**
+ * Mark a pending filing whose envelope left with no answer from the gateway. The page poll may
+ * then find that Companies House never received it, and tell the reader to file again.
+ *
+ * @param {object} input
+ * @param {string} input.userSub
+ * @param {string} input.submissionNumber
+ * @param {string} input.kind
+ * @param {object} [input.data] - the same fields recordSubmissionInProgress kept
+ */
+export async function recordOutcomeUnknown({ userSub, submissionNumber, kind, data = {} }) {
+  await putAsyncRequest(
+    userSub,
+    submissionNumber,
+    "pending",
+    { ...data, kind, outcomeUnknown: true },
+    process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME,
+    FILING_STATE_RETENTION,
+  );
+}

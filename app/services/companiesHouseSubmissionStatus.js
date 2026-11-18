@@ -64,7 +64,7 @@ export function isGatewayTest() {
  * @param {string} input.kind - a key of FORM_KINDS
  * @returns {Promise<{data: object}|{errors: Array, submissionNumber: string}|{notFound: true, submissionNumber: string}>}
  */
-export async function pollSubmission({ userSub, submissionNumber, govTestScenario, ownPresenter, kind }) {
+export async function pollSubmission({ userSub, submissionNumber, govTestScenario, ownPresenter, kind, now = new Date() }) {
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
   const persistedRequest = await getAsyncRequest(userSub, submissionNumber, asyncRequestsTableName);
 
@@ -94,6 +94,9 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
   const parsed = parseGatewayResponse(gatewayResponse.data);
 
   if (parsed.errors?.length) {
+    if (neverReceived({ persistedRequest, errors: parsed.errors, now })) {
+      return { data: await recordNeverReceived({ userSub, submissionNumber, persistedRequest, kind }) };
+    }
     logger.error({ message: "Companies House gateway returned errors while polling", submissionNumber, errors: parsed.errors });
     return { errors: parsed.errors, submissionNumber };
   }
@@ -103,6 +106,38 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
   const status = parsed.statuses[0];
   const { data } = await recordSubmissionStatus({ userSub, submissionNumber, persistedRequest, status, kind });
   return { data };
+}
+
+// TIS v5.3 section 1.2.4: Companies House answers a delivered envelope with its receipt in the same
+// connection, so a delivered submission is known to GetSubmissionStatus at once. The TIS gives no
+// time for that, so the margin is 30 minutes. Section 2.5: option 1 also answers "No Transaction
+// Found" 90 days after Companies House finished a submission, so an older filing proves nothing.
+export const NEVER_RECEIVED_MARGIN_MS = 30 * 60 * 1000;
+const NO_STATUS_AFTER_MS = 90 * 24 * 60 * 60 * 1000;
+export const NEVER_RECEIVED_REJECT_CODE = "NOT-RECEIVED";
+const NEVER_RECEIVED_MESSAGE = "Companies House did not receive this filing. Nothing was filed. File it again.";
+
+// A filing kept pending after its envelope got no answer, that Companies House says it has no
+// record of, past the margin.
+function neverReceived({ persistedRequest, errors, now }) {
+  if (persistedRequest.status !== "pending" || persistedRequest.data?.outcomeUnknown !== true) return false;
+  if (!errors.every((error) => error.text === "No Transaction Found")) return false;
+  const age = now.getTime() - new Date(persistedRequest.createdAt).getTime();
+  return age >= NEVER_RECEIVED_MARGIN_MS && age < NO_STATUS_AFTER_MS;
+}
+
+// Recorded the way a REJECT is, so the page and the filings list tell the reader to file again. No
+// token or fee was charged for it: a token is charged only on ACCEPT, and a confirmation statement
+// fee is marked used only when the gateway acknowledges the envelope.
+async function recordNeverReceived({ userSub, submissionNumber, persistedRequest, kind }) {
+  const status = {
+    submissionNumber,
+    statusCode: "REJECT",
+    rejections: [{ rejectCode: NEVER_RECEIVED_REJECT_CODE, description: NEVER_RECEIVED_MESSAGE, instanceNumber: "1" }],
+  };
+  logger.warn({ message: "Companies House has no record of a filing whose envelope got no answer", submissionNumber });
+  const { data } = await recordSubmissionStatus({ userSub, submissionNumber, persistedRequest, status, kind });
+  return data;
 }
 
 /**
