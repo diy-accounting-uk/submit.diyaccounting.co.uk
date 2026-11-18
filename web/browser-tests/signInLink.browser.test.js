@@ -83,3 +83,30 @@ test("the sign-in page ignores a ?next= that leaves the site", async ({ page }) 
   await expect(page.locator("#signInDestination")).toBeHidden();
   expect(await page.evaluate(() => sessionStorage.getItem("postLoginRedirect"))).toBeNull();
 });
+
+test("a Welsh page's Sign in link leads to the Welsh sign-in page, which reads in Welsh and returns to the Welsh page", async ({
+  page,
+}) => {
+  const failedRequests = [];
+  const consoleErrors = [];
+  page.on("response", (response) => {
+    if (response.status() >= 400) failedRequests.push(`${response.status()} ${response.url()}`);
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  await serveRealSite(page);
+  await page.goto("http://localhost:3000/cy/hmrc/vat/vatObligations.html", { waitUntil: "domcontentloaded" });
+  const loginLink = page.locator("a.login-link");
+  await expect(loginLink).toHaveAttribute("href", `/cy/auth/login.html?next=${encodeURIComponent("/cy/hmrc/vat/vatObligations.html")}`);
+  await loginLink.click();
+  await page.waitForURL("**/cy/auth/login.html?next=*");
+  await expect(page.locator("h1")).toHaveText("Mewngofnodi");
+  await expect(page.locator("#loginWithCognito")).toContainText("Mewngofnodi gyda’ch cyfrif Google");
+  await expect(page.locator("#signInDestination")).toContainText("Mewngofnodwch i barhau i");
+  await expect(page.locator("main")).not.toContainText("Sign in with your");
+  expect(await page.evaluate(() => sessionStorage.getItem("postLoginRedirect"))).toBe("/cy/hmrc/vat/vatObligations.html");
+  await page.waitForLoadState("networkidle");
+  expect(failedRequests).toEqual([]);
+  expect(consoleErrors).toEqual([]);
+});

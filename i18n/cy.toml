@@ -810,6 +810,54 @@ cy = '''Mae’r bartneriaeth gyswllt hon wedi dod i ben.'''
 hash = "c9c81f826401"
 cy = '''Nid oedd modd darllen eich cais ({message}). Ail-lwythwch y dudalen.'''
 
+[strings."login.title"]
+hash = "c0e2df789143"
+cy = '''Mewngofnodi - DIY Accounting Submit'''
+
+[strings."login.sign-in-bfd402"]
+hash = "bfd402b2f6f3"
+cy = '''Mewngofnodi'''
+
+[strings."login.sign-in-to-file-with-hmrc-0b1578"]
+hash = "0b1578590741"
+cy = '''Mewngofnodwch i ffeilio gyda CThEF a Thŷ’r Cwmnïau'''
+
+[strings."login.choose-how-to-sign-in-581869"]
+hash = "5818697261a0"
+cy = '''Dewiswch sut i fewngofnodi'''
+
+[strings."login.your-free-pass-is-waiting-sign-27746c"]
+hash = "27746c9b04ae"
+cy = '''Mae eich tocyn am ddim yn aros amdanoch. Mewngofnodwch gyda chyfrif Google neu Microsoft i’w ychwanegu. Nid oes angen cerdyn.'''
+
+[strings."login.sign-in-with-your-google-account-5cfef4"]
+hash = "5cfef4ba369a"
+cy = '''<img src="../images/g-logo.png" alt="" class="provider-logo" /> Mewngofnodi gyda’ch cyfrif Google'''
+
+[strings."login.sign-in-with-your-microsoft-account-836e6a"]
+hash = "836e6a2301ae"
+cy = '''<img src="../images/microsoft-logo.svg" alt="" class="provider-logo" /> Mewngofnodi gyda’ch cyfrif Microsoft'''
+
+[strings."login.use-the-account-you-already-have-6cd9cb"]
+hash = "6cd9cbbf82b8"
+cy = '''Defnyddiwch y cyfrif sydd gennych eisoes. Rydym yn cael eich cyfeiriad e-bost a’ch enw, a dim byd arall.'''
+
+[strings."login.the-first-time-you-sign-in-7c5281"]
+hash = "7c52814113e1"
+cy = '''Y tro cyntaf y byddwch yn mewngofnodi, rydym yn creu eich cyfrif. Mae am ddim nes i chi ddewis Bundle.'''
+
+[strings."login.cannot-sign-in-with-either-account-faebfa"]
+hash = "faebfa2cf7f5"
+cy = '''Methu mewngofnodi gyda’r naill gyfrif na’r llall? <a href="../help.html#lost-sign-in-account">Gweld beth i’w wneud</a> (yn Saesneg).'''
+
+[strings."login.config-failed"]
+hash = "710503f2907a"
+cy = '''Nid oes modd mewngofnodi gan fod gosodiadau’r wefan wedi methu llwytho. Ail-lwythwch y dudalen.'''
+
+[strings."login.continue-to"]
+hash = "ab0b82ed8486"
+cy = '''Mewngofnodwch i barhau i {name}.'''
+
 # == spreadsheets.html (LANG9): the build marks this page; ids spreadsheets.<first words>-<hash> ==
 [strings."spreadsheets.title"]
 hash = "b0b685eb311b"

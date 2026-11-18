@@ -160,7 +160,7 @@ test("a reader with the Welsh choice on the English address of a page with a cop
   const notice = page.locator(".language-notice");
   await expect(notice).toContainText("Mae’r dudalen hon ar gael yn Gymraeg.");
   await expect(notice.getByRole("link", { name: "Darllenwch hi yn Gymraeg" })).toHaveAttribute("href", "cy/get-started.html");
-  await expect(page.locator("a.login-link")).toHaveAttribute("href", "/auth/login.html?next=%2Fcy%2Fget-started.html");
+  await expect(page.locator("a.login-link")).toHaveAttribute("href", "/cy/auth/login.html?next=%2Fcy%2Fget-started.html");
 });
 
 test("a reader with the English choice on a Welsh page gets the English chrome and a link to the English page", async ({ page }) => {

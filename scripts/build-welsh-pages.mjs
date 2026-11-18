@@ -56,6 +56,8 @@ export const WELSH_PAGES = [
   { id: "get-started", en: "get-started.html", cy: "cy/get-started.html", enUrl: `${SITE_ORIGIN}/get-started.html` },
   { id: "tools", en: "tools.html", cy: "cy/tools.html", enUrl: `${SITE_ORIGIN}/tools.html`, marks: "build" },
   { id: "bundles", en: "bundles.html", cy: "cy/bundles.html", enUrl: `${SITE_ORIGIN}/bundles.html`, marks: "build" },
+  // The sign-in page; its OAuth callbacks stay at their registered English addresses.
+  { id: "login", en: "auth/login.html", cy: "cy/auth/login.html", enUrl: `${SITE_ORIGIN}/auth/login.html`, marks: "build" },
   { id: "spreadsheets", en: "spreadsheets.html", cy: "cy/spreadsheets.html", enUrl: `${SITE_ORIGIN}/spreadsheets.html`, marks: "build" },
   { id: "mtd-calendar", en: "mtd-calendar.html", cy: "cy/mtd-calendar.html", enUrl: `${SITE_ORIGIN}/mtd-calendar.html`, marks: "build" },
   { id: "rates", en: "rates.html", cy: "cy/rates.html", enUrl: `${SITE_ORIGIN}/rates.html`, marks: "build" },

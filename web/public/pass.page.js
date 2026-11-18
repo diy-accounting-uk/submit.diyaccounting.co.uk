@@ -420,7 +420,7 @@ async function onRedeemClick() {
     sessionStorage.setItem("postLoginRedirect", window.location.pathname + window.location.search);
     sessionStorage.setItem(ADD_ON_RETURN_KEY, currentCode);
   } catch {}
-  window.location.href = SIGN_IN_PATH;
+  window.location.href = window.signInHref ? window.signInHref(SIGN_IN_PATH, "/") : SIGN_IN_PATH;
 }
 
 function showEntry() {

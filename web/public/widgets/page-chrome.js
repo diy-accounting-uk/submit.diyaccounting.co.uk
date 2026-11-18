@@ -44,12 +44,20 @@
   // The sign-in address that returns to a page: loginPath?next=<the page's path from the site root>.
   // The page defaults to the current one, or its copy in the chosen language; a page under /auth/
   // and the home page need no target.
+  // A reader whose choice is Welsh signs in on the sign-in page's Welsh copy.
   function signInHref(loginPath, returnTo) {
     const target = returnTo === undefined ? copyInChromeLanguage() + window.location.search : returnTo;
-    if (!target.startsWith("/") || target === "/" || /^\/(cy\/)?auth\//.test(target)) return loginPath;
-    return loginPath + "?next=" + encodeURIComponent(target);
+    const signInPath = welshSignInPath(loginPath);
+    if (!target.startsWith("/") || target === "/" || /^\/(cy\/)?auth\//.test(target)) return signInPath;
+    return signInPath + "?next=" + encodeURIComponent(target);
   }
   window.signInHref = signInHref;
+
+  function welshSignInPath(loginPath) {
+    if (chromeLanguage() !== "cy" || (window.WELSH_COPIES || []).indexOf("auth/login.html") === -1) return loginPath;
+    if (/(^|\/)cy\/auth\/login\.html$/.test(loginPath)) return loginPath;
+    return loginPath.replace(/(^|\/)auth\/login\.html$/, "$1cy/auth/login.html");
+  }
 
   // Runs before any page script or widget: a stored sign-in whose id or access token has expired and
   // that has no refresh token to renew it is cleared once, so the page renders signed out and no call

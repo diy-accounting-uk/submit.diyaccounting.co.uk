@@ -388,7 +388,7 @@ async function renderDynamicActivities() {
             path,
             activityItem({
               buttonClass: "btn activity-secondary",
-              href: window.signInHref("auth/login.html", `/${path}`),
+              href: window.signInHref("/auth/login.html", `/${path}`),
               label: window.activityName(activity, language),
             }),
           );
