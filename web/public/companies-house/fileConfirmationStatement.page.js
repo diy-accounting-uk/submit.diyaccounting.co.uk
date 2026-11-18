@@ -845,7 +845,7 @@ function renderRejections(rejections) {
   }
   container.style.display = "block";
   container.className = "outcome outcome--error";
-  container.replaceChildren(...rejections.map((entry) => element("p", {}, `${entry.rejectCode}: ${entry.description}`)));
+  container.replaceChildren(...rejections.map((entry) => element("p", {}, window.companiesHouseRejections.rejectionText(entry))));
 }
 
 // A director and a PSC are separate Companies House registers with no shared identifier, so
@@ -1019,7 +1019,7 @@ async function handlePscVerificationSubmit(index, matches) {
           status: outcome.statusCode,
         }),
       ),
-      ...(outcome.rejections || []).map((rejection) => buildParagraph([`${rejection.rejectCode}: ${rejection.description}`])),
+      ...(outcome.rejections || []).map((rejection) => buildParagraph([window.companiesHouseRejections.rejectionText(rejection)])),
     );
   } catch (error) {
     console.error("PSC verification statement filing failed:", error);

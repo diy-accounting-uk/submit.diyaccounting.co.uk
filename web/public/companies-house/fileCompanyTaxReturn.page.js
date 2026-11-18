@@ -2962,7 +2962,7 @@ function renderCompaniesHouse() {
     );
     errors.style.display = "block";
     errors.replaceChildren(
-      create("ul", {}, ...(rejections ?? []).map((entry) => create("li", {}, `${entry.rejectCode}: ${entry.description}`))),
+      create("ul", {}, ...(rejections ?? []).map((entry) => create("li", {}, window.companiesHouseRejections.rejectionText(entry)))),
       create(
         "p",
         {},

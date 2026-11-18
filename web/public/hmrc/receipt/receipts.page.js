@@ -100,15 +100,17 @@ function filingInProgressEntry(filing) {
   const status = document.createElement("span");
   status.className = "filing-status";
   status.textContent =
-    filing.status === "rejected"
-      ? siteText("receipts.filing-rejected", "Rejected by Companies House")
-      : siteText("receipts.filing-pending", "Waiting for Companies House");
+    filing.status === "rejected" && window.companiesHouseRejections.notReceived(filing.rejections)
+      ? siteText("receipts.filing-not-received", "Not received by Companies House")
+      : filing.status === "rejected"
+        ? siteText("receipts.filing-rejected", "Rejected by Companies House")
+        : siteText("receipts.filing-pending", "Waiting for Companies House");
   entry.append(title, sent, number, ": ", status);
   if (filing.status === "rejected" && filing.rejections?.length) {
     const reasons = document.createElement("ul");
     for (const rejection of filing.rejections) {
       const reason = document.createElement("li");
-      reason.textContent = rejection.description;
+      reason.textContent = window.companiesHouseRejections.rejectionDescription(rejection);
       reasons.appendChild(reason);
     }
     entry.appendChild(reasons);

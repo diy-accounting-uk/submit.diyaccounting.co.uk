@@ -253,7 +253,7 @@ function renderRejections(rejections) {
   container.replaceChildren(
     ...rejections.map((entry) => {
       const paragraph = document.createElement("p");
-      paragraph.textContent = `${entry.rejectCode}: ${entry.description}`;
+      paragraph.textContent = window.companiesHouseRejections.rejectionText(entry);
       return paragraph;
     }),
   );

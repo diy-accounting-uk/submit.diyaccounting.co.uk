@@ -561,7 +561,7 @@ function renderRejections(rejections) {
   }
   container.style.display = "block";
   container.className = "outcome outcome--error";
-  container.replaceChildren(...rejections.map((entry) => paragraph(`${entry.rejectCode}: ${entry.description}`)));
+  container.replaceChildren(...rejections.map((entry) => paragraph(window.companiesHouseRejections.rejectionText(entry))));
 }
 
 function showFilingCopyLink(outcome) {

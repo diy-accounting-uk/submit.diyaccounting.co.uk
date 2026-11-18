@@ -3666,6 +3666,10 @@ cy = '''Gwrthodwyd gan Dŷ’r Cwmnïau'''
 hash = "503ac787bdd5"
 cy = '''Yn aros am Dŷ’r Cwmnïau'''
 
+[strings."receipts.filing-not-received"]
+hash = "9ce2eac27b43"
+cy = '''Ni chafodd Tŷ’r Cwmnïau ef'''
+
 [strings."receipts.in-progress-heading"]
 hash = "fa66b460081d"
 cy = '''Ffeilio i Dŷ’r Cwmnïau sydd heb ei dderbyn eto'''
@@ -5057,6 +5061,10 @@ cy = '''Methu mewnforio {file}: Google Sheet yw hwn. Dewiswch y llyfr DIYA-GL, y
 [strings."widget.books-drive-failed"]
 hash = "032d4a88cf0e"
 cy = '''Methu agor Google Drive: {reason}.'''
+
+[strings."widget.ch-not-received"]
+hash = "aa5eeb3cece5"
+cy = '''Ni chafodd Tŷ’r Cwmnïau y ffeilio hwn. Ni ffeiliwyd dim. Ffeiliwch ef eto.'''
 
 [strings."widget.assist-check"]
 hash = "fd71bbc052b0"
