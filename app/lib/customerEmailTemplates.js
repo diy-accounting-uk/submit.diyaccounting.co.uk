@@ -239,18 +239,19 @@ function receiptRows(receipt, language = "en") {
   return rows;
 }
 
+function chargeSentence(reference, welsh) {
+  if (!reference) return "";
+  if (welsh) return `Dyfynnwch gyfeirnod y tâl ${reference} pan fyddwch yn talu.`;
+  return `Quote charge reference ${reference} when you pay.`;
+}
+
 function receiptNotes(receipt, language = "en") {
   const isVat = !receipt?.kind && Boolean(receipt?.formBundleNumber) && Boolean(receipt?.processingDate);
   if (!isVat) return [];
   const welsh = language === "cy";
   const indicators = welsh ? WELSH_PAYMENT_INDICATORS : PAYMENT_INDICATORS;
   const indicator = Object.hasOwn(indicators, receipt.paymentIndicator) ? indicators[receipt.paymentIndicator] : "";
-  const reference = receipt.chargeRefNumber;
-  const charge = !reference
-    ? ""
-    : welsh
-      ? `Dyfynnwch gyfeirnod y tâl ${reference} pan fyddwch yn talu.`
-      : `Quote charge reference ${reference} when you pay.`;
+  const charge = chargeSentence(receipt.chargeRefNumber, welsh);
   return [[welsh ? WELSH_VAT_RECEIPT_EXPLANATION : VAT_RECEIPT_EXPLANATION, indicator, charge].filter(Boolean).join(" ")];
 }
 

@@ -135,7 +135,6 @@ describe("lib/customerEmailTemplates", () => {
     expect(m.text).toContain("XM002610011594");
     expect(m.text).toContain("cy/hmrc/receipt/receipts.html");
     expect(m.text).not.toContain("Reply to this email");
-
   });
 
   test("submission-receipt is in Welsh when the filing was made with the Welsh choice", () => {
