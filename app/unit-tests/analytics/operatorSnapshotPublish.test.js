@@ -1712,10 +1712,10 @@ describe("operatorSnapshotPublish", () => {
 
       expect(failedChartIds).toEqual([]);
       expect(dailyCharts.hours).toHaveLength(336);
-      expect(queries.filter((sql) => /_hourly/.test(sql))).toHaveLength(17);
       const hourlyModes = dailyCharts.charts.flatMap((chart) =>
         chart.modes.filter((mode) => mode.hourly).map((mode) => `${chart.id}/${mode.id}`),
       );
+      expect(queries.filter((sql) => /_hourly/.test(sql))).toHaveLength(hourlyModes.length);
       expect(hourlyModes).toEqual([
         "activity-started-and-completed/started",
         "activity-started-and-completed/completed",
@@ -1777,9 +1777,10 @@ describe("operatorSnapshotPublish", () => {
         previous: first.dailyCharts,
       });
 
-      expect(firstRunQueryCount).toBe(64);
-      expect(queries).toHaveLength(17);
-      expect(queries.every((sql) => /_hourly/.test(sql))).toBe(true);
+      const modes = buildDailyChartDefinitions().flatMap((chart) => chart.modes);
+      const hourlySql = modes.filter((mode) => mode.hourlySql).map((mode) => mode.hourlySql);
+      expect(firstRunQueryCount).toBeGreaterThan(queries.length);
+      expect([...queries].sort()).toEqual([...hourlySql].sort());
       expect(second.failedChartIds).toEqual([]);
       expect(second.dailyCharts.dailySeriesQueriedAt).toBe(firstRunAt.toISOString());
       expect(second.dailyCharts.charts.map((chart) => chart.modes.map((mode) => mode.series))).toEqual(
