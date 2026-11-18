@@ -11,6 +11,9 @@ const siteText = (id, english, values) =>
     ? window.siteText(id, english, values)
     : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
 
+const unknownError = () => siteText("bundles.unknown-error", "Unknown error");
+const manageSubscriptionText = () => siteText("bundles.manage-subscription", "Manage Subscription");
+
 // The Welsh of each listed bundle's catalogue description, keyed by the catalogue's English. A
 // description the catalogue has since changed is not in this map and shows as the catalogue writes it.
 const BUNDLE_DESCRIPTIONS = {
@@ -199,7 +202,7 @@ const markToRequest = (btn, message = siteText("bundles.request-bundle", "Reques
   btn.classList.remove("btn-ok");
 };
 
-const markGranted = (btn, message = "Added ✓") => {
+const markGranted = (btn, message = siteText("bundles.added", "Added ✓")) => {
   btn.textContent = message;
   btn.disabled = true;
   btn.classList.add("btn-ok");
@@ -222,7 +225,7 @@ async function requestBundle(bundleId, bundleName, qualifiers = {}) {
   const idToken = getIdToken();
 
   // Show status immediately before making the request
-  showStatus(`Requesting bundle "${bundleName}"...`, "info");
+  showStatus(siteText("bundles.requesting-bundle", "Requesting bundle “{name}”...", { name: bundleName }), "info");
 
   try {
     const r = await window.fetchWithIdToken("/api/v1/bundle", {
@@ -236,7 +239,7 @@ async function requestBundle(bundleId, bundleName, qualifiers = {}) {
 
     if (r.ok) {
       if (r.status === 202 || body.status === "granted" || body.status === "already_granted") {
-        showStatus(`Bundle "${bundleName}" added successfully.`, "success");
+        showStatus(siteText("bundles.bundle-added", "Bundle “{name}” added successfully.", { name: bundleName }), "success");
         // Update local state and write through to persistent cache
         if (!hasBundle(__userBundles, bundleId)) {
           __userBundles.push(bundleId);
@@ -262,13 +265,16 @@ async function requestBundle(bundleId, bundleName, qualifiers = {}) {
         window.dispatchEvent(new CustomEvent("bundle-changed"));
         return true;
       } else {
-        showStatus(`Bundle ${bundleId} request failed: unexpected response`, "error");
+        showStatus(siteText("bundles.request-unexpected", "Bundle {id} request failed: unexpected response", { id: bundleId }), "error");
       }
     } else {
-      showStatus(`Failed to request bundle: ${body.error || "Unknown error"}`, "error");
+      showStatus(
+        siteText("bundles.request-failed", "Failed to request bundle: {reason}", { reason: body.error || unknownError() }),
+        "error",
+      );
     }
   } catch (err) {
-    showStatus(`Failed to request bundle. Error: ${err?.message || err}.`, "error");
+    showStatus(siteText("bundles.request-error", "Failed to request bundle. Error: {reason}.", { reason: err?.message || err }), "error");
   }
   return false;
 }
@@ -331,8 +337,12 @@ const cardEl = (b) => {
   const allocation = b.allocation || "";
   const manageCard = () =>
     serviceItemEl(
-      bundleButton("btn btn-outline service-btn", { "data-manage-subscription": "true" }, `Manage Subscription — ${name}`),
-      noteEl("ok", "Active subscription"),
+      bundleButton(
+        "btn btn-outline service-btn",
+        { "data-manage-subscription": "true" },
+        siteText("bundles.manage-subscription-name", "Manage Subscription — {name}", { name }),
+      ),
+      noteEl("ok", siteText("bundles.active-subscription", "Active subscription")),
     );
   const hasActiveSubscription = () => __fullBundleData.some((fb) => fb.bundleId === b.id && fb.allocated && fb.stripeSubscriptionId);
   const holdsThisBundle = () => __fullBundleData.some((fb) => fb.bundleId === b.id && fb.allocated);
@@ -348,9 +358,14 @@ const cardEl = (b) => {
   };
   const heldCard = () => {
     if (hasActiveSubscription()) return manageCard();
-    if (holdsThisBundle()) return serviceItemEl(domEl("strong", {}, name), noteEl("ok", "You hold this bundle"));
+    if (holdsThisBundle())
+      return serviceItemEl(domEl("strong", {}, name), noteEl("ok", siteText("bundles.you-hold", "You hold this bundle")));
     const holderName = holderIncludingThis();
-    if (holderName) return serviceItemEl(domEl("strong", {}, name), noteEl("ok", `Included in ${holderName}`));
+    if (holderName)
+      return serviceItemEl(
+        domEl("strong", {}, name),
+        noteEl("ok", siteText("bundles.included-in", "Included in {name}", { name: holderName })),
+      );
     return null;
   };
 
@@ -496,7 +511,7 @@ document.addEventListener("click", async (e) => {
 
   const success = await requestBundle(bundleId, bundleName, qualifiers);
   if (success) {
-    markGranted(btn, `Added ✓ ${bundleName}`);
+    markGranted(btn, siteText("bundles.added-name", "Added ✓ {name}", { name: bundleName }));
   } else {
     btn.textContent = original;
     btn.disabled = false;
@@ -538,12 +553,15 @@ document.addEventListener("click", async (e) => {
     if (response.ok && body.checkoutUrl) {
       window.location.href = body.checkoutUrl;
     } else {
-      showStatus(`Failed to start checkout: ${body.error || body.message || "Unknown error"}`, "error");
+      showStatus(
+        siteText("bundles.checkout-failed", "Failed to start checkout: {reason}", { reason: body.error || body.message || unknownError() }),
+        "error",
+      );
       btn.textContent = original;
       btn.disabled = false;
     }
   } catch (err) {
-    showStatus(`Failed to start checkout: ${err?.message || err}`, "error");
+    showStatus(siteText("bundles.checkout-failed", "Failed to start checkout: {reason}", { reason: err?.message || err }), "error");
     btn.textContent = original;
     btn.disabled = false;
   }
@@ -556,11 +574,11 @@ document.addEventListener("click", async (e) => {
 
   const idToken = getIdToken();
   if (!idToken) {
-    showStatus("Please sign in first.", "warning");
+    showStatus(siteText("bundles.sign-in-first", "Please sign in first."), "warning");
     return;
   }
 
-  btn.textContent = "Loading portal...";
+  btn.textContent = siteText("bundles.loading-portal", "Loading portal...");
   btn.disabled = true;
 
   try {
@@ -572,13 +590,18 @@ document.addEventListener("click", async (e) => {
     if (response.ok && body.portalUrl) {
       window.location.href = body.portalUrl;
     } else {
-      showStatus(`Failed to open subscription portal: ${body.error || body.message || "Unknown error"}`, "error");
-      btn.textContent = "Manage Subscription";
+      showStatus(
+        siteText("bundles.portal-failed", "Failed to open subscription portal: {reason}", {
+          reason: body.error || body.message || unknownError(),
+        }),
+        "error",
+      );
+      btn.textContent = manageSubscriptionText();
       btn.disabled = false;
     }
   } catch (err) {
-    showStatus(`Failed to open subscription portal: ${err?.message || err}`, "error");
-    btn.textContent = "Manage Subscription";
+    showStatus(siteText("bundles.portal-failed", "Failed to open subscription portal: {reason}", { reason: err?.message || err }), "error");
+    btn.textContent = manageSubscriptionText();
     btn.disabled = false;
   }
 });
@@ -592,7 +615,7 @@ function updateBundleStatus() {
     const id = btn.getAttribute("data-bundle-id");
     const name = btn.getAttribute("data-bundle-name") || id;
     if (hasBundle(bundles, id)) {
-      markGranted(btn, `Added ✓ ${name}`);
+      markGranted(btn, siteText("bundles.added-name", "Added ✓ {name}", { name }));
     } else if (!btn.hasAttribute("data-disabled-reason")) {
       // Re-enable buttons that are not structurally disabled (on-pass/on-subscription/capacity)
       markToRequest(btn, siteText("bundles.request", "Request {name}", { name }));
@@ -610,7 +633,7 @@ function isListedInCurrentEnvironment(b) {
 function renderCatalogueBundles() {
   const container = document.getElementById("catalogBundles");
   if (!__catalogueData || !__catalogueData.bundles) {
-    container.replaceChildren(messageEl("Catalog unavailable."));
+    container.replaceChildren(messageEl(siteText("bundles.catalog-unavailable", "Catalog unavailable.")));
     return;
   }
   const cards = (__catalogueData.bundles || [])
@@ -631,7 +654,7 @@ function renderCatalogueBundles() {
     .filter(isListedInCurrentEnvironment)
     .sort((a, b) => (a.allocation === "on-request") - (b.allocation === "on-request"))
     .map(cardEl);
-  container.replaceChildren(...(cards.length > 0 ? cards : [messageEl("No bundles available.")]));
+  container.replaceChildren(...(cards.length > 0 ? cards : [messageEl(siteText("bundles.no-bundles", "No bundles available."))]));
   updateBundleStatus();
 }
 
@@ -662,7 +685,7 @@ const __catalogueReady = (async function () {
       init: headers ? { headers } : undefined,
     });
     if (!__catalogueData || !__catalogueData.bundles) {
-      container.replaceChildren(messageEl("Catalog unavailable."));
+      container.replaceChildren(messageEl(siteText("bundles.catalog-unavailable", "Catalog unavailable.")));
       __catalogueSettled = true;
       renderCurrentBundles();
       releaseReservedHeight();
@@ -683,7 +706,7 @@ const __catalogueReady = (async function () {
     try {
       console.error("[bundles.html] Catalog bootstrap error:", err && (err.stack || err.message || err));
     } catch {}
-    container.replaceChildren(messageEl("Failed to load catalog."));
+    container.replaceChildren(messageEl(siteText("bundles.catalog-failed", "Failed to load catalog.")));
     __catalogueSettled = true;
     renderCurrentBundles();
     releaseReservedHeight();
@@ -702,8 +725,8 @@ function passSummarySentence(passSummary) {
 // configuration sets. A group with no row has no heading.
 function groupedBundleRows(rows) {
   const groups = [
-    ["From your plan or passes", rows.filter((entry) => !entry.configDriven)],
-    ["Set for your account", rows.filter((entry) => entry.configDriven)],
+    [siteText("bundles.group-plan-or-passes", "From your plan or passes"), rows.filter((entry) => !entry.configDriven)],
+    [siteText("bundles.group-set-for-account", "Set for your account"), rows.filter((entry) => entry.configDriven)],
   ];
   return groups.flatMap(([title, members]) =>
     members.length === 0 ? [] : [domEl("h3", { class: "bundle-group-heading" }, title), ...members.map((entry) => entry.row)],
@@ -732,15 +755,19 @@ function renderCurrentBundles() {
     // Build info fragments
     const fragments = [];
     if (tokensGranted !== undefined) {
-      fragments.push(`${tokensGranted} token${tokensGranted !== 1 ? "s" : ""} allocated`);
+      fragments.push(
+        tokensGranted === 1
+          ? siteText("bundles.held-one-token", "1 token allocated")
+          : siteText("bundles.held-tokens", "{count} tokens allocated", { count: tokensGranted }),
+      );
     }
     if (tokensRemaining !== undefined) {
-      fragments.push(`${tokensRemaining} remaining`);
+      fragments.push(siteText("bundles.held-remaining", "{count} remaining", { count: tokensRemaining }));
     }
     if (tokenResetAt) {
       const resetDate = new Date(tokenResetAt);
       if (!isNaN(resetDate.getTime())) {
-        fragments.push(`refreshes ${resetDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`);
+        fragments.push(siteText("bundles.held-refreshes", "refreshes {date}", { date: dateInReaderLanguage(resetDate) }));
       }
     }
     const expiryStr = fullData?.expiry;
@@ -748,9 +775,13 @@ function renderCurrentBundles() {
       const expiryDate = new Date(expiryStr);
       if (!isNaN(expiryDate.getTime())) {
         const shortLived = /^P[01]D$/.test(catBundle?.timeout || "");
-        const day = expiryDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+        const day = dateInReaderLanguage(expiryDate);
         const time = expiryDate.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZoneName: "short" });
-        fragments.push(shortLived ? `expires ${day} at ${time}` : `expires ${day}`);
+        fragments.push(
+          shortLived
+            ? siteText("bundles.held-expires-at", "expires {date} at {time}", { date: day, time })
+            : siteText("bundles.held-expires", "expires {date}", { date: day }),
+        );
       }
     }
 
@@ -765,7 +796,7 @@ function renderCurrentBundles() {
       ? domEl(
           "button",
           { "type": "button", "class": "btn btn-outline bundle-row-btn", "data-manage-subscription": "true", "data-bundle-id": bundleId },
-          "Manage Subscription",
+          manageSubscriptionText(),
         )
       : null;
 
@@ -890,10 +921,13 @@ async function withdrawAffiliate() {
     document.getElementById("affiliateWithdrawConfirm")?.remove();
     renderCurrentBundles();
     renderAffiliateApplyState();
-    showStatus("Your affiliate status is removed.", "success");
+    showStatus(siteText("bundles.affiliate-removed", "Your affiliate status is removed."), "success");
   } catch (err) {
     if (yes) yes.disabled = false;
-    showStatus(`Your affiliate status was not removed (${err.message})`, "error");
+    showStatus(
+      siteText("bundles.affiliate-not-removed", "Your affiliate status was not removed ({message})", { message: err.message }),
+      "error",
+    );
   }
 }
 
@@ -928,7 +962,7 @@ async function removeBundle(bundleId, fireAndForget = true) {
   const idToken = getIdToken();
 
   // Show status immediately before making the request
-  showStatus(`Removing bundle "${bundleName}"...`, "info");
+  showStatus(siteText("bundles.removing", "Removing bundle “{name}”...", { name: bundleName }), "info");
 
   try {
     const response = await window.fetchWithIdToken("/api/v1/bundle", {
@@ -959,12 +993,15 @@ async function removeBundle(bundleId, fireAndForget = true) {
       updateBundleStatus(); // Update the request buttons
       // Notify developer mode toggle to refresh
       window.dispatchEvent(new CustomEvent("bundle-changed"));
-      showStatus(`Bundle "${bundleName}" removed successfully.`, "success");
+      showStatus(siteText("bundles.removed", "Bundle “{name}” removed successfully.", { name: bundleName }), "success");
     } else {
-      showStatus(`Failed to remove bundle: ${result.error || "Unknown error"}`, "error");
+      showStatus(
+        siteText("bundles.remove-failed", "Failed to remove bundle: {reason}", { reason: result.error || unknownError() }),
+        "error",
+      );
     }
   } catch (error) {
-    showStatus("Failed to remove bundle. Please try again.", "error");
+    showStatus(siteText("bundles.remove-error", "Failed to remove bundle. Please try again."), "error");
     console.error("Remove bundle error:", error);
   }
 }
@@ -993,7 +1030,7 @@ async function initFeedbackEngagementSection() {
   if (joinBtn) {
     // If already registered, update button state
     if (alreadyRegistered) {
-      joinBtn.textContent = "Thanks! We'll be in touch soon.";
+      joinBtn.textContent = siteText("bundles.feedback-thanks", "Thanks! We'll be in touch soon.");
       joinBtn.classList.add("btn-ok");
       joinBtn.disabled = true;
       return;
@@ -1001,22 +1038,22 @@ async function initFeedbackEngagementSection() {
 
     joinBtn.addEventListener("click", async function () {
       joinBtn.disabled = true;
-      joinBtn.textContent = "Sending...";
+      joinBtn.textContent = siteText("bundles.feedback-sending", "Sending...");
       try {
         const response = await window.fetchWithIdToken("/api/v1/interest", { method: "POST" });
         if (response.ok) {
-          joinBtn.textContent = "Thanks! We'll be in touch soon.";
+          joinBtn.textContent = siteText("bundles.feedback-thanks", "Thanks! We'll be in touch soon.");
           joinBtn.classList.add("btn-ok");
           try {
             localStorage.setItem("feedbackEngagementRegistered", "true");
           } catch {}
         } else {
-          joinBtn.textContent = "Try again";
+          joinBtn.textContent = siteText("bundles.feedback-try-again", "Try again");
           joinBtn.disabled = false;
         }
       } catch (err) {
         console.error("Feedback engagement failed:", err);
-        joinBtn.textContent = "Try again";
+        joinBtn.textContent = siteText("bundles.feedback-try-again", "Try again");
         joinBtn.disabled = false;
       }
     });
@@ -1328,8 +1365,11 @@ async function fetchMyGeneratedPasses(append) {
               "span",
               { class: "pass-code" },
               data.totals.countedPasses === data.totals.passes
-                ? `All ${data.totals.passes} passes`
-                : `${data.totals.countedPasses} of ${data.totals.passes} passes (the others are under 3 new accounts together)`,
+                ? siteText("bundles.totals-all", "All {count} passes", { count: data.totals.passes })
+                : siteText("bundles.totals-some", "{counted} of {count} passes (the others are under 3 new accounts together)", {
+                    counted: data.totals.countedPasses,
+                    count: data.totals.passes,
+                  }),
             ),
           ),
           passFiguresEl(data.totals, "pass-figures"),
@@ -1388,11 +1428,11 @@ document.addEventListener("click", async (e) => {
       body: JSON.stringify({ code: btn.getAttribute("data-pass-code"), raiseBy: RELEASE_RAISE_BY }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    showStatus(`Pass ${btn.getAttribute("data-pass-code")} released`, "success");
+    showStatus(siteText("bundles.pass-released", "Pass {code} released", { code: btn.getAttribute("data-pass-code") }), "success");
     fetchMyGeneratedPasses(false);
   } catch (err) {
     btn.disabled = false;
-    showStatus(`The pass was not released (${err.message})`, "error");
+    showStatus(siteText("bundles.pass-not-released", "The pass was not released ({message})", { message: err.message }), "error");
   }
 });
 
@@ -1503,13 +1543,18 @@ async function deletePasses(codes) {
     const results = body.results || [];
     const deleted = results.filter((result) => result.status === "deleted").length;
     const skipped = results.length - deleted;
-    const skippedText = skipped > 0 ? `, ${skipped} not deleted (already deleted or not yours)` : "";
-    showStatus(`Deleted ${deleted} ${deleted === 1 ? "pass" : "passes"}${skippedText}`, deleted > 0 ? "success" : "warning");
+    const deletedText =
+      deleted === 1
+        ? siteText("bundles.deleted-one", "Deleted 1 pass")
+        : siteText("bundles.deleted-many", "Deleted {count} passes", { count: deleted });
+    const skippedText =
+      skipped > 0 ? siteText("bundles.deleted-skipped", ", {count} not deleted (already deleted or not yours)", { count: skipped }) : "";
+    showStatus(`${deletedText}${skippedText}`, deleted > 0 ? "success" : "warning");
     document.getElementById("passDeleteConfirm")?.remove();
     await fetchMyGeneratedPasses(false);
   } catch (err) {
     if (yes) yes.disabled = false;
-    showStatus(`The passes were not deleted (${err.message})`, "error");
+    showStatus(siteText("bundles.passes-not-deleted", "The passes were not deleted ({message})", { message: err.message }), "error");
   }
 }
 
@@ -1605,7 +1650,7 @@ document.getElementById("affiliateApplyBtn")?.addEventListener("click", async ()
     if (typeof body.url !== "string" || !body.url.startsWith("https://")) throw new Error("Stripe sent no onboarding link");
     window.location.assign(body.url);
   } catch (err) {
-    showStatus(`The application was not started (${err.message})`, "error");
+    showStatus(siteText("bundles.apply-not-started", "The application was not started ({message})", { message: err.message }), "error");
     button.disabled = false;
   }
 });
@@ -1625,11 +1670,16 @@ function showAffiliate(affiliate) {
   document.getElementById("affiliateTier").value = affiliate.tier;
   document.getElementById("affiliateState").value = affiliate.state;
   document.getElementById("affiliateResult").textContent =
-    `Tier ${affiliate.tier}, state ${affiliate.state}` +
-    (affiliate.approvedAt ? `, approved ${affiliate.approvedAt}` : "") +
+    siteText("bundles.affiliate-tier-state", "Tier {tier}, state {state}", { tier: affiliate.tier, state: affiliate.state }) +
+    (affiliate.approvedAt ? siteText("bundles.affiliate-approved-at", ", approved {date}", { date: affiliate.approvedAt }) : "") +
     (affiliate.hasConnectAccount
-      ? `, Stripe details ${affiliate.detailsSubmitted ? "submitted" : "not submitted"}, transfers ${affiliate.transfersActive ? "active" : "not active"}`
-      : ", no Stripe account");
+      ? (affiliate.detailsSubmitted
+          ? siteText("bundles.affiliate-details-submitted", ", Stripe details submitted")
+          : siteText("bundles.affiliate-details-not-submitted", ", Stripe details not submitted")) +
+        (affiliate.transfersActive
+          ? siteText("bundles.affiliate-transfers-active", ", transfers active")
+          : siteText("bundles.affiliate-transfers-not-active", ", transfers not active"))
+      : siteText("bundles.affiliate-no-stripe", ", no Stripe account"));
 }
 
 document.getElementById("affiliateLookupBtn")?.addEventListener("click", async () => {
@@ -1638,13 +1688,13 @@ document.getElementById("affiliateLookupBtn")?.addEventListener("click", async (
   try {
     const res = await window.fetchWithIdToken(`/api/v1/affiliate?referrerHash=${encodeURIComponent(referrerHash)}`);
     if (res.status === 404) {
-      result.textContent = "No affiliate for that referrer";
+      result.textContent = siteText("bundles.affiliate-none-for-referrer", "No affiliate for that referrer");
       return;
     }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     showAffiliate(await res.json());
   } catch (err) {
-    result.textContent = `The lookup failed (${err.message})`;
+    result.textContent = siteText("bundles.affiliate-lookup-failed", "The lookup failed ({message})", { message: err.message });
   }
 });
 
@@ -1665,9 +1715,9 @@ document.getElementById("affiliateSaveBtn")?.addEventListener("click", async () 
       throw new Error(body.message || `HTTP ${res.status}`);
     }
     showAffiliate(await res.json());
-    showStatus("Affiliate saved", "success");
+    showStatus(siteText("bundles.affiliate-saved", "Affiliate saved"), "success");
   } catch (err) {
-    showStatus(`The affiliate was not saved (${err.message})`, "error");
+    showStatus(siteText("bundles.affiliate-not-saved", "The affiliate was not saved ({message})", { message: err.message }), "error");
   } finally {
     saveButton.disabled = false;
   }
@@ -1696,7 +1746,7 @@ function initPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const checkoutResult = urlParams.get("checkout");
   if (checkoutResult === "success") {
-    showStatus("Subscription activated! Your bundle has been added.", "success");
+    showStatus(siteText("bundles.checkout-success", "Subscription activated! Your bundle has been added."), "success");
     const sessionId = urlParams.get("session_id");
     // Clear URL params without reload
     const url = new URL(window.location);
@@ -1746,7 +1796,7 @@ function initPage() {
       setTimeout(refreshBundles, 3000);
     });
   } else if (checkoutResult === "canceled") {
-    showStatus("Checkout was canceled. You can try again when you're ready.", "info");
+    showStatus(siteText("bundles.checkout-canceled", "Checkout was canceled. You can try again when you're ready."), "info");
     const url = new URL(window.location);
     url.searchParams.delete("checkout");
     window.history.replaceState({}, "", url);

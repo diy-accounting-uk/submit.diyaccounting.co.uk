@@ -100,7 +100,7 @@ const GENERATED_PASSES = {
   },
 };
 
-async function serveSite(page, apiBodies) {
+async function serveSite(page, apiBodies, apiStatus = {}) {
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     if (url.hostname !== "localhost") {
@@ -109,7 +109,8 @@ async function serveSite(page, apiBodies) {
     }
     if (url.pathname.startsWith("/api/")) {
       const body = Object.entries(apiBodies).find(([prefix]) => url.pathname.startsWith(prefix))?.[1] ?? {};
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+      const status = Object.entries(apiStatus).find(([prefix]) => url.pathname.startsWith(prefix))?.[1] ?? 200;
+      await route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
       return;
     }
     const filePath = path.join(PUBLIC_ROOT, decodeURIComponent(url.pathname));
@@ -180,6 +181,7 @@ test.describe("Welsh pages in a long-used account's states", () => {
     await expect(button).toHaveText("Dileu’r rhai a ddewiswyd");
     await page.locator("#generatedPassesList .pass-select").first().check();
     await expect(button).toHaveText("Dileu’r rhai a ddewiswyd (1)");
+    await expect(page.locator("#generatedPassesList")).toContainText("Pob un o’r 1 tocyn");
     const card = page.locator("#generatedPassesList [data-pass-code]").first();
     await expect(card.locator('[data-figure="filed"] dt')).toHaveText("Wedi ffeilio");
     await expect(card.locator('[data-figure="last-used"] dd')).toHaveText("28 Hyd 2026");
@@ -205,4 +207,69 @@ test.describe("Welsh pages in a long-used account's states", () => {
       expect(text).not.toMatch(/\bFiled\b/);
     });
   }
+
+  for (const [result, welsh, english] of [
+    ["canceled", "Cafodd y taliad ei ganslo. Gallwch roi cynnig arall arni pan fyddwch yn barod.", "Checkout was canceled"],
+    ["success", "Mae’r tanysgrifiad yn weithredol! Mae eich Bundle wedi’i ychwanegu.", "Subscription activated"],
+  ]) {
+    test(`a ${result} checkout's status reads in Welsh`, async ({ page }) => {
+      await serveSite(page, { "/api/v1/bundle": { bundles: [] } });
+      await page.goto(`http://localhost:3000/cy/bundles.html?checkout=${result}`, { waitUntil: "load" });
+      const status = page.locator("#statusMessagesContainer");
+      await expect(status).toContainText(welsh);
+      await expect(status).not.toContainText(english);
+    });
+  }
+
+  test("the feedback button's sending, thanks and try-again states read in Welsh", async ({ page }) => {
+    await serveSite(page, { "/api/v1/bundle": { bundles: [] } }, { "/api/v1/interest": 500 });
+    await page.route("**/lib/feature-flags.js", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/javascript",
+        body: 'window.featureFlags = { getFeature: async () => ({ enabled: true, message: "Neges" }) };',
+      }),
+    );
+    await page.goto("http://localhost:3000/cy/bundles.html", { waitUntil: "load" });
+    const join = page.locator("#feedbackEngagementBtn");
+    await expect(join).toBeVisible();
+    await join.click();
+    await expect(join).toHaveText("Rhowch gynnig arall arni");
+    await page.unroute("**/*");
+    await serveSite(page, { "/api/v1/bundle": { bundles: [] } });
+    await page.route("**/lib/feature-flags.js", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/javascript",
+        body: 'window.featureFlags = { getFeature: async () => ({ enabled: true, message: "Neges" }) };',
+      }),
+    );
+    await join.click();
+    await expect(join).toHaveText("Diolch! Byddwn mewn cysylltiad cyn bo hir.");
+  });
+
+  test("a held subscription's info line and Manage button read in Welsh", async ({ page }) => {
+    await serveSite(page, {
+      "/api/v1/bundle": {
+        bundles: [
+          {
+            bundleId: "resident-vat",
+            allocated: true,
+            tokensGranted: 100,
+            tokensRemaining: 90,
+            tokenResetAt: "2026-12-01T00:00:00.000Z",
+            stripeSubscriptionId: "sub_1",
+          },
+        ],
+      },
+    });
+    await page.goto("http://localhost:3000/cy/bundles.html", { waitUntil: "load" });
+    const current = page.locator("#currentBundles");
+    await expect(current).toContainText("100 credyd wedi’u dyrannu · 90 ar ôl · yn adnewyddu 1 Rhagfyr 2026");
+    await expect(current.locator("[data-manage-subscription]")).toHaveText("Rheoli’r tanysgrifiad");
+    await expect(current).toContainText("O’ch cynllun neu’ch tocynnau");
+    for (const english of ["tokens allocated", "remaining", "refreshes", "Manage Subscription", "From your plan"]) {
+      await expect(current).not.toContainText(english);
+    }
+  });
 });

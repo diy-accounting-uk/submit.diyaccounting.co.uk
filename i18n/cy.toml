@@ -982,6 +982,242 @@ cy = '''Dileu {count} tocyn? Mae’r dolenni’n stopio gweithio ar unwaith. Mae
 hash = "7b05a8e35af9"
 cy = '''Ydw, dileu'''
 
+[strings."bundles.unknown-error"]
+hash = "27c2ccd962c2"
+cy = '''Gwall anhysbys'''
+
+[strings."bundles.manage-subscription"]
+hash = "cbc4ef9225a0"
+cy = '''Rheoli’r tanysgrifiad'''
+
+[strings."bundles.added"]
+hash = "91cf2b03dd54"
+cy = '''Wedi’i ychwanegu ✓'''
+
+[strings."bundles.requesting-bundle"]
+hash = "d84abce346aa"
+cy = '''Yn gofyn am y Bundle “{name}”...'''
+
+[strings."bundles.bundle-added"]
+hash = "e65e251412f1"
+cy = '''Ychwanegwyd y Bundle “{name}”.'''
+
+[strings."bundles.request-unexpected"]
+hash = "dd9ee29dbb74"
+cy = '''Methodd y cais am y Bundle {id}: ateb annisgwyl'''
+
+[strings."bundles.request-failed"]
+hash = "e4224410a7ab"
+cy = '''Methu gofyn am y Bundle: {reason}'''
+
+[strings."bundles.request-error"]
+hash = "50844a848a25"
+cy = '''Methu gofyn am y Bundle. Gwall: {reason}.'''
+
+[strings."bundles.manage-subscription-name"]
+hash = "b2d0023a7a80"
+cy = '''Rheoli’r tanysgrifiad — {name}'''
+
+[strings."bundles.active-subscription"]
+hash = "0ea27e06941a"
+cy = '''Tanysgrifiad gweithredol'''
+
+[strings."bundles.you-hold"]
+hash = "5f312f8f8f6c"
+cy = '''Mae’r Bundle hwn gennych'''
+
+[strings."bundles.included-in"]
+hash = "7c0c0e5911a9"
+cy = '''Wedi’i gynnwys yn {name}'''
+
+[strings."bundles.added-name"]
+hash = "020171449da6"
+cy = '''Wedi’i ychwanegu ✓ {name}'''
+
+[strings."bundles.checkout-failed"]
+hash = "061fa343146b"
+cy = '''Methu dechrau’r taliad: {reason}'''
+
+[strings."bundles.sign-in-first"]
+hash = "708821b693b0"
+cy = '''Mewngofnodwch yn gyntaf.'''
+
+[strings."bundles.loading-portal"]
+hash = "187be9a5769b"
+cy = '''Yn llwytho’r porth...'''
+
+[strings."bundles.portal-failed"]
+hash = "6a4036be83f6"
+cy = '''Methu agor porth y tanysgrifiad: {reason}'''
+
+[strings."bundles.catalog-unavailable"]
+hash = "d5d2f25c32e4"
+cy = '''Nid yw’r catalog ar gael.'''
+
+[strings."bundles.no-bundles"]
+hash = "50d6e49caa89"
+cy = '''Nid oes Bundles ar gael.'''
+
+[strings."bundles.catalog-failed"]
+hash = "904e7afe0b8c"
+cy = '''Methu llwytho’r catalog.'''
+
+[strings."bundles.group-plan-or-passes"]
+hash = "562b98027b99"
+cy = '''O’ch cynllun neu’ch tocynnau'''
+
+[strings."bundles.group-set-for-account"]
+hash = "7c4ccf31d881"
+cy = '''Wedi’u gosod ar gyfer eich cyfrif'''
+
+[strings."bundles.affiliate-removed"]
+hash = "35779f77dc84"
+cy = '''Mae eich statws partner cyswllt wedi’i ddileu.'''
+
+[strings."bundles.affiliate-not-removed"]
+hash = "77fa54439fb0"
+cy = '''Ni ddilëwyd eich statws partner cyswllt ({message})'''
+
+[strings."bundles.removing"]
+hash = "36719641c2d4"
+cy = '''Yn dileu’r Bundle “{name}”...'''
+
+[strings."bundles.removed"]
+hash = "6615374538d2"
+cy = '''Dilëwyd y Bundle “{name}”.'''
+
+[strings."bundles.remove-failed"]
+hash = "f94759830a7a"
+cy = '''Methu dileu’r Bundle: {reason}'''
+
+[strings."bundles.remove-error"]
+hash = "52fce1817e47"
+cy = '''Methu dileu’r Bundle. Rhowch gynnig arall arni.'''
+
+[strings."bundles.feedback-thanks"]
+hash = "6744fff5488f"
+cy = '''Diolch! Byddwn mewn cysylltiad cyn bo hir.'''
+
+[strings."bundles.feedback-sending"]
+hash = "286a3af7348e"
+cy = '''Yn anfon...'''
+
+[strings."bundles.feedback-try-again"]
+hash = "d8b8392e2c54"
+cy = '''Rhowch gynnig arall arni'''
+
+[strings."bundles.totals-all"]
+hash = "75cbfbf46f20"
+cy = '''Pob un o’r {count} tocyn'''
+
+[strings."bundles.totals-some"]
+hash = "9137ef21f427"
+cy = '''{counted} o {count} tocyn (mae gan y lleill lai na 3 chyfrif newydd rhyngddynt)'''
+
+[strings."bundles.pass-released"]
+hash = "26762f971232"
+cy = '''Rhyddhawyd tocyn {code}'''
+
+[strings."bundles.pass-not-released"]
+hash = "1c332c82cc49"
+cy = '''Ni ryddhawyd y tocyn ({message})'''
+
+[strings."bundles.deleted-one"]
+hash = "4b572b57b992"
+cy = '''Dilëwyd 1 tocyn'''
+
+[strings."bundles.deleted-many"]
+hash = "df55b2ee99dc"
+cy = '''Dilëwyd {count} tocyn'''
+
+[strings."bundles.deleted-skipped"]
+hash = "9c35d6210931"
+cy = ''', {count} heb eu dileu (wedi’u dileu eisoes neu nid chi biau nhw)'''
+
+[strings."bundles.passes-not-deleted"]
+hash = "b951c93353b2"
+cy = '''Ni ddilëwyd y tocynnau ({message})'''
+
+[strings."bundles.apply-not-started"]
+hash = "773c7c272f6b"
+cy = '''Ni ddechreuwyd y cais ({message})'''
+
+[strings."bundles.affiliate-tier-state"]
+hash = "aeb2b7022ff6"
+cy = '''Haen {tier}, statws {state}'''
+
+[strings."bundles.affiliate-approved-at"]
+hash = "0fe00a4545e5"
+cy = ''', cymeradwywyd {date}'''
+
+[strings."bundles.affiliate-details-submitted"]
+hash = "d2581ed1c197"
+cy = ''', manylion Stripe wedi’u cyflwyno'''
+
+[strings."bundles.affiliate-details-not-submitted"]
+hash = "fad0083c86b7"
+cy = ''', manylion Stripe heb eu cyflwyno'''
+
+[strings."bundles.affiliate-transfers-active"]
+hash = "9b33c15e0647"
+cy = ''', trosglwyddiadau’n weithredol'''
+
+[strings."bundles.affiliate-transfers-not-active"]
+hash = "16ebc870f510"
+cy = ''', trosglwyddiadau ddim yn weithredol'''
+
+[strings."bundles.affiliate-no-stripe"]
+hash = "0639760ce8d3"
+cy = ''', dim cyfrif Stripe'''
+
+[strings."bundles.affiliate-none-for-referrer"]
+hash = "1810c159cc06"
+cy = '''Dim partner cyswllt ar gyfer yr atgyfeiriwr hwnnw'''
+
+[strings."bundles.affiliate-lookup-failed"]
+hash = "f57f3d843d2e"
+cy = '''Methodd y chwilio ({message})'''
+
+[strings."bundles.affiliate-saved"]
+hash = "433d20cf43a7"
+cy = '''Cadwyd y partner cyswllt'''
+
+[strings."bundles.affiliate-not-saved"]
+hash = "46a0dd192876"
+cy = '''Ni chadwyd y partner cyswllt ({message})'''
+
+[strings."bundles.checkout-success"]
+hash = "28807d88cd93"
+cy = '''Mae’r tanysgrifiad yn weithredol! Mae eich Bundle wedi’i ychwanegu.'''
+
+[strings."bundles.checkout-canceled"]
+hash = "3211ffbc2457"
+cy = '''Cafodd y taliad ei ganslo. Gallwch roi cynnig arall arni pan fyddwch yn barod.'''
+
+[strings."bundles.held-one-token"]
+hash = "2d26abd6a4cb"
+cy = '''1 credyd wedi’i ddyrannu'''
+
+[strings."bundles.held-tokens"]
+hash = "ab5b9e8bc3dc"
+cy = '''{count} credyd wedi’u dyrannu'''
+
+[strings."bundles.held-remaining"]
+hash = "ad9afa16db65"
+cy = '''{count} ar ôl'''
+
+[strings."bundles.held-refreshes"]
+hash = "da1f1820b461"
+cy = '''yn adnewyddu {date}'''
+
+[strings."bundles.held-expires-at"]
+hash = "b3de4f29c805"
+cy = '''yn dod i ben {date} am {time}'''
+
+[strings."bundles.held-expires"]
+hash = "60c4f38a0460"
+cy = '''yn dod i ben {date}'''
+
 [strings."login.title"]
 hash = "c0e2df789143"
 cy = '''Mewngofnodi - DIY Accounting Submit'''
