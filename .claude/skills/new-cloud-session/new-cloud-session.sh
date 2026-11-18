@@ -10,6 +10,8 @@
 #   new-cloud-session.sh post <codename> <task-file> [--dry-run]
 #   new-cloud-session.sh watch <codename> [--interval <seconds>]
 #   new-cloud-session.sh creds <codename> [--dry-run]
+#   new-cloud-session.sh relay-key | relay-url | relay-register <codename> | relay-send <codename|coordinator> <file>
+#   new-cloud-session.sh relay-open [frame-file] | relay-ack <id>...
 #
 # --dry-run runs every read and prints every write (repository create, push, clone, file append, workflow dispatch)
 # in its place.
@@ -28,6 +30,12 @@ SESSIONS_DIR=${CLOUD_SESSIONS_DIR:-$(dirname "$MAIN_CHECKOUT")/cloud-sessions}
 POOL_FILE=$SKILL_DIR/pool.txt
 ENV_FILE=$SKILL_DIR/environment.txt
 CODENAMES=$REPO_ROOT/CODENAMES.txt
+# The relay: ci-env-CollabRelayStack, PLAN_CLOUD_COLLABORATION.md "Signed and encrypted messages without polling".
+RELAY_STACK=ci-env-CollabRelayStack
+RELAY_PROFILE=${RELAY_AWS_PROFILE:-diya-submit-ci}
+RELAY_NAMESPACE=submit-collab
+COORDINATOR_KEY=${COLLAB_COORDINATOR_KEY:-$HOME/.ssh/submit-collab-coordinator}
+COORDINATOR_PUB=$REPO_ROOT/.collab/coordinator.pub
 
 DRY=0
 NEW=0
@@ -40,7 +48,7 @@ die() {
 }
 
 usage() {
-  sed -n '8,12p' "${BASH_SOURCE[0]}" | sed 's/^# *//' >&2
+  sed -n '8,14p' "${BASH_SOURCE[0]}" | sed 's/^# *//' >&2
   exit 2
 }
 
@@ -407,11 +415,24 @@ cmd_watch() {
   done
 }
 
+# The worker's public key: the one ssh-ed25519 line of .collab/<codename>.pub on its collab branch.
+worker_key() {
+  local cn=$1 g=$TMP/worker-key-$1 key
+  git init -q "$g"
+  git -C "$g" fetch -q --depth 1 "https://github.com/$(repo_of "$cn").git" refs/heads/collab ||
+    die "$(repo_of "$cn") has no collab branch"
+  key=$(git -C "$g" show "FETCH_HEAD:.collab/$cn.pub" 2>/dev/null) ||
+    die "no .collab/$cn.pub on the collab branch of $(repo_of "$cn"); the worker pushes it by the collaborate skill"
+  [ "$(printf '%s\n' "$key" | grep -c .)" = 1 ] || die ".collab/$cn.pub is not one line"
+  [[ $key =~ ^ssh-ed25519\ [A-Za-z0-9+/]+={0,2}(\ .*)?$ ]] || die ".collab/$cn.pub is not an ssh-ed25519 public key"
+  printf '%s\n' "$key"
+}
+
 # Gives a worker one-hour ci credentials that only it can read. Reads the worker's public key from .collab/<codename>.pub
 # on its collab branch, dispatches cloud-credentials.yml on main with it, waits for the run, downloads the age
 # ciphertext and pushes it to .collab/<codename>.aws.age on collab. The plaintext never reaches this machine.
 cmd_creds() {
-  local cn="" g key before run_id="" title tries
+  local cn="" key before run_id="" title tries
   while [ $# -gt 0 ]; do
     case $1 in
       --dry-run) DRY=1; shift ;;
@@ -423,14 +444,7 @@ cmd_creds() {
   valid_codename "$cn"
   repo_exists "$cn" || die "$(repo_of "$cn") is not on GitHub"
 
-  g=$TMP/creds
-  git init -q "$g"
-  git -C "$g" fetch -q --depth 1 "https://github.com/$(repo_of "$cn").git" refs/heads/collab ||
-    die "$(repo_of "$cn") has no collab branch"
-  key=$(git -C "$g" show "FETCH_HEAD:.collab/$cn.pub" 2>/dev/null) ||
-    die "no .collab/$cn.pub on the collab branch of $(repo_of "$cn"); the worker pushes it by the collaborate skill"
-  [ "$(printf '%s\n' "$key" | grep -c .)" = 1 ] || die ".collab/$cn.pub is not one line"
-  [[ $key =~ ^ssh-ed25519\ [A-Za-z0-9+/]+={0,2}(\ .*)?$ ]] || die ".collab/$cn.pub is not an ssh-ed25519 public key"
+  key=$(worker_key "$cn")
   echo "worker key: $(printf '%s\n' "$key" | ssh-keygen -l -f -)"
 
   title="cloud credentials for $cn"
@@ -458,9 +472,179 @@ cmd_creds() {
   echo "pushed: .collab/$cn.aws.age on the collab branch of $(repo_of "$cn"); the credentials expire within the hour"
 }
 
+need_tool() {
+  command -v "$1" >/dev/null || die "$1 is not installed: $2"
+}
+
+# Stops unless the coordinator's private key exists and matches .collab/coordinator.pub.
+coordinator_key_ready() {
+  need_tool ssh-keygen "it comes with OpenSSH"
+  [ -f "$COORDINATOR_KEY" ] || die "no coordinator key at $COORDINATOR_KEY; run: bash $SKILL_DIR/new-cloud-session.sh relay-key"
+  [ -f "$COORDINATOR_PUB" ] || die "no $COORDINATOR_PUB; run: bash $SKILL_DIR/new-cloud-session.sh relay-key"
+  [ "$(ssh-keygen -y -f "$COORDINATOR_KEY" | awk '{ print $2 }')" = "$(awk 'NF { print $2; exit }' "$COORDINATOR_PUB")" ] ||
+    die "$COORDINATOR_KEY does not match $COORDINATOR_PUB"
+}
+
+# The base64 body of an SSHSIG over standard input, made with the coordinator's key.
+relay_sign() {
+  ssh-keygen -Y sign -n "$RELAY_NAMESPACE" -f "$COORDINATOR_KEY" - 2>/dev/null | sed '1d;$d' | tr -d '\n'
+}
+
+# One output of the relay stack (read-only AWS call with the ci SSO profile).
+relay_output() {
+  local value
+  value=$(aws --profile "$RELAY_PROFILE" --region eu-west-2 cloudformation describe-stacks --stack-name "$RELAY_STACK" \
+    --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text 2>"$TMP/relay-output.err") ||
+    die "cannot read $RELAY_STACK (deploy-environment.yml deploys it on ci; an expired SSO session needs aws sso login --sso-session diyaccounting): $(cat "$TMP/relay-output.err")"
+  [ -n "$value" ] && [ "$value" != None ] || die "$RELAY_STACK has no output $1"
+  printf '%s' "$value"
+}
+
+# POSTs the JSON on standard input to one relay route and prints the answer.
+relay_post() {
+  local url
+  url=$(relay_output CollabRelayHttpUrl)
+  curl -sS --fail-with-body -X POST -H 'content-type: application/json' --data-binary @- "$url$1"
+  echo
+}
+
+uri_encode() { jq -rn --arg s "$1" '$s|@uri'; }
+epoch_ms() { perl -MTime::HiRes=time -e 'printf "%d", time * 1000'; }
+
+# Makes the coordinator's key pair once and writes its public half to .collab/coordinator.pub for a commit to main.
+cmd_relay_key() {
+  [ "${1:-}" != --dry-run ] || DRY=1
+  need_tool ssh-keygen "it comes with OpenSSH"
+  if [ -f "$COORDINATOR_KEY" ]; then
+    echo "coordinator key: $COORDINATOR_KEY (kept)"
+  else
+    run ssh-keygen -q -t ed25519 -N '' -C submit-collab-coordinator -f "$COORDINATOR_KEY"
+  fi
+  if [ "$DRY" = 1 ]; then
+    echo "dry-run: write the public key of $COORDINATOR_KEY to $COORDINATOR_PUB"
+    return
+  fi
+  mkdir -p "$(dirname "$COORDINATOR_PUB")"
+  printf '%s coordinator\n' "$(ssh-keygen -y -f "$COORDINATOR_KEY" | awk '{ print $1, $2 }')" >"$COORDINATOR_PUB"
+  echo "wrote $COORDINATOR_PUB ($(ssh-keygen -l -f "$COORDINATOR_PUB"))"
+  echo "commit it to main through a pull request: deploy-environment.yml then redeploys $RELAY_STACK with the key,"
+  echo "and the next re-sync gives every work repository the key that workers encrypt to."
+}
+
+# Prints the signed wss:// URL of the coordinator's connection, for a Monitor WebSocket source. It is valid for 5 minutes.
+cmd_relay_url() {
+  local ts sig ws
+  coordinator_key_ready
+  need_tool jq "brew install jq"
+  ts=$(date -u +%s)
+  sig=$(printf 'connect|coordinator|%s' "$ts" | relay_sign)
+  ws=$(relay_output CollabRelayWebSocketUrl)
+  printf '%s?party=coordinator&ts=%s&sig=%s\n' "$ws" "$ts" "$(uri_encode "$sig")"
+}
+
+# Registers a worker's public key with the relay and writes the relay's send URL to .collab/relay on its collab branch.
+cmd_relay_register() {
+  local cn="" key ts sig url
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --dry-run) DRY=1; shift ;;
+      -*) usage ;;
+      *) [ -z "$cn" ] || usage; cn=$1; shift ;;
+    esac
+  done
+  [ -n "$cn" ] || usage
+  valid_codename "$cn"
+  coordinator_key_ready
+  need_tool jq "brew install jq"
+  key=$(worker_key "$cn")
+  echo "worker key: $(printf '%s\n' "$key" | ssh-keygen -l -f -)"
+  url=$(relay_output CollabRelayHttpUrl)
+  printf '%s\n' "$url" >"$TMP/relay"
+  if [ "$DRY" = 1 ]; then
+    echo "dry-run: POST $url/register for $cn, and write $url to .collab/relay on the collab branch of $(repo_of "$cn")"
+    return
+  fi
+  ts=$(date -u +%s)
+  sig=$(printf 'register|%s|%s|%s' "$cn" "$key" "$ts" | relay_sign)
+  jq -n --arg party "$cn" --arg publicKey "$key" --argjson ts "$ts" --arg sig "$sig" \
+    '{party: $party, publicKey: $publicKey, ts: $ts, sig: $sig}' | relay_post /register
+  collab_commit "$cn" "Relay send URL for $cn" .collab/relay "$TMP/relay"
+}
+
+# Encrypts a file to one party (a worker, or the coordinator itself for a test), signs it and posts it to the relay.
+cmd_relay_send() {
+  local to="" file="" key seq ts
+  while [ $# -gt 0 ]; do
+    case $1 in
+      -*) usage ;;
+      *)
+        if [ -z "$to" ]; then to=$1; elif [ -z "$file" ]; then file=$1; else usage; fi
+        shift
+        ;;
+    esac
+  done
+  [ -n "$to" ] && [ -n "$file" ] || usage
+  [ -f "$file" ] || die "no message file at $file"
+  coordinator_key_ready
+  need_tool age "brew install age"
+  need_tool jq "brew install jq"
+  if [ "$to" = coordinator ]; then
+    key=$(awk 'NF { print; exit }' "$COORDINATOR_PUB")
+  else
+    valid_codename "$to"
+    key=$(worker_key "$to")
+  fi
+  printf '%s\n' "$key" >"$TMP/recipient.pub"
+  age -a -R "$TMP/recipient.pub" -o "$TMP/body.age" "$file"
+  seq=$(epoch_ms)
+  ts=$(date -u +%s)
+  { printf 'send|coordinator|%s|%s|%s|' "$to" "$seq" "$ts"; cat "$TMP/body.age"; } | relay_sign >"$TMP/sig"
+  jq -n --arg to "$to" --argjson seq "$seq" --argjson ts "$ts" --rawfile sig "$TMP/sig" --rawfile body "$TMP/body.age" \
+    '{from: "coordinator", to: $to, seq: $seq, ts: $ts, sig: $sig, body: $body}' | relay_post /send
+}
+
+# Decrypts one relay frame (the text of a Monitor event) from a file or standard input, and prints its id and message.
+cmd_relay_open() {
+  local frame type
+  coordinator_key_ready
+  need_tool age "brew install age"
+  need_tool jq "brew install jq"
+  frame=$(cat "${1:-/dev/stdin}")
+  type=$(jq -r .type <<<"$frame")
+  if [ "$type" != message ]; then
+    echo "$type frame; nothing to open"
+    return
+  fi
+  jq -r '"id: \(.id)\nfrom: \(.from)\nseq: \(.seq)\nts: \(.ts)"' <<<"$frame"
+  jq -j .body <<<"$frame" | age -d -i "$COORDINATOR_KEY"
+  echo "acknowledge it with: bash $SKILL_DIR/new-cloud-session.sh relay-ack $(jq -r .id <<<"$frame")"
+}
+
+# Removes messages from the coordinator's inbox on the relay, so they are not sent again on the next connection.
+cmd_relay_ack() {
+  local ts sig ids id
+  [ $# -gt 0 ] || usage
+  for id in "$@"; do
+    [[ $id =~ ^[0-9]{16}\.[a-z]+$ ]] || die "'$id' is not a relay message id"
+  done
+  coordinator_key_ready
+  need_tool jq "brew install jq"
+  ts=$(date -u +%s)
+  ids=$(IFS=,; printf '%s' "$*")
+  sig=$(printf 'ack|coordinator|%s|%s' "$ts" "$ids" | relay_sign)
+  printf '%s\n' "$@" | jq -R . | jq -s --argjson ts "$ts" --arg sig "$sig" \
+    '{party: "coordinator", ts: $ts, ids: ., sig: $sig}' | relay_post /ack
+}
+
 case ${1:-} in
   release) shift; cmd_release "$@" ;;
   creds) shift; cmd_creds "$@" ;;
+  relay-key) shift; cmd_relay_key "$@" ;;
+  relay-url) shift; cmd_relay_url "$@" ;;
+  relay-register) shift; cmd_relay_register "$@" ;;
+  relay-send) shift; cmd_relay_send "$@" ;;
+  relay-open) shift; cmd_relay_open "$@" ;;
+  relay-ack) shift; cmd_relay_ack "$@" ;;
   post) shift; cmd_post "$@" ;;
   watch) shift; cmd_watch "$@" ;;
   -h | --help) usage ;;

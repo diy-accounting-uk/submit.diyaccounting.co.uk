@@ -111,7 +111,8 @@ On a task:
    `Collab-Status: wip` in the body. A reclaimed VM loses running commands and work that is not
    pushed.
 6. Commit with the report in the last commit's body (below), then
-   `git push origin claude/<codename>-<row>`.
+   `git push origin claude/<codename>-<row>`. Then send the one-line reply of step 7 to the
+   coordinator by the relay ("Report by the relay", below).
 7. Reply in one line: the branch, the SHA, `done` or `not-done`. End the turn. The next message
    starts the next task.
 
@@ -119,6 +120,39 @@ When you cannot do the task (a missing tool, a brief that needs AWS with no cred
 gate that cannot run here),
 push the branch with one commit (`git commit --allow-empty` when nothing changed) whose body says
 why, with `Collab-Status: not-done`.
+
+## Report by the relay
+
+The relay wakes the coordinator at once; without it the coordinator finds your push only on its
+next poll. The relay is in use when `collab` holds `.collab/relay` (the coordinator writes it after
+it registers your key) and `main` holds `.collab/coordinator.pub`. When either is missing, skip
+this section: the push is the reply. The commands need `age`, `jq`, `curl` and `ssh-keygen`.
+
+The message is one line, `<branch> <sha> <done|not-done|wip>`. It carries no file: git stays the
+store, and for a large result the line can name a file in the commit with its SHA-256. Put the
+line in `/tmp/relay-msg.txt`, then run in one Bash call from the repository root:
+
+```bash
+cn=<codename>
+git fetch -q origin collab:refs/remotes/origin/collab main:refs/remotes/origin/main
+url=$(git show origin/collab:.collab/relay)
+git show origin/main:.collab/coordinator.pub > /tmp/relay-coordinator.pub
+age -a -R /tmp/relay-coordinator.pub -o /tmp/relay-body.age /tmp/relay-msg.txt
+seq=$(date +%s%3N); ts=$(date +%s)
+{ printf 'send|%s|coordinator|%s|%s|' "$cn" "$seq" "$ts"; cat /tmp/relay-body.age; } |
+  ssh-keygen -Y sign -n submit-collab -f ~/.ssh/aws-handoff - 2>/dev/null | sed '1d;$d' | tr -d '\n' > /tmp/relay-sig
+jq -n --arg from "$cn" --argjson seq "$seq" --argjson ts "$ts" --rawfile sig /tmp/relay-sig --rawfile body /tmp/relay-body.age \
+  '{from: $from, to: "coordinator", seq: $seq, ts: $ts, sig: $sig, body: $body}' |
+  curl -sS --fail-with-body -X POST -H 'content-type: application/json' --data-binary @- "$url/send"
+```
+
+- The answer `{"id":"…","delivered":N}` means the relay stored the message for seven days.
+  `delivered` 0 means the coordinator was not connected; it gets the message when it connects.
+- `401` means the signature or the clock failed: check `date -u` and that `.collab/<codename>.pub`
+  on `collab` is `~/.ssh/aws-handoff.pub`. `409` means the seq was not newer; send again.
+- A failed send does not change the task's status. Say in the reply that the relay send failed.
+- The message is ciphertext that only the coordinator's key opens, and the signature is made with
+  your private key, which never leaves the VM.
 
 ## AWS credentials
 

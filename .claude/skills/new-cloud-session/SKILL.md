@@ -38,6 +38,12 @@ other subcommands:
 | `post <codename> <file>` | Writes the file as `.collab/<codename>.md` on `collab`, for the fallback loop. |
 | `watch <codename> [--interval <s>]` | Polls `refs/heads/claude/*` every 120 s and prints one line per new tip. |
 | `creds <codename>` | Gives the worker one-hour ci credentials that only it can read (below). |
+| `relay-key` | Makes the coordinator key pair once and writes `.collab/coordinator.pub` (below). |
+| `relay-url` | Prints the signed `wss://` URL of the coordinator's relay connection, valid for 5 minutes. |
+| `relay-register <codename>` | Registers the worker's key with the relay and writes the send URL to `.collab/relay` on `collab`. |
+| `relay-send <codename\|coordinator> <file>` | Encrypts the file to the party, signs it and posts it to the relay. |
+| `relay-open [frame-file]` | Decrypts one relay frame (a Monitor event) and prints its id and message. |
+| `relay-ack <id>...` | Removes messages from the coordinator's inbox on the relay. |
 
 ## AWS credentials for a worker
 
@@ -66,6 +72,44 @@ and nothing else. The workflow encrypts the credentials file to the worker's key
 uploads only the ciphertext, kept for one day. Only the worker's private key decrypts it, so neither
 this machine nor the public Actions record holds the plaintext. Run `creds` again for each hour of
 AWS work; each run is in the Actions record.
+
+## The relay
+
+The relay (`ci-env-CollabRelayStack`, ci account) wakes the coordinator the moment a worker
+reports, with no poll and no approval click. The coordinator holds one WebSocket connection to it
+in a `Monitor`; a worker posts to it over HTTPS. Every request carries an SSH signature
+(`ssh-keygen -Y sign -n submit-collab`) that the relay checks, and every message body is `age`
+ciphertext that only the recipient can read. Git stays the store for large results: a message
+names the branch, the commit and the SHA-256 of a file, and the coordinator fetches it.
+
+The keys:
+
+- The coordinator key pair is `~/.ssh/submit-collab-coordinator` (`COLLAB_COORDINATOR_KEY` changes
+  the path). Its public half is `.collab/coordinator.pub` on `main`, so every work repository has
+  it after the re-sync, and `deploy-environment.yml` gives it to the relay. `relay-key` makes the
+  pair once and writes the file; commit the file through a pull request.
+- Each worker signs with `~/.ssh/aws-handoff`, the key whose public half it pushes to
+  `.collab/<codename>.pub` for `creds`. `relay-register <codename>` sends that key to the relay,
+  signed by the coordinator.
+
+The coordinator needs `age` and `jq` (`brew install age jq`) and a current SSO session for the
+`diya-submit-ci` profile, because the script reads the relay's two URLs from the stack outputs.
+
+To watch a worker by the relay:
+
+1. Run `relay-register <codename>` once the worker has pushed its key (it says `ready: <codename>`).
+2. Run `relay-url`, and arm a Monitor with its output as the WebSocket source:
+   `Monitor({ws: {url: "<the URL>"}, description: "relay messages", timeout_ms: 1800000})`.
+   Arm it within 5 minutes of `relay-url`. On connect the relay sends every message not yet
+   acknowledged.
+3. Each event is one JSON frame. A `{"type":"ping"}` frame keeps the connection open (every 9
+   minutes); ignore it. For a `{"type":"message"}` frame, save the event text to a file and run
+   `relay-open <file>`. Act on the message, then run the `relay-ack <id>` line it prints, so the
+   next connection does not send it again.
+4. When the Monitor expires or the connection closes, run `relay-url` again and re-arm. A
+   connection lasts at most 2 hours.
+
+When the stack or `.collab/coordinator.pub` is missing, `watch <codename>` stays the channel.
 
 ## The pool
 
@@ -165,7 +209,8 @@ sidebar. In method a the CLI shows it.
 
 ## After the start
 
-1. Arm a Monitor with the `watch` command the script prints. Each line is a new `claude/*` tip.
+1. Arm a Monitor on the relay ("The relay", above). Without the relay, arm a Monitor with the
+   `watch` command the script prints; each line is a new `claude/*` tip.
 2. Send the task to the worker by `SendMessage`, by its session name, in the format of "The task
    message" in the `collaborate` skill. When a message does not reach an idle worker, queue it with
    `claude -p "<task message>" --cloud <session-id>` (documented; the CLI posts it and exits).
