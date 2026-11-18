@@ -279,6 +279,24 @@ describe("companiesHouseSubmissionStatusPoll handler", () => {
     expect(second.acknowledged).toBe(true);
   });
 
+  test("a record that failed after the receipt was stored sends no second receipt on the next poll", async () => {
+    await fileAccounts("PRS011");
+    mockPublishActivityEvent.mockRejectedValueOnce(new Error("event bus unavailable"));
+
+    const first = await handler();
+
+    expect(first.outcomes).toEqual([{ submissionNumber: "PRS011", statusCode: "ACCEPT", outcome: "error" }]);
+    expect(mockRecordFiledReceipt).toHaveBeenCalledTimes(1);
+    expect(asyncRequests.get(`${USER_SUB}/PRS011`)).toMatchObject({ status: "completed" });
+
+    allowNextPoll();
+    const second = await handler();
+
+    expect(second.outcomes).toEqual([{ submissionNumber: "PRS011", statusCode: "ACCEPT", outcome: "already-recorded" }]);
+    expect(second.acknowledged).toBe(true);
+    expect(mockRecordFiledReceipt).toHaveBeenCalledTimes(1);
+  });
+
   test("a second run inside the poll interval does not reach the gateway", async () => {
     await handler();
     gatewayRequests.length = 0;

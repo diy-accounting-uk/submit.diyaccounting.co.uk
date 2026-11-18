@@ -51,6 +51,11 @@ async function recordPresenterStatus(status) {
     logger.error({ message: "Companies House filing has no request item to record its status against", submissionNumber, statusCode });
     return { submissionNumber, statusCode, outcome: "no-request" };
   }
+  // A record that failed after its receipt was stored gave its claim back; the stored outcome says
+  // it is recorded, as it does for the page poll.
+  if (persistedRequest.status === "completed" || (persistedRequest.status === "failed" && persistedRequest.data?.statusCode === "REJECT")) {
+    return { submissionNumber, statusCode, outcome: "already-recorded" };
+  }
   const { recorded } = await recordSubmissionStatus({
     userSub: filing.userSub,
     submissionNumber,
