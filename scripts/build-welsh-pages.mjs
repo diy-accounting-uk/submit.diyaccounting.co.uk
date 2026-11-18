@@ -444,7 +444,8 @@ function relocate(url, pages, page) {
 // The line under a GOV.UK quote that tax-sources.mjs writes: "Source: <a>GOV.UK, title</a> (checked 13 November 2026)".
 // The quote keeps its English words, each paragraph marked lang="en-GB"; the line is ours, so the copy
 // writes it in Welsh with the date in Welsh month names, and marks only the linked GOV.UK title as English.
-const SOURCE_FOOTER_PATTERN = /<footer>\s*Source:\s*(<a\b[\s\S]*?<\/a\s*>)\s*\(checked\s+(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})\)\s*<\/footer>/g;
+const SOURCE_FOOTER_PATTERN =
+  /<footer>\s*Source:\s*(<a\b[\s\S]*?<\/a\s*>)\s*\(checked\s+(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})\)\s*<\/footer>/g;
 const ENGLISH_MONTHS = [
   "January",
   "February",
