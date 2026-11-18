@@ -5,6 +5,13 @@
 // edit those and run npm run build:welsh. page-chrome.js loads this file when the language choice is Welsh.
 
 window.WELSH_TEXT = {
+  "bundles.affiliate": "Partner cyswllt",
+  "bundles.affiliate-approved": "wedi’i gymeradwyo",
+  "bundles.affiliate-withdraw-confirm":
+    "Dileu eich statws partner cyswllt cymeradwy? Mae’r comisiwn rydych wedi’i ennill yn cael ei ddal ac nid yw’n cael ei dalu tra nad ydych wedi’ch cymeradwyo. Mae atgyfeiriadau newydd yn ennill credyd ar eich tanysgrifiad eich hun yn lle hynny. I ddod yn bartner cyswllt eto, cysylltwch â’r tîm cymorth.",
+  "bundles.affiliate-withdraw-keep": "Cadw",
+  "bundles.affiliate-withdraw-label": "Cadarnhau dileu statws partner cyswllt",
+  "bundles.affiliate-withdraw-yes": "Ydw, dileu",
   "bundles.apply-approved": "Rydych yn bartner cyswllt cymeradwy.",
   "bundles.apply-button": "Gwneud cais gyda Stripe",
   "bundles.apply-continue": "Parhau gyda Stripe",
@@ -14,6 +21,7 @@ window.WELSH_TEXT = {
   "bundles.apply-started": "Mae eich cais wedi dechrau. Gorffennwch gamau Stripe i’w anfon.",
   "bundles.apply-submitted":
     "Mae gan Stripe eich manylion. Rydym yn adolygu’r cais ac yn rhoi gwybod i chi am ein penderfyniad drwy e-bost.",
+  "bundles.config-set-note": "Wedi’i osod ar gyfer eich cyfrif gan DIY Accounting",
   "bundles.day-pass-note": "Un diwrnod, dim cerdyn. I ddal ati i ffeilio ar ôl heddiw, dewiswch gynllun uchod.",
   "bundles.description-resident-ltd":
     "Ffeilio cyfrifon a datganiadau cadarnhau gyda Thŷ’r Cwmnïau. £9.99/yr / £0.99/mo, canslo unrhyw bryd.",
@@ -22,6 +30,7 @@ window.WELSH_TEXT = {
   "bundles.description-resident-tax-agent":
     "Rheoli cleientiaid practis a ffeilio ar eu rhan, gyda phopeth yn Resident Pro a dim terfyn ar gredyd. £199.99/yr / £19.99/mo, canslo unrhyw bryd.",
   "bundles.description-resident-vat": "Cyflwyno Ffurflenni TAW i CThEF. £9.99/yr / £0.99/mo, canslo unrhyw bryd.",
+  "bundles.family-affiliate": "Partner cyswllt y teulu",
   "bundles.limit-reached": "Wedi cyrraedd y terfyn — {name}",
   "bundles.limit-reached-note": "Mae pob tocyn diwrnod yn cael ei ddefnyddio. Rhowch gynnig arall arni yfory, neu dewiswch Bundle.",
   "bundles.monthly-via-stripe": "Tanysgrifiad misol drwy Stripe",
@@ -32,6 +41,7 @@ window.WELSH_TEXT = {
   "bundles.pass-required": "Angen tocyn — {name}",
   "bundles.pass-required-note": "Rhowch wahoddiad tocyn uchod i ddatgloi’r Bundle hwn",
   "bundles.redirecting": "Yn mynd i’r dudalen dalu...",
+  "bundles.remove": "Dileu",
   "bundles.request": "Gofyn am {name}",
   "bundles.request-bundle": "Gofyn am Bundle",
   "bundles.request-free": "am ddim",

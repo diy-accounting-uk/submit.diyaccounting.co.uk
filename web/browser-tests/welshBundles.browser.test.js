@@ -29,7 +29,7 @@ const API_BODIES = {
   "/api/v1/pass/my-passes": { passes: [] },
 };
 
-async function openBundles(page, pagePath) {
+async function openBundles(page, pagePath, apiBodies = API_BODIES) {
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     if (url.hostname !== "localhost") {
@@ -37,7 +37,7 @@ async function openBundles(page, pagePath) {
       return;
     }
     if (url.pathname.startsWith("/api/")) {
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(API_BODIES[url.pathname] ?? {}) });
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(apiBodies[url.pathname] ?? {}) });
       return;
     }
     const filePath = path.join(PUBLIC_ROOT, decodeURIComponent(url.pathname));
@@ -85,6 +85,21 @@ test.describe("Welsh Bundles page", () => {
     for (const word of words) expect(["Cynhyrchu", "Prawf", "Rhagolwg"]).toContain(word.trim());
     await expect(statusList).not.toContainText("for real use");
     await expect(statusList).not.toContainText("against a test service");
+  });
+
+  test("a held bundle's Remove and the affiliate row read in Welsh", async ({ page }) => {
+    await openBundles(page, "cy/bundles.html", {
+      ...API_BODIES,
+      "/api/v1/bundle": { bundles: [{ bundleId: "day-guest", allocated: true, tokensGranted: 3, tokensRemaining: 3 }] },
+      "/api/v1/affiliate/application": { state: "approved", terms: { name: "Standard" } },
+    });
+    const current = page.locator("#currentBundles");
+    await expect(current.locator("[data-remove-bundle-id]")).toHaveText("Dileu");
+    await expect(current.locator("[data-affiliate-row] .bundle-row-name")).toHaveText("Partner cyswllt");
+    await expect(current.locator("[data-withdraw-affiliate]")).toHaveText("Dileu");
+    await expect(current.locator("[data-affiliate-row]")).toContainText("wedi’i gymeradwyo · Standard");
+    await expect(current).not.toContainText("Remove");
+    await expect(current).not.toContainText("Affiliate");
   });
 
   test("the English page keeps its English", async ({ page }) => {

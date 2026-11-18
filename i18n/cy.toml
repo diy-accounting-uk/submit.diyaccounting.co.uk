@@ -810,6 +810,42 @@ cy = '''Mae’r bartneriaeth gyswllt hon wedi dod i ben.'''
 hash = "c9c81f826401"
 cy = '''Nid oedd modd darllen eich cais ({message}). Ail-lwythwch y dudalen.'''
 
+[strings."bundles.config-set-note"]
+hash = "2568a3b13efb"
+cy = '''Wedi’i osod ar gyfer eich cyfrif gan DIY Accounting'''
+
+[strings."bundles.remove"]
+hash = "c3812fc4acb8"
+cy = '''Dileu'''
+
+[strings."bundles.affiliate-approved"]
+hash = "2687f86ed678"
+cy = '''wedi’i gymeradwyo'''
+
+[strings."bundles.family-affiliate"]
+hash = "d1d088846598"
+cy = '''Partner cyswllt y teulu'''
+
+[strings."bundles.affiliate"]
+hash = "c58cc9af3a31"
+cy = '''Partner cyswllt'''
+
+[strings."bundles.affiliate-withdraw-confirm"]
+hash = "127ef23b40e8"
+cy = '''Dileu eich statws partner cyswllt cymeradwy? Mae’r comisiwn rydych wedi’i ennill yn cael ei ddal ac nid yw’n cael ei dalu tra nad ydych wedi’ch cymeradwyo. Mae atgyfeiriadau newydd yn ennill credyd ar eich tanysgrifiad eich hun yn lle hynny. I ddod yn bartner cyswllt eto, cysylltwch â’r tîm cymorth.'''
+
+[strings."bundles.affiliate-withdraw-label"]
+hash = "0482ca763b6a"
+cy = '''Cadarnhau dileu statws partner cyswllt'''
+
+[strings."bundles.affiliate-withdraw-yes"]
+hash = "372e28e20d40"
+cy = '''Ydw, dileu'''
+
+[strings."bundles.affiliate-withdraw-keep"]
+hash = "183f00f483d3"
+cy = '''Cadw'''
+
 [strings."login.title"]
 hash = "c0e2df789143"
 cy = '''Mewngofnodi - DIY Accounting Submit'''

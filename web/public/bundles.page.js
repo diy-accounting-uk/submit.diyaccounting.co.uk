@@ -690,7 +690,7 @@ const __catalogueReady = (async function () {
   }
 })();
 
-const CONFIG_SET_NOTE = "Set for your account by DIY Accounting";
+const configSetNote = () => siteText("bundles.config-set-note", "Set for your account by DIY Accounting");
 
 // The catalogue phrase follows "you can"; shown alone it starts with a capital and ends with a full stop.
 function passSummarySentence(passSummary) {
@@ -754,7 +754,7 @@ function renderCurrentBundles() {
       }
     }
 
-    if (fullData?.configDriven) fragments.push(CONFIG_SET_NOTE);
+    if (fullData?.configDriven) fragments.push(configSetNote());
 
     const summary = passSummarySentence(catBundle?.passSummary);
     const summaryLine = summary ? domEl("div", { class: "bundle-note bundle-summary" }, summary) : null;
@@ -784,7 +784,7 @@ function renderCurrentBundles() {
           : domEl(
               "button",
               { "type": "button", "class": "btn btn-danger-outline bundle-row-btn", "data-remove-bundle-id": bundleId },
-              "Remove",
+              siteText("bundles.remove", "Remove"),
             ),
       ),
       summaryLine,
@@ -812,21 +812,25 @@ function renderCurrentBundles() {
 function affiliateRowEl() {
   const application = __affiliateApplication;
   if (!application || !(application.state === "approved" || application.configDriven)) return null;
-  const approvedNote = ["approved", application.terms?.name].filter(Boolean).join(" · ");
-  const note = application.configDriven ? CONFIG_SET_NOTE : approvedNote;
+  const approvedNote = [siteText("bundles.affiliate-approved", "approved"), application.terms?.name].filter(Boolean).join(" · ");
+  const note = application.configDriven ? configSetNote() : approvedNote;
   return domEl(
     "div",
     { "class": "service-item bundle-row", "data-affiliate-row": "true" },
     domEl(
       "span",
       { class: "bundle-row-line" },
-      domEl("span", { class: "bundle-row-name" }, application.configDriven ? "Family affiliate" : "Affiliate"),
+      domEl(
+        "span",
+        { class: "bundle-row-name" },
+        application.configDriven ? siteText("bundles.family-affiliate", "Family affiliate") : siteText("bundles.affiliate", "Affiliate"),
+      ),
       application.configDriven
         ? null
         : domEl(
             "button",
             { "type": "button", "class": "btn btn-danger-outline bundle-row-btn", "data-withdraw-affiliate": "true" },
-            "Remove",
+            siteText("bundles.remove", "Remove"),
           ),
     ),
     domEl("div", { class: "bundle-note" }, note),
@@ -835,9 +839,11 @@ function affiliateRowEl() {
 
 // Commission lines already earned at a cash tier stay held while the affiliate is not approved, and the
 // referrer earns the customer credit tier on new referrals.
-const AFFILIATE_WITHDRAW_TEXT =
-  "Remove your approved affiliate status? Commission you have earned stays held and is not paid while you are not approved. " +
-  "New referrals earn credit on your own subscription instead. To become an affiliate again, contact support.";
+const affiliateWithdrawText = () =>
+  siteText(
+    "bundles.affiliate-withdraw-confirm",
+    "Remove your approved affiliate status? Commission you have earned stays held and is not paid while you are not approved. New referrals earn credit on your own subscription instead. To become an affiliate again, contact support.",
+  );
 
 function showAffiliateWithdrawConfirm(anchor) {
   document.getElementById("affiliateWithdrawConfirm")?.remove();
@@ -847,14 +853,22 @@ function showAffiliateWithdrawConfirm(anchor) {
       "id": "affiliateWithdrawConfirm",
       "class": "pass-delete-confirm",
       "role": "group",
-      "aria-label": "Confirm removal of affiliate status",
+      "aria-label": siteText("bundles.affiliate-withdraw-label", "Confirm removal of affiliate status"),
     },
-    domEl("p", { class: "pass-delete-confirm-text" }, AFFILIATE_WITHDRAW_TEXT),
+    domEl("p", { class: "pass-delete-confirm-text" }, affiliateWithdrawText()),
     domEl(
       "div",
       { class: "bundle-row-line" },
-      domEl("button", { type: "button", class: "btn btn-small btn-danger-outline affiliate-withdraw-confirm-yes" }, "Yes, remove"),
-      domEl("button", { type: "button", class: "btn btn-small btn-secondary affiliate-withdraw-confirm-keep" }, "Keep"),
+      domEl(
+        "button",
+        { type: "button", class: "btn btn-small btn-danger-outline affiliate-withdraw-confirm-yes" },
+        siteText("bundles.affiliate-withdraw-yes", "Yes, remove"),
+      ),
+      domEl(
+        "button",
+        { type: "button", class: "btn btn-small btn-secondary affiliate-withdraw-confirm-keep" },
+        siteText("bundles.affiliate-withdraw-keep", "Keep"),
+      ),
     ),
   );
   anchor.insertAdjacentElement("beforeend", panel);
