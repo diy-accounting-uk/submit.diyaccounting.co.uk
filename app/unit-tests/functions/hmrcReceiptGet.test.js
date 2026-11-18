@@ -166,6 +166,19 @@ describe("hmrcReceiptGet ingestHandler", () => {
     expect(JSON.parse(response.body).message).toBe("Receipt not found");
   });
 
+  test("a missing table answers 500, not the receipt-not-found validation error", async () => {
+    const missingTable = () => Object.assign(new Error("Requested resource not found"), { name: "ResourceNotFoundException" });
+    listFilingsInProgress.mockRejectedValueOnce(missingTable());
+
+    const listResponse = await hmrcReceiptGetHandler(buildAuthenticatedEvent({ sub: "filer-sub" }));
+
+    expect(listResponse.statusCode).toBe(500);
+
+    listUserReceipts.mockRejectedValueOnce(missingTable());
+    const receiptsResponse = await hmrcReceiptGetHandler(buildAuthenticatedEvent({ sub: "filer-sub" }));
+    expect(receiptsResponse.statusCode).toBe(500);
+  });
+
   test("403s a client id that does not belong to the caller's practice", async () => {
     getClient.mockResolvedValue(null);
 

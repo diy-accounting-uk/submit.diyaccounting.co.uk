@@ -158,8 +158,8 @@ export async function ingestHandler(event) {
       });
     }
   } catch (error) {
-    // Check if this is a not found error
-    if (error.message && error.message.includes("not found")) {
+    // getReceiptByReceiptId's own error; a DynamoDB ResourceNotFoundException ("Requested resource not found") is a 500.
+    if (error.message === "Receipt not found") {
       logger.warn({ message: "Receipt not found", error: error.message });
       return buildValidationError(request, ["Receipt not found"], responseHeaders);
     }
