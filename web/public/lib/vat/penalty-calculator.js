@@ -51,7 +51,9 @@ function update(rebuildTicks) {
   const periodEnd = byId("vatPeriodEnd").value;
   const frequency = byId("vatFrequency").value;
   const result = byId("vatResult");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(periodEnd)) {
+  const hasPeriodEnd = /^\d{4}-\d{2}-\d{2}$/.test(periodEnd);
+  byId("vatReturnTicksHint").hidden = hasPeriodEnd;
+  if (!hasPeriodEnd) {
     result.hidden = true;
     return;
   }

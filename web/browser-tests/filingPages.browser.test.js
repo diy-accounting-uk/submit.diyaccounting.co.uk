@@ -125,6 +125,19 @@ test("the VAT penalty calculator shows the due date, the points, the threshold a
   await expect(page.locator("main a[href='vat-return-from-a-spreadsheet.html']").first()).toBeVisible();
 });
 
+test("the VAT penalty calculator says where the returns appear until a period end is entered", async ({ page }) => {
+  await serveRealSite(page);
+  await page.goto("http://localhost:3000/vat-return-due-date-and-penalty-points.html", { waitUntil: "load" });
+  const hint = page.locator("#vatReturnTicks").locator("xpath=..").locator("#vatReturnTicksHint");
+  await expect(hint).toBeVisible();
+  await expect(hint).toContainText("once you enter the last day of the accounting period");
+  await page.locator("#vatPeriodEnd").fill("2026-09-30");
+  await expect(hint).toBeHidden();
+  await expect(page.locator("#vatReturnTicks input").first()).toBeVisible();
+  await page.locator("#vatPeriodEnd").fill("");
+  await expect(hint).toBeVisible();
+});
+
 test("the VAT penalty page holds the rules as text without a script", async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();

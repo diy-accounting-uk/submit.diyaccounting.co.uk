@@ -344,7 +344,9 @@ function vatPenaltyCalculatorHtml() {
     `<input type="date" id="vatPeriodEnd" name="vatPeriodEnd" /></div>` +
     `<div class="form-group"><label for="vatFrequency">How often you send a return</label>` +
     `<select id="vatFrequency" name="vatFrequency">${options}</select></div>` +
-    `<fieldset class="form-group"><legend>Tick each return that was late</legend><div id="vatReturnTicks"></div></fieldset>` +
+    `<fieldset class="form-group"><legend>Tick each return that was late</legend>` +
+    `<p id="vatReturnTicksHint" class="hint">Your returns of the last 24 months show here once you enter the last day of the accounting period.</p>` +
+    `<div id="vatReturnTicks"></div></fieldset>` +
     `<div id="vatResult" role="status" aria-live="polite" hidden>` +
     `<p><strong>Due date:</strong> <span id="vatDueDate"></span></p>` +
     `<p><strong>Penalty points:</strong> <span id="vatPoints"></span></p>` +
