@@ -552,6 +552,21 @@ export function parseGatewayResponse(xml) {
   };
 }
 
+/**
+ * The fields of a parsed GetSubmissionStatus answer that a log line carries: the qualifier, each
+ * error's number and text, and each status's submission number and code.
+ *
+ * @param {ReturnType<typeof parseGatewayResponse>} parsed
+ * @returns {{qualifier: string|undefined, errors: Array<{number: number|undefined, text: string|undefined}>, statuses: Array<{submissionNumber: string|undefined, statusCode: string|undefined}>}}
+ */
+export function summariseGatewayResponse(parsed) {
+  return {
+    qualifier: parsed.qualifier,
+    errors: parsed.errors.map(({ number, text }) => ({ number, text })),
+    statuses: parsed.statuses.map(({ submissionNumber, statusCode }) => ({ submissionNumber, statusCode })),
+  };
+}
+
 function parseAddressElement(addressElement) {
   if (!addressElement) {
     return undefined;

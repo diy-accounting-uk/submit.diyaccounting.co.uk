@@ -89,6 +89,14 @@ async function openForm(
     if (environmentName === null) return route.abort();
     await route.fulfill({ status: 200, contentType: "text/plain", body: environmentName });
   });
+  // prod's deploy writes HMRC's live API into submit.env; the committed file names the test API.
+  if (environmentName === "prod") {
+    await page.route("**/submit.env", async (route) => {
+      const response = await route.fetch();
+      const body = (await response.text()).replace(/^HMRC_BASE_URI=.*$/m, "HMRC_BASE_URI=https://api.service.hmrc.gov.uk");
+      await route.fulfill({ response, body });
+    });
+  }
 
   await page.route("**/submit.js", async (route) => {
     await route.fulfill({

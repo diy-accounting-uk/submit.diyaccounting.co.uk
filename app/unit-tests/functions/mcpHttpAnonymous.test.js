@@ -27,6 +27,8 @@ vi.mock("@app/data/dynamoDbMcpSessionRepository.js", () => {
     updateMcpSessionCloud: record("updateMcpSessionCloud"),
     updateMcpSessionHmrcGrant: record("updateMcpSessionHmrcGrant"),
     deleteMcpSession: record("deleteMcpSession"),
+    getMcpUserBook: record("getMcpUserBook"),
+    putMcpUserBook: record("putMcpUserBook"),
   };
 });
 

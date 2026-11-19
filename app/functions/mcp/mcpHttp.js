@@ -3,7 +3,7 @@
 
 // @capability MCP-18 Serve the submission MCP over HTTP behind CloudFront
 // - **Use when:** a chat client must reach the submission MCP at `/mcp` with OAuth, or the routes, stack, edge behaviours or rate rules behind that endpoint need tracing.
-// - **Does:** mcpHttp.js answers `/mcp` through handleMcpRequest in mcp/lib/http.js, with sessions in the mcp-sessions DynamoDB table; a session item also keeps the id of the session's HMRC grant (MCP-21). A POST with no Authorization header gets an answer to `initialize`, `notifications/initialized`, `ping` and `tools/list` from the environment's hosted tool list and stores no session; every other request without a valid token gets 401 with the `WWW-Authenticate` challenge, and a signed-in request with no `Mcp-Session-Id` starts the session. mcpOauth.js serves the OAuth metadata documents under `/.well-known/oauth-*` and the authorization facade under `/mcp/oauth/*` in front of Cognito. McpStack.java creates both Lambdas, the codes entry Lambda (MCP-20) and the HMRC grant Lambda (MCP-21); deploy.yml's deploy-mcp job deploys it before deploy-api. EdgeStack.java sends `/mcp`, `/mcp/*` and `/.well-known/oauth-*` to the API Gateway origin with caching off and every viewer header forwarded, and counts those paths in a WAF rate rule keyed on the Authorization header instead of the per-IP rule; a request to them with no Authorization header is counted per address (McpAnonymousRateLimitRule). The consent page carries a Reviewer sign-in form for one demo user: POST `/mcp/oauth/reviewer` compares the typed user name and password with the stored secret before it calls Cognito, signs the user in through app/lib/mcpReviewerSignIn.js (admin password flow, then the one-time code from app/lib/totp.js), parks the sealed tokens in the sessions table (app/data/dynamoDbReviewerCodeRepository.js) and answers a code that the token route redeems once. A token in the `mcp-reviewer` group gets prod's tool set in every environment (mcp/lib/hosted-tools.js). EdgeStack.java blocks more than 10 reviewer POSTs in 300 seconds per address. MCP-26 seeds the user.
+// - **Does:** mcpHttp.js answers `/mcp` through handleMcpRequest in mcp/lib/http.js, with sessions in the mcp-sessions DynamoDB table; a session item also keeps the id of the session's HMRC grant (MCP-21). A POST with no Authorization header gets an answer to `initialize`, `notifications/initialized`, `ping` and `tools/list` from the environment's hosted tool list and stores no session; every other request without a valid token gets 401 with the `WWW-Authenticate` challenge, and a signed-in request with no `Mcp-Session-Id` starts the session. The table also keeps one open-book item per user (`book:<hashedSub>`), and a tool call whose session holds no book reopens the cloud book that user opened last, so a client that does not send back the session id keeps its book. mcpOauth.js serves the OAuth metadata documents under `/.well-known/oauth-*` and the authorization facade under `/mcp/oauth/*` in front of Cognito. McpStack.java creates both Lambdas, the codes entry Lambda (MCP-20) and the HMRC grant Lambda (MCP-21); deploy.yml's deploy-mcp job deploys it before deploy-api. EdgeStack.java sends `/mcp`, `/mcp/*` and `/.well-known/oauth-*` to the API Gateway origin with caching off and every viewer header forwarded, and counts those paths in a WAF rate rule keyed on the Authorization header instead of the per-IP rule; a request to them with no Authorization header is counted per address (McpAnonymousRateLimitRule). The consent page carries a Reviewer sign-in form for one demo user: POST `/mcp/oauth/reviewer` compares the typed user name and password with the stored secret before it calls Cognito, signs the user in through app/lib/mcpReviewerSignIn.js (admin password flow, then the one-time code from app/lib/totp.js), parks the sealed tokens in the sessions table (app/data/dynamoDbReviewerCodeRepository.js) and answers a code that the token route redeems once. A token in the `mcp-reviewer` group gets prod's tool set in every environment (mcp/lib/hosted-tools.js). EdgeStack.java blocks more than 10 reviewer POSTs in 300 seconds per address. MCP-26 seeds the user.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/mcp/mcpHttp.js`; `app/functions/mcp/mcpOauth.js`; `infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java`
 // - **Files:** app/functions/mcp/mcpHttp.js, app/functions/mcp/mcpOauth.js, mcp/lib/http.js, app/data/dynamoDbMcpSessionRepository.js, app/data/dynamoDbReviewerCodeRepository.js, app/lib/mcpReviewerSignIn.js, app/lib/totp.js, mcp/lib/hosted-tools.js, infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java, .github/workflows/deploy.yml
@@ -33,6 +33,8 @@ import {
   createMcpSession,
   deleteMcpSession,
   getMcpSession,
+  getMcpUserBook,
+  putMcpUserBook,
   updateMcpSessionCloud,
   updateMcpSessionHmrcGrant,
 } from "../../data/dynamoDbMcpSessionRepository.js";
@@ -186,6 +188,22 @@ async function loadStoredBook(session, hashedSub, pointer) {
   rememberBook(key, session);
 }
 
+// A client that does not send back the Mcp-Session-Id starts a new session on every call, so a
+// tool call whose session holds no book takes the one this user opened last. The pointer is keyed
+// by the caller's own hashedSub, so it never names another user's book. A book that cannot be
+// reopened leaves the session without one, and open_book still works. Answers the stored pointer.
+async function loadUserBook(session, hashedSub) {
+  const pointer = await getMcpUserBook(hashedSub);
+  if (!pointer) return null;
+  try {
+    await loadStoredBook(session, hashedSub, pointer);
+    logger.info({ message: "MCP book restored from the user's last open book" });
+  } catch (error) {
+    logger.warn({ message: "MCP user's last open book could not be restored", reason: error.message });
+  }
+  return pointer;
+}
+
 async function mapResponse(response, extraHeaders) {
   const headers = { ...Object.fromEntries(response.headers), ...extraHeaders };
   return { statusCode: response.status, headers, body: await response.text() };
@@ -276,6 +294,9 @@ export async function ingestHandler(event) {
     }
   }
 
+  const userBook = rpcMethod === "tools/call" && !session.cloud ? await loadUserBook(session, hashedSub) : null;
+  const startingPointer = stored?.cloud ?? userBook;
+
   const response = await handleMcpRequest(buildRequest(event, host, httpMethod, bodyText), {
     session,
     toolNames: hostedToolNames(process.env.ENVIRONMENT_NAME, groups),
@@ -285,6 +306,9 @@ export async function ingestHandler(event) {
   if (stored && session.cloud && !samePointer(session.cloud, stored.cloud)) {
     rememberBook(pointerKey(hashedSub, session.cloud), session);
     await updateMcpSessionCloud(stored.sessionId, session.cloud);
+  }
+  if (session.cloud && !samePointer(session.cloud, startingPointer)) {
+    await putMcpUserBook(hashedSub, session.cloud);
   }
   if (stored && (session.hmrcGrant?.grantId ?? null) !== (stored.hmrcGrant?.grantId ?? null)) {
     await updateMcpSessionHmrcGrant(stored.sessionId, session.hmrcGrant);
