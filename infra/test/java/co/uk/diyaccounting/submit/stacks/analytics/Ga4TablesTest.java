@@ -182,6 +182,24 @@ class Ga4TablesTest {
     }
 
     @Test
+    void bqEventsTableCarriesTheVisitorKindUserProperty() {
+        Template template = synthTemplate();
+
+        template.hasResourceProperties(
+                "AWS::Glue::Table",
+                Match.objectLike(Map.of(
+                        "TableInput",
+                        Match.objectLike(Map.of(
+                                "Name",
+                                "ga4_bq_events",
+                                "StorageDescriptor",
+                                Match.objectLike(Map.of(
+                                        "Columns",
+                                        Match.arrayWith(
+                                                List.of(Map.of("Name", "visitor_kind", "Type", "string"))))))))));
+    }
+
+    @Test
     void dateDimensionColumnIsKeptAsAPlainStringAlongsideTheDtPartition() {
         Template template = synthTemplate();
 

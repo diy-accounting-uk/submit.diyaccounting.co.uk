@@ -103,6 +103,11 @@
             } catch {
               // localStorage unavailable: the session stays classified as human
             }
+            // The rest of this page's GA4 events carry the operator kind, so the session that
+            // signed in is flagged as well as the pages after it.
+            if (typeof window.gtag === "function") {
+              window.gtag("set", "user_properties", { visitor_kind: "operator" });
+            }
           }
           const viewerSettings = await import("/lib/services/viewer-settings.js");
           const operatorFeaturesOn = viewerSettings.isOperatorFeaturesOn();

@@ -258,6 +258,15 @@ describe("ga4EventExportPull", () => {
       expect(options.query).toMatch(/device\.web_info\.browser_version\s+AS device_browser_version,/);
     });
 
+    test("the query reads the visitor kind from the event's user properties", async () => {
+      await handler({ date: "2026-08-20" });
+
+      const [options] = mockCreateQueryJob.mock.calls[0];
+      expect(options.query).toMatch(
+        /\(SELECT value\.string_value FROM UNNEST\(user_properties\) WHERE key = 'visitor_kind'\)\s+AS visitor_kind/,
+      );
+    });
+
     test("metric values come back as numbers, not strings, and are written unchanged", async () => {
       stubJob([
         {

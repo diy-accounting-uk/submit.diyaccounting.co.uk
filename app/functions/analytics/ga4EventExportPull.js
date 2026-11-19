@@ -143,7 +143,8 @@ SELECT
   traffic_source.medium                  AS traffic_medium,
   traffic_source.name                    AS traffic_campaign,
   stream_id,
-  platform
+  platform,
+  (SELECT value.string_value FROM UNNEST(user_properties) WHERE key = 'visitor_kind')    AS visitor_kind
 FROM \`${projectId}.${datasetId}.events_${tableDateSuffix}\`
 `.trim();
 }

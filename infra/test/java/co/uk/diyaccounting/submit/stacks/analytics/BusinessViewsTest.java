@@ -201,6 +201,17 @@ class BusinessViewsTest {
     }
 
     @Test
+    void landingPagesViewLeavesOutSessionsTheOperatorTookPartIn() {
+        Template template = synthBusinessViews();
+
+        var sql = sqlForView(template, "v_ga4_landing_pages_daily").replaceAll("--[^\\n]*", "");
+        assertTrue(
+                sql.contains("count_if(visitor_kind = 'operator') > 0 AS operator_session"),
+                "expected each session to be flagged when any of its events carries the operator kind: " + sql);
+        assertTrue(sql.contains("WHERE  NOT operator_session"), "expected operator sessions to be filtered: " + sql);
+    }
+
+    @Test
     void visitorsViewReadsTheClientAddressOnlyAsASaltedHashInsideAnAggregate() {
         Template template = synthBusinessViews();
 
