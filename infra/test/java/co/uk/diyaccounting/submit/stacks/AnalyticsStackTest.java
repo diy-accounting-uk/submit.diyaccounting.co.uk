@@ -241,6 +241,75 @@ class AnalyticsStackTest {
                 "the role that creates activity_events_all needs glue:GetTable on the tables it joins");
     }
 
+    @Test
+    void everyViewThatReadsGa4BqEventsWaitsForThatTable() throws IOException {
+        Template analytics = synthAnalyticsTemplate();
+
+        var tableIds = glueTableLogicalIdsByName(analytics);
+        var ga4BqEventsTableId = tableIds.get("ga4_bq_events");
+        assertTrue(ga4BqEventsTableId != null, "the stack should define the ga4_bq_events table");
+        var readers = viewsReadingTable(analytics, "ga4_bq_events");
+        assertFalse(readers.isEmpty(), "at least one view should read ga4_bq_events");
+        for (var reader : readers.entrySet()) {
+            assertTrue(
+                    dependsOnOf(reader.getValue()).contains(ga4BqEventsTableId),
+                    reader.getKey() + " should depend on the ga4_bq_events table so its columns exist first");
+        }
+    }
+
+    @Test
+    void everyViewWaitsForEachGlueTableItsSqlReads() throws IOException {
+        Template analytics = synthAnalyticsTemplate();
+
+        var missing = new java.util.TreeSet<String>();
+        for (var table : glueTableLogicalIdsByName(analytics).entrySet()) {
+            for (var reader : viewsReadingTable(analytics, table.getKey()).entrySet()) {
+                if (!dependsOnOf(reader.getValue()).contains(table.getValue())) {
+                    missing.add(reader.getKey() + " -> " + table.getKey());
+                }
+            }
+        }
+        assertTrue(missing.isEmpty(), "views missing a dependency on a table they read: " + missing);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, String> glueTableLogicalIdsByName(Template template) {
+        var ids = new HashMap<String, String>();
+        template.findResources("AWS::Glue::Table").forEach((logicalId, resource) -> {
+            var properties = (Map<String, Object>) resource.get("Properties");
+            var tableInput = (Map<String, Object>) properties.get("TableInput");
+            var name = tableInput.get("Name");
+            if (name instanceof String tableName) {
+                ids.put(tableName, logicalId);
+            }
+        });
+        return ids;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Map<String, Object>> viewsReadingTable(Template template, String tableName) {
+        var pattern = java.util.regex.Pattern.compile("\\b" + java.util.regex.Pattern.quote(tableName) + "\\b");
+        var readers = new java.util.TreeMap<String, Map<String, Object>>();
+        template.findResources("Custom::AthenaView").forEach((logicalId, resource) -> {
+            var properties = (Map<String, Object>) resource.get("Properties");
+            var sql = String.valueOf(properties.get("Sql")).replaceAll("--[^\\n]*", "");
+            var viewName = String.valueOf(properties.get("ViewName"));
+            if (!viewName.equals(tableName) && pattern.matcher(sql).find()) {
+                readers.put(viewName, resource);
+            }
+        });
+        return readers;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> dependsOnOf(Map<String, Object> resource) {
+        var dependsOn = resource.get("DependsOn");
+        if (dependsOn instanceof List<?> list) {
+            return (List<String>) list;
+        }
+        return dependsOn instanceof String single ? List.of(single) : List.of();
+    }
+
     private static Template synthAnalyticsTemplate() throws IOException {
         Path cdkJsonPath = Path.of("cdk-environment/cdk.json").toAbsolutePath();
         Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);

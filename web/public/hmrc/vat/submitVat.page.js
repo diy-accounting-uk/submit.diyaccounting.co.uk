@@ -792,6 +792,8 @@ async function connectHmrc() {
     window.location.href = authResponseUrl;
   } catch (error) {
     console.error("Authentication error:", error);
+    // No redirect happened, so no Assist check waits on a return from HMRC.
+    sessionStorage.removeItem(HMRC_ASSIST_CHECK_PENDING_KEY);
     showStatus(siteText("widget.hmrc-auth-failed", "Authentication failed: {reason}", { reason: error.message }), "error");
   }
 }

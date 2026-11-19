@@ -1267,6 +1267,31 @@ const CAMPAIGN_COMPONENT = `CASE platform WHEN 'microsoft' THEN 'Microsoft: ' EL
 
 const PLATFORM_LABELS = { google: "Google", microsoft: "Microsoft" };
 
+/**
+ * A daily chart query (day, component, value) without the components whose value adds up to 0
+ * over the whole window. A mode that uses it sets hidesIdleLines, so buildChartSeries does not
+ * put a filtered component back as a 0 line from componentOrder, and the page hides a line that
+ * is 0 over the range it shows. A campaign whose only metric on a day is a conversion writes a row with
+ * no impressions, clicks or cost; this keeps it out of the charts of those metrics.
+ *
+ * @param {string} sql - a query answering day, component and value
+ * @returns {string}
+ */
+export function withoutAllZeroComponents(sql) {
+  const inner = sql
+    .split("\n")
+    .map((line) => `    ${line}`)
+    .join("\n");
+  return (
+    `SELECT day, component, value\n` +
+    `FROM (\n` +
+    `  SELECT day, component, value, sum(value) OVER (PARTITION BY component) AS window_total\n` +
+    `  FROM (\n${inner}\n  ) per_day\n` +
+    `) per_component\n` +
+    `WHERE  window_total > 0`
+  );
+}
+
 const plural = (count, singular, pluralForm) => `${count} ${Number(count) === 1 ? singular : pluralForm}`;
 
 /**
@@ -1839,9 +1864,11 @@ export function buildDailyChartDefinitions() {
           totalDescription: "Impressions of every campaign added together.",
           labelOf: (id) => id,
           descriptionOf: (id) => `Times the ${id} campaign's advertisements were shown in a day.`,
-          sql:
+          hidesIdleLines: true,
+          sql: withoutAllZeroComponents(
             `SELECT cast(day AS varchar) AS day, ${CAMPAIGN_COMPONENT} AS component, cast(sum(impressions) AS double) AS value\n` +
-            `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+              `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+          ),
         },
         {
           id: "ads-clicks",
@@ -1852,9 +1879,11 @@ export function buildDailyChartDefinitions() {
           maxComponents: 10,
           labelOf: (id) => id,
           descriptionOf: (id) => `Clicks on the ${id} campaign's advertisements in a day.`,
-          sql:
+          hidesIdleLines: true,
+          sql: withoutAllZeroComponents(
             `SELECT cast(day AS varchar) AS day, ${CAMPAIGN_COMPONENT} AS component, cast(sum(clicks) AS double) AS value\n` +
-            `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+              `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+          ),
         },
         {
           id: "ads-ctr",
@@ -1888,9 +1917,11 @@ export function buildDailyChartDefinitions() {
           componentOrder: ["google", "microsoft"],
           labelOf: (id) => PLATFORM_LABELS[id] ?? id,
           descriptionOf: (id) => `The day's ${PLATFORM_LABELS[id] ?? id} Ads cost, in pounds.`,
-          sql:
+          hidesIdleLines: true,
+          sql: withoutAllZeroComponents(
             `SELECT cast(day AS varchar) AS day, platform AS component, cast(sum(cost_gbp) AS double) AS value\n` +
-            `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+              `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+          ),
         },
         {
           id: "ads-paid-landings",
@@ -1957,7 +1988,10 @@ export function buildDailyChartDefinitions() {
           total: null,
           componentOrder: ["google", "microsoft"],
           labelOf: (id) => PLATFORM_LABELS[id] ?? id,
-          descriptionOf: (id) => `Conversions ${PLATFORM_LABELS[id] ?? id} Ads counts in a day. The Google pull does not read conversions.`,
+          descriptionOf: (id) =>
+            id === "google"
+              ? "Conversions Google Ads counts in a day, on the day of the click that led to each."
+              : `Conversions ${PLATFORM_LABELS[id] ?? id} Ads counts in a day.`,
           sql:
             `SELECT cast(day AS varchar) AS day, platform AS component, cast(conversions AS double) AS value\n` +
             `FROM   v_ads_performance_daily\nWHERE  ${dailyWindowFilter("day")} AND conversions IS NOT NULL`,
@@ -2309,10 +2343,10 @@ export function buildDailyChartDefinitions() {
           id: "country",
           label: "By country",
           total: "All countries",
-          totalDescription: "Sessions of every country added together, AI agents apart.",
+          totalDescription: "Sessions of every country added together, AI agents and automated clients apart.",
           maxComponents: 10,
           labelOf: (id) => id,
-          descriptionOf: (id) => `Sessions from ${id} that are not AI agents, from the activity events.`,
+          descriptionOf: (id) => `Sessions from ${id} that are neither AI agents nor automated clients, from the activity events.`,
           sql: longFormSql({
             dayExpression: "day",
             componentExpression: "country",
@@ -2349,6 +2383,30 @@ export function buildDailyChartDefinitions() {
             valueExpression: "ai_agent_sessions",
             view: "v_traffic_by_country_hourly",
             where: "ai_agent_sessions > 0",
+          }),
+        },
+        {
+          id: "automated-country",
+          label: "Automated clients by country",
+          total: "All automated sessions",
+          totalDescription: "Sessions by automated clients from every country added together.",
+          maxComponents: 10,
+          labelOf: (id) => id,
+          descriptionOf: (id) =>
+            `Sessions from ${id} by an automated client: an empty user agent, a bot token with a contact URL, a headless or driven browser, an HTTP library or a page-speed tool.`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "country",
+            valueExpression: "automated_sessions",
+            view: "v_traffic_by_country_daily",
+            dayColumn: "day",
+            where: "automated_sessions > 0",
+          }),
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "country",
+            valueExpression: "automated_sessions",
+            view: "v_traffic_by_country_hourly",
+            where: "automated_sessions > 0",
           }),
         },
       ],
@@ -2432,15 +2490,18 @@ function buildChartSeriesOfOneKind({ days, rows, mode }) {
   const describe = (id) => (mode.descriptionOf ? { description: mode.descriptionOf(id) } : {});
   let components = [...valuesByComponent.entries()].map(([id, values]) => ({ id, label: mode.labelOf(id), ...describe(id), values }));
   if (mode.componentOrder) {
-    components = mode.componentOrder.map(
-      (id) =>
-        components.find((component) => component.id === id) ?? {
-          id,
-          label: mode.labelOf(id),
-          ...describe(id),
-          values: new Array(days.length).fill(0),
-        },
-    );
+    const present = new Set(components.map((component) => component.id));
+    components = mode.componentOrder
+      .filter((id) => !mode.hidesIdleLines || present.has(id))
+      .map(
+        (id) =>
+          components.find((component) => component.id === id) ?? {
+            id,
+            label: mode.labelOf(id),
+            ...describe(id),
+            values: new Array(days.length).fill(0),
+          },
+      );
   } else {
     components.sort((a, b) => sum(b.values) - sum(a.values) || a.label.localeCompare(b.label));
   }
@@ -2549,6 +2610,7 @@ export async function buildDailyCharts({
             id: mode.id,
             label: mode.label,
             ...(mode.unit ? { unit: mode.unit } : {}),
+            ...(mode.hidesIdleLines ? { hidesIdleLines: true } : {}),
             series,
             ...(hourly ? { hourly } : {}),
           },

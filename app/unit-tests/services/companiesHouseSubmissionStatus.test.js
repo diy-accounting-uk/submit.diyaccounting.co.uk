@@ -24,11 +24,17 @@ vi.mock("@aws-sdk/lib-dynamodb", () => {
       this.input = input;
     }
   }
+  class QueryCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
   return {
     DynamoDBDocumentClient: { from: () => ({ send: mockSend }) },
     GetCommand,
     PutCommand,
     UpdateCommand,
+    QueryCommand,
   };
 });
 
@@ -67,7 +73,7 @@ vi.mock("@app/services/companiesHouseXmlGateway.js", async (importOriginal) => {
   };
 });
 
-import { pollSubmission } from "@app/services/companiesHouseSubmissionStatus.js";
+import { pollSubmission, hasStoredFinalStatus, isNeverReceived } from "@app/services/companiesHouseSubmissionStatus.js";
 import { initializeSalt } from "@app/services/subHasher.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -281,11 +287,15 @@ describe("pollSubmission", () => {
     expect(mockEventBridgeSend).not.toHaveBeenCalled();
   });
 
-  test("records nothing and sends no email when the presenter poll has already claimed the final status", async () => {
+  test("answers pending, records nothing and sends no email while the presenter poll is still recording the final status", async () => {
     const lib = await import("@aws-sdk/lib-dynamodb");
     mockSend.mockImplementation(async (cmd) => {
       if (cmd instanceof lib.GetCommand) return { Item: { requestId: cmd.input.Key.requestId, status: "pending" } };
-      if (cmd instanceof lib.UpdateCommand && cmd.input.ConditionExpression === "attribute_not_exists(claimedAt)") {
+      if (
+        cmd instanceof lib.UpdateCommand &&
+        cmd.input.Key?.requestId === "pending#00001A" &&
+        cmd.input.ConditionExpression?.startsWith("attribute_not_exists(claimedAt)")
+      ) {
         throw Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" });
       }
       return {};
@@ -297,7 +307,7 @@ describe("pollSubmission", () => {
 
     const result = await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "confirmation-statement" });
 
-    expect(result.data.statusCode).toBe("ACCEPT");
+    expect(result.data).toEqual({ submissionNumber: "00001A", statusCode: "PENDING", rejections: [] });
     expect(mockSend.mock.calls.filter(([cmd]) => cmd instanceof lib.PutCommand)).toHaveLength(0);
     expect(mockEventBridgeSend).not.toHaveBeenCalled();
   });
@@ -317,7 +327,11 @@ describe("pollSubmission", () => {
             }
           : { Item: { requestId: "00001A", status: "pending" } };
       }
-      if (cmd instanceof lib.UpdateCommand && cmd.input.ConditionExpression === "attribute_not_exists(claimedAt)") {
+      if (
+        cmd instanceof lib.UpdateCommand &&
+        cmd.input.Key?.requestId === "pending#00001A" &&
+        cmd.input.ConditionExpression?.startsWith("attribute_not_exists(claimedAt)")
+      ) {
         claimLost = true;
         throw Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" });
       }
@@ -439,5 +453,28 @@ describe("pollSubmission", () => {
 
     expect(result.data.receiptId).toBe("cached-receipt");
     expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+});
+
+describe("hasStoredFinalStatus", () => {
+  const neverReceived = {
+    statusCode: "REJECT",
+    rejections: [{ rejectCode: "NOT-RECEIVED", description: "Companies House did not receive this filing.", instanceNumber: "1" }],
+  };
+
+  test("an accepted filing and a Companies House rejection are final", () => {
+    expect(hasStoredFinalStatus({ status: "completed", data: { statusCode: "ACCEPT" } })).toBe(true);
+    expect(hasStoredFinalStatus({ status: "failed", data: { statusCode: "REJECT", rejections: [{ rejectCode: "1" }] } })).toBe(true);
+  });
+
+  test("the never-received rejection is not final, so a later decision is recorded over it", () => {
+    expect(isNeverReceived(neverReceived)).toBe(true);
+    expect(hasStoredFinalStatus({ status: "failed", data: neverReceived })).toBe(false);
+  });
+
+  test("a send that failed before Companies House had it, and a pending filing, are not final", () => {
+    expect(hasStoredFinalStatus({ status: "failed", data: { message: "socket hang up" } })).toBe(false);
+    expect(hasStoredFinalStatus({ status: "pending", data: {} })).toBe(false);
+    expect(hasStoredFinalStatus(null)).toBe(false);
   });
 });

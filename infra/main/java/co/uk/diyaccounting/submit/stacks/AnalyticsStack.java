@@ -730,81 +730,10 @@ public class AnalyticsStack extends Stack {
             r.getNode().addDependency(stripeTables.subscriptionsTable);
             r.getNode().addDependency(hashAliasTable);
         });
-        businessViews.viewResourcesByName.get("v_revenue_daily").getNode().addDependency(paypalTables.donationsTable);
-        businessViews.viewResourcesByName.get("v_ads_cost_daily").getNode().addDependency(adsCostTables.costTable);
-        businessViews.viewResourcesByName.get("v_usd_gbp_daily").getNode().addDependency(fxRateTables.ratesTable);
-        businessViews
-                .viewResourcesByName
-                .get("v_spreadsheets_downloads_daily")
-                .getNode()
-                .addDependency(ga4DailyTables.downloadsByProductTable);
-        businessViews
-                .viewResourcesByName
-                .get("v_submit_referrals_daily")
-                .getNode()
-                .addDependency(ga4DailyTables.sessionsByHostSourceTable);
-        businessViews
-                .viewResourcesByName
-                .get("v_company_runway")
-                .getNode()
-                .addDependency(companyBookTables.companyAccountsTable);
-        // The three new sources each feed exactly one view, so their dependency edges are added
-        // by view name rather than unconditionally on every view.
-        businessViews
-                .viewResourcesByName
-                .get("v_visitors_by_kind_hourly")
-                .getNode()
-                .addDependency(ga4DailyTables.sessionsByHourKindTable);
-        businessViews
-                .viewResourcesByName
-                .get("v_alarm_state_changes_daily")
-                .getNode()
-                .addDependency(alarmStateChangeDelivery.glueTable);
-        businessViews
-                .viewResourcesByName
-                .get("v_availability_sli_daily")
-                .getNode()
-                .addDependency(workflowRunTables.probeRunsTable);
-        businessViews
-                .viewResourcesByName
-                .get("v_dora_runs_daily")
-                .getNode()
-                .addDependency(workflowRunTables.doraRunsTable);
-        businessViews
-                .viewResourcesByName
-                .get("v_operator_interventions_daily")
-                .getNode()
-                .addDependency(operatorEffortTables.workflowRunsTable);
-        businessViews
-                .viewResourcesByName
-                .get("v_operator_interventions_daily")
-                .getNode()
-                .addDependency(operatorEffortTables.issueEventsTable);
-        businessViews
-                .viewResourcesByName
-                .get("v_operator_interventions_daily")
-                .getNode()
-                .addDependency(operatorEffortTables.commitsTable);
-        businessViews
-                .viewResourcesByName
-                .get("v_agent_runs_daily")
-                .getNode()
-                .addDependency(workflowRunTables.agentRunsTable);
-        businessViews
-                .viewResourcesByName
-                .get("v_agent_runs_daily")
-                .getNode()
-                .addDependency(operatorEffortTables.issueEventsTable);
-        businessViews
-                .viewResourcesByName
-                .get("v_compliance_status")
-                .getNode()
-                .addDependency(complianceTables.accessibilityTable);
-        businessViews
-                .viewResourcesByName
-                .get("v_compliance_status")
-                .getNode()
-                .addDependency(complianceTables.fraudHeadersTable);
+        businessViews.dependOnTheTablesTheyRead(this.getNode().findAll().stream()
+                .filter(CfnTable.class::isInstance)
+                .map(CfnTable.class::cast)
+                .toList());
 
         new AnalyticsDashboard(
                 this,
@@ -1117,7 +1046,8 @@ public class AnalyticsStack extends Stack {
                         "detail_json",
                         "app_client",
                         "session_id",
-                        "activity_id")
+                        "activity_id",
+                        "bot_class")
                 .forEach(name -> columns.add(CfnTable.ColumnProperty.builder()
                         .name(name)
                         .type("string")

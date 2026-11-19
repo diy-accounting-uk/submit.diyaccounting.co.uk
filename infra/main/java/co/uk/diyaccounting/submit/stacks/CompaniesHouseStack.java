@@ -282,7 +282,10 @@ public class CompaniesHouseStack extends Stack {
 
         // Lookup existing DynamoDB Activity Charges Table - the confirmation statement submit
         // Lambda checks and marks a per-filing Stripe charge before it accepts a fee-due
-        // submission (activityCharges.js).
+        // submission. The confirmation statement status Lambda and the presenter poll mark that
+        // charge used for a statement Companies House accepts after its envelope got no answer; the
+        // other status Lambdas share their module, so they carry the table name with no grant
+        // (activityCharges.js).
         ITable activityChargesTable = Table.fromTableName(
                 this,
                 "ImportedActivityChargesTable-%s".formatted(props.deploymentName()),
@@ -1045,6 +1048,7 @@ public class CompaniesHouseStack extends Stack {
 
         var companiesHouseAccountsGetLambdaEnv = xmlGatewayFilingLambdaEnv(props)
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName())
+                .with("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME", activityChargesTable.getTableName())
                 .with(
                         "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
                         companiesHouseAccountsAsyncRequestsTable.getTableName())
@@ -1085,7 +1089,8 @@ public class CompaniesHouseStack extends Stack {
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseAccountsGetLambda, bundlesTable, region, account, props, activityBusArn, false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseAccountsGetLambda, props);
-        receiptsTable.grant(this.companiesHouseAccountsGetLambda, "dynamodb:PutItem");
+        receiptsTable.grant(
+                this.companiesHouseAccountsGetLambda, "dynamodb:PutItem", "dynamodb:Query", "dynamodb:UpdateItem");
         grantTokenCharge(this.companiesHouseAccountsGetLambda, bundlesTable);
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHouseAccountsGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
@@ -1509,6 +1514,7 @@ public class CompaniesHouseStack extends Stack {
 
         var companiesHouseConfirmationStatementGetLambdaEnv = xmlGatewayFilingLambdaEnv(props)
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName())
+                .with("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME", activityChargesTable.getTableName())
                 .with(
                         "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
                         companiesHouseAccountsAsyncRequestsTable.getTableName())
@@ -1570,7 +1576,12 @@ public class CompaniesHouseStack extends Stack {
                 activityBusArn,
                 false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseConfirmationStatementGetLambda, props);
-        receiptsTable.grant(this.companiesHouseConfirmationStatementGetLambda, "dynamodb:PutItem");
+        receiptsTable.grant(
+                this.companiesHouseConfirmationStatementGetLambda,
+                "dynamodb:PutItem",
+                "dynamodb:Query",
+                "dynamodb:UpdateItem");
+        activityChargesTable.grant(this.companiesHouseConfirmationStatementGetLambda, "dynamodb:UpdateItem");
         grantTokenCharge(this.companiesHouseConfirmationStatementGetLambda, bundlesTable);
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHouseConfirmationStatementGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
@@ -1651,6 +1662,7 @@ public class CompaniesHouseStack extends Stack {
 
         var companiesHousePscVerificationStatementGetLambdaEnv = xmlGatewayFilingLambdaEnv(props)
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName())
+                .with("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME", activityChargesTable.getTableName())
                 .with(
                         "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
                         companiesHouseAccountsAsyncRequestsTable.getTableName())
@@ -1714,7 +1726,11 @@ public class CompaniesHouseStack extends Stack {
                 activityBusArn,
                 false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHousePscVerificationStatementGetLambda, props);
-        receiptsTable.grant(this.companiesHousePscVerificationStatementGetLambda, "dynamodb:PutItem");
+        receiptsTable.grant(
+                this.companiesHousePscVerificationStatementGetLambda,
+                "dynamodb:PutItem",
+                "dynamodb:Query",
+                "dynamodb:UpdateItem");
         grantTokenCharge(this.companiesHousePscVerificationStatementGetLambda, bundlesTable);
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHousePscVerificationStatementGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
@@ -1724,6 +1740,7 @@ public class CompaniesHouseStack extends Stack {
         // poll does, then acknowledges the poll (GetSubmissionStatus option 2, then GetStatusAck).
         var companiesHouseSubmissionStatusPollLambdaEnv = xmlGatewayFilingLambdaEnv(props)
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName())
+                .with("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME", activityChargesTable.getTableName())
                 .with(
                         "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
                         companiesHouseAccountsAsyncRequestsTable.getTableName())
@@ -1767,7 +1784,12 @@ public class CompaniesHouseStack extends Stack {
                 false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseSubmissionStatusPollLambda, props);
         codesSealKeySecret.grantRead(this.companiesHouseSubmissionStatusPollLambda);
-        receiptsTable.grant(this.companiesHouseSubmissionStatusPollLambda, "dynamodb:PutItem");
+        receiptsTable.grant(
+                this.companiesHouseSubmissionStatusPollLambda,
+                "dynamodb:PutItem",
+                "dynamodb:Query",
+                "dynamodb:UpdateItem");
+        activityChargesTable.grant(this.companiesHouseSubmissionStatusPollLambda, "dynamodb:UpdateItem");
         grantTokenCharge(this.companiesHouseSubmissionStatusPollLambda, bundlesTable);
         // Reads the filing state and the filer's request by key, and writes them; no Query, no Scan.
         companiesHouseAccountsAsyncRequestsTable.grant(

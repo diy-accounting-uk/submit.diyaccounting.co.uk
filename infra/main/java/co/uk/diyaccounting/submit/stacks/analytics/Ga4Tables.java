@@ -268,6 +268,7 @@ public class Ga4Tables {
                 "traffic_medium", "string",
                 "traffic_campaign", "string",
                 "stream_id", "string",
-                "platform", "string");
+                "platform", "string",
+                "visitor_kind", "string");
     }
 }

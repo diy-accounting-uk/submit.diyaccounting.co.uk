@@ -141,6 +141,22 @@ describe("activityEventTransform", () => {
     expect(row.activity_id).toBe("submit-vat");
   });
 
+  test("promotes the bot class from a new-session event", async () => {
+    const detail = { ...loginDetail, event: "new-session", botClass: "automated" };
+
+    const result = await handler({ records: [{ recordId: "r1", data: encode(envelope(detail)) }] });
+    const row = JSON.parse(decode(result.records[0].data));
+
+    expect(row.bot_class).toBe("automated");
+  });
+
+  test("leaves bot class null for an event carrying none", async () => {
+    const result = await handler({ records: [{ recordId: "r1", data: encode(envelope(loginDetail)) }] });
+    const row = JSON.parse(decode(result.records[0].data));
+
+    expect(row.bot_class).toBeNull();
+  });
+
   test("leaves activity id null for an event carrying none", async () => {
     const result = await handler({ records: [{ recordId: "r1", data: encode(envelope(loginDetail)) }] });
     const row = JSON.parse(decode(result.records[0].data));

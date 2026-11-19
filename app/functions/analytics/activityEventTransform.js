@@ -78,6 +78,7 @@ export function flattenEnvelope(envelope) {
     app_client: detail.appClient ?? null,
     session_id: detail.sessionId ?? null,
     activity_id: detail.activityId ?? null,
+    bot_class: detail.botClass ?? null,
   };
 }
 

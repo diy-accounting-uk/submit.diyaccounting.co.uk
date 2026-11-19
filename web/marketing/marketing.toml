@@ -1297,6 +1297,12 @@ integrations = ["Microsoft Excel", "OpenOffice Calc", "DIYA-GL"]
 videos = ["accounting-spreadsheet-profit", "short-spreadsheets"]
 
   [[listingProduct.screenshots]]
+  id = "workbook"
+  source = "spreadsheets"
+  image = "images/spreadsheets/diyaccounting-spreadsheets-workbook-bst.png"
+  alt = "The profit and loss account of the Basic Sole Trader workbook, through to the income tax due"
+
+  [[listingProduct.screenshots]]
   id = "sales"
   source = "spreadsheets"
   image = "images/spreadsheets/diyaccounting-spreadsheets-Basic Sole Tader - Sales.png"
@@ -1307,12 +1313,6 @@ videos = ["accounting-spreadsheet-profit", "short-spreadsheets"]
   source = "spreadsheets"
   image = "images/spreadsheets/diyaccounting-spreadsheets-Basic Sole Tader - Purchases.png"
   alt = "The purchases spreadsheet of the Basic Sole Trader workbook"
-
-  [[listingProduct.screenshots]]
-  id = "profit-and-loss"
-  source = "spreadsheets"
-  image = "images/spreadsheets/diyaccounting-spreadsheets-Basic Sole Tader - Profit and Loss.png"
-  alt = "The profit and loss account of the Basic Sole Trader workbook"
 
   [[listingProduct.screenshots]]
   id = "income-tax"
@@ -1362,10 +1362,16 @@ integrations = ["Microsoft Excel", "OpenOffice Calc", "DIY Accounting Submit", "
 videos = ["accounting-spreadsheet-profit"]
 
   [[listingProduct.screenshots]]
-  id = "sales"
+  id = "workbook"
+  source = "spreadsheets"
+  image = "images/spreadsheets/diyaccounting-spreadsheets-workbook-se.png"
+  alt = "The monthly profit and loss of the Self Employed workbook, with the financial health check"
+
+  [[listingProduct.screenshots]]
+  id = "self-assessment"
   source = "spreadsheets"
   image = "images/spreadsheets/diyaccounting-spreadsheets-se1.png"
-  alt = "A sheet of the Self Employed workbook"
+  alt = "The self-assessment allowable expenses and capital allowances page of the Self Employed workbook"
 
   [[listingProduct.screenshots]]
   id = "purchases"
@@ -1419,6 +1425,12 @@ features = [
 ]
 integrations = ["Microsoft Excel", "OpenOffice Calc", "DIYA-GL"]
 videos = ["accounting-spreadsheet-profit"]
+
+  [[listingProduct.screenshots]]
+  id = "workbook"
+  source = "spreadsheets"
+  image = "images/spreadsheets/diyaccounting-spreadsheets-workbook-taxi.png"
+  alt = "The Taxi Driver profit and loss, with CabSmart picking vehicle costs or the mileage allowance"
 
   [[listingProduct.screenshots]]
   id = "product-page"
@@ -1487,16 +1499,16 @@ integrations = ["Microsoft Excel", "OpenOffice Calc", "DIY Accounting Submit", "
 videos = ["accounting-spreadsheet-profit"]
 
   [[listingProduct.screenshots]]
+  id = "workbook"
+  source = "spreadsheets"
+  image = "images/spreadsheets/diyaccounting-spreadsheets-workbook-ltd.png"
+  alt = "The monthly profit and loss account of the Company Accounts workbook, from sales to profit before tax"
+
+  [[listingProduct.screenshots]]
   id = "balance-sheet"
   source = "spreadsheets"
   image = "images/spreadsheets/diyaccounting-spreadsheets-balance-sheet.jpg"
   alt = "The balance sheet of the Company Accounts workbook"
-
-  [[listingProduct.screenshots]]
-  id = "profit-and-loss"
-  source = "spreadsheets"
-  image = "images/spreadsheets/diyaccounting-spreadsheets-monthly-p-and-l.jpg"
-  alt = "The monthly profit and loss account"
 
   [[listingProduct.screenshots]]
   id = "corporation-tax"
@@ -1508,7 +1520,7 @@ videos = ["accounting-spreadsheet-profit"]
   id = "cash-and-bank"
   source = "spreadsheets"
   image = "images/spreadsheets/diyaccounting-spreadsheets-cashandbank2.jpg"
-  alt = "The cash and bank reconciliation"
+  alt = "The bank payments sheet of the Company Accounts workbook"
 
 [[listingProduct]]
 id = "spreadsheets-payslips"
@@ -1544,16 +1556,22 @@ integrations = ["Microsoft Excel", "OpenOffice Calc", "HMRC Basic PAYE Tools"]
 videos = []
 
   [[listingProduct.screenshots]]
+  id = "workbook"
+  source = "spreadsheets"
+  image = "images/spreadsheets/diyaccounting-spreadsheets-workbook-payslips.png"
+  alt = "A monthly payslip from the Payslips workbook: pay, tax, National Insurance and the totals for the year to date"
+
+  [[listingProduct.screenshots]]
   id = "payslips"
   source = "spreadsheets"
   image = "images/spreadsheets/diyaccounting-spreadsheets-payslips.png"
-  alt = "Payslips printed from the Payslips workbook"
+  alt = "The National Insurance contributions sheet of the Payslips workbook"
 
   [[listingProduct.screenshots]]
   id = "payroll-payslips"
   source = "spreadsheets"
   image = "images/spreadsheets/diyaccounting-spreadsheets-Payroll-Payslips.png"
-  alt = "The payroll sheet that feeds the payslips"
+  alt = "Two monthly payslips printed from the Payslips workbook"
 
   [[listingProduct.screenshots]]
   id = "product-page"

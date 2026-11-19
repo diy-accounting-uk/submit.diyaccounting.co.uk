@@ -33,11 +33,25 @@ vi.mock("@aws-sdk/client-secrets-manager", () => ({
   },
 }));
 
-const { handler, adsCostRows, buildCampaignQuery, buildAdGroupQuery, searchAllPages, fetchAdsAccessToken, readAdsAccount, objectKey } =
-  await import("../../functions/analytics/adsCostPull.js");
+const {
+  handler,
+  adsCostRows,
+  buildCampaignQuery,
+  buildAdGroupQuery,
+  searchAllPages,
+  fetchAdsAccessToken,
+  readAdsAccount,
+  objectKey,
+  conversionWindowDays,
+  CONVERSION_WINDOW_DAYS,
+} = await import("../../functions/analytics/adsCostPull.js");
 
 const campaignSearch = JSON.parse(readFileSync(new URL("./fixtures/adsCostCampaignSearch.json", import.meta.url), "utf-8"));
 const adGroupSearch = JSON.parse(readFileSync(new URL("./fixtures/adsCostAdGroupSearch.json", import.meta.url), "utf-8"));
+const conversionsCampaignSearch = JSON.parse(
+  readFileSync(new URL("./fixtures/adsConversionsCampaignSearch.json", import.meta.url), "utf-8"),
+);
+const conversionsAdGroupSearch = JSON.parse(readFileSync(new URL("./fixtures/adsConversionsAdGroupSearch.json", import.meta.url), "utf-8"));
 
 function jsonResponse(body) {
   return { ok: true, json: async () => body, text: async () => JSON.stringify(body) };
@@ -57,6 +71,7 @@ describe("adsCostRows", () => {
         impressions: 25,
         clicks: 2,
         cost_gbp: 0.6,
+        conversions: 0,
       },
       {
         date: "2026-09-28",
@@ -67,6 +82,7 @@ describe("adsCostRows", () => {
         impressions: 15,
         clicks: 1,
         cost_gbp: 0.3,
+        conversions: 0,
       },
       {
         date: "2026-09-28",
@@ -77,6 +93,7 @@ describe("adsCostRows", () => {
         impressions: 289,
         clicks: 5,
         cost_gbp: 1.252199,
+        conversions: 0,
       },
     ]);
   });
@@ -88,7 +105,44 @@ describe("adsCostRows", () => {
     expect(rowCost).toBeCloseTo(campaignCost, 6);
   });
 
-  test("leaves out a row with no impressions, clicks or cost", () => {
+  test("carries each row's conversions and keeps a campaign whose only metric that day is a conversion", () => {
+    const rows = adsCostRows(conversionsCampaignSearch.results, conversionsAdGroupSearch.results);
+
+    expect(rows.map((row) => [row.campaign_id, row.ad_group_id, row.clicks, row.conversions])).toEqual([
+      ["24295022766", "198457346577", 3, 2.5],
+      ["24295022766", "200929043735", 1, 0],
+      ["24265222030", "", 0, 1],
+    ]);
+  });
+
+  test("the day's conversions sum to the campaigns' totals", () => {
+    const rows = adsCostRows(conversionsCampaignSearch.results, conversionsAdGroupSearch.results);
+    const rowConversions = rows.reduce((sum, row) => sum + row.conversions, 0);
+    const campaignConversions = conversionsCampaignSearch.results.reduce((sum, r) => sum + Number(r.metrics.conversions), 0);
+    expect(rowConversions).toBe(campaignConversions);
+  });
+
+  test("gives a campaign its own row on a day it has no ad group rows, even when it has them on another day", () => {
+    const campaign = { id: "24295022766", name: "Search: MTD VAT" };
+    const adGroupResults = [
+      {
+        campaign,
+        adGroup: { id: "1", name: "Own brand" },
+        metrics: { clicks: "2", impressions: "20", costMicros: "500000" },
+        segments: { date: "2026-09-27" },
+      },
+    ];
+    const campaignResults = [
+      { campaign, metrics: { clicks: "2", impressions: "20", costMicros: "500000" }, segments: { date: "2026-09-27" } },
+      { campaign, metrics: { conversions: 1 }, segments: { date: "2026-09-28" } },
+    ];
+    expect(adsCostRows(campaignResults, adGroupResults).map((row) => [row.date, row.ad_group_id, row.clicks, row.conversions])).toEqual([
+      ["2026-09-27", "1", 2, 0],
+      ["2026-09-28", "", 0, 1],
+    ]);
+  });
+
+  test("leaves out a row with no impressions, clicks, cost or conversions", () => {
     const empty = { campaign: { id: "1", name: "Idle" }, metrics: {}, segments: { date: "2026-09-28" } };
     expect(adsCostRows([empty], [])).toEqual([]);
   });
@@ -97,11 +151,31 @@ describe("adsCostRows", () => {
 describe("queries", () => {
   test("select the day's metrics by campaign and by ad group", () => {
     expect(buildCampaignQuery("2026-09-28")).toBe(
-      "SELECT segments.date, campaign.id, campaign.name, metrics.impressions, metrics.clicks, metrics.cost_micros FROM campaign WHERE segments.date = '2026-09-28'",
+      "SELECT segments.date, campaign.id, campaign.name, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM campaign WHERE segments.date = '2026-09-28'",
     );
     expect(buildAdGroupQuery("2026-09-28")).toBe(
-      "SELECT segments.date, campaign.id, campaign.name, ad_group.id, ad_group.name, metrics.impressions, metrics.clicks, metrics.cost_micros FROM ad_group WHERE segments.date = '2026-09-28'",
+      "SELECT segments.date, campaign.id, campaign.name, ad_group.id, ad_group.name, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM ad_group WHERE segments.date = '2026-09-28'",
     );
+  });
+
+  test("select every day of a range, each row carrying its own date", () => {
+    expect(buildCampaignQuery("2026-08-30", "2026-09-29")).toBe(
+      "SELECT segments.date, campaign.id, campaign.name, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM campaign WHERE segments.date BETWEEN '2026-08-30' AND '2026-09-29'",
+    );
+    expect(buildAdGroupQuery("2026-08-30", "2026-09-29")).toContain(
+      "FROM ad_group WHERE segments.date BETWEEN '2026-08-30' AND '2026-09-29'",
+    );
+  });
+});
+
+describe("conversionWindowDays", () => {
+  test("is today and the 90 days before it, oldest first", () => {
+    const days = conversionWindowDays(new Date("2026-09-29T02:15:00Z"));
+    expect(CONVERSION_WINDOW_DAYS).toBe(90);
+    expect(days).toHaveLength(91);
+    expect(days[0]).toBe("2026-07-01");
+    expect(days.at(-1)).toBe("2026-09-29");
+    expect(new Set(days).size).toBe(91);
   });
 });
 
@@ -172,28 +246,91 @@ describe("handler", () => {
     vi.unstubAllGlobals();
   });
 
-  test("with no date writes yesterday and today so far, each to its own partition", async () => {
+  test("writes the day's conversions in each lake row", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url, options) => {
         if (String(url).startsWith("https://oauth2.googleapis.com/token")) return jsonResponse({ access_token: "at" });
-        return jsonResponse(JSON.parse(options.body).query.includes("FROM ad_group") ? adGroupSearch : campaignSearch);
+        const query = JSON.parse(options.body).query;
+        expect(query).toContain("metrics.conversions");
+        return jsonResponse(query.includes("FROM ad_group") ? conversionsAdGroupSearch : conversionsCampaignSearch);
+      }),
+    );
+    try {
+      await handler({ date: "2026-11-17" });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    const put = mockS3Send.mock.calls[0][0].input;
+    expect(put.Key).toBe("curated/ads/ads_cost/dt=2026-11-17/ads_cost.json.gz");
+    const lines = gunzipSync(put.Body).toString("utf-8").trim().split("\n").map(JSON.parse);
+    expect(lines.map((line) => line.conversions)).toEqual([2.5, 0, 1]);
+  });
+
+  async function runAt(isoNow, searches) {
+    const queries = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url, options) => {
+        if (String(url).startsWith("https://oauth2.googleapis.com/token")) return jsonResponse({ access_token: "at" });
+        const query = JSON.parse(options.body).query;
+        queries.push(query);
+        return jsonResponse(query.includes("FROM ad_group") ? searches.adGroup : searches.campaign);
       }),
     );
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-09-29T10:15:00Z"));
-    let result;
+    vi.setSystemTime(new Date(isoNow));
     try {
-      result = await handler({});
+      return { result: await handler({}), queries };
     } finally {
       vi.useRealTimers();
       vi.unstubAllGlobals();
     }
+  }
 
-    expect(result.days.map((d) => d.key)).toEqual([
-      "curated/ads/ads_cost/dt=2026-09-28/ads_cost.json.gz",
-      "curated/ads/ads_cost/dt=2026-09-29/ads_cost.json.gz",
-    ]);
+  function putsByKey() {
+    return new Map(mockS3Send.mock.calls.map(([command]) => [command.input.Key, command.input.Body]));
+  }
+
+  function linesOf(body) {
+    const text = gunzipSync(body).toString("utf-8").trim();
+    return text ? text.split("\n").map(JSON.parse) : [];
+  }
+
+  test("with no date asks for today and the 90 days before it in one search per query, and writes one object per day", async () => {
+    const { result, queries } = await runAt("2026-09-29T02:15:00Z", { campaign: campaignSearch, adGroup: adGroupSearch });
+
+    expect(queries).toHaveLength(2);
+    for (const query of queries) expect(query).toContain("segments.date BETWEEN '2026-07-01' AND '2026-09-29'");
+    expect(result.days).toHaveLength(91);
+    expect(result.days.map((day) => day.key)).toEqual(conversionWindowDays(new Date("2026-09-29T02:15:00Z")).map(objectKey));
+    expect(mockS3Send).toHaveBeenCalledTimes(91);
+    const puts = putsByKey();
+    expect(puts.size).toBe(91);
+    expect(linesOf(puts.get(objectKey("2026-09-28")))).toHaveLength(3);
+    expect(linesOf(puts.get(objectKey("2026-09-27")))).toEqual([]);
+    expect(result.days.find((day) => day.date === "2026-09-28").count).toBe(3);
+  });
+
+  test("a day pulled again inside the window replaces its object with the later conversions, and keeps its cost", async () => {
+    await runAt("2026-11-17T20:15:00Z", { campaign: conversionsCampaignSearch, adGroup: conversionsAdGroupSearch });
+    const first = linesOf(putsByKey().get(objectKey("2026-11-17")));
+
+    mockS3Send.mockClear();
+    const moreConversions = structuredClone(conversionsAdGroupSearch);
+    moreConversions.results[1].metrics.conversions = 2.0;
+    const moreCampaign = structuredClone(conversionsCampaignSearch);
+    moreCampaign.results[1].metrics.conversions = 4.5;
+    await runAt("2026-11-19T02:15:00Z", { campaign: moreCampaign, adGroup: moreConversions });
+    const puts = putsByKey();
+    const second = linesOf(puts.get(objectKey("2026-11-17")));
+
+    expect(mockS3Send.mock.calls.filter(([command]) => command.input.Key === objectKey("2026-11-17"))).toHaveLength(1);
+    expect(second.map((line) => line.conversions)).toEqual([2.5, 2, 1]);
+    expect(second.map((line) => [line.impressions, line.clicks, line.cost_gbp])).toEqual(
+      first.map((line) => [line.impressions, line.clicks, line.cost_gbp]),
+    );
   });
 
   test("throws when a required environment variable is missing", async () => {

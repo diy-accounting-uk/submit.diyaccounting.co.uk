@@ -12,6 +12,7 @@ const mockSend = vi.fn();
 const mockPutCommand = vi.fn();
 const mockGetCommand = vi.fn();
 const mockQueryCommand = vi.fn();
+const mockUpdateCommand = vi.fn();
 
 const dynamoDbModule = {
   PutCommand: class PutCommand {
@@ -29,6 +30,12 @@ const dynamoDbModule = {
   QueryCommand: class QueryCommand {
     constructor(params) {
       mockQueryCommand(params);
+      this.params = params;
+    }
+  },
+  UpdateCommand: class UpdateCommand {
+    constructor(params) {
+      mockUpdateCommand(params);
       this.params = params;
     }
   },
@@ -51,7 +58,9 @@ vi.mock("@app/services/subHasher.js", () => ({
   subHashCandidates: vi.fn((sub) => [{ version: "v1", hashedSub: `hashed-${sub}` }]),
 }));
 
-const { putReceipt, listUserReceipts } = await import("@app/data/dynamoDbReceiptRepository.js");
+const { putReceipt, putReceiptIfNew, listUserReceipts, findReceiptForSubmission, markReceiptStepDone, clearReceiptStep } =
+  await import("@app/data/dynamoDbReceiptRepository.js");
+const { subHashCandidates } = await import("@app/services/subHasher.js");
 
 describe("data/dynamoDbReceiptRepository", () => {
   beforeEach(() => {
@@ -59,6 +68,7 @@ describe("data/dynamoDbReceiptRepository", () => {
     mockPutCommand.mockClear();
     mockGetCommand.mockClear();
     mockQueryCommand.mockClear();
+    mockUpdateCommand.mockClear();
     mockSend.mockResolvedValue({});
     process.env.RECEIPTS_DYNAMODB_TABLE_NAME = "test-receipts-table";
   });
@@ -74,6 +84,117 @@ describe("data/dynamoDbReceiptRepository", () => {
       await putReceipt("practice-sub", "receipt-1", { formBundleNumber: "FB1" }, "customer");
 
       expect(mockPutCommand.mock.calls[0][0].Item.clientId).toBeUndefined();
+    });
+  });
+
+  describe("putReceiptIfNew", () => {
+    test("stores the receipt only when none is stored under its id, and answers the hash it is stored under", async () => {
+      expect(await putReceiptIfNew("user-sub", "receipt-1", { formBundleNumber: "FB1" }, "customer")).toBe("hashed-user-sub");
+
+      expect(mockPutCommand.mock.calls[0][0].ConditionExpression).toBe("attribute_not_exists(receiptId)");
+    });
+
+    test("leaves a receipt already stored under its id as it is and says so", async () => {
+      mockSend.mockRejectedValueOnce(
+        Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" }),
+      );
+
+      expect(await putReceiptIfNew("user-sub", "receipt-1", { formBundleNumber: "FB1" }, "customer")).toBeNull();
+    });
+
+    test("a write that fails for another reason fails the caller", async () => {
+      mockSend.mockRejectedValueOnce(Object.assign(new Error("throttled"), { name: "ProvisionedThroughputExceededException" }));
+
+      await expect(putReceiptIfNew("user-sub", "receipt-1", { formBundleNumber: "FB1" }, "customer")).rejects.toThrow("throttled");
+    });
+
+    test("putReceipt writes without a condition", async () => {
+      await putReceipt("user-sub", "receipt-1", { formBundleNumber: "FB1" }, "customer");
+
+      expect(mockPutCommand.mock.calls[0][0].ConditionExpression).toBeUndefined();
+    });
+  });
+
+  describe("findReceiptForSubmission", () => {
+    const SENT_AT = "2026-03-01T10:00:00.000Z";
+
+    test("reads only the receipts stored since the submission was sent, and finds the one ending with its number", async () => {
+      mockSend.mockResolvedValueOnce({
+        Items: [
+          { receiptId: "2026-03-01T10:05:00.000Z-00001B" },
+          { receiptId: "2026-03-02T08:00:00.000Z-00001A", emailRequestedAt: SENT_AT },
+        ],
+      });
+
+      expect(await findReceiptForSubmission("user-sub", "00001A", SENT_AT)).toEqual({
+        receiptId: "2026-03-02T08:00:00.000Z-00001A",
+        emailRequestedAt: SENT_AT,
+        hashedSub: "hashed-user-sub",
+      });
+      const query = mockQueryCommand.mock.calls[0][0];
+      expect(query.KeyConditionExpression).toBe("hashedSub = :hashedSub AND receiptId >= :sentAt");
+      expect(query.ExpressionAttributeValues).toEqual({ ":hashedSub": "hashed-user-sub", ":sentAt": SENT_AT });
+    });
+
+    test("does not take a submission number that only ends the same way", async () => {
+      mockSend.mockResolvedValue({ Items: [{ receiptId: "2026-03-02T08:00:00.000Z-100001A" }] });
+
+      expect(await findReceiptForSubmission("user-sub", "00001A", SENT_AT)).toBeNull();
+    });
+
+    test("reads every page of every salt version until it finds the receipt", async () => {
+      subHashCandidates.mockReturnValueOnce([
+        { version: "v1", hashedSub: "hashed-user-sub" },
+        { version: "v0", hashedSub: "hashed-v0-user-sub" },
+      ]);
+      mockSend
+        .mockResolvedValueOnce({ Items: [], LastEvaluatedKey: { receiptId: "k" } })
+        .mockResolvedValueOnce({ Items: [] })
+        .mockResolvedValueOnce({ Items: [{ receiptId: "2026-03-02T08:00:00.000Z-00001A" }] });
+
+      expect(await findReceiptForSubmission("user-sub", "00001A", SENT_AT)).toMatchObject({ hashedSub: "hashed-v0-user-sub" });
+      expect(mockQueryCommand).toHaveBeenCalledTimes(3);
+      expect(mockQueryCommand.mock.calls[1][0].ExclusiveStartKey).toEqual({ receiptId: "k" });
+    });
+  });
+
+  describe("markReceiptStepDone", () => {
+    test("records a step on a stored receipt only when it is not recorded", async () => {
+      const recordedAt = await markReceiptStepDone("hashed-user-sub", "receipt-1", "tokenChargedAt");
+
+      expect(recordedAt).toMatch(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/);
+
+      const update = mockUpdateCommand.mock.calls[0][0];
+      expect(update.Key).toEqual({ hashedSub: "hashed-user-sub", receiptId: "receipt-1" });
+      expect(update.ConditionExpression).toBe("attribute_exists(receiptId) AND attribute_not_exists(#step)");
+      expect(update.ExpressionAttributeNames).toEqual({ "#step": "tokenChargedAt" });
+    });
+
+    test("answers false for a step already recorded", async () => {
+      mockSend.mockRejectedValueOnce(
+        Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" }),
+      );
+
+      expect(await markReceiptStepDone("hashed-user-sub", "receipt-1", "emailRequestedAt")).toBeNull();
+    });
+  });
+
+  describe("clearReceiptStep", () => {
+    test("removes a step only while it holds the time the caller recorded", async () => {
+      expect(await clearReceiptStep("hashed-user-sub", "receipt-1", "tokenChargedAt", "2026-11-19T10:00:00.000Z")).toBe(true);
+
+      const update = mockUpdateCommand.mock.calls[0][0];
+      expect(update.UpdateExpression).toBe("REMOVE #step");
+      expect(update.ConditionExpression).toBe("#step = :recordedAt");
+      expect(update.ExpressionAttributeValues).toEqual({ ":recordedAt": "2026-11-19T10:00:00.000Z" });
+    });
+
+    test("answers false when the step holds another time", async () => {
+      mockSend.mockRejectedValueOnce(
+        Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" }),
+      );
+
+      expect(await clearReceiptStep("hashed-user-sub", "receipt-1", "tokenChargedAt", "2026-11-19T10:00:00.000Z")).toBe(false);
     });
   });
 

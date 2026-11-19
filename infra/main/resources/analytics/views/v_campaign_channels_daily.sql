@@ -3,7 +3,7 @@
 
 -- @capability DATA-68 SQL view: campaign results by place
 -- - **Use when:** a campaign report must say which place (utm source, medium, campaign or referral code) produced sessions, pass uses, subscribers and commission.
--- - **Does:** v_campaign_channels_daily joins the session beacon's ref and utm_* values (new-session events), pass redemptions and live commission lines on one key per day: utm source, medium, campaign and ref. Redemptions and commission lines reach the key through the redeemer's first bundle record, which carries the acquisition captured at landing. BusinessViews.java registers the view.
+-- - **Does:** v_campaign_channels_daily joins the session beacon's ref and utm_* values (new-session events from people, automated clients left out), pass redemptions and live commission lines on one key per day: utm source, medium, campaign and ref. Redemptions and commission lines reach the key through the redeemer's first bundle record, which carries the acquisition captured at landing. BusinessViews.java registers the view.
 -- - **Run:** no command; `SELECT * FROM v_campaign_channels_daily WHERE day >= current_date - INTERVAL '30' DAY`
 -- - **Entry:** `infra/main/resources/analytics/views/v_campaign_channels_daily.sql:`
 -- - **Files:** infra/main/resources/analytics/views/v_campaign_channels_daily.sql, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/BusinessViews.java
@@ -16,7 +16,10 @@
 -- One row per day, utm_source, utm_medium, utm_campaign and ref ('' when the value is absent).
 --
 -- sessions counts new-session events from people (actor visitor) whose beacon carried a landing,
--- read from detail_json (utmSource, utmMedium, utmCampaign, ref). The beacon is sent after consent,
+-- read from detail_json (utmSource, utmMedium, utmCampaign, ref). A session whose bot_class is
+-- 'automated' (classifyBot in app/lib/visitorClassifier.js: an empty user agent, a bot token with a
+-- contact URL, a headless or driven browser, an HTTP library or a page-speed tool) is left out, as
+-- in v_traffic_by_country_daily; an event written before the bot class existed counts as a person. The beacon is sent after consent,
 -- so a visit without consent has no row here.
 --
 -- A pass use is one redemption item per code and account in dynamo_passes; the day is the first
@@ -50,6 +53,7 @@ session_rows AS (
   FROM   activity_events_all
   WHERE  event = 'new-session'
     AND  actor = 'visitor'
+    AND  coalesce(bot_class, 'none') <> 'automated'
     AND  (json_extract_scalar(detail_json, '$.utmSource') IS NOT NULL
           OR json_extract_scalar(detail_json, '$.ref') IS NOT NULL)
   GROUP  BY 1, 2, 3, 4, 5),

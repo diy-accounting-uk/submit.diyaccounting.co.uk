@@ -16,7 +16,7 @@
 import { createLogger } from "../../lib/logger.js";
 import { extractRequest, http200OkResponse, http400BadRequestResponse, getHeader } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
-import { classifyVisitor } from "../../lib/visitorClassifier.js";
+import { classifyVisitor, classifyBot } from "../../lib/visitorClassifier.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/account/sessionBeaconPost.js" });
@@ -97,6 +97,7 @@ export async function ingestHandler(event) {
     flow: "user-journey",
     detail: {
       visitorType,
+      botClass: classifyBot(userAgent),
       country,
       page,
       userAgent: userAgent.substring(0, 100),

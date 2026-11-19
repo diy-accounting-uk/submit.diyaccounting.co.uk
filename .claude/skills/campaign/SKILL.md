@@ -72,8 +72,10 @@ the current step and write the report with what was done.
   `../private.diyaccounting.co.uk/strategy/PLAN_MARKETING_STRATEGY.md` section 2) to pass uses,
   subscribers and commission pence, one row per day, utm source, medium, campaign and ref. Query it
   in the lake (workgroup `prod-env-analytics`) for the last 30 days and report per place, not per
-  pass. Sessions come only from visits that gave consent, and a use or subscriber whose account
-  has no sourced bundle record reports the pass code as `ref`.
+  pass. Sessions come only from visits that gave consent, with automated clients (headless
+  browsers, HTTP libraries, bots with a contact URL, page-speed tools, an empty user agent) left
+  out, and a use or subscriber whose account has no sourced bundle record reports the pass code as
+  `ref`.
 - Judge them against the brief's stop rule. Fewer than 10 Uses in six weeks means change the
   place. Ten or more Uses with no subscriber means fix the landing page before more posting, so
   this session's step 4 picks MKT1 or MKT2.

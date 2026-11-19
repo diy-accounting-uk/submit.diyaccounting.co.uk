@@ -11,8 +11,10 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.immutables.value.Value;
 import software.amazon.awscdk.CustomResource;
 import software.amazon.awscdk.Duration;
@@ -20,6 +22,7 @@ import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.customresources.Provider;
 import software.amazon.awscdk.services.athena.CfnNamedQuery;
+import software.amazon.awscdk.services.glue.CfnTable;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.amazon.awscdk.services.iam.Policy;
@@ -446,6 +449,8 @@ public class BusinessViews extends Construct {
      */
     public final Map<String, CustomResource> viewResourcesByName = new java.util.LinkedHashMap<>();
 
+    private final Map<String, String> sqlByViewName = new java.util.LinkedHashMap<>();
+
     @Value.Immutable
     public interface BusinessViewsProps {
 
@@ -621,6 +626,7 @@ public class BusinessViews extends Construct {
                     .build();
             this.viewResources.add(viewResource);
             this.viewResourcesByName.put(view.name(), viewResource);
+            this.sqlByViewName.put(view.name(), sql);
 
             for (String readTable : view.readTables()) {
                 if (!viewNames.contains(readTable)) {
@@ -633,6 +639,29 @@ public class BusinessViews extends Construct {
                 }
                 viewResource.getNode().addDependency(upstream);
             }
+        }
+    }
+
+    /**
+     * Makes each view wait for every Glue table its SQL names, so a column the view selects exists
+     * before CREATE OR REPLACE VIEW runs in the same deployment. A table is matched by its name as
+     * a whole word in the SQL with comments removed; a table no view reads gets no edge.
+     *
+     * @param tables the Glue tables of the stack
+     */
+    public void dependOnTheTablesTheyRead(Collection<CfnTable> tables) {
+        for (CfnTable table : tables) {
+            if (!(Stack.of(table).resolve(table.getTableInput()) instanceof Map<?, ?> tableInput)
+                    || !(tableInput.get("name") instanceof String tableName)) {
+                continue;
+            }
+            var namePattern = Pattern.compile("\\b" + Pattern.quote(tableName) + "\\b");
+            sqlByViewName.forEach((viewName, sql) -> {
+                if (!viewName.equals(tableName)
+                        && namePattern.matcher(sql.replaceAll("--[^\\n]*", "")).find()) {
+                    viewResourcesByName.get(viewName).getNode().addDependency(table);
+                }
+            });
         }
     }
 

@@ -6,7 +6,8 @@
 -- Impressions, clicks, cost and conversions from v_ads_cost_daily over every campaign of one
 -- platform (google or microsoft), with the click-through rate (clicks over impressions) and the
 -- cost per click in pounds. A day with no impressions has no click-through rate, and one with no
--- clicks has no cost per click. conversions is null for Google, whose pull does not read it.
+-- clicks has no cost per click. conversions is null for a Google day pulled before the pull read
+-- conversions.
 CREATE OR REPLACE VIEW v_ads_performance_daily AS
 SELECT day,
        platform,

@@ -59,7 +59,7 @@ describe("dynamoDbCompaniesHousePendingFilerRepository", () => {
     expect(retentionDays).toBeGreaterThan(99);
 
     mockSend.mockResolvedValueOnce({ Item: { ...update.input.Key, sealedFiler: values[":sealedFiler"], kind: "accounts" } });
-    expect(await getPendingFiling("00001A")).toEqual({ userSub: "filer-sub-1", kind: "accounts", claimed: false });
+    expect(await getPendingFiling("00001A")).toEqual({ userSub: "filer-sub-1", kind: "accounts" });
   });
 
   test("a sealed sub does not open under another submission number", async () => {

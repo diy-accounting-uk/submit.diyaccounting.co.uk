@@ -218,7 +218,8 @@ export function extractAndValidateConfirmationStatementParameters(event, errorMe
 }
 
 // The envelope left, so Companies House may have it. The filing stays pending with its request
-// data, the page polls it by number, and a late ACCEPT still gets its receipt and email.
+// data, the page polls it by number, and a late ACCEPT still gets its receipt and email, and marks
+// the paid fee used.
 async function submittedWithOutcomeUnknown({ request, responseHeaders, submissionNumber, userSub, error, data }) {
   await recordOutcomeUnknown({ userSub, submissionNumber, kind: "confirmation-statement", data });
   await recordSubmissionFailure({
@@ -368,7 +369,11 @@ export async function ingestHandler(event) {
 
     // The reader's language choice, so the receipt email of an accepted filing is in it.
     const welsh = getHeader(event.headers, "X-Site-Language") === "cy";
-    inProgressData = welsh ? { language: "cy" } : {};
+    inProgressData = {
+      ...(welsh ? { language: "cy" } : {}),
+      // A statement accepted after its envelope got no answer marks the paid fee used then.
+      ...(shouldMarkChargeUsed ? { feeCharge: { activityId: CONFIRMATION_STATEMENT_ACTIVITY_ID, subjectKey } } : {}),
+    };
     await recordSubmissionInProgress({
       userSub,
       submissionNumber,

@@ -217,6 +217,39 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
     expect(writes.at(-1)[":data"]).toMatchObject({ kind: "confirmation-statement", outcomeUnknown: true });
   });
 
+  test("keeps a paid fee unspent with the pending filing when the gateway never answers, so a late acceptance spends it", async () => {
+    mockParsePaymentPeriodsResponse.mockReturnValue({ periods: [{ periodPaid: false }] });
+    mockHasPaidCharge.mockResolvedValue(true);
+    mockPostToGateway.mockImplementation(async (xml) => {
+      if (xml === "<GovTalkMessage>submission</GovTalkMessage>") throw new Error("The operation was aborted due to timeout");
+      return { ok: true, status: 200, data: "<GovTalkMessage>ack</GovTalkMessage>", headers: {}, duration: 1 };
+    });
+
+    const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
+
+    expect(response.statusCode).toBe(201);
+    expect(mockMarkChargeUsed).not.toHaveBeenCalled();
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const writes = mockSend.mock.calls
+      .map(([cmd]) => cmd)
+      .filter((cmd) => cmd instanceof lib.UpdateCommand && cmd.input.ExpressionAttributeValues?.[":status"])
+      .map((cmd) => cmd.input.ExpressionAttributeValues);
+    const feeCharge = { activityId: "file-confirmation-statement", subjectKey: "06846849:2025-09-21" };
+    expect(writes.map((values) => values[":data"].feeCharge)).toEqual([feeCharge, feeCharge]);
+  });
+
+  test("keeps no fee with a filing whose payment period Companies House already has paid", async () => {
+    mockParsePaymentPeriodsResponse.mockReturnValue({ periods: [{ periodPaid: true }] });
+
+    await companiesHouseConfirmationStatementPostHandler(buildEvent());
+
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const pending = mockSend.mock.calls
+      .map(([cmd]) => cmd)
+      .find((cmd) => cmd instanceof lib.UpdateCommand && cmd.input.ExpressionAttributeValues?.[":status"] === "pending");
+    expect(pending.input.ExpressionAttributeValues[":data"]).not.toHaveProperty("feeCharge");
+  });
+
   test("marks the filing failed when the connection to the gateway was refused, so nothing was delivered", async () => {
     mockPostToGateway.mockImplementation(async (xml) => {
       if (xml === "<GovTalkMessage>submission</GovTalkMessage>") {

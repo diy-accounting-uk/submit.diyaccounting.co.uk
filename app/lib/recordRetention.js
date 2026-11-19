@@ -30,6 +30,15 @@ export function isTestActor(actor) {
 }
 
 /**
+ * The short retention of a record that a test or a synthetic caller wrote: two days from now.
+ * @param {Date} now
+ * @returns {{ttl: number, ttl_datestamp: string}}
+ */
+export function testRecordRetention(now) {
+  return calculateTtl(now, TTL_PRESETS.TWO_DAYS);
+}
+
+/**
  * Retention of a pass. A test pass lives two days from creation. A pass with an end date lives
  * until thirty days after it. A pass with no end date has no ttl until its last use.
  * @param {{testPass?: boolean, actor?: string, validUntil?: string|null}} pass

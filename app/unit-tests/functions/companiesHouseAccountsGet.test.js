@@ -134,6 +134,7 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
     mockEventBridgeSend.mockResolvedValue({});
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand && cmd.input.TableName === "test-receipts-table") return { Items: [], Count: 0 };
       if (cmd instanceof lib.QueryCommand) {
         return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
       }
@@ -174,6 +175,7 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
   test("returns 404 without polling the gateway when the caller has no request for the submission", async () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand && cmd.input.TableName === "test-receipts-table") return { Items: [], Count: 0 };
       if (cmd instanceof lib.QueryCommand) return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
       return {};
     });
@@ -346,6 +348,7 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
     function storePendingRequest(data) {
       mockSend.mockImplementation(async (cmd) => {
         const lib = await import("@aws-sdk/lib-dynamodb");
+        if (cmd instanceof lib.QueryCommand && cmd.input.TableName === "test-receipts-table") return { Items: [], Count: 0 };
         if (cmd instanceof lib.QueryCommand) return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
         if (cmd instanceof lib.GetCommand) return { Item: { requestId: cmd.input.Key.requestId, status: "pending", data } };
         return {};
@@ -444,6 +447,7 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
     test("a poll after acceptance answers from the stored result and charges nothing more", async () => {
       mockSend.mockImplementation(async (cmd) => {
         const lib = await import("@aws-sdk/lib-dynamodb");
+        if (cmd instanceof lib.QueryCommand && cmd.input.TableName === "test-receipts-table") return { Items: [], Count: 0 };
         if (cmd instanceof lib.QueryCommand) return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
         if (cmd instanceof lib.GetCommand) {
           return { Item: { requestId: cmd.input.Key.requestId, status: "completed", data: { statusCode: "ACCEPT", receiptId: "r-1" } } };

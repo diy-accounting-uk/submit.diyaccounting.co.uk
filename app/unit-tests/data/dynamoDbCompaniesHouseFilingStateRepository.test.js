@@ -34,8 +34,14 @@ vi.mock("@aws-sdk/client-dynamodb", () => ({
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-const { claimFinalStatus, releaseFinalStatus, claimPresenterPollSlot, deferPresenterPoll, listFilingsInProgress } =
-  await import("@app/data/dynamoDbCompaniesHouseFilingStateRepository.js");
+const {
+  FINAL_STATUS_CLAIM_STALE_MINUTES,
+  claimFinalStatus,
+  releaseFinalStatus,
+  claimPresenterPollSlot,
+  deferPresenterPoll,
+  listFilingsInProgress,
+} = await import("@app/data/dynamoDbCompaniesHouseFilingStateRepository.js");
 const { initializeSalt, hashSub } = await import("@app/services/subHasher.js");
 
 const TABLE = "test-companies-house-accounts-async-requests-table";
@@ -56,10 +62,19 @@ describe("dynamoDbCompaniesHouseFilingStateRepository", () => {
     expect(await claimFinalStatus("00001A")).toBe(true);
     const [[claim]] = mockSend.mock.calls;
     expect(claim.input.Key).toEqual({ hashedSub: "companies-house-xmlgw", requestId: "pending#00001A" });
-    expect(claim.input.ConditionExpression).toBe("attribute_not_exists(claimedAt)");
+    expect(claim.input.ConditionExpression).toBe("attribute_not_exists(claimedAt) OR claimedAt < :staleBefore");
 
     mockSend.mockRejectedValueOnce(conditionalCheckFailure());
     expect(await claimFinalStatus("00001A")).toBe(false);
+  });
+
+  test("a claim older than the stale limit may be taken again", async () => {
+    const now = new Date("2026-11-19T10:00:00.000Z");
+    await claimFinalStatus("00001A", { now });
+    const values = mockSend.mock.calls[0][0].input.ExpressionAttributeValues;
+    expect(values[":now"]).toBe("2026-11-19T10:00:00.000Z");
+    expect(FINAL_STATUS_CLAIM_STALE_MINUTES).toBeGreaterThan(15);
+    expect(values[":staleBefore"]).toBe(new Date(now.getTime() - FINAL_STATUS_CLAIM_STALE_MINUTES * 60 * 1000).toISOString());
   });
 
   test("a claim that fails for another reason is not taken as already recorded", async () => {

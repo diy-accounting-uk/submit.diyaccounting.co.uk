@@ -719,6 +719,37 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
     expect(submissionArgs.companyNumber).toBe("00000099");
   });
 
+  test("keeps the client id on the pending request, so the receipt of an accepted filing is the client's", async () => {
+    mockPracticeAndClient({
+      clientId: "c1",
+      identifiers: { companyNumber: "00000099" },
+      authorisations: { "CH-ACCOUNTS": { status: "authorised" } },
+      archivedAt: null,
+    });
+    const body = buildAccountsBody({ clientId: "c1" });
+    delete body.companyNumber;
+
+    const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+
+    expect(response.statusCode).toBe(201);
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const pending = mockSend.mock.calls
+      .map(([cmd]) => cmd)
+      .find((cmd) => cmd instanceof lib.UpdateCommand && cmd.input.ExpressionAttributeValues?.[":status"] === "pending");
+    expect(pending.input.ExpressionAttributeValues[":data"].clientId).toBe("c1");
+  });
+
+  test("keeps no client id on the pending request of the practice's own filing", async () => {
+    const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody() }));
+
+    expect(response.statusCode).toBe(201);
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const pending = mockSend.mock.calls
+      .map(([cmd]) => cmd)
+      .find((cmd) => cmd instanceof lib.UpdateCommand && cmd.input.ExpressionAttributeValues?.[":status"] === "pending");
+    expect(pending.input.ExpressionAttributeValues[":data"]).not.toHaveProperty("clientId");
+  });
+
   test("returns 403 JSON when the client is present but not authorised for Companies House filing", async () => {
     mockPracticeAndClient({
       clientId: "c1",
