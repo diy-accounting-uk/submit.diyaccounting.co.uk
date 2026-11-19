@@ -69,6 +69,16 @@
     return url;
   }
 
+  async function hmrcRedirectUri() {
+    const env = await window.envReady;
+    return callbackBase(env, HMRC_CALLBACK_HOST) + "/activities/submitVatCallback.html";
+  }
+
+  async function companiesHouseRedirectUri() {
+    const env = await window.envReady;
+    return callbackBase(env, COMPANIES_HOUSE_CALLBACK_HOST) + "/companies-house/filingCallback.html";
+  }
+
   async function buildHmrcAuthUrl(state, scope = "write:vat read:vat", account = "live") {
     const env = await window.envReady;
 
@@ -78,7 +88,7 @@
 
     const clientId = synthetic ? env.HMRC_SANDBOX_CLIENT_ID : env.HMRC_CLIENT_ID;
 
-    const redirectUri = callbackBase(env, HMRC_CALLBACK_HOST) + "/activities/submitVatCallback.html";
+    const redirectUri = await hmrcRedirectUri();
 
     return (
       `${base.replace(/\/$/, "")}/oauth/authorize` +
@@ -93,7 +103,7 @@
   async function buildCompaniesHouseAuthUrl(state, scope) {
     const env = await window.envReady;
 
-    const redirectUri = callbackBase(env, COMPANIES_HOUSE_CALLBACK_HOST) + "/companies-house/filingCallback.html";
+    const redirectUri = await companiesHouseRedirectUri();
 
     // British spelling: Companies House's identity service uses "authorise", not "authorize".
     return (
@@ -155,6 +165,8 @@
     resolveIdentityProvider,
     IDENTITY_PROVIDERS,
     buildHmrcAuthUrl,
+    hmrcRedirectUri,
+    companiesHouseRedirectUri,
     buildCompaniesHouseAuthUrl,
     readBooksFragment,
     captureBooksFragment,

@@ -239,7 +239,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     const tokenEvent = buildLambdaEvent({
       method: "POST",
       path: "/api/v1/hmrc/token",
-      body: { code: "auth-code-from-callback" },
+      body: { code: "auth-code-from-callback", redirectUri: "https://ci-submit.diyaccounting.co.uk/activities/submitVatCallback.html" },
       authorizer: { authorizer: { lambda: { "sub": testUserSub, "cognito:username": "vatuser" } } },
     });
 
@@ -350,7 +350,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
   //   const tokenEvent = buildLambdaEvent({
   //     method: "POST",
   //     path: "/api/v1/hmrc/token",
-  //     body: { code: "synthetic-auth-code" },
+  //     body: { code: "synthetic-auth-code", redirectUri: "https://ci-submit.diyaccounting.co.uk/activities/submitVatCallback.html" },
   //     headers: { hmrcaccount: "synthetic" },
   //   });
   //

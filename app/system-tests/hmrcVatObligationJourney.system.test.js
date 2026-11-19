@@ -178,7 +178,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
     const tokenEvent = buildLambdaEvent({
       method: "POST",
       path: "/api/v1/hmrc/token",
-      body: { code: "obligation-auth-code" },
+      body: { code: "obligation-auth-code", redirectUri: "https://ci-submit.diyaccounting.co.uk/activities/submitVatCallback.html" },
       authorizer: { authorizer: { lambda: { "sub": testUserSub, "cognito:username": "obligationuser" } } },
     });
 

@@ -41,7 +41,10 @@ import {
   deleteCompaniesHouseGrant,
 } from "../../data/dynamoDbCompaniesHouseGrantRepository.js";
 import { sealFor, COMPANIES_HOUSE_GRANT_PURPOSE } from "../../lib/codesSeal.js";
+import { resolveCallbackRedirectUri } from "../../lib/oauthRedirectUri.js";
 import { companyNumberFromScope, GRANT_ID_PATTERN } from "../../lib/companiesHouseGrantAccess.js";
+
+const CALLBACK_PATH = "companies-house/filingCallback.html";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseTokenPost.js" });
 
@@ -67,8 +70,10 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (scope !== undefined && (typeof scope !== "string" || !companyNumberFromScope(scope))) {
     errorMessages.push("The scope must name a company as /company/<number>/");
   }
+  const resolved = resolveCallbackRedirectUri(parsedBody?.redirectUri, CALLBACK_PATH);
+  if (resolved.error) errorMessages.push(resolved.error);
 
-  return { code, scope };
+  return { code, scope, redirectUri: resolved.redirectUri };
 }
 
 // Ends the caller's own grant at sign-out. A grant that is missing, expired or another user's
@@ -125,7 +130,7 @@ export async function ingestHandler(event) {
   }
 
   const errorMessages = [];
-  const { code, scope } = extractAndValidateParameters(event, errorMessages);
+  const { code, scope, redirectUri } = extractAndValidateParameters(event, errorMessages);
 
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
@@ -136,7 +141,7 @@ export async function ingestHandler(event) {
   logger.info({ message: "Exchanging authorization code for Companies House access token" });
   let chResponse;
   try {
-    chResponse = await exchangeCompaniesHouseToken(code);
+    chResponse = await exchangeCompaniesHouseToken(code, redirectUri);
   } catch (error) {
     logger.error({ message: "Companies House token exchange request failed", error: error.message, stack: error.stack });
     const unreachable = http502BadGatewayResponse({
@@ -207,12 +212,10 @@ export async function ingestHandler(event) {
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing
 // HTTP request/response.
-export async function exchangeCompaniesHouseToken(code) {
+export async function exchangeCompaniesHouseToken(code, redirectUri) {
   const clientSecret = await resolveClientSecret();
   const identityBaseUri = getIdentityBaseUrl();
   const clientId = process.env.COMPANIES_HOUSE_CLIENT_ID;
-  const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
-  const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}companies-house/filingCallback.html`;
   const url = `${identityBaseUri}/oauth2/token`;
   const send = async (secret) => {
     const body = new URLSearchParams({

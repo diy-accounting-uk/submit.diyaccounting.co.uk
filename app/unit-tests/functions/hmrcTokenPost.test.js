@@ -37,6 +37,8 @@ const { openGrantFor, GRANT_ID_PATTERN } = await import("@app/lib/mcpHmrcGrantAc
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
+const APEX_REDIRECT_URI = "https://ci-submit.diyaccounting.co.uk/activities/submitVatCallback.html";
+
 describe("hmrcTokenPost ingestHandler", () => {
   beforeEach(() => {
     Object.assign(process.env, setupTestEnv());
@@ -65,7 +67,9 @@ describe("hmrcTokenPost ingestHandler", () => {
       scope: "read:vat write:vat",
     });
     try {
-      const response = await hmrcTokenPostHandler(buildLambdaEvent({ method: "POST", body: { code: "test-code" } }));
+      const response = await hmrcTokenPostHandler(
+        buildLambdaEvent({ method: "POST", body: { code: "test-code", redirectUri: APEX_REDIRECT_URI } }),
+      );
 
       expect(response.statusCode).toBe(200);
       const body = parseResponseBody(response);
@@ -97,7 +101,11 @@ describe("hmrcTokenPost ingestHandler", () => {
     });
     try {
       const response = await hmrcTokenPostHandler(
-        buildLambdaEvent({ method: "POST", body: { code: "test-code" }, headers: { hmrcaccount: "synthetic" } }),
+        buildLambdaEvent({
+          method: "POST",
+          body: { code: "test-code", redirectUri: APEX_REDIRECT_URI },
+          headers: { hmrcaccount: "synthetic" },
+        }),
       );
       const { hmrcGrantId } = parseResponseBody(response);
 
@@ -129,12 +137,72 @@ describe("hmrcTokenPost ingestHandler", () => {
         new Response(JSON.stringify({ error: "invalid_grant" }), { status: 400, headers: { "Content-Type": "application/json" } }),
       );
     try {
-      const response = await hmrcTokenPostHandler(buildLambdaEvent({ method: "POST", body: { code: "test-code" } }));
+      const response = await hmrcTokenPostHandler(
+        buildLambdaEvent({ method: "POST", body: { code: "test-code", redirectUri: APEX_REDIRECT_URI } }),
+      );
       expect(response.statusCode).toBe(400);
       expect([...table.items.keys()].filter((key) => String(key).startsWith("hmrc-grant:"))).toEqual([]);
     } finally {
       global.fetch = originalFetch;
     }
+  });
+
+  describe("redirect_uri", () => {
+    const OWN_REDIRECT_URI = "https://ci-set2.submit.diyaccounting.co.uk/activities/submitVatCallback.html";
+
+    function exchangeWith(redirectUri) {
+      return hmrcTokenPostHandler(buildLambdaEvent({ method: "POST", body: { code: "test-code", redirectUri } }));
+    }
+
+    function sentRedirectUri() {
+      const [, init] = global.fetch.mock.calls[0];
+      return new URLSearchParams(init.body).get("redirect_uri");
+    }
+
+    test("passes an apex callback host to HMRC as the redirect_uri while the deployment's base URL is another host", async () => {
+      process.env.DIY_SUBMIT_BASE_URL = "https://ci-set2.submit.diyaccounting.co.uk/";
+      const restore = stubHmrcExchange({ access_token: "a", expires_in: 14400, scope: "read:vat" });
+      try {
+        const response = await exchangeWith(APEX_REDIRECT_URI);
+        expect(response.statusCode).toBe(200);
+        expect(sentRedirectUri()).toBe(APEX_REDIRECT_URI);
+      } finally {
+        restore();
+      }
+    });
+
+    test("passes the deployment's own host to HMRC as the redirect_uri", async () => {
+      process.env.DIY_SUBMIT_BASE_URL = "https://ci-set2.submit.diyaccounting.co.uk/";
+      const restore = stubHmrcExchange({ access_token: "a", expires_in: 14400, scope: "read:vat" });
+      try {
+        const response = await exchangeWith(OWN_REDIRECT_URI);
+        expect(response.statusCode).toBe(200);
+        expect(sentRedirectUri()).toBe(OWN_REDIRECT_URI);
+      } finally {
+        restore();
+      }
+    });
+
+    test.each([
+      ["a foreign host", "https://evil.example.com/activities/submitVatCallback.html"],
+      ["a look-alike host", "https://ci-submit.diyaccounting.co.uk.evil.example.com/activities/submitVatCallback.html"],
+      ["another path on a registered host", "https://ci-submit.diyaccounting.co.uk/index.html"],
+      ["a registered host with a query", "https://ci-submit.diyaccounting.co.uk/activities/submitVatCallback.html?x=1"],
+      ["a value that is not a URL", "not a url"],
+      ["a missing value", undefined],
+    ])("rejects %s with a JSON 400 and sends nothing to HMRC", async (_label, redirectUri) => {
+      process.env.DIY_SUBMIT_BASE_URL = "https://ci-set2.submit.diyaccounting.co.uk/";
+      const restore = stubHmrcExchange({ access_token: "a", expires_in: 14400 });
+      try {
+        const response = await exchangeWith(redirectUri);
+        expect(response.statusCode).toBe(400);
+        expect(response.headers["Content-Type"]).toContain("application/json");
+        expect(JSON.stringify(parseResponseBody(response))).toContain("redirectUri");
+        expect(global.fetch).not.toHaveBeenCalled();
+      } finally {
+        restore();
+      }
+    });
   });
 
   test("HEAD request returns expected status", async () => {
@@ -152,7 +220,7 @@ describe("hmrcTokenPost ingestHandler", () => {
   });
 
   test("returns success with token exchange details when code provided", async () => {
-    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" } });
+    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code", redirectUri: APEX_REDIRECT_URI } });
     const response = await hmrcTokenPostHandler(event);
     // A fake code against the real HMRC sandbox is rejected, never a 500: HMRC's own
     // reply decides between a 4xx (rejected) and a 502 (HMRC/network unreachable).
@@ -166,7 +234,7 @@ describe("hmrcTokenPost ingestHandler", () => {
   test("accepts hmrcAccount header for synthetic", async () => {
     const event = buildLambdaEvent({
       method: "POST",
-      body: { code: "test-code" },
+      body: { code: "test-code", redirectUri: APEX_REDIRECT_URI },
       headers: { hmrcaccount: "synthetic" },
     });
     const response = await hmrcTokenPostHandler(event);
@@ -176,7 +244,7 @@ describe("hmrcTokenPost ingestHandler", () => {
   test("returns 400 for invalid hmrcAccount header", async () => {
     const event = buildLambdaEvent({
       method: "POST",
-      body: { code: "test-code" },
+      body: { code: "test-code", redirectUri: APEX_REDIRECT_URI },
       headers: { hmrcaccount: "invalid" },
     });
     const response = await hmrcTokenPostHandler(event);
@@ -200,7 +268,7 @@ describe("hmrcTokenPost ingestHandler", () => {
     try {
       const event = buildLambdaEvent({
         method: "POST",
-        body: { code: "test-code" },
+        body: { code: "test-code", redirectUri: APEX_REDIRECT_URI },
         headers: { hmrcaccount: "synthetic" },
       });
       const response = await hmrcTokenPostHandler(event);
@@ -222,7 +290,7 @@ describe("hmrcTokenPost ingestHandler", () => {
     );
 
     try {
-      const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" } });
+      const event = buildLambdaEvent({ method: "POST", body: { code: "test-code", redirectUri: APEX_REDIRECT_URI } });
       await hmrcTokenPostHandler(event);
 
       expect(mockSend).toHaveBeenCalledTimes(1);
@@ -247,7 +315,7 @@ describe("hmrcTokenPost ingestHandler", () => {
     );
 
     try {
-      const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" } });
+      const event = buildLambdaEvent({ method: "POST", body: { code: "test-code", redirectUri: APEX_REDIRECT_URI } });
       const response = await hmrcTokenPostHandler(event);
 
       expect(response.statusCode).toBe(400);
@@ -277,7 +345,7 @@ describe("hmrcTokenPost ingestHandler", () => {
     );
 
     try {
-      const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" } });
+      const event = buildLambdaEvent({ method: "POST", body: { code: "test-code", redirectUri: APEX_REDIRECT_URI } });
       const response = await hmrcTokenPostHandler(event);
 
       expect(response.statusCode).toBe(401);
@@ -302,7 +370,7 @@ describe("hmrcTokenPost ingestHandler", () => {
     );
 
     try {
-      const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" } });
+      const event = buildLambdaEvent({ method: "POST", body: { code: "test-code", redirectUri: APEX_REDIRECT_URI } });
       const response = await hmrcTokenPostHandler(event);
 
       expect(response.statusCode).toBe(502);
@@ -323,7 +391,7 @@ describe("hmrcTokenPost ingestHandler", () => {
     global.fetch = vi.fn().mockRejectedValue(new Error("getaddrinfo ENOTFOUND test-api.service.hmrc.gov.uk"));
 
     try {
-      const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" } });
+      const event = buildLambdaEvent({ method: "POST", body: { code: "test-code", redirectUri: APEX_REDIRECT_URI } });
       const response = await hmrcTokenPostHandler(event);
 
       expect(response.statusCode).toBe(502);
@@ -341,7 +409,7 @@ describe("hmrcTokenPost ingestHandler", () => {
     const originalFetch = global.fetch;
     global.fetch = vi.fn();
     try {
-      const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" }, authorizer: {} });
+      const event = buildLambdaEvent({ method: "POST", body: { code: "test-code", redirectUri: APEX_REDIRECT_URI }, authorizer: {} });
       const response = await hmrcTokenPostHandler(event);
 
       expect(response.statusCode).toBe(401);
@@ -355,7 +423,7 @@ describe("hmrcTokenPost ingestHandler", () => {
   test("ignores an x-user-sub header and returns 401 without authorizer context", async () => {
     const event = buildLambdaEvent({
       method: "POST",
-      body: { code: "test-code" },
+      body: { code: "test-code", redirectUri: APEX_REDIRECT_URI },
       headers: { "x-user-sub": "header-sub" },
       authorizer: {},
     });

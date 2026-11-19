@@ -17,6 +17,11 @@ test.describe("VAT submission OAuth callback error persistence", () => {
   let callbackHtmlContent;
   let statusMessagesJs;
   let loadingSpinnerJs;
+  let tokenRequestBodies;
+
+  test.beforeEach(() => {
+    tokenRequestBodies = [];
+  });
 
   test.beforeAll(async () => {
     callbackHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/activities/submitVatCallback.html"), "utf-8");
@@ -43,6 +48,12 @@ test.describe("VAT submission OAuth callback error persistence", () => {
         await route.fulfill({ status: 200, contentType: "application/javascript", body: statusMessagesJs });
       } else if (url.includes("/widgets/loading-spinner.js")) {
         await route.fulfill({ status: 200, contentType: "application/javascript", body: loadingSpinnerJs });
+      } else if (url.includes("/lib/auth-url-builder.js")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/javascript",
+          body: `window.authUrlBuilder = { hmrcRedirectUri: () => Promise.resolve("http://localhost:3000/activities/submitVatCallback.html") };`,
+        });
       } else if (url.endsWith("/submit.js")) {
         // Stand in for the real ES module: signal readiness and provide a minimal
         // fetchWithIdToken that delegates to the mocked /api/v1/hmrc/token route below.
@@ -66,6 +77,7 @@ test.describe("VAT submission OAuth callback error persistence", () => {
     });
 
     await page.route("**/api/v1/hmrc/token", async (route) => {
+      tokenRequestBodies.push(route.request().postDataJSON());
       await route.fulfill({
         status: tokenResponseStatus,
         contentType: "application/json",
@@ -149,6 +161,7 @@ test.describe("VAT submission OAuth callback error persistence", () => {
 
     await page.waitForURL("**/hmrc/vat/submitVat.html", { timeout: 5000 });
     expect(page.url()).toContain("submitVat.html");
+    expect(tokenRequestBodies).toEqual([{ code: "test-code", redirectUri: "http://localhost:3000/activities/submitVatCallback.html" }]);
     const stored = await page.evaluate(() => sessionStorage.getItem("hmrcGrantId"));
     expect(stored).toBe(GRANT_ID);
     expect(stored).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);

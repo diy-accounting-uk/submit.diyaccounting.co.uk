@@ -36,7 +36,7 @@ describe("System: HMRC Auth Flow (hmrcAuthUrl + hmrcToken)", () => {
     const tokenEvent = buildLambdaEvent({
       method: "POST",
       path: "/api/v1/hmrc/token",
-      body: { code: "test-authorization-code-123" },
+      body: { code: "test-authorization-code-123", redirectUri: "https://ci-submit.diyaccounting.co.uk/activities/submitVatCallback.html" },
     });
 
     const tokenResponse = await hmrcTokenPostHandler(tokenEvent);
@@ -59,7 +59,7 @@ describe("System: HMRC Auth Flow (hmrcAuthUrl + hmrcToken)", () => {
     const tokenEvent = buildLambdaEvent({
       method: "POST",
       path: "/api/v1/hmrc/token",
-      body: { code: "synthetic-code" },
+      body: { code: "synthetic-code", redirectUri: "https://ci-submit.diyaccounting.co.uk/activities/submitVatCallback.html" },
       headers: { hmrcaccount: "synthetic" },
     });
 

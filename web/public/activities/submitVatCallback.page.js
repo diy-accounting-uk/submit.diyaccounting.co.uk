@@ -198,7 +198,8 @@ function getValidatedAuthorisationCode() {
 
 async function exchangeToken(code) {
   const url = `/api/v1/hmrc/token`;
-  const body = JSON.stringify({ code });
+  const redirectUri = await window.authUrlBuilder.hmrcRedirectUri();
+  const body = JSON.stringify({ code, redirectUri });
 
   const requestHeaders = {
     "Content-Type": "application/json",
