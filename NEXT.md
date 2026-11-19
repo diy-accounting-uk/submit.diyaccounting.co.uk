@@ -19,7 +19,7 @@ with no such field is in no set. Anything touching code goes through a `claude/*
 the operator merges.
 
 **Prod runs deployment prod-c603fef** (`deploy.yml` run 44511694262 of `main` at c603fef40, PR #845, live at 11:58 UTC on 2026-11-19; `destroy-prod.yml` run of 11:57 removes prod-3fb6e3c).
-**ci**: `ci-set1` stands (13 stacks, first created at 00:53 UTC on 2026-11-18). It is the last-known-good ci set, so its self-destruct skips it while it stays last-known-good.
+**ci**: `ci-set2` stands (13 stacks, first created at 10:59 UTC on 2026-11-19, PR #846's deploy) and is the last-known-good ci set; its pointer was set at 11:34 UTC, so its self-destruct skips it for 12 hours, to 23:34 UTC on 2026-11-19.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
