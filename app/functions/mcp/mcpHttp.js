@@ -39,7 +39,7 @@ import {
   updateMcpSessionHmrcGrant,
 } from "../../data/dynamoDbMcpSessionRepository.js";
 import { handleMcpRequest } from "../../../mcp/lib/http.js";
-import { hostedToolNames } from "../../../mcp/lib/hosted-tools.js";
+import { hostedInstructions, hostedToolNames } from "../../../mcp/lib/hosted-tools.js";
 import { createSession, restoreCloudBook } from "../../../mcp/lib/book-tools.js";
 import { MCP_VENDOR_VERSION } from "../../../mcp/lib/client-headers.js";
 
@@ -300,6 +300,7 @@ export async function ingestHandler(event) {
   const response = await handleMcpRequest(buildRequest(event, host, httpMethod, bodyText), {
     session,
     toolNames: hostedToolNames(process.env.ENVIRONMENT_NAME, groups),
+    instructions: hostedInstructions(process.env.ENVIRONMENT_NAME, groups),
   });
   const result = await mapResponse(response, extraHeaders);
 
@@ -325,6 +326,7 @@ async function answerAnonymously(event, host, bodyText, rpcMethod) {
   const response = await handleMcpRequest(buildRequest(event, host, "POST", bodyText), {
     session,
     toolNames: hostedToolNames(process.env.ENVIRONMENT_NAME),
+    instructions: hostedInstructions(process.env.ENVIRONMENT_NAME),
   });
   return mapResponse(response, {});
 }

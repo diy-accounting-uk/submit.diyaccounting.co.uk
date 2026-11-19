@@ -13,11 +13,11 @@ import { createServer } from "./server.js";
 /**
  * Answers one MCP request.
  * @param {Request} request
- * @param {{session: Object, toolNames?: string[], overrides?: Object}} options
+ * @param {{session: Object, toolNames?: string[], overrides?: Object, instructions?: string}} options
  * @returns {Promise<Response>}
  */
-export async function handleMcpRequest(request, { session, toolNames = HOSTED_TOOL_NAMES, overrides = HOSTED_OVERRIDES }) {
-  const server = createServer(session, { toolNames, overrides });
+export async function handleMcpRequest(request, { session, toolNames = HOSTED_TOOL_NAMES, overrides = HOSTED_OVERRIDES, instructions }) {
+  const server = createServer(session, { toolNames, overrides, instructions });
   const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
   await server.connect(transport);
   return transport.handleRequest(request);

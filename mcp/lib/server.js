@@ -867,11 +867,12 @@ export const TOOLS = {
  * those names; overrides replaces a named tool's description, inputSchema and
  * handler.
  * @param {Object} [session] - defaults to a fresh, empty session
- * @param {{toolNames?: string[], overrides?: Object}} [options]
+ * @param {{toolNames?: string[], overrides?: Object, instructions?: string}} [options] - instructions,
+ *   when given, go to the client in the initialize result
  * @returns {McpServer}
  */
-export function createServer(session = createSession(), { toolNames, overrides = {} } = {}) {
-  const server = new McpServer(SERVER_INFO);
+export function createServer(session = createSession(), { toolNames, overrides = {}, instructions } = {}) {
+  const server = new McpServer(SERVER_INFO, instructions ? { instructions } : undefined);
   const known = { ...TOOLS, ...ITSA_TOOLS };
   const names = toolNames ?? Object.keys(known);
   for (const name of names) {

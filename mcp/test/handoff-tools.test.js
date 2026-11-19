@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createSession, openBook } from "../lib/book-tools.js";
-import { prepareVatReturn, vatHandoffLink } from "../lib/handoff-tools.js";
+import { prepareVatReturn, vatHandoffLink, VAT_FILING_SENTENCE } from "../lib/handoff-tools.js";
 import { deriveVatReturn } from "../lib/vat-tools.js";
 import { createServer, TOOLS } from "../lib/server.js";
 import { HOSTED_TOOL_NAMES, hostedToolNames } from "../lib/hosted-tools.js";
@@ -74,6 +74,8 @@ describe("prepare_vat_return", () => {
       });
       expect(answer.figures).toEqual(decoded.figures);
       expect(answer.instruction).toMatch(/check the figures.*declaration.*file the return there.*Nothing has been filed/);
+      expect(answer.instruction).toBe(VAT_FILING_SENTENCE);
+      expect(answer.instruction).toMatch(/tick the declaration and file the return there in your browser/);
     });
 
     it("refuses with no book loaded", async () => {
