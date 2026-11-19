@@ -45,6 +45,10 @@ describe("isContextClosedError", () => {
     expect(isContextClosedError(new Error("route.fulfill: Target page, context or browser has been closed"))).toBe(true);
   });
 
+  test("is true for a response body read after its context closed", () => {
+    expect(isContextClosedError(new Error("apiResponse.body: Response has been disposed"))).toBe(true);
+  });
+
   test("is false for a network failure", () => {
     expect(isContextClosedError(new Error("read ECONNRESET"))).toBe(false);
     expect(isContextClosedError(new Error("net::ERR_NAME_NOT_RESOLVED"))).toBe(false);
