@@ -78,6 +78,7 @@ async function openForm(
     environmentName = "ci",
     pagePath = "/hmrc/vat/submitVat.html",
     tokenScope = null,
+    authUrlFails = false,
   } = {},
 ) {
   const reportRequests = [];
@@ -145,10 +146,13 @@ async function openForm(
   });
 
   await page.route("**/auth-url-builder.js", async (route) => {
+    const build = authUrlFails
+      ? `async () => { throw new Error("no sign-in address"); }`
+      : `async (state, scope) => "/hmrc-sign-in?scope=" + encodeURIComponent(scope)`;
     await route.fulfill({
       status: 200,
       contentType: "application/javascript",
-      body: `window.authUrlBuilder = { buildHmrcAuthUrl: async (state, scope) => "/hmrc-sign-in?scope=" + encodeURIComponent(scope) };`,
+      body: `window.authUrlBuilder = { buildHmrcAuthUrl: ${build} };`,
     });
   });
   await page.route("**/hmrc-sign-in*", async (route) => {
@@ -394,6 +398,48 @@ test.describe("HMRC Assist check on the VAT return", () => {
     expect(reportRequests[0].vrn).toBe(VRN);
     expect(reportRequests[0].vatDueSales).toBe(100);
     expect(await page.evaluate(() => sessionStorage.getItem("hmrcAssistCheckPending"))).toBeNull();
+  });
+
+  test("from an obligation's button, returns from HMRC with the same obligation chosen and runs the check once", async ({ page }) => {
+    const earlier = {
+      periodKey: "KEARLY",
+      start: isoDaysFromToday(-210),
+      end: isoDaysFromToday(-121),
+      due: isoDaysFromToday(-84),
+      status: "O",
+    };
+    const later = { periodKey: "KLATER", start: isoDaysFromToday(-120), end: isoDaysFromToday(-30), due: isoDaysFromToday(7), status: "O" };
+    const fromObligation = `/hmrc/vat/submitVat.html?vrn=${VRN}&periodStart=${later.start}&periodEnd=${later.end}`;
+    const { reportRequests } = await openForm(page, { obligations: [later, earlier], tokenScope: "read:vat", pagePath: fromObligation });
+    await expect(page.locator("#obligationChoice")).toHaveValue("1");
+    await fillBoxes(page);
+    await page.locator("#hmrcAssistCheckBtn").click();
+    await page.waitForURL(/hmrc-sign-in/);
+    expect(reportRequests).toHaveLength(0);
+
+    await page.evaluate(() => sessionStorage.setItem("hmrcTokenScope", "write:vat read:vat"));
+    const returnPath = await page.evaluate(() => sessionStorage.getItem("currentActivity"));
+    expect(returnPath).toBe("/hmrc/vat/submitVat.html");
+    await page.goto(`${baseUrl}${returnPath}`, { waitUntil: "domcontentloaded" });
+
+    await expect(page.locator("#hmrcAssistMessages")).toBeVisible();
+    await expect(page.locator("#obligationChoice")).toHaveValue("1");
+    await expect(page.locator("#periodStart")).toHaveValue(later.start);
+    await expect(page.locator("#periodEnd")).toHaveValue(later.end);
+    await settle(page);
+    expect(reportRequests).toHaveLength(1);
+    expect(reportRequests[0]).toMatchObject({ vrn: VRN, periodKey: "KLATER", vatDueSales: 100 });
+    expect(await page.evaluate(() => sessionStorage.getItem("hmrcAssistCheckPending"))).toBeNull();
+  });
+
+  test("leaves no check waiting when the way to HMRC cannot be built", async ({ page }) => {
+    const { reportRequests } = await openForm(page, { tokenScope: "read:vat", authUrlFails: true });
+    await fillBoxes(page);
+    await page.locator("#hmrcAssistCheckBtn").click();
+    await expect(page.getByText("Authentication failed: no sign-in address")).toBeVisible();
+    expect(page.url()).toContain("/hmrc/vat/submitVat.html");
+    expect(await page.evaluate(() => sessionStorage.getItem("hmrcAssistCheckPending"))).toBeNull();
+    expect(reportRequests).toHaveLength(0);
   });
 
   test("acknowledges the report once, with the receipt id, after the messages are displayed", async ({ page }) => {
