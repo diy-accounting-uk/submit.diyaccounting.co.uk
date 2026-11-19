@@ -1531,6 +1531,67 @@ test.describe("Operator Dashboard", () => {
       await expect(visitors.locator(".chart-readout")).toContainText("8 Sept");
     });
 
+    test("a chart that hides idle lines leaves out a campaign with no figure in the 14 days shown", async ({ page }) => {
+      const days = FIXTURE_DAILY_CHARTS.days.length;
+      const active = { id: "search-mtd-vat", label: "Search: MTD VAT", values: Array.from({ length: days }, () => 4) };
+      const idleLately = {
+        id: "campaign-1",
+        label: "Campaign #1",
+        values: Array.from({ length: days }, (_, index) => (index < days - 30 ? 2 : 0)),
+      };
+      const total = {
+        id: "total",
+        label: "All campaigns",
+        isTotal: true,
+        values: active.values.map((value, index) => value + idleLately.values[index]),
+      };
+      const adsClicks = {
+        id: "ads-clicks",
+        label: "Ads clicks by campaign",
+        unit: "count",
+        hidesIdleLines: true,
+        series: [total, active, idleLately],
+      };
+      const charts = FIXTURE_DAILY_CHARTS.charts.map((chart) =>
+        chart.id === "conversion-to-paid" ? { ...chart, modes: [...chart.modes, adsClicks] } : chart,
+      );
+      await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT_WITH_CHARTS, dailyCharts: { ...FIXTURE_DAILY_CHARTS, charts } } });
+      await loadDashboard(page);
+
+      const paid = page.locator('.chart-card[data-chart-id="conversion-to-paid"]');
+      await paid.locator('.chart-mode[data-mode-id="ads-clicks"]').click();
+      await paid.locator('.chart-range-option[data-range="daily"]').click();
+      await expect(paid.locator('.chart-legend-item[data-series-id="campaign-1"]')).toBeVisible();
+      await expect(paid.locator("polyline.chart-line")).toHaveCount(3);
+
+      await paid.locator('.chart-range-option[data-range="hourly"]').click();
+      await expect(paid.locator('.chart-legend-item[data-series-id="campaign-1"]')).toHaveCount(0);
+      await expect(paid.locator('.chart-legend-item[data-series-id="search-mtd-vat"]')).toBeVisible();
+      await expect(paid.locator('.chart-legend-item[data-series-id="total"]')).toBeVisible();
+      await expect(paid.locator("polyline.chart-line")).toHaveCount(2);
+    });
+
+    test("a chart without hidesIdleLines keeps a line with no figure in the 14 days shown", async ({ page }) => {
+      const days = FIXTURE_DAILY_CHARTS.days.length;
+      const active = { id: "search-mtd-vat", label: "Search: MTD VAT", values: Array.from({ length: days }, () => 0.04) };
+      const idleLately = {
+        id: "campaign-1",
+        label: "Campaign #1",
+        values: Array.from({ length: days }, (_, index) => (index < days - 30 ? 0.02 : 0)),
+      };
+      const adsCtr = { id: "ads-ctr-idle", label: "Ads click-through rate by campaign", unit: "ratio", series: [active, idleLately] };
+      const charts = FIXTURE_DAILY_CHARTS.charts.map((chart) =>
+        chart.id === "conversion-to-paid" ? { ...chart, modes: [...chart.modes, adsCtr] } : chart,
+      );
+      await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT_WITH_CHARTS, dailyCharts: { ...FIXTURE_DAILY_CHARTS, charts } } });
+      await loadDashboard(page);
+
+      const paid = page.locator('.chart-card[data-chart-id="conversion-to-paid"]');
+      await paid.locator('.chart-mode[data-mode-id="ads-ctr-idle"]').click();
+      await paid.locator('.chart-range-option[data-range="hourly"]').click();
+      await expect(paid.locator('.chart-legend-item[data-series-id="campaign-1"]')).toBeVisible();
+    });
+
     test("shows the range switch on every graph and keeps its state when the tab changes", async ({ page }) => {
       await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
       await loadDashboard(page);

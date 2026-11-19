@@ -1269,7 +1269,9 @@ const PLATFORM_LABELS = { google: "Google", microsoft: "Microsoft" };
 
 /**
  * A daily chart query (day, component, value) without the components whose value adds up to 0
- * over the whole window. A campaign whose only metric on a day is a conversion writes a row with
+ * over the whole window. A mode that uses it sets hidesIdleLines, so buildChartSeries does not
+ * put a filtered component back as a 0 line from componentOrder, and the page hides a line that
+ * is 0 over the range it shows. A campaign whose only metric on a day is a conversion writes a row with
  * no impressions, clicks or cost; this keeps it out of the charts of those metrics.
  *
  * @param {string} sql - a query answering day, component and value
@@ -1862,6 +1864,7 @@ export function buildDailyChartDefinitions() {
           totalDescription: "Impressions of every campaign added together.",
           labelOf: (id) => id,
           descriptionOf: (id) => `Times the ${id} campaign's advertisements were shown in a day.`,
+          hidesIdleLines: true,
           sql: withoutAllZeroComponents(
             `SELECT cast(day AS varchar) AS day, ${CAMPAIGN_COMPONENT} AS component, cast(sum(impressions) AS double) AS value\n` +
               `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
@@ -1876,6 +1879,7 @@ export function buildDailyChartDefinitions() {
           maxComponents: 10,
           labelOf: (id) => id,
           descriptionOf: (id) => `Clicks on the ${id} campaign's advertisements in a day.`,
+          hidesIdleLines: true,
           sql: withoutAllZeroComponents(
             `SELECT cast(day AS varchar) AS day, ${CAMPAIGN_COMPONENT} AS component, cast(sum(clicks) AS double) AS value\n` +
               `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
@@ -1913,6 +1917,7 @@ export function buildDailyChartDefinitions() {
           componentOrder: ["google", "microsoft"],
           labelOf: (id) => PLATFORM_LABELS[id] ?? id,
           descriptionOf: (id) => `The day's ${PLATFORM_LABELS[id] ?? id} Ads cost, in pounds.`,
+          hidesIdleLines: true,
           sql: withoutAllZeroComponents(
             `SELECT cast(day AS varchar) AS day, platform AS component, cast(sum(cost_gbp) AS double) AS value\n` +
               `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
@@ -2485,15 +2490,18 @@ function buildChartSeriesOfOneKind({ days, rows, mode }) {
   const describe = (id) => (mode.descriptionOf ? { description: mode.descriptionOf(id) } : {});
   let components = [...valuesByComponent.entries()].map(([id, values]) => ({ id, label: mode.labelOf(id), ...describe(id), values }));
   if (mode.componentOrder) {
-    components = mode.componentOrder.map(
-      (id) =>
-        components.find((component) => component.id === id) ?? {
-          id,
-          label: mode.labelOf(id),
-          ...describe(id),
-          values: new Array(days.length).fill(0),
-        },
-    );
+    const present = new Set(components.map((component) => component.id));
+    components = mode.componentOrder
+      .filter((id) => !mode.hidesIdleLines || present.has(id))
+      .map(
+        (id) =>
+          components.find((component) => component.id === id) ?? {
+            id,
+            label: mode.labelOf(id),
+            ...describe(id),
+            values: new Array(days.length).fill(0),
+          },
+      );
   } else {
     components.sort((a, b) => sum(b.values) - sum(a.values) || a.label.localeCompare(b.label));
   }
@@ -2602,6 +2610,7 @@ export async function buildDailyCharts({
             id: mode.id,
             label: mode.label,
             ...(mode.unit ? { unit: mode.unit } : {}),
+            ...(mode.hidesIdleLines ? { hidesIdleLines: true } : {}),
             series,
             ...(hourly ? { hourly } : {}),
           },

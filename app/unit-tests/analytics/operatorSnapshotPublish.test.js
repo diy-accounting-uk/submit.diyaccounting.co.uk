@@ -3083,6 +3083,63 @@ describe("operatorSnapshotPublish", () => {
 });
 
 describe("withoutAllZeroComponents", () => {
+  test("every mode that drops all-zero components in its SQL hides idle lines, and only those modes", () => {
+    for (const definition of buildDailyChartDefinitions()) {
+      for (const mode of definition.modes) {
+        expect(Boolean(mode.hidesIdleLines), `${definition.id}/${mode.id}`).toBe(Boolean(mode.sql?.includes("WHERE  window_total > 0")));
+      }
+    }
+    const paid = buildDailyChartDefinitions().find((definition) => definition.id === "conversion-to-paid");
+    for (const id of ["ads-impressions", "ads-clicks", "ads-cost"]) {
+      expect(paid.modes.find((mode) => mode.id === id).hidesIdleLines, id).toBe(true);
+    }
+  });
+
+  test("the Ads cost chart with only Microsoft rows draws the total and Microsoft and no Google line", () => {
+    const mode = buildDailyChartDefinitions()
+      .find((definition) => definition.id === "conversion-to-paid")
+      .modes.find((candidate) => candidate.id === "ads-cost");
+    const days = ["2026-11-17", "2026-11-18"];
+
+    const series = buildChartSeries({ days, rows: [{ day: "2026-11-17", component: "microsoft", value: "1.5" }], mode });
+
+    expect(series.map((line) => [line.id, line.values])).toEqual([
+      ["total", [1.5, 0]],
+      ["microsoft", [1.5, 0]],
+    ]);
+  });
+
+  test("a chart without hidesIdleLines still draws a 0 line for each componentOrder id the rows lack", () => {
+    const mode = { componentOrder: ["google", "microsoft"], labelOf: (id) => id, total: null };
+
+    const series = buildChartSeries({ days: ["2026-11-17"], rows: [{ day: "2026-11-17", component: "microsoft", value: "2" }], mode });
+
+    expect(series.map((line) => [line.id, line.values])).toEqual([
+      ["google", [0]],
+      ["microsoft", [2]],
+    ]);
+  });
+
+  test("the published Ads cost mode carries hidesIdleLines for the page", async () => {
+    mockAthenaSend.mockImplementation((command) => {
+      switch (command.constructor.name) {
+        case "StartQueryExecutionCommand":
+          return Promise.resolve({ QueryExecutionId: "q" });
+        case "GetQueryExecutionCommand":
+          return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+        default:
+          return Promise.resolve({ ResultSet: resultSetOfRows(["day", "component", "value"], [["2026-11-18", "microsoft", "1"]]) });
+      }
+    });
+
+    const { dailyCharts } = await buildDailyCharts({ workGroup: "wg", database: "db", endDay: "2026-11-18" });
+
+    const paid = dailyCharts.charts.find((chart) => chart.id === "conversion-to-paid");
+    expect(paid.modes.find((mode) => mode.id === "ads-cost").hidesIdleLines).toBe(true);
+    expect(paid.modes.find((mode) => mode.id === "ads-cost").series.map((line) => line.id)).toEqual(["total", "microsoft"]);
+    expect(paid.modes.find((mode) => mode.id === "revenue").hidesIdleLines).toBeUndefined();
+  });
+
   test("keeps the day, component and value columns and drops a component whose values add up to 0 over the window", () => {
     const sql = withoutAllZeroComponents("SELECT day, component, value\nFROM   t\nGROUP  BY 1, 2");
     expect(sql).toBe(

@@ -169,13 +169,13 @@ describe("queries", () => {
 });
 
 describe("conversionWindowDays", () => {
-  test("is today and the 30 days before it, oldest first", () => {
+  test("is today and the 90 days before it, oldest first", () => {
     const days = conversionWindowDays(new Date("2026-09-29T02:15:00Z"));
-    expect(CONVERSION_WINDOW_DAYS).toBe(30);
-    expect(days).toHaveLength(31);
-    expect(days[0]).toBe("2026-08-30");
+    expect(CONVERSION_WINDOW_DAYS).toBe(90);
+    expect(days).toHaveLength(91);
+    expect(days[0]).toBe("2026-07-01");
     expect(days.at(-1)).toBe("2026-09-29");
-    expect(new Set(days).size).toBe(31);
+    expect(new Set(days).size).toBe(91);
   });
 });
 
@@ -298,16 +298,16 @@ describe("handler", () => {
     return text ? text.split("\n").map(JSON.parse) : [];
   }
 
-  test("with no date asks for today and the 30 days before it in one search per query, and writes one object per day", async () => {
+  test("with no date asks for today and the 90 days before it in one search per query, and writes one object per day", async () => {
     const { result, queries } = await runAt("2026-09-29T02:15:00Z", { campaign: campaignSearch, adGroup: adGroupSearch });
 
     expect(queries).toHaveLength(2);
-    for (const query of queries) expect(query).toContain("segments.date BETWEEN '2026-08-30' AND '2026-09-29'");
-    expect(result.days).toHaveLength(31);
+    for (const query of queries) expect(query).toContain("segments.date BETWEEN '2026-07-01' AND '2026-09-29'");
+    expect(result.days).toHaveLength(91);
     expect(result.days.map((day) => day.key)).toEqual(conversionWindowDays(new Date("2026-09-29T02:15:00Z")).map(objectKey));
-    expect(mockS3Send).toHaveBeenCalledTimes(31);
+    expect(mockS3Send).toHaveBeenCalledTimes(91);
     const puts = putsByKey();
-    expect(puts.size).toBe(31);
+    expect(puts.size).toBe(91);
     expect(linesOf(puts.get(objectKey("2026-09-28")))).toHaveLength(3);
     expect(linesOf(puts.get(objectKey("2026-09-27")))).toEqual([]);
     expect(result.days.find((day) => day.date === "2026-09-28").count).toBe(3);

@@ -116,9 +116,10 @@ function initiallyHidden(chart, modeIndex) {
 
 function activeSeries(state) {
   const mode = state.chart.modes[state.modeIndex];
-  if (isHourly(state)) return mode.hourly.series;
-  if (isDailySourceRange(state)) return lastDays(mode.series);
-  return mode.series;
+  let series = mode.series;
+  if (isHourly(state)) series = mode.hourly.series;
+  else if (isDailySourceRange(state)) series = lastDays(mode.series);
+  return mode.hidesIdleLines ? series.filter((line) => line.isTotal || line.values.some((value) => value !== 0 && value !== null)) : series;
 }
 
 // A duration at or above 1,000 ms reads in seconds.
