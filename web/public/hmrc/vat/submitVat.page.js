@@ -830,12 +830,14 @@ async function initializePage() {
     document.getElementById("periodKey").value = periodKey;
   }
 
+  // The status line says sandbox when this page's HMRC calls go to HMRC's test service
+  window.showHmrcStatusForService(
+    siteText("vat-submit.status-sandbox-text", "Returns you submit here go to HMRC's test service and reach no real record."),
+    document.getElementById("hmrcAssistStatusNote"),
+  );
+
   // Show synthetic indicator if in synthetic mode (determined by bundle qualifiers via sessionStorage)
   if (hmrcAccount === "synthetic") {
-    window.showHmrcSandboxStatus(
-      siteText("vat-submit.status-sandbox-text", "Returns you submit here go to HMRC's test service and reach no real record."),
-      document.getElementById("hmrcAssistStatusNote"),
-    );
     const syntheticIndicator = document.getElementById("syntheticIndicator");
     if (syntheticIndicator) {
       syntheticIndicator.classList.add("visible");

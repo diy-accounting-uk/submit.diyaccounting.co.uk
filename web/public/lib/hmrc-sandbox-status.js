@@ -2,8 +2,9 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // web/public/lib/hmrc-sandbox-status.js
-// A synthetic account reaches HMRC's test service, so each VAT page calls showHmrcSandboxStatus for
-// one: its status line says sandbox in place of the production line the page ships with.
+// Each VAT page ships with a production status line. showHmrcStatusForService swaps it for the
+// sandbox line when the page's HMRC calls go to HMRC's test service: always for a synthetic account,
+// which uses HMRC_SANDBOX_BASE_URI, and for any account where HMRC_BASE_URI is the test API.
 
 (function () {
   "use strict";
@@ -18,5 +19,33 @@
     banner.append(strong, ` ${sentence} `, ...trailing.filter(Boolean));
   }
 
+  // HMRC's test API answers on a test-api host; every other host is treated as the live API.
+  function isHmrcTestApi(baseUri) {
+    try {
+      return /^test-api(\.|$)/.test(new URL(baseUri).hostname);
+    } catch {
+      return false;
+    }
+  }
+
+  // The HMRC base URI the page's calls go to.
+  function effectiveHmrcBaseUri(env, hmrcAccount) {
+    return hmrcAccount === "synthetic" ? env.HMRC_SANDBOX_BASE_URI : env.HMRC_BASE_URI;
+  }
+
+  async function showHmrcStatusForService(sentence, ...trailing) {
+    const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+    let env;
+    try {
+      env = (await window.envReady) || {};
+    } catch {
+      env = {};
+    }
+    if (hmrcAccount === "synthetic" || isHmrcTestApi(effectiveHmrcBaseUri(env, hmrcAccount))) {
+      showHmrcSandboxStatus(sentence, ...trailing);
+    }
+  }
+
   window.showHmrcSandboxStatus = showHmrcSandboxStatus;
+  window.showHmrcStatusForService = showHmrcStatusForService;
 })();
