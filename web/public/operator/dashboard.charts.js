@@ -547,8 +547,10 @@ function sortCharts(charts) {
     .map(({ chart }) => chart);
 }
 
-// The id of the table section that backs a chart, or null for a chart with no table.
+// The id of the table section that backs a chart, or null for a chart with no table. A chart that
+// carries its own tableId names the table drawn beside it.
 function chartTableId(chart) {
+  if (chart.tableId) return chart.tableId;
   if (chart.id === "data-totals") return "dataTablesPanel";
   if (chart.standalone) return null;
   if (chart.id === "visitors") return "visitorsPanel";
