@@ -132,7 +132,10 @@ export async function verifyFilingAccepted(page, screenshotPath = defaultScreens
     const accepted = page.locator("#filingResult", { hasText: /\bACCEPT\b/ });
     const pending = page.locator("#checkAgainBtn");
     await expect(accepted.or(pending).first()).toBeVisible({ timeout: REAL_GATEWAY_OUTCOME_TIMEOUT_MS });
-    await expect(page.locator("#filingResult")).toContainText(/\d{6}/);
+    // allocateSubmissionNumber writes a base-36 counter, zero-padded to six digits and capital
+    // letters (00006W), and the page names it in either answer. Its zero padding gives it a digit,
+    // which keeps the outcome words ACCEPT and REJECT from matching.
+    await expect(page.locator("#filingResult")).toContainText(/\b(?=[A-Z]*\d)[0-9A-Z]{6}\b/);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-outcome.png`, readerView: true });
   });
 }
