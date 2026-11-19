@@ -16,8 +16,9 @@ Chrome or the operator.
 ## Status
 
 approved 2026-11-19 (the operator's message above). ops pushed: CH62 (7fc8c19b3) and RDR2
-(6fad6e878) on `claude/yarrow-ops`, PR #851. sheets building (TU1). Beside: LANG11c, OS18d and
-CH60 running on the laptop.
+(6fad6e878) on `claude/yarrow-ops`, PR #851. sheets building (TU1). Beside: LANG11c done (case,
+dry run and draft); OS18d running; CH60 waits on the test gateway (read at 07:00 UTC on
+2026-11-20).
 
 ## The goal
 
