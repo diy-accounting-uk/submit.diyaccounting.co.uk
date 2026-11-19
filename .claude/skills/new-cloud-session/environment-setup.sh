@@ -3,7 +3,7 @@
 # Copyright (C) 2006-2026 DIY Accounting Limited
 #
 # The setup script of the claude.ai/code cloud environment "DIY Accounting Submit", which holds the
-# submit-cloud-<codename> work repositories (PLAN_CLOUD_COLLABORATION.md). It is pasted into the
+# submit-cloud-<codename> work repositories (../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_CLOUD_COLLABORATION.md). It is pasted into the
 # environment's "Setup script" box; this copy is the record. The environment also sets:
 #   BASH_DEFAULT_TIMEOUT_MS=3600000
 #   BASH_MAX_TIMEOUT_MS=3600000

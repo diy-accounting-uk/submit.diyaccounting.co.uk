@@ -30,7 +30,7 @@ SESSIONS_DIR=${CLOUD_SESSIONS_DIR:-$(dirname "$MAIN_CHECKOUT")/cloud-sessions}
 POOL_FILE=$SKILL_DIR/pool.txt
 ENV_FILE=$SKILL_DIR/environment.txt
 CODENAMES=$REPO_ROOT/CODENAMES.txt
-# The relay: ci-env-CollabRelayStack, PLAN_CLOUD_COLLABORATION.md "Signed and encrypted messages without polling".
+# The relay: ci-env-CollabRelayStack, ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_CLOUD_COLLABORATION.md "Signed and encrypted messages without polling".
 RELAY_STACK=ci-env-CollabRelayStack
 RELAY_PROFILE=${RELAY_AWS_PROFILE:-diya-submit-ci}
 RELAY_NAMESPACE=submit-collab

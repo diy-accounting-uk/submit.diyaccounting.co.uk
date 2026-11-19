@@ -11,7 +11,7 @@ description: Start or steer the /iterate delivery loop so that the cloud workers
 - **Does:** collab-loop primes or steers the /iterate loop under /loop. Each tick rebuilds the state from git (collab-loop.sh state), brings every worker's skill and setup up to date, lands done results onto the batch, sends the next rows and gates to idle workers, and keeps local work to coordination, landing and proofs that need AWS, Chrome or the operator. The state lives in git, so a compaction mid-loop loses nothing.
 - **Run:** `/collab-loop [<wave set>]`
 - **Entry:** `.claude/skills/collab-loop/SKILL.md`
-- **Files:** .claude/skills/collab-loop/SKILL.md, .claude/skills/collab-loop/collab-loop.sh, PLAN_CLOUD_COLLABORATION.md
+- **Files:** .claude/skills/collab-loop/SKILL.md, .claude/skills/collab-loop/collab-loop.sh
 - **Keywords:** collab loop, cloud offload, cloud workers, submit-cloud, collaborate, iterate, wave set, idempotent loop, laptop load, setup currency, reload skills
 - **Related:** DEV-30, DEV-65, DEV-66
 @end-capability -->
@@ -228,7 +228,7 @@ expiry while any worker has a task. It is the fallback for the relay.
 
 ## The relay
 
-`ci-env-CollabRelayStack` (CW2 in `PLAN_CLOUD_COLLABORATION.md`) carries one signed, encrypted
+`ci-env-CollabRelayStack` (CW2 in `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_CLOUD_COLLABORATION.md`) carries one signed, encrypted
 line from a worker to the coordinator: `<branch> <sha> <done|not-done|wip>`. The collaborate skill
 sends it after each push when `collab` holds `.collab/relay`. Proved 2026-11-19: anvil's message
 arrived 9 s after its push.
