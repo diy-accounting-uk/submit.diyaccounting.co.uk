@@ -15,8 +15,8 @@ Chrome or the operator.
 
 ## Status
 
-approved 2026-11-19 (the operator's message above). ops pushed: CH62 (7fc8c19b3) and RDR2
-(6fad6e878) on `claude/yarrow-ops`, PR #851. sheets building (TU1). Beside: LANG11c done (case,
+approved 2026-11-19 (the operator's message above). ops on main: CH62 and RDR2 as
+0cbc114a9 (PR #851, merged 20:10 UTC); prod deploy running. sheets in review: TU1 on spreadsheets PR #215. Beside: LANG11c done (case,
 dry run and draft); OS18d running; CH60 waits on the test gateway (read at 07:00 UTC on
 2026-11-20).
 
@@ -41,7 +41,7 @@ deployment and one prod deployment for submit and one pull request run for sprea
 | ops (`claude/yarrow-ops`) | CH62, RDR2 | Sonnet | `app/services/companiesHousePresenterPoll.js`, `app/services/companiesHouseSubmissionStatus.js`, `app/services/companiesHouseXmlGateway.js`, their unit tests; `.github/workflows/deploy-cdk-stack.yml`, `.env.ci` |
 | sheets (spreadsheets `claude/yarrow-sheets`) | TU1 | Opus (design), Sonnet (build) | the new workflow, its script and test, in `../spreadsheets.diyaccounting.co.uk` |
 
-State: ops pushed (PR #851); sheets building.
+State: ops on main (PR #851); sheets in review (spreadsheets PR #215).
 
 ### Beside
 
