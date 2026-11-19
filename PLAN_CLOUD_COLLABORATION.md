@@ -26,7 +26,7 @@ only when the operator boards it.
 
 ## Status
 
-Five private work repositories (anvil, bugle, cyclone, dusk, epoch) run as workers, with Actions off, through the `/new-cloud-session` and `/collaborate` skills. They have built rows and run the wave 4 to wave 6 gates and the ridge set gate. CW1 (credentials for a worker) is merged and proved; CW2 (the relay) is built on the ridge set and is proved after its ci deploy.
+Five private work repositories (anvil, bugle, cyclone, dusk, epoch) run as workers, with Actions off, through the `/new-cloud-session` and `/collaborate` skills. They have built rows and run the wave 4 to wave 6 gates and the ridge set gate. CW1 (credentials for a worker) is merged and proved. CW2 (the relay) is proved: on 2026-11-19 anvil's signed, encrypted message reached the coordinator's WebSocket 9 s after its push, and all five workers are registered. The `/collab-loop` skill runs the loop on these workers.
 
 ## The goal
 
