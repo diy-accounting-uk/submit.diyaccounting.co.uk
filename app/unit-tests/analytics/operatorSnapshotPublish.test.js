@@ -910,7 +910,7 @@ describe("operatorSnapshotPublish", () => {
       expect(mode.descriptionOf("AWS Lambda")).toContain("tax apart");
     });
 
-    test("the Visitors chart reads sessions by landing page, the sign-in rate and sessions by country with AI agents apart", () => {
+    test("the Visitors chart reads sessions by landing page, the sign-in rate and sessions by country with AI agents and automated clients apart", () => {
       const visitors = buildDailyChartDefinitions().find((definition) => definition.id === "visitors");
 
       expect(visitors.modes.map((mode) => mode.id)).toEqual([
@@ -921,6 +921,7 @@ describe("operatorSnapshotPublish", () => {
         "sign-in-provider",
         "country",
         "ai-agent-country",
+        "automated-country",
       ]);
       const mode = (id) => visitors.modes.find((candidate) => candidate.id === id);
       expect(mode("landing-page").label).toBe("By landing page");
@@ -936,6 +937,9 @@ describe("operatorSnapshotPublish", () => {
       expect(mode("country").hourlySql).toContain("human_sessions > 0");
       expect(mode("ai-agent-country").sql).toContain("ai_agent_sessions > 0");
       expect(mode("ai-agent-country").hourlySql).toContain("ai_agent_sessions > 0");
+      expect(mode("automated-country").sql).toContain("automated_sessions > 0");
+      expect(mode("automated-country").hourlySql).toContain("FROM   v_traffic_by_country_hourly");
+      expect(mode("automated-country").hourlySql).toContain("automated_sessions > 0");
       for (const mode of visitors.modes.slice(1)) {
         expect(mode.descriptionOf("/pricing"), mode.id).toBeTruthy();
         if (mode.total) expect(mode.totalDescription, mode.id).toBeTruthy();
@@ -1686,6 +1690,7 @@ describe("operatorSnapshotPublish", () => {
         "visitors/sign-in-provider",
         "visitors/country",
         "visitors/ai-agent-country",
+        "visitors/automated-country",
       ]);
       for (const definition of buildDailyChartDefinitions()) {
         for (const mode of definition.modes.filter((candidate) => candidate.hourlySql)) {
@@ -1739,6 +1744,7 @@ describe("operatorSnapshotPublish", () => {
         "visitors/sign-in-provider",
         "visitors/country",
         "visitors/ai-agent-country",
+        "visitors/automated-country",
       ]);
       const visitors = dailyCharts.charts.find((chart) => chart.id === "visitors").modes[0];
       expect(visitors.hourly.series.map((line) => line.id)).toEqual(["operator", "human"]);
@@ -2967,7 +2973,7 @@ describe("operatorSnapshotPublish", () => {
       await handler();
 
       expect(mockS3Send.mock.calls.at(-3)[0].input).toEqual({ Bucket: "test-env-analytics-lake", Key: "snapshots/test/latest.json" });
-      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 47);
+      expect(startCount() - firstRunQueries).toBe(firstRunQueries - 48);
     });
 
     test("a failing cost drivers query publishes the snapshot without them and counts as one failure", async () => {

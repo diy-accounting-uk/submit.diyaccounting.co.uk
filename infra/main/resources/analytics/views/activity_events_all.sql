@@ -31,7 +31,7 @@ SELECT event_id, event_ts, ingest_ts, event, site, summary,
        flow, outcome, failure,
        request_id, hashed_sub, bundle_id, pass_type_id, subscription_id, visitor_type,
        country, page, hmrc_status, client_id, env, detail_json, app_client, session_id,
-       activity_id, dt
+       activity_id, bot_class, dt
 FROM   (
          SELECT e.*,
                 bool_or(coalesce(e.actor IN ('test-user', 'synthetic', 'probe'), false)
@@ -44,7 +44,7 @@ FROM   (
                          coalesce(alias.current_hash, raw.hashed_sub) AS hashed_sub,
                          raw.bundle_id, raw.pass_type_id, raw.subscription_id, raw.visitor_type,
                          raw.country, raw.page, raw.hmrc_status, raw.client_id, raw.env, raw.detail_json,
-                         raw.app_client, raw.session_id, raw.activity_id, raw.dt
+                         raw.app_client, raw.session_id, raw.activity_id, raw.bot_class, raw.dt
                   FROM   activity_events_lake raw
                   LEFT JOIN hash_aliases alias ON alias.old_hash = raw.hashed_sub
                 ) e

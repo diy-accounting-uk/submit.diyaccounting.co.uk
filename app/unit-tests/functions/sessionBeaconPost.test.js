@@ -77,6 +77,37 @@ describe("sessionBeaconPost ingestHandler", () => {
     expect(mockPublishActivityEvent).toHaveBeenCalledWith(expect.objectContaining({ actor: "synthetic" }));
   });
 
+  it("writes the bot class none on a new-session event from a standard browser", async () => {
+    await ingestHandler(
+      buildBeaconEvent(
+        { page: "/index.html" },
+        { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36" },
+      ),
+    );
+
+    expect(mockPublishActivityEvent.mock.calls[0][0].detail.botClass).toBe("none");
+  });
+
+  it("writes the bot class automated on a new-session event from a headless browser, and keeps the visitor actor", async () => {
+    await ingestHandler(
+      buildBeaconEvent(
+        { page: "/index.html" },
+        { "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/120.0.0.0 Safari/537.36" },
+      ),
+    );
+
+    const published = mockPublishActivityEvent.mock.calls[0][0];
+    expect(published.actor).toBe("visitor");
+    expect(published.detail.visitorType).toBe("human");
+    expect(published.detail.botClass).toBe("automated");
+  });
+
+  it("writes the bot class ai-agent on a new-session event from an AI agent", async () => {
+    await ingestHandler(buildBeaconEvent({ page: "/index.html" }, { "user-agent": "Mozilla/5.0 ChatGPT-User/1.0" }));
+
+    expect(mockPublishActivityEvent.mock.calls[0][0].detail.botClass).toBe("ai-agent");
+  });
+
   it("carries the landing attribution fields into the activity event detail", async () => {
     await ingestHandler(
       buildBeaconEvent({

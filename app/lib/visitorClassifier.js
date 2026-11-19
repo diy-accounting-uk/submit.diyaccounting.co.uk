@@ -50,3 +50,59 @@ export function classifyVisitor(userAgent) {
 
   return "human";
 }
+
+// User-agent tokens of automated clients that the crawler list does not name: generic bot and
+// spider tokens, headless and driven browsers, HTTP libraries and page-speed tools. A client that
+// runs the page's script and sends the beacon with one of these is a bot, not a visitor. A bare
+// "bot" would match phone models such as CUBOT, so a bot token needs the character after it, and
+// "+http" catches the contact URL bots put in their user agent.
+const AUTOMATED_PATTERNS = [
+  "bot/",
+  "bot;",
+  "bot)",
+  "+http",
+  "spider",
+  "crawl",
+  "scrape",
+  "headless",
+  "phantomjs",
+  "slimerjs",
+  "puppeteer",
+  "playwright",
+  "selenium",
+  "webdriver",
+  "electron/",
+  "python",
+  "aiohttp",
+  "httpx",
+  "curl/",
+  "wget/",
+  "go-http-client",
+  "okhttp",
+  "java/",
+  "node-fetch",
+  "axios/",
+  "undici",
+  "libwww",
+  "lighthouse",
+  "pagespeed",
+  "gtmetrix",
+  "pingdom",
+  "uptime",
+  "facebookexternalhit",
+];
+
+/**
+ * The bot class of a visitor: the visitor kind of classifyVisitor, with the human kind split into
+ * "automated" (an empty user agent or one that names an automated client) and "none".
+ *
+ * @param {string} userAgent
+ * @returns {"none"|"automated"|"ai-agent"|"crawler"|"synthetic"}
+ */
+export function classifyBot(userAgent) {
+  const visitorType = classifyVisitor(userAgent);
+  if (visitorType !== "human") return visitorType;
+  if (!userAgent || typeof userAgent !== "string" || !userAgent.trim()) return "automated";
+  const lower = userAgent.toLowerCase();
+  return AUTOMATED_PATTERNS.some((pattern) => lower.includes(pattern)) ? "automated" : "none";
+}

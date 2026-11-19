@@ -1117,7 +1117,8 @@ public class AnalyticsStack extends Stack {
                         "detail_json",
                         "app_client",
                         "session_id",
-                        "activity_id")
+                        "activity_id",
+                        "bot_class")
                 .forEach(name -> columns.add(CfnTable.ColumnProperty.builder()
                         .name(name)
                         .type("string")

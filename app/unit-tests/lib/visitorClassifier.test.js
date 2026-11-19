@@ -4,7 +4,7 @@
 // app/unit-tests/lib/visitorClassifier.test.js
 
 import { describe, test, expect } from "vitest";
-import { classifyVisitor } from "@app/lib/visitorClassifier.js";
+import { classifyVisitor, classifyBot } from "@app/lib/visitorClassifier.js";
 
 describe("lib/visitorClassifier", () => {
   describe("AI agents", () => {
@@ -94,6 +94,47 @@ describe("lib/visitorClassifier", () => {
 
     test("returns 'human' for empty string", () => {
       expect(classifyVisitor("")).toBe("human");
+    });
+  });
+
+  describe("classifyBot", () => {
+    test("returns none for a standard browser", () => {
+      expect(classifyBot("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36")).toBe("none");
+    });
+
+    test("returns none for a phone whose model name ends in bot", () => {
+      expect(
+        classifyBot("Mozilla/5.0 (Linux; Android 12; CUBOT X30 Build/SP1A) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36"),
+      ).toBe("none");
+    });
+
+    test("returns automated for a headless browser", () => {
+      expect(classifyBot("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 HeadlessChrome/120.0.0.0 Safari/537.36")).toBe("automated");
+    });
+
+    test("returns automated for a bot the crawler list does not name", () => {
+      expect(classifyBot("Mozilla/5.0 (compatible; AhrefsBot/7.0; +http://ahrefs.com/robot/)")).toBe("automated");
+      expect(classifyBot("Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2)")).toBe("automated");
+    });
+
+    test("returns automated for an HTTP library", () => {
+      expect(classifyBot("python-requests/2.31.0")).toBe("automated");
+      expect(classifyBot("curl/8.4.0")).toBe("automated");
+    });
+
+    test("returns automated for a page-speed tool", () => {
+      expect(classifyBot("Mozilla/5.0 (Linux; Android 11) Chrome/120.0 Mobile Safari/537.36 Chrome-Lighthouse")).toBe("automated");
+    });
+
+    test("returns automated for an empty or missing user agent", () => {
+      expect(classifyBot("")).toBe("automated");
+      expect(classifyBot(undefined)).toBe("automated");
+    });
+
+    test("keeps the visitor kinds that classifyVisitor names", () => {
+      expect(classifyBot("Mozilla/5.0 ChatGPT-User/1.0")).toBe("ai-agent");
+      expect(classifyBot("Googlebot/2.1")).toBe("crawler");
+      expect(classifyBot("DIYAccounting-Probe-Monitor/1.0")).toBe("synthetic");
     });
   });
 });
