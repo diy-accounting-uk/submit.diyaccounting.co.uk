@@ -661,6 +661,9 @@ export async function fillInVatObligations(page, obligationsQuery = {}, screensh
       await loggedSelectOption(page, "#status", statusValue, "obligations status", { screenshotPath });
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-obligations-filled-in.png`, readerView: true });
     }
+    // The PageUp and PageDown presses below scroll for the screenshots. On a focused select, Chromium
+    // on Linux moves the selection instead, so the status filter loses focus first.
+    await page.locator("#status").blur();
     if (testScenario || runFraudPreventionHeaderValidation) {
       // Wait for developer-mode.js to detect synthetic bundle and set sessionStorage
       if (isSyntheticMode()) {
