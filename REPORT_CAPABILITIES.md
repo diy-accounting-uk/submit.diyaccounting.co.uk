@@ -3902,7 +3902,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-138 Check every public video is embedded on the site
 
 - **Use when:** a video was published, replaced or deleted, or a new `publish.json` shipped, and every public channel video must still play from a page linked off videos.html.
-- **Does:** video-embed-check.js lists the YouTube channel's public uploads, loads the site's videos.html with Playwright, follows its area-page links and collects the embedded video ids. It fails, one line per problem, when a public channel video or a live publish.json video is embedded nowhere, a publish.json group has no linked area page, or oEmbed does not answer 200 for an embedded id.
+- **Does:** video-embed-check.js lists the YouTube channel's public uploads, loads the site's videos.html with Playwright, follows its area-page links and collects the embedded video ids. It reads the site's catalogue and environment name and applies the pages' listing rule, so a video whose activity the environment does not list is not expected on its pages. It fails, one line per problem, when a public channel video or a listed publish.json video is embedded nowhere, a group with a listed video has no linked area page, or oEmbed does not answer 200 for an embedded id. A public channel video that the environment holds back is a note, not a problem.
 - **Run:** `AWS_PROFILE=diya-submit-prod npm run video:embed-check`; `AWS_PROFILE=diya-submit-prod npm run video:embed-check -- --base <url>`
 - **Entry:** `scripts/video-embed-check.js`
 - **Files:** scripts/video-embed-check.js, app/unit-tests/scripts/videoEmbedCheck.test.js, scripts/youtube-upload.js, web/public/videos.html
