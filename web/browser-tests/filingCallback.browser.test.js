@@ -97,7 +97,7 @@ test.describe("Companies House filing OAuth callback", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/javascript",
-          body: `window.authUrlBuilder = { buildCompaniesHouseAuthUrl: (state, scope) => Promise.resolve("${BASE}/oauth2/authorise?state=" + encodeURIComponent(state) + "&scope=" + encodeURIComponent(scope)) };`,
+          body: `window.authUrlBuilder = { companiesHouseRedirectUri: () => Promise.resolve("${BASE}/companies-house/filingCallback.html"), buildCompaniesHouseAuthUrl: (state, scope) => Promise.resolve("${BASE}/oauth2/authorise?state=" + encodeURIComponent(state) + "&scope=" + encodeURIComponent(scope)) };`,
         });
       } else if (url.endsWith("/submit.js")) {
         await route.fulfill({

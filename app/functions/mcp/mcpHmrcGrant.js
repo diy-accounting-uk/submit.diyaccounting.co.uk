@@ -47,6 +47,7 @@ import {
 } from "../../data/dynamoDbHmrcGrantRepository.js";
 import { sealFor, HMRC_GRANT_PURPOSE } from "../../lib/codesSeal.js";
 import { prepareTokenExchangeRequest, exchangeOrFail } from "../hmrc/hmrcTokenPost.js";
+import { ownCallbackRedirectUri } from "../../lib/oauthRedirectUri.js";
 import { openGrantFor, GRANT_ID_PATTERN } from "../../lib/mcpHmrcGrantAccess.js";
 import { getFraudPreventionHeadersFeedback } from "../../services/hmrcFraudPreventionFeedback.js";
 
@@ -92,7 +93,7 @@ function authoriseUrl({ hmrcAccount, scope, state }) {
   const synthetic = hmrcAccount === "synthetic";
   const base = (synthetic ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI).replace(/\/$/, "");
   const clientId = synthetic ? process.env.HMRC_SANDBOX_CLIENT_ID : process.env.HMRC_CLIENT_ID;
-  const redirectUri = new URL(CALLBACK_PAGE_PATH, process.env.DIY_SUBMIT_BASE_URL).toString();
+  const redirectUri = ownCallbackRedirectUri(CALLBACK_PAGE_PATH);
   const query = new URLSearchParams({ response_type: "code", client_id: clientId, redirect_uri: redirectUri, scope, state });
   return `${base}/oauth/authorize?${query.toString()}`;
 }
@@ -164,7 +165,7 @@ async function callback(event, request, responseHeaders) {
   }
 
   await initializeSalt();
-  const exchangeRequest = await prepareTokenExchangeRequest(code, grant.hmrcAccount);
+  const exchangeRequest = await prepareTokenExchangeRequest(code, grant.hmrcAccount, ownCallbackRedirectUri(CALLBACK_PAGE_PATH));
   const exchanged = await exchangeOrFail(request, responseHeaders, exchangeRequest, `mcp-hmrc-grant:${parsed.grantId}`, grant.hmrcAccount);
   if (exchanged.failure) {
     await deleteHmrcGrant(parsed.grantId);

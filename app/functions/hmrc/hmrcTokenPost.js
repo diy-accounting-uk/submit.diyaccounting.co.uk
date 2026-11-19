@@ -34,6 +34,9 @@ import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { createGrantedHmrcGrant } from "../../data/dynamoDbHmrcGrantRepository.js";
 import { sealFor, HMRC_GRANT_PURPOSE } from "../../lib/codesSeal.js";
 import { publishActivityEvent, publishActivityFailureEvent } from "../../lib/activityAlert.js";
+import { resolveCallbackRedirectUri } from "../../lib/oauthRedirectUri.js";
+
+export const HMRC_CALLBACK_PATH = "activities/submitVatCallback.html";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcTokenPost.js" });
 
@@ -53,6 +56,8 @@ export function extractAndValidateParameters(event, errorMessages) {
 
   // Collect validation errors for required fields
   if (!code) errorMessages.push("Missing code from event body");
+  const resolved = resolveCallbackRedirectUri(parsedBody?.redirectUri, HMRC_CALLBACK_PATH);
+  if (resolved.error) errorMessages.push(resolved.error);
 
   // Extract HMRC account (synthetic/live) from header hmrcAccount
   const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";
@@ -61,7 +66,7 @@ export function extractAndValidateParameters(event, errorMessages) {
     errorMessages.push("Invalid hmrcAccount header. Must be either 'synthetic' or 'live' if provided.");
   }
 
-  return { code, hmrcAccount };
+  return { code, hmrcAccount, redirectUri: resolved.redirectUri };
 }
 
 // HTTP request/response, aware Lambda ingestHandler function
@@ -103,7 +108,7 @@ export async function ingestHandler(event) {
   }
 
   // Extract and validate parameters
-  const { code, hmrcAccount } = extractAndValidateParameters(event, errorMessages);
+  const { code, hmrcAccount, redirectUri } = extractAndValidateParameters(event, errorMessages);
 
   const responseHeaders = {};
 
@@ -114,7 +119,7 @@ export async function ingestHandler(event) {
 
   // Processing
   logger.info({ message: "Exchanging authorization code for HMRC access token" });
-  const tokenResponse = await prepareTokenExchangeRequest(code, hmrcAccount);
+  const tokenResponse = await prepareTokenExchangeRequest(code, hmrcAccount, redirectUri);
   const exchanged = await exchangeOrFail(request, responseHeaders, tokenResponse, userSub, hmrcAccount);
 
   if (exchanged.failure) {
@@ -199,19 +204,18 @@ export async function exchangeOrFail(request, responseHeaders, { url, body }, au
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 // Prepares the URL and body for a token exchange request, but does not execute the exchange itself
-export async function prepareTokenExchangeRequest(code, hmrcAccount) {
+export async function prepareTokenExchangeRequest(code, hmrcAccount, redirectUri) {
   const secretArn = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_CLIENT_SECRET_ARN : process.env.HMRC_CLIENT_SECRET_ARN;
   const overrideSecret = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_CLIENT_SECRET : process.env.HMRC_CLIENT_SECRET;
   const clientSecret = await retrieveHmrcClientSecret(hmrcAccount === "synthetic" ? "synthetic" : "live", overrideSecret, secretArn);
   const hmrcBaseUri = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
   const hmrcClientId = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_CLIENT_ID : process.env.HMRC_CLIENT_ID;
   const url = `${hmrcBaseUri}/oauth/token`;
-  const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
   const body = {
     grant_type: "authorization_code",
     client_id: hmrcClientId,
     client_secret: clientSecret,
-    redirect_uri: `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}activities/submitVatCallback.html`,
+    redirect_uri: redirectUri,
     code,
   };
 

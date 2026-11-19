@@ -131,7 +131,8 @@ function getValidatedAuthorisationCode() {
 
 async function exchangeToken(code, scope) {
   const url = `/api/v1/companies-house/token`;
-  const body = JSON.stringify({ code, scope });
+  const redirectUri = await window.authUrlBuilder.companiesHouseRedirectUri();
+  const body = JSON.stringify({ code, scope, redirectUri });
   console.log(`Exchanging Companies House token. Remote call initiated: POST ${url}`);
 
   // Cognito idToken identifies the authenticated web user for the token exchange audit,

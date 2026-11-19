@@ -44,6 +44,8 @@ function fakeHeaders(headers) {
   };
 }
 
+const APEX_REDIRECT_URI = "https://ci-submit.diyaccounting.co.uk/companies-house/filingCallback.html";
+
 describe("companiesHouseTokenPost ingestHandler", () => {
   let mockFetch;
 
@@ -65,6 +67,24 @@ describe("companiesHouseTokenPost ingestHandler", () => {
     const event = buildLambdaEvent({ method: "HEAD", path: "/api/v1/companies-house/token" });
     const response = await companiesHouseTokenPostHandler(event);
     expect(response.statusCode).toBe(200);
+  });
+
+  test("rejects a redirectUri on a foreign host with a JSON 400", async () => {
+    const event = buildLambdaEvent({
+      method: "POST",
+      body: { code: "test-code", redirectUri: "https://evil.example.com/companies-house/filingCallback.html" },
+    });
+    const response = await companiesHouseTokenPostHandler(event);
+    expect(response.statusCode).toBe(400);
+    expect(response.headers["Content-Type"]).toContain("application/json");
+    expect(response.body).toContain("redirectUri");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  test("returns 400 when redirectUri is missing", async () => {
+    const response = await companiesHouseTokenPostHandler(buildLambdaEvent({ method: "POST", body: { code: "test-code" } }));
+    expect(response.statusCode).toBe(400);
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("returns 400 when code is missing", async () => {
@@ -92,7 +112,7 @@ describe("companiesHouseTokenPost ingestHandler", () => {
 
     const scope =
       "https://identity.company-information.service.gov.uk/user/profile.read https://api.company-information.service.gov.uk/company/01234567/registered-office-address.update";
-    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code", scope } });
+    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code", scope, redirectUri: APEX_REDIRECT_URI } });
     const response = await companiesHouseTokenPostHandler(event);
 
     expect(response.statusCode).toBe(200);
@@ -118,7 +138,11 @@ describe("companiesHouseTokenPost ingestHandler", () => {
   test("returns 400 when the scope names no company", async () => {
     const event = buildLambdaEvent({
       method: "POST",
-      body: { code: "test-code", scope: "https://identity.company-information.service.gov.uk/user/profile.read" },
+      body: {
+        code: "test-code",
+        scope: "https://identity.company-information.service.gov.uk/user/profile.read",
+        redirectUri: APEX_REDIRECT_URI,
+      },
     });
     const response = await companiesHouseTokenPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -133,7 +157,7 @@ describe("companiesHouseTokenPost ingestHandler", () => {
       headers: fakeHeaders({}),
     });
 
-    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" } });
+    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code", redirectUri: APEX_REDIRECT_URI } });
     await companiesHouseTokenPostHandler(event);
 
     const [requestedUrl, requestInit] = mockFetch.mock.calls[0];
@@ -144,7 +168,7 @@ describe("companiesHouseTokenPost ingestHandler", () => {
     expect(params.get("code")).toBe("test-code");
     expect(params.get("client_id")).toBe("test-companies-house-client-id");
     expect(params.get("client_secret")).toBe("test-companies-house-client-secret");
-    expect(params.get("redirect_uri")).toContain("companies-house/filingCallback.html");
+    expect(params.get("redirect_uri")).toBe(APEX_REDIRECT_URI);
   });
 
   test("returns 400 and Companies House's own error when it answers invalid_grant", async () => {
@@ -155,7 +179,7 @@ describe("companiesHouseTokenPost ingestHandler", () => {
       headers: fakeHeaders({}),
     });
 
-    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" } });
+    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code", redirectUri: APEX_REDIRECT_URI } });
     const response = await companiesHouseTokenPostHandler(event);
 
     expect(response.statusCode).toBe(400);
@@ -180,7 +204,7 @@ describe("companiesHouseTokenPost ingestHandler", () => {
       headers: fakeHeaders({}),
     });
 
-    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" } });
+    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code", redirectUri: APEX_REDIRECT_URI } });
     const response = await companiesHouseTokenPostHandler(event);
 
     expect(response.statusCode).toBe(401);
@@ -200,7 +224,7 @@ describe("companiesHouseTokenPost ingestHandler", () => {
       headers: fakeHeaders({}),
     });
 
-    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" } });
+    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code", redirectUri: APEX_REDIRECT_URI } });
     const response = await companiesHouseTokenPostHandler(event);
 
     expect(response.statusCode).toBe(502);
@@ -216,7 +240,7 @@ describe("companiesHouseTokenPost ingestHandler", () => {
   test("returns 502 when the request to Companies House fails at the network level", async () => {
     mockFetch.mockRejectedValueOnce(new Error("getaddrinfo ENOTFOUND identity-sandbox.company-information.service.gov.uk"));
 
-    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" } });
+    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code", redirectUri: APEX_REDIRECT_URI } });
     const response = await companiesHouseTokenPostHandler(event);
 
     expect(response.statusCode).toBe(502);
@@ -236,7 +260,7 @@ describe("companiesHouseTokenPost ingestHandler", () => {
       headers: fakeHeaders({}),
     });
 
-    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" } });
+    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code", redirectUri: APEX_REDIRECT_URI } });
     await companiesHouseTokenPostHandler(event);
 
     expect(mockSend).toHaveBeenCalledTimes(1);
@@ -254,7 +278,7 @@ describe("companiesHouseTokenPost ingestHandler", () => {
     try {
       const event = buildLambdaEvent({
         method: "POST",
-        body: { code: "test-code" },
+        body: { code: "test-code", redirectUri: APEX_REDIRECT_URI },
         headers: { "x-user-sub": "header-sub" },
         authorizer: {},
       });
