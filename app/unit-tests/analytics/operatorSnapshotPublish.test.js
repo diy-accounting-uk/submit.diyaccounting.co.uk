@@ -94,6 +94,7 @@ import {
   dailyChartDays,
   buildChartSeries,
   buildDailyChartDefinitions,
+  withoutAllZeroComponents,
   buildDailyCharts,
   hourlyChartHours,
   buildCostDrivers,
@@ -1029,6 +1030,19 @@ describe("operatorSnapshotPublish", () => {
         expect(mode.componentOrder, id).toEqual(["google", "microsoft"]);
         expect(mode.labelOf("microsoft"), id).toBe("Microsoft");
         expect(mode.descriptionOf("microsoft"), id).toContain("Microsoft");
+      }
+      for (const [id, metric] of [
+        ["ads-impressions", "sum(impressions)"],
+        ["ads-clicks", "sum(clicks)"],
+        ["ads-cost", "sum(cost_gbp)"],
+      ]) {
+        const mode = paid.modes.find((candidate) => candidate.id === id);
+        expect(mode.sql, id).toContain(metric);
+        expect(mode.sql, id).toContain("sum(value) OVER (PARTITION BY component) AS window_total");
+        expect(mode.sql.trim().endsWith("WHERE  window_total > 0"), id).toBe(true);
+      }
+      for (const id of ["ads-ctr", "ads-cpc", "ads-conversions"]) {
+        expect(paid.modes.find((candidate) => candidate.id === id).sql, id).not.toContain("window_total");
       }
       const conversions = paid.modes.find((mode) => mode.id === "ads-conversions");
       expect(conversions.sql).toContain("FROM   v_ads_performance_daily");
@@ -3065,5 +3079,23 @@ describe("operatorSnapshotPublish", () => {
       expect(await logGroupStoredBytes([first, second])).toBe(22);
       expect(first.send.mock.calls[1][0].input.nextToken).toBe("more");
     });
+  });
+});
+
+describe("withoutAllZeroComponents", () => {
+  test("keeps the day, component and value columns and drops a component whose values add up to 0 over the window", () => {
+    const sql = withoutAllZeroComponents("SELECT day, component, value\nFROM   t\nGROUP  BY 1, 2");
+    expect(sql).toBe(
+      "SELECT day, component, value\n" +
+        "FROM (\n" +
+        "  SELECT day, component, value, sum(value) OVER (PARTITION BY component) AS window_total\n" +
+        "  FROM (\n" +
+        "    SELECT day, component, value\n" +
+        "    FROM   t\n" +
+        "    GROUP  BY 1, 2\n" +
+        "  ) per_day\n" +
+        ") per_component\n" +
+        "WHERE  window_total > 0",
+    );
   });
 });

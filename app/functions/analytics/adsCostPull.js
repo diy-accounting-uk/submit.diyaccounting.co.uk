@@ -2,8 +2,8 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // @capability DATA-59 Pull Google Ads daily cost into the lake
-// - **Use when:** the previous day's Google Ads impressions, clicks, cost and conversions must land in the lake, or backfill a date range.
-// - **Does:** adsCostPull.js reads the previous day's Google Ads performance (impressions, clicks, cost and conversions) by campaign and ad group through the Ads API. It authenticates with an OAuth client and a refresh token that it reads from Secrets Manager (ADS_OAUTH_CLIENT_SECRET_ARN, ADS_REFRESH_TOKEN_SECRET_ARN). A campaign with no ad groups (Performance Max) receives one row with an empty ad group, so daily rows always sum to the campaign total. It writes gzipped NDJSON under curated/ads/ads_cost/dt=YYYY-MM-DD/. AdsCostTables.java provisions the ads_cost Glue table with dt partition projection. The job exists only in prod when ADS_COST_PULL_ENABLED is true. msAdsCostPull.js writes the Microsoft Advertising rows (platform microsoft, with conversions) by day and campaign beside them, from infra/microsoft/ads/msads.toml and the shared app/lib/microsoftAdsReporting.js, in prod only. v_ads_cost_daily sums by day, platform and campaign; v_ads_cost_per_paid_landing_daily divides each platform's daily cost by v_paid_landings_daily's gclid (google) or msclkid (microsoft) count. operatorSnapshotPublish.js measures ads-cost-gbp, ads-cost-per-paid-landing-gbp and a ms- twin of each Ads row from them, and draws both platforms' conversions on the Ads conversions tab from v_ads_performance_daily. fxRatePull.js reads the European Central Bank 90-day reference rates nightly into curated/fx/fx_rates/ (FxRateTables.java); v_usd_gbp_daily carries the last rate over non-working days and v_contribution_daily converts the dollar AWS bill to pounds with it.
+// - **Use when:** Google Ads impressions, clicks, cost and conversions must land in the lake, or backfill a date range.
+// - **Does:** adsCostPull.js reads Google Ads performance (impressions, clicks, cost and conversions) by day, campaign and ad group through the Ads API, for today and the 30 days before it (CONVERSION_WINDOW_DAYS), because Google adds a conversion to the day of its click for 30 days; one campaign search and one ad group search cover the range, and each day is written to its own dt= partition under a fixed key, so a re-pull replaces it. It authenticates with an OAuth client and a refresh token that it reads from Secrets Manager (ADS_OAUTH_CLIENT_SECRET_ARN, ADS_REFRESH_TOKEN_SECRET_ARN). A campaign with no ad groups (Performance Max) receives one row with an empty ad group, so daily rows always sum to the campaign total. It writes gzipped NDJSON under curated/ads/ads_cost/dt=YYYY-MM-DD/. AdsCostTables.java provisions the ads_cost Glue table with dt partition projection. The job exists only in prod when ADS_COST_PULL_ENABLED is true. msAdsCostPull.js writes the Microsoft Advertising rows (platform microsoft, with conversions) by day and campaign beside them, from infra/microsoft/ads/msads.toml and the shared app/lib/microsoftAdsReporting.js, in prod only. v_ads_cost_daily sums by day, platform and campaign; v_ads_cost_per_paid_landing_daily divides each platform's daily cost by v_paid_landings_daily's gclid (google) or msclkid (microsoft) count. operatorSnapshotPublish.js measures ads-cost-gbp, ads-cost-per-paid-landing-gbp and a ms- twin of each Ads row from them, and draws both platforms' conversions on the Ads conversions tab from v_ads_performance_daily. fxRatePull.js reads the European Central Bank 90-day reference rates nightly into curated/fx/fx_rates/ (FxRateTables.java); v_usd_gbp_daily carries the last rate over non-working days and v_contribution_daily converts the dollar AWS bill to pounds with it.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/analytics/adsCostPull.js:handler`
 // - **Files:** app/functions/analytics/adsCostPull.js, app/unit-tests/analytics/adsCostPull.test.js, app/functions/analytics/msAdsCostPull.js, app/unit-tests/analytics/msAdsCostPull.test.js, app/lib/microsoftAdsReporting.js, app/functions/analytics/fxRatePull.js, app/unit-tests/analytics/fxRatePull.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/FxRateTables.java, app/unit-tests/analytics/fixtures/adsCostAdGroupSearch.json, app/unit-tests/analytics/fixtures/adsCostCampaignSearch.json, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/AdsCostTables.java, infra/main/resources/analytics/views/v_ads_cost_daily.sql, infra/main/resources/analytics/views/v_ads_cost_per_paid_landing_daily.sql, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/BusinessViewsTest.java
@@ -13,9 +13,9 @@
 
 // app/functions/analytics/adsCostPull.js
 //
-// Nightly job that pulls the previous day's Google Ads impressions, clicks, cost and conversions
-// per campaign and ad group through the Ads API and writes them as gzipped NDJSON under the lake's
-// curated/ads/ prefix. A campaign with no ad groups (Performance Max) gets one row with an empty
+// Nightly job that pulls Google Ads impressions, clicks, cost and conversions per campaign and ad
+// group, for today and the 30 days before it, through the Ads API and writes them as gzipped
+// NDJSON under the lake's curated/ads/ prefix, one object per day. A campaign with no ad groups (Performance Max) gets one row with an empty
 // ad group, so the day's rows always sum to the campaign's total. A lake row carries no visitor
 // or click identifier.
 
@@ -110,12 +110,19 @@ export async function fetchAdsAccessToken({ oauthClientSecretArn, refreshTokenSe
 
 const DATE_FIELDS = ["campaign.id", "campaign.name", "metrics.impressions", "metrics.clicks", "metrics.cost_micros", "metrics.conversions"];
 
-export function buildCampaignQuery(date) {
-  return `SELECT segments.date, ${DATE_FIELDS.join(", ")} FROM campaign WHERE segments.date = '${date}'`;
+// The query's date condition: one day, or every day from the first to the last inclusive. Each
+// result row carries its own segments.date, so a range gives each day the metrics a one-day
+// query of that day gives.
+function dateCondition(firstDate, lastDate) {
+  return firstDate === lastDate ? `segments.date = '${firstDate}'` : `segments.date BETWEEN '${firstDate}' AND '${lastDate}'`;
 }
 
-export function buildAdGroupQuery(date) {
-  return `SELECT segments.date, ${DATE_FIELDS.slice(0, 2).join(", ")}, ad_group.id, ad_group.name, ${DATE_FIELDS.slice(2).join(", ")} FROM ad_group WHERE segments.date = '${date}'`;
+export function buildCampaignQuery(firstDate, lastDate = firstDate) {
+  return `SELECT segments.date, ${DATE_FIELDS.join(", ")} FROM campaign WHERE ${dateCondition(firstDate, lastDate)}`;
+}
+
+export function buildAdGroupQuery(firstDate, lastDate = firstDate) {
+  return `SELECT segments.date, ${DATE_FIELDS.slice(0, 2).join(", ")}, ad_group.id, ad_group.name, ${DATE_FIELDS.slice(2).join(", ")} FROM ad_group WHERE ${dateCondition(firstDate, lastDate)}`;
 }
 
 /**
@@ -151,9 +158,9 @@ function metricsOf(result) {
 }
 
 /**
- * The lake rows for one day from the campaign-level and ad-group-level search results. An ad
- * group row is kept as it is. A campaign with no ad-group row that day (Performance Max has no
- * ad groups) gets one row with an empty ad group id and name. A row with no impressions, clicks,
+ * The lake rows from the campaign-level and ad-group-level search results, for every day they
+ * cover. An ad group row is kept as it is. A campaign with no ad-group row on a day (Performance
+ * Max has no ad groups) gets one row for that day with an empty ad group id and name. A row with no impressions, clicks,
  * cost or conversions is left out. Google counts a conversion on the day of the click that led to
  * it, so a later pull of the same day can carry more conversions.
  *
@@ -163,9 +170,9 @@ function metricsOf(result) {
  */
 export function adsCostRows(campaignResults, adGroupResults) {
   const rows = [];
-  const campaignsWithAdGroups = new Set();
+  const campaignDaysWithAdGroups = new Set();
   for (const result of adGroupResults) {
-    campaignsWithAdGroups.add(result.campaign.id);
+    campaignDaysWithAdGroups.add(`${result.segments.date}|${result.campaign.id}`);
     rows.push({
       date: result.segments.date,
       campaign_id: result.campaign.id,
@@ -176,7 +183,7 @@ export function adsCostRows(campaignResults, adGroupResults) {
     });
   }
   for (const result of campaignResults) {
-    if (campaignsWithAdGroups.has(result.campaign.id)) continue;
+    if (campaignDaysWithAdGroups.has(`${result.segments.date}|${result.campaign.id}`)) continue;
     rows.push({
       date: result.segments.date,
       campaign_id: result.campaign.id,
@@ -193,30 +200,57 @@ export function objectKey(dateStr) {
   return `curated/ads/ads_cost/dt=${dateStr}/ads_cost.json.gz`;
 }
 
+// Google adds a conversion to the day of its click for as long as the conversion window runs.
+// The account declares no window of its own, so it has Google's default of 30 days. A run with
+// no event re-pulls today and the 30 days before it, so each click day's conversions are read
+// again until its window closes.
+export const CONVERSION_WINDOW_DAYS = 30;
+
 /**
- * Pull Google Ads cost into the lake, one object per day.
+ * Today and the CONVERSION_WINDOW_DAYS days before it, oldest first, as "YYYY-MM-DD" in UTC.
  *
- * @param {{date?: string, from?: string, to?: string}} [event] - `date` ("YYYY-MM-DD") overrides
- *   yesterday and today so far; `from` and `to` (inclusive, at most 93 days) backfill a range.
+ * @param {Date} [now]
+ * @returns {string[]}
+ */
+export function conversionWindowDays(now = new Date()) {
+  return Array.from({ length: CONVERSION_WINDOW_DAYS + 1 }, (_, index) =>
+    new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (CONVERSION_WINDOW_DAYS - index)))
+      .toISOString()
+      .slice(0, 10),
+  );
+}
+
+/**
+ * Pull Google Ads cost into the lake, one object per day. The days are read with one campaign
+ * search and one ad group search over the whole range, and each day is written to its own dt=
+ * partition under a fixed object key, so a re-pull of a day replaces its object. A day with no
+ * rows is written empty, so a re-pull also clears a day that has lost its rows.
+ *
+ * @param {{date?: string, from?: string, to?: string}} [event] - `date` ("YYYY-MM-DD") pulls one
+ *   day; `from` and `to` (inclusive, at most 93 days) backfill a range; with neither, today and the
+ *   CONVERSION_WINDOW_DAYS days before it.
  * @returns {Promise<{days: Array<{date: string, key: string, count: number}>}>}
  */
 export async function handler(event = {}) {
   const bucket = requireEnv("ANALYTICS_LAKE_BUCKET_NAME");
   const oauthClientSecretArn = requireEnv("ADS_OAUTH_CLIENT_SECRET_ARN");
   const refreshTokenSecretArn = requireEnv("ADS_REFRESH_TOKEN_SECRET_ARN");
-  const days = daysOf(event);
+  const days = event.date || event.from || event.to ? daysOf(event) : conversionWindowDays();
+  const firstDate = days[0];
+  const lastDate = days[days.length - 1];
 
   const { customerId, apiVersion } = readAdsAccount();
   const accessToken = await fetchAdsAccessToken({ oauthClientSecretArn, refreshTokenSecretArn });
 
-  const results = [];
-  for (const targetDate of days) {
-    const [campaignResults, adGroupResults] = await Promise.all([
-      searchAllPages({ accessToken, customerId, apiVersion, query: buildCampaignQuery(targetDate) }),
-      searchAllPages({ accessToken, customerId, apiVersion, query: buildAdGroupQuery(targetDate) }),
-    ]);
-    const rows = adsCostRows(campaignResults, adGroupResults);
+  const [campaignResults, adGroupResults] = await Promise.all([
+    searchAllPages({ accessToken, customerId, apiVersion, query: buildCampaignQuery(firstDate, lastDate) }),
+    searchAllPages({ accessToken, customerId, apiVersion, query: buildAdGroupQuery(firstDate, lastDate) }),
+  ]);
+  const rowsByDay = new Map(days.map((day) => [day, []]));
+  for (const row of adsCostRows(campaignResults, adGroupResults)) rowsByDay.get(row.date)?.push(row);
 
+  const results = [];
+  for (const [targetDate, rows] of rowsByDay) {
     const key = objectKey(targetDate);
     await getS3Client().send(
       new PutObjectCommand({

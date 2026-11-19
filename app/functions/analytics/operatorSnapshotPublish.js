@@ -1267,6 +1267,29 @@ const CAMPAIGN_COMPONENT = `CASE platform WHEN 'microsoft' THEN 'Microsoft: ' EL
 
 const PLATFORM_LABELS = { google: "Google", microsoft: "Microsoft" };
 
+/**
+ * A daily chart query (day, component, value) without the components whose value adds up to 0
+ * over the whole window. A campaign whose only metric on a day is a conversion writes a row with
+ * no impressions, clicks or cost; this keeps it out of the charts of those metrics.
+ *
+ * @param {string} sql - a query answering day, component and value
+ * @returns {string}
+ */
+export function withoutAllZeroComponents(sql) {
+  const inner = sql
+    .split("\n")
+    .map((line) => `    ${line}`)
+    .join("\n");
+  return (
+    `SELECT day, component, value\n` +
+    `FROM (\n` +
+    `  SELECT day, component, value, sum(value) OVER (PARTITION BY component) AS window_total\n` +
+    `  FROM (\n${inner}\n  ) per_day\n` +
+    `) per_component\n` +
+    `WHERE  window_total > 0`
+  );
+}
+
 const plural = (count, singular, pluralForm) => `${count} ${Number(count) === 1 ? singular : pluralForm}`;
 
 /**
@@ -1839,9 +1862,10 @@ export function buildDailyChartDefinitions() {
           totalDescription: "Impressions of every campaign added together.",
           labelOf: (id) => id,
           descriptionOf: (id) => `Times the ${id} campaign's advertisements were shown in a day.`,
-          sql:
+          sql: withoutAllZeroComponents(
             `SELECT cast(day AS varchar) AS day, ${CAMPAIGN_COMPONENT} AS component, cast(sum(impressions) AS double) AS value\n` +
-            `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+              `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+          ),
         },
         {
           id: "ads-clicks",
@@ -1852,9 +1876,10 @@ export function buildDailyChartDefinitions() {
           maxComponents: 10,
           labelOf: (id) => id,
           descriptionOf: (id) => `Clicks on the ${id} campaign's advertisements in a day.`,
-          sql:
+          sql: withoutAllZeroComponents(
             `SELECT cast(day AS varchar) AS day, ${CAMPAIGN_COMPONENT} AS component, cast(sum(clicks) AS double) AS value\n` +
-            `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+              `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+          ),
         },
         {
           id: "ads-ctr",
@@ -1888,9 +1913,10 @@ export function buildDailyChartDefinitions() {
           componentOrder: ["google", "microsoft"],
           labelOf: (id) => PLATFORM_LABELS[id] ?? id,
           descriptionOf: (id) => `The day's ${PLATFORM_LABELS[id] ?? id} Ads cost, in pounds.`,
-          sql:
+          sql: withoutAllZeroComponents(
             `SELECT cast(day AS varchar) AS day, platform AS component, cast(sum(cost_gbp) AS double) AS value\n` +
-            `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+              `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+          ),
         },
         {
           id: "ads-paid-landings",
