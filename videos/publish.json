@@ -10161,7 +10161,57 @@
       "description": "An AI assistant connects to DIY Accounting Submit through the connector page and works out the nine VAT boxes from a saved book. It files nothing. It gives you a link that opens the VAT form with the figures filled in. You check each figure, tick the declaration and submit the return yourself. HMRC's test service confirms it and the receipt shows. This is a real recording of the product. The VAT service is a test service and the figures come from a sample book, so nothing here is a live filing. Read more at https://submit.diyaccounting.co.uk/mcp.html?utm_source=youtube&utm_medium=video.",
       "tags": ["DIY Accounting", "VAT", "HMRC", "Making Tax Digital", "MCP", "AI assistant", "VAT return"],
       "categoryId": "27",
-      "videoId": "0tBQzkjmNgM"
+      "videoId": "0tBQzkjmNgM",
+      "walkthrough": [
+        {
+          "scene": "connector",
+          "headline": "The assistant",
+          "caption": "An assistant connects to Submit with one web address. It works out the nine VAT boxes. It files nothing.",
+          "startSeconds": 0,
+          "thumb": "videos/assistant-vat-handoff/connector-thumb.webp",
+          "full": "videos/assistant-vat-handoff/connector.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "handoff",
+          "headline": "The hand-off",
+          "caption": "Check every figure. The browser is where you decide. Tick the declaration. You file the return, not the assistant.",
+          "startSeconds": 14,
+          "thumb": "videos/assistant-vat-handoff/handoff-thumb.webp",
+          "full": "videos/assistant-vat-handoff/handoff.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 398,
+          "fullWidth": 1000,
+          "fullHeight": 828
+        },
+        {
+          "scene": "submit",
+          "headline": "Submit to HMRC",
+          "caption": "Submitting sends you to HMRC, where you grant access.",
+          "startSeconds": 46,
+          "thumb": "videos/assistant-vat-handoff/submit-thumb.webp",
+          "full": "videos/assistant-vat-handoff/submit.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 398,
+          "fullWidth": 1000,
+          "fullHeight": 828
+        },
+        {
+          "scene": "receipt",
+          "headline": "Submitted",
+          "caption": "HMRC confirms the return is filed. The receipt is your record that it went through.",
+          "startSeconds": 55,
+          "thumb": "videos/assistant-vat-handoff/receipt-thumb.webp",
+          "full": "videos/assistant-vat-handoff/receipt.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        }
+      ]
     },
     {
       "id": "short-submit-return",
@@ -10177,7 +10227,86 @@
       "description": "DIY Accounting Submit sends VAT returns to HMRC under Making Tax Digital for 99p a month, with a free day pass to try it. This short video finds the open VAT period HMRC holds, fills in the nine boxes and shows HMRC's receipt. It is a real recording of the live product, sending to HMRC's sandbox, so the figures and periods are examples. Try it yourself at https://submit.diyaccounting.co.uk/?utm_source=youtube&utm_medium=video.\n\n00:00 Home\n00:05 Ask HMRC\n00:21 The open period\n00:31 Fill in the return\n01:00 Submit\n01:08 Submitted",
       "tags": ["DIY Accounting", "VAT return", "HMRC", "Making Tax Digital", "VAT submission"],
       "categoryId": "27",
-      "videoId": "Bql-v-1P2M0"
+      "videoId": "Bql-v-1P2M0",
+      "walkthrough": [
+        {
+          "scene": "home",
+          "headline": "Home",
+          "caption": "You can send a VAT return straight to HMRC.",
+          "startSeconds": 0,
+          "thumb": "videos/short-submit-return/home-thumb.webp",
+          "full": "videos/short-submit-return/home.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "obligations-form",
+          "headline": "Ask HMRC",
+          "caption": "Ask HMRC which periods are open.",
+          "instruction": "Enter your VAT registration number and the dates to search between, then choose Retrieve obligations.",
+          "startSeconds": 5,
+          "thumb": "videos/short-submit-return/obligations-form-thumb.webp",
+          "full": "videos/short-submit-return/obligations-form.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "results",
+          "headline": "The open period",
+          "caption": "An open period needs a return.",
+          "instruction": "Read the periods HMRC holds for you: a Fulfilled period already has its return, and an Open period is waiting for one.",
+          "startSeconds": 21,
+          "thumb": "videos/short-submit-return/results-thumb.webp",
+          "full": "videos/short-submit-return/results.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 378,
+          "fullWidth": 1000,
+          "fullHeight": 790
+        },
+        {
+          "scene": "submit-form",
+          "headline": "Fill in the return",
+          "caption": "Type the nine boxes from your records. Tick the declaration.",
+          "instruction": "Tick the declaration that the information is true and complete.",
+          "startSeconds": 31,
+          "thumb": "videos/short-submit-return/submit-form-thumb.webp",
+          "full": "videos/short-submit-return/submit-form.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "submit",
+          "headline": "Submit",
+          "caption": "Then submit it to HMRC.",
+          "instruction": "Choose Submit VAT return, then sign in to HMRC and give permission again, because sending a return needs a wider grant than reading obligations.",
+          "startSeconds": 60,
+          "thumb": "videos/short-submit-return/submit-thumb.webp",
+          "full": "videos/short-submit-return/submit.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 370,
+          "fullWidth": 1000,
+          "fullHeight": 770
+        },
+        {
+          "scene": "receipt",
+          "headline": "Submitted",
+          "caption": "HMRC's receipt is your record.",
+          "instruction": "Read the receipt that HMRC returns, with its Form Bundle Number, and keep it as your record.",
+          "startSeconds": 68,
+          "thumb": "videos/short-submit-return/receipt-thumb.webp",
+          "full": "videos/short-submit-return/receipt.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        }
+      ]
     },
     {
       "id": "short-file-micro-entity-accounts",
@@ -10416,7 +10545,87 @@
       "description": "DIY Accounting Submit files with Companies House and HMRC for 99p a month on Resident Ltd, with a free day pass to try the VAT side. This short video looks up a company, enters the profit and loss and the balance sheet, previews the iXBRL and files the small company accounts with Companies House. Sign-in and the Resident Ltd subscription happen off camera. It was recorded against a local simulator of Companies House, so nothing here is a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk/?utm_source=youtube&utm_medium=video.",
       "tags": ["DIY Accounting", "Companies House", "small company accounts", "FRS 102", "iXBRL"],
       "categoryId": "27",
-      "videoId": "gNcuxlLTG4A"
+      "videoId": "gNcuxlLTG4A",
+      "walkthrough": [
+        {
+          "scene": "company-lookup",
+          "headline": "Which company?",
+          "caption": "Type the company number and look it up. Companies House confirms the name.",
+          "instruction": "Check that the company name Companies House shows is yours.",
+          "startSeconds": 0,
+          "thumb": "videos/short-file-small-company-accounts/company-lookup-thumb.webp",
+          "full": "videos/short-file-small-company-accounts/company-lookup.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "profit-and-loss",
+          "headline": "The accounts",
+          "caption": "Enter the period and the profit and loss. Submit works out the profit.",
+          "instruction": "Check the gross profit, operating profit and profit for the year that Submit works out.",
+          "startSeconds": 19,
+          "thumb": "videos/short-file-small-company-accounts/profit-and-loss-thumb.webp",
+          "full": "videos/short-file-small-company-accounts/profit-and-loss.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "balance-sheet",
+          "headline": "The balance sheet",
+          "caption": "The balance sheet must balance.",
+          "instruction": "Enter this year's balance sheet, the directors and the statutory statements, then check that the net assets equal your capital and reserves.",
+          "startSeconds": 39,
+          "thumb": "videos/short-file-small-company-accounts/balance-sheet-thumb.webp",
+          "full": "videos/short-file-small-company-accounts/balance-sheet.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "preview",
+          "headline": "Preview",
+          "caption": "Preview the iXBRL. Nothing is filed yet.",
+          "instruction": "Choose Preview accounts and read the accounts as they will be filed. Nothing is sent to Companies House yet.",
+          "startSeconds": 45,
+          "thumb": "videos/short-file-small-company-accounts/preview-thumb.webp",
+          "full": "videos/short-file-small-company-accounts/preview.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "submit",
+          "headline": "File it",
+          "caption": "Enter the auth code. Filing costs one token.",
+          "instruction": "Enter the company's authentication code, check the cost of one token, then choose Submit to Companies House.",
+          "startSeconds": 55,
+          "thumb": "videos/short-file-small-company-accounts/submit-thumb.webp",
+          "full": "videos/short-file-small-company-accounts/submit.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "result",
+          "headline": "The outcome",
+          "caption": "Companies House accepts the filing. Your copy stays on your receipts page.",
+          "instruction": "Choose See your copy of this filing; it stays on the Receipts page.",
+          "startSeconds": 64,
+          "thumb": "videos/short-file-small-company-accounts/result-thumb.webp",
+          "full": "videos/short-file-small-company-accounts/result.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        }
+      ]
     },
     {
       "id": "short-diya-gl-books",
@@ -10431,7 +10640,105 @@
       "description": "A sole trader starts a new Basic Sole Trader book in diya-gl, DIY Accounting's free bookkeeping tool that runs in your browser. They enter one sale and one purchase, and read the profit from the year table and the profit and loss account, in under two minutes. It is a real recording of the live tool, not a mockup or a design draft. Try it yourself at https://diya-gl.co.uk/bst.html?utm_source=youtube&utm_medium=video.",
       "tags": ["DIY Accounting", "diya-gl", "bookkeeping", "sole trader", "profit and loss", "self-employed accounts"],
       "categoryId": "27",
-      "videoId": "jvy9j4Hr60c"
+      "videoId": "jvy9j4Hr60c",
+      "walkthrough": [
+        {
+          "scene": "new-book",
+          "step": 1,
+          "headline": "A sole trader's books",
+          "caption": "diya-gl keeps a sole trader's books, free, in your browser.",
+          "instruction": "Open the Basic Sole Trader book at diya-gl.co.uk/bst.html.",
+          "startSeconds": 1,
+          "thumb": "videos/short-diya-gl-books/new-book-1-thumb.webp",
+          "full": "videos/short-diya-gl-books/new-book-1.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 240,
+          "fullWidth": 1600,
+          "fullHeight": 798
+        },
+        {
+          "scene": "new-book",
+          "step": 2,
+          "headline": "Start a new book",
+          "caption": "Start a new book.",
+          "instruction": "Choose Start a new book.",
+          "startSeconds": 9,
+          "thumb": "videos/short-diya-gl-books/new-book-2-thumb.webp",
+          "full": "videos/short-diya-gl-books/new-book-2.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
+        },
+        {
+          "scene": "new-book",
+          "step": 3,
+          "headline": "Your business name",
+          "caption": "Type your business name.",
+          "instruction": "Enter your business name in the name box.",
+          "startSeconds": 14,
+          "thumb": "videos/short-diya-gl-books/new-book-3-thumb.webp",
+          "full": "videos/short-diya-gl-books/new-book-3.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
+        },
+        {
+          "scene": "new-book",
+          "step": 4,
+          "headline": "Set the year end",
+          "caption": "Set the year end, then create the book.",
+          "instruction": "Enter 31 March 2027 as the year end for the 2026 to 2027 tax year, then choose Create book.",
+          "startSeconds": 20,
+          "thumb": "videos/short-diya-gl-books/new-book-4-thumb.webp",
+          "full": "videos/short-diya-gl-books/new-book-4.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
+        },
+        {
+          "scene": "new-book",
+          "step": 6,
+          "headline": "Sales left, purchases right",
+          "caption": "Sales go on the left, purchases on the right.",
+          "instruction": "Find the new sales entry row on the left and the new purchases entry row on the right.",
+          "startSeconds": 27,
+          "thumb": "videos/short-diya-gl-books/new-book-6-thumb.webp",
+          "full": "videos/short-diya-gl-books/new-book-6.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
+        },
+        {
+          "scene": "entries",
+          "headline": "A sale and a purchase",
+          "caption": "A purchase: plants for the job, £200, under cost of sales. The book adds up as you go: April shows £300 profit.",
+          "instruction": "Read April's row in the year table for its sales, costs and profit.",
+          "startSeconds": 34,
+          "thumb": "videos/short-diya-gl-books/entries-thumb.webp",
+          "full": "videos/short-diya-gl-books/entries.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
+        },
+        {
+          "scene": "profit",
+          "headline": "See the profit",
+          "caption": "The P&L tab sets it out as a profit and loss account. Net profit: £300. Try it free at diya-gl.co.uk.",
+          "instruction": "Read Net profit at the foot of the profit and loss account.",
+          "startSeconds": 73,
+          "thumb": "videos/short-diya-gl-books/profit-thumb.webp",
+          "full": "videos/short-diya-gl-books/profit.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
+        }
+      ]
     }
   ]
 }
