@@ -3673,11 +3673,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-217 Expire the test items a table already holds
 
 - **Use when:** receipts, bundles, subscriptions or passes hold items that a test user or a probe wrote before those items got a short ttl, and they must go.
-- **Does:** expire-test-items.js reads from the lake the keys whose newest change is not a REMOVE and whose own actor is test-user or probe, with the newest-change order of buildActorSplitSql and the hash stored on the item. A pass key is found by a Query on issuedBy-index, because the lake holds the pass key hashed. A dry run prints the count and five keys. --apply sets the two-day ttl on each key with UpdateItem and a condition that the stored actor is still test-user or probe. It never sends a Scan.
-- **Run:** `AWS_PROFILE=diya-submit-ci node scripts/expire-test-items.js --environment ci --table receipts`; add `--apply` to write
+- **Does:** expire-test-items.js reads from the lake the keys whose newest change is not a REMOVE and whose own actor is test-user or probe, with the newest-change order of buildActorSplitSql and the hash stored on the item. A pass key is found by a Query on issuedBy-index, because the lake holds the pass key hashed. --scan, valid only with --table passes, takes the pass keys from a paginated Scan of <env>-env-passes instead (filter begins_with(pk, 'pass#') AND actor IN ('test-user', 'probe'), projection pk and actor only), which reaches the test passes that have no issuedBy. The Scan fires the <env>-env-dynamodb-customer-table-scan alarm (prod-env-dynamodb-customer-table-scan in prod); the operator approved it as an exception. Without --scan it never sends a Scan. A dry run prints the count and five keys. --apply sets the two-day ttl on each key with UpdateItem and a condition that the stored actor is still test-user or probe.
+- **Run:** `AWS_PROFILE=diya-submit-ci node scripts/expire-test-items.js --environment ci --table receipts`; add `--apply` to write; `--table passes --scan` takes the pass keys from a Scan
 - **Entry:** `scripts/expire-test-items.js:runExpireTestItems`; `scripts/expire-test-items.js:buildTestKeysSql`
 - **Files:** scripts/expire-test-items.js, app/unit-tests/scripts/expireTestItems.test.js
-- **Keywords:** test items, synthetic items, expire, ttl, short retention, lake keys, no scan, conditional update, test-user, probe
+- **Keywords:** test items, synthetic items, expire, ttl, short retention, lake keys, passes scan, conditional update, test-user, probe
 - **Related:** OPS-196, DATA-18
 
 #### OPS-170 Check public surfaces for keys in the rotation set
@@ -8761,7 +8761,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - no javascript: [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html), [OPS-213](#ops-213-write-the-videos-the-bundles-and-the-home-activity-list-into-the-deployed-pages-for-the-environment)
 - no key file: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - no recalculation: [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
-- no scan: [OPS-217](#ops-217-expire-the-test-items-a-table-already-holds)
 - no service account key: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - no sign-in: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session)
 - no stored key: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud)
@@ -8906,6 +8905,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - pass.html: [BILL-58](#bill-58-pass-link-landing-page)
 - passaddonreturn: [BILL-58](#bill-58-pass-link-landing-page)
 - passes: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
+- passes scan: [OPS-217](#ops-217-expire-the-test-items-a-table-already-holds)
 - passphrase: [BILL-10](#bill-10-redeem-a-pass)
 - passphrase salt: [BILL-40](#bill-40-migrate-the-hashed-sub-salt)
 - passsummary: [BILL-58](#bill-58-pass-link-landing-page)

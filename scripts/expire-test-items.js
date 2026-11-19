@@ -4,17 +4,18 @@
 
 // @capability OPS-217 Expire the test items a table already holds
 // - **Use when:** receipts, bundles, subscriptions or passes hold items that a test user or a probe wrote before those items got a short ttl, and they must go.
-// - **Does:** expire-test-items.js reads from the lake the keys whose newest change is not a REMOVE and whose own actor is test-user or probe, with the newest-change order of buildActorSplitSql and the hash stored on the item. A pass key is found by a Query on issuedBy-index, because the lake holds the pass key hashed. A dry run prints the count and five keys. --apply sets the two-day ttl on each key with UpdateItem and a condition that the stored actor is still test-user or probe. It never sends a Scan.
-// - **Run:** `AWS_PROFILE=diya-submit-ci node scripts/expire-test-items.js --environment ci --table receipts`; add `--apply` to write
+// - **Does:** expire-test-items.js reads from the lake the keys whose newest change is not a REMOVE and whose own actor is test-user or probe, with the newest-change order of buildActorSplitSql and the hash stored on the item. A pass key is found by a Query on issuedBy-index, because the lake holds the pass key hashed. --scan, valid only with --table passes, takes the pass keys from a paginated Scan of <env>-env-passes instead (filter begins_with(pk, 'pass#') AND actor IN ('test-user', 'probe'), projection pk and actor only), which reaches the test passes that have no issuedBy. The Scan fires the <env>-env-dynamodb-customer-table-scan alarm (prod-env-dynamodb-customer-table-scan in prod); the operator approved it as an exception. Without --scan it never sends a Scan. A dry run prints the count and five keys. --apply sets the two-day ttl on each key with UpdateItem and a condition that the stored actor is still test-user or probe.
+// - **Run:** `AWS_PROFILE=diya-submit-ci node scripts/expire-test-items.js --environment ci --table receipts`; add `--apply` to write; `--table passes --scan` takes the pass keys from a Scan
 // - **Entry:** `scripts/expire-test-items.js:runExpireTestItems`; `scripts/expire-test-items.js:buildTestKeysSql`
 // - **Files:** scripts/expire-test-items.js, app/unit-tests/scripts/expireTestItems.test.js
-// - **Keywords:** test items, synthetic items, expire, ttl, short retention, lake keys, no scan, conditional update, test-user, probe
+// - **Keywords:** test items, synthetic items, expire, ttl, short retention, lake keys, passes scan, conditional update, test-user, probe
 // - **Related:** OPS-196, DATA-18
 // @end-capability
 
 // scripts/expire-test-items.js
 //
-// The keys come from the lake, never from a Scan. Each key is the one the item stores: the query
+// The keys come from the lake, or for passes with --scan from a Scan of the passes table that reads
+// only pk and actor. Each lake key is the one the item stores: the query
 // reads the raw dynamo_* source, so a hash is the hash the item was written with and not its
 // hash_aliases alias. A key whose item a salt rotation moved has no item under that hash, so its
 // conditional update fails and nothing is written.
@@ -27,11 +28,12 @@
 //
 // Usage:
 //   node scripts/expire-test-items.js --environment <ci|prod> --table <receipts|bundles|subscriptions|passes> [--apply]
+//   node scripts/expire-test-items.js --environment <ci|prod> --table passes --scan [--apply]
 
 import { fileURLToPath } from "node:url";
 import { AthenaClient, GetQueryExecutionCommand, GetQueryResultsCommand, StartQueryExecutionCommand } from "@aws-sdk/client-athena";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, QueryCommand, ScanCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { NEWEST_ORDER } from "../app/lib/operatorSnapshot/dataSection.js";
 import { isTestActor, testRecordRetention } from "../app/lib/recordRetention.js";
 import { mapLimit } from "./salt-rotate.js";
@@ -41,6 +43,8 @@ const ENVIRONMENTS = ["ci", "prod"];
 const TEST_ACTORS = ["test-user", "probe"];
 const SAMPLE_SIZE = 5;
 const WRITE_CONCURRENCY = 8;
+const SCAN_PAGE_LIMIT = 500;
+const SCAN_TABLE = "passes";
 const QUERY_POLL_MS = 2000;
 const QUERY_TIMEOUT_MS = 10 * 60 * 1000;
 const PASS_PK_PREFIX = "pass#";
@@ -78,16 +82,18 @@ export const TABLES = {
 };
 
 export function parseArgs(argv) {
-  const opts = { apply: false };
+  const opts = { apply: false, scan: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--apply") opts.apply = true;
+    else if (arg === "--scan") opts.scan = true;
     else if (arg === "--environment") opts.environment = argv[++i];
     else if (arg === "--table") opts.table = argv[++i];
     else throw new Error(`unknown argument: ${arg}`);
   }
   if (!ENVIRONMENTS.includes(opts.environment)) throw new Error(`--environment must be one of ${ENVIRONMENTS.join(", ")}`);
   if (!TABLES[opts.table]) throw new Error(`--table must be one of ${Object.keys(TABLES).join(", ")}`);
+  if (opts.scan && opts.table !== SCAN_TABLE) throw new Error(`--scan is valid only with --table ${SCAN_TABLE}`);
   return opts;
 }
 
@@ -193,6 +199,35 @@ export async function findKeys({ dynamo, environment, table, rows }) {
 }
 
 /**
+ * The test pass keys from a paginated Scan of the passes table. Only pk and actor are read, and
+ * the filter keeps a pass# item whose own actor is test-user or probe.
+ *
+ * @returns {Promise<{keys: object[], scanned: number}>}
+ */
+export async function scanPassKeys(dynamo, name, { pageLimit = SCAN_PAGE_LIMIT } = {}) {
+  const keys = [];
+  let scanned = 0;
+  let lastKey;
+  do {
+    const page = await dynamo.send(
+      new ScanCommand({
+        TableName: name,
+        FilterExpression: "begins_with(pk, :pass) AND #actor IN (:testUser, :probe)",
+        ProjectionExpression: "pk, #actor",
+        ExpressionAttributeNames: { "#actor": "actor" },
+        ExpressionAttributeValues: { ":pass": PASS_PK_PREFIX, ":testUser": "test-user", ":probe": "probe" },
+        Limit: pageLimit,
+        ExclusiveStartKey: lastKey,
+      }),
+    );
+    scanned += page.ScannedCount ?? 0;
+    for (const item of page.Items ?? []) keys.push({ pk: item.pk });
+    lastKey = page.LastEvaluatedKey;
+  } while (lastKey);
+  return { keys, scanned };
+}
+
+/**
  * Set the short ttl on one item when its stored actor is still test-user or probe.
  *
  * @returns {Promise<boolean>} false when the condition failed: the item is gone or no longer a test item
@@ -218,18 +253,30 @@ export async function expireItem(dynamo, name, key, now) {
 }
 
 /**
- * Read the test keys of one table from the lake and, with apply, set the short ttl on each.
+ * Read the test keys of one table from the lake, or with scan the test pass keys from a Scan, and
+ * with apply set the short ttl on each.
  *
- * @returns {Promise<{table: string, lakeRows: number, keys: number, unresolved: number, sample: object[], updated: number, skipped: number}>}
+ * @returns {Promise<{table: string, lakeRows: number|null, scanned: number|null, keys: number, unresolved: number, sample: object[], updated: number, skipped: number}>}
  */
-export async function runExpireTestItems({ environment, table, apply, athena, dynamo, now = new Date(), log = console.log }) {
-  const rows = await runAthena(athena, buildTestKeysSql(table), environment);
-  const { keys, unresolved } = await findKeys({ dynamo, environment, table, rows });
-  const sample = keys.slice(0, SAMPLE_SIZE);
+export async function runExpireTestItems({ environment, table, apply, scan = false, athena, dynamo, now = new Date(), log = console.log }) {
+  if (scan && table !== SCAN_TABLE) throw new Error(`--scan is valid only with --table ${SCAN_TABLE}`);
   const name = tableName(environment, table);
-  log(`${name}: ${rows.length} lake rows, ${keys.length} keys${unresolved ? `, ${unresolved} rows with no pass key found` : ""}`);
+  let keys;
+  let unresolved = 0;
+  let lakeRows = null;
+  let scanned = null;
+  if (scan) {
+    ({ keys, scanned } = await scanPassKeys(dynamo, name));
+    log(`${name}: Scan read ${scanned} items, ${keys.length} test pass keys`);
+  } else {
+    const rows = await runAthena(athena, buildTestKeysSql(table), environment);
+    lakeRows = rows.length;
+    ({ keys, unresolved } = await findKeys({ dynamo, environment, table, rows }));
+    log(`${name}: ${rows.length} lake rows, ${keys.length} keys${unresolved ? `, ${unresolved} rows with no pass key found` : ""}`);
+  }
+  const sample = keys.slice(0, SAMPLE_SIZE);
   sample.forEach((key) => log(`  ${JSON.stringify(key)}`));
-  const result = { table: name, lakeRows: rows.length, keys: keys.length, unresolved, sample, updated: 0, skipped: 0 };
+  const result = { table: name, lakeRows, scanned, keys: keys.length, unresolved, sample, updated: 0, skipped: 0 };
   if (!apply) {
     log("Dry run: nothing written. Add --apply to set the short ttl on these keys.");
     return result;

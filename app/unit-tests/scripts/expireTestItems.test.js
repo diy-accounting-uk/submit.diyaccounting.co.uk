@@ -5,9 +5,9 @@
 
 import { describe, test, expect } from "vitest";
 import { GetQueryExecutionCommand, GetQueryResultsCommand, StartQueryExecutionCommand } from "@aws-sdk/client-athena";
-import { QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { QueryCommand, ScanCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 
-import { parseArgs, buildTestKeysSql, findKeys, expireItem, runExpireTestItems } from "../../../scripts/expire-test-items.js";
+import { parseArgs, buildTestKeysSql, findKeys, expireItem, scanPassKeys, runExpireTestItems } from "../../../scripts/expire-test-items.js";
 
 const NOW = new Date("2026-03-01T12:00:00.000Z");
 const TWO_DAYS_LATER = Math.floor(NOW.getTime() / 1000) + 2 * 86400;
@@ -29,13 +29,18 @@ function athenaReturning(header, rows) {
   };
 }
 
-function dynamoWith({ queryItems = () => [], failKeys = [] } = {}) {
+function dynamoWith({ queryItems = () => [], scanPages = [], failKeys = [] } = {}) {
   const calls = [];
   return {
     calls,
     send: async (command) => {
       calls.push(command);
       if (command instanceof QueryCommand) return { Items: queryItems(command.input) };
+      if (command instanceof ScanCommand) {
+        const index = command.input.ExclusiveStartKey ? command.input.ExclusiveStartKey.page : 0;
+        const page = scanPages[index] ?? { Items: [], ScannedCount: 0 };
+        return index + 1 < scanPages.length ? { ...page, LastEvaluatedKey: { page: index + 1 } } : page;
+      }
       if (command instanceof UpdateCommand) {
         if (failKeys.includes(JSON.stringify(command.input.Key))) {
           const error = new Error("The conditional request failed");
@@ -53,7 +58,12 @@ const quiet = () => {};
 
 describe("parseArgs", () => {
   test("reads the environment, the table and apply", () => {
-    expect(parseArgs(["--environment", "ci", "--table", "passes", "--apply"])).toEqual({ environment: "ci", table: "passes", apply: true });
+    expect(parseArgs(["--environment", "ci", "--table", "passes", "--apply"])).toEqual({
+      environment: "ci",
+      table: "passes",
+      apply: true,
+      scan: false,
+    });
   });
 
   test("is a dry run without apply", () => {
@@ -64,6 +74,16 @@ describe("parseArgs", () => {
     expect(() => parseArgs(["--environment", "dev", "--table", "receipts"])).toThrow(/environment/);
     expect(() => parseArgs(["--environment", "ci", "--table", "commissions"])).toThrow(/table/);
     expect(() => parseArgs(["--environment", "ci", "--table", "receipts", "--force"])).toThrow(/unknown argument/);
+  });
+
+  test("reads scan with the passes table", () => {
+    expect(parseArgs(["--environment", "prod", "--table", "passes", "--scan"]).scan).toBe(true);
+  });
+
+  test("refuses scan with any table other than passes", () => {
+    for (const table of ["receipts", "bundles", "subscriptions"]) {
+      expect(() => parseArgs(["--environment", "ci", "--table", table, "--scan"])).toThrow(/--scan is valid only with --table passes/);
+    }
   });
 });
 
@@ -206,5 +226,108 @@ describe("runExpireTestItems", () => {
       runExpireTestItems({ environment: "ci", table: "bundles", apply: true, athena, dynamo, now: NOW, log: quiet }),
     ).rejects.toThrow(/FAILED: TABLE_NOT_FOUND/);
     expect(dynamo.calls).toHaveLength(0);
+  });
+});
+
+describe("scan of the passes table", () => {
+  const firstPage = { Items: [{ pk: "pass#one-two-three-four", actor: "test-user" }], ScannedCount: 500 };
+  const secondPage = { Items: [{ pk: "pass#five-six-seven-eight", actor: "probe" }], ScannedCount: 120 };
+
+  test("asks for test pass items only and reads only pk and actor", async () => {
+    const dynamo = dynamoWith({ scanPages: [firstPage] });
+    await scanPassKeys(dynamo, "prod-env-passes");
+    const [scan] = dynamo.calls;
+    expect(scan).toBeInstanceOf(ScanCommand);
+    expect(scan.input).toMatchObject({
+      TableName: "prod-env-passes",
+      FilterExpression: "begins_with(pk, :pass) AND #actor IN (:testUser, :probe)",
+      ProjectionExpression: "pk, #actor",
+      ExpressionAttributeNames: { "#actor": "actor" },
+      ExpressionAttributeValues: { ":pass": "pass#", ":testUser": "test-user", ":probe": "probe" },
+    });
+    expect(scan.input.Limit).toBeGreaterThan(0);
+  });
+
+  test("follows every page and returns each pass key", async () => {
+    const dynamo = dynamoWith({ scanPages: [firstPage, secondPage] });
+    const result = await scanPassKeys(dynamo, "ci-env-passes");
+    expect(result).toEqual({ keys: [{ pk: "pass#one-two-three-four" }, { pk: "pass#five-six-seven-eight" }], scanned: 620 });
+    expect(dynamo.calls).toHaveLength(2);
+    expect(dynamo.calls[1].input.ExclusiveStartKey).toEqual({ page: 1 });
+  });
+
+  test("a dry run with scan reads no lake, prints the count and keys, and writes nothing", async () => {
+    const athena = athenaReturning([], []);
+    const dynamo = dynamoWith({ scanPages: [firstPage, secondPage] });
+    const lines = [];
+    const result = await runExpireTestItems({
+      environment: "prod",
+      table: "passes",
+      apply: false,
+      scan: true,
+      athena,
+      dynamo,
+      now: NOW,
+      log: (line) => lines.push(line),
+    });
+    expect(athena.calls).toHaveLength(0);
+    expect(result).toMatchObject({ table: "prod-env-passes", lakeRows: null, scanned: 620, keys: 2, updated: 0, skipped: 0 });
+    expect(lines[0]).toBe("prod-env-passes: Scan read 620 items, 2 test pass keys");
+    expect(dynamo.calls.every((command) => command instanceof ScanCommand)).toBe(true);
+  });
+
+  test("apply sends each scan-found key through the conditional update on actor", async () => {
+    const dynamo = dynamoWith({
+      scanPages: [firstPage, secondPage],
+      failKeys: [JSON.stringify({ pk: "pass#five-six-seven-eight" })],
+    });
+    const result = await runExpireTestItems({
+      environment: "ci",
+      table: "passes",
+      apply: true,
+      scan: true,
+      athena: athenaReturning([], []),
+      dynamo,
+      now: NOW,
+      log: quiet,
+    });
+    expect(result).toMatchObject({ keys: 2, updated: 1, skipped: 1 });
+    const updates = dynamo.calls.filter((command) => command instanceof UpdateCommand);
+    expect(updates.map((command) => command.input.Key)).toEqual([{ pk: "pass#one-two-three-four" }, { pk: "pass#five-six-seven-eight" }]);
+    for (const update of updates) {
+      expect(update.input.TableName).toBe("ci-env-passes");
+      expect(update.input.ConditionExpression).toBe("#actor IN (:testUser, :probe)");
+      expect(update.input.ExpressionAttributeValues[":ttl"]).toBe(TWO_DAYS_LATER);
+    }
+  });
+
+  test("scan with a table other than passes is refused before anything is read", async () => {
+    const athena = athenaReturning([], []);
+    const dynamo = dynamoWith();
+    await expect(
+      runExpireTestItems({ environment: "ci", table: "receipts", apply: true, scan: true, athena, dynamo, now: NOW, log: quiet }),
+    ).rejects.toThrow(/--scan is valid only with --table passes/);
+    expect(athena.calls).toHaveLength(0);
+    expect(dynamo.calls).toHaveLength(0);
+  });
+
+  test("without scan no Scan is sent, for passes or any other table", async () => {
+    for (const table of ["receipts", "bundles", "subscriptions", "passes"]) {
+      const header =
+        table === "passes" ? ["pass_id", "issued_by", "created_at"] : ["hashed_sub", "receipt_id", "bundle_id", "subscription_id"];
+      const row = table === "passes" ? ["p1", "issuer1", "2026-02-01T10:00:00.000Z"] : ["h1", "r1", "b1", "sub_1"];
+      const dynamo = dynamoWith({ queryItems: () => [{ pk: "pass#one-two-three-four", actor: "test-user" }] });
+      await runExpireTestItems({
+        environment: "ci",
+        table,
+        apply: true,
+        athena: athenaReturning(header, [row]),
+        dynamo,
+        now: NOW,
+        log: quiet,
+      });
+      expect(dynamo.calls.some((command) => command instanceof ScanCommand)).toBe(false);
+      expect(dynamo.calls.length).toBeGreaterThan(0);
+    }
   });
 });
