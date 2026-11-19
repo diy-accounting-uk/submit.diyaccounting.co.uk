@@ -477,13 +477,19 @@
       .join("");
 
     const devLinks =
-      '<a href="#" id="viewSourceLink" style="display: none">view source</a>' +
+      '<a href="#" id="viewSourceLink" style="display: none">' +
+      escapeHtml(siteText("chrome.dev-view-source", "view source")) +
+      "</a>" +
       '<a id="latestTestsLink" style="display: none" target="_blank" href="' +
       rootPrefix +
-      'tests/index.html">tests</a>' +
+      'tests/index.html">' +
+      escapeHtml(siteText("chrome.dev-tests", "tests")) +
+      "</a>" +
       '<a id="apiDocsLink" style="display: none" target="_blank" href="' +
       rootPrefix +
-      'docs/api/index.html">api</a>';
+      'docs/api/index.html">' +
+      escapeHtml(siteText("chrome.dev-api", "api")) +
+      "</a>";
 
     const sourceLink =
       '<a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" target="_blank" rel="noopener">' +

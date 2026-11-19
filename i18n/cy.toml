@@ -2759,6 +2759,18 @@ cy = '''Cymorth'''
 hash = "0e570ca6fabe"
 cy = '''Cod ffynhonnell'''
 
+[strings."chrome.dev-view-source"]
+hash = "336352db181d"
+cy = '''gweld y cod ffynhonnell'''
+
+[strings."chrome.dev-tests"]
+hash = "59830ebc3a41"
+cy = '''profion'''
+
+[strings."chrome.dev-api"]
+hash = "14c2529eb449"
+cy = '''API'''
+
 [strings."chrome.footer-legal"]
 hash = "7703ee854fb1"
 cy = '''Am ddim i’w ddefnyddio o dan y {licence}.'''
@@ -3637,6 +3649,46 @@ cy = '''Cyfrifon diwygiedig'''
 [strings."receipts.kind-amended-ct600"]
 hash = "755b43917dd6"
 cy = '''Ffurflen Dreth y Cwmni wedi’i diwygio'''
+
+[strings."receipts.kind-confirmation-statement"]
+hash = "9e84a7fe6e03"
+cy = '''Datganiad cadarnhau'''
+
+[strings."receipts.kind-psc-verification-statement"]
+hash = "bafc6e6ff2c5"
+cy = '''Datganiad dilysu PSC'''
+
+[strings."receipts.kind-filing"]
+hash = "23439992c152"
+cy = '''Ffeilio i Dŷ’r Cwmnïau'''
+
+[strings."receipts.submission-number"]
+hash = "3b6014a2cff4"
+cy = '''rhif cyflwyniad {number}'''
+
+[strings."receipts.filing-sent"]
+hash = "c6c92d7127f0"
+cy = '''anfonwyd {date},'''
+
+[strings."receipts.filing-rejected"]
+hash = "16d9cafed33f"
+cy = '''Gwrthodwyd gan Dŷ’r Cwmnïau'''
+
+[strings."receipts.filing-pending"]
+hash = "503ac787bdd5"
+cy = '''Yn aros am Dŷ’r Cwmnïau'''
+
+[strings."receipts.filing-not-received"]
+hash = "9ce2eac27b43"
+cy = '''Ni chafodd Tŷ’r Cwmnïau ef'''
+
+[strings."receipts.in-progress-heading"]
+hash = "fa66b460081d"
+cy = '''Ffeilio i Dŷ’r Cwmnïau sydd heb ei dderbyn eto'''
+
+[strings."receipts.in-progress-hint"]
+hash = "50484fbeccc7"
+cy = '''Mae Tŷ’r Cwmnïau yn gwirio rhai ffeilio â llaw, yn ystod oriau swyddfa. Rydym yn gofyn iddo am ei benderfyniad bob 15 munud yn ystod oriau swyddfa, ac yn anfon y dderbynneb atoch drwy e-bost pan fydd yn derbyn y ffeilio.'''
 
 [strings."receipts.unnamed"]
 hash = "2ad0d52676d4"
@@ -5021,6 +5073,18 @@ cy = '''Methu mewnforio {file}: Google Sheet yw hwn. Dewiswch y llyfr DIYA-GL, y
 [strings."widget.books-drive-failed"]
 hash = "032d4a88cf0e"
 cy = '''Methu agor Google Drive: {reason}.'''
+
+[strings."widget.ch-not-received"]
+hash = "aa5eeb3cece5"
+cy = '''Ni chafodd Tŷ’r Cwmnïau y ffeilio hwn. Ni ffeiliwyd dim. Ffeiliwch ef eto.'''
+
+[strings."widget.ch-not-received-number"]
+hash = "0d24f13b97cc"
+cy = '''Rhif cyflwyno {number}.'''
+
+[strings."widget.ch-not-received-title"]
+hash = "2aff3dacb517"
+cy = '''Ni chafodd Tŷ’r Cwmnïau y ffeilio hwn. Ni ffeiliwyd dim.'''
 
 [strings."widget.assist-check"]
 hash = "fd71bbc052b0"

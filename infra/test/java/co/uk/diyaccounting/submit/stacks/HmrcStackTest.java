@@ -81,6 +81,57 @@ class HmrcStackTest {
     }
 
     @Test
+    void receiptsListCanReadTheCompaniesHouseFilingsInProgress() {
+        TEMPLATE.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "FunctionName",
+                        SHARED_NAMES.hmrc.receiptGetIngestLambdaFunctionName,
+                        "Environment",
+                        Map.of(
+                                "Variables",
+                                Match.objectLike(Map.of(
+                                        "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
+                                        SHARED_NAMES.data.companiesHouseAccountsAsyncRequestsTableName))))));
+        TEMPLATE.hasResourceProperties(
+                "AWS::IAM::Policy",
+                Match.objectLike(
+                        Map.of(
+                                "PolicyDocument",
+                                Match.objectLike(
+                                        Map.of(
+                                                "Statement",
+                                                Match.arrayWith(
+                                                        java.util.List.of(
+                                                                Match.objectLike(
+                                                                        Map.of(
+                                                                                "Action",
+                                                                                "dynamodb:Query",
+                                                                                "Resource",
+                                                                                Match.arrayWith(
+                                                                                        java.util.List.of(
+                                                                                                Match.objectLike(
+                                                                                                        Map.of(
+                                                                                                                "Fn::Join",
+                                                                                                                Match
+                                                                                                                        .arrayWith(
+                                                                                                                                java
+                                                                                                                                        .util
+                                                                                                                                        .List
+                                                                                                                                        .of(
+                                                                                                                                                Match
+                                                                                                                                                        .arrayWith(
+                                                                                                                                                                java
+                                                                                                                                                                        .util
+                                                                                                                                                                        .List
+                                                                                                                                                                        .of(
+                                                                                                                                                                                ":table/"
+                                                                                                                                                                                        + SHARED_NAMES
+                                                                                                                                                                                                .data
+                                                                                                                                                                                                .companiesHouseAccountsAsyncRequestsTableName)))))))))))))))));
+    }
+
+    @Test
     void ingestLambdaCanOpenAnHmrcGrant() {
         TEMPLATE.hasResourceProperties(
                 "AWS::Lambda::Function",

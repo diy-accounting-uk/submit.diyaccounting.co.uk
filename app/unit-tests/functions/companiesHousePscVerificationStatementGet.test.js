@@ -109,8 +109,6 @@ describe("companiesHousePscVerificationStatementGet ingestHandler", () => {
       submissionNumber: "00001A",
       govTestScenario: null,
       kind: "psc-verification-statement",
-      acceptedEvent: "companies-house-psc-verification-statement-accepted",
-      acceptedSummary: "Companies House PSC verification statement accepted",
     });
   });
 

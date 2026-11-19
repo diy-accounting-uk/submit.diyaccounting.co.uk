@@ -67,4 +67,14 @@ test.describe("Welsh footer marks", () => {
       for (const gap of gaps) expect(gap).toBeGreaterThanOrEqual(3);
     });
   }
+
+  test("the developer links in the footer name themselves in Welsh", async ({ page }) => {
+    await serveSite(page);
+    // With no version file, as on the simulator, the source link keeps its own label.
+    await page.route("**/submit.version.txt", (route) => route.fulfill({ status: 404, contentType: "text/plain", body: "" }));
+    await page.goto("http://localhost:3000/cy/index.html", { waitUntil: "load" });
+    await expect(page.locator("#viewSourceLink")).toHaveText("gweld y cod ffynhonnell");
+    await expect(page.locator("#latestTestsLink")).toHaveText("profion");
+    await expect(page.locator("#apiDocsLink")).toHaveText("API");
+  });
 });

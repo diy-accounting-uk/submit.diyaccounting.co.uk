@@ -81,8 +81,6 @@ export async function ingestHandler(event) {
     govTestScenario,
     ownPresenter,
     kind: "psc-verification-statement",
-    acceptedEvent: "companies-house-psc-verification-statement-accepted",
-    acceptedSummary: "Companies House PSC verification statement accepted",
   });
 
   if (result.notFound) {

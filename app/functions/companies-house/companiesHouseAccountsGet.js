@@ -82,8 +82,6 @@ export async function ingestHandler(event) {
     govTestScenario,
     ownPresenter,
     kind: "accounts",
-    acceptedEvent: "companies-house-accounts-accepted",
-    acceptedSummary: "Companies House micro-entity accounts accepted",
   });
 
   if (result.notFound) {

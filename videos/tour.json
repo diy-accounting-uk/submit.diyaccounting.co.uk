@@ -110,7 +110,7 @@
         {
           "action": "scroll",
           "target": {
-            "text": "Why Choose DIY Accounting Submit?"
+            "text": "Who makes Submit"
           }
         },
         {
@@ -120,7 +120,8 @@
         {
           "action": "scroll",
           "target": {
-            "text": "Ready to Submit Your VAT Return?"
+            "role": "button",
+            "name": "Get started"
           },
           "caption": "Making Tax Digital compliant and recognised by HMRC.",
           "headline": "Recognised by HMRC",

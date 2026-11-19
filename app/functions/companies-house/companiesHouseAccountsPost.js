@@ -55,9 +55,11 @@ import {
   allocateSubmissionNumber,
   resolvePresenterCredentials,
   postToGateway,
+  gatewayRequestNotDelivered,
   parseGatewayResponse,
 } from "../../services/companiesHouseXmlGateway.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
+import { recordSubmissionInProgress, recordOutcomeUnknown } from "../../services/companiesHouseSubmissionInProgress.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { isClientAuthorisedForService } from "../../lib/hmrcAgentAuthorisation.js";
@@ -391,6 +393,20 @@ function validateBalanceSheetAddsUp(year, yearLabel, errorMessages) {
   }
 }
 
+// The envelope left, so Companies House may have it. The filing stays pending with its request
+// data, the page polls it by number, and a late ACCEPT still gets its receipt, email and charge.
+async function submittedWithOutcomeUnknown({ request, responseHeaders, submissionNumber, userSub, clientId, error, data }) {
+  await recordOutcomeUnknown({ userSub, submissionNumber, kind: "accounts", data });
+  await recordSubmissionFailure({
+    failure: "gateway-outcome-unknown",
+    summary: "Companies House accounts sent with no answer from the gateway; kept pending",
+    userSub,
+    detail: { submissionNumber, error: error.message },
+    clientId,
+  });
+  return http201CreatedResponse({ request, headers: { ...responseHeaders }, data: { submissionNumber } });
+}
+
 async function recordSubmissionFailure({ failure, summary, userSub, detail = {}, clientId }) {
   await publishActivityFailureEvent({
     event: "companies-house-accounts-failed",
@@ -519,28 +535,31 @@ export async function ingestHandler(event) {
   }
 
   let submissionNumber;
+  let envelopeSent = false;
+  let inProgressData;
   try {
     const ixbrl = buildAccountsIxbrl(accounts);
     submissionNumber = await allocateSubmissionNumber();
     const { presenterId, presenterCode } = ownPresenter ?? (await resolvePresenterCredentials());
 
-    await putAsyncRequest(
+    inProgressData = {
+      filedDocument: ixbrl,
+      chargeActivityId,
+      ...jointFilingFields(jointFilingId),
+      ...amendedFields(Boolean(accounts.revision)),
+      ...formRequestFields(formRequest),
+      // The document's own language, which the filing keeps; it does not follow the page language.
+      ...(accounts.documentLanguage === "cy" ? { documentLanguage: "cy" } : {}),
+      // The reader's language choice, so the receipt email of an accepted filing is in it.
+      ...(getHeader(event.headers, "X-Site-Language") === "cy" ? { language: "cy" } : {}),
+    };
+    await recordSubmissionInProgress({
       userSub,
       submissionNumber,
-      "pending",
-      {
-        filedDocument: ixbrl,
-        chargeActivityId,
-        ...jointFilingFields(jointFilingId),
-        ...amendedFields(Boolean(accounts.revision)),
-        ...formRequestFields(formRequest),
-        // The document's own language, which the filing keeps; it does not follow the page language.
-        ...(accounts.documentLanguage === "cy" ? { documentLanguage: "cy" } : {}),
-        // The reader's language choice, so the receipt email of an accepted filing is in it.
-        ...(getHeader(event.headers, "X-Site-Language") === "cy" ? { language: "cy" } : {}),
-      },
-      asyncRequestsTableName,
-    );
+      kind: "accounts",
+      underOwnPresenter: Boolean(ownPresenter),
+      data: inProgressData,
+    });
 
     const submissionXml = buildAccountsSubmission({
       presenterId,
@@ -556,6 +575,7 @@ export async function ingestHandler(event) {
       language: accounts.documentLanguage === "cy" ? "CY" : undefined,
     });
 
+    envelopeSent = true;
     const gatewayResponse = await postToGateway(submissionXml, govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {});
     const parsed = parseGatewayResponse(gatewayResponse.data);
 
@@ -608,6 +628,8 @@ export async function ingestHandler(event) {
     });
   } catch (error) {
     logger.error({ message: "Unexpected error submitting Companies House accounts", error: error.message, stack: error.stack });
+    if (envelopeSent && !gatewayRequestNotDelivered(error))
+      return submittedWithOutcomeUnknown({ request, responseHeaders, submissionNumber, userSub, clientId, error, data: inProgressData });
     if (submissionNumber) {
       await putAsyncRequest(userSub, submissionNumber, "failed", { message: error.message }, asyncRequestsTableName);
     }

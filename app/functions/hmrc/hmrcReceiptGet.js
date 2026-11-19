@@ -26,6 +26,7 @@ import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getUserSub } from "../../lib/jwtHelper.js";
 import { getReceipt, listUserReceipts } from "../../data/dynamoDbReceiptRepository.js";
+import { listFilingsInProgress } from "../../data/dynamoDbCompaniesHouseFilingStateRepository.js";
 import { getClient } from "../../data/dynamoDbPracticeClientRepository.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
@@ -79,7 +80,7 @@ export function extractAndValidateParameters(event, errorMessages, userSub) {
 // HTTP request/response, aware Lambda ingestHandler function
 export async function ingestHandler(event) {
   await initializeSalt();
-  validateEnv(["RECEIPTS_DYNAMODB_TABLE_NAME"]);
+  validateEnv(["RECEIPTS_DYNAMODB_TABLE_NAME", "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json", ...corsOriginHeaders(event?.headers) };
@@ -141,6 +142,9 @@ export async function ingestHandler(event) {
     } else {
       logger.info({ message: "Listing user receipts", userSub, clientId });
       const receipts = await listUserReceipts(userSub, clientId);
+      // The caller's own Companies House filings that Companies House has not accepted yet. A
+      // practice's list for one client holds receipts only.
+      const filingsInProgress = clientId ? [] : await listFilingsInProgress(userSub);
       await publishActivityEvent({
         event: "receipts-viewed",
         summary: "Receipts viewed",
@@ -150,15 +154,16 @@ export async function ingestHandler(event) {
       return http200OkResponse({
         request,
         headers: { ...responseHeaders },
-        data: { receipts },
+        data: { receipts, filingsInProgress },
       });
     }
   } catch (error) {
-    logger.error({ message: "Error retrieving receipts", error: error.message, stack: error.stack });
-    // Check if this is a not found error
-    if (error.message && error.message.includes("not found")) {
+    // getReceiptByReceiptId's own error; a DynamoDB ResourceNotFoundException ("Requested resource not found") is a 500.
+    if (error.message === "Receipt not found") {
+      logger.warn({ message: "Receipt not found", error: error.message });
       return buildValidationError(request, ["Receipt not found"], responseHeaders);
     }
+    logger.error({ message: "Error retrieving receipts", error: error.message, stack: error.stack });
     return http500ServerErrorResponse({
       request,
       headers: { ...responseHeaders },

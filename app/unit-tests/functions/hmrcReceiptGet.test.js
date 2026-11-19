@@ -19,13 +19,38 @@ vi.mock("@app/lib/activityAlert.js", async (importOriginal) => ({
   publishActivityEvent: vi.fn().mockResolvedValue({}),
 }));
 
+vi.mock("@app/data/dynamoDbCompaniesHouseFilingStateRepository.js", () => ({
+  listFilingsInProgress: vi.fn(),
+}));
+
 vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
   getClient: vi.fn(),
 }));
 
+const mockLoggerWarn = vi.fn();
+const mockLoggerError = vi.fn();
+vi.mock("@app/lib/logger.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    createLogger: (bindings) => {
+      const child = actual.createLogger(bindings);
+      return {
+        info: (...args) => child.info(...args),
+        error: (obj) => mockLoggerError(obj),
+        warn: (obj) => mockLoggerWarn(obj),
+        debug: (...args) => child.debug(...args),
+        trace: (...args) => child.trace(...args),
+        fatal: (...args) => child.fatal(...args),
+      };
+    },
+  };
+});
+
 const { ingestHandler: hmrcReceiptGetHandler } = await import("@app/functions/hmrc/hmrcReceiptGet.js");
 const { listUserReceipts } = await import("@app/data/dynamoDbReceiptRepository.js");
 const { getClient } = await import("@app/data/dynamoDbPracticeClientRepository.js");
+const { listFilingsInProgress } = await import("@app/data/dynamoDbCompaniesHouseFilingStateRepository.js");
 const { publishActivityEvent } = await import("@app/lib/activityAlert.js");
 
 function makeJwt(sub) {
@@ -51,6 +76,7 @@ describe("hmrcReceiptGet ingestHandler", () => {
   beforeEach(() => {
     Object.assign(process.env, setupTestEnv());
     listUserReceipts.mockReset().mockResolvedValue([]);
+    listFilingsInProgress.mockReset().mockResolvedValue([]);
     getClient.mockReset();
     publishActivityEvent.mockClear();
   });
@@ -91,6 +117,32 @@ describe("hmrcReceiptGet ingestHandler", () => {
     expect(listUserReceipts).toHaveBeenCalledWith("practice-sub", undefined);
   });
 
+  test("lists the caller's Companies House filings in progress beside the receipts", async () => {
+    const pending = {
+      submissionNumber: "00001A",
+      kind: "accounts",
+      status: "pending",
+      submittedAt: "2026-11-18T10:00:00.000Z",
+      rejections: [],
+    };
+    listFilingsInProgress.mockResolvedValue([pending]);
+
+    const response = await hmrcReceiptGetHandler(buildAuthenticatedEvent({ sub: "filer-sub" }));
+
+    expect(response.statusCode).toBe(200);
+    expect(listFilingsInProgress).toHaveBeenCalledWith("filer-sub");
+    expect(JSON.parse(response.body).filingsInProgress).toEqual([pending]);
+  });
+
+  test("a practice's list for one client carries no filings in progress", async () => {
+    getClient.mockResolvedValue({ clientId: "client-1" });
+
+    const response = await hmrcReceiptGetHandler(buildAuthenticatedEvent({ clientId: "client-1" }));
+
+    expect(JSON.parse(response.body).filingsInProgress).toEqual([]);
+    expect(listFilingsInProgress).not.toHaveBeenCalled();
+  });
+
   test("with a client id belonging to the caller's practice, lists only that client's receipts", async () => {
     getClient.mockResolvedValue({ clientId: "client-1" });
 
@@ -99,6 +151,32 @@ describe("hmrcReceiptGet ingestHandler", () => {
     expect(response.statusCode).toBe(200);
     expect(getClient).toHaveBeenCalledWith("practice-sub", "client-1");
     expect(listUserReceipts).toHaveBeenCalledWith("practice-sub", "client-1");
+  });
+
+  test("a receipt not found logs at warn, not error, and answers a validation error", async () => {
+    mockLoggerWarn.mockClear();
+    mockLoggerError.mockClear();
+    listUserReceipts.mockRejectedValueOnce(new Error("Receipt not found"));
+
+    const response = await hmrcReceiptGetHandler(buildAuthenticatedEvent({ sub: "missing-sub" }));
+
+    expect(mockLoggerWarn).toHaveBeenCalledWith(expect.objectContaining({ message: "Receipt not found" }));
+    expect(mockLoggerError).not.toHaveBeenCalledWith(expect.objectContaining({ message: "Error retrieving receipts" }));
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body).message).toBe("Receipt not found");
+  });
+
+  test("a missing table answers 500, not the receipt-not-found validation error", async () => {
+    const missingTable = () => Object.assign(new Error("Requested resource not found"), { name: "ResourceNotFoundException" });
+    listFilingsInProgress.mockRejectedValueOnce(missingTable());
+
+    const listResponse = await hmrcReceiptGetHandler(buildAuthenticatedEvent({ sub: "filer-sub" }));
+
+    expect(listResponse.statusCode).toBe(500);
+
+    listUserReceipts.mockRejectedValueOnce(missingTable());
+    const receiptsResponse = await hmrcReceiptGetHandler(buildAuthenticatedEvent({ sub: "filer-sub" }));
+    expect(receiptsResponse.statusCode).toBe(500);
   });
 
   test("403s a client id that does not belong to the caller's practice", async () => {

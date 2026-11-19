@@ -140,6 +140,11 @@ public class CompaniesHouseNames {
     public boolean companiesHouseAccountsGetLambdaJwtAuthorizer;
     public boolean companiesHouseAccountsGetLambdaCustomAuthorizer;
 
+    public String companiesHouseSubmissionStatusPollLambdaHandler;
+    public String companiesHouseSubmissionStatusPollLambdaFunctionName;
+    public String companiesHouseSubmissionStatusPollLambdaArn;
+    public String companiesHouseSubmissionStatusPollProvisionedConcurrencyLambdaAliasArn;
+
     public String hmrcCtReturnPreviewPostIngestLambdaHandler;
     public String hmrcCtReturnPreviewPostIngestLambdaFunctionName;
     public String hmrcCtReturnPreviewPostIngestLambdaArn;
@@ -614,6 +619,19 @@ public class CompaniesHouseNames {
                 "Polls the Companies House XML Gateway for the outcome of a submitted accounts filing",
                 "getCompaniesHouseAccounts",
                 List.of(new ApiParameter("submissionNumber", "path", true, "The 6-character submission number"))));
+
+        // The scheduled presenter poll: no route, an EventBridge schedule invokes it.
+        var companiesHouseSubmissionStatusPollLambdaHandlerName = "companiesHouseSubmissionStatusPoll.handler";
+        var companiesHouseSubmissionStatusPollLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseSubmissionStatusPollLambdaHandlerName);
+        this.companiesHouseSubmissionStatusPollLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, companiesHouseSubmissionStatusPollLambdaHandlerDashed);
+        this.companiesHouseSubmissionStatusPollLambdaHandler = "%s/companies-house/%s"
+                .formatted(root.appLambdaHandlerPrefix, companiesHouseSubmissionStatusPollLambdaHandlerName);
+        this.companiesHouseSubmissionStatusPollLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, companiesHouseSubmissionStatusPollLambdaHandlerDashed);
+        this.companiesHouseSubmissionStatusPollProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHouseSubmissionStatusPollLambdaArn, root.provisionedConcurrencyAliasName);
 
         this.hmrcCtReturnPreviewPostLambdaHttpMethod = HttpMethod.POST;
         this.hmrcCtReturnPreviewPostLambdaUrlPath = "/api/v1/hmrc/ct/return/preview";

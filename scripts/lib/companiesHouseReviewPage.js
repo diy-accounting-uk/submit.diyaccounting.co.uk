@@ -210,7 +210,7 @@ export function resultClass(result) {
 // `reviews` carry: directory, title, submissionNumber, input, fixtureLine, rows (findings rows),
 // reconciliation, validator, validatorText, visibleText, gateway, source files (submitResponse,
 // lastPoll), exampleRaw, exampleCompany. `judgeJson` is the parsed judge.json, or {}.
-export function renderIndex(date, reviews, judgeJson) {
+export function renderIndex(date, reviews, judgeJson, fixturePath = FIXTURE_PATH) {
   const directories = reviews.map((review) => review.directory);
   const out = [
     "<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>",
@@ -239,7 +239,7 @@ export function renderIndex(date, reviews, judgeJson) {
       ["Not proven", notProven],
       [
         "Figures from",
-        `<a href='${c}/source/case-input.json'>source/case-input.json</a> (our fixture, <code>${FIXTURE_PATH}</code> line ${review.fixtureLine})`,
+        `<a href='${c}/source/case-input.json'>source/case-input.json</a> (our fixture, <code>${fixturePath}</code> line ${review.fixtureLine})`,
       ],
       ["Company from", companySource(input).page],
       ["Judge", `<span class='${resultClass(verdict)}'>${escapeHtml(verdict)}</span> ${escapeHtml(judge.summary ?? "")}`],

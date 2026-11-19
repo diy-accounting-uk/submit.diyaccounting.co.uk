@@ -23,7 +23,15 @@ import {
 import { consentToDataCollection, goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
 import { clickLogIn, loginWithCognitoOrMockAuth, verifyLoggedInStatus } from "./steps/behaviour-login-steps.js";
 import { ensureBundleViaPassApi } from "./steps/behaviour-bundle-steps.js";
-import { completeVat, initSubmitVat, verifyVatSubmission } from "./steps/behaviour-hmrc-vat-steps.js";
+import {
+  clickObligationSubmitReturn,
+  completeVat,
+  fillInVatObligations,
+  initSubmitVat,
+  initVatObligations,
+  submitVatObligationsForm,
+  verifyVatSubmission,
+} from "./steps/behaviour-hmrc-vat-steps.js";
 import { allowSyntheticObligationsOnForm } from "./steps/behaviour-books-import-steps.js";
 import {
   fillInItsaCalculationTrigger,
@@ -148,6 +156,14 @@ async function openVatFormConnectedToHmrc(page, user) {
   await connectToHmrcFromVatForm(page, { vrn: user.vrn, username: user.username, password: user.password }, screenshotPath);
 }
 
+async function signInToHmrc(page, user) {
+  await goToHmrcAuth(page, screenshotPath);
+  await initHmrcAuth(page, screenshotPath);
+  await fillInHmrcAuth(page, user.username, user.password, screenshotPath);
+  await submitHmrcAuth(page, screenshotPath);
+  await grantPermissionHmrcAuth(page, screenshotPath);
+}
+
 function readReceipts(outputDir) {
   return readDynamoDbExport(path.join(outputDir, "receipts.jsonl")).map((item) => item.receipt);
 }
@@ -192,6 +208,32 @@ test.describe("HMRC Assist on the VAT return", () => {
       const returnReceipt = receipts.find((receipt) => receipt.formBundleNumber);
       expect(returnReceipt, "the stored VAT return receipt").toBeTruthy();
     }
+  });
+
+  test("asks HMRC for the write scope when the reader came from the obligations page, then shows HMRC's messages", async ({
+    page,
+  }, testInfo) => {
+    const user = await signInWithHmrcTestUser(page, testInfo);
+    const traffic = recordAssistTraffic(page, "vat");
+
+    await initVatObligations(page, screenshotPath);
+    const dayMs = 24 * 60 * 60 * 1000;
+    const hmrcVatPeriodFromDate = new Date(Date.now() - 300 * dayMs).toISOString().slice(0, 10);
+    await fillInVatObligations(page, { hmrcVatNumber: user.vrn, hmrcVatPeriodFromDate, status: "O" }, screenshotPath);
+    await submitVatObligationsForm(page, screenshotPath);
+    await signInToHmrc(page, user);
+    await expect(page.locator('#obligationsTable button:has-text("Submit return")').first()).toBeVisible({ timeout: 60000 });
+    const opened = await clickObligationSubmitReturn(page, screenshotPath);
+    expect(opened.navigated, "an open period with a Submit return button").toBe(true);
+
+    await fillInVatBoxesForOpenPeriod(page, undefined, screenshotPath);
+    await requestHmrcAssistFeedback(page, screenshotPath);
+    await signInToHmrc(page, user);
+
+    await verifyAssistMessagesInOrder(page, vatDefaultMessages(user.vrn), screenshotPath);
+    expect(traffic.reports.map((entry) => entry.status)).toEqual([200]);
+    expect(traffic.reports[0].body.vrn).toBe(user.vrn);
+    await expect.poll(() => traffic.acknowledgements.map((entry) => entry.status), { timeout: 60000 }).toEqual([204]);
   });
 
   test("says HMRC Assist has no feedback when HMRC answers 204, and sends no acknowledgement", async ({ page }, testInfo) => {

@@ -172,10 +172,12 @@
    * @param {HTMLButtonElement} [options.submitButton] - Held disabled for the countdown that starts when the check is pressed
    * @param {string[]} [options.highlightIds] - Ids of the inputs a message path fragment may name
    * @param {string} options.unavailableText - The one line shown when HMRC Assist cannot be reached
+   * @param {() => Promise<boolean>} [options.ensureAccess] - Called when the check is pressed, before any request; resolves false when
+   *   the page is taking the reader to HMRC to grant the scopes the check needs, and the page runs the check again on its return
    * @param {number} [options.ackRetryBaseMs] - First retry delay for the acknowledgement
    */
   function mount(options) {
-    const { kind, container, describeDraft, watch = [], submitButton, highlightIds = [], unavailableText } = options;
+    const { kind, container, describeDraft, watch = [], submitButton, highlightIds = [], unavailableText, ensureAccess } = options;
     const ackRetryBaseMs = options.ackRetryBaseMs ?? DEFAULT_ACK_RETRY_BASE_MS;
     const routes = ROUTES[kind];
     const doc = container.ownerDocument;
@@ -454,6 +456,7 @@
     async function check() {
       const draft = describeDraft();
       if (!draft.applicable || !draft.ready || requestInFlight) return;
+      if (ensureAccess && !(await ensureAccess())) return;
       const thisGeneration = ++generation;
       clearFeedback();
       requestInFlight = true;
@@ -509,7 +512,7 @@
     }
     refresh();
 
-    return { refresh, reset };
+    return { refresh, reset, check };
   }
 
   window.hmrcAssistMessages = { mount, unacknowledgedFor };

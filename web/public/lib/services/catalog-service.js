@@ -196,6 +196,11 @@ export function activityName(activity, language) {
   return (language === "cy" && activity.nameCy) || activity.name;
 }
 
+/** What a bundle lets the person do, in the page's language; a bundle with no Welsh phrase keeps its English one. */
+export function bundlePassSummary(bundle, language) {
+  return (language === "cy" && bundle.passSummaryCy) || bundle.passSummary;
+}
+
 /** The token cost shown beside a button, e.g. " (2 tokens)". */
 export function tokenCostLabel(tokenCost, language) {
   if (language === "cy") return ` (credyd: ${tokenCost})`;
@@ -289,6 +294,7 @@ if (typeof window !== "undefined") {
   window.activityArea = activityArea;
   window.areaName = areaName;
   window.activityName = activityName;
+  window.bundlePassSummary = bundlePassSummary;
   window.tokenCostLabel = tokenCostLabel;
   window.fetchCurrentEnvironmentName = fetchCurrentEnvironmentName;
   window.featureStatusSummary = featureStatusSummary;

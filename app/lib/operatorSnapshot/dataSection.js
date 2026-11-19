@@ -73,7 +73,8 @@ const OWNER_PATTERN = /^[A-Za-z0-9_-]+$/;
 const OWNER_QUERY_LIMIT = 2000;
 
 // The activity actor classes folded into the three the dashboard shows. An operator or the
-// system is `other`; an empty actor is `unknown` and is never counted as a customer.
+// system is `other`; an empty actor, and the `unknown` that a view writes for a record with no
+// actor, is `unknown` and is never counted as a customer.
 const ACTOR_CLASS_BY_ACTOR = {
   "customer": "customer",
   "test-user": "test",
@@ -81,6 +82,7 @@ const ACTOR_CLASS_BY_ACTOR = {
   "synthetic": "synthetic",
   "operator": "other",
   "system": "other",
+  "unknown": "unknown",
 };
 
 export function actorClassOf(actor) {
@@ -560,9 +562,9 @@ function storedDataChart({ now, tableRows, buckets, artefactBuckets, histories, 
     standalone: true,
     rangeSwitch: true,
     note:
-      "One point a day. DynamoDB figures come from the day's history file, so a day with no file leaves a gap. " +
+      "One point a UTC day. DynamoDB figures come from the day's history file, so a day with no file leaves a gap. " +
       "S3 figures come from CloudWatch a day or two late, and the newest one stands for the days after it. " +
-      "Transactional starts with its test and synthetic lines hidden, and its class lines start on the first day with an actor split.",
+      "Transactional starts with only its customer lines shown, and its class lines start on the first day with an actor split.",
     days,
     hours,
     modes: modes.filter((mode) => mode.series.length > 0),

@@ -60,7 +60,9 @@ describe("Pa11y configuration against the edge rate limit", () => {
       expect(scripts[`accessibility:axe-${environment}`]).toContain("--load-delay 12000");
       expect(scripts[`accessibility:axe-wcag22-${environment}`]).toContain("--load-delay 12000");
       expect(scripts[`accessibility:lighthouse-multi-${environment}`]).toContain("--pause-ms 30000");
-      expect(scripts[`penetration:zap-${environment}`]).toContain("-config ajaxSpider.numberOfBrowsers=1");
+      const zapScript = scripts[`penetration:zap-${environment}`];
+      expect(zapScript).toContain("-config spider.thread=1");
+      expect(zapScript).not.toContain(" -j ");
     }
   });
 });

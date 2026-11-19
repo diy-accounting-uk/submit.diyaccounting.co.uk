@@ -121,7 +121,8 @@ export const WELSH_ACCOUNTS_TEXT = {
   "General information": "Gwybodaeth gyffredinol",
   "{name} is a private company limited by shares, registered in {country}, registered number {number}. Its registered office is {office}.":
     "Mae {name} yn gwmni preifat cyfyngedig gan gyfranddaliadau, wedi’i gofrestru yng {country}, rhif cofrestru {number}. Ei swyddfa gofrestredig yw {office}.",
-  "England and Wales": "Nghymru",
+  // GOV.UK's Welsh for England and Wales is "Cymru a Lloegr"; "yng" mutates it to "Nghymru a Lloegr".
+  "England and Wales": "Nghymru a Lloegr",
   "The company's principal activity is {activity}.": "Prif weithgaredd y cwmni yw {activity}.",
   "No description of principal activity": "Dim disgrifiad o’r prif weithgaredd",
   "Dormant company": "Cwmni segur",

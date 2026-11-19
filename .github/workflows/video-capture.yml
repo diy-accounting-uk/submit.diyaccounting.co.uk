@@ -74,6 +74,8 @@ on:
           - 'short-spreadsheets'
           - 'short-submit-return'
           - 'short-file-micro-entity-accounts'
+          - 'short-file-small-company-accounts'
+          - 'short-diya-gl-books'
           - 'itsa-loss-claims'
           - 'itsa-foreign-property-losses'
           - 'itsa-carry-back-adjustments'

@@ -78,7 +78,7 @@ export function http400BadRequestResponse({ request, headers, message, error }) 
     request,
     headers,
     data: { message, ...error },
-    levelledLogger: logger.error.bind(logger),
+    levelledLogger: logger.warn.bind(logger),
   });
 }
 

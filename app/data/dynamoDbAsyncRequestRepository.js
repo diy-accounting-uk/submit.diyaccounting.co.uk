@@ -16,7 +16,7 @@
 import { createLogger } from "../lib/logger.js";
 import { hashSub, hashSubWithVersion, getSaltVersion, getPreviousVersions } from "../services/subHasher.js";
 import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
-import { calculateOneHourTtl } from "../lib/dateUtils.js";
+import { calculateTtl } from "../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbAsyncRequestRepository.js" });
 
@@ -27,8 +27,9 @@ const logger = createLogger({ source: "app/data/dynamoDbAsyncRequestRepository.j
  * @param {string} status - Request status: 'pending', 'processing', 'completed', 'failed'
  * @param {object} data - Optional data (result for completed, error for failed)
  * @param {string} tableName - Optional table name (defaults to env var)
+ * @param {{days?: number, hours?: number}} [retention] - How long the item lives, one hour unless given
  */
-export async function putAsyncRequest(userId, requestId, status, data = null, tableName = null) {
+export async function putAsyncRequest(userId, requestId, status, data = null, tableName = null, retention = { hours: 1 }) {
   const actualTableName = tableName || process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
   if (!actualTableName) {
     logger.warn({ message: "putAsyncRequest called but no table name provided or in env", requestId });
@@ -46,8 +47,7 @@ export async function putAsyncRequest(userId, requestId, status, data = null, ta
     const now = new Date();
     const isoNow = now.toISOString();
 
-    // Calculate TTL as 1 hour from now
-    const { ttl, ttl_datestamp: ttlDatestamp } = calculateOneHourTtl(now);
+    const { ttl, ttl_datestamp: ttlDatestamp } = calculateTtl(now, retention);
 
     const expressionAttributeNames = {
       "#status": "status",

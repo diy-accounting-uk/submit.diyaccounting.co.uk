@@ -372,6 +372,13 @@ public class HmrcStack extends Stack {
                 "ImportedPracticeClientsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().data.practiceClientsTableName);
 
+        // Lookup existing DynamoDB Companies House async-requests table - the receipts list reads the
+        // caller's own Companies House filings in progress from it.
+        ITable companiesHouseAccountsAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedCompaniesHouseAccountsAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().data.companiesHouseAccountsAsyncRequestsTableName);
+
         // The HMRC handlers the MCP reaches open an MCP session's HMRC grant themselves, so the
         // token never leaves Submit: they read the sealed grant from the mcp-sessions table and
         // refresh it with the HMRC client secret.
@@ -2598,6 +2605,9 @@ public class HmrcStack extends Stack {
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().data.receiptsTableName)
                 .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
+                .with(
+                        "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
+                        companiesHouseAccountsAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var myReceiptsLambdaUrlOrigin = new ApiLambda(
@@ -2649,6 +2659,8 @@ public class HmrcStack extends Stack {
         receiptsTable.grant(this.receiptGetLambda, "dynamodb:GetItem", "dynamodb:Query");
         // Read-only: confirms a clientId query parameter names one of the caller's own clients.
         practiceClientsTable.grant(this.receiptGetLambda, "dynamodb:GetItem");
+        // The listing queries the caller's own partition for Companies House filings in progress.
+        companiesHouseAccountsAsyncRequestsTable.grant(this.receiptGetLambda, "dynamodb:Query");
 
         // Grant access to user sub hash salt secret in Secrets Manager
         SubHashSaltHelper.grantSaltAccess(this.receiptGetLambda, region, account, props.envName());

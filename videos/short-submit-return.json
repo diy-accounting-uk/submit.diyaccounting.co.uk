@@ -60,41 +60,25 @@
       "id": "home",
       "chapter": "Home",
       "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "caption",
           "text": "You can send a VAT return straight to HMRC.",
           "headline": "Submit your VAT return",
           "keyWord": "Submit"
-        },
-        {
-          "action": "caption",
-          "text": "See the full sign-in and day pass walkthrough in our sign-in video.",
-          "holdMs": 1200,
-          "headline": "Sign in and day pass, faster",
-          "keyWord": "faster"
         }
       ]
     },
     {
       "id": "sign-in",
       "chapter": "Sign in",
-      "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "click",
-          "target": "a.login-link",
-          "caption": "Sign in with the account you already use.",
-          "headline": "Sign in first",
-          "keyWord": "Sign"
+          "target": "a.login-link"
         },
         {
-          "action": "login",
-          "caption": "Your account keeps your submissions in one place.",
-          "headline": "Confirm your identity",
-          "keyWord": "identity"
+          "action": "login"
         },
         {
           "action": "consent"
@@ -103,31 +87,24 @@
           "action": "hold",
           "ms": 600
         }
-      ]
+      ],
+      "offCamera": true
     },
     {
       "id": "day-pass",
       "chapter": "Day pass",
-      "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "click",
           "target": {
             "role": "link",
             "name": "Bundles"
-          },
-          "caption": "Bundles decide which activities you can run.",
-          "headline": "Open your bundles",
-          "keyWord": "bundles"
+          }
         },
         {
           "action": "ensureBundle",
           "bundle": "Day pass",
-          "testPass": true,
-          "caption": "A day pass opens the VAT activities for a day.",
-          "headline": "Get a day pass",
-          "keyWord": "pass"
+          "testPass": true
         },
         {
           "action": "hold",
@@ -138,10 +115,7 @@
           "target": {
             "role": "link",
             "name": "Activities"
-          },
-          "caption": "Every activity starts from the home page.",
-          "headline": "Go to activities",
-          "keyWord": "activities"
+          }
         },
         {
           "action": "await",
@@ -152,7 +126,8 @@
           "action": "hold",
           "ms": 500
         }
-      ]
+      ],
+      "offCamera": true
     },
     {
       "id": "obligations-form",
@@ -191,13 +166,16 @@
         {
           "action": "click",
           "target": "#retrieveBtn"
-        },
+        }
+      ]
+    },
+    {
+      "id": "hmrc-read-access",
+      "chapter": "HMRC access",
+      "offCamera": true,
+      "steps": [
         {
           "action": "hmrcAuthorise",
-          "fastForward": true,
-          "caption": "See the full HMRC access walkthrough in our HMRC authorisation video.",
-          "headline": "Grant access, faster",
-          "keyWord": "faster",
           "timeoutMs": 60000
         }
       ]
@@ -319,14 +297,17 @@
           "headline": "Submit to HMRC",
           "keyWord": "Submit",
           "instruction": "Choose Submit VAT return, then sign in to HMRC and give permission again, because sending a return needs a wider grant than reading obligations."
-        },
+        }
+      ]
+    },
+    {
+      "id": "hmrc-write-access",
+      "chapter": "HMRC access again",
+      "offCamera": true,
+      "steps": [
         {
           "action": "hmrcAuthorise",
-          "fastForward": true,
-          "timeoutMs": 60000,
-          "caption": "See the full HMRC access walkthrough in our HMRC authorisation video.",
-          "headline": "Grant access again, faster",
-          "keyWord": "faster"
+          "timeoutMs": 60000
         }
       ]
     },

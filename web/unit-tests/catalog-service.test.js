@@ -14,6 +14,7 @@ import {
   isBundleShown,
   activityPagePath,
   activityArea,
+  bundlePassSummary,
   featureStatusSummary,
   STATUS_FEATURES,
 } from "../public/lib/services/catalog-service.js";
@@ -270,5 +271,24 @@ describe("isJointFilingOffered", () => {
     expect(isJointFilingOffered(real, "ci", viewer)).toBe(true);
     expect(isJointFilingOffered(real, "simulator", viewer)).toBe(true);
     expect(isJointFilingOffered(real, "prod", viewer)).toBe(false);
+  });
+});
+
+describe("bundlePassSummary", () => {
+  const bundle = { id: "resident-vat", passSummary: "submit VAT returns to HMRC", passSummaryCy: "cyflwyno Ffurflenni TAW i CThEF" };
+
+  it("gives a Welsh reader the Welsh phrase and anyone else the English one", () => {
+    expect(bundlePassSummary(bundle, "cy")).toBe("cyflwyno Ffurflenni TAW i CThEF");
+    expect(bundlePassSummary(bundle, "en")).toBe("submit VAT returns to HMRC");
+  });
+
+  it("keeps the English phrase for a bundle with no Welsh one", () => {
+    expect(bundlePassSummary({ passSummary: "open the operator dashboard" }, "cy")).toBe("open the operator dashboard");
+  });
+
+  it("every catalogue bundle that says what it lets you do says it in Welsh too", () => {
+    const catalogue = parseToml(readFileSync("web/public/submit.catalogue.toml", "utf-8"));
+    const missing = catalogue.bundles.filter((entry) => entry.passSummary && !entry.passSummaryCy).map((entry) => entry.id);
+    expect(missing).toEqual([]);
   });
 });

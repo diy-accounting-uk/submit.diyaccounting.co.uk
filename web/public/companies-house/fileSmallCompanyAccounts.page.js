@@ -561,7 +561,7 @@ function renderRejections(rejections) {
   }
   container.style.display = "block";
   container.className = "outcome outcome--error";
-  container.replaceChildren(...rejections.map((entry) => paragraph(`${entry.rejectCode}: ${entry.description}`)));
+  container.replaceChildren(...rejections.map((entry) => paragraph(window.companiesHouseRejections.rejectionText(entry))));
 }
 
 function showFilingCopyLink(outcome) {
@@ -609,11 +609,14 @@ async function checkOutcome(submission, headers) {
     checkAgain.style.display = "inline-block";
     return;
   }
+  const notReceived = window.companiesHouseRejections.notReceivedHeadline(outcome);
   result.replaceChildren(
-    paragraphWithValues(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
-      number: outcome.submissionNumber,
-      status: outcome.statusCode,
-    }),
+    notReceived
+      ? paragraphWithValues(`${notReceived.title} ${notReceived.detail}`, {})
+      : paragraphWithValues(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
+          number: outcome.submissionNumber,
+          status: outcome.statusCode,
+        }),
   );
   result.className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
   renderRejections(outcome.rejections);
