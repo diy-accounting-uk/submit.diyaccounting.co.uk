@@ -285,6 +285,28 @@ class CompaniesHouseStackTest {
     }
 
     @Test
+    void onlyTheStatusLambdasThatCanMarkAFeeMayUpdateTheActivityCharges() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+        Template template = Template.fromStack(stack);
+
+        for (String functionName : List.of(
+                stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(), pollFunctionName())) {
+            assertTrue(
+                    roleCanUpdateActivityCharges(template, functionName),
+                    functionName + " marks a confirmation statement fee used on a late acceptance");
+            assertHasEnvironmentVariable(template, functionName, "ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME");
+        }
+        for (String functionName : List.of(
+                stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementGetLambdaProps.ingestFunctionName())) {
+            assertTrue(
+                    !roleCanUpdateActivityCharges(template, functionName),
+                    functionName + " files no form with a fee, so it may not update the activity charges");
+            assertHasEnvironmentVariable(template, functionName, "ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME");
+        }
+    }
+
+    @Test
     void everySubmitLambdaCanSealTheFilerIntoTheFilingState() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
@@ -1353,6 +1375,26 @@ class CompaniesHouseStackTest {
                     else actions.add(String.valueOf(action));
                 });
         return actions;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static boolean roleCanUpdateActivityCharges(Template template, String functionName) {
+        var roleRef = (Map<String, Object>)
+                propertiesOfFunction(template, functionName).get("Role");
+        var roleLogicalId = String.valueOf(((List<Object>) roleRef.get("Fn::GetAtt")).get(0));
+        return template.findResources("AWS::IAM::Policy").values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .filter(properties -> ((List<Map<String, Object>>) properties.get("Roles"))
+                        .stream().anyMatch(role -> roleLogicalId.equals(String.valueOf(role.get("Ref")))))
+                .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .anyMatch(statement -> {
+                    Object action = statement.get("Action");
+                    boolean updates = action instanceof List<?> list
+                            ? list.contains("dynamodb:UpdateItem")
+                            : "dynamodb:UpdateItem".equals(action);
+                    return updates && String.valueOf(statement.get("Resource")).contains("activity-charges");
+                });
     }
 
     @SuppressWarnings("unchecked")

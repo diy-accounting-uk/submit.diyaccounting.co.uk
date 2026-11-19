@@ -282,8 +282,10 @@ public class CompaniesHouseStack extends Stack {
 
         // Lookup existing DynamoDB Activity Charges Table - the confirmation statement submit
         // Lambda checks and marks a per-filing Stripe charge before it accepts a fee-due
-        // submission, and the Lambdas that record a final status mark that charge used for a
-        // statement Companies House accepts after its envelope got no answer (activityCharges.js).
+        // submission. The confirmation statement status Lambda and the presenter poll mark that
+        // charge used for a statement Companies House accepts after its envelope got no answer; the
+        // other status Lambdas share their module, so they carry the table name with no grant
+        // (activityCharges.js).
         ITable activityChargesTable = Table.fromTableName(
                 this,
                 "ImportedActivityChargesTable-%s".formatted(props.deploymentName()),
@@ -1089,7 +1091,6 @@ public class CompaniesHouseStack extends Stack {
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseAccountsGetLambda, props);
         receiptsTable.grant(
                 this.companiesHouseAccountsGetLambda, "dynamodb:PutItem", "dynamodb:Query", "dynamodb:UpdateItem");
-        activityChargesTable.grant(this.companiesHouseAccountsGetLambda, "dynamodb:UpdateItem");
         grantTokenCharge(this.companiesHouseAccountsGetLambda, bundlesTable);
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHouseAccountsGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
@@ -1730,7 +1731,6 @@ public class CompaniesHouseStack extends Stack {
                 "dynamodb:PutItem",
                 "dynamodb:Query",
                 "dynamodb:UpdateItem");
-        activityChargesTable.grant(this.companiesHousePscVerificationStatementGetLambda, "dynamodb:UpdateItem");
         grantTokenCharge(this.companiesHousePscVerificationStatementGetLambda, bundlesTable);
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHousePscVerificationStatementGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");

@@ -141,9 +141,10 @@ export async function findReceiptForSubmission(userSub, submissionNumber, sentAt
  * @param {string} hashedSub - the hash the receipt is stored under
  * @param {string} receiptId
  * @param {"emailRequestedAt"|"tokenChargedAt"} step
- * @returns {Promise<boolean>} false when the step was already recorded
+ * @returns {Promise<string|null>} the time recorded, or null when the step was already recorded
  */
 export async function markReceiptStepDone(hashedSub, receiptId, step) {
+  const recordedAt = new Date().toISOString();
   try {
     await executeDynamoDbCommand(
       (module) =>
@@ -153,13 +154,43 @@ export async function markReceiptStepDone(hashedSub, receiptId, step) {
           UpdateExpression: "SET #step = :now",
           ConditionExpression: "attribute_exists(receiptId) AND attribute_not_exists(#step)",
           ExpressionAttributeNames: { "#step": step },
-          ExpressionAttributeValues: { ":now": new Date().toISOString() },
+          ExpressionAttributeValues: { ":now": recordedAt },
+        }),
+    );
+    return recordedAt;
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") return null;
+    logger.error({ message: "Error recording a receipt step", error: error.message, receiptId, step });
+    throw error;
+  }
+}
+
+/**
+ * Remove a step recorded on a receipt, only when it still holds the time this caller recorded, so
+ * the step runs again on the next record.
+ * @param {string} hashedSub
+ * @param {string} receiptId
+ * @param {"emailRequestedAt"|"tokenChargedAt"} step
+ * @param {string} recordedAt - the time markReceiptStepDone answered
+ * @returns {Promise<boolean>} false when the step holds another time or none
+ */
+export async function clearReceiptStep(hashedSub, receiptId, step, recordedAt) {
+  try {
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: getResourceName("RECEIPTS_DYNAMODB_TABLE_NAME"),
+          Key: { hashedSub, receiptId },
+          UpdateExpression: "REMOVE #step",
+          ConditionExpression: "#step = :recordedAt",
+          ExpressionAttributeNames: { "#step": step },
+          ExpressionAttributeValues: { ":recordedAt": recordedAt },
         }),
     );
     return true;
   } catch (error) {
     if (error.name === "ConditionalCheckFailedException") return false;
-    logger.error({ message: "Error recording a receipt step", error: error.message, receiptId, step });
+    logger.error({ message: "Error clearing a receipt step", error: error.message, receiptId, step });
     throw error;
   }
 }

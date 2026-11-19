@@ -58,7 +58,7 @@ vi.mock("@app/services/subHasher.js", () => ({
   subHashCandidates: vi.fn((sub) => [{ version: "v1", hashedSub: `hashed-${sub}` }]),
 }));
 
-const { putReceipt, putReceiptIfNew, listUserReceipts, findReceiptForSubmission, markReceiptStepDone } =
+const { putReceipt, putReceiptIfNew, listUserReceipts, findReceiptForSubmission, markReceiptStepDone, clearReceiptStep } =
   await import("@app/data/dynamoDbReceiptRepository.js");
 const { subHashCandidates } = await import("@app/services/subHasher.js");
 
@@ -160,7 +160,9 @@ describe("data/dynamoDbReceiptRepository", () => {
 
   describe("markReceiptStepDone", () => {
     test("records a step on a stored receipt only when it is not recorded", async () => {
-      expect(await markReceiptStepDone("hashed-user-sub", "receipt-1", "tokenChargedAt")).toBe(true);
+      const recordedAt = await markReceiptStepDone("hashed-user-sub", "receipt-1", "tokenChargedAt");
+
+      expect(recordedAt).toMatch(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/);
 
       const update = mockUpdateCommand.mock.calls[0][0];
       expect(update.Key).toEqual({ hashedSub: "hashed-user-sub", receiptId: "receipt-1" });
@@ -173,7 +175,26 @@ describe("data/dynamoDbReceiptRepository", () => {
         Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" }),
       );
 
-      expect(await markReceiptStepDone("hashed-user-sub", "receipt-1", "emailRequestedAt")).toBe(false);
+      expect(await markReceiptStepDone("hashed-user-sub", "receipt-1", "emailRequestedAt")).toBeNull();
+    });
+  });
+
+  describe("clearReceiptStep", () => {
+    test("removes a step only while it holds the time the caller recorded", async () => {
+      expect(await clearReceiptStep("hashed-user-sub", "receipt-1", "tokenChargedAt", "2026-11-19T10:00:00.000Z")).toBe(true);
+
+      const update = mockUpdateCommand.mock.calls[0][0];
+      expect(update.UpdateExpression).toBe("REMOVE #step");
+      expect(update.ConditionExpression).toBe("#step = :recordedAt");
+      expect(update.ExpressionAttributeValues).toEqual({ ":recordedAt": "2026-11-19T10:00:00.000Z" });
+    });
+
+    test("answers false when the step holds another time", async () => {
+      mockSend.mockRejectedValueOnce(
+        Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" }),
+      );
+
+      expect(await clearReceiptStep("hashed-user-sub", "receipt-1", "tokenChargedAt", "2026-11-19T10:00:00.000Z")).toBe(false);
     });
   });
 

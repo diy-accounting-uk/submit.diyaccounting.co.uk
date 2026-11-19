@@ -19,7 +19,7 @@ import {
 import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { FILING_STATE_RETENTION, claimFinalStatus, releaseFinalStatus } from "../data/dynamoDbCompaniesHouseFilingStateRepository.js";
 import { recordFiledReceiptForSubmission } from "./filedReceipt.js";
-import { markReceiptStepDone } from "../data/dynamoDbReceiptRepository.js";
+import { markReceiptStepDone, clearReceiptStep } from "../data/dynamoDbReceiptRepository.js";
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
 import { jointFilingFields, amendedFields, formRequestFields } from "./jointFiling.js";
 import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
@@ -75,7 +75,11 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
     return { notFound: true, submissionNumber };
   }
 
-  if (persistedRequest.status === "completed" || persistedRequest.status === "failed") {
+  // A never-received rejection is asked about again while Companies House could still answer for
+  // the filing, so a late decision is recorded for a filing under the customer's own presenter,
+  // which the presenter poll never asks about.
+  const stillAsking = isNeverReceived(persistedRequest.data) && withinStatusWindow(persistedRequest, now);
+  if ((persistedRequest.status === "completed" || persistedRequest.status === "failed") && !stillAsking) {
     return { data: withoutPendingRequest(persistedRequest.data) };
   }
 
@@ -96,6 +100,9 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
   const parsed = parseGatewayResponse(gatewayResponse.data);
 
   if (parsed.errors?.length) {
+    if (stillAsking && parsed.errors.every((error) => error.text === "No Transaction Found")) {
+      return { data: withoutPendingRequest(persistedRequest.data) };
+    }
     if (neverReceived({ persistedRequest, errors: parsed.errors, now })) {
       return { data: await recordNeverReceived({ userSub, submissionNumber, persistedRequest, kind }) };
     }
@@ -126,6 +133,12 @@ function neverReceived({ persistedRequest, errors, now }) {
   if (!errors.every((error) => error.text === "No Transaction Found")) return false;
   const age = now.getTime() - new Date(persistedRequest.createdAt).getTime();
   return age >= NEVER_RECEIVED_MARGIN_MS && age < NO_STATUS_AFTER_MS;
+}
+
+// Whether Companies House can still answer a status poll for a filing: option 1 answers "No
+// Transaction Found" for every filing older than NO_STATUS_AFTER_MS.
+function withinStatusWindow(persistedRequest, now) {
+  return now.getTime() - new Date(persistedRequest.createdAt).getTime() < NO_STATUS_AFTER_MS;
 }
 
 // Recorded the way a REJECT is, so the page and the filings list tell the reader to file again. No
@@ -279,9 +292,19 @@ async function writeFinalStatus({ userSub, submissionNumber, persistedRequest, s
   const feeCharge = requestData.feeCharge;
   if (feeCharge) await markChargeUsed(userSub, feeCharge.activityId, feeCharge.subjectKey);
   // Each accepted filing costs its own token, alone or as half of a pair; the pair costs two.
+  // The charge is recorded before it runs, so a stop or a failed write can miss a token but never
+  // charge a second one. A charge that could not run is unrecorded again and the record fails, so
+  // the next poll charges it.
   if (requestData.chargeActivityId && !storedReceipt.tokenChargedAt) {
-    await chargeTokenOnSuccess(userSub, requestData.chargeActivityId);
-    await markReceiptStepDone(storedReceipt.hashedSub, receiptId, "tokenChargedAt");
+    const chargeRecordedAt = await markReceiptStepDone(storedReceipt.hashedSub, receiptId, "tokenChargedAt");
+    if (chargeRecordedAt) {
+      const charge = await chargeTokenOnSuccess(userSub, requestData.chargeActivityId);
+      if (charge?.reason === "charge_error") {
+        logger.warn({ message: "Companies House token charge could not run; the next poll charges it", submissionNumber, receiptId });
+        await clearReceiptStep(storedReceipt.hashedSub, receiptId, "tokenChargedAt", chargeRecordedAt);
+        throw new Error(`Token charge for submission ${submissionNumber} could not run`);
+      }
+    }
   }
   const data = { ...status, ...jointFiling, receiptId };
   await putAsyncRequest(userSub, submissionNumber, "completed", { ...data, kind }, asyncRequestsTableName, FILING_STATE_RETENTION);

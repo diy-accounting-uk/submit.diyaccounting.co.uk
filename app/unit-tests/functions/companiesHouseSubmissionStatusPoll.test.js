@@ -91,6 +91,8 @@ const { FINAL_STATUS_CLAIM_STALE_MINUTES } = await vi.importActual("@app/data/dy
 // The receipts table: a conditional put leaves a stored receipt as it is.
 const receipts = new Map();
 let failNextReceiptPut = false;
+// A test sets this to a step name to make the next record of that step on a receipt throw.
+let failNextStepMark = null;
 vi.mock("@app/data/dynamoDbReceiptRepository.js", () => ({
   putReceipt: async () => {
     throw new Error("the Companies House record writes its receipt with putReceiptIfNew");
@@ -114,9 +116,19 @@ vi.mock("@app/data/dynamoDbReceiptRepository.js", () => ({
     return null;
   },
   markReceiptStepDone: async (hashedSub, receiptId, step) => {
+    if (failNextStepMark === step) {
+      failNextStepMark = null;
+      throw new Error("receipts table unavailable");
+    }
     const stored = receipts.get(`${hashedSub.replace(/^hashed-/, "")}/${receiptId}`);
-    if (!stored || stored.steps[step]) return false;
+    if (!stored || stored.steps[step]) return null;
     stored.steps[step] = new Date().toISOString();
+    return stored.steps[step];
+  },
+  clearReceiptStep: async (hashedSub, receiptId, step, recordedAt) => {
+    const stored = receipts.get(`${hashedSub.replace(/^hashed-/, "")}/${receiptId}`);
+    if (!stored || stored.steps[step] !== recordedAt) return false;
+    delete stored.steps[step];
     return true;
   },
 }));
@@ -228,6 +240,7 @@ describe("companiesHouseSubmissionStatusPoll handler", () => {
     activityCharges.clear();
     failNextAsyncPut = null;
     failNextReceiptPut = false;
+    failNextStepMark = null;
     pollState = {};
     gatewayRequests.length = 0;
     rewriteGatewayAnswer = (xml) => xml;
@@ -606,7 +619,7 @@ describe("companiesHouseSubmissionStatusPoll handler", () => {
     expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
   });
 
-  test("a record stopped before its token charge charges the token once on the retry", async () => {
+  test("a record stopped after recording its token charge charges no second token on the retry", async () => {
     await fileAccounts("PRS035");
     mockChargeTokenOnSuccess.mockImplementationOnce(() => {
       throw new Error("Lambda stopped");
@@ -619,12 +632,104 @@ describe("companiesHouseSubmissionStatusPoll handler", () => {
     });
     allowNextPoll();
     await handler();
+
+    expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
+    expect(asyncRequests.get(`${USER_SUB}/PRS035`)).toMatchObject({ status: "completed" });
+    expect(receiptEmails()).toHaveLength(1);
+  });
+
+  test("a record whose token charge could not be recorded charges nothing, and the retry charges once", async () => {
+    await fileAccounts("PRS037");
+    failNextStepMark = "tokenChargedAt";
+
+    const first = await handler();
+
+    expect(first.outcomes).toEqual([{ submissionNumber: "PRS037", statusCode: "ACCEPT", outcome: "error" }]);
+    expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
     allowNextPoll();
     await handler();
 
+    expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
+    expect(asyncRequests.get(`${USER_SUB}/PRS037`)).toMatchObject({ status: "completed" });
+  });
+
+  test("a token charge that could not run is unrecorded, the poll is not acknowledged, and the next poll charges it", async () => {
+    await fileAccounts("PRS038");
+    mockChargeTokenOnSuccess.mockResolvedValueOnce({ consumed: false, reason: "charge_error" });
+
+    const first = await handler();
+
+    expect(first).toMatchObject({ acknowledged: false });
+    expect(first.outcomes).toEqual([{ submissionNumber: "PRS038", statusCode: "ACCEPT", outcome: "error" }]);
+    expect(asyncRequests.get(`${USER_SUB}/PRS038`)).toMatchObject({ status: "pending" });
+    const [stored] = receipts.values();
+    expect(stored.steps.tokenChargedAt).toBeUndefined();
+    allowNextPoll();
+    const second = await handler();
+
+    expect(second).toMatchObject({ acknowledged: true });
     expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(2);
-    expect(asyncRequests.get(`${USER_SUB}/PRS035`)).toMatchObject({ status: "completed" });
+    expect(asyncRequests.get(`${USER_SUB}/PRS038`)).toMatchObject({ status: "completed" });
     expect(receiptEmails()).toHaveLength(1);
+  });
+
+  test("a filing under the customer's own presenter recorded as never received is recorded when the page polls after a late accept", async () => {
+    const ownPresenter = { presenterId: SIMULATOR_PRESENTER_ID, presenterCode: SIMULATOR_PRESENTER_CODE };
+    await recordSubmissionInProgress({
+      userSub: USER_SUB,
+      submissionNumber: "PRS039",
+      kind: "accounts",
+      underOwnPresenter: true,
+      data: ACCOUNTS_REQUEST_DATA,
+    });
+    await recordOutcomeUnknown({ userSub: USER_SUB, submissionNumber: "PRS039", kind: "accounts", data: ACCOUNTS_REQUEST_DATA });
+    const pastMargin = new Date(Date.now() + 31 * 60 * 1000);
+    const first = await pollSubmission({ userSub: USER_SUB, submissionNumber: "PRS039", kind: "accounts", ownPresenter, now: pastMargin });
+    expect(first.data.rejections[0].rejectCode).toBe("NOT-RECEIVED");
+
+    const stillUnknown = await pollSubmission({
+      userSub: USER_SUB,
+      submissionNumber: "PRS039",
+      kind: "accounts",
+      ownPresenter,
+      now: pastMargin,
+    });
+    expect(stillUnknown).toEqual({ data: expect.objectContaining({ statusCode: "REJECT" }) });
+    expect(stillUnknown.data.pendingRequest).toBeUndefined();
+
+    await sendAccountsEnvelope("PRS039");
+    let late;
+    for (let poll = 0; poll < 5 && late?.data?.statusCode !== "ACCEPT"; poll++) {
+      late = await pollSubmission({ userSub: USER_SUB, submissionNumber: "PRS039", kind: "accounts", ownPresenter, now: pastMargin });
+    }
+
+    expect(late.data).toMatchObject({ statusCode: "ACCEPT" });
+    expect(asyncRequests.get(`${USER_SUB}/PRS039`)).toMatchObject({ status: "completed" });
+    expect(storedReceipts()).toEqual([expect.objectContaining({ statusCode: "ACCEPT", filedDocument: "<html>accounts</html>" })]);
+    expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  test("a never-received filing past the window Companies House answers for is not asked about again", async () => {
+    await recordSubmissionInProgress({
+      userSub: USER_SUB,
+      submissionNumber: "PRS040",
+      kind: "accounts",
+      underOwnPresenter: false,
+      data: ACCOUNTS_REQUEST_DATA,
+    });
+    await recordOutcomeUnknown({ userSub: USER_SUB, submissionNumber: "PRS040", kind: "accounts", data: ACCOUNTS_REQUEST_DATA });
+    await pollSubmission({ userSub: USER_SUB, submissionNumber: "PRS040", kind: "accounts", now: new Date(Date.now() + 31 * 60 * 1000) });
+    const asked = gatewayRequests.length;
+
+    const later = await pollSubmission({
+      userSub: USER_SUB,
+      submissionNumber: "PRS040",
+      kind: "accounts",
+      now: new Date(Date.now() + 91 * 24 * 60 * 60 * 1000),
+    });
+
+    expect(later.data.rejections[0].rejectCode).toBe("NOT-RECEIVED");
+    expect(gatewayRequests).toHaveLength(asked);
   });
 
   test("a receipt stored under the id dated by its record time is reused, with no second receipt or email", async () => {
