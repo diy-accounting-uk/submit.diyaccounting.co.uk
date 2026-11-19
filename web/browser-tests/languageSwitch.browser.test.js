@@ -336,3 +336,31 @@ test("the Companies House callback stays at its registered address and writes it
   await expect(page.locator(".language-notice")).toHaveCount(0);
   await expect(page.locator("#statusMessagesContainer")).toContainText("Ni chafwyd cod awdurdodi dilys.");
 });
+
+for (const welsh of ["/cy/index.html", "/cy/bundles.html", "/cy/get-started.html", "/cy/companies-house/companySearch.html"]) {
+  test(`${welsh} links only to the Welsh Companies House pages, and its English option goes to the English twin`, async ({ page }) => {
+    await storeWelsh(page);
+    await serveRealSite(page);
+    await page.goto(`${SITE_ORIGIN}${welsh}`, { waitUntil: "load" });
+    await page.waitForLoadState("networkidle");
+    const links = await page.locator("a[href]").evaluateAll((anchors) =>
+      anchors
+        .map((a) => ({
+          path: new URL(a.href).pathname,
+          origin: new URL(a.href).origin,
+          inSwitch: Boolean(a.closest(".language-switch")),
+        }))
+        .filter((link) => link.origin === location.origin && /companies-house\/.*\.html$/.test(link.path)),
+    );
+    for (const link of links.filter((link) => !link.inSwitch)) expect(link.path, "a Companies House link leaves /cy/").toMatch(/^\/cy\//);
+    const leaving = links.filter((link) => !link.path.startsWith("/cy/"));
+    if (welsh === "/cy/companies-house/companySearch.html") {
+      expect(leaving).toEqual([{ path: "/companies-house/companySearch.html", origin: SITE_ORIGIN, inSwitch: true }]);
+      const toEnglish = page.locator(".language-switch").getByRole("link", { name: "English" });
+      await expect(toEnglish).toHaveAttribute("lang", "en-GB");
+      await expect(toEnglish).toHaveAttribute("hreflang", "en-GB");
+    } else {
+      expect(leaving).toEqual([]);
+    }
+  });
+}

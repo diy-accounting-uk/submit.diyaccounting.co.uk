@@ -2759,6 +2759,18 @@ cy = '''Cymorth'''
 hash = "0e570ca6fabe"
 cy = '''Cod ffynhonnell'''
 
+[strings."chrome.dev-view-source"]
+hash = "336352db181d"
+cy = '''gweld y cod ffynhonnell'''
+
+[strings."chrome.dev-tests"]
+hash = "59830ebc3a41"
+cy = '''profion'''
+
+[strings."chrome.dev-api"]
+hash = "14c2529eb449"
+cy = '''API'''
+
 [strings."chrome.footer-legal"]
 hash = "7703ee854fb1"
 cy = '''Am ddim i’w ddefnyddio o dan y {licence}.'''

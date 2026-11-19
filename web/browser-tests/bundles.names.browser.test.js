@@ -109,6 +109,19 @@ test.describe("Your current bundles says where each row comes from", () => {
     });
   }
 
+  test("a reader who chose Welsh reads the summary line in Welsh on the Welsh page", async ({ page }) => {
+    await page.addInitScript(() => window.localStorage.setItem("siteLanguage", "cy"));
+    await serveRealSite(page, { signedIn: true, apiHandler: groupsApi });
+    await page.goto(`${SITE_ORIGIN}/cy/bundles.html`, { waitUntil: "domcontentloaded" });
+
+    const pro = page.locator("#currentBundles .bundle-row").filter({ hasText: "Resident Pro" });
+    await expect(pro.locator(".bundle-summary")).toHaveText(
+      "Cyflwyno Ffurflenni TAW i CThEF, ffeilio cyfrifon gyda Thŷ’r Cwmnïau, a gwneud dolenni tocyn i bobl eraill.",
+      { timeout: 15000 },
+    );
+    await expect(page.locator("#currentBundles")).not.toContainText("make pass links for other people");
+  });
+
   test("a group with no row has no heading", async ({ page }) => {
     await serveRealSite(page, { signedIn: true, apiHandler: apiFor("resident-pro") });
     await page.goto(`${SITE_ORIGIN}/bundles.html`, { waitUntil: "domcontentloaded" });

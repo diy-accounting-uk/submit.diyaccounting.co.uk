@@ -787,7 +787,11 @@ function renderCurrentBundles() {
 
     if (fullData?.configDriven) fragments.push(configSetNote());
 
-    const summary = passSummarySentence(catBundle?.passSummary);
+    // Like the name, the summary waits for the catalogue service, which picks the reader's language.
+    const summary =
+      __catalogueSettled && catBundle
+        ? passSummarySentence(__catalogService.bundlePassSummary(catBundle, window.siteLanguage?.chrome?.()))
+        : "";
     const summaryLine = summary ? domEl("div", { class: "bundle-note bundle-summary" }, summary) : null;
     const infoLine = fragments.length > 0 ? domEl("div", { class: "bundle-note" }, fragments.join(" · ")) : null;
 
