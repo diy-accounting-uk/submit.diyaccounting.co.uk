@@ -272,8 +272,15 @@
     const tag = document.createElement("span");
     tag.className = "status-tag";
     tag.dataset.status = "sandbox";
-    tag.textContent = "Sandbox";
-    line.append(tag, " This feature is open because preview features are on. It runs against the test services and files nothing real.");
+    tag.textContent = siteText("chrome.preview-sandbox-tag", "Sandbox");
+    line.append(
+      tag,
+      " ",
+      siteText(
+        "chrome.preview-sandbox-text",
+        "This feature is open because preview features are on. It runs against the test services and files nothing real.",
+      ),
+    );
     banner.append(line);
     return banner;
   }
@@ -303,18 +310,23 @@
       return false;
     }
 
+    // The availability table has a Welsh twin; the settings page has none.
+    const calendarPath = window.siteLanguage?.chrome() === "cy" ? "/cy/mtd-calendar.html" : "/mtd-calendar.html";
     const panel = listed
       ? unavailablePanel(
-          "Switched off in your settings",
-          "You turned this off. Nothing has been sent and nothing has been charged.",
+          siteText("chrome.switched-off-heading", "Switched off in your settings"),
+          siteText("chrome.switched-off-text", "You turned this off. Nothing has been sent and nothing has been charged."),
           "/settings.html",
-          "Open settings",
+          siteText("chrome.open-settings", "Open settings"),
         )
       : unavailablePanel(
-          "Not available here yet",
-          "This part of DIY Accounting Submit is not open on this site yet. Nothing has been sent and nothing has been charged.",
-          "/mtd-calendar.html#availability",
-          "See what is available",
+          siteText("chrome.unavailable-heading", "Not available here yet"),
+          siteText(
+            "chrome.unavailable-text",
+            "This part of DIY Accounting Submit is not open on this site yet. Nothing has been sent and nothing has been charged.",
+          ),
+          `${calendarPath}#availability`,
+          siteText("chrome.unavailable-link", "See what is available"),
         );
     main.replaceChildren(panel);
     document.body.dataset.activityUnavailable = activity.id;
