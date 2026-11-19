@@ -207,6 +207,10 @@ Claude-Session: <this session's claude.ai/code URL>
 Every command line gives the exact command and its counts. A gate that did not run says so on its
 line, with the reason.
 
+The three trailers are exact, in this order, on every commit you make: `Co-Authored-By: Claude
+<noreply@anthropic.com>` (never a model name in it), `Claude-Model: <your exact model id>`, and
+`Claude-Session: <this session's claude.ai/code URL>`. Never copy another session's trailers.
+
 ## Rules
 
 - Push only to `origin`, the work repository of this session. Never push to any other repository.
