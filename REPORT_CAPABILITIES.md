@@ -572,6 +572,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-64](#dev-64-define-a-wave-set-for-local-delivery) Define a wave set for local delivery: use when the operator wants the board delivered as one pull request per repository, built and tested locally first.
     - [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session) Lease a cloud work repository and start a worker session: use when the coordinator needs a Claude Code cloud session as a worker, or a pool repository must be leased, re-synced, released or watched.
     - [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator) Work rows as a cloud worker for the coordinator: use when a Claude Code cloud session on a submit-cloud-<codename> work repository starts, or a task message from the coordinator arrives in it.
+    - [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute) Run the delivery loop with the cloud workers doing the compute: use when the operator says collab loop, offload to the cloud, keep the laptop light, or starts or resumes /iterate with cloud sessions running.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -5626,7 +5627,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-60](#dev-60-fetch-the-local-tls-certificate) Fetch the local TLS certificate · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
-- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts) Find unused and duplicated workflows, scripts and npm scripts · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report · [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard · [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt · [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session · [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill · [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board · [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks · [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now) Say whether a /clear or a restart is safe now · [DEV-64](#dev-64-define-a-wave-set-for-local-delivery) Define a wave set for local delivery · [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session) Lease a cloud work repository and start a worker session · [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator) Work rows as a cloud worker for the coordinator
+- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts) Find unused and duplicated workflows, scripts and npm scripts · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report · [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard · [DEV-56](#dev-56-audit-the-workspaces-technical-debt) Audit the workspace's technical debt · [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session) Run a time-boxed marketing campaign session · [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill) Search community threads for the campaign skill · [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board) Check blockers and ask the operator what moves the board · [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks) Optimise the sites from the two webmaster tools and local checks · [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now) Say whether a /clear or a restart is safe now · [DEV-64](#dev-64-define-a-wave-set-for-local-delivery) Define a wave set for local delivery · [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session) Lease a cloud work repository and start a worker session · [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator) Work rows as a cloud worker for the coordinator · [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute) Run the delivery loop with the cloud workers doing the compute
 <!-- /generated:area DEV -->
 
 ### Simulator server & OAuth mocks (DEV)
@@ -5974,6 +5975,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DEV-64](#dev-64-define-a-wave-set-for-local-delivery) Define a wave set for local delivery
 - [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session) Lease a cloud work repository and start a worker session
 - [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator) Work rows as a cloud worker for the coordinator
+- [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute) Run the delivery loop with the cloud workers doing the compute
 <!-- /generated:group claude-code-delivery-cycle-skills-dev -->
 
 #### DEV-27 Render the open-work board
@@ -6362,6 +6364,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/collaborate/SKILL.md, PLAN_CLOUD_COLLABORATION.md
 - **Keywords:** collaborate, cloud worker, claude code on the web, work repository, submit-cloud, report-back contract, collab branch, poll loop, aws credentials, age, aws-handoff
 - **Related:** DEV-65
+
+#### DEV-67 Run the delivery loop with the cloud workers doing the compute
+
+- **Use when:** the operator says collab loop, offload to the cloud, keep the laptop light, or starts or resumes /iterate with cloud sessions running.
+- **Does:** collab-loop primes or steers the /iterate loop under /loop. Each tick rebuilds the state from git (collab-loop.sh state), brings every worker's skill and setup up to date, lands done results onto the batch, sends the next rows and gates to idle workers, and keeps local work to coordination, landing and proofs that need AWS, Chrome or the operator. The state lives in git, so a compaction mid-loop loses nothing.
+- **Run:** `/collab-loop [<wave set>]`
+- **Entry:** `.claude/skills/collab-loop/SKILL.md`
+- **Files:** .claude/skills/collab-loop/SKILL.md, .claude/skills/collab-loop/collab-loop.sh, PLAN_CLOUD_COLLABORATION.md
+- **Keywords:** collab loop, cloud offload, cloud workers, submit-cloud, collaborate, iterate, wave set, idempotent loop, laptop load, setup currency, reload skills
+- **Related:** DEV-30, DEV-65, DEV-66
 
 ## Spreadsheets and diya-gl (SS)
 
@@ -7516,11 +7528,13 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - clipping: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - close-when-gone: [OPS-195](#ops-195-replay-the-alarm-triage-prompt-over-invented-alarms)
 - cloud book: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
+- cloud offload: [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute)
 - cloud session: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session)
 - cloud sign-in: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - cloud sign-in event: [SS-33](#ss-33-send-diya-gl-ga4-events)
 - cloud worker: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator), [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
 - cloud worker role: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session)
+- cloud workers: [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute)
 - cloudformation: [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs)
 - cloudformation drift: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3), [OPS-32](#ops-32-detect-cloudformation-drift)
 - cloudfront: [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention), [OPS-115](#ops-115-provision-the-edgecloudfront-stack)
@@ -7567,8 +7581,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cognito-registered host: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - cold start: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - collab branch: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session), [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
+- collab loop: [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute)
 - collabora: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
-- collaborate: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator), [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
+- collaborate: [OPS-216](#ops-216-relay-signed-messages-from-cloud-workers-to-the-coordinator), [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator), [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute)
 - commission: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-57](#bill-57-show-a-referrer-the-callers-own-commission-totals), [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect), [BILL-55](#bill-55-run-the-commission-journeys-on-ci-with-stripe-test-mode-events), [DATA-68](#data-68-sql-view-campaign-results-by-place)
 - commissions: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - commit author: [SS-39](#ss-39-guard-commit-author-identity-on-prs)
@@ -8365,6 +8380,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - id token: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
 - idempotence: [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability)
 - idempotent enable: [DATA-40](#data-40-enable-required-google-cloud-apis)
+- idempotent loop: [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute)
 - identity: [CH-01](#ch-01-exchange-a-companies-house-oauth-token)
 - identity base url: [CH-09](#ch-09-query-and-submit-document-transactions)
 - identity guard: [OPS-28](#ops-28-enforce-commit-identity-allowlist), [SS-39](#ss-39-guard-commit-author-identity-on-prs)
@@ -8426,7 +8442,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - issuedby-index: [BILL-50](#bill-50-list-the-passes-held-for-review)
 - issues and comments: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens)
 - item counts: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
-- iterate: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
+- iterate: [DEV-30](#dev-30-run-the-delivery-cycle-unattended), [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute)
 - iterate skill: [SS-49](#ss-49-run-the-delivery-cycle-unattended)
 - itsa: [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures), [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
 - itsa annual submission: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary), [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary)
@@ -8502,6 +8518,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - lane user: [OPS-12](#ops-12-clean-up-expired-test-users), [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - language switch: [SITE-30](#site-30-build-the-welsh-pages)
 - lapse: [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle)
+- laptop load: [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute)
 - last known good: [OPS-149](#ops-149-finish-a-deployment)
 - last-known-good: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
 - late submission penalty: [HMRC-06](#hmrc-06-retrieve-vat-penalties)
@@ -9152,6 +9169,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - releases: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - releases.json: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
 - relief claims: [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims)
+- reload skills: [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute)
 - remedy budget: [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget)
 - remedy row: [OPS-21](#ops-21-auto-close-resolved-alarm-issues), [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope)
 - remote worker: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session)
@@ -9404,6 +9422,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - settings cog: [SITE-24](#site-24-change-an-account-setting)
 - settings page: [SITE-24](#site-24-change-an-account-setting)
 - settle in-flight work: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch)
+- setup currency: [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute)
 - setup guide: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
 - setup java: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
 - setup node: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
@@ -9562,7 +9581,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - submission record: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - submissions daily: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - submit vat: [HMRC-01](#hmrc-01-submit-a-vat-return)
-- submit-cloud: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session), [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator)
+- submit-cloud: [DEV-65](#dev-65-lease-a-cloud-work-repository-and-start-a-worker-session), [DEV-66](#dev-66-work-rows-as-a-cloud-worker-for-the-coordinator), [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute)
 - submit.bundle.js: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - submit.css: [OPS-162](#ops-162-bundle-submitcss-at-publish-time)
 - submit.env: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries), [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
@@ -9875,7 +9894,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - wave: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - wave branch: [DEV-64](#dev-64-define-a-wave-set-for-local-delivery)
 - wave dispatch: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
-- wave set: [DEV-64](#dev-64-define-a-wave-set-for-local-delivery)
+- wave set: [DEV-64](#dev-64-define-a-wave-set-for-local-delivery), [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute)
 - waves: [DEV-64](#dev-64-define-a-wave-set-for-local-delivery)
 - wcag: [OPS-97](#ops-97-compile-the-compliance-audit-report), [OPS-62](#ops-62-report-accessibility-penetration-testing)
 - wcag 1.4.12: [OPS-96](#ops-96-scan-pages-for-accessibility-violations)
