@@ -15,8 +15,9 @@ Chrome or the operator.
 
 ## Status
 
-approved 2026-11-19 (the operator's message above). Building wave 1: CH62 landed on
-`claude/yarrow-ops` as 7fc8c19b3; RDR2 building on cloud worker anvil.
+approved 2026-11-19 (the operator's message above). ops pushed: CH62 (7fc8c19b3) and RDR2
+(6fad6e878) on `claude/yarrow-ops`, PR #851. sheets building (TU1). Beside: LANG11c, OS18d and
+CH60 running on the laptop.
 
 ## The goal
 
@@ -39,7 +40,7 @@ deployment and one prod deployment for submit and one pull request run for sprea
 | ops (`claude/yarrow-ops`) | CH62, RDR2 | Sonnet | `app/services/companiesHousePresenterPoll.js`, `app/services/companiesHouseSubmissionStatus.js`, `app/services/companiesHouseXmlGateway.js`, their unit tests; `.github/workflows/deploy-cdk-stack.yml`, `.env.ci` |
 | sheets (spreadsheets `claude/yarrow-sheets`) | TU1 | Opus (design), Sonnet (build) | the new workflow, its script and test, in `../spreadsheets.diyaccounting.co.uk` |
 
-State: building.
+State: ops pushed (PR #851); sheets building.
 
 ### Beside
 
