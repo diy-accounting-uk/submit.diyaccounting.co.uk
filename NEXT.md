@@ -18,7 +18,7 @@ name, then the wave and the batch that build the row, or `beside` for a row with
 with no such field is in no set. Anything touching code goes through a `claude/*` branch and PR;
 the operator merges.
 
-**Prod runs deployment prod-e893b51** (`deploy.yml` run 44583401981 of `main` at e893b5149, PR #847, live at 18:38 UTC on 2026-11-19; `destroy-prod.yml` of 18:38 removed prod-50f4a56).
+**Prod runs deployment prod-0cbc114** (`deploy.yml` run 44602889969 of `main` at 0cbc114a9, PR #851, promoted by 20:39 UTC on 2026-11-19; it replaces prod-e893b51).
 **ci**: `ci-set1` is the last-known-good ci set (13 stacks, created 17:11 UTC on 2026-11-19 by PR #847's deploy; it carries RDR1). `ci-set2` is being deleted (its stacks DELETE_IN_PROGRESS at 19:00 UTC).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
