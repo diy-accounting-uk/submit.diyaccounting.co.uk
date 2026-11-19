@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-11-17",
+  "capturedAt": "2026-11-19",
   "shots": [
     {
       "pack": "submit",
@@ -88,6 +88,11 @@
     },
     {
       "pack": "spreadsheets-basic-sole-trader",
+      "shot": "workbook",
+      "file": "brand/packs/spreadsheets-basic-sole-trader/workbook.png"
+    },
+    {
+      "pack": "spreadsheets-basic-sole-trader",
       "shot": "sales",
       "file": "brand/packs/spreadsheets-basic-sole-trader/sales.png"
     },
@@ -98,11 +103,6 @@
     },
     {
       "pack": "spreadsheets-basic-sole-trader",
-      "shot": "profit-and-loss",
-      "file": "brand/packs/spreadsheets-basic-sole-trader/profit-and-loss.png"
-    },
-    {
-      "pack": "spreadsheets-basic-sole-trader",
       "shot": "income-tax",
       "file": "brand/packs/spreadsheets-basic-sole-trader/income-tax.png"
     },
@@ -110,6 +110,11 @@
       "pack": "spreadsheets-basic-sole-trader",
       "shot": "fixed-assets",
       "file": "brand/packs/spreadsheets-basic-sole-trader/fixed-assets.png"
+    },
+    {
+      "pack": "spreadsheets-self-employed",
+      "shot": "workbook",
+      "file": "brand/packs/spreadsheets-self-employed/workbook.png"
     },
     {
       "pack": "spreadsheets-self-employed",
@@ -133,6 +138,11 @@
     },
     {
       "pack": "spreadsheets-taxi-driver",
+      "shot": "workbook",
+      "file": "brand/packs/spreadsheets-taxi-driver/workbook.png"
+    },
+    {
+      "pack": "spreadsheets-taxi-driver",
       "shot": "product-page",
       "file": "brand/packs/spreadsheets-taxi-driver/product-page.png"
     },
@@ -153,13 +163,13 @@
     },
     {
       "pack": "spreadsheets-company",
-      "shot": "balance-sheet",
-      "file": "brand/packs/spreadsheets-company/balance-sheet.png"
+      "shot": "workbook",
+      "file": "brand/packs/spreadsheets-company/workbook.png"
     },
     {
       "pack": "spreadsheets-company",
-      "shot": "profit-and-loss",
-      "file": "brand/packs/spreadsheets-company/profit-and-loss.png"
+      "shot": "balance-sheet",
+      "file": "brand/packs/spreadsheets-company/balance-sheet.png"
     },
     {
       "pack": "spreadsheets-company",
@@ -170,6 +180,11 @@
       "pack": "spreadsheets-company",
       "shot": "cash-and-bank",
       "file": "brand/packs/spreadsheets-company/cash-and-bank.png"
+    },
+    {
+      "pack": "spreadsheets-payslips",
+      "shot": "workbook",
+      "file": "brand/packs/spreadsheets-payslips/workbook.png"
     },
     {
       "pack": "spreadsheets-payslips",

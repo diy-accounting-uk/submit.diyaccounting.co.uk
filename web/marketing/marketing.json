@@ -2006,6 +2006,13 @@
       ],
       "screenshots": [
         {
+          "id": "workbook",
+          "source": "spreadsheets",
+          "image": "images/spreadsheets/diyaccounting-spreadsheets-workbook-bst.png",
+          "alt": "The profit and loss account of the Basic Sole Trader workbook, through to the income tax due",
+          "file": "brand/packs/spreadsheets-basic-sole-trader/workbook.png"
+        },
+        {
           "id": "sales",
           "source": "spreadsheets",
           "image": "images/spreadsheets/diyaccounting-spreadsheets-Basic Sole Tader - Sales.png",
@@ -2018,13 +2025,6 @@
           "image": "images/spreadsheets/diyaccounting-spreadsheets-Basic Sole Tader - Purchases.png",
           "alt": "The purchases spreadsheet of the Basic Sole Trader workbook",
           "file": "brand/packs/spreadsheets-basic-sole-trader/purchases.png"
-        },
-        {
-          "id": "profit-and-loss",
-          "source": "spreadsheets",
-          "image": "images/spreadsheets/diyaccounting-spreadsheets-Basic Sole Tader - Profit and Loss.png",
-          "alt": "The profit and loss account of the Basic Sole Trader workbook",
-          "file": "brand/packs/spreadsheets-basic-sole-trader/profit-and-loss.png"
         },
         {
           "id": "income-tax",
@@ -2163,6 +2163,13 @@
         }
       ],
       "screenshots": [
+        {
+          "id": "workbook",
+          "source": "spreadsheets",
+          "image": "images/spreadsheets/diyaccounting-spreadsheets-workbook-se.png",
+          "alt": "The monthly profit and loss of the Self Employed workbook, with the financial health check",
+          "file": "brand/packs/spreadsheets-self-employed/workbook.png"
+        },
         {
           "id": "sales",
           "source": "spreadsheets",
@@ -2313,6 +2320,13 @@
         }
       ],
       "screenshots": [
+        {
+          "id": "workbook",
+          "source": "spreadsheets",
+          "image": "images/spreadsheets/diyaccounting-spreadsheets-workbook-taxi.png",
+          "alt": "The Taxi Driver profit and loss, with CabSmart picking vehicle costs or the mileage allowance",
+          "file": "brand/packs/spreadsheets-taxi-driver/workbook.png"
+        },
         {
           "id": "product-page",
           "source": "spreadsheets",
@@ -2473,18 +2487,18 @@
       ],
       "screenshots": [
         {
+          "id": "workbook",
+          "source": "spreadsheets",
+          "image": "images/spreadsheets/diyaccounting-spreadsheets-workbook-ltd.png",
+          "alt": "The monthly profit and loss account of the Company Accounts workbook, from sales to profit before tax",
+          "file": "brand/packs/spreadsheets-company/workbook.png"
+        },
+        {
           "id": "balance-sheet",
           "source": "spreadsheets",
           "image": "images/spreadsheets/diyaccounting-spreadsheets-balance-sheet.jpg",
           "alt": "The balance sheet of the Company Accounts workbook",
           "file": "brand/packs/spreadsheets-company/balance-sheet.png"
-        },
-        {
-          "id": "profit-and-loss",
-          "source": "spreadsheets",
-          "image": "images/spreadsheets/diyaccounting-spreadsheets-monthly-p-and-l.jpg",
-          "alt": "The monthly profit and loss account",
-          "file": "brand/packs/spreadsheets-company/profit-and-loss.png"
         },
         {
           "id": "corporation-tax",
@@ -2611,6 +2625,13 @@
       ],
       "videos": [],
       "screenshots": [
+        {
+          "id": "workbook",
+          "source": "spreadsheets",
+          "image": "images/spreadsheets/diyaccounting-spreadsheets-workbook-payslips.png",
+          "alt": "A monthly payslip from the Payslips workbook: pay, tax, National Insurance and the totals for the year to date",
+          "file": "brand/packs/spreadsheets-payslips/workbook.png"
+        },
         {
           "id": "payslips",
           "source": "spreadsheets",
