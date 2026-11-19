@@ -5,7 +5,7 @@
 
 const RESET_PATTERN = /ECONNRESET|socket hang up/i;
 const RETRY_DELAY_MS = 200;
-const CONTEXT_CLOSED_PATTERN = /Request context disposed|Target page, context or browser has been closed/i;
+const CONTEXT_CLOSED_PATTERN = /Request context disposed|Response has been disposed|Target page, context or browser has been closed/i;
 
 // True when the browser context closed while a route was still being served. The test has ended and no
 // page waits for the answer, but Playwright fails the run for an error thrown in the route callback.

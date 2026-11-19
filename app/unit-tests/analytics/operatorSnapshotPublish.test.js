@@ -96,6 +96,7 @@ import {
   buildDailyChartDefinitions,
   withoutAllZeroComponents,
   buildDailyCharts,
+  definitionHash,
   hourlyChartHours,
   buildCostDrivers,
   buildPaidSubscribers,
@@ -1827,6 +1828,64 @@ describe("operatorSnapshotPublish", () => {
       expect(second.dailyCharts.charts.find((chart) => chart.id === "retention").cohort).toEqual(
         first.dailyCharts.charts.find((chart) => chart.id === "retention").cohort,
       );
+    });
+
+    test("buildDailyCharts queries a mode again when its stored definition hash differs, and reuses the rest", async () => {
+      const queries = recordChartQueries();
+      const first = await buildDailyCharts({ workGroup: "wg", database: "db", endDay: END_DAY, now: new Date(`${END_DAY}T09:15:00.000Z`) });
+      const previous = structuredClone(first.dailyCharts);
+      const changedChart = previous.charts.find((chart) => chart.id === "conversion-to-paid");
+      changedChart.modes.find((mode) => mode.id === "ads-cost").definitionHash = "from-an-older-sql";
+      queries.length = 0;
+
+      const second = await buildDailyCharts({
+        workGroup: "wg",
+        database: "db",
+        endDay: END_DAY,
+        now: new Date(`${END_DAY}T14:15:00.000Z`),
+        previous,
+      });
+
+      const modes = buildDailyChartDefinitions().flatMap((chart) => chart.modes);
+      const adsCost = modes.find((mode) => mode.id === "ads-cost");
+      const hourlySql = modes.filter((mode) => mode.hourlySql).map((mode) => mode.hourlySql);
+      expect([...queries].sort()).toEqual([...hourlySql, adsCost.sql].sort());
+      const republished = second.dailyCharts.charts
+        .find((chart) => chart.id === "conversion-to-paid")
+        .modes.find((mode) => mode.id === "ads-cost");
+      expect(republished.definitionHash).toBe(definitionHash(adsCost));
+    });
+
+    test("buildDailyCharts queries every daily series, reconciliation and cohort again from a snapshot stored without definition hashes", async () => {
+      const queries = recordChartQueries();
+      const first = await buildDailyCharts({ workGroup: "wg", database: "db", endDay: END_DAY, now: new Date(`${END_DAY}T09:15:00.000Z`) });
+      const firstRunQueryCount = queries.length;
+      const previous = structuredClone(first.dailyCharts);
+      for (const chart of previous.charts) {
+        delete chart.reconciliationHash;
+        delete chart.cohortHash;
+        for (const mode of chart.modes) delete mode.definitionHash;
+      }
+      queries.length = 0;
+
+      await buildDailyCharts({ workGroup: "wg", database: "db", endDay: END_DAY, now: new Date(`${END_DAY}T14:15:00.000Z`), previous });
+
+      expect(queries).toHaveLength(firstRunQueryCount);
+    });
+
+    test("definitionHash changes with a mode's sql, order, classes, label or description, and not otherwise", () => {
+      const mode = buildDailyChartDefinitions()
+        .find((chart) => chart.id === "conversion-to-paid")
+        .modes.find((candidate) => candidate.id === "ads-cost");
+      const hash = definitionHash(mode);
+
+      expect(definitionHash({ ...mode })).toBe(hash);
+      expect(definitionHash({ ...mode, sql: `${mode.sql}\nLIMIT  1` })).not.toBe(hash);
+      expect(definitionHash({ ...mode, componentOrder: ["microsoft", "google"] })).not.toBe(hash);
+      expect(definitionHash({ ...mode, classes: ["customer", "test"] })).not.toBe(hash);
+      expect(definitionHash({ ...mode, labelOf: (id) => `Platform ${id}` })).not.toBe(hash);
+      expect(definitionHash({ ...mode, descriptionOf: (id) => `Cost of ${id}.` })).not.toBe(hash);
+      expect(hash).toMatch(/^[0-9a-f]{16}$/);
     });
 
     test("buildDailyCharts queries every daily series again at six hours old or on a new day", async () => {

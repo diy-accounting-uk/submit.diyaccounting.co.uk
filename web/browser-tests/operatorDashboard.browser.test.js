@@ -260,9 +260,54 @@ test.describe("Operator Dashboard", () => {
       await expect(card.locator(".chart-legend-item")).toHaveText(["nova-pro"]);
       await expect(card.locator(".chart-readout")).not.toContainText("undefined");
       await expect(card.locator(".chart-empty")).toBeHidden();
-      await expect(card.locator(".chart-table-link")).toHaveCount(0);
       await card.locator(".chart-mode", { hasText: "Input tokens" }).click();
       await expect(card.locator(".chart-readout")).toContainText("2,100");
+    });
+
+    test("gives the Bedrock chart a Table link to a table of the same figures by day and model", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: withConsole });
+      await loadDashboard(page, { loggedIn: true });
+      await openTab(page, "aws-prod");
+
+      const card = page.locator("#console-prod-bedrock .chart-card");
+      const tableLink = card.locator(".chart-table-link");
+      await expect(tableLink).toHaveCount(1);
+      await expect(tableLink).toHaveText("Table");
+      await expect(tableLink).toHaveAttribute("href", "#console-prod-bedrock-table");
+      for (const tab of ["Input tokens", "Output tokens", "Invocations"]) {
+        await card.locator(".chart-mode", { hasText: tab }).click();
+        await expect(tableLink).toBeVisible();
+      }
+
+      const table = page.locator("#console-prod-bedrock-table");
+      await expect(table).toBeVisible();
+      await expect(table.locator("th")).toHaveText(["Day", "Model", "Invocations", "Input tokens", "Output tokens"]);
+      await expect(table.locator("tbody tr")).toHaveCount(3);
+      await expect(table.locator("tbody tr").first().locator("td")).toHaveText(["2026-10-31", "nova-pro", "4", "4000", "900"]);
+      await expect(table.locator("tbody tr").last().locator("td")).toHaveText(["2026-11-02", "nova-pro", "2", "2100", "400"]);
+
+      await tableLink.click();
+      await expect(page).toHaveURL(/#console-prod-bedrock-table$/);
+    });
+
+    test("names the ci Bedrock chart and table apart from prod's", async ({ page }) => {
+      const prodBedrock = FIXTURE_CONSOLE_INDEX.items["prod-bedrock"];
+      const withCiBedrock = {
+        ...FIXTURE_SNAPSHOT,
+        console: {
+          ...FIXTURE_CONSOLE_INDEX,
+          items: { ...FIXTURE_CONSOLE_INDEX.items, "ci-bedrock": { ...prodBedrock, id: "ci-bedrock", target: "ci", env: "ci" } },
+        },
+      };
+      await setupRoutes(page, { snapshotBody: withCiBedrock });
+      await loadDashboard(page, { loggedIn: true });
+      await openTab(page, "aws-ci");
+
+      const card = page.locator("#console-ci-bedrock .chart-card");
+      await expect(card).toHaveAttribute("id", "chart-ci-bedrock-invocations");
+      await expect(card.locator(".chart-table-link")).toHaveAttribute("href", "#console-ci-bedrock-table");
+      await expect(page.locator("#console-ci-bedrock-table tbody tr")).toHaveCount(3);
+      await expect(page.locator("#chart-prod-bedrock-invocations")).toHaveCount(1);
     });
   });
 

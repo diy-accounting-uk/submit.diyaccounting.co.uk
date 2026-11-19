@@ -90,6 +90,21 @@ test.describe("Prod surface", () => {
     });
   }
 
+  test("the Welsh Company Tax Return page shows the not-available panel in Welsh in prod", async ({ page }) => {
+    await serveSite(page, "prod");
+    await page.goto("http://localhost:3000/cy/companies-house/fileCompanyTaxReturn.html", { waitUntil: "networkidle" });
+    const panel = page.locator("#activityUnavailablePanel");
+    await expect(panel).toBeVisible({ timeout: 15000 });
+    await expect(panel.locator("h2")).toHaveText("Ddim ar gael yma eto");
+    await expect(panel.locator("p")).toHaveText(
+      "Nid yw’r rhan hon o DIY Accounting Submit ar agor ar y wefan hon eto. Nid oes dim wedi’i anfon a dim wedi’i godi.",
+    );
+    await expect(panel.locator("a")).toHaveText("Gweld beth sydd ar gael");
+    await expect(panel.locator("a")).toHaveAttribute("href", "/cy/mtd-calendar.html#availability");
+    await expect(panel).not.toContainText("Not available");
+    await shoot(page, "guard-prod-cy");
+  });
+
   test("an Income Tax page keeps its form in ci", async ({ page }) => {
     await serveSite(page, "ci");
     await page.goto("http://localhost:3000/hmrc/itsa/dashboard.html", { waitUntil: "networkidle" });

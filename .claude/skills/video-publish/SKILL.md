@@ -157,7 +157,9 @@ AWS_PROFILE=diya-submit-prod npm run video:embed-check
 Run it after every publish and again after the deploy that ships a new `publish.json`. It lists
 the channel's public uploads, loads `videos.html` and its area pages, and fails when a public
 video is embedded nowhere, a manifest group has no area page, or oEmbed does not answer 200.
-Fix a failure before the run is called done.
+It applies the pages' listing rule: a video whose catalogue activity the site's environment does
+not list is held back from the pages on purpose, and a public one is printed as a NOTE line, not
+a failure. Fix a failure before the run is called done.
 
 ## Step 6 — check the declared status is what YouTube actually has
 

@@ -21,6 +21,7 @@
 // (operatorSnapshotGet.js) only ever reads what this Lambda writes; it never queries Athena
 // itself, so the dashboard stays fast even while a query here is slow.
 
+import { createHash } from "node:crypto";
 import { AthenaClient, StartQueryExecutionCommand, GetQueryExecutionCommand, GetQueryResultsCommand } from "@aws-sdk/client-athena";
 import { S3Client, PutObjectCommand, GetObjectCommand, ListBucketsCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { DynamoDBClient, DescribeTableCommand, DescribeTimeToLiveCommand } from "@aws-sdk/client-dynamodb";
@@ -2536,6 +2537,26 @@ function buildChartSeriesOfOneKind({ days, rows, mode }) {
 
 export const DAILY_SERIES_REFRESH_HOURS = 6;
 
+/**
+ * A short hash of a chart definition part (a mode, a reconciliation or a cohort): every field, with
+ * each function as its source, and the labels and descriptions its functions give the ids of its
+ * componentOrder and hourlyComponentOrder. A change to the SQL, the order, the classes, a label or a
+ * description changes the hash, so a series stored under the old hash is queried again.
+ *
+ * @param {object} part
+ * @returns {string}
+ */
+export function definitionHash(part) {
+  const ids = [...(part.componentOrder ?? []), ...(part.hourlyComponentOrder ?? [])];
+  const evaluated = {
+    labels: part.labelOf ? ids.map((id) => part.labelOf(id)) : [],
+    descriptions: part.descriptionOf ? ids.map((id) => part.descriptionOf(id) ?? null) : [],
+    hourlyDescriptions: part.hourlyDescriptionOf ? ids.map((id) => part.hourlyDescriptionOf(id) ?? null) : [],
+  };
+  const json = JSON.stringify({ part, evaluated }, (_, value) => (typeof value === "function" ? `fn:${value.toString()}` : value));
+  return createHash("sha256").update(json).digest("hex").slice(0, 16);
+}
+
 // The previous snapshot's daily charts, when they end on the same day and their daily series were
 // queried less than DAILY_SERIES_REFRESH_HOURS ago.
 function reusableDailyCharts(previous, endDay, now) {
@@ -2551,8 +2572,10 @@ function reusableDailyCharts(previous, endDay, now) {
  *
  * Each 90-day daily query reads every object of its view's tables, and the series changes only in
  * its last point during a day. So when `previous` (the last snapshot's dailyCharts) ends on the
- * same day and its daily series were queried less than DAILY_SERIES_REFRESH_HOURS ago, each mode
- * and reconciliation line it holds is reused. The 336-hour series are queried on every run.
+ * same day and its daily series were queried less than DAILY_SERIES_REFRESH_HOURS ago, each mode,
+ * reconciliation line and cohort table it holds is reused when it was stored under the same
+ * definitionHash as the current definition; one whose definition changed is queried again. The
+ * 336-hour series are queried on every run.
  *
  * @returns {Promise<{dailyCharts: {days: string[], hours: string[], dailySeriesQueriedAt: string, charts: object[]}, failedChartIds: string[]}>}
  */
@@ -2575,7 +2598,10 @@ export async function buildDailyCharts({
     OBSERVATION_QUERY_CONCURRENCY,
     async ({ definition, mode }) => {
       try {
-        const previousMode = previousChart(definition.id)?.modes?.find((candidate) => candidate.id === mode.id);
+        const modeHash = definitionHash(mode);
+        const previousMode = previousChart(definition.id)?.modes?.find(
+          (candidate) => candidate.id === mode.id && candidate.definitionHash === modeHash,
+        );
         const series = previousMode
           ? previousMode.series
           : buildChartSeries({ days, rows: await runAthenaQuery({ workGroup, database, sql: mode.sql }), mode });
@@ -2610,6 +2636,7 @@ export async function buildDailyCharts({
             id: mode.id,
             label: mode.label,
             ...(mode.unit ? { unit: mode.unit } : {}),
+            definitionHash: modeHash,
             ...(mode.hidesIdleLines ? { hidesIdleLines: true } : {}),
             series,
             ...(hourly ? { hourly } : {}),
@@ -2643,9 +2670,10 @@ export async function buildDailyCharts({
   for (const chart of charts) {
     const { reconciliation } = definitions.find((definition) => definition.id === chart.id);
     if (!reconciliation) continue;
-    const previousReconciliation = previousChart(chart.id)?.reconciliation;
-    if (previousReconciliation) {
-      chart.reconciliation = previousReconciliation;
+    chart.reconciliationHash = definitionHash(reconciliation);
+    const previous = previousChart(chart.id);
+    if (previous?.reconciliation && previous.reconciliationHash === chart.reconciliationHash) {
+      chart.reconciliation = previous.reconciliation;
       continue;
     }
     try {
@@ -2665,9 +2693,10 @@ export async function buildDailyCharts({
   for (const chart of charts) {
     const { cohort } = definitions.find((definition) => definition.id === chart.id);
     if (!cohort) continue;
-    const previousCohort = previousChart(chart.id)?.cohort;
-    if (previousCohort) {
-      chart.cohort = previousCohort;
+    chart.cohortHash = definitionHash(cohort);
+    const previous = previousChart(chart.id);
+    if (previous?.cohort && previous.cohortHash === chart.cohortHash) {
+      chart.cohort = previous.cohort;
       continue;
     }
     try {

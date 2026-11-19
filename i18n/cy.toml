@@ -2671,6 +2671,66 @@ cy = '''Gweithgaredd: mynediad wedi’i roi'''
 hash = "c1c048811163"
 cy = '''Gweithgaredd: angen {activities}'''
 
+[strings."chrome.unavailable-heading"]
+hash = "936b462a90f1"
+cy = '''Ddim ar gael yma eto'''
+
+[strings."chrome.unavailable-text"]
+hash = "48183f178ef1"
+cy = '''Nid yw’r rhan hon o DIY Accounting Submit ar agor ar y wefan hon eto. Nid oes dim wedi’i anfon a dim wedi’i godi.'''
+
+[strings."chrome.unavailable-link"]
+hash = "4f10c233d945"
+cy = '''Gweld beth sydd ar gael'''
+
+[strings."chrome.switched-off-heading"]
+hash = "9f2c892d6f3d"
+cy = '''Wedi’i ddiffodd yn eich gosodiadau'''
+
+[strings."chrome.switched-off-text"]
+hash = "afe2f3785d66"
+cy = '''Gwnaethoch ddiffodd hwn. Nid oes dim wedi’i anfon a dim wedi’i godi.'''
+
+[strings."chrome.open-settings"]
+hash = "ca381c1e76e6"
+cy = '''Agor y gosodiadau'''
+
+[strings."chrome.preview-sandbox-tag"]
+hash = "67fc62497e85"
+cy = '''Prawf'''
+
+[strings."chrome.preview-sandbox-text"]
+hash = "3c220b5ca9fa"
+cy = '''Mae’r nodwedd hon ar agor oherwydd bod nodweddion rhagolwg (preview) ymlaen. Mae’n rhedeg yn erbyn y gwasanaethau prawf ac nid yw’n ffeilio dim byd go iawn.'''
+
+[strings."chrome.bundle-default"]
+hash = "21b111cbfe6e"
+cy = '''Diofyn'''
+
+[strings."chrome.bundle-day-guest"]
+hash = "cbe35db34c53"
+cy = '''Tocyn diwrnod'''
+
+[strings."chrome.bundle-week-guest"]
+hash = "ef46c943020e"
+cy = '''Tocyn wythnos'''
+
+[strings."chrome.bundle-invited-guest"]
+hash = "c9e1193cbc1b"
+cy = '''Gwestai drwy wahoddiad'''
+
+[strings."chrome.bundle-resident-guest"]
+hash = "3a43ae95ff35"
+cy = '''Gwestai Resident'''
+
+[strings."chrome.bundle-resident-pro-comp"]
+hash = "01ed7869474b"
+cy = '''Resident Tax Agent (am ddim)'''
+
+[strings."chrome.bundle-operator"]
+hash = "291101a07fe9"
+cy = '''Gweithredwr'''
+
 [strings."chrome.not-signed-in"]
 hash = "491fc91cd76e"
 cy = '''Heb fewngofnodi'''

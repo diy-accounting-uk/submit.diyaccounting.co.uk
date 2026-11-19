@@ -206,6 +206,14 @@
     return table;
   }
 
+  const BEDROCK_COLUMNS = [
+    { heading: "Day", value: (row) => row.day },
+    { heading: "Model", value: (row) => row.model },
+    { heading: "Invocations", value: (row) => row.invocations },
+    { heading: "Input tokens", value: (row) => row.inputTokens },
+    { heading: "Output tokens", value: (row) => row.outputTokens },
+  ];
+
   const ALARM_COLUMNS = [
     { heading: "Alarm", value: (row) => row.name },
     { heading: "State", value: (row) => row.state },
@@ -251,15 +259,32 @@
     };
   }
 
-  function bedrockChart(allRows) {
+  // The Bedrock chart of one capture, and the table of the same figures drawn beside it: one row
+  // per day and model. The ids carry the capture id, so the prod and ci charts and tables differ.
+  function bedrockChart(allRows, captureId) {
     const rows = allRows.filter((row) => row.modelId);
     const days = [...new Set(rows.map((row) => row.bin.slice(0, 10)))].sort();
     const models = [...new Set(rows.map((row) => row.modelId))].sort();
+    const tableRows = days.flatMap((day) =>
+      models
+        .map((model) => ({
+          day: day,
+          model: shortModelName(model),
+          invocations: dayTotal(rows, model, day, "invocations"),
+          inputTokens: dayTotal(rows, model, day, "inputTokens"),
+          outputTokens: dayTotal(rows, model, day, "outputTokens"),
+        }))
+        .filter((row) => row.invocations > 0 || row.inputTokens > 0 || row.outputTokens > 0),
+    );
+    const tableId = "console-" + captureId + "-table";
     return {
       days: days,
+      tableId: tableId,
+      tableRows: tableRows,
       chart: {
-        id: "bedrock-invocations",
+        id: captureId + "-invocations",
         standalone: true,
+        tableId: tableId,
         title: "Bedrock invocations by day and model",
         modes: [
           bedrockMeasure(rows, days, models, "invocations", "Invocations", "invocations"),
@@ -339,9 +364,12 @@
         wrapper.appendChild(textElement("p", "console-capture-empty", "No Bedrock invocations in the last 7 days."));
         return { element: wrapper };
       }
-      const { chart, days } = bedrockChart(entry.rows);
+      const { chart, days, tableId, tableRows } = bedrockChart(entry.rows, captureId);
       const drawn = window.renderStandaloneChart(chart, days);
       wrapper.appendChild(drawn.element);
+      const table = tableElement(BEDROCK_COLUMNS, tableRows);
+      table.id = tableId;
+      wrapper.appendChild(table);
       return { element: wrapper, draw: drawn.draw };
     }
     return { element: wrapper };

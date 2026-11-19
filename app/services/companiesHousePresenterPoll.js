@@ -13,6 +13,7 @@ import {
   postToGateway,
   parseGatewayResponse,
   redactPresenterCredentials,
+  isNothingCompletedError,
 } from "./companiesHouseXmlGateway.js";
 import { getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { claimPresenterPollSlot, deferPresenterPoll } from "../data/dynamoDbCompaniesHouseFilingStateRepository.js";
@@ -98,10 +99,14 @@ export async function pollPresenterSubmissions({ now = new Date() } = {}) {
     await deferPresenterPoll(nowSeconds + parsed.pollInterval);
   }
 
-  const errors = parsed.errors.filter((error) => error.text !== NO_TRANSACTION_FOUND);
+  const errors = parsed.errors.filter((error) => error.text !== NO_TRANSACTION_FOUND && !isNothingCompletedError(error));
   if (errors.length) {
     logger.error({ message: "Companies House gateway returned errors for the presenter poll", errors });
     return { polled: true, acknowledged: false, errors };
+  }
+  if (parsed.errors.some(isNothingCompletedError)) {
+    logger.info({ message: "Companies House presenter poll: nothing accepted or rejected since the last acknowledged poll" });
+    return { polled: true, acknowledged: false, outcomes: [] };
   }
 
   // With nothing completed the gateway answers one blank Status element.

@@ -15,6 +15,7 @@ import {
   postToGateway,
   parseGatewayResponse,
   redactPresenterCredentials,
+  isNothingCompletedError,
 } from "./companiesHouseXmlGateway.js";
 import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { FILING_STATE_RETENTION, claimFinalStatus, releaseFinalStatus } from "../data/dynamoDbCompaniesHouseFilingStateRepository.js";
@@ -105,6 +106,12 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
     }
     if (neverReceived({ persistedRequest, errors: parsed.errors, now })) {
       return { data: await recordNeverReceived({ userSub, submissionNumber, persistedRequest, kind }) };
+    }
+    // Nothing decided yet: the filing is still being processed, so the reader keeps waiting.
+    if (parsed.errors.every(isNothingCompletedError)) {
+      logger.info({ message: "Companies House has not yet decided the submission", submissionNumber });
+      if (stillAsking) return { data: withoutPendingRequest(persistedRequest.data) };
+      return { data: { submissionNumber, statusCode: "PENDING", rejections: [] } };
     }
     logger.error({ message: "Companies House gateway returned errors while polling", submissionNumber, errors: parsed.errors });
     return { errors: parsed.errors, submissionNumber };

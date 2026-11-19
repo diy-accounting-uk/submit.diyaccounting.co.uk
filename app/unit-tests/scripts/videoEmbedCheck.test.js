@@ -7,14 +7,17 @@ import {
   extractEmbedId,
   extractFacadeId,
   extractPageVideoIds,
+  fetchListing,
+  formatReport,
   groupAreaPageMatches,
   parseArgs,
 } from "../../../scripts/video-embed-check.js";
 
 const areaPages = ["videos-hmrc-vat.html", "videos-hmrc-itsa.html", "videos-account.html", "videos-ch.html", "videos-accounting.html"];
 
+// Every manifest video is listed unless a test says otherwise.
 function scenario(overrides = {}) {
-  return {
+  const input = {
     channelVideos: [
       { videoId: "aaa", title: "VAT", privacyStatus: "public" },
       { videoId: "bbb", title: "Account", privacyStatus: "public" },
@@ -32,8 +35,10 @@ function scenario(overrides = {}) {
       ["aaa", 200],
       ["bbb", 200],
     ]),
+    environmentName: "prod",
     ...overrides,
   };
+  return { listedIds: new Set(input.manifestVideos.map((video) => video.id)), ...input };
 }
 
 describe("compareEmbeds", () => {
@@ -85,6 +90,40 @@ describe("compareEmbeds", () => {
     expect(compareEmbeds(scenario({ manifestVideos })).problems).toEqual([]);
   });
 
+  it("passes a manifest video the environment does not list, and notes it when it is public on the channel", () => {
+    const base = scenario();
+    const { problems, notes, rows } = compareEmbeds(
+      scenario({
+        channelVideos: [...base.channelVideos, { videoId: "fff", title: "Income Tax", privacyStatus: "public" }],
+        manifestVideos: [...base.manifestVideos, { id: "itsa-one", group: "itsa", videoId: "fff", catalogueActivity: "self-employed" }],
+        listedIds: new Set(["vat-one", "account-one"]),
+        areaPages: areaPages.filter((p) => p !== "videos-hmrc-itsa.html"),
+      }),
+    );
+    expect(problems).toEqual([]);
+    expect(rows.map((r) => r.id)).toEqual(["vat-one", "account-one"]);
+    expect(notes).toEqual(["public channel video fff (itsa-one) is held back: prod does not list self-employed"]);
+  });
+
+  it("fails a listed manifest video that is embedded nowhere even when another video of its group is held back", () => {
+    const base = scenario();
+    const { problems } = compareEmbeds(
+      scenario({
+        manifestVideos: [
+          ...base.manifestVideos,
+          { id: "itsa-one", group: "itsa", videoId: "fff", catalogueActivity: "self-employed" },
+          { id: "itsa-two", group: "itsa", videoId: "ggg" },
+        ],
+        listedIds: new Set(["vat-one", "account-one", "itsa-two"]),
+        areaPages: areaPages.filter((p) => p !== "videos-hmrc-itsa.html"),
+      }),
+    );
+    expect(problems).toEqual([
+      "manifest video itsa-two (ggg) is embedded on no page",
+      "manifest group itsa has no area page linked from videos.html",
+    ]);
+  });
+
   it("fails an embedded video whose oEmbed answers 404", () => {
     const { problems } = compareEmbeds(
       scenario({
@@ -96,6 +135,34 @@ describe("compareEmbeds", () => {
     );
     expect(problems).toHaveLength(1);
     expect(problems[0]).toContain("404");
+  });
+});
+
+describe("fetchListing", () => {
+  it("lists the manifest videos whose catalogue activity the site's environment lists", async () => {
+    const files = {
+      "https://site.example/submit.environment-name.txt": "prod\n",
+      "https://site.example/submit.catalogue.toml":
+        '[[activities]]\nid = "submit-vat"\n\n[[activities]]\nid = "self-employed"\nenvironments = ["ci"]\n',
+    };
+    const fetchImpl = async (url) => ({ ok: url in files, status: url in files ? 200 : 404, text: async () => files[url] });
+    const manifest = {
+      videos: [
+        { id: "vat-one", videoId: "aaa", catalogueActivity: "submit-vat" },
+        { id: "itsa-one", videoId: "fff", catalogueActivity: "self-employed" },
+        { id: "tour", videoId: "bbb" },
+        { id: "not-uploaded", videoId: null },
+      ],
+    };
+
+    const { environmentName, listedIds } = await fetchListing({ base: "https://site.example/", manifest, fetchImpl });
+
+    expect(environmentName).toBe("prod");
+    expect([...listedIds]).toEqual(["vat-one", "tour"]);
+  });
+
+  it("prints a note line for each held-back public video", () => {
+    expect(formatReport({ rows: [], problems: [], notes: ["held"] })).toContain("NOTE held");
   });
 });
 

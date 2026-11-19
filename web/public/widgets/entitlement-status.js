@@ -197,10 +197,38 @@
    * @param {Array<string>} bundleIds - Array of bundle IDs
    * @returns {Array<string>} Array of bundle names
    */
+  // The Welsh names of the catalogue's bundles, read only on a Welsh page. The Resident product
+  // names stay as they are, as the Welsh bundles page and its descriptions keep them, so they have
+  // no entry here and read the catalogue's name.
+  const WELSH_BUNDLE_NAMES = {
+    "default": () => siteText("chrome.bundle-default", "Default"),
+    "day-guest": () => siteText("chrome.bundle-day-guest", "Day pass"),
+    "week-guest": () => siteText("chrome.bundle-week-guest", "Week pass"),
+    "invited-guest": () => siteText("chrome.bundle-invited-guest", "Invited Guest"),
+    "resident-guest": () => siteText("chrome.bundle-resident-guest", "Resident Guest"),
+    "resident-pro-comp": () => siteText("chrome.bundle-resident-pro-comp", "Resident Tax Agent (Complimentary)"),
+    "operator": () => siteText("chrome.bundle-operator", "Operator"),
+  };
+
+  function bundleDisplayName(bundle) {
+    const welshName = window.siteLanguage?.chrome() === "cy" ? WELSH_BUNDLE_NAMES[bundle.id] : undefined;
+    return welshName ? welshName() : bundle.name || bundle.id;
+  }
+
   function getBundleNames(catalog, bundleIds) {
     if (!catalog?.bundles || !bundleIds?.length) return [];
-    const bundleMap = new Map(catalog.bundles.map((b) => [b.id, b.name || b.id]));
+    const bundleMap = new Map(catalog.bundles.map((b) => [b.id, bundleDisplayName(b)]));
     return bundleIds.map((id) => bundleMap.get(id) || id);
+  }
+
+  // The header status of a page whose activity needs one of these bundles and the person holds none.
+  function requiresStatus(catalog, requiredBundles) {
+    const bundleNames = getBundleNames(catalog, requiredBundles);
+    const activityList = bundleNames.length > 0 ? bundleNames.join(", ") : requiredBundles.join(", ");
+    return {
+      text: siteText("chrome.activity-requires", "Activity: requires {activities}", { activities: activityList }),
+      style: "requires",
+    };
   }
 
   /**
@@ -238,13 +266,7 @@
     }
 
     // User doesn't have access - show which activities are required
-    const bundleNames = getBundleNames(catalog, requiredBundles);
-    const activityList = bundleNames.length > 0 ? bundleNames.join(", ") : requiredBundles.join(", ");
-
-    return {
-      text: siteText("chrome.activity-requires", "Activity: requires {activities}", { activities: activityList }),
-      style: "requires",
-    };
+    return requiresStatus(catalog, requiredBundles);
   }
 
   function unavailablePanel(heading, text, linkHref, linkText) {
@@ -272,8 +294,15 @@
     const tag = document.createElement("span");
     tag.className = "status-tag";
     tag.dataset.status = "sandbox";
-    tag.textContent = "Sandbox";
-    line.append(tag, " This feature is open because preview features are on. It runs against the test services and files nothing real.");
+    tag.textContent = siteText("chrome.preview-sandbox-tag", "Sandbox");
+    line.append(
+      tag,
+      " ",
+      siteText(
+        "chrome.preview-sandbox-text",
+        "This feature is open because preview features are on. It runs against the test services and files nothing real.",
+      ),
+    );
     banner.append(line);
     return banner;
   }
@@ -303,18 +332,23 @@
       return false;
     }
 
+    // The availability table has a Welsh twin; the settings page has none.
+    const calendarPath = window.siteLanguage?.chrome() === "cy" ? "/cy/mtd-calendar.html" : "/mtd-calendar.html";
     const panel = listed
       ? unavailablePanel(
-          "Switched off in your settings",
-          "You turned this off. Nothing has been sent and nothing has been charged.",
+          siteText("chrome.switched-off-heading", "Switched off in your settings"),
+          siteText("chrome.switched-off-text", "You turned this off. Nothing has been sent and nothing has been charged."),
           "/settings.html",
-          "Open settings",
+          siteText("chrome.open-settings", "Open settings"),
         )
       : unavailablePanel(
-          "Not available here yet",
-          "This part of DIY Accounting Submit is not open on this site yet. Nothing has been sent and nothing has been charged.",
-          "/mtd-calendar.html#availability",
-          "See what is available",
+          siteText("chrome.unavailable-heading", "Not available here yet"),
+          siteText(
+            "chrome.unavailable-text",
+            "This part of DIY Accounting Submit is not open on this site yet. Nothing has been sent and nothing has been charged.",
+          ),
+          `${calendarPath}#availability`,
+          siteText("chrome.unavailable-link", "See what is available"),
         );
     main.replaceChildren(panel);
     document.body.dataset.activityUnavailable = activity.id;
@@ -373,6 +407,7 @@
       guardUnlistedActivity,
       getAutomaticBundles,
       getBundleNames,
+      requiresStatus,
     };
   }
 
