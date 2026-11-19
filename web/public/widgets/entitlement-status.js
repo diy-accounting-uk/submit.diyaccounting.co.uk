@@ -197,10 +197,38 @@
    * @param {Array<string>} bundleIds - Array of bundle IDs
    * @returns {Array<string>} Array of bundle names
    */
+  // The Welsh names of the catalogue's bundles, read only on a Welsh page. The Resident product
+  // names stay as they are, as the Welsh bundles page and its descriptions keep them, so they have
+  // no entry here and read the catalogue's name.
+  const WELSH_BUNDLE_NAMES = {
+    "default": () => siteText("chrome.bundle-default", "Default"),
+    "day-guest": () => siteText("chrome.bundle-day-guest", "Day pass"),
+    "week-guest": () => siteText("chrome.bundle-week-guest", "Week pass"),
+    "invited-guest": () => siteText("chrome.bundle-invited-guest", "Invited Guest"),
+    "resident-guest": () => siteText("chrome.bundle-resident-guest", "Resident Guest"),
+    "resident-pro-comp": () => siteText("chrome.bundle-resident-pro-comp", "Resident Tax Agent (Complimentary)"),
+    "operator": () => siteText("chrome.bundle-operator", "Operator"),
+  };
+
+  function bundleDisplayName(bundle) {
+    const welshName = window.siteLanguage?.chrome() === "cy" ? WELSH_BUNDLE_NAMES[bundle.id] : undefined;
+    return welshName ? welshName() : bundle.name || bundle.id;
+  }
+
   function getBundleNames(catalog, bundleIds) {
     if (!catalog?.bundles || !bundleIds?.length) return [];
-    const bundleMap = new Map(catalog.bundles.map((b) => [b.id, b.name || b.id]));
+    const bundleMap = new Map(catalog.bundles.map((b) => [b.id, bundleDisplayName(b)]));
     return bundleIds.map((id) => bundleMap.get(id) || id);
+  }
+
+  // The header status of a page whose activity needs one of these bundles and the person holds none.
+  function requiresStatus(catalog, requiredBundles) {
+    const bundleNames = getBundleNames(catalog, requiredBundles);
+    const activityList = bundleNames.length > 0 ? bundleNames.join(", ") : requiredBundles.join(", ");
+    return {
+      text: siteText("chrome.activity-requires", "Activity: requires {activities}", { activities: activityList }),
+      style: "requires",
+    };
   }
 
   /**
@@ -238,13 +266,7 @@
     }
 
     // User doesn't have access - show which activities are required
-    const bundleNames = getBundleNames(catalog, requiredBundles);
-    const activityList = bundleNames.length > 0 ? bundleNames.join(", ") : requiredBundles.join(", ");
-
-    return {
-      text: siteText("chrome.activity-requires", "Activity: requires {activities}", { activities: activityList }),
-      style: "requires",
-    };
+    return requiresStatus(catalog, requiredBundles);
   }
 
   function unavailablePanel(heading, text, linkHref, linkText) {
@@ -385,6 +407,7 @@
       guardUnlistedActivity,
       getAutomaticBundles,
       getBundleNames,
+      requiresStatus,
     };
   }
 

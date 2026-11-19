@@ -3,16 +3,18 @@
 
 // web/unit-tests/entitlement-status-visitor-kind.test.js
 // Confirms the entitlement widget flags a browser that holds the operator bundle, and sets the
-// GA4 visitor_kind user property on the same page so that page's later events carry it.
+// GA4 visitor_kind user property on the same page so that page's later events carry it. Also
+// renders the header's "requires" status on a Welsh and an English page from the real catalogue.
 
 import { describe, it, expect, vi } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
+import TOML from "@iarna/toml";
 
 const widgetSource = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/entitlement-status.js"), "utf-8");
 
-function loadWidget({ bundles, withGtag = true }) {
+function loadWidget({ bundles = [], withGtag = true, language = "en" } = {}) {
   const stored = new Map([["cognitoIdToken", "token"]]);
   const localStorage = {
     getItem: (key) => (stored.has(key) ? stored.get(key) : null),
@@ -22,12 +24,64 @@ function loadWidget({ bundles, withGtag = true }) {
   const window = {
     requestCache: { getJSON: vi.fn(async () => ({ bundles })) },
     ...(withGtag ? { gtag } : {}),
+    ...(language === "cy" ? welshChrome() : {}),
   };
   const document = { readyState: "loading", addEventListener: vi.fn(), querySelector: () => null };
   const context = vm.createContext({ window, document, localStorage, console: { warn: vi.fn(), log: vi.fn() } });
   vm.runInContext(widgetSource, context);
   return { window, gtag, stored };
 }
+
+// What page-chrome.js gives a Welsh page: the language choice and siteText over welsh-text.js.
+function welshChrome() {
+  const holder = { window: {} };
+  vm.runInContext(fs.readFileSync(path.join(process.cwd(), "web/public/lib/welsh-text.js"), "utf-8"), vm.createContext(holder));
+  const welsh = holder.window.WELSH_TEXT;
+  return {
+    siteLanguage: { chrome: () => "cy" },
+    siteText: (id, english, values) =>
+      (welsh[id] ?? english).replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole)),
+  };
+}
+
+const catalogue = TOML.parse(fs.readFileSync(path.join(process.cwd(), "web/public/submit.catalogue.toml"), "utf-8"));
+const submitVatBundles = catalogue.activities.find((activity) => activity.id === "submit-vat").bundles;
+
+describe("entitlement widget requires status", () => {
+  it("names the bundles a Welsh page needs in Welsh, with no English bundle name that has a Welsh entry", () => {
+    const { window } = loadWidget({ language: "cy" });
+
+    const status = window.__entitlementStatus.requiresStatus(catalogue, submitVatBundles);
+
+    expect(status.style).toBe("requires");
+    expect(status.text).toBe("Gweithgaredd: angen Tocyn diwrnod, Tocyn wythnos, Gwestai drwy wahoddiad, Resident VAT, Gwestai Resident");
+    for (const englishName of ["Day pass", "Week pass", "Invited Guest", "Resident Guest", "Activity"]) {
+      expect(status.text).not.toContain(englishName);
+    }
+  });
+
+  it("gives every catalogue bundle a Welsh name, and keeps the Resident product names as the Welsh bundles page does", () => {
+    const { window } = loadWidget({ language: "cy" });
+
+    const welshNames = window.__entitlementStatus.getBundleNames(
+      catalogue,
+      catalogue.bundles.map((bundle) => bundle.id),
+    );
+
+    catalogue.bundles.forEach((bundle, index) => {
+      if (/^Resident (VAT|Ltd|Pro|Tax Agent)$/.test(bundle.name)) expect(welshNames[index], bundle.id).toBe(bundle.name);
+      else expect(welshNames[index], bundle.id).not.toBe(bundle.name);
+    });
+  });
+
+  it("names the bundles an English page needs with the catalogue's names, as before", () => {
+    const { window } = loadWidget();
+
+    const status = window.__entitlementStatus.requiresStatus(catalogue, submitVatBundles);
+
+    expect(status.text).toBe("Activity: requires Day pass, Week pass, Invited Guest, Resident VAT, Resident Guest");
+  });
+});
 
 describe("entitlement widget operator flag", () => {
   it("sets the operator flag and the GA4 visitor_kind user property when the operator bundle is allocated", async () => {
