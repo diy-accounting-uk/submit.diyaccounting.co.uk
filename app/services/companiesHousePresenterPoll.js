@@ -17,7 +17,7 @@ import {
 import { getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { claimPresenterPollSlot, deferPresenterPoll } from "../data/dynamoDbCompaniesHouseFilingStateRepository.js";
 import { getPendingFiling } from "../data/dynamoDbCompaniesHousePendingFilerRepository.js";
-import { FORM_KINDS, recordSubmissionStatus, isGatewayTest } from "./companiesHouseSubmissionStatus.js";
+import { FORM_KINDS, recordSubmissionStatus, isGatewayTest, hasStoredFinalStatus } from "./companiesHouseSubmissionStatus.js";
 
 // The presenter poll runs on a schedule shared by every deployment of an environment. It never
 // polls more often than this, or than the PollInterval the gateway last sent, whichever is longer.
@@ -35,25 +35,17 @@ async function recordPresenterStatus(status) {
     logger.info({ message: "Companies House status for a submission this environment did not record", submissionNumber, statusCode });
     return { submissionNumber, statusCode, outcome: "not-ours" };
   }
-  if (filing.claimed) {
-    return { submissionNumber, statusCode, outcome: "already-recorded" };
-  }
   if (statusCode !== "ACCEPT" && statusCode !== "REJECT") {
     logger.error({ message: "Companies House presenter poll returned a status that is not final", submissionNumber, statusCode });
     return { submissionNumber, statusCode, outcome: "not-final" };
   }
-  const persistedRequest = await getAsyncRequest(
-    filing.userSub,
-    submissionNumber,
-    process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME,
-  );
+  const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
+  const persistedRequest = await getAsyncRequest(filing.userSub, submissionNumber, asyncRequestsTableName);
   if (!persistedRequest) {
     logger.error({ message: "Companies House filing has no request item to record its status against", submissionNumber, statusCode });
     return { submissionNumber, statusCode, outcome: "no-request" };
   }
-  // A record that failed after its receipt was stored gave its claim back; the stored outcome says
-  // it is recorded, as it does for the page poll.
-  if (persistedRequest.status === "completed" || (persistedRequest.status === "failed" && persistedRequest.data?.statusCode === "REJECT")) {
+  if (hasStoredFinalStatus(persistedRequest)) {
     return { submissionNumber, statusCode, outcome: "already-recorded" };
   }
   const { recorded } = await recordSubmissionStatus({
@@ -63,15 +55,19 @@ async function recordPresenterStatus(status) {
     status,
     kind: filing.kind,
   });
-  return { submissionNumber, statusCode, outcome: recorded ? "recorded" : "already-recorded" };
+  if (recorded) return { submissionNumber, statusCode, outcome: "recorded" };
+  // Another poll holds the claim. Its record counts only once the outcome is stored; until then the
+  // status is not acknowledged, so the gateway answers it again if that record fails.
+  const stored = await getAsyncRequest(filing.userSub, submissionNumber, asyncRequestsTableName);
+  return { submissionNumber, statusCode, outcome: hasStoredFinalStatus(stored) ? "already-recorded" : "being-recorded" };
 }
 
 /**
  * Ask the gateway for every submission of our presenter that Companies House has accepted or
  * rejected since the last acknowledged poll (GetSubmissionStatus option 2), record each against
  * its filing, then acknowledge the poll with GetStatusAck. The poll is skipped while the shared
- * poll slot is taken. The acknowledgement is held back when any record failed, so the gateway
- * answers the same submissions again on the next poll.
+ * poll slot is taken. The acknowledgement is held back unless every final status in the poll is
+ * stored, so the gateway answers the same submissions again on the next poll.
  *
  * @param {{now?: Date}} [input]
  * @returns {Promise<{polled: boolean, acknowledged?: boolean, errors?: Array, outcomes?: Array}>}
@@ -129,9 +125,10 @@ export async function pollPresenterSubmissions({ now = new Date() } = {}) {
     }
   }
   // A StatusAck acknowledges the whole poll. TIS v5.3 section 2.5 says a presenter poll answers
-  // only accepted or rejected submissions; a poll that answers anything else, or whose record
-  // failed, is not acknowledged, so the gateway answers it again.
-  if (outcomes.some(({ outcome }) => outcome === "error" || outcome === "not-final")) {
+  // only accepted or rejected submissions; a poll that answers anything else, whose record failed,
+  // or whose status another poll has claimed but not stored, is not acknowledged, so the gateway
+  // answers it again.
+  if (outcomes.some(({ outcome }) => outcome === "error" || outcome === "not-final" || outcome === "being-recorded")) {
     return { polled: true, acknowledged: false, outcomes };
   }
 

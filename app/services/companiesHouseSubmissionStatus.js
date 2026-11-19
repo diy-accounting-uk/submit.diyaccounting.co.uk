@@ -18,10 +18,11 @@ import {
 } from "./companiesHouseXmlGateway.js";
 import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { FILING_STATE_RETENTION, claimFinalStatus, releaseFinalStatus } from "../data/dynamoDbCompaniesHouseFilingStateRepository.js";
-import { recordFiledReceipt } from "./filedReceipt.js";
+import { recordFiledReceiptOnce } from "./filedReceipt.js";
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
 import { jointFilingFields, amendedFields, formRequestFields } from "./jointFiling.js";
 import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
+import { markChargeUsed } from "./activityCharges.js";
 
 const ACCOUNTS_RECEIPT_KIND = "companies-house-accounts";
 
@@ -128,7 +129,7 @@ function neverReceived({ persistedRequest, errors, now }) {
 
 // Recorded the way a REJECT is, so the page and the filings list tell the reader to file again. No
 // token or fee was charged for it: a token is charged only on ACCEPT, and a confirmation statement
-// fee is marked used only when the gateway acknowledges the envelope.
+// fee is marked used only when the gateway acknowledges the envelope or Companies House accepts it.
 async function recordNeverReceived({ userSub, submissionNumber, persistedRequest, kind }) {
   const status = {
     submissionNumber,
@@ -141,10 +142,23 @@ async function recordNeverReceived({ userSub, submissionNumber, persistedRequest
 }
 
 /**
+ * Whether a filer's request item holds a final status a poll recorded: an accepted filing's
+ * "completed", or a rejection's "failed" with its REJECT. A "failed" item from a send that never
+ * reached Companies House carries no REJECT and is not one.
+ * @param {object|null} request - the filer's async request item
+ * @returns {boolean}
+ */
+export function hasStoredFinalStatus(request) {
+  return request?.status === "completed" || (request?.status === "failed" && request.data?.statusCode === "REJECT");
+}
+
+/**
  * Record a submission's status once Companies House has decided it. REJECT stores "failed" with
- * the reject reasons; ACCEPT writes a receipt (which asks for the receipt email), stores
- * "completed", publishes the form's accepted event and charges its token. PENDING and PARKED
- * change nothing. Only the first caller to claim a final status records it.
+ * the reject reasons; ACCEPT writes a receipt (which asks for the receipt email), marks a paid
+ * confirmation statement fee used, stores "completed", publishes the form's accepted event and
+ * charges its token. PENDING and PARKED change nothing. Only the poll that holds the claim records
+ * it; a record that fails part-way gives the claim back, and the retry writes under the same
+ * receipt id, so the receipt and its email are written once and the token is charged once.
  *
  * @param {object} input
  * @param {string} input.userSub
@@ -161,15 +175,22 @@ export async function recordSubmissionStatus({ userSub, submissionNumber, persis
     return { data: status, recorded: false };
   }
   if (!(await claimFinalStatus(submissionNumber))) {
-    logger.info({ message: "Companies House final status already recorded", submissionNumber, statusCode: status.statusCode });
+    logger.info({
+      message: "Companies House final status is being recorded by another poll",
+      submissionNumber,
+      statusCode: status.statusCode,
+    });
     // The other poll holds the claim: answer with what it stored, so the page gets the receipt id.
-    // While that poll is still writing, the stored request is not final yet and the status stands.
+    // Until it has stored the outcome, the filing is still pending for the reader.
     const stored = await getAsyncRequest(userSub, submissionNumber, process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME);
-    const storedIsFinal = stored?.status === "completed" || stored?.status === "failed";
-    return { data: storedIsFinal ? stored.data : status, recorded: false };
+    return {
+      data: hasStoredFinalStatus(stored) ? stored.data : { submissionNumber, statusCode: "PENDING", rejections: [] },
+      recorded: false,
+    };
   }
   try {
-    return { data: await writeFinalStatus({ userSub, submissionNumber, persistedRequest, status, kind }), recorded: true };
+    const data = await writeFinalStatus({ userSub, submissionNumber, persistedRequest, status, kind });
+    return { data, recorded: true };
   } catch (error) {
     await releaseFinalStatus(submissionNumber);
     throw error;
@@ -196,13 +217,18 @@ async function writeFinalStatus({ userSub, submissionNumber, persistedRequest, s
     return status;
   }
 
-  const receiptId = `${new Date().toISOString()}-${submissionNumber}`;
+  // Dated by the time the filing was sent, which a retry reads unchanged from the request item, so
+  // every attempt writes the same receipt and the reader's receipt id never changes.
+  const receiptId = `${persistedRequest.createdAt}-${submissionNumber}`;
   // The accounts document is kept with the receipt so the customer's copy shows what was filed.
   const filedDocument = persistedRequest.data?.filedDocument;
   const receipt = filedDocument
     ? { ...status, kind: ACCOUNTS_RECEIPT_KIND, filedDocument, ...jointFiling, ...formRequestFields(persistedRequest.data?.formRequest) }
     : { ...status, ...jointFiling };
-  await recordFiledReceipt({
+  // Every step before the "completed" put is safe to repeat: a retry finds the receipt stored and
+  // asks for no second email, and a fee already marked used stays used. The steps after it run once,
+  // because a stored "completed" ends every later poll of this filing.
+  await recordFiledReceiptOnce({
     userSub,
     receiptId,
     receipt,
@@ -211,6 +237,8 @@ async function writeFinalStatus({ userSub, submissionNumber, persistedRequest, s
     synthetic: isGatewayTest(),
     language: persistedRequest.data?.language,
   });
+  const feeCharge = persistedRequest.data?.feeCharge;
+  if (feeCharge) await markChargeUsed(userSub, feeCharge.activityId, feeCharge.subjectKey);
   const data = { ...status, ...jointFiling, receiptId };
   await putAsyncRequest(userSub, submissionNumber, "completed", { ...data, kind }, asyncRequestsTableName);
   const { acceptedEvent, acceptedSummary } = FORM_KINDS[kind];

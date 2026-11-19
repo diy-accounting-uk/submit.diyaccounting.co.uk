@@ -6,7 +6,8 @@
 // Companies House async-requests table (COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME), in the
 // "companies-house-xmlgw" partition that already holds the submission-number counter, so no item
 // here can collide with a user's own request item:
-//   pending#<submissionNumber>  - one per filing: claimedAt marks that its final status is recorded.
+//   pending#<submissionNumber>  - one per filing: claimedAt marks that a poll is recording its final
+//                                 status, or has recorded it.
 //                                 For a filing under our presenter it also holds the filer's sub,
 //                                 sealed, and the form kind (dynamoDbCompaniesHousePendingFilerRepository.js).
 //   presenter-poll-state        - nextPollAt: the earliest epoch second the presenter poll may run.
@@ -38,15 +39,22 @@ export function pendingFilingKey(submissionNumber) {
   return { hashedSub: GATEWAY_PARTITION, requestId: `${PENDING_PREFIX}${submissionNumber}` };
 }
 
+// A record of a final status takes seconds and runs inside one Lambda invocation, which AWS stops
+// after 15 minutes. A claim older than this belongs to a record that can no longer be running (its
+// release failed, or its Lambda was stopped), so the next poll may take it.
+export const FINAL_STATUS_CLAIM_STALE_MINUTES = 20;
+
 /**
  * Take the one right to record a submission's final status. The page poll and the presenter poll
- * both call this before they write a receipt, so only the first records it and sends the email.
+ * both call this before they write a receipt, so only the first records it and sends the email. A
+ * claim older than FINAL_STATUS_CLAIM_STALE_MINUTES counts as given back.
  * @param {string} submissionNumber
- * @returns {Promise<boolean>} false when the status is already recorded
+ * @param {{now?: Date}} [options]
+ * @returns {Promise<boolean>} false when another poll holds a claim that is not stale
  */
-export async function claimFinalStatus(submissionNumber) {
-  const now = new Date();
+export async function claimFinalStatus(submissionNumber, { now = new Date() } = {}) {
   const { ttl } = calculateTtl(now, FILING_STATE_RETENTION);
+  const staleBefore = new Date(now.getTime() - FINAL_STATUS_CLAIM_STALE_MINUTES * 60 * 1000);
   try {
     await executeDynamoDbCommand(
       (module) =>
@@ -54,9 +62,9 @@ export async function claimFinalStatus(submissionNumber) {
           TableName: filingStateTableName(),
           Key: pendingFilingKey(submissionNumber),
           UpdateExpression: "SET claimedAt = :now, #ttl = if_not_exists(#ttl, :ttl)",
-          ConditionExpression: "attribute_not_exists(claimedAt)",
+          ConditionExpression: "attribute_not_exists(claimedAt) OR claimedAt < :staleBefore",
           ExpressionAttributeNames: { "#ttl": "ttl" },
-          ExpressionAttributeValues: { ":now": now.toISOString(), ":ttl": ttl },
+          ExpressionAttributeValues: { ":now": now.toISOString(), ":staleBefore": staleBefore.toISOString(), ":ttl": ttl },
         }),
     );
     return true;

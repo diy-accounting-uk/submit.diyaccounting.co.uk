@@ -7,11 +7,16 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 
 const calls = [];
 const mockPutReceipt = vi.fn();
+const mockPutReceiptIfNew = vi.fn();
 const mockRequestCustomerEmail = vi.fn();
 vi.mock("@app/data/dynamoDbReceiptRepository.js", () => ({
   putReceipt: (...args) => {
     calls.push("putReceipt");
     return mockPutReceipt(...args);
+  },
+  putReceiptIfNew: (...args) => {
+    calls.push("putReceiptIfNew");
+    return mockPutReceiptIfNew(...args);
   },
 }));
 vi.mock("@app/lib/customerEmailRequest.js", () => ({
@@ -21,7 +26,7 @@ vi.mock("@app/lib/customerEmailRequest.js", () => ({
   },
 }));
 
-import { recordFiledReceipt } from "@app/services/filedReceipt.js";
+import { recordFiledReceipt, recordFiledReceiptOnce } from "@app/services/filedReceipt.js";
 
 const filing = {
   userSub: "user-sub-1",
@@ -75,5 +80,31 @@ describe("recordFiledReceipt", () => {
   test("resolves when the request reports it was not made", async () => {
     mockRequestCustomerEmail.mockResolvedValue({ requested: false });
     await expect(recordFiledReceipt(filing)).resolves.toBeUndefined();
+  });
+});
+
+describe("recordFiledReceiptOnce", () => {
+  beforeEach(() => {
+    calls.length = 0;
+    mockPutReceiptIfNew.mockReset().mockResolvedValue(true);
+    mockRequestCustomerEmail.mockReset().mockResolvedValue({ requested: true });
+  });
+
+  test("stores a new receipt, then requests the email", async () => {
+    await expect(recordFiledReceiptOnce({ ...filing, language: "cy" })).resolves.toBe(true);
+    expect(mockPutReceiptIfNew).toHaveBeenCalledWith(filing.userSub, filing.receiptId, filing.receipt, "customer", "client-1");
+    expect(calls).toEqual(["putReceiptIfNew", "requestCustomerEmail"]);
+    expect(mockRequestCustomerEmail).toHaveBeenCalledWith({
+      kind: "submission-receipt",
+      userSub: filing.userSub,
+      synthetic: true,
+      data: { receiptId: filing.receiptId, receiptKind: "vat-return", clientId: "client-1", language: "cy" },
+    });
+  });
+
+  test("requests no second email when the receipt is already stored", async () => {
+    mockPutReceiptIfNew.mockResolvedValue(false);
+    await expect(recordFiledReceiptOnce(filing)).resolves.toBe(false);
+    expect(mockRequestCustomerEmail).not.toHaveBeenCalled();
   });
 });

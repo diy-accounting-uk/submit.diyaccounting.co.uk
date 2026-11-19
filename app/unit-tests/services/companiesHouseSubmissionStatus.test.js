@@ -281,11 +281,15 @@ describe("pollSubmission", () => {
     expect(mockEventBridgeSend).not.toHaveBeenCalled();
   });
 
-  test("records nothing and sends no email when the presenter poll has already claimed the final status", async () => {
+  test("answers pending, records nothing and sends no email while the presenter poll is still recording the final status", async () => {
     const lib = await import("@aws-sdk/lib-dynamodb");
     mockSend.mockImplementation(async (cmd) => {
       if (cmd instanceof lib.GetCommand) return { Item: { requestId: cmd.input.Key.requestId, status: "pending" } };
-      if (cmd instanceof lib.UpdateCommand && cmd.input.ConditionExpression === "attribute_not_exists(claimedAt)") {
+      if (
+        cmd instanceof lib.UpdateCommand &&
+        cmd.input.Key?.requestId === "pending#00001A" &&
+        cmd.input.ConditionExpression?.startsWith("attribute_not_exists(claimedAt)")
+      ) {
         throw Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" });
       }
       return {};
@@ -297,7 +301,7 @@ describe("pollSubmission", () => {
 
     const result = await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "confirmation-statement" });
 
-    expect(result.data.statusCode).toBe("ACCEPT");
+    expect(result.data).toEqual({ submissionNumber: "00001A", statusCode: "PENDING", rejections: [] });
     expect(mockSend.mock.calls.filter(([cmd]) => cmd instanceof lib.PutCommand)).toHaveLength(0);
     expect(mockEventBridgeSend).not.toHaveBeenCalled();
   });
@@ -317,7 +321,11 @@ describe("pollSubmission", () => {
             }
           : { Item: { requestId: "00001A", status: "pending" } };
       }
-      if (cmd instanceof lib.UpdateCommand && cmd.input.ConditionExpression === "attribute_not_exists(claimedAt)") {
+      if (
+        cmd instanceof lib.UpdateCommand &&
+        cmd.input.Key?.requestId === "pending#00001A" &&
+        cmd.input.ConditionExpression?.startsWith("attribute_not_exists(claimedAt)")
+      ) {
         claimLost = true;
         throw Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" });
       }

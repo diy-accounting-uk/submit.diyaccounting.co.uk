@@ -51,7 +51,7 @@ vi.mock("@app/services/subHasher.js", () => ({
   subHashCandidates: vi.fn((sub) => [{ version: "v1", hashedSub: `hashed-${sub}` }]),
 }));
 
-const { putReceipt, listUserReceipts } = await import("@app/data/dynamoDbReceiptRepository.js");
+const { putReceipt, putReceiptIfNew, listUserReceipts } = await import("@app/data/dynamoDbReceiptRepository.js");
 
 describe("data/dynamoDbReceiptRepository", () => {
   beforeEach(() => {
@@ -74,6 +74,34 @@ describe("data/dynamoDbReceiptRepository", () => {
       await putReceipt("practice-sub", "receipt-1", { formBundleNumber: "FB1" }, "customer");
 
       expect(mockPutCommand.mock.calls[0][0].Item.clientId).toBeUndefined();
+    });
+  });
+
+  describe("putReceiptIfNew", () => {
+    test("stores the receipt only when none is stored under its id, and says it did", async () => {
+      expect(await putReceiptIfNew("user-sub", "receipt-1", { formBundleNumber: "FB1" }, "customer")).toBe(true);
+
+      expect(mockPutCommand.mock.calls[0][0].ConditionExpression).toBe("attribute_not_exists(receiptId)");
+    });
+
+    test("leaves a receipt already stored under its id as it is and says so", async () => {
+      mockSend.mockRejectedValueOnce(
+        Object.assign(new Error("The conditional request failed"), { name: "ConditionalCheckFailedException" }),
+      );
+
+      expect(await putReceiptIfNew("user-sub", "receipt-1", { formBundleNumber: "FB1" }, "customer")).toBe(false);
+    });
+
+    test("a write that fails for another reason fails the caller", async () => {
+      mockSend.mockRejectedValueOnce(Object.assign(new Error("throttled"), { name: "ProvisionedThroughputExceededException" }));
+
+      await expect(putReceiptIfNew("user-sub", "receipt-1", { formBundleNumber: "FB1" }, "customer")).rejects.toThrow("throttled");
+    });
+
+    test("putReceipt writes without a condition", async () => {
+      await putReceipt("user-sub", "receipt-1", { formBundleNumber: "FB1" }, "customer");
+
+      expect(mockPutCommand.mock.calls[0][0].ConditionExpression).toBeUndefined();
     });
   });
 

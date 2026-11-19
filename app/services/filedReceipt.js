@@ -3,7 +3,7 @@
 
 // @capability SITE-28 Store a filed receipt and email a copy
 // - **Use when:** a handler records the receipt of a filing that HMRC or Companies House accepted.
-// - **Does:** recordFiledReceipt stores the receipt with putReceipt, then asks for a submission-receipt email. A failed email request never fails the filing. A new filing handler calls it in place of putReceipt; a source scan test fails on any other importer of putReceipt.
+// - **Does:** recordFiledReceipt stores the receipt with putReceipt, then asks for a submission-receipt email. A failed email request never fails the filing. recordFiledReceiptOnce does the same for a record that may be retried under one receipt id: a receipt already stored is left as it is and no second email is asked for. A new filing handler calls it in place of putReceipt; a source scan test fails on any other importer of putReceipt.
 // - **Run:** `import { recordFiledReceipt } from "app/services/filedReceipt.js"`
 // - **Entry:** `app/services/filedReceipt.js:recordFiledReceipt`
 // - **Files:** app/services/filedReceipt.js, app/unit-tests/services/filedReceipt.test.js, app/unit-tests/putReceiptImporters.test.js
@@ -13,7 +13,7 @@
 
 // app/services/filedReceipt.js
 
-import { putReceipt } from "../data/dynamoDbReceiptRepository.js";
+import { putReceipt, putReceiptIfNew } from "../data/dynamoDbReceiptRepository.js";
 import { requestCustomerEmail } from "../lib/customerEmailRequest.js";
 
 /**
@@ -32,6 +32,23 @@ import { requestCustomerEmail } from "../lib/customerEmailRequest.js";
  */
 export async function recordFiledReceipt({ userSub, receiptId, receipt, actor, clientId, receiptKind, synthetic, language }) {
   await putReceipt(userSub, receiptId, receipt, actor, clientId);
+  await requestReceiptEmail({ userSub, receiptId, clientId, receiptKind, synthetic, language });
+}
+
+/**
+ * recordFiledReceipt for a record that may be retried under the same receiptId: a receipt already
+ * stored under it is left as it is, and no second email is asked for.
+ *
+ * @param {Object} params - as recordFiledReceipt
+ * @returns {Promise<boolean>} false when the receipt was already stored
+ */
+export async function recordFiledReceiptOnce({ userSub, receiptId, receipt, actor, clientId, receiptKind, synthetic, language }) {
+  if (!(await putReceiptIfNew(userSub, receiptId, receipt, actor, clientId))) return false;
+  await requestReceiptEmail({ userSub, receiptId, clientId, receiptKind, synthetic, language });
+  return true;
+}
+
+async function requestReceiptEmail({ userSub, receiptId, clientId, receiptKind, synthetic, language }) {
   const data = { receiptId, receiptKind, clientId, ...(language === "cy" ? { language } : {}) };
   await requestCustomerEmail({ kind: "submission-receipt", userSub, synthetic, data });
 }

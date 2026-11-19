@@ -21,6 +21,24 @@ const logger = createLogger({ source: "app/data/dynamoDbReceiptRepository.js" })
  *   omitted for the practice's own filings, so existing receipts with no client id stay readable
  */
 export async function putReceipt(userSub, receiptId, receipt, actor, clientId) {
+  await storeReceipt(userSub, receiptId, receipt, actor, clientId, { onlyIfNew: false });
+}
+
+/**
+ * Store a receipt as putReceipt does, unless one is already stored under this receipt id, which it
+ * leaves as it is. For a record that may be retried under the same receipt id.
+ * @param {string} userSub
+ * @param {string} receiptId
+ * @param {object} receipt
+ * @param {string} actor
+ * @param {string} [clientId]
+ * @returns {Promise<boolean>} false when a receipt was already stored under this id
+ */
+export async function putReceiptIfNew(userSub, receiptId, receipt, actor, clientId) {
+  return storeReceipt(userSub, receiptId, receipt, actor, clientId, { onlyIfNew: true });
+}
+
+async function storeReceipt(userSub, receiptId, receipt, actor, clientId, { onlyIfNew }) {
   logger.info({ message: `DynamoDB enabled, proceeding with putReceipt [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]` });
 
   try {
@@ -56,6 +74,7 @@ export async function putReceipt(userSub, receiptId, receipt, actor, clientId) {
         new module.PutCommand({
           TableName: tableName,
           Item: item,
+          ...(onlyIfNew ? { ConditionExpression: "attribute_not_exists(receiptId)" } : {}),
         }),
     );
 
@@ -64,7 +83,12 @@ export async function putReceipt(userSub, receiptId, receipt, actor, clientId) {
       hashedSub,
       receiptId,
     });
+    return true;
   } catch (error) {
+    if (onlyIfNew && error.name === "ConditionalCheckFailedException") {
+      logger.info({ message: "Receipt already stored under this id", receiptId });
+      return false;
+    }
     logger.error({
       message: "Error storing receipt in DynamoDB",
       error: error.message,

@@ -39,7 +39,7 @@ export async function putPendingFiling({ submissionNumber, userSub, kind }) {
 
 /**
  * @param {string} submissionNumber
- * @returns {Promise<{userSub: string|undefined, kind: string|undefined, claimed: boolean}|null>} null
+ * @returns {Promise<{userSub: string|undefined, kind: string|undefined}|null>} null
  *   when no filing under our presenter carries the number; userSub is undefined on a claim-only item
  */
 export async function getPendingFiling(submissionNumber) {
@@ -49,5 +49,5 @@ export async function getPendingFiling(submissionNumber) {
   );
   if (!Item) return null;
   const filer = Item.sealedFiler ? await openFor(PENDING_FILER_PURPOSE, Item.sealedFiler, key.requestId) : undefined;
-  return { userSub: filer?.userSub, kind: Item.kind, claimed: Boolean(Item.claimedAt) };
+  return { userSub: filer?.userSub, kind: Item.kind };
 }
