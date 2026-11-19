@@ -1368,10 +1368,10 @@ videos = ["accounting-spreadsheet-profit"]
   alt = "The monthly profit and loss of the Self Employed workbook, with the financial health check"
 
   [[listingProduct.screenshots]]
-  id = "sales"
+  id = "self-assessment"
   source = "spreadsheets"
   image = "images/spreadsheets/diyaccounting-spreadsheets-se1.png"
-  alt = "A sheet of the Self Employed workbook"
+  alt = "The self-assessment allowable expenses and capital allowances page of the Self Employed workbook"
 
   [[listingProduct.screenshots]]
   id = "purchases"
@@ -1520,7 +1520,7 @@ videos = ["accounting-spreadsheet-profit"]
   id = "cash-and-bank"
   source = "spreadsheets"
   image = "images/spreadsheets/diyaccounting-spreadsheets-cashandbank2.jpg"
-  alt = "The cash and bank reconciliation"
+  alt = "The bank payments sheet of the Company Accounts workbook"
 
 [[listingProduct]]
 id = "spreadsheets-payslips"
@@ -1565,13 +1565,13 @@ videos = []
   id = "payslips"
   source = "spreadsheets"
   image = "images/spreadsheets/diyaccounting-spreadsheets-payslips.png"
-  alt = "Payslips printed from the Payslips workbook"
+  alt = "The National Insurance contributions sheet of the Payslips workbook"
 
   [[listingProduct.screenshots]]
   id = "payroll-payslips"
   source = "spreadsheets"
   image = "images/spreadsheets/diyaccounting-spreadsheets-Payroll-Payslips.png"
-  alt = "The payroll sheet that feeds the payslips"
+  alt = "Two monthly payslips printed from the Payslips workbook"
 
   [[listingProduct.screenshots]]
   id = "product-page"

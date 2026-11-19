@@ -2171,11 +2171,11 @@
           "file": "brand/packs/spreadsheets-self-employed/workbook.png"
         },
         {
-          "id": "sales",
+          "id": "self-assessment",
           "source": "spreadsheets",
           "image": "images/spreadsheets/diyaccounting-spreadsheets-se1.png",
-          "alt": "A sheet of the Self Employed workbook",
-          "file": "brand/packs/spreadsheets-self-employed/sales.png"
+          "alt": "The self-assessment allowable expenses and capital allowances page of the Self Employed workbook",
+          "file": "brand/packs/spreadsheets-self-employed/self-assessment.png"
         },
         {
           "id": "purchases",
@@ -2511,7 +2511,7 @@
           "id": "cash-and-bank",
           "source": "spreadsheets",
           "image": "images/spreadsheets/diyaccounting-spreadsheets-cashandbank2.jpg",
-          "alt": "The cash and bank reconciliation",
+          "alt": "The bank payments sheet of the Company Accounts workbook",
           "file": "brand/packs/spreadsheets-company/cash-and-bank.png"
         }
       ],
@@ -2636,14 +2636,14 @@
           "id": "payslips",
           "source": "spreadsheets",
           "image": "images/spreadsheets/diyaccounting-spreadsheets-payslips.png",
-          "alt": "Payslips printed from the Payslips workbook",
+          "alt": "The National Insurance contributions sheet of the Payslips workbook",
           "file": "brand/packs/spreadsheets-payslips/payslips.png"
         },
         {
           "id": "payroll-payslips",
           "source": "spreadsheets",
           "image": "images/spreadsheets/diyaccounting-spreadsheets-Payroll-Payslips.png",
-          "alt": "The payroll sheet that feeds the payslips",
+          "alt": "Two monthly payslips printed from the Payslips workbook",
           "file": "brand/packs/spreadsheets-payslips/payroll-payslips.png"
         },
         {
