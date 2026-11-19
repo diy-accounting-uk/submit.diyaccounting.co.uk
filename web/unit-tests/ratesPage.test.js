@@ -75,11 +75,11 @@ describe("rates page", () => {
       expect(SELF_EMPLOYED[year]).toEqual({
         start: isoDates(parsed.tax_year.start),
         end: isoDates(parsed.tax_year.end),
-        income_tax: parsed.income_tax,
-        national_insurance: parsed.national_insurance,
-        capital_allowances: parsed.capital_allowances,
-        mileage: parsed.mileage,
-        vat: parsed.vat,
+        income_tax: isoDates(parsed.income_tax),
+        national_insurance: isoDates(parsed.national_insurance),
+        capital_allowances: isoDates(parsed.capital_allowances),
+        mileage: isoDates(parsed.mileage),
+        vat: isoDates(parsed.vat),
       });
     }
     for (const year of FINANCIAL_YEARS) {
@@ -87,11 +87,11 @@ describe("rates page", () => {
       expect(LIMITED_COMPANY[year]).toEqual({
         start: isoDates(parsed.financial_year.start),
         end: isoDates(parsed.financial_year.end),
-        corporation_tax: parsed.corporation_tax,
-        corporation_tax_previous_financial_year: parsed.corporation_tax_previous_financial_year,
-        capital_allowances: parsed.capital_allowances,
-        mileage: parsed.mileage,
-        vat: parsed.vat,
+        corporation_tax: isoDates(parsed.corporation_tax),
+        corporation_tax_previous_financial_year: isoDates(parsed.corporation_tax_previous_financial_year),
+        capital_allowances: isoDates(parsed.capital_allowances),
+        mileage: isoDates(parsed.mileage),
+        vat: isoDates(parsed.vat),
       });
     }
   });
