@@ -52,6 +52,10 @@ export function vatHandoffLink(handoff) {
   return `${publicBaseUrl()}${VAT_FORM_PATH}#books=${encoded}`;
 }
 
+// What the person does with the link: the plugin files nothing, so the return is filed in the browser.
+export const VAT_FILING_SENTENCE =
+  "Open this link, check the figures on the page, tick the declaration and file the return there in your browser. Nothing has been filed.";
+
 /**
  * prepare_vat_return: derives the return for the quarter ending on periodEnd from the session's
  * loaded book, the way derive_vat_return does, and answers the link that opens the VAT form with
@@ -80,6 +84,6 @@ export async function prepareVatReturn(session, params = {}) {
     link,
     period,
     figures,
-    instruction: "Open this link, check the figures on the page, tick the declaration and file the return there. Nothing has been filed.",
+    instruction: VAT_FILING_SENTENCE,
   };
 }

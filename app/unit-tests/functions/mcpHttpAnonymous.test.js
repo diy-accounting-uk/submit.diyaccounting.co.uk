@@ -79,6 +79,20 @@ describe("the hosted MCP endpoint without a token", () => {
     expect(initialized.capabilities.tools).toBeDefined();
   });
 
+  it("answers initialize on prod with the instructions that the connector offers VAT tools only", async () => {
+    const result = await ingestHandler(
+      anonymousPost({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "catalogue", version: "1" } },
+      }),
+    );
+    const { result: initialized } = JSON.parse(result.body);
+    expect(initialized.instructions).toMatch(/VAT tools only/);
+    expect(initialized.instructions).toMatch(/tick the declaration/);
+  });
+
   it("lists prod's six hosted tools by name, title and input schema", async () => {
     const result = await ingestHandler(anonymousPost({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} }));
     expect(result.statusCode).toBe(200);
