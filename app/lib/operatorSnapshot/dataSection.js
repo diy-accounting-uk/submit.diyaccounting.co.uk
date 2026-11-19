@@ -123,7 +123,7 @@ export function itemClassSql({ actor, accountClass, testRow }) {
 // The newest change of an item. change_ts is in whole seconds, so the stream's sequence number
 // breaks a tie; a record from before the sequence number reached the lake falls back to the order
 // a tie can only have when one change is a delete: a delete comes after a modify.
-const NEWEST_ORDER = `change_ts DESC, lpad(coalesce(change_seq, ''), 40, '0') DESC, CASE change_type WHEN 'REMOVE' THEN 0 WHEN 'MODIFY' THEN 1 ELSE 2 END`;
+export const NEWEST_ORDER = `change_ts DESC, lpad(coalesce(change_seq, ''), 40, '0') DESC, CASE change_type WHEN 'REMOVE' THEN 0 WHEN 'MODIFY' THEN 1 ELSE 2 END`;
 
 function itemsSql(kind, { source, alias, keys, owner, actor = "actor", testRow = "false", exists = "true" }) {
   const from = alias
