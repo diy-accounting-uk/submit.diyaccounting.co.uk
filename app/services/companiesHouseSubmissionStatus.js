@@ -14,6 +14,7 @@ import {
   resolvePresenterCredentials,
   postToGateway,
   parseGatewayResponse,
+  summariseGatewayResponse,
   redactPresenterCredentials,
   isNothingCompletedError,
 } from "./companiesHouseXmlGateway.js";
@@ -92,13 +93,26 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
     requestXml: redactPresenterCredentials(statusRequestXml),
   });
   const gatewayResponse = await postToGateway(statusRequestXml, govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {});
+  let parsed;
+  try {
+    parsed = parseGatewayResponse(gatewayResponse.data);
+  } catch (error) {
+    logger.error({
+      message: "Companies House GetSubmissionStatus response could not be parsed",
+      submissionNumber,
+      status: gatewayResponse.status,
+      error: error.message,
+      responseXml: redactPresenterCredentials(gatewayResponse.data),
+    });
+    throw error;
+  }
+  // The parsed fields, not the envelope: the envelope of a routine answer carries GovTalkErrors.
   logger.info({
     message: "Companies House GetSubmissionStatus response",
     submissionNumber,
     status: gatewayResponse.status,
-    responseXml: redactPresenterCredentials(gatewayResponse.data),
+    ...summariseGatewayResponse(parsed),
   });
-  const parsed = parseGatewayResponse(gatewayResponse.data);
 
   if (parsed.errors?.length) {
     if (stillAsking && parsed.errors.every((error) => error.text === "No Transaction Found")) {
