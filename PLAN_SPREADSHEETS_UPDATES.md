@@ -3,7 +3,7 @@
 
 # PLAN: keeping the spreadsheet packages current
 
-Status: two open tasks. TU1 and RF1 stay in this plan until the operator boards them (operator, 2026-11-15). Repository: `../spreadsheets.diyaccounting.co.uk`. The rollover plan that built the current pipeline is archived at `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SPREADSHEETS_ROLLOVER.md`.
+Status: two open tasks. TU1 is boarded on `NEXT.md` (operator, 2026-11-19); RF1 stays in this plan until the operator boards it (operator, 2026-11-15). Repository: `../spreadsheets.diyaccounting.co.uk`. The rollover plan that built the current pipeline is archived at `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SPREADSHEETS_ROLLOVER.md`.
 
 ## Operator assertions (verbatim)
 
