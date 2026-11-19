@@ -43,7 +43,9 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## In flight
 
-**Hold until 16:00 UTC on 2026-11-19** (operator): the HMRC Assist demo to HMRC runs 15:00 to 16:00 on https://ci-submit.diyaccounting.co.uk/ (ci-set2). Push nothing that deploys to ci and merge nothing, PR #846 included, until 16:00. A new ci deploy can move `/submit/ci/last-known-good-deployment` off ci-set2, and a failed probe rolls the site back.
+**COOL-DOWN is on since 2026-11-19T13:36:42Z.** No new board rows except a degradation. Agents commit and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
+
+**Hold until 16:00 UTC on 2026-11-19** (operator): the HMRC Assist demo to HMRC runs 15:00 to 16:00 on https://ci-set2.submit.diyaccounting.co.uk/. Push nothing that deploys to ci and merge nothing, PR #846 included, until 16:00. A new ci deploy can move `/submit/ci/last-known-good-deployment` off ci-set2, and a failed probe rolls the site back.
 
 - [ ] **CH62. The presenter poll treats Companies House error 8026 as nothing completed.** Prod alarm issue #843 (prod-app-companies-house-stack-health, from `check-prod-3fb6e3c-app-companies-house-submission-status-poll-log-errors`) fires every 15 minutes in office hours from 07:00 UTC on 2026-11-19: the live gateway answers every presenter poll with Error 8026 ("No Accepted or Rejected documents found in system..."), and `app/services/companiesHousePresenterPoll.js` (line 103) logs it at error because line 101 filters only "No Transaction Found". **In flight**: built by cloud worker anvil (a5cefe9a9), landed as 49e7deb22 on `claude/xenon-ops`, PR #846 (gates green on f6c1e2645). Left: the PR, the prod deploy, alarm #843 back to OK and closed with this row. **Source**: alarm #843, 2026-11-19. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files. **Repository**: submit.
 
