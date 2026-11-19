@@ -38,6 +38,10 @@ const { handler, adsCostRows, buildCampaignQuery, buildAdGroupQuery, searchAllPa
 
 const campaignSearch = JSON.parse(readFileSync(new URL("./fixtures/adsCostCampaignSearch.json", import.meta.url), "utf-8"));
 const adGroupSearch = JSON.parse(readFileSync(new URL("./fixtures/adsCostAdGroupSearch.json", import.meta.url), "utf-8"));
+const conversionsCampaignSearch = JSON.parse(
+  readFileSync(new URL("./fixtures/adsConversionsCampaignSearch.json", import.meta.url), "utf-8"),
+);
+const conversionsAdGroupSearch = JSON.parse(readFileSync(new URL("./fixtures/adsConversionsAdGroupSearch.json", import.meta.url), "utf-8"));
 
 function jsonResponse(body) {
   return { ok: true, json: async () => body, text: async () => JSON.stringify(body) };
@@ -57,6 +61,7 @@ describe("adsCostRows", () => {
         impressions: 25,
         clicks: 2,
         cost_gbp: 0.6,
+        conversions: 0,
       },
       {
         date: "2026-09-28",
@@ -67,6 +72,7 @@ describe("adsCostRows", () => {
         impressions: 15,
         clicks: 1,
         cost_gbp: 0.3,
+        conversions: 0,
       },
       {
         date: "2026-09-28",
@@ -77,6 +83,7 @@ describe("adsCostRows", () => {
         impressions: 289,
         clicks: 5,
         cost_gbp: 1.252199,
+        conversions: 0,
       },
     ]);
   });
@@ -88,7 +95,24 @@ describe("adsCostRows", () => {
     expect(rowCost).toBeCloseTo(campaignCost, 6);
   });
 
-  test("leaves out a row with no impressions, clicks or cost", () => {
+  test("carries each row's conversions and keeps a campaign whose only metric that day is a conversion", () => {
+    const rows = adsCostRows(conversionsCampaignSearch.results, conversionsAdGroupSearch.results);
+
+    expect(rows.map((row) => [row.campaign_id, row.ad_group_id, row.clicks, row.conversions])).toEqual([
+      ["24295022766", "198457346577", 3, 2.5],
+      ["24295022766", "200929043735", 1, 0],
+      ["24265222030", "", 0, 1],
+    ]);
+  });
+
+  test("the day's conversions sum to the campaigns' totals", () => {
+    const rows = adsCostRows(conversionsCampaignSearch.results, conversionsAdGroupSearch.results);
+    const rowConversions = rows.reduce((sum, row) => sum + row.conversions, 0);
+    const campaignConversions = conversionsCampaignSearch.results.reduce((sum, r) => sum + Number(r.metrics.conversions), 0);
+    expect(rowConversions).toBe(campaignConversions);
+  });
+
+  test("leaves out a row with no impressions, clicks, cost or conversions", () => {
     const empty = { campaign: { id: "1", name: "Idle" }, metrics: {}, segments: { date: "2026-09-28" } };
     expect(adsCostRows([empty], [])).toEqual([]);
   });
@@ -97,10 +121,10 @@ describe("adsCostRows", () => {
 describe("queries", () => {
   test("select the day's metrics by campaign and by ad group", () => {
     expect(buildCampaignQuery("2026-09-28")).toBe(
-      "SELECT segments.date, campaign.id, campaign.name, metrics.impressions, metrics.clicks, metrics.cost_micros FROM campaign WHERE segments.date = '2026-09-28'",
+      "SELECT segments.date, campaign.id, campaign.name, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM campaign WHERE segments.date = '2026-09-28'",
     );
     expect(buildAdGroupQuery("2026-09-28")).toBe(
-      "SELECT segments.date, campaign.id, campaign.name, ad_group.id, ad_group.name, metrics.impressions, metrics.clicks, metrics.cost_micros FROM ad_group WHERE segments.date = '2026-09-28'",
+      "SELECT segments.date, campaign.id, campaign.name, ad_group.id, ad_group.name, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM ad_group WHERE segments.date = '2026-09-28'",
     );
   });
 });
@@ -170,6 +194,28 @@ describe("handler", () => {
     expect(lines).toHaveLength(3);
     expect(lines.map((line) => line.ad_group_id)).toEqual(["198457346577", "200929043735", ""]);
     vi.unstubAllGlobals();
+  });
+
+  test("writes the day's conversions in each lake row", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url, options) => {
+        if (String(url).startsWith("https://oauth2.googleapis.com/token")) return jsonResponse({ access_token: "at" });
+        const query = JSON.parse(options.body).query;
+        expect(query).toContain("metrics.conversions");
+        return jsonResponse(query.includes("FROM ad_group") ? conversionsAdGroupSearch : conversionsCampaignSearch);
+      }),
+    );
+    try {
+      await handler({ date: "2026-11-17" });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    const put = mockS3Send.mock.calls[0][0].input;
+    expect(put.Key).toBe("curated/ads/ads_cost/dt=2026-11-17/ads_cost.json.gz");
+    const lines = gunzipSync(put.Body).toString("utf-8").trim().split("\n").map(JSON.parse);
+    expect(lines.map((line) => line.conversions)).toEqual([2.5, 0, 1]);
   });
 
   test("with no date writes yesterday and today so far, each to its own partition", async () => {

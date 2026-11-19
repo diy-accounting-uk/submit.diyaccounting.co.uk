@@ -5,8 +5,9 @@
 -- One row per day, platform (google or microsoft), campaign and ad group, read from the nightly
 -- pulls of the Google Ads API and the Microsoft Advertising Reporting service. cost_gbp is in
 -- pounds as the account reports it. Microsoft rows have no ad group. conversions is what the
--- platform counts as a conversion and is null for Google rows, which the pull does not read. A
--- row written before the platform column existed is a Google row. The table is empty in an
+-- platform counts as a conversion; Google counts it on the day of the click. A Google row written
+-- before the pull read conversions has none. A row written before the platform column existed is
+-- a Google row. The table is empty in an
 -- environment with no Ads credentials.
 CREATE OR REPLACE VIEW v_ads_cost_daily AS
 SELECT date(date_parse(date, '%Y-%m-%d')) AS day,

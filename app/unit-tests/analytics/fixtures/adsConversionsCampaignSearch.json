@@ -1,0 +1,16 @@
+{
+  "results": [
+    {
+      "campaign": { "resourceName": "customers/8142685080/campaigns/24265222030", "name": "Campaign #1", "id": "24265222030" },
+      "metrics": { "clicks": "0", "conversions": 1.0, "costMicros": "0", "impressions": "0" },
+      "segments": { "date": "2026-11-17" }
+    },
+    {
+      "campaign": { "resourceName": "customers/8142685080/campaigns/24295022766", "name": "Search: MTD VAT", "id": "24295022766" },
+      "metrics": { "clicks": "4", "conversions": 2.5, "costMicros": "1200000", "impressions": "52" },
+      "segments": { "date": "2026-11-17" }
+    }
+  ],
+  "fieldMask": "segments.date,campaign.id,campaign.name,metrics.impressions,metrics.clicks,metrics.costMicros,metrics.conversions",
+  "queryResourceConsumption": "222"
+}

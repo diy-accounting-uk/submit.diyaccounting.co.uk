@@ -793,8 +793,8 @@ public class IngestionStack extends Stack {
         }
 
         // ============================================================================
-        // Google Ads cost pull job: yesterday's impressions, clicks and cost per campaign and ad
-        // group into the lake, read through the Ads API with the OAuth client and refresh token
+        // Google Ads cost pull job: yesterday's impressions, clicks, cost and conversions per
+        // campaign and ad group into the lake, read through the Ads API with the OAuth client and refresh token
         // infra/google/ads/ads-inventory.js --consent stores in Secrets Manager. Created only
         // when adsCostPullEnabled is set (prod). The secrets are passed to the Lambda as partial
         // ARNs, which Secrets Manager resolves without the random suffix.

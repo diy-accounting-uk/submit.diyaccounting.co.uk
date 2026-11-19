@@ -1957,7 +1957,10 @@ export function buildDailyChartDefinitions() {
           total: null,
           componentOrder: ["google", "microsoft"],
           labelOf: (id) => PLATFORM_LABELS[id] ?? id,
-          descriptionOf: (id) => `Conversions ${PLATFORM_LABELS[id] ?? id} Ads counts in a day. The Google pull does not read conversions.`,
+          descriptionOf: (id) =>
+            id === "google"
+              ? "Conversions Google Ads counts in a day, on the day of the click that led to each."
+              : `Conversions ${PLATFORM_LABELS[id] ?? id} Ads counts in a day.`,
           sql:
             `SELECT cast(day AS varchar) AS day, platform AS component, cast(conversions AS double) AS value\n` +
             `FROM   v_ads_performance_daily\nWHERE  ${dailyWindowFilter("day")} AND conversions IS NOT NULL`,

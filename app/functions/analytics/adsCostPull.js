@@ -2,19 +2,19 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // @capability DATA-59 Pull Google Ads daily cost into the lake
-// - **Use when:** the previous day's Google Ads impressions, clicks and cost must land in the lake, or backfill a date range.
-// - **Does:** adsCostPull.js reads the previous day's Google Ads performance by campaign and ad group through the Ads API. It authenticates to Google via workload identity federation. A campaign with no ad groups (Performance Max) receives one row with an empty ad group, so daily rows always sum to the campaign total. It writes gzipped NDJSON under curated/ads/ads_cost/dt=YYYY-MM-DD/. AdsCostTables.java provisions the ads_cost Glue table with dt partition projection. The job exists only in prod when ADS_COST_PULL_ENABLED is true. msAdsCostPull.js writes the Microsoft Advertising rows (platform microsoft, with conversions) by day and campaign beside them, from infra/microsoft/ads/msads.toml and the shared app/lib/microsoftAdsReporting.js, in prod only. v_ads_cost_daily sums by day, platform and campaign; v_ads_cost_per_paid_landing_daily divides each platform's daily cost by v_paid_landings_daily's gclid (google) or msclkid (microsoft) count. operatorSnapshotPublish.js measures ads-cost-gbp, ads-cost-per-paid-landing-gbp and a ms- twin of each Ads row from them. fxRatePull.js reads the European Central Bank 90-day reference rates nightly into curated/fx/fx_rates/ (FxRateTables.java); v_usd_gbp_daily carries the last rate over non-working days and v_contribution_daily converts the dollar AWS bill to pounds with it.
+// - **Use when:** the previous day's Google Ads impressions, clicks, cost and conversions must land in the lake, or backfill a date range.
+// - **Does:** adsCostPull.js reads the previous day's Google Ads performance (impressions, clicks, cost and conversions) by campaign and ad group through the Ads API. It authenticates with an OAuth client and a refresh token that it reads from Secrets Manager (ADS_OAUTH_CLIENT_SECRET_ARN, ADS_REFRESH_TOKEN_SECRET_ARN). A campaign with no ad groups (Performance Max) receives one row with an empty ad group, so daily rows always sum to the campaign total. It writes gzipped NDJSON under curated/ads/ads_cost/dt=YYYY-MM-DD/. AdsCostTables.java provisions the ads_cost Glue table with dt partition projection. The job exists only in prod when ADS_COST_PULL_ENABLED is true. msAdsCostPull.js writes the Microsoft Advertising rows (platform microsoft, with conversions) by day and campaign beside them, from infra/microsoft/ads/msads.toml and the shared app/lib/microsoftAdsReporting.js, in prod only. v_ads_cost_daily sums by day, platform and campaign; v_ads_cost_per_paid_landing_daily divides each platform's daily cost by v_paid_landings_daily's gclid (google) or msclkid (microsoft) count. operatorSnapshotPublish.js measures ads-cost-gbp, ads-cost-per-paid-landing-gbp and a ms- twin of each Ads row from them, and draws both platforms' conversions on the Ads conversions tab from v_ads_performance_daily. fxRatePull.js reads the European Central Bank 90-day reference rates nightly into curated/fx/fx_rates/ (FxRateTables.java); v_usd_gbp_daily carries the last rate over non-working days and v_contribution_daily converts the dollar AWS bill to pounds with it.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/analytics/adsCostPull.js:handler`
 // - **Files:** app/functions/analytics/adsCostPull.js, app/unit-tests/analytics/adsCostPull.test.js, app/functions/analytics/msAdsCostPull.js, app/unit-tests/analytics/msAdsCostPull.test.js, app/lib/microsoftAdsReporting.js, app/functions/analytics/fxRatePull.js, app/unit-tests/analytics/fxRatePull.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/FxRateTables.java, app/unit-tests/analytics/fixtures/adsCostAdGroupSearch.json, app/unit-tests/analytics/fixtures/adsCostCampaignSearch.json, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/AdsCostTables.java, infra/main/resources/analytics/views/v_ads_cost_daily.sql, infra/main/resources/analytics/views/v_ads_cost_per_paid_landing_daily.sql, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/BusinessViewsTest.java
-// - **Keywords:** google ads cost, impressions clicks, ads api, workload identity federation, curated ads, performance max, cost per paid landing, nightly pull, operator objective
+// - **Keywords:** google ads cost, google ads conversions, impressions clicks, ads api, workload identity federation, curated ads, performance max, cost per paid landing, nightly pull, operator objective
 // - **Related:** DATA-58, DATA-32, DATA-33
 // @end-capability
 
 // app/functions/analytics/adsCostPull.js
 //
-// Nightly job that pulls the previous day's Google Ads impressions, clicks and cost per campaign
-// and ad group through the Ads API and writes them as gzipped NDJSON under the lake's
+// Nightly job that pulls the previous day's Google Ads impressions, clicks, cost and conversions
+// per campaign and ad group through the Ads API and writes them as gzipped NDJSON under the lake's
 // curated/ads/ prefix. A campaign with no ad groups (Performance Max) gets one row with an empty
 // ad group, so the day's rows always sum to the campaign's total. A lake row carries no visitor
 // or click identifier.
@@ -108,7 +108,7 @@ export async function fetchAdsAccessToken({ oauthClientSecretArn, refreshTokenSe
   return accessToken;
 }
 
-const DATE_FIELDS = ["campaign.id", "campaign.name", "metrics.impressions", "metrics.clicks", "metrics.cost_micros"];
+const DATE_FIELDS = ["campaign.id", "campaign.name", "metrics.impressions", "metrics.clicks", "metrics.cost_micros", "metrics.conversions"];
 
 export function buildCampaignQuery(date) {
   return `SELECT segments.date, ${DATE_FIELDS.join(", ")} FROM campaign WHERE segments.date = '${date}'`;
@@ -146,14 +146,16 @@ function metricsOf(result) {
     impressions: Number(metrics.impressions ?? 0),
     clicks: Number(metrics.clicks ?? 0),
     cost_gbp: Number(metrics.costMicros ?? 0) / MICROS_PER_POUND,
+    conversions: Number(metrics.conversions ?? 0),
   };
 }
 
 /**
  * The lake rows for one day from the campaign-level and ad-group-level search results. An ad
  * group row is kept as it is. A campaign with no ad-group row that day (Performance Max has no
- * ad groups) gets one row with an empty ad group id and name. A row with no impressions, clicks
- * or cost is left out.
+ * ad groups) gets one row with an empty ad group id and name. A row with no impressions, clicks,
+ * cost or conversions is left out. Google counts a conversion on the day of the click that led to
+ * it, so a later pull of the same day can carry more conversions.
  *
  * @param {Array<Object>} campaignResults
  * @param {Array<Object>} adGroupResults
@@ -184,7 +186,7 @@ export function adsCostRows(campaignResults, adGroupResults) {
       ...metricsOf(result),
     });
   }
-  return rows.filter((row) => row.impressions > 0 || row.clicks > 0 || row.cost_gbp > 0);
+  return rows.filter((row) => row.impressions > 0 || row.clicks > 0 || row.cost_gbp > 0 || row.conversions > 0);
 }
 
 export function objectKey(dateStr) {

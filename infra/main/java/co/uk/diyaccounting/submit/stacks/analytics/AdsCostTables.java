@@ -18,7 +18,7 @@ import software.constructs.Construct;
  * {@code msAdsCostPull.js} (Microsoft Advertising) write nightly to
  * {@code curated/ads/ads_cost/dt=YYYY-MM-DD/}: {@code ads_cost}, one row per day, campaign and
  * ad group with its platform, impressions, clicks, cost in pounds and conversions. A row with no
- * platform is a Google row; the Google pull does not write conversions.
+ * platform is a Google row.
  *
  * <p>Always created, in every environment, even where the pull job is absent: the table is then
  * empty and {@code v_ads_cost_daily} still compiles. Same shape as {@link PayPalDonationTables}:

@@ -1026,6 +1026,11 @@ describe("operatorSnapshotPublish", () => {
         expect(mode.labelOf("microsoft"), id).toBe("Microsoft");
         expect(mode.descriptionOf("microsoft"), id).toContain("Microsoft");
       }
+      const conversions = paid.modes.find((mode) => mode.id === "ads-conversions");
+      expect(conversions.sql).toContain("FROM   v_ads_performance_daily");
+      expect(conversions.sql).not.toContain("platform =");
+      expect(conversions.descriptionOf("google")).toContain("Google Ads");
+      expect(conversions.descriptionOf("google")).toContain("click");
       expect(paid.modes.find((mode) => mode.id === "ads-paid-landings").sql).toContain("sum(msclkid_landings)");
       expect(paid.modes.find((mode) => mode.id === "ads-cost-per-paid-landing").unit).toBe("gbp");
       expect(paid.modes.find((mode) => mode.id === "ads-ctr").unit).toBe("ratio");
