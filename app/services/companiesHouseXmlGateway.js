@@ -486,6 +486,20 @@ export function buildStatusAckRequest({ presenterId, presenterCode, transactionI
   return buildEnvelopeXml({ requestClass: "StatusAck", transactionId, gatewayTest, presenterId, presenterCode, bodyXml });
 }
 
+// GovTalk Error 8026: a GetSubmissionStatus poll found no accepted or rejected submission to
+// report, though some may still be in processing. It is identified by its number, because its text
+// carries irregular spacing.
+export const NOTHING_COMPLETED_ERROR_NUMBER = 8026;
+
+/**
+ * Whether a gateway error says only that nothing has completed yet.
+ * @param {{number?: number}} error - an entry of parseGatewayResponse's errors
+ * @returns {boolean}
+ */
+export function isNothingCompletedError(error) {
+  return error?.number === NOTHING_COMPLETED_ERROR_NUMBER;
+}
+
 /**
  * Parse a GovTalk response envelope (an acknowledgement, a GetSubmissionStatus answer, or a
  * GovTalkErrors block) into a plain object.
