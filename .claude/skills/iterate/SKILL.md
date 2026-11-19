@@ -19,9 +19,10 @@ description: Run the delivery cycle unattended until the board has no machine-on
 # iterate
 
 **SSO check.** Before the first AWS call, and before any request that the operator log in, run
-`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
-get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
-one fails, and name the profile and the error. Never ask for a login from memory.
+`scripts/sso-check.sh`. It calls `diya-submit-ci` and `diya-submit-prod` through the CLI and a Node SDK
+client and prints one line per profile: live, CLI cache only, or expired. Ask for
+`aws sso login --sso-session diyaccounting` only when it reports a profile not live, and name the
+profile and its line. Never ask for a login from memory.
 
 The cycle this repository has settled on, run under `/loop` in dynamic mode:
 
@@ -86,7 +87,7 @@ active` line carrying a `https://claude.ai/code/session_…` URL means the sessi
    session is connected, print `/rc` once for the operator; it is their command, not the session's.
    The `/config` toggle "Enable Remote Control for all sessions" (user settings; a `true` in a
    project's `.claude/settings.local.json` is ignored) connects every new session on its own.
-2. **SSO.** `aws --profile diya-submit-ci sts get-caller-identity`. If it fails, print
+2. **SSO.** `scripts/sso-check.sh`. If it reports a profile not live, print
    `aws sso login --sso-session diyaccounting` and wait; the window it opens (8 to 12 hours) is the
    budget every wave is sized to. Note the login time; read every AWS fact a cycle needs while the
    token is fresh, and when a render finds it expired, say so on the prod line and print the login

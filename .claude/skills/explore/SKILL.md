@@ -18,9 +18,10 @@ description: Walk the deployed ci site as a person would, one role at a time (vi
 # explore
 
 **SSO check.** Before the first AWS call, and before any request that the operator log in, run
-`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
-get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
-one fails, and name the profile and the error. Never ask for a login from memory.
+`scripts/sso-check.sh`. It calls `diya-submit-ci` and `diya-submit-prod` through the CLI and a Node SDK
+client and prints one line per profile: live, CLI cache only, or expired. Ask for
+`aws sso login --sso-session diyaccounting` only when it reports a profile not live, and name the
+profile and its line. Never ask for a login from memory.
 
 A test checks what its author thought of. This pass follows a link that looked promising, resizes
 the window, reads a result and asks whether it says what it should. The design is in
@@ -32,7 +33,7 @@ reports text.
 
 ## Before
 
-1. Check the SSO session: `aws --profile diya-submit-ci sts get-caller-identity`. If it fails,
+1. Check the SSO session: `scripts/sso-check.sh diya-submit-ci`. If it reports the profile not live,
    ask the operator to run `aws sso login --sso-session diyaccounting`, then stop.
 2. Install the browser once per machine:
    `npx -y @playwright/mcp@0.0.83 install-browser chrome-for-testing`.
