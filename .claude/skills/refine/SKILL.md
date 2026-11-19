@@ -76,6 +76,7 @@ Write each correction into the row as you go; do not keep a separate list.
 For every row a sub-agent will run, read the code the row points at and ask what the agent would
 have to discover to finish. Then put that in the brief. The checks that paid for themselves:
 
+- **The method serves the goal and its consumer.** Name who consumes the row's output (a vendor's reviewer, a customer, a regulator, a test) and check the method fits them: a deliverable for a vendor's review is made on that vendor's surface (an OpenAI plugin's demo video is recorded in ChatGPT, not Claude). A row whose wording contradicts its goal is rewritten here, never executed as worded.
 - **The mechanism is the one the code uses.** A row that says "set `payment_intent_data`" on a
   subscription-mode checkout, or "device-code grant" on Cognito, describes a mechanism the
   platform refuses; read the call site and name the mechanism that works, with the line. A test
