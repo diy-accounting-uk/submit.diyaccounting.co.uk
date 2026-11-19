@@ -747,7 +747,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### SITE-28 Store a filed receipt and email a copy
 
 - **Use when:** a handler records the receipt of a filing that HMRC or Companies House accepted.
-- **Does:** recordFiledReceipt stores the receipt with putReceipt, then asks for a submission-receipt email. A failed email request never fails the filing. recordFiledReceiptOnce does the same for a record that may be retried under one receipt id: a receipt already stored is left as it is and no second email is asked for. A new filing handler calls it in place of putReceipt; a source scan test fails on any other importer of putReceipt.
+- **Does:** recordFiledReceipt stores the receipt with putReceipt, then asks for a submission-receipt email. A failed email request never fails the filing. recordFiledReceiptForSubmission does the same for a submission a status poll may record more than once: it reuses the submission's stored receipt and marks the email on the receipt, so the email is asked for once and a stopped record's retry completes it. A new filing handler calls it in place of putReceipt; a source scan test fails on any other importer of putReceipt.
 - **Run:** `import { recordFiledReceipt } from "app/services/filedReceipt.js"`
 - **Entry:** `app/services/filedReceipt.js:recordFiledReceipt`
 - **Files:** app/services/filedReceipt.js, app/unit-tests/services/filedReceipt.test.js, app/unit-tests/putReceiptImporters.test.js

@@ -32,7 +32,8 @@ export async function putReceipt(userSub, receiptId, receipt, actor, clientId) {
  * @param {object} receipt
  * @param {string} actor
  * @param {string} [clientId]
- * @returns {Promise<boolean>} false when a receipt was already stored under this id
+ * @returns {Promise<string|null>} the hash the receipt is stored under, or null when a receipt was
+ *   already stored under this id
  */
 export async function putReceiptIfNew(userSub, receiptId, receipt, actor, clientId) {
   return storeReceipt(userSub, receiptId, receipt, actor, clientId, { onlyIfNew: true });
@@ -83,11 +84,11 @@ async function storeReceipt(userSub, receiptId, receipt, actor, clientId, { only
       hashedSub,
       receiptId,
     });
-    return true;
+    return hashedSub;
   } catch (error) {
     if (onlyIfNew && error.name === "ConditionalCheckFailedException") {
       logger.info({ message: "Receipt already stored under this id", receiptId });
-      return false;
+      return null;
     }
     logger.error({
       message: "Error storing receipt in DynamoDB",
@@ -95,6 +96,70 @@ async function storeReceipt(userSub, receiptId, receipt, actor, clientId, { only
       userSub,
       receiptId,
     });
+    throw error;
+  }
+}
+
+/**
+ * Find the receipt a filer holds for one submission, under any salt version. The receipt id ends
+ * with "Z-<submissionNumber>" and starts with a time no earlier than the submission was sent, so
+ * the query reads only the filer's receipts stored since then.
+ * @param {string} userSub
+ * @param {string} submissionNumber
+ * @param {string} sentAt - ISO time the submission was sent; no receipt of it is older
+ * @returns {Promise<{receiptId: string, hashedSub: string, emailRequestedAt?: string, tokenChargedAt?: string}|null>}
+ */
+export async function findReceiptForSubmission(userSub, submissionNumber, sentAt) {
+  const tableName = getResourceName("RECEIPTS_DYNAMODB_TABLE_NAME");
+  const suffix = `Z-${submissionNumber}`;
+  for (const { hashedSub } of subHashCandidates(userSub)) {
+    let startKey;
+    do {
+      const exclusiveStartKey = startKey;
+      const response = await executeDynamoDbCommand(
+        (module) =>
+          new module.QueryCommand({
+            TableName: tableName,
+            KeyConditionExpression: "hashedSub = :hashedSub AND receiptId >= :sentAt",
+            ExpressionAttributeValues: { ":hashedSub": hashedSub, ":sentAt": sentAt },
+            ProjectionExpression: "receiptId, emailRequestedAt, tokenChargedAt",
+            ConsistentRead: true,
+            ExclusiveStartKey: exclusiveStartKey,
+          }),
+      );
+      const item = (response.Items ?? []).find((candidate) => candidate.receiptId.endsWith(suffix));
+      if (item) return { ...item, hashedSub };
+      startKey = response.LastEvaluatedKey;
+    } while (startKey);
+  }
+  return null;
+}
+
+/**
+ * Record on a stored receipt that one follow-up step of it has run, unless that step is already
+ * recorded.
+ * @param {string} hashedSub - the hash the receipt is stored under
+ * @param {string} receiptId
+ * @param {"emailRequestedAt"|"tokenChargedAt"} step
+ * @returns {Promise<boolean>} false when the step was already recorded
+ */
+export async function markReceiptStepDone(hashedSub, receiptId, step) {
+  try {
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: getResourceName("RECEIPTS_DYNAMODB_TABLE_NAME"),
+          Key: { hashedSub, receiptId },
+          UpdateExpression: "SET #step = :now",
+          ConditionExpression: "attribute_exists(receiptId) AND attribute_not_exists(#step)",
+          ExpressionAttributeNames: { "#step": step },
+          ExpressionAttributeValues: { ":now": new Date().toISOString() },
+        }),
+    );
+    return true;
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") return false;
+    logger.error({ message: "Error recording a receipt step", error: error.message, receiptId, step });
     throw error;
   }
 }

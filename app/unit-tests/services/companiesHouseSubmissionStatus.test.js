@@ -24,11 +24,17 @@ vi.mock("@aws-sdk/lib-dynamodb", () => {
       this.input = input;
     }
   }
+  class QueryCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
   return {
     DynamoDBDocumentClient: { from: () => ({ send: mockSend }) },
     GetCommand,
     PutCommand,
     UpdateCommand,
+    QueryCommand,
   };
 });
 
@@ -67,7 +73,7 @@ vi.mock("@app/services/companiesHouseXmlGateway.js", async (importOriginal) => {
   };
 });
 
-import { pollSubmission } from "@app/services/companiesHouseSubmissionStatus.js";
+import { pollSubmission, hasStoredFinalStatus, isNeverReceived } from "@app/services/companiesHouseSubmissionStatus.js";
 import { initializeSalt } from "@app/services/subHasher.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -447,5 +453,28 @@ describe("pollSubmission", () => {
 
     expect(result.data.receiptId).toBe("cached-receipt");
     expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+});
+
+describe("hasStoredFinalStatus", () => {
+  const neverReceived = {
+    statusCode: "REJECT",
+    rejections: [{ rejectCode: "NOT-RECEIVED", description: "Companies House did not receive this filing.", instanceNumber: "1" }],
+  };
+
+  test("an accepted filing and a Companies House rejection are final", () => {
+    expect(hasStoredFinalStatus({ status: "completed", data: { statusCode: "ACCEPT" } })).toBe(true);
+    expect(hasStoredFinalStatus({ status: "failed", data: { statusCode: "REJECT", rejections: [{ rejectCode: "1" }] } })).toBe(true);
+  });
+
+  test("the never-received rejection is not final, so a later decision is recorded over it", () => {
+    expect(isNeverReceived(neverReceived)).toBe(true);
+    expect(hasStoredFinalStatus({ status: "failed", data: neverReceived })).toBe(false);
+  });
+
+  test("a send that failed before Companies House had it, and a pending filing, are not final", () => {
+    expect(hasStoredFinalStatus({ status: "failed", data: { message: "socket hang up" } })).toBe(false);
+    expect(hasStoredFinalStatus({ status: "pending", data: {} })).toBe(false);
+    expect(hasStoredFinalStatus(null)).toBe(false);
   });
 });

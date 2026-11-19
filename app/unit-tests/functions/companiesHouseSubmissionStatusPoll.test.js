@@ -95,13 +95,28 @@ vi.mock("@app/data/dynamoDbReceiptRepository.js", () => ({
   putReceipt: async () => {
     throw new Error("the Companies House record writes its receipt with putReceiptIfNew");
   },
-  putReceiptIfNew: async (userSub, receiptId, receipt) => {
+  putReceiptIfNew: async (userSub, receiptId, receipt, actor, clientId) => {
     if (failNextReceiptPut) {
       failNextReceiptPut = false;
       throw new Error("receipts table unavailable");
     }
-    if (receipts.has(`${userSub}/${receiptId}`)) return false;
-    receipts.set(`${userSub}/${receiptId}`, receipt);
+    if (receipts.has(`${userSub}/${receiptId}`)) return null;
+    receipts.set(`${userSub}/${receiptId}`, { receipt, clientId, steps: {} });
+    return `hashed-${userSub}`;
+  },
+  findReceiptForSubmission: async (userSub, submissionNumber, sentAt) => {
+    for (const [key, stored] of receipts) {
+      const [owner, receiptId] = [key.slice(0, key.indexOf("/")), key.slice(key.indexOf("/") + 1)];
+      if (owner === userSub && receiptId >= sentAt && receiptId.endsWith(`Z-${submissionNumber}`)) {
+        return { receiptId, hashedSub: `hashed-${userSub}`, ...stored.steps };
+      }
+    }
+    return null;
+  },
+  markReceiptStepDone: async (hashedSub, receiptId, step) => {
+    const stored = receipts.get(`${hashedSub.replace(/^hashed-/, "")}/${receiptId}`);
+    if (!stored || stored.steps[step]) return false;
+    stored.steps[step] = new Date().toISOString();
     return true;
   },
 }));
@@ -143,14 +158,20 @@ const { buildAccountsSubmission, buildConfirmationStatementSubmission, parseGate
 
 const USER_SUB = "filer-sub-1";
 
-async function fileAccounts(submissionNumber, { scenario, ownPresenter = false } = {}) {
+const ACCOUNTS_REQUEST_DATA = { filedDocument: "<html>accounts</html>", chargeActivityId: "file-micro-entity-accounts" };
+
+async function fileAccounts(submissionNumber, { scenario, ownPresenter = false, data = ACCOUNTS_REQUEST_DATA } = {}) {
   await recordSubmissionInProgress({
     userSub: USER_SUB,
     submissionNumber,
     kind: "accounts",
     underOwnPresenter: ownPresenter,
-    data: { filedDocument: "<html>accounts</html>", chargeActivityId: "file-micro-entity-accounts" },
+    data,
   });
+  await sendAccountsEnvelope(submissionNumber, { scenario });
+}
+
+async function sendAccountsEnvelope(submissionNumber, { scenario } = {}) {
   const envelope = buildAccountsSubmission({
     presenterId: SIMULATOR_PRESENTER_ID,
     presenterCode: SIMULATOR_PRESENTER_CODE,
@@ -174,7 +195,7 @@ function gatewayClasses() {
 }
 
 function storedReceipts() {
-  return [...receipts.values()];
+  return [...receipts.values()].map(({ receipt }) => receipt);
 }
 
 function receiptEmails() {
@@ -230,7 +251,7 @@ describe("companiesHouseSubmissionStatusPoll handler", () => {
         data: expect.objectContaining({ receiptKind: "accounts" }),
       }),
     ]);
-    expect(asyncRequests.get(`${USER_SUB}/PRS001`)).toMatchObject({ status: "completed" });
+    expect(asyncRequests.get(`${USER_SUB}/PRS001`)).toMatchObject({ status: "completed", retention: { days: 100 } });
     expect(mockPublishActivityEvent).toHaveBeenCalledWith(expect.objectContaining({ event: "companies-house-accounts-accepted" }));
     expect(mockChargeTokenOnSuccess).toHaveBeenCalledWith(USER_SUB, "file-micro-entity-accounts");
     expect(gatewayClasses()).toEqual(["GetSubmissionStatus", "StatusAck"]);
@@ -346,7 +367,7 @@ describe("companiesHouseSubmissionStatusPoll handler", () => {
     expect(second.acknowledged).toBe(true);
   });
 
-  test("a record whose completed write fails stores one receipt, sends one email and charges one token after the retry", async () => {
+  test("a record whose completed write fails stores one receipt, sends one email and charges one token across the retry", async () => {
     await fileAccounts("PRS011");
     failNextAsyncPut = "completed";
 
@@ -356,7 +377,7 @@ describe("companiesHouseSubmissionStatusPoll handler", () => {
     expect(first.outcomes).toEqual([{ submissionNumber: "PRS011", statusCode: "ACCEPT", outcome: "error" }]);
     expect(storedReceipts()).toHaveLength(1);
     expect(asyncRequests.get(`${USER_SUB}/PRS011`)).toMatchObject({ status: "pending" });
-    expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
+    expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
 
     allowNextPoll();
     const second = await handler();
@@ -513,5 +534,110 @@ describe("companiesHouseSubmissionStatusPoll handler", () => {
     expect(result).toMatchObject({ polled: true, acknowledged: false });
     expect(result.errors[0]).toMatchObject({ number: 502 });
     expect(gatewayClasses()).toEqual(["GetSubmissionStatus"]);
+  });
+
+  test("a filing recorded as never received is recorded in full when Companies House accepts it later", async () => {
+    const data = { ...ACCOUNTS_REQUEST_DATA, clientId: "client-7" };
+    await recordSubmissionInProgress({ userSub: USER_SUB, submissionNumber: "PRS031", kind: "accounts", underOwnPresenter: false, data });
+    await recordOutcomeUnknown({ userSub: USER_SUB, submissionNumber: "PRS031", kind: "accounts", data });
+    const pastMargin = new Date(Date.now() + 31 * 60 * 1000);
+    const first = await pollSubmission({ userSub: USER_SUB, submissionNumber: "PRS031", kind: "accounts", now: pastMargin });
+    expect(first.data.rejections[0].rejectCode).toBe("NOT-RECEIVED");
+    const again = await pollSubmission({ userSub: USER_SUB, submissionNumber: "PRS031", kind: "accounts", now: pastMargin });
+    expect(again.data).toMatchObject({ statusCode: "REJECT" });
+    expect(again.data.pendingRequest).toBeUndefined();
+
+    await sendAccountsEnvelope("PRS031");
+    const result = await handler();
+
+    expect(result.outcomes).toEqual([{ submissionNumber: "PRS031", statusCode: "ACCEPT", outcome: "recorded" }]);
+    expect(result.acknowledged).toBe(true);
+    expect(asyncRequests.get(`${USER_SUB}/PRS031`)).toMatchObject({ status: "completed", retention: { days: 100 } });
+    expect(storedReceipts()).toEqual([expect.objectContaining({ statusCode: "ACCEPT", filedDocument: "<html>accounts</html>" })]);
+    expect(receiptEmails()).toEqual([expect.objectContaining({ data: expect.objectContaining({ clientId: "client-7" }) })]);
+    expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  test("a later rejection replaces the never-received rejection", async () => {
+    await recordSubmissionInProgress({
+      userSub: USER_SUB,
+      submissionNumber: "PRS032",
+      kind: "accounts",
+      underOwnPresenter: false,
+      data: ACCOUNTS_REQUEST_DATA,
+    });
+    await recordOutcomeUnknown({ userSub: USER_SUB, submissionNumber: "PRS032", kind: "accounts", data: ACCOUNTS_REQUEST_DATA });
+    await pollSubmission({ userSub: USER_SUB, submissionNumber: "PRS032", kind: "accounts", now: new Date(Date.now() + 31 * 60 * 1000) });
+
+    await sendAccountsEnvelope("PRS032", { scenario: "ACCOUNTS_REJECTED" });
+    const result = await handler();
+
+    expect(result.outcomes).toEqual([{ submissionNumber: "PRS032", statusCode: "REJECT", outcome: "recorded" }]);
+    expect(asyncRequests.get(`${USER_SUB}/PRS032`).data.rejections[0]).toMatchObject({ description: "Random Test mode rejection" });
+  });
+
+  test("a practice's client filing stores its receipt as the client's", async () => {
+    await fileAccounts("PRS033", { data: { ...ACCOUNTS_REQUEST_DATA, clientId: "client-9" } });
+
+    await handler();
+
+    expect([...receipts.values()].map(({ clientId }) => clientId)).toEqual(["client-9"]);
+    expect(receiptEmails()[0].data.clientId).toBe("client-9");
+  });
+
+  test("a record stopped before its email asks for the email once when the stale claim is taken", async () => {
+    await fileAccounts("PRS034");
+    mockRequestCustomerEmail.mockImplementationOnce(() => {
+      throw new Error("Lambda stopped");
+    });
+
+    await handler();
+    // The stopped Lambda gave no claim back; past the stale limit the next poll takes it.
+    filingStates.set("PRS034", {
+      ...filingStates.get("PRS034"),
+      claimedAt: Date.now() - (FINAL_STATUS_CLAIM_STALE_MINUTES + 1) * 60 * 1000,
+    });
+    allowNextPoll();
+    const second = await handler();
+
+    expect(second.outcomes).toEqual([{ submissionNumber: "PRS034", statusCode: "ACCEPT", outcome: "recorded" }]);
+    expect(storedReceipts()).toHaveLength(1);
+    expect(mockRequestCustomerEmail).toHaveBeenCalledTimes(2);
+    expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  test("a record stopped before its token charge charges the token once on the retry", async () => {
+    await fileAccounts("PRS035");
+    mockChargeTokenOnSuccess.mockImplementationOnce(() => {
+      throw new Error("Lambda stopped");
+    });
+
+    await handler();
+    filingStates.set("PRS035", {
+      ...filingStates.get("PRS035"),
+      claimedAt: Date.now() - (FINAL_STATUS_CLAIM_STALE_MINUTES + 1) * 60 * 1000,
+    });
+    allowNextPoll();
+    await handler();
+    allowNextPoll();
+    await handler();
+
+    expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(2);
+    expect(asyncRequests.get(`${USER_SUB}/PRS035`)).toMatchObject({ status: "completed" });
+    expect(receiptEmails()).toHaveLength(1);
+  });
+
+  test("a receipt stored under the id dated by its record time is reused, with no second receipt or email", async () => {
+    await fileAccounts("PRS036");
+    const earlierFormId = new Date(Date.now() + 60 * 1000).toISOString() + "-PRS036";
+    receipts.set(`${USER_SUB}/${earlierFormId}`, { receipt: { statusCode: "ACCEPT" }, steps: {} });
+
+    const result = await handler();
+
+    expect(result.outcomes).toEqual([{ submissionNumber: "PRS036", statusCode: "ACCEPT", outcome: "recorded" }]);
+    expect(storedReceipts()).toHaveLength(1);
+    expect(asyncRequests.get(`${USER_SUB}/PRS036`).data.receiptId).toBe(earlierFormId);
+    expect(receiptEmails()).toEqual([]);
+    expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
   });
 });

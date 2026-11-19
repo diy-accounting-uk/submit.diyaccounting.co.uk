@@ -18,7 +18,8 @@ import {
 } from "./companiesHouseXmlGateway.js";
 import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { FILING_STATE_RETENTION, claimFinalStatus, releaseFinalStatus } from "../data/dynamoDbCompaniesHouseFilingStateRepository.js";
-import { recordFiledReceiptOnce } from "./filedReceipt.js";
+import { recordFiledReceiptForSubmission } from "./filedReceipt.js";
+import { markReceiptStepDone } from "../data/dynamoDbReceiptRepository.js";
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
 import { jointFilingFields, amendedFields, formRequestFields } from "./jointFiling.js";
 import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
@@ -75,7 +76,7 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
   }
 
   if (persistedRequest.status === "completed" || persistedRequest.status === "failed") {
-    return { data: persistedRequest.data };
+    return { data: withoutPendingRequest(persistedRequest.data) };
   }
 
   const { presenterId, presenterCode } = ownPresenter ?? (await resolvePresenterCredentials());
@@ -142,23 +143,55 @@ async function recordNeverReceived({ userSub, submissionNumber, persistedRequest
 }
 
 /**
- * Whether a filer's request item holds a final status a poll recorded: an accepted filing's
- * "completed", or a rejection's "failed" with its REJECT. A "failed" item from a send that never
- * reached Companies House carries no REJECT and is not one.
+ * Whether a status is the rejection recorded when Companies House had no record of a filing whose
+ * envelope got no answer. It is not Companies House's own decision, so a later ACCEPT or REJECT
+ * replaces it.
+ * @param {{rejections?: Array}|null|undefined} status
+ * @returns {boolean}
+ */
+export function isNeverReceived(status) {
+  return Boolean(status?.rejections?.some((rejection) => rejection.rejectCode === NEVER_RECEIVED_REJECT_CODE));
+}
+
+/**
+ * Whether a filer's request item holds a final status Companies House decided: an accepted
+ * filing's "completed", or a rejection's "failed" with its REJECT. Neither a "failed" item from a
+ * send that never reached Companies House (no REJECT) nor the never-received rejection is one.
  * @param {object|null} request - the filer's async request item
  * @returns {boolean}
  */
 export function hasStoredFinalStatus(request) {
-  return request?.status === "completed" || (request?.status === "failed" && request.data?.statusCode === "REJECT");
+  if (request?.status === "completed") return true;
+  return request?.status === "failed" && request.data?.statusCode === "REJECT" && !isNeverReceived(request.data);
+}
+
+// The page answer of a stored outcome leaves out the fields the request was sent with.
+function withoutPendingRequest(data) {
+  if (!data?.pendingRequest) return data;
+  const answer = { ...data };
+  delete answer.pendingRequest;
+  return answer;
+}
+
+/**
+ * The fields the filer's request was sent with. A never-received record keeps them under
+ * pendingRequest, so a status that arrives after it is recorded from the same fields.
+ * @param {object} persistedRequest
+ * @returns {object}
+ */
+function sentRequestData(persistedRequest) {
+  return persistedRequest.data?.pendingRequest ?? persistedRequest.data ?? {};
 }
 
 /**
  * Record a submission's status once Companies House has decided it. REJECT stores "failed" with
- * the reject reasons; ACCEPT writes a receipt (which asks for the receipt email), marks a paid
- * confirmation statement fee used, stores "completed", publishes the form's accepted event and
- * charges its token. PENDING and PARKED change nothing. Only the poll that holds the claim records
- * it; a record that fails part-way gives the claim back, and the retry writes under the same
- * receipt id, so the receipt and its email are written once and the token is charged once.
+ * the reject reasons; ACCEPT writes a receipt, asks for the receipt email, marks a paid
+ * confirmation statement fee used, charges its token, stores "completed" and publishes the form's
+ * accepted event. PENDING and PARKED change nothing. Only the poll that holds the claim records it;
+ * a record that fails or stops part-way is retried, and the retry finds the receipt of the
+ * submission and runs only the steps the receipt does not show as done, so the receipt, its email
+ * and the token charge each happen once. The never-received rejection gives its claim back, so a
+ * later decision from Companies House is recorded over it.
  *
  * @param {object} input
  * @param {string} input.userSub
@@ -188,62 +221,71 @@ export async function recordSubmissionStatus({ userSub, submissionNumber, persis
       recorded: false,
     };
   }
+  let data;
   try {
-    const data = await writeFinalStatus({ userSub, submissionNumber, persistedRequest, status, kind });
-    return { data, recorded: true };
+    data = await writeFinalStatus({ userSub, submissionNumber, persistedRequest, status, kind });
   } catch (error) {
     await releaseFinalStatus(submissionNumber);
     throw error;
   }
+  if (isNeverReceived(status)) await releaseFinalStatus(submissionNumber);
+  return { data, recorded: true };
 }
 
 async function writeFinalStatus({ userSub, submissionNumber, persistedRequest, status, kind }) {
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
+  const requestData = sentRequestData(persistedRequest);
   const jointFiling = {
-    ...jointFilingFields(persistedRequest.data?.jointFilingId),
-    ...amendedFields(persistedRequest.data?.amended === true),
+    ...jointFilingFields(requestData.jointFilingId),
+    ...amendedFields(requestData.amended === true),
   };
 
   if (status.statusCode === "REJECT") {
-    // Kept as long as the filing state, so the filings list shows the rejection and its reasons.
+    // Kept as long as the filing state, so the filings list shows the rejection and its reasons. The
+    // never-received rejection also keeps the fields the request was sent with, for a later status.
+    const pendingRequest = isNeverReceived(status) ? { pendingRequest: requestData } : {};
     await putAsyncRequest(
       userSub,
       submissionNumber,
       "failed",
-      { ...status, kind, ...jointFiling },
+      { ...status, kind, ...jointFiling, ...pendingRequest },
       asyncRequestsTableName,
       FILING_STATE_RETENTION,
     );
     return status;
   }
 
-  // Dated by the time the filing was sent, which a retry reads unchanged from the request item, so
-  // every attempt writes the same receipt and the reader's receipt id never changes.
-  const receiptId = `${persistedRequest.createdAt}-${submissionNumber}`;
   // The accounts document is kept with the receipt so the customer's copy shows what was filed.
-  const filedDocument = persistedRequest.data?.filedDocument;
+  const filedDocument = requestData.filedDocument;
   const receipt = filedDocument
-    ? { ...status, kind: ACCOUNTS_RECEIPT_KIND, filedDocument, ...jointFiling, ...formRequestFields(persistedRequest.data?.formRequest) }
+    ? { ...status, kind: ACCOUNTS_RECEIPT_KIND, filedDocument, ...jointFiling, ...formRequestFields(requestData.formRequest) }
     : { ...status, ...jointFiling };
-  // Every step before the "completed" put is safe to repeat: a retry finds the receipt stored and
-  // asks for no second email, and a fee already marked used stays used. The steps after it run once,
-  // because a stored "completed" ends every later poll of this filing.
-  await recordFiledReceiptOnce({
+  // Every step before the "completed" put is safe to repeat: the receipt is found by its submission
+  // number, the email and the token charge run only when the receipt does not show them done, and a
+  // fee already marked used stays used. The event after the put runs once, because a stored
+  // "completed" ends every later poll of this filing.
+  const storedReceipt = await recordFiledReceiptForSubmission({
     userSub,
-    receiptId,
+    submissionNumber,
+    sentAt: persistedRequest.createdAt,
     receipt,
     actor: resolveActorClass(),
+    clientId: requestData.clientId,
     receiptKind: kind,
     synthetic: isGatewayTest(),
-    language: persistedRequest.data?.language,
+    language: requestData.language,
   });
-  const feeCharge = persistedRequest.data?.feeCharge;
+  const { receiptId } = storedReceipt;
+  const feeCharge = requestData.feeCharge;
   if (feeCharge) await markChargeUsed(userSub, feeCharge.activityId, feeCharge.subjectKey);
+  // Each accepted filing costs its own token, alone or as half of a pair; the pair costs two.
+  if (requestData.chargeActivityId && !storedReceipt.tokenChargedAt) {
+    await chargeTokenOnSuccess(userSub, requestData.chargeActivityId);
+    await markReceiptStepDone(storedReceipt.hashedSub, receiptId, "tokenChargedAt");
+  }
   const data = { ...status, ...jointFiling, receiptId };
-  await putAsyncRequest(userSub, submissionNumber, "completed", { ...data, kind }, asyncRequestsTableName);
+  await putAsyncRequest(userSub, submissionNumber, "completed", { ...data, kind }, asyncRequestsTableName, FILING_STATE_RETENTION);
   const { acceptedEvent, acceptedSummary } = FORM_KINDS[kind];
   await publishActivityEvent({ event: acceptedEvent, summary: acceptedSummary, userSub });
-  // Each accepted filing costs its own token, alone or as half of a pair; the pair costs two.
-  if (persistedRequest.data?.chargeActivityId) await chargeTokenOnSuccess(userSub, persistedRequest.data.chargeActivityId);
   return data;
 }

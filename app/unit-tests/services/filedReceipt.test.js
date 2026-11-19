@@ -8,6 +8,8 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 const calls = [];
 const mockPutReceipt = vi.fn();
 const mockPutReceiptIfNew = vi.fn();
+const mockFindReceiptForSubmission = vi.fn();
+const mockMarkReceiptStepDone = vi.fn();
 const mockRequestCustomerEmail = vi.fn();
 vi.mock("@app/data/dynamoDbReceiptRepository.js", () => ({
   putReceipt: (...args) => {
@@ -18,6 +20,14 @@ vi.mock("@app/data/dynamoDbReceiptRepository.js", () => ({
     calls.push("putReceiptIfNew");
     return mockPutReceiptIfNew(...args);
   },
+  findReceiptForSubmission: (...args) => {
+    calls.push("findReceiptForSubmission");
+    return mockFindReceiptForSubmission(...args);
+  },
+  markReceiptStepDone: (...args) => {
+    calls.push("markReceiptStepDone");
+    return mockMarkReceiptStepDone(...args);
+  },
 }));
 vi.mock("@app/lib/customerEmailRequest.js", () => ({
   requestCustomerEmail: (...args) => {
@@ -26,7 +36,7 @@ vi.mock("@app/lib/customerEmailRequest.js", () => ({
   },
 }));
 
-import { recordFiledReceipt, recordFiledReceiptOnce } from "@app/services/filedReceipt.js";
+import { recordFiledReceipt, recordFiledReceiptForSubmission } from "@app/services/filedReceipt.js";
 
 const filing = {
   userSub: "user-sub-1",
@@ -83,28 +93,83 @@ describe("recordFiledReceipt", () => {
   });
 });
 
-describe("recordFiledReceiptOnce", () => {
+describe("recordFiledReceiptForSubmission", () => {
+  const SENT_AT = "2026-01-01T00:00:00.000Z";
+  const submission = {
+    userSub: "user-sub-1",
+    submissionNumber: "00001A",
+    sentAt: SENT_AT,
+    receipt: { submissionNumber: "00001A" },
+    actor: "customer",
+    clientId: "client-1",
+    receiptKind: "accounts",
+    synthetic: true,
+  };
+  const newReceiptId = `${SENT_AT}-00001A`;
+
   beforeEach(() => {
     calls.length = 0;
-    mockPutReceiptIfNew.mockReset().mockResolvedValue(true);
+    mockPutReceiptIfNew.mockReset().mockResolvedValue("hashed-1");
+    mockFindReceiptForSubmission.mockReset().mockResolvedValue(null);
+    mockMarkReceiptStepDone.mockReset().mockResolvedValue(true);
     mockRequestCustomerEmail.mockReset().mockResolvedValue({ requested: true });
   });
 
-  test("stores a new receipt, then requests the email", async () => {
-    await expect(recordFiledReceiptOnce({ ...filing, language: "cy" })).resolves.toBe(true);
-    expect(mockPutReceiptIfNew).toHaveBeenCalledWith(filing.userSub, filing.receiptId, filing.receipt, "customer", "client-1");
-    expect(calls).toEqual(["putReceiptIfNew", "requestCustomerEmail"]);
+  test("stores a new receipt dated by the send, requests the email, then records that it did", async () => {
+    await expect(recordFiledReceiptForSubmission({ ...submission, language: "cy" })).resolves.toEqual({
+      receiptId: newReceiptId,
+      hashedSub: "hashed-1",
+    });
+    expect(mockPutReceiptIfNew).toHaveBeenCalledWith("user-sub-1", newReceiptId, submission.receipt, "customer", "client-1");
+    expect(calls).toEqual(["findReceiptForSubmission", "putReceiptIfNew", "requestCustomerEmail", "markReceiptStepDone"]);
     expect(mockRequestCustomerEmail).toHaveBeenCalledWith({
       kind: "submission-receipt",
-      userSub: filing.userSub,
+      userSub: "user-sub-1",
       synthetic: true,
-      data: { receiptId: filing.receiptId, receiptKind: "vat-return", clientId: "client-1", language: "cy" },
+      data: { receiptId: newReceiptId, receiptKind: "accounts", clientId: "client-1", language: "cy" },
     });
+    expect(mockMarkReceiptStepDone).toHaveBeenCalledWith("hashed-1", newReceiptId, "emailRequestedAt");
   });
 
-  test("requests no second email when the receipt is already stored", async () => {
-    mockPutReceiptIfNew.mockResolvedValue(false);
-    await expect(recordFiledReceiptOnce(filing)).resolves.toBe(false);
+  test("a retry after a stop before the email asks for it once and stores no second receipt", async () => {
+    mockFindReceiptForSubmission.mockResolvedValue({ receiptId: newReceiptId, hashedSub: "hashed-1" });
+
+    await recordFiledReceiptForSubmission(submission);
+
+    expect(mockPutReceiptIfNew).not.toHaveBeenCalled();
+    expect(mockRequestCustomerEmail).toHaveBeenCalledTimes(1);
+    expect(mockMarkReceiptStepDone).toHaveBeenCalledWith("hashed-1", newReceiptId, "emailRequestedAt");
+  });
+
+  test("a retry of a receipt whose email is recorded asks for no second email", async () => {
+    mockFindReceiptForSubmission.mockResolvedValue({ receiptId: newReceiptId, hashedSub: "hashed-1", emailRequestedAt: SENT_AT });
+
+    await recordFiledReceiptForSubmission(submission);
+
+    expect(mockPutReceiptIfNew).not.toHaveBeenCalled();
+    expect(mockRequestCustomerEmail).not.toHaveBeenCalled();
+    expect(mockMarkReceiptStepDone).not.toHaveBeenCalled();
+  });
+
+  test("reuses a receipt stored under the id dated by its record time, which was emailed when it was stored", async () => {
+    const earlierFormId = "2026-01-02T09:30:00.000Z-00001A";
+    mockFindReceiptForSubmission.mockResolvedValue({ receiptId: earlierFormId, hashedSub: "hashed-1" });
+
+    await expect(recordFiledReceiptForSubmission(submission)).resolves.toMatchObject({ receiptId: earlierFormId });
+
+    expect(mockFindReceiptForSubmission).toHaveBeenCalledWith("user-sub-1", "00001A", SENT_AT);
+    expect(mockPutReceiptIfNew).not.toHaveBeenCalled();
+    expect(mockRequestCustomerEmail).not.toHaveBeenCalled();
+    expect(mockMarkReceiptStepDone).toHaveBeenCalledWith("hashed-1", earlierFormId, "emailRequestedAt");
+  });
+
+  test("a receipt another poll stored between the lookup and the put is reused", async () => {
+    mockPutReceiptIfNew.mockResolvedValue(null);
+    mockFindReceiptForSubmission
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ receiptId: newReceiptId, hashedSub: "hashed-1", emailRequestedAt: SENT_AT });
+
+    await expect(recordFiledReceiptForSubmission(submission)).resolves.toMatchObject({ receiptId: newReceiptId });
     expect(mockRequestCustomerEmail).not.toHaveBeenCalled();
   });
 });
