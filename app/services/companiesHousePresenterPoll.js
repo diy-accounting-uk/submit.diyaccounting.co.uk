@@ -12,6 +12,7 @@ import {
   resolvePresenterCredentials,
   postToGateway,
   parseGatewayResponse,
+  summariseGatewayResponse,
   redactPresenterCredentials,
   isNothingCompletedError,
 } from "./companiesHouseXmlGateway.js";
@@ -88,12 +89,24 @@ export async function pollPresenterSubmissions({ now = new Date() } = {}) {
     requestXml: redactPresenterCredentials(statusRequestXml),
   });
   const gatewayResponse = await postToGateway(statusRequestXml);
+  let parsed;
+  try {
+    parsed = parseGatewayResponse(gatewayResponse.data);
+  } catch (error) {
+    logger.error({
+      message: "Companies House presenter GetSubmissionStatus response could not be parsed",
+      status: gatewayResponse.status,
+      error: error.message,
+      responseXml: redactPresenterCredentials(gatewayResponse.data),
+    });
+    throw error;
+  }
+  // The parsed fields, not the envelope: the envelope of a routine answer carries GovTalkErrors.
   logger.info({
     message: "Companies House presenter GetSubmissionStatus response",
     status: gatewayResponse.status,
-    responseXml: redactPresenterCredentials(gatewayResponse.data),
+    ...summariseGatewayResponse(parsed),
   });
-  const parsed = parseGatewayResponse(gatewayResponse.data);
 
   if (parsed.pollInterval > MINIMUM_PRESENTER_POLL_SECONDS) {
     await deferPresenterPoll(nowSeconds + parsed.pollInterval);

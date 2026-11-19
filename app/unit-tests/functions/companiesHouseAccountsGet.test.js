@@ -184,7 +184,7 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
     expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
-  test("logs the redacted request and response bodies, never the presenter id or code", async () => {
+  test("logs the redacted request body and the parsed response, never the presenter id or code", async () => {
     const requestXml =
       "<GovTalkMessage><Header><SenderDetails><IDAuthentication><SenderID>hashed-presenter-id</SenderID>" +
       "<Authentication><Method>clear</Method><Value>hashed-presenter-code</Value></Authentication></IDAuthentication></SenderDetails></Header>" +
@@ -215,7 +215,8 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
       .find((obj) => obj.message === "Companies House GetSubmissionStatus response");
     expect(requestLog.requestXml).toContain("<PresenterID>***</PresenterID>");
     expect(requestLog.requestXml).toContain("<SenderID>***</SenderID>");
-    expect(responseLog.responseXml).toContain("<SenderID>***</SenderID>");
+    expect(responseLog.responseXml).toBeUndefined();
+    expect(responseLog.statuses).toEqual([{ submissionNumber: "00001A", statusCode: "PENDING" }]);
     expect(responseLog.status).toBe(200);
   });
 
