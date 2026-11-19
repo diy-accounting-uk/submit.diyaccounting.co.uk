@@ -939,6 +939,16 @@ describe("operatorSnapshotPublish", () => {
       expect(mode("ai-agent-country").sql).toContain("ai_agent_sessions > 0");
       expect(mode("ai-agent-country").hourlySql).toContain("ai_agent_sessions > 0");
       expect(mode("automated-country").sql).toContain("automated_sessions > 0");
+      const automatedDescription = mode("automated-country").descriptionOf("GB");
+      for (const automatedClass of [
+        "an empty user agent",
+        "a bot token with a contact URL",
+        "a headless or driven browser",
+        "an HTTP library",
+        "a page-speed tool",
+      ]) {
+        expect(automatedDescription).toContain(automatedClass);
+      }
       expect(mode("automated-country").hourlySql).toContain("FROM   v_traffic_by_country_hourly");
       expect(mode("automated-country").hourlySql).toContain("automated_sessions > 0");
       for (const mode of visitors.modes.slice(1)) {

@@ -201,6 +201,20 @@ class BusinessViewsTest {
     }
 
     @Test
+    void campaignChannelsAndCountryViewsLeaveAutomatedClientsOutOfTheirPersonCounts() {
+        Template template = synthBusinessViews();
+
+        var channels = sqlForView(template, "v_campaign_channels_daily").replaceAll("--[^\\n]*", "");
+        assertTrue(
+                channels.contains("AND  coalesce(bot_class, 'none') <> 'automated'"),
+                "expected automated clients to be left out of the channel sessions: " + channels);
+        var country = sqlForView(template, "v_traffic_by_country_daily").replaceAll("--[^\\n]*", "");
+        assertTrue(
+                country.contains("coalesce(bot_class, 'none') <> 'automated') AS human_sessions"),
+                "expected automated clients to be left out of the country's human sessions: " + country);
+    }
+
+    @Test
     void landingPagesViewLeavesOutSessionsTheOperatorTookPartIn() {
         Template template = synthBusinessViews();
 

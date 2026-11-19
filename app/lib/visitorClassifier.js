@@ -52,7 +52,9 @@ export function classifyVisitor(userAgent) {
 }
 
 // User-agent tokens of automated clients that the crawler list does not name: generic bot and
-// spider tokens, headless and driven browsers, HTTP libraries and page-speed tools. A client that
+// spider tokens, headless and driven browsers, HTTP libraries and page-speed tools. A desktop app's
+// embedded browser (Electron) is a person's: a driven one is caught by its headless or driver
+// token, not by the Electron token. A client that
 // runs the page's script and sends the beacon with one of these is a bot, not a visitor. A bare
 // "bot" would match phone models such as CUBOT, so a bot token needs the character after it, and
 // "+http" catches the contact URL bots put in their user agent.
@@ -71,7 +73,6 @@ const AUTOMATED_PATTERNS = [
   "playwright",
   "selenium",
   "webdriver",
-  "electron/",
   "python",
   "aiohttp",
   "httpx",

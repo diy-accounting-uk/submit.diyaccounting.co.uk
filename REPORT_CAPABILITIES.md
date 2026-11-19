@@ -4893,7 +4893,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-68 SQL view: campaign results by place
 
 - **Use when:** a campaign report must say which place (utm source, medium, campaign or referral code) produced sessions, pass uses, subscribers and commission.
-- **Does:** v_campaign_channels_daily joins the session beacon's ref and utm_* values (new-session events), pass redemptions and live commission lines on one key per day: utm source, medium, campaign and ref. Redemptions and commission lines reach the key through the redeemer's first bundle record, which carries the acquisition captured at landing. BusinessViews.java registers the view.
+- **Does:** v_campaign_channels_daily joins the session beacon's ref and utm_* values (new-session events from people, automated clients left out), pass redemptions and live commission lines on one key per day: utm source, medium, campaign and ref. Redemptions and commission lines reach the key through the redeemer's first bundle record, which carries the acquisition captured at landing. BusinessViews.java registers the view.
 - **Run:** no command; `SELECT * FROM v_campaign_channels_daily WHERE day >= current_date - INTERVAL '30' DAY`
 - **Entry:** `infra/main/resources/analytics/views/v_campaign_channels_daily.sql:`
 - **Files:** infra/main/resources/analytics/views/v_campaign_channels_daily.sql, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/BusinessViews.java

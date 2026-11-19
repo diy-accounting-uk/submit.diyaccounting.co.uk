@@ -2393,7 +2393,7 @@ export function buildDailyChartDefinitions() {
           maxComponents: 10,
           labelOf: (id) => id,
           descriptionOf: (id) =>
-            `Sessions from ${id} whose user agent names an automated client: a headless browser, an HTTP library or a bot the crawler list does not name.`,
+            `Sessions from ${id} by an automated client: an empty user agent, a bot token with a contact URL, a headless or driven browser, an HTTP library or a page-speed tool.`,
           sql: longFormSql({
             dayExpression: "day",
             componentExpression: "country",
