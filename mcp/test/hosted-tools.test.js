@@ -4,7 +4,8 @@
 import { describe, expect, it } from "vitest";
 
 import { createSession } from "../lib/book-tools.js";
-import { HOSTED_OVERRIDES, HOSTED_TOOL_NAMES, REVIEWER_GROUP, hostedToolNames } from "../lib/hosted-tools.js";
+import { HOSTED_OVERRIDES, HOSTED_TOOL_NAMES, REVIEWER_GROUP, hostedInstructions, hostedToolNames } from "../lib/hosted-tools.js";
+import { VAT_FILING_SENTENCE } from "../lib/handoff-tools.js";
 import { handleMcpRequest } from "../lib/http.js";
 import { ITSA_TOOLS } from "../lib/itsa-tools.js";
 import { createServer, TOOLS } from "../lib/server.js";
@@ -131,5 +132,50 @@ describe("the hosted tool set", () => {
       const text = JSON.stringify(answer);
       expect(text, name).toMatch(/not found/i);
     }
+  });
+
+  describe("server instructions", () => {
+    const initialize = (instructions) =>
+      handleMcpRequest(
+        new Request("https://submit.diyaccounting.co.uk/mcp", {
+          method: "POST",
+          headers: { "content-type": "application/json", "accept": "application/json, text/event-stream" },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 1,
+            method: "initialize",
+            params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "test", version: "1" } },
+          }),
+        }),
+        { session: createSession(), toolNames: hostedToolNames("prod"), instructions },
+      ).then((response) => response.json());
+
+    it("the initialize result for prod's tool set says the connector offers VAT tools only and cannot file accounts or pay", async () => {
+      const { result } = await initialize(hostedInstructions("prod"));
+
+      expect(result.instructions).toMatch(/VAT tools only/);
+      expect(result.instructions).toMatch(/cannot file a VAT return, pay HMRC or anyone else, or file company accounts/);
+    });
+
+    it("the initialize result says how a return is filed and what to show from a derived return", async () => {
+      const { result } = await initialize(hostedInstructions("prod"));
+
+      expect(result.instructions).toContain("call prepare_vat_return");
+      expect(result.instructions).toContain(VAT_FILING_SENTENCE);
+      expect(result.instructions).toMatch(/After derive_vat_return, show the nine boxes and the largest lines behind boxes 1 and 4/);
+    });
+
+    it("the reviewer gets prod's instructions in every environment, and the wider tool set gets none", () => {
+      for (const environmentName of ["ci", "simulator", undefined]) {
+        expect(hostedInstructions(environmentName, [REVIEWER_GROUP])).toBe(hostedInstructions("prod"));
+        expect(hostedInstructions(environmentName)).toBeUndefined();
+      }
+    });
+
+    it("a server built with no instructions sends none", async () => {
+      const { result } = await initialize(undefined);
+
+      expect(result.instructions).toBeUndefined();
+    });
   });
 });

@@ -16,6 +16,7 @@ import { openBook } from "./book-tools.js";
 import { deriveItsaAnnualSubmission } from "./itsa-tools.js";
 import { CHANGES_OUTSIDE, READS } from "./tool-annotations.js";
 import { runForClients, RUN_FOR_CLIENTS_TOOLS } from "./batch-tools.js";
+import { VAT_FILING_SENTENCE } from "./handoff-tools.js";
 
 // The book tools read and write the server's filesystem, which a hosted caller never reaches.
 const HOSTED_RUN_FOR_CLIENTS_TOOLS = RUN_FOR_CLIENTS_TOOLS.filter((tool) => tool !== "open_book" && tool !== "save_book");
@@ -86,6 +87,27 @@ export const REVIEWER_GROUP = "mcp-reviewer";
 export function hostedToolNames(environmentName, groups = []) {
   const prod = (environmentName || "").toLowerCase() === "prod";
   return prod || groups.includes(REVIEWER_GROUP) ? PROD_HOSTED_TOOL_NAMES : HOSTED_TOOL_NAMES;
+}
+
+// What an assistant connected to prod's tool set needs to know beyond each tool's description: what
+// the connector cannot do, how a return gets filed, and what to show from a derived return.
+const PROD_HOSTED_INSTRUCTIONS =
+  "This connector offers VAT tools only: it opens a diya-gl book, derives a VAT return from it, prepares the link " +
+  "that opens the VAT return form with those figures filled in, and reads stored VAT receipts. It cannot file a VAT " +
+  "return, pay HMRC or anyone else, or file company accounts. When asked for any of those, say that this connector " +
+  "offers VAT tools only and cannot do it. To file a VAT return, call prepare_vat_return, give the person its link and " +
+  `tell them: "${VAT_FILING_SENTENCE}" After derive_vat_return, show the nine boxes and the largest lines behind ` +
+  "boxes 1 and 4.";
+
+/**
+ * The server instructions the hosted endpoint sends in an environment, for a caller in these groups:
+ * prod's tool set carries them, the wider tool set carries none.
+ * @param {string|undefined} environmentName
+ * @param {string[]} [groups] - the token's `cognito:groups`
+ * @returns {string|undefined}
+ */
+export function hostedInstructions(environmentName, groups = []) {
+  return hostedToolNames(environmentName, groups) === PROD_HOSTED_TOOL_NAMES ? PROD_HOSTED_INSTRUCTIONS : undefined;
 }
 
 export const HOSTED_OVERRIDES = {
