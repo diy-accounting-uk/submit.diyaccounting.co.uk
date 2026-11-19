@@ -19,9 +19,10 @@ description: From a prod-env-charges-without-activation alarm (or its [ALARM] is
 # paid-without-activation
 
 **SSO check.** Before the first AWS call, and before any request that the operator log in, run
-`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
-get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
-one fails, and name the profile and the error. Never ask for a login from memory.
+`scripts/sso-check.sh`. It calls `diya-submit-ci` and `diya-submit-prod` through the CLI and a Node SDK
+client and prints one line per profile: live, CLI cache only, or expired. Ask for
+`aws sso login --sso-session diyaccounting` only when it reports a profile not live, and name the
+profile and its line. Never ask for a login from memory.
 
 The alarm `prod-env-charges-without-activation` fires when `ChargesWithoutActivation` in
 `Submit/Analytics` is above 0 for a day. The metric is

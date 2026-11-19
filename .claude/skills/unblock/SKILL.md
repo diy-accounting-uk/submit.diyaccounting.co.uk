@@ -63,9 +63,8 @@ Each row then has one result:
 Read-only commands need no approval. Never write to AWS, GitHub settings or a vendor in this
 pass, and never change an issue during a `/board` render.
 
-An SSO login is never an ask on recall. Run `aws --profile diya-submit-ci sts get-caller-identity`
-and the same for `diya-submit-prod` first, and print the login only when one fails, naming the
-profile and the error.
+An SSO login is never an ask on recall. Run `scripts/sso-check.sh` first, and print the login only
+when it reports a profile not live, naming the profile and its line.
 
 An AWS write that the session's permissions allow gets no `!` block. Present it with what it
 changes. On the operator's yes, run it, read the result back and report it. Print the `!` block

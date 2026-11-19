@@ -19,9 +19,10 @@ description: Run a full key rotation with the operator present. Rolls every key 
 # key-rotation
 
 **SSO check.** Before the first AWS call, and before any request that the operator log in, run
-`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
-get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
-one fails, and name the profile and the error. Never ask for a login from memory.
+`scripts/sso-check.sh`. It calls `diya-submit-ci` and `diya-submit-prod` through the CLI and a Node SDK
+client and prints one line per profile: live, CLI cache only, or expired. Ask for
+`aws sso login --sso-session diyaccounting` only when it reports a profile not live, and name the
+profile and its line. Never ask for a login from memory.
 
 The authority for the order and for each key's procedure is
 `../private.diyaccounting.co.uk/security/RUNBOOK_INFORMATION_SECURITY.md` sections 3 and 4. This
@@ -86,8 +87,8 @@ The sections below use these names.
 
 ## 1. Preconditions
 
-1. machine: `aws --profile diya-submit-prod sts get-caller-identity`, then the same with
-   `diya-submit-ci`. If one fails, print this and wait:
+1. machine: `scripts/sso-check.sh diya-submit-prod diya-submit-ci`. If it reports a profile not live, print
+   this and wait:
 
    ```
    ! aws sso login --sso-session diyaccounting

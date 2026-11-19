@@ -855,6 +855,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability DEV-65 -->
 <!-- capability DEV-66 -->
 <!-- capability DEV-67 -->
+<!-- capability DEV-68 -->
 ## Spreadsheets and diya-gl (SS)
 
 <!-- generated:area SS -->

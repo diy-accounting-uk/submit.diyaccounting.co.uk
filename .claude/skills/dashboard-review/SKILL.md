@@ -18,9 +18,10 @@ description: Read every tab of the prod operator dashboard (https://submit.diyac
 # dashboard-review
 
 **SSO check.** Before the first AWS call, and before any request that the operator log in, run
-`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
-get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
-one fails, and name the profile and the error. Never ask for a login from memory.
+`scripts/sso-check.sh`. It calls `diya-submit-ci` and `diya-submit-prod` through the CLI and a Node SDK
+client and prints one line per profile: live, CLI cache only, or expired. Ask for
+`aws sso login --sso-session diyaccounting` only when it reports a profile not live, and name the
+profile and its line. Never ask for a login from memory.
 
 The operator dashboard draws every number from one JSON snapshot. `operatorSnapshotPublish.js`
 writes it in prod every six hours (02:15, 08:15, 14:15 and 20:15 UTC) as the last step of the ingestion workflow, to

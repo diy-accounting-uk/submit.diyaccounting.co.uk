@@ -18,9 +18,10 @@ description: Sync the Stripe products and prices from the bundle catalogue, in t
 # stripe-catalogue-sync — sync Stripe products and prices from the catalogue
 
 **SSO check.** Before the first AWS call, and before any request that the operator log in, run
-`aws --profile diya-submit-ci sts get-caller-identity` and `aws --profile diya-submit-prod sts
-get-caller-identity` in the same turn. Ask for `aws sso login --sso-session diyaccounting` only when
-one fails, and name the profile and the error. Never ask for a login from memory.
+`scripts/sso-check.sh`. It calls `diya-submit-ci` and `diya-submit-prod` through the CLI and a Node SDK
+client and prints one line per profile: live, CLI cache only, or expired. Ask for
+`aws sso login --sso-session diyaccounting` only when it reports a profile not live, and name the
+profile and its line. Never ask for a login from memory.
 
 `web/public/submit.catalogue.toml` is the source of truth for what each on-subscription
 bundle costs. `infra/stripe/stripe-sync.js` reads it and creates or finds the matching
