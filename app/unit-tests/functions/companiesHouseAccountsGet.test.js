@@ -372,7 +372,9 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
       const [receipt] = await puts();
       expect(receipt.input.Item.receipt).toMatchObject({ kind: "companies-house-accounts", jointFilingId: JOINT_FILING_ID });
       const lib = await import("@aws-sdk/lib-dynamodb");
-      const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
+      const update = mockSend.mock.calls
+        .map(([cmd]) => cmd)
+        .find((cmd) => cmd instanceof lib.UpdateCommand && cmd.input.ExpressionAttributeValues?.[":data"]);
       expect(update.input.ExpressionAttributeValues[":data"]).toMatchObject({ jointFilingId: JOINT_FILING_ID });
       expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
       expect(mockChargeTokenOnSuccess).toHaveBeenCalledWith(expect.any(String), "file-small-company-accounts");
@@ -383,7 +385,9 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
       gatewayAnswers("REJECT");
       await companiesHouseAccountsGetHandler(buildEvent());
       const lib = await import("@aws-sdk/lib-dynamodb");
-      const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
+      const update = mockSend.mock.calls
+        .map(([cmd]) => cmd)
+        .find((cmd) => cmd instanceof lib.UpdateCommand && cmd.input.ExpressionAttributeValues?.[":data"]);
       expect(update.input.ExpressionAttributeValues[":data"]).toMatchObject({ statusCode: "REJECT", jointFilingId: JOINT_FILING_ID });
       expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
     });

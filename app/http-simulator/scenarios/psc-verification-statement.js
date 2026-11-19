@@ -93,7 +93,7 @@ export function submitPscVerificationStatement({ senderIdHash, authValueHash, su
   }
 
   usedSubmissionNumbers.add(submissionNumber);
-  submissions.set(submissionNumber, { pollCount: 0, scenario: scenario || null, companyNumber });
+  submissions.set(submissionNumber, { pollCount: 0, scenario: scenario || null, companyNumber, senderIdHash });
 
   return { acknowledged: true, gatewayTimestamp: new Date().toISOString(), pollInterval: 1 };
 }
@@ -125,4 +125,16 @@ export function pollPscVerificationStatement({ senderIdHash, authValueHash, subm
     return { statusCode: "PENDING", submissionNumber, companyNumber: record.companyNumber, rejections: [] };
   }
   return { statusCode: "ACCEPT", submissionNumber, companyNumber: record.companyNumber, rejections: [] };
+}
+
+/**
+ * Every PSC verification statement of the presenter that Companies House has finished: all but
+ * those submitted under PENDING_FOREVER, each accepted.
+ * @param {string} senderIdHash
+ * @returns {Array<object>}
+ */
+export function completedPscVerificationStatementStatuses(senderIdHash) {
+  return [...submissions.entries()]
+    .filter(([, record]) => record.senderIdHash === senderIdHash && record.scenario !== "PENDING_FOREVER")
+    .map(([submissionNumber, record]) => ({ statusCode: "ACCEPT", submissionNumber, companyNumber: record.companyNumber, rejections: [] }));
 }

@@ -194,11 +194,11 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void stackWiresTwentyFiveLambdas() {
+    void stackWiresTwentySixLambdas() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::Lambda::Function", 25);
+        template.resourceCountIs("AWS::Lambda::Function", 26);
         for (String functionName : List.of(
                 stack.companiesHouseSearchGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseCompanyGetLambdaProps.ingestFunctionName(),
@@ -224,9 +224,76 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
                 stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName(),
-                stack.companiesHousePscVerificationStatementGetLambdaProps.ingestFunctionName())) {
+                stack.companiesHousePscVerificationStatementGetLambdaProps.ingestFunctionName(),
+                pollFunctionName())) {
             template.hasResourceProperties(
                     "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", functionName)));
+        }
+    }
+
+    @Test
+    void presenterPollRunsEveryFifteenMinutesInOfficeHoursOnWeekdays() {
+        Template template = Template.fromStack(synthCompaniesHouseStack());
+
+        template.resourceCountIs("AWS::Events::Rule", 1);
+        template.hasResourceProperties(
+                "AWS::Events::Rule",
+                Match.objectLike(Map.of(
+                        "Name",
+                        pollFunctionName() + "-schedule",
+                        "ScheduleExpression",
+                        "cron(0/15 7-18 ? * MON-FRI *)")));
+        template.hasResourceProperties(
+                "AWS::Lambda::Permission",
+                Match.objectLike(Map.of("Action", "lambda:InvokeFunction", "Principal", "events.amazonaws.com")));
+    }
+
+    @Test
+    void presenterPollReadsAndWritesTheFilingStateByKeyAndNeverScans() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack("", "", PRESENTER_ID_ARN, PRESENTER_CODE_ARN);
+        Template template = Template.fromStack(stack);
+        String pollFunctionName = pollFunctionName();
+
+        var actions = actionsOnRole(template, pollFunctionName);
+        assertTrue(actions.contains("dynamodb:GetItem"), "the poll reads the filing state and the filer's request");
+        assertTrue(actions.contains("dynamodb:UpdateItem"), "the poll claims the final status and writes the request");
+        assertTrue(actions.contains("dynamodb:PutItem"), "the poll writes the receipt");
+        assertTrue(actions.contains("secretsmanager:GetSecretValue"), "the poll reads the presenter and seal secrets");
+        assertTrue(actions.contains("events:PutEvents"), "the poll publishes the accepted event and the email request");
+        assertTrue(!actions.contains("dynamodb:Scan"), "the poll must not scan any table");
+        assertTrue(
+                BundlesTableIamAssertions.lambdaRoleCanUpdateBundlesTable(template, pollFunctionName),
+                "the poll charges the filing's token on the bundles table");
+        assertHasEnvironmentVariable(template, pollFunctionName, "MCP_OAUTH_BLOB_KEY_SECRET_ARN");
+        assertHasEnvironmentVariable(template, pollFunctionName, "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME");
+        assertHasEnvironmentVariable(template, pollFunctionName, "COMPANIES_HOUSE_PRESENTER_ID_ARN");
+    }
+
+    @Test
+    void thePagePollLambdasCanChargeTheFilingsToken() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+        Template template = Template.fromStack(stack);
+
+        for (String functionName : List.of(
+                stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementGetLambdaProps.ingestFunctionName())) {
+            assertTrue(
+                    BundlesTableIamAssertions.lambdaRoleCanUpdateBundlesTable(template, functionName),
+                    functionName + " charges the filing's token on acceptance");
+        }
+    }
+
+    @Test
+    void everySubmitLambdaCanSealTheFilerIntoTheFilingState() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+        Template template = Template.fromStack(stack);
+
+        for (String functionName : List.of(
+                stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName())) {
+            assertHasEnvironmentVariable(template, functionName, "MCP_OAUTH_BLOB_KEY_SECRET_ARN");
         }
     }
 
@@ -585,7 +652,7 @@ class CompaniesHouseStackTest {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
-        // The 23 Lambdas routed through grantCompaniesHouseLambdaAccess call isOperatorEmail() in
+        // The 24 Lambdas routed through grantCompaniesHouseLambdaAccess call isOperatorEmail() in
         // enforceBundles(), and the OAuth token exchange publishes activity events, which label
         // an operator's events from the same list.
         var operatorEmailsArn = Match.objectLike(Map.of(
@@ -598,7 +665,7 @@ class CompaniesHouseStackTest {
                 Match.objectLike(Map.of(
                         "PolicyDocument",
                         Match.objectLike(Map.of("Statement", Match.arrayWith(List.of(operatorEmailsStatement)))))),
-                24);
+                25);
     }
 
     @Test
@@ -644,9 +711,9 @@ class CompaniesHouseStackTest {
         // Every Lambda except the token exchange queries the bundles table: the two company
         // lookup routes, the registered office address read, the six filing routes, the three
         // accounts routes, the three Company Tax Return routes, the six confirmation statement
-        // routes, and the two PSC verification statement routes, all gated by enforceBundles().
-        // The token exchange has no authorizer and so no user to check a bundle entitlement
-        // against.
+        // routes, and the two PSC verification statement routes, all gated by enforceBundles(), and
+        // the presenter poll, whose token charge reads the filer's bundles. The token exchange has
+        // no authorizer and so no user to check a bundle entitlement against.
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -654,7 +721,7 @@ class CompaniesHouseStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "dynamodb:Query")))))))),
-                23);
+                24);
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -662,7 +729,7 @@ class CompaniesHouseStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "events:PutEvents")))))))),
-                24);
+                25);
     }
 
     @Test
@@ -1123,10 +1190,10 @@ class CompaniesHouseStackTest {
         CompaniesHouseStack stack = synthCompaniesHouseStack("", "", PRESENTER_ID_ARN, PRESENTER_CODE_ARN);
         Template template = Template.fromStack(stack);
 
-        // The wildcard suffix Secrets Manager requires, granted to exactly the seven Lambda roles
+        // The wildcard suffix Secrets Manager requires, granted to exactly the eight Lambda roles
         // that reach the gateway (accounts submit/poll, filing-data, confirmation statement
-        // submit/poll, PSC verification statement submit/poll) for each of the two presenter
-        // secrets.
+        // submit/poll, PSC verification statement submit/poll, the presenter poll) for each of the
+        // two presenter secrets.
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -1138,7 +1205,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         PRESENTER_ID_ARN + "-*")))))))),
-                7);
+                8);
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -1150,7 +1217,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         PRESENTER_CODE_ARN + "-*")))))))),
-                7);
+                8);
     }
 
     @Test
@@ -1243,6 +1310,49 @@ class CompaniesHouseStackTest {
                 resources.size() < 500,
                 "CompaniesHouseStack synths " + resources.size()
                         + " resources, approaching CloudFormation's 500-per-stack limit");
+    }
+
+    private static String pollFunctionName() {
+        return SubmitSharedNames.forDocs().companiesHouse.companiesHouseSubmissionStatusPollLambdaFunctionName;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> propertiesOfFunction(Template template, String functionName) {
+        var functions = template.findResources("AWS::Lambda::Function").values().stream()
+                .map(resource -> (Map<String, Object>) resource.get("Properties"))
+                .filter(properties -> functionName.equals(properties.get("FunctionName")))
+                .toList();
+        assertEquals(1, functions.size(), "expected exactly one Lambda named " + functionName);
+        return functions.get(0);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void assertHasEnvironmentVariable(Template template, String functionName, String variable) {
+        var environment = (Map<String, Object>)
+                propertiesOfFunction(template, functionName).get("Environment");
+        var variables = (Map<String, Object>) environment.get("Variables");
+        assertTrue(variables.containsKey(variable), functionName + " carries " + variable);
+    }
+
+    // Every IAM action on the Lambda's own role, across all its policies.
+    @SuppressWarnings("unchecked")
+    private static java.util.Set<String> actionsOnRole(Template template, String functionName) {
+        var roleRef = (Map<String, Object>)
+                propertiesOfFunction(template, functionName).get("Role");
+        var roleLogicalId = String.valueOf(((List<Object>) roleRef.get("Fn::GetAtt")).get(0));
+        var actions = new java.util.TreeSet<String>();
+        template.findResources("AWS::IAM::Policy").values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .filter(properties -> ((List<Map<String, Object>>) properties.get("Roles"))
+                        .stream().anyMatch(role -> roleLogicalId.equals(String.valueOf(role.get("Ref")))))
+                .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .forEach(statement -> {
+                    Object action = statement.get("Action");
+                    if (action instanceof List<?> list) list.forEach(item -> actions.add(String.valueOf(item)));
+                    else actions.add(String.valueOf(action));
+                });
+        return actions;
     }
 
     @SuppressWarnings("unchecked")

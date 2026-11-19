@@ -80,6 +80,35 @@ function accountsEnvelope({
 </GovTalkMessage>`;
 }
 
+function statusAckEnvelope({ senderId = VALID_SENDER_ID, authValue = VALID_AUTH_VALUE } = {}) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope">
+  <EnvelopeVersion>1.0</EnvelopeVersion>
+  <Header>
+    <MessageDetails>
+      <Class>StatusAck</Class>
+      <Qualifier>request</Qualifier>
+      <TransactionID>3</TransactionID>
+    </MessageDetails>
+    <SenderDetails>
+      <IDAuthentication>
+        <SenderID>${senderId}</SenderID>
+        <Authentication>
+          <Method>clear</Method>
+          <Value>${authValue}</Value>
+        </Authentication>
+      </IDAuthentication>
+    </SenderDetails>
+  </Header>
+  <GovTalkDetails>
+    <Keys/>
+  </GovTalkDetails>
+  <Body>
+    <StatusAck xmlns="http://xmlgw.companieshouse.gov.uk"></StatusAck>
+  </Body>
+</GovTalkMessage>`;
+}
+
 function statusEnvelope({ senderId = VALID_SENDER_ID, authValue = VALID_AUTH_VALUE, submissionNumber = "AAA001" } = {}) {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope">
@@ -105,7 +134,7 @@ function statusEnvelope({ senderId = VALID_SENDER_ID, authValue = VALID_AUTH_VAL
   </GovTalkDetails>
   <Body>
     <GetSubmissionStatus xmlns="http://xmlgw.companieshouse.gov.uk">
-      <SubmissionNumber>${submissionNumber}</SubmissionNumber>
+      ${submissionNumber ? `<SubmissionNumber>${submissionNumber}</SubmissionNumber>` : ""}
       <PresenterID>${SIMULATOR_PRESENTER_ID}</PresenterID>
     </GetSubmissionStatus>
   </Body>
@@ -535,6 +564,67 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
 
     const document = parseXmlDocument(response.text);
     expect(firstElementText(document, "Text")).toBe("No Transaction Found");
+  });
+
+  describe("presenter poll and StatusAck", () => {
+    const post = (body, scenario) =>
+      request(app)
+        .post(GATEWAY_PATH)
+        .set({ "Content-Type": "text/xml", ...(scenario ? { "Gov-Test-Scenario": scenario } : {}) })
+        .send(body);
+    const statusesOf = (response) =>
+      allElements(parseXmlDocument(response.text), "Status").map((status) => [
+        firstElementText(status, "SubmissionNumber"),
+        firstElementText(status, "StatusCode"),
+      ]);
+
+    test("answers every completed submission of the presenter across the forms, and leaves a pending one out", async () => {
+      await post(accountsEnvelope({ submissionNumber: "PP0001" }));
+      await post(accountsEnvelope({ submissionNumber: "PP0002" }), "ACCOUNTS_REJECTED");
+      await post(accountsEnvelope({ submissionNumber: "PP0003" }), "PENDING_FOREVER");
+      await post(confirmationStatementEnvelope({ submissionNumber: "PP0004" }), "CS_SHAREHOLDERS_REQUIRED");
+      await post(pscVerificationStatementEnvelope({ submissionNumber: "PP0005" }));
+
+      const response = await post(statusEnvelope({ submissionNumber: "" }));
+
+      expect(firstElementText(parseXmlDocument(response.text), "Qualifier")).toBe("response");
+      expect(statusesOf(response)).toEqual([
+        ["PP0001", "ACCEPT"],
+        ["PP0002", "REJECT"],
+        ["PP0004", "REJECT"],
+        ["PP0005", "ACCEPT"],
+      ]);
+    });
+
+    test("answers the same submissions again until a StatusAck acknowledges them", async () => {
+      await post(accountsEnvelope({ submissionNumber: "PP0011" }));
+
+      expect(statusesOf(await post(statusEnvelope({ submissionNumber: "" })))).toEqual([["PP0011", "ACCEPT"]]);
+      expect(statusesOf(await post(statusEnvelope({ submissionNumber: "" })))).toEqual([["PP0011", "ACCEPT"]]);
+
+      const ack = await post(statusAckEnvelope());
+      expect(firstElementText(parseXmlDocument(ack.text), "Class")).toBe("StatusAck");
+      expect(allElements(parseXmlDocument(ack.text), "GovTalkErrors")).toHaveLength(0);
+
+      expect(statusesOf(await post(statusEnvelope({ submissionNumber: "" })))).toEqual([["", ""]]);
+    });
+
+    test("a poll for one submission number still answers after the presenter poll acknowledged it", async () => {
+      await post(accountsEnvelope({ submissionNumber: "PP0021" }));
+      await post(statusEnvelope({ submissionNumber: "" }));
+      await post(statusAckEnvelope());
+
+      await post(statusEnvelope({ submissionNumber: "PP0021" }));
+      const response = await post(statusEnvelope({ submissionNumber: "PP0021" }));
+      expect(statusesOf(response)).toEqual([["PP0021", "ACCEPT"]]);
+    });
+
+    test("rejects a presenter poll and a StatusAck under the wrong credentials with a 502", async () => {
+      const poll = await post(statusEnvelope({ submissionNumber: "", authValue: WRONG_HASH }));
+      const ack = await post(statusAckEnvelope({ authValue: WRONG_HASH }));
+      expect(firstElementText(parseXmlDocument(poll.text), "Number")).toBe("502");
+      expect(firstElementText(parseXmlDocument(ack.text), "Number")).toBe("502");
+    });
   });
 
   describe("CompanyDataRequest", () => {

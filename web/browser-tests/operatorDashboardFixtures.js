@@ -374,8 +374,9 @@ const OTHER_CLASS_WORDS = [
   ["unknown", "unknown accounts"],
 ];
 
-// The Retention graph as the publisher writes it: a Totals tab, a Daily events tab and a
-// Submitters by kind tab, the other classes' lines last, and the cohort table.
+// The Retention graph as the publisher writes it: an Accounts tab with the other classes' lines
+// last, a Returning tab, a Subscriptions tab, a Daily events tab, a
+// Submitters by kind tab, and the cohort table.
 export function retentionChart() {
   const net = CHART_DAYS.map((_, index) => (index % 17 === 0 ? 1 : index % 29 === 0 ? -1 : 0));
   const newSubmitters = rampSeries(
@@ -404,7 +405,7 @@ export function retentionChart() {
     objectiveId: "retention",
     title: "Retention",
     unit: "count",
-    note: "Days are UTC. Totals reads a figure on each day; Daily events counts the events of each day. The 90 and 7 day windows roll.",
+    note: "Days are UTC. The Accounts, Returning and Subscriptions tabs read a figure on each day; Daily events counts the events of each day. The 90 and 7 day windows roll.",
     reconciliation: "Last 90 days, customers: 12 distinct submitters made 90 completions.",
     cohort: {
       months: 3,
@@ -417,7 +418,7 @@ export function retentionChart() {
     modes: [
       {
         id: "totals",
-        label: "Totals",
+        label: "Accounts",
         series: [
           rampSeries("accounts-total", "Accounts in total", 3, 41, "Accounts with a record on or before the day. Customer accounts only."),
           rampSeries(
@@ -430,6 +431,21 @@ export function retentionChart() {
           chartSeries("active-customers-7d", "Active customers, 7 days to this day", 4, {
             description: "Distinct signed-in customers who made a call in the 7 days to the day.",
           }),
+          ...OTHER_CLASS_WORDS.map(([name, words], index) =>
+            rampSeries(
+              `accounts-total-${name}`,
+              `Accounts in total, ${words}`,
+              index === 0 ? 200 : 0,
+              index === 0 ? 350 : 1,
+              `Accounts with a record on or before the day. Only ${words}.`,
+            ),
+          ),
+        ],
+      },
+      {
+        id: "returns",
+        label: "Returning",
+        series: [
           rampSeries(
             "submitters-90d",
             "Submitters, 90 days to this day",
@@ -437,9 +453,6 @@ export function retentionChart() {
             13,
             "Distinct customers with a VAT submission in the 90 days to the day.",
           ),
-          chartSeries("submitters-7d", "Submitters, 7 days to this day", 1, {
-            description: "Distinct customers with a VAT submission in the 7 days to the day.",
-          }),
           rampSeries(
             "due-submitters-90d",
             "Submitters due, 90 days to this day",
@@ -454,6 +467,9 @@ export function retentionChart() {
             3,
             "Of the submitters due, the customers who submitted in the 90 days to the day too.",
           ),
+          chartSeries("submitters-7d", "Submitters, 7 days to this day", 1, {
+            description: "Distinct customers with a VAT submission in the 7 days to the day.",
+          }),
           rampSeries(
             "returning-submitters-7d",
             "Returning submitters, 7 days to this day",
@@ -461,17 +477,14 @@ export function retentionChart() {
             1,
             "Of the submitters in the 7 days to the day, the customers who had also submitted before them.",
           ),
+        ],
+      },
+      {
+        id: "holdings",
+        label: "Subscriptions",
+        series: [
           rampSeries("active-subscriptions", "Active subscriptions", 0, 8, "Customer subscriptions active at the end of the day."),
           rampSeries("active-passes", "Active passes", 0, 2, "Passes issued by customers that are open to redeem at the end of the day."),
-          ...OTHER_CLASS_WORDS.map(([name, words], index) =>
-            rampSeries(
-              `accounts-total-${name}`,
-              `Accounts in total, ${words}`,
-              index === 0 ? 200 : 0,
-              index === 0 ? 350 : 1,
-              `Accounts with a record on or before the day. Only ${words}.`,
-            ),
-          ),
         ],
       },
       {
@@ -743,6 +756,225 @@ export const FIXTURE_DAILY_CHARTS = {
       };
       return visitors;
     })(),
+  ],
+};
+
+const zeroSeries = (id, label, extra = {}) => ({ id, label, values: CHART_DAYS.map(() => 0), ...extra });
+
+const sumOfSeries = (id, label, parts, extra = {}) => ({
+  id,
+  label,
+  isTotal: true,
+  values: CHART_DAYS.map((_, day) => Math.round(parts.reduce((sum, part) => sum + part.values[day], 0) * 100) / 100),
+  ...extra,
+});
+
+// The graphs whose lines, hidden lines and tabs follow from the review of every graph: HMRC
+// failures with the base of its rate, AWS costs with tax as a line of its own, sign-ins split by
+// the class of the account, and call graphs whose customer lines are empty but whose calls with no
+// recorded actor are not.
+function reviewedHmrcFailures() {
+  const lookup = eventSeries(
+    "obligation-lookup-failed",
+    "obligation-lookup-failed",
+    30,
+    3,
+    "VAT submissions that failed with the class obligation-lookup-failed.",
+    4,
+  );
+  const matched = eventSeries(
+    "obligation-not-matched",
+    "obligation-not-matched",
+    41,
+    1,
+    "VAT submissions that failed with the class obligation-not-matched.",
+    9,
+  );
+  const submissions = eventSeries(
+    "submissions",
+    "Submissions",
+    4,
+    3,
+    "Customers' VAT submissions, successful or failed: the base of the failure rate.",
+  );
+  const failures = {
+    id: "failures",
+    label: "Failures",
+    description: "Customers' VAT submissions that failed.",
+    values: CHART_DAYS.map((_, day) => lookup.values[day] + matched.values[day]),
+  };
+  return {
+    id: "hmrc-failures",
+    objectiveId: "uptime",
+    title: "HMRC submission failures",
+    unit: "count",
+    note: "Customers' VAT returns that failed on their way to HMRC, from the activity events. Days and hours are UTC.",
+    modes: [
+      {
+        id: "class",
+        label: "By failure class",
+        series: [
+          sumOfSeries("total", "All failures", [lookup, matched], { description: "Failures of every class added together." }),
+          lookup,
+          matched,
+        ],
+      },
+      {
+        id: "rate",
+        label: "Failure rate",
+        series: [
+          {
+            id: "failure-rate",
+            label: "Failure rate, %",
+            description: "Share of the day's VAT submissions that failed, as a percentage.",
+            values: CHART_DAYS.map((_, day) => (failures.values[day] > 0 ? 100 : submissions.values[day] > 0 ? 0 : null)),
+          },
+        ],
+      },
+      { id: "submissions", label: "Submissions and failures", series: [submissions, failures] },
+    ],
+  };
+}
+
+function reviewedAwsCosts() {
+  const tax = eventSeries("Tax", "Tax", 30, 120, "Dollars billed as tax on every service across all accounts.", 2);
+  const services = [
+    chartSeries("Claude Sonnet 4.5 (Amazon Bedrock Edition)", "Claude Sonnet 4.5 (Amazon Bedrock Edition)", 6, {
+      description: "Dollars billed.",
+    }),
+    chartSeries("Amazon Simple Storage Service", "Amazon Simple Storage Service", 3, { description: "Dollars billed." }),
+    chartSeries("AWS Lambda", "AWS Lambda", 1.4, { description: "Dollars billed." }),
+  ];
+  const untagged = chartSeries("untagged", "untagged", 9, { description: "Dollars billed for charges with no deployment tag." });
+  const deployments = [
+    chartSeries("prod", "prod", 1.2, { description: "Dollars billed for resources tagged with deployment prod." }),
+    chartSeries("ci-set1", "ci-set1", 0.6, { description: "Dollars billed for resources tagged with deployment ci-set1." }),
+  ];
+  const cloudWatchTax = eventSeries(
+    "Tax for product code AmazonCloudWatch",
+    "Tax for product code AmazonCloudWatch",
+    30,
+    28,
+    "Dollars billed.",
+    2,
+  );
+  const charges = [
+    chartSeries("$0.10 per alarm metric month", "$0.10 per alarm metric month", 1.4, { description: "Dollars billed." }),
+    chartSeries("$0.5985 per GB custom log data ingested", "$0.5985 per GB custom log data ingested", 0.4, {
+      description: "Dollars billed.",
+    }),
+  ];
+  return {
+    id: "low-running-cost",
+    objectiveId: "low-running-cost",
+    title: "AWS costs",
+    unit: "usd",
+    note: "AWS cost across every account in the organisation, one point per UTC day of the charge.",
+    modes: [
+      { id: "cost", label: "Cost", series: [sumOfSeries("total", "All services", [tax, ...services]), tax, ...services] },
+      {
+        id: "deployment",
+        label: "By deployment",
+        series: [sumOfSeries("total", "All deployments", [untagged, ...deployments]), untagged, ...deployments],
+      },
+      {
+        id: "charge",
+        label: "CloudWatch by charge",
+        series: [sumOfSeries("total", "All CloudWatch", [cloudWatchTax, ...charges]), cloudWatchTax, ...charges],
+      },
+    ],
+  };
+}
+
+function reviewedVisitors() {
+  const visitors = FIXTURE_DAILY_CHARTS.charts.find((chart) => chart.id === "visitors");
+  const google = eventSeries("Google@customer", "Google, customer", 6, 2, "Sign-ins through Google. Only sign-ins of customers.");
+  const native = eventSeries("Native@customer", "Native, customer", 9, 1, "Sign-ins through Native. Only sign-ins of customers.", 3);
+  const nativeTest = chartSeries("Native@test", "Native, test", 60, {
+    description: "Sign-ins through Native. Only sign-ins of test users.",
+  });
+  return {
+    ...visitors,
+    modes: [
+      ...visitors.modes,
+      {
+        id: "sign-in-provider",
+        label: "Sign-ins by provider",
+        series: [
+          sumOfSeries("total@customer", "All sign-ins, customer", [google, native]),
+          google,
+          native,
+          sumOfSeries("total@test", "All sign-ins, test", [nativeTest]),
+          nativeTest,
+        ],
+      },
+    ],
+  };
+}
+
+function reviewedIntegrationRequests() {
+  const stripeOther = chartSeries("stripe 2xx@other", "Stripe 2xx, other", 60, {
+    description: "Live calls to Stripe that ended with 2xx.",
+  });
+  const hmrcUnknown = eventSeries(
+    "hmrc 2xx@unknown",
+    "HMRC 2xx, unknown",
+    3,
+    12,
+    "Live calls to HMRC that ended with 2xx. Only calls recorded with no actor.",
+  );
+  const stripeUnknown = eventSeries(
+    "stripe 2xx@unknown",
+    "Stripe 2xx, unknown",
+    5,
+    4,
+    "Live calls to Stripe that ended with 2xx. Only calls recorded with no actor.",
+    1,
+  );
+  const stripe200 = chartSeries("200@other", "200, other", 60, { description: "Live calls to Stripe that ended with 200." });
+  return {
+    id: "integration-requests",
+    objectiveId: "integrations",
+    title: "API requests by organisation and status",
+    unit: "count",
+    note: "Live calls to HMRC, Companies House and Stripe, from the call records, by the class of the caller.",
+    modes: [
+      {
+        id: "all",
+        label: "All",
+        series: [
+          zeroSeries("total@customer", "All requests, customer", { isTotal: true }),
+          sumOfSeries("total@other", "All requests, other", [stripeOther]),
+          stripeOther,
+          sumOfSeries("total@unknown", "All requests, unknown", [hmrcUnknown, stripeUnknown]),
+          hmrcUnknown,
+          stripeUnknown,
+        ],
+      },
+      {
+        id: "stripe",
+        label: "Stripe",
+        series: [
+          zeroSeries("total@customer", "All requests, customer", { isTotal: true }),
+          sumOfSeries("total@other", "All requests, other", [stripe200]),
+          stripe200,
+        ],
+      },
+    ],
+  };
+}
+
+const REVIEWED_CHART_BUILDERS = {
+  "low-running-cost": reviewedAwsCosts,
+  "visitors": reviewedVisitors,
+  "integration-requests": reviewedIntegrationRequests,
+};
+
+export const FIXTURE_REVIEWED_CHARTS = {
+  ...FIXTURE_DAILY_CHARTS,
+  charts: [
+    ...FIXTURE_DAILY_CHARTS.charts.map((chart) => (REVIEWED_CHART_BUILDERS[chart.id] ? REVIEWED_CHART_BUILDERS[chart.id]() : chart)),
+    reviewedHmrcFailures(),
   ],
 };
 

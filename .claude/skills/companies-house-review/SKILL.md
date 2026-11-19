@@ -9,7 +9,7 @@ description: Review our Companies House accounts filings as the XML Gateway team
 <!-- @capability CH-17 Review accounts filings as the Companies House XML team does
 - **Use when:** accounts test or live submissions are about to go to Companies House, or the operator asks for a walk-through of the review results.
 - **Does:** The companies-house-review skill reads the XML team's emails and checks the sources for newer versions. companies-house-review.mjs rebuilds each accounts case in the test-service fixture as filed. It picks the example of the same type from an Accounts Data Product zip. It renders both in Chromium and runs the test validator. It judges each criterion and writes findings.md and walkthrough.md under target/companies-house-review/<date>/.
-- **Run:** `/companies-house-review`; `node scripts/companies-house-review.mjs --adp-zip <Accounts_Bulk_Data-YYYY-MM-DD.zip> --run <case>=<run id>... [--skip-validator]`
+- **Run:** `/companies-house-review`; `node scripts/companies-house-review.mjs --adp-zip <Accounts_Bulk_Data-YYYY-MM-DD.zip> --run <case>=<run id>... [--skip-validator] [--fixture <cases.json>] [--case <name>]...`
 - **Entry:** `.claude/skills/companies-house-review/SKILL.md`; `scripts/companies-house-review.mjs:main`
 - **Files:** .claude/skills/companies-house-review/SKILL.md, scripts/companies-house-review.mjs, scripts/lib/companiesHouseReviewReconcile.js, scripts/lib/companiesHouseReviewCriteria.js, scripts/lib/companiesHouseReviewPage.js, scripts/fixtures/companies-house-test-service-cases.json
 - **Keywords:** companies house, xml gateway, accounts review, ixbrl, accounts data product, example accounts, filleted, micro-entity, dormant, findings, walkthrough
@@ -79,10 +79,10 @@ and "HMRC XBRL guide". Use the newer version and update this table in the same c
 
 | Source | URL | Version found |
 |---|---|---|
-| TIS page (the XML team links it) | https://www.gov.uk/government/publications/technical-interface-specifications-for-companies-house-software | Page updated 21 Oct 2026 |
+| TIS page (the XML team links it) | https://www.gov.uk/government/publications/technical-interface-specifications-for-companies-house-software | Page updated 9 Nov 2026 |
 | Information for software developers (read first) | https://www.gov.uk/government/publications/technical-interface-specifications-for-companies-house-software/important-information-for-software-developers-read-first | Not versioned |
 | General TIS | https://assets.publishing.service.gov.uk/media/66618d1d2aec9626ea8805c1/Companies_House_TIS_v5.3.odt | 5.3 |
-| Accounts TIS (Electronic Filing of Inline XBRL Accounts, supplement to TIS) | https://assets.publishing.service.gov.uk/media/6ad89ab4b63982f71c3bd38c/TIS_October_2026.odt | 6.1, issued 20 Oct 2026 |
+| Accounts TIS (Electronic Filing of Inline XBRL Accounts, supplement to TIS) | https://assets.publishing.service.gov.uk/media/6af19c2161f6de11bdc42bc5/TIS_November_2026.odt | 6.2, published 9 Nov 2026 (the statements carry Welsh phrases; the review holds a Welsh document to them) |
 | Gateway schema status and envelope examples | http://xmlgw.companieshouse.gov.uk/SchemaStatus | Live list |
 | Accounts envelope example (`Accounts.xml`) | http://xmlgw.companieshouse.gov.uk/examples/Accounts.xml | Carries a 2009 XBRL instance, not iXBRL: use it for the envelope only |
 | Companies House test validator | https://test-validator.companieshouse.gov.uk/xbrl_validate | Live |

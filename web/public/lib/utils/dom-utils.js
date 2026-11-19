@@ -239,6 +239,47 @@ export function readMeta(name) {
   return el && el.content ? el.content.trim() : "";
 }
 
+// The search form of an HMRC read page (obligations, liabilities, payments, penalties): a card that
+// holds the criteria and two buttons, Show search criteria and Cancel request.
+const SEARCH_FORM_PARTS = ["searchCriteriaContainer", "toggleSearchCriteriaBtn", "cancelRequestBtn"];
+
+function searchFormParts() {
+  return SEARCH_FORM_PARTS.map((id) => document.getElementById(id));
+}
+
+/** While a request waits on HMRC, the criteria fold away behind the card's two buttons. */
+export function hideSearchCriteria() {
+  const [criteria, toggleButton, cancelButton] = searchFormParts();
+  if (!criteria || !toggleButton) return;
+  criteria.style.display = "none";
+  toggleButton.style.display = "inline-block";
+  if (cancelButton) cancelButton.style.display = "inline-block";
+}
+
+/**
+ * The card shows again with its criteria, for a new search, a cancelled request or an error.
+ * @param {string} formCardId - the id of the card that holds the form
+ */
+export function showSearchCriteria(formCardId) {
+  const [criteria, toggleButton, cancelButton] = searchFormParts();
+  document.getElementById(formCardId).style.display = "";
+  if (!criteria || !toggleButton) return;
+  criteria.style.display = "block";
+  toggleButton.style.display = "none";
+  if (cancelButton) cancelButton.style.display = "none";
+}
+
+/**
+ * With HMRC's answer shown the card would hold nothing, so the whole card goes until showSearchCriteria.
+ * @param {string} formCardId - the id of the card that holds the form
+ */
+export function hideSearchFormForResults(formCardId) {
+  const [, toggleButton, cancelButton] = searchFormParts();
+  if (toggleButton) toggleButton.style.display = "none";
+  if (cancelButton) cancelButton.style.display = "none";
+  document.getElementById(formCardId).style.display = "none";
+}
+
 // Export on window for backward compatibility
 if (typeof window !== "undefined") {
   window.showStatus = showStatus;
@@ -247,6 +288,8 @@ if (typeof window !== "undefined") {
   window.showFailure = showFailure;
   window.requestError = requestError;
   window.removeStatusMessage = removeStatusMessage;
+  // A namespace, not three globals: the ITSA page scripts declare their own showSearchCriteria.
+  window.SearchForm = { hideCriteria: hideSearchCriteria, showCriteria: showSearchCriteria, hideForResults: hideSearchFormForResults };
   window.onDomReady = onDomReady;
   window.readMeta = readMeta;
 }

@@ -68,8 +68,15 @@ const PRESENTER_ID_MISSING_ERROR = {
   text: "No presenter ID supplied",
 };
 
+// A presenter poll answers at most this many completed submissions (TIS v5.3, section 2.5).
+const PRESENTER_POLL_MAXIMUM = 20;
+
 let submissions = new Map();
 let usedSubmissionNumbers = new Set();
+// The presenter poll's acknowledgement state, shared by every form's registry: the submission
+// numbers each presenter's last poll answered, and the numbers a StatusAck has acknowledged.
+let awaitingAcknowledgement = new Map();
+let acknowledgedSubmissionNumbers = new Set();
 
 /**
  * Clear all simulator state. Called between test runs, the same way state/store.js's reset() is.
@@ -77,6 +84,35 @@ let usedSubmissionNumbers = new Set();
 export function resetAccountsFilings() {
   submissions = new Map();
   usedSubmissionNumbers = new Set();
+  awaitingAcknowledgement = new Map();
+  acknowledgedSubmissionNumbers = new Set();
+}
+
+/**
+ * The completed statuses a presenter poll may answer: those not acknowledged yet, at most the
+ * gateway's 20. Records them as the poll a StatusAck will acknowledge.
+ * @param {string} senderIdHash
+ * @param {Array<{submissionNumber: string}>} completedStatuses - every form registry's completed statuses for the presenter
+ * @returns {Array<object>}
+ */
+export function answerPresenterPoll(senderIdHash, completedStatuses) {
+  const unacknowledged = completedStatuses
+    .filter((status) => !acknowledgedSubmissionNumbers.has(status.submissionNumber))
+    .slice(0, PRESENTER_POLL_MAXIMUM);
+  awaitingAcknowledgement.set(
+    senderIdHash,
+    unacknowledged.map((status) => status.submissionNumber),
+  );
+  return unacknowledged;
+}
+
+/**
+ * Acknowledge the presenter's last poll, so the next poll leaves its submissions out.
+ * @param {string} senderIdHash
+ */
+export function acknowledgePresenterPoll(senderIdHash) {
+  for (const submissionNumber of awaitingAcknowledgement.get(senderIdHash) ?? []) acknowledgedSubmissionNumbers.add(submissionNumber);
+  awaitingAcknowledgement.delete(senderIdHash);
 }
 
 /**
@@ -118,9 +154,34 @@ export function submitAccounts({ senderIdHash, authValueHash, submissionNumber, 
   }
 
   usedSubmissionNumbers.add(submissionNumber);
-  submissions.set(submissionNumber, { pollCount: 0, scenario: scenario || null, companyNumber });
+  submissions.set(submissionNumber, { pollCount: 0, scenario: scenario || null, companyNumber, senderIdHash });
 
   return { acknowledged: true, gatewayTimestamp: new Date().toISOString(), pollInterval: 1 };
+}
+
+// The verdict Companies House reaches on an accounts submission, once it is no longer pending.
+function finalStatus(submissionNumber, record, scenario) {
+  if (scenario === "ACCOUNTS_REJECTED") {
+    return {
+      statusCode: "REJECT",
+      submissionNumber,
+      companyNumber: record.companyNumber,
+      rejections: [{ rejectCode: "1", description: "Random Test mode rejection", instanceNumber: "1" }],
+    };
+  }
+  return { statusCode: "ACCEPT", submissionNumber, companyNumber: record.companyNumber, rejections: [] };
+}
+
+/**
+ * Every accounts submission of the presenter that Companies House has finished: all but those
+ * submitted under PENDING_FOREVER, each with the verdict its submission scenario sets.
+ * @param {string} senderIdHash
+ * @returns {Array<object>}
+ */
+export function completedAccountsStatuses(senderIdHash) {
+  return [...submissions.entries()]
+    .filter(([, record]) => record.senderIdHash === senderIdHash && record.scenario !== "PENDING_FOREVER")
+    .map(([submissionNumber, record]) => finalStatus(submissionNumber, record, record.scenario));
 }
 
 /**
@@ -149,15 +210,10 @@ export function pollStatus({ senderIdHash, authValueHash, submissionNumber, scen
     return { statusCode: "PENDING", submissionNumber, companyNumber: record.companyNumber, rejections: [] };
   }
   if (scenario === "ACCOUNTS_REJECTED") {
-    return {
-      statusCode: "REJECT",
-      submissionNumber,
-      companyNumber: record.companyNumber,
-      rejections: [{ rejectCode: "1", description: "Random Test mode rejection", instanceNumber: "1" }],
-    };
+    return finalStatus(submissionNumber, record, scenario);
   }
   if (record.pollCount === 1) {
     return { statusCode: "PENDING", submissionNumber, companyNumber: record.companyNumber, rejections: [] };
   }
-  return { statusCode: "ACCEPT", submissionNumber, companyNumber: record.companyNumber, rejections: [] };
+  return finalStatus(submissionNumber, record, scenario);
 }

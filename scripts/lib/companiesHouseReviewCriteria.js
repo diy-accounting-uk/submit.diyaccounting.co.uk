@@ -12,12 +12,59 @@
 import { longDate } from "./companiesHouseReviewReconcile.js";
 import { registeredOfficeLine } from "../../app/services/accountsIxbrlCommon.js";
 
+// The phrase rules from the Companies House accounts TIS, "FRS unaudited accounts statements to
+// the Balance sheet". Every inner array is an OR; the outer array is an AND. Case-insensitive. A
+// Welsh document (ReportPrincipalLanguage on the Welsh member) is held to the TIS's Welsh phrases.
+export const STATEMENTS = {
+  section477: {
+    label: "Section 477 audit exemption statement",
+    concept: "StatementThatCompanyEntitledToExemptionFromAuditUnderSection477CompaniesAct2006RelatingToSmallCompanies",
+    phrases: [["exempt", "exemption"], ["section 477 of the companies act 2006"]],
+    welshPhrases: [["wedi'i eithrio", "eithriad"], ["adran 477 o ddeddf cwmnïau 2006"]],
+  },
+  section480: {
+    label: "Section 480 dormant audit exemption statement",
+    concept: "StatementThatCompanyEntitledToExemptionFromAuditUnderSection480CompaniesAct2006RelatingToDormantCompanies",
+    phrases: [["exempt", "exemption"], ["section 480 of the companies act 2006"]],
+    welshPhrases: [["wedi'i eithrio", "eithriad"], ["adran 480 o ddeddf cwmnïau 2006"]],
+  },
+  membersNoAudit: {
+    label: "Members have not required an audit (section 476)",
+    concept: "StatementThatMembersHaveNotRequiredCompanyToObtainAnAudit",
+    phrases: [["members have not required the company to obtain an audit", "member has not required the company to obtain an audit"]],
+    welshPhrases: [
+      ["aelodau heb ei gwneud yn ofynnol i'r cwmni gael archwiliad", "aelod heb ei gwneud yn ofynnol i'r cwmni gael archwiliad"],
+    ],
+  },
+  directorsResponsibilities: {
+    label: "Directors acknowledge their responsibilities",
+    concept: "StatementThatDirectorsAcknowledgeTheirResponsibilitiesUnderCompaniesAct",
+    phrases: [["directors acknowledge", "director acknowledges"], ["responsibilities"], ["companies act 2006", "the act"]],
+    welshPhrases: [["cyfarwyddwyryn cydnabod", "cyfarwyddwr yn cydnabod"], ["cyfrifoldebau"], ["ddeddf cwmnïau 2006", "y ddeddf"]],
+  },
+  microProvisions: {
+    label: "Prepared in accordance with the micro-entity provisions",
+    concept: "StatementThatAccountsHaveBeenPreparedInAccordanceWithProvisionsSmallCompaniesRegime",
+    phrases: [["prepared"], ["in accordance with"], ["provisions"], ["micro"]],
+    welshPhrases: [["wedi eu paratoi"], ["yn unol â"], ["darpariaethau"], ["micro"]],
+  },
+  smallCompaniesRegime: {
+    label: "Prepared in accordance with the small companies regime",
+    concept: "StatementThatAccountsHaveBeenPreparedInAccordanceWithProvisionsSmallCompaniesRegime",
+    phrases: [["prepared"], ["in accordance with"], ["provisions"], ["small companies"]],
+    // The TIS prints "Paratowyd yn unol â" here, but the test validator checks "Wedi eu paratoi".
+    welshPhrases: [["wedi eu paratoi"], ["yn unol â"], ["darpariaethau"], ["cwmnïau bach"]],
+  },
+};
+
 const PUBLIC_COMPANY_NAME = /\b(plc|public limited company)\b/i;
 const PUBLIC_COMPANY_TEXT = /\bpublic (limited )?company\b/i;
-const PRIVATE_COMPANY_TEXT = /\bprivate (limited )?company\b/i;
+const PRIVATE_COMPANY_TEXT = /\bprivate (limited )?company\b|\b[cg]wmni preifat\b/i;
 const LEGAL_FORM_TEXT =
-  /\b(private|public) (limited )?company limited by (shares|guarantee)\b|\blimited liability partnership\b|\bunlimited company\b/i;
-const JURISDICTION_TEXT = /\bregistered in (England and Wales|Scotland|Northern Ireland|England|Wales)\b/i;
+  /\b(private|public) (limited )?company limited by (shares|guarantee)\b|\blimited liability partnership\b|\bunlimited company\b|\b[cg]wmni (preifat|cyhoeddus) cyfyngedig gan (gyfranddaliadau|warant)\b/i;
+const JURISDICTION_TEXT =
+  /\bregistered in (England and Wales|Scotland|Northern Ireland|England|Wales)\b|\bwedi[’']i gofrestru yng? (Nghymru a Lloegr|Nghymru|Lloegr|Ngogledd Iwerddon|Yr Alban)\b/i;
+const REGISTERED_OFFICE_TEXT = /registered office|swyddfa gofrestredig/i;
 const PLACEHOLDER_WORD = /\b(test|fictional|example|sample|dummy|placeholder|lorem)\b/i;
 const ZEROS = /0{8}/;
 const NEVER_TRADED_TEXT = /\bhas not traded\b/i;
@@ -98,8 +145,8 @@ export function taxNoteBracketsCriterion(ours) {
   const taxFacts = ours.facts.filter((fact) => fact.concept === "CurrentTaxForPeriod" && fact.visible !== false);
   if (taxFacts.length === 0) return row(criterion, "pass", "no tax note", "visible-text.txt");
   // The profit and loss account prints the same charge in brackets by design, so read the note's own page.
-  const heading = ours.visibleText.match(/^\s*\d+\.\s*Tax on profit\s*$/m);
-  const note = heading ? ours.visibleText.slice(heading.index).split(/^\s*\d+\.\s+(?!Tax on profit\b)\S.*$/m)[0] : "";
+  const heading = ours.visibleText.match(/^\s*\d+\.\s*(Tax on profit|Treth ar elw)\s*$/m);
+  const note = heading ? ours.visibleText.slice(heading.index).split(/^\s*\d+\.\s+(?!Tax on profit\b|Treth ar elw\b)\S.*$/m)[0] : "";
   if (!note) return row(criterion, "unknown", "the tax facts have no tax note page", "visible-text.txt");
   const bracketed = taxFacts.filter((fact) => {
     const text = fact.text.trim();
@@ -145,7 +192,7 @@ export function companyInformationCriterion(input, ours) {
   if (!JURISDICTION_TEXT.test(text)) missing.push("part of the UK of registration");
   if (!text.includes(input.companyNumber)) missing.push("company number");
   if (
-    !/registered office/i.test(text) ||
+    !REGISTERED_OFFICE_TEXT.test(text) ||
     !squash(text)
       .replace(/ ([,.])/g, "$1")
       .includes(registeredOfficeLine(input.registeredOffice))

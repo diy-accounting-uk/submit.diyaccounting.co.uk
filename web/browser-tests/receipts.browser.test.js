@@ -115,6 +115,49 @@ test.describe("Receipts page - receipt details", () => {
     await expect(page.locator("#receiptsTable tbody tr").nth(1).locator("td").nth(1)).toContainText("BBB");
   });
 
+  test("lists a pending Companies House filing and a rejected one with their submission numbers, above the receipts", async ({ page }) => {
+    await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
+    await page.evaluate(async () => {
+      localStorage.setItem("cognitoIdToken", "token");
+      const filingsInProgress = [
+        { submissionNumber: "00001A", kind: "accounts", status: "pending", submittedAt: "2026-11-18T10:00:00.000Z", rejections: [] },
+        {
+          submissionNumber: "00001B",
+          kind: "confirmation-statement",
+          status: "rejected",
+          submittedAt: "2026-11-17T10:00:00.000Z",
+          rejections: [{ rejectCode: "11686", description: "You must provide the name of each shareholder" }],
+        },
+      ];
+      window.fetchWithIdToken = async () => ({ ok: true, json: async () => ({ receipts: [], filingsInProgress }) });
+      await window.fetchReceipts();
+    });
+
+    const section = page.locator("#filingsInProgress");
+    await expect(section).toBeVisible();
+    const entries = section.locator("li.filing-in-progress");
+    await expect(entries).toHaveCount(2);
+    await expect(entries.nth(0)).toContainText("Accounts");
+    await expect(entries.nth(0)).toContainText("submission number 00001A");
+    await expect(entries.nth(0)).toContainText("Waiting for Companies House");
+    await expect(entries.nth(1)).toContainText("Confirmation statement");
+    await expect(entries.nth(1)).toContainText("submission number 00001B");
+    await expect(entries.nth(1)).toContainText("Rejected by Companies House");
+    await expect(entries.nth(1)).toContainText("You must provide the name of each shareholder");
+    await expect(page.locator("#emptyState")).toHaveText("No receipts yet.");
+  });
+
+  test("shows no filings-in-progress section when every filing is a receipt", async ({ page }) => {
+    await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
+    await page.evaluate(async () => {
+      localStorage.setItem("cognitoIdToken", "token");
+      window.fetchWithIdToken = async () => ({ ok: true, json: async () => ({ receipts: [], filingsInProgress: [] }) });
+      await window.fetchReceipts();
+    });
+
+    await expect(page.locator("#filingsInProgress")).toBeHidden();
+  });
+
   test("lists the accounts and both returns of a long period of account under one row, titled by return and dates", async ({ page }) => {
     await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
     await page.evaluate(async () => {

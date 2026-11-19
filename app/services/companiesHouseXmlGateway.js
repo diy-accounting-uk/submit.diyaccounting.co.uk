@@ -433,13 +433,17 @@ export function buildPaymentPeriodsRequest({
 }
 
 /**
- * Build the GovTalk envelope for a GetSubmissionStatus poll.
+ * Build the GovTalk envelope for a GetSubmissionStatus poll. The Technical Interface Specification
+ * (v5.3, section 2.5) names three options: 1, one submission (submissionNumber); 2, every completed
+ * submission for the presenter (neither); 3, every completed submission for one company from the
+ * presenter (companyNumber). Options 2 and 3 answer each completed submission once, provided a
+ * StatusAck follows the poll.
  *
  * @param {object} input
  * @param {string} input.presenterId
  * @param {string} input.presenterCode
- * @param {string} [input.submissionNumber] - either this or companyNumber
- * @param {string} [input.companyNumber]
+ * @param {string} [input.submissionNumber] - option 1
+ * @param {string} [input.companyNumber] - option 3, when no submissionNumber is given
  * @param {string} [input.transactionId] - defaults to the current epoch milliseconds
  * @param {boolean} [input.gatewayTest]
  * @returns {string} the envelope XML
@@ -452,16 +456,34 @@ export function buildStatusRequest({
   transactionId = String(Date.now()),
   gatewayTest = false,
 }) {
-  const identifierXml = submissionNumber
-    ? `<SubmissionNumber>${escapeXmlText(submissionNumber)}</SubmissionNumber>`
-    : `<CompanyNumber>${escapeXmlText(companyNumber)}</CompanyNumber>`;
+  let identifierXml = "";
+  if (submissionNumber) identifierXml = `<SubmissionNumber>${escapeXmlText(submissionNumber)}</SubmissionNumber>\n      `;
+  else if (companyNumber) identifierXml = `<CompanyNumber>${escapeXmlText(companyNumber)}</CompanyNumber>\n      `;
 
   const bodyXml = `<GetSubmissionStatus xmlns="http://xmlgw.companieshouse.gov.uk">
-      ${identifierXml}
-      <PresenterID>${escapeXmlText(presenterId)}</PresenterID>
+      ${identifierXml}<PresenterID>${escapeXmlText(presenterId)}</PresenterID>
     </GetSubmissionStatus>`;
 
   return buildEnvelopeXml({ requestClass: "GetSubmissionStatus", transactionId, gatewayTest, presenterId, presenterCode, bodyXml });
+}
+
+/**
+ * Build the GovTalk envelope for a GetStatusAck: the acknowledgement that must follow every
+ * presenter or company GetSubmissionStatus poll, or the gateway answers the same submissions
+ * again on the next poll. The schema's root element is StatusAck, and so is the Class
+ * (GetStatusAck-v1-1.xsd and the published GetStatusAck.xml example).
+ *
+ * @param {object} input
+ * @param {string} input.presenterId
+ * @param {string} input.presenterCode
+ * @param {string} [input.transactionId] - defaults to the current epoch milliseconds
+ * @param {boolean} [input.gatewayTest]
+ * @returns {string} the envelope XML
+ */
+export function buildStatusAckRequest({ presenterId, presenterCode, transactionId = String(Date.now()), gatewayTest = false }) {
+  const bodyXml = `<StatusAck xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlgw.companieshouse.gov.uk http://xmlgw.companieshouse.gov.uk/v1-0/schema/forms/GetStatusAck-v1-1.xsd"></StatusAck>`;
+
+  return buildEnvelopeXml({ requestClass: "StatusAck", transactionId, gatewayTest, presenterId, presenterCode, bodyXml });
 }
 
 /**
@@ -748,6 +770,37 @@ export function getXmlGatewayUri() {
  *   gateway ignores headers it does not know, so the same call shape reaches both.
  * @returns {Promise<{ok: boolean, status: number, data: string, headers: object, duration: number}>}
  */
+// Node's fetch (undici) fails with TypeError("fetch failed") and puts the system error in cause.
+// These codes come before a byte of the request leaves: the name does not resolve (getaddrinfo),
+// the connection is refused or unreachable (connect), the connect phase times out (undici), or
+// the TLS handshake fails. A timeout or reset after that may follow a delivered request.
+const NOT_DELIVERED_CODES = new Set([
+  "ENOTFOUND",
+  "EAI_AGAIN",
+  "ECONNREFUSED",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "EADDRNOTAVAIL",
+  "UND_ERR_CONNECT_TIMEOUT",
+  "CERT_HAS_EXPIRED",
+  "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+  "UNABLE_TO_GET_ISSUER_CERT_LOCALLY",
+  "DEPTH_ZERO_SELF_SIGNED_CERT",
+  "SELF_SIGNED_CERT_IN_CHAIN",
+]);
+
+/**
+ * Whether a postToGateway failure proves the envelope never reached Companies House.
+ * @param {Error} error - what postToGateway threw
+ * @returns {boolean} true for a DNS, connection or TLS handshake failure; false for a timeout,
+ *   a reset or anything else, after which Companies House may hold the envelope
+ */
+export function gatewayRequestNotDelivered(error) {
+  const code = error?.cause?.code ?? error?.code;
+  if (typeof code !== "string") return false;
+  return NOT_DELIVERED_CODES.has(code) || code.startsWith("ERR_SSL_") || code.startsWith("ERR_TLS_");
+}
+
 export async function postToGateway(xml, extraHeaders = {}) {
   const url = getXmlGatewayUri();
 

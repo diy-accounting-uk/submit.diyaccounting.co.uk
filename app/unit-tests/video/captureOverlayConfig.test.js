@@ -4,7 +4,12 @@
 import fs from "node:fs";
 import TOML from "@iarna/toml";
 import { describe, it, expect } from "vitest";
-import { captureOverlayConfig, unlistedNavTabSelectors, EXAMPLE_SIGN_IN_ADDRESS } from "../../../scripts/lib/video/captureOverlayConfig.js";
+import {
+  captureOverlayConfig,
+  unlistedNavTabSelectors,
+  EXAMPLE_SIGN_IN_ADDRESS,
+  TEST_EQUIPMENT_SELECTORS,
+} from "../../../scripts/lib/video/captureOverlayConfig.js";
 
 describe("captureOverlayConfig", () => {
   const activities = [
@@ -26,6 +31,12 @@ describe("captureOverlayConfig", () => {
   it("carries the script's chapter position", () => {
     expect(captureOverlayConfig({ chapterPosition: "top-center" }, { activities }, null).chapterPosition).toBe("top-center");
     expect(captureOverlayConfig({}, { activities }, null).chapterPosition).toBeUndefined();
+  });
+
+  it("conceals the developer mode toggle in every capture, whatever the scene file suppresses", () => {
+    expect(TEST_EQUIPMENT_SELECTORS).toContain(".developer-mode-toggle");
+    expect(captureOverlayConfig({}, { activities }, null).conceal).toEqual(TEST_EQUIPMENT_SELECTORS);
+    expect(captureOverlayConfig({ suppress: ["#syntheticIndicator"] }, { activities }, "user").conceal).toContain(".developer-mode-toggle");
   });
 
   it("swaps the sign-in address for one example address", () => {

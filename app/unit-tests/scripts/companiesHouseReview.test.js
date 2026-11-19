@@ -6,7 +6,13 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "../../functions/companies-house/companiesHouseAccountsPost.js";
-import { parseFigure, longDate, reconcile, reconciliationMarkdown } from "../../../scripts/lib/companiesHouseReviewReconcile.js";
+import {
+  parseFigure,
+  longDate,
+  reconcile,
+  reconciliationMarkdown,
+  taggedDate,
+} from "../../../scripts/lib/companiesHouseReviewReconcile.js";
 import {
   categoryCriterion,
   companyInformationCriterion,
@@ -17,8 +23,10 @@ import {
   placeholderCriterion,
   sameBalanceSheetDateCriterion,
   substanceCriteria,
+  STATEMENTS,
   taxNoteBracketsCriterion,
 } from "../../../scripts/lib/companiesHouseReviewCriteria.js";
+import { WELSH_ACCOUNTS_TEXT } from "../../../app/services/accountsLanguage.js";
 import { parseFindings, readReviewFolder } from "../../../scripts/lib/companiesHouseReviewFolder.js";
 import {
   companySource,
@@ -211,6 +219,32 @@ describe("reconcile", () => {
   });
 });
 
+// The English each statement rule reads, as the accounts builders write it.
+const STATEMENT_ENGLISH = {
+  section477: "The company is entitled to exemption from audit under section 477 of the Companies Act 2006 relating to small companies.",
+  section480: "The company is entitled to exemption from audit under section 480 of the Companies Act 2006 relating to dormant companies.",
+  membersNoAudit: "The members have not required the company to obtain an audit in accordance with section 476 of the Companies Act 2006.",
+  directorsResponsibilities:
+    "The directors acknowledge their responsibilities for complying with the requirements of the Companies Act 2006 with respect to accounting records and the preparation of accounts.",
+  microProvisions:
+    "These accounts have been prepared in accordance with the provisions applicable to companies subject to the micro-entities regime and delivered in accordance with the provisions applicable to companies subject to the small companies regime.",
+  smallCompaniesRegime:
+    "These accounts have been prepared and delivered in accordance with the provisions applicable to companies subject to the small companies regime.",
+};
+
+describe("statement phrase rules", () => {
+  it.each(Object.entries(STATEMENT_ENGLISH))("%s: the builder's Welsh holds every Welsh phrase the review checks", (key, english) => {
+    const welsh = WELSH_ACCOUNTS_TEXT[english].replace(/[‘’]/g, "'").toLowerCase();
+    const missing = STATEMENTS[key].welshPhrases.filter((options) => !options.some((phrase) => welsh.includes(phrase)));
+    expect(missing).toEqual([]);
+  });
+
+  it.each(Object.entries(STATEMENT_ENGLISH))("%s: the builder's English holds every phrase the review checks", (key, english) => {
+    const lower = english.toLowerCase();
+    expect(STATEMENTS[key].phrases.filter((options) => !options.some((phrase) => lower.includes(phrase)))).toEqual([]);
+  });
+});
+
 describe("substance criteria", () => {
   it.each(cases.map((c) => [c.name, c]))("passes every check for %s", (_name, c) => {
     const rows = substanceCriteria({ kind: c.kind, input: c.input, ours: c.ours, today: TODAY });
@@ -236,6 +270,15 @@ describe("substance criteria", () => {
     ).toBe("pass");
   });
 
+  it("reads the tax note of a Welsh document under its Welsh heading", () => {
+    const c = caseNamed("small-company-accounts-full");
+    const welsh = withText(c.ours, (t) => t.replace(/^(\s*\d+\.\s*)Tax on profit(\s*)$/m, "$1Treth ar elw$2"));
+    expect(welsh.visibleText).toMatch(/^\s*\d+\.\s*Treth ar elw\s*$/m);
+    const result = taxNoteBracketsCriterion(welsh);
+    expect(result.result).toBe("pass");
+    expect(result.evidence).toContain("without brackets");
+  });
+
   it("passes a document with no tax note", () => {
     expect(taxNoteBracketsCriterion(caseNamed("micro-entity-accounts").ours).evidence).toBe("no tax note");
   });
@@ -249,6 +292,39 @@ describe("substance criteria", () => {
       withText(c.ours, (t) => t.replace("private company", "public company")),
     );
     expect(byText.result).toBe("fail");
+  });
+
+  it("reconciles a Welsh document's dates in the day/month/year form it tags", () => {
+    expect(taggedDate("2026-03-31")).toBe("31 March 2026");
+    expect(taggedDate("2026-03-31", "cy")).toBe("31/03/2026");
+    const welshCase = JSON.parse(readFileSync("scripts/fixtures/companies-house-test-service-cases-welsh.json", "utf8")).find(
+      (candidate) => candidate.name === "micro-entity-accounts-welsh",
+    );
+    const { name, type, govTestScenario, expectedOutcome, fictional, ...requestBody } = welshCase;
+    const errors = [];
+    const accounts = extractAndValidateAccountsParameters({ body: JSON.stringify(requestBody) }, errors);
+    const result = reconcile(welshCase, oursFrom(buildAccountsIxbrl(accounts)));
+    expect(result.rows.filter((row) => row.result === "MISMATCH")).toEqual([]);
+  });
+
+  it("reads the s396(A1) statement and the private company in a Welsh document", () => {
+    const welshCase = JSON.parse(readFileSync("scripts/fixtures/companies-house-test-service-cases-welsh.json", "utf8")).find(
+      (candidate) => candidate.name === "micro-entity-accounts-welsh",
+    );
+    const { name, type, govTestScenario, expectedOutcome, fictional, ...requestBody } = welshCase;
+    const errors = [];
+    const accounts = extractAndValidateAccountsParameters({ body: JSON.stringify(requestBody) }, errors);
+    expect(errors).toEqual([]);
+    const ours = oursFrom(buildAccountsIxbrl(accounts));
+    expect(ours.visibleText).toContain("gwmni preifat cyfyngedig gan gyfranddaliadau");
+    expect(companyInformationCriterion(welshCase, ours).result).toBe("pass");
+    expect(categoryCriterion(welshCase, ours).result).toBe("pass");
+    expect(
+      companyInformationCriterion(
+        welshCase,
+        withText(ours, (t) => t.replace(/swyddfa gofrestredig/gi, "swyddfa")),
+      ).result,
+    ).toBe("fail");
   });
 
   it("is unsure when the accounts do not say private", () => {

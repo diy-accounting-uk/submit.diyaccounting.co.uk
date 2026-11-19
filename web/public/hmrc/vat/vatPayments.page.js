@@ -7,39 +7,6 @@ const siteText = (id, english, values) =>
     ? window.siteText(id, english, values)
     : english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
 
-// Global variables
-let searchCriteriaHidden = false;
-
-// Functions to manage search criteria visibility
-function hideSearchCriteria() {
-  const container = document.getElementById("searchCriteriaContainer");
-  const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
-  const cancelBtn = document.getElementById("cancelRequestBtn");
-  if (container && toggleBtn) {
-    container.style.display = "none";
-    toggleBtn.style.display = "inline-block";
-    if (cancelBtn) cancelBtn.style.display = "inline-block";
-    searchCriteriaHidden = true;
-  }
-}
-
-function showSearchCriteria() {
-  const container = document.getElementById("searchCriteriaContainer");
-  const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
-  const cancelBtn = document.getElementById("cancelRequestBtn");
-  if (container && toggleBtn) {
-    container.style.display = "block";
-    toggleBtn.style.display = "none";
-    if (cancelBtn) cancelBtn.style.display = "none";
-    searchCriteriaHidden = false;
-  }
-}
-
-function hideRequestControls() {
-  document.getElementById("cancelRequestBtn").style.display = "none";
-  document.getElementById("toggleSearchCriteriaBtn").style.display = "none";
-}
-
 function cancelRequest() {
   // Clear all in-progress session data
   sessionStorage.removeItem("pendingPaymentsRequest");
@@ -51,7 +18,7 @@ function cancelRequest() {
   sessionStorage.removeItem("currentActivity");
 
   // Show form and hide results
-  showSearchCriteria();
+  window.SearchForm.showCriteria("paymentsForm");
   document.getElementById("paymentsResults").style.display = "none";
   hideStatus();
   console.log("Request cancelled, session data cleared");
@@ -117,7 +84,7 @@ async function continuePaymentsRetrieval() {
     }
 
     console.log("Retrieved pending request:", pendingRequest);
-    hideSearchCriteria(); // Hide the form when retrieving payments after auth
+    window.SearchForm.hideCriteria(); // Hide the form when retrieving payments after auth
     showLoading();
     hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
     showStatus(siteText("vat-payments.retrieving", "Retrieving VAT payments..."), "info");
@@ -171,7 +138,7 @@ async function continuePaymentsRetrieval() {
         sessionStorage.removeItem("hmrcGrantId");
         sessionStorage.removeItem("hmrcTokenScope");
         showFailure({ status: 401 }, siteText("vat-payments.could-not-retrieve", "Could not retrieve VAT payments"));
-        showSearchCriteria(); // Show form on error
+        window.SearchForm.showCriteria("paymentsForm"); // Show form on error
         return;
       }
       throw requestError(response, result, "Failed to retrieve payments");
@@ -180,7 +147,7 @@ async function continuePaymentsRetrieval() {
     // Display results
     displayPayments(result.payments || []);
     document.getElementById("paymentsResults").style.display = "block";
-    hideRequestControls();
+    window.SearchForm.hideForResults("paymentsForm");
     hideStatus();
 
     // Clean up session storage - keep token for subsequent HMRC operations
@@ -193,7 +160,7 @@ async function continuePaymentsRetrieval() {
   } catch (error) {
     console.error("Error retrieving payments:", error);
     showFailure(error, siteText("vat-payments.could-not-retrieve", "Could not retrieve VAT payments"));
-    showSearchCriteria(); // Show form on error
+    window.SearchForm.showCriteria("paymentsForm"); // Show form on error
     // Clear pending request data to prevent auto-retry loop on next page load
     sessionStorage.removeItem("pendingPaymentsRequest");
     sessionStorage.removeItem("hmrcGrantId");
@@ -330,7 +297,7 @@ async function handleFormSubmission(event) {
       // Display results
       displayPayments(result.payments || []);
       document.getElementById("paymentsResults").style.display = "block";
-      hideRequestControls();
+      window.SearchForm.hideForResults("paymentsForm");
       hideStatus();
     } catch (error) {
       console.error("Error retrieving payments:", error);
@@ -397,7 +364,7 @@ const formatCurrency = HmrcDisplayFormat.formatAmount;
 
 // Toggle search criteria button handler
 document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {
-  showSearchCriteria();
+  window.SearchForm.showCriteria("paymentsForm");
 });
 
 // Cancel request button handler
@@ -411,7 +378,7 @@ document.getElementById("newSearchBtn")?.addEventListener("click", () => {
   const resultsContainer = document.getElementById("paymentsResults");
   form.reset();
   resultsContainer.style.display = "none";
-  showSearchCriteria(); // Show the form again when doing a new search
+  window.SearchForm.showCriteria("paymentsForm"); // Show the form again when doing a new search
   hideStatus();
 });
 

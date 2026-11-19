@@ -33,6 +33,7 @@ async function fetchReceipts() {
     return;
   }
   const json = await res.json();
+  showFilingsInProgress(Array.isArray(json.filingsInProgress) ? json.filingsInProgress : []);
   const items = Array.isArray(json.receipts) ? json.receipts : [];
   const { accountingPeriodDates, longDateText } = await import("../../lib/long-period.js");
   describeLongPeriodReturn = (longPeriod) => {
@@ -73,6 +74,66 @@ async function fetchReceipts() {
       tbody.appendChild(tr);
     }
   }
+}
+
+const FILING_IN_PROGRESS_TITLES = {
+  "accounts": siteText("receipts.kind-accounts", "Accounts"),
+  "confirmation-statement": siteText("receipts.kind-confirmation-statement", "Confirmation statement"),
+  "psc-verification-statement": siteText("receipts.kind-psc-verification-statement", "PSC verification statement"),
+};
+
+// A Companies House filing that is not a receipt yet: still waiting for Companies House, which checks
+// some filings by hand in office hours, or rejected. Each one shows its submission number, the number
+// Companies House knows it by.
+function filingInProgressEntry(filing) {
+  const entry = document.createElement("li");
+  entry.className = "filing-in-progress";
+  entry.dataset.status = filing.status;
+  const title = document.createElement("strong");
+  title.textContent = FILING_IN_PROGRESS_TITLES[filing.kind] || siteText("receipts.kind-filing", "Companies House filing");
+  const number = document.createElement("span");
+  number.className = "submission-number";
+  number.textContent = siteText("receipts.submission-number", "submission number {number}", { number: filing.submissionNumber });
+  const sent = filing.submittedAt
+    ? ` ${siteText("receipts.filing-sent", "sent {date},", { date: HmrcDisplayFormat.formatDateTime(filing.submittedAt) })} `
+    : " ";
+  const status = document.createElement("span");
+  status.className = "filing-status";
+  status.textContent =
+    filing.status === "rejected" && window.companiesHouseRejections.notReceived(filing.rejections)
+      ? siteText("receipts.filing-not-received", "Not received by Companies House")
+      : filing.status === "rejected"
+        ? siteText("receipts.filing-rejected", "Rejected by Companies House")
+        : siteText("receipts.filing-pending", "Waiting for Companies House");
+  entry.append(title, sent, number, ": ", status);
+  if (filing.status === "rejected" && filing.rejections?.length) {
+    const reasons = document.createElement("ul");
+    for (const rejection of filing.rejections) {
+      const reason = document.createElement("li");
+      reason.textContent = window.companiesHouseRejections.rejectionDescription(rejection);
+      reasons.appendChild(reason);
+    }
+    entry.appendChild(reasons);
+  }
+  return entry;
+}
+
+function showFilingsInProgress(filings) {
+  const section = document.getElementById("filingsInProgress");
+  section.replaceChildren();
+  section.style.display = filings.length ? "block" : "none";
+  if (!filings.length) return;
+  const heading = document.createElement("h2");
+  heading.textContent = siteText("receipts.in-progress-heading", "Companies House filings not accepted yet");
+  const hint = document.createElement("p");
+  hint.className = "hint";
+  hint.textContent = siteText(
+    "receipts.in-progress-hint",
+    "Companies House checks some filings by hand, in office hours. We ask it for its decision every 15 minutes in office hours, and email you the receipt when it accepts the filing.",
+  );
+  const list = document.createElement("ul");
+  for (const filing of filings) list.appendChild(filingInProgressEntry(filing));
+  section.append(heading, hint, list);
 }
 
 let describeLongPeriodReturn = (longPeriod) =>

@@ -2951,18 +2951,20 @@ function renderCompaniesHouse() {
     return;
   }
   if (statusCode === "REJECT") {
+    const notReceived = window.companiesHouseRejections.notReceivedHeadline(sending.companiesHouse);
     outcome.className = "outcome outcome--error";
     outcome.replaceChildren(
       outcomeTitle(
-        sending.amendment?.accounts
-          ? siteText("ch.ct.ch-rejected-revised", "Companies House rejected the revised accounts")
-          : siteText("ch.ct.ch-rejected", "Companies House rejected the accounts"),
+        notReceived?.title ||
+          (sending.amendment?.accounts
+            ? siteText("ch.ct.ch-rejected-revised", "Companies House rejected the revised accounts")
+            : siteText("ch.ct.ch-rejected", "Companies House rejected the accounts")),
       ),
       paragraph(siteText("ch.ct.submission", "Submission "), { strong: submissionNumber }, siteText("ch.ct.full-stop", ".")),
     );
     errors.style.display = "block";
     errors.replaceChildren(
-      create("ul", {}, ...(rejections ?? []).map((entry) => create("li", {}, `${entry.rejectCode}: ${entry.description}`))),
+      create("ul", {}, ...(rejections ?? []).map((entry) => create("li", {}, window.companiesHouseRejections.rejectionText(entry)))),
       create(
         "p",
         {},

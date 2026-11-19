@@ -65,7 +65,8 @@ const mockAllocateSubmissionNumber = vi.fn();
 const mockResolvePresenterCredentials = vi.fn();
 const mockPostToGateway = vi.fn();
 const mockParseGatewayResponse = vi.fn();
-vi.mock("@app/services/companiesHouseXmlGateway.js", () => ({
+vi.mock("@app/services/companiesHouseXmlGateway.js", async (importOriginal) => ({
+  gatewayRequestNotDelivered: (await importOriginal()).gatewayRequestNotDelivered,
   buildPscVerificationStatementSubmission: (...args) => mockBuildPscVerificationStatementSubmission(...args),
   allocateSubmissionNumber: (...args) => mockAllocateSubmissionNumber(...args),
   postToGateway: (...args) => mockPostToGateway(...args),
@@ -168,6 +169,46 @@ describe("companiesHousePscVerificationStatementPost ingestHandler", () => {
     expect(mockBuildPscVerificationStatementSubmission).toHaveBeenCalledWith(
       expect.objectContaining({ presenterId: "OWN-PRES-7731", presenterCode: "OwnSecretCode#42" }),
     );
+  });
+
+  test("keeps the filing pending and answers its number when the gateway never answers the sent envelope", async () => {
+    mockPostToGateway.mockImplementation(async (xml) => {
+      if (xml === "<GovTalkMessage>submission</GovTalkMessage>") throw new Error("The operation was aborted due to timeout");
+      return { ok: true, status: 200, data: "<GovTalkMessage>ack</GovTalkMessage>", headers: {}, duration: 1 };
+    });
+
+    const response = await companiesHousePscVerificationStatementPostHandler(buildEvent());
+
+    expect(response.statusCode).toBe(201);
+    expect(parseResponseBody(response).submissionNumber).toBe("00001A");
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const writes = mockSend.mock.calls
+      .map(([cmd]) => cmd)
+      .filter((cmd) => cmd instanceof lib.UpdateCommand && cmd.input.ExpressionAttributeValues?.[":status"])
+      .map((cmd) => cmd.input.ExpressionAttributeValues);
+    expect(writes.map((values) => values[":status"])).toEqual(["pending", "pending"]);
+    expect(writes.at(-1)[":data"]).toMatchObject({ kind: "psc-verification-statement", outcomeUnknown: true });
+  });
+
+  test("marks the filing failed when the connection to the gateway was refused, so nothing was delivered", async () => {
+    mockPostToGateway.mockImplementation(async (xml) => {
+      if (xml === "<GovTalkMessage>submission</GovTalkMessage>") {
+        throw Object.assign(new TypeError("fetch failed"), {
+          cause: Object.assign(new Error("connect ECONNREFUSED 10.0.0.1:443"), { code: "ECONNREFUSED", syscall: "connect" }),
+        });
+      }
+      return { ok: true, status: 200, data: "<GovTalkMessage>ack</GovTalkMessage>", headers: {}, duration: 1 };
+    });
+
+    const response = await companiesHousePscVerificationStatementPostHandler(buildEvent());
+
+    expect(response.statusCode).toBe(500);
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const statuses = mockSend.mock.calls
+      .map(([cmd]) => cmd)
+      .filter((cmd) => cmd instanceof lib.UpdateCommand && cmd.input.ExpressionAttributeValues?.[":status"])
+      .map((cmd) => cmd.input.ExpressionAttributeValues[":status"]);
+    expect(statuses).toEqual(["pending", "failed"]);
   });
 
   test("forwards a Gov-Test-Scenario header to the gateway call", async () => {

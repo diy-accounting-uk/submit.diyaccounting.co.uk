@@ -37,7 +37,9 @@ export async function deriveVatReturn(session, params = {}) {
   if (!session.book || !session.lines) {
     throw new Error("No book is loaded. Call open_book first.");
   }
+  // The workbook's due date is a month after the period ends, not HMRC's deadline, so the answer leaves it out.
   const derived = await deriveVatReturnFromBook(session.book, session.lines, params);
+  delete derived.dueDate;
   const lines = Object.fromEntries(Object.entries(derived.lines).map(([box, boxLines]) => [box, boxLines.map(lineForPerson)]));
   return { ...derived, lines };
 }

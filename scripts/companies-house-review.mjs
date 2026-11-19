@@ -39,21 +39,21 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync, copyF
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { inflateRawSync } from "node:zlib";
-import { basename, dirname, join, relative } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "../app/functions/companies-house/companiesHouseAccountsPost.js";
 import { ixbrlStructureProblems } from "../app/lib/ixbrlStructure.js";
 import { readReviewFolder } from "./lib/companiesHouseReviewFolder.js";
 import { reconcile, reconciliationMarkdown } from "./lib/companiesHouseReviewReconcile.js";
-import { isoToday, notCarriedFromInput, sameBalanceSheetDateCriterion, substanceCriteria } from "./lib/companiesHouseReviewCriteria.js";
 import {
-  FIXTURE_PATH as FIXTURE_RELATIVE_PATH,
-  fixtureLineOf,
-  gatewayState,
-  renderIndex,
-  walkthroughMarkdown,
-} from "./lib/companiesHouseReviewPage.js";
+  isoToday,
+  notCarriedFromInput,
+  sameBalanceSheetDateCriterion,
+  STATEMENTS,
+  substanceCriteria,
+} from "./lib/companiesHouseReviewCriteria.js";
+import { fixtureLineOf, gatewayState, renderIndex, walkthroughMarkdown } from "./lib/companiesHouseReviewPage.js";
 
 const REPOSITORY_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const FIXTURE_PATH = join(REPOSITORY_ROOT, "scripts", "fixtures", "companies-house-test-service-cases.json");
@@ -102,41 +102,6 @@ const KINDS = {
     },
     dormant: false,
     statements: ["section477", "membersNoAudit", "directorsResponsibilities", "smallCompaniesRegime", "section444-5", "section444-5A"],
-  },
-};
-
-// The phrase rules from the Companies House accounts TIS, "FRS unaudited accounts statements to
-// the Balance sheet". Every inner array is an OR; the outer array is an AND. Case-insensitive.
-const STATEMENTS = {
-  section477: {
-    label: "Section 477 audit exemption statement",
-    concept: "StatementThatCompanyEntitledToExemptionFromAuditUnderSection477CompaniesAct2006RelatingToSmallCompanies",
-    phrases: [["exempt", "exemption"], ["section 477 of the companies act 2006"]],
-  },
-  section480: {
-    label: "Section 480 dormant audit exemption statement",
-    concept: "StatementThatCompanyEntitledToExemptionFromAuditUnderSection480CompaniesAct2006RelatingToDormantCompanies",
-    phrases: [["exempt", "exemption"], ["section 480 of the companies act 2006"]],
-  },
-  membersNoAudit: {
-    label: "Members have not required an audit (section 476)",
-    concept: "StatementThatMembersHaveNotRequiredCompanyToObtainAnAudit",
-    phrases: [["members have not required the company to obtain an audit", "member has not required the company to obtain an audit"]],
-  },
-  directorsResponsibilities: {
-    label: "Directors acknowledge their responsibilities",
-    concept: "StatementThatDirectorsAcknowledgeTheirResponsibilitiesUnderCompaniesAct",
-    phrases: [["directors acknowledge", "director acknowledges"], ["responsibilities"], ["companies act 2006", "the act"]],
-  },
-  microProvisions: {
-    label: "Prepared in accordance with the micro-entity provisions",
-    concept: "StatementThatAccountsHaveBeenPreparedInAccordanceWithProvisionsSmallCompaniesRegime",
-    phrases: [["prepared"], ["in accordance with"], ["provisions"], ["micro"]],
-  },
-  smallCompaniesRegime: {
-    label: "Prepared in accordance with the small companies regime",
-    concept: "StatementThatAccountsHaveBeenPreparedInAccordanceWithProvisionsSmallCompaniesRegime",
-    phrases: [["prepared"], ["in accordance with"], ["provisions"], ["small companies"]],
   },
 };
 
@@ -202,6 +167,25 @@ const SECTION_444_5A =
   /444\s*\(5A\)|profit and loss account (has|have) not been delivered|not to deliver (a copy of )?the (company's )?profit and loss account/i;
 const APPROVAL_LINE = /approved by the (board|directors)/i;
 
+// The same sentences in a Welsh document, as the builder writes them from the TIS's Welsh phrases.
+const WELSH_SECTION_444_5 = /wedi eu cyflwyno yn unol â'r darpariaethau .*drefn cwmnïau bach/i;
+const WELSH_SECTION_444_5A = /444\s*\(5A\)|peidio â chyflwyno copi o'r cyfrif elw a cholled/i;
+const WELSH_APPROVAL_LINE = /cymeradwywyd gan y (bwrdd|cyfarwyddwyr)/i;
+const BALANCE_SHEET_HEADINGS = ["Balance sheet", "Mantolen"];
+const NOTES_HEADINGS = ["Notes to the financial statements", "Nodiadau i’r datganiadau ariannol"];
+
+/** Whether the document names Welsh as its principal language, as the accounts TIS requires of Welsh accounts. */
+export function isWelshDocument(facts) {
+  return facts.some(
+    (fact) =>
+      fact.concept === "ReportPrincipalLanguage" &&
+      fact.members.some(([dimension, member]) => dimension === "LanguagesDimension" && member === "Welsh"),
+  );
+}
+
+// The TIS writes its Welsh phrases with a straight apostrophe; a document may print a curly one.
+const plainApostrophes = (text) => text.replaceAll("’", "'");
+
 // Patterns that pick the example for each accounts type from an Accounts Data Product zip.
 const EXAMPLE_RULES = {
   "micro": [/AccountingStandardsDimension[^>]*>\s*[\w-]*:?Micro-entities/, /AccountsTypeDimension[^>]*>\s*[\w-]*:?FilletedAccounts/],
@@ -234,6 +218,8 @@ function parseArgs(argv) {
     else if (flag === "--date") args.date = argv[(index += 1)];
     else if (flag === "--out-dir") args.outDir = argv[(index += 1)];
     else if (flag === "--runs-dir") args.runsDir = argv[(index += 1)];
+    else if (flag === "--fixture") args.fixture = argv[(index += 1)];
+    else if (flag === "--case") (args.only ??= []).push(argv[(index += 1)]);
     else if (flag === "--run") {
       const [caseName, runId] = argv[(index += 1)].split("=");
       args.runs[caseName] = runId;
@@ -242,7 +228,9 @@ function parseArgs(argv) {
       args.examples[caseName] = file;
     } else throw new Error(`Unknown argument ${flag}`);
   }
-  args.outDir ??= join(REPOSITORY_ROOT, "target", "companies-house-review", args.date);
+  args.outDir = args.outDir ? resolve(args.outDir) : join(REPOSITORY_ROOT, "target", "companies-house-review", args.date);
+  args.fixture = args.fixture ? resolve(args.fixture) : FIXTURE_PATH;
+  args.fixtureRelative = relative(REPOSITORY_ROOT, args.fixture);
   return args;
 }
 
@@ -301,52 +289,57 @@ async function inspect(page, file, screenshotPath) {
   await page.setViewportSize({ width: 900, height: 1200 });
   await page.goto(`file://${file}`, { waitUntil: "load" });
   await page.screenshot({ path: screenshotPath, fullPage: true });
-  return page.evaluate((ixNs) => {
-    const contexts = {};
-    for (const context of document.getElementsByTagNameNS("http://www.xbrl.org/2003/instance", "context")) {
-      contexts[context.getAttribute("id")] = Array.from(
-        context.getElementsByTagNameNS("http://xbrl.org/2006/xbrldi", "explicitMember"),
-      ).map((member) => [member.getAttribute("dimension").split(":").pop(), member.textContent.trim().split(":").pop()]);
-    }
-    const hiddenRoot = (node) => {
-      for (let parent = node.parentElement; parent; parent = parent.parentElement) {
-        if (parent.localName === "hidden" && parent.namespaceURI === ixNs) return true;
+  return page.evaluate(
+    ([ixNs, balanceSheetHeadings]) => {
+      const contexts = {};
+      for (const context of document.getElementsByTagNameNS("http://www.xbrl.org/2003/instance", "context")) {
+        contexts[context.getAttribute("id")] = Array.from(
+          context.getElementsByTagNameNS("http://xbrl.org/2006/xbrldi", "explicitMember"),
+        ).map((member) => [member.getAttribute("dimension").split(":").pop(), member.textContent.trim().split(":").pop()]);
       }
-      return false;
-    };
-    const facts = ["nonFraction", "nonNumeric"].flatMap((localName) =>
-      Array.from(document.getElementsByTagNameNS(ixNs, localName)).map((fact) => ({
-        concept: fact.getAttribute("name").split(":").pop(),
-        context: fact.getAttribute("contextRef"),
-        members: contexts[fact.getAttribute("contextRef")] ?? [],
-        text: fact.textContent.replace(/\s+/g, " ").trim().slice(0, 400),
-        hidden: hiddenRoot(fact),
-        visible: typeof fact.checkVisibility === "function" ? fact.checkVisibility() : true,
-      })),
-    );
-    const pages = Array.from(document.querySelectorAll("div.page"));
-    const balanceSheetPage = pages.find((candidate) => candidate.querySelector("h2")?.textContent.startsWith("Balance sheet"));
-    const balanceSheetRows = balanceSheetPage
-      ? Array.from(balanceSheetPage.querySelectorAll("tbody tr")).map((row) => ({
-          label: row.querySelector("td.label")?.textContent.trim() ?? "",
-          figures: Array.from(row.querySelectorAll("td.figure")).map((cell) => cell.textContent.trim()),
-        }))
-      : null;
-    const last = pages[pages.length - 1];
-    const after = [];
-    for (let node = last?.nextSibling; node; node = node.nextSibling) {
-      if (node.nodeType === 1 && node.checkVisibility()) after.push(node.nodeName);
-      if (node.nodeType === 3 && node.textContent.trim()) after.push(node.textContent.trim());
-    }
-    return {
-      parseError: document.getElementsByTagName("parsererror").length > 0,
-      visibleText: document.body?.innerText ?? "",
-      facts,
-      balanceSheetRows,
-      lastPageTitle: last?.querySelector("h2")?.textContent.trim() ?? null,
-      afterLastPage: after,
-    };
-  }, IX_NS);
+      const hiddenRoot = (node) => {
+        for (let parent = node.parentElement; parent; parent = parent.parentElement) {
+          if (parent.localName === "hidden" && parent.namespaceURI === ixNs) return true;
+        }
+        return false;
+      };
+      const facts = ["nonFraction", "nonNumeric"].flatMap((localName) =>
+        Array.from(document.getElementsByTagNameNS(ixNs, localName)).map((fact) => ({
+          concept: fact.getAttribute("name").split(":").pop(),
+          context: fact.getAttribute("contextRef"),
+          members: contexts[fact.getAttribute("contextRef")] ?? [],
+          text: fact.textContent.replace(/\s+/g, " ").trim().slice(0, 400),
+          hidden: hiddenRoot(fact),
+          visible: typeof fact.checkVisibility === "function" ? fact.checkVisibility() : true,
+        })),
+      );
+      const pages = Array.from(document.querySelectorAll("div.page"));
+      const balanceSheetPage = pages.find((candidate) =>
+        balanceSheetHeadings.some((heading) => candidate.querySelector("h2")?.textContent.startsWith(heading)),
+      );
+      const balanceSheetRows = balanceSheetPage
+        ? Array.from(balanceSheetPage.querySelectorAll("tbody tr")).map((row) => ({
+            label: row.querySelector("td.label")?.textContent.trim() ?? "",
+            figures: Array.from(row.querySelectorAll("td.figure")).map((cell) => cell.textContent.trim()),
+          }))
+        : null;
+      const last = pages[pages.length - 1];
+      const after = [];
+      for (let node = last?.nextSibling; node; node = node.nextSibling) {
+        if (node.nodeType === 1 && node.checkVisibility()) after.push(node.nodeName);
+        if (node.nodeType === 3 && node.textContent.trim()) after.push(node.textContent.trim());
+      }
+      return {
+        parseError: document.getElementsByTagName("parsererror").length > 0,
+        visibleText: document.body?.innerText ?? "",
+        facts,
+        balanceSheetRows,
+        lastPageTitle: last?.querySelector("h2")?.textContent.trim() ?? null,
+        afterLastPage: after,
+      };
+    },
+    [IX_NS, BALANCE_SHEET_HEADINGS],
+  );
 }
 
 function membersOf(facts, dimension) {
@@ -359,7 +352,10 @@ function factText(facts, concept) {
 
 function statementResult(key, document) {
   if (key === "section444-5") {
-    const sentence = document.visibleText.split(/(?<=\.)\s+/).find((candidate) => SECTION_444_5.test(candidate));
+    const pattern = isWelshDocument(document.facts) ? WELSH_SECTION_444_5 : SECTION_444_5;
+    const sentence = plainApostrophes(document.visibleText)
+      .split(/(?<=\.)\s+/)
+      .find((candidate) => pattern.test(candidate));
     return {
       label: "Section 444(5): delivered under the small companies regime",
       result: sentence ? "pass" : "fail",
@@ -373,7 +369,10 @@ function statementResult(key, document) {
       document.facts,
       "StatementThatDirectorsHaveElectedNotToDeliverProfitLossAccountUnderSection4445ACompaniesAct2006",
     );
-    const sentence = document.visibleText.split(/(?<=\.)\s+/).find((candidate) => SECTION_444_5A.test(candidate));
+    const pattern = isWelshDocument(document.facts) ? WELSH_SECTION_444_5A : SECTION_444_5A;
+    const sentence = plainApostrophes(document.visibleText)
+      .split(/(?<=\.)\s+/)
+      .find((candidate) => pattern.test(candidate));
     return {
       label: "Section 444(5A): the profit and loss account is not delivered",
       result: sentence ? "pass" : "fail",
@@ -384,8 +383,9 @@ function statementResult(key, document) {
   }
   const rule = STATEMENTS[key];
   const text = factText(document.facts, rule.concept);
-  const lower = text.toLowerCase();
-  const missing = rule.phrases.filter((options) => !options.some((phrase) => lower.includes(phrase)));
+  const lower = plainApostrophes(text).toLowerCase();
+  const phrases = isWelshDocument(document.facts) ? rule.welshPhrases : rule.phrases;
+  const missing = phrases.filter((options) => !options.some((phrase) => lower.includes(phrase)));
   if (!text) return { label: rule.label, result: "fail", evidence: `no ${rule.concept} fact` };
   return {
     label: rule.label,
@@ -438,7 +438,7 @@ function judge(kind, ours, example, validator, structureProblems, { input, today
     );
   }
 
-  const nothingAfter = ours.lastPageTitle === "Notes to the financial statements" && ours.afterLastPage.length === 0;
+  const nothingAfter = NOTES_HEADINGS.includes(ours.lastPageTitle) && ours.afterLastPage.length === 0;
   add(
     "Nothing after the last note",
     nothingAfter ? "pass" : "fail",
@@ -516,7 +516,8 @@ function judge(kind, ours, example, validator, structureProblems, { input, today
         (fact) => fact.concept === "NameEntityOfficer" && fact.visible && fact.members.some(([, member]) => member === officer),
       )
     : null;
-  const approvalSentence = ours.visibleText.split(/\n/).find((line) => APPROVAL_LINE.test(line));
+  const approvalLine = isWelshDocument(ours.facts) ? WELSH_APPROVAL_LINE : APPROVAL_LINE;
+  const approvalSentence = ours.visibleText.split(/\n/).find((line) => approvalLine.test(line));
   add(
     "Directors' approval line, with date and signing director",
     dateFact && nameFact && approvalSentence ? "pass" : "fail",
@@ -660,11 +661,11 @@ function exampleSourceText(rawName, origin) {
 // Writes index.html and walkthrough.md from the files already in the folder and judge.json. It builds
 // no document, posts nothing to the validator and calls no gh.
 function renderOnly(args) {
-  const reviews = readReviewFolder(args.outDir, readFileSync(FIXTURE_PATH, "utf8"));
+  const reviews = readReviewFolder(args.outDir, readFileSync(args.fixture, "utf8"));
   const judgePath = join(args.outDir, "judge.json");
   const judgeJson = existsSync(judgePath) ? JSON.parse(readFileSync(judgePath, "utf8")) : {};
   writeFileSync(join(args.outDir, "walkthrough.md"), walkthroughMarkdown(args.date, reviews, judgeJson));
-  writeFileSync(join(args.outDir, "index.html"), renderIndex(args.date, reviews, judgeJson));
+  writeFileSync(join(args.outDir, "index.html"), renderIndex(args.date, reviews, judgeJson, args.fixtureRelative));
   console.log(`Rendered ${reviews.length} cases: ${relative(REPOSITORY_ROOT, args.outDir)}/index.html`);
 }
 
@@ -672,8 +673,12 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.renderOnly) return renderOnly(args);
   mkdirSync(args.outDir, { recursive: true });
-  const cases = JSON.parse(readFileSync(FIXTURE_PATH, "utf8")).filter((testCase) => testCase.type === "accounts");
-  const fixtureText = readFileSync(FIXTURE_PATH, "utf8");
+  const cases = JSON.parse(readFileSync(args.fixture, "utf8")).filter(
+    (testCase) => testCase.type === "accounts" && (!args.only || args.only.includes(testCase.name)),
+  );
+  if (args.only && cases.length !== args.only.length)
+    throw new Error(`--case names a case that is not an accounts case in ${args.fixtureRelative}`);
+  const fixtureText = readFileSync(args.fixture, "utf8");
   for (const caseName of Object.keys(args.runs)) {
     if (!cases.some((testCase) => testCase.name === caseName)) throw new Error(`--run names ${caseName}, which is not an accounts case`);
   }
@@ -778,7 +783,7 @@ async function main() {
       const reconciliation = reconcile(testCase, ours);
       writeFileSync(
         join(caseDir, "reconciliation.md"),
-        reconciliationMarkdown(directory, testCase, reconciliation, FIXTURE_RELATIVE_PATH, fixtureLineOf(fixtureText, name)),
+        reconciliationMarkdown(directory, testCase, reconciliation, args.fixtureRelative, fixtureLineOf(fixtureText, name)),
       );
       reviews.push({
         directory,
@@ -814,7 +819,7 @@ async function main() {
   const judgePath = join(args.outDir, "judge.json");
   const judgeJson = existsSync(judgePath) ? JSON.parse(readFileSync(judgePath, "utf8")) : {};
   writeFileSync(join(args.outDir, "walkthrough.md"), walkthroughMarkdown(args.date, reviews, judgeJson));
-  writeFileSync(join(args.outDir, "index.html"), renderIndex(args.date, reviews, judgeJson));
+  writeFileSync(join(args.outDir, "index.html"), renderIndex(args.date, reviews, judgeJson, args.fixtureRelative));
   for (const review of reviews) {
     const counts = review.rows.reduce((tally, row) => ({ ...tally, [row.result]: (tally[row.result] ?? 0) + 1 }), {});
     console.log(`VERDICT ${review.directory}: ${JSON.stringify(counts)}`);

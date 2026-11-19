@@ -845,7 +845,7 @@ function renderRejections(rejections) {
   }
   container.style.display = "block";
   container.className = "outcome outcome--error";
-  container.replaceChildren(...rejections.map((entry) => element("p", {}, `${entry.rejectCode}: ${entry.description}`)));
+  container.replaceChildren(...rejections.map((entry) => element("p", {}, window.companiesHouseRejections.rejectionText(entry))));
 }
 
 // A director and a PSC are separate Companies House registers with no shared identifier, so
@@ -1019,7 +1019,7 @@ async function handlePscVerificationSubmit(index, matches) {
           status: outcome.statusCode,
         }),
       ),
-      ...(outcome.rejections || []).map((rejection) => buildParagraph([`${rejection.rejectCode}: ${rejection.description}`])),
+      ...(outcome.rejections || []).map((rejection) => buildParagraph([window.companiesHouseRejections.rejectionText(rejection)])),
     );
   } catch (error) {
     console.error("PSC verification statement filing failed:", error);
@@ -1074,10 +1074,15 @@ async function checkOutcome(submission, headers, payload) {
     checkAgain.style.display = "inline-block";
     return;
   }
-  showSubmissionProgress(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
-    number: outcome.submissionNumber,
-    status: outcome.statusCode,
-  });
+  const notReceived = window.companiesHouseRejections.notReceivedHeadline(outcome);
+  if (notReceived) {
+    showSubmissionProgress(`${notReceived.title} ${notReceived.detail}`, {});
+  } else {
+    showSubmissionProgress(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
+      number: outcome.submissionNumber,
+      status: outcome.statusCode,
+    });
+  }
   result.className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
   renderRejections(outcome.rejections);
   await renderFilingRecord(payload, outcome);

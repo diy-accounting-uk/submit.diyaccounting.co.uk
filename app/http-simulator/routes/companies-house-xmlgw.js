@@ -6,18 +6,32 @@
 // Handles: POST /v1-0/xmlgw/Gateway - Class=Accounts, Class=ConfirmationAndVerificationStatement
 //          (or ConfirmationStatement) and Class=PSCVerificationStatement submissions,
 //          Class=CompanyDataRequest and Class=PaymentPeriodsRequest reads, and
-//          Class=GetSubmissionStatus polls for any of them, all arrive at the same endpoint.
+//          Class=GetSubmissionStatus polls for any of them (one submission, or every completed
+//          submission of the presenter) and Class=StatusAck acknowledgements, all arrive at the
+//          same endpoint.
 
 import express from "express";
 import { parseXmlDocument, firstElementText, firstElement, allElements, escapeXmlText } from "../../lib/xmlDom.js";
-import { submitAccounts, pollStatus } from "../scenarios/accounts-filing.js";
+import {
+  submitAccounts,
+  pollStatus,
+  isAuthenticated,
+  completedAccountsStatuses,
+  answerPresenterPoll,
+  acknowledgePresenterPoll,
+} from "../scenarios/accounts-filing.js";
 import {
   requestCompanyData,
   requestPaymentPeriods,
   submitConfirmationStatement,
   pollConfirmationStatement,
+  completedConfirmationStatementStatuses,
 } from "../scenarios/confirmation-statement.js";
-import { submitPscVerificationStatement, pollPscVerificationStatement } from "../scenarios/psc-verification-statement.js";
+import {
+  submitPscVerificationStatement,
+  pollPscVerificationStatement,
+  completedPscVerificationStatementStatuses,
+} from "../scenarios/psc-verification-statement.js";
 
 const GATEWAY_PATH = "/v1-0/xmlgw/Gateway";
 
@@ -64,7 +78,7 @@ ${govTalkDetailsXml}
 `;
 }
 
-function buildSubmissionStatusBodyXml(status) {
+function buildStatusXml(status) {
   const rejectionsXml =
     status.rejections && status.rejections.length > 0
       ? `<Rejections>${status.rejections
@@ -77,9 +91,23 @@ function buildSubmissionStatusBodyXml(status) {
           .join("")}</Rejections>`
       : "<Rejections></Rejections>";
 
-  return `<SubmissionStatus><Status><SubmissionNumber>${escapeXmlText(status.submissionNumber)}</SubmissionNumber><StatusCode>${
+  return `<Status><SubmissionNumber>${escapeXmlText(status.submissionNumber)}</SubmissionNumber><StatusCode>${
     status.statusCode
-  }</StatusCode>${status.companyNumber ? `<CompanyNumber>${escapeXmlText(status.companyNumber)}</CompanyNumber>` : ""}${rejectionsXml}</Status></SubmissionStatus>`;
+  }</StatusCode>${status.companyNumber ? `<CompanyNumber>${escapeXmlText(status.companyNumber)}</CompanyNumber>` : ""}${rejectionsXml}</Status>`;
+}
+
+function buildSubmissionStatusBodyXml(status) {
+  return `<SubmissionStatus>${buildStatusXml(status)}</SubmissionStatus>`;
+}
+
+// TIS v5.3: when a presenter poll finds nothing, the one Status carries a blank SubmissionNumber
+// and StatusCode.
+function buildPresenterPollBodyXml(statuses) {
+  const statusesXml =
+    statuses.length > 0
+      ? statuses.map(buildStatusXml).join("")
+      : "<Status><SubmissionNumber></SubmissionNumber><StatusCode></StatusCode></Status>";
+  return `<SubmissionStatus>${statusesXml}</SubmissionStatus>`;
 }
 
 const REGISTERED_OFFICE_ADDRESS_FIELDS = [
@@ -252,8 +280,12 @@ function handleGetSubmissionStatus(document, { senderIdHash, authValueHash, scen
 
   const presenterId = firstElementText(getSubmissionStatus, "PresenterID");
   const submissionNumber = firstElementText(getSubmissionStatus, "SubmissionNumber");
+  const companyNumber = firstElementText(getSubmissionStatus, "CompanyNumber");
   if (!presenterId) {
     return schemaFailureFor("Body/GetSubmissionStatus/PresenterID");
+  }
+  if (!submissionNumber && !companyNumber) {
+    return handlePresenterPoll({ senderIdHash, authValueHash, scenario });
   }
   if (!submissionNumber) {
     return schemaFailureFor("Body/GetSubmissionStatus/SubmissionNumber");
@@ -278,6 +310,33 @@ function handleGetSubmissionStatus(document, { senderIdHash, authValueHash, scen
     qualifier: "response",
     bodyXml: buildSubmissionStatusBodyXml(outcome),
   };
+}
+
+const AUTHORISATION_FAILURE = { errors: [{ raisedBy: "Gateway", number: 502, type: "fatal", text: "Authorisation Failure" }] };
+
+// GetSubmissionStatus with PresenterID alone: every completed submission of the presenter across
+// the three form registries that no StatusAck has acknowledged yet.
+function handlePresenterPoll({ senderIdHash, authValueHash, scenario }) {
+  if (!isAuthenticated({ senderIdHash, authValueHash }) || scenario === "AUTH_FAILURE") {
+    return AUTHORISATION_FAILURE;
+  }
+  const statuses = answerPresenterPoll(senderIdHash, [
+    ...completedAccountsStatuses(senderIdHash),
+    ...completedConfirmationStatementStatuses(senderIdHash),
+    ...completedPscVerificationStatementStatuses(senderIdHash),
+  ]);
+  return { qualifier: "response", bodyXml: buildPresenterPollBodyXml(statuses) };
+}
+
+function handleStatusAck(document, { senderIdHash, authValueHash, scenario }) {
+  if (!firstElement(document, "StatusAck")) {
+    return schemaFailureFor("Body/StatusAck");
+  }
+  if (!isAuthenticated({ senderIdHash, authValueHash }) || scenario === "AUTH_FAILURE") {
+    return AUTHORISATION_FAILURE;
+  }
+  acknowledgePresenterPoll(senderIdHash);
+  return { qualifier: "response", bodyXml: "" };
 }
 
 function handleConfirmationStatement(document, { senderIdHash, authValueHash, scenario }) {
@@ -437,6 +496,8 @@ export function apiEndpoint(app) {
       outcome = handlePaymentPeriodsRequest(document, { ...credentials, scenario: govTestScenario });
     } else if (requestClass === "GetSubmissionStatus") {
       outcome = handleGetSubmissionStatus(document, { ...credentials, scenario: govTestScenario });
+    } else if (requestClass === "StatusAck") {
+      outcome = handleStatusAck(document, { ...credentials, scenario: govTestScenario });
     } else {
       outcome = schemaFailureFor("Header/MessageDetails/Class");
     }

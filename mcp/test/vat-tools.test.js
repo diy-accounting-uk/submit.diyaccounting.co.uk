@@ -54,10 +54,10 @@ describe("derive_vat_return", () => {
       });
 
       it("answers the five quarters the package's return forms are filled for, box by box", async () => {
-        for (const { periodEnd, dueDate, form } of quarterForms(results)) {
+        for (const { periodEnd, form } of quarterForms(results)) {
           const answer = await deriveVatReturn(session, { periodEnd });
           expect(answer.periodEnd).toBe(periodEnd);
-          expect(answer.dueDate).toBe(dueDate);
+          expect(answer).not.toHaveProperty("dueDate");
           expect(answer.boxes.box1).toBe(pence(form.G9));
           expect(answer.boxes.box2).toBe(0);
           expect(answer.boxes.box3).toBe(pence(form.G13));

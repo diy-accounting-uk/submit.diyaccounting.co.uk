@@ -73,6 +73,7 @@ vi.mock("@app/data/dynamoDbCodesEntryRepository.js", () => ({
 }));
 vi.mock("@app/lib/codesSeal.js", () => ({
   openCodes: async () => ({ companyAuthCode: "ABC123", personalCodes: [] }),
+  sealFor: async () => "v1.sealed-filer",
 }));
 
 const mockBuildMicroEntityAccounts = vi.fn();
@@ -86,7 +87,8 @@ const mockAllocateSubmissionNumber = vi.fn();
 const mockResolvePresenterCredentials = vi.fn();
 const mockPostToGateway = vi.fn();
 const mockParseGatewayResponse = vi.fn();
-vi.mock("@app/services/companiesHouseXmlGateway.js", () => ({
+vi.mock("@app/services/companiesHouseXmlGateway.js", async (importOriginal) => ({
+  gatewayRequestNotDelivered: (await importOriginal()).gatewayRequestNotDelivered,
   hashPresenterCredential: vi.fn((value) => `hashed-${value}`),
   buildAccountsSubmission: (...args) => mockBuildAccountsSubmission(...args),
   buildStatusRequest: vi.fn(),
@@ -372,6 +374,53 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     expect(response.statusCode).toBe(500);
     const body = parseResponseBody(response);
     expect(body.errors[0].number).toBe("502");
+  });
+
+  async function asyncRequestWrites() {
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    return mockSend.mock.calls
+      .map(([cmd]) => cmd)
+      .filter((cmd) => cmd instanceof lib.UpdateCommand && cmd.input.ExpressionAttributeValues?.[":status"])
+      .map((cmd) => cmd.input.ExpressionAttributeValues);
+  }
+
+  test("keeps the filing pending with its request data and answers its number when the gateway never answers the sent envelope", async () => {
+    mockPostToGateway.mockRejectedValue(new Error("The operation was aborted due to timeout"));
+
+    const response = await companiesHouseAccountsPostHandler(buildEvent());
+
+    expect(response.statusCode).toBe(201);
+    expect(parseResponseBody(response).submissionNumber).toBe("00001A");
+    const writes = await asyncRequestWrites();
+    expect(writes.map((values) => values[":status"])).toEqual(["pending", "pending"]);
+    const kept = writes.at(-1)[":data"];
+    expect(kept).toMatchObject({ kind: "accounts", outcomeUnknown: true, filedDocument: '<?xml version="1.0"?><html>fake ixbrl</html>' });
+    expect(kept.chargeActivityId).toBeTruthy();
+  });
+
+  test("marks the filing failed when the connection to the gateway was refused, so nothing was delivered", async () => {
+    mockPostToGateway.mockRejectedValue(
+      Object.assign(new TypeError("fetch failed"), {
+        cause: Object.assign(new Error("connect ECONNREFUSED 10.0.0.1:443"), { code: "ECONNREFUSED", syscall: "connect" }),
+      }),
+    );
+
+    const response = await companiesHouseAccountsPostHandler(buildEvent());
+
+    expect(response.statusCode).toBe(500);
+    expect((await asyncRequestWrites()).map((values) => values[":status"])).toEqual(["pending", "failed"]);
+  });
+
+  test("marks the filing failed when the envelope could not be built, before anything was sent", async () => {
+    mockBuildAccountsSubmission.mockImplementation(() => {
+      throw new Error("envelope build failed");
+    });
+
+    const response = await companiesHouseAccountsPostHandler(buildEvent());
+
+    expect(response.statusCode).toBe(500);
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+    expect((await asyncRequestWrites()).map((values) => values[":status"])).toEqual(["pending", "failed"]);
   });
 
   test("returns 400 with the gateway errors when the gateway reports the company authentication code as invalid", async () => {

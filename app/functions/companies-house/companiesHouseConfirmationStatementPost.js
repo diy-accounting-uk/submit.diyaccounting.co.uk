@@ -46,9 +46,11 @@ import {
   allocateSubmissionNumber,
   resolvePresenterCredentials,
   postToGateway,
+  gatewayRequestNotDelivered,
   parseGatewayResponse,
 } from "../../services/companiesHouseXmlGateway.js";
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
+import { recordSubmissionInProgress, recordOutcomeUnknown } from "../../services/companiesHouseSubmissionInProgress.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { hasPaidCharge, markChargeUsed } from "../../services/activityCharges.js";
@@ -215,6 +217,19 @@ export function extractAndValidateConfirmationStatementParameters(event, errorMe
   };
 }
 
+// The envelope left, so Companies House may have it. The filing stays pending with its request
+// data, the page polls it by number, and a late ACCEPT still gets its receipt and email.
+async function submittedWithOutcomeUnknown({ request, responseHeaders, submissionNumber, userSub, error, data }) {
+  await recordOutcomeUnknown({ userSub, submissionNumber, kind: "confirmation-statement", data });
+  await recordSubmissionFailure({
+    failure: "gateway-outcome-unknown",
+    summary: "Companies House confirmation statement sent with no answer from the gateway; kept pending",
+    userSub,
+    detail: { submissionNumber, error: error.message },
+  });
+  return http201CreatedResponse({ request, headers: { ...responseHeaders }, data: { submissionNumber } });
+}
+
 async function recordSubmissionFailure({ failure, summary, userSub, detail = {} }) {
   await publishActivityFailureEvent({
     event: "companies-house-confirmation-statement-failed",
@@ -272,6 +287,8 @@ export async function ingestHandler(event) {
   const govTestScenario = getHeader(event.headers, "Gov-Test-Scenario");
 
   let submissionNumber;
+  let envelopeSent = false;
+  let inProgressData = {};
   try {
     const { presenterId, presenterCode } = ownPresenter ?? (await resolvePresenterCredentials());
     const gatewayHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
@@ -351,7 +368,14 @@ export async function ingestHandler(event) {
 
     // The reader's language choice, so the receipt email of an accepted filing is in it.
     const welsh = getHeader(event.headers, "X-Site-Language") === "cy";
-    await putAsyncRequest(userSub, submissionNumber, "pending", welsh ? { language: "cy" } : null, asyncRequestsTableName);
+    inProgressData = welsh ? { language: "cy" } : {};
+    await recordSubmissionInProgress({
+      userSub,
+      submissionNumber,
+      kind: "confirmation-statement",
+      underOwnPresenter: Boolean(ownPresenter),
+      data: inProgressData,
+    });
 
     const submissionXml = buildConfirmationStatementSubmission({
       presenterId,
@@ -367,6 +391,7 @@ export async function ingestHandler(event) {
       gatewayTest,
     });
 
+    envelopeSent = true;
     const gatewayResponse = await postToGateway(submissionXml, gatewayHeaders);
     const parsed = parseGatewayResponse(gatewayResponse.data);
 
@@ -419,6 +444,8 @@ export async function ingestHandler(event) {
       error: error.message,
       stack: error.stack,
     });
+    if (envelopeSent && !gatewayRequestNotDelivered(error))
+      return submittedWithOutcomeUnknown({ request, responseHeaders, submissionNumber, userSub, error, data: inProgressData });
     if (submissionNumber) {
       await putAsyncRequest(userSub, submissionNumber, "failed", { message: error.message }, asyncRequestsTableName);
     }

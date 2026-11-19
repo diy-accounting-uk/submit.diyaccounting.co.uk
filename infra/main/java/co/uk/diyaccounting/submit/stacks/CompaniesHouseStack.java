@@ -25,6 +25,7 @@ import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
+import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.utils.FphCheckAccess;
 import co.uk.diyaccounting.submit.utils.IntegrationCallAccess;
 import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
@@ -33,12 +34,17 @@ import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
 import java.util.Set;
 import org.immutables.value.Value;
+import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
+import software.amazon.awscdk.services.events.CronOptions;
+import software.amazon.awscdk.services.events.Rule;
+import software.amazon.awscdk.services.events.Schedule;
+import software.amazon.awscdk.services.events.targets.LambdaFunction;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
@@ -123,6 +129,10 @@ public class CompaniesHouseStack extends Stack {
     public AbstractApiLambdaProps companiesHouseAccountsGetLambdaProps;
     public Function companiesHouseAccountsGetLambda;
     public ILogGroup companiesHouseAccountsGetLambdaLogGroup;
+
+    public Function companiesHouseSubmissionStatusPollLambda;
+    public ILogGroup companiesHouseSubmissionStatusPollLambdaLogGroup;
+    public Rule companiesHouseSubmissionStatusPollSchedule;
 
     public AbstractApiLambdaProps hmrcCtReturnPreviewPostLambdaProps;
     public Function hmrcCtReturnPreviewPostLambda;
@@ -1076,6 +1086,7 @@ public class CompaniesHouseStack extends Stack {
                 this.companiesHouseAccountsGetLambda, bundlesTable, region, account, props, activityBusArn, false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseAccountsGetLambda, props);
         receiptsTable.grant(this.companiesHouseAccountsGetLambda, "dynamodb:PutItem");
+        grantTokenCharge(this.companiesHouseAccountsGetLambda, bundlesTable);
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHouseAccountsGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
@@ -1560,6 +1571,7 @@ public class CompaniesHouseStack extends Stack {
                 false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseConfirmationStatementGetLambda, props);
         receiptsTable.grant(this.companiesHouseConfirmationStatementGetLambda, "dynamodb:PutItem");
+        grantTokenCharge(this.companiesHouseConfirmationStatementGetLambda, bundlesTable);
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHouseConfirmationStatementGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
@@ -1569,6 +1581,7 @@ public class CompaniesHouseStack extends Stack {
                         companiesHouseAccountsAsyncRequestsTable.getTableName())
                 .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
         withPresenterSecretArns(companiesHousePscVerificationStatementPostLambdaEnv, props);
+        withFilerSealKeyEnv(companiesHousePscVerificationStatementPostLambdaEnv, codesSealKeySecret);
         if (xmlGatewayPackageReference(props) != null) {
             companiesHousePscVerificationStatementPostLambdaEnv.with(
                     "COMPANIES_HOUSE_PACKAGE_REFERENCE", xmlGatewayPackageReference(props));
@@ -1633,6 +1646,8 @@ public class CompaniesHouseStack extends Stack {
         grantCompaniesHousePresenterSecretsAccess(this.companiesHousePscVerificationStatementPostLambda, props);
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHousePscVerificationStatementPostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        // Seals the filer's sub into the filing state the presenter poll reads.
+        codesSealKeySecret.grantRead(this.companiesHousePscVerificationStatementPostLambda);
 
         var companiesHousePscVerificationStatementGetLambdaEnv = xmlGatewayFilingLambdaEnv(props)
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName())
@@ -1700,8 +1715,85 @@ public class CompaniesHouseStack extends Stack {
                 false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHousePscVerificationStatementGetLambda, props);
         receiptsTable.grant(this.companiesHousePscVerificationStatementGetLambda, "dynamodb:PutItem");
+        grantTokenCharge(this.companiesHousePscVerificationStatementGetLambda, bundlesTable);
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHousePscVerificationStatementGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+        // The scheduled presenter poll: asks the XML Gateway for every submission of our presenter
+        // that Companies House has accepted or rejected, records each against its filing as the page
+        // poll does, then acknowledges the poll (GetSubmissionStatus option 2, then GetStatusAck).
+        var companiesHouseSubmissionStatusPollLambdaEnv = xmlGatewayFilingLambdaEnv(props)
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName())
+                .with(
+                        "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
+                        companiesHouseAccountsAsyncRequestsTable.getTableName())
+                .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
+        withPresenterSecretArns(companiesHouseSubmissionStatusPollLambdaEnv, props);
+        withFilerSealKeyEnv(companiesHouseSubmissionStatusPollLambdaEnv, codesSealKeySecret);
+        var companiesHouseSubmissionStatusPollLambdaConstruct = new Lambda(
+                this,
+                LambdaProps.builder()
+                        .idPrefix(
+                                props.sharedNames().companiesHouse.companiesHouseSubmissionStatusPollLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().companiesHouse.companiesHouseSubmissionStatusPollLambdaFunctionName)
+                        .ingestHandler(
+                                props.sharedNames().companiesHouse.companiesHouseSubmissionStatusPollLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouse.companiesHouseSubmissionStatusPollLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseSubmissionStatusPollProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .ingestMemorySize(256)
+                        .ingestLambdaTimeout(Duration.minutes(2))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .environment(companiesHouseSubmissionStatusPollLambdaEnv)
+                        .build());
+        this.companiesHouseSubmissionStatusPollLambda = companiesHouseSubmissionStatusPollLambdaConstruct.ingestLambda;
+        this.companiesHouseSubmissionStatusPollLambdaLogGroup =
+                companiesHouseSubmissionStatusPollLambdaConstruct.logGroup;
+        // The salt to hash the filer's sub, PutEvents for the accepted event and the receipt email
+        // request, and the bundles Query the token charge reads the filer's bundles with.
+        grantCompaniesHouseLambdaAccess(
+                this.companiesHouseSubmissionStatusPollLambda,
+                bundlesTable,
+                region,
+                account,
+                props,
+                activityBusArn,
+                false);
+        grantCompaniesHousePresenterSecretsAccess(this.companiesHouseSubmissionStatusPollLambda, props);
+        codesSealKeySecret.grantRead(this.companiesHouseSubmissionStatusPollLambda);
+        receiptsTable.grant(this.companiesHouseSubmissionStatusPollLambda, "dynamodb:PutItem");
+        grantTokenCharge(this.companiesHouseSubmissionStatusPollLambda, bundlesTable);
+        // Reads the filing state and the filer's request by key, and writes them; no Query, no Scan.
+        companiesHouseAccountsAsyncRequestsTable.grant(
+                this.companiesHouseSubmissionStatusPollLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        // Every 15 minutes from 07:00 to 18:45 UTC on weekdays: Companies House checks filings by hand
+        // in office hours only, and this window covers office hours in GMT and in BST. The poll slot
+        // in the async-requests table keeps the presenter at one poll per 10 minutes or more, however
+        // many deployments of the environment share this schedule.
+        this.companiesHouseSubmissionStatusPollSchedule = Rule.Builder.create(
+                        this,
+                        props.sharedNames().companiesHouse.companiesHouseSubmissionStatusPollLambdaFunctionName
+                                + "-Schedule")
+                .ruleName(props.sharedNames().companiesHouse.companiesHouseSubmissionStatusPollLambdaFunctionName
+                        + "-schedule")
+                .description("Poll Companies House for filings it has accepted or rejected, in office hours")
+                .schedule(Schedule.cron(CronOptions.builder()
+                        .minute("0/15")
+                        .hour("7-18")
+                        .weekDay("MON-FRI")
+                        .build()))
+                .targets(List.of(LambdaFunction.Builder.create(this.companiesHouseSubmissionStatusPollLambda)
+                        .build()))
+                .build();
+        infof(
+                "Created Lambda %s for the Companies House presenter poll with an office-hours schedule",
+                this.companiesHouseSubmissionStatusPollLambda.getNode().getId());
 
         FphCheckAccess.wireSenders(this, props.sharedNames().hmrc.hmrcFphCheckQueueName, Set.of());
 
@@ -1735,7 +1827,8 @@ public class CompaniesHouseStack extends Stack {
                         companiesHouseConfirmationStatementPostLambdaUrlOrigin,
                         companiesHouseConfirmationStatementGetLambdaUrlOrigin,
                         companiesHousePscVerificationStatementPostLambdaUrlOrigin,
-                        companiesHousePscVerificationStatementGetLambdaUrlOrigin));
+                        companiesHousePscVerificationStatementGetLambdaUrlOrigin,
+                        companiesHouseSubmissionStatusPollLambdaConstruct));
 
         cfnOutput(this, "CompaniesHouseSearchGetLambdaArn", this.companiesHouseSearchGetLambda.getFunctionArn());
         cfnOutput(this, "CompaniesHouseCompanyGetLambdaArn", this.companiesHouseCompanyGetLambda.getFunctionArn());
@@ -1849,6 +1942,18 @@ public class CompaniesHouseStack extends Stack {
             PopulatedMap<String, String> env, ITable mcpSessionsTable, ISecret codesSealKeySecret) {
         env.with("MCP_SESSIONS_DYNAMODB_TABLE_NAME", mcpSessionsTable.getTableName())
                 .with("MCP_OAUTH_BLOB_KEY_SECRET_ARN", codesSealKeySecret.getSecretArn());
+    }
+
+    // The key that seals the filer's sub into a Companies House filing state: the submit Lambdas seal
+    // it, the presenter poll opens it.
+    private static void withFilerSealKeyEnv(PopulatedMap<String, String> env, ISecret codesSealKeySecret) {
+        env.with("MCP_OAUTH_BLOB_KEY_SECRET_ARN", codesSealKeySecret.getSecretArn());
+    }
+
+    // chargeTokenOnSuccess reads the filer's bundle and decrements its tokens with a conditional
+    // UpdateItem on the bundles table.
+    private static void grantTokenCharge(Function fn, ITable bundlesTable) {
+        bundlesTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
     }
 
     // Taking an entry reads it and deletes it, in one conditional delete.
