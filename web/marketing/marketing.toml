@@ -1099,7 +1099,7 @@ features = [
   "Looks up any VAT return already sent",
 ]
 integrations = ["HMRC Making Tax Digital for VAT", "DIY Accounting Spreadsheets", "DIYA-GL books", "MCP connector for AI assistants"]
-videos = ["view-obligations", "hmrc-authorise", "assistant-vat-handoff", "submit-return"]
+videos = ["view-obligations", "hmrc-authorise", "assistant-vat-handoff", "submit-return", "short-submit-return"]
 
   [[listingProduct.screenshots]]
   id = "vat-form"
@@ -1165,7 +1165,7 @@ features = [
   "Keeps each filing and Companies House's answer with the account",
 ]
 integrations = ["Companies House filing", "Companies House public data", "Stripe payments"]
-videos = ["company-lookup", "change-registered-office", "change-registered-email", "file-micro-entity-accounts", "short-file-micro-entity-accounts", "file-small-company-accounts", "file-confirmation-statement"]
+videos = ["company-lookup", "change-registered-office", "change-registered-email", "file-micro-entity-accounts", "short-file-micro-entity-accounts", "file-small-company-accounts", "short-file-small-company-accounts", "file-confirmation-statement"]
 
   [[listingProduct.screenshots]]
   id = "lookup"
@@ -1612,7 +1612,7 @@ features = [
   "A 35-day sandbox on sign-in keeps books on any device",
 ]
 integrations = ["DIY Accounting Spreadsheets", "DIY Accounting Submit", "MCP server for AI assistants"]
-videos = ["accounting-diya-gl-profit", "mcp-diya-gl"]
+videos = ["accounting-diya-gl-profit", "mcp-diya-gl", "short-diya-gl-books"]
 
   [[listingProduct.screenshots]]
   id = "home"
@@ -1717,6 +1717,9 @@ videos = ["tour"]
 "mcp-diya-gl" = 106
 "short-file-micro-entity-accounts" = 101
 "short-spreadsheets" = 113
+"short-submit-return" = 86
+"short-file-small-company-accounts" = 84
+"short-diya-gl-books" = 99
 
 [[listing]]
 id = "capterra"
