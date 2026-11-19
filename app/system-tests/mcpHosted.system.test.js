@@ -202,6 +202,32 @@ describe("System: hosted MCP endpoint through Express", () => {
     expect(result.structuredContent).toBeDefined();
   });
 
+  it("derives from the book the user opened on a tools/call that carries no Mcp-Session-Id, and never from another user's", async () => {
+    const token = signedAccessToken({ sub: "no-session-id-user" });
+    const opened = await rawPost(
+      { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "open_book", arguments: { bookId: BOOK_ID } } },
+      { Authorization: `Bearer ${token}` },
+    );
+    expect((await opened.json()).result.isError).toBeFalsy();
+
+    const derive = {
+      jsonrpc: "2.0",
+      id: 2,
+      method: "tools/call",
+      params: { name: "derive_vat_return", arguments: { periodEnd: "2025-06-30" } },
+    };
+    const derived = await rawPost(derive, { Authorization: `Bearer ${token}` });
+    expect(derived.status).toBe(200);
+    const { result } = await derived.json();
+    expect(result.isError).toBeFalsy();
+    expect(result.structuredContent).toBeDefined();
+
+    const other = await rawPost(derive, { Authorization: `Bearer ${signedAccessToken({ sub: "another-no-session-id-user" })}` });
+    const otherResult = (await other.json()).result;
+    expect(otherResult.isError).toBe(true);
+    expect(otherResult.content[0].text).toContain("No book is loaded");
+  });
+
   it("answers 401 for a token issued to another client", async () => {
     const response = await rawPost(
       { jsonrpc: "2.0", id: 1, method: "tools/list" },

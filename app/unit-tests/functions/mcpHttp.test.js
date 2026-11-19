@@ -23,12 +23,16 @@ const mockGetMcpSession = vi.fn();
 const mockUpdateMcpSessionCloud = vi.fn();
 const mockDeleteMcpSession = vi.fn();
 const mockUpdateMcpSessionHmrcGrant = vi.fn();
+const mockGetMcpUserBook = vi.fn();
+const mockPutMcpUserBook = vi.fn();
 vi.mock("@app/data/dynamoDbMcpSessionRepository.js", () => ({
   createMcpSession: (...args) => mockCreateMcpSession(...args),
   getMcpSession: (...args) => mockGetMcpSession(...args),
   updateMcpSessionCloud: (...args) => mockUpdateMcpSessionCloud(...args),
   updateMcpSessionHmrcGrant: (...args) => mockUpdateMcpSessionHmrcGrant(...args),
   deleteMcpSession: (...args) => mockDeleteMcpSession(...args),
+  getMcpUserBook: (...args) => mockGetMcpUserBook(...args),
+  putMcpUserBook: (...args) => mockPutMcpUserBook(...args),
 }));
 
 const mockHandleMcpRequest = vi.fn();
@@ -82,6 +86,8 @@ function expectNoAccountRead() {
   expect(mockUpdateMcpSessionHmrcGrant).not.toHaveBeenCalled();
   expect(mockDeleteMcpSession).not.toHaveBeenCalled();
   expect(mockRestoreCloudBook).not.toHaveBeenCalled();
+  expect(mockGetMcpUserBook).not.toHaveBeenCalled();
+  expect(mockPutMcpUserBook).not.toHaveBeenCalled();
 }
 
 beforeEach(() => {
@@ -93,6 +99,7 @@ beforeEach(() => {
   process.env.MCP_TOKEN_JWKS_URI = "https://issuer.test.example/jwks.json";
   process.env.MCP_TOKEN_CLIENT_ID = "mcp-client";
   mockVerify.mockResolvedValue({ sub: USER_SUB, token_use: "access", client_id: "mcp-client" });
+  mockGetMcpUserBook.mockResolvedValue(null);
   mockHandleMcpRequest.mockImplementation(
     async () =>
       new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: {} }), { status: 200, headers: { "content-type": "application/json" } }),
@@ -380,5 +387,101 @@ describe("mcpHttp ingestHandler", () => {
     const result = await ingestHandler(mcpEvent({ method: "DELETE", headers: { "mcp-session-id": "s-5" } }));
     expect(result.statusCode).toBe(404);
     expect(mockDeleteMcpSession).not.toHaveBeenCalled();
+  });
+  describe("the user's last open book", () => {
+    const userBooks = new Map();
+    const OPEN_BOOK = { jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "open_book", arguments: { bookId: "book-u1" } } };
+
+    function okResponse() {
+      return new Response(JSON.stringify({ jsonrpc: "2.0", id: 2, result: {} }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
+    beforeEach(() => {
+      userBooks.clear();
+      let sessionNumber = 0;
+      mockCreateMcpSession.mockImplementation(async (hashedSub) => ({ sessionId: `s-u${++sessionNumber}`, hashedSub, cloud: null }));
+      mockGetMcpUserBook.mockImplementation(async (hashedSub) => userBooks.get(hashedSub) ?? null);
+      mockPutMcpUserBook.mockImplementation(async (hashedSub, cloud) => userBooks.set(hashedSub, cloud));
+      mockRestoreCloudBook.mockImplementation(async (session, pointer) => {
+        session.book = { name: pointer.bookId };
+        session.lines = [];
+        session.cloud = { ...pointer };
+      });
+      mockHandleMcpRequest.mockImplementation(async (_request, { session }) => {
+        if (session.book === null) {
+          session.book = { name: "book-u1" };
+          session.lines = [];
+          session.cloud = { bookId: "book-u1", clientId: null, etag: "eu1" };
+        }
+        return okResponse();
+      });
+    });
+
+    it("derives from the book an open_book in another session opened, on a tools/call with no Mcp-Session-Id", async () => {
+      const opened = await ingestHandler(mcpEvent({ body: OPEN_BOOK }));
+      expect(opened.headers["Mcp-Session-Id"]).toBe("s-u1");
+      expect(mockPutMcpUserBook).toHaveBeenCalledWith(OWN_HASH(), { bookId: "book-u1", clientId: null, etag: "eu1" });
+
+      let bookAtDerive;
+      mockHandleMcpRequest.mockImplementationOnce(async (_request, { session }) => {
+        bookAtDerive = session.book;
+        return okResponse();
+      });
+      const derived = await ingestHandler(mcpEvent({ body: TOOLS_CALL }));
+      expect(derived.statusCode).toBe(200);
+      expect(derived.headers["Mcp-Session-Id"]).toBe("s-u2");
+      expect(bookAtDerive).toEqual({ name: "book-u1" });
+      expect(mockGetMcpUserBook).toHaveBeenLastCalledWith(OWN_HASH());
+      expect(mockPutMcpUserBook).toHaveBeenCalledOnce();
+    });
+
+    it("never restores another user's book", async () => {
+      await ingestHandler(mcpEvent({ body: OPEN_BOOK }));
+      mockVerify.mockResolvedValue({ sub: "user-sub-2", token_use: "access", client_id: "mcp-client" });
+
+      let bookAtDerive;
+      mockHandleMcpRequest.mockImplementationOnce(async (_request, { session }) => {
+        bookAtDerive = session.book;
+        return okResponse();
+      });
+      await ingestHandler(mcpEvent({ body: TOOLS_CALL }));
+      expect(bookAtDerive).toBeNull();
+      expect(mockGetMcpUserBook).toHaveBeenLastCalledWith(hashSub("user-sub-2"));
+      expect(mockRestoreCloudBook).not.toHaveBeenCalled();
+    });
+
+    it("keeps the book a stored session holds over the user's last open book", async () => {
+      userBooks.set(OWN_HASH(), { bookId: "book-other", clientId: null, etag: "e9" });
+      mockGetMcpSession.mockResolvedValue({
+        sessionId: "s-7",
+        hashedSub: OWN_HASH(),
+        cloud: { bookId: "book-7", clientId: null, etag: "e7" },
+      });
+      let bookAtCall;
+      mockHandleMcpRequest.mockImplementationOnce(async (_request, { session }) => {
+        bookAtCall = session.book;
+        return okResponse();
+      });
+      await ingestHandler(mcpEvent({ headers: { "mcp-session-id": "s-7" }, body: TOOLS_CALL }));
+      expect(bookAtCall).toEqual({ name: "book-7" });
+      expect(mockGetMcpUserBook).not.toHaveBeenCalled();
+      expect(mockPutMcpUserBook).not.toHaveBeenCalled();
+    });
+
+    it("answers the tool call with no book when the user's last open book cannot be reopened", async () => {
+      userBooks.set(OWN_HASH(), { bookId: "book-gone", clientId: null, etag: "e1" });
+      mockRestoreCloudBook.mockRejectedValueOnce(new Error("Not found"));
+      let bookAtCall;
+      mockHandleMcpRequest.mockImplementationOnce(async (_request, { session }) => {
+        bookAtCall = session.book;
+        return okResponse();
+      });
+      const result = await ingestHandler(mcpEvent({ body: TOOLS_CALL }));
+      expect(result.statusCode).toBe(200);
+      expect(bookAtCall).toBeNull();
+    });
   });
 });

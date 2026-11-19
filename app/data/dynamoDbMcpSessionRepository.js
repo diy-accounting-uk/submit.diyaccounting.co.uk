@@ -7,6 +7,10 @@
 // sessionId, holding the owner's hashedSub, the pointer to the cloud book the session has open and
 // the id of the session's HMRC grant (the grant itself is its own item; see
 // dynamoDbHmrcGrantRepository.js). Every write refreshes a 24-hour ttl.
+//
+// The table also holds one open-book item per user, keyed "book:<hashedSub>", with the pointer to
+// the cloud book that user opened or saved last in any session. A client that does not send back
+// the Mcp-Session-Id starts a new session on each call, and finds its book through this item.
 
 import { randomUUID } from "node:crypto";
 import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
@@ -20,6 +24,14 @@ function tableName() {
 
 function newTtl() {
   return calculateTtl(new Date(), SESSION_LIFETIME).ttl;
+}
+
+function userBookKey(hashedSub) {
+  return `book:${hashedSub}`;
+}
+
+function expired(item) {
+  return item.ttl <= Math.floor(Date.now() / 1000);
 }
 
 /**
@@ -36,19 +48,48 @@ export async function createMcpSession(hashedSub) {
 
 /**
  * Reads a session. An item whose ttl has passed answers null even if DynamoDB has not yet
- * removed it.
+ * removed it. A session id is a UUID; every other item in the table has a "<kind>:" key, so an id
+ * with a colon answers null and a caller cannot use another kind of item as its session.
  *
  * @param {string} sessionId
  * @returns {Promise<{sessionId: string, hashedSub: string, cloud: Object|null, ttl: number}|null>}
  */
 export async function getMcpSession(sessionId) {
+  if (sessionId.includes(":")) return null;
   const result = await executeDynamoDbCommand(
     (module) => new module.GetCommand({ TableName: tableName(), Key: { sessionId }, ConsistentRead: true }),
   );
   const item = result?.Item;
   if (!item) return null;
-  if (item.ttl <= Math.floor(Date.now() / 1000)) return null;
+  if (expired(item)) return null;
   return item;
+}
+
+/**
+ * Reads the pointer to the cloud book a user opened or saved last, in any session.
+ *
+ * @param {string} hashedSub - the user's hashed sub
+ * @returns {Promise<{bookId: string, clientId: string|null, etag: string}|null>}
+ */
+export async function getMcpUserBook(hashedSub) {
+  const result = await executeDynamoDbCommand(
+    (module) => new module.GetCommand({ TableName: tableName(), Key: { sessionId: userBookKey(hashedSub) }, ConsistentRead: true }),
+  );
+  const item = result?.Item;
+  if (!item || item.hashedSub !== hashedSub || expired(item)) return null;
+  return item.cloud ?? null;
+}
+
+/**
+ * Stores the pointer to the cloud book a user opened or saved last and refreshes the ttl.
+ *
+ * @param {string} hashedSub - the user's hashed sub
+ * @param {{bookId: string, clientId: string|null, etag: string}} cloud
+ * @returns {Promise<void>}
+ */
+export async function putMcpUserBook(hashedSub, cloud) {
+  const item = { sessionId: userBookKey(hashedSub), hashedSub, cloud, ttl: newTtl() };
+  await executeDynamoDbCommand((module) => new module.PutCommand({ TableName: tableName(), Item: item }));
 }
 
 /**
