@@ -10741,16 +10741,16 @@
       ]
     },
     {
-      "id": "claude-plugin-review-test-cases",
+      "id": "chatgpt-plugin-review-test-cases",
       "group": "vat",
       "publish": true,
       "pipelineVersion": 10,
-      "videoFile": "target/videos/os18d-review-test-cases/os18d-review-test-cases.webm",
-      "title": "DIY Accounting Submit plugin in Claude: the eight review test cases",
-      "description": "The DIY Accounting Submit plugin in a Claude chat: list the saved books, open one, derive a VAT return, get the link to file it in the browser, read stored receipts, and three requests the plugin declines (file the return, pay the bill, file company accounts). It is a real recording of the live plugin, not a mockup or a design draft.",
-      "tags": ["DIY Accounting", "VAT", "Making Tax Digital", "Claude", "plugin", "MCP"],
+      "videoFile": "target/videos/os18d-review-test-cases/os18d-chatgpt-review-test-cases.webm",
+      "title": "DIY Accounting Submit plugin in ChatGPT: the eight review test cases",
+      "description": "The DIY Accounting Submit plugin in a ChatGPT chat: list the saved books, open one, derive a VAT return, get the link to file it in the browser, read stored receipts, and three requests the plugin declines (file the return, pay the bill, file company accounts). It is a real recording of the live plugin, not a mockup or a design draft.",
+      "tags": ["DIY Accounting", "VAT", "Making Tax Digital", "ChatGPT", "plugin", "MCP"],
       "categoryId": "27",
-      "videoId": "gYcPhpzgQYg"
+      "videoId": "BwlUg5MQaI0"
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "diya-submit",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Work out a UK VAT return from your saved books, check the nine boxes, then open the link the assistant gives you and file it yourself on the Submit page. Read your stored VAT receipts afterwards.",
   "author": {
     "name": "DIY Accounting Limited",
@@ -41,7 +41,7 @@
         "release_notes": "First release. List the books saved in your DIY Accounting Submit account, open one, and work out the nine VAT boxes for a quarter with the lines behind them. Get a link to the VAT form with the figures filled in, then check and file the return yourself on the Submit site. Read your stored VAT receipts afterwards."
       },
       "review": {
-        "demo_recording_url": "https://youtu.be/gYcPhpzgQYg",
+        "demo_recording_url": "https://youtu.be/BwlUg5MQaI0",
         "commerce": false,
         "commerce_description": "This plugin does not sell products or process payments. A person signs in to an existing DIY Accounting Submit account and uses what that account already has.",
         "test_cases": {
