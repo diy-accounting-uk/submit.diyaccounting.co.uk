@@ -3,7 +3,7 @@
 
 # PLAN: keeping the spreadsheet packages current
 
-Status: RF1 is being worked as two updates (see Updates): U1, the ltd refresh, is running (operator's go, 2026-11-20); U2, a rehearsal of the se, bst and taxi refresh to the 2028-04-05 year end, is planned. TU1 is on spreadsheets main (PR #215, and the quote-check fix PR #216, 2026-11-20). Repository: `../spreadsheets.diyaccounting.co.uk`. The rollover plan that built the current pipeline is archived at `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SPREADSHEETS_ROLLOVER.md`.
+Status: RF1 is being worked as two updates (see Updates): U1, the ltd refresh: its refresh run succeeded (branch `refresh-pinned/ltd-44784124989`) and its test moves are on `NEXT.md`. U2, a rehearsal of the se, bst and taxi refresh to the 2028-04-05 year end, is on `NEXT.md` and waits on the operator's go. TU1 is on spreadsheets main (PR #215, and the quote-check fix PR #216, 2026-11-20). Repository: `../spreadsheets.diyaccounting.co.uk`. The rollover plan that built the current pipeline is archived at `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SPREADSHEETS_ROLLOVER.md`.
 
 ## Operator assertions (verbatim)
 
@@ -16,6 +16,8 @@ Status: RF1 is being worked as two updates (see Updates): U1, the ltd refresh, i
 For the first ltd refresh the operator chose (2026-11-15): the exact-value checks move to the new pinned package in that refresh's pull request.
 
 > go fot ltd. and I want a plan for this (make an updates section in the doc PLAN_SPREADSHEETS_UPDATES.md including ltd and this )for se can set up a test in prod so we run the tax year updater to get the 2028-04-05 ye tax rules for se/bstand taxi, and run a test with the current pinning, then re-pin and another test, then we wind back and remove the 2028 ye stuff we added when we get a successful test. (operator, 2026-11-20)
+
+> put U2 on the board and yes, this is in prod. don't start it yet I shall soon be existing the session so also board U1 and prepare for this session to close (operator, 2026-11-20)
 
 ## Where it stands
 
@@ -33,7 +35,7 @@ For the first ltd refresh the operator chose (2026-11-15): the exact-value check
 
 | # | Task | Waits on |
 |---|---|---|
-| RF1 | The first pinned-package refreshes carry their test moves: the ltd half is U1, the se half is U2 (see Updates). Model: Sonnet. Size: ~6 files. | U1: running. U2: the rehearsal, then the real se, bst and taxi refresh once `main` builds the Apr28 packages (from 2027-01-16) |
+| RF1 | The first pinned-package refreshes carry their test moves: the ltd half is U1, the se half is U2 (see Updates). Model: Sonnet. Size: ~6 files. | U1: the test moves on the refresh branch. U2: the operator's go for the rehearsal, then the real se, bst and taxi refresh once `main` builds the Apr28 packages (from 2027-01-16) |
 | TU1 | An LLM-powered GitHub Action in spreadsheets updates the tax rates each month and commits them itself (operator, 2026-11-15). It does by machine what `.claude/skills/package-updates/SKILL.md` does by hand. (a) **Read.** The job fetches the gov.uk pages that submit's `.claude/skills/tax-sources/sources/*.json` name, plus the pages the `package-updates` skill lists. It asks Bedrock for the rates through the OIDC role the reconciliation judge already uses (`vars.SPREADSHEETS_ACTIONS_ROLE_ARN`, Nova 2 Lite at temperature 0, a tool call with a fixed schema per data file). It checks each answer against the verbatim quote on the page before it uses the figure. (b) **Write.** It updates `app/data/se-YYYY-YYYY.toml` and `app/data/ltd-YYYY.toml`, and creates a new year's pair once gov.uk publishes its rates. Writing is canonical: fixed key order, fixed number format, and no date or run stamp in a data file. So a month with no material change writes identical bytes, and `git diff --quiet` ends the run with no commit. (c) **Commit.** When a value changes, the job commits to `main` and pushes with `GITHUB_TOKEN` and `--no-verify`, as the generate workflows do. A `GITHUB_TOKEN` push starts no workflow, so the job then dispatches `generate-all.yml` (a `workflow_dispatch` sent with `GITHUB_TOKEN` does start it). That run's `changed-packages` scope commits the rebuilt packages. (d) **Schedule.** A monthly cron and a dispatch, with `concurrency` and `cancel-in-progress: false`. Proof: two runs on one commit with no gov.uk change commit nothing. A run against a fixture with one changed rate commits exactly that one line, with the model call stubbed in a unit test. Model: Opus (design), Sonnet (build). Size: ~6 files. | — |
 
 ## Updates
