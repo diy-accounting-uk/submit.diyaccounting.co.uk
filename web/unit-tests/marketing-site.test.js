@@ -556,6 +556,7 @@ describe("listing register", () => {
       "softwarereview",
       "featuredcustomers",
       "linkedin",
+      "yell",
       "freeindex",
     ]);
     for (const place of ["Capterra", "Trustpilot", "AlternativeTo", "SaaSHub", "G2", "Product Hunt", "Yell", "AccountingWEB"]) {
@@ -615,6 +616,7 @@ describe("listing register", () => {
       "softwarereview",
       "featuredcustomers",
       "linkedin",
+      "yell",
       "freeindex",
     ]);
     expect(liveListings(withoutUrl).map((l) => l.id)).toEqual([
@@ -623,6 +625,7 @@ describe("listing register", () => {
       "saashub-diy-accounting",
       "softwarereview",
       "linkedin",
+      "yell",
       "freeindex",
     ]);
   });
