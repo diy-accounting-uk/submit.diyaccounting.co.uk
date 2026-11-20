@@ -119,7 +119,7 @@ never prompts.
 ## Step 5 — upload unlisted, review, then public
 
 ```bash
-npm run video:publish
+AWS_PROFILE=diya-submit-prod npm run video:publish
 ```
 
 Uploads every entry with `publish: true` and no `videoId`, as **unlisted**, with the `.vtt`
@@ -130,7 +130,7 @@ branch; it is JSON, not docs).
 Give the operator the unlisted links to watch. Then:
 
 ```bash
-npm run video:publish -- --public
+AWS_PROFILE=diya-submit-prod npm run video:publish -- --public
 ```
 
 flips the uploaded entries to public. Never run `--public` before the operator has watched
