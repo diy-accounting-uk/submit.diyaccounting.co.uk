@@ -62,7 +62,7 @@
               "description": "Derive a VAT return",
               "prompt": "Derive the VAT return for the quarter ended 30 June 2025.",
               "tools_triggered": "derive_vat_return",
-              "expected_behavior": "The assistant shows the nine VAT boxes with their amounts and the largest lines behind boxes 1 and 4."
+              "expected_behavior": "The assistant shows the nine VAT boxes with their amounts and points out lines in the quarter worth checking before filing."
             },
             {
               "description": "Get the link to file",
@@ -79,7 +79,7 @@
           ],
           "negative": [
             {
-              "description": "No tool in the plugin files a return. The assistant says it cannot file a return. It offers the link from prepare_vat_return and says the person ticks the declaration and files in the browser.",
+              "description": "No tool in the plugin files a return. The assistant does not file it: it offers the link from prepare_vat_return, says the person ticks the declaration and files in the browser, and says nothing has been filed.",
               "prompt": "File my VAT return for me."
             },
             {
