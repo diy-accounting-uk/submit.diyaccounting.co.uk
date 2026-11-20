@@ -3100,16 +3100,28 @@
       "place": "SaaSHub",
       "group": "review",
       "products": [
-        "submit",
-        "spreadsheets",
-        "diya-gl"
+        "submit"
       ],
-      "url": "",
-      "state": "submitted",
-      "date": "2026-11-13",
-      "terms": "Submitted 2026-11-13 on the Free plan. SaaSHub reviews each submission. Verification by an email on the product's domain comes after approval.",
+      "url": "https://www.saashub.com/diy-accounting-submit",
+      "state": "live",
+      "date": "2026-11-20",
+      "terms": "Approved 2026-11-20 on the Free plan. Verification by an email on the product's domain is open; the operator does it.",
       "priceText": "",
       "utmSource": "saashub"
+    },
+    {
+      "id": "saashub-diy-accounting",
+      "place": "SaaSHub",
+      "group": "review",
+      "products": [
+        "spreadsheets"
+      ],
+      "url": "https://www.saashub.com/diy-accounting",
+      "state": "live",
+      "date": "2026-11-20",
+      "terms": "Approved 2026-11-20 on the Free plan. Verification by an email on the product's domain is open; the operator does it.",
+      "priceText": "",
+      "utmSource": "saashub-diy-accounting"
     },
     {
       "id": "g2",
