@@ -3,7 +3,7 @@
 
 # PLAN: keeping the spreadsheet packages current
 
-Status: one open task. TU1 is on spreadsheets main (PR #215, and the quote-check fix PR #216, 2026-11-20); RF1 stays in this plan until the operator boards it (operator, 2026-11-15). Repository: `../spreadsheets.diyaccounting.co.uk`. The rollover plan that built the current pipeline is archived at `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SPREADSHEETS_ROLLOVER.md`.
+Status: RF1 is being worked as two updates (see Updates): U1, the ltd refresh, is running (operator's go, 2026-11-20); U2, a rehearsal of the se, bst and taxi refresh to the 2028-04-05 year end, is planned. TU1 is on spreadsheets main (PR #215, and the quote-check fix PR #216, 2026-11-20). Repository: `../spreadsheets.diyaccounting.co.uk`. The rollover plan that built the current pipeline is archived at `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SPREADSHEETS_ROLLOVER.md`.
 
 ## Operator assertions (verbatim)
 
@@ -14,6 +14,8 @@ Status: one open task. TU1 is on spreadsheets main (PR #215, and the quote-check
 > I want a LLM powered githb action that updates the tax rates and the github action should commit.
 
 For the first ltd refresh the operator chose (2026-11-15): the exact-value checks move to the new pinned package in that refresh's pull request.
+
+> go fot ltd. and I want a plan for this (make an updates section in the doc PLAN_SPREADSHEETS_UPDATES.md including ltd and this )for se can set up a test in prod so we run the tax year updater to get the 2028-04-05 ye tax rules for se/bstand taxi, and run a test with the current pinning, then re-pin and another test, then we wind back and remove the 2028 ye stuff we added when we get a successful test. (operator, 2026-11-20)
 
 ## Where it stands
 
@@ -31,11 +33,49 @@ For the first ltd refresh the operator chose (2026-11-15): the exact-value check
 
 | # | Task | Waits on |
 |---|---|---|
-| RF1 | The first pinned-package refreshes carry their test moves. A session runs the refresh the age test names, opens the pull request from the job summary, and adds two kinds of change to it. (1) The first ltd refresh moves the pin from Oct27 to Dec27. Its pull request moves `app/test/judge-reconciliation.test.js` lines 253 and 673 (net assets 47,516.89) and `app/test/verify-roundtrip-frame.test.js` lines 143 to 153 (the October package) to the new pinned package (operator, 2026-11-15). (2) The first se refresh to Apr28 adds a 2027-28 entry to `sa103-mtd-mapping.json`'s `api.years`. It also adds the 2027-28 facts to `app/test/se-derivations.test.js`'s `EXPECT_PRESENT_BY_YEAR`, `EXPECT_ABSENT_BY_YEAR`, `EXPECT_BASIS_PERIOD_ADJUSTMENTS_BY_YEAR` and its Structures and Buildings Allowance figures. The rest of that test already follows the pin (`taxYearLabel`, `taxYearDataFile`). Model: Sonnet. Size: ~6 files. | The first refresh: the age test fails for ltd on 2027-04-05, or a refresh is run sooner |
+| RF1 | The first pinned-package refreshes carry their test moves: the ltd half is U1, the se half is U2 (see Updates). Model: Sonnet. Size: ~6 files. | U1: running. U2: the rehearsal, then the real se, bst and taxi refresh once `main` builds the Apr28 packages (from 2027-01-16) |
 | TU1 | An LLM-powered GitHub Action in spreadsheets updates the tax rates each month and commits them itself (operator, 2026-11-15). It does by machine what `.claude/skills/package-updates/SKILL.md` does by hand. (a) **Read.** The job fetches the gov.uk pages that submit's `.claude/skills/tax-sources/sources/*.json` name, plus the pages the `package-updates` skill lists. It asks Bedrock for the rates through the OIDC role the reconciliation judge already uses (`vars.SPREADSHEETS_ACTIONS_ROLE_ARN`, Nova 2 Lite at temperature 0, a tool call with a fixed schema per data file). It checks each answer against the verbatim quote on the page before it uses the figure. (b) **Write.** It updates `app/data/se-YYYY-YYYY.toml` and `app/data/ltd-YYYY.toml`, and creates a new year's pair once gov.uk publishes its rates. Writing is canonical: fixed key order, fixed number format, and no date or run stamp in a data file. So a month with no material change writes identical bytes, and `git diff --quiet` ends the run with no commit. (c) **Commit.** When a value changes, the job commits to `main` and pushes with `GITHUB_TOKEN` and `--no-verify`, as the generate workflows do. A `GITHUB_TOKEN` push starts no workflow, so the job then dispatches `generate-all.yml` (a `workflow_dispatch` sent with `GITHUB_TOKEN` does start it). That run's `changed-packages` scope commits the rebuilt packages. (d) **Schedule.** A monthly cron and a dispatch, with `concurrency` and `cancel-in-progress: false`. Proof: two runs on one commit with no gov.uk change commit nothing. A run against a fixture with one changed rate commits exactly that one line, with the model call stubbed in a unit test. Model: Opus (design), Sonnet (build). Size: ~6 files. | — |
+
+## Updates
+
+### U1. Refresh the ltd pin now (RF1, ltd half)
+
+The operator said go on 2026-11-20. RF1's trigger allows a refresh before the age test fails on 2027-04-05.
+
+1. `refresh-pinned.yml` with `product=ltd` runs on spreadsheets `main` (run 44784124989). The newest ltd package in `packages/` is 2028-01-31, so the pin moves from 2027-10-31 to 2028-01-31. RF1 was written when Dec27 was the newest.
+2. The run pushes `refresh-pinned/ltd-<run id>` and writes the `gh pr create` command into its summary.
+3. On that branch a local Sonnet agent moves the exact-value checks to the 2028-01-31 package: `app/test/judge-reconciliation.test.js` (the net assets figure 47,516.89 and its second use) and `app/test/verify-roundtrip-frame.test.js` (the October package frame). It runs the tests those files reach with `VITEST_MAX_WORKERS=2`.
+4. The pull request merges through the spreadsheets `/auto-merge`. Proof: `test.yml` on the pull request passes, and `app/test/pinned-age.test.js` shows ltd built on the run's date.
+
+### U2. Rehearse the se, bst and taxi refresh to the 2028-04-05 year end
+
+The goal is to find, before the real refresh, what breaks when the se, bst and taxi pins move from 2027-04-05 to 2028-04-05, and to have the RF1 test moves ready.
+
+Facts that shape it:
+
+- The 2027-28 tax rules already exist: `app/data/se-2027-2028.toml`, which TU1's Action reads and updates each month. BST, SE and Taxi all use the `se` tax regime. No tax-year update is needed to build Apr28 packages.
+- The Apr28 packages are missing only because of the date window. `yearEndCutoff` in `app/bin/generate.js` builds year ends up to 15 months ahead from the 16th of a month. On 2026-11-20 the cutoff is 2028-01-31. From 2027-01-16 it reaches 2028-04-30, and the first generate run on `main` after that date builds the Apr28 packages. The real se, bst and taxi refresh can therefore happen in January 2027, not April.
+- The rule "no generate workflow is dispatched from a task branch" protects task branches that merge. The rehearsal branch never merges, so it is the one branch where a generate run commits packages on purpose.
+
+Steps:
+
+1. Make the throwaway branch `claude/<codename>-apr28-rehearsal` from spreadsheets `main`. One commit on it moves the window: `yearEndCutoff` returns 2028-04-30. That commit exists only on this branch.
+2. Dispatch `generate-all.yml` on the branch. The generate runs build the Apr28 se, bst and taxi packages from `se-2027-2028.toml`, reconcile them, and commit them to the branch. Their reconcile and judge jobs are the first test.
+3. **Test A, current pins.** With the pins still at 2027-04-05, `test.yml` and the reconcile jobs run on the branch and pass. This shows the Apr28 packages do not disturb the pinned tests.
+4. **Re-pin.** Dispatch `refresh-pinned.yml` on the branch for se, bst and taxi in turn. Each run moves its pin to 2028-04-05 on a `refresh-pinned/<product>-<run id>` branch made from the rehearsal branch. Merge the three into the rehearsal branch.
+5. Add RF1's se test moves on the rehearsal branch:
+   - a 2027-28 entry in `app/data/hmrc/sa103-mtd-mapping.json`'s `api.years`;
+   - the 2027-28 facts in `app/test/se-derivations.test.js`'s `EXPECT_PRESENT_BY_YEAR`, `EXPECT_ABSENT_BY_YEAR` and `EXPECT_BASIS_PERIOD_ADJUSTMENTS_BY_YEAR`, and its Structures and Buildings Allowance figures;
+   - whatever else Test B shows the bst and taxi pins need.
+6. **Test B, new pins.** `test.yml`, the reconcile jobs and the judge run on the branch and pass.
+7. **Wind back.** Save the diff of step 5 and of the refresh runs' test changes as `examples/apr28-rehearsal.patch` on a short docs pull request to spreadsheets `main`, with the run ids of Tests A and B in its description. That patch is the January refresh's starting point. Then delete the rehearsal branch and the three `refresh-pinned/*` branches. Nothing reached `main`: the Apr28 packages, the moved window and the moved pins go with the branches.
+
+What it never does: deploy. No `deploy.yml` runs from the rehearsal branch, so the live spreadsheets site and its downloads are untouched. "Test in prod" here means the real pipeline in GitHub Actions (generate, reconcile, judge, `test.yml`) on real packages. If a run on the spreadsheets ci environment is wanted as well, `deploy.yml` takes `environment: ci` from the branch; that is an addition the operator chooses.
+
+Who: a local Sonnet agent (spreadsheets is laptop work), with the coordinator dispatching the workflows and reading the runs. Size: 1 commit on the branch, ~4 files of test moves, 1 patch file.
 
 ## Rules for these tasks
 
-- No generate workflow is dispatched from a task branch. A generate run there commits package folders to that branch.
+- No generate workflow is dispatched from a task branch. A generate run there commits package folders to that branch. The U2 rehearsal branch, which never merges, is the one exception.
 - New `uses:` lines reuse the pinned action SHAs already in the repository (`scripts/check-action-pins.mjs`).
 - An agent runs only the tests its change reaches, with `VITEST_MAX_WORKERS=2`, and pushes with `SKIP_PUSH_TESTS=1`. Browser and LibreOffice proof comes from `test.yml` on the pull request.
