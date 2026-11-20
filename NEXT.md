@@ -43,8 +43,6 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## In flight
 
-- [ ] **U1. Refresh the ltd pinned package to 2028-01-31 and move its exact-value tests (RF1, ltd half).** The operator said go on 2026-11-20. `refresh-pinned.yml` (product ltd, run 44784124989) succeeded and pushed `refresh-pinned/ltd-44784124989` in `../spreadsheets.diyaccounting.co.uk`: `examples/pinned.json` ltd moves from 2027-10-31 to 2028-01-31 (built 2026-11-20), with the Jan28 example, reports and `examples/parity/ltd/report.json` rebuilt (18 files). The test moves are on the branch as 88b3d64ac (worktree `../spreadsheets-worktrees/ltd-pin-jan28`; local `npm test` verdict GREEN), and spreadsheets PR #221 is open (18:58 UTC on 2026-11-20). Left: its checks, then the spreadsheets `/auto-merge`. Proof: `test.yml` on the pull request passes. Invoke `orient-spreadsheets` first. **Source**: `PLAN_SPREADSHEETS_UPDATES.md` U1 (RF1). **Owner**: Claude Code (a local agent: spreadsheets is laptop work). **Model**: Sonnet. **Size**: ~2 files. **Repository**: spreadsheets.
-
 ## Machine-only
 
 ## Machine-ask

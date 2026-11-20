@@ -3,7 +3,7 @@
 
 # PLAN: keeping the spreadsheet packages current
 
-Status: RF1 is being worked as two updates (see Updates): U1, the ltd refresh: its refresh run succeeded (branch `refresh-pinned/ltd-44784124989`) and its test moves are on `NEXT.md`. U2, a rehearsal of the se, bst and taxi refresh to the 2028-04-05 year end, is on `NEXT.md` and waits on the operator's go. TU1 is on spreadsheets main (PR #215, and the quote-check fix PR #216, 2026-11-20). Repository: `../spreadsheets.diyaccounting.co.uk`. The rollover plan that built the current pipeline is archived at `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SPREADSHEETS_ROLLOVER.md`.
+Status: RF1's ltd half is on spreadsheets main (PR #221, b2df63439, 2026-11-20): the ltd pin is 2028-01-31 and its tests moved with it. RF1's se half is U2 (see Updates), a rehearsal of the se, bst and taxi refresh to the 2028-04-05 year end; it is on `NEXT.md` and waits on the operator's go. TU1 is on spreadsheets main (PR #215, and the quote-check fix PR #216, 2026-11-20). Repository: `../spreadsheets.diyaccounting.co.uk`. The rollover plan that built the current pipeline is archived at `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SPREADSHEETS_ROLLOVER.md`.
 
 ## Operator assertions (verbatim)
 
@@ -24,7 +24,7 @@ For the first ltd refresh the operator chose (2026-11-15): the exact-value check
 - **Generation.** The four generate workflows (`generate-ltd.yml`, `generate-bst.yml`, `generate-se.yml`, `generate-taxi.yml`) run on a push to `main` that changes `app/templates/**`, `app/data/**` (not `app/data/releases.json`), `app/products/**`, `app/lib/**` (not `app/lib/provenance-data.js`), `app/bin/generate.js` or the workflow itself. They also run on a dispatch, on a call from `generate-all.yml` and, for ltd only, on a schedule.
 - **What a run commits.** The `params` job sets `commit-scope`: `changed-packages` for a push, a call or a default dispatch, and `new-folders` for a schedule. `changed-packages` stages new and modified files under `packages/` with `git add --ignore-removal`, and `new-folders` stages only the folders `main` lacks. A `new-folders` run whose window holds nothing new stops after `params` (`generate.js --package <p> --list`).
 - **Byte-identical output.** Package PDFs take `--source-date-epoch` from the product's last template commit, and weasyprint 70.0, pydyf 0.13.0 and fonttools 4.68.0 are pinned; workbooks were already reproducible. The push runs of 593967e9c, 14bd570d9 and bedbcdde9 committed nothing for all four products. An unchanged input therefore gives no commit.
-- **Pins.** `examples/pinned.json` holds each product's pinned year-end and build date. It is read and written only through `app/lib/pinned.js`. The values are ltd 2027-10-31 (built 2026-10-05), bst and se 2027-04-05 (built 2026-11-14), and taxi 2027-04-05 (built 2026-11-13).
+- **Pins.** `examples/pinned.json` holds each product's pinned year-end and build date. It is read and written only through `app/lib/pinned.js`. The values are ltd 2028-01-31 (built 2026-11-20), bst and se 2027-04-05 (built 2026-11-14), and taxi 2027-04-05 (built 2026-11-13).
   - `app/test/pinned-age.test.js` fails once a pin is more than six months old, and names `gh workflow run refresh-pinned.yml -f product=<product>`.
   - `refresh-pinned.yml` pushes `refresh-pinned/<product>-<run id>` and writes the `gh pr create` command into its summary, because Actions may not create pull requests in this repository.
 - **The judge.** The deploy's and the reconcile jobs' LLM judge (`app/bin/judge-reconciliation.js`) runs Nova 2 Lite at temperature 0 with up to 30,000 output tokens. A fail stands only on two fails in a row, and the digest (`app/lib/report-indicators.js`) states the corporation tax bridge from operating profit.
@@ -35,19 +35,10 @@ For the first ltd refresh the operator chose (2026-11-15): the exact-value check
 
 | # | Task | Waits on |
 |---|---|---|
-| RF1 | The first pinned-package refreshes carry their test moves: the ltd half is U1, the se half is U2 (see Updates). Model: Sonnet. Size: ~6 files. | U1: the test moves on the refresh branch. U2: the operator's go for the rehearsal, then the real se, bst and taxi refresh once `main` builds the Apr28 packages (from 2027-01-16) |
+| RF1 | The se, bst and taxi pinned-package refresh carries its test moves: U2 rehearses it (see Updates). The ltd browser test `web/browser-tests/diya-gl-ltd-equivalence.browser.test.js` names the first month's tab of the pinned ltd package (`FIRST_TAB`), so an ltd refresh to another year end moves it. Model: Sonnet. Size: ~6 files. | U2: the operator's go for the rehearsal, then the real se, bst and taxi refresh once `main` builds the Apr28 packages (from 2027-01-16) |
 | TU1 | An LLM-powered GitHub Action in spreadsheets updates the tax rates each month and commits them itself (operator, 2026-11-15). It does by machine what `.claude/skills/package-updates/SKILL.md` does by hand. (a) **Read.** The job fetches the gov.uk pages that submit's `.claude/skills/tax-sources/sources/*.json` name, plus the pages the `package-updates` skill lists. It asks Bedrock for the rates through the OIDC role the reconciliation judge already uses (`vars.SPREADSHEETS_ACTIONS_ROLE_ARN`, Nova 2 Lite at temperature 0, a tool call with a fixed schema per data file). It checks each answer against the verbatim quote on the page before it uses the figure. (b) **Write.** It updates `app/data/se-YYYY-YYYY.toml` and `app/data/ltd-YYYY.toml`, and creates a new year's pair once gov.uk publishes its rates. Writing is canonical: fixed key order, fixed number format, and no date or run stamp in a data file. So a month with no material change writes identical bytes, and `git diff --quiet` ends the run with no commit. (c) **Commit.** When a value changes, the job commits to `main` and pushes with `GITHUB_TOKEN` and `--no-verify`, as the generate workflows do. A `GITHUB_TOKEN` push starts no workflow, so the job then dispatches `generate-all.yml` (a `workflow_dispatch` sent with `GITHUB_TOKEN` does start it). That run's `changed-packages` scope commits the rebuilt packages. (d) **Schedule.** A monthly cron and a dispatch, with `concurrency` and `cancel-in-progress: false`. Proof: two runs on one commit with no gov.uk change commit nothing. A run against a fixture with one changed rate commits exactly that one line, with the model call stubbed in a unit test. Model: Opus (design), Sonnet (build). Size: ~6 files. | — |
 
 ## Updates
-
-### U1. Refresh the ltd pin now (RF1, ltd half)
-
-The operator said go on 2026-11-20. RF1's trigger allows a refresh before the age test fails on 2027-04-05.
-
-1. `refresh-pinned.yml` with `product=ltd` runs on spreadsheets `main` (run 44784124989). The newest ltd package in `packages/` is 2028-01-31, so the pin moves from 2027-10-31 to 2028-01-31. RF1 was written when Dec27 was the newest.
-2. The run pushes `refresh-pinned/ltd-<run id>` and writes the `gh pr create` command into its summary.
-3. On that branch a local Sonnet agent moves the exact-value checks to the 2028-01-31 package: `app/test/judge-reconciliation.test.js` (the net assets figure 47,516.89 and its second use) and `app/test/verify-roundtrip-frame.test.js` (the October package frame). It runs the tests those files reach with `VITEST_MAX_WORKERS=2`.
-4. The pull request merges through the spreadsheets `/auto-merge`. Proof: `test.yml` on the pull request passes, and `app/test/pinned-age.test.js` shows ltd built on the run's date.
 
 ### U2. Rehearse the se, bst and taxi refresh to the 2028-04-05 year end
 
