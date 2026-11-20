@@ -829,7 +829,7 @@ Each path has one score per criterion and one sentence of reasoning per score. A
 | --- | --- | --- | --- | --- | --- |
 | OOS20 | Prove the connector in each assistant and write the steps that worked | X4 | Steps on `mcp.html` for ChatGPT, Gemini, Perplexity and Copilot, each proved once, and the answer to whether ChatGPT's paid plans run a custom connector's tools. | MCP sign-ins by client name. | machine-ask; on the board |
 | OOS17 | Operator: submit the connector in Claude's directory portal | X1, X3 | The Claude directory listing, with the VAT tool set. | The connector shows in the directory as a Community connector. | machine-ask; on the board |
-| OOS18 | Operator: submit the plugin to OpenAI | X2 | The ChatGPT directory listing for GB, with the VAT tool set. | The plugin shows in the ChatGPT directory for GB. | human-driven; on the board |
+| OOS18 | Operator: submit the plugin to OpenAI | X2 | The ChatGPT directory listing for GB, with the VAT tool set. | The plugin shows in the ChatGPT directory for GB. | submitted 0.1.6 on 2026-11-20; the review and the publish step are on the board as OS18g |
 
 **Wave 4: Listings**
 
