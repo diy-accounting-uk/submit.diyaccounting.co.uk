@@ -15,10 +15,10 @@ Chrome or the operator.
 
 ## Status
 
-approved 2026-11-19 (the operator's message above). ops on main: CH62 and RDR2 as
-0cbc114a9 (PR #851, merged 20:10 UTC); prod deploy running. sheets on spreadsheets main: TU1 as a915b8161 (PR #215). Beside: LANG11c done (case,
-dry run and draft); OS18d running; CH60 waits on the test gateway (read at 07:00 UTC on
-2026-11-20).
+approved 2026-11-19 (the operator's message above). ops on main as 0cbc114a9 (PR #851), live on
+prod. sheets: TU1's Action on spreadsheets main (PR #215); its quote-check fix is building on
+`claude/zephyr-taxquote` (operator's go, 2026-11-20). Beside: OS18d on PR #856 (video public, plugin 0.1.6
+uploaded to OpenAI); CH60 proves on the next live accounts filing on prod that answers pending.
 
 ## The goal
 
