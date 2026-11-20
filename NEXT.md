@@ -19,7 +19,7 @@ with no such field is in no set. Anything touching code goes through a `claude/*
 the operator merges.
 
 **Prod runs deployment prod-f3009b4** (`deploy.yml` run 44707855758 of `main` at f3009b47c, PR #856, promoted by 09:42 UTC on 2026-11-20; it replaces prod-c984cd1).
-**ci**: `ci-set1` is the last-known-good ci set (13 stacks, created 17:11 UTC on 2026-11-19 by PR #847's deploy; it carries RDR1). No other ci set stands (read 2026-11-20).
+**ci**: `ci-set1` is the last-known-good ci set (15 stacks, 13 in eu-west-2 and 2 in us-east-1, created 17:11 UTC on 2026-11-19 by PR #847's deploy; it carries RDR1). No other ci set stands (read 17:45 UTC on 2026-11-20); `destroy-ci.yml` keeps it while it is last-known-good.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -43,9 +43,9 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## In flight
 
-## Machine-only
+- [ ] **U1. Refresh the ltd pinned package to 2028-01-31 and move its exact-value tests (RF1, ltd half).** The operator said go on 2026-11-20. `refresh-pinned.yml` (product ltd, run 44784124989) succeeded and pushed `refresh-pinned/ltd-44784124989` in `../spreadsheets.diyaccounting.co.uk`: `examples/pinned.json` ltd moves from 2027-10-31 to 2028-01-31 (built 2026-11-20), with the Jan28 example, reports and `examples/parity/ltd/report.json` rebuilt (18 files). No pull request is open and no agent works the branch (read 17:45 UTC on 2026-11-20). Left, on that branch: move the checks that hold the October package's values to the Jan28 package, `app/test/judge-reconciliation.test.js` (net assets 47,516.89 at lines 190, 213, 259 and 733) and `app/test/verify-roundtrip-frame.test.js` (the October package test at lines 143 to 148), and run the tests they reach with `VITEST_MAX_WORKERS=2`. Then open the pull request with the `gh pr create` command from run 44784124989's summary (base `main`, head `refresh-pinned/ltd-44784124989`), push with `SKIP_PUSH_TESTS=1`, and merge through the spreadsheets `/auto-merge`. Proof: `test.yml` on the pull request passes. Invoke `orient-spreadsheets` first. **Source**: `PLAN_SPREADSHEETS_UPDATES.md` U1 (RF1). **Owner**: Claude Code (a local agent: spreadsheets is laptop work). **Model**: Sonnet. **Size**: ~2 files. **Repository**: spreadsheets.
 
-- [ ] **U1. Refresh the ltd pinned package to 2028-01-31 and move its exact-value tests (RF1, ltd half).** The operator said go on 2026-11-20. `refresh-pinned.yml` (product ltd, run 44784124989) succeeded and pushed `refresh-pinned/ltd-44784124989` in `../spreadsheets.diyaccounting.co.uk`: `examples/pinned.json` ltd moves from 2027-10-31 to 2028-01-31 (built 2026-11-20), with the Jan28 example, reports and `examples/parity/ltd/report.json` rebuilt (18 files). Left, on that branch: move the checks that hold the October package's values to the Jan28 package, `app/test/judge-reconciliation.test.js` (net assets 47,516.89 at lines 190, 213, 259 and 733) and `app/test/verify-roundtrip-frame.test.js` (the October package test at lines 143 to 148), and run the tests they reach with `VITEST_MAX_WORKERS=2`. Then open the pull request with the `gh pr create` command from run 44784124989's summary (base `main`, head `refresh-pinned/ltd-44784124989`), push with `SKIP_PUSH_TESTS=1`, and merge through the spreadsheets `/auto-merge`. Proof: `test.yml` on the pull request passes. Invoke `orient-spreadsheets` first. **Source**: `PLAN_SPREADSHEETS_UPDATES.md` U1 (RF1). **Owner**: Claude Code (a local agent: spreadsheets is laptop work). **Model**: Sonnet. **Size**: ~2 files. **Repository**: spreadsheets.
+## Machine-only
 
 ## Machine-ask
 
