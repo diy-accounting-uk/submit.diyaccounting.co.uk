@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "diya-submit",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Work out a UK VAT return from your saved books, check the nine boxes, then open the link the assistant gives you and file it yourself on the Submit page. Read your stored VAT receipts afterwards.",
   "author": {
     "name": "DIY Accounting Limited",
@@ -41,7 +41,7 @@
         "release_notes": "First release. List the books saved in your DIY Accounting Submit account, open one, and work out the nine VAT boxes for a quarter with the lines behind them. Get a link to the VAT form with the figures filled in, then check and file the return yourself on the Submit site. Read your stored VAT receipts afterwards."
       },
       "review": {
-        "demo_recording_url": "https://youtu.be/KVXeXX-o_Jc",
+        "demo_recording_url": "https://youtu.be/9_kkDNZmVMQ",
         "commerce": false,
         "commerce_description": "This plugin does not sell products or process payments. A person signs in to an existing DIY Accounting Submit account and uses what that account already has.",
         "test_cases": {
@@ -62,7 +62,7 @@
               "description": "Derive a VAT return",
               "prompt": "Derive the VAT return for the quarter ended 30 June 2025.",
               "tools_triggered": "derive_vat_return",
-              "expected_behavior": "The assistant shows the nine VAT boxes with their amounts and the largest lines behind boxes 1 and 4."
+              "expected_behavior": "The assistant shows the nine VAT boxes with their amounts and points out lines in the quarter worth checking before filing."
             },
             {
               "description": "Get the link to file",
@@ -79,7 +79,7 @@
           ],
           "negative": [
             {
-              "description": "No tool in the plugin files a return. The assistant says it cannot file a return. It offers the link from prepare_vat_return and says the person ticks the declaration and files in the browser.",
+              "description": "No tool in the plugin files a return. The assistant does not file it: it offers the link from prepare_vat_return, says the person ticks the declaration and files in the browser, and says nothing has been filed.",
               "prompt": "File my VAT return for me."
             },
             {
