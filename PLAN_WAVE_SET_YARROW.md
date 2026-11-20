@@ -16,8 +16,8 @@ Chrome or the operator.
 ## Status
 
 approved 2026-11-19 (the operator's message above). ops on main as 0cbc114a9 (PR #851), live on
-prod. sheets: TU1's Action on spreadsheets main (PR #215); its quote-check fix is building on
-`claude/zephyr-taxquote` (operator's go, 2026-11-20). Beside: OS18d on main (PR #856; plugin 0.1.6 in review at OpenAI); CH60 proves on the next live accounts filing on prod that answers pending.
+prod. sheets: TU1 on spreadsheets main (PR #215, and the quote-check fix PR #216 as 1fca5be9e: 3 and 5
+refusals of 80 in the proof runs, both guards kept, operator 2026-11-20). Beside: OS18d on main (PR #856; plugin 0.1.6 in review at OpenAI); CH60 proves on the next live accounts filing on prod that answers pending.
 
 ## The goal
 
