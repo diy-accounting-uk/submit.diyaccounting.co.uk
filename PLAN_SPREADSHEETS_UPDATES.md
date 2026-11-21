@@ -3,7 +3,7 @@
 
 # PLAN: keeping the spreadsheet packages current
 
-Status: RF1's ltd half is on spreadsheets main (PR #221, b2df63439, 2026-11-20): the ltd pin is 2028-01-31 and its tests moved with it. RF1's se half is U2 (see Updates), a rehearsal of the se, bst and taxi refresh to the 2028-04-05 year end; it is on `NEXT.md` and waits on the operator's go. TU1 is on spreadsheets main (PR #215, and the quote-check fix PR #216, 2026-11-20). Repository: `../spreadsheets.diyaccounting.co.uk`. The rollover plan that built the current pipeline is archived at `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SPREADSHEETS_ROLLOVER.md`.
+Status: RF1's ltd half is on spreadsheets main (PR #221, b2df63439, 2026-11-20): the ltd pin is 2028-01-31 and its tests moved with it. RF1's se half is U2 (see Updates), a rehearsal of the se, bst and taxi refresh to the 2028-04-05 year end; it is on `NEXT.md`, ready (the operator's go, 2026-11-21). TU1 is on spreadsheets main (PR #215, and the quote-check fix PR #216, 2026-11-20). Repository: `../spreadsheets.diyaccounting.co.uk`. The rollover plan that built the current pipeline is archived at `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SPREADSHEETS_ROLLOVER.md`.
 
 ## Operator assertions (verbatim)
 
