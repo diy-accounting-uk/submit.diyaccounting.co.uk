@@ -22,7 +22,7 @@ the set, with no deployment of its own.
 
 ## Status
 
-approved 2026-11-17 (the operator's `/iterate`). On main as 66bc3c536 (PR #837, merged 2026-11-18), the prod deploy running. ci proofs passed on ci-set1: WEB2, WEB3, WEB8, WEB14, AUTH, DASH40 (bundles), CW2, WAF2 (alarm-replay), and the LANG10a, LANG10b and LANG11a Welsh journeys. Fixes the ci proofs found rode on the set: the support form posts to the site's own API (WEB14), and the Welsh Bundles page strings. Prod Cognito native sign-in is approved for every ridge prod proof until the set is complete (operator, 2026-11-19): enable, prove, disable. Open: OS16d only (the operator's send to mcprush). DASH35 closed on 2026-11-20 (prod snapshot: Security Hub open 0).
+approved 2026-11-17 (the operator's `/iterate`). On main as 66bc3c536 (PR #837, merged 2026-11-18) and live on prod. ci proofs passed on ci-set1: WEB2, WEB3, WEB8, WEB14, AUTH, DASH40 (bundles), CW2, WAF2 (alarm-replay), and the LANG10a, LANG10b and LANG11a Welsh journeys. Fixes the ci proofs found rode on the set: the support form posts to the site's own API (WEB14), and the Welsh Bundles page strings. Prod Cognito native sign-in is approved for every ridge prod proof until the set is complete (operator, 2026-11-19): enable, prove, disable. Open: OS16d only (the operator's send to mcprush). DASH35 closed on 2026-11-20 (prod snapshot: Security Hub open 0).
 
 ## The goal
 
