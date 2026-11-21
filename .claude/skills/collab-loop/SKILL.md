@@ -72,7 +72,8 @@ on top of a loop already running, and it does only what the state still lacks.
 ## Prime (first run, or after a compaction)
 
 1. `/iterate`'s "Before the first cycle": Remote Control, SSO, inboxes. Read `NEXT.md` in full and
-   the wave set plan.
+   the wave set plan when one is named. With none, the cycle is `/iterate`'s own, over the board's
+   machine-only rows; `/wave-set` defines a set.
 2. `ListAgents`. A restarted worker keeps its old session's name, so send to the `[ref]` of the
    newest live row of that name. The workers are the cloud peers named for their code names ("Anvil
    collaboration", "Collaborate Bugle", "Cyclone collaboration", "Dusk collaboration", "Collaborate
@@ -91,7 +92,7 @@ on top of a loop already running, and it does only what the state still lacks.
      tip, polled every 90 s (`scratchpad/watch-cloud.sh`; write it again from "The cloud watcher"
      below if the scratchpad was cleared);
    - `scripts/watch-ci.sh` over `main` and the open PRs, while anything is in flight.
-6. Start the loop: `/loop` with `/collab-loop <wave set>` as the prompt and no interval. Monitor
+6. Start the loop: `/loop` with `/collab-loop [<wave set>]` as the prompt and no interval. Monitor
    events and agent completions wake it; `ScheduleWakeup` at 1200 to 1800 s is the fallback.
 
 ## One tick
