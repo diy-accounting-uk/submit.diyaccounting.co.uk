@@ -750,6 +750,47 @@ test.describe("Companies House forms opened with a company number", () => {
   }
 });
 
+test.describe("Company lookup drill-down links for two PSCs of one name", () => {
+  const NAMESAKES = {
+    ...PSCS,
+    activeCount: 2,
+    pscs: [
+      ...PSCS.pscs,
+      {
+        name: "Eleanor Bramwell",
+        kind: "individual-person-with-significant-control",
+        naturesOfControl: ["ownership-of-shares-25-to-50-percent"],
+        notifiedOn: "2024-05-01",
+        dateOfBirth: { month: 8, year: 1996 },
+        nationality: "British",
+      },
+    ],
+  };
+
+  for (const [language, prefix, cease, change] of [
+    [
+      "English",
+      "",
+      [
+        "Tell Companies House Eleanor Bramwell (born January 1970) has ceased to be a PSC",
+        "Tell Companies House Eleanor Bramwell (born August 1996) has ceased to be a PSC",
+      ],
+      [
+        "Tell Companies House Eleanor Bramwell (born January 1970)'s details have changed",
+        "Tell Companies House Eleanor Bramwell (born August 1996)'s details have changed",
+      ],
+    ],
+    ["Welsh", "/cy", [/\(ganwyd Ionawr 1970\)/, /\(ganwyd Awst 1996\)/], [/\(ganwyd Ionawr 1970\)/, /\(ganwyd Awst 1996\)/]],
+  ]) {
+    test(`each link names the month and year of birth of its PSC, in ${language}`, async ({ page }) => {
+      await serveSite(page, { bundles: ["resident-ltd"], pscs: NAMESAKES });
+      await page.goto(`${BASE}${prefix}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
+      await expect(page.locator("#drillView .cease-psc-links a")).toHaveText(cease, { timeout: 15000 });
+      await expect(page.locator("#drillView .change-psc-details-links a")).toHaveText(change);
+    });
+  }
+});
+
 test.describe("Company lookup drill-down PSC cessation links", () => {
   test("an account holding the cessation form gets a link for each current PSC, and the authority PSC07 states", async ({ page }) => {
     await serveSite(page, { bundles: ["resident-ltd"] });

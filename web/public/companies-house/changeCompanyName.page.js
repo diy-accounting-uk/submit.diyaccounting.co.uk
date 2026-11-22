@@ -40,6 +40,8 @@ const NAME_MESSAGES = {
 window.companiesHouseFormPage.registerMessages(NAME_MESSAGES);
 
 function showError(text) {
+  // One refusal at a time: the answer just refused replaces the one refused before.
+  window.hideStatus?.();
   if (window.showStatus) window.showStatus(text, "error");
 }
 

@@ -365,10 +365,13 @@ test("a relevant date after today is refused before anything is sent, for a stat
   await page.goto(`${SITE}/companies-house/pscStatements.html`, { waitUntil: "networkidle" });
   await lookUp(page);
   await page.getByLabel("Give a statement").check();
-  await page.locator("#notify-none").check();
   await dateAndCode(page, "2099-01-01");
   await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#statusMessagesContainer")).toContainText("Choose the statement.");
+  await page.locator("#notify-none").check();
+  await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.locator("#statusMessagesContainer")).toContainText("The relevant date cannot be after today.");
+  await expect(page.locator("#statusMessagesContainer .status-message")).toHaveCount(1);
   await expect(page.locator("#formView")).toBeVisible();
 
   await page.reload({ waitUntil: "networkidle" });

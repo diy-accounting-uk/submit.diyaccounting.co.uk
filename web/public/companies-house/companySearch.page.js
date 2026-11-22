@@ -175,6 +175,7 @@ const pscOf = (psc) => ({
   naturesOfControl: psc.naturesOfControl || [],
   notifiedOn: psc.notifiedOn,
   ceasedOn: psc.ceasedOn,
+  dateOfBirth: psc.dateOfBirth,
 });
 
 const readProfile = (companyNumber) => readOnce(companyNumber, "profile", () => window.getCompanyProfile(companyNumber));
@@ -1406,7 +1407,7 @@ async function appendPscLinks(container, companyNumber, pscs, { activityId, page
     const link = document.createElement("a");
     const query = new URLSearchParams({ companyNumber, ...chooser(psc) });
     link.href = `${pagePrefix()}/companies-house/${page}?${query}`;
-    link.textContent = linkText(psc.name);
+    link.textContent = linkText(window.companiesHouseNamesakes.namedApart(psc, current));
     item.appendChild(link);
     list.appendChild(item);
   });

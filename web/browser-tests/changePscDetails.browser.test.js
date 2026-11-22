@@ -378,6 +378,7 @@ test("a date of change, or a date of confirmation, after today is refused before
   await page.locator("#dateOfChange").fill("2026-11-01");
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.locator("#statusMessagesContainer")).toContainText("The date of confirmation cannot be after today.");
+  await expect(page.locator("#statusMessagesContainer .status-message")).toHaveCount(1);
   await expect(page.locator("#formView")).toBeVisible();
   expect(filings).toHaveLength(0);
 });
