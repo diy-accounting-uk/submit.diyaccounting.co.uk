@@ -128,6 +128,20 @@ describe.each(WELSH_PAGES)("Welsh page $cy", (page) => {
     expect(missing).toEqual([]);
   });
 
+  it("links a page that has a Welsh copy at that copy, unless the link says it opens the English", () => {
+    const welshCopies = new Set(WELSH_PAGES.map((other) => other.en));
+    const english = [];
+    for (const [tag, url] of welsh.matchAll(/<a\s[^>]*href="([^"]*)"[^>]*>/g)) {
+      if (url === "" || /^(#|\$\{|[a-z][a-z0-9+.-]*:)/i.test(url)) continue;
+      if (/\shreflang="en(-GB)?"/.test(tag)) continue;
+      const bare = url.replace(/[?#].*$/, "");
+      const resolved = bare.startsWith("/") ? bare.slice(1) : path.posix.join(path.posix.dirname(page.cy), bare);
+      const file = resolved === "" || resolved.endsWith("/") ? `${resolved}index.html` : resolved;
+      if (!file.startsWith("cy/") && welshCopies.has(file)) english.push(url);
+    }
+    expect(english).toEqual([]);
+  });
+
   it("writes the line under each source quote in Welsh and keeps the quote's words marked English", () => {
     const blocks = [...welsh.matchAll(/<blockquote class="source-quote[^"]*"[^>]*>([\s\S]*?)<\/blockquote>/g)];
     for (const [block, inner] of blocks) {

@@ -19429,7 +19429,7 @@ cy = '''<strong>Data cyflwyniad TAW</strong>: Yn cael ei gasglu pan fyddwch yn c
 
 [strings."privacy.email-delivery-data-when-we-send-4ebcd3"]
 hash = "4ebcd3b06e41"
-cy = '''<strong>Data danfon e-bost</strong>: Pan fyddwn yn anfon e-bost atoch, mae Amazon SES yn cofnodi canlyniad y danfon. Os bydd eich cyfeiriad yn bownsio neu os byddwch yn marcio ein e-bost fel sbam, mae SES yn cadw’r cyfeiriad ar restr atal er mwyn i ni roi’r gorau i anfon ato.'''
+cy = '''<strong>Data danfon e-bost</strong>: Pan fyddwn yn anfon e-bost atoch, mae Amazon SES yn cofnodi canlyniad y danfon. Os bydd eich cyfeiriad yn bownsio neu os byddwch yn marcio ein he-bost fel sbam, mae SES yn cadw’r cyfeiriad ar restr atal er mwyn i ni roi’r gorau i anfon ato.'''
 
 [strings."privacy.corporation-tax-filing-data-collected-when-d5ce63"]
 hash = "d5ce630993d4"
@@ -19561,7 +19561,7 @@ cy = '''Bundles y defnyddiwr (hawliau)'''
 
 [strings."privacy.1-month-after-expiry-eb0eec"]
 hash = "eb0eecfb01dd"
-cy = '''1 mis ar ôl iddo ddod i ben'''
+cy = '''1 mis ar ôl iddynt ddod i ben'''
 
 [strings."privacy.service-access-management-da597f"]
 hash = "da597f4ee607"
@@ -19797,7 +19797,7 @@ cy = '''Eich dewisiadau'''
 
 [strings."privacy.analytics-consent-you-can-decline-both-03e2d4"]
 hash = "03e2d48fe7f9"
-cy = '''<strong>Caniatâd dadansoddeg</strong>: Gallwch wrthod RUM a Google Analytics ill dau yn y faner caniatâd. Nid oes data dadansoddeg yn cael ei gasglu nes i chi roi caniatâd. Gallwch newid eich dewis unrhyw bryd gyda’r ddolen “Dewisiadau cwcis” yn nhroedyn y dudalen. Rydym yn cyfrif pob ateb, wedi’i dderbyn neu wedi’i wrthod, heb ddynodydd. Gweler Caniatâd a rheolaeth.'''
+cy = '''<strong>Caniatâd dadansoddeg</strong>: Gallwch wrthod RUM a Google Analytics ill dau yn y faner ganiatâd. Nid oes data dadansoddeg yn cael ei gasglu nes i chi roi caniatâd. Gallwch newid eich dewis unrhyw bryd gyda’r ddolen “Dewisiadau cwcis” yn nhroedyn y dudalen. Rydym yn cyfrif pob ateb, wedi’i dderbyn neu wedi’i wrthod, heb ddynodydd. Gweler Caniatâd a rheolaeth.'''
 
 [strings."privacy.hmrc-authorisation-you-can-revoke-hmrc-b168fb"]
 hash = "b168fbc319bd"
@@ -20121,7 +20121,7 @@ cy = '''Cyflawni contract (<span lang="en-GB">contract performance</span>); Rhwy
 
 [strings."privacy.corporation-tax-return-submission-to-hmrc-b8250b"]
 hash = "b8250b70bc0d"
-cy = '''Cyflwyno Ffurflen Treth Gorfforaeth i CThEF'''
+cy = '''Cyflwyno Ffurflen Dreth Gorfforaeth i CThEF'''
 
 [strings."privacy.fraud-prevention-data-transmission-0b17c6"]
 hash = "0b17c6f2b8ff"
@@ -20423,7 +20423,7 @@ cy = '''Telerau defnyddio - DIY Accounting Submit'''
 
 [strings."terms.terms-of-use-8c45a4"]
 hash = "8c45a486e4b1"
-cy = '''Telerau defnyddio'''
+cy = '''Telerau defnyddio (<span lang="en-GB">terms of use</span>)'''
 
 [strings."terms.last-updated-22-november-2026-83c508"]
 hash = "83c508914894"
@@ -20535,7 +20535,7 @@ cy = '''Rhaglen we yw DIY Accounting Submit sy’n helpu busnesau yn y DU a’u 
 
 [strings."terms.vat-making-tax-digital-view-vat-6c4117"]
 hash = "6c41179d7329"
-cy = '''<strong>TAW (Troi Treth yn Ddigidol).</strong> Gweld rhwymedigaethau, rhwymedigaethau talu, taliadau a chosbau TAW. Cyflwyno Ffurflenni TAW i CThEF. Gweld Ffurflenni a gyflwynwyd a derbynebau.'''
+cy = '''<strong>TAW (Troi Treth yn Ddigidol).</strong> Gweld rhwymedigaethau, rhwymedigaethau talu (<span lang="en-GB">liabilities</span>), taliadau a chosbau TAW. Cyflwyno Ffurflenni TAW i CThEF. Gweld Ffurflenni a gyflwynwyd a derbynebau.'''
 
 [strings."terms.income-tax-self-assessment-making-tax-9f8dc2"]
 hash = "9f8dc239ebed"
@@ -21003,7 +21003,7 @@ cy = '''Nid ydym yn ad-dalu tanysgrifiad na ffi ffeilio, ac eithrio lle mae’r 
 
 [strings."terms.this-service-is-for-business-use-b81bfe"]
 hash = "b81bfec9cae4"
-cy = '''Mae’r Gwasanaeth hwn at ddefnydd busnes. Nid yw hawliau canslo defnyddwyr, gan gynnwys y cyfnod ailfeddwl o 14 diwrnod, yn gymwys.'''
+cy = '''Mae’r Gwasanaeth hwn at ddefnydd busnes. Nid yw hawliau canslo defnyddwyr, gan gynnwys y cyfnod ailfeddwl (<span lang="en-GB">cooling-off period</span>) o 14 diwrnod, yn gymwys.'''
 
 [strings."terms.11-intellectual-property-1a4c98"]
 hash = "1a4c98b584c6"
@@ -21043,7 +21043,7 @@ cy = '''Nid ydym yn gwarantu y bydd y Gwasanaeth yn rhydd rhag gwallau, yn ddiog
 
 [strings."terms.we-are-not-liable-for-any-5cb3fa"]
 hash = "5cb3fa6e0977"
-cy = '''Nid ydym yn atebol am unrhyw iawndal anuniongyrchol, achlysurol, arbennig, canlyniadol na chosbol sy’n deillio o’ch defnydd o’r Gwasanaeth'''
+cy = '''Nid ydym yn atebol am unrhyw iawndal anuniongyrchol, achlysurol (<span lang="en-GB">incidental</span>), arbennig, canlyniadol na chosbol (<span lang="en-GB">punitive</span>) sy’n deillio o’ch defnydd o’r Gwasanaeth'''
 
 [strings."terms.our-total-liability-to-you-for-26e298"]
 hash = "26e298871ce9"
@@ -21063,7 +21063,7 @@ cy = '''13. Indemnio (<span lang="en-GB">indemnification</span>)'''
 
 [strings."terms.you-agree-to-indemnify-and-hold-1ab03b"]
 hash = "1ab03b83a9ac"
-cy = '''Rydych yn cytuno i indemnio DIY Accounting Limited, ei swyddogion, ei gyflogeion a’i asiantau, a’u cadw’n ddiniwed, rhag unrhyw hawliadau, iawndal neu dreuliau sy’n deillio o’ch defnydd o’r Gwasanaeth, o’ch achos o dorri’r Telerau hyn, neu o’ch achos o dorri unrhyw gyfreithiau neu reoliadau.'''
+cy = '''Rydych yn cytuno i indemnio DIY Accounting Limited, ei swyddogion, ei gyflogeion a’i asiantau, a’u cadw’n ddiniwed (<span lang="en-GB">hold harmless</span>), rhag unrhyw hawliadau, iawndal neu dreuliau sy’n deillio o’ch defnydd o’r Gwasanaeth, o’ch achos o dorri’r Telerau hyn, neu o’ch achos o dorri unrhyw gyfreithiau neu reoliadau.'''
 
 [strings."terms.14-force-majeure-61e608"]
 hash = "61e608134681"
@@ -21087,7 +21087,7 @@ cy = '''Camau gan y llywodraeth neu gan reoleiddwyr'''
 
 [strings."terms.natural-disasters-pandemics-or-other-acts-05a71d"]
 hash = "05a71daf8b2c"
-cy = '''Trychinebau naturiol, pandemigau, neu weithredoedd eraill gan Dduw'''
+cy = '''Trychinebau naturiol, pandemigau, neu weithredoedd eraill gan Dduw (<span lang="en-GB">acts of God</span>)'''
 
 [strings."terms.cyber-attacks-denial-of-service-attacks-bbae8c"]
 hash = "bbae8c25c76c"
@@ -21151,23 +21151,23 @@ cy = '''Os bydd anghydfod yn codi rhyngoch chi a DIY Accounting Limited:'''
 
 [strings."terms.good-faith-negotiation-both-parties-agree-ccd27b"]
 hash = "ccd27bd97d3a"
-cy = '''<strong>Negodi’n ddidwyll:</strong> Mae’r ddau barti’n cytuno i geisio datrys yr anghydfod drwy negodi’n ddidwyll am gyfnod o <strong>30 diwrnod</strong> cyn dechrau unrhyw achos ffurfiol'''
+cy = '''<strong>Negodi’n ddidwyll (<span lang="en-GB">good faith negotiation</span>):</strong> Mae’r ddau barti’n cytuno i geisio datrys yr anghydfod drwy negodi’n ddidwyll am gyfnod o <strong>30 diwrnod</strong> cyn dechrau unrhyw achos ffurfiol'''
 
 [strings."terms.mediation-if-negotiation-fails-either-party-2ac914"]
 hash = "2ac914cb1580"
-cy = '''<strong>Cyfryngu:</strong> Os bydd y negodi’n methu, caiff y naill barti neu’r llall gynnig cyfryngu drwy gyfryngwr y cytunir arno neu wasanaeth megis y Centre for Effective Dispute Resolution (CEDR). Bydd costau cyfryngu’n cael eu rhannu’n gyfartal oni chytunir fel arall'''
+cy = '''<strong>Cyfryngu (<span lang="en-GB">mediation</span>):</strong> Os bydd y negodi’n methu, caiff y naill barti neu’r llall gynnig cyfryngu drwy gyfryngwr y cytunir arno neu wasanaeth megis y Centre for Effective Dispute Resolution (CEDR). Bydd costau cyfryngu’n cael eu rhannu’n gyfartal oni chytunir fel arall'''
 
 [strings."terms.small-claims-for-disputes-under-10-f582bc"]
 hash = "f582bc7dfd29"
-cy = '''<strong>Hawliadau bychain:</strong> Ar gyfer anghydfodau o dan £10,000, caiff y naill barti neu’r llall ddwyn hawliad yn Llys Hawliadau Bychain Cymru a Lloegr'''
+cy = '''<strong>Hawliadau bychain:</strong> Ar gyfer anghydfodau o dan £10,000, caiff y naill barti neu’r llall ddwyn hawliad yn Llys Hawliadau Bychain (<span lang="en-GB">Small Claims Court</span>) Cymru a Lloegr'''
 
-[strings."terms.court-proceedings-if-mediation-is-unsuccessful-a628da"]
-hash = "a628da2a74b7"
-cy = '''<strong>Achos llys:</strong> Os yw’r cyfryngu’n aflwyddiannus neu’n amhriodol, caiff y naill barti neu’r llall ddechrau achos llys yn unol ag Adran 18 (Y Gyfraith Lywodraethol)'''
+[strings."terms.court-proceedings-if-mediation-is-unsuccessful-46c8ee"]
+hash = "46c8ee3d8ef0"
+cy = '''<strong>Achos llys:</strong> Os yw’r cyfryngu’n aflwyddiannus neu’n amhriodol, caiff y naill barti neu’r llall ddechrau achos llys yn unol ag Adran 19 (Y Gyfraith Lywodraethol)'''
 
 [strings."terms.this-clause-does-not-prevent-either-c15065"]
 hash = "c150659b8abb"
-cy = '''Nid yw’r cymal hwn yn atal y naill barti na’r llall rhag ceisio rhyddhad gwaharddol brys lle bo angen.'''
+cy = '''Nid yw’r cymal hwn yn atal y naill barti na’r llall rhag ceisio rhyddhad gwaharddol (<span lang="en-GB">injunctive relief</span>) brys lle bo angen.'''
 
 [strings."terms.18-changes-to-terms-6a5018"]
 hash = "6a501801ed98"
@@ -21191,7 +21191,7 @@ cy = '''Os nad ydych yn cytuno i’r Telerau wedi’u diweddaru, cewch gau eich 
 
 [strings."terms.19-governing-law-and-jurisdiction-86d1f7"]
 hash = "86d1f79b557a"
-cy = '''19. Y gyfraith lywodraethol ac awdurdodaeth'''
+cy = '''19. Y gyfraith lywodraethol ac awdurdodaeth (<span lang="en-GB">governing law and jurisdiction</span>)'''
 
 [strings."terms.these-terms-are-governed-by-the-dddfe4"]
 hash = "dddfe4fd158f"
@@ -21251,7 +21251,7 @@ cy = '''Y comisiwn yw 33% o’r swm net y mae’r cwsmer a atgyfeiriwyd yn ei da
 
 [strings."terms.a-customer-who-shares-a-pass-5ec1c1"]
 hash = "5ec1c1ae62d1"
-cy = '''Mae cwsmer sy’n rhannu tocyn yn ennill credyd ariannol ar ei danysgrifiad ei hun. Rydym yn rhyddhau’r credyd ariannol 30 diwrnod ar ôl y taliad y mae’n deillio ohono. Mae’r credyd ariannol yn cael ei gymhwyso’n fisol. Mae terfyn o 12 mis am ddim i gyd ar y credyd ariannol.'''
+cy = '''Mae cwsmer sy’n rhannu tocyn yn ennill credyd ariannol (<span lang="en-GB">credit</span>) ar ei danysgrifiad ei hun. Rydym yn rhyddhau’r credyd ariannol 30 diwrnod ar ôl y taliad y mae’n deillio ohono. Mae’r credyd ariannol yn cael ei gymhwyso’n fisol. Mae terfyn o 12 mis am ddim i gyd ar y credyd ariannol.'''
 
 [strings."terms.an-approved-affiliate-earns-cash-we-007173"]
 hash = "007173d7ead8"
@@ -21807,7 +21807,7 @@ cy = '''Ni allwch ddiwygio Ffurflen TAW sydd wedi’i chyflwyno yn Submit. Mae�
 
 [strings."help.a-small-error-goes-on-your-7db66e"]
 hash = "7db66e6d7fd8"
-cy = '''Mae gwall bach yn mynd ar eich Ffurflen TAW nesaf. Mae’n fach pan fydd ei werth net yn £10,000 neu lai, neu hyd at £50,000 os nad yw’n fwy nag 1% o’ch ffigur Blwch 6 ar gyfer y cyfnod y byddwch yn dod o hyd iddo ynddo. Rhaid iddo fod o fewn y terfyn amser o 4 blynedd a heb fod yn fwriadol.'''
+cy = '''Mae gwall bach yn mynd ar eich Ffurflen TAW nesaf. Mae’n fach pan fydd ei werth net yn £10,000 neu lai, neu hyd at £50,000 os nad yw’n fwy nag 1% o’ch ffigur Blwch 6 ar gyfer cyfnod y Ffurflen TAW y byddwch yn dod o hyd iddo ynddo. Rhaid iddo fod o fewn y terfyn amser o 4 blynedd a heb fod yn fwriadol.'''
 
 [strings."help.any-other-error-goes-to-hmrc-cedcce"]
 hash = "cedcce0ff92b"
@@ -22087,7 +22087,7 @@ cy = '''Pa nodweddion hygyrchedd sydd gan yr ap hwn?'''
 
 [strings."help.diy-accounting-submit-is-designed-to-eace94"]
 hash = "eace94c8bc64"
-cy = '''Mae DIY Accounting Submit wedi’i ddylunio i fodloni safonau hygyrchedd WCAG 2.2 Lefel AA:'''
+cy = '''Mae DIY Accounting Submit wedi’i ddylunio i fodloni safonau hygyrchedd Canllawiau Hygyrchedd Cynnwys y We (WCAG) 2.2 Lefel AA:'''
 
 [strings."help.keyboard-navigation-b84d4f"]
 hash = "b84d4fa6913a"
@@ -22311,7 +22311,7 @@ cy = '''Cofrestrwch ar gyfer Troi Treth yn Ddigidol ar gyfer TAW yn <a href="htt
 
 [strings."help.wait-24-to-48-hours-hmrc-ae99f4"]
 hash = "ae99f4f9528b"
-cy = '''Arhoswch 24 i 48 awr. Mae angen amser ar CThEF i ddechrau eich mynediad at Troi Treth yn Ddigidol.'''
+cy = '''Arhoswch 24 i 48 awr. Mae angen amser ar CThEF i ddechrau eich mynediad at Droi Treth yn Ddigidol.'''
 
 [strings."help.sign-in-to-diy-accounting-submit-072b75"]
 hash = "072b7587410e"
@@ -22375,7 +22375,7 @@ cy = '''Mae Cynhyrchu yn anfon eich ffeilio at CThEF go iawn. Mae Prawf yn ei an
 
 [strings."help.production-needs-your-government-gateway-user-195484"]
 hash = "195484913ce0"
-cy = '''Mae angen eich Dynodydd Defnyddiwr (ID) a’ch cyfrinair ar gyfer Porth y Llywodraeth ar <strong>Cynhyrchu</strong>. Mae cyflwyniad yn Ffurflen TAW sy’n rhwymo mewn cyfraith.'''
+cy = '''Mae angen eich Dynodydd Defnyddiwr (ID) a’ch cyfrinair ar gyfer Porth y Llywodraeth ar <strong>Gynhyrchu</strong>. Mae cyflwyniad yn Ffurflen TAW sy’n rhwymo mewn cyfraith.'''
 
 [strings."help.sandbox-uses-test-credentials-and-any-fc8c68"]
 hash = "fc8c6826329b"
@@ -22395,7 +22395,7 @@ cy = '''Beth os na allaf gael mynediad at fy nghyfrif Google neu Microsoft?'''
 
 [strings."help.if-you-lose-access-to-the-8828ac"]
 hash = "8828acf1bbd5"
-cy = '''Os byddwch yn colli mynediad at y cyfrif yr ydych yn mewngofnodi ag ef, nid oes dim yn cael ei golli yn CThEF. Mae eich awdurdodiad CThEF yn perthyn i’ch Porth y Llywodraeth, nid i’ch darparwr mewngofnodi, ac mae CThEF yn cadw ei gofnod o bob Ffurflen TAW a gyflwynwyd gennych.'''
+cy = '''Os byddwch yn colli mynediad at y cyfrif yr ydych yn mewngofnodi ag ef, nid oes dim yn cael ei golli yn CThEF. Mae eich awdurdodiad CThEF yn perthyn i’ch cyfrif Porth y Llywodraeth, nid i’ch darparwr mewngofnodi, ac mae CThEF yn cadw ei gofnod o bob Ffurflen TAW a gyflwynwyd gennych.'''
 
 [strings."help.to-carry-on-ee7d52"]
 hash = "ee7d523572a5"
@@ -22495,7 +22495,7 @@ cy = '''Cliriwch y cwcis ar gyfer submit.diyaccounting.co.uk yn unig.'''
 
 [strings."help.if-the-problem-stays-send-us-931844"]
 hash = "931844d44737"
-cy = '''Os yw’r broblem yn parhau, <a href="/help.html" target="_blank" rel="noopener">anfonwch gais am gymorth atom</a> neu e-bostiwch support@diyaccounting.co.uk.'''
+cy = '''Os yw’r broblem yn parhau, <a href="help.html" target="_blank" rel="noopener">anfonwch gais am gymorth atom</a> neu e-bostiwch support@diyaccounting.co.uk.'''
 
 [strings."help.receipts-60a627"]
 hash = "60a627df404a"
