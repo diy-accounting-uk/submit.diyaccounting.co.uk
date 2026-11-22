@@ -140,8 +140,9 @@ class SubmitEnvironmentCdkResourceTest {
         // Streams: receipts, bundles, passes, subscriptions, commissions, integration calls, HMRC
         //      API requests, practice clients, activity charges, MCP sessions
         //      (one UpdateTable to enable, one DescribeTable to read the stream ARN)
-        // TTL: passes, subscriptions and the due list join the tables that already had it
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 155);
+        // TTL: passes, subscriptions, the due list and the Companies House cache join the tables that
+        //      already had it; the cache has no PITR
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 157);
         Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 68);
 
         // 8) Observability stack should enable CloudTrail (Trail present), covering every region

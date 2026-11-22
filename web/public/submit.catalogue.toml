@@ -557,6 +557,16 @@ paths = ["companies-house/watchList.html"]
 environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
+id = "company-reports"
+name = "Company Reports (Companies House, preview)"
+nameCy = "Adroddiadau cwmni (Tŷ'r Cwmnïau, rhagolwg (preview))"
+display = "on-entitlement"
+bundles = ["default"]
+metered = false
+paths = ["^/api/v1/companies-house/company/[^/]+/reports/[^/]+$", "^/companies-house/company/[^/]+/reports(/[^/]+)?$"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
 id = "change-registered-office"
 name = "Change Registered Office Address (Companies House)"
 nameCy = "Newid cyfeiriad y swyddfa gofrestredig (Tŷ'r Cwmnïau)"

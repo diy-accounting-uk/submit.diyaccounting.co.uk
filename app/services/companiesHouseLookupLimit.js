@@ -51,6 +51,8 @@ export const LOOKUP_CALLS = {
   filedAccounts: 15,
   filedDocument: 3,
   lastAccounts: 3,
+  // A report reads the register through the shared cache; a cold report makes at most 20 calls.
+  report: 20,
 };
 
 // Adds a lookup's calls to one counter for this window and answers the calls counted so far, or null

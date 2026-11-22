@@ -217,7 +217,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 31);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 32);
         // The two previews call no external API and share the /api/v1/companies-house alarm.
         assertGroupedStackHealthAlarm(
                 companiesHouseStackTemplate,
@@ -226,6 +226,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                         "companies-house-accounts-get",
                         "companies-house-accounts-post",
                         "companies-house-company-get",
+                        "companies-house-company-report-get",
                         "companies-house-confirmation-statement-get",
                         "companies-house-confirmation-statement-post",
                         "companies-house-email-address-post",
@@ -576,9 +577,11 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         // route, for 236 + 2 = 238. GET /api/v1/pass/campaign sits on its own unshared path and adds a
         // primary route and an auto-HEAD route, for 238 + 2 = 240. GET
         // /api/v1/companies-house/company/{companyNumber}/last-accounts sits on its own unshared path and
-        // adds a primary route and an auto-HEAD route, for 240 + 2 = 242.
+        // adds a primary route and an auto-HEAD route, for 240 + 2 = 242. GET
+        // /api/v1/companies-house/company/{companyNumber}/reports/{report} sits on its own unshared path
+        // and adds a primary route and an auto-HEAD route, for 242 + 2 = 244.
         assertEquals(
-                242,
+                244,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

@@ -157,6 +157,9 @@ public class CompaniesHouseStack extends Stack {
     public Function companiesHousePscGetLambda;
     public ILogGroup companiesHousePscGetLambdaLogGroup;
 
+    public AbstractApiLambdaProps companiesHouseCompanyReportGetLambdaProps;
+    public Function companiesHouseCompanyReportGetLambda;
+    public ILogGroup companiesHouseCompanyReportGetLambdaLogGroup;
     public AbstractApiLambdaProps companiesHouseFilingHistoryGetLambdaProps;
     public Function companiesHouseFilingHistoryGetLambda;
     public ILogGroup companiesHouseFilingHistoryGetLambdaLogGroup;
@@ -1481,6 +1484,71 @@ public class CompaniesHouseStack extends Stack {
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseFilingHistoryGetLambda, bundlesTable, region, account, props, activityBusArn, true);
 
+        // The company reports: one Lambda for every report, reading the register through the shared
+        // Companies House cache and the stop a Companies House 429 sets.
+        ITable companiesHouseCacheTable = Table.fromTableName(
+                this,
+                "ImportedCompaniesHouseCacheTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().data.companiesHouseCacheTableName);
+        var companiesHouseCompanyReportGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
+                .with("COMPANIES_HOUSE_CACHE_DYNAMODB_TABLE_NAME", companiesHouseCacheTable.getTableName())
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                companiesHouseCompanyReportGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
+        if (StringUtils.isNotBlank(props.companiesHouseApiKeyArn())) {
+            companiesHouseCompanyReportGetLambdaEnv.with(
+                    "COMPANIES_HOUSE_API_KEY_ARN", props.companiesHouseApiKeyArn());
+        }
+        var companiesHouseCompanyReportGetLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseCompanyReportGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseCompanyReportGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler(
+                                props.sharedNames().companiesHouse.companiesHouseCompanyReportGetIngestLambdaHandler)
+                        .ingestLambdaArn(
+                                props.sharedNames().companiesHouse.companiesHouseCompanyReportGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseCompanyReportGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestMemorySize(256)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHouseCompanyReportGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHouseCompanyReportGetLambdaUrlPath)
+                        .jwtAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseCompanyReportGetLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseCompanyReportGetLambdaCustomAuthorizer)
+                        .environment(companiesHouseCompanyReportGetLambdaEnv)
+                        .build());
+        this.companiesHouseCompanyReportGetLambdaProps = companiesHouseCompanyReportGetLambdaUrlOrigin.apiProps;
+        this.companiesHouseCompanyReportGetLambda = companiesHouseCompanyReportGetLambdaUrlOrigin.ingestLambda;
+        this.companiesHouseCompanyReportGetLambdaLogGroup = companiesHouseCompanyReportGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.companiesHouseCompanyReportGetLambdaProps);
+        infof(
+                "Created Lambda %s for the Companies House company reports with ingestHandler %s",
+                this.companiesHouseCompanyReportGetLambda.getNode().getId(),
+                props.sharedNames().companiesHouse.companiesHouseCompanyReportGetIngestLambdaHandler);
+        grantCompaniesHouseLambdaAccess(
+                this.companiesHouseCompanyReportGetLambda, bundlesTable, region, account, props, activityBusArn, true);
+        // The cache's reads and writes; invalidating a company's entries is a later route's.
+        companiesHouseCacheTable.grant(
+                this.companiesHouseCompanyReportGetLambda, "dynamodb:GetItem", "dynamodb:PutItem");
+
         var companiesHouseFiledAccountsGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
                 .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
@@ -2152,7 +2220,8 @@ public class CompaniesHouseStack extends Stack {
                 this.companiesHousePscGetLambda,
                 this.companiesHouseFilingHistoryGetLambda,
                 this.companiesHouseFiledAccountsGetLambda,
-                this.companiesHouseFiledDocumentGetLambda)) {
+                this.companiesHouseFiledDocumentGetLambda,
+                this.companiesHouseCompanyReportGetLambda)) {
             securityStateTable.grant(lookup, "dynamodb:UpdateItem", "dynamodb:GetItem", "dynamodb:PutItem");
         }
         // Each public lookup charges the counter of all public lookups on the same key in one update,
@@ -2196,6 +2265,7 @@ public class CompaniesHouseStack extends Stack {
                         companiesHouseOfficersGetLambdaUrlOrigin,
                         companiesHousePscGetLambdaUrlOrigin,
                         companiesHouseFilingHistoryGetLambdaUrlOrigin,
+                        companiesHouseCompanyReportGetLambdaUrlOrigin,
                         companiesHouseFiledAccountsGetLambdaUrlOrigin,
                         companiesHouseFiledDocumentGetLambdaUrlOrigin,
                         companiesHouseLastAccountsGetLambdaUrlOrigin,

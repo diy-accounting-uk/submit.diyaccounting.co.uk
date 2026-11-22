@@ -505,6 +505,18 @@ public class KindCdk {
      */
     public static ITable ensureTable(
             Stack stack, String id, String tableName, String partitionKeyName, String sortKeyName) {
+        ITable table = ensureTableWithoutPointInTimeRecovery(stack, id, tableName, partitionKeyName, sortKeyName);
+        ensurePointInTimeRecovery(
+                stack, id, tableName, TABLE_CREATION_RESOURCES.get(stack).get(tableName));
+        return table;
+    }
+
+    /**
+     * Creates a table as {@link #ensureTable} does, without point-in-time recovery: for a table that
+     * holds only a copy of data kept elsewhere, such as a cache, which a restore would not need.
+     */
+    public static ITable ensureTableWithoutPointInTimeRecovery(
+            Stack stack, String id, String tableName, String partitionKeyName, String sortKeyName) {
         // Build attribute definitions
         List<Map<String, String>> attributeDefinitions = new java.util.ArrayList<>();
         attributeDefinitions.add(Map.of("AttributeName", partitionKeyName, "AttributeType", "S"));
@@ -548,8 +560,6 @@ public class KindCdk {
                 .build();
         ensureTableResource.getNode().addDependency(createTableGrant);
         recordTableCreation(stack, tableName, ensureTableResource);
-
-        ensurePointInTimeRecovery(stack, id, tableName, ensureTableResource);
 
         return Table.fromTableName(stack, id + "-Table", tableName);
     }

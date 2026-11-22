@@ -51,6 +51,19 @@ class KindCdkTest {
     }
 
     @Test
+    void ensureTableWithoutPointInTimeRecoveryCreatesTheTableAloneAndItsTtlFollowsTheCreation() {
+        App app = new App();
+        Stack stack = new Stack(app, "TestStack");
+
+        KindCdk.ensureTableWithoutPointInTimeRecovery(stack, "Cache", "test-env-cache", "pk", "sk");
+        KindCdk.ensureTimeToLive(stack, "CacheTTL", "test-env-cache", "ttl");
+
+        Template template = Template.fromStack(stack);
+        template.resourceCountIs("Custom::AWS", 2);
+        template.resourceCountIs("Custom::EnsurePitr", 0);
+    }
+
+    @Test
     void ensureStreamEnablesNewAndOldImagesWithTablePhysicalResourceId() {
         App app = new App();
         Stack stack = new Stack(app, "TestStack");

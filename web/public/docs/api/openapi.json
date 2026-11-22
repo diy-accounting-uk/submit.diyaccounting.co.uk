@@ -551,6 +551,30 @@
         } ]
       }
     },
+    "/companies-house/company/{companyNumber}/reports/{report}" : {
+      "get" : {
+        "summary" : "Get a report on a company",
+        "description" : "Builds one report on a company from its Companies House record, read through a shared cache",
+        "operationId" : "getCompanyReport",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "report",
+          "in" : "path",
+          "required" : true,
+          "description" : "The report: filings, people, capital, charges, history or accounts",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/companies-house/confirmation-statement" : {
       "post" : {
         "summary" : "Submit a confirmation statement filing",

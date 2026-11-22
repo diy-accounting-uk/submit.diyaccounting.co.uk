@@ -112,6 +112,7 @@ import { apiEndpoint as hmrcCtReturnPreviewPostApiEndpoint } from "../functions/
 import { apiEndpoint as hmrcCtReturnPostApiEndpoint } from "../functions/hmrc/hmrcCtReturnPost.js";
 import { apiEndpoint as hmrcCtReturnGetApiEndpoint } from "../functions/hmrc/hmrcCtReturnGet.js";
 import { apiEndpoint as companiesHouseOfficersGetApiEndpoint } from "../functions/companies-house/companiesHouseOfficersGet.js";
+import { apiEndpoint as companiesHouseCompanyReportGetApiEndpoint } from "../functions/companies-house/companiesHouseCompanyReportGet.js";
 import { apiEndpoint as companiesHousePscGetApiEndpoint } from "../functions/companies-house/companiesHousePscGet.js";
 import { apiEndpoint as companiesHouseFilingHistoryGetApiEndpoint } from "../functions/companies-house/companiesHouseFilingHistoryGet.js";
 import { apiEndpoint as companiesHouseFiledAccountsGetApiEndpoint } from "../functions/companies-house/companiesHouseFiledAccountsGet.js";
@@ -446,6 +447,7 @@ hmrcCtReturnPreviewPostApiEndpoint(app);
 hmrcCtReturnPostApiEndpoint(app);
 hmrcCtReturnGetApiEndpoint(app);
 companiesHouseOfficersGetApiEndpoint(app);
+companiesHouseCompanyReportGetApiEndpoint(app);
 companiesHousePscGetApiEndpoint(app);
 companiesHouseFilingHistoryGetApiEndpoint(app);
 companiesHouseFiledAccountsGetApiEndpoint(app);

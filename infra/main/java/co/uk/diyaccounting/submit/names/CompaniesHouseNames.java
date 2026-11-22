@@ -198,6 +198,14 @@ public class CompaniesHouseNames {
     public boolean companiesHousePscGetLambdaJwtAuthorizer;
     public boolean companiesHousePscGetLambdaCustomAuthorizer;
 
+    public String companiesHouseCompanyReportGetIngestLambdaHandler;
+    public String companiesHouseCompanyReportGetIngestLambdaFunctionName;
+    public String companiesHouseCompanyReportGetIngestLambdaArn;
+    public String companiesHouseCompanyReportGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseCompanyReportGetLambdaHttpMethod;
+    public String companiesHouseCompanyReportGetLambdaUrlPath;
+    public boolean companiesHouseCompanyReportGetLambdaJwtAuthorizer;
+    public boolean companiesHouseCompanyReportGetLambdaCustomAuthorizer;
     public String companiesHouseFilingHistoryGetIngestLambdaHandler;
     public String companiesHouseFilingHistoryGetIngestLambdaFunctionName;
     public String companiesHouseFilingHistoryGetIngestLambdaArn;
@@ -838,6 +846,36 @@ public class CompaniesHouseNames {
                 "Retrieves every filing on a company's public filing history, every category, newest first",
                 "getCompanyFilingHistory",
                 List.of(new ApiParameter("companyNumber", "path", true, "The 8-character company number"))));
+
+        this.companiesHouseCompanyReportGetLambdaHttpMethod = HttpMethod.GET;
+        this.companiesHouseCompanyReportGetLambdaUrlPath =
+                "/api/v1/companies-house/company/{companyNumber}/reports/{report}";
+        this.companiesHouseCompanyReportGetLambdaJwtAuthorizer = true;
+        this.companiesHouseCompanyReportGetLambdaCustomAuthorizer = false;
+        var companiesHouseCompanyReportGetLambdaHandlerName = "companiesHouseCompanyReportGet.ingestHandler";
+        var companiesHouseCompanyReportGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseCompanyReportGetLambdaHandlerName);
+        this.companiesHouseCompanyReportGetIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, companiesHouseCompanyReportGetLambdaHandlerDashed);
+        this.companiesHouseCompanyReportGetIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(root.appLambdaHandlerPrefix, companiesHouseCompanyReportGetLambdaHandlerName);
+        this.companiesHouseCompanyReportGetIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, companiesHouseCompanyReportGetLambdaHandlerDashed);
+        this.companiesHouseCompanyReportGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHouseCompanyReportGetIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseCompanyReportGetLambdaHttpMethod,
+                this.companiesHouseCompanyReportGetLambdaUrlPath,
+                "Get a report on a company",
+                "Builds one report on a company from its Companies House record, read through a shared cache",
+                "getCompanyReport",
+                List.of(
+                        new ApiParameter("companyNumber", "path", true, "The 8-character company number"),
+                        new ApiParameter(
+                                "report",
+                                "path",
+                                true,
+                                "The report: filings, people, capital, charges, history or accounts"))));
 
         this.companiesHouseFiledAccountsGetLambdaHttpMethod = HttpMethod.GET;
         this.companiesHouseFiledAccountsGetLambdaUrlPath =

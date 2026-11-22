@@ -197,11 +197,11 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void stackWiresThirtyOneLambdas() {
+    void stackWiresThirtyTwoLambdas() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::Lambda::Function", 31);
+        template.resourceCountIs("AWS::Lambda::Function", 32);
         for (String functionName : List.of(
                 stack.companiesHouseSearchGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseCompanyGetLambdaProps.ingestFunctionName(),
@@ -532,10 +532,10 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void lambdaFunctionPropsExposesAllThirtyOneRoutesForApiStackToConsume() {
+    void lambdaFunctionPropsExposesAllThirtyTwoRoutesForApiStackToConsume() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
 
-        assertEquals(31, stack.lambdaFunctionProps.size());
+        assertEquals(32, stack.lambdaFunctionProps.size());
         assertEquals(
                 List.of(
                         "/api/v1/companies-house/search",
@@ -560,6 +560,7 @@ class CompaniesHouseStackTest {
                         "/api/v1/companies-house/company/{companyNumber}/officers",
                         "/api/v1/companies-house/company/{companyNumber}/persons-with-significant-control",
                         "/api/v1/companies-house/company/{companyNumber}/filing-history",
+                        "/api/v1/companies-house/company/{companyNumber}/reports/{report}",
                         "/api/v1/companies-house/company/{companyNumber}/filed-accounts",
                         "/api/v1/companies-house/company/{companyNumber}/filed-accounts/{transactionId}/document",
                         "/api/v1/companies-house/company/{companyNumber}/last-accounts",
@@ -656,7 +657,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         API_KEY_ARN + "-*")))))))),
-                10);
+                11);
     }
 
     @Test
@@ -711,7 +712,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         API_KEY_ARN + "-*")))))))),
-                10);
+                11);
     }
 
     @Test
@@ -732,7 +733,7 @@ class CompaniesHouseStackTest {
                 Match.objectLike(Map.of(
                         "PolicyDocument",
                         Match.objectLike(Map.of("Statement", Match.arrayWith(List.of(operatorEmailsStatement)))))),
-                29);
+                30);
     }
 
     @Test
@@ -789,7 +790,7 @@ class CompaniesHouseStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "dynamodb:Query")))))))),
-                28);
+                29);
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -797,7 +798,7 @@ class CompaniesHouseStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "events:PutEvents")))))))),
-                29);
+                30);
     }
 
     @Test

@@ -22,6 +22,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureGlobalSecondaryIndex;
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureStream;
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureTable;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureTableWithoutPointInTimeRecovery;
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureTimeToLive;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
@@ -106,6 +107,7 @@ public class DataStack extends Stack {
     public ITable activityChargesTable;
     public ITable practiceClientsTable;
     public ITable dueListTable;
+    public ITable companiesHouseCacheTable;
     public ITable commissionsTable;
     public ITable securityStateTable;
     public ITable alarmIssueLockTable;
@@ -1205,6 +1207,25 @@ public class DataStack extends Stack {
                 "ALL");
         infof("Ensured due list DynamoDB table with name %s", props.sharedNames().data.dueListTableName);
 
+        // Companies House cache table: partition key is the company number, sort key is the
+        // Companies House path with its query, or figures#<transaction id> for the figures of one
+        // filing. It holds a trimmed copy of public register answers, each with a ttl, so it has no
+        // point-in-time recovery: a restore would not need a copy of the register.
+        this.companiesHouseCacheTable = ensureTableWithoutPointInTimeRecovery(
+                this,
+                props.resourceNamePrefix() + "-CompaniesHouseCacheTable",
+                props.sharedNames().data.companiesHouseCacheTableName,
+                "companyNumber",
+                "sk");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-CompaniesHouseCacheTTL",
+                props.sharedNames().data.companiesHouseCacheTableName,
+                "ttl");
+        infof(
+                "Ensured Companies House cache DynamoDB table with name %s",
+                props.sharedNames().data.companiesHouseCacheTableName);
+
         // Commissions table: partition key names the owner of the item (commission#<referrerHash>,
         // held, charge#<chargeId>, card#<fingerprint>), sort key names the item within it. Pointer
         // items do the work of indexes, so the table has no secondary index.
@@ -1765,6 +1786,8 @@ public class DataStack extends Stack {
         cfnOutput(this, "PracticeClientsTableArn", this.practiceClientsTable.getTableArn());
         cfnOutput(this, "DueListTableName", this.dueListTable.getTableName());
         cfnOutput(this, "DueListTableArn", this.dueListTable.getTableArn());
+        cfnOutput(this, "CompaniesHouseCacheTableName", this.companiesHouseCacheTable.getTableName());
+        cfnOutput(this, "CompaniesHouseCacheTableArn", this.companiesHouseCacheTable.getTableArn());
         cfnOutput(this, "CommissionsTableName", this.commissionsTable.getTableName());
         cfnOutput(this, "CommissionsTableArn", this.commissionsTable.getTableArn());
         cfnOutput(this, "CommissionsTableStreamArn", commissionsStreamArn);

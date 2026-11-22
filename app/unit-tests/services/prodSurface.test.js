@@ -18,6 +18,7 @@ describe("what the catalogue lists in each environment", () => {
     "file-company-tax-return-with-accounts",
     "file-revised-accounts",
     "file-psc-verification-statement",
+    "company-reports",
   ])("%s is listed in ci and not in prod", (id) => {
     expect(isActivityListedInEnvironment(activity(id), "ci")).toBe(true);
     expect(isActivityListedInEnvironment(activity(id), "prod")).toBe(false);

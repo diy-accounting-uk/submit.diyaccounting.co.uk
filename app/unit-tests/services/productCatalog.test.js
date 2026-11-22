@@ -441,6 +441,18 @@ describe("productCatalogHelper", () => {
     expect(activity.environments).not.toContain("prod");
   });
 
+  it("company-reports is a default-bundle activity whose paths are the report route and the reports page", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "company-reports");
+    expect(activity).toMatchObject({ bundles: ["default"], display: "on-entitlement", metered: false });
+    expect(activity.environments).not.toContain("prod");
+    const matches = (path) => activity.paths.some((pattern) => new RegExp(pattern).test(path));
+    expect(matches("/api/v1/companies-house/company/00000001/reports/filings")).toBe(true);
+    expect(matches("/companies-house/company/00000001/reports")).toBe(true);
+    expect(matches("/companies-house/company/00000001/reports/people")).toBe(true);
+    expect(matches("/api/v1/companies-house/company/00000001/officers")).toBe(false);
+  });
+
   it("company-lookup should be available in prod alongside the register filings", () => {
     const catalog = parseCatalog(tomlText);
     const activity = catalog.activities.find((a) => a.id === "company-lookup");

@@ -486,6 +486,47 @@ class DataStackTest {
     }
 
     @Test
+    void companiesHouseCacheTableIsKeyedByCompanyNumberAndSkExpiresOnTtlAndHasNoPointInTimeRecovery() {
+        DataStack dataStack = synthDataStack();
+        Template template = Template.fromStack(dataStack);
+        String tableName = dataStack.companiesHouseCacheTable.getTableName();
+
+        var table = template.findResources(
+                "Custom::AWS",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "Create",
+                                createContaining(
+                                        "createTable",
+                                        tableName,
+                                        "\"AttributeName\":\"companyNumber\"",
+                                        "\"KeyType\":\"HASH\"",
+                                        "\"AttributeName\":\"sk\"",
+                                        "\"KeyType\":\"RANGE\""))));
+        assertEquals(1, table.size());
+
+        var ttl = template.findResources(
+                "Custom::AWS",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "Create",
+                                createContaining(
+                                        "updateTimeToLive",
+                                        tableName,
+                                        "\"AttributeName\":\"ttl\"",
+                                        "\"Enabled\":true"))));
+        assertEquals(1, ttl.size());
+
+        // A cache holds a copy of the public register, so a restore would not need it.
+        assertEquals(
+                0,
+                template.findResources("Custom::EnsurePitr", Map.of("Properties", Map.of("TableName", tableName)))
+                        .size());
+    }
+
+    @Test
     void everyLambdaFunctionHasAnExplicitLogGroup() {
         DataStack dataStack = synthDataStack();
         Template template = Template.fromStack(dataStack);
