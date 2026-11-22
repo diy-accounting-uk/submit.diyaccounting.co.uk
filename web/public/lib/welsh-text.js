@@ -1202,7 +1202,7 @@ window.WELSH_TEXT = {
   "ch.revision.date-before-original":
     "Rhaid cymeradwyo’r cyfrifon diwygiedig ar {date} neu wedi hynny, pan gymeradwywyd y cyfrifon gwreiddiol",
   "ch.revision.line-accruals": "croniadau",
-  "ch.revision.line-accruals-deferred-income": "atebolrwydd cronedig ac incwm gohiriedig",
+  "ch.revision.line-accruals-deferred-income": "croniadau ac incwm gohiriedig",
   "ch.revision.line-amounts-owed-to-directors": "symiau sy’n ddyledus i gyfarwyddwyr",
   "ch.revision.line-amounts-owed-to-group-undertakings": "symiau sy’n ddyledus i ymgymeriadau grŵp",
   "ch.revision.line-bank-loans-after-one-year": "benthyciadau banc sy’n ddyledus ar ôl mwy na blwyddyn",
@@ -1597,7 +1597,7 @@ window.WELSH_TEXT = {
   "itsa.current-total-retrieved": "Mae’r cyfanswm presennol wedi’i adalw.",
   "itsa.current-total-token-expired": "Mae’r tocyn mynediad wedi dod i ben. Rhowch gynnig arall ar lwytho’r cyfanswm.",
   "itsa.declaration-wording":
-    "Rwy’n datgan bod yr wybodaeth a’r Ffurflen Dreth a gyflwynwyd gennyf (o’u hystyried gyda’i gilydd) yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth. Rwy’n deall y gallai fod yn rhaid i mi dalu cosbau ariannol ac wynebu erlyniad os byddaf yn rhoi gwybodaeth anwir.",
+    "Rwy’n datgan bod yr wybodaeth a’r Ffurflen Dreth a gyflwynwyd gennyf (o’u hystyried gyda’i gilydd) yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth. Deallaf y gallai fod yn rhaid i mi dalu cosbau ariannol a chael fy erlyn os rhoddaf wybodaeth anwir.",
   "itsa.definition-annual-payments-relief-claimed": "Gwerth y taliadau blynyddol a wnaed.",
   "itsa.definition-annual-payments-tax-rate": "Y gyfradd dreth a ddefnyddiwyd yn y cyfrifiad.",
   "itsa.definition-blind-person-s-allowance": "Mae Lwfans Person Dall yn swm ychwanegol o lwfans di-dreth.",

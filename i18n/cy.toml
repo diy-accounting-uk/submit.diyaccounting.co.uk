@@ -5263,10 +5263,13 @@ cy = '''Cyflwr OAuth annilys. Rhowch gynnig arall arni.'''
 #   final declaration                   datganiad terfynol
 #   Declaration                         Datganiad
 #   The legal declaration, the Welsh of HMRC's English in the Income Tax end-to-end service guide
-#   (make-updates-at-tax-year-end.html#agreeing-to-the-declaration); Ffurflen Dreth is HMRC's Welsh for tax return:
+#   (make-updates-at-tax-year-end.html#agreeing-to-the-declaration); Ffurflen Dreth is HMRC's Welsh for tax return.
+#   The first sentence is a translation: no gov.uk/cy page gives it. The second is HMRC's own Welsh of the same English
+#   sentence, from the declaration (box 22) of the Welsh SA100, Ffurflen Dreth 2026
+#   (https://assets.publishing.service.gov.uk/media/69c14db1cfa346b9d4704a94/SA100-Cymraeg-2026.pdf):
 #     Rwy’n datgan bod yr wybodaeth a’r Ffurflen Dreth a gyflwynwyd gennyf (o’u hystyried gyda’i gilydd) yn gywir ac yn
-#     gyflawn hyd eithaf fy ngwybodaeth. Rwy’n deall y gallai fod yn rhaid i mi dalu cosbau ariannol ac wynebu
-#     erlyniad os byddaf yn rhoi gwybodaeth anwir.
+#     gyflawn hyd eithaf fy ngwybodaeth. Deallaf y gallai fod yn rhaid i mi dalu cosbau ariannol a chael fy erlyn os
+#     rhoddaf wybodaeth anwir.
 #   forecast, estimate                  rhagolwg, amcangyfrif
 #   Business details, business start date  Manylion y busnes, Dyddiad dechrau’r busnes
 #   Self-employment                     Hunangyflogaeth (mid-sentence: hunangyflogaeth)
@@ -5786,7 +5789,7 @@ cy = '''Ni roddwyd gan CThEF'''
 
 [strings."itsa.declaration-wording"]
 hash = "d185edde28a0"
-cy = '''Rwy’n datgan bod yr wybodaeth a’r Ffurflen Dreth a gyflwynwyd gennyf (o’u hystyried gyda’i gilydd) yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth. Rwy’n deall y gallai fod yn rhaid i mi dalu cosbau ariannol ac wynebu erlyniad os byddaf yn rhoi gwybodaeth anwir.'''
+cy = '''Rwy’n datgan bod yr wybodaeth a’r Ffurflen Dreth a gyflwynwyd gennyf (o’u hystyried gyda’i gilydd) yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth. Deallaf y gallai fod yn rhaid i mi dalu cosbau ariannol a chael fy erlyn os rhoddaf wybodaeth anwir.'''
 
 [strings."itsa.record-declared-on"]
 hash = "f079025aecc0"
@@ -10518,7 +10521,7 @@ cy = '''Pob busnes a gyfrifodd CThEF yn y cyfrifiad hwn, fel bod busnes sydd gen
 
 [strings."itsa-final.i-declare-that-the-information-and-d185ed"]
 hash = "d185edde28a0"
-cy = '''Rwy’n datgan bod yr wybodaeth a’r Ffurflen Dreth a gyflwynwyd gennyf (o’u hystyried gyda’i gilydd) yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth. Rwy’n deall y gallai fod yn rhaid i mi dalu cosbau ariannol ac wynebu erlyniad os byddaf yn rhoi gwybodaeth anwir.'''
+cy = '''Rwy’n datgan bod yr wybodaeth a’r Ffurflen Dreth a gyflwynwyd gennyf (o’u hystyried gyda’i gilydd) yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth. Deallaf y gallai fod yn rhaid i mi dalu cosbau ariannol a chael fy erlyn os rhoddaf wybodaeth anwir.'''
 
 [strings."itsa-final.hmrc-assist-feedback-was-shown-for-efb24c"]
 hash = "efb24cfbf48d"
@@ -18270,7 +18273,7 @@ cy = '''rhagdaliadau ac incwm cronedig'''
 
 [strings."ch.revision.line-accruals-deferred-income"]
 hash = "00d08a3dcdbc"
-cy = '''atebolrwydd cronedig ac incwm gohiriedig'''
+cy = '''croniadau ac incwm gohiriedig'''
 
 [strings."ch.revision.line-unreadable"]
 hash = "d7620a4522b1"
@@ -18298,7 +18301,7 @@ cy = '''Mae {file} ar gyfer y cyfnod {from} i {to}; mae’r cyfrifon sy’n cael
 
 [strings."ch-small-company.the-accounts-filed-were-a-full-78a2db"]
 hash = "78a2dba52fee"
-cy = '''<span id="revisionCopyFull">Copi llawn oedd y cyfrifon a ffeiliwyd. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod.</span> <span id="revisionCopyFilleted">Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, ac nid oes cyfrif elw a cholled ynddo. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod: ar gyfer copi llawn, teipiwch linellau’r cyfrif elw a cholled ar gyfer y ddwy flynedd, neu ollwng llyfr y cwmni ar y cerdyn uchod.</span>'''
+cy = '''<span id="revisionCopyFull">Copi llawn oedd y cyfrifon a ffeiliwyd. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod.</span> <span id="revisionCopyFilleted">Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, ac nid oes cyfrif elw a cholled ynddo. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod: ar gyfer copi llawn, teipiwch linellau’r cyfrif elw a cholled ar gyfer y ddwy flynedd, neu gollyngwch lyfr y cwmni ar y cerdyn uchod.</span>'''
 
 [strings."ch.revision.prior-profit-and-loss-empty"]
 hash = "0d8f32fc2a79"
