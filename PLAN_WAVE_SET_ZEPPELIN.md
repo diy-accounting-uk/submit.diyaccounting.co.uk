@@ -17,7 +17,7 @@ skill, section "How a set is delivered", says how `/iterate` builds it.
 
 ## Status
 
-defined 2026-11-22. The operator's `/iterate` on this set is its approval.
+approved 2026-11-22 (the operator's `/collab-loop` on the set). building wave 1. The cloud workers build the rows and run the gates (`collab-loop` skill); the laptop lands them.
 
 ## The goal
 
@@ -59,7 +59,7 @@ this order across the waves: rule, lookup, watch, passes, fill, welsh.
 | email | PE1 | Sonnet | `customerEmailTemplates.js`, `customerEmailRequest.js`, `passGeneratePost.js`, `passAdminPost.js`, their tests |
 | edge | SY1 (the route) | Sonnet | `companiesHousePublicDeadlinesGet.js`, `EdgeStack.java`, `EdgeStackTest.java` |
 
-State: pending.
+State: building. Wave branch `claude/zeppelin-w01` from `main` at 82a4b97b8, worktree `.claude/worktrees/zeppelin-w01`. Tasks sent 2026-11-22 (each is `.collab/<worker>.md` on the worker's `collab` branch; its result is `claude/<worker>-<row>` in `submit-cloud-<worker>`): anvil AA3, then AA1; bugle AA8; epoch AA2 (built beside AA1 from the plan's six facts; it lands after AA1); cyclone PE1; dusk SY1 (the route). Landed: none. The `companyTaxReturn` simulator suite runs on the wave branch after AA1 and AA2 land.
 
 ### Wave 2
 
