@@ -61,17 +61,27 @@ function extractPscParticulars(body, errorMessages) {
   };
 }
 
-// A date the event happened on, and the date the company had confirmation of it, which cannot be earlier.
+// Today's date in the United Kingdom, as YYYY-MM-DD.
+const todayInUk = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
+
+// A date the event happened on, and the date the company had confirmation of it, which cannot be
+// earlier. The form gives notice of an event that has happened and been confirmed, so neither date
+// is ahead of today.
 function extractEventAndConfirmationDates(body, eventField, errorMessages) {
   const eventDate = body[eventField];
   const { confirmationDate } = body;
+  const today = todayInUk();
   if (!eventDate || !isValidIsoDate(eventDate)) {
     errorMessages.push(`Invalid or missing ${eventField} - must be YYYY-MM-DD`);
+  } else if (eventDate > today) {
+    errorMessages.push(`Invalid ${eventField} - must not be in the future`);
   }
   if (!confirmationDate || !isValidIsoDate(confirmationDate)) {
     errorMessages.push("Invalid or missing confirmationDate - must be YYYY-MM-DD");
   } else if (eventDate && isValidIsoDate(eventDate) && confirmationDate < eventDate) {
     errorMessages.push(`Invalid confirmationDate - must not be before ${eventField}`);
+  } else if (confirmationDate > today) {
+    errorMessages.push("Invalid confirmationDate - must not be in the future");
   }
   return { [eventField]: eventDate, confirmationDate };
 }

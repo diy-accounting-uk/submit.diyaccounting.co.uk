@@ -185,6 +185,29 @@ describe("companiesHousePscCessationPost ingestHandler", () => {
     expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
+  test("answers 400 in JSON, sending nothing, for a cessation or a confirmation dated after today in the United Kingdom", async () => {
+    vi.useFakeTimers({ now: new Date("2026-11-20T12:00:00Z"), toFake: ["Date"] });
+    try {
+      for (const [overrides, message] of [
+        [{ cessationDate: "2026-11-21", confirmationDate: "2026-11-21" }, "Invalid cessationDate - must not be in the future"],
+        [{ confirmationDate: "2026-11-21" }, "Invalid confirmationDate - must not be in the future"],
+      ]) {
+        const response = await ingestHandler(buildEvent({ body: buildCessationBody(overrides) }));
+        expect(response.statusCode, message).toBe(400);
+        expect(response.headers["Content-Type"]).toBe("application/json");
+        expect(JSON.stringify(parseResponseBody(response))).toContain(message);
+      }
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+
+      const today = await ingestHandler(
+        buildEvent({ body: buildCessationBody({ cessationDate: "2026-11-20", confirmationDate: "2026-11-20" }) }),
+      );
+      expect(today.statusCode).toBe(201);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test("answers 500 in JSON and marks the filing failed when the gateway rejects the envelope", async () => {
     mockParseGatewayResponse.mockReturnValue({ errors: [{ number: "604", text: "Invalid Request" }], statuses: [] });
     const response = await ingestHandler(buildEvent());

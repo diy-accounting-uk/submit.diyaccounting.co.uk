@@ -193,6 +193,7 @@ describe("companiesHousePscChangeDetailsPost ingestHandler", () => {
       [{ address: { ...NEW_ADDRESS, country: "Wales" } }, "Invalid address - unknown country Wales"],
       [{ dateOfChange: "01/11/2026" }, "Invalid or missing dateOfChange"],
       [{ confirmationDate: "2026-10-31" }, "must not be before dateOfChange"],
+      [{ dateOfChange: "2999-01-01", confirmationDate: "2999-01-02" }, "Invalid dateOfChange - must not be in the future"],
       [{ surname: "" }, "Missing surname"],
       [{ companyAuthCode: "AB" }, "Invalid companyAuthCode"],
     ]) {
