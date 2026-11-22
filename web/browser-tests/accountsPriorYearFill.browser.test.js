@@ -276,7 +276,7 @@ test.describe("Accounts forms' prior year from the last filed accounts", () => {
     await serveSite(page);
     await lookUp(page, "fileMicroEntityAccounts", "00000006");
     await expect(page.locator("#priorYearNote")).toContainText(
-      "Those accounts hold capital and reserves of 10000, but called up share capital and the profit and loss account add up to 8000: the difference sits in reserves this form has no line for. Correct the prior year's profit and loss account so the two agree before you preview.",
+      "Those accounts hold capital and reserves of £10,000, but called up share capital and the profit and loss account add up to £8,000: the difference sits in reserves this form has no line for. Correct the prior year's profit and loss account so the two agree before you preview.",
     );
     const message = await page.evaluate(() => capitalAndReservesProblem(readYear("prior"), readYear("prior")));
     expect(message).toBe(

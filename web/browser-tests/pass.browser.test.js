@@ -14,7 +14,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const PUBLIC_ROOT = path.join(process.cwd(), "web/public");
 const SITE = "http://localhost:3000";
-const WIDTHS = [375, 1280];
+const WIDTHS = [375, 390, 1280];
 const CODE = "river-cloud-stone-lamp";
 
 const CONTENT_TYPES = {
@@ -161,6 +161,19 @@ for (const width of WIDTHS) {
       expect(calls.redeem).toBe(0);
       await expectNoSideScroll(page);
       await shot(page, "valid-signed-in", width);
+    });
+
+    test("the heading the page focuses for a screen reader shows no focus ring, and a button reached by keyboard shows its ring", async ({
+      page,
+    }) => {
+      await serveRealSite(page);
+      await open(page, width);
+      await expect(heading(page)).toBeFocused();
+      const ring = (locator) => locator.evaluate((element) => getComputedStyle(element).outlineStyle);
+      expect(await ring(heading(page))).toBe("none");
+      const button = page.getByRole("button", { name: "Redeem pass" });
+      while (!(await button.evaluate((element) => element === document.activeElement))) await page.keyboard.press("Tab");
+      expect(await ring(button)).toBe("solid");
     });
 
     test("signed out, valid: the same button, and one sentence that says sign-in comes next", async ({ page }) => {

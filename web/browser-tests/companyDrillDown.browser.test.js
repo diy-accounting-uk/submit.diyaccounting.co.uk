@@ -206,6 +206,14 @@ async function shoot(page, name) {
   await page.screenshot({ path: path.join(SCREENSHOT_DIR, `${name}-${page.viewportSize().width}.png`), fullPage: true });
 }
 
+// The view at desktop width and at a phone's, for a test that opens it once.
+async function shootAtWidths(page, name) {
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await shoot(page, name);
+  }
+}
+
 const BASE = "http://localhost:3000";
 
 const VIEWS = [
@@ -260,7 +268,7 @@ test.describe("Company lookup drill-down", () => {
       await expect(page.locator(view.shows)).toBeVisible({ timeout: 15000 });
       await expect(page.locator("#drillNav")).toContainText("Trosolwg");
       expect(new URL(page.url()).pathname).toBe(`/cy${view.address}`);
-      await shoot(page, `cy-${view.name}`);
+      await shootAtWidths(page, `cy-${view.name}`);
     });
   }
 
@@ -373,12 +381,12 @@ test.describe("Company lookup drill-down", () => {
       "href",
       "/companies-house/fileMicroEntityAccounts.html?companyNumber=00000001&periodStart=2098-05-01&periodEnd=2099-04-30",
     );
-    await shoot(page, "overview-default-bundle");
+    await shootAtWidths(page, "overview-default-bundle");
     await expect(page.locator("#confirmationSection .file-this")).toContainText("needs the Resident Ltd bundle");
     await page.goto(`${BASE}/companies-house/company/00000001/accounts`, { waitUntil: "networkidle" });
     await expect(page.locator("#drillView")).toContainText("Total exemption full");
     expect(apiRequests.some((request) => request.endsWith("/filed-accounts"))).toBe(false);
-    await shoot(page, "accounts-default-bundle");
+    await shootAtWidths(page, "accounts-default-bundle");
   });
 
   test("the accounts list reads the filed accounts and their iXBRL mark where the account holds the revision activity", async ({
@@ -467,7 +475,7 @@ test.describe("Company lookup drill-down past the newest filings", () => {
     await page.goto(`${BASE}/cy/companies-house/company/00000001/filing-history`, { waitUntil: "networkidle" });
     const description = page.locator("#drillView a", { hasText: "Micro company accounts made up to" });
     await expect(description).toHaveAttribute("lang", "en", { timeout: 15000 });
-    await shoot(page, "cy-filing-history");
+    await shootAtWidths(page, "cy-filing-history");
   });
 
   test("a whole filing history carries no note", async ({ page }) => {
@@ -515,7 +523,7 @@ test.describe("Company lookup drill-down past the newest filings", () => {
     await expect(note).toBeVisible({ timeout: 15000 });
     await expect(note).toContainText("612");
     await expect(note).not.toContainText("This shows the newest");
-    await shoot(page, "cy-filing-history-truncated");
+    await shootAtWidths(page, "cy-filing-history-truncated");
   });
 });
 
@@ -591,7 +599,7 @@ test.describe("Company lookup drill-down edit links", () => {
     await expect(page.locator("#officeSection .file-this-authority")).toContainText("company authentication code");
     await expect(page.locator("#watchSection .watch-list-add")).toHaveCount(0);
     await expect(page.locator("#watchSection .watch-list-sign-in")).toHaveText("Sign in to add to your watch list");
-    await shoot(page, "overview-signed-out");
+    await shootAtWidths(page, "overview-signed-out");
   });
 
   test("the company's status names Companies House's route for closing a company and carries no edit link", async ({ page }) => {
@@ -620,7 +628,7 @@ test.describe("Company lookup drill-down edit links", () => {
       },
     );
     await expect(page.locator("#officeSection .file-this-authority")).toContainText("cod dilysu");
-    await shoot(page, "cy-overview-edit-links");
+    await shootAtWidths(page, "cy-overview-edit-links");
   });
 
   for (const width of [1280, 390]) {

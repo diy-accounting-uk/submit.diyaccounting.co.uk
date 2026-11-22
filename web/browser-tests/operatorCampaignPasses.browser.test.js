@@ -13,6 +13,20 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const SCREENSHOTS = "target/screenshots/operator-campaign-passes";
 
+// The page, or one part of it, at the page's width and again at a phone's width.
+async function shotAtWidths(page, name, part) {
+  const shown = page.viewportSize();
+  for (const [width, file] of [
+    [shown.width, `${SCREENSHOTS}/${name}.png`],
+    [390, `${SCREENSHOTS}/${name}-390.png`],
+  ]) {
+    await page.setViewportSize({ width, height: shown.height });
+    if (part) await page.locator(part).screenshot({ path: file });
+    else await page.screenshot({ path: file, fullPage: true });
+  }
+  await page.setViewportSize(shown);
+}
+
 const donorPass = {
   code: "lantern-brisk-meadow-oak",
   passTypeId: "custom-campaign",
@@ -83,7 +97,7 @@ test.describe("the operator's campaign pass page", () => {
 
     await expect(page.locator("#cpGrants .cp-grant")).toHaveCount(1);
     await expect(page.locator(`[data-pass-code="${donorPass.code}"]`)).toBeVisible();
-    await page.screenshot({ path: `${SCREENSHOTS}/form-empty.png`, fullPage: true });
+    await shotAtWidths(page, "form-empty");
 
     await page.fill("#cpValidFrom", "2026-11-22");
     await page.fill("#cpValidUntil", "2026-12-31");
@@ -96,7 +110,7 @@ test.describe("the operator's campaign pass page", () => {
     await page.selectOption("#cpGrant1Bundle", "resident-vat-comp");
     await page.fill("#cpGrant1Duration", "P6M");
     await page.fill("#cpNotes", "Trade show");
-    await page.screenshot({ path: `${SCREENSHOTS}/form-filled.png`, fullPage: true });
+    await shotAtWidths(page, "form-filled");
 
     await page.click("#cpCreate");
 
@@ -105,7 +119,7 @@ test.describe("the operator's campaign pass page", () => {
     await expect(page.locator("#cpNewPassLink")).toHaveText(`${SITE_ORIGIN}/pass.html?pass=${eventPass.code}`);
     await expect(page.locator("#cpNewPassQr")).toBeVisible();
     expect(await page.locator("#cpNewPassQr").evaluate((img) => img.complete && img.naturalWidth > 0)).toBe(true);
-    await page.locator("#cpNewPass").screenshot({ path: `${SCREENSHOTS}/new-pass.png` });
+    await shotAtWidths(page, "new-pass", "#cpNewPass");
 
     expect(created).toHaveLength(1);
     expect(created[0].body).toEqual({
@@ -139,12 +153,12 @@ test.describe("the operator's campaign pass page", () => {
 
     const donor = page.locator(`#cpList [data-pass-code="${donorPass.code}"]`);
     await expect(donor.locator(".pass-terms li")).toHaveText([
-      "Redeem from 22 November 2026 to 22 May 2027",
+      "Redeem from 22 November 2026 to 23 May 2027",
       "Up to 1000 redemptions, 1 per account",
       "Resident VAT (Complimentary) for 1 year from redemption, 100 tokens a month",
     ]);
     await expect(donor.locator('[data-figure="uses"] dd')).toHaveText("12");
-    await page.locator("#cpList").screenshot({ path: `${SCREENSHOTS}/campaign-passes-list.png` });
+    await shotAtWidths(page, "campaign-passes-list", "#cpList");
   });
 
   test("offers no bundle sold by subscription, the automatic one or the operator's own", async ({ page }) => {

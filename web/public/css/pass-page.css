@@ -21,15 +21,6 @@
   margin-top: 0;
 }
 
-.pass-card h2:focus {
-  outline: none;
-}
-
-.pass-card h2:focus-visible {
-  outline: 3px solid var(--c-focus);
-  outline-offset: 2px;
-}
-
 .pass-bundle {
   margin: var(--space-4) 0;
 }

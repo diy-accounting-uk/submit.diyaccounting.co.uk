@@ -1128,6 +1128,8 @@ window.WELSH_TEXT = {
   "ch.prior.no-next-period":
     "Nid yw Tŷ’r Cwmnïau yn nodi cyfnod cyfrifyddu nesaf ar gyfer y cwmni hwn, felly ni ellir paru blwyddyn y ffurflen hon â’r cyfrifon diwethaf ac mae’r flwyddyn flaenorol yn wag.",
   "ch.prior.none": "Nid oes gan Dŷ’r Cwmnïau unrhyw gyfrifon ar gyfer y cwmni hwn, felly mae’r flwyddyn flaenorol yn wag.",
+  "ch.prior.of-which-qualifier": "O hynny,",
+  "ch.prior.optional-qualifier": "(dewisol)",
   "ch.prior.paper":
     "Cafodd cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, eu ffeilio ar bapur. Mae Tŷ’r Cwmnïau yn eu cadw fel dogfen wedi’i sganio yn unig, felly mae’r flwyddyn flaenorol yn wag: teipiwch hi o’r cyfrifon hynny.",
   "ch.prior.placed":

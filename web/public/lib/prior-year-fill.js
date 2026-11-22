@@ -41,9 +41,15 @@ function formatDate(isoDate, welsh) {
   });
 }
 
-// The name of the line a prior-year field belongs to: its row's heading.
+// The name of the line a prior-year field belongs to: its row's heading, without the "(optional)" after
+// it or the "Of which," before a part of a line.
 function lineName(input) {
-  return input.closest("tr").querySelector("th").textContent.trim();
+  const optional = siteText("ch.prior.optional-qualifier", "(optional)");
+  const ofWhich = siteText("ch.prior.of-which-qualifier", "Of which,");
+  let name = input.closest("tr").querySelector("th").textContent.trim().replace(/\s+/g, " ");
+  if (name.endsWith(optional)) name = name.slice(0, -optional.length).trim();
+  if (name.startsWith(ofWhich)) name = name.slice(ofWhich.length).trim();
+  return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
 // Whether a field is part of the form as it stands: enabled, and in no hidden row or section.
@@ -207,10 +213,11 @@ async function capitalAndReservesNote(doc) {
     capitalAndReserves: Number(capital.value),
   });
   if (!mismatch) return null;
+  const pounds = (amount) => `${amount < 0 ? "-" : ""}£${Math.abs(amount).toLocaleString("en-GB")}`;
   return siteText(
     "ch.prior.reserves",
     "Those accounts hold capital and reserves of {capital}, but called up share capital and the profit and loss account add up to {sum}: the difference sits in reserves this form has no line for. Correct the prior year's profit and loss account so the two agree before you preview.",
-    { capital: mismatch.capital, sum: mismatch.sum },
+    { capital: pounds(mismatch.capital), sum: pounds(mismatch.sum) },
   );
 }
 

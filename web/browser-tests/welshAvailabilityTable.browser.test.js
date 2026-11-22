@@ -45,6 +45,7 @@ async function measure(page, pagePath) {
     width: table.getBoundingClientRect().width,
     cellFont: getComputedStyle(table.querySelector("td")).fontSize,
     bodyFont: getComputedStyle(document.body).fontSize,
+    scrollsSideways: table.parentElement.scrollWidth > table.parentElement.clientWidth,
   }));
 }
 
@@ -70,6 +71,8 @@ test.describe("MTD calendar availability table at 1280px", () => {
     expect(english.cellFont).toBe(english.bodyFont);
     expect(welsh.height).toBeLessThanOrEqual(english.height);
     expect(welsh.width).toBeLessThanOrEqual(english.width + 1);
+    expect(english.scrollsSideways).toBe(false);
+    expect(welsh.scrollsSideways).toBe(false);
     await englishPage.close();
     await welshPage.close();
   });

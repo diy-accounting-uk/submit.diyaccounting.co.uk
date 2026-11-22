@@ -402,6 +402,11 @@ export default defineConfig({
       workers: Number(process.env.PW_BROWSER_WORKERS || 1),
       outputDir: "./target/browser-test-results/",
       use: {
+        // A UK reader's browser: dates in day, month, year order and the clock of Europe/London. Chromium
+        // draws a date input in the order of the process's LANG, which the locale option leaves alone.
+        locale: "en-GB",
+        timezoneId: "Europe/London",
+        launchOptions: { env: { ...process.env, LANG: "en_GB.UTF-8" } },
         ...(process.env.PW_VIDEO === "off" ? { video: "off" } : {}),
         ...(process.env.PW_TRACE === "off" ? { trace: "off" } : {}),
       },

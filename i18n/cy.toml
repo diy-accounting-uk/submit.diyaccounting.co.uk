@@ -17954,3 +17954,13 @@ cy = '''asedau anniriaethol'''
 [strings."ch.revision.note-share-capital"]
 hash = "96ab5e8c8f2c"
 cy = '''cyfalaf cyfranddaliadau wedi’i alw'''
+
+# == The prior-year fill's line names, without the qualifiers of the form's headings: ids ch.prior.optional-qualifier, ch.prior.of-which-qualifier ==
+
+[strings."ch.prior.optional-qualifier"]
+hash = "0059798b7f70"
+cy = '''(dewisol)'''
+
+[strings."ch.prior.of-which-qualifier"]
+hash = "124b78a39b3d"
+cy = '''O hynny,'''

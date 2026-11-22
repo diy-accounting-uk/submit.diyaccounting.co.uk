@@ -121,10 +121,18 @@ main ol.calendar {
   }
 }
 
-/* Eight columns fit the card at desktop width without a hidden column. */
+/* Eight columns fit the card at desktop width without a hidden column: the cells keep a narrow side
+   padding there, and the full padding where the table stacks. */
 .availability-table th,
 .availability-table td {
   padding: var(--space-1);
+}
+
+@media (min-width: 601px) {
+  .availability-table th,
+  .availability-table td {
+    padding: var(--space-1) 2px;
+  }
 }
 
 /* The Welsh cells carry HMRC's Welsh term with the English after it ("cynhyrchu (production)") and run

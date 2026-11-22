@@ -136,6 +136,15 @@ describe("prior-year fill", () => {
     expect(note.textContent).toContain("could not be read from Companies House");
   });
 
+  it("names each line left empty by its heading, without the (optional) after it or the Of which, before a part of a line", async () => {
+    const form = MICRO_FORM.replace(">Provisions for liabilities<", ">Provisions for liabilities (optional)<").replace(
+      "</table>",
+      `${row("priorTradeDebtors", "Of which, trade debtors")}</table>`,
+    );
+    const { note } = await fill(form, { outcome: "mapped", set: SET, accounts: MICRO_ACCOUNTS });
+    expect(note.textContent).toContain("Left empty, with no figure in those accounts: Provisions for liabilities, Trade debtors.");
+  });
+
   it("keeps a prior-year figure already entered", async () => {
     await fill(MICRO_FORM, { outcome: "mapped", set: SET, accounts: MICRO_ACCOUNTS }, { typed: { priorFixedAssets: "1234" } });
     expect(value("priorFixedAssets")).toBe("1234");
@@ -239,7 +248,7 @@ describe("prior-year fill", () => {
     };
     const { note } = await fill(MICRO_FORM, { outcome: "mapped", set: SET, accounts: withReserves });
     expect(note.textContent).toContain(
-      "Those accounts hold capital and reserves of 10000, but called up share capital and the profit and loss account add up to 8000: the difference sits in reserves this form has no line for. Correct the prior year's profit and loss account so the two agree before you preview.",
+      "Those accounts hold capital and reserves of £10,000, but called up share capital and the profit and loss account add up to £8,000: the difference sits in reserves this form has no line for. Correct the prior year's profit and loss account so the two agree before you preview.",
     );
   });
 });
