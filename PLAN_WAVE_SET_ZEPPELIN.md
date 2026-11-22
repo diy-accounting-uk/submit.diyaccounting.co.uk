@@ -144,8 +144,6 @@ The operator asked which board rows outside the set could join it, and said "Add
 | welsh2 | LANG14, then LANG15 | Opus, Sonnet | Welsh copies of privacy, terms, accessibility and help; the section that lists the Welsh services |
 | fixtures | LOOK1 | Sonnet | the browser tests' fixtures and the simulator's companies; the set's last build |
 
-Beside, with no pull request: CR13 (the licence question's draft, in the private repository).
-
 State: defined; no row dispatched yet. Dispatch as workers come free, the batches with no shared file first (due, reports, practice, campaign), the form rows as a chain.
 
 ## Waves: spreadsheets

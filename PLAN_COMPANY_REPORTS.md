@@ -5,7 +5,7 @@
 
 A signed-in reader opens a company on the lookup and reads six plain reports built from the company's own public filings. Each report states figures, dates and changes, names the filing each one comes from, and defines each figure in one sentence. No report gives an opinion. Submit reads Companies House as a good citizen: inside the published rate limit, with a cache for each kind of answer, one request at a time for a company, and a stop on a 429. Facts checked 2026-11-22.
 
-**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. Tasks CR2 to CR9, CR13, OCR1 and CR14 are boarded on `NEXT.md`; CR10 to CR12 are not built until a report needs them (section 8). Briefs are section 6.2.
+**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. Tasks CR2 to CR9, OCR1 and CR14 are boarded on `NEXT.md`; CR13's draft is written (`../private.diyaccounting.co.uk/companies-house/correspondence/DRAFT_DATA_LICENCE_QUESTION.md`, 2026-11-22); CR10 to CR12 are not built until a report needs them (section 8). Briefs are section 6.2.
 
 ## Operator assertions (verbatim)
 
@@ -241,8 +241,7 @@ Every report page ends with one line, keyed `ch.reports.source`: "Source: the Co
 | CR7 | Charges and insolvency | CR3 | machine-only | Sonnet | ~6 files |
 | CR8 | Registered office and name history | CR4 | machine-only | Sonnet | ~5 files |
 | CR9 | Accounts figures year on year | CR3, CL2 | machine-only | Sonnet | ~9 files |
-| CR13 | Draft the licence question to Companies House | nothing | machine-only | Opus | 1 file |
-| OCR1 | Ask Companies House the licence question | CR13 | human-driven | operator | 0 files |
+| OCR1 | Ask Companies House the licence question | nothing | human-driven | operator | 0 files |
 | CR14 | Copy, privacy line, guide and launch on prod | CR4 to CR9 | machine-only | Sonnet | ~8 files |
 
 CR4, CR5, CR7 and CR9 can run in parallel after CR3; they share `i18n/cy.toml` and the page script, so they land one after the other and the later one rebuilds the Welsh text. CR10 to CR12 (the Accounts Data Product, the streaming key and the stream that clears the cache) are briefed below and are not tasks until a report needs them (D3, D4). CR2 adds an activity, so it lands after AA3, CL1, WL1 and CP1 in the catalogue order of `NEXT.md`.
@@ -324,16 +323,10 @@ CR4, CR5, CR7 and CR9 can run in parallel after CR3; they share `i18n/cy.toml` a
 - **Tests.** Unit tests of the event reader (a filing event calls `invalidateCompany` with its company number, a 429, a 416, the timepoint stored).
 - **Waits on**: CR11, CR2. **Class**: machine-only. **Model**: Sonnet. **Size**: ~10 files.
 
-#### CR13. Draft the licence question to Companies House
-
-- **Goal.** One short question for the Companies House developer forum or enquiries address that settles N6: under what licence is register data from the public data API and the bulk products offered, and what attribution does Companies House ask for. It quotes the GOV.UK OGL line and the 2014 answer, with their URLs (section 1.2).
-- **Output.** The draft in `../private.diyaccounting.co.uk/companies-house/correspondence/DRAFT_DATA_LICENCE_QUESTION.md`, through the `email-draft` skill.
-- **Waits on**: nothing. **Class**: machine-only. **Model**: Opus. **Size**: 1 file.
-
 #### OCR1. Ask Companies House the licence question
 
-- **Goal.** The operator posts or sends CR13's draft, and pastes the answer into the same folder; a session then records it in section 1.3 and in the source line (D5).
-- **Waits on**: CR13. **Class**: human-driven.
+- **Goal.** The operator posts the draft `../private.diyaccounting.co.uk/companies-house/correspondence/DRAFT_DATA_LICENCE_QUESTION.md` on the developer forum, and pastes the answer into the same folder; a session then records it in section 1.3 and in the source line (D5).
+- **Waits on**: nothing. **Class**: human-driven.
 
 #### CR14. Copy, privacy line, guide and launch on prod
 
