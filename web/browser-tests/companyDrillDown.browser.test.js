@@ -890,6 +890,20 @@ test.describe("Company lookup drill-down records location", () => {
     );
   });
 
+  test("a filing history Companies House does not answer says so, and the form's link still shows", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.route("**/api/v1/companies-house/company/00000001/filing-history*", (route) =>
+      route.fulfill({ status: 502, contentType: "application/json", body: JSON.stringify({ message: "Bad gateway" }) }),
+    );
+    await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    const section = page.locator("#recordsSection");
+    await expect(section).toContainText("Could not read the company’s filing history from Companies House.", { timeout: 15000 });
+    await expect(section.locator("dl")).toHaveCount(0);
+    await expect(section.locator('.file-this[data-activity="change-records-location"] a.btn')).toHaveText(
+      "Tell Companies House where the records are kept",
+    );
+  });
+
   test("the Welsh overview states the section in Welsh and marks the form's words as English", async ({ page }) => {
     await serveSite(page, { bundles: ["resident-ltd"], filings: SAIL_FILINGS });
     await page.goto(`${BASE}/cy/companies-house/company/00000001`, { waitUntil: "networkidle" });
