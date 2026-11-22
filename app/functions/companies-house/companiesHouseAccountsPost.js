@@ -26,6 +26,7 @@ import {
   http403ForbiddenResponse,
   http400BadRequestResponse,
   http500ServerErrorResponse,
+  http502BadGatewayResponse,
   getHeader,
 } from "../../lib/httpResponseHelper.js";
 import {
@@ -40,13 +41,12 @@ import { isValidCompanyNumber, http403ForbiddenFromBundleEnforcement } from "../
 import { isValidIsoDate } from "../../lib/hmrcValidation.js";
 import { buildMicroEntityAccounts, DORMANT_TRADING_STATUSES } from "../../services/microEntityAccountsIxbrl.js";
 import { SHARE_CLASSES, sharesIssuedFor } from "../../../web/public/lib/accounts-notes-check.js";
-import { comparativesFinding } from "../../../web/public/lib/first-accounts.js";
+import { comparativesFinding, isFirstAccountsPeriod } from "../../../web/public/lib/first-accounts.js";
 import { buildSmallCompanyAccounts } from "../../services/smallCompanyAccountsIxbrl.js";
 import { REGISTERED_OFFICE_FIELDS, readDirectorsAdvances } from "../../services/accountsIxbrlCommon.js";
 import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
 import { checkWelshCompany, inAccountsLanguage, readDocumentLanguage } from "../../services/accountsLanguage.js";
 import { getCompanyProfile } from "./companiesHouseCompanyGet.js";
-import { isFirstAccountsPeriod } from "../../../web/public/lib/first-accounts.js";
 import { extractAndValidateSmallCompany } from "../../services/smallCompanyAccountsRequest.js";
 import {
   buildAccountsSubmission,
@@ -319,6 +319,37 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
   };
 }
 
+// Accounts that give a date of incorporation leave out the prior year as the company's first, so the
+// register must agree: the company was incorporated on that date, which is the period's start, and
+// it holds no accounts but, on a revision, these. A request cannot make an established company's
+// accounts one year by naming its period's start as the incorporation date.
+async function refuseFirstAccountsTheRegisterDoesNotHold(request, responseHeaders, accounts) {
+  let profile;
+  let chResponse;
+  try {
+    ({ profile, chResponse } = await getCompanyProfile(accounts.companyNumber));
+  } catch (error) {
+    logger.error({ message: "The register read for first accounts could not be made", error: error.message });
+  }
+  if (!profile && chResponse?.status !== 404) {
+    return http502BadGatewayResponse({
+      request,
+      headers: { ...responseHeaders },
+      message: "The Companies House register could not be read, so these first accounts were not filed. Try again later.",
+      error: { reason: "first-accounts-register-not-read" },
+    });
+  }
+  if (profile?.dateOfCreation === accounts.dateOfIncorporation && isFirstAccountsPeriod(profile, accounts.periodStart)) return undefined;
+  return buildValidationError(
+    request,
+    [
+      "Companies House does not hold these as the company's first accounts: it was incorporated on " +
+        `${profile?.dateOfCreation ?? "a date the register does not give"}, or it has filed accounts before, so these accounts must show the prior year`,
+    ],
+    responseHeaders,
+  );
+}
+
 // The micro-entity balance sheet: this year, and the prior year unless the accounts are the first.
 function readMicroBalanceSheet(balanceSheet, { dateOfIncorporation, periodStart }, errorMessages) {
   const currentYear = extractAndValidateBalanceSheetYear(balanceSheet?.currentYear, "currentYear", errorMessages);
@@ -567,15 +598,6 @@ export async function ingestHandler(event) {
     });
     if (notRead) return notRead;
   }
-  // First accounts leave out the prior year, so the register, never the request, says whether these are the first.
-  if (accounts.dateOfIncorporation) {
-    const { profile } = await getCompanyProfile(accounts.companyNumber);
-    if (!isFirstAccountsPeriod(profile ?? {}, accounts.periodStart)) {
-      errorMessages.push(
-        "smallCompany.dateOfIncorporation marks first accounts, but the Companies House register does not show this period as the company's first: give smallCompany.balanceSheet.priorYear",
-      );
-    }
-  }
   // Revised accounts that name the receipt of the accounts they revise are checked against it, under
   // the signed-in user's own receipts, by the rules the page applies.
   const revisesReceipt = accounts.revision?.revisesReceipt;
@@ -600,6 +622,10 @@ export async function ingestHandler(event) {
       periodEnd: accounts.periodEnd,
     });
     if (registerRefusal) return registerRefusal;
+  }
+  if (accounts.dateOfIncorporation) {
+    const notFirst = await refuseFirstAccountsTheRegisterDoesNotHold(request, responseHeaders, accounts);
+    if (notFirst) return notFirst;
   }
 
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;

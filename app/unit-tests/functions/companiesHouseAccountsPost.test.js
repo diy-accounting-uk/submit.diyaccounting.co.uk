@@ -1032,6 +1032,37 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       expect(mockPostToGateway).not.toHaveBeenCalled();
     });
 
+    test("refuses one year for an established company that names its period's start as the incorporation date, and sends nothing", async () => {
+      for (const profile of [
+        { dateOfCreation: "2019-06-01", accountsLastPeriodStart: "2024-01-01" },
+        { dateOfCreation: "2025-01-01", accountsLastPeriodStart: "2024-01-01" },
+      ]) {
+        mockGetCompanyProfile.mockResolvedValue({ profile });
+        const response = await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }));
+        expect(response.statusCode).toBe(400);
+        expect(JSON.stringify(parseResponseBody(response))).toContain("must show the prior year");
+      }
+      expect(mockGetCompanyProfile).toHaveBeenCalledWith("00000001");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("files the revision of first accounts, which the register holds as the last accounts for the same period", async () => {
+      mockGetCompanyProfile.mockResolvedValue({ profile: { dateOfCreation: "2025-01-01", accountsLastPeriodStart: "2025-01-01" } });
+      expect((await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }))).statusCode).toBe(201);
+    });
+
+    test("answers a JSON 502, and sends nothing, when the register cannot be read; a company the register does not hold is refused", async () => {
+      mockGetCompanyProfile.mockRejectedValue(new Error("Missing required environment variable COMPANIES_HOUSE_BASE_URI"));
+      const unread = await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }));
+      expect(unread.statusCode).toBe(502);
+      expect(parseResponseBody(unread)).toMatchObject({ reason: "first-accounts-register-not-read" });
+      mockGetCompanyProfile.mockResolvedValue({ chResponse: { ok: false, status: 500 }, profile: null });
+      expect((await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }))).statusCode).toBe(502);
+      mockGetCompanyProfile.mockResolvedValue({ chResponse: { ok: false, status: 404 }, profile: null });
+      expect((await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }))).statusCode).toBe(400);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
     test("an established company's two years are filed as they are, with no date of incorporation", async () => {
       await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody() }));
       const [input] = mockBuildMicroEntityAccounts.mock.calls[0];
@@ -1483,6 +1514,14 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
       const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
       expect(response.statusCode).toBe(400);
       expect(JSON.stringify(parseResponseBody(response))).toContain("smallCompany.balanceSheet.priorYear is required");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses one year of small company accounts when the register holds accounts filed before", async () => {
+      mockGetCompanyProfile.mockResolvedValue({ profile: { dateOfCreation: "2025-01-01", accountsLastPeriodStart: "2024-01-01" } });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody() }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("must show the prior year");
       expect(mockPostToGateway).not.toHaveBeenCalled();
     });
 
