@@ -308,4 +308,18 @@ test.describe("Revising small company accounts without a change", () => {
     const { sent } = await refileUnchanged(page, { ...SMALL_COMPANY_NOTES_CASE_INPUT, filleted: true });
     expect(sent.smallCompany.directors).toEqual(["Alan James Morgan", "Alex Jones"]);
   });
+
+  test("a filleted copy with advances to two directors other than the signer keeps both among the directors", async ({ page }) => {
+    const [advance] = SMALL_COMPANY_NOTES_CASE_INPUT.directorsAdvances;
+    const { sent } = await refileUnchanged(page, {
+      ...SMALL_COMPANY_NOTES_CASE_INPUT,
+      filleted: true,
+      directors: ["Alan James Morgan", "Alex Jones", "Pat Third"],
+      directorsAdvances: [
+        { ...advance, advanced: 400, balanceAtEnd: 500 },
+        { name: "Pat Third", terms: "Interest at 2.25% a year", balanceAtStart: 0, advanced: 300, repaid: 0, balanceAtEnd: 300 },
+      ],
+    });
+    expect(sent.smallCompany.directors).toEqual(["Alan James Morgan", "Alex Jones", "Pat Third"]);
+  });
 });

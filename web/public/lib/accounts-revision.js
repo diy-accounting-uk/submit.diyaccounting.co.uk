@@ -283,7 +283,9 @@ function figuresOf(document, name) {
   return Array.from(document.matchAll(pattern), ([, contextRef, attributes, text]) => {
     const digits = text.replace(/[,\s]/g, "");
     let value = NaN;
-    if (/^\d+$/.test(digits)) value = Number(digits);
+    // A fact stated in hundreds or thousands carries the power of ten in its scale.
+    const scaled = Number(digits) * 10 ** Number(/\sscale="(-?\d+)"/.exec(attributes)?.[1] ?? 0);
+    if (/^\d+$/.test(digits) && Number.isInteger(scaled)) value = scaled;
     else if (/^-?$/.test(digits)) value = 0;
     return { contextRef, value: /\ssign="-"/.test(attributes) ? -value : value };
   });

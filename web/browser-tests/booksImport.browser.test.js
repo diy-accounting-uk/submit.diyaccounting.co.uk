@@ -1044,6 +1044,19 @@ test.describe("books import of an iXBRL accounts document", () => {
     }
   });
 
+  test("a document that states the provisions in hundreds fills them in pounds", async ({ page }) => {
+    await openAccountsPage(page, SMALL_URL, SMALL_COMPANY_EVERY_LINE_CASE_INPUT.companyNumber);
+    const stated = 'contextRef="e2026" unitRef="GBP" decimals="0" format="ixt2:numdotdecimal">300<';
+    const provisions = `<ix:nonFraction name="core:ProvisionsForLiabilitiesBalanceSheetSubtotal" ${stated}`;
+    const document = buildSmallCompanyAccounts(SMALL_COMPANY_EVERY_LINE_CASE_INPUT);
+    expect(document).toContain(provisions);
+    const inHundreds = document.replace(provisions, provisions.replace('decimals="0"', 'decimals="-2" scale="2"').replace(">300<", ">3<"));
+    await chooseFile(page, "accounts.xhtml", Buffer.from(inHundreds, "utf8"), "application/xhtml+xml");
+
+    await expect(page.locator("#booksImportStatus")).toContainText("from accounts.xhtml", { timeout: 60_000 });
+    await expect(page.locator("#currentProvisionsForLiabilities")).toHaveValue("300");
+  });
+
   test("a micro-entity document fills creditors after one year without the provisions, and the provisions", async ({ page }) => {
     await openAccountsPage(page, MICRO_URL, "06846849");
     const document = builtAccountsDocument("micro-entity-accounts", {
