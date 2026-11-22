@@ -424,3 +424,38 @@ describe("services/hmrcApi", () => {
     });
   });
 });
+
+describe("the HMRC request lines", () => {
+  it("log each query parameter's name and never its value", async () => {
+    const { hmrcHttpGet, buildHmrcHeaders } = await import("@app/services/hmrcApi.js");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ obligations: [] }),
+        headers: { forEach: (fn) => fn("application/json", "content-type") },
+      }),
+    );
+    const lines = [];
+    const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => lines.push(String(chunk)) > 0);
+    try {
+      const govClientHeaders = { "Gov-Client-Device-ID": "dev" };
+      await hmrcHttpGet(
+        "/organisations/vat/obligations",
+        buildHmrcHeaders("token-123", govClientHeaders, "SCENARIO", "r1", null, "c1"),
+        govClientHeaders,
+        "SCENARIO",
+        "synthetic",
+        { from: "2025-04-06", to: "2026-04-05", status: "O" },
+        "user-sub-1",
+      );
+    } finally {
+      write.mockRestore();
+    }
+    const logged = lines.join("");
+
+    expect(logged).toContain("/organisations/vat/obligations?from={from}&to={to}&status={status}");
+    for (const value of ["2025-04-06", "2026-04-05", "status=O"]) expect(logged).not.toContain(value);
+  });
+});

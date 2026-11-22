@@ -105,6 +105,23 @@ describe("lib/hmrcAgentAuthorisation", () => {
     expect(init.method).toBe("GET");
   });
 
+  it("logs the request and response with the agent reference and the invitation named", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(mockJsonResponse({ ok: true, status: 200, body: { status: "Pending" } })));
+    const lines = [];
+    const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => lines.push(String(chunk)) > 0);
+    try {
+      const { getInvitationStatus } = await import("@app/lib/hmrcAgentAuthorisation.js");
+      await getInvitationStatus({ arn: "TARN0000001", invitationId: "inv-7q2m", accessToken: "token-123" });
+    } finally {
+      write.mockRestore();
+    }
+    const logged = lines.join("");
+
+    expect(logged).toContain("/agents/{arn}/invitations/{invitationId}");
+    expect(logged).not.toContain("TARN0000001");
+    expect(logged).not.toContain("inv-7q2m");
+  });
+
   it("cancelInvitation deletes the invitation", async () => {
     const mockFetch = vi.fn().mockResolvedValueOnce(mockJsonResponse({ ok: true, status: 204 }));
     vi.stubGlobal("fetch", mockFetch);

@@ -18,6 +18,7 @@ import {
   http504GatewayTimeoutResponse,
 } from "../lib/httpResponseHelper.js";
 import { BundleAuthorizationError, BundleEntitlementError } from "./bundleManagement.js";
+import { loggedUrlOf } from "../lib/loggedPath.js";
 
 const logger = createLogger({ source: "app/services/companiesHouseApi.js" });
 
@@ -84,11 +85,15 @@ export async function companiesHouseGetJson(baseUrl, endpoint, queryParams = {})
 
   const result = await sendWithApiKey((key) => {
     const headers = buildCompaniesHouseHeaders(key);
-    logger.info({ message: `Request to GET ${requestUrl}`, url: requestUrl, headers: { ...headers, Authorization: "[redacted]" } });
+    logger.info({
+      message: `Request to GET ${loggedUrlOf(requestUrl)}`,
+      url: loggedUrlOf(requestUrl),
+      headers: { ...headers, Authorization: "[redacted]" },
+    });
     return sendJsonToCompaniesHouse(requestUrl, { method: "GET", headers }, DEFAULT_TIMEOUTS.SHORT);
   });
 
-  logger.info({ message: `Response from GET ${requestUrl}`, url: requestUrl, status: result.status });
+  logger.info({ message: `Response from GET ${loggedUrlOf(requestUrl)}`, url: loggedUrlOf(requestUrl), status: result.status });
 
   return { ok: result.ok, status: result.status, data: result.data, headers: result.headers };
 }

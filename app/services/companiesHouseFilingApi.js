@@ -18,6 +18,7 @@ import {
 } from "../lib/httpResponseHelper.js";
 import { companiesHouseAccessFromEvent } from "../lib/companiesHouseGrantAccess.js";
 import { BundleAuthorizationError, BundleEntitlementError } from "./bundleManagement.js";
+import { loggedUrlOf } from "../lib/loggedPath.js";
 
 const logger = createLogger({ source: "app/services/companiesHouseFilingApi.js" });
 
@@ -89,8 +90,8 @@ export async function companiesHouseFilingRequest(method, path, { accessToken, b
   };
 
   logger.info({
-    message: `Request to ${method} ${requestUrl}`,
-    url: requestUrl,
+    message: `Request to ${method} ${loggedUrlOf(requestUrl)}`,
+    url: loggedUrlOf(requestUrl),
     method,
     headers: { ...headers, Authorization: "[redacted]" },
   });
@@ -101,7 +102,7 @@ export async function companiesHouseFilingRequest(method, path, { accessToken, b
     timeoutMs,
   );
 
-  logger.info({ message: `Response from ${method} ${requestUrl}`, url: requestUrl, status: result.status });
+  logger.info({ message: `Response from ${method} ${loggedUrlOf(requestUrl)}`, url: loggedUrlOf(requestUrl), status: result.status });
 
   return result;
 }

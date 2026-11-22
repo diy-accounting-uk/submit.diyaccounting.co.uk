@@ -20,7 +20,7 @@ import { fetchWithTimeout } from "./httpFetch.js";
 import { hmrcCallTarget } from "./hmrcHosts.js";
 import { callActorClass, integrationApi, recordedFetch } from "./integrationCalls.js";
 import { warmOperators } from "./operators.js";
-import { eventWithLoggedPath, loggedPathOf } from "./loggedPath.js";
+import { eventWithLoggedPath, loggedPathOf, loggedQueryOf } from "./loggedPath.js";
 
 const logger = createLogger({ source: "app/lib/httpResponseHelper.js" });
 
@@ -353,7 +353,7 @@ export function extractRequest(event) {
       }
       logger.info({
         message: "Processing request with event",
-        request: sanitiseString(`${request.origin}${loggedPath}${request.search}`),
+        request: sanitiseString(`${request.origin}${loggedPath}${loggedQueryOf(request.searchParams)}`),
         event: describeEventWithoutBody(event),
       });
     } catch (err) {

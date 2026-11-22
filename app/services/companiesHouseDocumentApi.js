@@ -9,6 +9,7 @@ import { createLogger } from "../lib/logger.js";
 import { DEFAULT_TIMEOUTS, HttpTimeoutError } from "../lib/httpFetch.js";
 import { sendTextToCompaniesHouse } from "./companiesHouseSend.js";
 import { buildCompaniesHouseHeaders, companiesHouseGetJson, sendWithApiKey } from "./companiesHouseApi.js";
+import { loggedUrlOf } from "../lib/loggedPath.js";
 
 const logger = createLogger({ source: "app/services/companiesHouseDocumentApi.js" });
 
@@ -101,11 +102,11 @@ async function readDocumentContent(documentId, contentType, maxBytes) {
   const requestUrl = `${getCompaniesHouseDocumentBaseUrl()}/document/${documentId}/content`;
   const answer = await sendWithApiKey((key) => {
     const headers = { ...buildCompaniesHouseHeaders(key), Accept: contentType };
-    logger.info({ message: `Request to GET ${requestUrl}`, url: requestUrl, accept: contentType });
+    logger.info({ message: `Request to GET ${loggedUrlOf(requestUrl)}`, url: loggedUrlOf(requestUrl), accept: contentType });
     return sendTextToCompaniesHouse(requestUrl, { method: "GET", headers, redirect: "manual" }, DEFAULT_TIMEOUTS.SHORT, { maxBytes });
   });
   if (answer.tooLarge) return { ok: false, status: 413, data: "", headers: answer.headers, tooLarge: true };
-  logger.info({ message: `Response from GET ${requestUrl}`, url: requestUrl, status: answer.status });
+  logger.info({ message: `Response from GET ${loggedUrlOf(requestUrl)}`, url: loggedUrlOf(requestUrl), status: answer.status });
   if (!REDIRECT_STATUSES.has(answer.status)) {
     return { ok: answer.ok, status: answer.status, data: answer.ok ? answer.data : "", headers: answer.headers };
   }

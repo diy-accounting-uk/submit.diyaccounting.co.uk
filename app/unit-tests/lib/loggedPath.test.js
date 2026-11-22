@@ -6,7 +6,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, test, expect, vi, afterEach } from "vitest";
-import { loggedPathOf, eventWithLoggedPath } from "@app/lib/loggedPath.js";
+import { loggedPathOf, eventWithLoggedPath, loggedQueryOf } from "@app/lib/loggedPath.js";
 import { extractRequest, http200OkResponse, http404NotFoundResponse } from "@app/lib/httpResponseHelper.js";
 
 function filesUnder(directory) {
@@ -115,6 +115,59 @@ describe("the path a log line prints", () => {
         expect(logged).not.toContain(encodeURIComponent(value));
       }
     });
+  });
+
+  describe("a request with a query", () => {
+    const RECEIPT_NAME = "2026-11-22T10:15:00.000Z-123456789012";
+    const query = { name: RECEIPT_NAME, period: "18A2" };
+    const events = {
+      "local server": {
+        path: "/api/v1/hmrc/receipt",
+        requestContext: { http: { method: "GET", path: "/api/v1/hmrc/receipt" } },
+        headers: { "host": "submit.example.com", "x-request-id": "req-2" },
+        queryStringParameters: query,
+        rawQueryString: `name=${encodeURIComponent(RECEIPT_NAME)}&period=18A2`,
+      },
+      "API Gateway": {
+        routeKey: "GET /api/v1/hmrc/receipt",
+        rawPath: "/api/v1/hmrc/receipt",
+        rawQueryString: `name=${encodeURIComponent(RECEIPT_NAME)}&period=18A2`,
+        requestContext: { http: { method: "GET", path: "/api/v1/hmrc/receipt" } },
+        headers: { "host": "submit.example.com", "x-request-id": "req-2" },
+        queryStringParameters: query,
+      },
+    };
+
+    test.each(Object.entries(events))("logs each query parameter's name and never its value, from the %s", (unused, event) => {
+      const logged = capturedLines(() => {
+        const { request } = extractRequest(event);
+        http200OkResponse({ request, data: {} });
+      });
+
+      expect(logged).toContain("/api/v1/hmrc/receipt?name={name}&period={period}");
+      for (const value of [RECEIPT_NAME, encodeURIComponent(RECEIPT_NAME), "123456789012", "18A2"]) expect(logged).not.toContain(value);
+    });
+
+    test("keeps the request id, the status and the message of the response line", () => {
+      const logged = capturedLines(() => {
+        const { request } = extractRequest(events["API Gateway"]);
+        http200OkResponse({ request, data: {} });
+      });
+      const line = logged
+        .split("\n")
+        .filter(Boolean)
+        .map((text) => JSON.parse(text))
+        .find((entry) => entry.message === "Responding to request with response");
+
+      expect(line).toMatchObject({ level: 30, statusCode: 200, requestId: "req-2", path: "/api/v1/hmrc/receipt" });
+    });
+  });
+
+  test("a query is logged as its names, once a name", () => {
+    expect(loggedQueryOf(new URLSearchParams("a=1&b=2&a=3"))).toBe("?a={a}&b={b}");
+    expect(loggedQueryOf({ from: "2026-01-01" })).toBe("?from={from}");
+    expect(loggedQueryOf("")).toBe("");
+    expect(loggedQueryOf(undefined)).toBe("");
   });
 
   test("names a value that is percent-encoded in the path, and one that spans segments", () => {

@@ -15,6 +15,7 @@ import { companiesHouseStopSecondsLeft, stopCompaniesHouseLookups } from "./comp
 import { getCacheEntry, putCacheEntry } from "../data/dynamoDbCompaniesHouseCacheRepository.js";
 import { emitMetric } from "../lib/emfMetrics.js";
 import { createLogger } from "../lib/logger.js";
+import { loggedOutboundPathOf } from "../lib/loggedPath.js";
 
 const logger = createLogger({ source: "app/services/companiesHouseCache.js" });
 
@@ -301,7 +302,7 @@ export async function cachedCompaniesHouseGet(companyNumber, endpoint, queryPara
     await stopCompaniesHouseLookups(response.headers?.["retry-after"]);
     return { ok: false, status: 429, retryAfterSeconds: (await companiesHouseStopSecondsLeft()) || undefined };
   }
-  logger.warn({ message: "Companies House answer not cached", endpoint, status: response.status });
+  logger.warn({ message: "Companies House answer not cached", endpoint: loggedOutboundPathOf(endpoint), status: response.status });
   return { ok: false, status: response.status };
 }
 

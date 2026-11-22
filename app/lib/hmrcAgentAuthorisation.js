@@ -21,6 +21,7 @@ import { v4 as uuidv4 } from "uuid";
 import { createLogger, context } from "./logger.js";
 import { sendToHmrc } from "../services/hmrcApi.js";
 import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
+import { loggedUrlOf } from "./loggedPath.js";
 import {
   http400BadRequestResponse,
   http403ForbiddenResponse,
@@ -98,7 +99,7 @@ async function agentAuthorisationRequest(method, url, { accessToken, govClientHe
     init.body = JSON.stringify(body);
   }
 
-  logger.info({ message: `Request to ${method} ${url}`, url, method });
+  logger.info({ message: `Request to ${method} ${loggedUrlOf(url)}`, url: loggedUrlOf(url), method });
   const startTime = Date.now();
   let response;
   try {
@@ -114,7 +115,7 @@ async function agentAuthorisationRequest(method, url, { accessToken, govClientHe
   }
   const duration = Date.now() - startTime;
   const data = await response.json().catch(() => ({}));
-  logger.info({ message: `Response from ${method} ${url}`, url, status: response.status });
+  logger.info({ message: `Response from ${method} ${loggedUrlOf(url)}`, url: loggedUrlOf(url), status: response.status });
   await auditAgentAuthorisationRequest(auditForUserSub, {
     url,
     httpRequest: init,

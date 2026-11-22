@@ -50,6 +50,7 @@ function getHeader(headers, name) {
   return null;
 }
 import { getHmrcErrorMessage, extractHmrcErrorCode } from "../lib/hmrcValidation.js";
+import { loggedUrlOf } from "../lib/loggedPath.js";
 
 const logger = createLogger({ source: "app/services/hmrcApi.js" });
 
@@ -513,8 +514,8 @@ export async function hmrcHttpGet(
   }
 
   logger.info({
-    message: `Request to GET ${hmrcRequestUrl}`,
-    url: hmrcRequestUrl,
+    message: `Request to GET ${loggedUrlOf(hmrcRequestUrl)}`,
+    url: loggedUrlOf(hmrcRequestUrl),
     ...httpRequest,
     testScenario,
     environment: {
@@ -565,8 +566,8 @@ export async function hmrcHttpGet(
   }
 
   logger.info({
-    message: `Response from GET ${hmrcRequestUrl}`,
-    url: hmrcRequestUrl,
+    message: `Response from GET ${loggedUrlOf(hmrcRequestUrl)}`,
+    url: loggedUrlOf(hmrcRequestUrl),
     status: hmrcResponse.status,
     hmrcResponseBody,
   });
@@ -650,8 +651,8 @@ async function hmrcHttpWriteRequest(method, hmrcRequestUrl, hmrcRequestHeaders, 
   }
 
   logger.info({
-    message: `Request to ${method} ${hmrcRequestUrl}`,
-    url: hmrcRequestUrl,
+    message: `Request to ${method} ${loggedUrlOf(hmrcRequestUrl)}`,
+    url: loggedUrlOf(hmrcRequestUrl),
     ...httpRequest,
   });
 
@@ -697,8 +698,8 @@ async function hmrcHttpWriteRequest(method, hmrcRequestUrl, hmrcRequestHeaders, 
   }
 
   logger.info({
-    message: `Response from ${method} ${hmrcRequestUrl}`,
-    url: hmrcRequestUrl,
+    message: `Response from ${method} ${loggedUrlOf(hmrcRequestUrl)}`,
+    url: loggedUrlOf(hmrcRequestUrl),
     status: hmrcResponse.status,
     hmrcResponseBody,
   });
