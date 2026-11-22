@@ -40,7 +40,7 @@ From board row WDM1, operator, 2026-11-22:
 | Public deadline lookup, no sign-in | on prod | none | `web/public/company-filing-deadlines.html`, `scripts/filing-pages.toml:256-283` |
 | Drill-down addresses `/companies-house/company/<CRN>` | open row CL1, wave set zeppelin W2 | `default` | `NEXT.md` CL1 |
 | Watch list | open row WL1, zeppelin W3; up to 50 companies an account | `default` | `NEXT.md` WL1 |
-| Due list | plan `PLAN_DUE_LIST_v2.md`; launch is DUE14 | decision D2 of that plan; it recommends `default` | `PLAN_DUE_LIST_v2.md` sections 8, 9 |
+| Due list | plan `PLAN_DUE_LIST.md`; launch is DUE14 | decision D2 of that plan; it recommends `default` | `PLAN_DUE_LIST.md` sections 8, 9 |
 | Company reports | plan `PLAN_COMPANY_REPORTS_v4.md`; launch is CR14 | decision D1 of that plan; it recommends `default` | `PLAN_COMPANY_REPORTS_v4.md` sections 5, 8 |
 | Campaign passes | open row CP1, zeppelin W4 | operator page | `NEXT.md` CP1 |
 | Marketing assets (videos, screenshots, listing packs) | open row MA1, blocked on CL1, WL1 and the due list | none | `NEXT.md` MA1 |

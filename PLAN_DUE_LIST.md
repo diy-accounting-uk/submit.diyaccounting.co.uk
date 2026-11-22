@@ -5,11 +5,11 @@
 
 A signed-in user sees one list of every filing and payment that their businesses owe, from every source, sorted by due date. Each row says where it came from and when that source was last read. The user can get an email before each due date and when a watched company files, and can subscribe to the list in a calendar. A new user enters a company number, or signs in to HMRC, and sees at once what is due and what Submit can file. Facts checked 2026-11-22.
 
-**Status**: first draft (v1), not yet reviewed. 15 tasks: 13 machine (DUE2 to DUE14) and 2 human (ODUE1, ODUE2). Briefs are section 9.
+**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. 13 machine tasks (DUE2 to DUE14) and 1 human task (ODUE2), all boarded on `NEXT.md`. Briefs are section 9.
 
 ## Operator assertions (verbatim)
 
-From board row DUE1, operator, 2026-11-22:
+From the board row that asked for this plan, operator, 2026-11-22:
 
 > The list aggregates sources and is agnostic of them: one row per filing due, sorted by due date with the soonest first and a marker line between overdue and due; filters by business (each company and sole trader the account files for, and each watched company of WL1), by source (Companies House, HMRC, and any other source the plan finds, for example the ICO data protection fee), and by type (taxes, accounts, people, shareholders). For each filing type (VAT returns, Income Tax quarterly updates and the final declaration, the CT600 and its payment date, accounts, the confirmation statement, PSC and officer changes, and any other the plan finds), the plan answers: the source and its interface; whether it can be read headless (Companies House public data with our API key) or only with the user present (HMRC obligations read with the user's HMRC grant; check what HMRC's terms and the fraud prevention headers allow for a call with no user present, and whether a refresh token may be used for one); how often to read it and what each read costs (calls, rate limits, money); what can be computed instead of read (a CT600 due date from the accounting period); how the row shows when its source was last read; and when and how it warns that the row is stale. The plan also covers: (a) alerts: an email before each due date and when a watched company files something (Companies House's streaming API, or the filing history read on a schedule), what each costs in calls, the account setting that turns each on, and the line the privacy policy (`web/public/privacy.html`, whose service emails today are subscription details, receipts and pass links) needs for reminders; Companies House already lets anyone follow a company and get free email alerts when it files, so the plan states what ours adds; (b) a calendar feed: the due list as an `.ics` subscription for Google, Outlook and Apple calendars, with a secret per-account address that the account can reset, and what it holds (no personal data beyond the filing and the business name); (c) payment dates beside filing dates (VAT, Corporation Tax, Self Assessment); (d) a first-use path: one page where a new user enters a company number, or signs in to HMRC, and sees at once what is due and what Submit can file, with the next step for each. It names the bundle that sees the list, the storage (none of an HMRC answer beyond what the page shows unless the plan justifies it), the page, and one task per source and per shared part with its brief, model and size. Builds on WL1, CL4 (filings due on the company drill-down) and the obligations pages that exist for VAT and Income Tax.
 
@@ -130,7 +130,6 @@ Costs in pounds use $1 = £0.79.
 | N6 | Whether HMRC offers software a Corporation Tax obligations read | Search the HMRC API catalogue for a Corporation Tax obligations API. Until one is found, the CT600 and payment rows are computed. |
 | N7 | Fargate and Lambda prices in eu-west-2, and the daily exchange rate | The AWS pricing pages per region. The figures here are US East and an assumed rate. |
 | N8 | How long before a due date Companies House's own reminder emails go | The reminders page does not say. Section 6.1 does not depend on it. |
-| N9 | Whether the volume of the filing history stream fits one small task | A one-hour sample with ci's stream key, if decision D4 picks the stream. |
 
 ## 3. Each filing type
 
@@ -245,27 +244,29 @@ The partition key is `hashedSub` and the sort key is `sk`. `scripts/salt-rotate.
 | Item | Key (`hashedSub`, `sk`) | Attributes |
 | --- | --- | --- |
 | Business | `<hashedSub>`, `business#<id>` | `kind` (company, watched, vat, sole-trader), `label`, `companyNumber` (companies only), `itsa` (sole traders), `hmrcReadAt` (set by the first HMRC rows write), `job` = `refresh` and `jobOn` (companies, watched companies and sole traders) |
-| Row | `<hashedSub>`, `row#<businessId>#<type>#<periodEnd, or the date the user entered>` | `type`, `filterType`, `businessId`, `periodStart`, `periodEnd`, `dueDate`, `kind` (filing or payment), `source` (companies-house, hmrc, computed, user), `rule` (fact id, computed rows), `readAt`, `status` (open, closed), `job` = `remind` and `jobOn` (open rows with a reminder to come), `ttl` |
+| Row | `<hashedSub>`, `row#<businessId>#<type>#<periodEnd, or the date the user entered>` | `type`, `filterType`, `businessId`, `periodStart`, `periodEnd`, `dueDate`, `kind` (filing or payment), `source` (companies-house, hmrc, computed, user, ico), `rule` (fact id, computed rows), `readAt`, `status` (open, closed), `job` = `remind` and `jobOn` (open rows with a reminder to come), `ttl` |
 | Feed | `feed#<sha256 of token>`, `feed` | `sub` (raw), `createdAt` |
 | Feed pointer | `<hashedSub>`, `feed` | `tokenHash` |
 | Watched filing | `<hashedSub>`, `seen#<companyNumber>` | `lastTransactionDate`, `lastTransactionId` |
 
 - **One GSI**, `job-jobOn-index`: partition key `job`, sort key `jobOn` (a date), projection ALL. The refresh job Queries `job = refresh AND jobOn <= today`; the reminder job Queries `job = remind AND jobOn <= today`. A missed day is picked up on the next run. One index is used because `ensureGlobalSecondaryIndex` in `KindCdk.java` ignores `ResourceInUseException`, so a second index made while the first is still building can be skipped with no error.
 - The reminder and alert jobs need the raw sub for `findAddress`. Any item that sets `job` holds `sub`. The sub is the account's identifier; it holds no customer content.
+- A new row that matches a stored row in key, due date and source updates only the stored row's `readAt`. So a daily refresh keeps the row's `status`, `job` and `jobOn`: it does not reopen a row that the user closed, and does not reset its reminders. A row whose due date or source changes is written as a new open row.
+- Closing a row sets `status: closed` and removes its `job` and `jobOn`, so the reminder job does not find it.
 - `ttl` is 90 days after `dueDate`, so closed and old rows go without a sweep.
 - The table joins `partitionTables` in `scripts/salt-rotation-tables.json` with `"sortKey": "sk"`. The feed items keep their own partition and are not moved; the lookup holds the raw sub and hashes it with the current salt.
 
 ### 5.2 What the table holds from HMRC, and why
 
-An HMRC row holds the period start and end, the due date, the status and the read time. That is what the page shows. It holds no VRN, NINO, period key, amount or penalty. The row is kept so that the reminder email and the calendar feed can carry HMRC dates between sign-ins (goals 3 and 4); without it the HMRC rows would exist only while the page is open. This is decision D1 (a).
+An HMRC row holds the period start and end, the due date, the status and the read time. That is what the page shows. It holds no VRN, NINO, period key, amount or penalty. The row is kept so that the reminder email and the calendar feed can carry HMRC dates between sign-ins (goals 3 and 4); without it the HMRC rows would exist only while the page is open. This is decision D1.
 
 ## 6. Alerts
 
 ### 6.1 Due-date reminders
 
 - **Setting.** `dueReminders`, a boolean, default `false`, in `ACCOUNT_SETTING_DEFAULTS`. It fits the existing boolean shape. The settings page and the due list page both show it.
-- **When.** 14 days before and 2 days before each open row's due date, and the day after it becomes overdue. A row write sets `job = remind` and `jobOn` to the next of those dates.
-- **Job.** A daily Lambda at 06:00 UTC (an EventBridge rule cron runs in UTC) Queries the index for `job = remind` up to today, skips accounts whose setting is off, groups the rows by account, and sends one email per account with every row due that day. It sets each row's next `jobOn`, and removes `job` after the last reminder.
+- **When.** 14 days before and 2 days before each open row's due date, and the day after it becomes overdue. When a row is written as new, `putRows` sets `job = remind` and `jobOn` to the first of those dates that is today or later.
+- **Job.** A daily Lambda at 06:00 UTC (an EventBridge rule cron runs in UTC) Queries the index for `job = remind` up to today, groups the rows by account, and sends one email per account whose setting is on, with every row it read for that account. For every row it reads, sent or not, it sets `jobOn` to the next reminder date after today, or removes `job` after the last reminder. So an account that turns reminders on later gets no old reminders.
 - **Email kind.** `due-reminder` in `customerEmailTemplates.js`: subject "Due soon: 2 filings for Acme Ltd"; one line per row with the due date, the source and its last read; a "See the due list" button. A stale HMRC row says "We last read this from HMRC on <date>. Sign in to HMRC to check it."
 - **Cost.** No call to any source; the rows are already stored. SES at $0.10 per 1,000 emails is £0.08 per 1,000. 1,000 accounts with 3 reminder days a month each cost about £0.24 a month. The Lambda cost is pence a month (N7).
 
@@ -275,7 +276,7 @@ An HMRC row holds the period start and end, the due date, the status and the rea
 - **Read.** The filing history route that CL1 adds, page 1, newest first, once a day per watched company, in the same refresh job as section 3.1. A transaction newer than `seen#<companyNumber>` raises the alert. One company that two accounts watch is read once.
 - **Cost.** One call per distinct watched company a day. With WL1's cap of 50 per account, 100 accounts that watch 50 each are at most 5,000 calls a day, 2.9% of the daily allowance. Free in money.
 - **Email kind.** `watched-company-filed`: one email a day per account, listing each company, the filing description and date, and links to CL1's `/companies-house/company/<CRN>/filing-history`.
-- **The stream instead.** The streaming API pushes each filing within minutes. It needs a long-lived connection, which a Lambda (15 minutes at most) cannot hold, so it needs a container task: 0.25 vCPU and 0.5 GB on ARM is about $7.20 a month, £5.70 (US East price, N7), plus its stack and alarms. Every UK filing passes through it, and the task drops all but the watched companies. Decision D4 picks the daily read; the stream is the step up when an hour matters.
+- **Read method.** The daily filing history read (D4). Alerts arrive up to a day after the filing.
 - **What ours adds to Companies House Follow and its reminders.** Follow and the reminders are free, and each needs a Companies House account; the reminders also need a WebFiling account per company. Ours adds: one list across Companies House, HMRC and the other sources; one email for many companies; reminders for watched companies without their authentication code; the calendar feed; and the "File this" step beside each row.
 
 ### 6.3 The privacy policy lines
@@ -296,37 +297,36 @@ An HMRC row holds the period start and end, the due date, the status and the rea
 - **Subscribing.** The page shows the address with a copy button, a "Google Calendar" link (`https://calendar.google.com/calendar/r?cid=webcal://…`) and a `webcal://` link for Apple and Outlook. Outlook refreshes about every 3 hours (6 for a work account), per Microsoft's page.
 - **Cost.** One DynamoDB Query per uncached request. Free in calls to any source.
 
-## 8. Operator decisions
+## 8. Decisions
 
-| # | Decision | Alternatives | Recommendation |
-| --- | --- | --- | --- |
-| D1 | HMRC rows between sign-ins | (a) Read with the user present; store the dates only, so emails and the feed carry them. (b) Read with the user present; store nothing; HMRC rows show only on the open page and never in emails or the feed. (c) Keep the sealed refresh token up to 18 months and read on a schedule as `BATCH_PROCESS_DIRECT`; needs SDST's answer to N1 and a security review of long-lived tokens. | (a). It meets goals 3 and 4 with no new token risk. (c) can follow if SDST says yes. |
-| D2 | The bundle that sees the list | (a) `default`: every signed-in account; the HMRC rows still need the read activity that exists (`vat-obligations` is in the free `day-guest`). (b) The paid bundles only (`resident-vat`, `resident-ltd`, `resident-pro`). | (a). The Companies House rows cost us no money, and the list leads to the paid filings. |
-| D3 | The privacy policy lines | Approve section 6.3 as written, or change the words. | Approve as written. |
-| D4 | Watched-company alerts | (a) The daily filing history read; free; up to a day late. (b) The streaming API; about £5.70 a month plus a container stack; minutes late. | (a). |
+Operator, 2026-11-22.
 
-ODUE1 records the answers in this section.
+| # | Decision | Design |
+| --- | --- | --- |
+| D1 | HMRC rows between sign-ins | Read with the user present; store the dates only, so emails and the feed carry them (section 5.2). |
+| D2 | The bundle that sees the list | `default`: every signed-in account. The HMRC rows still need the read activity that exists (`vat-obligations` is in the free `day-guest`). |
+| D3 | The privacy policy lines | Section 6.3 as written. |
+| D4 | Watched-company alerts | The daily filing history read (section 6.2). It is free and up to a day late. |
 
 ## 9. Tasks
 
-`DUE` tasks are a session's. `ODUE` tasks are the operator's.
+`DUE` tasks are a session's. `ODUE2` is the operator's.
 
 ### 9.1 The task table
 
 | Label | Task | Waits on | Class | Model | Size |
 | --- | --- | --- | --- | --- | --- |
-| ODUE1 | Answer D1 to D4 | nothing | human-driven | | |
 | DUE2 | Due date rules and their sources | nothing | machine-only | Sonnet | ~8 files |
 | DUE3 | The due list table | nothing | machine-only | Sonnet | ~8 files |
-| DUE4 | The due list API and activity | DUE2, DUE3, ODUE1, WL1 | machine-only | Sonnet | ~14 files |
+| DUE4 | The due list API and activity | DUE2, DUE3, WL1 | machine-only | Sonnet | ~16 files |
 | DUE5 | Companies House rows and the daily refresh | DUE4, CL1 | machine-only | Sonnet | ~9 files |
-| DUE6 | The due list page | DUE5 | machine-only | Sonnet | ~10 files |
+| DUE6 | The due list page | DUE5, SY1 | machine-only | Sonnet | ~10 files |
 | DUE7 | VAT rows from HMRC | DUE6 | machine-only | Sonnet | ~6 files |
 | DUE8 | Income Tax rows from HMRC | DUE7 | machine-only | Sonnet | ~6 files |
 | DUE9 | Rows the user enters: officer and PSC changes, the ICO fee | DUE8 | machine-only | Sonnet | ~9 files |
-| DUE10 | Due-date reminder emails | DUE5, ODUE1 | machine-only | Sonnet | ~10 files |
+| DUE10 | Due-date reminder emails | DUE5 | machine-only | Sonnet | ~10 files |
 | DUE11 | Watched-company alerts | DUE10, WL1, CL1 | machine-only | Sonnet | ~7 files |
-| DUE12 | The calendar feed | DUE6, ODUE1 | machine-only | Sonnet | ~10 files |
+| DUE12 | The calendar feed | DUE6 | machine-only | Sonnet | ~10 files |
 | DUE13 | The first-use path, copy, guide and video | DUE9, DUE11, DUE12 | machine-only | Sonnet | ~10 files |
 | ODUE2 | Try the due list on ci | DUE13 deployed to ci | human-driven | | |
 | DUE14 | Launch on prod | ODUE2 | machine-only | Haiku | ~5 files |
@@ -336,12 +336,6 @@ DUE6 to DUE9 change the same page files, so they run in that order on one branch
 ### 9.2 Briefs
 
 Each brief stands alone. Line numbers drift, so each names its anchor text. Every brief has the same gates: `npm run bundle` first in a worktree; `npx eslint` and `npx prettier --check` on each changed file; Welsh strings in `i18n/cy.toml` beside the English, then `npm run build:welsh`; a new module carries an `@capability` header and `npm run capabilities:generate`; `./mvnw clean verify` when a stack changes, with the stack's resource total against CloudFormation's 500 named in the pull request.
-
-#### ODUE1. Answer D1 to D4
-
-- **Goal.** The operator answers decisions D1 to D4 in section 8.
-- **Then.** A session writes each answer into section 8 and changes any brief that the answer changes.
-- **Class**: human-driven. **Owner**: operator.
 
 #### DUE2. Due date rules and their sources
 
@@ -356,32 +350,32 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 
 - **Goal.** The table of section 5.1 exists in every environment, with its repository.
 - **Stack.** Add `dueListTable` to `DataStack.java` with `ensureTable`, as `practiceClientsTable` is made: partition key `hashedSub`, sort key `sk`, on demand, PITR, `ensureTimeToLive` on `ttl`, and one `ensureGlobalSecondaryIndex` named `job-jobOn-index` (`job`, `jobOn`, `ALL`). Add its name to `sharedNames().data`. Add the table to `partitionTables` in `scripts/salt-rotation-tables.json` with `"sortKey": "sk"` and make `SaltRotationTablesTest.java` pass.
-- **Repository.** `app/data/dynamoDbDueListRepository.js`: `putBusiness`, `deleteBusiness` (and its rows), `listBusinessesAndRows(userSub)` (one Query on `hashedSub`, trying `subHashCandidates`), `putRows(userSub, rows)` (`BatchWrite`, sets `ttl` with `app/lib/recordRetention.js`), `queryJobsDue(job, date)` (the index, `jobOn <= date`), `putFeedToken`, `findFeedByTokenHash`.
-- **Tests.** `app/unit-tests/data/dynamoDbDueListRepository.test.js` against the mocked client, as the other repository tests do; the CDK resource counts in `infra/test/java`.
+- **Repository.** `app/data/dynamoDbDueListRepository.js`: `putBusiness`, `deleteBusiness` (and its rows), `listBusinessesAndRows(userSub)` (one Query on `hashedSub`, trying `subHashCandidates`), `putRows(userSub, rows, replace)` (reads the account's stored rows; updates only `readAt` of a row that matches a stored row in key, due date and source; writes the other rows with `BatchWrite`, with `ttl` from `app/lib/recordRetention.js`; deletes the stored rows that `replace` selects and that the new set does not hold), `closeRow(userSub, sk)` (section 5.1), `queryJobsDue(job, date)` (the index, `jobOn <= date`), `putFeedToken`, `findFeedByTokenHash`.
+- **Tests.** `app/unit-tests/data/dynamoDbDueListRepository.test.js` against the mocked client, as the other repository tests do, with the replace, an unchanged row that keeps its `status` and `jobOn`, and a close; the CDK resource counts in `infra/test/java`.
 - **Run.** `npx vitest run app/unit-tests/data/dynamoDbDueListRepository.test.js`; `./mvnw clean verify`.
 - **Waits on**: nothing. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~8 files.
 
 #### DUE4. The due list API and activity
 
 - **Goal.** A signed-in account adds and removes businesses, reads its businesses and rows, and writes rows that its page read from HMRC.
-- **Catalogue.** Add the activity `due-list` beside `company-watch-list`: `display = "on-entitlement"`, `bundles` per D2, `metered = false`, `environments = ["local", "test", "simulator", "proxy", "ci"]`, `paths = ["^/api/v1/due-list.*"]`. The page `due.html` stays out of `paths`, because it also serves a signed-out visitor (DUE6). Update `app/unit-tests/services/prodSurface.test.js`, `app/unit-tests/services/productCatalog.test.js`, `web/unit-tests/catalogue-names.test.js` and `web/unit-tests/catalog-paths.test.js`.
+- **Catalogue.** Add the activity `due-list` beside `company-watch-list`: `display = "on-entitlement"`, `bundles = ["default"]` (D2), `metered = false`, `environments = ["local", "test", "simulator", "proxy", "ci"]`, `paths = ["^/api/v1/due-list.*"]`. The page `due.html` stays out of `paths`, because it also serves a signed-out visitor (DUE6). Update `app/unit-tests/services/prodSurface.test.js`, `app/unit-tests/services/productCatalog.test.js`, `web/unit-tests/catalogue-names.test.js` and `web/unit-tests/catalog-paths.test.js`.
 - **Routes.** `app/functions/account/dueListGet.js` (`GET /api/v1/due-list`), `dueListBusinessPut.js` (`PUT /api/v1/due-list/businesses/{id}`, `DELETE` on the same path), `dueListRowsPost.js` (`POST /api/v1/due-list/rows`). Each has its Express route in `app/bin/server.js` and its API Gateway route in `ApiRoutes.java`, with `enforceBundles`.
 - **Limits.** At most 50 businesses an account (WL1's cap), 500 rows an account. A company number passes `isValidCompanyNumber`.
 - **Row writes.** `POST /rows` takes rows of `source: "hmrc"` for one business. It replaces that business's HMRC rows and its computed rows of the same types, and sets `hmrcReadAt` on the business. It refuses a row with a field outside section 5.1, so no VRN, NINO, period key or amount can be stored. It sets `readAt` to the server time.
-- **Receipts close rows.** In `app/services/filedReceipt.js`, after `recordFiledReceipt` stores a VAT or Companies House receipt, close the matching open row of that account when one exists. A Companies House receipt matches the company business by company number, then type and period end. A VAT receipt matches the account's open VAT return rows with the same period end, because no business holds a VRN. A failure is logged and never fails the filing.
-- **Tests.** Unit tests of each route (limits, the field refusal, the 403 without the activity), of the receipt hook, and a system test of add, write, read and delete against dynalite.
+- **A VAT receipt closes its row.** The stored VAT receipt holds no period end, so `hmrcVatReturnPost.js` passes its `periodEnd` to a new `closeVatReturnRow(userSub, periodEnd)` after each of its two `recordFiledReceipt` calls. The SQS `payload` holds no `periodEnd` today, so add it there for the worker's call. Give the VAT return Lambdas in `HmrcStack.java` the due list table name and a write grant. It closes the account's open VAT return row with that period end when exactly one matches; with two or more (two VAT businesses on one stagger, and no business holds a VRN) it leaves them for the next HMRC read. A failure is logged and never fails the filing. Companies House rows close at the next refresh, when the profile moves on (DUE5).
+- **Tests.** Unit tests of each route (limits, the field refusal, the 403 without the activity), of the VAT row close (one match, two matches), and a system test of add, write, read and delete against dynalite.
 - **Run.** `npx vitest run app/unit-tests/functions/dueList*.test.js app/unit-tests/services`; `npm run test:system`.
-- **Waits on**: DUE2, DUE3, ODUE1 (D1 and D2), WL1 (catalogue order). **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~14 files.
+- **Waits on**: DUE2, DUE3, WL1 (catalogue order). **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~16 files.
 
 #### DUE5. Companies House rows and the daily refresh
 
 - **Goal.** Each company business has its accounts, confirmation statement, identity verification, CT600 and CT payment rows, read from Companies House on the day it is added and every day after. Each sole trader has its Self Assessment payment rows, and its standard Income Tax rows when it is in Making Tax Digital for Income Tax, stored so that the emails and the feed carry them.
-- **Profile.** `getCompanyProfile` answers `accountsNextPeriodStart` (`next_accounts.period_start_on`), `accountsOverdue` (`next_accounts.overdue`) and `confirmationStatementOverdue` (`confirmation_statement.overdue`) where AA29 has not added them. `companiesHousePublicDeadlinesGet.js` also answers `accountsNextPeriodStart`, so the signed-out page (DUE6) can split a period of account longer than 12 months.
-- **Rows.** `app/services/dueListCompaniesHouse.js` turns one profile into rows with `due-rules.js`. Each write replaces the business's Companies House rows and the rows computed from them, so a filed period's rows go when the profile moves to the next period. Adding a company business (DUE4's `PUT`) reads its profile at once.
-- **Sole traders.** Adding a sole trader writes `saPaymentRows` for the current and next tax year, and `itsaStandardRows` when `itsa` is set and `hmrcReadAt` is not. The business gets `job = refresh` with `jobOn` the next 6 April. The job writes them again on that date. These rows need no call.
-- **Job.** `app/functions/account/dueListRefresh.js`, scheduled hourly in `AccountStack.java` as `bundleCapacityReconcileSchedule` is. It Queries the index for `job = refresh` up to today. It reads each distinct company number once, at most one call a second and at most 500 a run, writes the rows of every account that holds the company, and sets `jobOn` to tomorrow. It writes sole-trader rows with no call. A 429 stops the run; the next hour goes on. It emits a metric of companies read, 429s and failures.
+- **Profile.** `getCompanyProfile` answers `accountsNextPeriodStart` from AA29 (built by CL1). Add `accountsOverdue` (`next_accounts.overdue`) and `confirmationStatementOverdue` (`confirmation_statement.overdue`), with the name that SY1 gives the public route for the first.
+- **Rows.** `app/services/dueListCompaniesHouse.js` turns one profile into rows with `due-rules.js`. Each write replaces the business's accounts, confirmation statement and identity verification rows, so a filed period's rows go when the profile moves to the next period. The CT600 and CT payment rows are written by key and never deleted by a refresh, because they stay due after the accounts are filed; an old period's rows stay until the user marks them done (DUE9) or their `ttl`. Adding a company business (DUE4's `PUT`) reads its profile at once.
+- **Sole traders.** Adding or changing a sole trader writes `saPaymentRows` for the current and next tax year, and `itsaStandardRows` when `itsa` is set and `hmrcReadAt` is not. The business gets `job = refresh` with `jobOn` the next 6 April. The job writes them again on that date. These rows need no call.
+- **Job.** `app/functions/account/dueListRefresh.js`, scheduled hourly in `AccountStack.java` as `bundleCapacityReconcileSchedule` is. It Queries the index for `job = refresh` up to today. It reads each distinct company number once, at most one call a second and at most 500 a run, writes the rows of every account that holds the company, and sets `jobOn` to tomorrow. It writes sole-trader rows with no call. A 429 stops the run; the next hour goes on. It emits a metric of companies read, 429s and failures. Grant the Lambda the index with `grantTableIndexActions` beside its table grant, because a table grant alone does not reach an index (`KindCdk.java`), and grant it the Companies House API key.
 - **Simulator.** The simulator profile answers carry the new fields.
-- **Tests.** Unit tests of the row building (an overdue company, a first-year company, an 18-month period, a profile that moved to the next period) and of the job (one read for a shared company, the 429 stop, the 500 cap, a sole trader with and without `hmrcReadAt`).
+- **Tests.** Unit tests of the row building (an overdue company, a first-year company, an 18-month period, a profile that moved to the next period, with the old CT rows kept) and of the job (one read for a shared company, the 429 stop, the 500 cap, a sole trader with and without `hmrcReadAt`).
 - **Run.** `npx vitest run app/unit-tests/services/dueListCompaniesHouse.test.js app/unit-tests/functions/dueListRefresh.test.js`; `./mvnw clean verify`.
 - **Waits on**: DUE4, CL1. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~9 files.
 
@@ -391,16 +385,16 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 - **List.** One row per open filing or payment, soonest first. Overdue rows come first, then a marker line "Due from today", then the rest. Each row: the business, the filing type, the period, the due date and days left (`deadlineLine` from `web/public/lib/company/deadline-rules.js`), the source and its last read, a stale warning per section 3, and the next step.
 - **Filters.** Business (each business of section 4), source (Companies House, HMRC, worked out, entered by you, ICO), type (taxes, accounts, people, shareholders, other). The filters write to the address (`?business=`, `?source=`, `?type=`) so a filtered view is bookmarkable.
 - **Next step.** Where the account holds the filing's activity in this environment, a "File this" button opens the form with the company filled in (CL1's `?companyNumber=`). Otherwise the row names the bundle that has it, or links to the government service when Submit does not offer the filing here.
-- **Signed out.** The page takes a company number and reads `GET /api/v1/public/company-deadlines` (with DUE5's `accountsNextPeriodStart`), then shows the accounts, confirmation statement, CT600 and CT payment rows computed in the browser, and "Sign in to keep this list, add VAT and Income Tax, and get reminders."
+- **Signed out.** The page takes a company number and reads `GET /api/v1/public/company-deadlines` (with SY1's `accountsNextPeriodStart`), then shows the accounts, confirmation statement, CT600 and CT payment rows computed in the browser, and "Sign in to keep this list, add VAT and Income Tax, and get reminders."
 - **Business management.** Add a company (the lookup's `searchCompanies`), add a VAT business or a sole trader by label, rename, remove. Watched companies show with a link to WL1's page.
 - **Tests.** `web/browser-tests/dueList.browser.test.js`: order and the marker line; each filter; a stale row; a signed-out lookup; the "File this" and bundle cases. A behaviour journey on the simulator lane: sign in, add a company, see its rows, open "File this" (`lockf -k /tmp/submit-simulator.lock`).
 - **Visual definition of done.** A new page: `visual-review` on the passing run's screenshots.
-- **Waits on**: DUE5. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~10 files.
+- **Waits on**: DUE5, SY1. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~10 files.
 
 #### DUE7. VAT rows from HMRC
 
 - **Goal.** With a live HMRC grant, the page reads each VAT business's open obligations and liabilities and stores their dates.
-- **Read.** For each VAT business whose VRN is in `CarriedIdentifiers` (the page asks for it once a session), call `/api/v1/hmrc/vat/obligation?status=O&from=<today minus 365 days>&to=<today>` and `/api/v1/hmrc/vat/liability`, one VRN at a time. Settle N2 in the sandbox first; if HMRC leaves out a period that ends after `to`, send `to` as today plus 90 days within HMRC's range rule.
+- **Read.** For each VAT business whose VRN is in `CarriedIdentifiers` (the page asks for it once a session), call `/api/v1/hmrc/vat/obligation?vrn=<VRN>&status=O&from=<today minus 365 days>&to=<today>` and `/api/v1/hmrc/vat/liability?vrn=<VRN>`, one VRN at a time. Settle N2 in the sandbox first; if HMRC leaves out a period that ends after `to`, send `to` as today plus 90 days within HMRC's range rule.
 - **Rows.** A return row per open obligation, a payment row on the same date, and a payment row per liability with a `due` date. Post them to `POST /api/v1/due-list/rows`. After a VAT receipt from Submit, the expected next period (DUE2) shows until the next read.
 - **No grant.** The rows stay as last read, with the stale rule of section 3.5 and a "Sign in to HMRC" button that starts the existing VAT sign-in and returns to the page.
 - **Tests.** Browser tests with mocked routes: the rows; the no-grant state; that no VRN reaches the rows request. A behaviour journey against the HMRC sandbox on the proxy lane.
@@ -418,27 +412,27 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 #### DUE9. Rows the user enters: officer and PSC changes, the ICO fee
 
 - **Goal.** The user records a change of officer or PSC, or an ICO expiry date, and sees the row due.
-- **Page.** On a company, "Record a change": a director or secretary joined or left, or a PSC changed, with its date; the row is due 14 days later (DUE2's `changeDue`) and links to Companies House's service. On any business, "Add the ICO fee": the expiry date; the row type is "other", source "ICO", text "Entered by you on <date>". Each row has "Mark as done".
-- **Route.** `app/functions/account/dueListUserRowPut.js`: `PUT /api/v1/due-list/user-rows/{rowId}` writes one row of `source: "user"` (a new row, or `status: "closed"` for "Mark as done"), and `DELETE` on the same path removes it. It refuses a field outside section 5.1 and any other source. Express route in `app/bin/server.js`, API Gateway route in `ApiRoutes.java`, with `enforceBundles`; the path is under `due-list`'s `^/api/v1/due-list.*`.
+- **Page.** On a company, "Record a change": a director or secretary joined or left, or a PSC changed, with its date; the row is due 14 days later (DUE2's `changeDue`) and links to Companies House's service. On any business, "Add the ICO fee": the expiry date; the row type is "other", source `ico`, text "Entered by you on <date>". Each of these rows, and each CT600 and CT payment row, has "Mark as done".
+- **Route.** `app/functions/account/dueListUserRowPut.js`: `PUT /api/v1/due-list/user-rows/{rowId}` writes one row of `source` `user` or `ico`, or closes any row of the account for "Mark as done" (`closeRow`). `DELETE` on the same path removes a `user` or `ico` row. It refuses a field outside section 5.1 and any other source. Express route in `app/bin/server.js`, API Gateway route in `ApiRoutes.java`, with `enforceBundles`; the path is under `due-list`'s `^/api/v1/due-list.*`.
 - **ICO register.** Download the register dataset once from https://ico.org.uk/about-the-ico/what-we-do/register-of-fee-payers/ and write its format, size, update frequency and licence into this plan's section 3.9 (N5). Build no reader in this task.
-- **Tests.** Unit tests of the route (the field and source refusal, "Mark as done"); browser tests of each entry and its due date.
+- **Tests.** Unit tests of the route (the field and source refusal, "Mark as done" on a user row and on a CT600 row); browser tests of each entry and its due date.
 - **Waits on**: DUE8. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~9 files.
 
 #### DUE10. Due-date reminder emails
 
 - **Goal.** An account with `dueReminders` on gets the emails of section 6.1.
 - **Setting.** Add `dueReminders: false` to `ACCOUNT_SETTING_DEFAULTS` in `app/lib/accountSettings.js`, with a switch on `web/public/settings.html` and on the due list page.
-- **Rows.** `putRows` in `dynamoDbDueListRepository.js`, which every row write uses, sets `job = remind`, `sub` and `jobOn` on each open row to the next of: 14 days before, 2 days before, the day after the due date.
-- **Job.** `app/functions/account/dueListReminders.js`, daily at 06:00 UTC in `AccountStack.java` as `commissionReleaseSchedule` is. Query the index for `job = remind` up to today; group by account; read each account's settings; call `requestCustomerEmail({ kind: "due-reminder", userSub, data })` once per account; set each row's next `jobOn`, or remove `job` after the last reminder.
+- **Rows.** `putRows` in `dynamoDbDueListRepository.js`, which every row write uses, sets `job = remind`, `sub` and `jobOn` on each open row it writes as new to the first of these that is today or later: 14 days before, 2 days before, the day after the due date.
+- **Job.** `app/functions/account/dueListReminders.js`, daily at 06:00 UTC in `AccountStack.java` as `commissionReleaseSchedule` is, with `grantTableIndexActions` for the index. Query the index for `job = remind` up to today; group by account; read each account's settings; call `requestCustomerEmail({ kind: "due-reminder", userSub, data })` once per account whose setting is on; for every row read, set its next `jobOn`, or remove `job` after the last reminder.
 - **Template.** `due-reminder` in `buildCustomerEmail`, English and Welsh, in the house style of `renderEmail`. Add the kind to the type list in `customerEmailRequest.js` and to the render script of SITE-29.
 - **Privacy.** Apply D3's lines of section 6.3 to `web/public/privacy.html` and its Welsh page in the same change.
-- **Tests.** Unit tests of the template, the `jobOn` rule and the job (setting off sends nothing; one email per account); the email render check.
-- **Waits on**: DUE5, ODUE1 (D3). **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~10 files.
+- **Tests.** Unit tests of the template, the `jobOn` rule (a refresh after the day's reminder keeps the next `jobOn`) and the job (setting off sends nothing and still moves `jobOn`; one email per account); the email render check.
+- **Waits on**: DUE5. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~10 files.
 
 #### DUE11. Watched-company alerts
 
 - **Goal.** An account with `watchAlerts` on gets one email a day that lists what its watched companies filed (section 6.2).
-- **Mirror.** In `app/functions/account/accountSettingsPut.js`, when WL1's setting changes, write a business of kind `watched` per company with `putBusiness`, with `job = refresh` and `jobOn` today (and delete those taken off), so the refresh job finds them.
+- **Mirror.** In `app/functions/account/accountSettingsPut.js`, on each settings write, add a business of kind `watched` with `putBusiness` for each company on WL1's list that has none, with `job = refresh` and `jobOn` today, and delete those taken off the list, so the refresh job finds them. Turning on `watchAlerts` is a settings write, so a list made before this task lands is mirrored then. Give the settings Lambda in `AccountStack.java` the due list table name and a read and write grant.
 - **Read.** In `dueListRefresh.js`, for watched companies, also read page 1 of the filing history through CL1's client function, once per distinct company. Compare with `seen#<companyNumber>` per account; a newer transaction queues an alert. The first read sets `seen` and sends nothing.
 - **Email.** `watched-company-filed`, English and Welsh, links to `/companies-house/company/<CRN>/filing-history`.
 - **Setting.** `watchAlerts: false` in `ACCOUNT_SETTING_DEFAULTS`, with its switches.
@@ -453,7 +447,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 - **Builder.** `app/lib/dueListIcs.js`: lines folded at 75 octets, CRLF line ends, text escaped per RFC 5545, all-day events, stable UIDs.
 - **Page.** On `due.html`: "Subscribe in a calendar", the address with copy, the Google and `webcal://` links, and "Reset the address" with a confirm.
 - **Tests.** Unit tests of the builder (folding, escaping, no field outside section 7), the token hash lookup, the reset; a browser test of the panel. Parse the output with an iCalendar parser in the test.
-- **Waits on**: DUE6, ODUE1 (D3). **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~10 files.
+- **Waits on**: DUE6. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~10 files.
 
 #### DUE13. The first-use path, copy, guide and video
 
