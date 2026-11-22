@@ -350,14 +350,14 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       (body) => {
         body.balanceSheet.currentYear.profitAndLossAccount = 3800;
       },
-      "Capital and reserves of 4000 for the current year do not equal called up share capital plus the profit and loss account, which add up to 3900.",
+      "Capital and reserves of £4,000 for the current year do not equal called up share capital plus the profit and loss account, which add up to £3,900.",
     ],
     [
       "the prior year",
       (body) => {
         body.balanceSheet.priorYear.profitAndLossAccount = 1900;
       },
-      "Capital and reserves of 2900 for the prior year do not equal called up share capital plus the profit and loss account, which add up to 2000.",
+      "Capital and reserves of £2,900 for the prior year do not equal called up share capital plus the profit and loss account, which add up to £2,000.",
     ],
   ])(
     "refuses capital and reserves in %s that differ from share capital plus the profit and loss account, and sends nothing",
@@ -378,7 +378,7 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
     expect(response.statusCode).toBe(400);
     expect(parseResponseBody(response).message).toContain(
-      "Capital and reserves of 4000 for the current year do not equal called up share capital plus the profit and loss account, which add up to 3900.",
+      "Capital and reserves of £4,000 for the current year do not equal called up share capital plus the profit and loss account, which add up to £3,900.",
     );
     expect(mockPostToGateway).not.toHaveBeenCalled();
   });

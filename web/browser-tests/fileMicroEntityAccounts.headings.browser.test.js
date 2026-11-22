@@ -73,7 +73,9 @@ test.describe("File micro-entity accounts page - optional balance sheet headings
     await page.fill("#currentPrepaymentsAccruedIncome", "300");
     await page.fill("#currentProvisionsForLiabilities", "50");
     await page.fill("#currentAccrualsDeferredIncome", "100");
-    await expect(page.locator("#yearTotals")).toContainText("Net assets: 4160 this year, 2900 last year. Matches capital and reserves.");
+    await expect(page.locator("#yearTotals")).toContainText(
+      "Net assets: £4,160 this year, £2,900 last year. Matches capital and reserves.",
+    );
     const current = await page.evaluate(() => buildAccountsPayload().balanceSheet.currentYear);
     expect(current).toMatchObject({
       calledUpShareCapitalNotPaid: 10,

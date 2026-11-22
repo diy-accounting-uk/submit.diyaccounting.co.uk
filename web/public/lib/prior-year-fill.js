@@ -213,11 +213,10 @@ async function capitalAndReservesNote(doc) {
     capitalAndReserves: Number(capital.value),
   });
   if (!mismatch) return null;
-  const pounds = (amount) => `${amount < 0 ? "-" : ""}£${Math.abs(amount).toLocaleString("en-GB")}`;
   return siteText(
     "ch.prior.reserves",
     "Those accounts hold capital and reserves of {capital}, but called up share capital and the profit and loss account add up to {sum}: the difference sits in reserves this form has no line for. Correct the prior year's profit and loss account so the two agree before you preview.",
-    { capital: pounds(mismatch.capital), sum: pounds(mismatch.sum) },
+    { capital: check.formatPounds(mismatch.capital), sum: check.formatPounds(mismatch.sum) },
   );
 }
 

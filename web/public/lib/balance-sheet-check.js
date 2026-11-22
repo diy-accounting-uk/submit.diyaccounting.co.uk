@@ -12,6 +12,11 @@ export const CAPITAL_AND_RESERVES_MESSAGE =
 
 export const YEAR_NAMES = { currentYear: "the current year", priorYear: "the prior year" };
 
+/** A whole-pound amount as the forms write money: £10,000, or -£500. */
+export function formatPounds(amount) {
+  return `${amount < 0 ? "-" : ""}£${Math.abs(amount).toLocaleString("en-GB")}`;
+}
+
 /**
  * The figures of a year whose capital and reserves differ from the lines under them, or null when
  * they agree or a figure is not a number.
@@ -31,5 +36,5 @@ export function capitalAndReservesMismatch({ calledUpShareCapital, profitAndLoss
  * @param {string} [template] - the same message in the reader's language
  */
 export function capitalAndReservesMessage({ capital, sum }, yearName, template = CAPITAL_AND_RESERVES_MESSAGE) {
-  return template.replace("{capital}", String(capital)).replace("{year}", yearName).replace("{sum}", String(sum));
+  return template.replace("{capital}", formatPounds(capital)).replace("{year}", yearName).replace("{sum}", formatPounds(sum));
 }

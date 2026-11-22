@@ -280,13 +280,13 @@ test.describe("Accounts forms' prior year from the last filed accounts", () => {
     );
     const message = await page.evaluate(() => capitalAndReservesProblem(readYear("prior"), readYear("prior")));
     expect(message).toBe(
-      "Capital and reserves of 10000 for the current year do not equal called up share capital plus the profit and loss account, which add up to 8000.",
+      "Capital and reserves of £10,000 for the current year do not equal called up share capital plus the profit and loss account, which add up to £8,000.",
     );
     const priorOnly = await page.evaluate(() =>
       capitalAndReservesProblem({ calledUpShareCapital: 100, profitAndLossAccount: 900, capitalAndReserves: 1000 }, readYear("prior")),
     );
     expect(priorOnly).toBe(
-      "Capital and reserves of 10000 for the prior year do not equal called up share capital plus the profit and loss account, which add up to 8000.",
+      "Capital and reserves of £10,000 for the prior year do not equal called up share capital plus the profit and loss account, which add up to £8,000.",
     );
     await page.fill("#priorProfitAndLossAccount", "9900");
     const corrected = await page.evaluate(() =>
