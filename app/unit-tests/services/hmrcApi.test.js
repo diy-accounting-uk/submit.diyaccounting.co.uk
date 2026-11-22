@@ -538,3 +538,27 @@ describe("the HMRC request lines", () => {
     for (const value of ["2025-04-06", "2026-04-05", "status=O"]) expect(logged).not.toContain(value);
   });
 });
+
+describe("the lines of a failed HMRC answer", () => {
+  it.each(["http400BadRequestFromHmrcResponse", "http404NotFoundFromHmrcResponse", "http500ServerErrorFromHmrcResponse"])(
+    "%s logs the route's pattern and the query's names, never a value",
+    async (name) => {
+      const hmrcApi = await import("@app/services/hmrcApi.js");
+      const { context } = await import("@app/lib/logger.js");
+      const request = new URL("https://submit.example/api/v1/hmrc/vat/return/2026A1?vrn=176540158&periodKey=26A1&from=2026-01-01");
+      const lines = [];
+      const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => lines.push(String(chunk)) > 0);
+      try {
+        context.run(new Map([["loggedPath", "/api/v1/hmrc/vat/return/{periodKey}"]]), () =>
+          hmrcApi[name](request, { status: 400, data: { code: "X" } }, {}),
+        );
+      } finally {
+        write.mockRestore();
+      }
+      const logged = lines.join("");
+
+      expect(logged).toContain("https://submit.example/api/v1/hmrc/vat/return/{periodKey}?vrn={vrn}&periodKey={periodKey}&from={from}");
+      for (const value of ["176540158", "26A1", "2026-01-01", "2026A1"]) expect(logged).not.toContain(value);
+    },
+  );
+});

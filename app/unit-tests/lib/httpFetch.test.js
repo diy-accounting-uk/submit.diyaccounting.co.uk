@@ -58,15 +58,18 @@ describe("fetchWithTimeout on a timeout", () => {
     });
   });
 
-  test("logs and throws a URL with no query as given", async () => {
+  test("logs and throws a URL with each company, transaction or document id named, never its value", async () => {
     vi.stubGlobal("fetch", hangingFetch());
-    const url = "https://api.company-information.service.gov.uk/company/00000001";
+    const url = "https://api.company-information.service.gov.uk/company/SC123456/filing-history/MzUxMjI3NTEwN2FkaXF6a2N4";
 
     const error = await fetchWithTimeout(url, {}, 5).catch((thrown) => thrown);
 
-    expect(error.url).toBe(url);
-    expect(error.message).toBe(`Request to ${url} timed out after 5ms`);
-    expect(loggedLines[0].args[0].url).toBe(url);
+    const named = "https://api.company-information.service.gov.uk/company/{companyNumber}/filing-history/{transactionId}";
+    expect(error.url).toBe(named);
+    expect(error.message).toBe(`Request to ${named} timed out after 5ms`);
+    expect(loggedLines[0].args[0].url).toBe(named);
+    const written = JSON.stringify([loggedLines, error.message, { ...error }]);
+    for (const id of ["SC123456", "MzUxMjI3NTEwN2FkaXF6a2N4"]) expect(written).not.toContain(id);
   });
 });
 
@@ -76,6 +79,20 @@ describe("fetchRetryingNetworkErrors logging", () => {
   });
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  test("logs a retried URL with its document or agent id named, never its value", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValueOnce(new TypeError("fetch failed")).mockResolvedValueOnce({ ok: true, status: 200 }));
+
+    await fetchRetryingNetworkErrors(
+      "https://document-api.company-information.service.gov.uk/document/AbC-123_xyz/content",
+      {},
+      {
+        sleep: async () => {},
+      },
+    );
+
+    expect(loggedLines[0].args[0].url).toBe("https://document-api.company-information.service.gov.uk/document/{documentId}/content");
   });
 
   test("logs a retried URL by its origin and path, without the query", async () => {

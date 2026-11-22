@@ -222,7 +222,7 @@ async function writeCache(companyNumber, sk, value, readAt, seconds, kind) {
     const parts = Math.ceil(json.length / ITEM_VALUE_BYTES);
     if (parts > MAX_PARTS) {
       emitMetric({ namespace: METRICS_NAMESPACE, metricName: TOO_LARGE_METRIC, dimensions: { Kind: kind } });
-      logger.warn({ message: "Companies House answer too large for the cache", companyNumber, kind, bytes: json.length });
+      logger.warn({ message: "Companies House answer too large for the cache", kind, bytes: json.length });
       await putCacheEntry(companyNumber, sk, { tooLarge: true }, readAt, seconds);
       return;
     }

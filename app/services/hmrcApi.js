@@ -50,7 +50,7 @@ function getHeader(headers, name) {
   return null;
 }
 import { getHmrcErrorMessage, extractHmrcErrorCode } from "../lib/hmrcValidation.js";
-import { loggedUrlOf } from "../lib/loggedPath.js";
+import { loggedQueryOf, loggedUrlOf } from "../lib/loggedPath.js";
 
 const logger = createLogger({ source: "app/services/hmrcApi.js" });
 
@@ -853,10 +853,17 @@ export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, 
   });
 }
 
+// The request of a failed HMRC answer as a log line may print it: the route's pattern, with each path
+// parameter named, and its query's names with no values.
+function loggedRequestOf(request) {
+  if (!(request instanceof URL)) return undefined;
+  return `${request.origin}${context.get("loggedPath") ?? "{path}"}${loggedQueryOf(request.searchParams)}`;
+}
+
 export function http404NotFoundFromHmrcResponse(request, hmrcResponse, govClientHeaders, errorDetails = null) {
   logger.warn({
     message: "Not found for request",
-    request: request?.toString(),
+    request: loggedRequestOf(request),
     hmrcResponseCode: hmrcResponse.status,
     responseBody: hmrcResponse.data,
   });
@@ -894,7 +901,7 @@ export function buildHmrcRejectionMessage(responseBody, fallbackMessage) {
 export function http400BadRequestFromHmrcResponse(request, hmrcResponse, govClientHeaders, errorDetails = null) {
   logger.warn({
     message: "Bad request rejected by HMRC",
-    request: request?.toString(),
+    request: loggedRequestOf(request),
     hmrcResponseCode: hmrcResponse.status,
     responseBody: hmrcResponse.data,
   });
@@ -921,7 +928,7 @@ export function http400BadRequestFromHmrcResponse(request, hmrcResponse, govClie
 export function http500ServerErrorFromHmrcResponse(request, hmrcResponse, govClientHeaders, errorDetails = null) {
   logger.error({
     message: "HMRC request failed for request",
-    request: request?.toString(),
+    request: loggedRequestOf(request),
     hmrcResponseCode: hmrcResponse.status,
     responseBody: hmrcResponse.data,
   });

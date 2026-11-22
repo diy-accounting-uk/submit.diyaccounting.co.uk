@@ -68,7 +68,7 @@ export async function extractCompaniesHouseAccessTokenFromLambdaEvent(event, use
  * @param {Object} responseHeaders
  */
 export function http403ForbiddenForGrantCompany(request, companyNumber, responseHeaders = {}) {
-  logger.warn({ message: "Companies House grant is bound to another company", companyNumber });
+  logger.warn({ message: "Companies House grant is bound to another company" });
   return http403ForbiddenResponse({
     request,
     headers: { ...responseHeaders },

@@ -351,7 +351,13 @@ describe("services/companiesHouseCache", () => {
     test("too large for six parts is answered once, counted, and then refused for its lifetime with no further call", async () => {
       answers = [chargesOfBytes(2 * 1024 * 1024)];
 
-      const first = await cachedCompaniesHouseGet("00000001", "/company/00000001/charges", {}, { kind: "charges" });
+      const lines = [];
+      const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => lines.push(String(chunk)) > 0);
+      const first = await cachedCompaniesHouseGet("00000001", "/company/00000001/charges", {}, { kind: "charges" }).finally(() =>
+        write.mockRestore(),
+      );
+      expect(lines.join("")).toContain("Companies House answer too large for the cache");
+      expect(lines.join("")).not.toContain("00000001");
       const second = await cachedCompaniesHouseGet("00000001", "/company/00000001/charges", {}, { kind: "charges" });
       const third = await cachedCompaniesHouseGet("00000001", "/company/00000001/charges", {}, { kind: "charges" });
 

@@ -15,13 +15,14 @@
 // Shared HTTP fetch utility with timeout and abort support
 
 import { createLogger } from "./logger.js";
+import { loggedOutboundPathOf } from "./loggedPath.js";
 
 const logger = createLogger({ source: "app/lib/httpFetch.js" });
 
 /**
- * A URL as this module logs it and puts in an error: the origin and path, with no query string or
- * fragment, because a query can carry a signed credential or an identifier. A URL with neither is
- * written as given.
+ * A URL as this module logs it and puts in an error: the origin and the path, with each company,
+ * transaction, document or agent id in the path named in braces, and no query string or fragment,
+ * because a query can carry a signed credential or an identifier.
  * @param {string|URL} url
  * @returns {string}
  */
@@ -32,8 +33,7 @@ export function urlWithoutQuery(url) {
   } catch {
     return "[unparsable URL]";
   }
-  if (!parsed.search && !parsed.hash) return String(url);
-  return `${parsed.origin}${parsed.pathname}`;
+  return `${parsed.origin}${loggedOutboundPathOf(parsed.pathname)}`;
 }
 
 /**

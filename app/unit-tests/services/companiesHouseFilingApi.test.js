@@ -195,3 +195,18 @@ describe("companiesHouseFilingApi", () => {
     });
   });
 });
+
+describe("the refusal of a grant bound to another company", () => {
+  test("logs no company number", async () => {
+    const { http403ForbiddenForGrantCompany } = await import("@app/services/companiesHouseFilingApi.js");
+    const lines = [];
+    const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => lines.push(String(chunk)) > 0);
+    try {
+      expect(http403ForbiddenForGrantCompany({}, "SC123456").statusCode).toBe(403);
+    } finally {
+      write.mockRestore();
+    }
+    expect(lines.join("")).toContain("Companies House grant is bound to another company");
+    expect(lines.join("")).not.toContain("SC123456");
+  });
+});
