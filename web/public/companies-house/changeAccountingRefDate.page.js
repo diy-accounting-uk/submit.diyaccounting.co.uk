@@ -37,29 +37,66 @@ function periodText(start, end) {
   return window.siteText("ch.ard.period", "{start} to {end}", { start: formatDate(start), end: formatDate(end) });
 }
 
-// The two periods the form can change, from the profile: the current one and the one before it.
-function periodsOf(profile) {
-  const found = [];
-  if (profile.accountsNextPeriodStart && profile.accountsNextPeriodEnd) {
-    found.push({
-      start: profile.accountsNextPeriodStart,
-      end: profile.accountsNextPeriodEnd,
-      label: window.siteText("ch.ard.current-period", "{period} (the current period)", {
-        period: periodText(profile.accountsNextPeriodStart, profile.accountsNextPeriodEnd),
-      }),
-    });
-  }
-  if (profile.accountsLastPeriodStart && profile.accountsLastPeriodEnd) {
-    found.push({
-      start: profile.accountsLastPeriodStart,
-      end: profile.accountsLastPeriodEnd,
-      label: window.siteText("ch.ard.previous-period", "{period} (the previous period)", {
-        period: periodText(profile.accountsLastPeriodStart, profile.accountsLastPeriodEnd),
-      }),
-    });
-  }
-  return found;
+// Today's date in the United Kingdom, as YYYY-MM-DD.
+function todayInTheUnitedKingdom() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" }).format(
+    new Date(),
+  );
 }
+
+const isoOf = (date) => date.toISOString().slice(0, 10);
+
+function dayAfter(iso) {
+  const date = new Date(`${iso}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 1);
+  return isoOf(date);
+}
+
+// The end of the 12-month period after one that ends on periodEnd: the accounting reference date a
+// year on, or the month's last day where the month has no such day.
+function nextReferenceDate(periodEnd, accountingReferenceDate) {
+  const [year, month, day] = periodEnd.split("-").map(Number);
+  const refMonth = Number(accountingReferenceDate?.month) || month;
+  const refDay = Number(accountingReferenceDate?.day) || day;
+  const lastDay = new Date(Date.UTC(year + 1, refMonth, 0)).getUTCDate();
+  return isoOf(new Date(Date.UTC(year + 1, refMonth - 1, Math.min(refDay, lastDay))));
+}
+
+function periodChoice(start, end, current) {
+  return {
+    start,
+    end,
+    label: current
+      ? window.siteText("ch.ard.current-period", "{period} (the current period)", { period: periodText(start, end) })
+      : window.siteText("ch.ard.previous-period", "{period} (the previous period)", { period: periodText(start, end) }),
+  };
+}
+
+// The two periods the form can change, as AA01 defines them: the current period, which has not
+// yet ended, and the immediately previous one. The register's next accounts are for the earliest
+// period not yet filed: the current period while it runs, or, once it has ended, the previous one,
+// with the current period after it to the next reference date. While the accounts are overdue no
+// period can be changed.
+function periodsOf(profile, today = todayInTheUnitedKingdom()) {
+  const nextStart = profile.accountsNextPeriodStart;
+  const nextEnd = profile.accountsNextPeriodEnd;
+  if (!nextStart || !nextEnd) return [];
+  if (profile.accountsNextDue && profile.accountsNextDue < today) return [];
+  if (nextEnd >= today) {
+    const found = [periodChoice(nextStart, nextEnd, true)];
+    if (profile.accountsLastPeriodStart && profile.accountsLastPeriodEnd) {
+      found.push(periodChoice(profile.accountsLastPeriodStart, profile.accountsLastPeriodEnd, false));
+    }
+    return found;
+  }
+  const currentStart = dayAfter(nextEnd);
+  return [
+    periodChoice(currentStart, nextReferenceDate(nextEnd, profile.accountingReferenceDate), true),
+    periodChoice(nextStart, nextEnd, false),
+  ];
+}
+
+const accountsOverdue = (profile, today = todayInTheUnitedKingdom()) => Boolean(profile.accountsNextDue && profile.accountsNextDue < today);
 
 function renderPeriodChoices(chosenEnd) {
   const holder = document.getElementById("periodChoices");
@@ -92,9 +129,11 @@ async function handleCompanySubmit(event) {
     const profile = await window.getCompanyProfile(companyNumber);
     company = { companyNumber, companyName: profile.companyName };
     periods = periodsOf(profile);
+    document.getElementById("accountsOverdue").style.display = accountsOverdue(profile) ? "block" : "none";
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     renderPeriodChoices(new URLSearchParams(window.location.search).get("currentPeriodEnd"));
+    if (accountsOverdue(profile)) document.getElementById("noPeriods").style.display = "none";
     showView("formView");
   } catch (error) {
     console.error("Could not read the company's accounting periods:", error);

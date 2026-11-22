@@ -324,3 +324,51 @@ test("a company with no accounting period on the register cannot continue", asyn
   await expect(page.locator("#noPeriods")).toBeVisible();
   await expect(page.getByRole("button", { name: "Continue" })).toBeDisabled();
 });
+
+// A company whose register shows its next accounts for a period that has already ended: on
+// 22 November 2026 the period to 31 March 2026 is the immediately previous one, and the current period
+// runs to 31 March 2027.
+const ENDED_PERIOD_PROFILE = {
+  companyNumber: "00000001",
+  companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+  accountingReferenceDate: { day: "31", month: "03" },
+  accountsNextPeriodStart: "2025-04-01",
+  accountsNextPeriodEnd: "2026-03-31",
+  accountsNextDue: "2026-12-31",
+  accountsLastPeriodStart: "2024-04-01",
+  accountsLastPeriodEnd: "2025-03-31",
+};
+
+test("once the register's next accounts period has ended, the page offers the period running now and that one, and none before", async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(new Date("2026-11-22T12:00:00Z"));
+  const filings = [];
+  await serveSite(page, { filings, profile: ENDED_PERIOD_PROFILE });
+  await page.goto(`${SITE}/companies-house/changeAccountingRefDate.html`, { waitUntil: "networkidle" });
+  await lookUpAndFill(page, { lookUp: "Look up the accounting periods", newPeriodEnd: "2027-01-31" });
+  await expect(page.locator("#periodChoices label")).toHaveText([
+    "1 April 2026 to 31 March 2027 (the current period)",
+    "1 April 2025 to 31 March 2026 (the previous period)",
+  ]);
+  await expect(page.getByLabel("1 April 2026 to 31 March 2027 (the current period)")).toBeChecked();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect.poll(() => filings.length).toBe(1);
+  expect(filings[0]).toMatchObject({ currentPeriodEnd: "2027-03-31", newPeriodEnd: "2027-01-31" });
+});
+
+test("a company whose accounts are overdue is told it cannot change its year end, and nothing is sent", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-22T12:00:00Z"));
+  const filings = [];
+  await serveSite(page, { filings, profile: { ...ENDED_PERIOD_PROFILE, accountsNextDue: "2026-09-30" } });
+  await page.goto(`${SITE}/companies-house/changeAccountingRefDate.html`, { waitUntil: "networkidle" });
+  await page.locator("#companyNumber").fill("00000001");
+  await page.getByRole("button", { name: "Look up the accounting periods" }).click();
+  await expect(page.locator("#accountsOverdue")).toBeVisible();
+  await expect(page.locator("#accountsOverdue")).toContainText("You cannot change your company’s year end when its accounts are overdue.");
+  await expect(page.locator("#periodChoices input")).toHaveCount(0);
+  await expect(page.locator("#noPeriods")).toBeHidden();
+  await expect(page.getByRole("button", { name: "Continue" })).toBeDisabled();
+  expect(filings).toHaveLength(0);
+});

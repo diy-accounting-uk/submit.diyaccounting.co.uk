@@ -23363,6 +23363,10 @@ cy = '''Y cyfnod presennol a’r un o’i flaen, fel y mae Tŷ’r Cwmnïau yn e
 hash = "8d3cf2eff1cc"
 cy = '''Nid yw’r gofrestr yn dangos unrhyw gyfnod cyfrifyddu ar gyfer y cwmni hwn.'''
 
+[strings."ch-change-ard.the-register-shows-this-company-s-252498"]
+hash = "252498b4354d"
+cy = '''Mae’r gofrestr yn dangos bod cyfrifon y cwmni hwn yn hwyr, ac mae GOV.UK yn dweud na allwch newid diwedd blwyddyn eich cwmni pan fydd ei gyfrifon yn hwyr. Ffeiliwch y cyfrifon sy’n hwyr yn gyntaf.'''
+
 [strings."ch-change-ard.new-end-date-of-the-period-cca7f1"]
 hash = "cca7f155e708"
 cy = '''Dyddiad gorffen newydd y cyfnod'''
