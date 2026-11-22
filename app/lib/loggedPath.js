@@ -65,7 +65,17 @@ const OUTBOUND_ID_AFTER = {
   "document": "documentId",
   "agents": "arn",
   "invitations": "invitationId",
+  "returns": "periodKey",
 };
+
+// HMRC paths put a National Insurance number, a business id or a calculation id after segments
+// that vary from one API to the next, so these ids are also named by their form, wherever they sit.
+const OUTBOUND_ID_FORMS = [
+  ["vrn", /^\d{9}$/],
+  ["nino", /^[A-Z]{2}\d{6}[A-D]$/i],
+  ["businessId", /^X[A-Z0-9]IS\d{11}$/i],
+  ["id", /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i],
+];
 
 /**
  * An outbound URL as a log line may print it: its origin, its path with each id named by the
@@ -85,8 +95,8 @@ export function loggedUrlOf(url) {
 }
 
 /**
- * The path of an outbound request as a log line may print it, with each id named by the segment
- * before it and no query.
+ * The path of an outbound request as a log line may print it, with no query and each id named: by
+ * the segment before it, or for HMRC's ids by their form.
  * @param {string} path - for example /company/SC123456/officers
  * @returns {string}
  */
@@ -94,8 +104,9 @@ export function loggedOutboundPathOf(path) {
   const segments = String(path).split("?")[0].split("/");
   return segments
     .map((segment, index) => {
-      const name = OUTBOUND_ID_AFTER[segments[index - 1]];
-      return name && segment !== "" ? `{${name}}` : segment;
+      if (segment === "") return segment;
+      const name = OUTBOUND_ID_AFTER[segments[index - 1]] ?? OUTBOUND_ID_FORMS.find(([, form]) => form.test(decodedOrRaw(segment)))?.[0];
+      return name ? `{${name}}` : segment;
     })
     .join("/");
 }

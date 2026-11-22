@@ -57,6 +57,24 @@ describe("an outbound URL in a log line", () => {
     expect(loggedUrlOf("not a url")).toBe("[unparsable URL]");
   });
 
+  test.each([
+    ["/organisations/vat/123456789/returns/18A1", "/organisations/vat/{vrn}/returns/{periodKey}"],
+    ["/organisations/vat/123456789/returns/%2318A1", "/organisations/vat/{vrn}/returns/{periodKey}"],
+    ["/organisations/vat/123456789/obligations", "/organisations/vat/{vrn}/obligations"],
+    ["/individuals/business/details/AA123456A/list", "/individuals/business/details/{nino}/list"],
+    [
+      "/individuals/business/property/foreign/AA123456A/XAIS12345678901/period/2025-26/0a1b2c3d-1111-2222-3333-444455556666",
+      "/individuals/business/property/foreign/{nino}/{businessId}/period/2025-26/{id}",
+    ],
+    [
+      "/individuals/calculations/AA123456A/self-assessment/2025-26/0a1b2c3d-1111-2222-3333-444455556666",
+      "/individuals/calculations/{nino}/self-assessment/2025-26/{id}",
+    ],
+    ["/test/fraud-prevention-headers/validate", "/test/fraud-prevention-headers/validate"],
+  ])("names the ids of the HMRC path %s", (path, named) => {
+    expect(loggedUrlOf(`https://test-api.service.hmrc.gov.uk${path}`)).toBe(`https://test-api.service.hmrc.gov.uk${named}`);
+  });
+
   test("the public data API's request and response lines hold no company number, transaction or query value", async () => {
     await companiesHouseGetJson("https://api.example", `/company/${COMPANY}/filing-history/${TRANSACTION}`, { category: "accounts" });
 

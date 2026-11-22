@@ -480,6 +480,13 @@ export async function validateFraudPreventionHeaders(
   }
 }
 
+// The top-level field names of an HMRC answer, for a log line: the answer itself goes only to the
+// audit record, because it holds a customer's figures, periods and references.
+function responseFieldsOf(body) {
+  if (Array.isArray(body)) return ["[array]"];
+  return body && typeof body === "object" ? Object.keys(body) : [];
+}
+
 export async function hmrcHttpGet(
   endpoint,
   hmrcRequestHeaders,
@@ -569,7 +576,7 @@ export async function hmrcHttpGet(
     message: `Response from GET ${loggedUrlOf(hmrcRequestUrl)}`,
     url: loggedUrlOf(hmrcRequestUrl),
     status: hmrcResponse.status,
-    hmrcResponseBody,
+    responseFields: responseFieldsOf(hmrcResponseBody),
   });
 
   const httpResponse = {
@@ -701,7 +708,7 @@ async function hmrcHttpWriteRequest(method, hmrcRequestUrl, hmrcRequestHeaders, 
     message: `Response from ${method} ${loggedUrlOf(hmrcRequestUrl)}`,
     url: loggedUrlOf(hmrcRequestUrl),
     status: hmrcResponse.status,
-    hmrcResponseBody,
+    responseFields: responseFieldsOf(hmrcResponseBody),
   });
 
   const httpResponse = {

@@ -426,6 +426,85 @@ describe("services/hmrcApi", () => {
 });
 
 describe("the HMRC request lines", () => {
+  it("log the answer's top-level field names and its status, and audit the answer whole", async () => {
+    const { hmrcHttpGet, buildHmrcHeaders } = await import("@app/services/hmrcApi.js");
+    const { putHmrcApiRequest } = await import("@app/data/dynamoDbHmrcApiRequestRepository.js");
+    const answer = { obligations: [{ periodKey: "26A1", start: "2026-01-01", end: "2026-03-31", status: "O" }], vatDue: 4321.55 };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(answer),
+        headers: { forEach: (fn) => fn("application/json", "content-type") },
+      }),
+    );
+    const lines = [];
+    const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => lines.push(String(chunk)) > 0);
+    try {
+      const govClientHeaders = { "Gov-Client-Device-ID": "dev" };
+      await hmrcHttpGet(
+        "/organisations/vat/176493528/obligations",
+        buildHmrcHeaders("token-123", govClientHeaders, "SCENARIO", "r1", null, "c1"),
+        govClientHeaders,
+        "SCENARIO",
+        "synthetic",
+        {},
+        "user-sub-1",
+      );
+    } finally {
+      write.mockRestore();
+    }
+    const responseLine = lines
+      .join("")
+      .split("\n")
+      .filter(Boolean)
+      .map((text) => JSON.parse(text))
+      .find((entry) => String(entry.message).startsWith("Response from GET"));
+
+    expect(responseLine).toMatchObject({ status: 200, responseFields: ["obligations", "vatDue"] });
+    expect(responseLine).not.toHaveProperty("hmrcResponseBody");
+    for (const value of ["26A1", "4321.55", "2026-03-31"]) expect(JSON.stringify(responseLine)).not.toContain(value);
+    expect(putHmrcApiRequest).toHaveBeenCalledWith(
+      "user-sub-1",
+      expect.objectContaining({ httpResponse: expect.objectContaining({ body: answer }) }),
+    );
+  });
+
+  it("name the VAT number in the path in place of its value", async () => {
+    const { hmrcHttpGet, buildHmrcHeaders } = await import("@app/services/hmrcApi.js");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ obligations: [] }),
+        headers: { forEach: (fn) => fn("application/json", "content-type") },
+      }),
+    );
+    const lines = [];
+    const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => lines.push(String(chunk)) > 0);
+    try {
+      const govClientHeaders = { "Gov-Client-Device-ID": "dev" };
+      await hmrcHttpGet(
+        "/organisations/vat/176493528/obligations",
+        buildHmrcHeaders("token-123", govClientHeaders, "SCENARIO", "r1", null, "c1"),
+        govClientHeaders,
+        "SCENARIO",
+        "synthetic",
+        {},
+        "user-sub-1",
+      );
+    } finally {
+      write.mockRestore();
+    }
+    const logged = lines.join("");
+
+    expect(logged).toContain("/organisations/vat/{vrn}/obligations");
+    expect(logged).not.toContain("[VRN]/obligations");
+    expect(logged).not.toContain("176493528");
+  });
+
   it("log each query parameter's name and never its value", async () => {
     const { hmrcHttpGet, buildHmrcHeaders } = await import("@app/services/hmrcApi.js");
     vi.stubGlobal(
