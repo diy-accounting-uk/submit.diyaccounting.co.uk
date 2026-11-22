@@ -35,6 +35,62 @@ describe("a name the same as another, as Companies House counts it", () => {
     same("ŘEAL COFFEE CAFÉ LTD", "REAL COFFEE CAFE LTD");
   });
 
+  it.each([
+    ["0", "ZERO", "O"],
+    ["1", "ONE"],
+    ["2", "TWO", "TO", "TOO"],
+    ["3", "THREE"],
+    ["4", "FOUR", "FOR"],
+    ["5", "FIVE"],
+    ["6", "SIX"],
+    ["7", "SEVEN"],
+    ["8", "EIGHT"],
+    ["9", "NINE"],
+    ["&", "AND"],
+    ["+", "PLUS"],
+    ["£", "POUND"],
+    ["€", "EURO"],
+    ["$", "DOLLAR"],
+    ["¥", "YEN"],
+    ["%", "PER CENT", "PERCENT", "PER CENTUM", "PERCENTUM"],
+    ["@", "AT"],
+  ])("reads %s and the rest of section 6.5's row as the same", (...row) => {
+    for (const other of row.slice(1)) same(`${row[0]} TREES LIMITED`, `${other} TREES LIMITED`);
+  });
+
+  it.each([
+    ["ÀÁÂÃÄÅĀĂĄǺ", "A"],
+    ["ÆǼ", "AE"],
+    ["ÇĆĈĊČ", "C"],
+    ["ÞĎĐ", "D"],
+    ["ÈÉÊËĒĔĖĘĚ", "E"],
+    ["ĜĞĠĢ", "G"],
+    ["ĤĦ", "H"],
+    ["ÌÍÎÏĨĪĬĮİ", "I"],
+    ["Ĵ", "J"],
+    ["Ķ", "K"],
+    ["ĹĻĽĿŁ", "L"],
+    ["ÑŃŅŇŊ", "N"],
+    ["ÒÓÔÕÖØŌŎŐǾ", "O"],
+    ["Œ", "OE"],
+    ["ŔŖŘ", "R"],
+    ["ŚŜŞŠ", "S"],
+    ["ŢŤŦ", "T"],
+    ["ÙÚÛÜŨŪŬŮŰŲ", "U"],
+    ["ŴẀẂẄ", "W"],
+    ["ỲÝŶŸ", "Y"],
+    ["ŹŻŽ", "Z"],
+  ])("reads each of %s as %s", (letters, plain) => {
+    for (const letter of letters) same(`B${letter}X TRADING LIMITED`, `B${plain}X TRADING LIMITED`);
+  });
+
+  it("reads a name written with a digit as the same as one written with its word", () => {
+    same("TWO TREES LIMITED", "2 TREES LIMITED");
+    same("4 SEASONS LTD", "FOUR SEASONS LIMITED");
+    same("ZERO WASTE LIMITED", "0 WASTE LIMITED");
+    same("365 DAYS LIMITED", "THREESIXFIVE DAYS LIMITED");
+  });
+
   it("keeps names apart that differ in a word that counts", () => {
     different("BRAMWELL TENNANT TRADING LIMITED", "BRAMWELL TENNANT TRADING HOLDINGS LIMITED");
     different("SMITH AND JONES LIMITED", "SMITH AND JONES BUILDERS LIMITED");

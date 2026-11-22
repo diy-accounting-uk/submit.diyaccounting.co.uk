@@ -481,3 +481,17 @@ test("a name another company holds is caught before sending, and asks for that c
   expect(filings[0].supportingDocument).toMatchObject({ kind: "same-as-no-objection" });
   expect(searches).toEqual(["BRAMWELL TENNANT TRADING LIMITED"]);
 });
+
+test("a name written with a number word is caught as the same as one written with the digit", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, {
+    filings,
+    searchItems: [{ companyNumber: "08888888", title: "2 TREES LTD", companyStatus: "active" }],
+  });
+  await page.goto(`${SITE}/companies-house/changeCompanyName.html`, { waitUntil: "networkidle" });
+  await lookUpAndFill(page, { lookUp: "Look up the company", proposedName: "Two Trees Limited" });
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#statusMessagesContainer")).toContainText("Companies House lists 2 TREES LTD (08888888) with this name.");
+  await expect(page.locator("#letterKind")).toHaveValue("same-as-no-objection");
+  expect(filings).toHaveLength(0);
+});

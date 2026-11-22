@@ -95,7 +95,18 @@ const DISREGARDED_AFTER_A_SPACE = [
   "PRYDAIN FAWR",
   "PF",
 ];
-// Section 6.5's words and signs read as the same, each as the word this key uses.
+// Section 6.5's letters that carry no accent mark to strip, each as the letter it is read as; the
+// others of its first table lose their accents in normalize("NFD").
+const READ_AS_LETTERS = [
+  [/[ÞĐ]/g, "D"],
+  [/Ħ/g, "H"],
+  [/[ŁĿ]/g, "L"],
+  [/Ŋ/g, "N"],
+  [/Ø/g, "O"],
+  [/Ŧ/g, "T"],
+];
+// Section 6.5's words, signs and digits read as the same, each as the word this key uses. The number
+// words come before the digits, so a digit read as a word is not read again.
 const READ_AS = [
   [/&/g, " AND "],
   [/\+/g, " PLUS "],
@@ -105,13 +116,26 @@ const READ_AS = [
   [/\$/g, " DOLLAR "],
   [/¥/g, " YEN "],
   [/%|\bPER CENT(UM)?\b|\bPERCENT\b/g, " PERCENTUM "],
+  [/\bZERO\b/g, " O "],
+  [/\b(TWO|TOO|TO)\b/g, " TOO "],
+  [/\bFOUR\b/g, " FOR "],
+  [/0/g, " O "],
+  [/1/g, " ONE "],
+  [/2/g, " TOO "],
+  [/3/g, " THREE "],
+  [/4/g, " FOR "],
+  [/5/g, " FIVE "],
+  [/6/g, " SIX "],
+  [/7/g, " SEVEN "],
+  [/8/g, " EIGHT "],
+  [/9/g, " NINE "],
 ];
 // The punctuation, signs and symbols section 6.4 disregards.
 const DISREGARDED_PUNCTUATION = /[‘’'",()[\]{}<>!«»“”?./\\]/g;
 
 /**
  * A key under which two names that Companies House counts as the "same as" each other are equal:
- * the first 60 characters, letters without accents, the words and signs read as the same, the start's
+ * the first 60 characters, letters without accents, the words, signs and digits read as the same, the start's
  * THE and WWW, the endings and the words after a blank space that it disregards, a final S, the
  * listed punctuation and the spaces between characters left out.
  * @param {string} name
@@ -125,6 +149,7 @@ export function sameAsKey(name) {
     .replace(/Œ/g, "OE")
     .normalize("NFD")
     .replace(/\p{M}/gu, "");
+  for (const [letter, plain] of READ_AS_LETTERS) key = key.replace(letter, plain);
   for (const [sign, word] of READ_AS) key = key.replace(sign, word);
   key = key.replace(DISREGARDED_PUNCTUATION, " ").replace(/\s+/g, " ").trim();
   key = key.replace(/^(THE|WWW) /, "");
