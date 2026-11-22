@@ -327,7 +327,7 @@
           "url": "/hmrc/receipt/receipts.html",
           "waitFor": "#receiptsTable .receipt-label",
           "scrollTo": "#receiptsTable",
-          "caption": "Companies House has accepted these micro-entity accounts. Start from your receipts.",
+          "caption": "Companies House accepted these accounts. Start from your receipts.",
           "instruction": "Open the Receipts page.",
           "headline": "Start from your receipts",
           "keyWord": "receipts"
@@ -385,7 +385,7 @@
           "target": "#revisionBanner",
           "scrollTo": "#revisionBanner",
           "dwellMs": 600,
-          "caption": "The form fills from the accounts you filed. The original stays on the register, and the revised accounts are filed beside it.",
+          "caption": "The form fills from the filing. The original stays on the register.",
           "instruction": "Check the banner: you are revising the accounts filed at Companies House, and the form holds the figures you filed.",
           "headline": "The original stays",
           "keyWord": "original"
@@ -409,7 +409,7 @@
             "role": "heading",
             "name": "Employees and director"
           },
-          "caption": "Correct the figure that was wrong. Here the average number of employees was 3, not 2.",
+          "caption": "Correct the figure. The company had 3 employees on average, not 2.",
           "instruction": "Change the figure that was wrong in the original accounts.",
           "headline": "Correct the figure",
           "keyWord": "Correct"
@@ -457,7 +457,7 @@
             "role": "heading",
             "name": "Employees and director"
           },
-          "caption": "Give the date the directors approved the revision. Deliver it within 28 days of that date.",
+          "caption": "Date the approval. File within 28 days of it.",
           "instruction": "Enter the date the directors approved the revised accounts, and file them within 28 days of it.",
           "headline": "Within 28 days",
           "keyWord": "28"
@@ -511,7 +511,7 @@
           "target": "#previewRendered",
           "scrollTo": "#previewRendered",
           "dwellMs": 700,
-          "caption": "The preview says these are revised accounts, with what was wrong and what changes. Nothing is filed yet.",
+          "caption": "The preview says what was wrong and what changes. Nothing is filed yet.",
           "instruction": "Choose Preview accounts, then read the revised accounts and the revision statement. Nothing is sent yet.",
           "headline": "Revised, not filed yet",
           "keyWord": "Revised"
@@ -616,7 +616,7 @@
           "url": "/hmrc/receipt/receipts.html",
           "waitFor": ".receipt-kind",
           "scrollTo": "#receiptsTable",
-          "caption": "Your receipts list the filing as revised accounts, beside the original.",
+          "caption": "Your receipts list it as revised accounts.",
           "instruction": "Find the filing on the Receipts page, listed as Revised accounts.",
           "headline": "Listed as revised",
           "keyWord": "revised"
