@@ -128,8 +128,23 @@ describe("passAdminPost", () => {
           bundleId: "day-guest",
           validUntil: null,
           maxUses: 1,
+          usesLeft: 1,
+          generatedBy: "operator",
+          restrictedTo: null,
+          passSummary: "submit VAT returns to HMRC",
         },
       });
+    });
+
+    test("an email-restricted operator pass sends the masked address and never the full one", async () => {
+      await ingestHandler(
+        buildEventWithToken(tokenFor(operatorEmail), passBody({ testPass: false, restrictedToEmail: "jane.doe@example.com" })),
+      );
+
+      const request = mockRequestCustomerEmail.mock.calls[0][0];
+      expect(request.data.restrictedTo).toMatch(/^j.*@example\.com$/);
+      expect(request.data.restrictedTo).not.toBe("jane.doe@example.com");
+      expect(JSON.stringify(request)).not.toContain("jane.doe@example.com");
     });
 
     test("a test pass marks the request synthetic", async () => {

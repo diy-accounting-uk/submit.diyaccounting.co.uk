@@ -15,8 +15,8 @@ const OUTPUT_DIRECTORY = path.join(process.cwd(), "target", "customer-emails");
 const WIDTHS = [600, 360];
 
 const EXPECTED_TEXT = {
-  "physical-pass": ["Your pass: Day pass", "tiger-happy-mountain-silver", "Open the pass link", "attached as files to print"],
-  "digital-pass": ["Your pass: Day pass", "river-quiet-amber-cloud", "No end date", "Unlimited", "Open the pass link"],
+  "physical-pass": ["A pass to share: Day pass", "tiger-happy-mountain-silver", "Open the pass link", "attached as files to print"],
+  "digital-pass": ["A pass to share: Day pass", "river-quiet-amber-cloud", "No end date", "Unlimited", "Open the pass link"],
   "vat-receipt": [
     "Your receipt: VAT return",
     "Form bundle number",
@@ -58,7 +58,7 @@ test.describe("Customer emails as a reader sees them", () => {
         );
         if (hasQr) {
           expect(images).toHaveLength(1);
-          expect(images[0].alt).toBe("QR code for your pass");
+          expect(images[0].alt).toBe("QR code for the pass");
           expect(images[0].loaded, "the QR image loads").toBe(true);
           expect(images[0].width).toBeGreaterThanOrEqual(150);
         } else {

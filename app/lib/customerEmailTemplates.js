@@ -115,6 +115,7 @@ function assertHttps(href) {
  * @param {string} [model.preheader]
  * @param {string} model.heading
  * @param {string} [model.intro]
+ * @param {{heading: string, paragraphs: string[]}} [model.section] - a sub-heading and its paragraphs, before the rows
  * @param {{label: string, value: string}[]} [model.rows]
  * @param {{href: string, text: string}[]} [model.actions]
  * @param {string[]} [model.notes]
@@ -128,6 +129,7 @@ export function renderEmail({
   preheader = "",
   heading,
   intro = "",
+  section = null,
   rows = [],
   actions = [],
   notes = [],
@@ -145,11 +147,12 @@ export function renderEmail({
 
   const textLines = [heading, ""];
   if (intro) textLines.push(intro, "");
+  if (section) textLines.push(section.heading, "", ...section.paragraphs.flatMap((paragraph) => [paragraph, ""]));
   for (const row of rows) textLines.push(`${row.label}: ${row.value}`);
   if (rows.length) textLines.push("");
   for (const action of actions) textLines.push(`${action.text}: ${action.href}`);
   if (actions.length) textLines.push("");
-  if (image) textLines.push(`${image.alt}: see the attached image.`, "");
+  if (image) textLines.push(`${image.alt}: ${welsh ? "gweler y ddelwedd sydd ynghlwm." : "see the attached image."}`, "");
   for (const note of notes) textLines.push(note, "");
   textLines.push("--", reason, replyLine, COMPANY_NAME);
   const text = textLines.join("\n");
@@ -170,6 +173,10 @@ export function renderEmail({
   const imageHtml = image
     ? `<p style="margin:16px 0 0 0;"><img src="cid:${escapeRecordAttribute(image.cid)}" alt="${escapeRecordAttribute(image.alt)}" width="200" height="200" style="display:block;width:200px;height:200px;"></p>`
     : "";
+  const sectionHtml = section
+    ? `<h2 style="margin:24px 0 8px 0;font-size:18px;line-height:1.3;color:${TEXT_COLOUR};">${e(section.heading)}</h2>` +
+      section.paragraphs.map((paragraph) => `<p style="margin:0 0 12px 0;font-size:16px;line-height:1.5;">${e(paragraph)}</p>`).join("")
+    : "";
   const notesHtml = notes.map((note) => `<p style="margin:16px 0 0 0;font-size:15px;line-height:1.5;">${e(note)}</p>`).join("");
 
   const html =
@@ -181,6 +188,7 @@ export function renderEmail({
     `<tr><td style="padding-bottom:16px;font-size:14px;font-weight:bold;color:${SECONDARY_COLOUR};">DIY Accounting Submit</td></tr>` +
     `<tr><td><h1 style="margin:0 0 12px 0;font-size:22px;line-height:1.3;color:${TEXT_COLOUR};">${e(heading)}</h1>` +
     (intro ? `<p style="margin:0 0 12px 0;font-size:16px;line-height:1.5;">${e(intro)}</p>` : "") +
+    sectionHtml +
     (rows.length ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rowsHtml}</table>` : "") +
     actionsHtml +
     imageHtml +
@@ -220,6 +228,99 @@ function formatPeriod(value, locale = "en-GB") {
 }
 
 const RECEIPT_FIELD_FORMATTERS = { processingDate: formatDateTime, periodId: formatPeriod };
+
+// "7 days" or "1 month" from an ISO 8601 duration of days or months; null for any other form.
+function durationWords(isoDuration, welsh) {
+  const match = /^P(\d+)([DM])$/.exec(isoDuration || "");
+  if (!match) return null;
+  const count = Number(match[1]);
+  if (welsh) return `${count} ${match[2] === "D" ? "diwrnod" : "mis"}`;
+  const unit = match[2] === "D" ? "day" : "month";
+  return `${count} ${unit}${count === 1 ? "" : "s"}`;
+}
+
+// What one bundle of a pass gives, in a sentence: its summary, its tokens and how long it lasts from redemption.
+function passBundleSentence({ name, summary, tokensGranted, timeout }, welsh) {
+  const lasts = durationWords(timeout, welsh);
+  if (welsh) {
+    const parts = [summary ? `Mae’n rhoi ${name}: gallwch ${summary}.` : `Mae’n rhoi ${name}.`];
+    if (tokensGranted === "unlimited") parts.push("Nid oes terfyn ar gredydau (tokens).");
+    else if (typeof tokensGranted === "number") parts.push(`Mae’n dod gyda ${tokensGranted} credyd (tokens).`);
+    parts.push(lasts ? `Mae’n para ${lasts} o’r adeg y byddwch yn ei ddefnyddio.` : "Nid oes ganddo ddyddiad gorffen.");
+    return parts.join(" ");
+  }
+  const parts = [summary ? `It gives the ${name}: you can ${summary}.` : `It gives the ${name}.`];
+  if (tokensGranted === "unlimited") parts.push("There is no limit on tokens.");
+  else if (typeof tokensGranted === "number") parts.push(`It comes with ${tokensGranted} token${tokensGranted === 1 ? "" : "s"}.`);
+  parts.push(lasts ? `It lasts ${lasts} from when you redeem it.` : "It has no end date.");
+  return parts.join(" ");
+}
+
+/**
+ * The part of a pass email for the person the pass is given to, so it reads correctly when the
+ * email is forwarded: what the pass gives, how to redeem it, its code, the date by which to redeem
+ * it and the uses left.
+ *
+ * @param {Object} terms
+ * @param {{name: string, summary?: string, tokensGranted?: number|string, timeout?: string}[]} terms.bundles
+ * @param {string} terms.code
+ * @param {string|null} terms.validUntil - the date by which the pass must be redeemed
+ * @param {number|null} terms.usesLeft
+ * @param {"en"|"cy"} [language]
+ * @returns {{section: {heading: string, paragraphs: string[]}, rows: {label: string, value: string}[], action: string, imageAlt: string}}
+ */
+export function passRecipientSection({ bundles, code, validUntil, usesLeft }, language = "en") {
+  const welsh = language === "cy";
+  const locale = welsh ? "cy-GB" : "en-GB";
+  const gives = bundles.map((bundle) => passBundleSentence(bundle, welsh));
+  if (welsh) {
+    return {
+      section: {
+        heading: "I’r person sy’n cael y tocyn hwn",
+        paragraphs: [
+          ...gives,
+          "I’w ddefnyddio, agorwch y ddolen neu sganiwch y cod QR, yna mewngofnodwch gyda chyfrif Google neu Microsoft.",
+        ],
+      },
+      rows: [
+        { label: "Cod y tocyn", value: code },
+        { label: "Defnyddiwch ef erbyn", value: validUntil ? formatDate(validUntil, locale) : "Dim dyddiad gorffen" },
+        { label: "Defnyddiau ar ôl", value: usesLeft === null || usesLeft === undefined ? "Dim terfyn" : String(usesLeft) },
+      ],
+      action: "Agor dolen y tocyn",
+      imageAlt: "Cod QR y tocyn",
+    };
+  }
+  return {
+    section: {
+      heading: "For the person who gets this pass",
+      paragraphs: [...gives, "To redeem it, open the link or scan the QR code, then sign in with a Google or Microsoft account."],
+    },
+    rows: [
+      { label: "Pass code", value: code },
+      { label: "Redeem by", value: validUntil ? formatDate(validUntil, locale) : "No end date" },
+      { label: "Uses left", value: usesLeft === null || usesLeft === undefined ? "Unlimited" : String(usesLeft) },
+    ],
+    action: "Open the pass link",
+    imageAlt: "QR code for the pass",
+  };
+}
+
+// The top of a pass email, for the person who generated the pass.
+function passIssuerIntro({ generatedBy, restrictedTo }, welsh) {
+  if (welsh) {
+    const parts = [
+      "Gwnaethoch greu’r tocyn hwn i’w roi i rywun arall. Anfonwch yr e-bost hwn ymlaen, neu anfonwch y ddolen neu’r cod QR atynt.",
+    ];
+    if (generatedBy === "user") parts.push("Ni allwch ei ddefnyddio eich hun.");
+    if (restrictedTo) parts.push(`Dim ond ${restrictedTo} all ei ddefnyddio.`);
+    return parts.join(" ");
+  }
+  const parts = ["You generated this pass to give to someone else. Forward this email, or send them the link or the QR code."];
+  if (generatedBy === "user") parts.push("You cannot redeem it yourself.");
+  if (restrictedTo) parts.push(`Only ${restrictedTo} can redeem it.`);
+  return parts.join(" ");
+}
 
 function siteUrl(baseUrl, path = "") {
   const base = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
@@ -327,24 +428,36 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
     case "pass-generated": {
       const passUrl = `${siteUrl(baseUrl, "pass.html")}?pass=${encodeURIComponent(data.code)}`;
       const physical = data.passTypeId === PHYSICAL_PASS_TYPE_ID;
+      const welsh = data.language === "cy";
+      const bundle = catalog?.bundles?.find((b) => b.id === data.bundleId);
+      const recipient = passRecipientSection(
+        {
+          bundles: [{ name, summary: data.passSummary, tokensGranted: bundle?.tokensGranted, timeout: bundle?.timeout }],
+          code: data.code,
+          validUntil: data.validUntil,
+          usesLeft: data.usesLeft,
+        },
+        welsh ? "cy" : "en",
+      );
+      const printNote = welsh
+        ? "Mae blaen a chefn y tocyn wedi’u hatodi fel ffeiliau i’w hargraffu: mae’r blaen yn dangos y geiriau, mae’r cefn yn dangos y cod QR."
+        : "The front and back of the pass are attached as files to print: the front shows the words, the back shows the QR code.";
+      const subject = welsh ? `Tocyn i’w rannu: ${name}` : `A pass to share: ${name}`;
       return {
         ...renderEmail({
-          subject: `Your pass: ${name}`,
-          preheader: `Your pass for ${name}.`,
-          heading: `Your pass: ${name}`,
-          intro: "Open the link or scan the QR code to redeem the pass.",
-          rows: [
-            { label: "Pass code", value: data.code },
-            { label: "Bundle", value: name },
-            { label: "Valid until", value: data.validUntil ? formatDate(data.validUntil) : "No end date" },
-            { label: "Uses", value: data.maxUses ? String(data.maxUses) : "Unlimited" },
-          ],
-          actions: [{ href: passUrl, text: "Open the pass link" }],
-          image: { cid: PASS_QR_CONTENT_ID, alt: "QR code for your pass" },
-          notes: physical
-            ? ["The front and back of the pass are attached as files to print: the front shows the words, the back shows the QR code."]
-            : [],
-          reason,
+          subject,
+          preheader: welsh ? `Tocyn ar gyfer ${name} i’w roi i rywun arall.` : `A pass for the ${name} to give to someone else.`,
+          heading: subject,
+          intro: passIssuerIntro(data, welsh),
+          section: recipient.section,
+          rows: recipient.rows,
+          actions: [{ href: passUrl, text: recipient.action }],
+          image: { cid: PASS_QR_CONTENT_ID, alt: recipient.imageAlt },
+          notes: physical ? [printNote] : [],
+          reason: welsh
+            ? "Aeth yr e-bost hwn at y person a greodd y tocyn ar DIY Accounting Submit."
+            : "This email went to the person who generated the pass on DIY Accounting Submit.",
+          language: welsh ? "cy" : "en",
         }),
         passQr: { code: data.code, url: passUrl, physical },
       };

@@ -17,6 +17,7 @@ import { validateEnv } from "../../lib/env.js";
 import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
+  getHeader,
   http200OkResponse,
   http400BadRequestResponse,
   http401UnauthorizedResponse,
@@ -29,9 +30,9 @@ import { isOperatorEmail } from "../../lib/operators.js";
 import { isSyntheticTestUserEmail } from "../../lib/syntheticTestUser.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { createPass } from "../../services/passService.js";
-import { publishActivityEvent, classifyActor } from "../../lib/activityAlert.js";
+import { publishActivityEvent, classifyActor, maskEmail } from "../../lib/activityAlert.js";
 import { requestCustomerEmail } from "../../lib/customerEmailRequest.js";
-import { loadPassTypesFromRoot, getPassTypeById } from "../../services/productCatalog.js";
+import { loadPassTypesFromRoot, getPassTypeById, loadCatalogFromRoot } from "../../services/productCatalog.js";
 import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 
 const logger = createLogger({ source: "app/functions/account/passAdminPost.js" });
@@ -150,6 +151,9 @@ export async function ingestHandler(event) {
       summary: "Pass generated: " + bundleId,
       detail: { bundleId, passTypeId },
     });
+    const welsh = getHeader(event.headers || {}, "X-Site-Language") === "cy";
+    const passBundle = loadCatalogFromRoot().bundles?.find((b) => b.id === pass.bundleId);
+    const restrictedTo = callerIsOperator && restrictedToEmail ? maskEmail(restrictedToEmail) : null;
     await requestCustomerEmail({
       kind: "pass-generated",
       userSub: decodedToken.sub,
@@ -160,6 +164,11 @@ export async function ingestHandler(event) {
         bundleId: pass.bundleId,
         validUntil: pass.validUntil || null,
         maxUses: pass.maxUses ?? null,
+        usesLeft: pass.maxUses === null || pass.maxUses === undefined ? null : pass.maxUses - (pass.useCount ?? 0),
+        generatedBy: "operator",
+        restrictedTo,
+        passSummary: (welsh ? passBundle?.passSummaryCy : passBundle?.passSummary) ?? null,
+        ...(welsh ? { language: "cy" } : {}),
       },
     });
 
