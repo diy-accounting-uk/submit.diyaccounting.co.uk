@@ -191,13 +191,22 @@ describe("accountAcquisitionPost ingestHandler", () => {
     expect(mockAccountCreatedAt).toHaveBeenCalledTimes(1);
   });
 
-  test("records the account whose post begins the record, however old it is", async () => {
+  test("stores no landing for an old account whose post begins the record, and publishes nothing", async () => {
     recordBeganAt = undefined;
     mockAccountCreatedAt.mockResolvedValue(new Date("2025-03-01T12:00:00.000Z"));
     const response = await ingestHandler(acquisitionEvent(LANDING));
+    expect(parseResponseBody(response)).toEqual({ ok: true, firstRecord: false });
+    expect(mockPublishActivityEvent).not.toHaveBeenCalled();
+    expect(firstSourceBySub.get("test-sub")).toEqual({ beforeTheRecordBegan: true });
+    expect(recordBeganAt).toEqual(expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/));
+  });
+
+  test("records the account whose post begins the record when the user pool created it moments before", async () => {
+    recordBeganAt = undefined;
+    mockAccountCreatedAt.mockResolvedValue(new Date(Date.now() - 30_000));
+    const response = await ingestHandler(acquisitionEvent(LANDING));
     expect(parseResponseBody(response)).toEqual({ ok: true, firstRecord: true });
     expect(mockPublishActivityEvent).toHaveBeenCalledTimes(1);
-    expect(recordBeganAt).toEqual(expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/));
   });
 
   test("records an account with no creation time to read as a new account", async () => {

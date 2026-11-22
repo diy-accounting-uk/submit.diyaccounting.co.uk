@@ -69,12 +69,20 @@ function isSameLanding(stored, landing) {
 // of first sources began: its real first source was never recorded, so no landing is.
 const BEFORE_THE_RECORD_BEGAN = { beforeTheRecordBegan: true };
 
-// The record begins at the first post this route ever takes. The account that makes that post is
-// recorded as any new account is, because nothing dates the record before it.
+// A new account posts its landing on its first page after the sign-in, moments after the user pool
+// creates it.
+const NEW_ACCOUNT_POST_WINDOW_MS = 60 * 60 * 1000;
+
+// The record begins at the first post this route ever takes. Every later post compares the
+// account's creation with that time. The post that begins the record has nothing earlier to compare
+// with, so its account is new only when the user pool created it within the window a new account
+// posts in: the first post on a deployment is most often a returning account's.
 async function existedBeforeTheRecordBegan(username) {
   const createdAt = await accountCreatedAt(username);
   const { beganAt, begunNow } = await beginFirstSourceRecord(new Date().toISOString());
-  return Boolean(createdAt) && !begunNow && createdAt.toISOString() < beganAt;
+  if (!createdAt) return false;
+  if (begunNow) return Date.parse(beganAt) - createdAt.getTime() > NEW_ACCOUNT_POST_WINDOW_MS;
+  return createdAt.toISOString() < beganAt;
 }
 
 export async function ingestHandler(event) {
