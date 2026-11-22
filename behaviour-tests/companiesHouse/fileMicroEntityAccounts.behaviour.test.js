@@ -435,7 +435,7 @@ for (const filleted of [false, true]) {
     test.skip(filesThroughRealCompaniesHouseGateway(), "the real gateway leaves the original pending, so it has no receipt to revise");
     addOnPageLogging(page);
     fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
-    const accounts = buildSmallCompanyAccounts({ withComparatives: !filleted });
+    const accounts = buildSmallCompanyAccounts({ withComparatives: true });
 
     await signInWithResidentBundle(page, baseUrl);
     await goToFileSmallCompanyAccounts(page, screenshotPath);
