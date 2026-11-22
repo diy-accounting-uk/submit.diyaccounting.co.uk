@@ -534,6 +534,18 @@
       inEnglishMarkHtml(chromeLanguage() === "cy");
     const legal = escapeHtml(siteText("chrome.footer-legal", "Free to use under the {licence}.")).replace("{licence}", licenceLink);
 
+    // A reader in Welsh is told, on every page, the language of our replies.
+    const supportLink = '<a href="mailto:support@diyaccounting.co.uk">support@diyaccounting.co.uk</a>';
+    const welshMessages =
+      chromeLanguage() === "cy"
+        ? '<p class="footer-legal footer-welsh-messages">' +
+          escapeHtml(siteText("chrome.welsh-messages", "You can write to us in Welsh at {email}. We reply in English for now.")).replace(
+            "{email}",
+            supportLink,
+          ) +
+          "</p>"
+        : "";
+
     return (
       '<nav class="footer-links" aria-label="' +
       escapeHtml(siteText("chrome.footer-site-information", "Site information")) +
@@ -545,6 +557,7 @@
       sourceLink +
       devLinks +
       "</nav>" +
+      welshMessages +
       '<p class="footer-legal">&copy; 2006-2026 DIY Accounting Limited. ' +
       legal +
       "</p>"

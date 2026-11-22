@@ -153,6 +153,21 @@ test.describe("Welsh help page", () => {
 });
 
 test.describe("Welsh privacy, terms and accessibility pages", () => {
+  for (const name of ["terms", "privacy"]) {
+    test(`${name} says in both languages, under its date, that the English text applies where the two differ`, async ({ page }) => {
+      await serveSite(page);
+      await page.goto(`http://localhost:3000/${name}.html`, { waitUntil: "load" });
+      const english = page.locator("header .legal-language");
+      await expect(english).toContainText("is a translation. If the Welsh and the English texts differ, the English text applies.");
+      await expect(english.locator("a")).toHaveAttribute("href", `cy/${name}.html`);
+      await page.goto(`http://localhost:3000/cy/${name}.html`, { waitUntil: "load" });
+      const welsh = page.locator("header .legal-language");
+      await expect(welsh).toContainText("Os oes gwahaniaeth rhwng y testun Cymraeg a’r testun Saesneg, y testun Saesneg sy’n gymwys.");
+      await expect(welsh.locator("a")).toHaveAttribute("href", `/${name}.html`);
+      await expect(welsh.locator("a")).toHaveAttribute("hreflang", "en-GB");
+    });
+  }
+
   test("the cookie banner of a Welsh page links the Welsh privacy policy with no English mark", async ({ page }) => {
     await serveSite(page);
     await page.goto("http://localhost:3000/cy/terms.html", { waitUntil: "load" });

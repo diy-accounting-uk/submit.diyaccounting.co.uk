@@ -95,6 +95,37 @@ test.describe("The list of the site's Welsh services", () => {
     });
   }
 
+  const WELSH_MESSAGES = "Gallwch ysgrifennu atom yn Gymraeg yn support@diyaccounting.co.uk. Rydym yn ateb yn Saesneg am y tro.";
+
+  for (const address of ["cy/index.html", "cy/terms.html", "cy/companies-house/companySearch.html"]) {
+    test(`the footer of ${address} says in Welsh that a message in Welsh gets its reply in English`, async ({ page }) => {
+      await serveSite(page);
+      await page.goto(`http://localhost:3000/${address}`, { waitUntil: "load" });
+      const line = page.locator("footer .footer-welsh-messages");
+      await expect(line).toHaveText(WELSH_MESSAGES);
+      await expect(line.locator("a")).toHaveAttribute("href", "mailto:support@diyaccounting.co.uk");
+    });
+  }
+
+  test("the Welsh help page says it beside its support buttons, in the same words as the footer and the home page's list", async ({
+    page,
+  }) => {
+    await serveSite(page);
+    await page.goto("http://localhost:3000/cy/help.html", { waitUntil: "load" });
+    await expect(page.locator(".support-section #welsh-messages-line")).toHaveText(WELSH_MESSAGES);
+    await expect(page.locator("footer .footer-welsh-messages")).toHaveText(WELSH_MESSAGES);
+    await page.goto("http://localhost:3000/cy/index.html", { waitUntil: "load" });
+    await expect(page.locator("section[data-welsh-offer] p").last()).toHaveText(WELSH_MESSAGES);
+  });
+
+  test("an English page says nothing about messages in Welsh in its footer or its help support part", async ({ page }) => {
+    await serveSite(page);
+    await page.goto("http://localhost:3000/help.html", { waitUntil: "load" });
+    await expect(page.locator("footer .footer-links")).toHaveCount(1);
+    await expect(page.locator("footer .footer-welsh-messages")).toHaveCount(0);
+    await expect(page.locator("#welsh-messages-line")).toHaveCount(0);
+  });
+
   test("the English home page carries no such list", async ({ page }) => {
     await serveSite(page);
     await page.goto("http://localhost:3000/index.html", { waitUntil: "load" });

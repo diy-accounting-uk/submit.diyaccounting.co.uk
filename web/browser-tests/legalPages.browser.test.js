@@ -47,8 +47,8 @@ async function serveRealSite(page) {
 }
 
 const legalPages = [
-  ["privacy.html", "17 November 2026"],
-  ["terms.html", "17 November 2026"],
+  ["privacy.html", "22 November 2026"],
+  ["terms.html", "22 November 2026"],
   ["accessibility.html", "17 November 2026"],
   ["security.html", "17 November 2026"],
 ];

@@ -113,6 +113,8 @@ class HelpPage {
 
     this.searchInput.addEventListener("input", handleSearch);
 
+    this.showWelshMessagesLine();
+
     // Support modal handlers
     const openSupportBtn = document.getElementById("open-support-form");
     if (openSupportBtn) {
@@ -145,6 +147,25 @@ class HelpPage {
         this.closeModal();
       }
     });
+  }
+
+  /**
+   * A reader in Welsh sees, beside the ways to reach support, the language of our replies.
+   */
+  showWelshMessagesLine() {
+    const options = document.querySelector(".support-section .support-options");
+    if (!options || window.siteLanguage?.chrome() !== "cy") return;
+    const [before, after] = siteText(
+      "chrome.welsh-messages",
+      "You can write to us in Welsh at {email}. We reply in English for now.",
+    ).split("{email}");
+    const link = document.createElement("a");
+    link.href = "mailto:support@diyaccounting.co.uk";
+    link.textContent = "support@diyaccounting.co.uk";
+    const line = document.createElement("p");
+    line.id = "welsh-messages-line";
+    line.append(before, link, after ?? "");
+    options.after(line);
   }
 
   /**

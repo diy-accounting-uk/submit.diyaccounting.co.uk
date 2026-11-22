@@ -18819,9 +18819,9 @@ cy = '''Polisi preifatrwydd - DIY Accounting Submit'''
 hash = "ba445cff3898"
 cy = '''Polisi preifatrwydd'''
 
-[strings."privacy.last-updated-17-november-2026-bcd1c1"]
-hash = "bcd1c1d646a7"
-cy = '''Diweddarwyd ddiwethaf: 17 Tachwedd 2026'''
+[strings."privacy.last-updated-22-november-2026-83c508"]
+hash = "83c508914894"
+cy = '''Diweddarwyd ddiwethaf: 22 Tachwedd 2026'''
 
 [strings."privacy.contents-437aea"]
 hash = "437aea62a5bd"
@@ -20425,9 +20425,9 @@ cy = '''Telerau defnyddio - DIY Accounting Submit'''
 hash = "8c45a486e4b1"
 cy = '''Telerau defnyddio'''
 
-[strings."terms.last-updated-17-november-2026-bcd1c1"]
-hash = "bcd1c1d646a7"
-cy = '''Diweddarwyd ddiwethaf: 17 Tachwedd 2026'''
+[strings."terms.last-updated-22-november-2026-83c508"]
+hash = "83c508914894"
+cy = '''Diweddarwyd ddiwethaf: 22 Tachwedd 2026'''
 
 [strings."terms.contents-437aea"]
 hash = "437aea62a5bd"
@@ -24409,3 +24409,21 @@ cy = '''Newid enw’r cwmni'''
 [strings."receipts.kind-change-of-name"]
 hash = "d4dfec486b34"
 cy = '''Newid enw’r cwmni'''
+
+# == The sentence on messages written in Welsh, in the footer of every page a reader sees in Welsh and beside the help page's support buttons: chrome.welsh-messages ==
+# shared."welsh-offer" and web/public/about.html carry the same sentence.
+
+[strings."chrome.welsh-messages"]
+hash = "e32dc410bf3f"
+cy = '''Gallwch ysgrifennu atom yn Gymraeg yn {email}. Rydym yn ateb yn Saesneg am y tro.'''
+
+# == The sentence on the terms of use and the privacy policy that the English text applies where the two differ ==
+# No official Welsh model of this clause was found; docs-out/lang16-terms.md lists it for a Welsh speaker.
+
+[strings."terms.the-welsh-copy-of-these-terms-d2eddf"]
+hash = "d2eddf835aa0"
+cy = '''Cyfieithiad o’r <a href="/terms.html" hreflang="en-GB">telerau Saesneg</a> yw’r dudalen hon. Os oes gwahaniaeth rhwng y testun Cymraeg a’r testun Saesneg, y testun Saesneg sy’n gymwys.'''
+
+[strings."privacy.the-welsh-copy-of-this-policy-fb9862"]
+hash = "fb9862233b21"
+cy = '''Cyfieithiad o’r <a href="/privacy.html" hreflang="en-GB">polisi Saesneg</a> yw’r dudalen hon. Os oes gwahaniaeth rhwng y testun Cymraeg a’r testun Saesneg, y testun Saesneg sy’n gymwys.'''

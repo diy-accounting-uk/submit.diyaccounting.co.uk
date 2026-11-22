@@ -1687,6 +1687,7 @@ window.WELSH_TEXT = {
   "chrome.unavailable-link": "Gweld beth sydd ar gael",
   "chrome.unavailable-text":
     "Nid yw’r rhan hon o DIY Accounting Submit ar agor ar y wefan hon eto. Nid oes dim wedi’i anfon a dim wedi’i godi.",
+  "chrome.welsh-messages": "Gallwch ysgrifennu atom yn Gymraeg yn {email}. Rydym yn ateb yn Saesneg am y tro.",
   "common.skip-link": "Neidio i’r prif gynnwys",
   "consent.accept": "Derbyn",
   "consent.advert":
