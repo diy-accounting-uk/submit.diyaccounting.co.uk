@@ -446,7 +446,8 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 - **Edge.** A cache policy of one hour for `/api/v1/public/due-calendar/*` in `EdgeStack.java`, beside `publicDeadlinesCachePolicy`. The answer is `text/calendar; charset=utf-8`; a 404 for an unknown token has no cache.
 - **Builder.** `app/lib/dueListIcs.js`: lines folded at 75 octets, CRLF line ends, text escaped per RFC 5545, all-day events, stable UIDs.
 - **Page.** On `due.html`: "Subscribe in a calendar", the address with copy, the Google and `webcal://` links, and "Reset the address" with a confirm.
-- **Tests.** Unit tests of the builder (folding, escaping, no field outside section 7), the token hash lookup, the reset; a browser test of the panel. Parse the output with an iCalendar parser in the test.
+- **Deletion.** The feed lookup item sits in its own partition (`feed#<token hash>`), so a deletion by hashed sub (`scripts/delete-user-data.js`, the salt rotation) does not reach it. The account's feed pointer holds the token hash: the deletion script reads the pointer and removes the lookup, with a test (found by DUE3).
+- **Tests.** Unit tests of the builder (folding, escaping, no field outside section 7), the token hash lookup, the reset; a browser test of the panel. Parse the output with an iCalendar parser in the test. A test that an account's deletion leaves no feed lookup.
 - **Waits on**: DUE6. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~10 files.
 
 #### DUE13. The first-use path, copy, guide and video
