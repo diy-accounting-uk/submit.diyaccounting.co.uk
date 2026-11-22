@@ -800,9 +800,10 @@ public class EdgeStack extends Stack {
         // (number=... or q=...). The default TTL is 0, so only an answer whose Cache-Control the
         // Lambda sets (a found company) is kept; an error is never cached. No header or cookie is
         // in the key, so every visitor shares one copy.
-        // The public company register read is cached the same way: by its path and its query string
-        // (number=...), no header or cookie in the key, and only an answer whose Cache-Control the
-        // Lambda sets (a found company) is kept.
+        // The public company register read is cached the same way: by its path and its number, no
+        // header or cookie in the key, and only an answer whose Cache-Control the Lambda sets (a found
+        // company) is kept. Each key holds only the parameters its route reads, so a caller who adds
+        // another parameter gets the cached answer rather than a new call on the Companies House key.
         CachePolicy publicRegisterCachePolicy = CachePolicy.Builder.create(
                         this, props.resourceNamePrefix() + "-PublicRegisterCP")
                 .cachePolicyName(props.resourceNamePrefix() + "-public-register-cp")
@@ -810,7 +811,8 @@ public class EdgeStack extends Stack {
                 .minTtl(software.amazon.awscdk.Duration.seconds(0))
                 .defaultTtl(software.amazon.awscdk.Duration.seconds(0))
                 .maxTtl(software.amazon.awscdk.Duration.seconds(PUBLIC_REGISTER_CACHE_MAX_TTL_SECONDS))
-                .queryStringBehavior(software.amazon.awscdk.services.cloudfront.CacheQueryStringBehavior.all())
+                .queryStringBehavior(
+                        software.amazon.awscdk.services.cloudfront.CacheQueryStringBehavior.allowList("number"))
                 .headerBehavior(software.amazon.awscdk.services.cloudfront.CacheHeaderBehavior.none())
                 .cookieBehavior(software.amazon.awscdk.services.cloudfront.CacheCookieBehavior.none())
                 .enableAcceptEncodingGzip(true)
@@ -824,7 +826,8 @@ public class EdgeStack extends Stack {
                 .minTtl(software.amazon.awscdk.Duration.seconds(0))
                 .defaultTtl(software.amazon.awscdk.Duration.seconds(0))
                 .maxTtl(software.amazon.awscdk.Duration.seconds(PUBLIC_DEADLINES_CACHE_MAX_TTL_SECONDS))
-                .queryStringBehavior(software.amazon.awscdk.services.cloudfront.CacheQueryStringBehavior.all())
+                .queryStringBehavior(
+                        software.amazon.awscdk.services.cloudfront.CacheQueryStringBehavior.allowList("number", "q"))
                 .headerBehavior(software.amazon.awscdk.services.cloudfront.CacheHeaderBehavior.none())
                 .cookieBehavior(software.amazon.awscdk.services.cloudfront.CacheCookieBehavior.none())
                 .enableAcceptEncodingGzip(true)

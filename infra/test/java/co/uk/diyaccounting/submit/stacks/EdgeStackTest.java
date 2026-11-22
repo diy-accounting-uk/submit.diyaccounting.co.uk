@@ -334,7 +334,7 @@ class EdgeStackTest {
     }
 
     @Test
-    void publicDeadlinesPathIsCachedByQueryStringAndComesBeforeTheGeneralApiBehaviour() {
+    void publicDeadlinesPathIsCachedByItsTwoParametersAndComesBeforeTheGeneralApiBehaviour() {
         Template template = Template.fromStack(synthEdgeStack());
 
         template.hasResourceProperties(
@@ -349,7 +349,11 @@ class EdgeStackTest {
                                 "ParametersInCacheKeyAndForwardedToOrigin",
                                 Match.objectLike(Map.of(
                                         "QueryStringsConfig",
-                                        Map.of("QueryStringBehavior", "all"),
+                                        Map.of(
+                                                "QueryStringBehavior",
+                                                "whitelist",
+                                                "QueryStrings",
+                                                List.of("number", "q")),
                                         "CookiesConfig",
                                         Map.of("CookieBehavior", "none"),
                                         "HeadersConfig",
@@ -473,7 +477,7 @@ class EdgeStackTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void publicRegisterPathIsCachedAnHourByQueryStringWithTheDeadlinesCorsPolicyBeforeTheGeneralApiBehaviour() {
+    void publicRegisterPathIsCachedAnHourByItsNumberWithTheDeadlinesCorsPolicyBeforeTheGeneralApiBehaviour() {
         Template template = Template.fromStack(synthEdgeStack());
 
         template.hasResourceProperties(
@@ -490,7 +494,7 @@ class EdgeStackTest {
                                 "ParametersInCacheKeyAndForwardedToOrigin",
                                 Match.objectLike(Map.of(
                                         "QueryStringsConfig",
-                                        Map.of("QueryStringBehavior", "all"),
+                                        Map.of("QueryStringBehavior", "whitelist", "QueryStrings", List.of("number")),
                                         "CookiesConfig",
                                         Map.of("CookieBehavior", "none"),
                                         "HeadersConfig",
