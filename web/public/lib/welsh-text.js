@@ -1552,6 +1552,7 @@ window.WELSH_TEXT = {
   "ch.remove-officer.role-corporate-secretary": "Ysgrifennydd corfforaethol",
   "ch.remove-officer.role-director": "Cyfarwyddwr",
   "ch.remove-officer.role-secretary": "Ysgrifennydd",
+  "ch.reports.access-check-failed": "Nid oedd Submit yn gallu gwirio a oes gennych fynediad i’r adroddiadau hyn. Rhowch gynnig arall arni.",
   "ch.reports.accounts-summary": "Y prif ffigurau o bob set o gyfrifon a ffeiliwyd, a’r newid rhwng y ddwy flynedd ddiweddaraf.",
   "ch.reports.accounts-title": "Ffigurau’r cyfrifon o flwyddyn i flwyddyn",
   "ch.reports.all-reports": "Pob adroddiad ar y cwmni hwn",

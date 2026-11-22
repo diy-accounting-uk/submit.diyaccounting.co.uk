@@ -26479,3 +26479,9 @@ cy = '''Nid oes gan y llyfr ffigur ar gyfer y rhain, felly teipiwch nhw: {fields
 [strings."ch.revision.advance-rows-over"]
 hash = "a967d75e25a4"
 cy = '''Mae’r cyfrifon a ffeiliwyd yn cynnwys {filed} rhes o flaensymiau i gyfarwyddwyr ac mae’r ffurflen hon yn cymryd {taken}, felly nid yw’r rhesi ar ôl rhes {taken} wedi’u llenwi.'''
+
+# == Company reports: the note when Submit cannot read the account's bundles ==
+
+[strings."ch.reports.access-check-failed"]
+hash = "f4773326f7f7"
+cy = '''Nid oedd Submit yn gallu gwirio a oes gennych fynediad i’r adroddiadau hyn. Rhowch gynnig arall arni.'''

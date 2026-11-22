@@ -6,17 +6,36 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
-import { bannedWordsIn, BANNED_WORDS, REPORT_BANNED_WORDS } from "@app/lib/companyReports/wording.js";
+import { bannedWordsIn, BANNED_WORDS, REPORT_BANNED_WORDS, REPORT_BANNED_WORDS_CY } from "@app/lib/companyReports/wording.js";
 import { REPORT_NAMES } from "@app/functions/companies-house/companiesHouseCompanyReportGet.js";
 
 const REPORTS_DIR = path.join(process.cwd(), "app/lib/companyReports");
 const PAGE = path.join(process.cwd(), "web/public/companies-house/companyReports.page.js");
 
-// Every siteText("<id>", "<English>") the reports page shows, as [id, English].
+const SEARCH_PAGE = path.join(process.cwd(), "web/public/companies-house/companySearch.page.js");
+const LITERAL_SITE_TEXT = /\bsiteText\(\s*"([^"]+)",\s*"((?:[^"\\]|\\.)*)"/g;
+// The page's own wrapper passes its arguments on to window.siteText; every other call names its id
+// and its English as literals, so the test reads every sentence the page can show.
+const SITE_TEXT_WRAPPER = "const siteText = (id, english, values) => (window.siteText ? window.siteText(id, english, values) : english);";
+
+// Every siteText("<id>", "<English>") the reports page shows, and the search page's strings of the
+// reports, as [id, English].
 function pageStrings() {
-  const source = fs.readFileSync(PAGE, "utf-8");
-  return [...source.matchAll(/\bsiteText\(\s*"([^"]+)",\s*"((?:[^"\\]|\\.)*)"/g)].map(([, id, english]) => [id, english]);
+  const page = [...fs.readFileSync(PAGE, "utf-8").matchAll(LITERAL_SITE_TEXT)];
+  const search = [...fs.readFileSync(SEARCH_PAGE, "utf-8").matchAll(LITERAL_SITE_TEXT)].filter(
+    ([, id]) => id.startsWith("ch.reports.") || id === "ch.drill.nav-reports",
+  );
+  return [...page, ...search].map(([, id, english]) => [id, english]);
 }
+
+function welshText() {
+  const source = fs.readFileSync(path.join(process.cwd(), "web/public/lib/welsh-text.js"), "utf-8");
+  const window = {};
+  new Function("window", source)(window);
+  return window.WELSH_TEXT;
+}
+
+const reportOf = (id) => REPORT_NAMES.find((name) => id.startsWith(`ch.reports.${name}.`));
 
 describe("the words a company report may use", () => {
   it("finds a word that rates the company, in any case, as a whole word", () => {
@@ -50,9 +69,43 @@ describe("the words a company report may use", () => {
   it("passes every sentence the reports page shows, with each report's own words on its rows", () => {
     const strings = pageStrings();
     expect(strings.length).toBeGreaterThan(40);
+    expect(strings.map(([id]) => id)).toContain("ch.drill.nav-reports");
     for (const [id, english] of strings) {
-      const report = REPORT_NAMES.find((name) => id.startsWith(`ch.reports.${name}.`));
-      expect(bannedWordsIn([english], report), id).toEqual([]);
+      expect(bannedWordsIn([english], reportOf(id)), id).toEqual([]);
     }
+  });
+
+  it("passes the Welsh of every sentence the reports page shows, against the Welsh list", () => {
+    const welsh = welshText();
+    for (const [id] of pageStrings()) {
+      expect(welsh[id], `${id} has Welsh`).toBeTruthy();
+      expect(bannedWordsIn([welsh[id]], reportOf(id), "cy"), id).toEqual([]);
+    }
+  });
+
+  it("finds a Welsh word in any of its forms, and leaves the register's own words alone", () => {
+    expect(bannedWordsIn(["Mae’r sefyllfa’n gryf."], undefined, "cy")).toEqual(["gryf"]);
+    expect(bannedWordsIn(["Arwystl i sicrhau dyled."], "charges", "cy")).toEqual(["dyled"]);
+    expect(bannedWordsIn(["Arian sy’n ddyledus i’r cwmni."], "charges", "cy")).toEqual([]);
+    expect(bannedWordsIn(["Ffeiliwyd yn hwyr."], "filings", "cy")).toEqual(["hwyr"]);
+    expect(Object.keys(REPORT_BANNED_WORDS_CY).sort()).toEqual(Object.keys(REPORT_BANNED_WORDS).sort());
+  });
+
+  it("names the id and the English of every siteText call as literals, so this test reads every sentence", () => {
+    const source = fs.readFileSync(PAGE, "utf-8").replace(SITE_TEXT_WRAPPER, "");
+    const calls = source.match(/\bsiteText\(/g) || [];
+    const literals = [...source.matchAll(LITERAL_SITE_TEXT)];
+    expect(calls.length).toBe(literals.length);
+  });
+
+  it("puts no text on the page that does not come through siteText", () => {
+    const source = fs.readFileSync(PAGE, "utf-8");
+    const rawText = [
+      ...source.matchAll(/\.textContent\s*=\s*(["'`])/g),
+      ...source.matchAll(/\belement\(\s*"[^"]+",\s*[^,()]+,\s*(["'`])/g),
+      ...source.matchAll(/\.(?:innerHTML|innerText|insertAdjacentHTML)\b/g),
+      ...source.matchAll(/createTextNode\(\s*(["'`])/g),
+    ];
+    expect(rawText.map(([match]) => match)).toEqual([]);
   });
 });

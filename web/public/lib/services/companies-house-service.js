@@ -141,11 +141,12 @@ export async function getFiledAccounts(companyNumber) {
 
 /**
  * Get one company report. A report the route has no module for yet answers 404 with the reason
- * "unknown_report", which the error carries. The error also carries callLimitReached (the report
- * stopped at its limit of Companies House calls) and tooLarge (the record is too large to keep).
+ * "unknown_report", which the error carries. A report cut short answers 200 with partial,
+ * callLimitReached or tooLarge in its body.
  * @param {string} companyNumber
  * @param {string} report - filings, people, capital, charges, history or accounts
- * @returns {Promise<{companyNumber: string, report: string, readAt: string, partial?: boolean, retryAfterSeconds?: number}>}
+ * @returns {Promise<{companyNumber: string, report: string, readAt: string, partial?: boolean, retryAfterSeconds?: number,
+ *   callLimitReached?: boolean, tooLarge?: boolean}>}
  */
 export async function getCompanyReport(companyNumber, report) {
   const response = await fetchWithIdToken(
@@ -156,8 +157,6 @@ export async function getCompanyReport(companyNumber, report) {
   if (!response.ok) {
     const error = await errorFromResponse(response, body);
     error.reason = body?.reason;
-    error.callLimitReached = body?.callLimitReached === true;
-    error.tooLarge = body?.tooLarge === true;
     throw error;
   }
   return body;

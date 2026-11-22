@@ -277,7 +277,7 @@ function loadEntitlement() {
           }
         }
       }
-      return { catalog, environmentName, viewer, held, isActivityShown: service.isActivityShown };
+      return { catalog, environmentName, viewer, held, isActivityShown: service.isActivityShown, isBundleShown: service.isBundleShown };
     })().catch((error) => {
       entitlementRead = null;
       throw error;
@@ -293,11 +293,26 @@ async function allocatedBundles() {
     ttlMs: 5000,
     init: { headers: { Authorization: `Bearer ${idToken}` } },
   });
-  return (data?.bundles || []).filter((bundle) => bundle.allocated).map((bundle) => bundle.bundleId);
+  // requestCache answers the body of a failed request too, so an answer with no bundle list is a
+  // failed read and not an account that holds nothing.
+  if (!Array.isArray(data?.bundles)) throw new Error("The account's bundles could not be read");
+  return data.bundles.filter((bundle) => bundle.allocated).map((bundle) => bundle.bundleId);
+}
+
+// Whether a reader of this deployment can get a bundle: one the Bundles page lists, or one a
+// preview setting shows. A hidden bundle comes only with a pass, and an automatic one is held by all.
+function isObtainable(entitlement, bundle) {
+  return (
+    !bundle.hidden &&
+    bundle.enable !== "never" &&
+    bundle.allocation !== "automatic" &&
+    entitlement.isBundleShown(bundle, entitlement.environmentName, entitlement.viewer)
+  );
 }
 
 /**
- * Whether the account holds an activity: shown, held, and the bundles that would grant it.
+ * Whether the account holds an activity: shown, held, and the bundles a reader of this deployment
+ * can get that would grant it.
  * @returns {{shown: boolean, held: boolean, bundles: object[]}}
  */
 function activityAccess(entitlement, activityId) {
@@ -309,7 +324,7 @@ function activityAccess(entitlement, activityId) {
   return {
     shown: true,
     held: bundleIds.some((id) => entitlement.held.has(id)),
-    bundles: (entitlement.catalog.bundles || []).filter((bundle) => bundleIds.includes(bundle.id)),
+    bundles: (entitlement.catalog.bundles || []).filter((bundle) => bundleIds.includes(bundle.id) && isObtainable(entitlement, bundle)),
   };
 }
 
@@ -666,7 +681,7 @@ async function appendFileThis(container, { activityId, page, label, companyNumbe
     holder.remove();
     return;
   }
-  if (!access.shown) {
+  if (!access.shown || (!access.held && access.bundles.length === 0)) {
     holder.remove();
     return;
   }
@@ -1546,17 +1561,25 @@ const VIEW_RENDERERS = {
     }),
 };
 
-// Whether the account holds the reports activity, and the names of the bundles that have it; null
-// when the entitlement cannot be read.
+// Whether the account holds the reports activity, and the names of the bundles that have it;
+// checkFailed when the entitlement cannot be read.
 const reportsAccess = () =>
   loadEntitlement()
     .then((entitlement) => {
       const access = activityAccess(entitlement, "company-reports");
       return { held: access.held, bundleNames: access.bundles.map(bundleName) };
     })
-    .catch(() => null);
+    .catch((error) => {
+      console.warn("Could not read the account's bundles for the reports:", error);
+      return { checkFailed: true };
+    });
+
+// Each showView call counts itself here, so a call that a later one overtook drops what it read.
+let latestViewCall = 0;
 
 async function showView(state) {
+  const call = ++latestViewCall;
+  const overtaken = () => call !== latestViewCall;
   window.showLoading ? window.showLoading() : null;
   window.hideStatus ? window.hideStatus() : null;
   try {
@@ -1568,6 +1591,7 @@ async function showView(state) {
     try {
       profile = await readProfile(state.companyNumber);
     } catch (error) {
+      if (overtaken()) return;
       if (error && error.status === 404) {
         showNotFound(
           window.siteText("ch.drill.no-such-company", "No company with the number {number} is on the register.", {
@@ -1578,6 +1602,7 @@ async function showView(state) {
       }
       throw error;
     }
+    if (overtaken()) return;
     document.getElementById("drillHeading").textContent = `${profile.companyName} (${profile.companyNumber})`;
     renderNav(state);
     const overview = document.getElementById("drillOverview");
@@ -1599,8 +1624,13 @@ async function showView(state) {
       ]);
       return;
     }
+    // The view draws into its own holder. A later call empties #drillView, so a view that is still
+    // reading when the reader moves on draws into a holder no longer on the page.
     view.innerHTML = "";
-    const found = await VIEW_RENDERERS[state.view](view, state);
+    const holder = document.createElement("div");
+    view.appendChild(holder);
+    const found = await VIEW_RENDERERS[state.view](holder, state);
+    if (overtaken()) return;
     if (!found) {
       showNotFound(
         state.view === "confirmation-statement"
@@ -1621,9 +1651,9 @@ async function showView(state) {
     view.style.display = "block";
     showOnly("profileView");
   } catch (error) {
-    showSearchError(error);
+    if (!overtaken()) showSearchError(error);
   } finally {
-    window.hideLoading ? window.hideLoading() : null;
+    if (!overtaken()) window.hideLoading ? window.hideLoading() : null;
   }
 }
 

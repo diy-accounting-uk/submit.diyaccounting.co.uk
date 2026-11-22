@@ -10,6 +10,7 @@
 // answers come from fixtures.
 
 import { test, expect } from "@playwright/test";
+import { bannedWordsIn } from "../../app/lib/companyReports/wording.js";
 import fs from "fs";
 import path from "path";
 
@@ -56,7 +57,13 @@ function json(route, status, body, headers = {}) {
 // catalogue's text.
 async function serveSite(
   page,
-  { reportAnswer = { status: 200, body: { readAt: READ_AT } }, catalogue = (text) => text, reportRequests = [] } = {},
+  {
+    reportAnswer = { status: 200, body: { readAt: READ_AT } },
+    catalogue = (text) => text,
+    reportRequests = [],
+    reportDelays = {},
+    bundleAnswer = { status: 200, body: { bundles: [], tokensRemaining: 10 } },
+  } = {},
 ) {
   await page.addInitScript(() => {
     localStorage.setItem("consent.analytics", "declined");
@@ -69,10 +76,11 @@ async function serveSite(
     if (url.hostname !== "localhost") return route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
     const pathname = decodeURIComponent(url.pathname);
     if (pathname.startsWith("/api/")) {
-      if (pathname === "/api/v1/bundle") return json(route, 200, { bundles: [], tokensRemaining: 10 });
+      if (pathname === "/api/v1/bundle") return json(route, bundleAnswer.status, bundleAnswer.body);
       const report = pathname.match(/^\/api\/v1\/companies-house\/company\/04512345\/reports\/([^/]+)$/);
       if (report) {
         reportRequests.push(report[1]);
+        if (reportDelays[report[1]]) await new Promise((resolve) => setTimeout(resolve, reportDelays[report[1]]));
         return json(
           route,
           reportAnswer.status,
@@ -189,6 +197,73 @@ test.describe("The company reports index", () => {
   });
 });
 
+test.describe("The note on the reports for an account without them", () => {
+  const withReportBundles = (bundles) => (text) =>
+    text.replace(/(id = "company-reports"[\s\S]*?bundles = )\["default"\]/, `$1${JSON.stringify(bundles)}`);
+
+  test("names only a bundle a reader of this deployment can get, never a hidden one", async ({ page }) => {
+    await serveSite(page, { catalogue: withReportBundles(["resident-ltd", "resident-ltd-comp"]) });
+    await page.goto(`${BASE}${COMPANY}/reports`, { waitUntil: "networkidle" });
+    await expect(page.locator(".company-reports-access")).toHaveText("These reports come with Resident Ltd.");
+  });
+
+  test("names no bundle that the deployment does not list", async ({ page }) => {
+    await serveSite(page, {
+      catalogue: (text) =>
+        withReportBundles(["resident-ltd", "resident-vat"])(text).replace(
+          /(id = "resident-ltd"[\s\S]*?listedInEnvironments = )\[[^\]]*\]/,
+          '$1["prod"]',
+        ),
+    });
+    await page.goto(`${BASE}${COMPANY}/reports`, { waitUntil: "networkidle" });
+    await expect(page.locator(".company-reports-access")).toHaveText("These reports come with Resident VAT.");
+  });
+
+  test("says the reports are not offered when only a hidden bundle has them", async ({ page }) => {
+    await serveSite(page, { catalogue: withReportBundles(["resident-ltd-comp"]) });
+    await page.goto(`${BASE}${COMPANY}/reports`, { waitUntil: "networkidle" });
+    await expect(page.locator(".company-reports-access")).toHaveText("These reports are not offered here yet.");
+  });
+
+  test("names no bundle on a deployment that hides the activity, where the page is not open", async ({ page }) => {
+    await serveSite(page, {
+      reportAnswer: { status: 403, body: { message: "Forbidden" } },
+      catalogue: (text) =>
+        withReportBundles(["resident-ltd"])(text).replace(/(id = "company-reports"[\s\S]*?environments = )\[[^\]]*\]/, '$1["prod"]'),
+    });
+    for (const address of [`${COMPANY}/reports`, `${COMPANY}/reports/people`]) {
+      await page.goto(`${BASE}${address}`, { waitUntil: "networkidle" });
+      await expect(page.getByRole("heading", { name: "Not available here yet" })).toBeVisible();
+      await expect(page.getByText("Resident Ltd").filter({ visible: true })).toHaveCount(0);
+    }
+  });
+});
+
+test.describe("A failed read of the account's bundles", () => {
+  const unreadable = { status: 500, body: { message: "The bundles could not be read" } };
+
+  test("says on a view that Submit could not check access, and not that the reports are not offered", async ({ page }) => {
+    await serveSite(page, { bundleAnswer: unreadable, reportAnswer: { status: 403, body: { message: "Forbidden" } } });
+    await page.goto(`${BASE}${COMPANY}/reports/people`, { waitUntil: "networkidle" });
+    await expect(page.locator(".company-report-state")).toHaveText("Submit could not check your access to these reports. Try again.");
+  });
+
+  test("says on the index that Submit could not check access", async ({ page }) => {
+    await serveSite(page, { bundleAnswer: unreadable });
+    await page.goto(`${BASE}${COMPANY}/reports`, { waitUntil: "networkidle" });
+    await expect(page.locator(".company-reports-access")).toHaveText("Submit could not check your access to these reports. Try again.");
+    await expect(page.locator(".company-reports-list a")).toHaveCount(6);
+  });
+
+  test("says so in Welsh", async ({ page }) => {
+    await serveSite(page, { bundleAnswer: unreadable, reportAnswer: { status: 403, body: { message: "Forbidden" } } });
+    await page.goto(`${BASE}/cy${COMPANY}/reports/people`, { waitUntil: "networkidle" });
+    await expect(page.locator(".company-report-state")).toHaveText(
+      "Nid oedd Submit yn gallu gwirio a oes gennych fynediad i’r adroddiadau hyn. Rhowch gynnig arall arni.",
+    );
+  });
+});
+
 test.describe("A company report's view", () => {
   for (const language of LANGUAGES) {
     for (const width of [1280, 390]) {
@@ -241,35 +316,37 @@ test.describe("A company report's view", () => {
     await expect(page.locator(".company-report-source")).toBeVisible();
   });
 
-  test("says the report stopped at its call limit when the route answers 429 with callLimitReached", async ({ page }) => {
-    await serveSite(page, { reportAnswer: { status: 429, body: { message: "The report's call limit", callLimitReached: true } } });
-    await page.goto(`${BASE}${COMPANY}/reports/accounts`, { waitUntil: "networkidle" });
-    await expect(page.locator(".company-report-state")).toHaveText(
-      "Submit stopped reading this company's record at its limit of calls to Companies House for one report.",
-    );
-    await expect(page.locator(".company-report-terms dt")).toHaveCount(8);
-  });
-
   test("says a report cut short at its call limit shows only what was read", async ({ page }) => {
     await serveSite(page, { reportAnswer: { status: 200, body: { readAt: READ_AT, callLimitReached: true } } });
     await page.goto(`${BASE}${COMPANY}/reports/accounts`, { waitUntil: "networkidle" });
     await expect(page.locator(".company-report-state")).toHaveText(
       "Submit stopped reading this company's record at its limit of calls to Companies House for one report. This report shows only the parts Submit had already read.",
     );
+    await expect(page.locator(".company-report-terms dt")).toHaveCount(8);
     await expect(page.locator(".company-report-source")).toBeVisible();
   });
 
-  test("says the record is too large when the route answers 413", async ({ page }) => {
-    await serveSite(page, { reportAnswer: { status: 413, body: { message: "Too large", tooLarge: true } } });
+  test("says a report with a part too large to keep shows only what was read", async ({ page }) => {
+    await serveSite(page, { reportAnswer: { status: 200, body: { readAt: READ_AT, tooLarge: true } } });
     await page.goto(`${BASE}${COMPANY}/reports/filings`, { waitUntil: "networkidle" });
-    await expect(page.locator(".company-report-state")).toHaveText("This company's record is too large for Submit to show in this report.");
+    await expect(page.locator(".company-report-state")).toHaveText(
+      "This company's record is too large for Submit to show in this report. This report shows only the parts Submit had already read.",
+    );
     await expect(page.locator("#drillHeading")).toContainText("HARBOUR LANE JOINERY LIMITED");
   });
 
-  test("gives the call-limit and too-large sentences in Welsh", async ({ page }) => {
-    await serveSite(page, { reportAnswer: { status: 413, body: { message: "Too large", tooLarge: true } } });
-    await page.goto(`${BASE}/cy${COMPANY}/reports/filings`, { waitUntil: "networkidle" });
+  test("names both the call limit and a part too large when a report meets both", async ({ page }) => {
+    await serveSite(page, { reportAnswer: { status: 200, body: { readAt: READ_AT, callLimitReached: true, tooLarge: true } } });
+    await page.goto(`${BASE}${COMPANY}/reports/filings`, { waitUntil: "networkidle" });
     await expect(page.locator(".company-report-state")).toHaveText(
+      "Submit stopped reading this company's record at its limit of calls to Companies House for one report. This company's record is too large for Submit to show in this report. This report shows only the parts Submit had already read.",
+    );
+  });
+
+  test("gives the call-limit and too-large sentences in Welsh", async ({ page }) => {
+    await serveSite(page, { reportAnswer: { status: 200, body: { readAt: READ_AT, tooLarge: true } } });
+    await page.goto(`${BASE}/cy${COMPANY}/reports/filings`, { waitUntil: "networkidle" });
+    await expect(page.locator(".company-report-state")).toContainText(
       "Mae cofnod y cwmni hwn yn rhy fawr i Submit ei ddangos yn yr adroddiad hwn.",
     );
     expect(await page.evaluate(() => window.siteText("ch.reports.call-limit", "English"))).toContain("derfyn o alwadau");
@@ -313,9 +390,72 @@ test.describe("A company report's view", () => {
     expect(reportRequests).toEqual(["filings", "capital"]);
   });
 
+  test("drops a report's answer that arrives after the reader moved to another view", async ({ page }) => {
+    const reportRequests = [];
+    await serveSite(page, {
+      reportRequests,
+      reportDelays: { filings: 1500 },
+      reportAnswer: { status: 404, body: { message: "No module", reason: "unknown_report" } },
+    });
+    await page.goto(`${BASE}${COMPANY}/reports`, { waitUntil: "networkidle" });
+    await page.locator(".company-reports-list a", { hasText: "Filing record and timeliness" }).click();
+    await expect.poll(() => reportRequests).toEqual(["filings"]);
+    await page.locator("#drillNav a", { hasText: "Officers" }).click();
+    await expect(page).toHaveURL(`${BASE}${COMPANY}/officers`);
+    await page.waitForTimeout(2000);
+    await expect(page.locator("#drillView .company-report-state")).toHaveCount(0);
+    await expect(page.locator("#drillView h4", { hasText: "Filing record and timeliness" })).toHaveCount(0);
+    await expect(page.locator("#drillView .company-report-terms")).toHaveCount(0);
+  });
+
+  test("drops a slow report's answer when the reader opens another report", async ({ page }) => {
+    await serveSite(page, { reportDelays: { filings: 1500 } });
+    await page.goto(`${BASE}${COMPANY}/reports`, { waitUntil: "networkidle" });
+    await page.locator(".company-reports-list a", { hasText: "Filing record and timeliness" }).click();
+    await page.goBack();
+    await page.locator(".company-reports-list a", { hasText: "Share capital" }).click();
+    await expect(page.locator("#drillView h4")).toHaveText("Share capital");
+    await page.waitForTimeout(2000);
+    await expect(page.locator("#drillView h4")).toHaveText("Share capital");
+    await expect(page.locator("#drillView .company-report-read")).toHaveCount(1);
+  });
+
   test("names an address with a report this page does not have as not found", async ({ page }) => {
     await serveSite(page);
     await page.goto(`${BASE}${COMPANY}/reports/forecast`, { waitUntil: "networkidle" });
     await expect(page.locator("#drillNotFound")).toBeVisible();
   });
+});
+
+test.describe("The words a reader of the reports sees", () => {
+  const reports = ["filings", "people", "capital", "charges", "history", "accounts"];
+  const answers = [
+    { status: 200, body: { readAt: READ_AT, partial: true, retryAfterSeconds: 90, callLimitReached: true, tooLarge: true } },
+    { status: 404, body: { message: "No company report named it", reason: "unknown_report" } },
+    { status: 403, body: { message: "Forbidden" } },
+  ];
+  for (const [language, prefix] of [
+    ["en", ""],
+    ["cy", "/cy"],
+  ]) {
+    test(`hold no banned word on the index and on every report's view in ${language === "en" ? "English" : "Welsh"}`, async ({ page }) => {
+      test.setTimeout(120000);
+      const seen = [];
+      for (const reportAnswer of answers) {
+        await page.unrouteAll({ behavior: "ignoreErrors" });
+        await serveSite(page, { reportAnswer });
+        await page.goto(`${BASE}${prefix}${COMPANY}/reports`, { waitUntil: "networkidle" });
+        seen.push({ report: undefined, text: await page.locator("#drillNav").innerText() });
+        seen.push({ report: undefined, text: await page.locator("#drillView").innerText() });
+        for (const report of reports) {
+          await page.goto(`${BASE}${prefix}${COMPANY}/reports/${report}`, { waitUntil: "networkidle" });
+          await expect(page.locator("#drillView h4")).toBeVisible();
+          seen.push({ report, text: await page.locator("#drillView").innerText() });
+        }
+      }
+      for (const { report, text } of seen) {
+        expect(bannedWordsIn([text], report, language), `${report || "index"}: ${text}`).toEqual([]);
+      }
+    });
+  }
 });

@@ -212,8 +212,9 @@
     if (!access || access.held) return null;
     const note = element("p", "hint company-reports-access");
     note.setAttribute("role", "note");
-    note.textContent =
-      access.bundleNames.length > 0
+    note.textContent = access.checkFailed
+      ? siteText("ch.reports.access-check-failed", "Submit could not check your access to these reports. Try again.")
+      : access.bundleNames.length > 0
         ? siteText("ch.reports.needs-bundle", "These reports come with {bundles}.", { bundles: access.bundleNames.join(", ") })
         : siteText("ch.reports.not-offered", "These reports are not offered here yet.");
     return note;
@@ -232,7 +233,7 @@
   /**
    * The reports index: one link and one line for each report.
    * @param {HTMLElement} container
-   * @param {{companyNumber: string, viewLink: Function, access: Promise<{held: boolean, bundleNames: string[]}|null>}} context
+   * @param {{companyNumber: string, viewLink: Function, access: Promise<{held?: boolean, bundleNames?: string[], checkFailed?: boolean}>}} context
    * @returns {Promise<boolean>} true: the index is always found
    */
   async function renderReportsIndex(container, { companyNumber, viewLink, access }) {
@@ -263,7 +264,7 @@
   /**
    * One report's view.
    * @param {HTMLElement} container
-   * @param {{companyNumber: string, report: string, viewLink: Function, access: Promise<{held: boolean, bundleNames: string[]}|null>}} context
+   * @param {{companyNumber: string, report: string, viewLink: Function, access: Promise<{held?: boolean, bundleNames?: string[], checkFailed?: boolean}>}} context
    * @returns {Promise<boolean>} true: every report the address names has a view
    */
   async function renderReportView(container, { companyNumber, report: name, viewLink, access }) {
@@ -277,12 +278,8 @@
     } catch (error) {
       const state = element("p", "company-report-state");
       state.setAttribute("role", "status");
-      if (error && error.status === 429 && error.callLimitReached) {
-        state.textContent = callLimitText();
-      } else if (error && error.status === 429) {
+      if (error && error.status === 429) {
         state.textContent = rateLimitText(error.retryAfterSeconds);
-      } else if (error && (error.status === 413 || error.tooLarge)) {
-        state.textContent = siteText("ch.reports.too-large", "This company's record is too large for Submit to show in this report.");
       } else if (error && error.status === 404 && error.reason === "unknown_report") {
         state.textContent = siteText("ch.reports.not-ready", "This report is not ready yet.");
       } else if (error && error.status === 403) {
@@ -302,13 +299,20 @@
         element("p", "company-report-read", siteText("ch.reports.read-at", "Read from Companies House at {time} on {date}.", read)),
       );
     }
-    if (answer.partial || answer.callLimitReached) {
+    // The route answers 200 with what the report read. A report cut short says why: the call limit
+    // of one report view, the stop after Companies House's own limit, or a record too large to keep.
+    const cutShort = [];
+    if (answer.callLimitReached) cutShort.push(callLimitText());
+    else if (answer.partial) cutShort.push(rateLimitText(answer.retryAfterSeconds));
+    if (answer.tooLarge) {
+      cutShort.push(siteText("ch.reports.too-large", "This company's record is too large for Submit to show in this report."));
+    }
+    if (cutShort.length > 0) {
       const partial = element("p", "company-report-state");
       partial.setAttribute("role", "status");
-      partial.textContent = `${answer.callLimitReached ? callLimitText() : rateLimitText(answer.retryAfterSeconds)} ${siteText(
-        "ch.reports.partial",
-        "This report shows only the parts Submit had already read.",
-      )}`;
+      partial.textContent = [...cutShort, siteText("ch.reports.partial", "This report shows only the parts Submit had already read.")].join(
+        " ",
+      );
       container.appendChild(partial);
     }
     const rows = element("div", "company-report-rows");
