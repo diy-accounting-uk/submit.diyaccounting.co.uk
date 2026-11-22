@@ -244,6 +244,7 @@ The live package record is `../private.diyaccounting.co.uk/companies-house/corre
 | Q2 | Does the gateway accept revised accounts by software when the original accounts came by paper, WebFiling or other software? | AA15 |
 | Q3 | What does the gateway answer when a second set of accounts arrives for a period and the revised fact is `false`? What does it answer when the fact is `true` and it holds no accounts for the period? | AA15, AA2 |
 | Q4 | Does the gateway refuse revised accounts for a period after some time? | AA4 copy |
+| Q5 | A `CompanyDataRequest` takes a `MadeUpDate`. Are the shareholdings and the statement of capital in the answer the register as at that date, or as at the last confirmation statement? What does the answer hold when the `MadeUpDate` is before the last confirmation statement, or after today? Does it state shareholdings for every private company limited by shares? | AA31 copy (section 11.4, point 5) |
 
 One point is settled from examples before any question. AA1 reads amended examples in the Accounts Data Product to see which date `core:DateAuthorisationFinancialStatementsForIssue` holds in a revision. It becomes a question only when the examples disagree.
 
@@ -933,14 +934,11 @@ graph TD
 
 ## 9. Not confirmed
 
-- Q1 to Q4 of section 2.3.
+- Q1 to Q5 of section 2.3.
 - The error number that the real gateway gives a revised document that fails rule 2. AA2 uses the validator's text.
 - Which date `core:DateAuthorisationFinancialStatementsForIssue` holds in a revision. AA1 reads the examples.
 - Whether a spreadsheets workbook or a package zip fills the accounts forms. AA6 tests it.
 - Whether the Document API offers the iXBRL of every software-filed set of accounts. AA23 reads the metadata first.
-- As at which date a `CompanyDataRequest` states the shareholdings, and whether it states them for every private company. AA25 reads the schema and one test answer.
-- What a `MembersRegisterDataRequest` answers. AA25 reads its schema.
-- What a Company book states for a period that is not twelve months. AA25 decides it.
 - Whether the DIYA-GL app opens a dropped iXBRL document in a browser. The code path exists; AA27 adds the test.
 - Whether each new bundle export runs under the bundle's stubs in a browser. AA28 proves each in a unit test first.
 
@@ -967,3 +965,148 @@ graph TD
 | Filing history descriptions | https://github.com/companieshouse/api-enumerations/blob/master/filing_history_descriptions.yml |
 | The XML team's review process and the live package | `../private.diyaccounting.co.uk/companies-house/correspondence/`, `.claude/skills/companies-house-review/SKILL.md` |
 | The joint filing's path to prod | `PLAN_HMRC_CT_APPROVAL.md` |
+
+## 11. Design: the book from the register
+
+AA25's output. It replaces the draft contract and the draft field map of the AA25 brief. AA26 builds it. AA31, AA32, CL3, SY2 and SY3 call it.
+
+- "The book schema" is `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/schema/diya-gl-book-v2.schema.json`.
+- A path that starts `app/lib/` is in `../spreadsheets.diyaccounting.co.uk/`. A path that starts `app/services/` or `app/functions/` is in this repository.
+- Line numbers are those of spreadsheets `24547a929` and submit `60ab98a8f`.
+
+### 11.1 The function contract
+
+```js
+// app/lib/diya-gl-register-book.js, re-exported from app/lib/diya-gl-engine.js
+export async function buildBookFromRegister(
+  { profile, officers = [], capital, shareholdings, capitalDate, lastAccounts, periodEnd },
+  deps = {},
+) // resolves to { book, lines, differences }
+```
+
+The function reads no file except through `deps.resources`, and it calls no network.
+
+**Inputs.**
+
+| Input | Fields the builder reads | Source route | Given |
+| --- | --- | --- | --- |
+| `profile` | `companyNumber`, `companyName`, `dateOfCreation`, `registeredOffice` (`addressLine1`, `addressLine2`, `addressLine3`, `cityOrTown`, `postalCode`), `accountsNextPeriodStart`, `accountsNextPeriodEnd`, `accountsLastPeriodEnd` | `GET /api/v1/companies-house/company/{companyNumber}` with AA29's fields; SY2's public route answers the same names | always |
+| `officers` | each `name`, `officerRole`, `appointedOn`, `resignedOn` | `GET .../officers`, its `officers` array | when known |
+| `capital` | `shareCurrency`, `totalAggregateNominalValue`, `shares[]` of `shareClass`, `numShares`, `aggregateNominalValue`, all strings | `POST .../filing-data`, its `statementOfCapital` | with the authentication code |
+| `shareholdings` | each `shareClass`, `numberHeld`, `shareholders[]` of `forename` and `surname`, or `amalgamatedName` | `POST .../filing-data`, its `shareholdings` | with `capital` |
+| `capitalDate` | `YYYY-MM-DD` | `POST .../filing-data`, its `madeUpDate` | with `capital` |
+| `lastAccounts` | the result of `mapIxbrlAccounts(text, { companyNumber, periodEnd: profile.accountsLastPeriodEnd, regime: "any", firstAccounts })` (`app/lib/ixbrl-accounts.js:734`); `firstAccounts` is true when the set starts on `profile.dateOfCreation` | AA23's document route; SY2's public route | when the last set has an iXBRL document |
+| `periodEnd` | `YYYY-MM-DD`, on or after `profile.accountsNextPeriodEnd` | the year end the reader chose (SY2) | optional |
+| `deps.resources` | a loader that reads `data/ltd-*.toml` | default `nodeResourceLoader()`, which also serves Submit's bundle through its embedded files (`EMBEDDED_RESOURCE_DIRS` in `scripts/build-books-bundle.mjs`); `browserResourceLoader()` in the DIYA-GL app | optional |
+
+**Steps.**
+
+1. The period. The start is `accountsNextPeriodStart`, else the day after `accountsLastPeriodEnd`, else `dateOfCreation`. The end is `periodEnd`, else `accountsNextPeriodEnd`.
+2. The rate data. Call `loadTaxDataForBook` (`app/lib/product-workbook.js:133`) on a probe book with that period, as `loadTaxData` does (`app/lib/ixbrl-summary-book.js:411`).
+3. With `lastAccounts`, and an end equal to `accountsNextPeriodEnd`: call `buildIxbrlSummaryBooks(lastAccounts, { resources })`, then `rollForward(summary.book, summary.lines, rateData)`. Set `documentInfo.periodCoveredEnd` to the end of step 1. The start already agrees, because `rollForward` starts the day after the filed end (`app/lib/diya-gl-roll-forward.js:487`). So the opening lines keep their date.
+4. In every other case: call `buildNewBook({ product: "ltd", businessName: profile.companyName, yearEnd: end, vatRegistered: false }, rateData)` (`app/lib/diya-gl-new-book.js:167`). Set `periodCoveredStart` to the start of step 1. `lines` is `[]`.
+5. Write the company and the people by the field map (11.2). They replace the names that the summary book took from the filed document (`app/lib/ixbrl-summary-book.js:402`).
+6. Run the checks of 11.4 into `differences`.
+7. Run `validateBook(book)` and `validateLines(lines, book)`. A failure throws.
+
+**Result.**
+
+- `book` passes `validateBook`.
+- `lines` holds the opening entries that `rollForward` writes, or `[]`.
+- `differences` is an array of `{ code, text }`. The text is one plain sentence that the page shows as it is.
+
+| Code | When |
+| --- | --- |
+| `filed-accounts` | One for each entry of the summary books' `differences` (section 1.9) |
+| `period` | The period is not twelve whole months |
+| `no-figures` | The register holds a last set and no iXBRL of it reached the builder; the text names its period end |
+| `first-period` | The company has filed no accounts yet |
+| `periods-between` | `periodEnd` is after `accountsNextPeriodEnd`, so the periods between are not on the register |
+| `capital` | The filed called up share capital and the statement of capital differ by more than 50p |
+| `capital-currency` | The statement of capital is not in GBP |
+| `no-members` | No shareholdings reached the builder |
+| `shareholders-date` | Always with members: the date the shareholdings are stated as at (`capitalDate`) |
+| `share-classes` | The company has more than one share class |
+| `holding-left-out` | A holding the book does not carry, with its class, its holder and its number of shares |
+| `shareholdings-total` | The holdings of a class do not add up to its `numShares` |
+| `officers-left-out` | An officer of a role that the book does not hold, or an officer past the seventh |
+
+**Errors.** The function throws `RegisterBookError`, exported beside it, with a `field` and a message. The page shows the message.
+
+| `field` | When |
+| --- | --- |
+| `profile` | `profile`, its `companyNumber` or its `companyName` is missing |
+| `period` | Step 1 finds no end or no start, or the start is after the end |
+| `periodEnd` | `periodEnd` is before `accountsNextPeriodEnd` |
+| `lastAccounts` | Its company number is not the profile's, or its period does not end the day before the start of step 1 |
+| `taxYear` | `loadTaxDataForBook` finds no rate data for the period; the message names the year end |
+
+An `IxbrlError` of `mapIxbrlAccounts` belongs to the caller, which runs it first. A book or lines that fail step 7 throw `InvalidDiyaGlBookError` (`app/lib/diya-gl-interchange.js:376`); that is a defect in the builder.
+
+**Two further changes in AA26.**
+
+- Export `isTwelveWholeMonths(start, end)` from `app/lib/product-workbook.js`, and make `refuseUnlessTwelveWholeMonths` (line 111) use it. A period is twelve whole months when it starts on the first of a month and ends on the last day of the twelfth month. Consumers call it to decide whether to offer the package.
+- Widen the pattern of `diya-gl:companyNumber` (book schema line 169) from `^([0-9]{8})?$` to `^([0-9]{8}|[A-Z]{2}[0-9]{6})?$`. A Scottish or Northern Ireland number such as `SC123456` fails it today. The summary books write the filed number there (`app/lib/ixbrl-summary-book.js:382`), and `readBookSource` validates them, so it refuses such a company's filed set now. Add a test with an `SC` number.
+
+### 11.2 The field map
+
+| Register field | Book field | Defined at | Rule |
+| --- | --- | --- | --- |
+| `profile.companyName` | `entityInformation.organizationIdentifier` | book schema line 108 | As given. The package prints it in `OpenAccounts!E2` (`app/lib/xlsx-exporter.js:1805`) |
+| `profile.companyNumber` | `entityInformation."diya-gl:companyNumber"` | line 167 | As given; `OpenAccounts!E3` |
+| `registeredOffice.addressLine1` to `addressLine3` | `entityInformation.organizationAddressLine` | line 116 | The lines that exist, joined with ", "; `OpenAccounts!J3` |
+| `registeredOffice.cityOrTown` | `entityInformation.organizationTown` | line 120 | As given; `OpenAccounts!J4` |
+| `registeredOffice.postalCode` | `entityInformation.organizationPostcode` | line 124 | As given; `OpenAccounts!N6` |
+| The first director in the book's `directors[]` | `entityInformation."diya-gl:companiesHouseName"` | line 177 | The schema defines this field as the first director's name as filed. So the company name does not go here |
+| `lastAccounts.principalActivity` | `entityInformation.organizationDescription` | line 112 | The summary book sets it, and `rollForward` keeps it |
+| The period of 11.1 step 1 | `documentInfo.periodCoveredStart`, `documentInfo.periodCoveredEnd` | lines 46, 51 | As step 1 gives them |
+| Each officer whose `officerRole` is `director`, `corporate-director`, `secretary` or `corporate-secretary`, and whose `resignedOn` is absent or on or after the period start | one entry of `directors[]` | line 188 | Register order. At most seven, the rows of `Directors&Secretary` (`app/lib/xlsx-exporter.js:1860`); the rest go to `officers-left-out` |
+| `officer.name` | `directors[].name` | line 196 | "SURNAME, Forenames" becomes "Forenames SURNAME". The spelling and case stay as the register gives them |
+| `officer.officerRole` | `directors[].role` | line 200 | "Director" for the two director roles; "Company Secretary" for the two secretary roles |
+| `officer.appointedOn` | `directors[].appointed` | line 209 | As given |
+| `officer.resignedOn` | `directors[].resigned` | line 214 | When present |
+| The shares of the member with the same name | `directors[].shares` | line 204 | Names compare with case and spaces ignored. The sum over every class the book carries |
+| Each entry of `shareholdings` that the book carries | one entry of `members[]` | line 610 | Register order. At most 17, the rows of the register of members (`app/lib/xlsx-exporter.js:1849`; `buildCompanySecretary` drops the rest, `app/lib/calculators/ltd.js:1349`); the rest go to `holding-left-out` |
+| The entry's place in that order | `members[].memberID` | line 618 | `M1`, `M2` and on, as the workbook reader numbers them (`app/lib/xlsx-exporter.js:2431`) |
+| `shareholders[]` | `members[].name` | line 622 | "Forename Surname", or `amalgamatedName` as given. Joint holders are joined with " and " |
+| `numberHeld` | `members[].shares` | line 625 | A whole number. A fraction goes to `holding-left-out` |
+| The class's `aggregateNominalValue` ÷ `numShares` in `capital` | `members[].nominalValue` | line 629 | Pounds per share, rounded to six places |
+| (none) | `members[].acquiredDate` | line 634 | Left out. The answer holds no date per holding |
+| The closing balance sheet of `lastAccounts` | `openingBalances` and the `OB-001` lines | line 345 | `rollForward`, by the table of section 1.9. Called up share capital lands on `3000`, which the package prints in `OpenAccounts!E33` (`app/products/ltd/layout.js:158`) |
+
+The book takes nothing else. Left out: `sicCodes`, the company status and type, `dateOfCreation` (it sets the period only), the statement's `prescribedParticulars` and `totalAmountUnpaid`, and `capitalDate` (it appears in a text only). The `filing-data` answer's officers and registered office are not read: the officers route and the profile give them.
+
+### 11.3 The cases
+
+| Case | Inputs | Book | Lines | `differences` |
+| --- | --- | --- | --- | --- |
+| Full register with shareholders (AA31 with the code, AA32 with `codesEntryId`, CL3) | All | The roll forward of the last set, with directors and members | The opening entries | `filed-accounts`, `shareholders-date`, and any check of 11.4 that fails |
+| Public data only (SY2, SY3, AA31 without the code) | `profile`, `officers`, `lastAccounts` | The roll forward, with directors and no `members` | The opening entries | `no-members`, `filed-accounts` |
+| The last set is a PDF | `profile` with `accountsLastPeriodEnd`, no `lastAccounts` | `buildNewBook` for the next period, with the company and the people | `[]` | `no-figures`, which says to type the opening balances from the filed PDF |
+| A first period, no accounts yet | `profile` with no `accountsLastPeriodEnd` | `buildNewBook`, from `accountsNextPeriodStart` (the date of incorporation) to `accountsNextPeriodEnd` | `[]` | `first-period`; usually `period`; with `capital`, a `first-period` text that names the share capital issued, which the customer posts on the incorporation date |
+| A period that is not twelve whole months | Any | The register's period, as stated | As the other cases | `period`. The consumer offers the DIYA-GL book file and withholds the package (11.4, point 1) |
+| Two share classes | `capital` and `shareholdings` with two classes | Members by the rule of 11.4, point 2 | As the other cases | `share-classes`, and `holding-left-out` when the nominal values differ |
+
+### 11.4 The open points
+
+| Point | Answer | Evidence | Status |
+| --- | --- | --- | --- |
+| 1. The period | The book states the register's period. A period of twelve whole months gets a package. Any other period gets `period`, and the consumer offers the book file only | `periodFromYearEnd` gives twelve months (`app/lib/diya-gl-new-book.js:136`); `rollForward` always rolls twelve months (`app/lib/diya-gl-roll-forward.js:487`); the package refuses any other period (`refuseUnlessTwelveWholeMonths`, `app/lib/product-workbook.js:111`); the Company calculator works in twelve month columns (`app/lib/calculators/ltd.js:1770`) | Settled |
+| 2. Share classes | One nominal value for every class: one member for each holding of each class. Different nominal values: the members of the class with the largest total nominal value; each holding of the other classes goes to `holding-left-out` | `members[].nominalValue` holds one figure for the book (book schema line 629); `registerNominalValue` throws on two (`app/lib/share-nominal.js:45`); the register sheet has no class column (`MEMBER_COLUMNS`, `app/lib/xlsx-exporter.js:1850`); the recorded test answer holds two classes at £1 a share | Settled |
+| 3. Capital | `3000` takes the filed called up share capital, so the opening balance sheet equals the filed one. The builder compares it with `totalAggregateNominalValue` and writes `capital` when they differ by more than 50p. The text says that shares issued or bought back after the year end are a line in the new period | The statement is as at `capitalDate`, after the filed year end; the summary book posts the filed figure to `3000` (`app/lib/ixbrl-summary-book.js:313`) | Settled |
+| 4. `MembersRegisterDataRequest` | Not used. Submit keeps `CompanyDataRequest` | Its schema documents it as the elected members' register held on the public record (`MembersRegisterData-v1-0.xsd`); the schema page lists the elect, withdraw and update forms as retired on 18/11/2025; `CompanyDataRequest` gives shareholdings for any company with a confirmation statement (General specification 5.3, section 2.3). Its one gain is a date registered for each member | Settled |
+| 5. The date of the shareholder list | Working rule: the page sends the profile's `confirmationStatementNextMadeUpTo`, as AA31 step 3 says. The builder states the members as at the answer's `madeUpDate` in `shareholders-date`, and leaves `acquiredDate` out | The schema says only "Date information made up to" (`baseTypes-v3-7.xsd`, element `MadeUpDate`). The recorded test answer echoes the date that was sent, for a company other than the one asked for, so it shows no effect of the date. The simulator answers a fixed `madeUpDate` (`app/http-simulator/scenarios/confirmation-statement.js:82`) | Q5 in section 2.3 |
+| 6. A PDF set and a first period | Both get `buildNewBook` for the next period, with the company and the people and no lines (11.3) | A PDF holds no figures (section 1.9); the profile has no last accounts for a new company (AA29) | Settled |
+
+Facts of the recorded test answer (run 36264617953, case `company-data-request`) that the builder relies on:
+
+- The answer gives `shareClass`, `numShares` and `aggregateNominalValue` for each class. It also gives `AmountPaidDuePerShare` and `AmountUnpaidPerShare`, which the parser does not read, and it holds no `PrescribedParticulars` and no `TotalAmountUnpaid`. So the builder requires none of those.
+- A shareholder can be a company, named in one name field.
+- `parseCompanyDataResponse` reads the first `Capital` element only (`parseStatementOfCapitalElement`, `app/services/companiesHouseXmlGateway.js:624`). The schema allows one for each currency. Until the parser reads them all, a statement in another currency gives `capital-currency`.
+
+### 11.5 Privacy
+
+- The book holds the names, roles, appointment and resignation dates, shareholdings and the registered office (Rules of this plan).
+- The builder copies by the field map and never spreads an input object. The caller drops every other field before the call (AA31 step 4).
+- These fields reach no book, line or `differences` text: a date of birth (`dob`, `dateOfBirth`), a nationality, a country of residence, an occupation, identity verification details, a service or residential address, and a shareholder's address.
+- AA26's tests pass inputs that hold each of those fields. They assert that no value of them appears in the JSON of the book, the lines or `differences`. AA31's browser test asserts the same of the page's outputs.
