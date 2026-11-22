@@ -53,6 +53,7 @@ describe("companiesHouseSailAddressXml", () => {
     expect(() => buildSailAddressBody({ ...SHORT, premise: "" })).toThrow("building name or number");
     expect(() => buildSailAddressBody({ ...SHORT, postTown: undefined })).toThrow("post town");
     expect(() => buildSailAddressBody({ ...SHORT, country: "FR" })).toThrow("unknown SAIL address country FR");
+    expect(() => buildSailAddressBody({ ...SHORT, country: "constructor" })).toThrow("unknown SAIL address country constructor");
   });
 
   test("the schema check refuses a body whose elements are out of order", async () => {

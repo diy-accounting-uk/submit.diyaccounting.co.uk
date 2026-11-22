@@ -187,6 +187,9 @@ describe("companiesHouseSailAddressPost ingestHandler", () => {
       [{ address: { ...address, postTown: undefined } }, "Missing address.postTown"],
       [{ address: { ...address, country: "FR" } }, "Invalid address.country"],
       [{ address: { ...address, country: "GBR" } }, "Invalid address.country"],
+      [{ address: { ...address, country: "constructor" } }, "Invalid address.country"],
+      [{ address: { ...address, country: "__proto__" } }, "Invalid address.country"],
+      [{ address: { ...address, country: ["GB-ENG"] } }, "Invalid address.country"],
       [{ address: { ...address, street: "x".repeat(51) } }, "Invalid address.street - must be at most 50 characters"],
       [{ address: { ...address, postcode: "x".repeat(16) } }, "Invalid address.postcode - must be at most 15 characters"],
       [

@@ -30,6 +30,8 @@ const CONTENT_TYPES = {
 const COMPANIES = {
   "00000001": { companyNumber: "00000001", companyName: "SIMULATOR EXAMPLE COMPANY LIMITED", jurisdiction: "england-wales" },
   "SC000000": { companyNumber: "SC000000", companyName: "SIMULATOR SCOTTISH COMPANY LIMITED", jurisdiction: "scotland" },
+  "00000002": { companyNumber: "00000002", companyName: "CWMNI ENGHREIFFTIOL CYF", jurisdiction: "wales" },
+  "NI000000": { companyNumber: "NI000000", companyName: "SIMULATOR NORTHERN IRELAND COMPANY LIMITED", jurisdiction: "northern-ireland" },
 };
 
 // The real site from disk, signed in with the resident Ltd bundle, and the Companies House routes
@@ -249,6 +251,18 @@ test("a company registered in Scotland is offered Scotland alone, and its charge
   await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
   expect(filings[0].body).toMatchObject({ destination: "sail", records: ["CHARGESC"] });
 });
+
+for (const [companyNumber, countries] of [
+  ["00000002", ["England", "Wales"]],
+  ["NI000000", ["Northern Ireland"]],
+]) {
+  test(`company ${companyNumber} is offered the countries of the part of the United Kingdom it is registered in`, async ({ page }) => {
+    await serveSite(page, { filings: [] });
+    await page.goto(`${SITE}/companies-house/recordsLocation.html`, { waitUntil: "networkidle" });
+    await lookUp(page, { companyNumber });
+    await expect(page.locator("#sailCountry option:not([hidden])")).toHaveText(countries);
+  });
+}
 
 test("the records are in the words and the order of form AD03", async ({ page }) => {
   await serveSite(page);

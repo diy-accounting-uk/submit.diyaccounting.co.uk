@@ -18,10 +18,11 @@ const CHANGES = {
   "to-office": { kind: "record-location", destination: "registered-office" },
 };
 
-// The parts of the United Kingdom an inspection location may be in, by where the company is registered.
+// The countries an inspection location may be in, by where the company is registered. England and
+// Wales are one part of the United Kingdom, so a Welsh company's location may be in either.
 const COUNTRIES_BY_JURISDICTION = {
   "england-wales": ["GB-ENG", "GB-WLS"],
-  "wales": ["GB-WLS"],
+  "wales": ["GB-ENG", "GB-WLS"],
   "scotland": ["GB-SCT"],
   "northern-ireland": ["GB-NIR"],
 };

@@ -80,6 +80,21 @@ test.describe("Home page activities for a Resident account", () => {
     }
   });
 
+  test("a catalogue with a paths array written over several lines still gives the activity buttons", async ({ page }) => {
+    const catalogue = fs.readFileSync(path.join(PUBLIC_ROOT, "submit.catalogue.toml"), "utf-8");
+    const oneLine = catalogue.split("\n").find((line) => line.startsWith('paths = ["companies-house/recordsLocation.html"'));
+    const overLines = oneLine.replace("[", "[\n  ").replaceAll('", "', '",\n  "').replace(/\]$/, ",\n]");
+    await serveHomeForResident(page);
+    await page.route("**/submit.catalogue.toml", (route) =>
+      route.fulfill({ status: 200, contentType: "text/x-toml", body: catalogue.replace(oneLine, overLines) }),
+    );
+    await page.goto("http://localhost:3000/", { waitUntil: "domcontentloaded" });
+
+    const buttons = page.locator("#dynamicActivities .activity-group button.btn:not([disabled])");
+    await expect(buttons.first()).toBeVisible();
+    await expect(page.locator("#dynamicActivities")).toContainText("Tell Companies House where the company keeps its records");
+  });
+
   test("prod shows no status box, and the introduction lists only what the catalogue lists for prod", async ({ page }) => {
     await serveHomeForResident(page, "prod");
     await page.goto("http://localhost:3000/", { waitUntil: "domcontentloaded" });

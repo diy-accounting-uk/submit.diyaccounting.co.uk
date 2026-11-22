@@ -52,7 +52,9 @@ function element(name, value) {
 export function buildSailAddressBody(address) {
   if (!address.premise) throw new Error("a SAIL address needs its building name or number");
   if (!address.postTown) throw new Error("a SAIL address needs its post town");
-  if (!SAIL_ADDRESS_COUNTRIES[address.country]) throw new Error(`unknown SAIL address country ${address.country}`);
+  if (typeof address.country !== "string" || !Object.hasOwn(SAIL_ADDRESS_COUNTRIES, address.country)) {
+    throw new Error(`unknown SAIL address country ${address.country}`);
+  }
   const part = (field) => element(SAIL_ADDRESS_PARTS[field].element, address[field]);
   return (
     `<SailAddress xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ` +

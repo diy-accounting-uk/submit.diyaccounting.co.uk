@@ -250,7 +250,7 @@ function extractSailAddress(body, errorMessages) {
       errorMessages.push(`Invalid address.${field} - has a character Companies House does not take`);
     if (value) address[field] = value;
   }
-  if (!SAIL_ADDRESS_COUNTRIES[given.country]) {
+  if (typeof given.country !== "string" || !Object.hasOwn(SAIL_ADDRESS_COUNTRIES, given.country)) {
     errorMessages.push(`Invalid address.country - must be one of ${Object.keys(SAIL_ADDRESS_COUNTRIES).join(", ")}`);
   }
   return { address: { ...address, country: given.country } };
