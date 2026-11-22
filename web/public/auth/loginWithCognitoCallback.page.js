@@ -96,38 +96,13 @@ function signedInProvider(idTokenPayload) {
   return "cognito";
 }
 
-// The landing fields analytics.js stores under attribution.landing; click ids stay in the browser.
-const ACQUISITION_FIELDS = ["utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm", "ref", "landedAt"];
-const ACQUISITION_POSTED_KEY = "attribution.landing.posted";
-
-// Sends the stored landing as the account's source, once per landing, without holding up the
-// sign-in: the post is never awaited and keepalive lets it finish after the page moves on.
-function recordAccountAcquisition(accessToken, loginProvider) {
-  let landing;
+// Tells the page the sign-in lands on to post the stored landing as the account's source. The post
+// is made there and not here, because this page leaves before an answer could arrive.
+function markSignInForAccountAcquisition() {
   try {
-    landing = JSON.parse(localStorage.getItem("attribution.landing") || "null");
+    sessionStorage.setItem("attribution.landing.signIn", "1");
   } catch {
-    return;
-  }
-  if (!landing || typeof landing !== "object" || !accessToken) return;
-  if (localStorage.getItem(ACQUISITION_POSTED_KEY) === String(landing.landedAt)) return;
-  const body = {};
-  for (const field of ACQUISITION_FIELDS) {
-    if (typeof landing[field] === "string" && landing[field]) body[field] = landing[field];
-  }
-  try {
-    fetch("/api/v1/account/acquisition", {
-      method: "POST",
-      keepalive: true,
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
-      body: JSON.stringify(body),
-    }).catch(() => {});
-    localStorage.setItem(ACQUISITION_POSTED_KEY, String(landing.landedAt));
-  } catch {
-    return;
-  }
-  if (typeof gtag === "function") {
-    gtag("event", "sign_up", { method: loginProvider });
+    // no storage: no post
   }
 }
 
@@ -278,7 +253,7 @@ async function handleAuthCallback(code, state) {
     if (typeof gtag === "function") {
       gtag("event", "login", { method: loginProvider });
     }
-    recordAccountAcquisition(accessToken, loginProvider);
+    markSignInForAccountAcquisition();
     showStatus(siteText("login.callback-fetching-bundles", "Authenticated successfully. Fetching bundles..."), "info");
 
     // Extract MFA status from the ID token

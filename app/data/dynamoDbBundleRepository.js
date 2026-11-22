@@ -666,6 +666,61 @@ export async function updateAccountSettings(userId, settings) {
   }
 }
 
+/**
+ * The source recorded as the account's first, under its current hashed sub or an earlier one.
+ * @param {string} userId
+ * @returns {Promise<object|undefined>} The stored source, or undefined when the account has none
+ */
+export async function getFirstAccountSource(userId) {
+  const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
+  for (const { hashedSub } of subHashCandidates(userId)) {
+    const response = await executeDynamoDbCommand(
+      (module) =>
+        new module.GetCommand({ TableName: tableName, Key: { hashedSub, bundleId: ACCOUNT_SETTINGS_ITEM_ID }, ConsistentRead: true }),
+    );
+    if (response.Item?.firstSource) return response.Item.firstSource;
+  }
+  return undefined;
+}
+
+// Two attempts: the first write fails when the settings item does not exist yet, the second
+// follows its creation.
+const FIRST_SOURCE_ATTEMPTS = 2;
+
+/**
+ * Record a source as the account's first in one conditional write on the settings item, so two
+ * records at once keep one. Only the source's own attribute is written.
+ * @param {string} userId
+ * @param {object} source
+ * @returns {Promise<object>} The account's first source as stored: this one, or the one recorded before it
+ */
+export async function recordFirstAccountSource(userId, source) {
+  const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
+  for (let attempt = 1; attempt <= FIRST_SOURCE_ATTEMPTS; attempt++) {
+    try {
+      const response = await executeDynamoDbCommand(
+        (module) =>
+          new module.UpdateCommand({
+            TableName: tableName,
+            Key: { hashedSub: hashSub(userId), bundleId: ACCOUNT_SETTINGS_ITEM_ID },
+            UpdateExpression: "SET firstSource = :source, updatedAt = :now",
+            ConditionExpression: "attribute_exists(#settings) AND attribute_not_exists(firstSource)",
+            ExpressionAttributeNames: { "#settings": "settings" },
+            ExpressionAttributeValues: { ":source": source, ":now": new Date().toISOString() },
+            ReturnValues: "ALL_NEW",
+          }),
+      );
+      return response.Attributes.firstSource;
+    } catch (error) {
+      if (!isConditionFailure(error)) throw error;
+    }
+    const recordedBefore = await getFirstAccountSource(userId);
+    if (recordedBefore) return recordedBefore;
+    await ensureAccountSettingsItem(userId);
+  }
+  throw new Error("The account's first source could not be recorded");
+}
+
 async function readOwnAccountSettings(userId) {
   const response = await executeDynamoDbCommand(
     (module) =>

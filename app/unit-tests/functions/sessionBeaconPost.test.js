@@ -137,6 +137,24 @@ describe("sessionBeaconPost ingestHandler", () => {
     });
   });
 
+  it("caps each attribution field at 200 characters and drops one that holds markup, an email address or a landedAt that is not a timestamp", async () => {
+    await ingestHandler(
+      buildBeaconEvent({
+        page: "/",
+        utmSource: "a".repeat(5000),
+        utmMedium: "<script>alert(1)</script>",
+        utmCampaign: "someone@example.com",
+        gclid: "abc123",
+        landedAt: "my name is Someone 1 2020",
+        utmTerm: { nested: "x" },
+      }),
+    );
+    const { detail } = mockPublishActivityEvent.mock.calls[0][0];
+    expect(detail.utmSource).toBe("a".repeat(200));
+    expect(detail.gclid).toBe("abc123");
+    for (const dropped of ["utmMedium", "utmCampaign", "landedAt", "utmTerm"]) expect(detail).not.toHaveProperty(dropped);
+  });
+
   it("carries no attribution fields when the beacon sends none", async () => {
     await ingestHandler(buildBeaconEvent({ page: "/index.html" }));
 

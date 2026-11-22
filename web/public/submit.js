@@ -502,6 +502,68 @@ function handleActivityCompletedEvent(event) {
   postActivityEvent(event.detail, "completed");
 }
 
+// The landing fields analytics.js stores under attribution.landing; click ids stay in the browser.
+const ACQUISITION_FIELDS = ["utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm", "ref", "landedAt"];
+const ACQUISITION_POSTED_KEY = "attribution.landing.posted";
+const ACQUISITION_SIGN_IN_KEY = "attribution.landing.signIn";
+
+function readLandingForAccountAcquisition() {
+  if (sessionStorage.getItem(ACQUISITION_SIGN_IN_KEY) !== "1") return null;
+  sessionStorage.removeItem(ACQUISITION_SIGN_IN_KEY);
+  const accessToken = localStorage.getItem("cognitoAccessToken");
+  const landing = JSON.parse(localStorage.getItem("attribution.landing") || "null");
+  if (!accessToken || !landing || typeof landing !== "object") return null;
+  if (localStorage.getItem(ACQUISITION_POSTED_KEY) === String(landing.landedAt)) return null;
+  return { accessToken, landing };
+}
+
+function handleAccountAcquisitionAnswer(answer, landing) {
+  try {
+    localStorage.setItem(ACQUISITION_POSTED_KEY, String(landing.landedAt));
+  } catch (error) {
+    console.warn("Failed to store that the landing was posted:", error);
+  }
+  if (answer.firstRecord === true && typeof gtag === "function") {
+    let method = "cognito";
+    try {
+      method = localStorage.getItem("loginProvider") || method;
+    } catch {
+      // no storage: the default method
+    }
+    gtag("event", "sign_up", { method });
+  }
+}
+
+// Posts the stored landing as the account's source on the first page after a sign-in, once per
+// sign-in until a post succeeds. The landing counts as posted only when the route answers with
+// success, so a post that fails or is cut off by a page change is sent again at the next sign-in.
+// sign_up is sent only when the route answers that this is the account's first record.
+function recordAccountAcquisitionAfterSignIn() {
+  let pending;
+  try {
+    pending = readLandingForAccountAcquisition();
+  } catch {
+    return;
+  }
+  if (!pending) return;
+  const { accessToken, landing } = pending;
+  const body = {};
+  for (const field of ACQUISITION_FIELDS) {
+    if (typeof landing[field] === "string" && landing[field]) body[field] = landing[field];
+  }
+  fetch("/api/v1/account/acquisition", {
+    method: "POST",
+    keepalive: true,
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + accessToken },
+    body: JSON.stringify(body),
+  })
+    .then((response) => (response.ok ? response.json() : null))
+    .then((answer) => (answer ? handleAccountAcquisitionAnswer(answer, landing) : undefined))
+    .catch(() => {
+      // Best-effort: the landing stays unposted and the next sign-in sends it again.
+    });
+}
+
 function ensurePrivacyLink() {
   const anchors = Array.from(document.querySelectorAll('body > footer a[href$="privacy.html"]'));
   if (anchors.length) return;
@@ -521,6 +583,7 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       recordActivityViewOnLoad();
+      recordAccountAcquisitionAfterSignIn();
       ensurePrivacyLink();
       bootstrapRumConfigFromMeta();
       maybeInitRum();
@@ -532,6 +595,7 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
     });
   } else {
     recordActivityViewOnLoad();
+    recordAccountAcquisitionAfterSignIn();
     ensurePrivacyLink();
     bootstrapRumConfigFromMeta();
     maybeInitRum();

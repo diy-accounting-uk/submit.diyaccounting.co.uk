@@ -1335,6 +1335,7 @@ public class AccountStack extends Stack {
         // Account Acquisition POST Lambda (JWT auth - the source of an account, posted at its sign-in)
         // ============================================================================
         var accountAcquisitionPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var accountAcquisitionPostApiLambda = new ApiLambda(
@@ -1379,6 +1380,11 @@ public class AccountStack extends Stack {
                         "arn:aws:ssm:%s:%s:parameter/submit/%s/mcp-app-client-id"
                                 .formatted(region, account, props.envName())))
                 .build());
+
+        // The handler reads the account's first source from its settings item, creates that item
+        // when the account has none, and writes the source once.
+        bundlesTable.grant(
+                this.accountAcquisitionPostLambda, "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem");
 
         SubHashSaltHelper.grantSaltAccess(this.accountAcquisitionPostLambda, region, account, props.envName());
 

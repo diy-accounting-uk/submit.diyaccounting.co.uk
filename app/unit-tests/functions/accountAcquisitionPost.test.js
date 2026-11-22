@@ -13,6 +13,17 @@ vi.mock("@app/lib/activityAlert.js", async (importOriginal) => {
   return { ...actual, publishActivityEvent: (...args) => mockPublishActivityEvent(...args) };
 });
 
+const firstSourceBySub = new Map();
+const mockGetFirstAccountSource = vi.fn(async (sub) => firstSourceBySub.get(sub));
+const mockRecordFirstAccountSource = vi.fn(async (sub, source) => {
+  if (!firstSourceBySub.has(sub)) firstSourceBySub.set(sub, source);
+  return firstSourceBySub.get(sub);
+});
+vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
+  getFirstAccountSource: (...args) => mockGetFirstAccountSource(...args),
+  recordFirstAccountSource: (...args) => mockRecordFirstAccountSource(...args),
+}));
+
 const mockSsmSend = vi.fn();
 vi.mock("@aws-sdk/client-ssm", () => ({
   SSMClient: class {
@@ -52,6 +63,12 @@ function acquisitionEvent(body, { sub = "test-sub" } = {}) {
 describe("accountAcquisitionPost ingestHandler", () => {
   beforeEach(() => {
     mockPublishActivityEvent.mockClear();
+    mockPublishActivityEvent.mockResolvedValue({ published: true });
+    firstSourceBySub.clear();
+    mockGetFirstAccountSource.mockClear();
+    mockRecordFirstAccountSource.mockClear();
+    process.env.BUNDLE_DYNAMODB_TABLE_NAME = "test-bundles";
+    process.env.ACTIVITY_BUS_NAME = "test-bus";
     mockSsmSend.mockReset();
     process.env.ENVIRONMENT_NAME = "ci";
     _setTestSalt("test-salt");
@@ -78,6 +95,69 @@ describe("accountAcquisitionPost ingestHandler", () => {
     expect(mockPublishActivityEvent).toHaveBeenCalledWith(
       expect.objectContaining({ event: "account-acquisition", userSub: "test-sub", appClient: "submit", detail: LANDING }),
     );
+  });
+
+  test("answers firstRecord true for the account's first landing, and stores it", async () => {
+    const response = await ingestHandler(acquisitionEvent(LANDING));
+    expect(parseResponseBody(response)).toEqual({ ok: true, firstRecord: true });
+    expect(firstSourceBySub.get("test-sub")).toEqual(LANDING);
+  });
+
+  test("answers firstRecord false for a later landing of an account that has a source, and publishes nothing more", async () => {
+    await ingestHandler(acquisitionEvent(LANDING));
+    const later = { utmSource: "google", utmMedium: "cpc", utmCampaign: "watch-due", landedAt: "2026-12-01T10:00:00.000Z" };
+    const response = await ingestHandler(acquisitionEvent(later));
+    expect(response.statusCode).toBe(200);
+    expect(parseResponseBody(response)).toEqual({ ok: true, firstRecord: false });
+    expect(mockPublishActivityEvent).toHaveBeenCalledTimes(1);
+    expect(firstSourceBySub.get("test-sub")).toEqual(LANDING);
+  });
+
+  test("answers firstRecord true again when the same landing is sent again, and publishes nothing more", async () => {
+    await ingestHandler(acquisitionEvent(LANDING));
+    const response = await ingestHandler(acquisitionEvent(LANDING));
+    expect(parseResponseBody(response)).toEqual({ ok: true, firstRecord: true });
+    expect(mockPublishActivityEvent).toHaveBeenCalledTimes(1);
+  });
+
+  test("records an untagged first landing as the account's source, so a later tagged landing is not its first", async () => {
+    const untagged = { landedAt: "2026-11-20T09:00:00.000Z" };
+    const first = await ingestHandler(acquisitionEvent(untagged));
+    expect(parseResponseBody(first)).toEqual({ ok: true, firstRecord: true });
+    expect(mockPublishActivityEvent.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ summary: "Account acquisition: untagged", detail: untagged }),
+    );
+    const later = await ingestHandler(acquisitionEvent(LANDING));
+    expect(parseResponseBody(later)).toEqual({ ok: true, firstRecord: false });
+    expect(mockPublishActivityEvent).toHaveBeenCalledTimes(1);
+  });
+
+  test("keeps one account's source apart from another's", async () => {
+    await ingestHandler(acquisitionEvent(LANDING, { sub: "sub-a" }));
+    const response = await ingestHandler(acquisitionEvent({ ...LANDING, utmSource: "other" }, { sub: "sub-b" }));
+    expect(parseResponseBody(response)).toEqual({ ok: true, firstRecord: true });
+    expect(mockPublishActivityEvent).toHaveBeenCalledTimes(2);
+  });
+
+  test("answers 500 in JSON and stores nothing when the event is not published, so the next post records it", async () => {
+    mockPublishActivityEvent.mockResolvedValueOnce({ published: false, error: "throttled" });
+    const failed = await ingestHandler(acquisitionEvent(LANDING));
+    expect(failed.statusCode).toBe(500);
+    expect(failed.headers["Content-Type"]).toBe("application/json");
+    expect(parseResponseBody(failed).message).toBe("The account's source was not recorded");
+    expect(firstSourceBySub.has("test-sub")).toBe(false);
+
+    const next = await ingestHandler(acquisitionEvent(LANDING));
+    expect(parseResponseBody(next)).toEqual({ ok: true, firstRecord: true });
+  });
+
+  test("answers 500 in JSON when the store fails", async () => {
+    mockGetFirstAccountSource.mockRejectedValueOnce(new Error("table unavailable"));
+    const response = await ingestHandler(acquisitionEvent(LANDING));
+    expect(response.statusCode).toBe(500);
+    expect(response.headers["Content-Type"]).toBe("application/json");
+    expect(JSON.stringify(parseResponseBody(response))).not.toContain("table unavailable");
+    expect(mockPublishActivityEvent).not.toHaveBeenCalled();
   });
 
   test("drops a field it does not know", async () => {

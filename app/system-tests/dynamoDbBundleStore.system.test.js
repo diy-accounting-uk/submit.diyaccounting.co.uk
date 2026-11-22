@@ -152,3 +152,38 @@ describe("System: the account settings item and its watch list with local dynali
     expect((await store.getAccountSettings(userId)).watchedCompanies).toEqual(["00000002"]);
   });
 });
+
+describe("System: the account's first source on the settings item with local dynalite", () => {
+  const first = { utmSource: "newsletter", landedAt: "2026-11-20T09:00:00.000Z" };
+  const later = { utmSource: "google", landedAt: "2026-12-01T10:00:00.000Z" };
+
+  it("has no first source until one is recorded, then keeps the first whatever is recorded after it", async () => {
+    const userId = "first-source-user";
+    expect(await store.getFirstAccountSource(userId)).toBeUndefined();
+
+    expect(await store.recordFirstAccountSource(userId, first)).toEqual(first);
+    expect(await store.recordFirstAccountSource(userId, later)).toEqual(first);
+    expect(await store.getFirstAccountSource(userId)).toEqual(first);
+  });
+
+  it("keeps one of many sources recorded at once", async () => {
+    const userId = "first-source-at-once-user";
+    const sources = Array.from({ length: 8 }, (_, index) => ({ utmSource: `source-${index}` }));
+    const stored = await Promise.all(sources.map((source) => store.recordFirstAccountSource(userId, source)));
+    expect(new Set(stored.map((source) => source.utmSource)).size).toBe(1);
+    expect(await store.getFirstAccountSource(userId)).toEqual(stored[0]);
+  });
+
+  it("leaves the settings and the bundles as they were", async () => {
+    const userId = "first-source-with-settings-user";
+    await store.updateAccountSettings(userId, { passGeneration: true });
+    await store.addToWatchedCompanies(userId, "00000001", 50);
+
+    await store.recordFirstAccountSource(userId, first);
+
+    expect(await store.getAccountSettings(userId)).toEqual({ passGeneration: true, watchedCompanies: ["00000001"] });
+    expect(await store.getUserBundles(userId)).toEqual([]);
+    await store.updateAccountSettings(userId, { passGeneration: false });
+    expect(await store.getFirstAccountSource(userId)).toEqual(first);
+  });
+});

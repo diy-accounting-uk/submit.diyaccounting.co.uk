@@ -18,22 +18,9 @@ import { extractRequest, http200OkResponse, http400BadRequestResponse, getHeader
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { classifyVisitor, classifyBot } from "../../lib/visitorClassifier.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { buildRecordableAttributionMap } from "../../lib/acquisition.js";
 
 const logger = createLogger({ source: "app/functions/account/sessionBeaconPost.js" });
-
-// Landing-attribution fields session-beacon.js carries from analytics.js's localStorage
-// capture. The beacon is sent only after consent, and carries them when the browser still
-// holds a valid stored landing.
-const ATTRIBUTION_DETAIL_KEYS = ["utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm", "gclid", "msclkid", "ref", "landedAt"];
-
-function extractAttribution(body) {
-  const attribution = {};
-  for (const key of ATTRIBUTION_DETAIL_KEYS) {
-    const value = body[key];
-    if (typeof value === "string" && value) attribution[key] = value;
-  }
-  return attribution;
-}
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
@@ -101,7 +88,7 @@ export async function ingestHandler(event) {
       country,
       page,
       userAgent: userAgent.substring(0, 100),
-      ...extractAttribution(body),
+      ...buildRecordableAttributionMap(body),
     },
   });
 

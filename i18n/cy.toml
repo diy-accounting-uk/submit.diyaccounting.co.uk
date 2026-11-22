@@ -23817,3 +23817,9 @@ cy = '''
 </ul>
 <p>Gallwch ysgrifennu atom yn Gymraeg yn <a href="mailto:support@diyaccounting.co.uk">support@diyaccounting.co.uk</a>. Rydym yn ateb yn Saesneg am y tro.</p>
 '''
+
+# == The privacy page's storage key that marks the landing as recorded ==
+
+[strings."privacy.attribution-landing-posted-set-after-you-1f969e"]
+hash = "1f969e3529d7"
+cy = '''<strong><code>attribution.landing.posted</code></strong >: Caiff ei osod ar ôl i chi fewngofnodi, unwaith y bydd tagiau’r ymgyrch a’r cod atgyfeirio uchod wedi’u cofnodi yn erbyn eich cyfrif, fel eu bod yn cael eu cofnodi unwaith'''
