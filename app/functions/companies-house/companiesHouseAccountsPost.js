@@ -493,6 +493,51 @@ async function readFilingProfile({ request, responseHeaders, userSub, companyNum
   return { profile: answer.profile ?? null };
 }
 
+// The checks of the accounts against the register and the user's own receipts, in order: the one
+// limited read of the company's profile (the registered office fill, the Welsh check and first
+// accounts take it), a revision against the receipt it names, then the register's checks. Answers
+// the response that refuses the filing, or undefined.
+async function refuseAgainstTheRegister({ request, responseHeaders, userSub, accounts, errorMessages }) {
+  let filingProfile = null;
+  if (!accounts.registeredOffice?.addressLine1 || accounts.documentLanguage === "cy" || accounts.dateOfIncorporation) {
+    const read = await readFilingProfile({ request, responseHeaders, userSub, companyNumber: accounts.companyNumber });
+    if (read.failure) return read.failure;
+    filingProfile = read.profile;
+    await fillRegisteredOffice(accounts, errorMessages, { readProfile: async () => ({ profile: read.profile }) });
+    if (accounts.documentLanguage === "cy") checkWelshCompany(read.profile?.jurisdiction, errorMessages);
+  }
+  // Revised accounts that name the receipt of the accounts they revise are checked against it, under
+  // the signed-in user's own receipts, by the rules the page applies.
+  const revisesReceipt = accounts.revision?.revisesReceipt;
+  if (revisesReceipt) {
+    const revisedReceipt = (await getReceipt(userSub, revisesReceipt.replace(/\.json$/, ""))) ?? null;
+    const refusal = revisedReceiptRefusal(revisedReceipt, accounts.companyNumber, {
+      periodStart: accounts.periodStart,
+      periodEnd: accounts.periodEnd,
+    });
+    if (refusal) errorMessages.push(refusal);
+  }
+  if (errorMessages.length > 0) {
+    return buildValidationError(request, errorMessages, responseHeaders);
+  }
+  // Revised accounts that name no receipt replace accounts filed another way, which the register holds.
+  if (accounts.revision && !revisesReceipt) {
+    const revisionRefusal = await refuseRevisionWithNothingToReplace({
+      request,
+      headers: responseHeaders,
+      userSub,
+      companyNumber: accounts.companyNumber,
+      periodEnd: accounts.periodEnd,
+    });
+    if (revisionRefusal) return revisionRefusal;
+  }
+  if (accounts.dateOfIncorporation) {
+    const notFirst = refuseFirstAccountsTheRegisterDoesNotHold(request, responseHeaders, accounts, filingProfile);
+    if (notFirst) return notFirst;
+  }
+  return undefined;
+}
+
 async function refuseClientNotAuthorised({ request, responseHeaders, userSub, clientId }) {
   logger.warn({ message: "Client-scoped request refused: not authorised for Companies House filing", clientId });
   await recordSubmissionFailure({
@@ -572,43 +617,8 @@ export async function ingestHandler(event) {
   if (clientId) {
     accounts.companyNumber = client.identifiers?.companyNumber;
   }
-  let filingProfile = null;
-  if (!accounts.registeredOffice?.addressLine1 || accounts.documentLanguage === "cy" || accounts.dateOfIncorporation) {
-    const read = await readFilingProfile({ request, responseHeaders, userSub, companyNumber: accounts.companyNumber });
-    if (read.failure) return read.failure;
-    filingProfile = read.profile;
-    await fillRegisteredOffice(accounts, errorMessages, { readProfile: async () => ({ profile: read.profile }) });
-    if (accounts.documentLanguage === "cy") checkWelshCompany(read.profile?.jurisdiction, errorMessages);
-  }
-  // Revised accounts that name the receipt of the accounts they revise are checked against it, under
-  // the signed-in user's own receipts, by the rules the page applies.
-  const revisesReceipt = accounts.revision?.revisesReceipt;
-  if (revisesReceipt) {
-    const revisedReceipt = (await getReceipt(userSub, revisesReceipt.replace(/\.json$/, ""))) ?? null;
-    const refusal = revisedReceiptRefusal(revisedReceipt, accounts.companyNumber, {
-      periodStart: accounts.periodStart,
-      periodEnd: accounts.periodEnd,
-    });
-    if (refusal) errorMessages.push(refusal);
-  }
-  if (errorMessages.length > 0) {
-    return buildValidationError(request, errorMessages, responseHeaders);
-  }
-  // Revised accounts that name no receipt replace accounts filed another way, which the register holds.
-  if (accounts.revision && !revisesReceipt) {
-    const registerRefusal = await refuseRevisionWithNothingToReplace({
-      request,
-      headers: responseHeaders,
-      userSub,
-      companyNumber: accounts.companyNumber,
-      periodEnd: accounts.periodEnd,
-    });
-    if (registerRefusal) return registerRefusal;
-  }
-  if (accounts.dateOfIncorporation) {
-    const notFirst = refuseFirstAccountsTheRegisterDoesNotHold(request, responseHeaders, accounts, filingProfile);
-    if (notFirst) return notFirst;
-  }
+  const registerRefusal = await refuseAgainstTheRegister({ request, responseHeaders, userSub, accounts, errorMessages });
+  if (registerRefusal) return registerRefusal;
 
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
   // Forwarded to the gateway call so the simulator's Gov-Test-Scenario handling can be driven
@@ -655,7 +665,7 @@ export async function ingestHandler(event) {
       chargeActivityId,
       ...jointFilingFields(jointFilingId),
       ...amendedFields(Boolean(accounts.revision)),
-      ...revisesReceiptFields(revisesReceipt),
+      ...revisesReceiptFields(accounts.revision?.revisesReceipt),
       ...formRequestFields(formRequest),
       // The document's own language, which the filing keeps; it does not follow the page language.
       ...(accounts.documentLanguage === "cy" ? { documentLanguage: "cy" } : {}),
