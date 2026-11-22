@@ -1307,13 +1307,18 @@ window.WELSH_TEXT = {
   "ch.micro.capital-and-reserves-mismatch":
     "Nid yw cyfalaf a chronfeydd wrth gefn o {capital} ar gyfer {year} yn hafal i’r cyfalaf cyfranddaliadau wedi’i alw ynghyd â’r cyfrif elw a cholled, sy’n dod i {sum}.",
   "ch.micro.confirm-provisions": "Cadarnhewch fod y cyfrifon yn dilyn y darpariaethau micro-endid",
+  "ch.micro.first-accounts":
+    "Dyma gyfrifon cyntaf y cwmni: mae’r cyfnod yn dechrau ar y diwrnod y cafodd ei gorffori, {date}, felly nid oes blwyddyn flaenorol.",
   "ch.micro.matches": "Yn cyfateb i’r cyfalaf a’r cronfeydd wrth gefn.",
   "ch.micro.mismatch": "Nid yw’n cyfateb i’r cyfalaf a’r cronfeydd wrth gefn ar gyfer {years} - cywirwch hyn cyn gweld y rhagolwg.",
   "ch.micro.mismatch-last-year": "y llynedd (cyfalaf a chronfeydd wrth gefn {amount})",
   "ch.micro.mismatch-this-year": "eleni (cyfalaf a chronfeydd wrth gefn {amount})",
   "ch.micro.must-equal":
     "Rhaid i’r cyfalaf a’r cronfeydd wrth gefn fod yn hafal i’r asedau net ar gyfer y ddwy flynedd cyn gweld y rhagolwg.",
+  "ch.micro.must-equal-one-year": "Rhaid i’r cyfalaf a’r cronfeydd wrth gefn fod yn hafal i’r asedion net cyn gweld y rhagolwg.",
   "ch.micro.net-assets": "Asedau net: {current} eleni, {prior} y llynedd. {verdict}",
+  "ch.micro.net-assets-one-year": "Asedion net: {current} eleni. {verdict}",
+  "ch.micro.not-first-accounts": "Nid dyma gyfrifon cyntaf y cwmni, felly mae’r fantolen yn dangos y flwyddyn flaenorol wrth ochr eleni.",
   "ch.micro.section-480":
     "Mae gan y cwmni hawl i eithriad rhag archwiliad o dan adran 480 o Ddeddf Cwmnïau 2006 sy’n ymwneud â chwmnïau segur.",
   "ch.micro.the-current-year": "y flwyddyn gyfredol",
@@ -2863,6 +2868,12 @@ window.WELSH_TEXT = {
   "widget.books-saved-label": "Neu defnyddiwch un o lyfrau cadw’r cleient",
   "widget.books-saved-option": "{title} (fersiwn {version})",
   "widget.books-saved-use": "Llenwi o’r llyfr hwn",
+  "widget.books-small-filled": "Llenwyd {count} maes o {file} ar gyfer y cyfnod {start} i {end}.",
+  "widget.books-small-first-accounts": "Dyma gyfrifon cyntaf y cwmni, felly nid oes blwyddyn flaenorol i’w llenwi.",
+  "widget.books-small-next":
+    "Gwiriwch y ffigurau, ychwanegwch y prif weithgaredd, y polisïau cyfrifyddu, y dyddiad cymeradwyo a’r datganiadau, yna gweld y rhagolwg.",
+  "widget.books-small-prior-filled": "Mae mantolen y flwyddyn flaenorol wedi’i llenwi o falansau agoriadol y llyfr.",
+  "widget.books-small-prior-type": "Nid oes gan y llyfr ffigur ar gyfer y rhain, felly teipiwch nhw: {fields}.",
   "widget.callback-back": "Yn ôl i {activity}",
   "widget.callback-bad-state": "Cyflwr OAuth annilys. Rhowch gynnig arall arni.",
   "widget.callback-exchanging": "Yn cyfnewid y cod awdurdodi am docyn mynediad...",

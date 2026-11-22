@@ -193,7 +193,8 @@ function withOptionalHeadings(balanceSheetYears) {
  *   creditorsAfterOneYear, calledUpShareCapital, profitAndLossAccount, capitalAndReserves
  * @param {number} [input.balanceSheet.current.calledUpShareCapitalNotPaid] - and prepaymentsAccruedIncome, provisionsForLiabilities,
  *   accrualsDeferredIncome: optional headings that enter the balance sheet totals
- * @param {object} [input.balanceSheet.prior] - the same shape as current, for the comparative year
+ * @param {object} [input.balanceSheet.prior] - the same shape as current, for the comparative year; first accounts have none
+ * @param {string} [input.dateOfIncorporation] - ISO date; given for the company's first accounts, and equal to periodStart
  * @param {Array<{name: string, terms: string, balanceAtStart: number, advanced: number, repaid: number, balanceAtEnd: number}>} [input.directorsAdvances] - the section 413 note on advances and credits to directors, for a company whose directors owe it money
  * @param {{current: object, prior?: object}} [input.profitAndLoss] - MICRO_PROFIT_AND_LOSS_LINES; when
  *   present the document is the full copy HMRC takes with a Company Tax Return, with the profit and
@@ -445,6 +446,7 @@ export function buildMicroEntityAccounts(input) {
     title: accountsText(input.dormant ? "Unaudited dormant micro-entity accounts" : "Unaudited micro-entity accounts"),
     periodStart: input.periodStart,
     periodEnd: input.periodEnd,
+    dateOfIncorporation: input.dateOfIncorporation,
   })}${revisionHtml}${accountantsPage}
 <div class="page">
 ${heading(

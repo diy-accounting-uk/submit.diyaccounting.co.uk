@@ -40,6 +40,7 @@ import { isValidCompanyNumber, http403ForbiddenFromBundleEnforcement } from "../
 import { isValidIsoDate } from "../../lib/hmrcValidation.js";
 import { buildMicroEntityAccounts, DORMANT_TRADING_STATUSES } from "../../services/microEntityAccountsIxbrl.js";
 import { SHARE_CLASSES, sharesIssuedFor } from "../../../web/public/lib/accounts-notes-check.js";
+import { comparativesFinding } from "../../../web/public/lib/first-accounts.js";
 import { buildSmallCompanyAccounts } from "../../services/smallCompanyAccountsIxbrl.js";
 import { REGISTERED_OFFICE_FIELDS, readDirectorsAdvances } from "../../services/accountsIxbrlCommon.js";
 import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
@@ -183,6 +184,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     smallCompany,
     directorsAdvances,
     documentLanguage,
+    dateOfIncorporation,
   } = parsedBody;
 
   // A client-scoped request resolves its company number from the client row instead, so the
@@ -225,15 +227,9 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     errorMessages.push("A dormant company files micro-entity accounts: dormant cannot be combined with smallCompany");
   }
 
-  let currentYear;
-  let priorYear;
-  if (!isSmallCompany) {
-    currentYear = extractAndValidateBalanceSheetYear(balanceSheet?.currentYear, "currentYear", errorMessages);
-    priorYear = extractAndValidateBalanceSheetYear(balanceSheet?.priorYear, "priorYear", errorMessages);
-
-    validateBalanceSheetAddsUp(currentYear, "currentYear", errorMessages);
-    validateBalanceSheetAddsUp(priorYear, "priorYear", errorMessages);
-  }
+  const { currentYear, priorYear } = isSmallCompany
+    ? {}
+    : readMicroBalanceSheet(balanceSheet, { dateOfIncorporation, periodStart }, errorMessages);
 
   const numericAverageEmployees = Number(averageEmployees);
   if (
@@ -308,7 +304,8 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     periodStart,
     periodEnd,
     // buildMicroEntityAccounts() names the two years current/prior, not currentYear/priorYear.
-    balanceSheet: { current: currentYear, prior: priorYear },
+    balanceSheet: { current: currentYear, ...(priorYear ? { prior: priorYear } : {}) },
+    ...(dateOfIncorporation && !priorYear ? { dateOfIncorporation } : {}),
     averageNumberOfEmployees: numericAverageEmployees,
     directorName,
     dateOfApproval: dateApproved,
@@ -318,6 +315,34 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     ...(validDirectorsAdvances?.length ? { directorsAdvances: validDirectorsAdvances } : {}),
     ...(isDormant ? { dormant: true, dormantTradingStatus, shareClass, nominalValue: numericNominalValue } : {}),
   };
+}
+
+// The micro-entity balance sheet: this year, and the prior year unless the accounts are the first.
+function readMicroBalanceSheet(balanceSheet, { dateOfIncorporation, periodStart }, errorMessages) {
+  const currentYear = extractAndValidateBalanceSheetYear(balanceSheet?.currentYear, "currentYear", errorMessages);
+  validateBalanceSheetAddsUp(currentYear, "currentYear", errorMessages);
+  if (readMicroFirstAccounts(dateOfIncorporation, periodStart, balanceSheet?.priorYear, errorMessages)) return { currentYear };
+  const priorYear = extractAndValidateBalanceSheetYear(balanceSheet?.priorYear, "priorYear", errorMessages);
+  validateBalanceSheetAddsUp(priorYear, "priorYear", errorMessages);
+  return { currentYear, priorYear };
+}
+
+// Micro-entity accounts show the prior year's balance sheet unless they are the company's first,
+// which give the date of incorporation: it must be the period's start, and the accounts carry no
+// prior year. Answers whether the request is first accounts.
+function readMicroFirstAccounts(dateOfIncorporation, periodStart, priorYearValues, errorMessages) {
+  if (dateOfIncorporation === undefined || dateOfIncorporation === null) return false;
+  if (typeof dateOfIncorporation !== "string" || !isValidIsoDate(dateOfIncorporation)) {
+    errorMessages.push("Invalid dateOfIncorporation - must be YYYY-MM-DD");
+    return false;
+  }
+  const finding = comparativesFinding({ periodStart, dateOfIncorporation, hasPriorYear: Boolean(priorYearValues) });
+  if (finding === "first-accounts-start-on-incorporation") {
+    errorMessages.push("dateOfIncorporation must equal periodStart: a company's first accounts start on the day it was incorporated");
+  } else if (finding === "first-accounts-have-no-prior-year") {
+    errorMessages.push("dateOfIncorporation marks first accounts, which have no preceding year: leave out balanceSheet.priorYear");
+  }
+  return true;
 }
 
 // A dormant company had no significant accounting transaction in the period, so its profit and
@@ -350,7 +375,7 @@ function validateDormantFiling({ currentYear, priorYear, dormantTradingStatus, s
   }
   if (
     Number.isFinite(currentYear.profitAndLossAccount) &&
-    Number.isFinite(priorYear.profitAndLossAccount) &&
+    Number.isFinite(priorYear?.profitAndLossAccount) &&
     currentYear.profitAndLossAccount !== priorYear.profitAndLossAccount
   ) {
     errorMessages.push("A dormant company cannot report a profit or loss: profitAndLossAccount must equal the prior year");

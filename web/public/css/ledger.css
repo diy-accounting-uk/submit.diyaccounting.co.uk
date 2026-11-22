@@ -66,7 +66,7 @@
   margin-bottom: 0;
 }
 
-.ledger--one-year .ledger__prior {
+.ledger.ledger--one-year .ledger__prior {
   display: none;
 }
 

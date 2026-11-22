@@ -10865,10 +10865,6 @@ cy = '''Gwlad (dewisol)'''
 hash = "659a653dd0a9"
 cy = '''Mantolen'''
 
-[strings."ch-micro-entity.whole-pounds-for-example-600-or-3d55fd"]
-hash = "3d55fd32c6bf"
-cy = '''Punnoedd cyfan. Er enghraifft, £600 neu £1,200. Mae angen y ddwy flynedd.'''
-
 [strings."ch-micro-entity.line-d7852c"]
 hash = "d7852cd0d245"
 cy = '''Llinell'''
@@ -26435,3 +26431,45 @@ cy = '''Newid manylion {name} ({role})'''
 [strings."receipts.kind-officer-change"]
 hash = "1f5d8e481f55"
 cy = '''Manylion cyfarwyddwr neu ysgrifennydd wedi newid'''
+
+# == First micro-entity accounts, and the prior year the books card fills on the small company form ==
+
+[strings."ch-micro-entity.whole-pounds-for-example-600-or-a4c6e0"]
+hash = "a4c6e087ef2c"
+cy = '''Punnoedd cyfan. Er enghraifft, £600 neu £1,200. Mae angen y ddwy flynedd, oni bai mai cyfrifon cyntaf y cwmni yw’r rhain.'''
+
+[strings."ch.micro.first-accounts"]
+hash = "6f1d078e1d3f"
+cy = '''Dyma gyfrifon cyntaf y cwmni: mae’r cyfnod yn dechrau ar y diwrnod y cafodd ei gorffori, {date}, felly nid oes blwyddyn flaenorol.'''
+
+[strings."ch.micro.not-first-accounts"]
+hash = "83f10e581c14"
+cy = '''Nid dyma gyfrifon cyntaf y cwmni, felly mae’r fantolen yn dangos y flwyddyn flaenorol wrth ochr eleni.'''
+
+[strings."ch.micro.net-assets-one-year"]
+hash = "dba2f338ce77"
+cy = '''Asedion net: {current} eleni. {verdict}'''
+
+[strings."ch.micro.must-equal-one-year"]
+hash = "ca0accba7878"
+cy = '''Rhaid i’r cyfalaf a’r cronfeydd wrth gefn fod yn hafal i’r asedion net cyn gweld y rhagolwg.'''
+
+[strings."widget.books-small-filled"]
+hash = "91aa3f880a3b"
+cy = '''Llenwyd {count} maes o {file} ar gyfer y cyfnod {start} i {end}.'''
+
+[strings."widget.books-small-next"]
+hash = "322270ea25e9"
+cy = '''Gwiriwch y ffigurau, ychwanegwch y prif weithgaredd, y polisïau cyfrifyddu, y dyddiad cymeradwyo a’r datganiadau, yna gweld y rhagolwg.'''
+
+[strings."widget.books-small-first-accounts"]
+hash = "c24ae9f607fc"
+cy = '''Dyma gyfrifon cyntaf y cwmni, felly nid oes blwyddyn flaenorol i’w llenwi.'''
+
+[strings."widget.books-small-prior-filled"]
+hash = "4d2e0096c8e7"
+cy = '''Mae mantolen y flwyddyn flaenorol wedi’i llenwi o falansau agoriadol y llyfr.'''
+
+[strings."widget.books-small-prior-type"]
+hash = "95010e95ea16"
+cy = '''Nid oes gan y llyfr ffigur ar gyfer y rhain, felly teipiwch nhw: {fields}.'''

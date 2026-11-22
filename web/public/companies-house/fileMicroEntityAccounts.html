@@ -192,13 +192,16 @@
           </section>
           <section class="form-section">
             <h3>Balance sheet</h3>
-            <p id="ledgerHint1" class="hint">Whole pounds. For example, £600 or £1,200. Both years are needed.</p>
-            <table class="ledger">
+            <p id="ledgerHint1" class="hint">
+              Whole pounds. For example, £600 or £1,200. Both years are needed, unless these are the company's first accounts.
+            </p>
+            <p id="firstAccountsLine" class="hint" aria-live="polite"></p>
+            <table id="balanceSheetLedger" class="ledger">
               <thead>
                 <tr>
                   <th scope="col">Line</th>
                   <th scope="col" class="ledger__figure">This year (£)</th>
-                  <th scope="col" class="ledger__figure">Prior year (£)</th>
+                  <th scope="col" class="ledger__figure ledger__prior">Prior year (£)</th>
                 </tr>
               </thead>
               <tbody>
@@ -220,7 +223,7 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Prior year">
+                  <td class="ledger__figure ledger__prior" data-column="Prior year">
                     <label for="priorCalledUpShareCapitalNotPaid" class="visually-hidden"
                       >Called up share capital not paid, last year</label
                     >
@@ -255,7 +258,7 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Prior year">
+                  <td class="ledger__figure ledger__prior" data-column="Prior year">
                     <label for="priorFixedAssets" class="visually-hidden">Fixed assets, last year</label>
                     <div class="input-prefix input-prefix--amount">
                       <span class="prefix" aria-hidden="true">£</span
@@ -290,7 +293,7 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Prior year">
+                  <td class="ledger__figure ledger__prior" data-column="Prior year">
                     <label for="priorCurrentAssets" class="visually-hidden">Current assets, last year</label>
                     <div class="input-prefix input-prefix--amount">
                       <span class="prefix" aria-hidden="true">£</span
@@ -323,7 +326,7 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Prior year">
+                  <td class="ledger__figure ledger__prior" data-column="Prior year">
                     <label for="priorPrepaymentsAccruedIncome" class="visually-hidden">Prepayments and accrued income, last year</label>
                     <div class="input-prefix input-prefix--amount">
                       <span class="prefix" aria-hidden="true">£</span
@@ -358,7 +361,7 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Prior year">
+                  <td class="ledger__figure ledger__prior" data-column="Prior year">
                     <label for="priorCreditorsWithinOneYear" class="visually-hidden"
                       >Creditors: amounts falling due within one year, last year</label
                     >
@@ -398,7 +401,7 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Prior year">
+                  <td class="ledger__figure ledger__prior" data-column="Prior year">
                     <label for="priorCreditorsAfterOneYear" class="visually-hidden"
                       >Creditors: amounts falling due after more than one year, last year</label
                     >
@@ -434,7 +437,7 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Prior year">
+                  <td class="ledger__figure ledger__prior" data-column="Prior year">
                     <label for="priorProvisionsForLiabilities" class="visually-hidden">Provisions for liabilities, last year</label>
                     <div class="input-prefix input-prefix--amount">
                       <span class="prefix" aria-hidden="true">£</span
@@ -465,7 +468,7 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Prior year">
+                  <td class="ledger__figure ledger__prior" data-column="Prior year">
                     <label for="priorAccrualsDeferredIncome" class="visually-hidden">Accruals and deferred income, last year</label>
                     <div class="input-prefix input-prefix--amount">
                       <span class="prefix" aria-hidden="true">£</span
@@ -498,7 +501,7 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Prior year">
+                  <td class="ledger__figure ledger__prior" data-column="Prior year">
                     <label for="priorCalledUpShareCapital" class="visually-hidden">Called up share capital, last year</label>
                     <div class="input-prefix input-prefix--amount">
                       <span class="prefix" aria-hidden="true">£</span
@@ -533,7 +536,7 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Prior year">
+                  <td class="ledger__figure ledger__prior" data-column="Prior year">
                     <label for="priorProfitAndLossAccount" class="visually-hidden">Profit and loss account, last year</label>
                     <div class="input-prefix input-prefix--amount">
                       <span class="prefix" aria-hidden="true">£</span
@@ -568,7 +571,7 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Prior year">
+                  <td class="ledger__figure ledger__prior" data-column="Prior year">
                     <label for="priorCapitalAndReserves" class="visually-hidden">Capital and reserves, last year</label>
                     <div class="input-prefix input-prefix--amount">
                       <span class="prefix" aria-hidden="true">£</span

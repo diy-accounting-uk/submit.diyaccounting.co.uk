@@ -953,6 +953,46 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     });
   });
 
+  describe("the first accounts of a micro-entity", () => {
+    const firstAccountsBody = () => {
+      const body = buildAccountsBody({ dateOfIncorporation: "2025-01-01" });
+      delete body.balanceSheet.priorYear;
+      return body;
+    };
+
+    test("files first accounts with one year, marked with the date of incorporation", async () => {
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }));
+      expect(response.statusCode).toBe(201);
+      const [input] = mockBuildMicroEntityAccounts.mock.calls[0];
+      expect(input.dateOfIncorporation).toBe("2025-01-01");
+      expect(input.balanceSheet.prior).toBeUndefined();
+    });
+
+    test("refuses accounts with no prior year that are not first accounts, and first accounts that carry one or start late", async () => {
+      const noPrior = firstAccountsBody();
+      delete noPrior.dateOfIncorporation;
+      const late = { ...firstAccountsBody(), dateOfIncorporation: "2024-12-01" };
+      const withPrior = buildAccountsBody({ dateOfIncorporation: "2025-01-01" });
+      const answers = [];
+      for (const body of [noPrior, late, withPrior]) {
+        const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+        expect(response.statusCode).toBe(400);
+        answers.push(JSON.stringify(parseResponseBody(response)));
+      }
+      expect(answers[0]).toContain("priorYear");
+      expect(answers[1]).toContain("dateOfIncorporation must equal periodStart");
+      expect(answers[2]).toContain("which have no preceding year");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("an established company's two years are filed as they are, with no date of incorporation", async () => {
+      await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody() }));
+      const [input] = mockBuildMicroEntityAccounts.mock.calls[0];
+      expect(input.dateOfIncorporation).toBeUndefined();
+      expect(input.balanceSheet.prior).toBeDefined();
+    });
+  });
+
   describe("an advance to someone who is not a director", () => {
     const ADVANCE = { name: "Sam Lender", terms: "Interest free", balanceAtStart: 0, advanced: 0, repaid: 0, balanceAtEnd: 0 };
     const SENTENCE = "names Sam Lender, who is not among the directors of these accounts: add them to the directors";

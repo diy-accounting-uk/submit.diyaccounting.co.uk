@@ -169,7 +169,7 @@ function arithmeticProblems(xhtml) {
 
 describe("the arithmetic of every accounts document this repository builds", () => {
   test("covers the validation samples, the test-service accounts cases and the document cases", () => {
-    expect(DOCUMENTS.filter(([name]) => name.startsWith("validation sample"))).toHaveLength(8);
+    expect(DOCUMENTS.filter(([name]) => name.startsWith("validation sample"))).toHaveLength(9);
     expect(DOCUMENTS.filter(([name]) => name.startsWith("test-service"))).toHaveLength(8);
     expect(DOCUMENTS.filter(([name]) => name.startsWith("document case")).length).toBeGreaterThan(3);
   });

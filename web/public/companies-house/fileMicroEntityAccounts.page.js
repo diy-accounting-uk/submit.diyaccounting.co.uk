@@ -83,6 +83,72 @@ function netAssetsOf(year) {
 // render that resolves later holds figures the form no longer shows.
 let latestYearTotals = 0;
 
+// Micro-entity accounts show the prior year unless they are the company's first, which the
+// company's profile and the period start show. The prior year column follows that rule, and the
+// line above the balance sheet says which it is.
+let firstAccountsRule = null;
+import("../lib/first-accounts.js").then((module) => {
+  firstAccountsRule = module;
+  applyFirstAccountsRule();
+});
+
+function isFirstAccounts() {
+  return Boolean(firstAccountsRule?.isFirstAccountsPeriod?.(company ?? {}, document.getElementById("periodStart").value));
+}
+
+function applyFirstAccountsRule() {
+  if (!firstAccountsRule?.isFirstAccountsPeriod) return;
+  const first = isFirstAccounts();
+  document.getElementById("balanceSheetLedger").classList.toggle("ledger--one-year", first);
+  document.querySelectorAll("#balanceSheetLedger .ledger__prior input").forEach((input) => {
+    input.disabled = first;
+  });
+  document.getElementById("firstAccountsLine").textContent = first
+    ? window.siteText(
+        "ch.micro.first-accounts",
+        "These are the company's first accounts: the period starts on the day it was incorporated, {date}, so there is no prior year.",
+        { date: company.dateOfCreation },
+      )
+    : window.siteText(
+        "ch.micro.not-first-accounts",
+        "These are not the company's first accounts, so the balance sheet shows the prior year beside this year.",
+      );
+  refreshYearTotals();
+}
+
+// The company, with the facts of its profile that say whether a period is its first.
+function companyFromProfile(profile) {
+  return {
+    companyNumber: profile.companyNumber,
+    companyName: profile.companyName,
+    dateOfCreation: profile.dateOfCreation,
+    accountsLastPeriodStart: profile.accountsLastPeriodStart,
+  };
+}
+
+async function renderOneYearTotals(current) {
+  const render = ++latestYearTotals;
+  const { formatPounds } = await import("../lib/balance-sheet-check.js");
+  if (render !== latestYearTotals) return;
+  const currentNetAssets = netAssetsOf(current);
+  const verdict =
+    currentNetAssets === current.capitalAndReserves
+      ? window.siteText("ch.micro.matches", "Matches capital and reserves.")
+      : window.siteText("ch.micro.mismatch", "Does not match capital and reserves for {years} - correct this before previewing.", {
+          years: window.siteText("ch.micro.mismatch-this-year", "this year (capital and reserves {amount})", {
+            amount: formatPounds(current.capitalAndReserves),
+          }),
+        });
+  document.getElementById("yearTotals").textContent = window.siteText(
+    "ch.micro.net-assets-one-year",
+    "Net assets: {current} this year. {verdict}",
+    {
+      current: formatPounds(currentNetAssets),
+      verdict,
+    },
+  );
+}
+
 async function renderYearTotals(current, prior) {
   const render = ++latestYearTotals;
   const { formatPounds } = await import("../lib/balance-sheet-check.js");
@@ -119,7 +185,8 @@ async function renderYearTotals(current, prior) {
 }
 
 function refreshYearTotals() {
-  renderYearTotals(readYear("current"), readYear("prior"));
+  if (isFirstAccounts()) renderOneYearTotals(readYear("current"));
+  else renderYearTotals(readYear("current"), readYear("prior"));
 }
 
 async function handleCompanySubmit(event) {
@@ -131,7 +198,8 @@ async function handleCompanySubmit(event) {
   hideStatus();
   try {
     const profile = await window.getCompanyProfile(companyNumber);
-    company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
+    company = companyFromProfile(profile);
+    applyFirstAccountsRule();
     window.accountsFormSections.fillRegisteredOffice(profile.registeredOffice);
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
@@ -216,9 +284,10 @@ function buildAccountsPayload() {
     ...(accountantsReport ? { accountantsReport } : {}),
     periodStart: document.getElementById("periodStart").value,
     periodEnd: document.getElementById("periodEnd").value,
+    ...(isFirstAccounts() ? { dateOfIncorporation: company.dateOfCreation } : {}),
     balanceSheet: {
       currentYear: readYear("current"),
-      priorYear: readYear("prior"),
+      ...(isFirstAccounts() ? {} : { priorYear: readYear("prior") }),
     },
     averageEmployees: Number(document.getElementById("averageEmployees").value),
     director: {
@@ -258,7 +327,7 @@ async function capitalAndReservesProblem(currentYear, priorYear) {
   const check = await import("../lib/balance-sheet-check.js");
   const years = [
     [window.siteText("ch.micro.the-current-year", "the current year"), currentYear],
-    [window.siteText("ch.micro.the-prior-year", "the prior year"), priorYear],
+    ...(priorYear ? [[window.siteText("ch.micro.the-prior-year", "the prior year"), priorYear]] : []),
   ];
   for (const [yearName, year] of years) {
     const mismatch = check.capitalAndReservesMismatch(year);
@@ -285,10 +354,15 @@ async function handleAccountsFormSubmit(event) {
   const approvalDateCheck = await import("../lib/approval-date-check.js");
   if (approvalDateCheck.showApprovalDateAfterToday(document.getElementById("directorDateApproved"), new Date())) return;
   const currentYear = readYear("current");
-  const priorYear = readYear("prior");
-  if (netAssetsOf(currentYear) !== currentYear.capitalAndReserves || netAssetsOf(priorYear) !== priorYear.capitalAndReserves) {
+  const priorYear = isFirstAccounts() ? null : readYear("prior");
+  if (
+    netAssetsOf(currentYear) !== currentYear.capitalAndReserves ||
+    (priorYear && netAssetsOf(priorYear) !== priorYear.capitalAndReserves)
+  ) {
     showStatus(
-      window.siteText("ch.micro.must-equal", "Capital and reserves must equal net assets for both years before previewing."),
+      priorYear
+        ? window.siteText("ch.micro.must-equal", "Capital and reserves must equal net assets for both years before previewing.")
+        : window.siteText("ch.micro.must-equal-one-year", "Capital and reserves must equal net assets before previewing."),
       "error",
     );
     return;
@@ -557,6 +631,7 @@ document.getElementById("directorsReportConsistent").value = window.siteText("ch
 document.getElementById("companyForm").addEventListener("submit", handleCompanySubmit);
 document.getElementById("accountsForm").addEventListener("submit", handleAccountsFormSubmit);
 document.getElementById("accountsForm").addEventListener("input", refreshYearTotals);
+document.getElementById("periodStart").addEventListener("input", applyFirstAccountsRule);
 document.getElementById("dormant").addEventListener("change", toggleDormantFields);
 document.getElementById("includeAccountantsReport").addEventListener("change", window.accountsFormSections.showAccountantsReportFields);
 document.getElementById("useOwnPresenter").addEventListener("change", syncOwnPresenterFields);
@@ -635,14 +710,14 @@ async function startRevision(receiptName) {
       return;
     }
     const profile = await window.getCompanyProfile(read.source.companyNumber);
-    company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
+    company = companyFromProfile(profile);
     window.accountsFormSections.fillFiledRegisteredOffice(read.source.registeredOffice, profile.registeredOffice);
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     showDocumentLanguageChoice(profile.jurisdiction);
     window.booksImport.fillMicroEntityFormFromMapped(read.source.mapped);
     module.fillCarriedOver(read.source);
-    refreshYearTotals();
+    applyFirstAccountsRule();
     revision = { module, source: read.source, restoreStatus };
     module.showRevisionSection(revisionElements(), read.source);
     document.getElementById("revisionBanner").hidden = false;

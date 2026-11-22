@@ -21,6 +21,7 @@ import {
   CONCEPTS,
 } from "@app/services/accountsIxbrlCommon.js";
 import { parseXmlDocument } from "@app/lib/xmlDom.js";
+import { ixbrlStructureProblems } from "@app/lib/ixbrlStructure.js";
 
 const SAMPLE_INPUT = {
   companyNumber: "02706061",
@@ -777,5 +778,28 @@ describe("the accountants' report of a micro-entity", () => {
     test("a company whose directors owe nothing writes no note", () => {
       expect(buildMicroEntityAccounts(SAMPLE_INPUT)).not.toContain("Advances and credits to directors");
     });
+  });
+});
+
+describe("the first accounts of a micro-entity", () => {
+  const firstAccounts = {
+    ...SAMPLE_INPUT,
+    dateOfIncorporation: SAMPLE_INPUT.periodStart,
+    balanceSheet: { current: SAMPLE_INPUT.balanceSheet.current },
+  };
+
+  test("the cover page says they are the first, with the date of incorporation on the period's start instant, and the balance sheet has one year", () => {
+    const xhtml = buildMicroEntityAccounts(firstAccounts);
+    expect(xhtml).toMatch(
+      /The company's first accounts, from its incorporation on <ix:nonNumeric name="bus:DateFormationOrIncorporation" contextRef="(p\d{4})"[^>]*>[^<]+<\/ix:nonNumeric>/,
+    );
+    const contextRef = /name="bus:DateFormationOrIncorporation" contextRef="([^"]+)"/.exec(xhtml)[1];
+    expect(xhtml).toContain(`name="bus:StartDateForPeriodCoveredByReport" contextRef="${contextRef}"`);
+    expect(ixbrlStructureProblems(xhtml)).toEqual([]);
+  });
+
+  test("an established company's accounts keep both years and carry no date of incorporation", () => {
+    const xhtml = buildMicroEntityAccounts(SAMPLE_INPUT);
+    expect(xhtml).not.toContain("DateFormationOrIncorporation");
   });
 });

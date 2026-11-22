@@ -232,15 +232,18 @@
           </section>
           <section class="form-section">
             <h3 data-i18n="ch-micro-entity.balance-sheet-659a65">Mantolen</h3>
-            <p data-i18n="ch-micro-entity.whole-pounds-for-example-600-or-3d55fd" id="ledgerHint1" class="hint">
-              Punnoedd cyfan. Er enghraifft, £600 neu £1,200. Mae angen y ddwy flynedd.
+            <p data-i18n="ch-micro-entity.whole-pounds-for-example-600-or-a4c6e0" id="ledgerHint1" class="hint">
+              Punnoedd cyfan. Er enghraifft, £600 neu £1,200. Mae angen y ddwy flynedd, oni bai mai cyfrifon cyntaf y cwmni yw’r rhain.
             </p>
-            <table class="ledger">
+            <p id="firstAccountsLine" class="hint" aria-live="polite"></p>
+            <table id="balanceSheetLedger" class="ledger">
               <thead>
                 <tr>
                   <th data-i18n="ch-micro-entity.line-d7852c" scope="col">Llinell</th>
                   <th data-i18n="ch-micro-entity.this-year-251996" scope="col" class="ledger__figure">Eleni (£)</th>
-                  <th data-i18n="ch-micro-entity.prior-year-9ca024" scope="col" class="ledger__figure">Y flwyddyn flaenorol (£)</th>
+                  <th data-i18n="ch-micro-entity.prior-year-9ca024" scope="col" class="ledger__figure ledger__prior">
+                    Y flwyddyn flaenorol (£)
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -267,7 +270,11 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                  <td
+                    class="ledger__figure ledger__prior"
+                    data-column="Y flwyddyn flaenorol"
+                    data-i18n-data-column="ch-micro-entity.prior-year-ff70f6"
+                  >
                     <label
                       data-i18n="ch-micro-entity.called-up-share-capital-not-paid-c1f41d"
                       for="priorCalledUpShareCapitalNotPaid"
@@ -308,7 +315,11 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                  <td
+                    class="ledger__figure ledger__prior"
+                    data-column="Y flwyddyn flaenorol"
+                    data-i18n-data-column="ch-micro-entity.prior-year-ff70f6"
+                  >
                     <label data-i18n="ch-micro-entity.fixed-assets-last-year-7a8f8c" for="priorFixedAssets" class="visually-hidden"
                       >Asedau sefydlog, y llynedd</label
                     >
@@ -349,7 +360,11 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                  <td
+                    class="ledger__figure ledger__prior"
+                    data-column="Y flwyddyn flaenorol"
+                    data-i18n-data-column="ch-micro-entity.prior-year-ff70f6"
+                  >
                     <label data-i18n="ch-micro-entity.current-assets-last-year-d3e6ca" for="priorCurrentAssets" class="visually-hidden"
                       >Asedau cyfredol, y llynedd</label
                     >
@@ -392,7 +407,11 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                  <td
+                    class="ledger__figure ledger__prior"
+                    data-column="Y flwyddyn flaenorol"
+                    data-i18n-data-column="ch-micro-entity.prior-year-ff70f6"
+                  >
                     <label
                       data-i18n="ch-micro-entity.prepayments-and-accrued-income-last-year-6c802c"
                       for="priorPrepaymentsAccruedIncome"
@@ -438,7 +457,11 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                  <td
+                    class="ledger__figure ledger__prior"
+                    data-column="Y flwyddyn flaenorol"
+                    data-i18n-data-column="ch-micro-entity.prior-year-ff70f6"
+                  >
                     <label
                       data-i18n="ch-micro-entity.creditors-amounts-falling-due-within-one-8b2d0a"
                       for="priorCreditorsWithinOneYear"
@@ -488,7 +511,11 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                  <td
+                    class="ledger__figure ledger__prior"
+                    data-column="Y flwyddyn flaenorol"
+                    data-i18n-data-column="ch-micro-entity.prior-year-ff70f6"
+                  >
                     <label
                       data-i18n="ch-micro-entity.creditors-amounts-falling-due-after-more-dafc98"
                       for="priorCreditorsAfterOneYear"
@@ -535,7 +562,11 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                  <td
+                    class="ledger__figure ledger__prior"
+                    data-column="Y flwyddyn flaenorol"
+                    data-i18n-data-column="ch-micro-entity.prior-year-ff70f6"
+                  >
                     <label
                       data-i18n="ch-micro-entity.provisions-for-liabilities-last-year-495eaa"
                       for="priorProvisionsForLiabilities"
@@ -578,7 +609,11 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                  <td
+                    class="ledger__figure ledger__prior"
+                    data-column="Y flwyddyn flaenorol"
+                    data-i18n-data-column="ch-micro-entity.prior-year-ff70f6"
+                  >
                     <label
                       data-i18n="ch-micro-entity.accruals-and-deferred-income-last-year-25f04e"
                       for="priorAccrualsDeferredIncome"
@@ -622,7 +657,11 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                  <td
+                    class="ledger__figure ledger__prior"
+                    data-column="Y flwyddyn flaenorol"
+                    data-i18n-data-column="ch-micro-entity.prior-year-ff70f6"
+                  >
                     <label
                       data-i18n="ch-micro-entity.called-up-share-capital-last-year-74c14f"
                       for="priorCalledUpShareCapital"
@@ -669,7 +708,11 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                  <td
+                    class="ledger__figure ledger__prior"
+                    data-column="Y flwyddyn flaenorol"
+                    data-i18n-data-column="ch-micro-entity.prior-year-ff70f6"
+                  >
                     <label
                       data-i18n="ch-micro-entity.profit-and-loss-account-last-year-96e336"
                       for="priorProfitAndLossAccount"
@@ -716,7 +759,11 @@
                       />
                     </div>
                   </td>
-                  <td class="ledger__figure" data-column="Y flwyddyn flaenorol" data-i18n-data-column="ch-micro-entity.prior-year-ff70f6">
+                  <td
+                    class="ledger__figure ledger__prior"
+                    data-column="Y flwyddyn flaenorol"
+                    data-i18n-data-column="ch-micro-entity.prior-year-ff70f6"
+                  >
                     <label
                       data-i18n="ch-micro-entity.capital-and-reserves-last-year-3cced7"
                       for="priorCapitalAndReserves"

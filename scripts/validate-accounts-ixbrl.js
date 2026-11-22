@@ -10,7 +10,7 @@
  *
  * Usage:
  *   node scripts/validate-accounts-ixbrl.js <path-to-ixbrl-file>
- *   node scripts/validate-accounts-ixbrl.js            - validates built-in micro, small full, small filleted and small first accounts samples,
+ *   node scripts/validate-accounts-ixbrl.js            - validates built-in micro, micro first accounts, small full, small filleted and small first accounts samples,
  *                                                        and revised micro, dormant, small full and small filleted samples
  *
  * The validator (https://test-validator.companieshouse.gov.uk/xbrl_validate) has no JSON API: it
@@ -272,6 +272,11 @@ const DORMANT_SAMPLE_INPUT = {
   },
 };
 
+// Micro-entity first accounts: incorporated on the period's first day, with no prior year.
+function microFirstAccountsOf(input) {
+  return { ...input, dateOfIncorporation: input.periodStart, balanceSheet: { current: input.balanceSheet.current } };
+}
+
 // The company's first accounts: incorporated on the period's first day, with no prior year.
 function firstAccountsOf(input) {
   return {
@@ -289,6 +294,7 @@ function firstAccountsOf(input) {
 export function validationSamples() {
   return [
     ["micro", buildMicroEntityAccounts(SAMPLE_INPUT)],
+    ["micro-first-accounts", buildMicroEntityAccounts(microFirstAccountsOf(SAMPLE_INPUT))],
     ["small-full", buildSmallCompanyAccounts(SMALL_COMPANY_SAMPLE_INPUT)],
     ["small-filleted", buildSmallCompanyAccounts({ ...SMALL_COMPANY_SAMPLE_INPUT, filleted: true })],
     ["small-first-accounts", buildSmallCompanyAccounts(firstAccountsOf(SMALL_COMPANY_SAMPLE_INPUT))],

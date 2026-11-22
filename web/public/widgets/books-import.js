@@ -802,6 +802,8 @@
     const bookProfitAndLoss = profitAndLossFormat === 2 ? accounts.profitAndLossFormat2 : accounts.profitAndLoss;
     filled += setFigures("current", bookProfitAndLoss.currentYear, SMALL_PROFIT_AND_LOSS_LINES[profitAndLossFormat]);
     filled += setFigures("current", accounts.balanceSheet.currentYear, SMALL_BALANCE_SHEET_LINES);
+    const prior = fillSmallCompanyPriorYearFromBook(accounts, bookProfitAndLoss, profitAndLossFormat);
+    filled += prior.filled;
     const noteClasses = Object.entries(accounts.fixedAssetNote || {});
     if (noteClasses.length > 0) {
       setChecked("includeFixedAssetNote", true);
@@ -819,7 +821,59 @@
       setField("directorName", accounts.directorName);
       filled += 1;
     }
-    return `Filled ${plural(filled, "field")} from ${fileName} for the period ${accounts.periodStart} to ${accounts.periodEnd}. The book holds no prior year profit and loss account, so the prior year is yours to add. Check the figures, add the principal activity, the accounting policies, the date approved and the statements, then preview.`;
+    return [
+      siteText("widget.books-small-filled", "Filled {count} fields from {file} for the period {start} to {end}.", {
+        count: filled,
+        file: fileName,
+        start: accounts.periodStart,
+        end: accounts.periodEnd,
+      }),
+      prior.sentence,
+      siteText(
+        "widget.books-small-next",
+        "Check the figures, add the principal activity, the accounting policies, the date approved and the statements, then preview.",
+      ),
+    ].join(" ");
+  }
+
+  // The prior year of the small company form from the book, when the form shows one: the balance
+  // sheet from the book's opening balances, and the profit and loss account where the book holds it.
+  // Answers how many fields it filled and the sentence that names the prior-year fields left for the
+  // reader to type.
+  function fillSmallCompanyPriorYearFromBook(accounts, bookProfitAndLoss, profitAndLossFormat) {
+    if (!document.getElementById("includeComparatives")?.checked) {
+      return {
+        filled: 0,
+        sentence: siteText(
+          "widget.books-small-first-accounts",
+          "These are the company's first accounts, so there is no prior year to fill.",
+        ),
+      };
+    }
+    const balanceSheet = accounts.balanceSheet.priorYear ?? {};
+    const profitAndLoss = bookProfitAndLoss.priorYear ?? {};
+    const filled =
+      setFigures("prior", balanceSheet, SMALL_BALANCE_SHEET_LINES) +
+      setFigures("prior", profitAndLoss, SMALL_PROFIT_AND_LOSS_LINES[profitAndLossFormat]);
+    const filleted = document.getElementById("copyFilleted")?.checked;
+    const unsourced = [
+      ...SMALL_BALANCE_SHEET_LINES.filter((name) => typeof balanceSheet[name] !== "number"),
+      ...(filleted ? [] : SMALL_PROFIT_AND_LOSS_LINES[profitAndLossFormat].filter((name) => typeof profitAndLoss[name] !== "number")),
+    ]
+      .map((name) => document.getElementById("prior" + upperFirst(name)))
+      .filter(Boolean)
+      .map((input) => (document.querySelector(`label[for="${input.id}"]`)?.textContent ?? input.id).trim());
+    const filledSentence =
+      Object.keys(balanceSheet).length > 0
+        ? siteText("widget.books-small-prior-filled", "The prior year's balance sheet is filled from the book's opening balances.")
+        : "";
+    const typeSentence =
+      unsourced.length > 0
+        ? siteText("widget.books-small-prior-type", "The book holds no figure for these, so type them: {fields}.", {
+            fields: unsourced.join("; "),
+          })
+        : "";
+    return { filled, sentence: [filledSentence, typeSentence].filter(Boolean).join(" ") };
   }
 
   const HANDOFF_KEY = "booksHandoff";

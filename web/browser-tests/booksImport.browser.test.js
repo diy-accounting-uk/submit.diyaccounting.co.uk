@@ -895,10 +895,14 @@ async function zippedFixtureBook(directory) {
   return zip.generateAsync({ type: "nodebuffer" });
 }
 
-async function openAccountsPage(page, url, companyNumber) {
+async function openAccountsPage(page, url, companyNumber, profile = {}) {
   await openPage(page, url);
   await page.route(`**/api/v1/companies-house/company/${companyNumber}`, (route) =>
-    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ companyNumber, companyName: "Example Ltd" }) }),
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ companyNumber, companyName: "Example Ltd", ...profile }),
+    }),
   );
   await page.locator("#companyNumber").fill(companyNumber);
   await page.locator("#companyLookupBtn").click();
@@ -991,6 +995,52 @@ test.describe("books import on the small company accounts page", () => {
     // The company's profile names no first accounts, so the form shows the prior year for the reader to type.
     await expect(page.locator("#includeComparatives")).toBeChecked();
     await expect(page.locator("#principalActivity")).toHaveValue("");
+  });
+});
+
+test.describe("books import of the small company prior year", () => {
+  const ESTABLISHED = { dateOfCreation: "2019-04-01", accountsLastPeriodStart: "2024-04-01" };
+  const SMALL_URL_CY = "http://localhost:3000/cy/companies-house/fileSmallCompanyAccounts.html";
+
+  for (const width of [1280, 390]) {
+    test(`an established company's prior year balance sheet fills from the book's opening balances, and the card names the fields to type, at ${width} px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await openAccountsPage(page, SMALL_URL, "12345678", ESTABLISHED);
+      await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
+      const status = page.locator("#booksImportStatus");
+      await expect(status).toContainText("The prior year's balance sheet is filled from the book's opening balances.", { timeout: 60_000 });
+      await expect(status).toContainText("The book holds no figure for these, so type them: Accruals (due within one year), last year;");
+      await expect(status).toContainText("Provisions for liabilities, last year; Turnover, last year; Cost of sales, last year;");
+      await expect(page.locator("#includeComparatives")).toBeChecked();
+      await expect(page.locator("#priorStocks")).toHaveValue("10000");
+      await expect(page.locator("#priorCalledUpShareCapital")).toHaveValue("100");
+      await expect(page.locator("#priorTurnover")).toHaveValue("");
+      await status.screenshot({ path: `target/screenshots/first-accounts/books-small-prior-${width}.png` });
+    });
+
+    test(`the Welsh card says the prior year balance sheet is filled and names the fields to type, at ${width} px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await openAccountsPage(page, SMALL_URL_CY, "12345678", ESTABLISHED);
+      await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
+      const status = page.locator("#booksImportStatus");
+      await expect(status).toContainText("Mae mantolen y flwyddyn flaenorol wedi’i llenwi o falansau agoriadol y llyfr.", {
+        timeout: 60_000,
+      });
+      await expect(status).toContainText("Nid oes gan y llyfr ffigur ar gyfer y rhain, felly teipiwch nhw:");
+      await expect(page.locator("#priorStocks")).toHaveValue("10000");
+      await status.screenshot({ path: `target/screenshots/first-accounts/books-small-prior-cy-${width}.png` });
+    });
+  }
+
+  test("a company's first accounts fill no prior year, and the card says why", async ({ page }) => {
+    await openAccountsPage(page, SMALL_URL, "12345678", { dateOfCreation: "2025-04-01" });
+    await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
+    const status = page.locator("#booksImportStatus");
+    await expect(status).toContainText("These are the company's first accounts, so there is no prior year to fill.", { timeout: 60_000 });
+    await expect(page.locator("#includeComparatives")).not.toBeChecked();
+    await expect(page.locator("#priorStocks")).toHaveValue("");
   });
 });
 
