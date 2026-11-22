@@ -227,11 +227,11 @@ The six concepts are in `fixtures/frc-taxonomy/frs-102-2026-concepts.json`:
 | Candidate | Finding | Task |
 | --- | --- | --- |
 | A new submission type or flag on the XML Gateway | None. The form stays `Accounts` and the envelope does not change | none |
-| Test submissions and a review before live | Open. The live package covers the form types tested, and a new release of a covered type is tested again | AA9, OAA1, then AA10 to AA13 and OAA2 |
+| Test submissions and a review before live | Needed. The XML team's email of 2026-11-02, which issued the live package, says: "This covers the filing of the form type you have tested to date. If you wish to increase your filing options, you will have to test them via me." The four document types tested then were micro-entity, dormant micro-entity, small company full and small company filleted accounts. Revised accounts are a filing option that was not tested (the listing request of 2026-11-12 answered "Amended accounts: No"), so the four revised cases go to the test service and the XML team reviews them before the launch | AA10 to AA13 and OAA2 |
 | A new REST API scope or application | None. The REST filing API covers transactions, the registered office, the registered email and insolvency | none |
 | Reading the filed accounts of a company | No approval. The filing history and the Document API take the API key that the company lookup uses | AA23 |
 | Reading the register to build books | No approval. The profile and the officers take the API key. `CompanyDataRequest` is a request that the live package already sends | AA29, AA31 |
-| A change to the live package's form list | Open, same question as the review | AA9, OAA1 |
+| A change to the live package's form list | None asked. The form stays `Accounts`, and OAA2's review covers the new filing option | OAA2 |
 | The finder listing | Companies House lists a supplier after three consecutive months of live filings on its own presenter ID and credit account (the XML team, 2026-11-13). The operator raises the listing | none |
 
 The live package record is `../private.diyaccounting.co.uk/companies-house/correspondence/EMAIL_XMLGW_LIVE_PACKAGE_ISSUED.md`. The mail mirror holds no statement from the XML team on revised or amended accounts (searched 2026-11-12).
@@ -246,6 +246,8 @@ The live package record is `../private.diyaccounting.co.uk/companies-house/corre
 | Q4 | Does the gateway refuse revised accounts for a period after some time? | AA4 copy |
 | Q5 | A `CompanyDataRequest` takes a `MadeUpDate`. Are the shareholdings and the statement of capital in the answer the register as at that date, or as at the last confirmation statement? What does the answer hold when the `MadeUpDate` is before the last confirmation statement, or after today? Does it state shareholdings for every private company limited by shares? | AA31 copy (section 11.4, point 5) |
 | Q6 | In revised accounts by replacement, does `core:DateAuthorisationFinancialStatementsForIssue` hold the date the directors approved the revised accounts (as `bus:DateApprovalRevisionReport` does), or the date they approved the original accounts? Four revised documents on the 2026 taxonomy in the Accounts Data Product daily file of 2026-11-21 hold the revision date there, equal to `bus:DateApprovalRevisionReport`. One revised small company document on the 2025 taxonomy in the daily file of 2026-11-20 holds the original approval date there and dates the revision later. Until the answer, Submit follows the 2026 taxonomy examples and puts the revision date there | AA1 |
+
+No question is sent (operator, 2026-11-22). Q1 is answered by the XML team's email of 2026-11-02 quoted in section 2.2's table: a new filing option is tested through the XML team, so AA12, AA13 and OAA2 run. Q2 is read from the register in AA15's first step. Q3 matters to AA15 only, and the simulator's answers stay until a live filing shows the gateway's. Q4: the page's copy follows GOV.UK. Q5 is tested with the business's own company when AA31 is built. Q6: Submit follows the four examples on the 2026 taxonomy.
 
 The examples in the Accounts Data Product disagree on which date `core:DateAuthorisationFinancialStatementsForIssue` holds in a revision, so that point is Q6.
 
@@ -365,9 +367,6 @@ The finder pages were read on 2026-11-12. "Amended accounts" is Yes for 36 of 57
 
 | Label | Task | Delivers | Verified by | Class |
 | --- | --- | --- | --- | --- |
-| AA9 | Draft the questions for the XML team | One draft with Q1 to Q6 | The `email-draft` skill's facts pass | machine-only |
-| OAA1 | Send the questions | The email to the XML team | The send date is in this plan | human-driven |
-| AA22 | Record the XML team's answers | The reply on record; each answer in section 2.3 | Section 2.3 holds an answer for Q1 to Q6 | machine-only |
 | AA10 | Revised cases for the review | Four fixture cases; the review script judges a revision | Unit tests of the review script | machine-only |
 | AA11 | Review and judge the four cases | A review folder with the judge's verdicts | The judge passes all four | machine-only |
 | AA12 | File the four cases on the test service | Four submission numbers | The gateway acknowledges each | machine-only |
@@ -428,7 +427,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Reader.** In `app/services/jointFiling.js`, `readRevision` requires both texts and applies `MAX_REVISION_DIFFERENCES_LENGTH` to each. Rename that constant to match.
 - **Document.** In `app/services/accountsIxbrlCommon.js`, add the six concepts of section 2.1 to `CONCEPTS`, beside `reportAmendedRevisedVersion`. In `revisionPage`, tag each of the three fixed sentences and the two customer texts with `renderTextFact`. Add one visible sentence with the date the directors approved the revised accounts, tagged `bus:DateApprovalRevisionReport` with `renderDateFact`. Every tagged statement is visible text. The page headings become "What was wrong with the original accounts" and "What the revised accounts change".
 - **Callers of the page.** `app/services/microEntityAccountsIxbrl.js` (`const revisionHtml = input.revision`) and `app/services/smallCompanyAccountsIxbrl.js` (`if (input.revision) {`) pass the context reference and the approval date that `revisionPage` now needs.
-- **The balance sheet date.** Read three amended examples of the 2026 taxonomy in an Accounts Data Product zip (the `companies-house-review` skill gives the download). See which date `core:DateAuthorisationFinancialStatementsForIssue` holds. Follow the examples and state the finding in the pull request. When the examples disagree, add the question to AA9's draft.
+- **The balance sheet date.** Read three amended examples of the 2026 taxonomy in an Accounts Data Product zip (the `companies-house-review` skill gives the download). See which date `core:DateAuthorisationFinancialStatementsForIssue` holds. Follow the examples and state the finding in the pull request. When the examples disagree, follow the newer taxonomy's examples and say so in the pull request.
 - **Joint filing page.** `web/public/companies-house/fileCompanyTaxReturn.html` (`revisionGroup`) gets two text areas in place of `revisionDifferences`. `web/public/companies-house/fileCompanyTaxReturn.page.js` (`revisionDifferencesProblem`, `sending.revision`) sends both, on the accounts request and on the Company Tax Return request.
 - **Tests.** Extend `describe("revised accounts"` in `app/unit-tests/services/microEntityAccountsIxbrl.test.js`: each of the six facts is present, non-empty and visible. Add the same block to `app/unit-tests/services/smallCompanyAccountsIxbrl.test.js` for full and filleted accounts, and a dormant case to the micro-entity file. Update `app/unit-tests/services/jointFiling.test.js`, `app/unit-tests/functions/companiesHouseAccountsPost.test.js`, `web/browser-tests/fileCompanyTaxReturn.browser.test.js`, `describeTheRevisionAndSend` in `behaviour-tests/steps/behaviour-hmrc-company-tax-return-steps.js` and `REVISION_DIFFERENCES` in `behaviour-tests/companyTaxReturn.behaviour.test.js`.
 - **Validator.** Add four revised samples to the `samples` list in `scripts/validate-accounts-ixbrl.js`. `npm run validate:accounts-ixbrl` prints `RESULT: valid` for each. The script reaches the network, so it runs on demand and stays out of the test suite.
@@ -507,28 +506,6 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Run.** `npm run build:mtd-calendar`; `npx vitest run web/unit-tests/mtdCalendar.test.js`.
 - **Waits on**: nothing. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: 3 files.
 
-#### AA9. Draft the questions for the XML team
-
-- **Goal.** One short email that asks Q1 to Q6 of section 2.3.
-- **How.** Use the `email-draft` skill on Opus. It reads the thread and the operator's sent mail from corpus-loom. The email is a reply on the XML team's accounts testing thread, which `../private.diyaccounting.co.uk/companies-house/correspondence/EMAIL_XMLGW_LIVE_PACKAGE_ISSUED.md` names.
-- **Facts the draft may state.** Submit files micro-entity, small company and dormant accounts under its live package. It builds revised accounts by replacement with the six facts of the accounts specification's "Revised Accounts" section. GOV.UK says software can file an amendment "if you used it to file your annual accounts".
-- **Rules.** The questions of section 2.3, numbered, and nothing else. No request to allow an omission. Paragraphs are unwrapped lines. The operator sent the listing request of board row OOS22 under a subject of its own; the draft's header offers one for this email too.
-- **Output.** `../private.diyaccounting.co.uk/companies-house/correspondence/DRAFT_EMAIL_XMLGW_REVISED_ACCOUNTS.md`, committed in the private repository.
-- **Waits on**: nothing. AA1's date question joins the draft when it arises before the send. **Class**: machine-only. **Repository**: private. **Model**: Opus. **Size**: 1 file.
-
-#### OAA1. Send the questions
-
-- The operator reads AA9's draft and sends it from his own address to the XML team.
-- A session renames the draft to `EMAIL_XMLGW_REVISED_ACCOUNTS.md`, adds the `Sent:` line and writes the send date here.
-- **Waits on**: AA9. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
-
-#### AA22. Record the XML team's answers
-
-- **Goal.** The reply to OAA1 is on record, and section 2.3 of this plan holds each answer.
-- **How.** Find the reply in the mail mirror with the `corpus-loom` `search` tool (source `mail-antony`, the subject of OAA1's email). Write it beside the sent email as `EMAIL_XMLGW_REVISED_ACCOUNTS_REPLY.md` in `../private.diyaccounting.co.uk/companies-house/correspondence/`, in the form of `EMAIL_XMLGW_LIVE_PACKAGE_ISSUED.md` there. Write each answer into section 2.3 in one sentence, with no name and no quoted text.
-- **What the answers start.** The answer to Q1 decides OAA2: test submissions and a review, or neither. The answers to Q2 and Q3 start AA15. The answer to Q4 gives AA4's copy its time limit, or removes the sentence. The answer to Q5 settles the date that the builder states for the members (section 11.4, point 5). The answer to Q6 confirms the date that AA1's document puts in `core:DateAuthorisationFinancialStatementsForIssue`, or changes it.
-- **Waits on**: the reply to OAA1. **Class**: machine-only. **Repository**: private, submit. **Model**: Sonnet. **Size**: 2 files.
-
 #### AA10. Revised cases for the review
 
 - **Goal.** The review tooling builds, files and judges four revised cases.
@@ -563,10 +540,9 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 
 #### OAA2. Send the review request
 
-- The operator sends AA13's draft when the answer to Q1 (AA22) asks for test submissions.
-- When that answer says that no test is needed, this task closes with nothing sent.
+- The operator sends AA13's draft. The XML team's email of 2026-11-02 asks that a new filing option is tested through it.
 - A session records the XML team's verdict in the correspondence folder. A fail goes back to AA1 and AA11.
-- **Waits on**: AA22, AA13. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
+- **Waits on**: AA13. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
 
 #### AA14. Prove a revision through the Submit API
 
@@ -580,10 +556,10 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 
 - **Goal.** A customer files revised accounts when Submit holds no receipt for the original, or when the revision changes regime.
 - **Design.** Both accounts forms get a choice at the top: "These accounts replace accounts already filed". It opens the revision section of `web/public/lib/accounts-revision.js`. The customer types the original approval date, or drops the filed iXBRL document on the books card, which gives `approvalDate`.
-- **Shaped by the answers.** Q2 decides whether the choice is offered for accounts first filed another way. Q3 gives the gateway's answers for a second original and for a revision with no original. The page words its errors from them, and AA2's simulator returns them.
+- **First step.** Read the register for Q2: in an Accounts Data Product daily file, find revised accounts filed by software, and read each company's filing history for an original marked as filed on paper. Offer the choice for accounts first filed another way only when such a filing exists; name the companies checked in the pull request. The simulator's answers for a second original and for a revision with no original stay as AA2 built them, and the page words its errors from them, until a live filing shows the gateway's.
 - **Until then.** The amend link on a receipt is the one way in. The page names the paper route on https://www.gov.uk/annual-accounts/corrections-and-amendments for other accounts.
 - **Tests.** Browser tests of the choice on both forms; two behaviour journeys; simulator unit tests for the Q3 answers.
-- **Waits on**: AA22, AA5. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~10 files.
+- **Waits on**: AA5. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~10 files.
 
 #### AA23. The company's filed accounts from the register
 
@@ -638,7 +614,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 
 #### AA18. Launch on prod
 
-- **Preconditions.** AA1 to AA7 and AA16 are on `main`. The judge passed AA11. The test service acknowledged the submissions of AA12 and AA14. The answers to OAA1 are on record (AA22). When Q1's answer asked for test submissions, the XML team's verdict on OAA2 is a pass. OAA3 said go. The operator approved the launch on 2026-11-22.
+- **Preconditions.** AA1 to AA7 and AA16 are on `main`. The judge passed AA11. The test service acknowledged the submissions of AA12 and AA14. The XML team's verdict on OAA2 is a pass. OAA3 said go. The operator approved the launch on 2026-11-22.
 - **Change.** In `web/public/submit.catalogue.toml`, add `"prod"` to the `environments` of `file-revised-accounts` and drop "preview" from its name. In `scripts/build-mtd-calendar.mjs`, set the revised row's cells to `production` where the accounts row says production, and add the row's `video` id. Run `npm run build:mtd-calendar`. Run `npm run build:static-content`, which now writes the FAQ entry of AA16 into `web/public/help.html` and the journey of AA17 into `web/public/guide.html`, because the activity lists `prod`.
 - **Terms.** In `web/public/terms.html`, two sentences name what Submit files. One holds "micro-entity accounts, small company accounts and confirmation statements". The other starts "Companies House accounts and confirmation statements:". Add revised accounts to both.
 - **Video.** Flip the video public by the `video-publish` skill.
@@ -819,17 +795,13 @@ graph TD
   AA5 --> AA6
   AA1 --> AA7
   AA3 --> AA7
-  AA9 --> OAA1
-  OAA1 --> AA22
   AA1 --> AA10
   AA10 --> AA11
   AA11 --> AA12
   AA12 --> AA13
   AA13 --> OAA2
-  AA22 --> OAA2
   AA7 --> AA14
   AA10 --> AA14
-  AA22 --> AA15
   AA5 --> AA15
   AA3 --> AA23
   AA23 --> AA24
@@ -843,7 +815,6 @@ graph TD
   AA12 --> AA18
   AA14 --> AA18
   AA16 --> AA18
-  AA22 --> AA18
   OAA2 --> AA18
   OAA3 --> AA18
   AA18 --> AA20
@@ -874,15 +845,15 @@ graph TD
 - AA5, AA16 and AA17: blocked by AA4. AA6: blocked by AA5.
 - AA11: blocked by AA10. AA12: blocked by AA11. AA13: blocked by AA12.
 - AA14: blocked by AA7 and AA10.
-- OAA1: blocked by AA9. AA22: blocked by the reply to OAA1. OAA2: blocked by AA13 and AA22.
-- AA15: blocked by AA22 and AA5. AA23: blocked by AA3. AA24: blocked by AA23 and AA15.
-- AA18: blocked by AA6, AA7, AA11, AA12, AA14, AA16, AA22, OAA2's outcome when Q1's answer asks for tests, and OAA3.
+- OAA2: blocked by AA13.
+- AA15: blocked by AA5. AA23: blocked by AA3. AA24: blocked by AA23 and AA15.
+- AA18: blocked by AA6, AA7, AA11, AA12, AA14, AA16, OAA2's pass and OAA3.
 - AA20 and AA21: blocked by AA18.
 - AA28: blocked by AA4, and by AA27 on the DIYA-GL prod site for its package action.
 - AA26: blocked by AA25. AA30: blocked by AA26 and its publish to npm. So the order across the two repositories is AA26, the release, AA30.
 - AA31: blocked by AA23, AA28, AA29 and AA30. AA32: blocked by AA23, AA29, AA30 and AA31.
 - AA33: blocked by AA31. OAA5: blocked by AA33. AA34: blocked by AA27, AA31, AA33 and OAA5. AA35: blocked by AA34.
-- AA8, AA9, AA25, AA27 and AA29 wait on nothing.
+- AA8, AA25, AA27 and AA29 wait on nothing.
 
 ## 7. Shared facts
 
@@ -906,22 +877,21 @@ graph TD
 
 ## 8. Order of delivery
 
-**Before any answer from Companies House.** These land behind the activity's environment rule, with simulator and validator proofs:
+**Before the XML team's review.** These land behind the activity's environment rule, with simulator and validator proofs:
 
-1. AA9, then OAA1. The questions go first, because the reply takes the longest.
-2. AA3 with AA1, then AA2.
-3. AA4, then AA5, then AA6. AA7 and AA8 run beside them.
-4. AA10, then AA11. AA23 runs beside them after AA3.
-5. AA16 and AA17 after AA4, then OAA3.
+1. AA3 with AA1, then AA2.
+2. AA4, then AA5, then AA6. AA7 and AA8 run beside them.
+3. AA10, then AA11. AA23 runs beside them after AA3.
+4. AA16 and AA17 after AA4, then OAA3.
 
 **With no answer needed (the operator gave the go on 2026-11-22).** AA12 files four test submissions. AA14 files one. AA13 drafts the review request.
 
-**After the reply to OAA1.**
+**The review, then the launch.**
 
-1. AA22 records the answers. Then OAA2, when Q1's answer asks for test submissions.
-2. AA15, from the answers to Q2 and Q3, then AA24.
-3. AA18, the launch. It is the one change that offers a revision on prod.
-4. AA20 and AA21.
+1. OAA2: the operator sends the review request with AA12's four submission numbers.
+2. AA18, the launch, after the XML team's pass. It is the one change that offers a revision on prod.
+3. AA20 and AA21.
+4. AA15, from its read of the register, then AA24.
 
 **The two book features.** They wait on no answer from Companies House.
 
