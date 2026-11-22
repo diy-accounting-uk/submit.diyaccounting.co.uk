@@ -73,6 +73,18 @@ export const CONCEPTS = {
   countryFormationOrIncorporation: { prefix: "bus", name: "CountryFormationOrIncorporation" },
   scopeAccounts: { prefix: "bus", name: "ScopeAccounts" },
   reportAmendedRevisedVersion: { prefix: "bus", name: "ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse" },
+  revisedReportReplacesPreviouslyFiledReport: { prefix: "bus", name: "StatementThatRevisedReportReplacesPreviouslyFiledReportForPeriod" },
+  revisedReportNowStatutoryAccounts: { prefix: "bus", name: "StatementThatThisReportNowStatutoryAccountsForPeriod" },
+  revisedReportPreparedAsDatePreviouslyFiledReport: {
+    prefix: "bus",
+    name: "StatementThatThisReportHasBeenPreparedAsDatePreviouslyFiledReport",
+  },
+  previouslyFiledReportNonCompliance: {
+    prefix: "bus",
+    name: "StatementRespectsInWhichPreviouslyFiledReportDidNotComplyWithCompaniesAct2006",
+  },
+  previouslyFiledReportSignificantAmendments: { prefix: "bus", name: "StatementSignificantAmendmentsToPreviouslyFiledReport" },
+  dateApprovalRevisionReport: { prefix: "bus", name: "DateApprovalRevisionReport" },
   addressLine1: { prefix: "bus", name: "AddressLine1" },
   addressLine2: { prefix: "bus", name: "AddressLine2" },
   addressLine3: { prefix: "bus", name: "AddressLine3" },
@@ -820,38 +832,46 @@ export function coverPage({ refs, companyName, companyNumber, title, periodStart
 }
 
 /**
- * The page that makes accounts a revision: the statements the Companies (Revision of Defective
- * Accounts and Reports) Regulations 2008 require of revised accounts, and the respects in which
- * they differ from the original accounts. Revised accounts carry the date they were approved on
- * the balance sheet, as any accounts do.
+ * The page that makes accounts a revision by replacement: the statements the Companies (Revision of
+ * Defective Accounts and Reports) Regulations 2008 require of revised accounts, the respects in
+ * which the original accounts did not comply with the Act, the significant amendments, and the date
+ * the directors approved the revised accounts. Each statement and the date are tagged, as the
+ * gateway requires of revised accounts that carry no supplementary note. Revised accounts carry
+ * that approval date on the balance sheet too, as any accounts do.
  * @param {object} input
  * @param {string} input.periodEnd - ISO date the accounts are made up to
- * @param {{originalDateOfApproval: string, differences: string}} input.revision
+ * @param {{originalDateOfApproval: string, nonCompliance: string, amendments: string}} input.revision
+ * @param {string} input.dateOfApproval - ISO date the directors approved the revised accounts
+ * @param {string} input.contextRef - the current period's context
  * @param {string} input.heading - the page heading, already built
  * @returns {string}
  */
-export function revisionPage({ heading, periodEnd, revision }) {
-  const originalDate = displayDate(revision.originalDateOfApproval);
+export function revisionPage({ heading, periodEnd, revision, dateOfApproval, contextRef }) {
+  const statement = (conceptKey, english, values) => renderTextFact(conceptKey, contextRef, accountsText(english, values));
+  const approval = accountsText("The directors approved these revised accounts on {date}.", {
+    date: renderDateFact("dateApprovalRevisionReport", contextRef, dateOfApproval),
+  });
   return `<div class="page">
-${heading}<p>${escapeXmlText(
-    accountsText(
-      "These are revised accounts. They replace the original accounts of the company for the financial year ended {end}, which were approved on {approved}.",
-      { end: displayDate(periodEnd), approved: originalDate },
-    ),
+${heading}<p>${statement(
+    "revisedReportReplacesPreviouslyFiledReport",
+    "These are revised accounts. They replace the original accounts of the company for the financial year ended {end}, which were approved on {approved}.",
+    { end: displayDate(periodEnd), approved: displayDate(revision.originalDateOfApproval) },
   )}</p>
-<p>${escapeXmlText(accountsText("The revised accounts are now the statutory accounts of the company."))}</p>
-<p>${escapeXmlText(
-    accountsText(
-      "They have been prepared as at the date of the original accounts, not as at the date of the revision, and so they do not deal with events between those dates.",
-    ),
+<p>${statement("revisedReportNowStatutoryAccounts", "The revised accounts are now the statutory accounts of the company.")}</p>
+<p>${statement(
+    "revisedReportPreparedAsDatePreviouslyFiledReport",
+    "They have been prepared as at the date of the original accounts, not as at the date of the revision, and so they do not deal with events between those dates.",
   )}</p>
 <p>${escapeXmlText(
     accountsText(
       "They have been prepared in accordance with the provisions of the Companies Act 2006 that applied to the original accounts when those were approved.",
     ),
   )}</p>
-<h3>${escapeXmlText(accountsText("Respects in which the original accounts differ"))}</h3>
-<p>${escapeXmlText(revision.differences)}</p>
+<h3>${escapeXmlText(accountsText("What was wrong with the original accounts"))}</h3>
+<p>${renderTextFact("previouslyFiledReportNonCompliance", contextRef, revision.nonCompliance)}</p>
+<h3>${escapeXmlText(accountsText("What the revised accounts change"))}</h3>
+<p>${renderTextFact("previouslyFiledReportSignificantAmendments", contextRef, revision.amendments)}</p>
+<p>${approval}</p>
 </div>`;
 }
 

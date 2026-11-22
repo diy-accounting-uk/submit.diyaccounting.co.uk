@@ -90,15 +90,16 @@ export function longPeriodFields(longPeriodRecordValue) {
   return longPeriodRecordValue ? { longPeriod: longPeriodRecordValue } : {};
 }
 
-const MAX_REVISION_DIFFERENCES_LENGTH = 2000;
+const MAX_REVISION_STATEMENT_LENGTH = 2000;
 
 /**
  * Read the optional revision of accounts already filed: the date the original accounts were
- * approved and a description of what the revision changes. The revised accounts carry both.
+ * approved, the respects in which they did not comply with the Companies Act 2006, and the
+ * significant amendments made as a consequence. The revised accounts state all three.
  * @param {object|undefined} body
  * @param {string|undefined} dateApproved - the approval date of the revised accounts
  * @param {string[]} errorMessages
- * @returns {{originalDateOfApproval: string, differences: string}|undefined}
+ * @returns {{originalDateOfApproval: string, nonCompliance: string, amendments: string}|undefined}
  */
 export function readRevision(body, dateApproved, errorMessages) {
   const value = body?.revision;
@@ -108,17 +109,23 @@ export function readRevision(body, dateApproved, errorMessages) {
     return undefined;
   }
   const originalDateOfApproval = value.originalDateOfApproval;
-  const differences = typeof value.differences === "string" ? value.differences.trim() : "";
   if (!isValidIsoDate(originalDateOfApproval)) {
     errorMessages.push("Invalid or missing revision.originalDateOfApproval - must be YYYY-MM-DD");
   } else if (isValidIsoDate(dateApproved) && originalDateOfApproval > dateApproved) {
     errorMessages.push("revision.originalDateOfApproval is after the date the revised accounts are approved");
   }
-  if (!differences) errorMessages.push("Missing revision.differences - say what the revision changes");
-  if (differences.length > MAX_REVISION_DIFFERENCES_LENGTH) {
-    errorMessages.push(`revision.differences is longer than ${MAX_REVISION_DIFFERENCES_LENGTH} characters`);
+  const nonCompliance = readRevisionStatement(value, "nonCompliance", "say what was wrong with the original accounts", errorMessages);
+  const amendments = readRevisionStatement(value, "amendments", "say what the revised accounts change", errorMessages);
+  return { originalDateOfApproval, nonCompliance, amendments };
+}
+
+function readRevisionStatement(revision, field, ask, errorMessages) {
+  const text = typeof revision[field] === "string" ? revision[field].trim() : "";
+  if (!text) errorMessages.push(`Missing revision.${field} - ${ask}`);
+  if (text.length > MAX_REVISION_STATEMENT_LENGTH) {
+    errorMessages.push(`revision.${field} is longer than ${MAX_REVISION_STATEMENT_LENGTH} characters`);
   }
-  return { originalDateOfApproval, differences };
+  return text;
 }
 
 /**

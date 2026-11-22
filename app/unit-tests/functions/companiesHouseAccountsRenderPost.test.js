@@ -368,7 +368,11 @@ describe("companiesHouseAccountsRenderPost ingestHandler", () => {
   });
 
   describe("revised accounts", () => {
-    const REVISION = { originalDateOfApproval: "2026-01-10", differences: "Creditors are restated." };
+    const REVISION = {
+      originalDateOfApproval: "2026-01-10",
+      nonCompliance: "A liability was left out.",
+      amendments: "Creditors are restated.",
+    };
 
     test("refuses to render a revision on prod, where revised accounts are not offered", async () => {
       process.env.ENVIRONMENT_NAME = "prod";

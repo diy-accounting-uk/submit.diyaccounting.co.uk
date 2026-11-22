@@ -2755,12 +2755,13 @@ function startAmendment({ accounts }) {
     unlockFirstReturn();
   }
   if (accounts) {
-    sending.revision = { originalDateOfApproval: element("directorDateApproved").value, differences: "" };
+    sending.revision = { originalDateOfApproval: element("directorDateApproved").value, nonCompliance: "", amendments: "" };
     sending.companiesHouse = null;
     unlockAccounts();
   }
   if (sending.longPeriod) lockPeriodDates();
-  element("revisionDifferences").value = "";
+  element("revisionNonCompliance").value = "";
+  element("revisionAmendments").value = "";
   element("returnResult").replaceChildren();
   element("returnRecord").replaceChildren();
   element("returnIrmark").style.display = "none";
@@ -2772,10 +2773,18 @@ function startAmendment({ accounts }) {
   showView("formView");
 }
 
-function revisionDifferencesProblem() {
-  const input = element("revisionDifferences");
-  if (input.value.trim()) return null;
-  return { input, message: siteText("ch.ct.say-differences", "Say what the revised accounts change") };
+// The two statements revised accounts make about the original accounts: one problem for each left empty.
+function revisionProblems() {
+  const problems = [];
+  const nonCompliance = element("revisionNonCompliance");
+  if (!nonCompliance.value.trim()) {
+    problems.push({ input: nonCompliance, message: siteText("ch.ct.say-non-compliance", "Say what was wrong with the original accounts") });
+  }
+  const amendments = element("revisionAmendments");
+  if (!amendments.value.trim()) {
+    problems.push({ input: amendments, message: siteText("ch.ct.say-amendments", "Say what the revised accounts change") });
+  }
+  return problems;
 }
 
 // What a reload needs of the two returns: which each has reached, never a code or a password.
@@ -3388,12 +3397,16 @@ async function handleSubmitReturn() {
     }
     window.formErrors.clearFormErrors();
     if (sending.amendment?.accounts) {
-      const differencesProblem = revisionDifferencesProblem();
-      if (differencesProblem) {
-        window.formErrors.showFormErrors([differencesProblem]);
+      const problems = revisionProblems();
+      if (problems.length) {
+        window.formErrors.showFormErrors(problems);
         return;
       }
-      sending.revision = { ...sending.revision, differences: element("revisionDifferences").value.trim() };
+      sending.revision = {
+        ...sending.revision,
+        nonCompliance: element("revisionNonCompliance").value.trim(),
+        amendments: element("revisionAmendments").value.trim(),
+      };
     }
   }
   await runSend(async () => {
@@ -3464,7 +3477,8 @@ function startAgain() {
   forgetJoint();
   hideAmendPanel();
   agentClient = null;
-  element("revisionDifferences").value = "";
+  element("revisionNonCompliance").value = "";
+  element("revisionAmendments").value = "";
   element("jointProgress").style.display = "none";
   element("booksImport").hidden = false;
   element("companyAuthCode").value = "";

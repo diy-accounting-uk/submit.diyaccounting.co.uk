@@ -12581,6 +12581,14 @@ cy = '''Cod dilysu’r cwmni'''
 hash = "5dc87bc3b086"
 cy = '''6 i 8 nod, gan Dŷ’r Cwmnïau. Mae’n cael ei anfon unwaith gyda’r cyfrifon ac nid yw byth yn cael ei gadw.'''
 
+[strings."ch-tax-return.what-was-wrong-with-the-original-b6637a"]
+hash = "b6637a6b53ee"
+cy = '''Beth oedd o’i le ar y cyfrifon gwreiddiol?'''
+
+[strings."ch-tax-return.say-how-the-original-accounts-did-116491"]
+hash = "11649108f16c"
+cy = '''Dywedwch ym mha ffyrdd nad oedd y cyfrifon gwreiddiol yn cydymffurfio â Deddf Cwmnïau 2006. Mae Tŷ’r Cwmnïau yn argraffu hyn yn y cyfrifon diwygiedig.'''
+
 [strings."ch-tax-return.what-do-the-revised-accounts-change-ff3c9b"]
 hash = "ff3c9b4ea7bf"
 cy = '''Beth mae’r cyfrifon diwygiedig yn ei newid?'''
@@ -15225,7 +15233,11 @@ cy = '''Rydych yn diwygio’r cyfrifon a ffeiliwyd yn Nhŷ’r Cwmnïau. Newidiw
 hash = "3179faf9ad1f"
 cy = '''Nid yw’r naill Ffurflen na’r llall yn newid gyda’r atebion hyn, felly nid oes dim i’w ddiwygio. Newidiwch ateb a gweld rhagolwg eto.'''
 
-[strings."ch.ct.say-differences"]
+[strings."ch.ct.say-non-compliance"]
+hash = "1ecfc1154024"
+cy = '''Dywedwch beth oedd o’i le ar y cyfrifon gwreiddiol'''
+
+[strings."ch.ct.say-amendments"]
 hash = "bffa02d9d26a"
 cy = '''Dywedwch beth mae’r cyfrifon diwygiedig yn ei newid'''
 

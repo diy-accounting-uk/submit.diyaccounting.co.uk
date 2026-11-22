@@ -479,7 +479,40 @@ test.describe("File Company Tax Return entry form", () => {
       "Send the revised accounts to Companies House and the amended return to HMRC",
     );
     await expect(page.locator("#revisionGroup")).toBeVisible();
+    await expect(page.locator("#revisionNonCompliance")).toBeVisible();
+    await expect(page.locator("#revisionAmendments")).toBeVisible();
     await expect(page.locator("#companyAuthCode")).toHaveValue("");
+  });
+
+  test("the revised accounts are not sent until both statements about the original accounts are given", async ({ page }) => {
+    const values = { ...(await filledFormValues(page)), sendTo: "both" };
+    const receipt = {
+      kind: "company-tax-return",
+      statusCode: "ACCEPT",
+      jointFilingId: ORIGINAL_JOINT_FILING_ID,
+      formRequest: { company: { companyNumber: "12345678", companyName: "Precision Code Ltd" }, values },
+    };
+    const accountsRequests = [];
+    page.on("request", (request) => {
+      if (new URL(request.url()).pathname === "/api/v1/companies-house/accounts") accountsRequests.push(request);
+    });
+    await openAmendment(page, receipt);
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#companyAuthCode").fill("ABC123");
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+
+    await page.locator("#submitReturnBtn").click();
+
+    await expect(page.locator("body")).toContainText("Say what was wrong with the original accounts");
+    await expect(page.locator("body")).toContainText("Say what the revised accounts change");
+
+    await page.locator("#revisionNonCompliance").fill("A liability was left out.");
+    await page.locator("#submitReturnBtn").click();
+
+    await expect(page.locator("body")).toContainText("Say what the revised accounts change");
+    expect(accountsRequests).toHaveLength(0);
   });
 
   test("?amend= on a receipt filed before the answers were kept says so and starts nothing", async ({ page }) => {

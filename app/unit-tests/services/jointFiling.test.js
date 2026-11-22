@@ -75,13 +75,18 @@ describe("the activities a call from the joint page matches", () => {
 });
 
 describe("services/jointFiling revisions and amendments", () => {
-  const REVISION = { originalDateOfApproval: "2026-09-01", differences: " Creditors are restated. " };
+  const REVISION = {
+    originalDateOfApproval: "2026-09-01",
+    nonCompliance: " A liability was left out. ",
+    amendments: " Creditors are restated. ",
+  };
 
-  test("reads a revision and trims what it changes", () => {
+  test("reads a revision and trims what was wrong and what it changes", () => {
     const errors = [];
     expect(readRevision({ revision: REVISION }, "2026-10-20", errors)).toEqual({
       originalDateOfApproval: "2026-09-01",
-      differences: "Creditors are restated.",
+      nonCompliance: "A liability was left out.",
+      amendments: "Creditors are restated.",
     });
     expect(errors).toEqual([]);
   });
@@ -100,12 +105,16 @@ describe("services/jointFiling revisions and amendments", () => {
       return errors;
     };
     expect(refuse("yes")).toEqual(["Invalid revision - must be an object"]);
-    expect(refuse({ differences: "x" })).toEqual(["Invalid or missing revision.originalDateOfApproval - must be YYYY-MM-DD"]);
-    expect(refuse({ originalDateOfApproval: "2026-09-01", differences: "  " })).toEqual([
-      "Missing revision.differences - say what the revision changes",
+    expect(refuse({ nonCompliance: "x", amendments: "y" })).toEqual([
+      "Invalid or missing revision.originalDateOfApproval - must be YYYY-MM-DD",
     ]);
+    expect(refuse({ ...REVISION, nonCompliance: "  " })).toEqual([
+      "Missing revision.nonCompliance - say what was wrong with the original accounts",
+    ]);
+    expect(refuse({ ...REVISION, amendments: undefined })).toEqual(["Missing revision.amendments - say what the revised accounts change"]);
     expect(refuse(REVISION, "2026-08-31")).toEqual(["revision.originalDateOfApproval is after the date the revised accounts are approved"]);
-    expect(refuse({ ...REVISION, differences: "x".repeat(2001) })).toEqual(["revision.differences is longer than 2000 characters"]);
+    expect(refuse({ ...REVISION, nonCompliance: "x".repeat(2001) })).toEqual(["revision.nonCompliance is longer than 2000 characters"]);
+    expect(refuse({ ...REVISION, amendments: "x".repeat(2001) })).toEqual(["revision.amendments is longer than 2000 characters"]);
   });
 
   test("reads the amended flag", () => {

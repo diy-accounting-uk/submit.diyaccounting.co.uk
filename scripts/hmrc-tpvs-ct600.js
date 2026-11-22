@@ -150,7 +150,8 @@ const depreciation = figures.depreciation ?? 0;
 const revision = amended
   ? {
       originalDateOfApproval: periodEnd,
-      differences: "The tax charge in the profit and loss account is restated to match the amended return.",
+      nonCompliance: "The tax charge in the profit and loss account did not match the Company Tax Return.",
+      amendments: "The tax charge in the profit and loss account is restated to match the amended return.",
     }
   : undefined;
 const microAccounts = micro ? await deriveMicroEntityAccounts(session) : undefined;

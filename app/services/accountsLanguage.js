@@ -86,7 +86,9 @@ export const WELSH_ACCOUNTS_TEXT = {
     "Maent wedi eu paratoi fel ar ddyddiad y cyfrifon gwreiddiol, nid fel ar ddyddiad y diwygiad, ac felly nid ydynt yn ymdrin â digwyddiadau rhwng y dyddiadau hynny.",
   "They have been prepared in accordance with the provisions of the Companies Act 2006 that applied to the original accounts when those were approved.":
     "Maent wedi eu paratoi yn unol â darpariaethau Deddf Cwmnïau 2006 a oedd yn gymwys i’r cyfrifon gwreiddiol pan gawsant eu cymeradwyo.",
-  "Respects in which the original accounts differ": "Y ffyrdd y mae’r cyfrifon gwreiddiol yn wahanol",
+  "What was wrong with the original accounts": "Beth oedd o’i le ar y cyfrifon gwreiddiol",
+  "What the revised accounts change": "Beth mae’r cyfrifon diwygiedig yn ei newid",
+  "The directors approved these revised accounts on {date}.": "Cymeradwyodd y cyfarwyddwyr y cyfrifon diwygiedig hyn ar {date}.",
 
   // The balance sheet (FRC 2026 Welsh labels).
   "Called up share capital not paid": "Cyfalaf cyfranddaliadau wedi'i alw na thalwyd",

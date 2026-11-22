@@ -152,6 +152,26 @@ function hiddenText(xhtml, name) {
   return Array.from(hidden.getElementsByTagName("ix:nonNumeric")).find((fact) => fact.getAttribute("name") === name)?.textContent;
 }
 
+const REVISION_FACTS = [
+  "bus:StatementThatRevisedReportReplacesPreviouslyFiledReportForPeriod",
+  "bus:StatementThatThisReportNowStatutoryAccountsForPeriod",
+  "bus:StatementThatThisReportHasBeenPreparedAsDatePreviouslyFiledReport",
+  "bus:StatementRespectsInWhichPreviouslyFiledReportDidNotComplyWithCompaniesAct2006",
+  "bus:StatementSignificantAmendmentsToPreviouslyFiledReport",
+  "bus:DateApprovalRevisionReport",
+];
+
+// The facts of this name in the body of the document, outside the hidden section.
+function visibleFacts(xhtml, name) {
+  const facts = Array.from(parseXmlDocument(xhtml).getElementsByTagName("ix:nonNumeric")).filter(
+    (fact) => fact.getAttribute("name") === name,
+  );
+  return facts.filter((fact) => {
+    for (let node = fact.parentNode; node; node = node.parentNode) if (node.nodeName === "ix:hidden") return false;
+    return true;
+  });
+}
+
 describe("services/smallCompanyAccountsIxbrl", () => {
   describe("buildSmallCompanyAccounts, full accounts", () => {
     const xhtml = buildSmallCompanyAccounts(SAMPLE_INPUT);
@@ -1094,26 +1114,38 @@ describe("the debtors, directors' loan, group and provisions lines of a small co
 describe("services/smallCompanyAccountsIxbrl revised accounts", () => {
   const REVISION = {
     originalDateOfApproval: "2026-09-01",
-    differences: "Creditors falling due within one year are restated to include a late invoice.",
+    nonCompliance: "The original accounts left out a liability that existed at the balance sheet date.",
+    amendments: "Creditors falling due within one year are restated to include a late invoice.",
   };
 
-  test("flags the report as revised, states the replacement and names what changed", () => {
+  test("flags the report as revised, states the replacement, what was wrong and what changed", () => {
     const xhtml = buildSmallCompanyAccounts({ ...SAMPLE_INPUT, revision: REVISION, dateOfApproval: "2026-10-20" });
     expect(hiddenText(xhtml, "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse")).toBe("true");
     expect(xhtml).toContain("These are revised accounts. They replace the original accounts of the company");
     expect(xhtml).toContain("which were approved on 1 September 2026");
-    expect(xhtml).toContain("Creditors falling due within one year are restated to include a late invoice.");
+    expect(xhtml).toContain(REVISION.nonCompliance);
+    expect(xhtml).toContain(REVISION.amendments);
   });
 
-  test("a filleted revision is flagged the same way", () => {
-    const xhtml = buildSmallCompanyAccounts({ ...SAMPLE_INPUT, filleted: true, revision: REVISION, dateOfApproval: "2026-10-20" });
+  test.each([
+    ["full", {}],
+    ["filleted", { filleted: true }],
+  ])("%s accounts tag each of the six revision facts once, visible and not empty", (label, kind) => {
+    const xhtml = buildSmallCompanyAccounts({ ...SAMPLE_INPUT, ...kind, revision: REVISION, dateOfApproval: "2026-10-20" });
     expect(hiddenText(xhtml, "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse")).toBe("true");
+    for (const name of REVISION_FACTS) {
+      const facts = visibleFacts(xhtml, name);
+      expect(facts, name).toHaveLength(1);
+      expect(facts[0].textContent.trim(), name).not.toBe("");
+    }
+    expect(visibleFacts(xhtml, "bus:DateApprovalRevisionReport")[0].textContent).toBe("20 October 2026");
   });
 
   test("an original filing carries no revision page", () => {
     const xhtml = buildSmallCompanyAccounts(SAMPLE_INPUT);
     expect(xhtml).not.toContain("These are revised accounts");
     expect(hiddenText(xhtml, "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse")).toBe("false");
+    for (const name of REVISION_FACTS) expect(visibleFacts(xhtml, name), name).toHaveLength(0);
   });
 });
 

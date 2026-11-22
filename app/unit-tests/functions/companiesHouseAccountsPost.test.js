@@ -614,7 +614,11 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
 
   describe("revised accounts", () => {
     const JOINT_FILING_ID = "7d1c0f0e-5a3b-4c8e-9f21-0a6b3c9d4e11";
-    const REVISION = { originalDateOfApproval: "2026-01-10", differences: "Creditors are restated." };
+    const REVISION = {
+      originalDateOfApproval: "2026-01-10",
+      nonCompliance: "A liability was left out.",
+      amendments: "Creditors are restated.",
+    };
 
     async function pendingData() {
       const lib = await import("@aws-sdk/lib-dynamodb");
@@ -693,10 +697,10 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
 
     test("refuses a revision without a description and sends nothing", async () => {
       const response = await companiesHouseAccountsPostHandler(
-        buildEvent({ body: buildAccountsBody({ revision: { originalDateOfApproval: "2026-01-10", differences: "" } }) }),
+        buildEvent({ body: buildAccountsBody({ revision: { ...REVISION, amendments: "" } }) }),
       );
       expect(response.statusCode).toBe(400);
-      expect(JSON.stringify(parseResponseBody(response))).toContain("revision.differences");
+      expect(JSON.stringify(parseResponseBody(response))).toContain("revision.amendments");
       expect(mockPostToGateway).not.toHaveBeenCalled();
     });
   });

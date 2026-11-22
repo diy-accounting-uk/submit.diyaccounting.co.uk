@@ -199,7 +199,7 @@ function withOptionalHeadings(balanceSheetYears) {
  * @param {number} input.averageNumberOfEmployees
  * @param {string} input.directorName
  * @param {string} input.dateOfApproval - ISO date
- * @param {{originalDateOfApproval: string, differences: string}} [input.revision] - makes the document revised accounts that replace accounts already filed
+ * @param {{originalDateOfApproval: string, nonCompliance: string, amendments: string}} [input.revision] - makes the document revised accounts that replace accounts already filed
  * @param {{accountantsName: string, statement: string}} [input.accountantsReport] - adds the accountants' report page and the audit exempt with accountants' report status
  * @param {object} input.balanceSheet
  * @param {object} input.balanceSheet.current - fixedAssets, currentAssets, creditorsWithinOneYear,
@@ -446,6 +446,8 @@ export function buildMicroEntityAccounts(input) {
         heading: heading(accountsText("Revised accounts"), forThePeriod),
         periodEnd: input.periodEnd,
         revision: input.revision,
+        dateOfApproval: input.dateOfApproval,
+        contextRef: refs.current,
       })}`
     : "";
 

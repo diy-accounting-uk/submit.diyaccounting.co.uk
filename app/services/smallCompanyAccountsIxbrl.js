@@ -1084,6 +1084,8 @@ export function buildSmallCompanyAccounts(input) {
         heading: heading(accountsText("Revised accounts"), forThePeriod),
         periodEnd: input.periodEnd,
         revision: input.revision,
+        dateOfApproval: input.dateOfApproval,
+        contextRef: refs.current,
       }),
     );
   }

@@ -254,7 +254,11 @@ const SMALL_KITCHEN_SINK_INPUT = {
     amortisationOnDisposals: 0,
   },
   accountantsReport: { accountantsName: "Example Accountants LLP", statement: "We prepared these accounts from the records you gave us." },
-  revision: { originalDateOfApproval: "2026-06-01", differences: "The original accounts gave the wrong stock figure." },
+  revision: {
+    originalDateOfApproval: "2026-06-01",
+    nonCompliance: "The original accounts gave the wrong stock figure.",
+    amendments: "Stocks and the profit for the year are restated.",
+  },
   directorsAdvances: [
     { name: "Alex Jones", terms: "Interest free, repayable on demand.", balanceAtStart: 0, advanced: 500, repaid: 500, balanceAtEnd: 0 },
   ],

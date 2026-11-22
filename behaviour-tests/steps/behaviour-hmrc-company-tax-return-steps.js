@@ -630,11 +630,12 @@ export async function verifyAmendedSendStep(page, { accounts }, screenshotPath =
 
 export async function describeTheRevisionAndSend(
   page,
-  { differences, userId, password, companyAuthCode },
+  { nonCompliance, amendments, userId, password, companyAuthCode },
   screenshotPath = defaultScreenshotPath,
 ) {
-  await test.step("The user says what the revised accounts change, then sends them with the codes", async () => {
-    await loggedFill(page, "#revisionDifferences", differences, "What the revised accounts change", { screenshotPath });
+  await test.step("The user says what was wrong with the original accounts and what the revised accounts change, then sends them with the codes", async () => {
+    await loggedFill(page, "#revisionNonCompliance", nonCompliance, "What was wrong with the original accounts", { screenshotPath });
+    await loggedFill(page, "#revisionAmendments", amendments, "What the revised accounts change", { screenshotPath });
     await loggedFill(page, "#companyAuthCode", companyAuthCode, "Company authentication code", { screenshotPath });
     await loggedFill(page, "#gatewayUserId", userId, "Government Gateway user ID", { screenshotPath });
     await loggedFill(page, "#gatewayPassword", password, "Government Gateway password", { screenshotPath });

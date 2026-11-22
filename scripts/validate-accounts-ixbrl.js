@@ -10,7 +10,8 @@
  *
  * Usage:
  *   node scripts/validate-accounts-ixbrl.js <path-to-ixbrl-file>
- *   node scripts/validate-accounts-ixbrl.js            - validates built-in micro, small full and small filleted samples
+ *   node scripts/validate-accounts-ixbrl.js            - validates built-in micro, small full and small filleted samples,
+ *                                                        and revised micro, dormant, small full and small filleted samples
  *
  * The validator (https://test-validator.companieshouse.gov.uk/xbrl_validate) has no JSON API: it
  * is a session-cookie-backed upload flow (POST the file, poll progress, fetch an HTML result
@@ -250,6 +251,26 @@ async function validate(filePath) {
   return false;
 }
 
+// Revised accounts that replace accounts approved on 1 September 2026, approved again on 20 October.
+const REVISION = {
+  originalDateOfApproval: "2026-09-01",
+  nonCompliance: "The original accounts left out a liability that existed at the balance sheet date.",
+  amendments: "Creditors falling due within one year are restated to include a late invoice.",
+};
+const REVISED_APPROVAL = { revision: REVISION, dateOfApproval: "2026-10-20" };
+
+const DORMANT_SAMPLE_INPUT = {
+  ...SAMPLE_INPUT,
+  dormant: true,
+  dormantTradingStatus: "noLongerTrading",
+  shareClass: "ordinaryShares",
+  nominalValue: 0.5,
+  balanceSheet: {
+    current: { ...SAMPLE_INPUT.balanceSheet.prior, calledUpShareCapital: 100, profitAndLossAccount: 7900 },
+    prior: SAMPLE_INPUT.balanceSheet.prior,
+  },
+};
+
 async function main() {
   const filePathArg = process.argv[2];
   if (filePathArg) {
@@ -260,6 +281,10 @@ async function main() {
     ["micro", buildMicroEntityAccounts(SAMPLE_INPUT)],
     ["small-full", buildSmallCompanyAccounts(SMALL_COMPANY_SAMPLE_INPUT)],
     ["small-filleted", buildSmallCompanyAccounts({ ...SMALL_COMPANY_SAMPLE_INPUT, filleted: true })],
+    ["revised-micro", buildMicroEntityAccounts({ ...SAMPLE_INPUT, ...REVISED_APPROVAL })],
+    ["revised-dormant", buildMicroEntityAccounts({ ...DORMANT_SAMPLE_INPUT, ...REVISED_APPROVAL })],
+    ["revised-small-full", buildSmallCompanyAccounts({ ...SMALL_COMPANY_SAMPLE_INPUT, ...REVISED_APPROVAL })],
+    ["revised-small-filleted", buildSmallCompanyAccounts({ ...SMALL_COMPANY_SAMPLE_INPUT, filleted: true, ...REVISED_APPROVAL })],
   ];
   const verdicts = [];
   for (const [label, xhtml] of samples) {

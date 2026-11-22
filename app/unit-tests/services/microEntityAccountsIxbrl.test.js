@@ -97,6 +97,26 @@ function hiddenText(xhtml, name) {
   return Array.from(hidden.getElementsByTagName("ix:nonNumeric")).find((fact) => fact.getAttribute("name") === name)?.textContent;
 }
 
+const REVISION_FACTS = [
+  "bus:StatementThatRevisedReportReplacesPreviouslyFiledReportForPeriod",
+  "bus:StatementThatThisReportNowStatutoryAccountsForPeriod",
+  "bus:StatementThatThisReportHasBeenPreparedAsDatePreviouslyFiledReport",
+  "bus:StatementRespectsInWhichPreviouslyFiledReportDidNotComplyWithCompaniesAct2006",
+  "bus:StatementSignificantAmendmentsToPreviouslyFiledReport",
+  "bus:DateApprovalRevisionReport",
+];
+
+// The facts of this name in the body of the document, outside the hidden section.
+function visibleFacts(xhtml, name) {
+  const facts = Array.from(parseXmlDocument(xhtml).getElementsByTagName("ix:nonNumeric")).filter(
+    (fact) => fact.getAttribute("name") === name,
+  );
+  return facts.filter((fact) => {
+    for (let node = fact.parentNode; node; node = node.parentNode) if (node.nodeName === "ix:hidden") return false;
+    return true;
+  });
+}
+
 describe("services/microEntityAccountsIxbrl", () => {
   describe("buildMicroEntityAccounts", () => {
     test("names the production software and its package version in the hidden section", () => {
@@ -679,7 +699,8 @@ describe("the accountants' report of a micro-entity", () => {
   describe("revised accounts", () => {
     const REVISION = {
       originalDateOfApproval: "2026-09-01",
-      differences: "Creditors falling due within one year are restated to include a late invoice.",
+      nonCompliance: "The original accounts left out a liability that existed at the balance sheet date.",
+      amendments: "Creditors falling due within one year are restated to include a late invoice.",
     };
 
     test("flags the report as a revised version of one already filed", () => {
@@ -687,20 +708,46 @@ describe("the accountants' report of a micro-entity", () => {
       expect(hiddenText(xhtml, "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse")).toBe("true");
     });
 
-    test("states that the accounts replace the original and name what changed", () => {
+    test("states that the accounts replace the original, what was wrong and what changed", () => {
       const xhtml = buildMicroEntityAccounts({ ...SAMPLE_INPUT, revision: REVISION, dateOfApproval: "2026-10-20" });
       expect(xhtml).toContain("These are revised accounts. They replace the original accounts of the company");
       expect(xhtml).toContain("which were approved on 1 September 2026");
       expect(xhtml).toContain("now the statutory accounts of the company");
       expect(xhtml).toContain("prepared as at the date of the original accounts, not as at the date of the revision");
-      expect(xhtml).toContain("Creditors falling due within one year are restated to include a late invoice.");
-      expect(xhtml).toContain("20 October 2026");
+      expect(xhtml).toContain("What was wrong with the original accounts");
+      expect(xhtml).toContain("What the revised accounts change");
+      expect(xhtml).toContain("The directors approved these revised accounts on");
+    });
+
+    test("tags each of the six revision facts once, visible and not empty, on the current period", () => {
+      const xhtml = buildMicroEntityAccounts({ ...SAMPLE_INPUT, revision: REVISION, dateOfApproval: "2026-10-20" });
+      for (const name of REVISION_FACTS) {
+        const facts = visibleFacts(xhtml, name);
+        expect(facts, name).toHaveLength(1);
+        expect(facts[0].textContent.trim(), name).not.toBe("");
+        expect(facts[0].getAttribute("contextRef"), name).toBe("y2026");
+      }
+      expect(visibleFacts(xhtml, REVISION_FACTS[3])[0].textContent).toBe(REVISION.nonCompliance);
+      expect(visibleFacts(xhtml, REVISION_FACTS[4])[0].textContent).toBe(REVISION.amendments);
+      expect(visibleFacts(xhtml, "bus:DateApprovalRevisionReport")[0].textContent).toBe("20 October 2026");
+    });
+
+    test("the balance sheet carries the date the directors approved the revised accounts", () => {
+      const xhtml = buildMicroEntityAccounts({ ...SAMPLE_INPUT, revision: REVISION, dateOfApproval: "2026-10-20" });
+      expect(visibleFacts(xhtml, "core:DateAuthorisationFinancialStatementsForIssue")[0].textContent).toBe("20 October 2026");
+    });
+
+    test("a dormant revision carries the same six facts", () => {
+      const xhtml = buildMicroEntityAccounts({ ...DORMANT_INPUT, revision: REVISION, dateOfApproval: "2026-10-20" });
+      expect(hiddenText(xhtml, "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse")).toBe("true");
+      for (const name of REVISION_FACTS) expect(visibleFacts(xhtml, name), name).toHaveLength(1);
     });
 
     test("an original filing carries no revision page and the flag stays false", () => {
       const xhtml = buildMicroEntityAccounts(SAMPLE_INPUT);
       expect(xhtml).not.toContain("These are revised accounts");
       expect(hiddenText(xhtml, "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse")).toBe("false");
+      for (const name of REVISION_FACTS) expect(visibleFacts(xhtml, name), name).toHaveLength(0);
     });
   });
   describe("the advances to directors note", () => {

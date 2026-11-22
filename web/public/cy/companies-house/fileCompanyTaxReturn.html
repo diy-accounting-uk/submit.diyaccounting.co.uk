@@ -210,20 +210,38 @@
               aria-describedby="companyAuthCode-hint"
             />
           </div>
-          <div class="form-group" id="revisionGroup" style="display: none">
-            <label data-i18n="ch-tax-return.what-do-the-revised-accounts-change-ff3c9b" for="revisionDifferences"
-              >Beth mae’r cyfrifon diwygiedig yn ei newid?</label
-            >
-            <p data-i18n="ch-tax-return.companies-house-prints-this-in-the-2021dd" id="revisionDifferences-hint" class="hint">
-              Mae Tŷ’r Cwmnïau yn argraffu hyn yn y cyfrifon diwygiedig, o dan y datganiad eu bod yn cymryd lle’r cyfrifon sydd ganddo.
-            </p>
-            <textarea
-              id="revisionDifferences"
-              name="revisionDifferences"
-              rows="4"
-              maxlength="2000"
-              aria-describedby="revisionDifferences-hint"
-            ></textarea>
+          <div id="revisionGroup" style="display: none">
+            <div class="form-group">
+              <label data-i18n="ch-tax-return.what-was-wrong-with-the-original-b6637a" for="revisionNonCompliance"
+                >Beth oedd o’i le ar y cyfrifon gwreiddiol?</label
+              >
+              <p data-i18n="ch-tax-return.say-how-the-original-accounts-did-116491" id="revisionNonCompliance-hint" class="hint">
+                Dywedwch ym mha ffyrdd nad oedd y cyfrifon gwreiddiol yn cydymffurfio â Deddf Cwmnïau 2006. Mae Tŷ’r Cwmnïau yn argraffu hyn
+                yn y cyfrifon diwygiedig.
+              </p>
+              <textarea
+                id="revisionNonCompliance"
+                name="revisionNonCompliance"
+                rows="4"
+                maxlength="2000"
+                aria-describedby="revisionNonCompliance-hint"
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-tax-return.what-do-the-revised-accounts-change-ff3c9b" for="revisionAmendments"
+                >Beth mae’r cyfrifon diwygiedig yn ei newid?</label
+              >
+              <p data-i18n="ch-tax-return.companies-house-prints-this-in-the-2021dd" id="revisionAmendments-hint" class="hint">
+                Mae Tŷ’r Cwmnïau yn argraffu hyn yn y cyfrifon diwygiedig, o dan y datganiad eu bod yn cymryd lle’r cyfrifon sydd ganddo.
+              </p>
+              <textarea
+                id="revisionAmendments"
+                name="revisionAmendments"
+                rows="4"
+                maxlength="2000"
+                aria-describedby="revisionAmendments-hint"
+              ></textarea>
+            </div>
           </div>
           <p data-i18n="ch-tax-return.sign-in-with-the-government-gateway-968fb6" class="hint">
             <span id="gatewayWhose"
