@@ -663,7 +663,8 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
 
     test("refuses a revision on prod from a preview request with a synthetic HMRC account, while the accounts go to the live gateway", async () => {
       process.env.ENVIRONMENT_NAME = "prod";
-      process.env.COMPANIES_HOUSE_GATEWAY_TEST = "false";
+      delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
+      process.env.COMPANIES_HOUSE_FILING_BASE_URI = "https://api.company-information.service.gov.uk";
       const response = await companiesHouseAccountsPostHandler(
         buildEvent({
           body: buildAccountsBody({ revision: REVISION }),
