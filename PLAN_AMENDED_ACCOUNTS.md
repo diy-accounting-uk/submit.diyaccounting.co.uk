@@ -370,10 +370,10 @@ The finder pages were read on 2026-11-12. "Amended accounts" is Yes for 36 of 57
 | AA22 | Record the XML team's answers | The reply on record; each answer in section 2.3 | Section 2.3 holds an answer for Q1 to Q4 | machine-only |
 | AA10 | Revised cases for the review | Four fixture cases; the review script judges a revision | Unit tests of the review script | machine-only |
 | AA11 | Review and judge the four cases | A review folder with the judge's verdicts | The judge passes all four | machine-only |
-| AA12 | File the four cases on the test service | Four submission numbers | The gateway acknowledges each | machine-ask |
+| AA12 | File the four cases on the test service | Four submission numbers | The gateway acknowledges each | machine-only |
 | AA13 | Draft the review request | One draft with the four numbers | The `email-draft` skill's facts pass | machine-only |
 | OAA2 | Send the review request | The email, then the XML team's verdict | The verdict is in the correspondence folder | human-driven |
-| AA14 | Prove a revision through the Submit API | One revised filing from MCP to the test service | The proof script's transcript | machine-ask |
+| AA14 | Prove a revision through the Submit API | One revised filing from MCP to the test service | The proof script's transcript | machine-only |
 | AA15 | A revision with no receipt | The form's own revised option; a change of regime | Simulator behaviour tests | machine-only |
 | AA23 | The company's filed accounts from the register | Two Submit API routes: the list and one document | Unit, simulator and system tests | machine-only |
 | AA24 | Choose the filed set from the register | The list on both forms; the form fills from the set | Browser tests; a simulator journey | machine-only |
@@ -385,7 +385,7 @@ The finder pages were read on 2026-11-12. "Amended accounts" is Yes for 36 of 57
 | AA16 | Submit's copy | The FAQ entry, the API description, CH-08's text | Unit tests; `npm run capabilities:check` | machine-only |
 | AA17 | Guide, screenshots and video | A guide journey; a video uploaded unlisted | `visual-review`; `npm run video:embed-check` | machine-only |
 | OAA3 | Watch the video | The go to make it public | The operator's answer | human-driven |
-| AA18 | Launch on prod | `prod` on the activity; the table says production | Prod shows the amend link; the route accepts | machine-ask |
+| AA18 | Launch on prod | `prod` on the activity; the table says production | Prod shows the amend link; the route accepts | machine-only |
 | AA19 | The finder answer and the register | A draft that says Yes; a register entry | The draft and the entry exist | machine-only |
 | OAA4 | Send the finder answer | The email to Companies House | The finder page shows Yes | human-driven |
 | AA20 | Knowledge-base article | One article on the spreadsheets site | That repository's SEO tests | machine-only |
@@ -405,7 +405,7 @@ The finder pages were read on 2026-11-12. "Amended accounts" is Yes for 36 of 57
 | AA32 | MCP tools for the filed accounts and the book | Two tools, local and hosted | MCP unit tests; hosted behaviour test | machine-only |
 | AA33 | Copy, guide and video for the new books | An FAQ entry, a guide journey, a video uploaded unlisted | `visual-review`; `npm run video:embed-check` | machine-only |
 | OAA5 | Watch the books video | The go to make it public | The operator's answer | human-driven |
-| AA34 | Launch the new books on prod | `prod` on `start-company-books` | Prod shows the page and its routes answer | machine-ask |
+| AA34 | Launch the new books on prod | `prod` on `start-company-books` | Prod shows the page and its routes answer | machine-only |
 | AA35 | Spreadsheets and DIYA-GL copy | An article, a product page line, a link in the app | That repository's SEO and browser tests | machine-only |
 
 ### 5.2 Briefs
@@ -551,10 +551,10 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 #### AA12. File the four cases on the test service
 
 - **Goal.** Four submission numbers on the Companies House test service.
-- **How.** After the operator's go, dispatch `.github/workflows/companies-house-test-service.yml` once for each revised case: `gh workflow run companies-house-test-service.yml --ref main -f case=<case name>`. The run builds each request with the route's own functions and sets `GatewayTest`. Its artifact holds the redacted exchanges.
+- **How.** The operator gave the go on 2026-11-22. Dispatch `.github/workflows/companies-house-test-service.yml` once for each revised case: `gh workflow run companies-house-test-service.yml --ref main -f case=<case name>`. The run builds each request with the route's own functions and sets `GatewayTest`. Its artifact holds the redacted exchanges.
 - **Proof.** The gateway acknowledges each submission. It parses the iXBRL at submit, so an acknowledgement shows that the document passed its rules. Each poll answers pending until the XML team reviews.
 - **Record.** Write the run id and the date into each case's `expectedOutcome.note` in the fixture. Use the form of the other cases ("Observed OK on the test service, run <run id> (<date>)."). The four submission numbers go into AA13's draft in the private repository.
-- **Waits on**: AA11, and AA10 on `main`. **Class**: machine-ask (the operator's go for four test submissions). **Repository**: submit. **Model**: Haiku. **Size**: 1 file.
+- **Waits on**: AA11, and AA10 on `main`. **Class**: machine-only (the operator gave the go for the four test submissions on 2026-11-22). **Repository**: submit. **Model**: Haiku. **Size**: 1 file.
 
 #### AA13. Draft the review request
 
@@ -576,7 +576,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **How.** Extend `mcp/scripts/accounts-test-service-proof.js`. After its original filing, it files the case `micro-entity-accounts-revised` with `revision`. Run `npm run mcp:accounts-test-service-proof` under the profile `diya-submit-ci`.
 - **Proof.** The transcript shows the gateway's acknowledgement and a pending poll for the revised submission.
 - **Why this lane.** The web amend journey starts from an accepted receipt. The test service accepts nothing until a person reviews it, so the web journey's proof is the simulator.
-- **Waits on**: AA7, AA10. **Class**: machine-ask (an SSO session and the operator's go for one test submission). **Repository**: submit. **Model**: Sonnet. **Size**: 1 file.
+- **Waits on**: AA7, AA10. **Class**: machine-only (an SSO session; the operator gave the go for the one test submission on 2026-11-22). **Repository**: submit. **Model**: Sonnet. **Size**: 1 file.
 
 #### AA15. A revision with no receipt
 
@@ -640,14 +640,14 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 
 #### AA18. Launch on prod
 
-- **Preconditions.** AA1 to AA7 and AA16 are on `main`. The judge passed AA11. The test service acknowledged the submissions of AA12 and AA14. The answers to OAA1 are on record (AA22). When Q1's answer asked for test submissions, the XML team's verdict on OAA2 is a pass. OAA3 said go. The operator approves the launch.
+- **Preconditions.** AA1 to AA7 and AA16 are on `main`. The judge passed AA11. The test service acknowledged the submissions of AA12 and AA14. The answers to OAA1 are on record (AA22). When Q1's answer asked for test submissions, the XML team's verdict on OAA2 is a pass. OAA3 said go. The operator approved the launch on 2026-11-22.
 - **Change.** In `web/public/submit.catalogue.toml`, add `"prod"` to the `environments` of `file-revised-accounts` and drop "preview" from its name. In `scripts/build-mtd-calendar.mjs`, set the revised row's cells to `production` where the accounts row says production, and add the row's `video` id. Run `npm run build:mtd-calendar`. Run `npm run build:static-content`, which now writes the FAQ entry of AA16 into `web/public/help.html` and the journey of AA17 into `web/public/guide.html`, because the activity lists `prod`.
 - **Terms.** In `web/public/terms.html`, two sentences name what Submit files. One holds "micro-entity accounts, small company accounts and confirmation statements". The other starts "Companies House accounts and confirmation statements:". Add revised accounts to both.
 - **Video.** Flip the video public by the `video-publish` skill.
 - **Tests.** `npx vitest run app/unit-tests/services/prodSurface.test.js web/unit-tests`; the simulator suites of AA4 and AA5.
 - **Downloads.** When AA28 is on `main`, its actions show on prod with the amend view. AA28 is not a precondition of this launch.
 - **Proof on prod.** With no filing: the FAQ entry shows; `web/public/companies-house/filings.html` shows "Amend" on an accepted accounts receipt; the availability table says production. The first customer revision then appears on the register as amended accounts.
-- **Waits on**: the preconditions. **Class**: machine-ask (the operator's approval). **Repository**: submit. **Model**: Sonnet. **Size**: ~5 files.
+- **Waits on**: the preconditions. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~5 files.
 
 #### AA19. The finder answer and the register
 
@@ -803,11 +803,11 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 
 #### AA34. Launch the new books on prod
 
-- **Preconditions.** AA31 and AA33 are on `main`. AA27 is on the DIYA-GL prod site. OAA5 said go. The operator approves the launch. No answer from Companies House is needed, because the feature files nothing.
+- **Preconditions.** AA31 and AA33 are on `main`. AA27 is on the DIYA-GL prod site. OAA5 said go. The operator approved the launch on 2026-11-22. No answer from Companies House is needed, because the feature files nothing.
 - **Change.** In `web/public/submit.catalogue.toml`, add `"prod"` to the `environments` of `start-company-books`. Add the page to `.pa11yci.prod.json`. Run `npm run build:static-content`. Flip the video public by the `video-publish` skill.
 - **Tests.** `npx vitest run app/unit-tests/services/prodSurface.test.js web/unit-tests`; the simulator journey of AA31.
 - **Proof on prod.** The home page lists the activity for a customer with the bundle. The page opens. The routes of AA23 and AA29 answer for a company number. The proof builds no book for a real company on the operator's account unless the operator chooses to.
-- **Waits on**: the preconditions. **Class**: machine-ask (the operator's approval). **Repository**: submit. **Model**: Sonnet. **Size**: ~4 files.
+- **Waits on**: the preconditions. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~4 files.
 
 #### AA35. Spreadsheets and DIYA-GL copy
 
@@ -888,16 +888,16 @@ graph TD
 - AA1: its merge follows AA3, or shares its pull request.
 - AA2, AA4, AA7, AA10: blocked by AA1. AA4 also by AA2 and AA3. AA7 also by AA3.
 - AA5, AA16 and AA17: blocked by AA4. AA6: blocked by AA5.
-- AA11: blocked by AA10. AA12: blocked by AA11 and the operator's go. AA13: blocked by AA12.
+- AA11: blocked by AA10. AA12: blocked by AA11. AA13: blocked by AA12.
 - AA14: blocked by AA7 and AA10.
 - OAA1: blocked by AA9. AA22: blocked by the reply to OAA1. OAA2: blocked by AA13 and AA22.
 - AA15: blocked by AA22 and AA5. AA23: blocked by AA3. AA24: blocked by AA23 and AA15.
-- AA18: blocked by AA6, AA7, AA11, AA12, AA14, AA16, AA22, OAA2's outcome when Q1's answer asks for tests, OAA3 and the operator's approval.
+- AA18: blocked by AA6, AA7, AA11, AA12, AA14, AA16, AA22, OAA2's outcome when Q1's answer asks for tests, and OAA3.
 - AA19, AA20 and AA21: blocked by AA18. OAA4: blocked by AA19.
 - AA28: blocked by AA4, and by AA27 on the DIYA-GL prod site for its package action.
 - AA26: blocked by AA25. AA30: blocked by AA26 and its publish to npm. So the order across the two repositories is AA26, the release, AA30.
 - AA31: blocked by AA23, AA28, AA29 and AA30. AA32: blocked by AA23, AA29, AA30 and AA31.
-- AA33: blocked by AA31. OAA5: blocked by AA33. AA34: blocked by AA27, AA31, AA33, OAA5 and the operator's approval. AA35: blocked by AA34.
+- AA33: blocked by AA31. OAA5: blocked by AA33. AA34: blocked by AA27, AA31, AA33 and OAA5. AA35: blocked by AA34.
 - AA8, AA9, AA25, AA27 and AA29 wait on nothing.
 
 ## 7. Shared facts
@@ -930,7 +930,7 @@ graph TD
 4. AA10, then AA11. AA23 runs beside them after AA3.
 5. AA16 and AA17 after AA4, then OAA3.
 
-**With the operator's go, and no answer needed.** AA12 files four test submissions. AA14 files one. AA13 drafts the review request.
+**With no answer needed (the operator gave the go on 2026-11-22).** AA12 files four test submissions. AA14 files one. AA13 drafts the review request.
 
 **After the reply to OAA1.**
 

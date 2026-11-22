@@ -21,7 +21,7 @@ The rows below are this plan's approval and launch work. `NEXT.md` carries the o
 | UH8 | The joint accounts and CT600 filing on prod: `prod` on CT29's activity | ~2 | Sonnet | UH7 |
 | CT25 | Run every scenario in the pack on the test service it names; one checklist row per scenario (C69) | ~3 | Sonnet | SDST's reply to the request of 2026-11-11 |
 | CT26 | Send SDST the scenario XML and the listing answers (C70); SDST's recognition and listing follow (C71) | 0 | Opus (email draft) | CT25 |
-| UH7 | Unhide the CT600 filing form on prod: the HIDE1 rule for it with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` | ~3 | Sonnet | HMRC's CT recognition (CT26's outcome, C71), the operator's approval |
+| UH7 | Unhide the CT600 filing form on prod: the HIDE1 rule for it with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` | ~3 | Sonnet | HMRC's CT recognition (CT26's outcome, C71); the operator approved the unhide on 2026-11-22 |
 
 ### The approval path
 
@@ -48,9 +48,9 @@ Our-practice checks not worth keeping: C84 (a pack statement that the CT channel
 
 - [ ] **CT25. Pass the recognition scenarios.** Each scenario in SDST's pack goes to the test service it names (`scripts/hmrc-tpvs-ct600.js`, with B34g1's `--ets` mode for ETS) and passes; the XML and the response of each go to `../private.diyaccounting.co.uk/hmrc/ct/recognition/`, and the checklist gains one row per scenario. A scenario that needs a page or box Submit refuses becomes its own build row. Checklist C69. **Source**: Basic guide for XML software developers, "Software recognition". **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files. Blocked on SDST's reply to the request of 2026-11-11.
 
-- [ ] **UH8. The joint accounts and CT600 filing on prod.** `prod` on CT29's activity and the availability table on `web/public/mtd-calendar.html`. Blocked on UH7 and the operator's approval. **Source**: operator, 2026-11-11 (replaces DF2b). **Owner**: Claude Code (build), operator (approval). **Model**: Sonnet. **Size**: ~2 files.
+- [ ] **UH8. The joint accounts and CT600 filing on prod.** `prod` on CT29's activity and the availability table on `web/public/mtd-calendar.html`. Blocked on UH7; the operator approved it on 2026-11-22. **Source**: operator, 2026-11-11 (replaces DF2b). **Owner**: Claude Code (build), operator (approval). **Model**: Sonnet. **Size**: ~2 files.
 
-- [ ] **UH7. Unhide the CT600 filing form on prod.** HIDE1 hid it with an environment rule (the catalogue's `environments` and the page guard in `web/public/widgets/entitlement-status.js`); unhiding is that rule with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` in the same change. Preconditions: HMRC's Corporation Tax recognition (CT26's outcome, checklist C71); B34g2b's ETS filing from the page; the activity in a bundle sold on prod; the operator's approval to enable it for live users. Unblocks `PLAN_ITSA_APPROVAL.md` UH2. **Source**: this plan. **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet. **Size**: ~3 files.
+- [ ] **UH7. Unhide the CT600 filing form on prod.** HIDE1 hid it with an environment rule (the catalogue's `environments` and the page guard in `web/public/widgets/entitlement-status.js`); unhiding is that rule with `prod` added, and the availability table and dates on `web/public/mtd-calendar.html` in the same change. Preconditions: HMRC's Corporation Tax recognition (CT26's outcome, checklist C71); B34g2b's ETS filing from the page; the activity in a bundle sold on prod. The operator approved the unhide on 2026-11-22. Unblocks `PLAN_ITSA_APPROVAL.md` UH2. **Source**: this plan. **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet. **Size**: ~3 files.
 
 ## Dependency graph
 
@@ -64,9 +64,9 @@ flowchart LR
     UH7 --> UH2["PLAN_ITSA_APPROVAL.md UH2"]
 ```
 
-- UH8: blocked by UH7 and the operator's approval
+- UH8: blocked by UH7
 - CT25: blocked by SDST's reply to the request of 2026-11-11; CT26 by CT25
-- UH7: blocked by HMRC's Corporation Tax recognition (CT26) and the operator's approval
+- UH7: blocked by HMRC's Corporation Tax recognition (CT26)
 
 ## Designs
 
