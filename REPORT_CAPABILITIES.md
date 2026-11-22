@@ -24,6 +24,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
   - [Account and engagement APIs](#account-and-engagement-apis-site)
     - [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest: use when a signed-in user clicks the homepage join button to register feedback interest.
     - [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon: use when the site needs to record a visit or logout as an activity event, filtered for crawlers.
+    - [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in) Record the source of an account at its sign-in: use when an account that landed from a tagged link must have its source recorded, whether or not it ever requests a bundle.
     - [SITE-05](#site-05-submit-support-tickets) Submit support tickets: use when a visitor needs to send a support request from the site.
     - [SITE-24](#site-24-change-an-account-setting) Change an account setting: use when a signed-in user changes a preference that belongs to the account, such as pass generation, and it must follow them to every browser.
     - [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event: use when a handler must send the customer an email after a subscription, a filed receipt, or a pass generated or redeemed.
@@ -653,7 +654,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area SITE -->
 - [Authentication and authorization](#authentication-and-authorization-site): [SITE-01](#site-01-sign-customers-in-via-cognito) Sign customers in via Cognito · [SITE-02](#site-02-verify-jwts-at-the-api-gateway) Verify JWTs at the API gateway
-- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event · [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy · [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check · [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages · [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site) Prove the Welsh pages read in Welsh on a running site · [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML · [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages) Write a landing page for each filing that is production on prod, and the article pages
+- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in) Record the source of an account at its sign-in · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event · [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy · [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check · [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages · [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site) Prove the Welsh pages read in Welsh on a running site · [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML · [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages) Write a landing page for each filing that is production on prod, and the article pages
 - [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront) Check that an API request came through CloudFront · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
 - [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts · [SITE-36](#site-36-compute-due-dates-from-sourced-rules) Compute due dates from sourced rules · [SITE-25](#site-25-build-the-marketing-site-data-social-images-brand-shots-and-listing-packs) Build the marketing site data, social images, brand shots and listing packs · [SITE-33](#site-33-check-the-tax-sources-each-week) Check the tax sources each week · [SITE-34](#site-34-check-the-compared-prices-each-month) Check the compared prices each month
 - [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes · [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style
@@ -692,6 +693,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:group account-and-engagement-apis-site -->
 - [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest
 - [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon
+- [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in) Record the source of an account at its sign-in
 - [SITE-05](#site-05-submit-support-tickets) Submit support tickets
 - [SITE-24](#site-24-change-an-account-setting) Change an account setting
 - [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event
@@ -722,6 +724,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/account/sessionBeaconPost.js, web/public/lib/session-beacon.js, app/unit-tests/functions/sessionBeaconPost.test.js
 - **Keywords:** session beacon, visitor classification, crawler, ai agent, activity event, analytics event, logout beacon
 - **Related:** SITE-01, SITE-03
+
+#### SITE-37 Record the source of an account at its sign-in
+
+- **Use when:** an account that landed from a tagged link must have its source recorded, whether or not it ever requests a bundle.
+- **Does:** loginWithCognitoCallback.page.js posts the stored attribution.landing once per landing after a sign-in, keepalive and never awaited, and fires the GA4 sign_up event. accountAcquisitionPost.js cleans the fields with buildAcquisitionMap, drops the click ids, and publishes one account-acquisition activity event.
+- **Run:** `POST /api/v1/account/acquisition`
+- **Entry:** `app/functions/account/accountAcquisitionPost.js:ingestHandler`; `web/public/auth/loginWithCognitoCallback.page.js`
+- **Files:** app/functions/account/accountAcquisitionPost.js, app/unit-tests/functions/accountAcquisitionPost.test.js, web/public/auth/loginWithCognitoCallback.page.js, web/browser-tests/loginCallbackAcquisition.browser.test.js, app/lib/acquisition.js
+- **Keywords:** acquisition, landing, utm, attribution, sign_up, first sign-in, account source, activity event
+- **Related:** SITE-04
 
 #### SITE-05 Submit support tickets
 
@@ -7185,6 +7197,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - account policies: [BILL-31](#bill-31-configure-stripe-account-policies)
 - account setting: [CH-23](#ch-23-keep-a-watch-list-of-companies)
 - account settings: [SITE-24](#site-24-change-an-account-setting)
+- account source: [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in)
 - account stack: [BILL-36](#bill-36-cdk-account-stack)
 - accounting year-end: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
 - accounts data product: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
@@ -7197,6 +7210,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - acm certificate: [OPS-49](#ops-49-request-a-site-or-holding-page-certificate), [SS-37](#ss-37-request-acm-certificates)
 - acm certificate expiry: [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events)
 - acm fixture: [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod)
+- acquisition: [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in)
 - actionlint gap: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
 - actions logs: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set)
 - actions role: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
@@ -7205,7 +7219,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - activity: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
 - activity bus: [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - activity charges: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
-- activity event: [SITE-04](#site-04-track-visits-via-session-beacon), [DATA-01](#data-01-publish-activity-events-to-the-bus)
+- activity event: [SITE-04](#site-04-track-visits-via-session-beacon), [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in), [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - activity events: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram), [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - activity list: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
 - activity_events: [DATA-11](#data-11-run-glue-data-quality-checks)
@@ -7326,7 +7340,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - athena query: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
 - athena view: [DATA-10](#data-10-create-or-replace-athena-business-views)
 - athena workgroup: [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
-- attribution: [DATA-68](#data-68-sql-view-campaign-results-by-place)
+- attribution: [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in), [DATA-68](#data-68-sql-view-campaign-results-by-place)
 - audit trail: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
 - auth logic: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
 - auth platform brand: [DATA-44](#data-44-assert-google-oauth-client-configuration)
@@ -8253,6 +8267,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - firehose putrecordbatch: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - firehose transform: [DATA-02](#data-02-transform-activity-events-into-lake-rows), [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows)
 - first paint: [OPS-162](#ops-162-bundle-submitcss-at-publish-time)
+- first sign-in: [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in)
 - fixed asset register: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - fixture: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
 - fixtures: [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check), [CH-12](#ch-12-generate-synthetic-test-companies), [DEV-01](#dev-01-run-the-http-simulator-server)
@@ -8652,6 +8667,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - lambda warming: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - lambda wiring: [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks), [BILL-36](#bill-36-cdk-account-stack)
 - lambda worker: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
+- landing: [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in)
 - landing page: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages)
 - lane: [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report)
 - lane user: [OPS-12](#ops-12-clean-up-expired-test-users), [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
@@ -9603,6 +9619,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - sibling repositories: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - sideways relief: [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims)
 - sign in: [SITE-01](#site-01-sign-customers-in-via-cognito), [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito)
+- sign_up: [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in)
 - signature verify: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - signed-in welsh: [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
 - signup to first submission: [DATA-29](#data-29-sql-views-submission-and-compliance)
@@ -9963,6 +9980,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - user-agent classification: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic)
 - user-restricted api: [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts)
 - usesperaccount: [BILL-59](#bill-59-create-a-custom-campaign-pass)
+- utm: [SITE-37](#site-37-record-the-source-of-an-account-at-its-sign-in)
 - utm_campaign: [DATA-68](#data-68-sql-view-campaign-results-by-place), [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - utm_source: [DATA-68](#data-68-sql-view-campaign-results-by-place), [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - utr: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)

@@ -208,6 +208,7 @@
     "resident-guest": () => siteText("chrome.bundle-resident-guest", "Resident Guest"),
     "resident-pro-comp": () => siteText("chrome.bundle-resident-pro-comp", "Resident Tax Agent (Complimentary)"),
     "resident-vat-comp": () => siteText("chrome.bundle-resident-vat-comp", "Resident VAT (Complimentary)"),
+    "resident-ltd-comp": () => siteText("chrome.bundle-resident-ltd-comp", "Resident Ltd (Complimentary)"),
     "operator": () => siteText("chrome.bundle-operator", "Operator"),
   };
 

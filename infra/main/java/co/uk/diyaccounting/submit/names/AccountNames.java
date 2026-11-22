@@ -164,6 +164,14 @@ public class AccountNames {
     public String activityStartedPostLambdaUrlPath;
     public boolean activityStartedPostLambdaJwtAuthorizer;
     public boolean activityStartedPostLambdaCustomAuthorizer;
+    public String accountAcquisitionPostIngestLambdaHandler;
+    public String accountAcquisitionPostIngestLambdaFunctionName;
+    public String accountAcquisitionPostIngestLambdaArn;
+    public String accountAcquisitionPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod accountAcquisitionPostLambdaHttpMethod;
+    public String accountAcquisitionPostLambdaUrlPath;
+    public boolean accountAcquisitionPostLambdaJwtAuthorizer;
+    public boolean accountAcquisitionPostLambdaCustomAuthorizer;
 
     public String passGetIngestLambdaHandler;
     public String passGetIngestLambdaFunctionName;
@@ -780,6 +788,30 @@ public class AccountNames {
                 "Publishes an activity-started event for the authenticated user's activity id, "
                         + "clicked from that activity's primary button",
                 "recordActivityStarted"));
+
+        // Account Acquisition POST Lambda (JWT auth - the source of an account, posted at its sign-in)
+        this.accountAcquisitionPostLambdaHttpMethod = HttpMethod.POST;
+        this.accountAcquisitionPostLambdaUrlPath = "/api/v1/account/acquisition";
+        this.accountAcquisitionPostLambdaJwtAuthorizer = true;
+        this.accountAcquisitionPostLambdaCustomAuthorizer = false;
+        var accountAcquisitionPostLambdaHandlerName = "accountAcquisitionPost.ingestHandler";
+        var accountAcquisitionPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(accountAcquisitionPostLambdaHandlerName);
+        this.accountAcquisitionPostIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, accountAcquisitionPostLambdaHandlerDashed);
+        this.accountAcquisitionPostIngestLambdaHandler =
+                "%s/account/%s".formatted(root.appLambdaHandlerPrefix, accountAcquisitionPostLambdaHandlerName);
+        this.accountAcquisitionPostIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, accountAcquisitionPostLambdaHandlerDashed);
+        this.accountAcquisitionPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.accountAcquisitionPostIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.accountAcquisitionPostLambdaHttpMethod,
+                this.accountAcquisitionPostLambdaUrlPath,
+                "Record an account's source",
+                "Publishes an account-acquisition event with the landing fields the authenticated user arrived with, "
+                        + "posted once after a sign-in",
+                "recordAccountAcquisition"));
 
         // Pass GET Lambda (public, no auth)
         this.passGetLambdaHttpMethod = HttpMethod.GET;

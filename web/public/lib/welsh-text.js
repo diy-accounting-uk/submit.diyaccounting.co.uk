@@ -1368,6 +1368,7 @@ window.WELSH_TEXT = {
   "chrome.bundle-invited-guest": "Gwestai drwy wahoddiad",
   "chrome.bundle-operator": "Gweithredwr",
   "chrome.bundle-resident-guest": "Gwestai Resident",
+  "chrome.bundle-resident-ltd-comp": "Resident Ltd (am ddim)",
   "chrome.bundle-resident-pro-comp": "Resident Tax Agent (am ddim)",
   "chrome.bundle-resident-vat-comp": "Resident VAT (am ddim)",
   "chrome.bundle-week-guest": "Tocyn wythnos",

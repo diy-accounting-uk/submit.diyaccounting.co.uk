@@ -120,6 +120,9 @@ public class AccountStack extends Stack {
     public AbstractApiLambdaProps activityStartedPostLambdaProps;
     public Function activityStartedPostLambda;
     public ILogGroup activityStartedPostLambdaLogGroup;
+    public AbstractApiLambdaProps accountAcquisitionPostLambdaProps;
+    public Function accountAcquisitionPostLambda;
+    public ILogGroup accountAcquisitionPostLambdaLogGroup;
 
     public AbstractApiLambdaProps passGetLambdaProps;
     public Function passGetLambda;
@@ -1317,6 +1320,67 @@ public class AccountStack extends Stack {
         infof(
                 "Created Activity Started POST Lambda %s",
                 this.activityStartedPostLambda.getNode().getId());
+
+        // ============================================================================
+        // Account Acquisition POST Lambda (JWT auth - the source of an account, posted at its sign-in)
+        // ============================================================================
+        var accountAcquisitionPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var accountAcquisitionPostApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.accountAcquisitionPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.accountAcquisitionPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.accountAcquisitionPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.accountAcquisitionPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .account
+                                .accountAcquisitionPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().account.accountAcquisitionPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.accountAcquisitionPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.accountAcquisitionPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.accountAcquisitionPostLambdaCustomAuthorizer)
+                        .environment(accountAcquisitionPostLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(accountAcquisitionPostApiLambda);
+        this.accountAcquisitionPostLambdaProps = accountAcquisitionPostApiLambda.apiProps;
+        this.accountAcquisitionPostLambda = accountAcquisitionPostApiLambda.ingestLambda;
+        this.accountAcquisitionPostLambdaLogGroup = accountAcquisitionPostApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.accountAcquisitionPostLambdaProps);
+
+        // Read the three app-client-id parameters IdentityStack writes, to map the caller's
+        // verified client id to "submit", "books" or "mcp" (app/lib/appClientResolver.js), the
+        // same read the sign-out route grants itself.
+        this.accountAcquisitionPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .sid("ReadAppClientIdParameters")
+                .effect(Effect.ALLOW)
+                .actions(List.of("ssm:GetParameter"))
+                .resources(List.of(
+                        "arn:aws:ssm:%s:%s:parameter/submit/%s/submit-app-client-id"
+                                .formatted(region, account, props.envName()),
+                        "arn:aws:ssm:%s:%s:parameter/submit/%s/spreadsheets-diya-gl-app-client-id"
+                                .formatted(region, account, props.envName()),
+                        "arn:aws:ssm:%s:%s:parameter/submit/%s/mcp-app-client-id"
+                                .formatted(region, account, props.envName())))
+                .build());
+
+        SubHashSaltHelper.grantSaltAccess(this.accountAcquisitionPostLambda, region, account, props.envName());
+
+        this.accountAcquisitionPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
+
+        infof(
+                "Created Account Acquisition POST Lambda %s",
+                this.accountAcquisitionPostLambda.getNode().getId());
 
         cfnOutput(this, "ActivityStartedPostLambdaArn", this.activityStartedPostLambda.getFunctionArn());
 

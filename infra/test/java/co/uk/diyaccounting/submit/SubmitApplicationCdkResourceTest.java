@@ -274,7 +274,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                 "PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
-        // 37 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1), operatorConsoleImageGet(1),
+        // 38 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1), operatorConsoleImageGet(1),
         // practiceClientsListGet(1), practiceClientsPost(1), practiceClientGet(1),
         // practiceClientDelete(1), practiceClientAuthorisationInvitePost(1),
         // practiceClientAuthorisationGet(1), practiceClientAuthorisationInviteDelete(1),
@@ -285,13 +285,13 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         // commissionRelease(1), commissionMineGet(1),
         // commissionCreditPayout(1), commissionCashPayout(1),
         // sessionBeaconPost(1),
-        // sessionSignOutPost(1), activityStartedPost(1), accountSettingsPut(1)
+        // sessionSignOutPost(1), activityStartedPost(1), accountAcquisitionPost(1), accountSettingsPut(1)
         Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
-        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 37);
+        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 38);
         assertGroupedStackHealthAlarm(
                 accountStackTemplate,
                 List.of(
-                        "account-settings-put",
+                        "account",
                         "activity-started-post",
                         "affiliate",
                         "bundle",
@@ -579,9 +579,11 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         // /api/v1/companies-house/company/{companyNumber}/last-accounts sits on its own unshared path and
         // adds a primary route and an auto-HEAD route, for 240 + 2 = 242. GET
         // /api/v1/companies-house/company/{companyNumber}/reports/{report} sits on its own unshared path
-        // and adds a primary route and an auto-HEAD route, for 242 + 2 = 244.
+        // and adds a primary route and an auto-HEAD route, for 242 + 2 = 244. POST
+        // /api/v1/account/acquisition sits on its own unshared path and adds a primary route and an
+        // auto-HEAD route, for 244 + 2 = 246.
         assertEquals(
-                244,
+                246,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

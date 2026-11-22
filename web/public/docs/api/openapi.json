@@ -21,6 +21,13 @@
     "description" : "DIY Accounting Submit API documentation"
   } ],
   "paths" : {
+    "/account/acquisition" : {
+      "post" : {
+        "summary" : "Record an account's source",
+        "description" : "Publishes an account-acquisition event with the landing fields the authenticated user arrived with, posted once after a sign-in",
+        "operationId" : "recordAccountAcquisition"
+      }
+    },
     "/account/settings" : {
       "put" : {
         "summary" : "Change account settings",

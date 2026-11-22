@@ -202,6 +202,7 @@ describe("productCatalogHelper", () => {
       "resident-pro",
       "resident-tax-agent",
       "resident-pro-comp",
+      "resident-ltd-comp",
     ]);
     expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "resident-ltd")).toBe(true);
     expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "resident-vat")).toBe(false);
@@ -269,6 +270,7 @@ describe("productCatalogHelper", () => {
       "resident-pro",
       "resident-tax-agent",
       "resident-pro-comp",
+      "resident-ltd-comp",
     ]);
     expect(isActivityAvailable(catalog, "file-confirmation-statement", "resident-ltd")).toBe(true);
     expect(isActivityAvailable(catalog, "file-confirmation-statement", "default")).toBe(false);
@@ -356,6 +358,18 @@ describe("productCatalogHelper", () => {
     const comp = getCatalogBundleById(parseCatalog(tomlText), "resident-pro-comp");
     expect(comp.includes).toEqual(["resident-tax-agent"]);
     expect(comp.tokensGranted).toBe("unlimited");
+  });
+
+  it("resident-ltd-comp includes resident-ltd, is hidden, and is granted only by a pass for a year", () => {
+    const comp = getCatalogBundleById(parseCatalog(tomlText), "resident-ltd-comp");
+    expect(comp.includes).toEqual(["resident-ltd"]);
+    expect(comp.hidden).toBe(true);
+    expect(comp.enable).toBe("on-pass");
+    expect(comp.allocation).toBe("on-pass");
+    expect(comp.timeout).toBe("P1Y");
+    expect(comp.prices).toBeUndefined();
+    expect(isActivityAvailable(parseCatalog(tomlText), "file-small-company-accounts", "resident-ltd-comp")).toBe(true);
+    expect(isActivityAvailable(parseCatalog(tomlText), "submit-vat", "resident-ltd-comp")).toBe(false);
   });
 
   it("the resident bundle is folded away", () => {

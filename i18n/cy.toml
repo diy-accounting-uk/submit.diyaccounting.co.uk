@@ -17679,6 +17679,10 @@ cy = '''{count} credyd (tokens) y dydd'''
 hash = "e911f8f30f7e"
 cy = '''Resident VAT (am ddim)'''
 
+[strings."chrome.bundle-resident-ltd-comp"]
+hash = "e9ff4e3d4ea1"
+cy = '''Resident Ltd (am ddim)'''
+
 # == Revised accounts checks: the receipt a revision names, its approval dates, the accountants' report and status it carries over ==
 
 [strings."ch.revision.refuse-already-revised"]
