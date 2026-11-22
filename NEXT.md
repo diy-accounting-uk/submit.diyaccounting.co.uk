@@ -19,7 +19,7 @@ with no such field is in no set. Anything touching code goes through a `claude/*
 the operator merges.
 
 **Prod runs deployment prod-f3009b4** (`deploy.yml` run 44707855758 of `main` at f3009b47c, PR #856, promoted by 09:42 UTC on 2026-11-20; it replaces prod-c984cd1).
-**ci**: no ci set stands and `/submit/ci/last-known-good-deployment` is `None` (read 11:22 UTC on 2026-11-22); the next branch deploy makes one.
+**ci**: no ci set stands and `/submit/ci/last-known-good-deployment` is `None` (read 12:35 UTC on 2026-11-22); the next branch deploy makes one.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
