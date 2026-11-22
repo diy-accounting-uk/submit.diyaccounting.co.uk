@@ -251,7 +251,8 @@ collab_commit() {
   tree=$(GIT_INDEX_FILE=$TMP/collab.index git -C "$g" write-tree)
   commit=$(git -C "$g" commit-tree "$tree" ${parent:+-p "$parent"} -m "$message" \
     -m "Co-Authored-By: Claude <noreply@anthropic.com>")
-  run git -C "$g" push -q "$url" "$commit:refs/heads/collab"
+  # --no-verify: a push to a work repository runs no pre-push hook, not even one a global core.hooksPath names.
+  run git -C "$g" push -q --no-verify "$url" "$commit:refs/heads/collab"
 }
 
 create_repository() {
@@ -272,9 +273,10 @@ create_repository() {
 sync_repository() {
   local cn=$1 base=$2 url
   url=$(url_of "$cn")
-  run git -C "$SOURCE_ROOT" push -q "$url" "refs/remotes/origin/main:refs/heads/main" || return 1
+  # --no-verify: the checkout's pre-push hook guards pushes to its own origin, not to a work repository.
+  run git -C "$SOURCE_ROOT" push -q --no-verify "$url" "refs/remotes/origin/main:refs/heads/main" || return 1
   if [ "$base" != main ]; then
-    run git -C "$SOURCE_ROOT" push -q "$url" "refs/heads/$base:refs/heads/$base" || return 1
+    run git -C "$SOURCE_ROOT" push -q --no-verify "$url" "refs/heads/$base:refs/heads/$base" || return 1
   fi
 }
 
