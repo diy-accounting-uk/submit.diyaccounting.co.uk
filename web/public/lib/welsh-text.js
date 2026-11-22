@@ -1424,6 +1424,8 @@ window.WELSH_TEXT = {
   "ch.name.see-company": "Gweld y cwmni ar y gofrestr",
   "ch.name.service-same-day": "Gwasanaeth yr un diwrnod, £{fee}",
   "ch.name.service-standard": "Gwasanaeth safonol, £{fee}",
+  "ch.notes.advances-required":
+    "Mae’r fantolen yn dangos symiau sy’n ddyledus gan gyfarwyddwyr. Rhowch res yn y nodyn ar flaensymiau i bob cyfarwyddwr sydd mewn dyled i’r cwmni.",
   "ch.notes.arithmetic":
     "Nid yw’r blaenswm i {name} yn adio: y swm sy’n ddyledus ar y dechrau, ynghyd â’r hyn a roddwyd ymlaen llaw, llai’r hyn a ad-dalwyd, yw £{expected}, felly’r swm sy’n ddyledus ar y diwedd yw £{expected}.",
   "ch.notes.figure": "Mae symiau’r blaenswm i {name} yn bunnoedd cyfan, ac nid oes yr un yn llai na dim.",

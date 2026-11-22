@@ -9,6 +9,7 @@ import {
   MAX_ADVANCE_NAME_LENGTH,
   MAX_ADVANCE_TERMS_LENGTH,
   directorsAdvancesFindings,
+  directorsAdvancesMissing,
   shareCapitalFindings,
   noteFindingSentence,
 } from "../public/lib/accounts-notes-check.js";
@@ -84,5 +85,20 @@ describe("the rules of the share capital note", () => {
       "Sam Lender is named for an advance, but on micro-entity accounts an advance names the director who signs the accounts, Jo Director. Correct the name.",
     );
     expect(directorsAdvancesFindings([{ ...row, name: "Jo Director" }], { signerName: "Jo Director" })).toEqual([]);
+  });
+});
+
+describe("the note on advances when the balance sheet shows amounts owed by directors", () => {
+  test("is missing when a year shows an amount owed and the note gives no row", () => {
+    expect(directorsAdvancesMissing(undefined, [100])).toBe(true);
+    expect(directorsAdvancesMissing([], [0, 100])).toBe(true);
+    expect(noteFindingSentence({ rule: "advances-required" })).toBe(
+      "The balance sheet shows amounts owed by directors. Give each director who owes the company money a row in the note on advances.",
+    );
+  });
+
+  test("is not missing when nothing is owed or a row is given", () => {
+    expect(directorsAdvancesMissing(undefined, [0, undefined])).toBe(false);
+    expect(directorsAdvancesMissing([{ name: "Alex Jones" }], [100])).toBe(false);
   });
 });

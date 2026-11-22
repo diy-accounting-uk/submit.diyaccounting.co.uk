@@ -642,7 +642,11 @@ async function notesProblem() {
     .filter(Boolean);
   const calledUpShareCapital = readPounds("currentCalledUpShareCapital");
   const shareCapital = readShareCapitalNote();
+  const owed = [readBalanceSheet("current"), ...(comparativesIncluded() ? [readBalanceSheet("prior")] : [])].map(
+    (sheet) => sheet.amountsOwedByDirectors,
+  );
   const findings = [
+    ...(check.directorsAdvancesMissing(readDirectorsAdvances(), owed) ? [{ rule: "advances-required" }] : []),
     ...check.directorsAdvancesFindings(readDirectorsAdvances() || [], {
       directorNames,
       amountsOwedByDirectors: readBalanceSheet("current").amountsOwedByDirectors,

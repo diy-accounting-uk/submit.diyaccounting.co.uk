@@ -129,16 +129,20 @@ test.describe("Form errors - a line follows its field's rule", () => {
     await expect(page.locator("#nino-error")).toBeVisible();
   });
 
-  test("a line with no rule stays until the next submit", async ({ page }) => {
+  test("a line with no rule leaves the summary at its field's first change, unannounced", async ({ page }) => {
     await openPage(page, "selfEmploymentPeriod.html");
     await page.evaluate(() =>
       window.formErrors.showFormErrors([
         { input: document.getElementById("nino"), message: "HMRC does not know this National Insurance number" },
+        { input: document.getElementById("businessId"), message: "HMRC does not know this business" },
       ]),
     );
     await page.fill("#nino", "AB123456C");
-    await expect(page.locator("#form-error-summary")).toContainText("HMRC does not know this National Insurance number");
-    await expect(page.locator("#nino-error")).toBeVisible();
+    await expect(page.locator("#form-error-summary")).not.toContainText("HMRC does not know this National Insurance number");
+    await expect(page.locator("#nino-error")).toHaveCount(0);
+    await expect(page.locator("#form-error-summary")).toContainText("HMRC does not know this business");
     await expect(page.locator("#form-error-announcer")).toHaveCount(0);
+    await page.fill("#businessId", "XAIS12345678901");
+    await expect(page.locator("#form-error-summary")).toHaveCount(0);
   });
 });

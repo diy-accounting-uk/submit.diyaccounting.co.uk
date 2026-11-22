@@ -461,13 +461,16 @@ test.describe("File small company accounts page", () => {
     );
   });
 
-  test("amounts owed by directors on the balance sheet with no advance row are refused on the page, in a sentence", async ({ page }) => {
+  test("amounts owed by directors with no advance row are refused on the page, as the route refuses them", async ({ page }) => {
     await openFormView(page);
     await fillCurrentYear(page);
-    await page.fill("#currentAmountsOwedByDirectors", "500");
+    await page.fill("#directors", "Alex Jones");
+    await page.fill("#currentAmountsOwedByDirectors", "100");
     expect(await page.evaluate(() => notesProblem())).toBe(
-      "The amounts owed at the end of the advances add up to £0, but the balance sheet shows £500 owed by directors.",
+      "The balance sheet shows amounts owed by directors. Give each director who owes the company money a row in the note on advances.",
     );
+    await page.fill("#currentAmountsOwedByDirectors", "0");
+    expect(await page.evaluate(() => notesProblem())).toBeNull();
   });
 
   test("an advance to someone who is not among the directors is refused on the page, in a sentence", async ({ page }) => {

@@ -135,7 +135,7 @@
 
   // errors: [{ input, message, passes? }]. passes() answers whether the field now meets the rule
   // the message is about: its line leaves the summary, and its message the field, once it does.
-  // A line with no rule stays until the next submit.
+  // A line with no rule leaves at the field's first change.
   function showFormErrors(errors) {
     clearFormErrors();
     if (errors.length === 0) return;
@@ -162,14 +162,14 @@
       });
       item.append(link);
       list.append(item);
-      if (!passes) return;
-      // A field that now meets its rule takes its line out of the summary, and the summary goes with its last line.
+      // A field that meets its rule takes its line out of the summary, and a field with no rule takes it
+      // out at its first change; the summary goes with its last line.
       const clearWhenPassing = () => {
-        if (!item.isConnected || !passes()) return;
+        if (!item.isConnected || (passes && !passes())) return;
         clearFieldError(input);
         item.remove();
         if (!list.children.length) summary.remove();
-        announce(siteText("widget.error-fixed", "Fixed: {message}", { message }));
+        if (passes) announce(siteText("widget.error-fixed", "Fixed: {message}", { message }));
         input.removeEventListener("input", clearWhenPassing);
         input.removeEventListener("change", clearWhenPassing);
       };

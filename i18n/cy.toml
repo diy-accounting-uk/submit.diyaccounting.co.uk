@@ -27019,3 +27019,9 @@ cy = '''Mae gan ymddiriedolwyr yr ymddiriedolaeth honno (yn rhinwedd eu swydd fe
 [strings."ch.notify-psc.influence-alone-held"]
 hash = "96014f36cbaa"
 cy = '''Dewiswch ddylanwad neu reolaeth arwyddocaol dim ond os nad oes yr un o’r ffyrdd eraill yn yr un adran yn berthnasol.'''
+
+# == The note on advances when the balance sheet shows amounts owed by directors ==
+
+[strings."ch.notes.advances-required"]
+hash = "79e97eb9c13d"
+cy = '''Mae’r fantolen yn dangos symiau sy’n ddyledus gan gyfarwyddwyr. Rhowch res yn y nodyn ar flaensymiau i bob cyfarwyddwr sydd mewn dyled i’r cwmni.'''

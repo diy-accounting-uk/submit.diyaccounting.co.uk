@@ -74,6 +74,16 @@ export function directorsAdvancesFindings(rows, { directorNames, signerName, amo
 }
 
 /**
+ * Whether a balance sheet shows amounts owed by directors while the note on advances gives no row.
+ * @param {Array<object>|undefined} rows - the advances to directors rows
+ * @param {number[]} amountsOwedByDirectors - the balance sheets' amounts owed by directors, one a year
+ * @returns {boolean}
+ */
+export function directorsAdvancesMissing(rows, amountsOwedByDirectors) {
+  return amountsOwedByDirectors.some((owed) => Number.isFinite(owed) && owed > 0) && !rows?.length;
+}
+
+/**
  * What is wrong with the share capital note.
  * @param {{shareClass: string, nominalValue: number}} shareCapital
  * @param {number} calledUpShareCapital - the balance sheet's called up share capital, in pounds
@@ -153,6 +163,11 @@ export function noteFindingSentence(finding, { calledUpShareCapital } = {}) {
         "ch.notes.sum",
         "The amounts owed at the end of the advances add up to £{total}, but the balance sheet shows £{owed} owed by directors.",
         { total: finding.total, owed: finding.owed },
+      );
+    case "advances-required":
+      return siteText(
+        "ch.notes.advances-required",
+        "The balance sheet shows amounts owed by directors. Give each director who owes the company money a row in the note on advances.",
       );
     case "share-class":
       return siteText("ch.notes.share-class", "Choose the class of the shares.");

@@ -21,7 +21,7 @@ import {
   INTANGIBLE_ASSET_FIELDS,
   intangibleAssetClosingFigures,
 } from "./smallCompanyAccountsIxbrl.js";
-import { SHARE_CLASSES, shareCapitalFindings } from "../../web/public/lib/accounts-notes-check.js";
+import { SHARE_CLASSES, shareCapitalFindings, directorsAdvancesMissing } from "../../web/public/lib/accounts-notes-check.js";
 import { readDirectorsAdvances } from "./accountsIxbrlCommon.js";
 import { comparativesFinding } from "../../web/public/lib/first-accounts.js";
 import { capitalAndReservesMismatch, capitalAndReservesMessage, YEAR_NAMES } from "../../web/public/lib/balance-sheet-check.js";
@@ -273,8 +273,12 @@ export function extractAndValidateSmallCompany(smallCompany, statementsAccepted,
     directorNames: directors,
     amountsOwedByDirectors: currentBalanceSheet.amountsOwedByDirectors ?? 0,
   });
-  const owedByDirectors = [currentBalanceSheet, priorBalanceSheet].some((sheet) => sheet?.amountsOwedByDirectors > 0);
-  if (owedByDirectors && !directorsAdvances?.length) {
+  if (
+    directorsAdvancesMissing(
+      directorsAdvances,
+      [currentBalanceSheet, priorBalanceSheet].map((sheet) => sheet?.amountsOwedByDirectors),
+    )
+  ) {
     errorMessages.push("smallCompany.directorsAdvances is required when a balance sheet shows amountsOwedByDirectors");
   }
 
