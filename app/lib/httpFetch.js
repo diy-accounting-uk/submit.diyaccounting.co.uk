@@ -19,6 +19,24 @@ import { createLogger } from "./logger.js";
 const logger = createLogger({ source: "app/lib/httpFetch.js" });
 
 /**
+ * A URL as this module logs it and puts in an error: the origin and path, with no query string or
+ * fragment, because a query can carry a signed credential or an identifier. A URL with neither is
+ * written as given.
+ * @param {string|URL} url
+ * @returns {string}
+ */
+export function urlWithoutQuery(url) {
+  let parsed;
+  try {
+    parsed = new URL(String(url));
+  } catch {
+    return "[unparsable URL]";
+  }
+  if (!parsed.search && !parsed.hash) return String(url);
+  return `${parsed.origin}${parsed.pathname}`;
+}
+
+/**
  * Custom error class for HTTP timeout errors
  */
 export class HttpTimeoutError extends Error {
@@ -65,13 +83,14 @@ export async function fetchWithTimeout(url, options = {}, timeoutMs = 30000) {
   } catch (error) {
     if (error.name === "AbortError") {
       const duration = Date.now() - startTime;
+      const loggedUrl = urlWithoutQuery(url);
       logger.warn({
         message: "HTTP request timed out",
-        url,
+        url: loggedUrl,
         timeoutMs,
         duration,
       });
-      throw new HttpTimeoutError(`Request to ${url} timed out after ${timeoutMs}ms`, url, timeoutMs);
+      throw new HttpTimeoutError(`Request to ${loggedUrl} timed out after ${timeoutMs}ms`, loggedUrl, timeoutMs);
     }
     throw error;
   } finally {
@@ -107,7 +126,7 @@ export async function fetchRetryingNetworkErrors(
       if (!(error instanceof TypeError) || attempt >= attempts) throw error;
       logger.warn({
         message: "HTTP request failed at the network layer, retrying",
-        url,
+        url: urlWithoutQuery(url),
         attempt,
         error: error.message,
       });
