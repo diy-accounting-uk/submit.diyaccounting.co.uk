@@ -23,7 +23,12 @@ import {
 import { PRODUCT_VERSION } from "../../lib/productVersion.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
-import { enforceCtBundles, clientAuthorisationMessage, refuseJointFilingWhenNotEnabled } from "../../services/ctClientScope.js";
+import {
+  enforceCtBundles,
+  clientAuthorisationMessage,
+  refuseJointFilingWhenNotEnabled,
+  refuseRevisionWhenNotEnabled,
+} from "../../services/ctClientScope.js";
 import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
 import { extractAndValidateCtReturnParameters, buildCtReturnDocuments, boxesThatDiffer } from "../../services/hmrcCtReturnRequest.js";
 import {
@@ -105,6 +110,8 @@ export async function ingestHandler(event) {
   const enforcement = await enforceCtBundles(event, request, clientId);
   if (enforcement.refusal) return enforcement.refusal;
   const { userSub, client, bundleIds } = enforcement;
+  const revisionRefusal = refuseRevisionWhenNotEnabled(event, request, parseRequestBody(event)?.revision != null);
+  if (revisionRefusal) return revisionRefusal;
 
   if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({ request, headers: { ...responseHeaders }, data: {} });

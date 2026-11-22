@@ -217,7 +217,7 @@ export const SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LABELS = [
   "Profit for the financial year",
 ];
 
-function microInputFromTestServiceCase(testCase) {
+export function microInputFromTestServiceCase(testCase) {
   return {
     companyNumber: testCase.companyNumber,
     companyName: testCase.companyName,

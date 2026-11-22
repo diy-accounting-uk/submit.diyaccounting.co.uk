@@ -23,7 +23,7 @@ import { FILING_STATE_RETENTION, claimFinalStatus, releaseFinalStatus } from "..
 import { recordFiledReceiptForSubmission } from "./filedReceipt.js";
 import { markReceiptStepDone, clearReceiptStep } from "../data/dynamoDbReceiptRepository.js";
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
-import { jointFilingFields, amendedFields, formRequestFields } from "./jointFiling.js";
+import { jointFilingFields, amendedFields, revisesReceiptFields, formRequestFields } from "./jointFiling.js";
 import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
 import { markChargeUsed } from "./activityCharges.js";
 
@@ -272,6 +272,7 @@ async function writeFinalStatus({ userSub, submissionNumber, persistedRequest, s
   const jointFiling = {
     ...jointFilingFields(requestData.jointFilingId),
     ...amendedFields(requestData.amended === true),
+    ...revisesReceiptFields(requestData.revisesReceipt),
   };
 
   if (status.statusCode === "REJECT") {

@@ -98,6 +98,12 @@ vi.mock("@app/services/companiesHouseXmlGateway.js", async (importOriginal) => (
   resolvePresenterCredentials: (...args) => mockResolvePresenterCredentials(...args),
 }));
 
+const mockGetReceipt = vi.fn();
+vi.mock("@app/data/dynamoDbReceiptRepository.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  getReceipt: (...args) => mockGetReceipt(...args),
+}));
+
 const mockGetCompanyProfile = vi.fn();
 vi.mock("@app/functions/companies-house/companiesHouseCompanyGet.js", () => ({
   getCompanyProfile: (...args) => mockGetCompanyProfile(...args),
@@ -719,6 +725,12 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       expect(await pendingData()).toMatchObject({ amended: true });
     });
 
+    test("a revision filed alone is charged to the accounts activity of its regime, as an original filing is", async () => {
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: REVISION }) }));
+      expect(response.statusCode).toBe(201);
+      expect(await pendingData()).toMatchObject({ amended: true, chargeActivityId: "file-micro-entity-accounts" });
+    });
+
     test("an original filing stores no amended mark", async () => {
       await companiesHouseAccountsPostHandler(buildEvent());
       expect(await pendingData()).not.toHaveProperty("amended");
@@ -780,6 +792,112 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       expect(response.statusCode).toBe(400);
       expect(JSON.stringify(parseResponseBody(response))).toContain("revision.amendments");
       expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("the receipt revised accounts name", () => {
+    const RECEIPT_NAME = "2026-10-24T10:15:00.000Z-00001A.json";
+    const REVISION = {
+      originalDateOfApproval: "2026-01-10",
+      nonCompliance: "A liability was left out.",
+      amendments: "Creditors are restated.",
+      revisesReceipt: RECEIPT_NAME,
+    };
+    const ORIGINAL_RECEIPT = {
+      kind: "companies-house-accounts",
+      statusCode: "ACCEPT",
+      submissionNumber: "00001A",
+      companyNumber: "00000001",
+      filedDocument: "<html/>",
+    };
+
+    async function pendingData() {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const updates = mockSend.mock.calls.map(([cmd]) => cmd).filter((cmd) => cmd instanceof lib.UpdateCommand);
+      return updates.find((cmd) => cmd.input.ExpressionAttributeValues[":status"] === "pending").input.ExpressionAttributeValues[":data"];
+    }
+
+    test("files revised accounts that name an accepted accounts receipt of the same company, and keeps its name", async () => {
+      mockGetReceipt.mockResolvedValue(ORIGINAL_RECEIPT);
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: REVISION }) }));
+      expect(response.statusCode).toBe(201);
+      expect(mockGetReceipt).toHaveBeenCalledWith(expect.any(String), "2026-10-24T10:15:00.000Z-00001A");
+      expect(await pendingData()).toMatchObject({ amended: true, revisesReceipt: RECEIPT_NAME });
+    });
+
+    test("files revised accounts that name no receipt, as accounts filed another way have none", async () => {
+      const { revisesReceipt, ...withoutReceipt } = REVISION;
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: withoutReceipt }) }));
+      expect(response.statusCode).toBe(201);
+      expect(mockGetReceipt).not.toHaveBeenCalled();
+      expect(await pendingData()).not.toHaveProperty("revisesReceipt");
+      expect(revisesReceipt).toBe(RECEIPT_NAME);
+    });
+
+    const refusals = [
+      ["a receipt not found in this account", null, "is not in your account"],
+      ["a receipt that is not accounts", { ...ORIGINAL_RECEIPT, kind: "company-tax-return" }, "not an accounts filing"],
+      ["accounts Companies House did not accept", { ...ORIGINAL_RECEIPT, statusCode: "REJECT" }, "did not accept those accounts"],
+      ["accounts filed with a Company Tax Return", { ...ORIGINAL_RECEIPT, jointFilingId: "joint-1" }, "Company Tax Return page"],
+      ["accounts that are already revised accounts", { ...ORIGINAL_RECEIPT, amended: true }, "already revised accounts"],
+      ["accounts of another company", { ...ORIGINAL_RECEIPT, companyNumber: "09999999" }, "for another company"],
+    ];
+    for (const [name, receipt, sentence] of refusals) {
+      test(`refuses revised accounts that name ${name}, with a sentence, and sends nothing`, async () => {
+        mockGetReceipt.mockResolvedValue(receipt);
+        const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: REVISION }) }));
+        expect(response.statusCode).toBe(400);
+        expect(JSON.stringify(parseResponseBody(response))).toContain(sentence);
+        expect(mockPostToGateway).not.toHaveBeenCalled();
+      });
+    }
+
+    test("refuses a receipt name that is not a stored receipt's name", async () => {
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({ body: buildAccountsBody({ revision: { ...REVISION, revisesReceipt: "../other/receipt" } }) }),
+      );
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("revision.revisesReceipt");
+      expect(mockGetReceipt).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("the date the directors approved the accounts", () => {
+    const AFTER_TODAY = "2099-01-01";
+    const SENTENCE = `The date approved, ${AFTER_TODAY}, is after today. Enter the date the directors approved the accounts.`;
+
+    test("refuses micro-entity accounts approved after today, with a sentence that names the date, and sends nothing", async () => {
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({ body: buildAccountsBody({ director: { name: "Jo Director", dateApproved: AFTER_TODAY } }) }),
+      );
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain(SENTENCE);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses small company accounts approved after today", async () => {
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({ body: buildSmallCompanyBody({ director: { name: "Jo Director", dateApproved: AFTER_TODAY } }) }),
+      );
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain(SENTENCE);
+    });
+
+    test("refuses revised accounts approved after today", async () => {
+      const revision = { originalDateOfApproval: "2026-01-10", nonCompliance: "A", amendments: "B" };
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({ body: buildAccountsBody({ revision, director: { name: "Jo Director", dateApproved: AFTER_TODAY } }) }),
+      );
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain(SENTENCE);
+    });
+
+    test("files accounts approved today", async () => {
+      const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({ body: buildAccountsBody({ director: { name: "Jo Director", dateApproved: today } }) }),
+      );
+      expect(response.statusCode).toBe(201);
     });
   });
 

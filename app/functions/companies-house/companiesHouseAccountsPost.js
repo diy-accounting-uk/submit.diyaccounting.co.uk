@@ -70,12 +70,16 @@ import {
   jointFilingFields,
   readRevision,
   amendedFields,
+  revisesReceiptFields,
   sanitiseFormRequest,
   formRequestFields,
 } from "../../services/jointFiling.js";
 import { refuseWhenOutOfTokens } from "../../services/tokenEnforcement.js";
 import { refuseRevisionWhenNotEnabled } from "../../services/ctClientScope.js";
 import { capitalAndReservesMismatch, capitalAndReservesMessage, YEAR_NAMES } from "../../../web/public/lib/balance-sheet-check.js";
+import { isApprovedAfterToday, approvalDateAfterTodayMessage } from "../../../web/public/lib/approval-date-check.js";
+import { refusalOf as revisedReceiptRefusal } from "../../../web/public/lib/accounts-revision.js";
+import { getReceipt } from "../../data/dynamoDbReceiptRepository.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseAccountsPost.js" });
 
@@ -251,6 +255,8 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
   const dateApproved = director?.dateApproved;
   if (!dateApproved || !isValidIsoDate(dateApproved)) {
     errorMessages.push("Invalid or missing director.dateApproved - must be YYYY-MM-DD");
+  } else if (isApprovedAfterToday(dateApproved, new Date())) {
+    errorMessages.push(approvalDateAfterTodayMessage(dateApproved));
   }
 
   const revision = readRevision(parsedBody, dateApproved, errorMessages);
@@ -507,6 +513,14 @@ export async function ingestHandler(event) {
     const { profile } = await getCompanyProfile(accounts.companyNumber);
     checkWelshCompany(profile?.jurisdiction, errorMessages);
   }
+  // Revised accounts that name the receipt of the accounts they revise are checked against it, under
+  // the signed-in user's own receipts, by the rules the page applies.
+  const revisesReceipt = accounts.revision?.revisesReceipt;
+  if (revisesReceipt) {
+    const revisedReceipt = (await getReceipt(userSub, revisesReceipt.replace(/\.json$/, ""))) ?? null;
+    const refusal = revisedReceiptRefusal(revisedReceipt, accounts.companyNumber);
+    if (refusal) errorMessages.push(refusal);
+  }
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }
@@ -554,6 +568,7 @@ export async function ingestHandler(event) {
       chargeActivityId,
       ...jointFilingFields(jointFilingId),
       ...amendedFields(Boolean(accounts.revision)),
+      ...revisesReceiptFields(revisesReceipt),
       ...formRequestFields(formRequest),
       // The document's own language, which the filing keeps; it does not follow the page language.
       ...(accounts.documentLanguage === "cy" ? { documentLanguage: "cy" } : {}),

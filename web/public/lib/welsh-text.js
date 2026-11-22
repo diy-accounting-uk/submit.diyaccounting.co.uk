@@ -1071,6 +1071,8 @@ window.WELSH_TEXT = {
     "Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.",
   "ch.lane.status-production": "Statws: cynhyrchu (production).",
   "ch.lane.status-sandbox": "Statws: prawf (sandbox).",
+  "ch.micro.approved-after-today":
+    "Mae’r dyddiad cymeradwyo, {date}, ar ôl heddiw. Nodwch y dyddiad y cymeradwyodd y cyfarwyddwyr y cyfrifon.",
   "ch.micro.capital-and-reserves-mismatch":
     "Nid yw cyfalaf a chronfeydd wrth gefn o {capital} ar gyfer {year} yn hafal i’r cyfalaf cyfranddaliadau a alwyd i fyny ynghyd â’r cyfrif elw a cholled, sy’n dod i {sum}.",
   "ch.micro.confirm-provisions": "Cadarnhewch fod y cyfrifon yn dilyn y darpariaethau micro-endid",
@@ -1140,6 +1142,7 @@ window.WELSH_TEXT = {
   "ch.record.officers-as-confirmed": "Swyddogion fel y’u cadarnhawyd",
   "ch.record.officers-explanation":
     "Dyma swyddogion presennol y cwmni ar y gofrestr pan wnaethoch ffeilio, ac a yw pob un wedi gwirio ei hunaniaeth.",
+  "ch.record.original-accounts": "Gweld y cyfrifon gwreiddiol y mae’r rhain yn eu diwygio",
   "ch.record.pending": "Gyda Thŷ’r Cwmnïau",
   "ch.record.psc-row": "{control}. Hysbyswyd {date}",
   "ch.record.pscs": "Pobl â rheolaeth arwyddocaol",
@@ -1160,16 +1163,29 @@ window.WELSH_TEXT = {
   "ch.revision.load-failed": "Ni allem agor y cyfrifon hynny i’w diwygio. Agorwch y ffeilio eto o’ch derbynebau.",
   "ch.revision.need-amendments": "Dywedwch beth mae’r cyfrifon diwygiedig yn ei newid",
   "ch.revision.need-non-compliance": "Dywedwch beth oedd yn anghywir yn y cyfrifon gwreiddiol",
+  "ch.revision.need-original-date": "Nodwch y dyddiad y cymeradwywyd y cyfrifon gwreiddiol, fel y mae’r cyfrifon a ffeiliwyd yn ei ddangos",
   "ch.revision.not-micro": "Cyfrifon cwmni bach yw’r rheini, felly maent yn cael eu diwygio ar dudalen cyfrifon cwmni bach.",
   "ch.revision.not-offered": "Ni ellir ffeilio cyfrifon diwygiedig yma eto, felly ni ellir diwygio’r cyfrifon hyn.",
   "ch.revision.not-small": "Cyfrifon micro-endid yw’r rheini, felly maent yn cael eu diwygio ar dudalen cyfrifon micro-endid.",
+  "ch.revision.refuse-already-revised":
+    "Mae’r cyfrifon hyn eisoes yn gyfrifon diwygiedig, ac nid yw’r wefan hon yn ffeilio ail ddiwygiad eto.",
   "ch.revision.refuse-joint":
     "Cafodd y cyfrifon hynny eu ffeilio gyda Ffurflen Dreth y Cwmni, felly diwygiwch nhw ar dudalen Ffurflen Dreth y Cwmni.",
   "ch.revision.refuse-kind": "Nid ffeilio cyfrifon yw’r dderbynneb honno, felly nid oes cyfrifon i’w diwygio.",
   "ch.revision.refuse-load": "Ni allem lwytho’r dderbynneb honno. Agorwch y ffeilio eto o’ch derbynebau.",
   "ch.revision.refuse-no-document": "Ni chadwyd y ddogfen a ffeiliwyd gyda’r dderbynneb honno, felly ni ellir ei diwygio yma.",
   "ch.revision.refuse-not-accepted": "Ni wnaeth Tŷ’r Cwmnïau dderbyn y cyfrifon hynny, felly nid oes dim i’w ddiwygio.",
+  "ch.revision.refuse-not-found": "Nid yw’r dderbynneb y mae’r cyfrifon diwygiedig hyn yn ei henwi yn eich cyfrif.",
+  "ch.revision.refuse-other-company": "Mae’r dderbynneb y mae’r cyfrifon diwygiedig hyn yn ei henwi ar gyfer cwmni arall.",
   "ch.revision.rejected": "Mae Tŷ’r Cwmnïau wedi gwrthod y cyfrifon diwygiedig.",
+  "ch.revision.status-preview":
+    "Rhagolwg yw cyfrifon diwygiedig yma: nid oes dim rydych yn ei ffeilio yn cyrraedd cofrestr fyw Tŷ’r Cwmnïau.",
+  "ch.revision.status-preview-label": "Statws: rhagolwg (preview).",
+  "ch.revision.status-production": "Mae’r cyfrifon diwygiedig rydych yn eu ffeilio yma yn cyrraedd cofrestr fyw Tŷ’r Cwmnïau.",
+  "ch.revision.status-production-label": "Statws: cynhyrchu (production).",
+  "ch.revision.status-sandbox":
+    "Mae’r cyfrifon diwygiedig rydych yn eu ffeilio yma yn mynd i wasanaeth prawf Tŷ’r Cwmnïau ac nid ydynt yn ffeilio dim byd go iawn.",
+  "ch.revision.status-sandbox-label": "Statws: amgylchedd prawf (sandbox).",
   "ch.search.column-address": "Cyfeiriad",
   "ch.search.column-company": "Cwmni",
   "ch.search.column-incorporated": "Corfforwyd",

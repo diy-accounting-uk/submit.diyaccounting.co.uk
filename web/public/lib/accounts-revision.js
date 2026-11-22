@@ -51,16 +51,25 @@ export async function isRevisionOfferedHere() {
 }
 
 /**
- * Why a receipt cannot be revised here, or null when it can.
- * @param {object|null} receipt - the stored receipt
+ * Why a receipt cannot be revised here, or null when it can. The page and the accounts route both
+ * apply it; the route also names the company the revised accounts are for.
+ * @param {object|null} receipt - the stored receipt, or null when none was found
+ * @param {string} [companyNumber] - the company of the revised accounts
  * @returns {string|null}
  */
-export function refusalOf(receipt) {
-  if (receipt?.kind !== ACCOUNTS_RECEIPT_KIND) {
+export function refusalOf(receipt, companyNumber) {
+  if (!receipt) return siteText("ch.revision.refuse-not-found", "The receipt these revised accounts name is not in your account.");
+  if (receipt.kind !== ACCOUNTS_RECEIPT_KIND) {
     return siteText("ch.revision.refuse-kind", "That receipt is not an accounts filing, so there are no accounts to revise.");
   }
   if (receipt.statusCode !== "ACCEPT") {
     return siteText("ch.revision.refuse-not-accepted", "Companies House did not accept those accounts, so there is nothing to revise.");
+  }
+  if (receipt.amended) {
+    return siteText(
+      "ch.revision.refuse-already-revised",
+      "These accounts are already revised accounts, and this site does not yet file a second revision.",
+    );
   }
   if (receipt.jointFilingId) {
     return siteText(
@@ -70,6 +79,9 @@ export function refusalOf(receipt) {
   }
   if (!receipt.filedDocument) {
     return siteText("ch.revision.refuse-no-document", "The document filed with that receipt was not kept, so it cannot be revised here.");
+  }
+  if (companyNumber && String(receipt.companyNumber).toUpperCase() !== String(companyNumber).toUpperCase()) {
+    return siteText("ch.revision.refuse-other-company", "The receipt these revised accounts name is for another company.");
   }
   return null;
 }
@@ -91,9 +103,36 @@ export function revisionSourceOf(receipt, bundle) {
     averageEmployees: mapped.averageEmployees,
     signer: mapped.signer || mapped.directors?.[0] || "",
     dormant: { dormant: mapped.dormant, tradingStatus: mapped.tradingStatus, shareNote: mapped.shareNote },
+    language: documentLanguageOf(receipt.filedDocument),
+    accountantsReport: accountantsReportOf(receipt.filedDocument),
     filedDocument: receipt.filedDocument,
     mapped,
   };
+}
+
+/**
+ * The language a filed document is written in: "cy" when its root carries xml:lang="cy", else "en".
+ * @param {string} document - the filed iXBRL
+ */
+export function documentLanguageOf(document) {
+  return /<html\b[^>]*\sxml:lang="cy"/.test(document) ? "cy" : "en";
+}
+
+function textFactOf(document, name) {
+  const match = new RegExp(`<ix:nonNumeric name="${name}"[^>]*>([^<]*)</ix:nonNumeric>`).exec(document);
+  return match ? match[1].replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&") : null;
+}
+
+/**
+ * The accountants' report a filed document carries: the firm and the statement of scope; null when it
+ * has none; { unreadable: true } when the document says it has one that these facts do not give.
+ * @param {string} document - the filed iXBRL
+ */
+export function accountantsReportOf(document) {
+  const accountantsName = textFactOf(document, "bus:NameEntityAccountants");
+  const statement = textFactOf(document, "accrep:StatementOnScopeAccountantsReport");
+  if (accountantsName && statement) return { accountantsName, statement };
+  return document.includes("AuditExemptWithAccountantsReport") ? { unreadable: true } : null;
 }
 
 /**
@@ -110,17 +149,21 @@ export async function readRevisionSource(receiptName, { fetchReceipt, loadBundle
   const receipt = await response.json();
   const refusal = refusalOf(receipt);
   if (refusal) return { refusal };
-  return { source: revisionSourceOf(receipt, await loadBundle()) };
+  return { source: { ...revisionSourceOf(receipt, await loadBundle()), receiptName } };
 }
+
+const originalDateNeeded = () =>
+  siteText("ch.revision.need-original-date", "Enter the date the original accounts were approved, as the filed accounts show it");
 
 /**
  * The problems with a revision: each revision text is required, and the revised accounts are
  * approved on or after the date the original accounts were approved.
  * @param {{originalDateOfApproval: string, nonCompliance: string, amendments: string, dateApproved: string}} revision
- * @returns {{field: "nonCompliance"|"amendments"|"dateApproved", message: string}[]}
+ * @returns {{field: "originalDateOfApproval"|"nonCompliance"|"amendments"|"dateApproved", message: string}[]}
  */
 export function checkRevision({ originalDateOfApproval, nonCompliance, amendments, dateApproved }) {
   const problems = [];
+  if (!String(originalDateOfApproval ?? "").trim()) problems.push({ field: "originalDateOfApproval", message: originalDateNeeded() });
   if (!String(nonCompliance ?? "").trim()) {
     problems.push({
       field: "nonCompliance",
@@ -164,6 +207,9 @@ export function isPastDeliveryDays(dateApproved, today) {
  */
 export function showRevisionSection({ section, originalDate, nonCompliance, amendments }, source) {
   originalDate.value = source.approvalDate || "";
+  originalDate.readOnly = Boolean(source.approvalDate);
+  originalDate.required = !source.approvalDate;
+  originalDate.dataset.requiredMessage = originalDateNeeded();
   nonCompliance.required = true;
   amendments.required = true;
   section.hidden = false;

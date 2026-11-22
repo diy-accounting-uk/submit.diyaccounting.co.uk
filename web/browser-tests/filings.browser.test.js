@@ -261,12 +261,20 @@ test.describe("Filings page - customer copy", () => {
 
   for (const width of [1280, 390]) {
     test(`titles the copy of revised accounts as revised (${width})`, async ({ page }) => {
-      await openFiling(page, ACCOUNTS_RECEIPT_NAME, { ...ACCOUNTS_RECEIPT, amended: true }, { width, revisionOffered: true });
+      const originalName = "2026-09-20T09:00:00.000Z-00000A.json";
+      await openFiling(
+        page,
+        ACCOUNTS_RECEIPT_NAME,
+        { ...ACCOUNTS_RECEIPT, amended: true, revisesReceipt: originalName },
+        { width, revisionOffered: true },
+      );
 
       await expect(page.locator("#filingContent .customer-copy-title")).toHaveText(
         "Your copy of the revised accounts filed at Companies House",
       );
-      await expect(page.locator("#filingContent .customer-copy-links a").first()).toHaveText("Amend these accounts");
+      await expect(page.locator("#amendFilingLink")).toBeHidden();
+      const original = page.locator("#filingContent .customer-copy-links a", { hasText: "See the original accounts these revise" });
+      await expect(original).toHaveAttribute("href", `filings.html?receipt=${encodeURIComponent(originalName)}`);
       fs.mkdirSync(path.join(process.cwd(), "target/browser-test-results/revised-accounts"), { recursive: true });
       await page.screenshot({
         path: path.join(process.cwd(), "target/browser-test-results/revised-accounts", `receipt-titled-revised-${width}.png`),

@@ -78,16 +78,19 @@ vi.mock("@app/services/hmrcTransactionEngine.js", async (importOriginal) => {
 });
 
 let jointActivityOverride;
+let revisedActivityOverride;
 vi.mock("@app/services/productCatalog.js", async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
     loadCatalogFromRoot: (...args) => {
       const catalog = actual.loadCatalogFromRoot(...args);
-      if (!jointActivityOverride) return catalog;
-      const activities = catalog.activities.map((activity) =>
-        activity.id === "file-company-tax-return-with-accounts" ? { ...activity, ...jointActivityOverride } : activity,
-      );
+      if (!jointActivityOverride && !revisedActivityOverride) return catalog;
+      const activities = catalog.activities.map((activity) => {
+        if (activity.id === "file-company-tax-return-with-accounts") return { ...activity, ...jointActivityOverride };
+        if (activity.id === "file-revised-accounts") return { ...activity, ...revisedActivityOverride };
+        return activity;
+      });
       return { ...catalog, activities };
     },
   };
@@ -159,6 +162,7 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     vi.clearAllMocks();
     mockLogs.length = 0;
     jointActivityOverride = undefined;
+    revisedActivityOverride = undefined;
     mockEventBridgeSend.mockResolvedValue({});
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
@@ -417,6 +421,15 @@ describe("hmrcCtReturnPost ingestHandler", () => {
   test("returns 401 when the Cognito bearer token is missing", async () => {
     const response = await hmrcCtReturnPostHandler(buildEvent({ authorizer: {} }));
     expect(response.statusCode).toBe(401);
+    expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+  });
+
+  test("refuses a return whose accounts carry a revision where revised accounts are not offered, and sends nothing", async () => {
+    revisedActivityOverride = { environments: ["prod"] };
+    const revision = { originalDateOfApproval: "2026-01-10", nonCompliance: "A", amendments: "B" };
+    const response = await hmrcCtReturnPostHandler(buildEvent({ body: { ...baseBody, revision } }));
+    expect(response.statusCode).toBe(403);
+    expect(parseResponseBody(response)).toMatchObject({ code: "ACTIVITY_ENVIRONMENT_RESTRICTED", activityId: "file-revised-accounts" });
     expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
   });
 

@@ -192,7 +192,9 @@ function buildAccountsPayload() {
       directorsResponsibilities: document.getElementById("statementDirectorsResponsibilities").checked,
       microEntityProvisions: document.getElementById("statementMicroEntityProvisions").checked,
     },
-    ...(revision ? { revision: revision.module.revisionPayload(revisionElements()) } : {}),
+    ...(revision
+      ? { revision: { ...revision.module.revisionPayload(revisionElements()), revisesReceipt: revision.source.receiptName } }
+      : {}),
   };
 }
 
@@ -236,12 +238,30 @@ async function capitalAndReservesProblem(currentYear, priorYear) {
   return null;
 }
 
+// The date approved cannot be after today, the rule the accounts route also applies. Answers true
+// when it is, after showing the problem beside the date.
+async function reportApprovalDateAfterToday() {
+  const input = document.getElementById("directorDateApproved");
+  const check = await import("../lib/approval-date-check.js");
+  if (!check.isApprovedAfterToday(input.value, new Date())) return false;
+  const message = check.approvalDateAfterTodayMessage(
+    input.value,
+    window.siteText(
+      "ch.micro.approved-after-today",
+      "The date approved, {date}, is after today. Enter the date the directors approved the accounts.",
+    ),
+  );
+  window.formErrors.showFormErrors([{ input, message }]);
+  return true;
+}
+
 async function handleAccountsFormSubmit(event) {
   event.preventDefault();
   const form = event.currentTarget;
   if (!window.formErrors.requireFormFields(form)) return;
   if (window.formErrors.reportMoneyProblems(form)) return;
   if (revision && reportRevisionProblems()) return;
+  if (await reportApprovalDateAfterToday()) return;
   const currentYear = readYear("current");
   const priorYear = readYear("prior");
   if (netAssetsOf(currentYear) !== currentYear.capitalAndReserves || netAssetsOf(priorYear) !== priorYear.capitalAndReserves) {
@@ -543,6 +563,7 @@ function reportRevisionProblems() {
   });
   if (problems.length === 0) return false;
   const inputs = {
+    originalDateOfApproval: elements.originalDate,
     nonCompliance: elements.nonCompliance,
     amendments: elements.amendments,
     dateApproved: document.getElementById("directorDateApproved"),
@@ -586,22 +607,74 @@ async function startRevision(receiptName) {
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     showDocumentLanguageChoice(profile.jurisdiction);
     window.booksImport.fillMicroEntityFormFromMapped(read.source.mapped);
+    fillCarriedOver(read.source);
     refreshYearTotals();
     revision = { module, source: read.source };
     module.showRevisionSection(revisionElements(), read.source);
+    await showRevisionStatus();
     document.getElementById("revisionBanner").hidden = false;
-    document.getElementById("changeCompanyLink").hidden = true;
+    document.getElementById("changeCompanyLine").hidden = true;
     showRevisionLateNote();
     showView("formView");
   } catch (error) {
     console.error("Failed to open the accounts to revise:", error);
     refuseRevision(
-      error.message ||
-        window.siteText("ch.revision.load-failed", "We could not open those accounts to revise. Open the filing again from your receipts."),
+      window.siteText("ch.revision.load-failed", "We could not open those accounts to revise. Open the filing again from your receipts."),
     );
   } finally {
     hideLoading();
   }
+}
+
+// The parts of the filed accounts the books mapping does not give: the accountants' report and the
+// language the accounts were filed in.
+function fillCarriedOver({ accountantsReport, language }) {
+  if (accountantsReport?.accountantsName) {
+    document.getElementById("includeAccountantsReport").checked = true;
+    document.getElementById("accountantsName").value = accountantsReport.accountantsName;
+    document.getElementById("accountantsStatement").value = accountantsReport.statement;
+    window.accountsFormSections.showAccountantsReportFields();
+  }
+  document.getElementById("revisionAccountantsNote").hidden = !accountantsReport?.unreadable;
+  if (!document.getElementById("documentLanguageSection").hidden) {
+    document.getElementById(language === "cy" ? "documentLanguageCy" : "documentLanguageEn").checked = true;
+  }
+}
+
+// The status line of the page names the micro-entity filing; a revision states the status the
+// catalogue gives revised accounts instead. The page's own line comes back when the revision ends.
+const REVISION_STATUS_TEXT = {
+  production: () => [
+    window.siteText("ch.revision.status-production-label", "Status: production."),
+    window.siteText("ch.revision.status-production", "Revised accounts you file here reach the live Companies House register."),
+  ],
+  sandbox: () => [
+    window.siteText("ch.revision.status-sandbox-label", "Status: sandbox."),
+    window.siteText(
+      "ch.revision.status-sandbox",
+      "Revised accounts you file here go to the Companies House test service and file nothing real.",
+    ),
+  ],
+  preview: () => [
+    window.siteText("ch.revision.status-preview-label", "Status: preview."),
+    window.siteText(
+      "ch.revision.status-preview",
+      "Revised accounts are a preview here: nothing you file reaches the live Companies House register.",
+    ),
+  ],
+};
+const statusLine = document.querySelector("[data-feature-status]");
+const pageStatusLine = statusLine.cloneNode(true);
+
+async function showRevisionStatus() {
+  const service = await import("/lib/services/catalog-service.js");
+  const catalog = service.parseCatalogueText(await service.fetchCatalogText());
+  const status = service.activityStatus(catalog.activities?.find((activity) => activity.id === "file-revised-accounts"));
+  const [label, sentence] = REVISION_STATUS_TEXT[status]();
+  const strong = document.createElement("strong");
+  strong.textContent = label;
+  statusLine.dataset.featureStatus = status;
+  statusLine.replaceChildren(strong, ` ${sentence}`);
 }
 
 function endRevision() {
@@ -611,9 +684,14 @@ function endRevision() {
   elements.section.hidden = true;
   elements.nonCompliance.required = false;
   elements.amendments.required = false;
+  elements.originalDate.required = false;
+  elements.originalDate.readOnly = true;
   document.getElementById("revisionBanner").hidden = true;
+  statusLine.dataset.featureStatus = pageStatusLine.dataset.featureStatus;
+  statusLine.replaceChildren(...pageStatusLine.cloneNode(true).childNodes);
   document.getElementById("revisionLateNote").hidden = true;
-  document.getElementById("changeCompanyLink").hidden = false;
+  document.getElementById("revisionAccountantsNote").hidden = true;
+  document.getElementById("changeCompanyLine").hidden = false;
 }
 
 document.getElementById("directorDateApproved").addEventListener("input", showRevisionLateNote);

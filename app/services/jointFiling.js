@@ -99,7 +99,9 @@ const MAX_REVISION_STATEMENT_LENGTH = 2000;
  * @param {object|undefined} body
  * @param {string|undefined} dateApproved - the approval date of the revised accounts
  * @param {string[]} errorMessages
- * @returns {{originalDateOfApproval: string, nonCompliance: string, amendments: string}|undefined}
+ * The revision may name the stored receipt of the accounts it revises; accounts filed another way
+ * have none.
+ * @returns {{originalDateOfApproval: string, nonCompliance: string, amendments: string, revisesReceipt?: string}|undefined}
  */
 export function readRevision(body, dateApproved, errorMessages) {
   const value = body?.revision;
@@ -116,7 +118,21 @@ export function readRevision(body, dateApproved, errorMessages) {
   }
   const nonCompliance = readRevisionStatement(value, "nonCompliance", "say what was wrong with the original accounts", errorMessages);
   const amendments = readRevisionStatement(value, "amendments", "say what the revised accounts change", errorMessages);
-  return { originalDateOfApproval, nonCompliance, amendments };
+  const revisesReceipt = value.revisesReceipt;
+  if (revisesReceipt === undefined || revisesReceipt === null) return { originalDateOfApproval, nonCompliance, amendments };
+  if (typeof revisesReceipt !== "string" || !/^[^/]+\.json$/.test(revisesReceipt)) {
+    errorMessages.push("Invalid revision.revisesReceipt - must be a receipt name ending in .json");
+  }
+  return { originalDateOfApproval, nonCompliance, amendments, revisesReceipt };
+}
+
+/**
+ * The field a stored record or receipt of revised accounts keeps for the receipt they revise.
+ * @param {string|undefined} revisesReceipt
+ * @returns {{revisesReceipt: string}|{}}
+ */
+export function revisesReceiptFields(revisesReceipt) {
+  return revisesReceipt ? { revisesReceipt } : {};
 }
 
 function readRevisionStatement(revision, field, ask, errorMessages) {

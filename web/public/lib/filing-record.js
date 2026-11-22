@@ -178,6 +178,14 @@ export function accountsFilingCopyHtml(receipt, { receiptName, linksTo = {} }) {
       linksTo.correct
         ? { href: linksTo.correct, text: siteText("ch.record.amend-accounts", "Amend these accounts") }
         : { href: "fileMicroEntityAccounts.html", text: siteText("ch.record.file-again", "File accounts again with corrected figures") },
+      ...(receipt.revisesReceipt
+        ? [
+            {
+              href: `filings.html?receipt=${encodeURIComponent(receipt.revisesReceipt)}`,
+              text: siteText("ch.record.original-accounts", "See the original accounts these revise"),
+            },
+          ]
+        : []),
       { href: linksTo.again ?? "companySearch.html", text: siteText("ch.record.look-up-another", "Look up another company") },
       { href: "../hmrc/receipt/receipts.html", text: siteText("ch.record.all-receipts", "All your receipts") },
     ],

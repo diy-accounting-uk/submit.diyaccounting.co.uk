@@ -10805,9 +10805,9 @@ cy = '''Chwilio am y cwmni'''
 hash = "b8156d93e1d2"
 cy = '''Cyfrifon micro-endid'''
 
-[strings."ch-micro-entity.company-change-company-dd2fd9"]
-hash = "dd2fd92fd208"
-cy = '''Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>). <a href="#" id="changeCompanyLink">Newid y cwmni</a>.'''
+[strings."ch-micro-entity.company-change-company-466dd4"]
+hash = "466dd4ccb9ed"
+cy = '''Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>). <span id="changeCompanyLine"><a href="#" id="changeCompanyLink">Newid y cwmni</a>.</span>'''
 
 [strings."ch-micro-entity.period-6e795d"]
 hash = "6e795d4d3cc2"
@@ -17676,3 +17676,57 @@ cy = '''{count} credyd (tokens) y dydd'''
 [strings."chrome.bundle-resident-vat-comp"]
 hash = "e911f8f30f7e"
 cy = '''Resident VAT (am ddim)'''
+
+# == Revised accounts checks: the receipt a revision names, its approval dates, the accountants' report and status it carries over ==
+
+[strings."ch.revision.refuse-already-revised"]
+hash = "7b43cf3a9ce1"
+cy = '''Mae’r cyfrifon hyn eisoes yn gyfrifon diwygiedig, ac nid yw’r wefan hon yn ffeilio ail ddiwygiad eto.'''
+
+[strings."ch-micro-entity.the-accounts-filed-have-an-accountants-01c4ff"]
+hash = "01c4ffbf80ed"
+cy = '''Mae gan y cyfrifon a ffeiliwyd adroddiad cyfrifwyr na allai’r dudalen hon ei ddarllen. Rhowch adroddiad y cyfrifwyr eto isod.'''
+
+[strings."ch.revision.need-original-date"]
+hash = "f7955ed5722a"
+cy = '''Nodwch y dyddiad y cymeradwywyd y cyfrifon gwreiddiol, fel y mae’r cyfrifon a ffeiliwyd yn ei ddangos'''
+
+[strings."ch.micro.approved-after-today"]
+hash = "dc0e40316c30"
+cy = '''Mae’r dyddiad cymeradwyo, {date}, ar ôl heddiw. Nodwch y dyddiad y cymeradwyodd y cyfarwyddwyr y cyfrifon.'''
+
+[strings."ch.revision.refuse-not-found"]
+hash = "c9084b1613da"
+cy = '''Nid yw’r dderbynneb y mae’r cyfrifon diwygiedig hyn yn ei henwi yn eich cyfrif.'''
+
+[strings."ch.revision.refuse-other-company"]
+hash = "14ab6f0171e1"
+cy = '''Mae’r dderbynneb y mae’r cyfrifon diwygiedig hyn yn ei henwi ar gyfer cwmni arall.'''
+
+[strings."ch.record.original-accounts"]
+hash = "33b61b131e36"
+cy = '''Gweld y cyfrifon gwreiddiol y mae’r rhain yn eu diwygio'''
+
+[strings."ch.revision.status-production-label"]
+hash = "b234a63f0120"
+cy = '''Statws: cynhyrchu (production).'''
+
+[strings."ch.revision.status-production"]
+hash = "045fe9196c93"
+cy = '''Mae’r cyfrifon diwygiedig rydych yn eu ffeilio yma yn cyrraedd cofrestr fyw Tŷ’r Cwmnïau.'''
+
+[strings."ch.revision.status-sandbox-label"]
+hash = "983109fd7107"
+cy = '''Statws: amgylchedd prawf (sandbox).'''
+
+[strings."ch.revision.status-sandbox"]
+hash = "8c740a5296f9"
+cy = '''Mae’r cyfrifon diwygiedig rydych yn eu ffeilio yma yn mynd i wasanaeth prawf Tŷ’r Cwmnïau ac nid ydynt yn ffeilio dim byd go iawn.'''
+
+[strings."ch.revision.status-preview-label"]
+hash = "d0e4c4e65b88"
+cy = '''Statws: rhagolwg (preview).'''
+
+[strings."ch.revision.status-preview"]
+hash = "45eaea3fb634"
+cy = '''Rhagolwg yw cyfrifon diwygiedig yma: nid oes dim rydych yn ei ffeilio yn cyrraedd cofrestr fyw Tŷ’r Cwmnïau.'''

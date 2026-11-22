@@ -68,6 +68,22 @@ vi.mock("@app/services/hmrcTransactionEngine.js", async (importOriginal) => ({
   postToTransactionEngine: (...args) => mockPostToTransactionEngine(...args),
 }));
 
+let revisedActivityOverride;
+vi.mock("@app/services/productCatalog.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    loadCatalogFromRoot: (...args) => {
+      const catalog = actual.loadCatalogFromRoot(...args);
+      if (!revisedActivityOverride) return catalog;
+      const activities = catalog.activities.map((activity) =>
+        activity.id === "file-revised-accounts" ? { ...activity, ...revisedActivityOverride } : activity,
+      );
+      return { ...catalog, activities };
+    },
+  };
+});
+
 import { ingestHandler as hmrcCtReturnPreviewPostHandler } from "@app/functions/hmrc/hmrcCtReturnPreviewPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -93,6 +109,7 @@ describe("hmrcCtReturnPreviewPost ingestHandler", () => {
   beforeEach(() => {
     Object.assign(process.env, setupTestEnv({ ENVIRONMENT_NAME: "test" }));
     vi.clearAllMocks();
+    revisedActivityOverride = undefined;
     mockEventBridgeSend.mockResolvedValue({});
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
@@ -101,6 +118,14 @@ describe("hmrcCtReturnPreviewPost ingestHandler", () => {
       }
       return {};
     });
+  });
+
+  test("refuses a preview whose accounts carry a revision where revised accounts are not offered", async () => {
+    revisedActivityOverride = { environments: ["prod"] };
+    const revision = { originalDateOfApproval: "2026-01-10", nonCompliance: "A", amendments: "B" };
+    const response = await hmrcCtReturnPreviewPostHandler(buildEvent({ body: { ...baseBody, revision } }));
+    expect(response.statusCode).toBe(403);
+    expect(parseResponseBody(response)).toMatchObject({ code: "ACTIVITY_ENVIRONMENT_RESTRICTED", activityId: "file-revised-accounts" });
   });
 
   test("returns the CT600, the computations and the accounts without calling HMRC or needing credentials", async () => {

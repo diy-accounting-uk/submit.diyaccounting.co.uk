@@ -68,6 +68,13 @@ async function openFormView(page) {
       body: fs.readFileSync(path.join(PUBLIC_DIR, "lib/balance-sheet-check.js"), "utf-8"),
     }),
   );
+  await page.route("**/lib/approval-date-check.js", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: fs.readFileSync(path.join(PUBLIC_DIR, "lib/approval-date-check.js"), "utf-8"),
+    }),
+  );
   const html = fs.readFileSync(path.join(PUBLIC_DIR, PAGE_PATH), "utf-8");
   await page.route(url, (route) => route.fulfill({ status: 200, contentType: "text/html", body: html }));
   await page.goto(url, { waitUntil: "domcontentloaded" });
@@ -120,6 +127,18 @@ test.describe("File micro-entity accounts page - the balance sheet adds up", () 
     await fillForm(page, { ...CONSISTENT_YEARS, current: { ...CONSISTENT_YEARS.current, profitAndLossAccount: 3800 } });
     await page.click("#previewBtn");
     await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("for the current year");
+    expect(await page.evaluate(() => window.rendered.length)).toBe(0);
+  });
+
+  test("refuses a date approved after today, with the date in the sentence, and renders nothing", async ({ page }) => {
+    await openFormView(page);
+    await fillForm(page, CONSISTENT_YEARS);
+    const tomorrow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    await page.fill("#directorDateApproved", tomorrow);
+    await page.click("#previewBtn");
+    await expect(page.locator(".error-summary")).toContainText(
+      `The date approved, ${tomorrow}, is after today. Enter the date the directors approved the accounts.`,
+    );
     expect(await page.evaluate(() => window.rendered.length)).toBe(0);
   });
 
