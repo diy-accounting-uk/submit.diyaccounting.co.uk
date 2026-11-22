@@ -659,7 +659,7 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       mockGetCompanyProfile.mockRejectedValue(new Error("Missing required environment variable COMPANIES_HOUSE_BASE_URI"));
       const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ documentLanguage: "cy" }) }));
       expect(response.statusCode).toBe(502);
-      expect(parseResponseBody(response)).toMatchObject({ reason: "welsh-company-not-read" });
+      expect(parseResponseBody(response)).toMatchObject({ reason: "company-profile-not-read" });
       expect(response.body).not.toContain("COMPANIES_HOUSE_BASE_URI");
       expect(mockPostToGateway).not.toHaveBeenCalled();
     });
@@ -686,6 +686,29 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ documentLanguage: "cy" }) }));
       expect(response.statusCode).toBe(400);
       expect(JSON.stringify(parseResponseBody(response))).toContain('jurisdiction as \\"unknown\\"');
+    });
+
+    test("a filing with no registered office reads the profile within the limits: none during the stop, and nothing sent", async () => {
+      mockStopValue.mockResolvedValue({ until: Date.now() + 60_000 });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ registeredOffice: undefined }) }));
+      expect(response.statusCode).toBe(429);
+      expect(mockGetCompanyProfile).not.toHaveBeenCalled();
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("a Welsh filing with no registered office reads the profile once, for the office and the jurisdiction", async () => {
+      mockGetCompanyProfile.mockResolvedValue({
+        profile: {
+          jurisdiction: "wales",
+          registeredOffice: { addressLine1: "1 Stryd y Castell", cityOrTown: "Caerdydd", postalCode: "CF10 1AA" },
+        },
+      });
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({ body: buildAccountsBody({ documentLanguage: "cy", registeredOffice: undefined }) }),
+      );
+      expect(response.statusCode).toBe(201);
+      expect(mockGetCompanyProfile).toHaveBeenCalledTimes(1);
+      expect(mockBuildMicroEntityAccounts.mock.calls[0][0].registeredOffice).toMatchObject({ addressLine1: "1 Stryd y Castell" });
     });
 
     test("English accounts read no profile and send no Language", async () => {

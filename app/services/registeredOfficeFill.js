@@ -14,12 +14,14 @@ const logger = createLogger({ source: "app/services/registeredOfficeFill.js" });
  * Set accounts.registeredOffice from the company profile when the request left it out.
  * @param {{companyNumber: string, registeredOffice?: object}} accounts - changed in place
  * @param {string[]} errorMessages - receives "Missing registeredOffice" when the profile has none
+ * @param {{readProfile?: () => Promise<{profile: object|null}>}} [options] - the profile read to use, for a
+ *   route that has read it already; without it the profile is read here
  */
-export async function fillRegisteredOffice(accounts, errorMessages) {
+export async function fillRegisteredOffice(accounts, errorMessages, { readProfile } = {}) {
   if (accounts.registeredOffice?.addressLine1) return;
   let office;
   try {
-    const { profile } = await getCompanyProfile(accounts.companyNumber);
+    const { profile } = await (readProfile ? readProfile() : getCompanyProfile(accounts.companyNumber));
     office = profile?.registeredOffice;
   } catch (error) {
     logger.warn({ message: "Company profile lookup for the registered office failed", error: error.message });

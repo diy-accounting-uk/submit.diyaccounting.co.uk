@@ -484,10 +484,11 @@ async function recordSubmissionFailure({ failure, summary, userSub, detail = {},
   });
 }
 
-// Welsh accounts are a Welsh company's: the register's profile gives the company's jurisdiction.
-// Answers the JSON error of a profile read that was refused, failed or could not be made, and
-// otherwise adds to errorMessages when the company is not a Welsh one.
-async function checkWelshAccountsCompany({ request, responseHeaders, userSub, companyNumber, errorMessages }) {
+// The register's profile gives the registered office a request leaves out and the jurisdiction Welsh
+// accounts need. A filing reads it once, as one of the limited lookups. Answers {failure} with the
+// JSON error of a read that was refused, failed or could not be made, and otherwise {profile}, which
+// is null for a company the register does not hold.
+async function readFilingProfile({ request, responseHeaders, userSub, companyNumber }) {
   const { answer, failure } = await limitedLookup({
     request,
     headers: responseHeaders,
@@ -495,17 +496,16 @@ async function checkWelshAccountsCompany({ request, responseHeaders, userSub, co
     calls: LOOKUP_CALLS.profile,
     read: () => getCompanyProfile(companyNumber),
     notRead: {
-      message: "The Companies House register could not be read, so the Welsh accounts were not filed. Try again later.",
-      reason: "welsh-company-not-read",
+      message: "The Companies House register could not be read, so the accounts were not filed. Try again later.",
+      reason: "company-profile-not-read",
     },
   });
-  if (failure) return failure;
-  // No company is a company with no jurisdiction; any other failed read is its own JSON error.
+  if (failure) return { failure };
+  // No company is a company with no profile; any other failed read is its own JSON error.
   if (!answer.profile && answer.chResponse && answer.chResponse.status !== 404) {
-    return lookupFailureResponse(request, answer.chResponse, responseHeaders);
+    return { failure: await lookupFailureResponse(request, answer.chResponse, responseHeaders) };
   }
-  checkWelshCompany(answer.profile?.jurisdiction, errorMessages);
-  return undefined;
+  return { profile: answer.profile ?? null };
 }
 
 async function refuseClientNotAuthorised({ request, responseHeaders, userSub, clientId }) {
@@ -587,16 +587,11 @@ export async function ingestHandler(event) {
   if (clientId) {
     accounts.companyNumber = client.identifiers?.companyNumber;
   }
-  await fillRegisteredOffice(accounts, errorMessages);
-  if (accounts.documentLanguage === "cy") {
-    const notRead = await checkWelshAccountsCompany({
-      request,
-      responseHeaders,
-      userSub,
-      companyNumber: accounts.companyNumber,
-      errorMessages,
-    });
-    if (notRead) return notRead;
+  if (!accounts.registeredOffice?.addressLine1 || accounts.documentLanguage === "cy") {
+    const read = await readFilingProfile({ request, responseHeaders, userSub, companyNumber: accounts.companyNumber });
+    if (read.failure) return read.failure;
+    await fillRegisteredOffice(accounts, errorMessages, { readProfile: async () => ({ profile: read.profile }) });
+    if (accounts.documentLanguage === "cy") checkWelshCompany(read.profile?.jurisdiction, errorMessages);
   }
   // Revised accounts that name the receipt of the accounts they revise are checked against it, under
   // the signed-in user's own receipts, by the rules the page applies.
