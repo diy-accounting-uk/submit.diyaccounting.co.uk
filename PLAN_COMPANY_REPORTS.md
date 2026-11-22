@@ -5,7 +5,7 @@
 
 A signed-in reader opens a company on the lookup and reads six plain reports built from the company's own public filings. Each report states figures, dates and changes, names the filing each one comes from, and defines each figure in one sentence. No report gives an opinion. Submit reads Companies House as a good citizen: inside the published rate limit, with a cache for each kind of answer, one request at a time for a company, and a stop on a 429. Facts checked 2026-11-22.
 
-**Status**: first draft (board row CR1). Tasks CR2 to CR14 and OCR1 are in section 6. Nothing is built until the review loop ends and the operator says go.
+**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. Tasks CR2 to CR9, CR13, OCR1 and CR14 are boarded on `NEXT.md`; CR10 to CR12 are not built until a report needs them (section 8). Briefs are section 6.2.
 
 ## Operator assertions (verbatim)
 
@@ -13,7 +13,7 @@ A signed-in reader opens a company on the lookup and reads six plain reports bui
 
 > Being a good citizen of the Companies House API: read its published rate limit and terms of use and state them with their source; a cache for each kind of answer with its lifetime; one request at a time per company and a back-off on 429; bulk products in place of per-company calls where a report reads many companies; the streaming API for change where a report watches a company; the attribution and licence wording Companies House asks for (Open Government Licence); and no personal data kept beyond what the page shows (a director's date of birth is month and year only on the public record).
 
-(Board row CR1, source: operator, 2026-11-21.)
+(Source: operator, 2026-11-21.)
 
 ## Goals
 
@@ -196,12 +196,12 @@ One DynamoDB table, `{env}-env-companies-house-cache`, on demand, with TTL on `t
 
 ### 3.4 Bulk products and the streaming API
 
-- **Bulk.** The six reports read one company, so they call the API. A report that reads many companies (WL1's watch list with figures, DUE1's list) reads the Accounts Data Product in place of the Document API: a daily job takes the morning's zip, maps each file with `mapIxbrlAccounts`, and writes the figures into the cache table under `figures-bulk#<period end>` in the company's partition. A bulk file names the company number and the period end and no transaction id, so a report over many companies reads these entries by company number and period end; CR9 keeps its own entries by transaction id. CR10 builds it after operator decision D4. The Company Data Product (monthly) is not needed by these reports, because the profile is one call and cached.
-- **Streaming.** A report that watches a company (WL1, DUE1's alerts) needs to know when the company changes. The streaming API's filing history stream, read with a streaming key, tells Submit when a watched company files; the consumer then deletes that company's cache entries so the next view reads fresh data. CR11 and CR12 build it after operator decision D3. Until then, the lifetimes in 3.2 bound how stale a report can be, and the page shows when it was read.
+- **Bulk.** The six reports read one company, so they call the API. A report that reads many companies (WL1's watch list with figures, the due list) reads the Accounts Data Product in place of the Document API: a daily job takes the morning's zip, maps each file with `mapIxbrlAccounts`, and writes the figures into the cache table under `figures-bulk#<period end>` in the company's partition. A bulk file names the company number and the period end and no transaction id, so a report over many companies reads these entries by company number and period end; CR9 keeps its own entries by transaction id. CR10 is the design for a report that reads many companies; no report in this plan does (decision D4). The Company Data Product (monthly) is not needed by these reports, because the profile is one call and cached.
+- **Streaming.** A report that watches a company (WL1, the due list's alerts) needs to know when the company changes. The streaming API's filing history stream, read with a streaming key, tells Submit when a watched company files; the consumer then deletes that company's cache entries so the next view reads fresh data. CR11 and CR12 are the design for a watching report; WL1 and the due list read the filing history on a schedule instead (decision D3). The lifetimes in 3.2 bound how stale a report can be, and the page shows when it was read.
 
 ### 3.5 Attribution
 
-Every report page ends with one line, keyed `ch.reports.source`: "Source: the Companies House register, read at <time>. Companies House does not check the information companies send it." The wording of the licence line is decision D5.
+Every report page ends with one line, keyed `ch.reports.source`: "Source: the Companies House register, read at <time>. Companies House does not check the information companies send it." The wording of the licence line is decision D5: the source sentence stands without a licence statement until OCR1's answer, then carries that answer.
 
 ### 3.6 Personal data
 
@@ -215,13 +215,13 @@ Every report page ends with one line, keyed `ch.reports.source`: "Source: the Co
 
 - `cachedCompaniesHouseGet(companyNumber, endpoint, queryParams, { kind })`: reads the cache, else calls `companiesHouseHttpGet`, trims with the trim of `kind`, writes the cache with the lifetime of `kind`, and returns `{ data, readAt, fromCache }`. Under the 429 stop it reads the cache only.
 - `cachedCompaniesHouseGetAllPages(companyNumber, endpoint, queryParams, { kind, maxPages })`: pages with `start_index` and `items_per_page` (N1) up to `maxPages` (default 10), one page after another.
-- `cachedAccountsFigures(companyNumber, filingItem)`: the figure cache by transaction id, filled through AA23's Document API client functions and `mapIxbrlAccounts` (CR9 adds the fill; CR2 adds the cache kind).
+- `cachedAccountsFigures(companyNumber, filingItem, { firstAccounts })`: the figure cache by transaction id, filled through AA23's Document API client functions and `mapIxbrlAccounts` with `expect.regime` `"any"` and the `firstAccounts` the caller gives (CR9 adds the fill; CR2 adds the cache kind). The caller sets `firstAccounts` when the filing is the oldest accounts filing in the filing history, so one filing maps the same whichever report fills its entry. Under the 429 stop it reads the cache only, and a 429 from the Document API writes the stop.
 - `invalidateCompany(companyNumber)`: queries the company's partition and deletes its entries except the figures (CR12 calls it).
 - The route `GET /api/v1/companies-house/company/{companyNumber}/reports/{report}` is one Lambda, `app/functions/companies-house/companiesHouseCompanyReportGet.js`, with `enforceBundles` as the officers route does (`companiesHouseOfficersGet.js:66-71`). One Lambda for all six reports keeps the stack's resource count low (CL1 names the total against CloudFormation's 500).
 
 ## 5. Who sees the reports, and the pages
 
-- **Activity.** A new activity `company-reports` beside `company-lookup` in `web/public/submit.catalogue.toml`: `bundles = ["default"]`, `display = "on-entitlement"`, `metered = false`, the paths `^/api/v1/companies-house/company/[^/]+/reports/[^/]+$` and the page. Its `environments` list every environment except `prod` until CR14 adds `prod`. The bundle is decision D1.
+- **Activity.** A new activity `company-reports` beside `company-lookup` in `web/public/submit.catalogue.toml`: `bundles = ["default"]`, `display = "on-entitlement"`, `metered = false`, the paths `^/api/v1/companies-house/company/[^/]+/reports/[^/]+$` and the page. Its `environments` list every environment except `prod` until CR14 adds `prod`. The bundle is `default` (decision D1).
 - **Page.** The reports are views of CL1's drill-down page (`companySearch.html` and its script, or the file CL1 names), at `/companies-house/company/<CRN>/reports` and `/reports/<filings|people|capital|charges|history|accounts>`. The page reads the path on load and uses `history.pushState`, as CL1 specifies. The reports index links from the profile view. Without the activity, the index names the bundle that has it.
 - **Each view** shows the report's rows, the definitions under a "What these words mean" list, the read time, the source line, and the partial and rate-limit states.
 
@@ -241,14 +241,11 @@ Every report page ends with one line, keyed `ch.reports.source`: "Source: the Co
 | CR7 | Charges and insolvency | CR3 | machine-only | Sonnet | ~6 files |
 | CR8 | Registered office and name history | CR4 | machine-only | Sonnet | ~5 files |
 | CR9 | Accounts figures year on year | CR3, CL2 | machine-only | Sonnet | ~9 files |
-| CR10 | Figures from the Accounts Data Product | D4, CR9 | machine-ask | Sonnet | ~10 files |
-| CR11 | A streaming API key | D3 | human-driven | operator | 0 files |
-| CR12 | The filing history stream clears the cache | CR11, CR2 | machine-only | Sonnet | ~10 files |
 | CR13 | Draft the licence question to Companies House | nothing | machine-only | Opus | 1 file |
 | OCR1 | Ask Companies House the licence question | CR13 | human-driven | operator | 0 files |
-| CR14 | Copy, privacy line, guide and launch on prod | CR4 to CR9, D5 | machine-only | Sonnet | ~8 files |
+| CR14 | Copy, privacy line, guide and launch on prod | CR4 to CR9 | machine-only | Sonnet | ~8 files |
 
-CR4, CR5, CR7 and CR9 can run in parallel after CR3; they share `i18n/cy.toml` and the page script, so they land one after the other and the later one rebuilds the Welsh text. CR2 adds an activity, so it lands after AA3, CL1, WL1 and CP1 in the catalogue order of `NEXT.md`.
+CR4, CR5, CR7 and CR9 can run in parallel after CR3; they share `i18n/cy.toml` and the page script, so they land one after the other and the later one rebuilds the Welsh text. CR10 to CR12 (the Accounts Data Product, the streaming key and the stream that clears the cache) are briefed below and are not tasks until a report needs them (D3, D4). CR2 adds an activity, so it lands after AA3, CL1, WL1 and CP1 in the catalogue order of `NEXT.md`.
 
 ### 6.2 Briefs
 
@@ -284,7 +281,7 @@ CR4, CR5, CR7 and CR9 can run in parallel after CR3; they share `i18n/cy.toml` a
 #### CR6. Share capital
 
 - **Goal.** Report 2.3, at `/reports/capital`, using what CR2's first step recorded for N4.
-- **Files.** `app/lib/companyReports/capital.js`, which calls the layer for the filing history and the PSC (the entries CR4 and CR5 also read) and calls `cachedAccountsFigures` for the last accounts filing; unit tests (an allotment with a capital figure, one without, a sole 75%-or-more PSC, no capital filings); simulator capital filings; the view, with the horizon sentence and the confirmation statement links; Welsh strings; the browser test.
+- **Files.** `app/lib/companyReports/capital.js`, which calls the layer for the filing history and the PSC (the entries CR4 and CR5 also read) and calls `cachedAccountsFigures` for the last accounts filing, with `firstAccounts` set by the rule in section 4; unit tests (an allotment with a capital figure, one without, a sole 75%-or-more PSC, no capital filings); simulator capital filings; the view, with the horizon sentence and the confirmation statement links; Welsh strings; the browser test.
 - **Waits on**: CR4, CR5, CR9. **Class**: machine-only. **Model**: Sonnet. **Size**: ~5 files.
 
 #### CR7. Charges and insolvency
@@ -302,7 +299,7 @@ CR4, CR5, CR7 and CR9 can run in parallel after CR3; they share `i18n/cy.toml` a
 #### CR9. Accounts figures year on year
 
 - **Goal.** Report 2.6, at `/reports/accounts`, and the figure cache fill.
-- **Files.** `app/lib/companyReports/accounts.js` and the fill of `cachedAccountsFigures` through AA23's Document API client functions (metadata, then content as `application/xhtml+xml`); unit tests on Submit's own fixtures (`app/test-helpers/accountsDocumentCases.js`) and on the three real micro-entity and small company documents that CL2 adds (if CL2 has not added them, fetch three and save them as fixtures); cases: a paper filing, a micro-entity with no profit and loss, a filleted small company, a dormant company, an `IxbrlError`, first accounts, a zero earlier figure (no percentage), the figure cache holds no `directors` or `signer`; the simulator serves two iXBRL filings and one PDF-only filing (AA23's scenarios); the view; Welsh strings; the browser test.
+- **Files.** `app/lib/companyReports/accounts.js` and the fill of `cachedAccountsFigures` through AA23's Document API client functions (metadata, then content as `application/xhtml+xml`); unit tests on Submit's own fixtures (`app/test-helpers/accountsDocumentCases.js`) and on the three real micro-entity and small company documents that CL2 adds (if CL2 has not added them, fetch three and save them as fixtures); cases: a paper filing, a micro-entity with no profit and loss, a filleted small company, a dormant company, an `IxbrlError`, first accounts, a zero earlier figure (no percentage), the figure cache holds no `directors` or `signer`, a 429 from the Document API writes the stop; the simulator serves two iXBRL filings and one PDF-only filing (AA23's scenarios); the view; Welsh strings; the browser test.
 - **Waits on**: CR3, CL2. **Class**: machine-only. **Model**: Sonnet. **Size**: ~9 files.
 
 #### CR10. Figures from the Accounts Data Product
@@ -311,13 +308,13 @@ CR4, CR5, CR7 and CR9 can run in parallel after CR3; they share `i18n/cy.toml` a
 - **First step.** Settle N7.
 - **Design.** An EventBridge schedule at 08:00 UK time Tuesday to Saturday starts a Lambda that streams the day's zip from `https://download.companieshouse.gov.uk/`, maps each iXBRL file with `mapIxbrlAccounts`, and writes the figures under `figures-bulk#<period end>` in the company's partition (section 3.2), trimmed by the figure kind's trim (no `directors` or `signer`; a unit test asserts it). Files the mapping refuses are counted, never guessed. The zip is not kept.
 - **Cost.** About £1 a month (a daily Lambda run of up to 15 minutes at 3 GB, and DynamoDB writes for each new filing on the register); not measured. The run time against Lambda's 15-minute limit is measured on ci first; if a day's file does not fit, the task stops and reports.
-- **Waits on**: D4, CR9. **Class**: machine-ask. **Model**: Sonnet. **Size**: ~10 files.
+- **Waits on**: a report that reads many companies (D4), CR9. **Class**: machine-ask. **Model**: Sonnet. **Size**: ~10 files.
 
 #### CR11. A streaming API key
 
 - **Goal.** A streaming key for ci and one for prod, in Secrets Manager through the GitHub secret path.
 - **Steps (the operator's).** 1. Open https://developer.company-information.service.gov.uk/manage-applications and sign in. 2. Create an application of type Streaming API for each environment. 3. Set each key as a GitHub environment secret from a terminal, with the name CR12 gives (`gh secret set COMPANIES_HOUSE_STREAM_KEY --env ci`, then `--env prod`).
-- **Waits on**: D3. **Class**: human-driven. **Size**: 0 files.
+- **Waits on**: a watching report that needs the stream (D3). **Class**: human-driven. **Size**: 0 files.
 
 #### CR12. The filing history stream clears the cache
 
@@ -335,27 +332,29 @@ CR4, CR5, CR7 and CR9 can run in parallel after CR3; they share `i18n/cy.toml` a
 
 #### OCR1. Ask Companies House the licence question
 
-- **Goal.** The operator posts or sends CR13's draft, and pastes the answer into the same folder; a session then records it in section 1.3 and, if it changes D5, in the source line.
+- **Goal.** The operator posts or sends CR13's draft, and pastes the answer into the same folder; a session then records it in section 1.3 and in the source line (D5).
 - **Waits on**: CR13. **Class**: human-driven.
 
 #### CR14. Copy, privacy line, guide and launch on prod
 
 - **Goal.** The reports on prod, with their copy and proof.
 - **Files.** `prod` on `company-reports`; the privacy line (section 3.6) in `web/public/privacy.html`; an FAQ entry; the capability entry in `REPORT_CAPABILITIES.md` (the `capabilities` skill); the guide screenshots (`npm run video:walkthrough`) for the reports journey; `visual-review` and `ui-ux-pro-max` on them.
-- **Waits on**: CR4, CR5, CR6, CR7, CR8, CR9, D5. **Class**: machine-only. **Model**: Sonnet. **Size**: ~8 files.
+- **Waits on**: CR4, CR5, CR6, CR7, CR8, CR9. **Class**: machine-only. **Model**: Sonnet. **Size**: ~8 files.
 
 ## 7. Costs
 
 - Companies House: the public data API, the Document API, the streaming API and the bulk products are free (sections 1.2 and 3.4).
 - The cache table: on demand, about £1 a month or less at 10,000 report views a month; not measured.
-- CR10: about £1 a month. CR12: about £5 a month. Both only after their decisions.
+- CR10 would cost about £1 a month and CR12 about £5 a month, when a report needs them.
 
-## 8. Operator decisions
+## 8. Decisions
 
-| # | Decision | Alternatives | Recommendation |
-| --- | --- | --- | --- |
-| D1 | Who sees the reports | (a) the `default` bundle, every signed-in account, as the lookup; (b) a paid bundle such as `resident-ltd`; (c) public with no sign-in, behind a WAF rule like the deadlines route | (a): the lookup is in `default`, and the calls are bounded by the cache |
-| D2 | Where answers are cached | (a) the DynamoDB cache of trimmed answers (section 3.2); (b) no server store, a per-browser cache in `sessionStorage` only, which costs more Companies House calls and matches `PLAN_AMENDED_ACCOUNTS.md`'s rule that no server stores register data for a book | (a): one cache serves every reader and keeps Submit inside the limit |
-| D3 | The streaming API | (a) defer CR11 and CR12 to DUE1's alerts and WL1, and rely on the lifetimes in 3.2; (b) build CR11 and CR12 now, about £5 a month | (a): the six reports read one company on demand |
-| D4 | The Accounts Data Product | (a) defer CR10 until a report reads figures for many companies (WL1, DUE1); (b) build CR10 now, about £1 a month | (a): no report in this plan reads many companies |
-| D5 | The source and licence line | (a) "Source: the Companies House register, read at <time>. Companies House does not check the information companies send it."; (b) (a) plus "Contains public sector information licensed under the Open Government Licence v3.0."; (c) (a) until OCR1's answer, then that answer | (c): the GOV.UK page states the OGL, a 2014 Companies House answer says the register is not under it, and the OGL excludes personal data |
+Operator, 2026-11-22.
+
+| # | Decision | Design |
+| --- | --- | --- |
+| D1 | Who sees the reports | The `default` bundle, every signed-in account, as the lookup. The cache bounds the calls. |
+| D2 | Where answers are cached | The DynamoDB cache of trimmed answers (section 3.2). One cache serves every reader and keeps Submit inside the limit. |
+| D3 | The streaming API | CR11 and CR12 wait until a report watches a company on demand; the six reports read one company, and the lifetimes in 3.2 bound their staleness. |
+| D4 | The Accounts Data Product | CR10 waits until a report reads figures for many companies; no report in this plan does. |
+| D5 | The source and licence line | The source sentence of section 3.5 without a licence statement until OCR1's answer, then that answer. |

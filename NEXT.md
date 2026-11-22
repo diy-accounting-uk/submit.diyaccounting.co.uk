@@ -137,7 +137,7 @@ Facts the Companies House form rows OFF1 to LOC1 share (from CL5's walk of the d
 
 - [ ] **DUE3. The due list table.** Brief: `PLAN_DUE_LIST.md` section 9.2, DUE3 (the deliverable and its proof are in its section 9.2 brief). **Source**: `PLAN_DUE_LIST.md` DUE3 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files. **Repository**: submit.
 
-- [ ] **CR1. Board the company reports plan's tasks.** `PLAN_COMPANY_REPORTS_v4.md` is the plan after three review rounds. Round 3 still changed scope: the two reports that read one filing map it by one rule (the oldest accounts filing is first accounts), and a 429 from the Document API sets the stop. The operator accepted v4 on 2026-11-22 with every decision as recommended: D1 (a) the `default` bundle; D2 (a) the DynamoDB cache; D3 (a) the streaming API deferred; D4 (a) the Accounts Data Product deferred; D5 (c) the source line without the Open Government Licence until OCR1's answer (section 8 holds them). Then a session renames the plan `PLAN_COMPANY_REPORTS.md`, deletes the earlier versions and boards its tasks (CR2 to CR14, OCR1). **Source**: operator, 2026-11-21. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 2 files. **Repository**: submit. **Wave set**: zeppelin beside.
+- [ ] **CR13. Draft the licence question to Companies House.** Brief: `PLAN_COMPANY_REPORTS.md` section 6.2, CR13 (the deliverable and its proof are in its section 6.2 brief). **Source**: `PLAN_COMPANY_REPORTS.md` CR13 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Opus. **Size**: 1 file. **Repository**: private.
 
 - [ ] **WDM1. Board the watch list and due list campaign's tasks.** `PLAN_WATCH_DUE_CAMPAIGN_v4.md` is the plan after three review rounds. Round 3 still changed scope: the funnel's account rows count only visitors who accept the cookie banner (about 13% of visits), so each stop rule reads landings, or an account row against a limit set from its own first reading. The operator accepted v4 on 2026-11-22 with both decisions as recommended: D1 (a) no paid search; D2 (b) a partner pass that grants Resident Ltd for a year, up to 500 redemptions for each partner (section 7 holds them). Then a session renames the plan `PLAN_WATCH_DUE_CAMPAIGN.md`, deletes the earlier versions and boards its tasks (WDM2 to WDM18). **Source**: operator, 2026-11-22. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 2 files. **Repository**: submit. **Wave set**: zeppelin beside.
 
@@ -252,6 +252,26 @@ Facts the Companies House form rows OFF1 to LOC1 share (from CL5's walk of the d
 - [ ] **ODUE2. Try the due list on ci.** Brief: `PLAN_DUE_LIST.md` section 9.2, ODUE2 (the deliverable and its proof are in its section 9.2 brief). Blocked on DUE13 deployed to ci. **Source**: `PLAN_DUE_LIST.md` ODUE2 (operator, 2026-11-22). **Owner**: Operator. **Model**: none. **Size**: 0 files. **Repository**: none.
 
 - [ ] **DUE14. Launch on prod.** Brief: `PLAN_DUE_LIST.md` section 9.2, DUE14 (the deliverable and its proof are in its section 9.2 brief). Blocked on ODUE2. **Source**: `PLAN_DUE_LIST.md` DUE14 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Haiku. **Size**: ~5 files. **Repository**: submit.
+
+- [ ] **CR2. The fetch and cache layer, the cache table and the report route.** Brief: `PLAN_COMPANY_REPORTS.md` section 6.2, CR2 (the deliverable and its proof are in its section 6.2 brief). Blocked on the wave set zeppelin on `main` (CL1's routes, WL1's catalogue order). **Source**: `PLAN_COMPANY_REPORTS.md` CR2 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~16 files. **Repository**: submit.
+
+- [ ] **CR3. The reports views on the drill-down page.** Brief: `PLAN_COMPANY_REPORTS.md` section 6.2, CR3 (the deliverable and its proof are in its section 6.2 brief). Blocked on CR2 and the wave set zeppelin on `main` (CL1's page). **Source**: `PLAN_COMPANY_REPORTS.md` CR3 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files. **Repository**: submit.
+
+- [ ] **CR4. Filing record and timeliness.** Brief: `PLAN_COMPANY_REPORTS.md` section 6.2, CR4 (the deliverable and its proof are in its section 6.2 brief). Blocked on CR3. **Source**: `PLAN_COMPANY_REPORTS.md` CR4 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files. **Repository**: submit.
+
+- [ ] **CR5. People over time.** Brief: `PLAN_COMPANY_REPORTS.md` section 6.2, CR5 (the deliverable and its proof are in its section 6.2 brief). Blocked on CR3. **Source**: `PLAN_COMPANY_REPORTS.md` CR5 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files. **Repository**: submit.
+
+- [ ] **CR6. Share capital.** Brief: `PLAN_COMPANY_REPORTS.md` section 6.2, CR6 (the deliverable and its proof are in its section 6.2 brief). Blocked on CR4, CR5 and CR9. **Source**: `PLAN_COMPANY_REPORTS.md` CR6 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files. **Repository**: submit.
+
+- [ ] **CR7. Charges and insolvency.** Brief: `PLAN_COMPANY_REPORTS.md` section 6.2, CR7 (the deliverable and its proof are in its section 6.2 brief). Blocked on CR3. **Source**: `PLAN_COMPANY_REPORTS.md` CR7 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files. **Repository**: submit.
+
+- [ ] **CR8. Registered office and name history.** Brief: `PLAN_COMPANY_REPORTS.md` section 6.2, CR8 (the deliverable and its proof are in its section 6.2 brief). Blocked on CR4. **Source**: `PLAN_COMPANY_REPORTS.md` CR8 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files. **Repository**: submit.
+
+- [ ] **CR9. Accounts figures year on year.** Brief: `PLAN_COMPANY_REPORTS.md` section 6.2, CR9 (the deliverable and its proof are in its section 6.2 brief). Blocked on CR3 and the wave set zeppelin on `main` (CL2). **Source**: `PLAN_COMPANY_REPORTS.md` CR9 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~9 files. **Repository**: submit.
+
+- [ ] **OCR1. Ask Companies House the licence question.** Brief: `PLAN_COMPANY_REPORTS.md` section 6.2, OCR1 (the deliverable and its proof are in its section 6.2 brief). Blocked on CR13. **Source**: `PLAN_COMPANY_REPORTS.md` OCR1 (operator, 2026-11-22). **Owner**: Operator. **Model**: none. **Size**: 0 files. **Repository**: none.
+
+- [ ] **CR14. Copy, privacy line, guide and launch on prod.** Brief: `PLAN_COMPANY_REPORTS.md` section 6.2, CR14 (the deliverable and its proof are in its section 6.2 brief). Blocked on CR4, CR5, CR6, CR7, CR8 and CR9. **Source**: `PLAN_COMPANY_REPORTS.md` CR14 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files. **Repository**: submit.
 
 ## Discipline
 

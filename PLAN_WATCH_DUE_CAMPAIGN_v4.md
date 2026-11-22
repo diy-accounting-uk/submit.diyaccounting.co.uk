@@ -41,7 +41,7 @@ From board row WDM1, operator, 2026-11-22:
 | Drill-down addresses `/companies-house/company/<CRN>` | open row CL1, wave set zeppelin W2 | `default` | `NEXT.md` CL1 |
 | Watch list | open row WL1, zeppelin W3; up to 50 companies an account | `default` | `NEXT.md` WL1 |
 | Due list | plan `PLAN_DUE_LIST.md`; launch is DUE14 | decision D2 of that plan; it recommends `default` | `PLAN_DUE_LIST.md` sections 8, 9 |
-| Company reports | plan `PLAN_COMPANY_REPORTS_v4.md`; launch is CR14 | decision D1 of that plan; it recommends `default` | `PLAN_COMPANY_REPORTS_v4.md` sections 5, 8 |
+| Company reports | plan `PLAN_COMPANY_REPORTS.md`; launch is CR14 | decision D1 of that plan; it recommends `default` | `PLAN_COMPANY_REPORTS.md` sections 5, 8 |
 | Campaign passes | open row CP1, zeppelin W4 | operator page | `NEXT.md` CP1 |
 | Marketing assets (videos, screenshots, listing packs) | open row MA1, blocked on CL1, WL1 and the due list | none | `NEXT.md` MA1 |
 | Practice bundle (Resident Tax Agent) | listed on ci only; prod waits on UH1 | `resident-tax-agent` | `submit.catalogue.toml:241`; `PLAN_ITSA_APPROVAL.md` UH1 |
@@ -267,7 +267,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 #### WDM7. The company check landing page
 
 - **Goal.** A public page `check-a-company.html` that answers "how do I check a UK company", with section 2.5's message.
-- **Page.** An `[[article]]` with a company search that opens `/companies-house/company/<CRN>/reports` (the lookup widget of `company-filing-deadlines.html`, with its target changed by a field). Sections: the six reports, one line each; where the figures come from, with the source line of `PLAN_COMPANY_REPORTS_v4.md` section 3.5 in the wording of its decision D5; "Add to watch list". A `tools_card`.
+- **Page.** An `[[article]]` with a company search that opens `/companies-house/company/<CRN>/reports` (the lookup widget of `company-filing-deadlines.html`, with its target changed by a field). Sections: the six reports, one line each; where the figures come from, with the source line of `PLAN_COMPANY_REPORTS.md` section 3.5 in the wording of its decision D5; "Add to watch list". A `tools_card`.
 - **New public page.** The five things of section 8.4. Tests as WDM5; `visual-review` on the new page.
 - **Waits on**: CR14 (the reports on prod), WDM6 (shared files). **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~7 files.
 
