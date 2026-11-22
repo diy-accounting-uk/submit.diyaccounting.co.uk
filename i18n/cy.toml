@@ -17520,3 +17520,17 @@ cy = '''y flwyddyn flaenorol'''
 [strings."ch.micro.capital-and-reserves-mismatch"]
 hash = "b95d3a1bcd14"
 cy = '''Nid yw cyfalaf a chronfeydd wrth gefn o {capital} ar gyfer {year} yn hafal i’r cyfalaf cyfranddaliadau a alwyd i fyny ynghyd â’r cyfrif elw a cholled, sy’n dod i {sum}.'''
+
+# == Company drill-down edit links and truncated lists: ids ch.drill.find-and-update, ch.drill.*-truncated and ch.edit.* ==
+
+[strings."ch.drill.find-and-update"]
+hash = "f7d46e67a54f"
+cy = '''Dod o hyd i wybodaeth am gwmnïau a’i diweddaru'''
+
+[strings."ch.drill.filing-history-truncated"]
+hash = "a4579883d1d8"
+cy = '''Mae hwn yn dangos y {shown} ffeilio diweddaraf o {total} ffeilio’r cwmni. Mae gwasanaeth Tŷ’r Cwmnïau ei hun yn dangos yr hanes llawn:'''
+
+[strings."ch.drill.accounts-truncated"]
+hash = "7eecad4d4ea8"
+cy = '''Mae hwn yn dangos y cyfrifon ymhlith ffeilio diweddaraf y cwmni. Mae gwasanaeth Tŷ’r Cwmnïau ei hun yn dangos pob set:'''

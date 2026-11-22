@@ -152,7 +152,10 @@ function json(route, status, body) {
 
 // The site from web/public with the drill-down rewrite the page router makes, and the API answered
 // from the fixtures. bundles is what /api/v1/bundle says the account holds.
-async function serveSite(page, { environmentName = "ci", bundles = [], apiRequests = [] } = {}) {
+async function serveSite(
+  page,
+  { environmentName = "ci", bundles = [], apiRequests = [], filings = FILINGS, filedAccounts = FILED_ACCOUNTS } = {},
+) {
   await page.addInitScript(() => {
     localStorage.setItem("consent.analytics", "declined");
     localStorage.setItem("cognitoIdToken", "id-token");
@@ -174,8 +177,8 @@ async function serveSite(page, { environmentName = "ci", bundles = [], apiReques
       if (company && !company[2]) return json(route, 200, PROFILE);
       if (company && company[2] === "/officers") return json(route, 200, OFFICERS);
       if (company && company[2] === "/persons-with-significant-control") return json(route, 200, PSCS);
-      if (company && company[2] === "/filing-history") return json(route, 200, FILINGS);
-      if (company && company[2] === "/filed-accounts") return json(route, 200, FILED_ACCOUNTS);
+      if (company && company[2] === "/filing-history") return json(route, 200, filings);
+      if (company && company[2] === "/filed-accounts") return json(route, 200, filedAccounts);
       if (company && company[2] === "/registered-email-address/eligibility")
         return json(route, 200, { eligibilityStatusCode: "COMPANY_VALID_FOR_SERVICE" });
       return json(route, 200, {});
@@ -385,6 +388,87 @@ test.describe("Company lookup drill-down", () => {
     await page.goto(`${BASE}/companies-house/company/00000001/accounts`, { waitUntil: "networkidle" });
     await expect(page.locator("#drillView")).toContainText("Micro entity", { timeout: 15000 });
     expect(apiRequests.some((request) => request.endsWith("/filed-accounts"))).toBe(false);
+  });
+});
+
+// A company with more filings than the routes read: the newest of them, and the total on the register.
+const TRUNCATED_FILINGS = { ...FILINGS, totalCount: 612, truncated: true };
+const OLDER_SET = {
+  transactionId: "SIMTX00000001AA2085",
+  madeUpDate: "2085-04-30",
+  filedOn: "2085-12-01",
+  accountsType: "micro-entity",
+  amended: false,
+  paperFiled: false,
+  pages: 4,
+};
+const TRUNCATED_FILED_ACCOUNTS = { ...FILED_ACCOUNTS, filedAccounts: [...FILED_ACCOUNTS.filedAccounts, OLDER_SET], truncated: true };
+
+test.describe("Company lookup drill-down past the newest filings", () => {
+  for (const width of [1280, 390]) {
+    test(`the filing history says it shows the newest filings of the total and names Companies House's service at ${width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await serveSite(page, { bundles: ["resident-ltd"], filings: TRUNCATED_FILINGS });
+      await page.goto(`${BASE}/companies-house/company/00000001/filing-history`, { waitUntil: "networkidle" });
+      const note = page.locator("#drillView .drill-truncated");
+      await expect(note).toContainText("This shows the newest 3 of the company's 612 filings.", { timeout: 15000 });
+      await expect(note.locator("a")).toHaveText("Find and update company information");
+      await expect(note.locator("a")).toHaveAttribute(
+        "href",
+        "https://find-and-update.company-information.service.gov.uk/company/00000001/filing-history",
+      );
+      const scrollsSideways = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      expect(scrollsSideways).toBe(false);
+      await shoot(page, "filing-history-truncated");
+    });
+  }
+
+  test("a whole filing history carries no note", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001/filing-history`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillView")).toContainText("Confirmation statement with no updates", { timeout: 15000 });
+    await expect(page.locator("#drillView .drill-truncated")).toHaveCount(0);
+  });
+
+  test("the accounts list says it shows the accounts among the newest filings", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"], filedAccounts: TRUNCATED_FILED_ACCOUNTS });
+    await page.goto(`${BASE}/companies-house/company/00000001/accounts`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillView .drill-truncated")).toContainText("This shows the accounts among the company's newest filings.", {
+      timeout: 15000,
+    });
+    await expect(page.locator("#drillView")).toContainText("30 April 2085");
+    await shoot(page, "accounts-truncated");
+  });
+
+  test("a set older than the newest ten whose iXBRL mark was not read is not called PDF only or not held", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"], filedAccounts: TRUNCATED_FILED_ACCOUNTS });
+    await page.goto(`${BASE}/companies-house/company/00000001/accounts/2085-04-30/SIMTX00000001AA2085`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillView")).toContainText("SIMTX00000001AA2085", { timeout: 15000 });
+    const text = await page.locator("#drillView").innerText();
+    expect(text).not.toContain("iXBRL document");
+    expect(text).not.toContain("Not held");
+    expect(text).not.toMatch(/PDF only/i);
+    await page.goto(`${BASE}/companies-house/company/00000001/accounts`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillView")).toContainText("30 April 2085", { timeout: 15000 });
+    expect(await page.locator("#drillView").innerText()).not.toMatch(/PDF only/i);
+  });
+
+  test("a set among the newest ten without an iXBRL document says Companies House does not hold one", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"], filedAccounts: TRUNCATED_FILED_ACCOUNTS });
+    await page.goto(`${BASE}/companies-house/company/00000001/accounts/2097-04-30/SIMTX00000001AA2097`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillView")).toContainText("Not held", { timeout: 15000 });
+  });
+
+  test("the Welsh filing history carries the note in Welsh", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"], filings: TRUNCATED_FILINGS });
+    await page.goto(`${BASE}/cy/companies-house/company/00000001/filing-history`, { waitUntil: "networkidle" });
+    const note = page.locator("#drillView .drill-truncated");
+    await expect(note).toBeVisible({ timeout: 15000 });
+    await expect(note).toContainText("612");
+    await expect(note).not.toContainText("This shows the newest");
+    await shoot(page, "cy-filing-history-truncated");
   });
 });
 

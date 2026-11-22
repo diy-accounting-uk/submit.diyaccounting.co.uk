@@ -175,8 +175,14 @@ const readOfficers = (companyNumber) =>
   readOnce(companyNumber, "officers", async () => ((await window.getOfficers(companyNumber)).officers || []).map(officerOf));
 const readPscs = (companyNumber) =>
   readOnce(companyNumber, "pscs", async () => ((await window.getPscs(companyNumber)).pscs || []).map(pscOf));
-const readFilingHistory = (companyNumber) =>
-  readOnce(companyNumber, "filings", async () => (await window.getFilingHistory(companyNumber)).filings || []);
+// The filing history as the route answers it: the newest filings it read, and whether the company
+// has more than those (truncated) of totalCount in all.
+const readFilingHistoryAnswer = (companyNumber) =>
+  readOnce(companyNumber, "filings", async () => {
+    const answer = await window.getFilingHistory(companyNumber);
+    return { filings: answer.filings || [], truncated: answer.truncated === true, totalCount: answer.totalCount };
+  });
+const readFilingHistory = async (companyNumber) => (await readFilingHistoryAnswer(companyNumber)).filings;
 
 // The public deadlines answer says whether the accounts are overdue, which the profile does not.
 const readDeadlines = (companyNumber) =>
@@ -203,14 +209,36 @@ function setFromFiling(filing) {
 const isAccountsFiling = (filing) => filing.type === "AA" || filing.type === "AAMD";
 const isConfirmationStatement = (filing) => filing.category === "confirmation-statement";
 
-// The sets of accounts: the filed-accounts route, which also says which sets hold an iXBRL document,
-// where the account holds its activity; otherwise the accounts items of the filing history.
-async function readAccountSets(companyNumber) {
+// The sets of accounts: the filed-accounts route, which also says which of the newest sets hold an
+// iXBRL document, where the account holds its activity; otherwise the accounts items of the filing
+// history. truncated says the company has filings older than those read.
+async function readAccountSetsAnswer(companyNumber) {
   const entitlement = await loadEntitlement();
   if (activityAccess(entitlement, "file-revised-accounts").held) {
-    return readOnce(companyNumber, "filedAccounts", async () => (await window.getFiledAccounts(companyNumber)).filedAccounts || []);
+    return readOnce(companyNumber, "filedAccounts", async () => {
+      const answer = await window.getFiledAccounts(companyNumber);
+      return { sets: answer.filedAccounts || [], truncated: answer.truncated === true };
+    });
   }
-  return (await readFilingHistory(companyNumber)).filter(isAccountsFiling).map(setFromFiling);
+  const history = await readFilingHistoryAnswer(companyNumber);
+  return { sets: history.filings.filter(isAccountsFiling).map(setFromFiling), truncated: history.truncated };
+}
+
+const readAccountSets = async (companyNumber) => (await readAccountSetsAnswer(companyNumber)).sets;
+
+const findAndUpdateUrl = (companyNumber, page) =>
+  `https://find-and-update.company-information.service.gov.uk/company/${encodeURIComponent(companyNumber)}/${page}`;
+
+// Says the list holds only the newest filings and names Companies House's own service for the rest.
+function truncatedNote(container, text, companyNumber) {
+  const note = document.createElement("p");
+  note.className = "hint drill-truncated";
+  note.textContent = text;
+  const link = document.createElement("a");
+  link.href = findAndUpdateUrl(companyNumber, "filing-history");
+  link.textContent = window.siteText("ch.drill.find-and-update", "Find and update company information");
+  note.append(" ", link);
+  container.appendChild(note);
 }
 
 // What the account may do: the catalogue, the environment, the viewer's settings and the bundles it
@@ -630,8 +658,19 @@ function filingDescription(filing) {
 
 async function renderFilingHistory(container, companyNumber) {
   sectionHeading(container, window.siteText("ch.drill.filing-history", "Filing history"));
-  const filings = await readFilingHistory(companyNumber);
+  const { filings, truncated, totalCount } = await readFilingHistoryAnswer(companyNumber);
   if (filings.length === 0) return emptyNote(container, window.siteText("ch.drill.no-filings", "The register lists no filings."));
+  if (truncated) {
+    truncatedNote(
+      container,
+      window.siteText(
+        "ch.drill.filing-history-truncated",
+        "This shows the newest {shown} of the company's {total} filings. Companies House's own service shows the full history:",
+        { shown: filings.length, total: totalCount },
+      ),
+      companyNumber,
+    );
+  }
   container.appendChild(
     table(
       [
@@ -670,9 +709,20 @@ const setHeadings = () => [
 
 async function renderAccountsList(container, companyNumber) {
   sectionHeading(container, window.siteText("ch.drill.accounts-on-register", "Accounts on the register"));
-  const sets = (await readAccountSets(companyNumber)).filter((set) => set.madeUpDate);
+  const answer = await readAccountSetsAnswer(companyNumber);
+  const sets = answer.sets.filter((set) => set.madeUpDate);
   if (sets.length === 0)
     return emptyNote(container, window.siteText("ch.drill.no-accounts", "The register lists no accounts for this company."));
+  if (answer.truncated) {
+    truncatedNote(
+      container,
+      window.siteText(
+        "ch.drill.accounts-truncated",
+        "This shows the accounts among the company's newest filings. Companies House's own service shows every set:",
+      ),
+      companyNumber,
+    );
+  }
   container.appendChild(
     table(
       setHeadings(),

@@ -952,6 +952,8 @@ window.WELSH_TEXT = {
   "ch.drill.accounts-made-up-to": "Cyfrifon wedi’u gwneud hyd at {date}",
   "ch.drill.accounts-on-register": "Cyfrifon ar y gofrestr",
   "ch.drill.accounts-overdue": "Mae’r cyfrifon yn hwyr.",
+  "ch.drill.accounts-truncated":
+    "Mae hwn yn dangos y cyfrifon ymhlith ffeilio diweddaraf y cwmni. Mae gwasanaeth Tŷ’r Cwmnïau ei hun yn dangos pob set:",
   "ch.drill.all-accounts": "Pob cyfrif ar y gofrestr",
   "ch.drill.amended": "Wedi’i ddiwygio",
   "ch.drill.change-email": "Newid y cyfeiriad e-bost cofrestredig",
@@ -980,7 +982,10 @@ window.WELSH_TEXT = {
   "ch.drill.file-micro-entity": "Ffeilio cyfrifon micro-endid",
   "ch.drill.file-small-company": "Ffeilio cyfrifon cwmni bach",
   "ch.drill.filing-history": "Hanes ffeilio",
+  "ch.drill.filing-history-truncated":
+    "Mae hwn yn dangos y {shown} ffeilio diweddaraf o {total} ffeilio’r cwmni. Mae gwasanaeth Tŷ’r Cwmnïau ei hun yn dangos yr hanes llawn:",
   "ch.drill.filing-id": "Ffeilio Tŷ’r Cwmnïau",
+  "ch.drill.find-and-update": "Dod o hyd i wybodaeth am gwmnïau a’i diweddaru",
   "ch.drill.how-filed": "Sut y’u ffeiliwyd",
   "ch.drill.ixbrl": "Dogfen iXBRL",
   "ch.drill.ixbrl-held": "Gan Dŷ’r Cwmnïau",
