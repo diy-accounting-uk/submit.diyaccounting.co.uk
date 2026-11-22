@@ -14,7 +14,7 @@ import { SMALL_COMPANY_NOTES_CASE_INPUT } from "@app/test-helpers/accountsDocume
 import { buildSmallCompanyAccounts } from "@app/services/smallCompanyAccountsIxbrl.js";
 import { inAccountsLanguage } from "@app/services/accountsLanguage.js";
 import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
-import { notesOf, registeredOfficeOf } from "../public/lib/accounts-revision.js";
+import { notesOf, registeredOfficeOf, accountantsReportOf } from "../public/lib/accounts-revision.js";
 import { serveMoneyInput, servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -74,7 +74,8 @@ async function openAmend(page, receipt) {
     route.fulfill({
       status: 200,
       contentType: "application/javascript",
-      body: `window.companiesHouseGatewayPoll = { pollGatewayUntilSettled: async ({ poll }) => poll(), isSettled: () => true, pendingNote: () => "", mayCheckAgain: () => false };`,
+      body: `${fs.readFileSync(path.join(PUBLIC_DIR, "lib/companies-house-gateway-poll.js"), "utf-8")}
+        Object.assign(window.companiesHouseGatewayPoll, { pollGatewayUntilSettled: async ({ poll }) => poll() });`,
     }),
   );
   await page.route("**/lib/services/catalog-service.js", (route) =>
@@ -143,13 +144,61 @@ async function refileUnchanged(page, input, { language = "en", reviseAs } = {}) 
   return { original, sent, revised: buildAccountsIxbrl(accounts) };
 }
 
-const carriedNotes = ({ policies, controllingParty, debtors, directorsAdvances, intangibleAssetNote }) => ({
+const carriedNotes = ({ policies, controllingParty, debtors, directorsAdvances, intangibleAssetNote, shareCapital }) => ({
   policies,
   controllingParty,
   debtors,
   directorsAdvances,
   intangibleAssetNote,
+  shareCapital,
 });
+
+// Every note the small company form can file: the notes case with an accountants' report, a tangible
+// fixed asset note beside its intangible one, the share capital note and an advance to each director.
+const EVERY_NOTE = {
+  ...SMALL_COMPANY_NOTES_CASE_INPUT,
+  accountantsReport: {
+    accountantsName: "Hughes & Partners",
+    statement: "We compiled these accounts from the company's records and the explanations given to us.",
+  },
+  fixedAssetNote: {
+    computerEquipment: {
+      costAtStart: 0,
+      additions: 1000,
+      disposals: 0,
+      depreciationAtStart: 0,
+      depreciationCharge: 0,
+      depreciationOnDisposals: 0,
+    },
+  },
+  directorsAdvances: [
+    {
+      name: "Alex Jones",
+      terms: "Interest free & repayable on demand",
+      balanceAtStart: 300,
+      advanced: 400,
+      repaid: 200,
+      balanceAtEnd: 500,
+    },
+    { name: "Alan James Morgan", terms: "Interest at 2.25% a year", balanceAtStart: 0, advanced: 300, repaid: 0, balanceAtEnd: 300 },
+  ],
+  balanceSheet: {
+    ...SMALL_COMPANY_NOTES_CASE_INPUT.balanceSheet,
+    current: {
+      ...SMALL_COMPANY_NOTES_CASE_INPUT.balanceSheet.current,
+      fixedAssets: 11000,
+      profitAndLossAccount: 20900,
+      capitalAndReserves: 21000,
+    },
+  },
+};
+
+// The tangible fixed asset facts of each class as the document states them.
+const fixedAssetFacts = (document) =>
+  Array.from(
+    document.matchAll(/<ix:nonFraction name="(core:[A-Za-z]*PropertyPlantEquipment[A-Za-z]*)" contextRef="([^"]+)"[^>]*>([^<]*)</g),
+    ([, name, context, text]) => [name, context, text],
+  );
 
 // The current tax of each year as the document states it, in the profit and loss account or the tax note.
 const taxFacts = (document) =>
@@ -160,15 +209,21 @@ const taxFacts = (document) =>
 
 test.describe("Revising small company accounts without a change", () => {
   for (const [label, input, options] of [
-    ["full accounts", SMALL_COMPANY_NOTES_CASE_INPUT, {}],
-    ["a filleted copy", { ...SMALL_COMPANY_NOTES_CASE_INPUT, filleted: true }, {}],
-    ["accounts filed in Welsh", SMALL_COMPANY_NOTES_CASE_INPUT, { language: "cy" }],
-    ["a filleted copy revised as a full copy", { ...SMALL_COMPANY_NOTES_CASE_INPUT, filleted: true }, { reviseAs: "full" }],
+    ["full accounts", EVERY_NOTE, {}],
+    ["a filleted copy", { ...EVERY_NOTE, filleted: true }, {}],
+    ["accounts filed in Welsh", EVERY_NOTE, { language: "cy" }],
+    ["a filleted copy revised as a full copy", { ...EVERY_NOTE, filleted: true }, { reviseAs: "full" }],
   ]) {
     test(`refiles every note the form carries as filed, for ${label}`, async ({ page }) => {
       const { original, revised } = await refileUnchanged(page, input, options);
-      expect(carriedNotes(notesOf(revised))).toEqual(carriedNotes(notesOf(original)));
+      const filedNotes = notesOf(original);
+      expect(filedNotes.shareCapital).toEqual(EVERY_NOTE.shareCapital);
+      expect(filedNotes.directorsAdvances).toEqual(EVERY_NOTE.directorsAdvances);
+      expect(carriedNotes(notesOf(revised))).toEqual(carriedNotes(filedNotes));
+      expect(accountantsReportOf(revised)).toEqual(EVERY_NOTE.accountantsReport);
+      expect(fixedAssetFacts(revised)).toEqual(fixedAssetFacts(original));
       expect(taxFacts(revised)).toEqual(taxFacts(original));
+      await expect(page.locator("#revisionNotesNote")).toBeHidden();
     });
   }
 

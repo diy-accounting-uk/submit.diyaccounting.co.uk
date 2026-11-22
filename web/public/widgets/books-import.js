@@ -495,6 +495,27 @@
     }
   }
 
+  // The balance sheet lines the books mapping does not give as the forms file them (the provisions,
+  // creditors after one year without them, the creditor splits), read from the document itself as a
+  // revision reads them, and filled over the mapping's figures.
+  async function fillBalanceSheetLinesFromIxbrl(input) {
+    const { balanceSheetLinesOf } = await import("/lib/accounts-revision.js");
+    const decoder = new TextDecoder();
+    const text = Array.isArray(input) ? input.map((part) => decoder.decode(part.bytes)).join("\n") : decoder.decode(input);
+    let filled = 0;
+    for (const [prefix, lines] of Object.entries(balanceSheetLinesOf(text))) {
+      if (prefix !== "current" && prefix !== "prior") continue;
+      for (const [line, value] of Object.entries(lines)) {
+        const box = document.getElementById(prefix + upperFirst(line));
+        if (!box) continue;
+        // A box the mapping filled was counted with its figures.
+        if (box.value === "") filled += 1;
+        setField(box.id, figureText(value));
+      }
+    }
+    return filled;
+  }
+
   // A set that cannot be read shows one failure message (title, cause, next step) and the card's status line.
   function refusedSet(error) {
     const cause = `${withoutFinalStop(error.message)}.`;
@@ -509,19 +530,42 @@
     return new Refusal(`${cause} Nothing filled.`);
   }
 
-  function ixbrlLeftOutText(mapped, formTakesProfitAndLoss) {
-    const names = [...new Set(mapped.unmapped.map((fact) => fact.concept))];
-    if (mapped.profitAndLoss && !formTakesProfitAndLoss) names.unshift("the profit and loss account");
+  // Statements the accounts forms make themselves, so a document's own copy of them is not left out.
+  const FORM_STATEMENT_CONCEPTS = new Set([
+    "ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse",
+    "AccountingStandardsAppliedMatchesTaxonomyEntry-pointTruefalse",
+    "StatementComplianceWithApplicableReportingFramework",
+    "ReportIncludesDetailedProfitLossStatementTruefalse",
+    "EntityHasTakenExemptionUnderCompaniesActInNotPublishingItsOwnProfitLossAccountTruefalse",
+    "ControllingPartyUltimateControllingPartyTruefalse",
+  ]);
+
+  // The notes on the document and the profit and loss account a form does not take, as text, and the
+  // names of the other facts the form has no field for.
+  function ixbrlLeftOut(mapped, formTakesProfitAndLoss) {
+    const unplaced = [...new Set(mapped.unmapped.map((fact) => fact.concept))].filter((name) => !FORM_STATEMENT_CONCEPTS.has(name));
     const notes = mapped.notes.map((note) => ` ${withoutFinalStop(note)}.`).join("");
-    const leftOut = names.length > 0 ? ` The document also holds ${namedList(names)}, which this form has no field for.` : "";
-    return notes + leftOut;
+    const profitAndLoss =
+      mapped.profitAndLoss && !formTakesProfitAndLoss
+        ? ` ${siteText("widget.books-ixbrl-profit-and-loss", "The document also holds the profit and loss account, which this form has no field for.")}`
+        : "";
+    let count = "";
+    if (unplaced.length === 1) {
+      count = ` ${siteText("widget.books-ixbrl-unplaced-one", "The document also holds 1 fact this form has no field for.")}`;
+    } else if (unplaced.length > 1) {
+      count = ` ${siteText("widget.books-ixbrl-unplaced", "The document also holds {count} facts this form has no field for.", { count: unplaced.length })}`;
+    }
+    return { text: notes + profitAndLoss + count, unplaced };
   }
 
   function ixbrlStatus(filled, fileName, mapped, advice, formTakesProfitAndLoss) {
-    return (
-      `Filled ${plural(filled, "field")} from ${fileName} (${taxonomyText(mapped.suite)}) for the period ${mapped.period.start} to ${mapped.period.end}.` +
-      `${ixbrlLeftOutText(mapped, formTakesProfitAndLoss)} ${advice}`
-    );
+    const leftOut = ixbrlLeftOut(mapped, formTakesProfitAndLoss);
+    return {
+      text:
+        `Filled ${plural(filled, "field")} from ${fileName} (${taxonomyText(mapped.suite)}) for the period ${mapped.period.start} to ${mapped.period.end}.` +
+        `${leftOut.text} ${advice}`,
+      unplaced: leftOut.unplaced,
+    };
   }
 
   function takesIxbrl(kind) {
@@ -559,7 +603,7 @@
   async function fillMicroEntityAccountsFromIxbrl({ bundle, source, fileName }) {
     const mapped = await mapIxbrlForPage(bundle, source.ixbrl, "micro");
     refuseOtherPeriod({ periodStart: mapped.period.start, periodEnd: mapped.period.end }, fileName);
-    const filled = fillMicroEntityFormFromMapped(mapped);
+    const filled = fillMicroEntityFormFromMapped(mapped) + (await fillBalanceSheetLinesFromIxbrl(source.ixbrl));
     let advice = "Check them, add the date approved and the statements, then preview.";
     if (mapped.dormant) {
       advice = `The document is for a dormant company, so the dormant box is ticked: confirm the trading history, share class and nominal value. ${advice}`;
@@ -681,7 +725,7 @@
   async function fillSmallCompanyAccountsFromIxbrl({ bundle, source, fileName }) {
     const mapped = await mapIxbrlForPage(bundle, source.ixbrl, "small");
     refuseOtherPeriod({ periodStart: mapped.period.start, periodEnd: mapped.period.end }, fileName);
-    const filled = fillSmallCompanyFormFromMapped(mapped);
+    const filled = fillSmallCompanyFormFromMapped(mapped) + (await fillBalanceSheetLinesFromIxbrl(source.ixbrl));
     return ixbrlStatus(
       filled,
       fileName,
@@ -993,6 +1037,13 @@
       "role": "status",
       "aria-live": "polite",
     });
+    const unplacedFacts = element("details", { id: "booksImportUnplaced", class: "hint books-import-unplaced" });
+    unplacedFacts.hidden = true;
+    const unplacedList = element("ul", {});
+    unplacedFacts.append(
+      element("summary", {}, siteText("widget.books-ixbrl-unplaced-names", "The facts this form has no field for")),
+      unplacedList,
+    );
     const section = element("section", { "class": "books-import", "aria-labelledby": "booksImportHeading" });
     const savedBooks = element("div", { id: "savedBooks", class: "form-group" });
     savedBooks.hidden = true;
@@ -1008,14 +1059,19 @@
       siteText("widget.books-saved-use", "Fill from this book"),
     );
     savedBooks.append(savedBooksLabel, savedBooksSelect, savedBooksUse);
-    section.append(heading, hint, dropZone, savedBooks, fileInput, statusLine);
+    section.append(heading, hint, dropZone, savedBooks, fileInput, statusLine, unplacedFacts);
     container.replaceChildren(section);
 
     let loaded = null;
     let working = false;
 
-    function say(text) {
+    // A status is text, or text with the names of the facts a document holds that the form has no field for.
+    function say(status) {
+      const { text, unplaced = [] } = typeof status === "string" ? { text: status } : status;
       statusLine.textContent = text;
+      unplacedList.replaceChildren(...unplaced.map((name) => element("li", {}, name)));
+      unplacedFacts.open = false;
+      unplacedFacts.hidden = unplaced.length === 0;
     }
 
     async function fillFromLoaded() {

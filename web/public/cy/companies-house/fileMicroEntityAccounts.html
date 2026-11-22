@@ -143,10 +143,6 @@
                 aria-describedby="revisionTexts-hint"
               ></textarea>
             </div>
-            <p data-i18n="ch-micro-entity.the-date-approved-below-is-more-4f3c83" id="revisionLateNote" class="hint" hidden>
-              Mae’r dyddiad cymeradwyo isod fwy na 28 diwrnod yn ôl. Cyflwynwch y cyfrifon diwygiedig nawr: mae’r gyfraith yn rhoi 28
-              diwrnod i’r cyfarwyddwyr o’r adeg y maent yn eu cymeradwyo.
-            </p>
             <p data-i18n="ch-micro-entity.the-accounts-filed-have-an-accountants-01c4ff" id="revisionAccountantsNote" class="hint" hidden>
               Mae gan y cyfrifon a ffeiliwyd adroddiad cyfrifwyr na allai’r dudalen hon ei ddarllen. Rhowch adroddiad y cyfrifwyr eto isod.
             </p>
@@ -762,6 +758,10 @@
             <div class="form-group">
               <label data-i18n="ch-micro-entity.date-approved-0410b4" for="directorDateApproved">Dyddiad cymeradwyo</label>
               <input type="date" id="directorDateApproved" name="directorDateApproved" required />
+              <p data-i18n="ch-micro-entity.the-date-approved-is-more-than-15ec2a" id="revisionLateNote" class="hint" hidden>
+                Mae’r dyddiad cymeradwyo fwy na 28 diwrnod yn ôl. Cyflwynwch y cyfrifon diwygiedig nawr: mae’r gyfraith yn rhoi 28 diwrnod
+                i’r cyfarwyddwyr o’r adeg y maent yn eu cymeradwyo.
+              </p>
             </div>
           </section>
           <section class="form-section">
@@ -845,6 +845,134 @@
                 <textarea id="accountantsStatement" name="accountantsStatement" rows="6">
 In accordance with your instructions, we have compiled these unaudited financial statements from the accounting records and from information and explanations you have given us.</textarea>
               </div>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-micro-entity.advances-to-the-director-d10ef7">Blaensymiau i’r cyfarwyddwr</h3>
+            <p data-i18n="ch-micro-entity.fill-this-in-when-the-director-aa153b" class="hint">
+              Llenwch hwn pan oedd y cyfarwyddwr mewn dyled i’r cwmni yn ystod y flwyddyn. Mae adran 413 o Ddeddf Cwmnïau 2006 yn gofyn am y
+              nodyn. Mae’n enwi’r cyfarwyddwr sy’n cymeradwyo’r cyfrifon.
+            </p>
+            <div class="directors-advance-row">
+              <div class="form-group">
+                <label data-i18n="ch-micro-entity.interest-rate-and-main-conditions-of-edab6a" for="directorsAdvanceTerms"
+                  >Cyfradd llog a phrif amodau’r blaenswm</label
+                >
+                <input type="text" id="directorsAdvanceTerms" data-advance-field="terms" name="directorsAdvanceTerms" />
+              </div>
+              <p data-i18n="ch-micro-entity.whole-pounds-for-example-600-or-94af4a" id="ledgerHintAdvances" class="hint">
+                Punnoedd cyfan. Er enghraifft, £600 neu £1,200.
+              </p>
+              <table class="ledger ledger--one-year">
+                <thead>
+                  <tr>
+                    <th data-i18n="ch-micro-entity.line-d7852c" scope="col">Llinell</th>
+                    <th data-i18n="ch-micro-entity.amount-2d7841" scope="col" class="ledger__figure">Swm (£)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th data-i18n="ch-micro-entity.owed-by-the-director-at-the-ff394e" scope="row">
+                      Yn ddyledus gan y cyfarwyddwr ar ddechrau’r flwyddyn
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-micro-entity.owed-by-the-director-at-the-ff394e"
+                        for="directorsAdvanceAtStart"
+                        class="visually-hidden"
+                        >Yn ddyledus gan y cyfarwyddwr ar ddechrau’r flwyddyn</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHintAdvances"
+                          type="text"
+                          id="directorsAdvanceAtStart"
+                          data-advance-field="balanceAtStart"
+                          name="directorsAdvanceAtStart"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-micro-entity.advanced-to-the-director-in-the-db47e6" scope="row">
+                      Wedi’i roi ymlaen llaw i’r cyfarwyddwr yn y flwyddyn
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-micro-entity.advanced-to-the-director-in-the-db47e6"
+                        for="directorsAdvanceMade"
+                        class="visually-hidden"
+                        >Wedi’i roi ymlaen llaw i’r cyfarwyddwr yn y flwyddyn</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHintAdvances"
+                          type="text"
+                          id="directorsAdvanceMade"
+                          data-advance-field="advanced"
+                          name="directorsAdvanceMade"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-micro-entity.repaid-by-the-director-in-the-657100" scope="row">
+                      Wedi’i ad-dalu gan y cyfarwyddwr yn y flwyddyn
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-micro-entity.repaid-by-the-director-in-the-657100"
+                        for="directorsAdvanceRepaid"
+                        class="visually-hidden"
+                        >Wedi’i ad-dalu gan y cyfarwyddwr yn y flwyddyn</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHintAdvances"
+                          type="text"
+                          id="directorsAdvanceRepaid"
+                          data-advance-field="repaid"
+                          name="directorsAdvanceRepaid"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th data-i18n="ch-micro-entity.owed-by-the-director-at-the-70403f" scope="row">
+                      Yn ddyledus gan y cyfarwyddwr ar ddiwedd y flwyddyn
+                    </th>
+                    <td class="ledger__figure">
+                      <label
+                        data-i18n="ch-micro-entity.owed-by-the-director-at-the-70403f"
+                        for="directorsAdvanceAtEnd"
+                        class="visually-hidden"
+                        >Yn ddyledus gan y cyfarwyddwr ar ddiwedd y flwyddyn</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHintAdvances"
+                          type="text"
+                          id="directorsAdvanceAtEnd"
+                          data-advance-field="balanceAtEnd"
+                          name="directorsAdvanceAtEnd"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </section>
           <section class="form-section">

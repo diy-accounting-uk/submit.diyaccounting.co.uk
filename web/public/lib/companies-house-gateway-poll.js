@@ -61,5 +61,18 @@
     );
   }
 
-  window.companiesHouseGatewayPoll = { pollGatewayUntilSettled, pendingNote, mayCheckAgain, isSettled, MAX_GATEWAY_POLLS };
+  // A Companies House status code in the word a sentence about the submission reads it as, in the
+  // chosen language. The gateway answers ACCEPT, REJECT, PENDING or PARKED; any code that is not
+  // settled reads as waiting, as the polls treat it.
+  function statusWord(statusCode) {
+    const words = {
+      ACCEPT: () => siteText("ch.gateway.status-accept", "accepted"),
+      REJECT: () => siteText("ch.gateway.status-reject", "rejected"),
+      PARKED: () => siteText("ch.gateway.status-parked", "held for a check by hand"),
+      PENDING: () => siteText("ch.gateway.status-pending", "waiting to be checked"),
+    };
+    return (words[statusCode] ?? words.PENDING)();
+  }
+
+  window.companiesHouseGatewayPoll = { pollGatewayUntilSettled, pendingNote, mayCheckAgain, isSettled, statusWord, MAX_GATEWAY_POLLS };
 })();

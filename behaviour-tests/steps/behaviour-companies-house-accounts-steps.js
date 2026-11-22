@@ -121,20 +121,20 @@ const REAL_GATEWAY_OUTCOME_TIMEOUT_MS = 300_000;
 export async function verifyFilingAccepted(page, screenshotPath = defaultScreenshotPath) {
   if (!filesThroughRealCompaniesHouseGateway()) {
     await test.step("The user sees the filing accepted", async () => {
-      await expect(page.locator("#filingResult")).toContainText("ACCEPT", { timeout: 30000 });
+      await expect(page.locator("#filingResult")).toContainText(/\b(?:Status:|was) accepted\b/, { timeout: 30000 });
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accepted.png`, readerView: true });
     });
     return;
   }
   await test.step("The user sees the filing accepted, or still being checked under its submission number", async () => {
     // A regular expression, because hasText with a string ignores case and the pending note's own
-    // words would match "ACCEPT".
-    const accepted = page.locator("#filingResult", { hasText: /\bACCEPT\b/ });
+    // words ("Once Companies House accepts the filing") would match a looser text.
+    const accepted = page.locator("#filingResult", { hasText: /\b(?:Status:|was) accepted\b/ });
     const pending = page.locator("#checkAgainBtn");
     await expect(accepted.or(pending).first()).toBeVisible({ timeout: REAL_GATEWAY_OUTCOME_TIMEOUT_MS });
     // allocateSubmissionNumber writes a base-36 counter, zero-padded to six digits and capital
     // letters (00006W), and the page names it in either answer. Its zero padding gives it a digit,
-    // which keeps the outcome words ACCEPT and REJECT from matching.
+    // which keeps the capitalised words of the outcome from matching.
     await expect(page.locator("#filingResult")).toContainText(/\b(?=[A-Z]*\d)[0-9A-Z]{6}\b/);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-outcome.png`, readerView: true });
   });
@@ -163,7 +163,7 @@ export async function openFilingCustomerCopy(page, screenshotPath = defaultScree
 
 export async function verifyFilingRejected(page, expectedRejectCode, screenshotPath = defaultScreenshotPath) {
   await test.step(`The user sees the filing rejected with reject code ${expectedRejectCode}`, async () => {
-    await expect(page.locator("#filingResult")).toContainText("REJECT", { timeout: 30000 });
+    await expect(page.locator("#filingResult")).toContainText(/\b(?:Status:|was) rejected\b/, { timeout: 30000 });
     await expect(page.locator("#rejections")).toContainText(expectedRejectCode);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-rejected.png`, readerView: true });
   });

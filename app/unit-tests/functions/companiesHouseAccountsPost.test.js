@@ -113,6 +113,7 @@ import {
   ingestHandler as companiesHouseAccountsPostHandler,
   readRegisteredOffice,
   readAccountantsReport,
+  extractAndValidateAccountsParameters,
 } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -1375,5 +1376,42 @@ describe("readAccountantsReport", () => {
     const text = [];
     readAccountantsReport("Test Firm LLP", text);
     expect(text).toEqual(["Invalid accountantsReport - must be an object"]);
+  });
+});
+
+describe("the advance to the director of a micro-entity accounts request", () => {
+  const ADVANCE = {
+    name: "Jo Director",
+    terms: "Interest free and repayable on demand",
+    balanceAtStart: 200,
+    advanced: 1000,
+    repaid: 400,
+    balanceAtEnd: 800,
+  };
+  const accountsOf = (overrides) => {
+    const errors = [];
+    const accounts = extractAndValidateAccountsParameters({ body: JSON.stringify(buildAccountsBody(overrides)) }, errors);
+    return { accounts, errors };
+  };
+
+  test("carries the advance the form sends", () => {
+    const { accounts, errors } = accountsOf({ directorsAdvances: [ADVANCE] });
+    expect(errors).toEqual([]);
+    expect(accounts.directorsAdvances).toEqual([ADVANCE]);
+  });
+
+  test("carries no advance when the form sends none", () => {
+    const { accounts, errors } = accountsOf({});
+    expect(errors).toEqual([]);
+    expect(accounts.directorsAdvances).toBeUndefined();
+  });
+
+  test("refuses an advance whose figures do not add up, or that gives no terms", () => {
+    expect(accountsOf({ directorsAdvances: [{ ...ADVANCE, balanceAtEnd: 900 }] }).errors).toEqual([
+      "directorsAdvances[0].balanceAtEnd must equal balanceAtStart plus advanced less repaid",
+    ]);
+    expect(accountsOf({ directorsAdvances: [{ ...ADVANCE, terms: "" }] }).errors).toEqual([
+      "directorsAdvances[0].terms is required: state the interest rate and the main conditions",
+    ]);
   });
 });

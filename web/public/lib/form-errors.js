@@ -141,6 +141,14 @@
       });
       item.append(link);
       list.append(item);
+      // A corrected field takes its line out of the summary, and the summary goes with its last line.
+      const clearOnChange = () => {
+        clearFieldError(input);
+        item.remove();
+        if (!list.children.length) summary.remove();
+      };
+      input.addEventListener("input", clearOnChange, { once: true });
+      input.addEventListener("change", clearOnChange, { once: true });
     });
     summary.append(heading, list);
     summaryHost(errors[0].input).prepend(summary);

@@ -5,7 +5,11 @@
 
 import { describe, test, expect } from "vitest";
 import { extractAndValidateSmallCompany } from "@app/services/smallCompanyAccountsRequest.js";
-import { SMALL_COMPANY_CASE_INPUT, SMALL_COMPANY_FORMAT_2_CASE_INPUT } from "@app/test-helpers/accountsDocumentCases.js";
+import {
+  SMALL_COMPANY_CASE_INPUT,
+  SMALL_COMPANY_FORMAT_2_CASE_INPUT,
+  SMALL_COMPANY_EVERY_LINE_CASE_INPUT,
+} from "@app/test-helpers/accountsDocumentCases.js";
 
 const STATEMENTS = {
   section477Exemption: true,
@@ -207,5 +211,59 @@ describe("services/smallCompanyAccountsRequest optional lines, policies and cont
     expect(party({ name: "Pat Lee", ultimate: true }).result.controllingParty).toEqual({ name: "Pat Lee", ultimate: true });
     expect(party({ name: "Pat Lee" }).errors).toContain("Invalid smallCompany.controllingParty.ultimate - must be true or false");
     expect(party({ ultimate: true }).errors).toContain("Missing smallCompany.controllingParty.name");
+  });
+});
+
+describe("services/smallCompanyAccountsRequest share capital note", () => {
+  test("keeps the share class and nominal value the form sends", () => {
+    const { result, errors } = validate(
+      sectionFrom(SMALL_COMPANY_CASE_INPUT, { shareCapital: { shareClass: "preferenceShares", nominalValue: 0.5 } }),
+    );
+    expect(errors).toEqual([]);
+    expect(result.shareCapital).toEqual({ shareClass: "preferenceShares", nominalValue: 0.5 });
+  });
+
+  test("carries no note when the form sends none", () => {
+    const { result, errors } = validate(sectionFrom(SMALL_COMPANY_CASE_INPUT));
+    expect(errors).toEqual([]);
+    expect(result.shareCapital).toBeUndefined();
+  });
+
+  test("refuses an unknown class, and a nominal value that does not divide the called up share capital", () => {
+    expect(
+      validate(sectionFrom(SMALL_COMPANY_CASE_INPUT, { shareCapital: { shareClass: "founderShares", nominalValue: 1 } })).errors,
+    ).toEqual([
+      "Invalid smallCompany.shareCapital.shareClass - must be one of ordinaryShares, preferenceShares, deferredShares, otherShares",
+    ]);
+    expect(
+      validate(sectionFrom(SMALL_COMPANY_CASE_INPUT, { shareCapital: { shareClass: "ordinaryShares", nominalValue: 0.3 } })).errors,
+    ).toEqual(["smallCompany.shareCapital.nominalValue must divide calledUpShareCapital into a whole number of shares"]);
+  });
+});
+
+describe("services/smallCompanyAccountsRequest advances to more than one director", () => {
+  const ADVANCES = [
+    {
+      name: "Alex Jones",
+      terms: "Interest free and repayable on demand",
+      balanceAtStart: 300,
+      advanced: 400,
+      repaid: 200,
+      balanceAtEnd: 500,
+    },
+    { name: "Alan James Morgan", terms: "Interest at 2.25% a year", balanceAtStart: 0, advanced: 300, repaid: 0, balanceAtEnd: 300 },
+  ];
+  const section = (directorsAdvances) => sectionFrom(SMALL_COMPANY_EVERY_LINE_CASE_INPUT, { fixedAssetNote: undefined, directorsAdvances });
+
+  test("keeps one advance a director, in the order the form sends them", () => {
+    const { result, errors } = validate(section(ADVANCES));
+    expect(errors).toEqual([]);
+    expect(result.directorsAdvances).toEqual(ADVANCES);
+  });
+
+  test("refuses advances whose amounts owed at the end do not add up to the amounts owed by directors", () => {
+    expect(validate(section([ADVANCES[0]])).errors).toEqual([
+      "smallCompany.directorsAdvances balanceAtEnd (500) must equal balanceSheet.currentYear.amountsOwedByDirectors",
+    ]);
   });
 });

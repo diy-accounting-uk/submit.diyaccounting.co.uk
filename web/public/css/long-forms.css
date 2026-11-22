@@ -57,3 +57,10 @@ h2 + form > .form-section:first-child {
 .input-prefix--amount {
   max-width: 16rem;
 }
+
+/* Each director's advance after the first starts below a rule, so the rows read as separate notes. */
+.directors-advance-row + .directors-advance-row {
+  border-top: 1px solid var(--c-rule);
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+}

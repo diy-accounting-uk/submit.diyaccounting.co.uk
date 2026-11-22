@@ -539,7 +539,7 @@ test.describe("File Confirmation Statement page", () => {
     await delay(300);
 
     await expect(page.locator("#resultView")).toBeVisible();
-    await expect(page.locator("#filingResult")).toContainText("ACCEPT");
+    await expect(page.locator("#filingResult")).toContainText("was accepted.");
     await expect(page.locator("#pscFollowUp")).toBeVisible();
     await expect(page.locator('[data-psc-follow-up-row="0"]')).toContainText("Jane Doe");
     const submitCalls = await page.evaluate(() => window.__submitCalls);
@@ -550,7 +550,7 @@ test.describe("File Confirmation Statement page", () => {
     await page.click('[data-psc-verify-index="0"]');
     await delay(300);
 
-    await expect(page.locator("#pscVerifyResult-0")).toContainText("ACCEPT");
+    await expect(page.locator("#pscVerifyResult-0")).toContainText("was accepted.");
     const pscSubmitCalls = await page.evaluate(() => window.__pscVerificationSubmitCalls);
     expect(pscSubmitCalls).toHaveLength(1);
     expect(pscSubmitCalls[0]).toMatchObject({
@@ -600,7 +600,7 @@ test.describe("File Confirmation Statement page", () => {
 
     await expect(page.locator("#checkAgainBtn")).toBeVisible({ timeout: 30_000 });
     await expect(page.locator("#filingResult")).toContainText("has not finished checking submission ABC123");
-    await expect(page.locator("#filingResult")).not.toContainText("was PENDING");
+    await expect(page.locator("#filingResult")).not.toContainText("was waiting to be checked");
     await expect(page.locator("#filingRecord")).toBeEmpty();
     const calls = await page.evaluate(() => window.__pollCalls);
     expect(calls).toHaveLength(8);
@@ -610,7 +610,7 @@ test.describe("File Confirmation Statement page", () => {
       window.__pollStatuses = ["ACCEPT"];
     });
     await page.click("#checkAgainBtn");
-    await expect(page.locator("#filingResult")).toContainText("ACCEPT", { timeout: 10_000 });
+    await expect(page.locator("#filingResult")).toContainText("was accepted.", { timeout: 10_000 });
     await expect(page.locator("#checkAgainBtn")).toBeHidden();
     await expect(page.locator("#pscFollowUp")).toBeVisible();
   });

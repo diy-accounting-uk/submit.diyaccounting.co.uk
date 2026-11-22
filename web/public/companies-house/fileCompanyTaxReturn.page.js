@@ -2316,6 +2316,14 @@ function waitSeconds(seconds) {
   return new Promise((resolve) => setTimeout(resolve, Math.max(seconds, 1) * 1000));
 }
 
+// HMRC's status of a return, in the word a sentence about the return reads it as. A return HMRC has
+// not settled reads as waiting, as the polls treat it, until HMRC answers ACCEPT or REJECT.
+function returnStatusWord(statusCode) {
+  if (statusCode === "ACCEPT") return siteText("ch.ct.status-accept", "accepted");
+  if (statusCode === "REJECT") return siteText("ch.ct.status-reject", "rejected");
+  return siteText("ch.ct.status-pending", "waiting to be checked");
+}
+
 async function pollUntilSettled(correlationId, firstWaitSeconds, extraHeaders) {
   let waitFor = firstWaitSeconds;
   let result;
@@ -2328,7 +2336,7 @@ async function pollUntilSettled(correlationId, firstWaitSeconds, extraHeaders) {
         siteText("ch.ct.return-word", "Return "),
         { strong: correlationId },
         siteText("ch.ct.is", " is "),
-        { strong: result.statusCode },
+        { strong: returnStatusWord(result.statusCode) },
         siteText("ch.ct.checking-again", ". Checking again..."),
       ),
     );
@@ -2442,7 +2450,7 @@ async function showOutcome(outcome) {
       siteText("ch.ct.not-settled", "HMRC has not settled the return yet. Return "),
       { strong: outcome.correlationId },
       siteText("ch.ct.is-still", " is still "),
-      { strong: outcome.statusCode },
+      { strong: returnStatusWord(outcome.statusCode) },
       siteText("ch.ct.full-stop", "."),
     ),
   );
@@ -3016,7 +3024,7 @@ function renderCompaniesHouse() {
       siteText("ch.ct.ch-not-settled", "Companies House has not settled the accounts yet. Submission "),
       { strong: submissionNumber },
       siteText("ch.ct.is", " is "),
-      { strong: statusCode },
+      { strong: window.companiesHouseGatewayPoll.statusWord(statusCode) },
       siteText("ch.ct.full-stop", "."),
     ),
     ...(sending.taxReturnSent
@@ -3244,7 +3252,7 @@ function renderLongOutcome() {
           siteText("ch.ct.return-part-word", "Return {part} of 2 ", { part }),
           { strong: entry.correlationId },
           siteText("ch.ct.is", " is "),
-          { strong: entry.statusCode },
+          { strong: returnStatusWord(entry.statusCode) },
           siteText("ch.ct.checking-again", ". Checking again..."),
         ),
       );

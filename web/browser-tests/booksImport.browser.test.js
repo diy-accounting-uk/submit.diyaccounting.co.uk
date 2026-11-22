@@ -17,7 +17,12 @@ import { PRODUCTS } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
 import { savePackageZip } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
 import { deriveItsaQuarterlyUpdate, deriveVatReturn } from "@diy-accounting-uk/diya-gl";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { SMALL_COMPANY_BANK_LINES_CASE_INPUT, SMALL_COMPANY_FORMAT_2_CASE_INPUT } from "@app/test-helpers/accountsDocumentCases.js";
+import {
+  SMALL_COMPANY_BANK_LINES_CASE_INPUT,
+  SMALL_COMPANY_FORMAT_2_CASE_INPUT,
+  SMALL_COMPANY_NOTES_CASE_INPUT,
+  SMALL_COMPANY_EVERY_LINE_CASE_INPUT,
+} from "@app/test-helpers/accountsDocumentCases.js";
 import { buildSmallCompanyAccounts } from "@app/services/smallCompanyAccountsIxbrl.js";
 import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
 import { screenshotAtBothWidths } from "./revisedAccountsScreenshots.js";
@@ -1021,6 +1026,56 @@ test.describe("books import of an iXBRL accounts document", () => {
     await expect(page.locator("#directorDateApproved")).toHaveValue("");
   });
 
+  test("a small company document fills creditors after one year without the provisions, and the provisions", async ({ page }) => {
+    await openAccountsPage(page, SMALL_URL, SMALL_COMPANY_EVERY_LINE_CASE_INPUT.companyNumber);
+    const document = buildSmallCompanyAccounts(SMALL_COMPANY_EVERY_LINE_CASE_INPUT);
+    await chooseFile(page, "accounts.xhtml", Buffer.from(document, "utf8"), "application/xhtml+xml");
+
+    await expect(page.locator("#booksImportStatus")).toContainText("from accounts.xhtml", { timeout: 60_000 });
+    for (const [year, figures] of Object.entries(SMALL_COMPANY_EVERY_LINE_CASE_INPUT.balanceSheet)) {
+      for (const line of [
+        "creditorsAfterOneYear",
+        "provisionsForLiabilities",
+        "amountsOwedToDirectors",
+        "amountsOwedToGroupUndertakings",
+      ]) {
+        await expect(page.locator(`#${year}${line[0].toUpperCase()}${line.slice(1)}`)).toHaveValue(String(figures[line]));
+      }
+    }
+  });
+
+  test("a micro-entity document fills creditors after one year without the provisions, and the provisions", async ({ page }) => {
+    await openAccountsPage(page, MICRO_URL, "06846849");
+    const document = builtAccountsDocument("micro-entity-accounts", {
+      balanceSheet: {
+        currentYear: {
+          fixedAssets: 800,
+          currentAssets: 6300,
+          creditorsWithinOneYear: 1968,
+          creditorsAfterOneYear: 200,
+          provisionsForLiabilities: 100,
+          calledUpShareCapital: 100,
+          profitAndLossAccount: 4732,
+          capitalAndReserves: 4832,
+        },
+        priorYear: {
+          fixedAssets: 0,
+          currentAssets: 3353,
+          creditorsWithinOneYear: 3219,
+          creditorsAfterOneYear: 0,
+          calledUpShareCapital: 100,
+          profitAndLossAccount: 34,
+          capitalAndReserves: 134,
+        },
+      },
+    });
+    await chooseFile(page, "accounts.xhtml", document, "application/xhtml+xml");
+
+    await expect(page.locator("#booksImportStatus")).toContainText("from accounts.xhtml", { timeout: 60_000 });
+    await expect(page.locator("#currentCreditorsAfterOneYear")).toHaveValue("200");
+    await expect(page.locator("#currentProvisionsForLiabilities")).toHaveValue("100");
+  });
+
   test("a dormant document ticks the dormant box and fills its trading history and shares", async ({ page }) => {
     await openAccountsPage(page, MICRO_URL, "09991482");
     await chooseFile(page, "dormant.xhtml", builtAccountsDocument("micro-entity-accounts-dormant"), "application/xhtml+xml");
@@ -1403,6 +1458,35 @@ test.describe("books import on an accounts form that revises filed accounts", ()
       expect(await pageScrollsSideways(page)).toBe(false);
     });
   }
+
+  test("a dropped iXBRL document leaves out the statements the form makes and counts the other facts in a closed list", async ({
+    page,
+  }) => {
+    await openAmendPage(page, SMALL_URL, smallFiled(), "12345678");
+    const document = buildSmallCompanyAccounts({ ...SMALL_COMPANY_NOTES_CASE_INPUT, companyNumber: "12345678" });
+    await chooseFile(page, "notes.xhtml", Buffer.from(document, "utf8"), "application/xhtml+xml");
+
+    const status = page.locator("#booksImportStatus");
+    await expect(status).toContainText("from notes.xhtml", { timeout: 60_000 });
+    await expect(status).toContainText(/The document also holds \d+ facts this form has no field for\./);
+    await expect(status).not.toContainText("Truefalse");
+    await expect(status).not.toContainText("StatementComplianceWithApplicableReportingFramework");
+    const unplaced = page.locator("#booksImportUnplaced");
+    await expect(unplaced).toBeVisible();
+    await expect(unplaced).not.toHaveAttribute("open", "");
+    await expect(unplaced.locator("li", { hasText: "DividendPolicy" })).toHaveCount(1);
+    await expect(unplaced.locator("li", { hasText: "ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse" })).toHaveCount(0);
+    await screenshotAtBothWidths(page, "books-amend-ixbrl-unplaced-facts");
+  });
+
+  test("a dropped iXBRL document whose other facts the form all places shows no list", async ({ page }) => {
+    await openAmendPage(page, MICRO_URL, microFiled(), "12345678");
+    const corrected = builtAccountsDocument("micro-entity-accounts-revised", { companyNumber: "12345678", revision: undefined });
+    await chooseFile(page, "corrected.xhtml", corrected, "application/xhtml+xml");
+    await expect(page.locator("#booksImportStatus")).toContainText("from corrected.xhtml", { timeout: 60_000 });
+    await expect(page.locator("#booksImportStatus")).not.toContainText("has no field for");
+    await expect(page.locator("#booksImportUnplaced")).toBeHidden();
+  });
 
   test("a book for another company fills nothing and keeps the revision", async ({ page }) => {
     await openAmendPage(page, MICRO_URL, microFiled(), "12345678");

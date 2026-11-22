@@ -15,6 +15,7 @@ import {
   SMALL_COMPANY_EVERY_LINE_CASE_INPUT,
 } from "@app/test-helpers/accountsDocumentCases.js";
 import { buildSmallCompanyAccounts, SMALL_COMPANY_POLICY_FIELDS } from "@app/services/smallCompanyAccountsIxbrl.js";
+import { notesOf } from "../public/lib/accounts-revision.js";
 import { inAccountsLanguage } from "@app/services/accountsLanguage.js";
 import { readSubmitCss } from "./submitCss.js";
 import { screenshotAtBothWidths } from "./revisedAccountsScreenshots.js";
@@ -303,6 +304,80 @@ test.describe("File small company accounts page", () => {
     expect(report.statement).toContain("compiled these unaudited financial statements");
   });
 
+  test("the share capital note shows when ticked, reaches the request, and the accounts it builds carry it back", async ({ page }) => {
+    await serveSiteStyles(page);
+    await openFormView(page);
+    await expect(page.locator("#shareCapitalNoteFields")).toBeHidden();
+    expect(await page.evaluate(() => buildAccountsPayload().smallCompany.shareCapital)).toBeUndefined();
+    await page.check("#includeShareCapitalNote");
+    await expect(page.locator("#shareCapitalNoteFields")).toBeVisible();
+    await page.selectOption("#shareCapitalClass", "preferenceShares");
+    await page.fill("#shareCapitalNominalValue", "0.5");
+    const shareCapital = await page.evaluate(() => buildAccountsPayload().smallCompany.shareCapital);
+    expect(shareCapital).toEqual({ shareClass: "preferenceShares", nominalValue: 0.5 });
+    expect(notesOf(buildSmallCompanyAccounts({ ...SMALL_COMPANY_CASE_INPUT, shareCapital })).shareCapital).toEqual(shareCapital);
+    await page.evaluate(() => {
+      document.getElementById("formCompanyName").textContent = company.companyName;
+      document.getElementById("formCompanyNumber").textContent = company.companyNumber;
+    });
+    await screenshotAtBothWidths(page, "small-original-share-capital");
+  });
+
+  test("a second director's advance takes its own row, reaches the request, and the accounts it builds carry both back", async ({
+    page,
+  }) => {
+    await serveSiteStyles(page);
+    await openFormView(page);
+    const rows = page.locator(".directors-advance-row");
+    await expect(rows).toHaveCount(1);
+    await page.click("#addDirectorsAdvance");
+    await expect(rows).toHaveCount(2);
+    const advances = [
+      {
+        name: "Alex Jones",
+        terms: "Interest free & repayable on demand",
+        balanceAtStart: 300,
+        advanced: 400,
+        repaid: 200,
+        balanceAtEnd: 500,
+      },
+      { name: "Alan James Morgan", terms: "Interest at 2.25% a year", balanceAtStart: 0, advanced: 300, repaid: 0, balanceAtEnd: 300 },
+    ];
+    for (const [index, advance] of advances.entries()) {
+      for (const [field, value] of Object.entries(advance)) {
+        await rows.nth(index).locator(`[data-advance-field="${field}"]`).fill(String(value));
+      }
+    }
+    expect(await page.evaluate(() => buildAccountsPayload().smallCompany.directorsAdvances)).toEqual(advances);
+    const ids = await page.evaluate(() => Array.from(document.querySelectorAll("[id]"), (element) => element.id));
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(
+      notesOf(buildSmallCompanyAccounts({ ...SMALL_COMPANY_EVERY_LINE_CASE_INPUT, directorsAdvances: advances })).directorsAdvances,
+    ).toEqual(advances);
+    await page.evaluate(() => {
+      document.getElementById("formCompanyName").textContent = company.companyName;
+      document.getElementById("formCompanyNumber").textContent = company.companyNumber;
+    });
+    await screenshotAtBothWidths(page, "small-original-two-advances");
+    await rows.nth(1).getByRole("button", { name: "Remove this advance" }).click();
+    await expect(rows).toHaveCount(1);
+    expect(await page.evaluate(() => buildAccountsPayload().smallCompany.directorsAdvances)).toEqual([advances[0]]);
+  });
+
+  test("an advance to someone who is not among the directors is refused on the page, in a sentence", async ({ page }) => {
+    await openFormView(page);
+    await fillCurrentYear(page);
+    await page.fill("#directors", "Alan James Morgan\nAlex Jones");
+    const row = page.locator(".directors-advance-row").first();
+    await row.locator('[data-advance-field="name"]').fill("Pat Other");
+    await row.locator('[data-advance-field="terms"]').fill("Interest free");
+    expect(await page.evaluate(() => formProblem())).toBe(
+      "Pat Other is named for an advance, but is not among the directors listed. Add them to the directors, or correct the name.",
+    );
+    await row.locator('[data-advance-field="name"]').fill("Alex Jones");
+    expect(await page.evaluate(() => formProblem())).toBeNull();
+  });
+
   test("the policy boxes sit under a closed disclosure and only the filled ones reach the request", async ({ page }) => {
     await openFormView(page);
     await expect(page.locator("#morePolicies")).not.toHaveAttribute("open", "");
@@ -471,12 +546,8 @@ async function openAmend(page, receipt, { width = 1280, outcome = "ACCEPT", juri
     route.fulfill({
       status: 200,
       contentType: "application/javascript",
-      body: `window.companiesHouseGatewayPoll = {
-        pollGatewayUntilSettled: async ({ poll }) => poll(),
-        isSettled: (outcome) => outcome.statusCode === "ACCEPT" || outcome.statusCode === "REJECT",
-        pendingNote: () => "",
-        mayCheckAgain: () => false,
-      };`,
+      body: `${fs.readFileSync(path.join(PUBLIC_DIR, "lib/companies-house-gateway-poll.js"), "utf-8")}
+        Object.assign(window.companiesHouseGatewayPoll, { pollGatewayUntilSettled: async ({ poll }) => poll() });`,
     }),
   );
   await page.route("**/lib/services/catalog-service.js", (route) =>
@@ -493,7 +564,11 @@ async function openAmend(page, receipt, { width = 1280, outcome = "ACCEPT", juri
   await page.route("**/lib/services/viewer-settings.js", (route) =>
     route.fulfill({ status: 200, contentType: "application/javascript", body: "export const fetchViewer = async () => ({});" }),
   );
-  const html = fs.readFileSync(path.join(PUBLIC_DIR, PAGE_PATH), "utf-8");
+  // The site's own failure message, which the page script gets from the shared dom utilities.
+  await serveFile(page, "**/lib/utils/dom-utils.js", "lib/utils/dom-utils.js");
+  const html = fs
+    .readFileSync(path.join(PUBLIC_DIR, PAGE_PATH), "utf-8")
+    .replace("</head>", '<script type="module" src="/lib/utils/dom-utils.js"></script></head>');
   await page.route(`http://localhost:3000/${PAGE_PATH}**`, (route) => route.fulfill({ status: 200, contentType: "text/html", body: html }));
   await page.goto(`http://localhost:3000/${PAGE_PATH}?amend=${encodeURIComponent(RECEIPT_NAME)}`, { waitUntil: "domcontentloaded" });
 }
@@ -541,6 +616,17 @@ test.describe("File small company accounts page - revising accounts from a recei
     expect(statement).not.toContain("were a full copy");
     await expect(page.locator("#currentTurnover")).toHaveValue("");
     await expect(page.locator("#currentCalledUpShareCapital")).not.toHaveValue("");
+    // The filed tax note fills the tax line; with it emptied the profit and loss account holds no figure.
+    await expect(page.locator("#currentTax")).not.toHaveValue("");
+    await page.fill("#currentTax", "");
+    await page.locator("#currentTurnover").dispatchEvent("input");
+    await expect(page.locator("#currentProfitAndLossTotals")).toBeHidden();
+    await page.fill("#currentTurnover", "50000");
+    await page.locator("#currentTurnover").dispatchEvent("input");
+    await expect(page.locator("#currentProfitAndLossTotals")).toBeVisible();
+    await expect(page.locator("#currentProfitAndLossTotals")).toContainText("Gross profit: 50000");
+    await page.fill("#currentTurnover", "");
+    await page.locator("#currentTurnover").dispatchEvent("input");
     await screenshot(page, "small-amend-filleted-note", 1280);
     await screenshotAtBothWidths(page, "small-amend-copy-filleted");
   });
@@ -549,6 +635,10 @@ test.describe("File small company accounts page - revising accounts from a recei
     test(`refuses micro-entity accounts, which revise on the micro-entity page (${width})`, async ({ page }) => {
       await openAmend(page, accountsReceipt(microCase.xhtml, { companyNumber: "06846849" }), { width });
       await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("micro-entity accounts page");
+      await expect(page.locator("#statusMessagesContainer .status-message-next")).toHaveAttribute(
+        "href",
+        `fileMicroEntityAccounts.html?amend=${encodeURIComponent(RECEIPT_NAME)}`,
+      );
       await expect(page.locator("#formView")).toBeHidden();
       await screenshot(page, "small-amend-refusal-micro-entity", width);
     });
@@ -603,7 +693,7 @@ test.describe("File small company accounts page - revising accounts from a recei
 
   for (const filleted of [false, true]) {
     const copy = filleted ? "filleted" : "full";
-    test(`opens a ${copy} copy with each note filled as filed, names the note it has no boxes for, and files them`, async ({ page }) => {
+    test(`opens a ${copy} copy with each note filled as filed and files them unchanged`, async ({ page }) => {
       const notesCase = SMALL_COMPANY_NOTES_CASE_INPUT;
       await openAmend(page, accountsReceipt(buildSmallCompanyAccounts({ ...notesCase, filleted })));
       await expect(page.locator("#revisionSection")).toBeVisible();
@@ -623,10 +713,10 @@ test.describe("File small company accounts page - revising accounts from a recei
       await expect(page.locator("#intangibleAssetNoteFields")).toBeVisible();
       await expect(page.locator("#intangibleNoteCostAtStart")).toHaveValue("11000");
       await expect(page.locator("#intangibleNoteAmortisationOnDisposals")).toHaveValue("200");
-      await expect(page.locator("#revisionNotesNote")).toBeVisible();
-      await expect(page.locator("#revisionNotesNote")).toHaveText(
-        "The filed accounts carry these notes, which you must enter again: called up share capital.",
-      );
+      await expect(page.locator("#revisionNotesNote")).toBeHidden();
+      await expect(page.locator("#includeShareCapitalNote")).toBeChecked();
+      await expect(page.locator("#shareCapitalClass")).toHaveValue("ordinaryShares");
+      await expect(page.locator("#shareCapitalNominalValue")).toHaveValue("1");
       await screenshotAtBothWidths(page, `small-amend-notes-${copy}`);
 
       if (filleted) {
@@ -649,6 +739,7 @@ test.describe("File small company accounts page - revising accounts from a recei
       expect(sent.smallCompany.intangibleAssetNote).toEqual(notesCase.intangibleAssetNote);
       expect(sent.smallCompany.dividendPolicy).toBe(notesCase.dividendPolicy);
       expect(sent.smallCompany.accountingPolicies).toBe(notesCase.accountingPolicies);
+      expect(sent.smallCompany.shareCapital).toEqual(notesCase.shareCapital);
     });
   }
 
@@ -664,9 +755,10 @@ test.describe("File small company accounts page - revising accounts from a recei
           await expect(page.locator(`#${year}${line[0].toUpperCase()}${line.slice(1)}`)).toHaveValue(String(value));
         }
       }
-      await expect(page.locator("#revisionNotesNote")).toHaveText(
-        "The filed accounts carry these notes, which you must enter again: called up share capital.",
-      );
+      await expect(page.locator("#revisionNotesNote")).toBeHidden();
+      await expect(page.locator("#includeShareCapitalNote")).toBeChecked();
+      await expect(page.locator("#shareCapitalClass")).toHaveValue("ordinaryShares");
+      await expect(page.locator("#shareCapitalNominalValue")).toHaveValue("1");
       if (filleted) {
         for (const [line, value] of Object.entries(input.profitAndLoss.current)) {
           const box = page.locator(`#current${line[0].toUpperCase()}${line.slice(1)}`);
@@ -688,6 +780,51 @@ test.describe("File small company accounts page - revising accounts from a recei
       }
     });
   }
+
+  test("opens accounts with two directors' advances in two rows and files them unchanged", async ({ page }) => {
+    const advances = [
+      {
+        name: "Alex Jones",
+        terms: "Interest free & repayable on demand",
+        balanceAtStart: 300,
+        advanced: 400,
+        repaid: 200,
+        balanceAtEnd: 500,
+      },
+      { name: "Alan James Morgan", terms: "Interest at 2.25% a year", balanceAtStart: 0, advanced: 300, repaid: 0, balanceAtEnd: 300 },
+    ];
+    await openAmend(
+      page,
+      accountsReceipt(buildSmallCompanyAccounts({ ...SMALL_COMPANY_EVERY_LINE_CASE_INPUT, directorsAdvances: advances })),
+    );
+    await expect(page.locator("#revisionSection")).toBeVisible();
+    await expect(page.locator(".directors-advance-row")).toHaveCount(2);
+    await expect(page.locator("#revisionNotesNote")).toBeHidden();
+    await expect(page.locator(".directors-advance-row").nth(1).locator('[data-advance-field="name"]')).toHaveValue("Alan James Morgan");
+    await screenshotAtBothWidths(page, "small-amend-two-advances");
+    await page.fill("#revisionNonCompliance", "The original accounts left out the stocks held at the year end.");
+    await page.fill("#revisionAmendments", "Stocks are now shown.");
+    await page.fill("#directorDateApproved", "2026-11-20");
+    await page.evaluate(() => {
+      document.getElementById("companyAuthCode").value = "ABC123";
+      return handleSubmitFiling();
+    });
+    await expect(page.locator("#filingResult")).toContainText("Companies House accepted the revised accounts.");
+    const [sent] = await page.evaluate(() => window.sentAccounts);
+    expect(sent.smallCompany.directorsAdvances).toEqual(advances);
+  });
+
+  test("names a note whose facts the filed accounts carry and cannot be read back", async ({ page }) => {
+    const filed = buildSmallCompanyAccounts(SMALL_COMPANY_NOTES_CASE_INPUT).replace(
+      /(<ix:nonNumeric name="core:TaxPolicy"[^>]*>)([^<]*)/,
+      "$1<span>$2</span>",
+    );
+    await openAmend(page, accountsReceipt(filed));
+    await expect(page.locator("#revisionSection")).toBeVisible();
+    await expect(page.locator("#revisionNotesNote")).toHaveText(
+      "The filed accounts carry these notes, which you must enter again: accounting policies.",
+    );
+  });
 
   test("opens accounts that state no ultimate controlling party with that choice made, and names no note to enter", async ({ page }) => {
     await openAmend(
@@ -715,16 +852,29 @@ test.describe("File small company accounts page - revising accounts from a recei
 
   test("shows its own sentence, and no technical message, when the accounts cannot be opened", async ({ page }) => {
     await openAmend(page, accountsReceipt(fullCase.xhtml), { profileFails: true });
-    await expect(page.locator("#statusMessagesContainer .status-error")).toHaveText(
+    await expect(page.locator("#statusMessagesContainer .status-message-cause")).toHaveText(
       "We could not open those accounts to revise. Open the filing again from your receipts.",
     );
+    await expect(page.locator("#statusMessagesContainer .status-message-next")).toHaveAttribute("href", "/hmrc/receipt/receipts.html");
     await expect(page.locator("#formView")).toBeHidden();
     await screenshotAtBothWidths(page, "small-amend-refusal-cannot-open");
+  });
+
+  test("states the revised accounts activity's status on a refusal too", async ({ page }) => {
+    await openAmend(page, accountsReceipt(fullCase.xhtml, { statusCode: "REJECT" }));
+    await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("did not accept those accounts");
+    await expect(page.locator("[data-feature-status]")).toHaveText(
+      "Status: preview. Revised accounts are a preview here: nothing you file reaches the live Companies House register.",
+    );
   });
 
   test("refuses accounts filed with a Company Tax Return", async ({ page }) => {
     await openAmend(page, accountsReceipt(fullCase.xhtml, { jointFilingId: "joint-1" }));
     await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("revise them on the Company Tax Return page");
+    await expect(page.locator("#statusMessagesContainer .status-message-next")).toHaveAttribute(
+      "href",
+      `filings.html?receipt=${encodeURIComponent(RECEIPT_NAME)}`,
+    );
     await expect(page.locator("#revisionBanner")).toBeHidden();
     await screenshotAtBothWidths(page, "small-amend-refusal-joint-filing");
   });
@@ -735,6 +885,11 @@ test.describe("File small company accounts page - revising accounts from a recei
     await page.fill("#directorDateApproved", "2026-11-20");
     expect(await page.evaluate(() => reportRevisionProblems())).toBe(true);
     await expect(page.locator(".error-summary")).toContainText("Say what was wrong with the original accounts");
+    await page.fill("#revisionNonCompliance", "The original accounts left out the stocks held at the year end.");
+    await expect(page.locator(".error-summary")).not.toContainText("Say what was wrong with the original accounts");
+    await expect(page.locator(".error-summary")).toContainText("Say what the revised accounts change");
+    await page.fill("#revisionAmendments", "Stocks are now shown.");
+    await expect(page.locator(".error-summary")).toHaveCount(0);
   });
 
   for (const width of [1280, 390]) {
