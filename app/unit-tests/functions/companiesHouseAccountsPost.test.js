@@ -808,8 +808,12 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       statusCode: "ACCEPT",
       submissionNumber: "00001A",
       companyNumber: "00000001",
-      filedDocument: "<html/>",
+      filedDocument: filedDocumentFor("2025-01-01", "2025-12-31"),
     };
+
+    function filedDocumentFor(start, end) {
+      return `<html><xbrli:context id="y2025"><xbrli:period><xbrli:startDate>${start}</xbrli:startDate><xbrli:endDate>${end}</xbrli:endDate></xbrli:period></xbrli:context><ix:nonNumeric name="bus:EntityCurrentLegalOrRegisteredName" contextRef="y2025">SIMULATOR EXAMPLE COMPANY LIMITED</ix:nonNumeric></html>`;
+    }
 
     async function pendingData() {
       const lib = await import("@aws-sdk/lib-dynamodb");
@@ -841,6 +845,11 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       ["accounts filed with a Company Tax Return", { ...ORIGINAL_RECEIPT, jointFilingId: "joint-1" }, "Company Tax Return page"],
       ["accounts that are already revised accounts", { ...ORIGINAL_RECEIPT, amended: true }, "already revised accounts"],
       ["accounts of another company", { ...ORIGINAL_RECEIPT, companyNumber: "09999999" }, "for another company"],
+      [
+        "accounts for another period",
+        { ...ORIGINAL_RECEIPT, filedDocument: filedDocumentFor("2024-01-01", "2024-12-31") },
+        "The accounts the receipt names are for the period 2024-01-01 to 2024-12-31, so revised accounts for 2025-01-01 to 2025-12-31 cannot replace them.",
+      ],
     ];
     for (const [name, receipt, sentence] of refusals) {
       test(`refuses revised accounts that name ${name}, with a sentence, and sends nothing`, async () => {

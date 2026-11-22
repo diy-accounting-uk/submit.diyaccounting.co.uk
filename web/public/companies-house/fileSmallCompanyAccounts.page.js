@@ -798,7 +798,9 @@ async function startRevision(receiptName) {
     const restoreStatus = await module.showRevisionStatus(document.querySelector("[data-feature-status]"));
     revision = { module, source: read.source, restoreStatus };
     module.showRevisionSection(revisionElements(), read.source);
-    document.getElementById("revisionFilletedNote").hidden = !read.source.mapped.filleted;
+    document.getElementById("revisionCopyNote").hidden = false;
+    document.getElementById("revisionCopyFull").hidden = read.source.mapped.filleted;
+    document.getElementById("revisionCopyFilleted").hidden = !read.source.mapped.filleted;
     document.getElementById("revisionBanner").hidden = false;
     document.getElementById("changeCompanyLine").hidden = true;
     showRevisionLateNote();
@@ -820,7 +822,7 @@ function endRevision() {
   revision = null;
   document.getElementById("revisionBanner").hidden = true;
   document.getElementById("revisionLateNote").hidden = true;
-  document.getElementById("revisionFilletedNote").hidden = true;
+  document.getElementById("revisionCopyNote").hidden = true;
   document.getElementById("revisionAccountantsNote").hidden = true;
   document.getElementById("changeCompanyLine").hidden = false;
 }

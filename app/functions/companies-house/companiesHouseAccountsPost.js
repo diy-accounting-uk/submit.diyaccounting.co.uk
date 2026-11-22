@@ -518,7 +518,10 @@ export async function ingestHandler(event) {
   const revisesReceipt = accounts.revision?.revisesReceipt;
   if (revisesReceipt) {
     const revisedReceipt = (await getReceipt(userSub, revisesReceipt.replace(/\.json$/, ""))) ?? null;
-    const refusal = revisedReceiptRefusal(revisedReceipt, accounts.companyNumber);
+    const refusal = revisedReceiptRefusal(revisedReceipt, accounts.companyNumber, {
+      periodStart: accounts.periodStart,
+      periodEnd: accounts.periodEnd,
+    });
     if (refusal) errorMessages.push(refusal);
   }
   if (errorMessages.length > 0) {

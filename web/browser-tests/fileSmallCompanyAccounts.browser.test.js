@@ -8,8 +8,12 @@ import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { serveMoneyInput, servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
-import { accountsDocumentCases, SMALL_COMPANY_CASE_INPUT } from "@app/test-helpers/accountsDocumentCases.js";
-import { buildSmallCompanyAccounts } from "@app/services/smallCompanyAccountsIxbrl.js";
+import {
+  accountsDocumentCases,
+  SMALL_COMPANY_CASE_INPUT,
+  SMALL_COMPANY_NOTES_CASE_INPUT,
+} from "@app/test-helpers/accountsDocumentCases.js";
+import { buildSmallCompanyAccounts, SMALL_COMPANY_POLICY_FIELDS } from "@app/services/smallCompanyAccountsIxbrl.js";
 import { inAccountsLanguage } from "@app/services/accountsLanguage.js";
 import { readSubmitCss } from "./submitCss.js";
 
@@ -510,7 +514,9 @@ test.describe("File small company accounts page - revising accounts from a recei
       await expect(page.locator("#copyFull")).toBeChecked();
       await expect(page.locator("#currentTurnover")).not.toHaveValue("");
       await expect(page.locator("#currentCalledUpShareCapital")).not.toHaveValue("");
-      await expect(page.locator("#revisionFilletedNote")).toBeHidden();
+      expect((await page.locator("#revisionCopyNote").innerText()).trim()).toBe(
+        "The accounts filed were a full copy. You can file the revision as a full or a filleted copy below.",
+      );
       await expect(page.locator("#changeCompanyLink")).toBeHidden();
       await expect(page.locator("[data-feature-status]")).toHaveText(
         "Status: preview. Revised accounts are a preview here: nothing you file reaches the live Companies House register.",
@@ -527,8 +533,10 @@ test.describe("File small company accounts page - revising accounts from a recei
     await openAmend(page, accountsReceipt(filletedCase.xhtml));
     await expect(page.locator("#revisionSection")).toBeVisible();
     await expect(page.locator("#copyFilleted")).toBeChecked();
-    await expect(page.locator("#revisionFilletedNote")).toBeVisible();
-    await expect(page.locator("#revisionFilletedNote")).toContainText("holds no profit and loss account");
+    await expect(page.locator("#revisionCopyNote")).toBeVisible();
+    const statement = (await page.locator("#revisionCopyNote").innerText()).trim();
+    expect(statement).toMatch(/^The accounts filed were a filleted copy, which holds no profit and loss account\./);
+    expect(statement).not.toContain("were a full copy");
     await expect(page.locator("#currentTurnover")).toHaveValue("");
     await expect(page.locator("#currentCalledUpShareCapital")).not.toHaveValue("");
     await screenshot(page, "small-amend-filleted-note", 1280);
@@ -557,7 +565,9 @@ test.describe("File small company accounts page - revising accounts from a recei
     expect(await page.evaluate(() => reportRevisionProblems())).toBe(true);
     await expect(page.locator("#revisionOriginalDate-error")).toContainText("Enter the date the original accounts were approved");
 
+    await expect(page.locator("#periodStart")).toHaveJSProperty("readOnly", true);
     await page.evaluate(() => startAgain());
+    await expect(page.locator("#periodStart")).toHaveJSProperty("readOnly", false);
     await expect(page.locator("[data-feature-status]")).toHaveAttribute("data-feature-status", "production");
     await expect(page.locator("[data-feature-status]")).toContainText("Status: production.");
     await expect(page.locator("#revisionOriginalDate")).toHaveJSProperty("readOnly", true);
@@ -585,6 +595,66 @@ test.describe("File small company accounts page - revising accounts from a recei
     await expect(page.locator("#accountantsName")).toHaveValue(ACCOUNTANTS_REPORT.accountantsName);
     await expect(page.locator("#accountantsStatement")).toHaveValue(ACCOUNTANTS_REPORT.statement);
     await expect(page.locator("#revisionAccountantsNote")).toBeHidden();
+  });
+
+  for (const filleted of [false, true]) {
+    const copy = filleted ? "filleted" : "full";
+    test(`opens a ${copy} copy with each note filled as filed, names the note it has no boxes for, and files them`, async ({ page }) => {
+      const notesCase = SMALL_COMPANY_NOTES_CASE_INPUT;
+      await openAmend(page, accountsReceipt(buildSmallCompanyAccounts({ ...notesCase, filleted })));
+      await expect(page.locator("#revisionSection")).toBeVisible();
+      for (const field of ["accountingPolicies", ...SMALL_COMPANY_POLICY_FIELDS.map((policy) => policy.field)]) {
+        await expect(page.locator(`#${field}`)).toHaveValue(notesCase[field]);
+      }
+      await expect(page.locator("#morePolicies")).toHaveAttribute("open", "");
+      await expect(page.locator("#controllingPartyNamed")).toBeChecked();
+      await expect(page.locator("#controllingPartyName")).toHaveValue("Morgan Holdings Limited");
+      await expect(page.locator("#controllingPartyUltimate")).toBeChecked();
+      await expect(page.locator("#directorsAdvanceName")).toHaveValue("Alex Jones");
+      await expect(page.locator("#directorsAdvanceTerms")).toHaveValue("Interest free & repayable on demand");
+      await expect(page.locator("#directorsAdvanceAtStart")).toHaveValue("300");
+      await expect(page.locator("#directorsAdvanceMade")).toHaveValue("700");
+      await expect(page.locator("#directorsAdvanceRepaid")).toHaveValue("200");
+      await expect(page.locator("#includeIntangibleAssetNote")).toBeChecked();
+      await expect(page.locator("#intangibleAssetNoteFields")).toBeVisible();
+      await expect(page.locator("#intangibleNoteCostAtStart")).toHaveValue("11000");
+      await expect(page.locator("#intangibleNoteAmortisationOnDisposals")).toHaveValue("200");
+      await expect(page.locator("#revisionNotesNote")).toBeVisible();
+      await expect(page.locator("#revisionNotesNote")).toHaveText(
+        "The filed accounts carry these notes, which you must enter again: called up share capital.",
+      );
+
+      if (filleted) {
+        for (const [line, value] of Object.entries(notesCase.profitAndLoss.current)) {
+          const box = page.locator(`#current${line[0].toUpperCase()}${line.slice(1)}`);
+          if ((await box.count()) && (await box.isEditable())) await box.fill(String(value));
+        }
+      }
+      await page.fill("#revisionNonCompliance", "The original accounts left out the stocks held at the year end.");
+      await page.fill("#revisionAmendments", "Stocks are now shown.");
+      await page.fill("#directorDateApproved", "2026-11-20");
+      await page.evaluate(() => {
+        document.getElementById("companyAuthCode").value = "ABC123";
+        return handleSubmitFiling();
+      });
+      await expect(page.locator("#filingResult")).toContainText("Companies House accepted the revised accounts.");
+      const [sent] = await page.evaluate(() => window.sentAccounts);
+      expect(sent.smallCompany.controllingParty).toEqual(notesCase.controllingParty);
+      expect(sent.smallCompany.directorsAdvances).toEqual(notesCase.directorsAdvances);
+      expect(sent.smallCompany.intangibleAssetNote).toEqual(notesCase.intangibleAssetNote);
+      expect(sent.smallCompany.dividendPolicy).toBe(notesCase.dividendPolicy);
+      expect(sent.smallCompany.accountingPolicies).toBe(notesCase.accountingPolicies);
+    });
+  }
+
+  test("opens accounts that state no ultimate controlling party with that choice made, and names no note to enter", async ({ page }) => {
+    await openAmend(
+      page,
+      accountsReceipt(buildSmallCompanyAccounts({ ...SMALL_COMPANY_CASE_INPUT, controllingParty: { ultimate: false } })),
+    );
+    await expect(page.locator("#revisionSection")).toBeVisible();
+    await expect(page.locator("#controllingPartyNoUltimate")).toBeChecked();
+    await expect(page.locator("#revisionNotesNote")).toBeHidden();
   });
 
   test("asks for the accountants' report again when the filed report cannot be read", async ({ page }) => {

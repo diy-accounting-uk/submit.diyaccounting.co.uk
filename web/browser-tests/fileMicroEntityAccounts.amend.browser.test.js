@@ -51,15 +51,26 @@ const MICRO_TEST_CASE = JSON.parse(
 ).find((testCase) => testCase.name === "micro-entity-accounts");
 const ACCOUNTANTS_REPORT = { accountantsName: "Jones & Partners", statement: "We compiled these accounts from the company's records." };
 
-function microDocument({ language = "en", accountantsReport } = {}) {
-  const input = { ...microInputFromTestServiceCase(MICRO_TEST_CASE), ...(accountantsReport ? { accountantsReport } : {}) };
+function microDocument({ language = "en", accountantsReport, directorsAdvances } = {}) {
+  const input = {
+    ...microInputFromTestServiceCase(MICRO_TEST_CASE),
+    ...(accountantsReport ? { accountantsReport } : {}),
+    ...(directorsAdvances ? { directorsAdvances } : {}),
+  };
   return inAccountsLanguage(language, () => buildMicroEntityAccounts(input));
 }
 
 async function openAmend(
   page,
   receipt,
-  { offered = true, width = WIDTHS.desktop, outcome = "ACCEPT", jurisdiction = "england-wales", profileFails = false } = {},
+  {
+    offered = true,
+    width = WIDTHS.desktop,
+    outcome = "ACCEPT",
+    jurisdiction = "england-wales",
+    profileFails = false,
+    revisedStatus = "preview",
+  } = {},
 ) {
   await page.setViewportSize({ width, height: 900 });
   await page.addInitScript(
@@ -130,7 +141,7 @@ async function openAmend(
       body: `export const fetchCatalogText = async () => "";
         export const fetchCurrentEnvironmentName = async () => "ci";
         export const parseCatalogueText = () => ({ activities: [{ id: "file-revised-accounts", name: "File Revised Accounts (Companies House, preview)" }] });
-        export const activityStatus = (activity) => (activity?.id === "file-revised-accounts" ? "preview" : null);
+        export const activityStatus = (activity) => (activity?.id === "file-revised-accounts" ? ${JSON.stringify(revisedStatus)} : null);
         export const isRevisedAccountsOffered = () => ${offered};`,
     }),
   );
@@ -279,6 +290,34 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     await expect(page.locator("#revisionAccountantsNote")).toBeHidden();
   });
 
+  for (const language of ["en", "cy"]) {
+    test(`names the advances to directors, which this form has no boxes for, in accounts filed in ${language}`, async ({ page }) => {
+      const directorName = microInputFromTestServiceCase(MICRO_TEST_CASE).directorName;
+      const directorsAdvances = [
+        { name: directorName, terms: "Repayable within nine months", balanceAtStart: 0, advanced: 450, repaid: 50, balanceAtEnd: 400 },
+      ];
+      await openAmend(
+        page,
+        accountsReceipt(microDocument({ language, directorsAdvances })),
+        language === "cy" ? { jurisdiction: "wales" } : {},
+      );
+      await expect(page.locator("#revisionSection")).toBeVisible();
+      await expect(page.locator("#revisionNotesNote")).toBeVisible();
+      await expect(page.locator("#revisionNotesNote")).toHaveText(
+        "The filed accounts carry these notes, which you must enter again: advances and credits to directors.",
+      );
+    });
+  }
+
+  test("names no note to enter again for accounts whose notes the form carries, dormant or not", async ({ page }) => {
+    await openAmend(page, accountsReceipt(microDocument()));
+    await expect(page.locator("#revisionSection")).toBeVisible();
+    await expect(page.locator("#revisionNotesNote")).toBeHidden();
+    await openAmend(page, accountsReceipt(dormantCase.xhtml, { companyNumber: "09991482" }));
+    await expect(page.locator("#dormant")).toBeChecked();
+    await expect(page.locator("#revisionNotesNote")).toBeHidden();
+  });
+
   test("asks for the accountants' report again when the filed report cannot be read", async ({ page }) => {
     const document = microDocument({ accountantsReport: ACCOUNTANTS_REPORT }).replace(/bus:NameEntityAccountants/g, "bus:SomethingElse");
     await openAmend(page, accountsReceipt(document));
@@ -320,6 +359,23 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("small company accounts page");
     await expect(page.locator("#formView")).toBeHidden();
   });
+
+  const statuses = [
+    ["production", "Status: production. Revised accounts you file here reach the live Companies House register."],
+    ["sandbox", "Status: sandbox. Revised accounts you file here go to the Companies House test service and file nothing real."],
+    ["preview", "Status: preview. Revised accounts are a preview here: nothing you file reaches the live Companies House register."],
+    [
+      null,
+      "Status: not yet in production. Revised accounts are not filed for real from here yet. The availability table says what each filing does.",
+    ],
+  ];
+  for (const [status, line] of statuses) {
+    test(`states the revised accounts activity's ${status ?? "unnamed"} status while revising`, async ({ page }) => {
+      await openAmend(page, accountsReceipt(microCase.xhtml), { revisedStatus: status });
+      await expect(page.locator("#formView")).toBeVisible();
+      await expect(page.locator("[data-feature-status]")).toHaveText(line);
+    });
+  }
 
   test("shows its own sentence, and no technical message, when the accounts cannot be opened", async ({ page }) => {
     await openAmend(page, accountsReceipt(microCase.xhtml), { profileFails: true });
@@ -374,8 +430,11 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
   test("a new filing after the revision files original accounts", async ({ page }) => {
     await openAmend(page, accountsReceipt(microCase.xhtml));
     await expect(page.locator("#revisionSection")).toBeVisible();
+    await expect(page.locator("#periodEnd")).toHaveJSProperty("readOnly", true);
     await page.evaluate(() => startAgain());
     await expect(page.locator("#revisionBanner")).toBeHidden();
+    await expect(page.locator("#periodStart")).toHaveJSProperty("readOnly", false);
+    await expect(page.locator("#periodEnd")).toHaveJSProperty("readOnly", false);
     await expect(page.locator("[data-feature-status]")).toContainText("Status: production.");
     await expect(page.locator("[data-feature-status]")).toHaveAttribute("data-feature-status", "production");
     await page.evaluate(() => {

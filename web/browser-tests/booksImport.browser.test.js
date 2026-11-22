@@ -1304,6 +1304,46 @@ test.describe("books import on an accounts form that revises filed accounts", ()
     });
   }
 
+  for (const [form, url, caseName] of [
+    ["micro-entity", MICRO_URL, "micro-entity-accounts"],
+    ["small company", SMALL_URL, "small-company-accounts-full"],
+  ]) {
+    const earlierYear = { companyNumber: "12345678", periodStart: "2024-04-01", periodEnd: "2025-03-31" };
+
+    test(`keeps the period of the accounts being revised on the ${form} form`, async ({ page }) => {
+      await openAmendPage(page, url, builtAccountsDocument(caseName, { companyNumber: "12345678" }).toString("utf8"), "12345678");
+      await expect(page.locator("#periodStart")).toHaveJSProperty("readOnly", true);
+      await expect(page.locator("#periodEnd")).toHaveJSProperty("readOnly", true);
+    });
+
+    test(`a book for another year fills nothing and keeps the revision on the ${form} form`, async ({ page }) => {
+      await openAmendPage(page, url, builtAccountsDocument(caseName, earlierYear).toString("utf8"), "12345678");
+      const originalDate = await page.locator("#revisionOriginalDate").inputValue();
+      const filedFixedAssets = await page.locator("#currentFixedAssets").inputValue();
+      await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
+
+      await expect(page.locator("#booksImportStatus")).toContainText(
+        "precision-code.diya-gl.zip is for the period 2025-04-01 to 2026-03-31; the accounts being revised are for 2024-04-01 to 2025-03-31. Nothing filled.",
+        { timeout: 60_000 },
+      );
+      await expect(page.locator("#currentFixedAssets")).toHaveValue(filedFixedAssets);
+      await expect(page.locator("#periodEnd")).toHaveValue("2025-03-31");
+      await expectRevisionKept(page, { originalDate, companyNumber: "12345678" });
+    });
+
+    test(`an iXBRL document for another year fills nothing on the ${form} form`, async ({ page }) => {
+      await openAmendPage(page, url, builtAccountsDocument(caseName, { companyNumber: "12345678" }).toString("utf8"), "12345678");
+      const filedFixedAssets = await page.locator("#currentFixedAssets").inputValue();
+      await chooseFile(page, "earlier.xhtml", builtAccountsDocument(caseName, earlierYear), "application/xhtml+xml");
+
+      await expect(page.locator("#booksImportStatus")).toContainText(
+        "earlier.xhtml is for the period 2024-04-01 to 2025-03-31; the accounts being revised are for 2025-04-01 to 2026-03-31. Nothing filled.",
+        { timeout: 60_000 },
+      );
+      await expect(page.locator("#currentFixedAssets")).toHaveValue(filedFixedAssets);
+    });
+  }
+
   test("a corrected iXBRL document replaces the figures and keeps the revision on the micro-entity form", async ({ page }) => {
     await openAmendPage(page, MICRO_URL, microFiled(), "12345678");
     const originalDate = await page.locator("#revisionOriginalDate").inputValue();

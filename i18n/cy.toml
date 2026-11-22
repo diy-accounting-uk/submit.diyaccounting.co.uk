@@ -17561,9 +17561,6 @@ cy = '''Beth mae’r cyfrifon diwygiedig yn ei newid?'''
 hash = "4f3c83c09ef8"
 cy = '''Mae’r dyddiad cymeradwyo isod fwy na 28 diwrnod yn ôl. Cyflwynwch y cyfrifon diwygiedig nawr: mae’r gyfraith yn rhoi 28 diwrnod i’r cyfarwyddwyr o’r adeg y maent yn eu cymeradwyo.'''
 
-[strings."ch-small-company.the-accounts-filed-were-a-filleted-2cd0d6"]
-hash = "2cd0d667ce2a"
-cy = '''Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, ac nid oes cyfrif elw a cholled ynddo. Teipiwch linellau’r cyfrif elw a cholled isod, neu ollwng llyfr y cwmni ar y cerdyn uchod.'''
 
 [strings."ch.revision.not-small"]
 hash = "9d271c1998af"
@@ -17740,3 +17737,49 @@ cy = '''Mae gan y cyfrifon a ffeiliwyd adroddiad cyfrifwyr na allai’r dudalen 
 [strings."ch.filing.no-comparatives"]
 hash = "46ad6e4354fd"
 cy = '''Cafodd y cyfrifon hyn eu ffeilio heb ffigurau’r flwyddyn flaenorol, felly ni ellir eu diwygio yma eto.'''
+
+# == Revised accounts that carry over the filed notes and period, and every status of the revised accounts activity ==
+
+[strings."ch.revision.status-not-production-label"]
+hash = "9ef51fdb4938"
+cy = '''Statws: ddim mewn cynhyrchu (production) eto.'''
+
+[strings."ch.revision.status-not-production"]
+hash = "b22dbd338dbb"
+cy = '''Nid yw cyfrifon diwygiedig yn cael eu ffeilio go iawn o’r fan hon eto. Mae’r tabl argaeledd yn dweud beth mae pob ffeilio yn ei wneud.'''
+
+[strings."ch-small-company.the-accounts-filed-were-a-full-b98563"]
+hash = "b98563bafa2e"
+cy = '''<span id="revisionCopyFull">Copi llawn oedd y cyfrifon a ffeiliwyd. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod.</span> <span id="revisionCopyFilleted">Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, ac nid oes cyfrif elw a cholled ynddo. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod: ar gyfer copi llawn, teipiwch linellau’r cyfrif elw a cholled, neu ollwng llyfr y cwmni ar y cerdyn uchod.</span>'''
+
+[strings."ch.revision.refuse-other-period"]
+hash = "35efb5496484"
+cy = '''Mae’r cyfrifon y mae’r dderbynneb yn eu henwi ar gyfer y cyfnod {from} i {to}, felly ni all cyfrifon diwygiedig ar gyfer {start} i {end} gymryd eu lle.'''
+
+[strings."ch.revision.notes-to-enter"]
+hash = "5af6cca8a5fe"
+cy = '''Mae’r cyfrifon a ffeiliwyd yn cynnwys y nodiadau hyn, y mae’n rhaid i chi eu rhoi eto: {notes}.'''
+
+[strings."ch.revision.note-policies"]
+hash = "d744b902438e"
+cy = '''polisïau cyfrifyddu'''
+
+[strings."ch.revision.note-controlling-party"]
+hash = "9c3c458a0dba"
+cy = '''parti sy’n rheoli'''
+
+[strings."ch.revision.note-debtors"]
+hash = "0d5275e96605"
+cy = '''dyledwyr'''
+
+[strings."ch.revision.note-directors-advances"]
+hash = "4d34028e4169"
+cy = '''blaensymiau a chredydau i gyfarwyddwyr'''
+
+[strings."ch.revision.note-intangible-assets"]
+hash = "7787ed290f7f"
+cy = '''asedau anniriaethol'''
+
+[strings."ch.revision.note-share-capital"]
+hash = "96ab5e8c8f2c"
+cy = '''cyfalaf cyfranddaliadau wedi’i alw'''
