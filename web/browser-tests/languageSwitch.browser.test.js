@@ -105,7 +105,7 @@ test("a page with no Welsh copy switches its chrome to Welsh and back, and keeps
   await expect(page.locator("a.login-link")).toHaveText("Mewngofnodi");
   await expect(page.locator("body > .skip-link")).toHaveText("Neidio i’r prif gynnwys");
   await expect(page.locator("footer")).toHaveAttribute("lang", "cy");
-  await expect(page.locator("footer .footer-links")).toContainText("Preifatrwydd (yn Saesneg)");
+  await expect(page.locator("footer .footer-links")).toContainText("Diogelwch (yn Saesneg)");
   await expect(page.locator(".language-switch")).toHaveAttribute("aria-label", "Iaith");
 
   await page.locator(".language-switch").getByRole("link", { name: "English" }).click();
@@ -293,7 +293,7 @@ test("the Welsh home reads its cookie banner, its cookie dialog and its How to f
   const banner = page.locator("#consent-banner");
   await expect(banner).toHaveAttribute("aria-label", "Caniatâd cwcis");
   await expect(banner).toContainText("Rydym yn defnyddio cwcis");
-  await expect(banner).toContainText("polisi preifatrwydd (yn Saesneg).");
+  await expect(banner).toContainText("Gweler ein polisi preifatrwydd.");
   await banner.getByRole("button", { name: "Gwrthod" }).click();
   await expect(banner).toHaveCount(0);
 

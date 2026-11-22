@@ -255,7 +255,7 @@ test.describe("Accounts forms' prior year from the last filed accounts", () => {
     await expect(page.locator("#priorYearNote")).toHaveText(
       "Companies House holds no accounts for this company, so the prior year is left empty.",
     );
-    await expect(page.locator("#includeComparatives")).not.toBeChecked();
+    await expect(page.locator("#priorFixedAssets")).toHaveValue("");
   });
 
   test("a company whose last accounts end a year before this period opens the form empty, naming both dates and the filing history", async ({

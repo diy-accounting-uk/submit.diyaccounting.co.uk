@@ -582,14 +582,14 @@ class CompaniesHouseStackTest {
                         "/api/v1/companies-house/psc-verification-statement/{submissionNumber}",
                         "/api/v1/companies-house/psc-cessation",
                         "/api/v1/companies-house/psc-change-details",
+                        "/api/v1/companies-house/psc-statement-notification",
+                        "/api/v1/companies-house/psc-statement-withdrawal",
                         "/api/v1/companies-house/forms/{kind}/{submissionNumber}",
                         "/api/v1/companies-house/accounting-reference-date",
                         "/api/v1/companies-house/officer-resignation",
                         "/api/v1/companies-house/sail-address",
                         "/api/v1/companies-house/record-location",
-                        "/api/v1/companies-house/change-of-name",
-                        "/api/v1/companies-house/psc-statement-notification",
-                        "/api/v1/companies-house/psc-statement-withdrawal"),
+                        "/api/v1/companies-house/change-of-name"),
                 stack.lambdaFunctionProps.stream().map(p -> p.urlPath()).toList());
     }
 
