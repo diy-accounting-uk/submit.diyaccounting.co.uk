@@ -445,7 +445,7 @@
           "text": "The average number of employees is now 3. No other figure changes.",
           "clear": true,
           "caption": "Say what the revised accounts change.",
-          "instruction": "Say what the revised accounts change.",
+          "instruction": "Under What do the revised accounts change, describe the correction and anything that follows from it.",
           "headline": "What changes",
           "keyWord": "changes"
         },
