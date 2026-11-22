@@ -347,6 +347,51 @@ test.describe("File Confirmation Statement page", () => {
     expect(previewCalls[0].directors[0].otherForenames).toBe("ELIZABETH");
   });
 
+  test("the gateway's character check passes a share class's prescribed particulars, which take any text", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page, {
+      filingData: {
+        ...FILING_DATA,
+        statementOfCapital: {
+          totalAmountUnpaid: 0,
+          totalNumberOfIssuedShares: 100,
+          shareCurrency: "GBP",
+          totalAggregateNominalValue: 100,
+          shares: [
+            { shareClass: "ORDINARY", prescribedParticulars: "Un bleidlais — ŵyr a wyres", numShares: 100, aggregateNominalValue: 100 },
+          ],
+        },
+      },
+    });
+    for (const module of ["companies-house-text-check.js", "companies-house-gateway-text.js"]) {
+      await page.route(`**/lib/${module}`, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/javascript",
+          body: fs.readFileSync(path.join(process.cwd(), "web/public/lib", module), "utf-8"),
+        }),
+      );
+    }
+    await loadPage(page);
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await acceptLawfulPurposeStatement(page);
+    await expect(page.locator("#prescribedParticulars-0")).toHaveValue("Un bleidlais — ŵyr a wyres");
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
+    await page.fill("#shareClass-0", "ORDINARY ŵ");
+    await page.click("#previewBtn");
+    await delay(200);
+    const messages = await page.evaluate(() => window.__statusMessages.map(({ message }) => message));
+    expect(messages.join(" ")).toContain("Share class has characters Companies House does not accept: ŵ");
+    expect(messages.join(" ")).not.toContain("Prescribed particulars");
+
+    await page.fill("#shareClass-0", "ORDINARY");
+    await page.click("#previewBtn");
+    await delay(200);
+    await expect(page.locator("#previewView")).toBeVisible();
+  });
+
   test("sends the register's shareholdings on a statement where nothing changed", async ({ page }) => {
     setupPage(page);
     const registerHolding = {

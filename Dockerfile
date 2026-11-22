@@ -56,6 +56,8 @@ COPY web/public/lib/accounts-notes-check.js web/public/lib/accounts-notes-check.
 COPY web/public/lib/first-accounts.js web/public/lib/first-accounts.js
 # The Companies House forms table: the filing route, the status poll, the presenter poll and the receipt emails read it.
 COPY web/public/lib/companies-house-forms.js web/public/lib/companies-house-forms.js
+# The gateway's character rule the form routes and the confirmation statement route share with the pages.
+COPY web/public/lib/companies-house-gateway-text.js web/public/lib/companies-house-gateway-text.js
 # The company name rule the change of name route shares with its page.
 COPY web/public/lib/companies-house-company-name.js web/public/lib/companies-house-company-name.js
 # The share capital arithmetic the return of allotment route shares with its page.

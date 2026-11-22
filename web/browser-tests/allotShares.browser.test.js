@@ -391,6 +391,50 @@ test("the failed read's sentence is in Welsh on the Welsh page", async ({ page }
   await expect(page.locator("#beforeSource")).toContainText("Nid oedd Submit yn gallu darllen cyfalaf cyfrannau’r cwmni");
 });
 
+for (const [language, prefix, cont, sentence] of [
+  ["English", "", "Continue", "has characters Companies House does not accept: ŵ"],
+  ["Welsh", "/cy", "Parhau", "nodau nad yw Tŷ’r Cwmnïau yn eu derbyn: ŵ"],
+]) {
+  test(`a consideration with a lower-case ŵ is stopped before anything is sent, in ${language}`, async ({ page }) => {
+    const filings = [];
+    await serveSite(page, { filings });
+    await page.goto(`${SITE}${prefix}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+    await page.locator("#companyNumber").fill("00000001");
+    await page.locator("#companyAuthCode").fill("SIMCS01");
+    await page.locator("#companyForm button[type=submit]").click();
+    await expect(page.locator("#formView")).toBeVisible();
+    await page.locator("#startDate").fill("2026-11-02");
+    await fillAllotment(page, {
+      shareClass: "Ordinary",
+      number: "50",
+      nominal: "1",
+      paid: "2.5",
+      consideration: "Fan o Glyndŵr, valued at 125 pounds.",
+    });
+    await page.getByRole("button", { name: cont }).click();
+    const status = page.locator("#statusMessagesContainer");
+    await expect(status).toContainText(sentence);
+    await expect(status).not.toContainText("valued at");
+    await expect(page.locator("#formView")).toBeVisible();
+    expect(filings).toHaveLength(0);
+  });
+}
+
+test("rights attached to shares take any text, a lower-case ŵ and a line break among it", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, { filings });
+  await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+  await lookUp(page);
+  await page.locator("#startDate").fill("2026-11-02");
+  await fillAllotment(page, { shareClass: "Ordinary", number: "50", nominal: "1", paid: "2.5" });
+  await page.locator('#beforeTables textarea[id^="before-rights-"]').fill("Un bleidlais — ŵyr a wyres.\nNo redemption.");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#reviewView")).toBeVisible();
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect.poll(() => filings.length).toBe(1);
+  expect(filings[0].statementOfCapital[0].shares[0].prescribedParticulars).toBe("Un bleidlais — ŵyr a wyres.\nNo redemption.");
+});
+
 test("a company authentication code Companies House does not accept stops at the company step with its sentence", async ({ page }) => {
   await serveSite(page, { filingData: 400 });
   await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });

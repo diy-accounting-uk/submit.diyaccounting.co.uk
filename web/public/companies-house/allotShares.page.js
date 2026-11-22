@@ -40,7 +40,8 @@ function showError(message) {
 }
 
 // One labelled field of a row. Each row's fields share the row's number in their ids.
-function field({ id, label, hint, value = "", multiline = false, className = "" }) {
+// gatewayText false marks a box the gateway takes any text in, so the page's character check passes it.
+function field({ id, label, hint, value = "", multiline = false, className = "", gatewayText = true }) {
   const group = document.createElement("div");
   group.className = "form-group";
   const labelElement = document.createElement("label");
@@ -53,6 +54,7 @@ function field({ id, label, hint, value = "", multiline = false, className = "" 
   if (multiline) input.rows = 3;
   else input.type = "text";
   if (className) input.className = className;
+  if (!gatewayText) input.dataset.gatewayText = "off";
   input.value = value;
   if (hint) {
     const hintElement = document.createElement("p");
@@ -208,6 +210,7 @@ function addBeforeRow(container, share = {}) {
       ),
       value: share.prescribedParticulars,
       multiline: true,
+      gatewayText: false,
     }),
   );
 }
@@ -351,6 +354,7 @@ function renderAfter() {
         ),
         value: newClassRights.get(rightsKey(currency, shareClass)) || "",
         multiline: true,
+        gatewayText: false,
       });
       const area = group.querySelector("textarea");
       area.dataset.key = rightsKey(currency, shareClass);

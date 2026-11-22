@@ -241,7 +241,8 @@ function buildShareClassRow(index, share = {}) {
     element("label", { for: `shareClass-${index}` }, window.siteText("ch.cs.share-class", "Share class")),
     textInput(`shareClass-${index}`, share.shareClass),
     element("label", { for: `prescribedParticulars-${index}` }, window.siteText("ch.cs.prescribed-particulars", "Prescribed particulars")),
-    textInput(`prescribedParticulars-${index}`, share.prescribedParticulars),
+    // Prescribed particulars take any text: the schema gives them no character pattern.
+    textInput(`prescribedParticulars-${index}`, share.prescribedParticulars, { "data-gateway-text": "off" }),
     element("label", { for: `numShares-${index}` }, window.siteText("ch.cs.number-of-shares", "Number of shares")),
     element("input", { type: "number", id: `numShares-${index}`, step: "1", min: "0", value: share.numShares || "" }),
     element(

@@ -313,6 +313,69 @@ describe("the filing route every Companies House form shares", () => {
     },
   );
 
+  // The text fields a form takes beside those of WELSH_TEXT: each change a request may make.
+  const MORE_WELSH_TEXT = [
+    ["psc-change-details", { newName: { forename: "Llŷr", surname: "BRAMWELL" } }, "newName.forename"],
+    ["psc-change-details", { nationality: "Cymro Glyndŵr" }, "nationality"],
+    ["psc-change-details", { countryOfResidence: "Gwlad y Bŵl" }, "countryOfResidence"],
+    [
+      "psc-change-details",
+      { residentialAddress: { premise: "1", street: "Lôn Glyndŵr", postTown: "Bangor", country: "GB-WLS", postcode: "LL57 1AA" } },
+      "residentialAddress.street",
+    ],
+    [
+      "psc-change-details",
+      {
+        pscKind: "corporate-entity-person-with-significant-control",
+        surname: undefined,
+        name: "TEIFI VALLEY HOLDINGS LIMITED",
+        newName: "Daliadau Glyndŵr",
+      },
+      "newName",
+    ],
+    [
+      "psc-change-details",
+      {
+        pscKind: "corporate-entity-person-with-significant-control",
+        surname: undefined,
+        name: "TEIFI VALLEY HOLDINGS LIMITED",
+        identification: { legalForm: "Cwmni Glyndŵr" },
+      },
+      "identification.legalForm",
+    ],
+    [
+      "officer-change",
+      {
+        corporate: true,
+        corporateName: "DIRECTORCO LIMITED",
+        newCorporateName: "Cwmni Glyndŵr",
+        newName: undefined,
+        dateOfBirth: undefined,
+      },
+      "newCorporateName",
+    ],
+    [
+      "officer-change",
+      {
+        corporate: true,
+        corporateName: "DIRECTORCO LIMITED",
+        address: { premise: "1", street: "Ffordd Glyndŵr", postTown: "Caerdydd", country: "GB-WLS", postcode: "CF10 1AA" },
+        newName: undefined,
+        dateOfBirth: undefined,
+      },
+      "address.street",
+    ],
+  ];
+
+  test.each(MORE_WELSH_TEXT)("%s refuses a Welsh lower-case letter in each change it can make: %j", async (kind, overrides, field) => {
+    const response = await fileCompaniesHouseForm(buildEvent(kind, overrides), kind);
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body).message).toMatch(
+      new RegExp(`${field.replace(/[.[\]]/g, "\\$&")} has characters Companies House does not accept: [ŵŷô ]+`),
+    );
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
   test("a change of name to a Welsh name is upper-cased and taken", async () => {
     const response = await fileCompaniesHouseForm(
       buildEvent("change-of-name", { proposedName: "Cwmni Glyndŵr Cyfyngedig" }),
