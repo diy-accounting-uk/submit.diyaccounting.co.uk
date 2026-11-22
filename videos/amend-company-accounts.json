@@ -189,6 +189,11 @@
           "label": "Looking up the company"
         },
         {
+          "action": "await",
+          "until": "#priorYearNote:has-text('prior-year figures are filled in')",
+          "label": "Filling last year's figures from the register"
+        },
+        {
           "action": "fill",
           "target": "#periodStart",
           "value": "{{yearsAgo:1}}"
@@ -242,6 +247,11 @@
           "action": "fill",
           "target": "#priorCreditorsWithinOneYear",
           "value": "1500"
+        },
+        {
+          "action": "fill",
+          "target": "#priorCreditorsAfterOneYear",
+          "value": "0"
         },
         {
           "action": "fill",
