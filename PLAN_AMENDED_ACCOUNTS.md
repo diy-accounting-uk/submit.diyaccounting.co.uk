@@ -232,7 +232,7 @@ The six concepts are in `fixtures/frc-taxonomy/frs-102-2026-concepts.json`:
 | Reading the filed accounts of a company | No approval. The filing history and the Document API take the API key that the company lookup uses | AA23 |
 | Reading the register to build books | No approval. The profile and the officers take the API key. `CompanyDataRequest` is a request that the live package already sends | AA29, AA31 |
 | A change to the live package's form list | Open, same question as the review | AA9, OAA1 |
-| The finder listing | Open. The page states no route for a supplier. Board row OOS22 asked on 2026-11-12, with the answer No | AA19, OAA4 |
+| The finder listing | Companies House lists a supplier after three consecutive months of live filings on its own presenter ID and credit account (the XML team, 2026-11-13). The operator raises the listing | none |
 
 The live package record is `../private.diyaccounting.co.uk/companies-house/correspondence/EMAIL_XMLGW_LIVE_PACKAGE_ISSUED.md`. The mail mirror holds no statement from the XML team on revised or amended accounts (searched 2026-11-12).
 
@@ -311,8 +311,6 @@ A revision that changes regime (micro-entity to small company, or the reverse) i
 | Customer copy and receipts | `web/public/lib/filing-record.js`, `web/public/hmrc/receipt/receipts.page.js` | The title and the amend link | AA4 |
 | Filing landing pages | `scripts/build-filing-pages.mjs` | A section on each accounts page | AA21 |
 | Knowledge base | `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/articles/` | One article, as `.html` with its `.md` copy | AA20 |
-| Listing register | `[[listing]]` tables in `web/marketing/marketing.toml`, read by `scripts/listings-register.mjs` | An entry for the GOV.UK finder | AA19 |
-| GOV.UK finder | the listing request of board row OOS22 | "Amended accounts: Yes" in place of No | AA19, OAA4 |
 
 Publication points of the two book features:
 
@@ -386,8 +384,6 @@ The finder pages were read on 2026-11-12. "Amended accounts" is Yes for 36 of 57
 | AA17 | Guide, screenshots and video | A guide journey; a video uploaded unlisted | `visual-review`; `npm run video:embed-check` | machine-only |
 | OAA3 | Watch the video | The go to make it public | The operator's answer | human-driven |
 | AA18 | Launch on prod | `prod` on the activity; the table says production | Prod shows the amend link; the route accepts | machine-only |
-| AA19 | The finder answer and the register | A draft that says Yes; a register entry | The draft and the entry exist | machine-only |
-| OAA4 | Send the finder answer | The email to Companies House | The finder page shows Yes | human-driven |
 | AA20 | Knowledge-base article | One article on the spreadsheets site | That repository's SEO tests | machine-only |
 | AA21 | Landing page sections | A section on each accounts landing page | The generator's staleness test | machine-only |
 
@@ -649,19 +645,6 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Proof on prod.** With no filing: the FAQ entry shows; `web/public/companies-house/filings.html` shows "Amend" on an accepted accounts receipt; the availability table says production. The first customer revision then appears on the register as amended accounts.
 - **Waits on**: the preconditions. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~5 files.
 
-#### AA19. The finder answer and the register
-
-- **Draft.** The listing request of board row OOS22 went to the XML team on 2026-11-12 with "Amended accounts: No". Its record is `../private.diyaccounting.co.uk/companies-house/correspondence/EMAIL_ACCOUNTS_SOFTWARE_FINDER.md`. Write a two-sentence follow-up on that thread with the `email-draft` skill on Opus. It says that the answer for the three tables is now Yes. Save it beside the record as `DRAFT_EMAIL_ACCOUNTS_SOFTWARE_FINDER_AMENDED.md`. When the reply to OOS22 names another route for a listing change, prepare the answer for that route.
-- **Register.** In the listing register (`[[listing]]` tables in `web/marketing/marketing.toml`), add an entry for the GOV.UK accounts software finder. Copy the fields of an entry there (`id`, `place`, `group`, `products`, `url`, `state`, `date`, `terms`); `state` is one of `LISTING_STATES` in `scripts/listings-register.mjs` (`planned`, `submitted`, `live`). Run `npm run marketing:build` and `npx vitest run web/unit-tests/marketing-site.test.js`.
-- **Board.** OOS22's row says to change the answer when the joint filing is on prod. When this plan is boarded, that row takes the new condition: Yes when AA18 is on prod.
-- **Waits on**: AA18. **Class**: machine-only. **Repository**: private, submit. **Model**: Opus (the draft). **Size**: 1 to 2 files.
-
-#### OAA4. Send the finder answer
-
-- The operator sends the draft from AA19 from his own address, on the listing request thread or by the route its reply names.
-- A session records the send date, the reply and the day the finder page shows Yes on the three tables.
-- **Waits on**: AA19. **Class**: human-driven. **Repository**: none. **Model**: none. **Size**: 0 files.
-
 #### AA20. Knowledge-base article
 
 - **Goal.** One article on the spreadsheets site: "How to correct company accounts after you have filed them".
@@ -860,8 +843,6 @@ graph TD
   AA22 --> AA18
   OAA2 --> AA18
   OAA3 --> AA18
-  AA18 --> AA19
-  AA19 --> OAA4
   AA18 --> AA20
   AA18 --> AA21
   AA4 --> AA28
@@ -893,7 +874,7 @@ graph TD
 - OAA1: blocked by AA9. AA22: blocked by the reply to OAA1. OAA2: blocked by AA13 and AA22.
 - AA15: blocked by AA22 and AA5. AA23: blocked by AA3. AA24: blocked by AA23 and AA15.
 - AA18: blocked by AA6, AA7, AA11, AA12, AA14, AA16, AA22, OAA2's outcome when Q1's answer asks for tests, and OAA3.
-- AA19, AA20 and AA21: blocked by AA18. OAA4: blocked by AA19.
+- AA20 and AA21: blocked by AA18.
 - AA28: blocked by AA4, and by AA27 on the DIYA-GL prod site for its package action.
 - AA26: blocked by AA25. AA30: blocked by AA26 and its publish to npm. So the order across the two repositories is AA26, the release, AA30.
 - AA31: blocked by AA23, AA28, AA29 and AA30. AA32: blocked by AA23, AA29, AA30 and AA31.
@@ -937,7 +918,7 @@ graph TD
 1. AA22 records the answers. Then OAA2, when Q1's answer asks for test submissions.
 2. AA15, from the answers to Q2 and Q3, then AA24.
 3. AA18, the launch. It is the one change that offers a revision on prod.
-4. AA19, OAA4, AA20 and AA21.
+4. AA20 and AA21.
 
 **The two book features.** They wait on no answer from Companies House.
 
@@ -955,7 +936,6 @@ graph TD
 - Q1 to Q4 of section 2.3.
 - The error number that the real gateway gives a revised document that fails rule 2. AA2 uses the validator's text.
 - Which date `core:DateAuthorisationFinancialStatementsForIssue` holds in a revision. AA1 reads the examples.
-- How a supplier's entry on the finder is set or changed. The listing request of board row OOS22 asks; no reply is on record.
 - Whether a spreadsheets workbook or a package zip fills the accounts forms. AA6 tests it.
 - Whether the Document API offers the iXBRL of every software-filed set of accounts. AA23 reads the metadata first.
 - As at which date a `CompanyDataRequest` states the shareholdings, and whether it states them for every private company. AA25 reads the schema and one test answer.
