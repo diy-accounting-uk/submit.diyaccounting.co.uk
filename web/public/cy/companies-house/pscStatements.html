@@ -1,0 +1,379 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from companies-house/pscStatements.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Rhoi datganiad PRhA neu ei dynnu’n ôl - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/companies-house/pscStatements.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/pscStatements.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/pscStatements.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/pscStatements.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="ch-psc-statements.give-or-withdraw-a-psc-statement-070ffa">Rhoi datganiad PRhA neu ei dynnu’n ôl</h1>
+      <p data-i18n="ch-psc-statements.tell-companies-house-the-company-has-59cd38" class="subtitle">
+        Dweud wrth Dŷ’r Cwmnïau nad oes gan y cwmni berson â rheolaeth arwyddocaol, na all gadarnhau un eto, neu nad yw datganiad o’r fath
+        yn wir mwyach
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p
+        data-i18n="ch-psc-statements.status-sandbox-this-runs-against-companies-3c285c"
+        class="hint"
+        data-feature-status="sandbox"
+        data-companies-house-service="xml-gateway"
+      >
+        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn
+        ei ffeilio yma yn cyrraedd y gofrestr fyw.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau"
+        data-sign-in-text="Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif."
+        data-i18n-data-sign-in-title="ch-psc-statements.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-psc-statements.sign-in-to-look-up-your-eb0bf2"
+        data-i18n-data-sign-in-title="ch-psc-statements.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-psc-statements.sign-in-to-look-up-your-eb0bf2"
+      >
+        <h2 data-i18n="ch-psc-statements.which-company-d9aae4">Pa gwmni?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="ch-psc-statements.company-number-8b121b" for="companyNumber">Rhif y cwmni</label>
+            <p data-i18n="ch-psc-statements.8-characters-for-example-00000001-do-090062" id="companyNumber-hint" class="hint">
+              8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button
+            data-i18n="ch-psc-statements.look-up-the-company-570ac0"
+            type="submit"
+            id="companyLookupBtn"
+            class="btn"
+            data-activity-start="psc-statements"
+          >
+            Chwilio am y cwmni
+          </button>
+        </form>
+      </div>
+
+      <!-- Statement form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2 data-i18n="ch-psc-statements.which-statement-691f72">Pa ddatganiad?</h2>
+        <p data-i18n="ch-psc-statements.company-3bc806">
+          Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).
+        </p>
+        <form id="statementForm" novalidate>
+          <fieldset class="form-group">
+            <legend data-i18n="ch-psc-statements.what-are-you-telling-companies-house-bec7e7">
+              Beth ydych chi’n ei ddweud wrth Dŷ’r Cwmnïau?
+            </legend>
+            <div class="choice">
+              <input type="radio" id="action-notify" name="action" value="notify" /><label
+                data-i18n="ch-psc-statements.give-a-statement-489df8"
+                for="action-notify"
+                >Rhoi datganiad</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="action-withdraw" name="action" value="withdraw" /><label
+                data-i18n="ch-psc-statements.a-statement-on-the-register-is-509e19"
+                for="action-withdraw"
+                >Nid yw datganiad ar y gofrestr yn wir mwyach</label
+              >
+            </div>
+          </fieldset>
+
+          <fieldset id="notifySection" class="form-group" style="display: none">
+            <legend data-i18n="ch-psc-statements.the-statement-4fdbca">Y datganiad</legend>
+            <p data-i18n="ch-psc-statements.choose-the-one-statement-that-applies-666a08" id="notify-hint" class="hint">
+              Dewiswch yr un datganiad sy’n berthnasol. Ar gyfer mwy nag un datganiad, ffeiliwch unwaith ar gyfer pob un.
+            </p>
+            <div class="choice">
+              <input type="radio" id="notify-none" name="notifyStatement" value="NO_INDIVIDUAL_OR_ENTITY_WITH_SIGNFICANT_CONTROL" /><label
+                data-i18n="ch-psc-statements.the-company-knows-or-has-reasonable-67c8ab"
+                for="notify-none"
+                >Mae’r cwmni’n gwybod, neu mae ganddo achos rhesymol i gredu, nad oes person cofrestradwy nac endid cyfreithiol perthnasol
+                cofrestradwy mewn perthynas â’r cwmni.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="notify-awaiting" name="notifyStatement" value="AWAITING_CONFIRMATION_FROM_PSC" /><label
+                data-i18n="ch-psc-statements.the-company-knows-or-has-cause-c22e0e"
+                for="notify-awaiting"
+                >Mae’r cwmni’n gwybod, neu mae ganddo achos i gredu, bod person wedi dod yn berson cofrestradwy neu’n endid cyfreithiol
+                perthnasol cofrestradwy mewn perthynas â’r cwmni, ond nid yw wedi cael cadarnhad eto.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="notify-790d" name="notifyStatement" value="PSC_CONTACTED_BUT_NO_RESPONSE" /><label
+                data-i18n="ch-psc-statements.the-company-has-given-a-notice-0d1edd"
+                for="notify-790d"
+                >Mae’r cwmni wedi rhoi hysbysiad o dan adran 790D neu 790DA o Ddeddf Cwmnïau 2006 na chydymffurfiwyd ag ef.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="notify-790e" name="notifyStatement" value="PSC_HAS_FAILED_TO_CONFIRM_CHANGED_DETAILS" /><label
+                data-i18n="ch-psc-statements.a-registrable-person-or-registrable-relevant-35cf89"
+                for="notify-790e"
+                >Mae person cofrestradwy neu endid cyfreithiol perthnasol cofrestradwy wedi methu â chydymffurfio â hysbysiad a roddwyd gan
+                y cwmni o dan adran 790E neu 790EA o Ddeddf Cwmnïau 2006.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="notify-restrictions" name="notifyStatement" value="RESTRICTIONS_NOTICE_ISSUED_TO_PSC" /><label
+                data-i18n="ch-psc-statements.the-company-has-issued-a-restrictions-f24abe"
+                for="notify-restrictions"
+                >Mae’r cwmni wedi cyhoeddi hysbysiad cyfyngiadau o dan baragraff 1 o Atodlen 1B i Ddeddf Cwmnïau 2006.</label
+              >
+            </div>
+          </fieldset>
+
+          <fieldset id="withdrawSection" class="form-group" style="display: none">
+            <legend data-i18n="ch-psc-statements.the-statement-that-is-no-longer-b47bd0">Y datganiad nad yw’n wir mwyach</legend>
+            <div class="choice">
+              <input
+                type="radio"
+                id="withdraw-none"
+                name="withdrawStatement"
+                value="NO_INDIVIDUAL_OR_ENTITY_WITH_SIGNFICANT_CONTROL"
+              /><label data-i18n="ch-psc-statements.the-company-knows-or-has-reasonable-67c8ab" for="withdraw-none"
+                >Mae’r cwmni’n gwybod, neu mae ganddo achos rhesymol i gredu, nad oes person cofrestradwy nac endid cyfreithiol perthnasol
+                cofrestradwy mewn perthynas â’r cwmni.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="withdraw-awaiting" name="withdrawStatement" value="AWAITING_CONFIRMATION_FROM_PSC" /><label
+                data-i18n="ch-psc-statements.the-company-knows-or-has-cause-037182"
+                for="withdraw-awaiting"
+                >Mae’r cwmni’n gwybod, neu mae ganddo achos i gredu, bod person wedi dod yn berson cofrestradwy neu’n endid cyfreithiol
+                perthnasol cofrestradwy mewn perthynas â’r cwmni, ond nid yw wedi cael cadarnhad eto fel y crybwyllir yn adran
+                790LA(1).</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="withdraw-steps" name="withdrawStatement" value="STEPS_TO_FIND_PSC_NOT_YET_COMPLETED" /><label
+                data-i18n="ch-psc-statements.the-company-has-not-yet-completed-aa3d09"
+                for="withdraw-steps"
+                >Nid yw’r cwmni wedi gorffen cymryd camau rhesymol eto i ganfod a oes unrhyw un sy’n berson cofrestradwy neu’n endid
+                cyfreithiol perthnasol cofrestradwy mewn perthynas â’r cwmni.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="withdraw-exists" name="withdrawStatement" value="PSC_EXISTS_BUT_NOT_IDENTIFIED" /><label
+                data-i18n="ch-psc-statements.the-company-knows-or-has-reasonable-6af9a1"
+                for="withdraw-exists"
+                >Mae’r cwmni’n gwybod, neu mae ganddo achos rhesymol i gredu, bod person cofrestradwy mewn perthynas â’r cwmni, ond nid yw
+                wedi nodi pwy yw’r person cofrestradwy.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="withdraw-unconfirmed" name="withdrawStatement" value="PSC_DETAILS_NOT_CONFIRMED" /><label
+                data-i18n="ch-psc-statements.the-company-has-identified-a-registrable-5d5266"
+                for="withdraw-unconfirmed"
+                >Mae’r cwmni wedi nodi person cofrestradwy mewn perthynas â’r cwmni, ond nid yw holl fanylion gofynnol y person hwnnw wedi’u
+                cadarnhau.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="withdraw-790d" name="withdrawStatement" value="PSC_CONTACTED_BUT_NO_RESPONSE" /><label
+                data-i18n="ch-psc-statements.the-company-has-given-a-notice-0d1edd"
+                for="withdraw-790d"
+                >Mae’r cwmni wedi rhoi hysbysiad o dan adran 790D neu 790DA o Ddeddf Cwmnïau 2006 na chydymffurfiwyd ag ef.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="withdraw-790e" name="withdrawStatement" value="PSC_HAS_FAILED_TO_CONFIRM_CHANGED_DETAILS" /><label
+                data-i18n="ch-psc-statements.a-registrable-person-or-registrable-relevant-35cf89"
+                for="withdraw-790e"
+                >Mae person cofrestradwy neu endid cyfreithiol perthnasol cofrestradwy wedi methu â chydymffurfio â hysbysiad a roddwyd gan
+                y cwmni o dan adran 790E neu 790EA o Ddeddf Cwmnïau 2006.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="withdraw-restrictions" name="withdrawStatement" value="RESTRICTIONS_NOTICE_ISSUED_TO_PSC" /><label
+                data-i18n="ch-psc-statements.the-company-has-issued-a-restrictions-f24abe"
+                for="withdraw-restrictions"
+                >Mae’r cwmni wedi cyhoeddi hysbysiad cyfyngiadau o dan baragraff 1 o Atodlen 1B i Ddeddf Cwmnïau 2006.</label
+              >
+            </div>
+          </fieldset>
+
+          <fieldset id="pscSection" class="form-group" style="display: none">
+            <legend data-i18n="ch-psc-statements.the-person-with-significant-control-the-8b1017">
+              Y person â rheolaeth arwyddocaol y rhoddwyd yr hysbysiad iddo
+            </legend>
+            <p data-i18n="ch-psc-statements.the-persons-with-significant-control-on-a6b66b" id="psc-hint" class="hint">
+              Y personau â rheolaeth arwyddocaol sydd ar y gofrestr nawr, fel y mae Tŷ’r Cwmnïau yn eu dangos.
+            </p>
+            <div id="pscChoices" aria-describedby="psc-hint"></div>
+            <p data-i18n="ch-psc-statements.the-register-lists-no-current-person-c1563d" id="noPscs" class="hint" style="display: none">
+              Nid yw’r gofrestr yn rhestru unrhyw berson presennol â rheolaeth arwyddocaol y gall y datganiad hwn ei enwi.
+            </p>
+          </fieldset>
+
+          <fieldset id="reasonSection" class="form-group" style="display: none">
+            <legend data-i18n="ch-psc-statements.how-the-restrictions-ended-acc654">Sut y daeth y cyfyngiadau i ben</legend>
+            <div class="choice">
+              <input type="radio" id="reason-company" name="restrictionsReason" value="RESTRICTIONS_NOTICE_WITHDRAWN_BY_COMPANY" /><label
+                data-i18n="ch-psc-statements.the-company-has-withdrawn-the-restrictions-3ef8af"
+                for="reason-company"
+                >Mae’r cwmni wedi tynnu’r hysbysiad cyfyngiadau yn ôl drwy roi hysbysiad tynnu’n ôl.</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="reason-court" name="restrictionsReason" value="RESTRICTIONS_NOTICE_WITHDRAWN_BY_COURT_ORDER" /><label
+                data-i18n="ch-psc-statements.the-court-has-made-an-order-a58702"
+                for="reason-court"
+                >Mae’r llys wedi gwneud gorchymyn o dan baragraff 8 o Atodlen 1B i Ddeddf Cwmnïau 2006 yn cyfarwyddo bod buddiant perthnasol
+                yn y cwmni yn peidio â bod yn ddarostyngedig i gyfyngiadau.</label
+              >
+            </div>
+          </fieldset>
+
+          <div class="form-group">
+            <label data-i18n="ch-psc-statements.relevant-date-6d8e2d" for="relevantDate">Dyddiad perthnasol</label>
+            <div id="notifyDateHint" class="hint">
+              <p data-i18n="ch-psc-statements.this-could-be-the-date-bdaf7e">Gallai hwn fod y dyddiad:</p>
+              <ul>
+                <li data-i18n="ch-psc-statements.the-company-first-knew-or-had-79ef16">
+                  y gwyddai’r cwmni gyntaf, neu y cafodd achos i gredu gyntaf, nad oes PRhA
+                </li>
+                <li data-i18n="ch-psc-statements.the-company-first-knew-or-had-93a9c4">
+                  y gwyddai’r cwmni gyntaf, neu y cafodd achos i gredu gyntaf, fod y person wedi dod yn PRhA mewn perthynas â’r cwmni
+                </li>
+                <li data-i18n="ch-psc-statements.by-which-the-person-was-required-d71ead">
+                  erbyn pryd roedd yn ofynnol i’r person gydymffurfio â hysbysiad adran 790D, 790DA, 790E neu 790EA
+                </li>
+                <li data-i18n="ch-psc-statements.the-restrictions-notice-was-given-797ebb">y rhoddwyd yr hysbysiad cyfyngiadau</li>
+              </ul>
+            </div>
+            <div id="withdrawDateHint" class="hint" style="display: none">
+              <p data-i18n="ch-psc-statements.this-could-be-the-date-bdaf7e">Gallai hwn fod y dyddiad:</p>
+              <ul>
+                <li data-i18n="ch-psc-statements.on-which-the-company-first-knew-39293d">
+                  y gwyddai’r cwmni gyntaf, neu y cafodd achos i gredu gyntaf, nad yw’r datganiad yn wir mwyach
+                </li>
+                <li data-i18n="ch-psc-statements.the-person-complied-with-a-section-a42609">
+                  y cydymffurfiodd y person â hysbysiad adran 790D, 790DA, 790E neu 790EA
+                </li>
+                <li data-i18n="ch-psc-statements.on-which-the-withdrawal-of-the-b1d6b3">
+                  y rhoddwyd yr hysbysiad yn tynnu’r hysbysiad cyfyngiadau yn ôl
+                </li>
+                <li data-i18n="ch-psc-statements.on-which-the-order-directing-that-6488c6">
+                  y gwnaed y gorchymyn yn cyfarwyddo bod buddiant perthnasol yn y cwmni yn peidio â bod yn ddarostyngedig i gyfyngiadau
+                </li>
+              </ul>
+            </div>
+            <input type="date" id="relevantDate" name="relevantDate" required />
+          </div>
+          <div class="form-group">
+            <label data-i18n="ch-psc-statements.company-authentication-code-56d0e6" for="companyAuthCode">Cod dilysu’r cwmni</label>
+            <p data-i18n="ch-psc-statements.the-6-to-8-character-code-48646a" id="companyAuthCode-hint" class="hint">
+              Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei
+              ddefnyddio.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button data-i18n="ch-psc-statements.continue-31fbef" type="submit" id="continueBtn" class="btn">Parhau</button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="reviewView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-psc-statements.review-the-filing-769b96">Adolygu’r ffeilio</h2>
+        <dl id="reviewList"></dl>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label data-i18n="ch-psc-statements.gov-test-scenario-dab532" for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button data-i18n="ch-psc-statements.file-with-companies-house-327c43" type="button" id="submitFilingBtn" class="btn">
+            Ffeilio gyda Thŷ’r Cwmnïau
+          </button>
+          <button data-i18n="ch-psc-statements.change-c0bf75" type="button" id="changeBtn" class="secondary-button">Newid</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-psc-statements.filing-result-0ecbf7">Canlyniad y ffeilio</h2>
+        <div id="filingResult"></div>
+        <div class="button-group">
+          <button data-i18n="ch-psc-statements.start-a-new-filing-0a9f24" type="button" id="startAgainBtn" class="secondary-button">
+            Dechrau ffeilio newydd
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../lib/welsh-text.js"></script>
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/companies-house-lane.js"></script>
+    <script src="../../lib/companies-house-gateway-poll.js"></script>
+    <script src="../../lib/companies-house-rejections.js"></script>
+    <script src="../../lib/companies-house-form-page.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../lib/form-errors.js"></script>
+    <script src="../../lib/companies-house-labels.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
+    <script src="../../lib/company-number-from-address.js"></script>
+    <script src="../../companies-house/pscStatements.page.js"></script>
+  </body>
+</html>

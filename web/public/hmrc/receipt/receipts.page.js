@@ -110,6 +110,8 @@ const FILING_IN_PROGRESS_TITLES = {
   "sail-address": siteText("receipts.kind-sail-address", "SAIL address"),
   "record-location": siteText("receipts.kind-record-location", "Location of company records"),
   "change-of-name": siteText("receipts.kind-change-of-name", "Change of company name"),
+  "psc-statement-notification": siteText("receipts.kind-psc-statement-notification", "PSC statement"),
+  "psc-statement-withdrawal": siteText("receipts.kind-psc-statement-withdrawal", "PSC statement withdrawal"),
 };
 
 // A Companies House filing that is not a receipt yet: still waiting for Companies House, which checks

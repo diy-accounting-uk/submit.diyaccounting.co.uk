@@ -22,6 +22,7 @@ import { buildPscChangeDetailsBody } from "@app/services/companiesHousePscChange
 import { buildAccountingReferenceDateBody } from "@app/services/companiesHouseAccountingReferenceDateXml.js";
 import { buildChangeOfNameBody, supportingDocumentFor } from "@app/services/companiesHouseChangeOfNameXml.js";
 import { getCompany, resetCompanyFixtures } from "@app/http-simulator/scenarios/companies.js";
+import { buildPscStatementNotificationBody, buildPscStatementWithdrawalBody } from "@app/services/companiesHousePscStatementXml.js";
 import { buildMicroEntityAccounts } from "@app/services/microEntityAccountsIxbrl.js";
 import { parseXmlDocument, firstElementText, allElements } from "@app/lib/xmlDom.js";
 
@@ -1073,6 +1074,38 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
     expect(allElements(acknowledgement, "GovTalkErrors")).toHaveLength(0);
     expect(await statusOf("CHG001")).toBe("PENDING");
     expect(await statusOf("CHG001")).toBe("ACCEPT");
+  });
+
+  test("acknowledges a PSCStatementNotification and a PSCStatementWithdrawal and polls each PENDING then ACCEPT", async () => {
+    for (const [formIdentifier, submissionNumber, formXml] of [
+      [
+        "PSCStatementNotification",
+        "STN001",
+        buildPscStatementNotificationBody({ statement: "NO_INDIVIDUAL_OR_ENTITY_WITH_SIGNFICANT_CONTROL", relevantDate: "2026-11-01" }),
+      ],
+      [
+        "PSCStatementWithdrawal",
+        "STW001",
+        buildPscStatementWithdrawalBody({ statement: "PSC_CONTACTED_BUT_NO_RESPONSE", withdrawalDate: "2026-11-05" }),
+      ],
+    ]) {
+      const envelope = buildFormSubmission({
+        presenterId: SIMULATOR_PRESENTER_ID,
+        presenterCode: SIMULATOR_PRESENTER_CODE,
+        companyNumber: FIXTURE_COMPANY_NUMBER,
+        companyName: "EXAMPLE PSC LIMITED",
+        companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
+        packageReference: "0012",
+        formIdentifier,
+        submissionNumber,
+        dateSigned: "2026-11-20",
+        formXml,
+        gatewayTest: true,
+      });
+      expect(allElements(parseXmlDocument((await post(envelope)).text), "GovTalkErrors"), formIdentifier).toHaveLength(0);
+      expect(await statusOf(submissionNumber)).toBe("PENDING");
+      expect(await statusOf(submissionNumber)).toBe("ACCEPT");
+    }
   });
 
   test("refuses a submission number already used", async () => {

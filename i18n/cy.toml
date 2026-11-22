@@ -24427,3 +24427,269 @@ cy = '''Cyfieithiad o’r <a href="/terms.html" hreflang="en-GB">telerau Saesneg
 [strings."privacy.the-welsh-copy-of-this-policy-fb9862"]
 hash = "fb9862233b21"
 cy = '''Cyfieithiad o’r <a href="/privacy.html" hreflang="en-GB">polisi Saesneg</a> yw’r dudalen hon. Os oes gwahaniaeth rhwng y testun Cymraeg a’r testun Saesneg, y testun Saesneg sy’n gymwys.'''
+
+# == The PSC statements page and the drill-down's link to it: ids ch-psc-statements.*, ch.psc-statements.*, ch.drill.psc-statements, receipts.kind-psc-statement-* ==
+
+[strings."ch-psc-statements.title"]
+hash = "0cdf5c5d2d26"
+cy = '''Rhoi datganiad PRhA neu ei dynnu’n ôl - DIY Accounting Submit'''
+
+[strings."ch-psc-statements.give-or-withdraw-a-psc-statement-070ffa"]
+hash = "070ffae35669"
+cy = '''Rhoi datganiad PRhA neu ei dynnu’n ôl'''
+
+[strings."ch-psc-statements.tell-companies-house-the-company-has-59cd38"]
+hash = "59cd380929f4"
+cy = '''Dweud wrth Dŷ’r Cwmnïau nad oes gan y cwmni berson â rheolaeth arwyddocaol, na all gadarnhau un eto, neu nad yw datganiad o’r fath yn wir mwyach'''
+
+[strings."ch-psc-statements.status-sandbox-this-runs-against-companies-3c285c"]
+hash = "3c285c86cda2"
+cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.'''
+
+[strings."ch-psc-statements.which-company-d9aae4"]
+hash = "d9aae49b05ee"
+cy = '''Pa gwmni?'''
+
+[strings."ch-psc-statements.company-number-8b121b"]
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
+
+[strings."ch-psc-statements.8-characters-for-example-00000001-do-090062"]
+hash = "090062b139be"
+cy = '''8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.'''
+
+[strings."ch-psc-statements.look-up-the-company-570ac0"]
+hash = "570ac0974205"
+cy = '''Chwilio am y cwmni'''
+
+[strings."ch-psc-statements.which-statement-691f72"]
+hash = "691f7295dfeb"
+cy = '''Pa ddatganiad?'''
+
+[strings."ch-psc-statements.company-3bc806"]
+hash = "3bc806ccac3b"
+cy = '''Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).'''
+
+[strings."ch-psc-statements.what-are-you-telling-companies-house-bec7e7"]
+hash = "bec7e76b8d31"
+cy = '''Beth ydych chi’n ei ddweud wrth Dŷ’r Cwmnïau?'''
+
+[strings."ch-psc-statements.give-a-statement-489df8"]
+hash = "489df898ade6"
+cy = '''Rhoi datganiad'''
+
+[strings."ch-psc-statements.a-statement-on-the-register-is-509e19"]
+hash = "509e1939d8d2"
+cy = '''Nid yw datganiad ar y gofrestr yn wir mwyach'''
+
+[strings."ch-psc-statements.the-statement-4fdbca"]
+hash = "4fdbca4cc6cd"
+cy = '''Y datganiad'''
+
+[strings."ch-psc-statements.choose-the-one-statement-that-applies-666a08"]
+hash = "666a087856e2"
+cy = '''Dewiswch yr un datganiad sy’n berthnasol. Ar gyfer mwy nag un datganiad, ffeiliwch unwaith ar gyfer pob un.'''
+
+[strings."ch-psc-statements.the-company-knows-or-has-reasonable-67c8ab"]
+hash = "67c8abca0f23"
+cy = '''Mae’r cwmni’n gwybod, neu mae ganddo achos rhesymol i gredu, nad oes person cofrestradwy nac endid cyfreithiol perthnasol cofrestradwy mewn perthynas â’r cwmni.'''
+
+[strings."ch-psc-statements.the-company-knows-or-has-cause-c22e0e"]
+hash = "c22e0ed37d4c"
+cy = '''Mae’r cwmni’n gwybod, neu mae ganddo achos i gredu, bod person wedi dod yn berson cofrestradwy neu’n endid cyfreithiol perthnasol cofrestradwy mewn perthynas â’r cwmni, ond nid yw wedi cael cadarnhad eto.'''
+
+[strings."ch-psc-statements.the-company-has-given-a-notice-0d1edd"]
+hash = "0d1eddebcc84"
+cy = '''Mae’r cwmni wedi rhoi hysbysiad o dan adran 790D neu 790DA o Ddeddf Cwmnïau 2006 na chydymffurfiwyd ag ef.'''
+
+[strings."ch-psc-statements.a-registrable-person-or-registrable-relevant-35cf89"]
+hash = "35cf894c0621"
+cy = '''Mae person cofrestradwy neu endid cyfreithiol perthnasol cofrestradwy wedi methu â chydymffurfio â hysbysiad a roddwyd gan y cwmni o dan adran 790E neu 790EA o Ddeddf Cwmnïau 2006.'''
+
+[strings."ch-psc-statements.the-company-has-issued-a-restrictions-f24abe"]
+hash = "f24abe7c1481"
+cy = '''Mae’r cwmni wedi cyhoeddi hysbysiad cyfyngiadau o dan baragraff 1 o Atodlen 1B i Ddeddf Cwmnïau 2006.'''
+
+[strings."ch-psc-statements.the-statement-that-is-no-longer-b47bd0"]
+hash = "b47bd0007610"
+cy = '''Y datganiad nad yw’n wir mwyach'''
+
+[strings."ch-psc-statements.the-company-knows-or-has-cause-037182"]
+hash = "037182b9af37"
+cy = '''Mae’r cwmni’n gwybod, neu mae ganddo achos i gredu, bod person wedi dod yn berson cofrestradwy neu’n endid cyfreithiol perthnasol cofrestradwy mewn perthynas â’r cwmni, ond nid yw wedi cael cadarnhad eto fel y crybwyllir yn adran 790LA(1).'''
+
+[strings."ch-psc-statements.the-company-has-not-yet-completed-aa3d09"]
+hash = "aa3d09653402"
+cy = '''Nid yw’r cwmni wedi gorffen cymryd camau rhesymol eto i ganfod a oes unrhyw un sy’n berson cofrestradwy neu’n endid cyfreithiol perthnasol cofrestradwy mewn perthynas â’r cwmni.'''
+
+[strings."ch-psc-statements.the-company-knows-or-has-reasonable-6af9a1"]
+hash = "6af9a1f43e2f"
+cy = '''Mae’r cwmni’n gwybod, neu mae ganddo achos rhesymol i gredu, bod person cofrestradwy mewn perthynas â’r cwmni, ond nid yw wedi nodi pwy yw’r person cofrestradwy.'''
+
+[strings."ch-psc-statements.the-company-has-identified-a-registrable-5d5266"]
+hash = "5d5266c00641"
+cy = '''Mae’r cwmni wedi nodi person cofrestradwy mewn perthynas â’r cwmni, ond nid yw holl fanylion gofynnol y person hwnnw wedi’u cadarnhau.'''
+
+[strings."ch-psc-statements.the-person-with-significant-control-the-8b1017"]
+hash = "8b1017fc5070"
+cy = '''Y person â rheolaeth arwyddocaol y rhoddwyd yr hysbysiad iddo'''
+
+[strings."ch-psc-statements.the-persons-with-significant-control-on-a6b66b"]
+hash = "a6b66beaf0cb"
+cy = '''Y personau â rheolaeth arwyddocaol sydd ar y gofrestr nawr, fel y mae Tŷ’r Cwmnïau yn eu dangos.'''
+
+[strings."ch-psc-statements.the-register-lists-no-current-person-c1563d"]
+hash = "c1563d084f43"
+cy = '''Nid yw’r gofrestr yn rhestru unrhyw berson presennol â rheolaeth arwyddocaol y gall y datganiad hwn ei enwi.'''
+
+[strings."ch-psc-statements.how-the-restrictions-ended-acc654"]
+hash = "acc654a0953a"
+cy = '''Sut y daeth y cyfyngiadau i ben'''
+
+[strings."ch-psc-statements.the-company-has-withdrawn-the-restrictions-3ef8af"]
+hash = "3ef8af01d75a"
+cy = '''Mae’r cwmni wedi tynnu’r hysbysiad cyfyngiadau yn ôl drwy roi hysbysiad tynnu’n ôl.'''
+
+[strings."ch-psc-statements.the-court-has-made-an-order-a58702"]
+hash = "a5870278317b"
+cy = '''Mae’r llys wedi gwneud gorchymyn o dan baragraff 8 o Atodlen 1B i Ddeddf Cwmnïau 2006 yn cyfarwyddo bod buddiant perthnasol yn y cwmni yn peidio â bod yn ddarostyngedig i gyfyngiadau.'''
+
+[strings."ch-psc-statements.relevant-date-6d8e2d"]
+hash = "6d8e2dbb62b2"
+cy = '''Dyddiad perthnasol'''
+
+[strings."ch-psc-statements.this-could-be-the-date-bdaf7e"]
+hash = "bdaf7e8e7eb6"
+cy = '''Gallai hwn fod y dyddiad:'''
+
+[strings."ch-psc-statements.the-company-first-knew-or-had-79ef16"]
+hash = "79ef16c7ec4a"
+cy = '''y gwyddai’r cwmni gyntaf, neu y cafodd achos i gredu gyntaf, nad oes PRhA'''
+
+[strings."ch-psc-statements.the-company-first-knew-or-had-93a9c4"]
+hash = "93a9c401144d"
+cy = '''y gwyddai’r cwmni gyntaf, neu y cafodd achos i gredu gyntaf, fod y person wedi dod yn PRhA mewn perthynas â’r cwmni'''
+
+[strings."ch-psc-statements.by-which-the-person-was-required-d71ead"]
+hash = "d71eadd4e72b"
+cy = '''erbyn pryd roedd yn ofynnol i’r person gydymffurfio â hysbysiad adran 790D, 790DA, 790E neu 790EA'''
+
+[strings."ch-psc-statements.the-restrictions-notice-was-given-797ebb"]
+hash = "797ebb3f28a9"
+cy = '''y rhoddwyd yr hysbysiad cyfyngiadau'''
+
+[strings."ch-psc-statements.on-which-the-company-first-knew-39293d"]
+hash = "39293dd182fc"
+cy = '''y gwyddai’r cwmni gyntaf, neu y cafodd achos i gredu gyntaf, nad yw’r datganiad yn wir mwyach'''
+
+[strings."ch-psc-statements.the-person-complied-with-a-section-a42609"]
+hash = "a4260949fa8c"
+cy = '''y cydymffurfiodd y person â hysbysiad adran 790D, 790DA, 790E neu 790EA'''
+
+[strings."ch-psc-statements.on-which-the-withdrawal-of-the-b1d6b3"]
+hash = "b1d6b39f738a"
+cy = '''y rhoddwyd yr hysbysiad yn tynnu’r hysbysiad cyfyngiadau yn ôl'''
+
+[strings."ch-psc-statements.on-which-the-order-directing-that-6488c6"]
+hash = "6488c67e9099"
+cy = '''y gwnaed y gorchymyn yn cyfarwyddo bod buddiant perthnasol yn y cwmni yn peidio â bod yn ddarostyngedig i gyfyngiadau'''
+
+[strings."ch-psc-statements.company-authentication-code-56d0e6"]
+hash = "56d0e640f9f0"
+cy = '''Cod dilysu’r cwmni'''
+
+[strings."ch-psc-statements.the-6-to-8-character-code-48646a"]
+hash = "48646a151fe7"
+cy = '''Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei ddefnyddio.'''
+
+[strings."ch-psc-statements.continue-31fbef"]
+hash = "31fbef162594"
+cy = '''Parhau'''
+
+[strings."ch-psc-statements.review-the-filing-769b96"]
+hash = "769b96283d75"
+cy = '''Adolygu’r ffeilio'''
+
+[strings."ch-psc-statements.gov-test-scenario-dab532"]
+hash = "dab5326bb25a"
+cy = '''Gov-Test-Scenario'''
+
+[strings."ch-psc-statements.file-with-companies-house-327c43"]
+hash = "327c43b89de4"
+cy = '''Ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-psc-statements.change-c0bf75"]
+hash = "c0bf75bd78bf"
+cy = '''Newid'''
+
+[strings."ch-psc-statements.filing-result-0ecbf7"]
+hash = "0ecbf7d7af61"
+cy = '''Canlyniad y ffeilio'''
+
+[strings."ch-psc-statements.start-a-new-filing-0a9f24"]
+hash = "0a9f240ab551"
+cy = '''Dechrau ffeilio newydd'''
+
+[strings."ch-psc-statements.sign-in-to-file-with-companies-5a7303"]
+hash = "5a7303865fa5"
+cy = '''Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-psc-statements.sign-in-to-look-up-your-eb0bf2"]
+hash = "eb0bf28eeabf"
+cy = '''Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif.'''
+
+[strings."ch.drill.psc-statements"]
+hash = "070ffae35669"
+cy = '''Rhoi datganiad PRhA neu ei dynnu’n ôl'''
+
+[strings."ch.psc-statements.kind-individual"]
+hash = "010dd7b94f5f"
+cy = '''Unigolyn'''
+
+[strings."ch.psc-statements.kind-entity"]
+hash = "40dc53b8aab1"
+cy = '''Endid cyfreithiol neu berson cofrestradwy arall'''
+
+[strings."ch.psc-statements.lookup-failed"]
+hash = "85798bd4b10f"
+cy = '''Methu darllen y cwmni hwn o Dŷ’r Cwmnïau.'''
+
+[strings."ch.psc-statements.choose-action"]
+hash = "ae77ad28611e"
+cy = '''Dewiswch a ydych yn rhoi datganiad neu’n dweud nad yw un yn wir mwyach.'''
+
+[strings."ch.psc-statements.choose-statement"]
+hash = "67ed035d41c0"
+cy = '''Dewiswch y datganiad.'''
+
+[strings."ch.psc-statements.choose-psc"]
+hash = "c00921aae373"
+cy = '''Dewiswch y person â rheolaeth arwyddocaol y rhoddwyd yr hysbysiad iddo.'''
+
+[strings."ch.psc-statements.choose-reason"]
+hash = "a25c83b1583b"
+cy = '''Dewiswch sut y daeth y cyfyngiadau i ben.'''
+
+[strings."ch.psc-statements.review-company"]
+hash = "de4743c87973"
+cy = '''Cwmni'''
+
+[strings."ch.psc-statements.review-psc"]
+hash = "f031ed8fea1c"
+cy = '''Person â rheolaeth arwyddocaol'''
+
+[strings."ch.psc-statements.review-reason"]
+hash = "acc654a0953a"
+cy = '''Sut y daeth y cyfyngiadau i ben'''
+
+[strings."ch.psc-statements.review-date"]
+hash = "6d8e2dbb62b2"
+cy = '''Dyddiad perthnasol'''
+
+[strings."receipts.kind-psc-statement-notification"]
+hash = "247cc7aa0acb"
+cy = '''Datganiad PRhA'''
+
+[strings."receipts.kind-psc-statement-withdrawal"]
+hash = "778575e44f95"
+cy = '''Tynnu datganiad PRhA yn ôl'''

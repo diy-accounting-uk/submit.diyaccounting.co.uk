@@ -28,6 +28,13 @@ import {
   NAME_CHANGE_METHODS,
   NAME_SUPPORTING_DOCUMENTS,
 } from "./companiesHouseChangeOfNameXml.js";
+import {
+  buildPscStatementNotificationBody,
+  buildPscStatementWithdrawalBody,
+  isLinkedStatement,
+  PSC_STATEMENTS,
+  RESTRICTIONS_WITHDRAWAL_REASONS,
+} from "./companiesHousePscStatementXml.js";
 
 function extractPscVerificationStatement(body, errorMessages) {
   const { title, forename, otherForenames, surname, dobMonth, dobYear, personalCode } = body;
@@ -305,6 +312,44 @@ function extractChangeOfName(body, errorMessages) {
   };
 }
 
+// A statement, and for a statement linked to a PSC the particulars that name the PSC.
+function extractPscStatement(body, errorMessages, statements) {
+  const { statement } = body;
+  if (!statements.includes(statement)) {
+    errorMessages.push(`Invalid statement - must be one of ${statements.join(", ")}`);
+    return { statement };
+  }
+  return isLinkedStatement(statement) ? { statement, ...extractPscParticulars(body, errorMessages) } : { statement };
+}
+
+function validDate(body, field, errorMessages) {
+  if (!body[field] || !isValidIsoDate(body[field])) errorMessages.push(`Invalid or missing ${field} - must be YYYY-MM-DD`);
+  return body[field];
+}
+
+function extractPscStatementNotification(body, errorMessages) {
+  const notifiable = Object.keys(PSC_STATEMENTS).filter((statement) => PSC_STATEMENTS[statement].notifiable);
+  return {
+    ...extractPscStatement(body, errorMessages, notifiable),
+    relevantDate: validDate(body, "relevantDate", errorMessages),
+  };
+}
+
+function extractPscStatementWithdrawal(body, errorMessages) {
+  const { statement, restrictionsWithdrawalReason } = body;
+  const restrictions = statement === "RESTRICTIONS_NOTICE_ISSUED_TO_PSC";
+  if (restrictions && !RESTRICTIONS_WITHDRAWAL_REASONS.includes(restrictionsWithdrawalReason)) {
+    errorMessages.push(`Invalid restrictionsWithdrawalReason - must be one of ${RESTRICTIONS_WITHDRAWAL_REASONS.join(", ")}`);
+  } else if (!restrictions && restrictionsWithdrawalReason !== undefined) {
+    errorMessages.push("Invalid restrictionsWithdrawalReason - only for RESTRICTIONS_NOTICE_ISSUED_TO_PSC");
+  }
+  return {
+    ...extractPscStatement(body, errorMessages, Object.keys(PSC_STATEMENTS)),
+    withdrawalDate: validDate(body, "withdrawalDate", errorMessages),
+    restrictionsWithdrawalReason: restrictions ? restrictionsWithdrawalReason : undefined,
+  };
+}
+
 /**
  * Each form's request check and body builder, by the kind its filing state carries. A form whose
  * filing carries a document in the envelope has buildDocument as well.
@@ -352,5 +397,13 @@ export const GATEWAY_FORM_BUILDERS = {
     buildFormXml: (form) => buildChangeOfNameBody(form),
     buildDocument: (form) =>
       form.supportingDocument ? supportingDocumentFor({ ...form.supportingDocument, date: form.dateSigned }) : undefined,
+  },
+  "psc-statement-notification": {
+    extractAndValidate: extractPscStatementNotification,
+    buildFormXml: (form) => buildPscStatementNotificationBody(form),
+  },
+  "psc-statement-withdrawal": {
+    extractAndValidate: extractPscStatementWithdrawal,
+    buildFormXml: (form) => buildPscStatementWithdrawalBody(form),
   },
 };

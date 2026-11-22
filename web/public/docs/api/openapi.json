@@ -687,6 +687,20 @@
         "operationId" : "postCompaniesHousePscChangeDetails"
       }
     },
+    "/companies-house/psc-statement-notification" : {
+      "post" : {
+        "summary" : "Submit a PSC statement filing",
+        "description" : "Builds the PSCStatementNotification body, a PSC statement, and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHousePscStatementNotification"
+      }
+    },
+    "/companies-house/psc-statement-withdrawal" : {
+      "post" : {
+        "summary" : "Submit a PSC statement withdrawal filing",
+        "description" : "Builds the PSCStatementWithdrawal body, the notice that a PSC statement is no longer true, and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHousePscStatementWithdrawal"
+      }
+    },
     "/companies-house/psc-verification-statement" : {
       "post" : {
         "summary" : "Submit a PSC verification statement filing",

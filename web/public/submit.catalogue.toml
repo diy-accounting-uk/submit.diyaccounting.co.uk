@@ -771,6 +771,17 @@ paths = ["companies-house/changeCompanyName.html", "^/api/v1/companies-house/cha
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
+id = "psc-statements"
+name = "Give or withdraw a PSC statement (Companies House, sandbox)"
+nameCy = "Rhoi neu dynnu datganiad PRhA yn ôl (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the PSCStatementNotification and PSCStatementWithdrawal form types for this presenter.
+paths = ["companies-house/pscStatements.html", "^/api/v1/companies-house/psc-statement-(notification|withdrawal).*", "^/api/v1/companies-house/forms/psc-statement-(notification|withdrawal)/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
 id = "diya-gl-storage"
 name = "Save diya-gl books (sandbox)"
 nameCy = "Cadw llyfrau diya-gl (amgylchedd prawf)"

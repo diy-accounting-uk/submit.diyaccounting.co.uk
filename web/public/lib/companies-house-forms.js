@@ -120,6 +120,30 @@ export const COMPANIES_HOUSE_FORMS = {
     // Companies House's fee for the form filed by software, in pounds: the standard service and the same-day service.
     fee: { standard: 20, sameDay: 85 },
   },
+  "psc-statement-notification": {
+    routeSegment: "psc-statement-notification",
+    receiptTitle: "PSC statement",
+    receiptTitleCy: "Datganiad PRhA",
+    acceptedEvent: "companies-house-psc-statement-notification-accepted",
+    acceptedSummary: "Companies House PSC statement accepted",
+    formIdentifier: "PSCStatementNotification",
+    schema: "PSCStatementNotification-v1-2.xsd",
+    activityId: "psc-statements",
+    label: "PSC statement",
+    sharedPoll: true,
+  },
+  "psc-statement-withdrawal": {
+    routeSegment: "psc-statement-withdrawal",
+    receiptTitle: "PSC statement withdrawal",
+    receiptTitleCy: "Tynnu datganiad PRhA yn ôl",
+    acceptedEvent: "companies-house-psc-statement-withdrawal-accepted",
+    acceptedSummary: "Companies House PSC statement withdrawal accepted",
+    formIdentifier: "PSCStatementWithdrawal",
+    schema: "PSCStatementWithdrawal-v1-2.xsd",
+    activityId: "psc-statements",
+    label: "PSC statement withdrawal",
+    sharedPoll: true,
+  },
 };
 
 /** The filing kinds, as the filing state and the receipts carry them. */

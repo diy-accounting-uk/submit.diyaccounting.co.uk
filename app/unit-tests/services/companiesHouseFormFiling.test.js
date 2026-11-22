@@ -112,6 +112,8 @@ const FORM_FIELDS = {
     noticeGiven: true,
     ownPresenter: { id: "66666666000", code: "OWNCODE1" },
   },
+  "psc-statement-notification": { statement: "NO_INDIVIDUAL_OR_ENTITY_WITH_SIGNFICANT_CONTROL", relevantDate: "2026-11-01" },
+  "psc-statement-withdrawal": { statement: "PSC_CONTACTED_BUT_NO_RESPONSE", withdrawalDate: "2026-11-05" },
 };
 
 const SHARED_ROUTE_KINDS = Object.keys(GATEWAY_FORM_BUILDERS);

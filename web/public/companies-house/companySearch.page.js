@@ -390,6 +390,14 @@ const AUTHORITY_SOURCES = {
     url: "https://www.gov.uk/make-changes-to-your-limited-company/company-name",
     title: "Make changes to your private limited company: Company name",
   },
+  pscStatementForm: {
+    url: "https://assets.publishing.service.gov.uk/media/69131f505dec0071ce496357/PSC08_v3.0-FINAL.pdf",
+    title: "PSC08 Notification of PSC statements",
+  },
+  pscStatementUpdateForm: {
+    url: "https://assets.publishing.service.gov.uk/media/5eac148286650c436060bbe9/PSC09_v2.0.pdf",
+    title: "PSC09 Update to PSC statements",
+  },
 };
 
 // A quotation GOV.UK publishes in Welsh as well: its Welsh is GOV.UK's own sentence.
@@ -502,6 +510,18 @@ function authorityNotes(activityId) {
       ),
       inEnglishOnly("changeOfNameForm", "You may use this form to give notice of an unconditional change of name by the company members."),
       inEnglishOnly("changeOfNameGuide", "Your company name will not officially change until Companies House registers it."),
+      codeOnline,
+    ],
+    "psc-statements": [
+      inEnglishOnly(
+        "pscStatementForm",
+        "The company must take reasonable steps to find out if there is anyone who is a registrable person or a registrable relevant legal entity (RLE), and if so, to identify them.",
+      ),
+      inEnglishOnly(
+        "pscStatementForm",
+        "This form may be authenticated by: Director, Secretary, Person authorised, Liquidator, Administrator, Administrative receiver, Receiver, Receiver manager, Charity Commission receiver and manager, CIC manager, Judicial factor.",
+      ),
+      inEnglishOnly("pscStatementUpdateForm", "You may use this form to tell us about an update to a PSC statement."),
       codeOnline,
     ],
     "file-micro-entity-accounts": accounts,
@@ -1116,6 +1136,12 @@ async function renderPscs(container, companyNumber) {
     activityId: "change-psc-details",
     page: "changePscDetails.html",
     label: window.siteText("ch.drill.change-psc", "Tell Companies House a PSC's details have changed"),
+    companyNumber,
+  });
+  await appendFileThis(container, {
+    activityId: "psc-statements",
+    page: "pscStatements.html",
+    label: window.siteText("ch.drill.psc-statements", "Give or withdraw a PSC statement"),
     companyNumber,
   });
 }

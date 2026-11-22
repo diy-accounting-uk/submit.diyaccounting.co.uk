@@ -217,7 +217,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 40);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 42);
         // The two previews call no external API and share the /api/v1/companies-house alarm.
         assertGroupedStackHealthAlarm(
                 companiesHouseStackTemplate,
@@ -245,6 +245,8 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                         "companies-house-officers-get",
                         "companies-house-psc-cessation-post",
                         "companies-house-psc-change-details-post",
+                        "companies-house-psc-statement-notification-post",
+                        "companies-house-psc-statement-withdrawal-post",
                         "companies-house-psc-get",
                         "companies-house-psc-verification-statement-get",
                         "companies-house-psc-verification-statement-post",
@@ -603,9 +605,12 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         // /api/v1/companies-house/sail-address and POST /api/v1/companies-house/record-location each sit on
         // their own unshared path and add a primary route and an auto-HEAD route, for 263 + 4 = 267. POST
         // /api/v1/companies-house/change-of-name sits on its own unshared path and adds a primary route and
-        // an auto-HEAD route, for 267 + 2 = 269.
+        // an auto-HEAD route, for 267 + 2 = 269. POST
+        // /api/v1/companies-house/psc-statement-notification and POST
+        // /api/v1/companies-house/psc-statement-withdrawal each sit on their own unshared path and add a
+        // primary route and an auto-HEAD route, for 269 + 4 = 273.
         assertEquals(
-                269,
+                273,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

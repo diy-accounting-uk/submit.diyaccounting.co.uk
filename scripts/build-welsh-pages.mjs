@@ -242,6 +242,14 @@ export const WELSH_PAGES = [
     marks: "build",
     markAttributes: CH_MARK_ATTRIBUTES,
   },
+  {
+    id: "ch-psc-statements",
+    en: "companies-house/pscStatements.html",
+    cy: "cy/companies-house/pscStatements.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/pscStatements.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
 ];
 
 export function welshUrl(page) {
