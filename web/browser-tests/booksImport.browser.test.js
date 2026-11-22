@@ -1104,7 +1104,7 @@ test.describe("books import of an iXBRL accounts document", () => {
     for (const [line, current, prior] of [
       ["BankLoansOverdrafts", "300", "200"],
       ["TaxationSocialSecurity", "200", "150"],
-      ["Accruals", "400", "250"],
+      ["Accruals", "400", "550"],
       ["BankLoansAfterOneYear", "1200", "700"],
     ]) {
       await expect(page.locator("#current" + line), `current ${line}`).toHaveValue(current);

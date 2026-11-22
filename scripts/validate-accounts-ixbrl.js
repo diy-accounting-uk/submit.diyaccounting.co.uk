@@ -21,6 +21,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
 import { buildMicroEntityAccounts } from "../app/services/microEntityAccountsIxbrl.js";
 import { buildSmallCompanyAccounts } from "../app/services/smallCompanyAccountsIxbrl.js";
 
@@ -84,17 +85,17 @@ const SMALL_COMPANY_SAMPLE_INPUT = {
       capitalAndReserves: 10000,
     },
     prior: {
-      fixedAssets: 8000,
+      fixedAssets: 9500,
       stocks: 400,
       debtors: 2000,
       cashAtBank: 1600,
       tradeCreditors: 900,
       corporationTax: 1000,
       otherCreditors: 600,
-      creditorsAfterOneYear: 1500,
+      creditorsAfterOneYear: 5100,
       calledUpShareCapital: 100,
-      profitAndLossAccount: 7900,
-      capitalAndReserves: 8000,
+      profitAndLossAccount: 5800,
+      capitalAndReserves: 5900,
     },
   },
   profitAndLoss: {
@@ -271,13 +272,12 @@ const DORMANT_SAMPLE_INPUT = {
   },
 };
 
-async function main() {
-  const filePathArg = process.argv[2];
-  if (filePathArg) {
-    process.exitCode = (await validate(filePathArg)) ? 0 : 1;
-    return;
-  }
-  const samples = [
+/**
+ * The built-in samples, each as its label and its built document.
+ * @returns {[string, string][]}
+ */
+export function validationSamples() {
+  return [
     ["micro", buildMicroEntityAccounts(SAMPLE_INPUT)],
     ["small-full", buildSmallCompanyAccounts(SMALL_COMPANY_SAMPLE_INPUT)],
     ["small-filleted", buildSmallCompanyAccounts({ ...SMALL_COMPANY_SAMPLE_INPUT, filleted: true })],
@@ -286,8 +286,16 @@ async function main() {
     ["revised-small-full", buildSmallCompanyAccounts({ ...SMALL_COMPANY_SAMPLE_INPUT, ...REVISED_APPROVAL })],
     ["revised-small-filleted", buildSmallCompanyAccounts({ ...SMALL_COMPANY_SAMPLE_INPUT, filleted: true, ...REVISED_APPROVAL })],
   ];
+}
+
+async function main() {
+  const filePathArg = process.argv[2];
+  if (filePathArg) {
+    process.exitCode = (await validate(filePathArg)) ? 0 : 1;
+    return;
+  }
   const verdicts = [];
-  for (const [label, xhtml] of samples) {
+  for (const [label, xhtml] of validationSamples()) {
     const samplePath = join(tmpdir(), `sample-${label}-accounts-ixbrl.html`);
     writeFileSync(samplePath, xhtml);
     console.log(`=== ${label} ===`);
@@ -299,7 +307,9 @@ async function main() {
   process.exitCode = verdicts.every(([, isValid]) => isValid) ? 0 : 1;
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}
