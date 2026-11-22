@@ -5,7 +5,7 @@
 
 Five audiences learn what the watch list and the due list show and what filing costs. Each one lands on a page that answers its question, and each one has a next step to a paid bundle. The channels cost nothing; a paid channel is the operator's decision. Each step from a visit to a paid bundle is counted by `utm_source`, and each channel has a stop rule. Facts checked 2026-11-22.
 
-**Status**: first draft (v1), not yet reviewed. 17 tasks, WDM2 to WDM18: 11 machine-only, 2 machine-ask, 4 human-driven. Briefs are section 8.
+**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. 16 tasks, WDM2 to WDM17, boarded on `NEXT.md`: 11 machine-only, 1 machine-ask, 4 human-driven. WDM18 (paid search) starts when the free channels show a sign-up rate (decision D1). Briefs are section 8.
 
 ## Operator assertions (verbatim)
 
@@ -40,8 +40,8 @@ From board row WDM1, operator, 2026-11-22:
 | Public deadline lookup, no sign-in | on prod | none | `web/public/company-filing-deadlines.html`, `scripts/filing-pages.toml:256-283` |
 | Drill-down addresses `/companies-house/company/<CRN>` | open row CL1, wave set zeppelin W2 | `default` | `NEXT.md` CL1 |
 | Watch list | open row WL1, zeppelin W3; up to 50 companies an account | `default` | `NEXT.md` WL1 |
-| Due list | plan `PLAN_DUE_LIST.md`; launch is DUE14 | decision D2 of that plan; it recommends `default` | `PLAN_DUE_LIST.md` sections 8, 9 |
-| Company reports | plan `PLAN_COMPANY_REPORTS.md`; launch is CR14 | decision D1 of that plan; it recommends `default` | `PLAN_COMPANY_REPORTS.md` sections 5, 8 |
+| Due list | plan `PLAN_DUE_LIST.md`; launch is DUE14 | the `default` bundle (decision D2 of that plan) | `PLAN_DUE_LIST.md` sections 8, 9 |
+| Company reports | plan `PLAN_COMPANY_REPORTS.md`; launch is CR14 | the `default` bundle (decision D1 of that plan) | `PLAN_COMPANY_REPORTS.md` sections 5, 8 |
 | Campaign passes | open row CP1, zeppelin W4 | operator page | `NEXT.md` CP1 |
 | Marketing assets (videos, screenshots, listing packs) | open row MA1, blocked on CL1, WL1 and the due list | none | `NEXT.md` MA1 |
 | Practice bundle (Resident Tax Agent) | listed on ci only; prod waits on UH1 | `resident-tax-agent` | `submit.catalogue.toml:241`; `PLAN_ITSA_APPROVAL.md` UH1 |
@@ -141,7 +141,7 @@ The partner bodies are the Institute of Certified Bookkeepers, AAT and the Inter
 
 ## 4. Paid channels
 
-Paid search is decision D1 (section 7). Its task is WDM18. The bid and budget rules of `MARKETING_GUIDANCE.md` apply to any paid change.
+There is no paid search until the free channels show a sign-up rate from the landing pages (decision D1, section 7); WDM18 then prepares it. The bid and budget rules of `MARKETING_GUIDANCE.md` apply to any paid change.
 
 ## 5. Measurement
 
@@ -177,16 +177,16 @@ A campaign session (WDM9) reads the figures of section 5 and applies these. Each
 | Partner passes | Fewer than 10 redemptions of a pass in six weeks after the partner shares it: make no further pass for that partner. |
 | Paid search | The rules of `MARKETING_GUIDANCE.md` ("Bid and budget rules"), with a WDM4 sign-up in place of the day-pass grant: read cost per click until 50 clicks; then stop when the cost per sign-up is above the limit and the sign-ups do not rise against the period before. The limit is set from the first reading of WDM4 sign-ups, as that section sets the £22 limit from the first reading of day-pass grants. |
 
-## 7. Operator decisions
+## 7. Decisions
 
-| # | Decision | Alternatives | Recommendation |
-| --- | --- | --- | --- |
-| D1 | Paid search for company deadline queries | (a) None. (b) A Google Search campaign for queries such as "when are my company accounts due", landing on `company-filing-deadlines.html`: £2 a day, about £61 a month recurring (£730 a year), about 55 clicks a month at £1.11 a click (not confirmed for these queries). (c) (b) plus Microsoft at £1 a day: about £91 a month recurring in total. | (a) until the free channels show a sign-up rate from the landing pages; then (b), judged by the stop rule. |
-| D2 | What a partner pass gives | (a) No pass; the free watch list and due list are the offer. (b) A CP1 pass per partner that grants Resident Ltd for a year (`P1Y`), up to 500 redemptions; it costs at most £9.99 a year of revenue per redeemer who would have paid, and needs a hidden `resident-ltd-comp` bundle (WDM14). | (b), for partner bodies only, as OOS44 does for VAT. |
+Operator, 2026-11-22.
 
-Answers (operator, 2026-11-22): D1 (a), D2 (b).
+| # | Decision | Design |
+| --- | --- | --- |
+| D1 | Paid search for company deadline queries | None until the free channels show a sign-up rate from the landing pages. WDM18 then prepares a Google Search campaign (£2 a day, about £61 a month, about 55 clicks a month at £1.11 a click, not confirmed for these queries), judged by the stop rule. |
+| D2 | What a partner pass gives | A CP1 pass per partner that grants Resident Ltd for a year (`P1Y`), up to 500 redemptions, for partner bodies only, as OOS44 does for VAT. It costs at most £9.99 a year of revenue per redeemer who would have paid, and needs a hidden `resident-ltd-comp` bundle (WDM14). |
 
-The due list's D2 and the reports' D1 decide whether those features are free with a sign-in. This plan's messages assume both plans' recommendations (`default`); if the operator picks a paid bundle, WDM6 and WDM7 state that bundle and its price.
+Both the due list and the reports are in the `default` bundle (decision D2 of `PLAN_DUE_LIST.md`, D1 of `PLAN_COMPANY_REPORTS.md`), so this plan's messages state them as free with a sign-in.
 
 ## 8. Tasks
 
@@ -206,13 +206,12 @@ The due list's D2 and the reports' D1 decide whether those features are free wit
 | WDM11 | The listing copy sitting file | MA1, WL1 on prod, DUE14 | machine-only | Sonnet | 1 file |
 | WDM12 | Update the live listings | WDM11 | human-driven | | 0 files |
 | WDM13 | The donor email update paragraph | WL1 on prod, DUE14 | machine-only | Opus | 1 file |
-| WDM14 | The `resident-ltd-comp` bundle | CP1, D2 (b) | machine-only | Sonnet | ~5 files |
-| WDM15 | Draft the partner proposals | WL1 on prod, DUE14, D2 | machine-only | Opus | 1 file |
+| WDM14 | The `resident-ltd-comp` bundle | CP1 | machine-only | Sonnet | ~5 files |
+| WDM15 | Draft the partner proposals | WL1 on prod, DUE14 | machine-only | Opus | 1 file |
 | WDM16 | Send the partner proposals | WDM15 | human-driven | | 0 files |
 | WDM17 | Make each partner's pass | CP1 on prod, WDM14, a partner's yes | human-driven | | 0 files |
-| WDM18 | Paid search for company deadline queries | D1 (b) or (c), WDM4, WDM5 | machine-ask | Sonnet | ~2 files |
 
-WDM5, WDM6 and WDM7 edit `scripts/filing-pages.toml`, `web/public/sitemap.xml`, `lighthouse.config.json` and `i18n/cy.toml`, so they land in that order.
+WDM18 is briefed below and is boarded when the free channels show a sign-up rate. WDM5, WDM6 and WDM7 edit `scripts/filing-pages.toml`, `web/public/sitemap.xml`, `lighthouse.config.json` and `i18n/cy.toml`, so they land in that order.
 
 ### 8.2 Briefs
 
@@ -312,14 +311,14 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 
 - **Goal.** A CP1 pass can grant Resident Ltd for a year.
 - **Change.** A hidden bundle `resident-ltd-comp` in `web/public/submit.catalogue.toml` that `includes = ["resident-ltd"]`, made as CP1 makes `resident-vat-comp`; the four catalogue tests of `NEXT.md`'s shared facts. State in the pull request whether the confirmation statement's per-filing price (£61.35) applies through the comp bundle.
-- **Waits on**: CP1, D2 (b). **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~5 files.
+- **Waits on**: CP1. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~5 files.
 
 #### WDM15. Draft the partner proposals
 
 - **Goal.** One short proposal for each body of section 3, through the `email-draft` skill.
-- **Content.** What the watch list and the due list show for that body's members (section 2.4 for the bookkeeping bodies, 2.3 for IPSE, 2.1 for Enterprise Nation); the prices; with D2 (b), the offer of a year of Resident Ltd through a link that members can use for six months; "There is no cost to <body>." Each link in a proposal carries `utm_source=<body>&utm_medium=partner&utm_campaign=watch-due`. Find each body's partnerships contact route and write it with its source URL.
+- **Content.** What the watch list and the due list show for that body's members (section 2.4 for the bookkeeping bodies, 2.3 for IPSE, 2.1 for Enterprise Nation); the prices; the offer of a year of Resident Ltd through a link that members can use for six months; "There is no cost to <body>." Each link in a proposal carries `utm_source=<body>&utm_medium=partner&utm_campaign=watch-due`. Find each body's partnerships contact route and write it with its source URL.
 - **Output.** `../private.diyaccounting.co.uk/strategy/marketing/WATCH_DUE_PARTNER_PROPOSALS.md`.
-- **Waits on**: WL1 on prod, DUE14, D2. **Class**: machine-only. **Repository**: private. **Model**: Opus. **Size**: 1 file.
+- **Waits on**: WL1 on prod, DUE14. **Class**: machine-only. **Repository**: private. **Model**: Opus. **Size**: 1 file.
 
 #### WDM16. Send the partner proposals
 
@@ -336,9 +335,9 @@ Each brief stands alone. Line numbers drift, so each names its anchor text. Ever
 #### WDM18. Paid search for company deadline queries
 
 - **Goal.** The paid campaign of D1, ready to start on the operator's word.
-- **Change.** In `infra/google/ads/ads.toml` (and `infra/microsoft/ads/ads.toml` for D1 (c)), a Search campaign with `status = "PAUSED"`, the budget D1 names, UK by presence, the keywords "company accounts due date", "confirmation statement due date", "when are my accounts due" and their relatives, the negative list of the existing campaign, and `final_url_suffix = "utm_source=google&utm_medium=cpc&utm_campaign=watch-due&utm_term={keyword}"` landing on `company-filing-deadlines.html`. Run the forecast (`ads-advisor` skill) and write the clicks and cost per click it gives in the pull request.
+- **Change.** In `infra/google/ads/ads.toml`, a Search campaign with `status = "PAUSED"`, the budget D1 names, UK by presence, the keywords "company accounts due date", "confirmation statement due date", "when are my accounts due" and their relatives, the negative list of the existing campaign, and `final_url_suffix = "utm_source=google&utm_medium=cpc&utm_campaign=watch-due&utm_term={keyword}"` landing on `company-filing-deadlines.html`. Run the forecast (`ads-advisor` skill) and write the clicks and cost per click it gives in the pull request.
 - **Ask.** The campaign spends only when the operator says "start" and its status changes to enabled; the reading date goes in `MARKETING_GUIDANCE.md`'s decision log with the change.
-- **Waits on**: D1 (b) or (c), WDM4, WDM5. **Class**: machine-ask. **Repository**: submit. **Model**: Sonnet. **Size**: ~2 files.
+- **Waits on**: a sign-up rate from the landing pages in WDM4's view, then the operator's word on the budget (D1), WDM4, WDM5. **Class**: machine-ask. **Repository**: submit. **Model**: Sonnet. **Size**: ~2 files.
 
 ## 9. Not confirmed
 
