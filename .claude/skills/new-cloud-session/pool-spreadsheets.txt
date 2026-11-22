@@ -3,3 +3,6 @@
 # The spreadsheets-cloud-<codename> work repositories of diy-accounting-uk, one code name a line, in the order
 # they were created. new-cloud-session.sh --repo spreadsheets appends a name when it creates the repository.
 apex
+blizzard
+cedar
+dynamo
