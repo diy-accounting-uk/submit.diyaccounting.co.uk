@@ -1543,7 +1543,7 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
       });
       const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody() }));
       expect(response.statusCode).toBe(400);
-      expect(JSON.stringify(parseResponseBody(response))).toContain("the Companies House register does not show this period");
+      expect(JSON.stringify(parseResponseBody(response))).toContain("Companies House does not hold these as the company's first accounts");
       expect(mockPostToGateway).not.toHaveBeenCalled();
     });
 
@@ -1551,7 +1551,7 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
       mockGetCompanyProfile.mockResolvedValue({ profile: { dateOfCreation: "2015-03-01" } });
       const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody() }));
       expect(response.statusCode).toBe(400);
-      expect(JSON.stringify(parseResponseBody(response))).toContain("the Companies House register does not show this period");
+      expect(JSON.stringify(parseResponseBody(response))).toContain("Companies House does not hold these as the company's first accounts");
       expect(mockPostToGateway).not.toHaveBeenCalled();
     });
 
