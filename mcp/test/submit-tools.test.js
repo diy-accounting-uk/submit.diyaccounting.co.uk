@@ -1159,6 +1159,22 @@ describe("submit-tools", () => {
       },
     );
 
+    it.each(["render_small_company_accounts_sandbox", "submit_small_company_accounts_sandbox"])(
+      "%s takes a fixed asset note that names only the classes the company holds",
+      (name) => {
+        const plantMachinery = {
+          costAtStart: 1000,
+          additions: 0,
+          disposals: 0,
+          depreciationAtStart: 200,
+          depreciationCharge: 200,
+          depreciationOnDisposals: 0,
+        };
+        const fixedAssetNote = z.object(TOOLS[name].inputSchema).shape.smallCompany.shape.fixedAssetNote.parse({ plantMachinery });
+        expect(fixedAssetNote).toEqual({ plantMachinery });
+      },
+    );
+
     it.each(CASES)("%s sends no field its schema lacks", async (name, handler, params) => {
       const body = await bodyOf(handler, params);
 

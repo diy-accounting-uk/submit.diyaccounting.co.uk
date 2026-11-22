@@ -117,9 +117,10 @@ export async function ingestHandler(event) {
   // A practice narrowing the list to one of its clients (queryStringParameters only, never
   // a path segment) - unrelated to the single-receipt name/key branch below.
   const clientId = event.queryStringParameters?.clientId || undefined;
-  if (clientId) {
-    const client = await getClient(userSub, clientId);
-    if (!client) {
+
+  // Processing
+  try {
+    if (clientId && !(await getClient(userSub, clientId))) {
       return http403ForbiddenResponse({
         request,
         headers: { ...responseHeaders },
@@ -127,10 +128,6 @@ export async function ingestHandler(event) {
         error: { code: "client-not-found" },
       });
     }
-  }
-
-  // Processing
-  try {
     if (hasNameOrKey) {
       logger.info({ message: "Retrieving single receipt", receiptId, key: Key });
       const receipt = await getReceiptByReceiptId(userSub, receiptId);

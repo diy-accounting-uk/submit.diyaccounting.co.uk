@@ -43,7 +43,10 @@ async function fetchReceipts() {
 
   if (!idToken) return;
 
-  const res = await window.fetchWithIdToken(receiptsUrl(), {});
+  const requestedUrl = receiptsUrl();
+  const res = await window.fetchWithIdToken(requestedUrl, {});
+  // An answer for a choice the reader has since changed is dropped; the later request draws the page.
+  if (requestedUrl !== receiptsUrl()) return;
   if (!res.ok) {
     tbody.innerHTML = "";
     table.style.display = "none";

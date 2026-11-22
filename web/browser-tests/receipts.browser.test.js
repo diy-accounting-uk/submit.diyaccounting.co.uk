@@ -614,6 +614,25 @@ test.describe("Receipts page - a practice's clients", () => {
     await page.screenshot({ path: "target/prc1/receipts-practice-client-en.png", fullPage: true });
   });
 
+  test("a slow answer for the reader's own list does not replace the list of the client chosen since", async ({ page }) => {
+    await openReceipts(page, { clients: PRACTICE_CLIENTS });
+    await page.evaluate(() => {
+      const answer = window.fetchWithIdToken;
+      window.fetchWithIdToken = async (url) => {
+        if (url === "/api/v1/hmrc/receipt") await new Promise((resolve) => setTimeout(resolve, 400));
+        return answer(url);
+      };
+      window.ownListDrawn = window.fetchReceipts();
+    });
+
+    await page.locator("#receiptsClient").selectOption("client-1");
+    await expect(page.locator("#filingsInProgress")).toContainText("00003B");
+    await page.evaluate(() => window.ownListDrawn);
+
+    await expect(page.locator("#filingsInProgress")).toContainText("00003B");
+    await expect(page.locator("#filingsInProgress")).not.toContainText("00003A");
+  });
+
   test("the Welsh page offers the same choice in Welsh", async ({ page }) => {
     await openReceipts(page, { clients: PRACTICE_CLIENTS, welsh: true });
     await expect(page.locator("#receiptsClientChoice")).toBeVisible();

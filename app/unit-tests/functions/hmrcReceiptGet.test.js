@@ -152,6 +152,17 @@ describe("hmrcReceiptGet ingestHandler", () => {
     expect(JSON.parse(response.body).filingsInProgress).toEqual([rejected]);
   });
 
+  test("a client list that cannot be read answers a JSON 500 and lists nothing", async () => {
+    getClient.mockRejectedValue(new Error("Requested resource not found"));
+
+    const response = await hmrcReceiptGetHandler(buildAuthenticatedEvent({ clientId: "client-1" }));
+
+    expect(response.statusCode).toBe(500);
+    expect(JSON.parse(response.body).message).toBe("Internal server error");
+    expect(listUserReceipts).not.toHaveBeenCalled();
+    expect(listFilingsInProgress).not.toHaveBeenCalled();
+  });
+
   test("a client id that is not the caller's lists no filings in progress", async () => {
     getClient.mockResolvedValue(null);
 
