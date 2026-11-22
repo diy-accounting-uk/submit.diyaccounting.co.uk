@@ -1,0 +1,222 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Return an allotment of shares - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/companies-house/allotShares.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/allotShares.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/allotShares.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/allotShares.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
+      <h1>Return an allotment of shares</h1>
+      <p class="subtitle">Tell Companies House the company has issued more shares, with its statement of capital</p>
+    </header>
+
+    <main id="mainContent">
+      <p class="hint" data-feature-status="sandbox" data-companies-house-service="xml-gateway">
+        <strong>Status: sandbox.</strong> This runs against Companies House's test service. Nothing you file here reaches the live register.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Sign in to file with Companies House"
+        data-sign-in-text="Sign in to look up your company and file with Companies House. The filing is made from your account."
+      >
+        <h2>Which company?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label for="companyNumber">Company number</label>
+            <p id="companyNumber-hint" class="hint">
+              8 characters, for example 00000001. Do not know it? <a href="companySearch.html">Search Companies House</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <div class="form-group">
+            <label for="companyAuthCode">Company authentication code</label>
+            <p id="companyAuthCode-hint" class="hint">
+              The 6 to 8 character code Companies House issued for this company. Not stored - used to read the company's share capital and
+              for this filing only.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="companyLookupBtn" class="btn" data-activity-start="allot-shares">Look up the company's shares</button>
+        </form>
+      </div>
+
+      <!-- Allotment form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2>The shares allotted</h2>
+        <p>Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).</p>
+        <p class="hint">
+          A company returns an allotment within one month of making it. Companies House charges no fee for this filing. Everything on it
+          appears on the public record.
+        </p>
+        <form id="allotmentForm" novalidate>
+          <fieldset class="form-group">
+            <legend>Allotment dates</legend>
+            <p id="dates-hint" class="hint">
+              If all shares were allotted on the same day, enter that date as the from date. If shares were allotted over a period of time,
+              enter both dates.
+            </p>
+            <div class="form-group">
+              <label for="startDate">From date</label>
+              <input type="date" id="startDate" name="startDate" required aria-describedby="dates-hint" />
+            </div>
+            <div class="form-group">
+              <label for="endDate">To date (optional)</label>
+              <input type="date" id="endDate" name="endDate" aria-describedby="dates-hint" />
+            </div>
+          </fieldset>
+
+          <div class="form-group">
+            <label for="currency">Currency of the shares</label>
+            <select id="currency" name="currency">
+              <option value="GBP">Pound sterling (GBP)</option>
+              <option value="EUR">Euro (EUR)</option>
+              <option value="USD">US dollar (USD)</option>
+            </select>
+          </div>
+
+          <fieldset class="form-group">
+            <legend>Shares allotted</legend>
+            <p class="hint">
+              Give details of the shares allotted, including bonus shares. Amounts are for each share, in the currency above.
+            </p>
+            <div id="allotmentRows"></div>
+            <button type="button" id="addAllotmentBtn" class="btn-small">Add another allotment</button>
+          </fieldset>
+
+          <fieldset class="form-group">
+            <legend>Share capital before the allotment</legend>
+            <p id="beforeSource" class="hint"></p>
+            <div id="beforeRows"></div>
+            <button type="button" id="addClassBtn" class="btn-small">Add a class of shares</button>
+            <div class="form-group">
+              <label for="unpaidBefore">Total aggregate amount unpaid before the allotment</label>
+              <p id="unpaidBefore-hint" class="hint">
+                Including both the nominal value and any share premium. Enter 0 if the shares are fully paid.
+              </p>
+              <input type="text" id="unpaidBefore" name="unpaidBefore" inputmode="decimal" value="0" aria-describedby="unpaidBefore-hint" />
+            </div>
+          </fieldset>
+
+          <section id="afterSection" class="form-group" aria-live="polite">
+            <h3>Statement of capital after the allotment</h3>
+            <p class="hint">The issued share capital this return states: the capital before, with the shares allotted added.</p>
+            <table id="afterTable" class="results-table">
+              <thead>
+                <tr>
+                  <th scope="col">Class of shares</th>
+                  <th scope="col" class="amount">Number of shares</th>
+                  <th scope="col" class="amount">Aggregate nominal value</th>
+                </tr>
+              </thead>
+              <tbody id="afterBody"></tbody>
+              <tfoot>
+                <tr>
+                  <th scope="row">Totals</th>
+                  <td id="afterTotalNumber" class="amount"></td>
+                  <td id="afterTotalNominal" class="amount"></td>
+                </tr>
+              </tfoot>
+            </table>
+            <p>Total aggregate amount unpaid: <strong id="afterUnpaid"></strong></p>
+            <div id="newClassParticulars"></div>
+          </section>
+          <button type="submit" id="continueBtn" class="btn">Continue</button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="reviewView" class="results-container" style="display: none">
+        <h2>Review the filing</h2>
+        <dl id="reviewList"></dl>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button type="button" id="submitFilingBtn" class="btn">File with Companies House</button>
+          <button type="button" id="changeBtn" class="secondary-button">Change</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2>Filing result</h2>
+        <div id="filingResult"></div>
+        <div class="button-group">
+          <button type="button" id="startAgainBtn" class="secondary-button">Start a new filing</button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../widgets/page-chrome.js"></script>
+    <script src="../lib/env-loader.js"></script>
+    <script src="../lib/companies-house-lane.js"></script>
+    <script src="../lib/companies-house-gateway-poll.js"></script>
+    <script src="../lib/companies-house-rejections.js"></script>
+    <script src="../lib/companies-house-form-page.js"></script>
+    <script src="../lib/auth-url-builder.js"></script>
+    <script type="module" src="../submit.js"></script>
+    <script src="../developer-mode.js"></script>
+    <script src="../lib/request-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
+    <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../lib/form-errors.js"></script>
+    <script src="../lib/companies-house-labels.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/signed-out-panel.js"></script>
+    <script src="../lib/company-number-from-address.js"></script>
+    <script src="allotShares.page.js"></script>
+  </body>
+</html>

@@ -48,6 +48,8 @@ import {
   OFFICER_NAME_MISMATCH_REASONS,
 } from "./companiesHouseOfficerAppointmentXml.js";
 import { buildOfficerChangeBody, OFFICER_CHANGE_ROLES } from "./companiesHouseOfficerChangeXml.js";
+import { buildAllotmentOfSharesBody } from "./companiesHouseAllotmentOfSharesXml.js";
+import { toMillionths, multiplyMillionths, fromMillionths } from "../../web/public/lib/share-capital.js";
 
 function extractPscVerificationStatement(body, errorMessages) {
   const { title, forename, otherForenames, surname, dobMonth, dobYear, personalCode } = body;
@@ -690,6 +692,197 @@ function extractOfficerChange(body, errorMessages) {
   };
 }
 
+// The currencies a return of allotment is taken in here; each is in the gateway's list of current currencies.
+export const ALLOTMENT_CURRENCIES = ["GBP", "EUR", "USD"];
+
+const MAX_SHARE_CLASS_LENGTH = 50;
+const MAX_PARTICULARS_LENGTH = 4000;
+const MAX_CONSIDERATION_LENGTH = 2000;
+const MAX_ALLOTMENTS = 50;
+const MAX_SHARE_CLASSES = 50;
+// NumShares and the per-share amounts take up to fifteen digits before the point.
+const MAX_SHARE_NUMBER = toMillionths("999999999999999.999999");
+const MAX_NOMINAL_DIGITS = 8;
+
+// Whether a nominal value is above 0 with at most eight significant digits, as the schema's ShareValue takes.
+function isNominalValue(text) {
+  const millionths = toMillionths(text);
+  if (!millionths) return false;
+  return fromMillionths(millionths).replace(".", "").replace(/^0+/, "").length <= MAX_NOMINAL_DIGITS;
+}
+
+const classKey = (currency, shareClass) => `${currency} ${shareClass.toLowerCase()}`;
+
+// A number of shares or an amount of a request, as text and as millionths; null with a message when it is not one.
+function readDecimal(value, name, errorMessages, { positive = false } = {}) {
+  const text = typeof value === "number" ? String(value) : trimmed(value);
+  const millionths = toMillionths(text);
+  if (millionths === null || millionths > MAX_SHARE_NUMBER || (positive && millionths === 0n)) {
+    errorMessages.push(
+      `Invalid ${name} - must be a number ${positive ? "above 0" : "of 0 or more"}, with at most 15 digits and 6 decimal places`,
+    );
+    return null;
+  }
+  return { text, millionths };
+}
+
+function readShareClass(value, name, errorMessages) {
+  const shareClass = trimmed(value);
+  if (!shareClass) errorMessages.push(`Missing ${name}`);
+  else if (shareClass.length > MAX_SHARE_CLASS_LENGTH)
+    errorMessages.push(`Invalid ${name} - must be at most ${MAX_SHARE_CLASS_LENGTH} characters`);
+  else if (!NAME_ADDRESS_CHARACTERS.test(shareClass)) errorMessages.push(`Invalid ${name} - has a character Companies House does not take`);
+  return shareClass;
+}
+
+function readCurrency(value, name, errorMessages) {
+  if (!ALLOTMENT_CURRENCIES.includes(value)) errorMessages.push(`Invalid ${name} - must be one of ${ALLOTMENT_CURRENCIES.join(", ")}`);
+  return value;
+}
+
+function readAllotment(given, index, errorMessages) {
+  const at = `allotments[${index}]`;
+  const allotment = given && typeof given === "object" ? given : {};
+  const shareClass = readShareClass(allotment.shareClass, `${at}.shareClass`, errorMessages);
+  const currency = readCurrency(allotment.currency, `${at}.currency`, errorMessages);
+  const number = readDecimal(allotment.numShares, `${at}.numShares`, errorMessages, { positive: true });
+  const paid = readDecimal(allotment.amountPaidPerShare, `${at}.amountPaidPerShare`, errorMessages);
+  const unpaid = readDecimal(allotment.amountUnpaidPerShare, `${at}.amountUnpaidPerShare`, errorMessages);
+  const nominalText = typeof allotment.nominalValue === "number" ? String(allotment.nominalValue) : trimmed(allotment.nominalValue);
+  const nominal = toMillionths(nominalText);
+  if (!isNominalValue(nominalText)) {
+    errorMessages.push(`Invalid ${at}.nominalValue - must be a number above 0, with at most 8 digits and 6 decimal places`);
+  } else if (paid && unpaid && paid.millionths + unpaid.millionths < nominal) {
+    errorMessages.push(
+      `Invalid ${at} - the amount paid and the amount unpaid on each share add up to less than its nominal value of ${nominalText}`,
+    );
+  }
+  const consideration = trimmed(allotment.consideration);
+  if (allotment.consideration !== undefined && allotment.consideration !== null && typeof allotment.consideration !== "string") {
+    errorMessages.push(`Invalid ${at}.consideration - must be text`);
+  } else if (consideration.length > MAX_CONSIDERATION_LENGTH) {
+    errorMessages.push(`Invalid ${at}.consideration - must be at most ${MAX_CONSIDERATION_LENGTH} characters`);
+  } else if (!NAME_ADDRESS_CHARACTERS.test(consideration)) {
+    errorMessages.push(`Invalid ${at}.consideration - has a character Companies House does not take, such as a line break`);
+  }
+  return {
+    shareClass,
+    currency,
+    numShares: number?.text,
+    amountPaidPerShare: paid?.text,
+    amountUnpaidPerShare: unpaid?.text,
+    nominalValue: nominalText,
+    ...(consideration ? { consideration } : {}),
+  };
+}
+
+function readCapital(given, index, errorMessages) {
+  const at = `statementOfCapital[${index}]`;
+  const capital = given && typeof given === "object" ? given : {};
+  const currency = readCurrency(capital.currency, `${at}.currency`, errorMessages);
+  const totalUnpaid = readDecimal(capital.totalAmountUnpaid, `${at}.totalAmountUnpaid`, errorMessages);
+  const givenShares = Array.isArray(capital.shares) ? capital.shares : [];
+  if (givenShares.length === 0) errorMessages.push(`Missing ${at}.shares - a statement of capital names each class of shares`);
+  if (givenShares.length > MAX_SHARE_CLASSES) errorMessages.push(`Invalid ${at}.shares - at most ${MAX_SHARE_CLASSES} classes`);
+  const shares = givenShares.slice(0, MAX_SHARE_CLASSES).map((givenShare, shareIndex) => {
+    const shareAt = `${at}.shares[${shareIndex}]`;
+    const share = givenShare && typeof givenShare === "object" ? givenShare : {};
+    const shareClass = readShareClass(share.shareClass, `${shareAt}.shareClass`, errorMessages);
+    const prescribedParticulars = trimmed(share.prescribedParticulars);
+    if (!prescribedParticulars)
+      errorMessages.push(`Missing ${shareAt}.prescribedParticulars - the rights attached to the shares of this class`);
+    if (prescribedParticulars.length > MAX_PARTICULARS_LENGTH) {
+      errorMessages.push(`Invalid ${shareAt}.prescribedParticulars - must be at most ${MAX_PARTICULARS_LENGTH} characters`);
+    }
+    const number = readDecimal(share.numShares, `${shareAt}.numShares`, errorMessages, { positive: true });
+    const nominal = readDecimal(share.aggregateNominalValue, `${shareAt}.aggregateNominalValue`, errorMessages, { positive: true });
+    return { shareClass, prescribedParticulars, numShares: number?.text, aggregateNominalValue: nominal?.text };
+  });
+  return { currency, totalAmountUnpaid: totalUnpaid?.text, shares };
+}
+
+// The statement of capital is the capital after the allotment, so it holds every class allotted, with
+// at least the shares allotted, their nominal value and what is unpaid on them.
+function checkStatementHoldsAllotments(statementOfCapital, allotments, errorMessages) {
+  const classes = new Map();
+  const unpaidByCurrency = new Map();
+  statementOfCapital.forEach((capital, index) => {
+    if (unpaidByCurrency.has(capital.currency))
+      errorMessages.push(`Invalid statementOfCapital[${index}] - ${capital.currency} is stated twice`);
+    unpaidByCurrency.set(capital.currency, { stated: toMillionths(capital.totalAmountUnpaid), allotted: 0n });
+    capital.shares.forEach((share, shareIndex) => {
+      const key = classKey(capital.currency, share.shareClass);
+      if (classes.has(key)) {
+        errorMessages.push(`Invalid statementOfCapital[${index}].shares[${shareIndex}] - the class ${share.shareClass} is stated twice`);
+      }
+      classes.set(key, {
+        number: toMillionths(share.numShares),
+        nominal: toMillionths(share.aggregateNominalValue),
+        allotted: 0n,
+        allottedNominal: 0n,
+      });
+    });
+  });
+  allotments.forEach((allotment, index) => {
+    const at = `allotments[${index}]`;
+    const held = classes.get(classKey(allotment.currency, allotment.shareClass));
+    if (!held) {
+      errorMessages.push(
+        `Invalid ${at} - the statement of capital has no ${allotment.currency} class ${allotment.shareClass}; it states the capital after the allotment`,
+      );
+      return;
+    }
+    const number = toMillionths(allotment.numShares);
+    const nominal = multiplyMillionths(number, toMillionths(allotment.nominalValue));
+    const unpaid = multiplyMillionths(number, toMillionths(allotment.amountUnpaidPerShare));
+    if (nominal === null || unpaid === null) {
+      errorMessages.push(`Invalid ${at} - the number of shares times an amount on each share has more than 6 decimal places`);
+      return;
+    }
+    held.allotted += number;
+    held.allottedNominal += nominal;
+    unpaidByCurrency.get(allotment.currency).allotted += unpaid;
+    if (held.number < held.allotted || held.nominal < held.allottedNominal) {
+      errorMessages.push(
+        `Invalid ${at} - the statement of capital states fewer ${allotment.shareClass} shares, or less nominal value, than are allotted; it states the capital after the allotment`,
+      );
+    }
+  });
+  for (const [currency, { stated, allotted }] of unpaidByCurrency) {
+    if (stated < allotted) {
+      errorMessages.push(
+        `Invalid statementOfCapital - the total amount unpaid in ${currency} is less than the ${fromMillionths(allotted)} unpaid on the shares allotted`,
+      );
+    }
+  }
+}
+
+function extractAllotmentOfShares(body, errorMessages) {
+  const { startDate, endDate } = body;
+  const before = errorMessages.length;
+  if (!startDate || !isValidIsoDate(startDate)) {
+    errorMessages.push("Invalid or missing startDate - must be YYYY-MM-DD");
+  }
+  const period = endDate !== undefined && endDate !== null && endDate !== "";
+  if (period && !isValidIsoDate(endDate)) {
+    errorMessages.push("Invalid endDate - must be YYYY-MM-DD");
+  } else if (period && isValidIsoDate(startDate) && endDate < startDate) {
+    errorMessages.push("Invalid endDate - must not be before startDate");
+  }
+  const givenAllotments = Array.isArray(body.allotments) ? body.allotments : [];
+  if (givenAllotments.length === 0) errorMessages.push("Missing allotments - name at least one allotment of shares");
+  if (givenAllotments.length > MAX_ALLOTMENTS) errorMessages.push(`Invalid allotments - at most ${MAX_ALLOTMENTS}`);
+  const allotments = givenAllotments.slice(0, MAX_ALLOTMENTS).map((allotment, index) => readAllotment(allotment, index, errorMessages));
+  const givenCapitals = Array.isArray(body.statementOfCapital) ? body.statementOfCapital : [];
+  if (givenCapitals.length === 0) errorMessages.push("Missing statementOfCapital - the company's capital after the allotment");
+  if (givenCapitals.length > ALLOTMENT_CURRENCIES.length) errorMessages.push("Invalid statementOfCapital - one entry for each currency");
+  const statementOfCapital = givenCapitals
+    .slice(0, ALLOTMENT_CURRENCIES.length)
+    .map((capital, index) => readCapital(capital, index, errorMessages));
+  if (errorMessages.length === before) checkStatementHoldsAllotments(statementOfCapital, allotments, errorMessages);
+  return { startDate, ...(period ? { endDate } : {}), statementOfCapital, allotments };
+}
+
 /**
  * Each form's request check and body builder, by the kind its filing state carries. A form whose
  * filing carries a document in the envelope has buildDocument as well.
@@ -757,5 +950,9 @@ export const GATEWAY_FORM_BUILDERS = {
   "officer-change": {
     extractAndValidate: extractOfficerChange,
     buildFormXml: (form) => buildOfficerChangeBody(form),
+  },
+  "allotment-of-shares": {
+    extractAndValidate: extractAllotmentOfShares,
+    buildFormXml: (form) => buildAllotmentOfSharesBody(form),
   },
 };

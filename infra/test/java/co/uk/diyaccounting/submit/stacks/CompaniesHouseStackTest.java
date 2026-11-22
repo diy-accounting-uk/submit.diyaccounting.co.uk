@@ -197,11 +197,11 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void stackWiresFortyFiveLambdas() {
+    void stackWiresFortySixLambdas() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::Lambda::Function", 45);
+        template.resourceCountIs("AWS::Lambda::Function", 46);
         for (String functionName : List.of(
                 stack.companiesHouseSearchGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseCompanyGetLambdaProps.ingestFunctionName(),
@@ -245,6 +245,7 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseChangeOfNamePostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseOfficerAppointmentPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseOfficerChangePostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAllotmentOfSharesPostLambdaProps.ingestFunctionName(),
                 pollFunctionName())) {
             template.hasResourceProperties(
                     "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", functionName)));
@@ -545,10 +546,10 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void lambdaFunctionPropsExposesAllFortyFiveRoutesForApiStackToConsume() {
+    void lambdaFunctionPropsExposesAllFortySixRoutesForApiStackToConsume() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
 
-        assertEquals(45, stack.lambdaFunctionProps.size());
+        assertEquals(46, stack.lambdaFunctionProps.size());
         assertEquals(
                 List.of(
                         "/api/v1/companies-house/search",
@@ -595,7 +596,8 @@ class CompaniesHouseStackTest {
                         "/api/v1/companies-house/record-location",
                         "/api/v1/companies-house/change-of-name",
                         "/api/v1/companies-house/officer-appointment",
-                        "/api/v1/companies-house/officer-change"),
+                        "/api/v1/companies-house/officer-change",
+                        "/api/v1/companies-house/allotment-of-shares"),
                 stack.lambdaFunctionProps.stream().map(p -> p.urlPath()).toList());
     }
 
@@ -769,7 +771,7 @@ class CompaniesHouseStackTest {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
-        // The 43 Lambdas routed through grantCompaniesHouseLambdaAccess call isOperatorEmail() in
+        // The 44 Lambdas routed through grantCompaniesHouseLambdaAccess call isOperatorEmail() in
         // enforceBundles(), and the OAuth token exchange publishes activity events, which label
         // an operator's events from the same list.
         var operatorEmailsArn = Match.objectLike(Map.of(
@@ -782,7 +784,7 @@ class CompaniesHouseStackTest {
                 Match.objectLike(Map.of(
                         "PolicyDocument",
                         Match.objectLike(Map.of("Statement", Match.arrayWith(List.of(operatorEmailsStatement)))))),
-                43);
+                44);
     }
 
     @Test
@@ -833,7 +835,8 @@ class CompaniesHouseStackTest {
         // of details route, the change of accounting reference date route, the officer resignation
         // route, the SAIL address route, the record location route, the change of name route, the two
         // PSC statement routes, the PSC notification route, the officer appointment
-        // route, the officer change of details route and the shared
+        // route, the officer change of details route, the allotment of shares route and
+        // the shared
         // form poll, all gated by enforceBundles(), and
         // the presenter poll, whose token charge reads the filer's bundles. The token exchange has
         // no authorizer and so no user to check a bundle entitlement against.
@@ -844,7 +847,7 @@ class CompaniesHouseStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "dynamodb:Query")))))))),
-                42);
+                43);
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -852,7 +855,7 @@ class CompaniesHouseStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "events:PutEvents")))))))),
-                43);
+                44);
     }
 
     @Test
@@ -1364,13 +1367,13 @@ class CompaniesHouseStackTest {
         CompaniesHouseStack stack = synthCompaniesHouseStack("", "", PRESENTER_ID_ARN, PRESENTER_CODE_ARN);
         Template template = Template.fromStack(stack);
 
-        // The wildcard suffix Secrets Manager requires, granted to exactly the twenty-one Lambda roles
+        // The wildcard suffix Secrets Manager requires, granted to exactly the twenty-two Lambda roles
         // that reach the gateway (accounts submit/poll, filing-data, confirmation statement
         // submit/poll, PSC verification statement submit/poll, PSC cessation submit, PSC change of
         // details submit, the change of accounting reference date submit, the officer resignation submit,
         // SAIL address submit, record location submit, the change of name submit, PSC statement and statement
         // withdrawal submit, PSC notification submit, officer appointment submit, officer change
-        // of details submit, the shared form
+        // of details submit, allotment of shares submit, the shared form
         // poll, the presenter poll) for each of the two presenter secrets.
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
@@ -1383,7 +1386,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         PRESENTER_ID_ARN + "-*")))))))),
-                21);
+                22);
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -1395,7 +1398,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         PRESENTER_CODE_ARN + "-*")))))))),
-                21);
+                22);
     }
 
     @Test
@@ -1423,7 +1426,8 @@ class CompaniesHouseStackTest {
                 stack.companiesHousePscStatementWithdrawalPostLambdaProps.ingestFunctionName(),
                 stack.companiesHousePscNotificationPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseOfficerAppointmentPostLambdaProps.ingestFunctionName(),
-                stack.companiesHouseOfficerChangePostLambdaProps.ingestFunctionName())) {
+                stack.companiesHouseOfficerChangePostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAllotmentOfSharesPostLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
             assertEquals(1, functions.size());

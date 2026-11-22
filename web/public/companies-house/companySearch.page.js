@@ -433,6 +433,14 @@ const AUTHORITY_SOURCES = {
     url: "https://www.gov.uk/government/publications/change-the-details-of-a-secretary-ch03",
     title: "Change the details of a secretary (CH03)",
   },
+  allotmentForm: {
+    url: "https://assets.publishing.service.gov.uk/media/69bbea434c478213a823ce3a/SH01_V8.0.pdf",
+    title: "SH01 Return of allotment of shares",
+  },
+  eventDrivenFilings: {
+    url: "https://www.gov.uk/government/publications/life-of-a-company-event-driven-filings/life-of-a-company-part-2-event-driven-filings",
+    title: "Life of a company: event driven filings",
+  },
 };
 
 // A quotation GOV.UK publishes in Welsh as well: its Welsh is GOV.UK's own sentence.
@@ -596,6 +604,18 @@ function authorityNotes(activityId) {
         "Please note that all information on this form will appear on the public record, apart from information relating to usual residential addresses.",
       ),
       inEnglishOnly("officerChangeSecretaryGuidance", "This form is not to be used for making new appointments."),
+      codeOnline,
+    ],
+    "allot-shares": [
+      inEnglishOnly("allotmentForm", "You may use this form to give notice of shares allotted following incorporation."),
+      inEnglishOnly(
+        "allotmentForm",
+        "You cannot use this form to give notice of shares taken by subscribers on formation of the company or for an allotment of a new class of shares by an unlimited company.",
+      ),
+      inEnglishOnly(
+        "eventDrivenFilings",
+        "Within one month of the allotment of shares, a limited company must deliver a return of allotment, on form SH01, to Companies House. You must complete a statement of capital as part of this form.",
+      ),
       codeOnline,
     ],
     "file-micro-entity-accounts": accounts,
@@ -1102,6 +1122,57 @@ async function renderRecordsSection(profile) {
     activityId: "change-records-location",
     page: "recordsLocation.html",
     label: window.siteText("ch.drill.change-records", "Tell Companies House where the records are kept"),
+    companyNumber: profile.companyNumber,
+  });
+}
+
+const ALLOTMENT_FILING = "SH01";
+
+// The company's last return of allotment of shares, from its filing history, with the capital the
+// return stated. The register publishes a company's share capital only in the filings that state it.
+async function renderSharesSection(profile) {
+  const section = document.getElementById("sharesSection");
+  section.innerHTML = "";
+  sectionHeading(section, window.siteText("ch.drill.shares", "Shares"));
+  try {
+    const { filings, truncated } = await readFilingHistoryAnswer(profile.companyNumber);
+    const allotment = filings.find((filing) => filing.type === ALLOTMENT_FILING);
+    if (allotment) {
+      const values = allotment.descriptionValues || {};
+      const capital = (values.capital || []).map((amount) => `${amount.currency} ${amount.figure}`).join(", ");
+      const terms = [
+        [
+          window.siteText("ch.drill.shares-last-allotment", "Last return of allotment of shares"),
+          values.date
+            ? window.siteText("ch.drill.shares-allotted-filed", "Allotment of {date}, filed {filed}", {
+                date: labels().formatCompanyDate(values.date),
+                filed: labels().formatCompanyDate(allotment.date),
+              })
+            : window.siteText("ch.drill.shares-filed", "Filed {filed}", { filed: labels().formatCompanyDate(allotment.date) }),
+        ],
+      ];
+      if (capital) terms.push([window.siteText("ch.drill.shares-capital", "Share capital that return stated"), capital]);
+      const dl = document.createElement("dl");
+      appendTerms(dl, terms);
+      section.appendChild(dl);
+    } else {
+      emptyNote(
+        section,
+        truncated
+          ? window.siteText("ch.drill.shares-none-recent", "The company’s newest {count} filings hold no return of allotment of shares.", {
+              count: filings.length,
+            })
+          : window.siteText("ch.drill.shares-none", "The register holds no return of allotment of shares for this company."),
+      );
+    }
+  } catch (error) {
+    console.warn("Could not read the filing history for the company's allotments:", error);
+    emptyNote(section, window.siteText("ch.drill.records-unread", "Could not read the company’s filing history from Companies House."));
+  }
+  await appendFileThis(section, {
+    activityId: "allot-shares",
+    page: "allotShares.html",
+    label: window.siteText("ch.drill.allot-shares", "Return an allotment of shares"),
     companyNumber: profile.companyNumber,
   });
 }
@@ -1621,6 +1692,7 @@ async function showView(state) {
         renderNameSection(profile),
         renderEmailSection(profile),
         renderRecordsSection(profile),
+        renderSharesSection(profile),
       ]);
       return;
     }

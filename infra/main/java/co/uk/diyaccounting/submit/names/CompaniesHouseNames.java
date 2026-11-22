@@ -406,6 +406,14 @@ public class CompaniesHouseNames {
     public String companiesHouseOfficerChangePostLambdaUrlPath;
     public boolean companiesHouseOfficerChangePostLambdaJwtAuthorizer;
     public boolean companiesHouseOfficerChangePostLambdaCustomAuthorizer;
+    public String companiesHouseAllotmentOfSharesPostIngestLambdaHandler;
+    public String companiesHouseAllotmentOfSharesPostIngestLambdaFunctionName;
+    public String companiesHouseAllotmentOfSharesPostIngestLambdaArn;
+    public String companiesHouseAllotmentOfSharesPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseAllotmentOfSharesPostLambdaHttpMethod;
+    public String companiesHouseAllotmentOfSharesPostLambdaUrlPath;
+    public boolean companiesHouseAllotmentOfSharesPostLambdaJwtAuthorizer;
+    public boolean companiesHouseAllotmentOfSharesPostLambdaCustomAuthorizer;
 
     public CompaniesHouseNames(SubmitSharedNames.SubmitSharedNamesProps props, SubmitSharedNames root) {
 
@@ -1542,5 +1550,28 @@ public class CompaniesHouseNames {
                 "Submit an officer change of details filing",
                 "Builds the OfficerChangeDetails body, the notice that a director's or a secretary's details have changed (CH01, CH02, CH03 or CH04), and submits it through the Companies House XML Gateway",
                 "postCompaniesHouseOfficerChange"));
+
+        this.companiesHouseAllotmentOfSharesPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHouseAllotmentOfSharesPostLambdaUrlPath = "/api/v1/companies-house/allotment-of-shares";
+        this.companiesHouseAllotmentOfSharesPostLambdaJwtAuthorizer = true;
+        this.companiesHouseAllotmentOfSharesPostLambdaCustomAuthorizer = false;
+        var companiesHouseAllotmentOfSharesPostLambdaHandlerName = "companiesHouseAllotmentOfSharesPost.ingestHandler";
+        var companiesHouseAllotmentOfSharesPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseAllotmentOfSharesPostLambdaHandlerName);
+        this.companiesHouseAllotmentOfSharesPostIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, companiesHouseAllotmentOfSharesPostLambdaHandlerDashed);
+        this.companiesHouseAllotmentOfSharesPostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(root.appLambdaHandlerPrefix, companiesHouseAllotmentOfSharesPostLambdaHandlerName);
+        this.companiesHouseAllotmentOfSharesPostIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, companiesHouseAllotmentOfSharesPostLambdaHandlerDashed);
+        this.companiesHouseAllotmentOfSharesPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.companiesHouseAllotmentOfSharesPostIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseAllotmentOfSharesPostLambdaHttpMethod,
+                this.companiesHouseAllotmentOfSharesPostLambdaUrlPath,
+                "Submit a return of allotment of shares",
+                "Builds the ReturnofAllotmentShares body, the return of an allotment of shares with the statement of capital after it, and submits it through the Companies House XML Gateway",
+                "postCompaniesHouseAllotmentOfShares"));
     }
 }

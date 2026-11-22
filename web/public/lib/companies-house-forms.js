@@ -180,6 +180,18 @@ export const COMPANIES_HOUSE_FORMS = {
     label: "officer change of details",
     sharedPoll: true,
   },
+  "allotment-of-shares": {
+    routeSegment: "allotment-of-shares",
+    receiptTitle: "Return of allotment of shares",
+    receiptTitleCy: "Dychwelyd cyfrannau a glustnodwyd",
+    acceptedEvent: "companies-house-allotment-of-shares-accepted",
+    acceptedSummary: "Companies House return of allotment of shares accepted",
+    formIdentifier: "ReturnofAllotmentShares",
+    schema: "ReturnofAllotmentShares-v3-0.xsd",
+    activityId: "allot-shares",
+    label: "return of allotment of shares",
+    sharedPoll: true,
+  },
 };
 
 /** The filing kinds, as the filing state and the receipts carry them. */

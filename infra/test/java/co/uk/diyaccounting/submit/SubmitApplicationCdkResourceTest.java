@@ -217,7 +217,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 45);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 46);
         // The two previews call no external API and share the /api/v1/companies-house alarm.
         assertGroupedStackHealthAlarm(
                 companiesHouseStackTemplate,
@@ -226,6 +226,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                         "companies-house-accounting-reference-date-post",
                         "companies-house-accounts-get",
                         "companies-house-accounts-post",
+                        "companies-house-allotment-of-shares-post",
                         "companies-house-change-of-name-post",
                         "companies-house-company-get",
                         "companies-house-company-report-get",
@@ -615,9 +616,11 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         // /api/v1/companies-house/psc-notification sits on its own unshared path and adds a primary route
         // and an auto-HEAD route, for 273 + 2 = 275. POST
         // /api/v1/companies-house/officer-appointment and POST /api/v1/companies-house/officer-change each
-        // sit on their own unshared path and add a primary route and an auto-HEAD route, for 275 + 4 = 279.
+        // sit on their own unshared path and add a primary route and an auto-HEAD route, for 275 + 4 = 279. POST
+        // /api/v1/companies-house/allotment-of-shares sits on its own unshared path and adds a primary route
+        // and an auto-HEAD route, for 279 + 2 = 281.
         assertEquals(
-                279,
+                281,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

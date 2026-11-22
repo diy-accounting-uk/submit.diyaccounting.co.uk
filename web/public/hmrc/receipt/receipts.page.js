@@ -115,6 +115,7 @@ const FILING_IN_PROGRESS_TITLES = {
   "psc-notification": siteText("receipts.kind-psc-notification", "New PSC notified"),
   "officer-appointment": siteText("receipts.kind-officer-appointment", "Director or secretary appointed"),
   "officer-change": siteText("receipts.kind-officer-change", "Director's or secretary's details changed"),
+  "allotment-of-shares": siteText("receipts.kind-allotment-of-shares", "Return of allotment of shares"),
 };
 
 // A Companies House filing that is not a receipt yet: still waiting for Companies House, which checks

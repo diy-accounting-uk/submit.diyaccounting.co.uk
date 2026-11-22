@@ -397,6 +397,13 @@
         } ]
       }
     },
+    "/companies-house/allotment-of-shares" : {
+      "post" : {
+        "summary" : "Submit a return of allotment of shares",
+        "description" : "Builds the ReturnofAllotmentShares body, the return of an allotment of shares with the statement of capital after it, and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseAllotmentOfShares"
+      }
+    },
     "/companies-house/change-of-name" : {
       "post" : {
         "summary" : "Submit a change of company name",

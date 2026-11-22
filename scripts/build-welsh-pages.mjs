@@ -219,6 +219,14 @@ export const WELSH_PAGES = [
     markAttributes: CH_MARK_ATTRIBUTES,
   },
   {
+    id: "ch-allot-shares",
+    en: "companies-house/allotShares.html",
+    cy: "cy/companies-house/allotShares.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/allotShares.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
     id: "ch-mcp-codes",
     en: "companies-house/mcpCodes.html",
     cy: "cy/companies-house/mcpCodes.html",

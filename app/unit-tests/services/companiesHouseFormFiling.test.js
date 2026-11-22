@@ -148,6 +148,21 @@ const FORM_FIELDS = {
     dateOfBirth: "1981-06-23",
     newName: { title: "MRS", forename: "CARYS", surname: "LLEWELYN" },
   },
+  "allotment-of-shares": {
+    startDate: "2026-11-02",
+    allotments: [
+      { shareClass: "Ordinary", numShares: "50", amountPaidPerShare: "2.5", amountUnpaidPerShare: "0", currency: "GBP", nominalValue: "1" },
+    ],
+    statementOfCapital: [
+      {
+        currency: "GBP",
+        totalAmountUnpaid: "0",
+        shares: [
+          { shareClass: "Ordinary", prescribedParticulars: "Each share has one vote.", numShares: "150", aggregateNominalValue: "150" },
+        ],
+      },
+    ],
+  },
 };
 
 const SHARED_ROUTE_KINDS = Object.keys(GATEWAY_FORM_BUILDERS);

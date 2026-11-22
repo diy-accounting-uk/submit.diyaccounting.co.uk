@@ -793,6 +793,17 @@ paths = ["companies-house/notifyPsc.html", "^/api/v1/companies-house/psc-notific
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
+id = "allot-shares"
+name = "Return an allotment of shares (Companies House, sandbox)"
+nameCy = "Dychwelyd cyfrannau a glustnodwyd (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the ReturnofAllotmentShares form type for this presenter.
+paths = ["companies-house/allotShares.html", "^/api/v1/companies-house/allotment-of-shares.*", "^/api/v1/companies-house/forms/allotment-of-shares/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
 id = "diya-gl-storage"
 name = "Save diya-gl books (sandbox)"
 nameCy = "Cadw llyfrau diya-gl (amgylchedd prawf)"

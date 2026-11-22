@@ -353,21 +353,22 @@ test.describe("Company lookup drill-down", () => {
   test("an account holding the forms' activities gets a file button for each, opening the form with the company", async ({ page }) => {
     await serveSite(page, { bundles: ["resident-ltd"] });
     await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
-    await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(9, { timeout: 15000 });
+    await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(10, { timeout: 15000 });
     const hrefs = await page
       .locator("#drillOverview .file-this a.btn")
       .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
     expect(hrefs.sort()).toEqual(
       [
+        "/companies-house/allotShares.html?companyNumber=00000001",
+        "/companies-house/changeAccountingRefDate.html?companyNumber=00000001&currentPeriodEnd=2099-04-30",
+        "/companies-house/changeCompanyName.html?companyNumber=00000001",
         "/companies-house/changeRegisteredEmail.html?companyNumber=00000001",
         "/companies-house/changeRegisteredOffice.html?companyNumber=00000001&addressLine1=1+Example+Street&locality=Cardiff&postalCode=CF14+3UZ&country=Wales",
+        "/companies-house/fileCompanyTaxReturn.html?companyNumber=00000001",
         "/companies-house/fileConfirmationStatement.html?companyNumber=00000001",
         "/companies-house/fileMicroEntityAccounts.html?companyNumber=00000001&periodStart=2098-05-01&periodEnd=2099-04-30",
         "/companies-house/fileSmallCompanyAccounts.html?companyNumber=00000001&periodStart=2098-05-01&periodEnd=2099-04-30",
-        "/companies-house/fileCompanyTaxReturn.html?companyNumber=00000001",
-        "/companies-house/changeAccountingRefDate.html?companyNumber=00000001&currentPeriodEnd=2099-04-30",
         "/companies-house/recordsLocation.html?companyNumber=00000001",
-        "/companies-house/changeCompanyName.html?companyNumber=00000001",
       ].sort(),
     );
   });
@@ -576,7 +577,7 @@ test.describe("Company lookup drill-down edit links", () => {
       await page.setViewportSize({ width, height: 900 });
       await serveSite(page, { bundles: ["resident-ltd"] });
       await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
-      await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(9, { timeout: 15000 });
+      await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(10, { timeout: 15000 });
       for (const { section, quotes, sources } of AUTHORITY) {
         await expect(page.locator(`${section} .file-this-authority`).first()).toBeAttached();
         const text = await page.locator(`${section} .file-this-authority`).allInnerTexts();
@@ -1021,5 +1022,68 @@ test.describe("Company lookup drill-down officer change of details links", () =>
     await expect(page.locator("#drillView")).toContainText("BRAMWELL, Eleanor", { timeout: 15000 });
     await expect(page.locator("#drillView .change-officer-links")).toHaveCount(0);
     await expect(page.locator('#drillView .file-this[data-activity="change-officer"]')).toHaveCount(0);
+  });
+});
+
+test.describe("Company lookup drill-down shares", () => {
+  const ALLOTMENT_FILINGS = {
+    ...FILINGS,
+    filings: [
+      {
+        transactionId: "SIMTX00000001SH012099",
+        date: "2099-01-20",
+        category: "capital",
+        type: "SH01",
+        description: "capital-allotment-shares",
+        descriptionValues: { date: "2099-01-05", capital: [{ currency: "GBP", figure: "150" }] },
+      },
+      ...FILINGS.filings,
+    ],
+  };
+
+  test("the overview states the last return of allotment and its capital, with the form's link and its authority", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"], filings: ALLOTMENT_FILINGS });
+    await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+
+    const section = page.locator("#sharesSection");
+    await expect(section.locator("h4")).toHaveText("Shares", { timeout: 15000 });
+    await expect(section.locator("dl")).toContainText("Last return of allotment of shares");
+    await expect(section.locator("dl")).toContainText("Allotment of 5 January 2099, filed 20 January 2099");
+    await expect(section.locator("dl")).toContainText("GBP 150");
+    const control = section.locator('.file-this[data-activity="allot-shares"]');
+    await expect(control.locator("a.btn")).toHaveText("Return an allotment of shares");
+    expect(await control.locator("a.btn").getAttribute("href")).toBe("/companies-house/allotShares.html?companyNumber=00000001");
+    await expect(control.locator(".file-this-authority")).toContainText(
+      "“Within one month of the allotment of shares, a limited company must deliver a return of allotment, on form SH01, to Companies House. You must complete a statement of capital as part of this form.”",
+    );
+    const sources = await control.locator(".file-this-authority a").evaluateAll((links) => links.map((anchor) => anchor.href));
+    expect(sources).toEqual(
+      expect.arrayContaining([
+        "https://assets.publishing.service.gov.uk/media/69bbea434c478213a823ce3a/SH01_V8.0.pdf",
+        "https://www.gov.uk/government/publications/life-of-a-company-event-driven-filings/life-of-a-company-part-2-event-driven-filings",
+      ]),
+    );
+    await section.scrollIntoViewIfNeeded();
+    await shoot(page, "shares");
+  });
+
+  test("a company with no return of allotment says the register holds none, in Welsh on the Welsh page", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    await expect(page.locator("#sharesSection")).toContainText("The register holds no return of allotment of shares for this company.", {
+      timeout: 15000,
+    });
+    await page.goto(`${BASE}/cy/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    await expect(page.locator("#sharesSection h4")).toHaveText("Cyfrannau", { timeout: 15000 });
+    await expect(page.locator('#sharesSection .file-this a.btn[href^="/cy/companies-house/allotShares.html"]')).toHaveText(
+      "Dychwelyd cyfrannau a glustnodwyd",
+    );
+  });
+
+  test("on prod, where the form is not offered, the section carries no link", async ({ page }) => {
+    await serveSite(page, { environmentName: "prod", bundles: ["resident-ltd"], filings: ALLOTMENT_FILINGS });
+    await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    await expect(page.locator("#sharesSection dl")).toContainText("Last return of allotment of shares", { timeout: 15000 });
+    await expect(page.locator('#sharesSection .file-this[data-activity="allot-shares"]')).toHaveCount(0);
   });
 });
