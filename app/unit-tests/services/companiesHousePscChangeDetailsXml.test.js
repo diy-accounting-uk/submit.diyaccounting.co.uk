@@ -5,6 +5,7 @@ import { describe, test, expect } from "vitest";
 import {
   addressProblems,
   buildPscChangeDetailsBody,
+  changeDetailsProblems,
   NATURE_OF_CONTROL_CODES,
   natureOfControlProblems,
 } from "@app/services/companiesHousePscChangeDetailsXml.js";
@@ -120,7 +121,9 @@ describe("companiesHousePscChangeDetailsXml", () => {
     expect(addressProblems({ premise: "2", postTown: "Cardiff", country: "GB-WLS", otherForeignCountry: "Wales" })).toEqual([
       "an address needs one country",
     ]);
-    expect(addressProblems({ premise: "2", postTown: "Cardiff", country: "Wales" })).toEqual(["unknown country Wales"]);
+    expect(addressProblems({ premise: "2", postTown: "Cardiff", country: "Wales" })).toEqual([
+      "an address names a country this form does not have",
+    ]);
   });
 
   test("no change, an unknown kind or a malformed date is refused", () => {
@@ -138,5 +141,112 @@ describe("companiesHousePscChangeDetailsXml", () => {
     const swapped = xml.replace(/(<ServiceAddress>.*<\/ServiceAddress>)(<NatureOfControls>.*<\/NatureOfControls>)/, "$2$1");
     expect(swapped).not.toEqual(xml);
     expect((await gatewayFormSchemaErrors(swapped, SCHEMA)).length).toBeGreaterThan(0);
+  });
+});
+
+describe("companiesHousePscChangeDetailsXml, the other changes PSC04, PSC05 and PSC06 offer", () => {
+  const HOLDCO = { kind: "corporate-entity-person-with-significant-control", name: "SIMULATOR HOLDINGS LIMITED" };
+  const FOUNDATION = { kind: "legal-person-person-with-significant-control", name: "The Example Foundation" };
+  const HOME = { premise: "7", street: "Orchard Close", postTown: "Bristol", country: "GB-ENG", postcode: "BS1 4AA" };
+
+  test("an individual's change of name is valid and names the new name in Change/Name", async () => {
+    const xml = buildPscChangeDetailsBody({
+      ...ELEANOR,
+      newName: { title: "Dr", forename: "Eleanor", otherForenames: "Ruth", surname: "Hale" },
+      ...DATES,
+    });
+    expect(await gatewayFormSchemaErrors(xml, SCHEMA)).toEqual([]);
+    expect(xml).toContain(
+      "<Change><Name><Title>Dr</Title><Surname>Hale</Surname><Forename>Eleanor</Forename><OtherForenames>Ruth</OtherForenames></Name></Change>",
+    );
+  });
+
+  test("an individual's change of usual residential address is valid, as an address and as the same as the service address", async () => {
+    const own = buildPscChangeDetailsBody({ ...ELEANOR, residentialAddress: HOME, ...DATES });
+    expect(await gatewayFormSchemaErrors(own, SCHEMA)).toEqual([]);
+    expect(own).toContain("<Change><ResidentialAddress><Address><Premise>7</Premise><Street>Orchard Close</Street>");
+    const same = buildPscChangeDetailsBody({ ...ELEANOR, residentialAddress: { sameAsServiceAddress: true }, ...DATES });
+    expect(await gatewayFormSchemaErrors(same, SCHEMA)).toEqual([]);
+    expect(same).toContain("<Change><ResidentialAddress><SameAsServiceAddress>true</SameAsServiceAddress></ResidentialAddress></Change>");
+  });
+
+  test("an individual's change of nationality and of country of residence is valid", async () => {
+    const xml = buildPscChangeDetailsBody({ ...ELEANOR, nationality: "Irish", countryOfResidence: "Ireland", ...DATES });
+    expect(await gatewayFormSchemaErrors(xml, SCHEMA)).toEqual([]);
+    expect(xml).toContain("<Change><Nationality>Irish</Nationality><CountryOfResidence>Ireland</CountryOfResidence></Change>");
+  });
+
+  test("every change of an individual together keeps the schema's order and is valid", async () => {
+    const xml = buildPscChangeDetailsBody({
+      ...ELEANOR,
+      newName: { surname: "Hale" },
+      address: ADDRESS,
+      residentialAddress: HOME,
+      nationality: "Irish",
+      countryOfResidence: "Ireland",
+      naturesOfControl: ["SIGINFLUENCECONTROL"],
+      ...DATES,
+    });
+    expect(await gatewayFormSchemaErrors(xml, SCHEMA)).toEqual([]);
+  });
+
+  test("a corporate entity's change of name, and of legal form, governing law and register, is valid", async () => {
+    const xml = buildPscChangeDetailsBody({
+      ...HOLDCO,
+      newName: "SIMULATOR GROUP LIMITED",
+      identification: {
+        legalForm: "Private limited company",
+        lawGoverned: "Companies Act 2006",
+        placeRegistered: "Companies House",
+        registrationNumber: "12345678",
+        countryOrState: "England and Wales",
+      },
+      ...DATES,
+    });
+    expect(await gatewayFormSchemaErrors(xml, SCHEMA)).toEqual([]);
+    expect(xml).toContain(
+      "<Change><CorporateName>SIMULATOR GROUP LIMITED</CorporateName><PSCCompanyIdentification><PSCPlaceRegistered>Companies House</PSCPlaceRegistered>" +
+        "<PSCRegistrationNumber>12345678</PSCRegistrationNumber><LawGoverned>Companies Act 2006</LawGoverned>" +
+        "<LegalForm>Private limited company</LegalForm><CountryOrState>England and Wales</CountryOrState></PSCCompanyIdentification></Change>",
+    );
+  });
+
+  test("a legal person's change of name and of legal form and governing law is valid", async () => {
+    const xml = buildPscChangeDetailsBody({
+      ...FOUNDATION,
+      newName: "The Example Trust",
+      identification: { legalForm: "Charitable foundation", lawGoverned: "Swiss Civil Code" },
+      ...DATES,
+    });
+    expect(await gatewayFormSchemaErrors(xml, SCHEMA)).toEqual([]);
+    expect(xml).toContain(
+      "<Change><LegalPersonName>The Example Trust</LegalPersonName><LegalPersonIdentification><LawGoverned>Swiss Civil Code</LawGoverned>" +
+        "<LegalForm>Charitable foundation</LegalForm></LegalPersonIdentification></Change>",
+    );
+  });
+
+  test("a change a kind of PSC does not have, or a part the form needs, is refused, and no reason repeats a value", () => {
+    expect(changeDetailsProblems({ ...HOLDCO, nationality: "Irish" })).toEqual([
+      "nationality is not a change this form makes for this kind of PSC",
+    ]);
+    expect(changeDetailsProblems({ ...ELEANOR, identification: { legalForm: "x", lawGoverned: "y" } })).toEqual([
+      "identification is not a change this form makes for this kind of PSC",
+    ]);
+    expect(changeDetailsProblems({ ...ELEANOR, newName: { forename: "Eleanor" } })).toEqual(["a new name needs its surname"]);
+    expect(changeDetailsProblems({ ...HOLDCO, identification: { legalForm: "Ltd" } })).toEqual([
+      "a change of legal form or governing law needs the governing law",
+    ]);
+    expect(
+      changeDetailsProblems({ ...HOLDCO, identification: { legalForm: "Ltd", lawGoverned: "UK", placeRegistered: "Companies House" } }),
+    ).toEqual(["a register named needs the registration number in it"]);
+    expect(changeDetailsProblems({ ...FOUNDATION, identification: { legalForm: "x", lawGoverned: "y", registrationNumber: "1" } })).toEqual(
+      ["a legal person is entered in no register on this form"],
+    );
+    const residential = changeDetailsProblems({ ...ELEANOR, residentialAddress: { premise: "7 Secret Lane", country: "Narnia" } });
+    expect(residential).toEqual([
+      "residential: an address needs its post town",
+      "residential: an address names a country this form does not have",
+    ]);
+    expect(residential.join(" ")).not.toMatch(/Secret|Narnia/);
   });
 });

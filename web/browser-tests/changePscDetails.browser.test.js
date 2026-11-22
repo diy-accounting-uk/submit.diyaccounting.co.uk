@@ -179,7 +179,7 @@ for (const width of [1280, 390]) {
     await page.locator("#companyNumber").fill("00000001");
     await page.getByRole("button", { name: "Chwilio am y personau â rheolaeth arwyddocaol" }).click();
     await page.getByLabel("SIMULATOR HOLDINGS LIMITED (Endid cyfreithiol neu berson cofrestradwy arall)").check();
-    await page.getByLabel("Eu cyfeiriad").check();
+    await page.getByLabel("Eu cyfeiriad", { exact: true }).check();
     await expect(page.locator("#addressLegend")).toHaveText("Cyfeiriad newydd y brif swyddfa");
     await page.locator("#premise").fill("Unit 4");
     await page.locator("#street").fill("Harbour Road");

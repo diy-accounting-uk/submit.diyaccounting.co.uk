@@ -24693,3 +24693,129 @@ cy = '''Datganiad PRhA'''
 [strings."receipts.kind-psc-statement-withdrawal"]
 hash = "778575e44f95"
 cy = '''Tynnu datganiad PRhA yn ôl'''
+
+# == The PSC change of details page's name, residential address, nationality, residence and legal form changes: ids ch-change-psc.*, ch.change-psc.* ==
+
+[strings."ch-change-psc.their-name-228e74"]
+hash = "228e741f2d29"
+cy = '''Eu henw'''
+
+[strings."ch-change-psc.their-usual-residential-address-47f54a"]
+hash = "47f54a9a8286"
+cy = '''Eu cyfeiriad preswyl arferol'''
+
+[strings."ch-change-psc.their-nationality-a39a71"]
+hash = "a39a71783ce8"
+cy = '''Eu cenedligrwydd'''
+
+[strings."ch-change-psc.their-country-or-state-of-residence-80c978"]
+hash = "80c9781decd9"
+cy = '''Eu gwlad neu dalaith breswyl'''
+
+[strings."ch-change-psc.their-legal-form-or-governing-law-aae170"]
+hash = "aae170698652"
+cy = '''Eu ffurf gyfreithiol neu’r gyfraith sy’n eu llywodraethu'''
+
+[strings."ch-change-psc.the-new-name-0e89d4"]
+hash = "0e89d468008d"
+cy = '''Yr enw newydd'''
+
+[strings."ch-change-psc.title-optional-8280fb"]
+hash = "8280fbd6bcff"
+cy = '''Teitl (dewisol)'''
+
+[strings."ch-change-psc.first-name-optional-36c4a5"]
+hash = "36c4a56d545d"
+cy = '''Enw cyntaf (dewisol)'''
+
+[strings."ch-change-psc.other-first-names-optional-e7bb6e"]
+hash = "e7bb6e0bfe2b"
+cy = '''Enwau cyntaf eraill (dewisol)'''
+
+[strings."ch-change-psc.surname-f762da"]
+hash = "f762da05f4d4"
+cy = '''Cyfenw'''
+
+[strings."ch-change-psc.name-dcd1d5"]
+hash = "dcd1d5223f73"
+cy = '''Enw'''
+
+[strings."ch-change-psc.the-new-usual-residential-address-45a2c6"]
+hash = "45a2c6f1b14d"
+cy = '''Y cyfeiriad preswyl arferol newydd'''
+
+[strings."ch-change-psc.the-person-s-home-address-it-413f78"]
+hash = "413f7812a172"
+cy = '''Cyfeiriad cartref y person. Nid yw ar y gofrestr gyhoeddus: mae Tŷ’r Cwmnïau yn ei gadw ar gofrestr breifat ac yn ei roi i asiantaethau gwirio credyd ac awdurdodau cyhoeddus penodedig yn unig, megis yr heddlu. Nid yw’r dudalen hon yn ei gadw ar ôl y ffeilio.'''
+
+[strings."ch-change-psc.the-same-as-the-service-address-845824"]
+hash = "845824bd86fe"
+cy = '''Yr un fath â’r cyfeiriad gohebiaeth (nid os mai swyddfa gofrestredig y cwmni yw’r cyfeiriad gohebiaeth)'''
+
+[strings."ch-change-psc.the-new-nationality-622684"]
+hash = "622684701171"
+cy = '''Y cenedligrwydd newydd'''
+
+[strings."ch-change-psc.nationality-8fb1b6"]
+hash = "8fb1b6a148c2"
+cy = '''Cenedligrwydd'''
+
+[strings."ch-change-psc.the-new-country-or-state-of-41be96"]
+hash = "41be96e50b8c"
+cy = '''Y wlad neu’r dalaith breswyl newydd'''
+
+[strings."ch-change-psc.country-or-state-fa8c02"]
+hash = "fa8c02cef510"
+cy = '''Gwlad neu dalaith'''
+
+[strings."ch-change-psc.the-new-legal-form-and-governing-bb87c5"]
+hash = "bb87c5d80715"
+cy = '''Y ffurf gyfreithiol newydd a’r gyfraith sy’n ei llywodraethu'''
+
+[strings."ch-change-psc.legal-form-18f1eb"]
+hash = "18f1ebee7ffd"
+cy = '''Ffurf gyfreithiol'''
+
+[strings."ch-change-psc.governing-law-da3aaa"]
+hash = "da3aaaff3096"
+cy = '''Y gyfraith lywodraethol'''
+
+[strings."ch-change-psc.if-it-is-entered-in-a-9c99a7"]
+hash = "9c99a7f8325a"
+cy = '''Os yw wedi’i gofnodi mewn cofrestr, rhowch y gofrestr, ei gwlad neu ei thalaith a’r rhif cofrestru ynddi.'''
+
+[strings."ch-change-psc.register-optional-18468a"]
+hash = "18468aa0529d"
+cy = '''Cofrestr (dewisol)'''
+
+[strings."ch-change-psc.country-or-state-of-the-register-e426b6"]
+hash = "e426b63fd005"
+cy = '''Gwlad neu dalaith y gofrestr (dewisol)'''
+
+[strings."ch-change-psc.registration-number-optional-e69eee"]
+hash = "e69eee167f91"
+cy = '''Rhif cofrestru (dewisol)'''
+
+[strings."ch.change-psc.legal-needed"]
+hash = "e13232f0a200"
+cy = '''Rhowch y ffurf gyfreithiol a’r gyfraith lywodraethol.'''
+
+[strings."ch.change-psc.registration-needed"]
+hash = "a4d2d3d5e8e1"
+cy = '''Rhowch y rhif cofrestru yn y gofrestr a enwyd.'''
+
+[strings."ch.change-psc.name-needed"]
+hash = "c9d9ef2fa7c0"
+cy = '''Rhowch yr enw newydd.'''
+
+[strings."ch.change-psc.residence-needed"]
+hash = "e38d994f0f05"
+cy = '''Rhowch enw neu rif adeilad y cyfeiriad preswyl arferol newydd, ei dref bost a’i wlad.'''
+
+[strings."ch.change-psc.nationality-needed"]
+hash = "133818460b58"
+cy = '''Rhowch y cenedligrwydd newydd.'''
+
+[strings."ch.change-psc.residence-country-needed"]
+hash = "ac7541820dfa"
+cy = '''Rhowch y wlad neu’r dalaith breswyl newydd.'''

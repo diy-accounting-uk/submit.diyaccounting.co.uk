@@ -12,7 +12,7 @@ import { isValidIsoDate } from "../lib/hmrcValidation.js";
 import { buildPscVerificationStatementBody } from "./companiesHousePscVerificationStatementXml.js";
 import { buildPscCessationBody } from "./companiesHousePscCessationXml.js";
 import { PSC_KIND_ELEMENTS } from "./companiesHousePscParticularsXml.js";
-import { addressProblems, buildPscChangeDetailsBody, natureOfControlProblems } from "./companiesHousePscChangeDetailsXml.js";
+import { buildPscChangeDetailsBody, changeDetailsProblems } from "./companiesHousePscChangeDetailsXml.js";
 import {
   buildAccountingReferenceDateBody,
   changeToPeriod,
@@ -116,26 +116,43 @@ function extractPscCessation(body, errorMessages) {
 }
 
 const ADDRESS_FIELDS = ["premise", "street", "thoroughfare", "postTown", "county", "country", "otherForeignCountry", "postcode"];
+const NAME_FIELDS = ["title", "forename", "otherForenames", "surname"];
+const IDENTIFICATION_FIELDS = ["legalForm", "lawGoverned", "placeRegistered", "registrationNumber", "countryOrState"];
+
+// An object of the request with only the named fields, each trimmed, empty ones left out; any other
+// value as it came, for the check to refuse.
+function trimmedFields(value, fields) {
+  if (value === undefined || value === null || typeof value !== "object") return value;
+  return Object.fromEntries(fields.map((field) => [field, trimmed(value[field]) || undefined]).filter(([, part]) => part !== undefined));
+}
+
+function trimmedText(value) {
+  return typeof value === "string" ? trimmed(value) : value;
+}
+
+function extractResidentialAddress(residentialAddress) {
+  if (residentialAddress?.sameAsServiceAddress === true) return { sameAsServiceAddress: true };
+  return trimmedFields(residentialAddress, ADDRESS_FIELDS);
+}
 
 function extractPscChangeDetails(body, errorMessages) {
-  const { naturesOfControl, address } = body;
-  if (naturesOfControl === undefined && address === undefined) {
-    errorMessages.push("Missing change - give naturesOfControl, address, or both");
-  }
-  if (naturesOfControl !== undefined) {
-    natureOfControlProblems(naturesOfControl).forEach((problem) => errorMessages.push(`Invalid naturesOfControl - ${problem}`));
-  }
-  const cleanAddress =
-    address === undefined || address === null || typeof address !== "object"
-      ? address
-      : Object.fromEntries(ADDRESS_FIELDS.map((field) => [field, trimmed(address[field]) || undefined]));
-  if (address !== undefined) {
-    addressProblems(cleanAddress).forEach((problem) => errorMessages.push(`Invalid address - ${problem}`));
+  const particulars = extractPscParticulars(body, errorMessages);
+  const individual = PSC_KIND_ELEMENTS[body.pscKind] === "Individual";
+  const changes = {
+    newName: individual ? trimmedFields(body.newName, NAME_FIELDS) : trimmedText(body.newName),
+    address: trimmedFields(body.address, ADDRESS_FIELDS),
+    residentialAddress: extractResidentialAddress(body.residentialAddress),
+    nationality: trimmedText(body.nationality),
+    countryOfResidence: trimmedText(body.countryOfResidence),
+    identification: trimmedFields(body.identification, IDENTIFICATION_FIELDS),
+    naturesOfControl: body.naturesOfControl,
+  };
+  if (PSC_KIND_ELEMENTS[body.pscKind]) {
+    changeDetailsProblems({ kind: body.pscKind, ...changes }).forEach((problem) => errorMessages.push(`Invalid change - ${problem}`));
   }
   return {
-    ...extractPscParticulars(body, errorMessages),
-    naturesOfControl,
-    address: cleanAddress,
+    ...particulars,
+    ...changes,
     ...extractEventAndConfirmationDates(body, "dateOfChange", errorMessages),
   };
 }

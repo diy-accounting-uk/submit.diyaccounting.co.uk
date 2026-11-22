@@ -95,6 +95,27 @@
             <div class="choice">
               <input type="checkbox" id="changeAddress" name="changeAddress" /><label for="changeAddress">Their address</label>
             </div>
+            <div class="choice"><input type="checkbox" id="changeName" name="changeName" /><label for="changeName">Their name</label></div>
+            <div class="choice" data-for="individual">
+              <input type="checkbox" id="changeResidence" name="changeResidence" /><label for="changeResidence"
+                >Their usual residential address</label
+              >
+            </div>
+            <div class="choice" data-for="individual">
+              <input type="checkbox" id="changeNationality" name="changeNationality" /><label for="changeNationality"
+                >Their nationality</label
+              >
+            </div>
+            <div class="choice" data-for="individual">
+              <input type="checkbox" id="changeCountryOfResidence" name="changeCountryOfResidence" /><label for="changeCountryOfResidence"
+                >Their country or state of residence</label
+              >
+            </div>
+            <div class="choice" data-for="entity">
+              <input type="checkbox" id="changeLegal" name="changeLegal" /><label for="changeLegal"
+                >Their legal form or governing law</label
+              >
+            </div>
           </fieldset>
 
           <fieldset id="controlSection" class="form-group" style="display: none">
@@ -194,6 +215,134 @@
             <div class="form-group" id="otherCountryGroup" style="display: none">
               <label for="otherForeignCountry">Which country?</label>
               <input type="text" id="otherForeignCountry" name="otherForeignCountry" maxlength="50" autocomplete="country-name" />
+            </div>
+          </fieldset>
+
+          <fieldset id="nameSection" class="form-group" style="display: none">
+            <legend>The new name</legend>
+            <div id="individualName">
+              <div class="form-group">
+                <label for="newTitle">Title (optional)</label>
+                <input type="text" id="newTitle" name="newTitle" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="newForename">First name (optional)</label>
+                <input type="text" id="newForename" name="newForename" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="newOtherForenames">Other first names (optional)</label>
+                <input type="text" id="newOtherForenames" name="newOtherForenames" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="newSurname">Surname</label>
+                <input type="text" id="newSurname" name="newSurname" maxlength="160" autocomplete="off" />
+              </div>
+            </div>
+            <div id="entityName">
+              <div class="form-group">
+                <label for="newEntityName">Name</label>
+                <input type="text" id="newEntityName" name="newEntityName" maxlength="160" autocomplete="off" />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset id="residenceSection" class="form-group" style="display: none">
+            <legend>The new usual residential address</legend>
+            <p id="residence-hint" class="hint">
+              The person's home address. It is not on the public register: Companies House keeps it on a private register and gives it only
+              to credit reference agencies and specified public authorities, such as the police. This page does not keep it after the
+              filing.
+            </p>
+            <div class="choice">
+              <input type="checkbox" id="sameAsService" name="sameAsService" aria-describedby="residence-hint" /><label for="sameAsService"
+                >The same as the service address (not if the service address is the company's registered office)</label
+              >
+            </div>
+            <div id="residenceFields">
+              <div class="form-group">
+                <label for="resPremise">Building name or number</label>
+                <input type="text" id="resPremise" name="resPremise" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="resStreet">Street</label>
+                <input type="text" id="resStreet" name="resStreet" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="resThoroughfare">Address line 2</label>
+                <input type="text" id="resThoroughfare" name="resThoroughfare" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="resPostTown">Post town</label>
+                <input type="text" id="resPostTown" name="resPostTown" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="resCounty">County or region</label>
+                <input type="text" id="resCounty" name="resCounty" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label for="resPostcode">Postcode</label>
+                <input type="text" id="resPostcode" name="resPostcode" maxlength="15" autocomplete="off" spellcheck="false" />
+              </div>
+              <div class="form-group">
+                <label for="resCountry">Country</label>
+                <select id="resCountry" name="resCountry">
+                  <option value="GB-ENG">England</option>
+                  <option value="GB-WLS">Wales</option>
+                  <option value="GB-SCT">Scotland</option>
+                  <option value="GB-NIR">Northern Ireland</option>
+                  <option value="GBR" selected>United Kingdom</option>
+                  <option value="OTHER">Another country</option>
+                </select>
+              </div>
+              <div class="form-group" id="resOtherCountryGroup" style="display: none">
+                <label for="resOtherForeignCountry">Which country?</label>
+                <input type="text" id="resOtherForeignCountry" name="resOtherForeignCountry" maxlength="50" autocomplete="off" />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset id="nationalitySection" class="form-group" style="display: none">
+            <legend>The new nationality</legend>
+            <div class="form-group">
+              <label for="newNationality">Nationality</label>
+              <input type="text" id="newNationality" name="newNationality" maxlength="50" />
+            </div>
+          </fieldset>
+
+          <fieldset id="countryOfResidenceSection" class="form-group" style="display: none">
+            <legend>The new country or state of residence</legend>
+            <div class="form-group">
+              <label for="newCountryOfResidence">Country or state</label>
+              <input type="text" id="newCountryOfResidence" name="newCountryOfResidence" maxlength="50" />
+            </div>
+          </fieldset>
+
+          <fieldset id="legalSection" class="form-group" style="display: none">
+            <legend>The new legal form and governing law</legend>
+            <div class="form-group">
+              <label for="legalForm">Legal form</label>
+              <input type="text" id="legalForm" name="legalForm" maxlength="160" />
+            </div>
+            <div class="form-group">
+              <label for="lawGoverned">Governing law</label>
+              <input type="text" id="lawGoverned" name="lawGoverned" maxlength="160" />
+            </div>
+            <div id="registerFields">
+              <p id="register-hint" class="hint">
+                If it is entered in a register, give the register, its country or state and the registration number in it.
+              </p>
+              <div class="form-group">
+                <label for="placeRegistered">Register (optional)</label>
+                <input type="text" id="placeRegistered" name="placeRegistered" maxlength="160" aria-describedby="register-hint" />
+              </div>
+              <div class="form-group">
+                <label for="countryOrState">Country or state of the register (optional)</label>
+                <input type="text" id="countryOrState" name="countryOrState" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label for="registrationNumber">Registration number (optional)</label>
+                <input type="text" id="registrationNumber" name="registrationNumber" maxlength="160" />
+              </div>
             </div>
           </fieldset>
 

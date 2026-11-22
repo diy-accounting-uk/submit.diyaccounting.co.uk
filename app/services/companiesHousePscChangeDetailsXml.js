@@ -9,9 +9,17 @@
 // (companiesHousePscParticularsXml.js), then its Change, then the date of the change and the date
 // the company had confirmation of it.
 //
-// The changes built here are the PSC's natures of control, which replace the set the register
-// holds, and its address: an individual's service address, or an entity's address. A change of
-// name, identification, nationality, country of residence or residential address is not built.
+// The changes built here, in the order the schema has them:
+// - an individual (PSC04): name, service address, usual residential address, nationality, country
+//   or state of residence, natures of control;
+// - a corporate entity (PSC05) or a legal person (PSC06): name, principal office address, legal
+//   form and governing law (with, for a corporate entity, the register it is entered in), natures
+//   of control.
+// The natures of control given replace the set the register holds. LLP natures of control are not
+// built: the forms here are a limited company's.
+//
+// The usual residential address is not on the public register. No problem message here repeats a
+// value given, so a refused filing writes none of it to a log.
 
 import { entityNameXml, individualIdentificationXml, optionalElement, pscElementName } from "./companiesHousePscParticularsXml.js";
 
@@ -62,7 +70,7 @@ export function natureOfControlProblems(codes) {
 }
 
 /**
- * The reasons an address cannot be filed, or [] when it can.
+ * The reasons an address cannot be filed, or [] when it can. No reason repeats a value given.
  * @param {object} address - premise, street, thoroughfare, postTown, county, country (a UK_COUNTRY_CODES
  *   code) or otherForeignCountry, postcode
  * @returns {string[]}
@@ -73,7 +81,8 @@ export function addressProblems(address) {
   if (!address.premise) problems.push("an address needs its premise");
   if (!address.postTown) problems.push("an address needs its post town");
   if (Boolean(address.country) === Boolean(address.otherForeignCountry)) problems.push("an address needs one country");
-  else if (address.country && !UK_COUNTRY_CODES.includes(address.country)) problems.push(`unknown country ${address.country}`);
+  else if (address.country && !UK_COUNTRY_CODES.includes(address.country))
+    problems.push("an address names a country this form does not have");
   for (const [field, max] of [
     ["premise", 50],
     ["street", 50],
@@ -85,6 +94,85 @@ export function addressProblems(address) {
   ]) {
     if (address[field] && String(address[field]).length > max) problems.push(`${field} is longer than ${max} characters`);
   }
+  return problems;
+}
+
+const longerThan = (value, max) => typeof value === "string" && value.length > max;
+
+function newNameProblems(newName, individual) {
+  if (!individual) {
+    if (typeof newName !== "string" || !newName) return ["a new name is needed"];
+    return longerThan(newName, 160) ? ["the new name is longer than 160 characters"] : [];
+  }
+  if (!newName || typeof newName !== "object" || !newName.surname) return ["a new name needs its surname"];
+  return [
+    ["title", 50],
+    ["forename", 50],
+    ["otherForenames", 50],
+    ["surname", 160],
+  ]
+    .filter(([field, max]) => longerThan(newName[field], max))
+    .map(([field, max]) => `the new ${field} is longer than ${max} characters`);
+}
+
+function identificationProblems(identification, elementName) {
+  if (!identification || typeof identification !== "object") return ["a change of legal form or governing law is needed"];
+  const problems = [];
+  if (!identification.legalForm) problems.push("a change of legal form or governing law needs the legal form");
+  if (!identification.lawGoverned) problems.push("a change of legal form or governing law needs the governing law");
+  const register = ["placeRegistered", "registrationNumber", "countryOrState"];
+  if (elementName === "LegalPerson" && register.some((field) => identification[field])) {
+    problems.push("a legal person is entered in no register on this form");
+  }
+  if (elementName === "Corporate" && identification.placeRegistered && !identification.registrationNumber) {
+    problems.push("a register named needs the registration number in it");
+  }
+  for (const [field, max] of [
+    ["legalForm", 160],
+    ["lawGoverned", 160],
+    ["placeRegistered", 160],
+    ["registrationNumber", 160],
+    ["countryOrState", 50],
+  ]) {
+    if (longerThan(identification[field], max)) problems.push(`${field} is longer than ${max} characters`);
+  }
+  return problems;
+}
+
+// The changes each kind of PSC has on the form.
+const INDIVIDUAL_CHANGES = ["newName", "address", "residentialAddress", "nationality", "countryOfResidence", "naturesOfControl"];
+const ENTITY_CHANGES = ["newName", "address", "identification", "naturesOfControl"];
+const ALL_CHANGES = [...new Set([...INDIVIDUAL_CHANGES, ...ENTITY_CHANGES])];
+
+const given = (value) => value !== undefined && value !== null;
+
+/**
+ * The reasons the changes given cannot be filed for this kind of PSC, or [] when they can. No
+ * reason repeats a value given.
+ * @param {object} input - as buildPscChangeDetailsBody reads it
+ * @returns {string[]}
+ */
+export function changeDetailsProblems(input) {
+  const elementName = pscElementName(input.kind);
+  const individual = elementName === "Individual";
+  const offered = individual ? INDIVIDUAL_CHANGES : ENTITY_CHANGES;
+  const changes = ALL_CHANGES.filter((change) => given(input[change]));
+  if (changes.length === 0) return ["a change of details needs a change"];
+  const problems = changes
+    .filter((change) => !offered.includes(change))
+    .map((change) => `${change} is not a change this form makes for this kind of PSC`);
+  if (given(input.newName)) problems.push(...newNameProblems(input.newName, individual));
+  if (given(input.address)) problems.push(...addressProblems(input.address));
+  if (individual && given(input.residentialAddress) && input.residentialAddress.sameAsServiceAddress !== true) {
+    problems.push(...addressProblems(input.residentialAddress).map((problem) => `residential: ${problem}`));
+  }
+  for (const field of ["nationality", "countryOfResidence"]) {
+    if (individual && given(input[field]) && (typeof input[field] !== "string" || !input[field] || input[field].length > 50)) {
+      problems.push(`${field} must be 1 to 50 characters`);
+    }
+  }
+  if (!individual && given(input.identification)) problems.push(...identificationProblems(input.identification, elementName));
+  if (given(input.naturesOfControl)) problems.push(...natureOfControlProblems(input.naturesOfControl));
   return problems;
 }
 
@@ -105,6 +193,44 @@ function naturesOfControlXml(codes) {
   return `<NatureOfControls>${controls}</NatureOfControls>`;
 }
 
+function individualChangeXml(input) {
+  const name = input.newName;
+  const nameXml = name
+    ? `<Name>${optionalElement("Title", name.title)}${optionalElement("Surname", name.surname)}` +
+      `${optionalElement("Forename", name.forename)}${optionalElement("OtherForenames", name.otherForenames)}</Name>`
+    : "";
+  const serviceXml = input.address ? `<ServiceAddress>${addressXml(input.address)}</ServiceAddress>` : "";
+  let residentialXml = "";
+  if (input.residentialAddress) {
+    const residence = input.residentialAddress.sameAsServiceAddress
+      ? "<SameAsServiceAddress>true</SameAsServiceAddress>"
+      : addressXml(input.residentialAddress);
+    residentialXml = `<ResidentialAddress>${residence}</ResidentialAddress>`;
+  }
+  return (
+    `${nameXml}${serviceXml}${residentialXml}${optionalElement("Nationality", input.nationality)}` +
+    `${optionalElement("CountryOfResidence", input.countryOfResidence)}`
+  );
+}
+
+function entityChangeXml(input, elementName) {
+  const corporate = elementName === "Corporate";
+  const id = input.identification;
+  let identificationXml = "";
+  if (id) {
+    const register = corporate
+      ? `${optionalElement("PSCPlaceRegistered", id.placeRegistered)}${optionalElement("PSCRegistrationNumber", id.registrationNumber)}`
+      : "";
+    const lawAndForm = `${optionalElement("LawGoverned", id.lawGoverned)}${optionalElement("LegalForm", id.legalForm)}`;
+    const countryOrState = corporate ? optionalElement("CountryOrState", id.countryOrState) : "";
+    const wrapper = corporate ? "PSCCompanyIdentification" : "LegalPersonIdentification";
+    identificationXml = `<${wrapper}>${register}${lawAndForm}${countryOrState}</${wrapper}>`;
+  }
+  const nameElement = corporate ? "CorporateName" : "LegalPersonName";
+  const nameXml = optionalElement(nameElement, input.newName);
+  return `${nameXml}${input.address ? addressXml(input.address) : ""}${identificationXml}`;
+}
+
 /**
  * Build the PSCChangeDetails form's root element (namespace http://xmlgw.companieshouse.gov.uk).
  *
@@ -118,7 +244,16 @@ function naturesOfControlXml(codes) {
  * @param {number} [input.dobYear]
  * @param {string} [input.name] - a corporate entity's or a legal person's name
  * @param {string[]} [input.naturesOfControl] - NATURE_OF_CONTROL_CODES, every one that applies after the change
- * @param {object} [input.address] - the new address, as addressProblems reads it
+ * @param {object} [input.address] - the new service address (an individual) or principal office
+ *   address (an entity), as addressProblems reads it
+ * @param {object|string} [input.newName] - an individual's {title, forename, otherForenames, surname},
+ *   or an entity's new name
+ * @param {object} [input.residentialAddress] - an individual's usual residential address, as
+ *   addressProblems reads it, or {sameAsServiceAddress: true}
+ * @param {string} [input.nationality] - an individual's
+ * @param {string} [input.countryOfResidence] - an individual's country or state of residence
+ * @param {object} [input.identification] - an entity's {legalForm, lawGoverned} and, for a corporate
+ *   entity, {placeRegistered, registrationNumber, countryOrState}
  * @param {string} input.dateOfChange - ISO date the change occurred
  * @param {string} input.confirmationDate - ISO date the company had confirmation of the change, how
  *   the details changed and the date of the change
@@ -128,16 +263,12 @@ export function buildPscChangeDetailsBody(input) {
   const elementName = pscElementName(input.kind);
   if (!ISO_DATE.test(input.dateOfChange ?? "")) throw new Error("dateOfChange must be YYYY-MM-DD");
   if (!ISO_DATE.test(input.confirmationDate ?? "")) throw new Error("confirmationDate must be YYYY-MM-DD");
-  if (!input.naturesOfControl && !input.address) throw new Error("a change of details needs a change");
-  const problems = [
-    ...(input.naturesOfControl ? natureOfControlProblems(input.naturesOfControl) : []),
-    ...(input.address ? addressProblems(input.address) : []),
-  ];
+  const problems = changeDetailsProblems(input);
   if (problems.length) throw new Error(problems.join("; "));
   const individual = elementName === "Individual";
-  let address = input.address ? addressXml(input.address) : "";
-  if (address && individual) address = `<ServiceAddress>${address}</ServiceAddress>`;
-  const change = `<Change>${address}${input.naturesOfControl ? naturesOfControlXml(input.naturesOfControl) : ""}</Change>`;
+  const changed = individual ? individualChangeXml(input) : entityChangeXml(input, elementName);
+  const controls = input.naturesOfControl ? naturesOfControlXml(input.naturesOfControl) : "";
+  const change = `<Change>${changed}${controls}</Change>`;
   const particulars = individual ? individualIdentificationXml(input) : entityNameXml(elementName, input.name);
   return (
     `<PSCChangeDetails xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ` +

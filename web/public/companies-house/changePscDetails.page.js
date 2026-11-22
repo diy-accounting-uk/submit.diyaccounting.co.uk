@@ -105,6 +105,7 @@ function showChosenPsc() {
     psc && psc.kind !== INDIVIDUAL
       ? window.siteText("ch.change-psc.address-entity", "The new principal office address")
       : window.siteText("ch.change-psc.address-individual", "The new service address");
+  showSections();
 }
 
 function renderPscChoices(chosenName) {
@@ -187,56 +188,164 @@ function chosenControls(psc) {
   ].filter(Boolean);
 }
 
-function chosenAddress() {
-  const value = (id) => document.getElementById(id).value.trim();
-  const country = document.getElementById("country").value;
-  const address = {
-    premise: value("premise"),
-    street: value("street"),
-    thoroughfare: value("thoroughfare"),
-    postTown: value("postTown"),
-    county: value("county"),
-    postcode: value("postcode"),
-  };
-  if (country === "OTHER") address.otherForeignCountry = value("otherForeignCountry");
+// The address inputs of the service or principal office address, and of the residential address.
+const ADDRESS_INPUTS = {
+  address: {
+    premise: "premise",
+    street: "street",
+    thoroughfare: "thoroughfare",
+    postTown: "postTown",
+    county: "county",
+    postcode: "postcode",
+    country: "country",
+    other: "otherForeignCountry",
+  },
+  residence: {
+    premise: "resPremise",
+    street: "resStreet",
+    thoroughfare: "resThoroughfare",
+    postTown: "resPostTown",
+    county: "resCounty",
+    postcode: "resPostcode",
+    country: "resCountry",
+    other: "resOtherForeignCountry",
+  },
+};
+
+const inputValue = (id) => document.getElementById(id).value.trim();
+const isChecked = (id) => document.getElementById(id).checked;
+
+function chosenAddress(inputs) {
+  const address = {};
+  ["premise", "street", "thoroughfare", "postTown", "county", "postcode"].forEach((part) => {
+    address[part] = inputValue(inputs[part]);
+  });
+  const country = document.getElementById(inputs.country).value;
+  if (country === "OTHER") address.otherForeignCountry = inputValue(inputs.other);
   else address.country = country;
   return Object.fromEntries(Object.entries(address).filter(([, part]) => part));
 }
 
-// The reason the form cannot go on, in the reader's words, or null.
-function formProblem(psc, changeControl, changeAddress) {
-  if (!psc) return window.siteText("ch.change-psc.choose-psc", "Choose the person with significant control whose details have changed.");
-  if (!changeControl && !changeAddress) return window.siteText("ch.change-psc.choose-change", "Choose what has changed.");
-  if (changeControl) {
-    const direct = chosenControls(psc).filter(isDirect);
-    if (direct.length === 0 && heldOtherwise(psc).length === 0) {
-      return window.siteText("ch.change-psc.control-needed", "Choose at least one way the person controls the company.");
-    }
-    if (direct.includes("SIGINFLUENCECONTROL") && direct.length > 1) {
-      return window.siteText(
-        "ch.change-psc.influence-alone",
-        "Choose significant influence or control only if none of the other ways applies.",
-      );
-    }
+const addressComplete = (address) => Boolean(address.premise && address.postTown && (address.country || address.otherForeignCountry));
+
+// What the reader ticked as changed: each a section of the form, offered for some kinds of PSC.
+const CHANGES = [
+  { box: "changeControl", section: "controlSection" },
+  { box: "changeAddress", section: "addressSection" },
+  { box: "changeName", section: "nameSection" },
+  { box: "changeResidence", section: "residenceSection", individualOnly: true },
+  { box: "changeNationality", section: "nationalitySection", individualOnly: true },
+  { box: "changeCountryOfResidence", section: "countryOfResidenceSection", individualOnly: true },
+  { box: "changeLegal", section: "legalSection", entityOnly: true },
+];
+
+function offeredFor(change, psc) {
+  const individual = !psc || psc.kind === INDIVIDUAL;
+  return !(change.individualOnly && !individual) && !(change.entityOnly && individual);
+}
+
+const ticked = (psc) => new Set(CHANGES.filter((change) => offeredFor(change, psc) && isChecked(change.box)).map((change) => change.box));
+
+function chosenName(psc) {
+  if (psc.kind !== INDIVIDUAL) return inputValue("newEntityName");
+  const name = {
+    title: inputValue("newTitle"),
+    forename: inputValue("newForename"),
+    otherForenames: inputValue("newOtherForenames"),
+    surname: inputValue("newSurname"),
+  };
+  return Object.fromEntries(Object.entries(name).filter(([, part]) => part));
+}
+
+function chosenIdentification(psc) {
+  const fields = [
+    "legalForm",
+    "lawGoverned",
+    ...(psc.kind === "corporate-entity-person-with-significant-control" ? ["placeRegistered", "registrationNumber", "countryOrState"] : []),
+  ];
+  return Object.fromEntries(fields.map((field) => [field, inputValue(field)]).filter(([, part]) => part));
+}
+
+const chosenResidence = () => (isChecked("sameAsService") ? { sameAsServiceAddress: true } : chosenAddress(ADDRESS_INPUTS.residence));
+
+// The form's change fields for what was ticked.
+function chosenChanges(psc, boxes) {
+  return {
+    ...(boxes.has("changeControl") ? { naturesOfControl: chosenControls(psc) } : {}),
+    ...(boxes.has("changeAddress") ? { address: chosenAddress(ADDRESS_INPUTS.address) } : {}),
+    ...(boxes.has("changeName") ? { newName: chosenName(psc) } : {}),
+    ...(boxes.has("changeResidence") ? { residentialAddress: chosenResidence() } : {}),
+    ...(boxes.has("changeNationality") ? { nationality: inputValue("newNationality") } : {}),
+    ...(boxes.has("changeCountryOfResidence") ? { countryOfResidence: inputValue("newCountryOfResidence") } : {}),
+    ...(boxes.has("changeLegal") ? { identification: chosenIdentification(psc) } : {}),
+  };
+}
+
+function controlProblem(psc) {
+  const direct = chosenControls(psc).filter(isDirect);
+  if (direct.length === 0 && heldOtherwise(psc).length === 0) {
+    return window.siteText("ch.change-psc.control-needed", "Choose at least one way the person controls the company.");
   }
-  if (changeAddress) {
-    const address = chosenAddress();
-    if (!address.premise || !address.postTown || (!address.country && !address.otherForeignCountry)) {
-      return window.siteText(
-        "ch.change-psc.address-needed",
-        "Give the new address's building name or number, its post town and its country.",
-      );
-    }
+  if (direct.includes("SIGINFLUENCECONTROL") && direct.length > 1) {
+    return window.siteText(
+      "ch.change-psc.influence-alone",
+      "Choose significant influence or control only if none of the other ways applies.",
+    );
   }
   return null;
+}
+
+function legalProblem(identification) {
+  if (!identification.legalForm || !identification.lawGoverned) {
+    return window.siteText("ch.change-psc.legal-needed", "Give the legal form and the governing law.");
+  }
+  if (identification.placeRegistered && !identification.registrationNumber) {
+    return window.siteText("ch.change-psc.registration-needed", "Give the registration number in the register named.");
+  }
+  return null;
+}
+
+// The reason the changes cannot be filed, in the reader's words, or null.
+function changeProblem(psc, boxes, changes) {
+  if (boxes.has("changeControl")) {
+    const problem = controlProblem(psc);
+    if (problem) return problem;
+  }
+  if (changes.address && !addressComplete(changes.address)) {
+    return window.siteText(
+      "ch.change-psc.address-needed",
+      "Give the new address's building name or number, its post town and its country.",
+    );
+  }
+  if (changes.newName !== undefined && (psc.kind === INDIVIDUAL ? !changes.newName.surname : !changes.newName)) {
+    return window.siteText("ch.change-psc.name-needed", "Give the new name.");
+  }
+  if (changes.residentialAddress && !changes.residentialAddress.sameAsServiceAddress && !addressComplete(changes.residentialAddress)) {
+    return window.siteText(
+      "ch.change-psc.residence-needed",
+      "Give the new usual residential address's building name or number, its post town and its country.",
+    );
+  }
+  if (changes.nationality === "") return window.siteText("ch.change-psc.nationality-needed", "Give the new nationality.");
+  if (changes.countryOfResidence === "")
+    return window.siteText("ch.change-psc.residence-country-needed", "Give the new country or state of residence.");
+  return changes.identification ? legalProblem(changes.identification) : null;
 }
 
 function handleChangeSubmit(event) {
   event.preventDefault();
   const psc = chosenPsc();
-  const changeControl = document.getElementById("changeControl").checked;
-  const changeAddress = document.getElementById("changeAddress").checked;
-  const problem = formProblem(psc, changeControl, changeAddress);
+  if (!psc) {
+    showError(window.siteText("ch.change-psc.choose-psc", "Choose the person with significant control whose details have changed."));
+    return;
+  }
+  const boxes = ticked(psc);
+  if (boxes.size === 0) {
+    showError(window.siteText("ch.change-psc.choose-change", "Choose what has changed."));
+    return;
+  }
+  const changes = chosenChanges(psc, boxes);
+  const problem = changeProblem(psc, boxes, changes);
   if (problem) {
     showError(problem);
     return;
@@ -256,8 +365,7 @@ function handleChangeSubmit(event) {
       companyAuthCode: document.getElementById("companyAuthCode").value.trim(),
       dateSigned: new Date().toISOString().slice(0, 10),
       ...pscFields(psc),
-      ...(changeControl ? { naturesOfControl: chosenControls(psc) } : {}),
-      ...(changeAddress ? { address: chosenAddress() } : {}),
+      ...changes,
       dateOfChange,
       confirmationDate,
     },
@@ -295,6 +403,13 @@ function countryText(address) {
   return document.querySelector(`#country option[value="${address.country}"]`).textContent;
 }
 
+const addressText = (address) =>
+  [address.premise, address.street, address.thoroughfare, address.postTown, address.county, address.postcode, countryText(address)]
+    .filter(Boolean)
+    .join(", ");
+
+const legendText = (sectionId) => document.querySelector(`#${sectionId} legend`).textContent.trim();
+
 function renderReview() {
   const list = document.getElementById("reviewList");
   list.replaceChildren();
@@ -307,14 +422,38 @@ function renderReview() {
   if (form.naturesOfControl) {
     rows.push([window.siteText("ch.change-psc.review-control", "How they control the company"), form.naturesOfControl.map(controlText)]);
   }
-  if (form.address) {
-    const address = form.address;
+  if (form.address) rows.push([document.getElementById("addressLegend").textContent, addressText(form.address)]);
+  if (form.newName !== undefined) {
+    const name = form.newName;
+    const nameText =
+      typeof name === "string" ? name : [name.title, name.forename, name.otherForenames, name.surname].filter(Boolean).join(" ");
+    rows.push([legendText("nameSection"), nameText]);
+  }
+  if (form.residentialAddress) {
+    const residence = form.residentialAddress;
     rows.push([
-      document.getElementById("addressLegend").textContent,
-      [address.premise, address.street, address.thoroughfare, address.postTown, address.county, address.postcode, countryText(address)]
-        .filter(Boolean)
-        .join(", "),
+      legendText("residenceSection"),
+      residence.sameAsServiceAddress ? document.querySelector('label[for="sameAsService"]').textContent.trim() : addressText(residence),
     ]);
+  }
+  if (form.nationality) rows.push([legendText("nationalitySection"), form.nationality]);
+  if (form.countryOfResidence) rows.push([legendText("countryOfResidenceSection"), form.countryOfResidence]);
+  if (form.identification) {
+    const id = form.identification;
+    const parts = [
+      [document.querySelector('label[for="legalForm"]').textContent, id.legalForm],
+      [document.querySelector('label[for="lawGoverned"]').textContent, id.lawGoverned],
+      [document.querySelector('label[for="placeRegistered"]').textContent, id.placeRegistered],
+      [document.querySelector('label[for="countryOrState"]').textContent, id.countryOrState],
+      [document.querySelector('label[for="registrationNumber"]').textContent, id.registrationNumber],
+    ];
+    // A field's label without its "(optional)".
+    const shortLabel = (label) => {
+      const text = label.trim();
+      const cut = text.lastIndexOf(" (");
+      return text.endsWith(")") && cut > 0 ? text.slice(0, cut) : text;
+    };
+    rows.push([legendText("legalSection"), parts.filter(([, value]) => value).map(([label, value]) => `${shortLabel(label)}: ${value}`)]);
   }
   rows.push(
     [window.siteText("ch.change-psc.review-changed", "Date of change"), formatDate(form.dateOfChange)],
@@ -339,15 +478,28 @@ function renderReview() {
   });
 }
 
+// The usual residential address is on no page once it is sent: the review and its inputs are cleared.
+function forgetResidence() {
+  document.getElementById("reviewList").replaceChildren();
+  Object.values(ADDRESS_INPUTS.residence).forEach((id) => {
+    const input = document.getElementById(id);
+    input.value = input.tagName === "SELECT" ? "GBR" : "";
+  });
+  document.getElementById("sameAsService").checked = false;
+}
+
 async function handleFile() {
   const scenario = document.getElementById("govTestScenario").value.trim();
   const headers = scenario ? { "Gov-Test-Scenario": scenario } : {};
+  const form = filing.form;
+  filing = null;
+  forgetResidence();
   showView("resultView");
   showLoading();
   try {
     await window.companiesHouseFormPage.fileAndShowOutcome({
       kind: FORM_KIND,
-      form: filing.form,
+      form,
       result: document.getElementById("filingResult"),
       headers,
     });
@@ -366,10 +518,24 @@ function startAgain() {
   showView("companyView");
 }
 
+// Show the changes offered for the chosen PSC's kind, the section of each one ticked, and the parts
+// within a section that depend on the kind or on another answer.
 function showSections() {
-  document.getElementById("controlSection").style.display = document.getElementById("changeControl").checked ? "block" : "none";
-  document.getElementById("addressSection").style.display = document.getElementById("changeAddress").checked ? "block" : "none";
-  document.getElementById("otherCountryGroup").style.display = document.getElementById("country").value === "OTHER" ? "block" : "none";
+  const psc = chosenPsc();
+  const show = (id, shown) => {
+    document.getElementById(id).style.display = shown ? "block" : "none";
+  };
+  document.querySelectorAll("[data-for]").forEach((choice) => {
+    const forIndividual = choice.dataset.for === "individual";
+    choice.style.display = !psc || (psc.kind === INDIVIDUAL) === forIndividual ? "" : "none";
+  });
+  CHANGES.forEach((change) => show(change.section, offeredFor(change, psc) && isChecked(change.box)));
+  show("individualName", !psc || psc.kind === INDIVIDUAL);
+  show("entityName", Boolean(psc) && psc.kind !== INDIVIDUAL);
+  show("registerFields", psc?.kind === "corporate-entity-person-with-significant-control");
+  show("residenceFields", !isChecked("sameAsService"));
+  show("otherCountryGroup", document.getElementById("country").value === "OTHER");
+  show("resOtherCountryGroup", document.getElementById("resCountry").value === "OTHER");
 }
 
 function updateGovTestScenarioVisibility() {
@@ -379,7 +545,7 @@ function updateGovTestScenarioVisibility() {
 
 document.getElementById("companyForm").addEventListener("submit", handleCompanySubmit);
 document.getElementById("changeForm").addEventListener("submit", handleChangeSubmit);
-["changeControl", "changeAddress", "country"].forEach((id) => document.getElementById(id).addEventListener("change", showSections));
+document.getElementById("changeForm").addEventListener("change", showSections);
 document.getElementById("submitFilingBtn").addEventListener("click", handleFile);
 document.getElementById("changeBtn").addEventListener("click", () => showView("formView"));
 document.getElementById("startAgainBtn").addEventListener("click", startAgain);

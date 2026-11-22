@@ -186,11 +186,11 @@ describe("companiesHousePscChangeDetailsPost ingestHandler", () => {
 
   test("answers 400 in JSON, sending nothing, for no change, a bad control, a bad address or a confirmation before the change", async () => {
     for (const [overrides, message] of [
-      [{ naturesOfControl: undefined }, "Missing change"],
-      [{ naturesOfControl: ["SIGINFLUENCECONTROL", "VOTINGRIGHTS_25TO50PERCENT"] }, "Invalid naturesOfControl - SIGINFLUENCECONTROL only"],
-      [{ naturesOfControl: ["OWNERSHIP"] }, "Invalid naturesOfControl - unknown nature of control OWNERSHIP"],
-      [{ address: { ...NEW_ADDRESS, postTown: " " } }, "Invalid address - an address needs its post town"],
-      [{ address: { ...NEW_ADDRESS, country: "Wales" } }, "Invalid address - unknown country Wales"],
+      [{ naturesOfControl: undefined }, "Invalid change - a change of details needs a change"],
+      [{ naturesOfControl: ["SIGINFLUENCECONTROL", "VOTINGRIGHTS_25TO50PERCENT"] }, "Invalid change - SIGINFLUENCECONTROL only"],
+      [{ naturesOfControl: ["OWNERSHIP"] }, "Invalid change - unknown nature of control OWNERSHIP"],
+      [{ address: { ...NEW_ADDRESS, postTown: " " } }, "Invalid change - an address needs its post town"],
+      [{ address: { ...NEW_ADDRESS, country: "Wales" } }, "Invalid change - an address names a country this form does not have"],
       [{ dateOfChange: "01/11/2026" }, "Invalid or missing dateOfChange"],
       [{ confirmationDate: "2026-10-31" }, "must not be before dateOfChange"],
       [{ dateOfChange: "2999-01-01", confirmationDate: "2999-01-02" }, "Invalid dateOfChange - must not be in the future"],
@@ -203,6 +203,70 @@ describe("companiesHousePscChangeDetailsPost ingestHandler", () => {
       expect(JSON.stringify(parseResponseBody(response))).toContain(message);
     }
     expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
+  test("an individual's name, residential address, nationality and residence are sent in the envelope", async () => {
+    const response = await ingestHandler(
+      buildEvent({
+        body: buildChangeBody({
+          naturesOfControl: undefined,
+          newName: { title: " DR ", surname: "HALE" },
+          residentialAddress: { ...NEW_ADDRESS, premise: "7 Hidden Lane" },
+          nationality: " Irish ",
+          countryOfResidence: "Ireland",
+        }),
+      }),
+    );
+    expect(response.statusCode).toBe(201);
+    const [submissionArgs] = mockBuildFormSubmission.mock.calls[0];
+    expect(submissionArgs.formXml).toContain(
+      "<Change><Name><Title>DR</Title><Surname>HALE</Surname></Name><ResidentialAddress><Address><Premise>7 Hidden Lane</Premise>",
+    );
+    expect(submissionArgs.formXml).toContain("<Nationality>Irish</Nationality><CountryOfResidence>Ireland</CountryOfResidence></Change>");
+  });
+
+  test("the residential address goes into the envelope only: not the filing state, an event or a refusal", async () => {
+    await ingestHandler(buildEvent({ body: buildChangeBody({ residentialAddress: { ...NEW_ADDRESS, premise: "7 Hidden Lane" } }) }));
+    const stored = JSON.stringify(mockSend.mock.calls.map(([cmd]) => cmd.input));
+    const published = JSON.stringify(mockEventBridgeSend.mock.calls.map(([cmd]) => cmd.input));
+    expect(stored).not.toContain("Hidden Lane");
+    expect(published).not.toContain("Hidden Lane");
+
+    const refused = await ingestHandler(
+      buildEvent({ body: buildChangeBody({ residentialAddress: { premise: "7 Hidden Lane", country: "Atlantis" } }) }),
+    );
+    expect(refused.statusCode).toBe(400);
+    expect(JSON.stringify(parseResponseBody(refused))).toContain("residential: an address needs its post town");
+    expect(JSON.stringify(parseResponseBody(refused))).not.toMatch(/Hidden Lane|Atlantis/);
+  });
+
+  test("a corporate entity's new name and legal form and governing law are sent; a nationality for one is refused", async () => {
+    const response = await ingestHandler(
+      buildEvent({
+        body: buildChangeBody({
+          pscKind: "corporate-entity-person-with-significant-control",
+          name: "HOLDCO LIMITED",
+          naturesOfControl: undefined,
+          newName: "HOLDCO GROUP LIMITED",
+          identification: { legalForm: "Private limited company", lawGoverned: "Companies Act 2006" },
+        }),
+      }),
+    );
+    expect(response.statusCode).toBe(201);
+    expect(mockBuildFormSubmission.mock.calls[0][0].formXml).toContain(
+      "<Change><CorporateName>HOLDCO GROUP LIMITED</CorporateName><PSCCompanyIdentification><LawGoverned>Companies Act 2006</LawGoverned>",
+    );
+    const refused = await ingestHandler(
+      buildEvent({
+        body: buildChangeBody({
+          pscKind: "corporate-entity-person-with-significant-control",
+          name: "HOLDCO LIMITED",
+          nationality: "British",
+        }),
+      }),
+    );
+    expect(refused.statusCode).toBe(400);
+    expect(JSON.stringify(parseResponseBody(refused))).toContain("nationality is not a change this form makes for this kind of PSC");
   });
 
   test("answers 500 in JSON when the gateway rejects the envelope", async () => {

@@ -122,6 +122,39 @@
                 >Eu cyfeiriad</label
               >
             </div>
+            <div class="choice">
+              <input type="checkbox" id="changeName" name="changeName" /><label data-i18n="ch-change-psc.their-name-228e74" for="changeName"
+                >Eu henw</label
+              >
+            </div>
+            <div class="choice" data-for="individual">
+              <input type="checkbox" id="changeResidence" name="changeResidence" /><label
+                data-i18n="ch-change-psc.their-usual-residential-address-47f54a"
+                for="changeResidence"
+                >Eu cyfeiriad preswyl arferol</label
+              >
+            </div>
+            <div class="choice" data-for="individual">
+              <input type="checkbox" id="changeNationality" name="changeNationality" /><label
+                data-i18n="ch-change-psc.their-nationality-a39a71"
+                for="changeNationality"
+                >Eu cenedligrwydd</label
+              >
+            </div>
+            <div class="choice" data-for="individual">
+              <input type="checkbox" id="changeCountryOfResidence" name="changeCountryOfResidence" /><label
+                data-i18n="ch-change-psc.their-country-or-state-of-residence-80c978"
+                for="changeCountryOfResidence"
+                >Eu gwlad neu dalaith breswyl</label
+              >
+            </div>
+            <div class="choice" data-for="entity">
+              <input type="checkbox" id="changeLegal" name="changeLegal" /><label
+                data-i18n="ch-change-psc.their-legal-form-or-governing-law-aae170"
+                for="changeLegal"
+                >Eu ffurf gyfreithiol neu’r gyfraith sy’n eu llywodraethu</label
+              >
+            </div>
           </fieldset>
 
           <fieldset id="controlSection" class="form-group" style="display: none">
@@ -252,6 +285,144 @@
             <div class="form-group" id="otherCountryGroup" style="display: none">
               <label data-i18n="ch-change-psc.which-country-1dd352" for="otherForeignCountry">Pa wlad?</label>
               <input type="text" id="otherForeignCountry" name="otherForeignCountry" maxlength="50" autocomplete="country-name" />
+            </div>
+          </fieldset>
+
+          <fieldset id="nameSection" class="form-group" style="display: none">
+            <legend data-i18n="ch-change-psc.the-new-name-0e89d4">Yr enw newydd</legend>
+            <div id="individualName">
+              <div class="form-group">
+                <label data-i18n="ch-change-psc.title-optional-8280fb" for="newTitle">Teitl (dewisol)</label>
+                <input type="text" id="newTitle" name="newTitle" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-change-psc.first-name-optional-36c4a5" for="newForename">Enw cyntaf (dewisol)</label>
+                <input type="text" id="newForename" name="newForename" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-change-psc.other-first-names-optional-e7bb6e" for="newOtherForenames"
+                  >Enwau cyntaf eraill (dewisol)</label
+                >
+                <input type="text" id="newOtherForenames" name="newOtherForenames" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-change-psc.surname-f762da" for="newSurname">Cyfenw</label>
+                <input type="text" id="newSurname" name="newSurname" maxlength="160" autocomplete="off" />
+              </div>
+            </div>
+            <div id="entityName">
+              <div class="form-group">
+                <label data-i18n="ch-change-psc.name-dcd1d5" for="newEntityName">Enw</label>
+                <input type="text" id="newEntityName" name="newEntityName" maxlength="160" autocomplete="off" />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset id="residenceSection" class="form-group" style="display: none">
+            <legend data-i18n="ch-change-psc.the-new-usual-residential-address-45a2c6">Y cyfeiriad preswyl arferol newydd</legend>
+            <p data-i18n="ch-change-psc.the-person-s-home-address-it-413f78" id="residence-hint" class="hint">
+              Cyfeiriad cartref y person. Nid yw ar y gofrestr gyhoeddus: mae Tŷ’r Cwmnïau yn ei gadw ar gofrestr breifat ac yn ei roi i
+              asiantaethau gwirio credyd ac awdurdodau cyhoeddus penodedig yn unig, megis yr heddlu. Nid yw’r dudalen hon yn ei gadw ar ôl y
+              ffeilio.
+            </p>
+            <div class="choice">
+              <input type="checkbox" id="sameAsService" name="sameAsService" aria-describedby="residence-hint" /><label
+                data-i18n="ch-change-psc.the-same-as-the-service-address-845824"
+                for="sameAsService"
+                >Yr un fath â’r cyfeiriad gohebiaeth (nid os mai swyddfa gofrestredig y cwmni yw’r cyfeiriad gohebiaeth)</label
+              >
+            </div>
+            <div id="residenceFields">
+              <div class="form-group">
+                <label data-i18n="ch-change-psc.building-name-or-number-bbd5d1" for="resPremise">Enw neu rif yr adeilad</label>
+                <input type="text" id="resPremise" name="resPremise" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-change-psc.street-c66659" for="resStreet">Stryd</label>
+                <input type="text" id="resStreet" name="resStreet" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-change-psc.address-line-2-350b2b" for="resThoroughfare">Llinell 2 y cyfeiriad</label>
+                <input type="text" id="resThoroughfare" name="resThoroughfare" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-change-psc.post-town-89cec1" for="resPostTown">Tref bost</label>
+                <input type="text" id="resPostTown" name="resPostTown" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-change-psc.county-or-region-9fe665" for="resCounty">Sir neu ranbarth</label>
+                <input type="text" id="resCounty" name="resCounty" maxlength="50" autocomplete="off" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-change-psc.postcode-0a4387" for="resPostcode">Cod post</label>
+                <input type="text" id="resPostcode" name="resPostcode" maxlength="15" autocomplete="off" spellcheck="false" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-change-psc.country-701d02" for="resCountry">Gwlad</label>
+                <select id="resCountry" name="resCountry">
+                  <option data-i18n="ch-change-psc.england-c0ea96" value="GB-ENG">Lloegr</option>
+                  <option data-i18n="ch-change-psc.wales-0cf387" value="GB-WLS">Cymru</option>
+                  <option data-i18n="ch-change-psc.scotland-a24667" value="GB-SCT">Yr Alban</option>
+                  <option data-i18n="ch-change-psc.northern-ireland-304a7e" value="GB-NIR">Gogledd Iwerddon</option>
+                  <option data-i18n="ch-change-psc.united-kingdom-8d23a6" value="GBR" selected>Y Deyrnas Unedig</option>
+                  <option data-i18n="ch-change-psc.another-country-eea65d" value="OTHER">Gwlad arall</option>
+                </select>
+              </div>
+              <div class="form-group" id="resOtherCountryGroup" style="display: none">
+                <label data-i18n="ch-change-psc.which-country-1dd352" for="resOtherForeignCountry">Pa wlad?</label>
+                <input type="text" id="resOtherForeignCountry" name="resOtherForeignCountry" maxlength="50" autocomplete="off" />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset id="nationalitySection" class="form-group" style="display: none">
+            <legend data-i18n="ch-change-psc.the-new-nationality-622684">Y cenedligrwydd newydd</legend>
+            <div class="form-group">
+              <label data-i18n="ch-change-psc.nationality-8fb1b6" for="newNationality">Cenedligrwydd</label>
+              <input type="text" id="newNationality" name="newNationality" maxlength="50" />
+            </div>
+          </fieldset>
+
+          <fieldset id="countryOfResidenceSection" class="form-group" style="display: none">
+            <legend data-i18n="ch-change-psc.the-new-country-or-state-of-41be96">Y wlad neu’r dalaith breswyl newydd</legend>
+            <div class="form-group">
+              <label data-i18n="ch-change-psc.country-or-state-fa8c02" for="newCountryOfResidence">Gwlad neu dalaith</label>
+              <input type="text" id="newCountryOfResidence" name="newCountryOfResidence" maxlength="50" />
+            </div>
+          </fieldset>
+
+          <fieldset id="legalSection" class="form-group" style="display: none">
+            <legend data-i18n="ch-change-psc.the-new-legal-form-and-governing-bb87c5">
+              Y ffurf gyfreithiol newydd a’r gyfraith sy’n ei llywodraethu
+            </legend>
+            <div class="form-group">
+              <label data-i18n="ch-change-psc.legal-form-18f1eb" for="legalForm">Ffurf gyfreithiol</label>
+              <input type="text" id="legalForm" name="legalForm" maxlength="160" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-change-psc.governing-law-da3aaa" for="lawGoverned">Y gyfraith lywodraethol</label>
+              <input type="text" id="lawGoverned" name="lawGoverned" maxlength="160" />
+            </div>
+            <div id="registerFields">
+              <p data-i18n="ch-change-psc.if-it-is-entered-in-a-9c99a7" id="register-hint" class="hint">
+                Os yw wedi’i gofnodi mewn cofrestr, rhowch y gofrestr, ei gwlad neu ei thalaith a’r rhif cofrestru ynddi.
+              </p>
+              <div class="form-group">
+                <label data-i18n="ch-change-psc.register-optional-18468a" for="placeRegistered">Cofrestr (dewisol)</label>
+                <input type="text" id="placeRegistered" name="placeRegistered" maxlength="160" aria-describedby="register-hint" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-change-psc.country-or-state-of-the-register-e426b6" for="countryOrState"
+                  >Gwlad neu dalaith y gofrestr (dewisol)</label
+                >
+                <input type="text" id="countryOrState" name="countryOrState" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-change-psc.registration-number-optional-e69eee" for="registrationNumber"
+                  >Rhif cofrestru (dewisol)</label
+                >
+                <input type="text" id="registrationNumber" name="registrationNumber" maxlength="160" />
+              </div>
             </div>
           </fieldset>
 
