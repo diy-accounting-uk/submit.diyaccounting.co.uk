@@ -17570,3 +17570,17 @@ cy = '''Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, ac nid oes cyfrif elw a
 [strings."ch.revision.not-small"]
 hash = "9d271c1998af"
 cy = '''Cyfrifon micro-endid yw’r rheini, felly maent yn cael eu diwygio ar dudalen cyfrifon micro-endid.'''
+
+# == The books card on the accounts forms and the drop cells of the accounts rows: widget.books-hint-company and mtd-calendar.*-package-zip-* ==
+
+[strings."widget.books-hint-company"]
+hash = "b2bd8dcd568f"
+cy = '''Gollyngwch eich llyfr DIYA-GL neu eich zip pecyn taenlen yma, neu dewiswch ffeil. Caiff ei darllen yn y porwr hwn ac ni chaiff byth ei huwchlwytho; dim ond y ffigurau rydych yn eu ffeilio sy’n cael eu hanfon.'''
+
+[strings."mtd-calendar.production-package-zip-c7a9da"]
+hash = "c7a9da697df5"
+cy = '''cynhyrchu (production) <span class="calendar-date">zip pecyn</span>'''
+
+[strings."mtd-calendar.preview-package-zip-de78a3"]
+hash = "de78a3668798"
+cy = '''rhagolwg (preview) <span class="calendar-date">zip pecyn</span>'''

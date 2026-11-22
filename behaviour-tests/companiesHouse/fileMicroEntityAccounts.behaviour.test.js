@@ -54,6 +54,7 @@ import {
   verifyRevisionRejected,
   verifyRevisedAccountsOnRecord,
   describeTheSmallCompanyRevision,
+  dropCorrectedBookOnTheRevision,
 } from "../steps/behaviour-companies-house-accounts-steps.js";
 import { companiesHouseLookupFixture } from "../steps/behaviour-companies-house-filing-steps.js";
 
@@ -544,6 +545,51 @@ test("Click through: file filleted small company accounts and see the filing acc
   );
   await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
   await verifyFilingAccepted(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: file micro-entity accounts from a book, amend them from a corrected book and see the revised accounts accepted", async ({
+  page,
+}, testInfo) => {
+  test.skip(filesThroughRealCompaniesHouseGateway(), "the real gateway leaves the original pending, so it has no receipt to revise");
+  addOnPageLogging(page);
+  fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
+  const bookZipFile = await writeFixtureBookZip("precision-code-ltd", companyNumber, testInfo.outputPath("books"));
+  const correctedBookZipFile = await writeFixtureBookZip("precision-code-ltd-loan", companyNumber, testInfo.outputPath("corrected-books"));
+
+  await signInWithResidentBundle(page, baseUrl);
+  await goToFileMicroEntityAccounts(page, screenshotPath);
+  await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
+  await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
+  await fillAccountsFormFromBook(
+    page,
+    bookZipFile,
+    "for the period 2025-04-01 to 2026-03-31.",
+    { currentFixedAssets: "208990" },
+    screenshotPath,
+  );
+  await completeMicroEntityAnswersTheBookLeaves(page, "2026-04-15", screenshotPath);
+  await previewAccounts(page, screenshotPath);
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyFilingAccepted(page, screenshotPath);
+  await openFilingCustomerCopy(page, screenshotPath);
+  await amendFiledAccountsFromCopy(page, screenshotPath);
+  await dropCorrectedBookOnTheRevision(page, correctedBookZipFile, "for the period 2025-04-01 to 2026-03-31.", screenshotPath);
+  await describeTheRevision(
+    page,
+    {
+      averageEmployees: 3,
+      nonCompliance: "The original accounts left out the loan the company took out in the year.",
+      amendments: "The loan is now shown in the creditors, and net assets change with it.",
+      dateApproved: "2026-04-20",
+    },
+    screenshotPath,
+  );
+  await verifyRevisionPreview(page, screenshotPath);
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyRevisionAccepted(page, screenshotPath);
+  await verifyRevisedAccountsOnRecord(page, screenshotPath);
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });
