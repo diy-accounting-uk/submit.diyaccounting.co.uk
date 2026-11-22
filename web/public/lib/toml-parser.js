@@ -122,6 +122,30 @@
     return { text: parts.join(" "), lastIndex: index };
   }
 
+  // The items of an array's inner text, split at each comma that is neither inside a string nor
+  // inside an array within the array.
+  function splitArrayItems(inner) {
+    const items = [];
+    let depth = 0;
+    let inString = false;
+    let start = 0;
+    for (let index = 0; index < inner.length; index++) {
+      const character = inner[index];
+      if (inString) {
+        if (character === "\\") index++;
+        else if (character === '"') inString = false;
+      } else if (character === '"') inString = true;
+      else if (character === "[") depth++;
+      else if (character === "]") depth--;
+      else if (character === "," && depth === 0) {
+        items.push(inner.substring(start, index));
+        start = index + 1;
+      }
+    }
+    items.push(inner.substring(start));
+    return items;
+  }
+
   function parseValue(val) {
     val = val.trim();
     // Double-quoted string
@@ -132,8 +156,7 @@
     if (val.startsWith("[") && val.endsWith("]")) {
       const inner = val.substring(1, val.length - 1).trim();
       if (!inner) return [];
-      return inner
-        .split(",")
+      return splitArrayItems(inner)
         .map((v) => v.trim())
         .filter((v) => v !== "")
         .map((v) => parseValue(v));

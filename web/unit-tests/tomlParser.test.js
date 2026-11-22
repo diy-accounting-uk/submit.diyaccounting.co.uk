@@ -24,6 +24,18 @@ describe("web/public/lib/toml-parser.js", () => {
     expect(parsed.activities).toEqual([{ id: "x", paths: ["a.html", "^/api/b.*"], after: "kept" }]);
   });
 
+  it("keeps a comma, a bracket and a hash inside a string of an array", () => {
+    expect(window.TOML.parse('paths = ["^/api/v1/a,b.*", "c # d", "[e]"]').paths).toEqual(["^/api/v1/a,b.*", "c # d", "[e]"]);
+  });
+
+  it("reads an empty array, numbers and an array inside an array", () => {
+    expect(window.TOML.parse("none = []\nnumbers = [1, 2]\nnested = [[1, 2], [3]]")).toEqual({
+      none: [],
+      numbers: [1, 2],
+      nested: [[1, 2], [3]],
+    });
+  });
+
   it("reads every activity of the site's catalogue as the server's parser does", () => {
     const source = readFileSync(join(PUBLIC_DIR, "submit.catalogue.toml"), "utf8");
     const browser = window.TOML.parse(source).activities;
