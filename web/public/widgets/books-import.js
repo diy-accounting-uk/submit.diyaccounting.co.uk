@@ -934,10 +934,16 @@
     const hint = element(
       "p",
       { id: "booksImportHint", class: "hint" },
-      siteText(
-        "widget.books-hint",
-        "Drop your DIYA-GL book, spreadsheets workbook or package zip here, or choose a file. It is read in this browser and never uploaded; only the figures you file are sent.",
-      ) +
+      // A Company book saves as a package of several workbooks, so the forms that take one ask for the package zip.
+      (takesIxbrl(kind)
+        ? siteText(
+            "widget.books-hint-company",
+            "Drop your DIYA-GL book or spreadsheets package zip here, or choose a file. It is read in this browser and never uploaded; only the figures you file are sent.",
+          )
+        : siteText(
+            "widget.books-hint",
+            "Drop your DIYA-GL book, spreadsheets workbook or package zip here, or choose a file. It is read in this browser and never uploaded; only the figures you file are sent.",
+          )) +
         (takesIxbrl(kind)
           ? " " +
             siteText(

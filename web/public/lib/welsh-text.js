@@ -2210,6 +2210,8 @@ window.WELSH_TEXT = {
   "widget.books-heading": "Llenwi o’ch llyfrau",
   "widget.books-hint":
     "Gollyngwch eich llyfr DIYA-GL, eich gweithlyfr taenlen neu eich zip pecyn yma, neu dewiswch ffeil. Caiff ei darllen yn y porwr hwn ac ni chaiff byth ei huwchlwytho; dim ond y ffigurau rydych yn eu ffeilio sy’n cael eu hanfon.",
+  "widget.books-hint-company":
+    "Gollyngwch eich llyfr DIYA-GL neu eich zip pecyn taenlen yma, neu dewiswch ffeil. Caiff ei darllen yn y porwr hwn ac ni chaiff byth ei huwchlwytho; dim ond y ffigurau rydych yn eu ffeilio sy’n cael eu hanfon.",
   "widget.books-hint-ixbrl":
     "Mae dogfen gyfrifon iXBRL (.xhtml) yn llenwi’r un ffurflen. Mae set o ddogfennau iXBRL yn ei llenwi hefyd: dewiswch ei holl ffeiliau gyda’i gilydd, neu un zip.",
   "widget.books-nothing-filled": "Ni lenwyd dim.",

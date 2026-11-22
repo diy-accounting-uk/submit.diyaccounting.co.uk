@@ -186,7 +186,7 @@ export const AVAILABILITY = [
     activity: "file-micro-entity-accounts",
     otherActivities: ["file-small-company-accounts"],
     video: "yPSpvLKrTJU",
-    cells: [["production"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, ["production", "micro-entity"], NOT_OFFERED],
+    cells: [["production"], ["production"], ["production", "package zip"], ["production"], ["production", "micro-entity"], NOT_OFFERED],
   },
   {
     filing: "Companies House confirmation statement",
@@ -218,7 +218,7 @@ export const AVAILABILITY = [
     filing: "Companies House revised accounts (micro-entity, small company, dormant)",
     web: "companies-house/fileMicroEntityAccounts.html",
     activity: "file-revised-accounts",
-    cells: [["preview", "from an accepted filing"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
+    cells: [["preview", "from an accepted filing"], ["preview"], ["preview", "package zip"], ["preview"], NOT_OFFERED, NOT_OFFERED],
   },
 ];
 

@@ -510,3 +510,16 @@ export async function describeTheSmallCompanyRevision(
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-small-revision-described.png`, readerView: true });
   });
 }
+
+// A corrected book dropped on the amend form replaces the figures and leaves the revision in place.
+export async function dropCorrectedBookOnTheRevision(page, bookZipFile, expectedStatus, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user drops the corrected book and the figures change while the revision stays", async () => {
+    const originalDate = await page.locator("#revisionOriginalDate").inputValue();
+    await page.locator("#booksImportFile").setInputFiles(bookZipFile);
+    await expect(page.locator("#booksImportStatus")).toContainText(expectedStatus, { timeout: 60_000 });
+    await expect(page.locator("#revisionBanner")).toBeVisible();
+    await expect(page.locator("#revisionSection")).toBeVisible();
+    await expect(page.locator("#revisionOriginalDate")).toHaveValue(originalDate);
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-corrected-book-dropped.png`, readerView: true });
+  });
+}
