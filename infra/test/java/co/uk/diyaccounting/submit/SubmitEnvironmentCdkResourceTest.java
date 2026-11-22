@@ -136,13 +136,13 @@ class SubmitEnvironmentCdkResourceTest {
         // a Provider-backed custom resource, for idempotent deployments, including
         // hmrcItsaBusinessDetailsGetAsyncRequests
         // PITR: every table (Custom::EnsurePitr, not Custom::AWS - see KindCdk.ensurePitrProvider)
-        // GSIs: passes issuedBy-index, bundles bundleId-expiry-index
+        // GSIs: passes issuedBy-index, bundles bundleId-expiry-index, due list job-jobOn-index
         // Streams: receipts, bundles, passes, subscriptions, commissions, integration calls, HMRC
         //      API requests, practice clients, activity charges, MCP sessions
         //      (one UpdateTable to enable, one DescribeTable to read the stream ARN)
-        // TTL: passes and subscriptions join the tables that already had it
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 152);
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 67);
+        // TTL: passes, subscriptions and the due list join the tables that already had it
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 155);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 68);
 
         // 8) Observability stack should enable CloudTrail (Trail present), covering every region
         // so the WAF, the RUM monitor and the canaries' us-east-1 activity are seen too.

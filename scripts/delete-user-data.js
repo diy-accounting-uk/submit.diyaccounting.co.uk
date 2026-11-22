@@ -204,6 +204,7 @@ export const TABLE_DEFS = [
   { suffix: "hmrc-vat-obligation-get-async-requests", sortKey: "requestId", action: "delete" },
   { suffix: "activity-charges", sortKey: "chargeKey", action: "delete" },
   { suffix: "practice-clients", sortKey: "clientId", action: "delete" },
+  { suffix: "due-list", sortKey: "sk", action: "delete" },
 ];
 
 /**

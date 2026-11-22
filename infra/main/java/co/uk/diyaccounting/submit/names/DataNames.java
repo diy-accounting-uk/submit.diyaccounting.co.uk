@@ -71,6 +71,7 @@ public class DataNames {
     public String subscriptionsTableName;
     public String activityChargesTableName;
     public String practiceClientsTableName;
+    public String dueListTableName;
     public String commissionsTableName;
     public String securityStateTableName;
     public String alarmIssueLockTableName;
@@ -194,6 +195,7 @@ public class DataNames {
         this.subscriptionsTableName = "%s-subscriptions".formatted(root.envResourceNamePrefix);
         this.activityChargesTableName = "%s-activity-charges".formatted(root.envResourceNamePrefix);
         this.practiceClientsTableName = "%s-practice-clients".formatted(root.envResourceNamePrefix);
+        this.dueListTableName = "%s-due-list".formatted(root.envResourceNamePrefix);
         this.commissionsTableName = "%s-commissions".formatted(root.envResourceNamePrefix);
         this.securityStateTableName = "%s-security-state".formatted(root.envResourceNamePrefix);
         this.alarmIssueLockTableName = "%s-alarm-issue-locks".formatted(root.envResourceNamePrefix);

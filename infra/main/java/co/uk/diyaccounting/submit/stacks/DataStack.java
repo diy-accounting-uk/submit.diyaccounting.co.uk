@@ -105,6 +105,7 @@ public class DataStack extends Stack {
     public ITable subscriptionsTable;
     public ITable activityChargesTable;
     public ITable practiceClientsTable;
+    public ITable dueListTable;
     public ITable commissionsTable;
     public ITable securityStateTable;
     public ITable alarmIssueLockTable;
@@ -1182,6 +1183,28 @@ public class DataStack extends Stack {
                 "Ensured practice clients DynamoDB table with name %s",
                 props.sharedNames().data.practiceClientsTableName);
 
+        // Due list table: partition key is the account's hashed sub (or feed#<token hash> for a
+        // calendar feed's lookup), sort key names the business, row, feed pointer or seen filing.
+        // One index finds the items a daily job is due to act on: the businesses to refresh and the
+        // rows to remind. A row's ttl is 90 days after its due date, so old and closed rows go.
+        this.dueListTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-DueListTable",
+                props.sharedNames().data.dueListTableName,
+                "hashedSub",
+                "sk");
+        ensureTimeToLive(
+                this, props.resourceNamePrefix() + "-DueListTTL", props.sharedNames().data.dueListTableName, "ttl");
+        ensureGlobalSecondaryIndex(
+                this,
+                props.resourceNamePrefix() + "-DueListJobGSI",
+                props.sharedNames().data.dueListTableName,
+                "job-jobOn-index",
+                "job",
+                "jobOn",
+                "ALL");
+        infof("Ensured due list DynamoDB table with name %s", props.sharedNames().data.dueListTableName);
+
         // Commissions table: partition key names the owner of the item (commission#<referrerHash>,
         // held, charge#<chargeId>, card#<fingerprint>), sort key names the item within it. Pointer
         // items do the work of indexes, so the table has no secondary index.
@@ -1740,6 +1763,8 @@ public class DataStack extends Stack {
         cfnOutput(this, "SubscriptionsTableArn", this.subscriptionsTable.getTableArn());
         cfnOutput(this, "PracticeClientsTableName", this.practiceClientsTable.getTableName());
         cfnOutput(this, "PracticeClientsTableArn", this.practiceClientsTable.getTableArn());
+        cfnOutput(this, "DueListTableName", this.dueListTable.getTableName());
+        cfnOutput(this, "DueListTableArn", this.dueListTable.getTableArn());
         cfnOutput(this, "CommissionsTableName", this.commissionsTable.getTableName());
         cfnOutput(this, "CommissionsTableArn", this.commissionsTable.getTableArn());
         cfnOutput(this, "CommissionsTableStreamArn", commissionsStreamArn);

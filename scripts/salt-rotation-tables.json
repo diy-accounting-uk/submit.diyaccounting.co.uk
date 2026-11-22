@@ -231,6 +231,10 @@
     {
       "table": "practice-clients",
       "sortKey": "clientId"
+    },
+    {
+      "table": "due-list",
+      "sortKey": "sk"
     }
   ],
   "rowTables": [

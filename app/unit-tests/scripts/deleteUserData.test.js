@@ -95,9 +95,10 @@ describe("lookupSubscriptionIdsInLake", () => {
 });
 
 describe("TABLE_DEFS", () => {
-  test("covers the activity charges and practice clients tables", () => {
+  test("covers the activity charges, practice clients and due list tables", () => {
     expect(TABLE_DEFS).toContainEqual({ suffix: "activity-charges", sortKey: "chargeKey", action: "delete" });
     expect(TABLE_DEFS).toContainEqual({ suffix: "practice-clients", sortKey: "clientId", action: "delete" });
+    expect(TABLE_DEFS).toContainEqual({ suffix: "due-list", sortKey: "sk", action: "delete" });
   });
 });
 
