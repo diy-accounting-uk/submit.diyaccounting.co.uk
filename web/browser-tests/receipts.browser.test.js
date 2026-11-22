@@ -522,3 +522,120 @@ test.describe("Receipts page - receipt details", () => {
     expectCleanFigures(expect, names);
   });
 });
+
+test.describe("Receipts page - a practice's clients", () => {
+  const PRACTICE_CLIENTS = [
+    { clientId: "client-1", displayName: "Bright Tiles Ltd", identifiers: { companyNumber: "12345678" } },
+    { clientId: "client-2", displayName: "North Wharf Ltd", identifiers: { companyNumber: "87654321" } },
+    { clientId: "client-3", displayName: "Old Mill Ltd", archivedAt: "2026-10-01T00:00:00.000Z" },
+  ];
+  const OWN_FILING = {
+    submissionNumber: "00003A",
+    kind: "accounts",
+    status: "pending",
+    submittedAt: "2026-11-20T10:00:00.000Z",
+    rejections: [],
+  };
+  const CLIENT_FILING = {
+    submissionNumber: "00003B",
+    kind: "accounts",
+    status: "rejected",
+    submittedAt: "2026-11-21T10:00:00.000Z",
+    rejections: [{ rejectCode: "9999", description: "The company authentication code is wrong" }],
+    clientId: "client-1",
+  };
+
+  async function openReceipts(page, { clients, welsh = false }) {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.route("**/*.js", async (route) => {
+      if (route.request().resourceType() === "script")
+        await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
+      else await route.continue();
+    });
+    await servePageScripts(page);
+    await serveHmrcFieldTableAssets(page);
+    await serveSubmissionRecordAssets(page);
+    await serveSiteStyles(page);
+    // The Welsh page's script text comes through page-chrome.js's siteText, from lib/welsh-text.js.
+    for (const file of welsh ? ["widgets/page-chrome.js", "lib/welsh-text.js"] : []) {
+      await page.route(`**/${file}`, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/javascript",
+          body: fs.readFileSync(path.join(process.cwd(), "web/public", file)),
+        }),
+      );
+    }
+    const pagePath = welsh ? "web/public/cy/hmrc/receipt/receipts.html" : "web/public/hmrc/receipt/receipts.html";
+    const base = welsh ? "http://localhost:3000/cy/hmrc/receipt/" : "http://localhost:3000/hmrc/receipt/";
+    const html = fs.readFileSync(path.join(process.cwd(), pagePath), "utf-8").replace("<head>", `<head><base href="${base}">`);
+    await page.route("**/receipts.html", (route) => route.fulfill({ status: 200, contentType: "text/html", body: html }));
+    await page.goto(`${base}receipts.html`, { waitUntil: "domcontentloaded" });
+    await delay(200);
+    await page.evaluate(
+      async ({ clientList, own, forClient }) => {
+        localStorage.setItem("cognitoIdToken", "token");
+        window.requestedUrls = [];
+        window.fetchWithIdToken = async (url) => {
+          window.requestedUrls.push(url);
+          if (url === "/api/v1/practice/clients") {
+            return clientList
+              ? { ok: true, json: async () => ({ clients: clientList }) }
+              : { ok: false, status: 403, json: async () => ({}) };
+          }
+          const clientId = new URL(url, "http://localhost").searchParams.get("clientId");
+          const filingsInProgress = clientId === "client-1" ? [forClient] : clientId ? [] : [own];
+          return { ok: true, json: async () => ({ receipts: [], filingsInProgress }) };
+        };
+        await window.showClientChoice();
+        await window.fetchReceipts();
+      },
+      { clientList: clients, own: OWN_FILING, forClient: CLIENT_FILING },
+    );
+  }
+
+  test("a practice chooses whose receipts to see, and a client's rejected filing shows under that client", async ({ page }) => {
+    await openReceipts(page, { clients: PRACTICE_CLIENTS });
+
+    const choice = page.locator("#receiptsClient");
+    await expect(page.locator("#receiptsClientChoice")).toBeVisible();
+    await expect(page.getByLabel("Show the receipts of")).toBeVisible();
+    await expect(choice.locator("option")).toHaveText(["My own filings", "Bright Tiles Ltd (12345678)", "North Wharf Ltd (87654321)"]);
+    await expect(page.locator("#filingsInProgress")).toContainText("00003A");
+    await expect(page.locator("#filingsInProgress")).not.toContainText("00003B");
+
+    await choice.selectOption("client-1");
+    await expect(page.locator("#filingsInProgress")).toContainText("00003B");
+    await expect(page.locator("#filingsInProgress")).toContainText("The company authentication code is wrong");
+    await expect(page.locator("#filingsInProgress")).not.toContainText("00003A");
+    expect(await page.evaluate(() => window.requestedUrls.at(-1))).toBe("/api/v1/hmrc/receipt?clientId=client-1");
+
+    fs.mkdirSync("target/prc1", { recursive: true });
+    await page.screenshot({ path: "target/prc1/receipts-practice-client-en.png", fullPage: true });
+  });
+
+  test("the Welsh page offers the same choice in Welsh", async ({ page }) => {
+    await openReceipts(page, { clients: PRACTICE_CLIENTS, welsh: true });
+    await expect(page.locator("#receiptsClientChoice")).toBeVisible();
+    await expect(page.locator("#receiptsClient option").first()).not.toHaveText("My own filings");
+    await page.locator("#receiptsClient").selectOption("client-1");
+    await expect(page.locator("#filingsInProgress")).toContainText("00003B");
+    await expect(page.locator("#filingsInProgress")).not.toContainText("Companies House filings not accepted yet");
+    fs.mkdirSync("target/prc1", { recursive: true });
+    await page.screenshot({ path: "target/prc1/receipts-practice-client-cy.png", fullPage: true });
+  });
+
+  for (const [label, clients] of [
+    ["a reader whose practice has no clients", []],
+    ["a reader with no practice", null],
+  ]) {
+    test(`${label} sees no client choice and their own filings`, async ({ page }) => {
+      await openReceipts(page, { clients });
+      await expect(page.locator("#receiptsClientChoice")).toBeHidden();
+      await expect(page.locator("#filingsInProgress")).toContainText("00003A");
+      expect(await page.evaluate(() => window.requestedUrls.filter((url) => url.startsWith("/api/v1/hmrc/receipt")))).toEqual([
+        "/api/v1/hmrc/receipt",
+      ]);
+    });
+  }
+});

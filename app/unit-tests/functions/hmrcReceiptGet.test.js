@@ -130,16 +130,34 @@ describe("hmrcReceiptGet ingestHandler", () => {
     const response = await hmrcReceiptGetHandler(buildAuthenticatedEvent({ sub: "filer-sub" }));
 
     expect(response.statusCode).toBe(200);
-    expect(listFilingsInProgress).toHaveBeenCalledWith("filer-sub");
+    expect(listFilingsInProgress).toHaveBeenCalledWith("filer-sub", undefined);
     expect(JSON.parse(response.body).filingsInProgress).toEqual([pending]);
   });
 
-  test("a practice's list for one client carries no filings in progress", async () => {
+  test("a practice's list for one client carries that client's filings in progress", async () => {
     getClient.mockResolvedValue({ clientId: "client-1" });
+    const rejected = {
+      submissionNumber: "00002B",
+      kind: "accounts",
+      status: "rejected",
+      submittedAt: "2026-11-18T10:00:00.000Z",
+      rejections: [{ code: "9999" }],
+      clientId: "client-1",
+    };
+    listFilingsInProgress.mockResolvedValue([rejected]);
 
     const response = await hmrcReceiptGetHandler(buildAuthenticatedEvent({ clientId: "client-1" }));
 
-    expect(JSON.parse(response.body).filingsInProgress).toEqual([]);
+    expect(listFilingsInProgress).toHaveBeenCalledWith("practice-sub", "client-1");
+    expect(JSON.parse(response.body).filingsInProgress).toEqual([rejected]);
+  });
+
+  test("a client id that is not the caller's lists no filings in progress", async () => {
+    getClient.mockResolvedValue(null);
+
+    const response = await hmrcReceiptGetHandler(buildAuthenticatedEvent({ clientId: "client-9" }));
+
+    expect(response.statusCode).toBe(403);
     expect(listFilingsInProgress).not.toHaveBeenCalled();
   });
 

@@ -18475,3 +18475,13 @@ cy = ''': '''
 [strings."ch.ct.is-still"]
 hash = "2e89bd6ae037"
 cy = ''': '''
+
+# == The receipts page's client choice: whose receipts a practice sees ==
+
+[strings."receipts.show-the-receipts-of-2dbe2a"]
+hash = "2dbe2ae8a3e2"
+cy = '''Dangos derbynebau ar gyfer'''
+
+[strings."receipts.my-own-filings-74b342"]
+hash = "74b342ff3ed3"
+cy = '''Fy ffeiliadau fy hun'''

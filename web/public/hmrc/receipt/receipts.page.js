@@ -14,6 +14,26 @@ function getIdToken() {
 // Accounts and Company Tax Return filings open on their own page, which draws the filed documents.
 const FILING_KINDS = new Set(["companies-house-accounts", "company-tax-return"]);
 
+// The receipts route's address for the chosen client, or for the reader's own filings.
+function receiptsUrl() {
+  const clientId = document.getElementById("receiptsClient").value;
+  return clientId ? `/api/v1/hmrc/receipt?clientId=${encodeURIComponent(clientId)}` : "/api/v1/hmrc/receipt";
+}
+
+// A practice chooses whose receipts to see; a reader with no client sees no choice.
+async function showClientChoice() {
+  const response = await window.fetchWithIdToken("/api/v1/practice/clients", {}).catch(() => null);
+  if (!response?.ok) return;
+  const clients = (await response.json())?.clients;
+  if (!Array.isArray(clients)) return;
+  const { clientChoices } = await import("../../lib/ct600-agent.js");
+  const choices = clientChoices(clients);
+  if (choices.length === 0) return;
+  const select = document.getElementById("receiptsClient");
+  select.append(...choices.map(({ clientId, label }) => new Option(label, clientId)));
+  document.getElementById("receiptsClientChoice").hidden = false;
+}
+
 async function fetchReceipts() {
   const idToken = getIdToken();
   const exportControls = document.getElementById("exportControls");
@@ -23,7 +43,7 @@ async function fetchReceipts() {
 
   if (!idToken) return;
 
-  const res = await window.fetchWithIdToken("/api/v1/hmrc/receipt", {});
+  const res = await window.fetchWithIdToken(receiptsUrl(), {});
   if (!res.ok) {
     tbody.innerHTML = "";
     table.style.display = "none";
@@ -499,7 +519,7 @@ function exportCsv(rows) {
 }
 
 document.getElementById("exportCsvBtn").addEventListener("click", async () => {
-  const res = await window.fetchWithIdToken("/api/v1/hmrc/receipt", {});
+  const res = await window.fetchWithIdToken(receiptsUrl(), {});
   if (!res.ok) return alert(siteText("receipts.export-failed", "Failed to export CSV"));
   const json = await res.json();
   const items = Array.isArray(json.receipts) ? json.receipts : [];
@@ -513,9 +533,12 @@ window.addEventListener("focus", () => {
 });
 
 // Initialize page - wait for submit.js module to be ready
+document.getElementById("receiptsClient").addEventListener("change", () => fetchReceipts());
+
 function initPage() {
   checkAuthStatus();
   fetchReceipts();
+  if (getIdToken()) showClientChoice();
 }
 
 if (window.__submitReady__) {

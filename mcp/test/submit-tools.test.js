@@ -824,6 +824,42 @@ describe("submit-tools", () => {
       for (const [url] of fetchMock.mock.calls) expect(url).toMatch(/\?clientId=01ARZ3NDEKTSV4RRFFQ69G5FAV$/);
     });
 
+    it("answers a client's rejected accounts filing on that client's list and not on the practice's own", async () => {
+      const CLIENT_ID = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
+      const rejection = { rejectCode: "100", description: "The accounts were rejected" };
+      const fetchMock = vi.fn(async (url) => {
+        const { pathname, searchParams } = new URL(url);
+        if (pathname !== "/api/v1/hmrc/receipt") return jsonResponse(400, { message: "Receipt not found" });
+        const clientFiling = searchParams.get("clientId") === CLIENT_ID;
+        return jsonResponse(200, {
+          receipts: [],
+          filingsInProgress: [
+            {
+              submissionNumber: clientFiling ? "00C001" : "00P001",
+              kind: "accounts",
+              status: "rejected",
+              submittedAt: "2026-05-02T09:00:00.000Z",
+              rejections: [rejection],
+              clientId: clientFiling ? CLIENT_ID : null,
+            },
+          ],
+        });
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const client = await listAccountsReceipts(session, { clientId: CLIENT_ID });
+      const own = await listAccountsReceipts(session, {});
+
+      expect(client.rejectedFilings).toEqual([
+        { submissionNumber: "00C001", status: "rejected", rejectedOn: "2026-05-02", rejections: [rejection] },
+      ]);
+      expect(own.rejectedFilings.map((filing) => filing.submissionNumber)).toEqual(["00P001"]);
+      expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
+        expect.stringMatching(/\/api\/v1\/hmrc\/receipt\?clientId=01ARZ3NDEKTSV4RRFFQ69G5FAV$/),
+        expect.stringMatching(/\/api\/v1\/hmrc\/receipt$/),
+      ]);
+    });
+
     it("is offered to an assistant as the way to find the receipt a revision names", () => {
       expect(TOOLS.list_accounts_receipts.annotations.readOnlyHint).toBe(true);
       expect(TOOLS.list_accounts_receipts.description).toContain("revision.revisesReceipt");

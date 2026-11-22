@@ -122,13 +122,21 @@ describe("dynamoDbCompaniesHouseFilingStateRepository", () => {
     const filings = await listFilingsInProgress("filer-sub-1");
 
     expect(filings).toEqual([
-      { submissionNumber: "00001A", kind: "accounts", status: "pending", submittedAt: "2026-11-18T10:00:00.000Z", rejections: [] },
+      {
+        submissionNumber: "00001A",
+        kind: "accounts",
+        status: "pending",
+        submittedAt: "2026-11-18T10:00:00.000Z",
+        rejections: [],
+        clientId: null,
+      },
       {
         submissionNumber: "00001B",
         kind: "confirmation-statement",
         status: "rejected",
         submittedAt: "2026-11-17T10:00:00.000Z",
         rejections: [{ rejectCode: "1", description: "No" }],
+        clientId: null,
       },
     ]);
     const [[query], [nextPage]] = mockSend.mock.calls;
@@ -137,5 +145,33 @@ describe("dynamoDbCompaniesHouseFilingStateRepository", () => {
     expect(query.input.ProjectionExpression).not.toContain("filedDocument");
     expect(query.input.FilterExpression).toContain("#data.#kind IN (:accounts, :confirmationStatement, :pscVerificationStatement)");
     expect(nextPage.input.ExclusiveStartKey).toEqual({ hashedSub: "x", requestId: "00001B" });
+  });
+
+  test("answers a practice client's filings in progress for its id, and the filings made for no client without one", async () => {
+    const items = [
+      { requestId: "00002A", status: "pending", createdAt: "2026-11-18T10:00:00.000Z", data: { kind: "accounts" } },
+      { requestId: "00002B", status: "pending", createdAt: "2026-11-18T11:00:00.000Z", data: { kind: "accounts", clientId: "client-1" } },
+      {
+        requestId: "00002C",
+        status: "failed",
+        createdAt: "2026-11-18T12:00:00.000Z",
+        data: { kind: "accounts", statusCode: "REJECT", rejections: [], clientId: "client-2" },
+      },
+    ];
+    mockSend.mockResolvedValue({ Items: items });
+
+    expect((await listFilingsInProgress("practice-sub")).map((filing) => filing.submissionNumber)).toEqual(["00002A"]);
+    expect((await listFilingsInProgress("practice-sub", "client-1")).map((filing) => filing.submissionNumber)).toEqual(["00002B"]);
+    expect(await listFilingsInProgress("practice-sub", "client-2")).toEqual([
+      {
+        submissionNumber: "00002C",
+        kind: "accounts",
+        status: "rejected",
+        submittedAt: "2026-11-18T12:00:00.000Z",
+        rejections: [],
+        clientId: "client-2",
+      },
+    ]);
+    expect(mockSend.mock.calls[0][0].input.ProjectionExpression).toContain("#data.#clientId");
   });
 });

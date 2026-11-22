@@ -142,9 +142,9 @@ export async function ingestHandler(event) {
     } else {
       logger.info({ message: "Listing user receipts", userSub, clientId });
       const receipts = await listUserReceipts(userSub, clientId);
-      // The caller's own Companies House filings that Companies House has not accepted yet. A
-      // practice's list for one client holds receipts only.
-      const filingsInProgress = clientId ? [] : await listFilingsInProgress(userSub);
+      // The Companies House filings that Companies House has not accepted yet, narrowed to the client
+      // as the receipts are: the client's for a clientId, the caller's own otherwise.
+      const filingsInProgress = await listFilingsInProgress(userSub, clientId);
       await publishActivityEvent({
         event: "receipts-viewed",
         summary: "Receipts viewed",

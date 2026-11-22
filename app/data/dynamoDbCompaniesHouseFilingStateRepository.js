@@ -139,11 +139,14 @@ export async function deferPresenterPoll(nextPollAt) {
 
 /**
  * The reader's Companies House filings that Companies House has not accepted yet: each one still
- * pending, and each rejection recorded in the last 100 days. An accepted filing is a receipt.
+ * pending, and each rejection recorded in the last 100 days. An accepted filing is a receipt. As
+ * listUserReceipts does, it answers a practice client's filings for that client's id, and only the
+ * filings made for no client otherwise.
  * @param {string} userSub
- * @returns {Promise<Array<{submissionNumber: string, kind: string|undefined, status: "pending"|"rejected", submittedAt: string|undefined, rejections: Array}>>}
+ * @param {string} [clientId] - one of the practice's clients
+ * @returns {Promise<Array<{submissionNumber: string, kind: string|undefined, status: "pending"|"rejected", submittedAt: string|undefined, rejections: Array, clientId: string|null}>>}
  */
-export async function listFilingsInProgress(userSub) {
+export async function listFilingsInProgress(userSub, clientId) {
   const hashedSub = hashSub(userSub);
   const filings = [];
   let startKey;
@@ -159,13 +162,14 @@ export async function listFilingsInProgress(userSub) {
             "#data.#kind IN (:accounts, :confirmationStatement, :pscVerificationStatement) AND " +
             "(#status = :pending OR (#status = :failed AND #data.#statusCode = :reject))",
           // The pending item carries the filed document; only the fields the list shows are read.
-          ProjectionExpression: "requestId, #status, createdAt, #data.#kind, #data.#statusCode, #data.#rejections",
+          ProjectionExpression: "requestId, #status, createdAt, #data.#kind, #data.#statusCode, #data.#rejections, #data.#clientId",
           ExpressionAttributeNames: {
             "#status": "status",
             "#data": "data",
             "#kind": "kind",
             "#statusCode": "statusCode",
             "#rejections": "rejections",
+            "#clientId": "clientId",
           },
           ExpressionAttributeValues: {
             ":hashedSub": hashedSub,
@@ -180,12 +184,15 @@ export async function listFilingsInProgress(userSub) {
         }),
     );
     for (const item of response.Items ?? []) {
+      const filingClientId = item.data?.clientId || null;
+      if (clientId ? filingClientId !== clientId : filingClientId) continue;
       filings.push({
         submissionNumber: item.requestId,
         kind: item.data?.kind,
         status: item.status === "pending" ? "pending" : "rejected",
         submittedAt: item.createdAt,
         rejections: item.data?.rejections ?? [],
+        clientId: filingClientId,
       });
     }
     startKey = response.LastEvaluatedKey;
