@@ -923,7 +923,7 @@ test.describe("books import on the micro-entity accounts page", () => {
     await expect(page.locator("#averageEmployees")).toHaveValue("3");
     await expect(page.locator("#directorName")).toHaveValue("Carol Smith");
     await expect(page.locator("#yearTotals")).toContainText("Matches capital and reserves.");
-    await expect(page.locator("#yearTotals")).toContainText("this year, 180802 last year");
+    await expect(page.locator("#yearTotals")).toContainText("this year, £180,802 last year");
     await expect(page.getByText("Net assets:")).toHaveCount(1);
     await expect(page.locator("#dormant")).not.toBeChecked();
     await expect(page.locator("#directorDateApproved")).toHaveValue("");

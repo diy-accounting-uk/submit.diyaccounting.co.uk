@@ -74,8 +74,14 @@ function netAssetsOf(year) {
   );
 }
 
+// Each render awaits the formatter's import, so only the latest one writes the line: an earlier
+// render that resolves later holds figures the form no longer shows.
+let latestYearTotals = 0;
+
 async function renderYearTotals(current, prior) {
+  const render = ++latestYearTotals;
   const { formatPounds } = await import("../lib/balance-sheet-check.js");
+  if (render !== latestYearTotals) return;
   const currentNetAssets = netAssetsOf(current);
   const priorNetAssets = netAssetsOf(prior);
   const mismatches = [];
