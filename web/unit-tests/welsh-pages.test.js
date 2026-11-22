@@ -66,6 +66,25 @@ describe("Welsh text of the site's scripts", () => {
     expect(unfilled).toEqual([]);
   });
 
+  it("a fragment a script joins to a value keeps the spaces its Welsh entry states, and a whole sentence loses them", async () => {
+    const catalogue = {
+      strings: {
+        "x.return-word": { cy: "Ffurflen " },
+        "x.is": { cy: ": " },
+        "x.sentence": { cy: "Elw gros. " },
+      },
+    };
+    const scripts = [
+      { id: "x.return-word", source: "Return ", file: "x.js" },
+      { id: "x.is", source: " is ", file: "x.js" },
+      { id: "x.sentence", source: "Gross profit.", file: "x.js" },
+    ];
+    const built = await renderWelshText(catalogue, scripts, []);
+    expect(built).toContain('"x.return-word": "Ffurflen "');
+    expect(built).toContain('"x.is": ": "');
+    expect(built).toContain('"x.sentence": "Elw gros."');
+  });
+
   it("lib/welsh-text.js is the current build of the catalogue and lists every Welsh copy", async () => {
     const committed = fs.readFileSync(WELSH_TEXT_PATH, "utf-8");
     expect(committed).toBe(await renderWelshText());

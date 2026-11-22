@@ -626,7 +626,9 @@ export async function renderWelshPage(page, catalogue = loadCatalogue(), pages =
 // The Welsh text of every siteText call and the pages that have a Welsh copy, for page-chrome.js.
 export async function renderWelshText(catalogue = loadCatalogue(), scripts = scriptStrings(), pages = WELSH_PAGES) {
   const ids = [...new Set(scripts.map(({ id }) => id))].sort();
-  const text = Object.fromEntries(ids.map((id) => [id, welshText(catalogue, id)]));
+  // A fragment a script joins to a value ("Return ", " is ") keeps the spaces its Welsh entry states.
+  const fragments = new Set(scripts.filter(({ source }) => source !== source.trim()).map(({ id }) => id));
+  const text = Object.fromEntries(ids.map((id) => [id, fragments.has(id) ? catalogue.strings[id].cy : welshText(catalogue, id)]));
   const source = [
     "// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0",
     "// Copyright (C) 2006-2026 DIY Accounting Limited",

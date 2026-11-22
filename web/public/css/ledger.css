@@ -105,6 +105,10 @@
     font-weight: var(--weight-strong);
   }
 
+  .ledger tbody th .hint {
+    font-weight: var(--weight-text);
+  }
+
   .ledger td.ledger__figure {
     display: flex;
     align-items: center;

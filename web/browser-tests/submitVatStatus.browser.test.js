@@ -77,6 +77,7 @@ async function openVatPage(
     storedAccount = synthetic ? "synthetic" : null,
     bundleAnswerMs = 300,
     bundlesSynthetic = () => synthetic,
+    tokensRemaining,
   },
 ) {
   await serveRealSite(page);
@@ -84,9 +85,14 @@ async function openVatPage(
   await page.route("**/api/v1/bundle", async (route) => {
     const answerMs = typeof bundleAnswerMs === "function" ? bundleAnswerMs() : bundleAnswerMs;
     if (answerMs === null) return;
-    const bundles = bundlesSynthetic() ? [{ bundleId: "day-guest", qualifiers: { synthetic: true } }] : [];
     await answerLate(answerMs);
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ bundles }) });
+    const tokens = tokensRemaining === undefined ? {} : { allocated: true, tokensGranted: tokensRemaining, tokensRemaining };
+    const bundles = bundlesSynthetic() ? [{ bundleId: "day-guest", qualifiers: { synthetic: true }, ...tokens }] : [];
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ bundles, ...(tokensRemaining === undefined ? {} : { tokensRemaining }) }),
+    });
   });
   await page.addInitScript((account) => {
     localStorage.setItem("cognitoIdToken", "test-id-token");
@@ -392,5 +398,44 @@ test.describe("The status follows the HMRC service the page calls", () => {
     await expect(banner).toHaveAttribute("data-feature-status", "sandbox");
     await expect(banner).toContainText("Statws: amgylchedd prawf (sandbox).");
     await expect(banner).toContainText("Mae hyn yn darllen gwasanaeth prawf CThEF");
+  });
+});
+
+test.describe("The VAT return page at phone width", () => {
+  async function openAtPhoneWidth(page, { synthetic }) {
+    await page.addInitScript(() =>
+      localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "helen@morgantechnical.example" })),
+    );
+    await openVatPage(page, "submitVat.html", { synthetic, tokensRemaining: 3 });
+    await page.setViewportSize({ width: 390, height: 844 });
+  }
+
+  test("the hint under a box's name is lighter than the name", async ({ page }) => {
+    await openAtPhoneWidth(page, { synthetic: false });
+    const weight = (locator) => locator.evaluate((element) => Number(getComputedStyle(element).fontWeight));
+    const name = page.locator('label[for="vatDueSales"]');
+    await expect(name).toBeVisible();
+    expect(await weight(name)).toBeGreaterThanOrEqual(600);
+    expect(await weight(page.locator("#vatDueSales-hint"))).toBeLessThan(500);
+  });
+
+  test("beside a synthetic account's wrench the header shows no cut icon and the whole Sign out button", async ({ page }) => {
+    await openAtPhoneWidth(page, { synthetic: true });
+    await expect(page.locator(".developer-mode-toggle")).toBeVisible();
+    await expect(page.locator(".token-balance")).toContainText("3 tokens");
+    const signOut = page.locator("a.login-link");
+    await expect(signOut).toBeVisible();
+    const status = page.locator(".login-status");
+    if (await status.isVisible()) {
+      const [box, iconBox] = [await status.boundingBox(), await status.locator(".login-person").boundingBox()];
+      expect(iconBox.x + iconBox.width).toBeLessThanOrEqual(box.x + box.width + 0.5);
+    }
+    const [nav, button] = [await page.locator(".header-nav").boundingBox(), await signOut.boundingBox()];
+    expect(button.x + button.width).toBeLessThanOrEqual(nav.x + nav.width + 0.5);
+  });
+
+  test("a live account's header keeps the signed-in person icon", async ({ page }) => {
+    await openAtPhoneWidth(page, { synthetic: false });
+    await expect(page.locator(".login-status .login-person")).toBeVisible();
   });
 });

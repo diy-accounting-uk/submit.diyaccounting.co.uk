@@ -259,6 +259,8 @@
   margin: 0;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  /* A reference with no space in it (an IRmark, a correlation id) breaks inside its column. */
+  overflow-wrap: anywhere;
 }
 .customer-copy-status {
   border-left: 4px solid var(--c-ink-muted, #505a5f);

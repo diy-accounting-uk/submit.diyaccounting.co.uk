@@ -280,6 +280,61 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(result).not.toContainText("PENDING");
   });
 
+  test("the Welsh page sets the reference of a return HMRC has not settled apart from the words around it", async ({ page }) => {
+    const submission = {
+      requests: [],
+      status: 200,
+      body: { correlationId: "CORRPEND", irmark: "IRMARK", pollIntervalSeconds: 0 },
+      pollBody: { statusCode: "PENDING", correlationId: "CORRPEND", pollIntervalSeconds: 600 },
+    };
+    await page.addInitScript(() => localStorage.setItem("siteLanguage", "cy"));
+    await serveRealSite(page, [], submission);
+    await page.goto(PAGE_URL.replace("/companies-house/", "/cy/companies-house/"), { waitUntil: "domcontentloaded" });
+    await page.locator("#companyNumber").fill("12345678");
+    await page.locator("#companyLookupBtn").click();
+    await expect(page.locator("#formView")).toBeVisible();
+    await page.locator("#booksImportFile").setInputFiles({
+      name: "precision-code.diya-gl.zip",
+      mimeType: "application/zip",
+      buffer: await zippedPrecisionCodeBook(),
+    });
+    await expect(page.locator("#booksImportStatus")).toContainText("precision-code.diya-gl.zip", { timeout: 60_000 });
+    await page.locator("#regimeSmall").check();
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+
+    await expect(page.locator("#returnResult")).toHaveText("Ffurflen CORRPEND: yn aros i gael ei gwirio. Yn gwirio eto...", {
+      timeout: 30_000,
+    });
+  });
+
+  test("at phone width the IRmark receipt of an accepted return breaks inside the customer's copy", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openForm(page, [], {
+      requests: [],
+      status: 200,
+      body: { correlationId: ACCEPTED_RETURN.correlationId, irmark: ACCEPTED_RETURN.irmark, pollIntervalSeconds: 0 },
+      pollBody: ACCEPTED_RETURN,
+    });
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+
+    const receipt = page.locator(".customer-copy-submission dd").first();
+    await expect(receipt).toHaveText(ACCEPTED_RETURN.irmarkReceipt, { timeout: 30_000 });
+    const [copy, box] = [await page.locator(".customer-copy").boundingBox(), await receipt.boundingBox()];
+    expect(box.x + box.width).toBeLessThanOrEqual(copy.x + copy.width + 0.5);
+    expect(await receipt.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+  });
+
   test("the pasted book export, its file input and the accounts-in-the-book radio are gone", async ({ page }) => {
     await openForm(page);
     await expect(page.locator("#bookExport")).toHaveCount(0);

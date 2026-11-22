@@ -229,6 +229,12 @@ dd {
     white-space: normal;
   }
 
+  /* A synthetic account's wrench takes the room of the signed-in name, which would show as a cut
+     icon; Sign out and the token count still say the reader is signed in. */
+  .header-nav:has(.developer-mode-toggle) .login-status[role="group"] {
+    display: none;
+  }
+
   .auth-section {
     justify-content: space-between;
   }
