@@ -75,6 +75,8 @@ const OUTBOUND_ID_FORMS = [
   ["nino", /^[A-Z]{2}\d{6}[A-D]$/i],
   ["businessId", /^X[A-Z0-9]IS\d{11}$/i],
   ["id", /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i],
+  // An Assist report's correlation id: a long hex token, which follows the report id.
+  ["correlationId", /^[0-9a-f]{32,}$/i],
 ];
 
 /**

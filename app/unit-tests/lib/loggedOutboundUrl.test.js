@@ -71,6 +71,26 @@ describe("an outbound URL in a log line", () => {
       "/individuals/calculations/{nino}/self-assessment/2025-26/{id}",
     ],
     ["/test/fraud-prevention-headers/validate", "/test/fraud-prevention-headers/validate"],
+    [
+      `/organisations/vat-assist/acknowledge/123456789/0a1b2c3d-1111-2222-3333-444455556666/${"c0ffee".repeat(10)}abcd`,
+      "/organisations/vat-assist/acknowledge/{vrn}/{id}/{correlationId}",
+    ],
+    [
+      `/individuals/self-assessment/assist/reports/acknowledge/AA123456A/0a1b2c3d-1111-2222-3333-444455556666/${"ab".repeat(32)}`,
+      "/individuals/self-assessment/assist/reports/acknowledge/{nino}/{id}/{correlationId}",
+    ],
+    ["/organisations/vat-assist/feedback/123456789", "/organisations/vat-assist/feedback/{vrn}"],
+    [
+      "/individuals/self-assessment/assist/reports/AA123456A/2025-26/0a1b2c3d-1111-2222-3333-444455556666",
+      "/individuals/self-assessment/assist/reports/{nino}/2025-26/{id}",
+    ],
+    [
+      "/individuals/business/self-employment/AA123456A/XAIS12345678901/period/2025-26/2025-04-06_2025-07-05",
+      "/individuals/business/self-employment/{nino}/{businessId}/period/2025-26/2025-04-06_2025-07-05",
+    ],
+    ["/individuals/person/itsa-status/AA123456A/2025-26", "/individuals/person/itsa-status/{nino}/2025-26"],
+    ["/obligations/details/AA123456A/income-and-expenditure", "/obligations/details/{nino}/income-and-expenditure"],
+    ["/test/fraud-prevention-headers/vat-mtd/validation-feedback", "/test/fraud-prevention-headers/vat-mtd/validation-feedback"],
   ])("names the ids of the HMRC path %s", (path, named) => {
     expect(loggedUrlOf(`https://test-api.service.hmrc.gov.uk${path}`)).toBe(`https://test-api.service.hmrc.gov.uk${named}`);
   });
