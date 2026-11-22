@@ -439,6 +439,31 @@ describe("runCases against the Companies House XML Gateway simulator", () => {
       expect(ixbrl.includes("section 444(5A)")).toBe(!hasProfitAndLoss);
     });
 
+    test.each([
+      "micro-entity-accounts-revised",
+      "micro-entity-accounts-dormant-revised",
+      "small-company-accounts-full-revised",
+      "small-company-accounts-filleted-revised",
+    ])("carries the fixture's %s revision into a revised iXBRL document that the gateway takes", async (caseName) => {
+      const fixtureCases = JSON.parse(
+        readFileSync(new URL("../../../scripts/fixtures/companies-house-test-service-cases.json", import.meta.url), "utf8"),
+      );
+      const revisedCase = fixtureCases.find((fixtureCase) => fixtureCase.name === caseName);
+
+      const { entries } = await runCases([{ ...revisedCase, expectedOutcome: { status: "TERMINAL", pinned: true } }], outDir, {
+        sleepFn: fastSleep,
+      });
+
+      expect(entries[0].errors).toEqual([]);
+      expect(["ACCEPT", "REJECT"]).toContain(entries[0].observedStatus);
+      const submitExchange = entries[0].exchanges.find((exchange) => exchange.label === "submit");
+      const data = /<Data>([^<]+)<\/Data>/.exec(submitExchange.requestXml)[1];
+      const ixbrl = Buffer.from(data, "base64").toString("utf8");
+      expect(ixbrl).toMatch(/name="bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse"[^>]*>true</);
+      expect(ixbrl).toContain(revisedCase.revision.nonCompliance.slice(0, 40));
+      expect(ixbrl).toMatch(/name="bus:DateApprovalRevisionReport"[^>]*>20 October 2026</);
+    });
+
     test("keeps polling a submission that stays PENDING for forty polls until it is ACCEPTed", async () => {
       const realFetch = globalThis.fetch;
       let polls = 0;

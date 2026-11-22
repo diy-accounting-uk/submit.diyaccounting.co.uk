@@ -575,5 +575,364 @@
       "pinned": false,
       "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 500 ordinary shares of £0.20 each (share capital £100) follow the register entry. Prior year equals the filed 2025 accounts; current year figures are synthetic, with the reserve moving from 34 by the year's profit of 4,698 and no 2026 dividend assumed (the 2025 profit of 4,195 against a reserve of 34 implies dividends in 2025). The prior-year profit and loss is the filed 2025 one, with its 22 of other income shown as interest receivable because the builder has no other operating income line."
     }
+  },
+  {
+    "name": "micro-entity-accounts-revised",
+    "type": "accounts",
+    "companyNumber": "06846849",
+    "companyName": "DIY ACCOUNTING LIMITED",
+    "registeredOffice": {
+      "addressLine1": "37 Sutherland Avenue",
+      "cityOrTown": "Leeds",
+      "postalCode": "LS8 1BY",
+      "country": "England"
+    },
+    "companyAuthCode": "AUTH09",
+    "periodStart": "2025-04-01",
+    "periodEnd": "2026-03-31",
+    "balanceSheet": {
+      "currentYear": {
+        "fixedAssets": 800,
+        "currentAssets": 6000,
+        "creditorsWithinOneYear": 2162,
+        "creditorsAfterOneYear": 0,
+        "calledUpShareCapital": 100,
+        "profitAndLossAccount": 4538,
+        "capitalAndReserves": 4638
+      },
+      "priorYear": {
+        "fixedAssets": 0,
+        "currentAssets": 3353,
+        "creditorsWithinOneYear": 3219,
+        "creditorsAfterOneYear": 0,
+        "calledUpShareCapital": 100,
+        "profitAndLossAccount": 34,
+        "capitalAndReserves": 134
+      }
+    },
+    "averageEmployees": 0,
+    "director": {
+      "name": "Antony Christopher Cartwright",
+      "dateApproved": "2026-10-20"
+    },
+    "statementsAccepted": {
+      "section477Exemption": true,
+      "membersNotRequiredAudit": true,
+      "directorsResponsibilities": true,
+      "microEntityProvisions": true
+    },
+    "expectedOutcome": {
+      "status": "POLL_TIMEOUT",
+      "pinned": false,
+      "note": "Not yet filed. Revises the case micro-entity-accounts as filed: the same company, period and figures but for the correction the revision describes, approved again on 2026-10-20. The authentication code is a placeholder."
+    },
+    "revision": {
+      "originalDateOfApproval": "2026-09-15",
+      "nonCompliance": "The original accounts left out a supplier invoice of £240 for software licences used in March 2026, so creditors were understated and the profit for the year overstated, and the accounts did not give a true and fair view as section 393 of the Companies Act 2006 requires.",
+      "amendments": "Creditors falling due within one year rise by £194 to £2,162: trade creditors rise by £240 and the corporation tax creditor falls by £46. The profit and loss reserve and capital and reserves fall by £194, to £4,538 and £4,638."
+    }
+  },
+  {
+    "name": "micro-entity-accounts-dormant-revised",
+    "type": "accounts",
+    "companyNumber": "09991482",
+    "companyName": "HARTLEY AND WREN SUPPLIES LIMITED",
+    "fictional": true,
+    "registeredOffice": {
+      "addressLine1": "14 Marsh Lane",
+      "cityOrTown": "Stockport",
+      "countyRegion": "Cheshire",
+      "postalCode": "SK4 1PX"
+    },
+    "companyAuthCode": "AUTH09",
+    "periodStart": "2025-04-01",
+    "periodEnd": "2026-03-31",
+    "balanceSheet": {
+      "currentYear": {
+        "fixedAssets": 0,
+        "currentAssets": 2,
+        "creditorsWithinOneYear": 0,
+        "creditorsAfterOneYear": 0,
+        "calledUpShareCapital": 2,
+        "profitAndLossAccount": 0,
+        "capitalAndReserves": 2
+      },
+      "priorYear": {
+        "fixedAssets": 0,
+        "currentAssets": 2,
+        "creditorsWithinOneYear": 0,
+        "creditorsAfterOneYear": 0,
+        "calledUpShareCapital": 2,
+        "profitAndLossAccount": 0,
+        "capitalAndReserves": 2
+      }
+    },
+    "averageEmployees": 0,
+    "director": {
+      "name": "Helen Margaret Ashworth",
+      "dateApproved": "2026-10-20"
+    },
+    "statementsAccepted": {
+      "section477Exemption": true,
+      "membersNotRequiredAudit": true,
+      "directorsResponsibilities": true,
+      "microEntityProvisions": true
+    },
+    "expectedOutcome": {
+      "status": "POLL_TIMEOUT",
+      "pinned": false,
+      "note": "Not yet filed. Revises the case micro-entity-accounts-dormant as filed: the same company, period and figures but for the correction the revision describes, approved again on 2026-10-20. The authentication code is a placeholder. A fictional company, as its original is."
+    },
+    "dormant": true,
+    "dormantTradingStatus": "neverTraded",
+    "shareClass": "ordinaryShares",
+    "nominalValue": 1,
+    "accountantsReport": {
+      "accountantsName": "Calder Brook Accountants LLP",
+      "statement": "In accordance with your instructions, we have compiled these unaudited financial statements from the accounting records and from information and explanations you have given us."
+    },
+    "revision": {
+      "originalDateOfApproval": "2026-09-15",
+      "nonCompliance": "The original accounts gave the called up share capital as £1, one ordinary share of £1. The register of members shows two ordinary shares of £1 each, issued on incorporation, so the balance sheet did not show the company's share capital as section 396 of the Companies Act 2006 requires.",
+      "amendments": "Called up share capital is £2 at both balance sheet dates, two ordinary shares of £1 each, and current assets are £2. Net assets and capital and reserves are £2 at both dates."
+    }
+  },
+  {
+    "name": "small-company-accounts-full-revised",
+    "type": "accounts",
+    "companyNumber": "06846849",
+    "companyName": "DIY ACCOUNTING LIMITED",
+    "registeredOffice": {
+      "addressLine1": "37 Sutherland Avenue",
+      "cityOrTown": "Leeds",
+      "postalCode": "LS8 1BY",
+      "country": "England"
+    },
+    "companyAuthCode": "AUTH09",
+    "periodStart": "2025-04-01",
+    "periodEnd": "2026-03-31",
+    "averageEmployees": 0,
+    "director": {
+      "name": "Antony Christopher Cartwright",
+      "dateApproved": "2026-10-20"
+    },
+    "statementsAccepted": {
+      "section477Exemption": true,
+      "membersNotRequiredAudit": true,
+      "directorsResponsibilities": true,
+      "smallCompaniesRegime": true
+    },
+    "smallCompany": {
+      "filleted": false,
+      "principalActivity": "the retail of accounting software",
+      "accountingPolicies": "The financial statements have been prepared under the historical cost convention.",
+      "goingConcernStatement": "The directors expect the company to have enough resources to continue in operation for the foreseeable future, so the financial statements are prepared on a going concern basis.",
+      "revenueRecognitionPolicy": "Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
+      "tangibleFixedAssetsPolicy": "Tangible fixed assets are measured at cost less accumulated depreciation. Computer equipment is depreciated at 33% a year on cost.",
+      "impairmentPolicy": "At each reporting date the company reviews its assets for signs of impairment. An asset whose carrying value is more than its recoverable amount is written down to that amount.",
+      "financialInstrumentsPolicy": "The company has only basic financial instruments. Debtors, cash and creditors are measured at the undiscounted amount of cash the company expects to receive or pay.",
+      "directors": ["Antony Christopher Cartwright", "Samantha Ashley Cartwright", "Jane Elizabeth Grundy"],
+      "balanceSheet": {
+        "currentYear": {
+          "fixedAssets": 800,
+          "stocks": 0,
+          "debtors": 800,
+          "cashAtBank": 5200,
+          "tradeCreditors": 740,
+          "corporationTax": 1056,
+          "otherCreditors": 366,
+          "creditorsAfterOneYear": 0,
+          "calledUpShareCapital": 100,
+          "profitAndLossAccount": 4538,
+          "capitalAndReserves": 4638
+        },
+        "priorYear": {
+          "fixedAssets": 0,
+          "stocks": 0,
+          "debtors": 1200,
+          "cashAtBank": 2153,
+          "tradeCreditors": 500,
+          "corporationTax": 984,
+          "otherCreditors": 1735,
+          "creditorsAfterOneYear": 0,
+          "calledUpShareCapital": 100,
+          "profitAndLossAccount": 34,
+          "capitalAndReserves": 134
+        }
+      },
+      "profitAndLoss": {
+        "currentYear": {
+          "turnover": 8500,
+          "costOfSales": 0,
+          "grossProfit": 8500,
+          "administrativeExpenses": 2940,
+          "operatingProfit": 5560,
+          "interestReceivable": 0,
+          "profitBeforeTax": 5560,
+          "tax": 1056,
+          "profit": 4504
+        },
+        "priorYear": {
+          "turnover": 7639,
+          "costOfSales": 0,
+          "grossProfit": 7639,
+          "administrativeExpenses": 2482,
+          "operatingProfit": 5157,
+          "interestReceivable": 22,
+          "profitBeforeTax": 5179,
+          "tax": 984,
+          "profit": 4195
+        }
+      },
+      "fixedAssetNote": {
+        "computerEquipment": {
+          "costAtStart": 0,
+          "additions": 1200,
+          "disposals": 0,
+          "depreciationAtStart": 0,
+          "depreciationCharge": 400,
+          "depreciationOnDisposals": 0
+        }
+      },
+      "taxPolicy": "The tax expense for the year comprises current tax, recognised in profit or loss.",
+      "currentIncomeTaxPolicy": "The current income tax charge is calculated on the tax rates and laws enacted or substantively enacted by the reporting date.",
+      "dividendPolicy": "Dividends are recognised as a liability in the period in which they are declared.",
+      "shareCapital": {
+        "shareClass": "ordinaryShares",
+        "nominalValue": 0.2
+      },
+      "controllingParty": {
+        "ultimate": false
+      }
+    },
+    "expectedOutcome": {
+      "status": "POLL_TIMEOUT",
+      "pinned": false,
+      "note": "Not yet filed. Revises the case small-company-accounts-full as filed: the same company, period and figures but for the correction the revision describes, approved again on 2026-10-20. The authentication code is a placeholder."
+    },
+    "revision": {
+      "originalDateOfApproval": "2026-09-15",
+      "nonCompliance": "The original accounts left out a supplier invoice of £240 for software licences used in March 2026, so administrative expenses and trade creditors were understated and the accounts did not give a true and fair view as section 393 of the Companies Act 2006 requires.",
+      "amendments": "Administrative expenses rise by £240 to £2,940 and trade creditors by £240 to £740. The corporation tax charge and the corporation tax creditor fall by £46 to £1,056. The profit for the year falls by £194 to £4,504, and the profit and loss reserve and capital and reserves fall by £194, to £4,538 and £4,638."
+    }
+  },
+  {
+    "name": "small-company-accounts-filleted-revised",
+    "type": "accounts",
+    "companyNumber": "06846849",
+    "companyName": "DIY ACCOUNTING LIMITED",
+    "registeredOffice": {
+      "addressLine1": "37 Sutherland Avenue",
+      "cityOrTown": "Leeds",
+      "postalCode": "LS8 1BY",
+      "country": "England"
+    },
+    "companyAuthCode": "AUTH09",
+    "periodStart": "2025-04-01",
+    "periodEnd": "2026-03-31",
+    "averageEmployees": 0,
+    "director": {
+      "name": "Antony Christopher Cartwright",
+      "dateApproved": "2026-10-20"
+    },
+    "statementsAccepted": {
+      "section477Exemption": true,
+      "membersNotRequiredAudit": true,
+      "directorsResponsibilities": true,
+      "smallCompaniesRegime": true
+    },
+    "smallCompany": {
+      "filleted": true,
+      "principalActivity": "the retail of accounting software",
+      "accountingPolicies": "The financial statements have been prepared under the historical cost convention.",
+      "goingConcernStatement": "The directors expect the company to have enough resources to continue in operation for the foreseeable future, so the financial statements are prepared on a going concern basis.",
+      "revenueRecognitionPolicy": "Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
+      "tangibleFixedAssetsPolicy": "Tangible fixed assets are measured at cost less accumulated depreciation. Computer equipment is depreciated at 33% a year on cost.",
+      "impairmentPolicy": "At each reporting date the company reviews its assets for signs of impairment. An asset whose carrying value is more than its recoverable amount is written down to that amount.",
+      "financialInstrumentsPolicy": "The company has only basic financial instruments. Debtors, cash and creditors are measured at the undiscounted amount of cash the company expects to receive or pay.",
+      "directors": ["Antony Christopher Cartwright", "Samantha Ashley Cartwright", "Jane Elizabeth Grundy"],
+      "balanceSheet": {
+        "currentYear": {
+          "fixedAssets": 800,
+          "stocks": 0,
+          "debtors": 800,
+          "cashAtBank": 5200,
+          "tradeCreditors": 740,
+          "corporationTax": 1056,
+          "otherCreditors": 366,
+          "creditorsAfterOneYear": 0,
+          "calledUpShareCapital": 100,
+          "profitAndLossAccount": 4538,
+          "capitalAndReserves": 4638
+        },
+        "priorYear": {
+          "fixedAssets": 0,
+          "stocks": 0,
+          "debtors": 1200,
+          "cashAtBank": 2153,
+          "tradeCreditors": 500,
+          "corporationTax": 984,
+          "otherCreditors": 1735,
+          "creditorsAfterOneYear": 0,
+          "calledUpShareCapital": 100,
+          "profitAndLossAccount": 34,
+          "capitalAndReserves": 134
+        }
+      },
+      "profitAndLoss": {
+        "currentYear": {
+          "turnover": 8500,
+          "costOfSales": 0,
+          "grossProfit": 8500,
+          "administrativeExpenses": 2940,
+          "operatingProfit": 5560,
+          "interestReceivable": 0,
+          "profitBeforeTax": 5560,
+          "tax": 1056,
+          "profit": 4504
+        },
+        "priorYear": {
+          "turnover": 7639,
+          "costOfSales": 0,
+          "grossProfit": 7639,
+          "administrativeExpenses": 2482,
+          "operatingProfit": 5157,
+          "interestReceivable": 22,
+          "profitBeforeTax": 5179,
+          "tax": 984,
+          "profit": 4195
+        }
+      },
+      "fixedAssetNote": {
+        "computerEquipment": {
+          "costAtStart": 0,
+          "additions": 1200,
+          "disposals": 0,
+          "depreciationAtStart": 0,
+          "depreciationCharge": 400,
+          "depreciationOnDisposals": 0
+        }
+      },
+      "taxPolicy": "The tax expense for the year comprises current tax, recognised in profit or loss.",
+      "currentIncomeTaxPolicy": "The current income tax charge is calculated on the tax rates and laws enacted or substantively enacted by the reporting date.",
+      "dividendPolicy": "Dividends are recognised as a liability in the period in which they are declared.",
+      "shareCapital": {
+        "shareClass": "ordinaryShares",
+        "nominalValue": 0.2
+      },
+      "controllingParty": {
+        "ultimate": false
+      }
+    },
+    "expectedOutcome": {
+      "status": "POLL_TIMEOUT",
+      "pinned": false,
+      "note": "Not yet filed. Revises the case small-company-accounts-filleted as filed: the same company, period and figures but for the correction the revision describes, approved again on 2026-10-20. The authentication code is a placeholder."
+    },
+    "revision": {
+      "originalDateOfApproval": "2026-09-15",
+      "nonCompliance": "The original accounts left out a supplier invoice of £240 for software licences used in March 2026, so administrative expenses and trade creditors were understated and the accounts did not give a true and fair view as section 393 of the Companies Act 2006 requires.",
+      "amendments": "Administrative expenses rise by £240 to £2,940 and trade creditors by £240 to £740. The corporation tax charge and the corporation tax creditor fall by £46 to £1,056. The profit for the year falls by £194 to £4,504, and the profit and loss reserve and capital and reserves fall by £194, to £4,538 and £4,638."
+    }
   }
 ]

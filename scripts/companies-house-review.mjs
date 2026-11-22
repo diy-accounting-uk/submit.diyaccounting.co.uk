@@ -104,12 +104,21 @@ const KINDS = {
     statements: ["section477", "membersNoAudit", "directorsResponsibilities", "smallCompaniesRegime", "section444-5", "section444-5A"],
   },
 };
+// A revised case is judged as its original kind is, and holds the revision's facts besides.
+for (const kind of Object.keys(KINDS)) {
+  KINDS[`${kind}-revised`] = {
+    ...KINDS[kind],
+    title: `Revised ${KINDS[kind].title.replace(/^\w/, (letter) => letter.toLowerCase())}`,
+    revised: true,
+  };
+}
 
 // Facts an example carries that ours leaves out on purpose, by reason. The reasons are the judgements
 // in the triage record's section "Example facts not carried, and why"; a missing fact named here is
 // reported as judged, and any other missing fact is a fail.
+const AMENDED_FILING = "amended filing";
 const NOT_CARRIED_REASONS = {
-  "amended filing": [
+  [AMENDED_FILING]: [
     "DateApprovalRevisionReport",
     "StatementRespectsInWhichPreviouslyFiledReportDidNotComplyWithCompaniesAct2006",
     "StatementSignificantAmendmentsToPreviouslyFiledReport",
@@ -151,7 +160,10 @@ const NOT_CARRIED_REASONS = {
     "NameEntityAccountants",
     "StatementOnScopeAccountantsReport",
   ],
-  "an auditor's statement; the accounts are unaudited and audit exempt": ["DirectorsReportConsistentWithAccountsTruefalse"],
+  "an auditor's statement; the accounts are unaudited and audit exempt": [
+    "DirectorsReportConsistentWithAccountsTruefalse",
+    "DirectorsReportConsistentWithRevisedAccountsTruefalse",
+  ],
   "directors' report date, and a filleted set has no directors' report": ["DateSigningDirectorsReport"],
 };
 const NOT_CARRIED = new Map(
@@ -202,9 +214,18 @@ const EXAMPLE_RULES = {
     /:TotalInventories"/,
   ],
 };
+const REVISED_FACT = /ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse"[^>]*>\s*true/;
+// The example of a revised case is a revised document of the same kind; an original case's example is not revised.
+for (const kind of Object.keys(EXAMPLE_RULES)) EXAMPLE_RULES[`${kind}-revised`] = [...EXAMPLE_RULES[kind], REVISED_FACT];
 const EXAMPLE_COMMON = [/(2025|2026)-01-01/, /NameProductionSoftware/];
 const EXAMPLE_EXCLUDE_ALL = [/LimitedLiabilityPartnershipLLP/];
-const EXAMPLE_EXCLUDE = { micro: [/EntityDormantTruefalse[^>]*>\s*true/] };
+const EXAMPLE_EXCLUDE = {
+  "micro": [/EntityDormantTruefalse[^>]*>\s*true/, REVISED_FACT],
+  "micro-revised": [/EntityDormantTruefalse[^>]*>\s*true/],
+  "dormant": [REVISED_FACT],
+  "small-full": [REVISED_FACT],
+  "small-filleted": [REVISED_FACT],
+};
 // LLP, Scottish LLP and Northern Irish LLP company numbers.
 const LLP_ENTRY = /_(OC|SO|NC)\d+_/;
 
@@ -234,9 +255,15 @@ function parseArgs(argv) {
   return args;
 }
 
-function kindOf(testCase) {
-  if (testCase.smallCompany) return testCase.smallCompany.filleted ? "small-filleted" : "small-full";
-  return testCase.dormant ? "dormant" : "micro";
+export function kindOf(testCase) {
+  const kind = testCase.smallCompany
+    ? testCase.smallCompany.filleted
+      ? "small-filleted"
+      : "small-full"
+    : testCase.dormant
+      ? "dormant"
+      : "micro";
+  return testCase.revision ? `${kind}-revised` : kind;
 }
 
 // A zip reader for the Accounts Data Product: central directory, then stored or deflated entries.
@@ -267,6 +294,11 @@ function readZipEntries(zipPath) {
   return { entries, read };
 }
 
+/** Whether a filed document can be the example of a case of this kind. */
+export function exampleMatches(kind, text) {
+  return EXAMPLE_RULES[kind].every((pattern) => pattern.test(text)) && !(EXAMPLE_EXCLUDE[kind] ?? []).some((pattern) => pattern.test(text));
+}
+
 function pickExamples(zipPath, kinds) {
   const { entries, read } = readZipEntries(zipPath);
   const best = {};
@@ -276,9 +308,7 @@ function pickExamples(zipPath, kinds) {
     const text = read(entry);
     if (!EXAMPLE_COMMON.every((pattern) => pattern.test(text)) || EXAMPLE_EXCLUDE_ALL.some((pattern) => pattern.test(text))) continue;
     for (const kind of kinds) {
-      const matches = EXAMPLE_RULES[kind].every((pattern) => pattern.test(text));
-      const excluded = (EXAMPLE_EXCLUDE[kind] ?? []).some((pattern) => pattern.test(text));
-      if (matches && !excluded && (!best[kind] || rank(text) < rank(best[kind].text))) best[kind] = { name: entry.name, text };
+      if (exampleMatches(kind, text) && (!best[kind] || rank(text) < rank(best[kind].text))) best[kind] = { name: entry.name, text };
     }
   }
   return best;
@@ -539,8 +569,11 @@ function judge(kind, ours, example, validator, structureProblems, { input, today
 }
 
 // Why an example fact is not carried: a standing judgement, or a part of the company the input does not have.
-function notCarriedReason(concept, input) {
-  return NOT_CARRIED.get(concept) ?? notCarriedFromInput(concept, input);
+// A revised case carries the revision's facts, so their absence is a fail there.
+export function notCarriedReason(concept, input) {
+  const reason = NOT_CARRIED.get(concept);
+  if (reason === AMENDED_FILING && input.revision) return notCarriedFromInput(concept, input);
+  return reason ?? notCarriedFromInput(concept, input);
 }
 
 function factComparison(ours, example, exampleSource, input) {
@@ -827,7 +860,9 @@ async function main() {
   console.log(`Evidence: ${relative(REPOSITORY_ROOT, args.outDir)}/index.html`);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}

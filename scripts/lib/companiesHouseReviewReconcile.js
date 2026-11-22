@@ -207,6 +207,37 @@ export function reconcile(input, ours) {
       check(`registeredOffice.${field}`, input.registeredOffice[field], concept, `y${current}-registered-office`, false);
   }
 
+  if (input.revision) {
+    const { originalDateOfApproval, nonCompliance, amendments } = input.revision;
+    check(
+      "revision.nonCompliance",
+      nonCompliance,
+      "StatementRespectsInWhichPreviouslyFiledReportDidNotComplyWithCompaniesAct2006",
+      `y${current}`,
+      false,
+    );
+    check("revision.amendments", amendments, "StatementSignificantAmendmentsToPreviouslyFiledReport", `y${current}`, false);
+    check(
+      "revision date (director.dateApproved)",
+      taggedDate(input.director.dateApproved, input.documentLanguage),
+      "DateApprovalRevisionReport",
+      `y${current}`,
+      false,
+    );
+    // The replacement statement names the date the original accounts were approved.
+    const replacement = find("StatementThatRevisedReportReplacesPreviouslyFiledReportForPeriod", `y${current}`);
+    const originalDate = longDate(originalDateOfApproval);
+    const named = replacement !== null && replacement.text.includes(originalDate);
+    rows.push({
+      field: "revision.originalDateOfApproval",
+      input: originalDateOfApproval,
+      taggedAs: `StatementThatRevisedReportReplacesPreviouslyFiledReportForPeriod @ y${current}`,
+      tagged: replacement ? replacement.text : "not tagged",
+      shown: visible.includes(originalDate) ? "yes" : "no",
+      result: named && visible.includes(originalDate) ? "match" : named ? "match (tag); not found as text" : "MISMATCH",
+    });
+  }
+
   if (input.accountantsReport) {
     check("accountantsReport.accountantsName", input.accountantsReport.accountantsName, "NameEntityAccountants", `y${current}`, false);
     check("accountantsReport.statement", input.accountantsReport.statement, "StatementOnScopeAccountantsReport", `y${current}`, false);
