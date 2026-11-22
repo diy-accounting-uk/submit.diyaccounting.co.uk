@@ -944,7 +944,8 @@ public class CompaniesHouseStack extends Stack {
         // The accounts filing route: render produces the iXBRL only, the other two reach the XML
         // Gateway with the presenter credentials, never the OAuth filing base URI or client secret
         // the six Lambdas above use.
-        var companiesHouseAccountsRenderPostLambdaEnv = xmlGatewayFilingLambdaEnv(props);
+        var companiesHouseAccountsRenderPostLambdaEnv =
+                xmlGatewayFilingLambdaEnv(props).with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
         var companiesHouseAccountsRenderPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -1369,7 +1370,8 @@ public class CompaniesHouseStack extends Stack {
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseFilingDataPostLambda, props);
         grantCodesEntryAccess(this.companiesHouseFilingDataPostLambda, mcpSessionsTable, codesSealKeySecret);
 
-        var companiesHouseConfirmationStatementRenderPostLambdaEnv = xmlGatewayFilingLambdaEnv(props);
+        var companiesHouseConfirmationStatementRenderPostLambdaEnv =
+                xmlGatewayFilingLambdaEnv(props).with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
         var companiesHouseConfirmationStatementRenderPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
