@@ -7,7 +7,7 @@
 
 import { describe, test, expect } from "vitest";
 import fs from "node:fs";
-import { ixdsTwoFileSets } from "../../app/test-helpers/accountsDocumentCases.js";
+import { ixdsTwoFileSets, IXDS_FIXTURE_SOFTWARE_VERSION } from "../../app/test-helpers/accountsDocumentCases.js";
 
 describe("the committed two-file document sets", () => {
   for (const [directory, files] of Object.entries(ixdsTwoFileSets())) {
@@ -17,6 +17,12 @@ describe("the committed two-file document sets", () => {
       });
     }
   }
+
+  test("the sets state a fixed software version, so a release of the package leaves them as they are", () => {
+    const first = fs.readFileSync("web/browser-tests/fixtures/ixds-two-file/accounts-1.xhtml", "utf8");
+    expect(first).toContain(`name="bus:VersionProductionSoftware" contextRef="y2025">${IXDS_FIXTURE_SOFTWARE_VERSION}<`);
+    expect(JSON.parse(fs.readFileSync("package.json", "utf8")).version).not.toBe(IXDS_FIXTURE_SOFTWARE_VERSION);
+  });
 
   test("the prior profit and loss reserve moves to the current one by the profit for the year", () => {
     const first = fs.readFileSync("web/browser-tests/fixtures/ixds-two-file/accounts-1.xhtml", "utf8");

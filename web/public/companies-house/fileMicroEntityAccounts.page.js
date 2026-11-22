@@ -571,7 +571,7 @@ async function startRevision(receiptName) {
     }
     const profile = await window.getCompanyProfile(read.source.companyNumber);
     company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
-    window.accountsFormSections.fillRegisteredOffice(profile.registeredOffice);
+    window.accountsFormSections.fillRegisteredOffice(read.source.registeredOffice ?? profile.registeredOffice);
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     showDocumentLanguageChoice(profile.jurisdiction);

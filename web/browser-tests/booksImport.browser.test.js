@@ -1337,6 +1337,21 @@ test.describe("books import on an accounts form that revises filed accounts", ()
       await screenshotAtBothWidths(page, `books-amend-another-period-${form.replace(" ", "-")}`);
     });
 
+    test(`the Welsh ${form} form says in Welsh that an iXBRL document for another year fills nothing`, async ({ page }) => {
+      await openAmendPage(
+        page,
+        url.replace("/companies-house/", "/cy/companies-house/"),
+        builtAccountsDocument(caseName, { companyNumber: "12345678" }).toString("utf8"),
+        "12345678",
+      );
+      await chooseFile(page, "earlier.xhtml", builtAccountsDocument(caseName, earlierYear), "application/xhtml+xml");
+
+      await expect(page.locator("#booksImportStatus")).toContainText(
+        "Mae earlier.xhtml ar gyfer y cyfnod 2024-04-01 i 2025-03-31; mae’r cyfrifon sy’n cael eu diwygio ar gyfer 2025-04-01 i 2026-03-31.",
+        { timeout: 60_000 },
+      );
+    });
+
     test(`an iXBRL document for another year fills nothing on the ${form} form`, async ({ page }) => {
       await openAmendPage(page, url, builtAccountsDocument(caseName, { companyNumber: "12345678" }).toString("utf8"), "12345678");
       const filedFixedAssets = await page.locator("#currentFixedAssets").inputValue();

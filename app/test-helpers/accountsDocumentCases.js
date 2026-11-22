@@ -418,8 +418,11 @@ export function computationsDocumentCase() {
  * another value.
  * @returns {Record<string, Record<string, string>>} files by set directory, then by file name
  */
+// The software version the fixtures state, in place of the package's, so a release does not change them.
+export const IXDS_FIXTURE_SOFTWARE_VERSION = "0.0.0";
+
 export function ixdsTwoFileSets() {
-  const whole = buildSmallCompanyAccounts({
+  const built = buildSmallCompanyAccounts({
     ...SMALL_COMPANY_CASE_INPUT,
     companyNumber: "03176906",
     companyName: "MILLENNIUM STADIUM PLC",
@@ -429,6 +432,10 @@ export function ixdsTwoFileSets() {
     directors: ["Maldwyn Beynon", "Alex Jones"],
     directorName: "Maldwyn Beynon",
   });
+  const whole = built.replace(
+    /(<ix:nonNumeric name="bus:VersionProductionSoftware" contextRef="[^"]+">)[^<]*</,
+    `$1${IXDS_FIXTURE_SOFTWARE_VERSION}<`,
+  );
   const pageStarts = [...whole.matchAll(/<div class="page[^"]*">/g)].map((match) => match.index);
   const profitAndLossStart = pageStarts.find((start) => whole.slice(start, start + 200).includes("<h2>Profit and loss account</h2>"));
   const profitAndLossEnd = pageStarts.find((start) => start > profitAndLossStart);

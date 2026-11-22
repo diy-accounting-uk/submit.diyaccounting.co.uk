@@ -97,12 +97,18 @@ export function refusalOf(receipt, companyNumber, period) {
   if (companyNumber && String(receipt.companyNumber).toUpperCase() !== String(companyNumber).toUpperCase()) {
     return siteText("ch.revision.refuse-other-company", "The receipt these revised accounts name is for another company.");
   }
-  const filed = period ? filedPeriodOf(receipt.filedDocument) : null;
-  if (period && (filed?.periodStart !== period.periodStart || filed?.periodEnd !== period.periodEnd)) {
+  const filed = filedPeriodOf(receipt.filedDocument);
+  if (!filed) {
+    return siteText(
+      "ch.revision.refuse-no-period",
+      "The accounts on that receipt do not state their period, so this site cannot revise them here.",
+    );
+  }
+  if (period && (filed.periodStart !== period.periodStart || filed.periodEnd !== period.periodEnd)) {
     return siteText(
       "ch.revision.refuse-other-period",
       "The accounts the receipt names are for the period {from} to {to}, so revised accounts for {start} to {end} cannot replace them.",
-      { from: filed?.periodStart ?? "", to: filed?.periodEnd ?? "", start: period.periodStart, end: period.periodEnd },
+      { from: filed.periodStart, to: filed.periodEnd, start: period.periodStart, end: period.periodEnd },
     );
   }
   return null;
@@ -129,9 +135,39 @@ export function revisionSourceOf(receipt, bundle) {
     accountantsReport: accountantsReportOf(receipt.filedDocument),
     notes: notesOf(receipt.filedDocument),
     balanceSheetLines: balanceSheetLinesOf(receipt.filedDocument),
+    registeredOffice: registeredOfficeOf(receipt.filedDocument),
     filedDocument: receipt.filedDocument,
     mapped,
   };
+}
+
+const OFFICE_FACTS = {
+  addressLine1: "bus:AddressLine1",
+  addressLine2: "bus:AddressLine2",
+  addressLine3: "bus:AddressLine3",
+  cityOrTown: "bus:PrincipalLocation-CityOrTown",
+  countyRegion: "bus:CountyRegion",
+  postalCode: "bus:PostalCodeZip",
+};
+
+/**
+ * The registered office a filed document states, as at the date of the accounts: each tagged part,
+ * and the country the builder writes untagged before the postcode. null when it states no office.
+ * @param {string} document - the filed iXBRL
+ */
+export function registeredOfficeOf(document) {
+  const office = {};
+  for (const [field, name] of Object.entries(OFFICE_FACTS)) {
+    const text = new RegExp(`<ix:nonNumeric name="${name}" contextRef="[^"]*-registered-office">([^<]*)</ix:nonNumeric>`).exec(
+      document,
+    )?.[1];
+    if (text) office[field] = unescapeXmlText(text);
+  }
+  const country = /<\/ix:nonNumeric>, ([^<]+?), <ix:nonNumeric name="bus:PostalCodeZip" contextRef="[^"]*-registered-office">/.exec(
+    document,
+  )?.[1];
+  if (country) office.country = unescapeXmlText(country);
+  return office.addressLine1 ? office : null;
 }
 
 /**

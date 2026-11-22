@@ -17740,9 +17740,6 @@ cy = '''Statws: ddim mewn cynhyrchu (production) eto.'''
 hash = "b22dbd338dbb"
 cy = '''Nid yw cyfrifon diwygiedig yn cael eu ffeilio go iawn o’r fan hon eto. Mae’r tabl argaeledd yn dweud beth mae pob ffeilio yn ei wneud.'''
 
-[strings."ch-small-company.the-accounts-filed-were-a-full-b98563"]
-hash = "b98563bafa2e"
-cy = '''<span id="revisionCopyFull">Copi llawn oedd y cyfrifon a ffeiliwyd. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod.</span> <span id="revisionCopyFilleted">Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, ac nid oes cyfrif elw a cholled ynddo. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod: ar gyfer copi llawn, teipiwch linellau’r cyfrif elw a cholled, neu ollwng llyfr y cwmni ar y cerdyn uchod.</span>'''
 
 [strings."ch.revision.refuse-other-period"]
 hash = "35efb5496484"
@@ -17835,3 +17832,21 @@ cy = '''Elw gweithredol: {operating}. Elw cyn treth: {pretax}. Elw am y flwyddyn
 [strings."ch.cs.holding-summary"]
 hash = "e06571e008b2"
 cy = '''{kind}, {number} yn cael eu dal'''
+
+# == Revised accounts: the refusal of a receipt whose accounts state no period, the books card's refusal of another period, the copy sentence and warning for a filleted copy revised as a full copy, and the route's refusals of a revision with no receipt and of an advance to someone who is not a director ==
+
+[strings."ch.revision.refuse-no-period"]
+hash = "2d56f29e596e"
+cy = '''Nid yw’r cyfrifon ar y dderbynneb honno yn nodi eu cyfnod, felly ni all y wefan hon eu diwygio yma.'''
+
+[strings."widget.books-other-period"]
+hash = "e2c63ae380ef"
+cy = '''Mae {file} ar gyfer y cyfnod {from} i {to}; mae’r cyfrifon sy’n cael eu diwygio ar gyfer {start} i {end}.'''
+
+[strings."ch-small-company.the-accounts-filed-were-a-full-78a2db"]
+hash = "78a2dba52fee"
+cy = '''<span id="revisionCopyFull">Copi llawn oedd y cyfrifon a ffeiliwyd. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod.</span> <span id="revisionCopyFilleted">Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, ac nid oes cyfrif elw a cholled ynddo. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod: ar gyfer copi llawn, teipiwch linellau’r cyfrif elw a cholled ar gyfer y ddwy flynedd, neu ollwng llyfr y cwmni ar y cerdyn uchod.</span>'''
+
+[strings."ch.revision.prior-profit-and-loss-empty"]
+hash = "0d8f32fc2a79"
+cy = '''Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, felly nid oes cyfrif elw a cholled ar gyfer y flwyddyn flaenorol ynddynt. Mae’r copi llawn hwn yn nodi llinellau cyfrif elw a cholled y flwyddyn flaenorol fel dim: teipiwch nhw ar y ffurflen os oedd gan y cwmni rai.'''

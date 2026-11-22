@@ -14,6 +14,7 @@ import {
   notesOf,
   revisionSourceOf,
   balanceSheetLinesOf,
+  registeredOfficeOf,
   NOTE_POLICY_FACTS,
   NOTE_CONTROLLING_PARTY_FACTS,
   NOTE_ADVANCE_FACTS,
@@ -66,7 +67,13 @@ function accountsReceipt(overrides = {}) {
 
 describe("which accounts receipts can be revised", () => {
   test("accepted accounts filed on their own with their document can be revised", () => {
-    expect(refusalOf(accountsReceipt())).toBeNull();
+    expect(refusalOf(accountsReceipt({ filedDocument: filedDocument() }))).toBeNull();
+  });
+
+  test("accounts whose document states no period are refused with their own sentence", () => {
+    const sentence = "The accounts on that receipt do not state their period, so this site cannot revise them here.";
+    expect(refusalOf(accountsReceipt())).toBe(sentence);
+    expect(refusalOf(accountsReceipt(), "06846849", { periodStart: "2025-04-01", periodEnd: "2026-03-31" })).toBe(sentence);
   });
 
   test("accounts that are already revised accounts are refused, with one sentence", () => {
@@ -136,6 +143,27 @@ describe("what a filed small company document carries over to its revision", () 
       });
     }
   }
+});
+
+describe("the registered office a filed document states", () => {
+  test("is read part by part, with the country written before the postcode, as the accounts were filed", () => {
+    expect(registeredOfficeOf(filedDocument())).toEqual(MICRO_CASE.registeredOffice);
+    const office = {
+      addressLine1: "1 Stryd & Fawr",
+      addressLine2: "Uned 2",
+      cityOrTown: "Caerdydd",
+      countyRegion: "De Morgannwg",
+      postalCode: "CF10 1AA",
+    };
+    const welsh = inAccountsLanguage("cy", () =>
+      buildMicroEntityAccounts({ ...microInputFromTestServiceCase(MICRO_CASE), registeredOffice: office }),
+    );
+    expect(registeredOfficeOf(welsh)).toEqual(office);
+  });
+
+  test("is null for a document that states no office", () => {
+    expect(registeredOfficeOf("<html/>")).toBeNull();
+  });
 });
 
 describe("the period a filed document is for", () => {

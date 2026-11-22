@@ -14,7 +14,7 @@ import { SMALL_COMPANY_NOTES_CASE_INPUT } from "@app/test-helpers/accountsDocume
 import { buildSmallCompanyAccounts } from "@app/services/smallCompanyAccountsIxbrl.js";
 import { inAccountsLanguage } from "@app/services/accountsLanguage.js";
 import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
-import { notesOf } from "../public/lib/accounts-revision.js";
+import { notesOf, registeredOfficeOf } from "../public/lib/accounts-revision.js";
 import { serveMoneyInput, servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -57,6 +57,7 @@ async function openAmend(page, receipt) {
       return { submissionNumber: "00002B", gatewayTimestamp: "2026-11-22T10:00:00Z", pollInterval: 0 };
     };
     window.pollMicroEntityAccounts = async () => ({ statusCode: "ACCEPT", submissionNumber: "00002B", receiptId: "r", rejections: [] });
+    window.renderMicroEntityAccounts = async () => ({ ixbrl: "<html><body>Preview</body></html>" });
   }, receipt);
   await page.route("**/*.js", async (route) => {
     if (route.request().resourceType() === "script") await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
@@ -168,6 +169,58 @@ test.describe("Revising small company accounts without a change", () => {
       const { original, revised } = await refileUnchanged(page, input, options);
       expect(carriedNotes(notesOf(revised))).toEqual(carriedNotes(notesOf(original)));
       expect(taxFacts(revised)).toEqual(taxFacts(original));
+    });
+  }
+
+  test("opens with the registered office the filed accounts state, so the revision refiles it", async ({ page }) => {
+    const registeredOffice = {
+      addressLine1: "5 Old Street",
+      cityOrTown: "Lichfield",
+      countyRegion: "Staffordshire",
+      postalCode: "WS13 6AA",
+    };
+    const { original, revised } = await refileUnchanged(page, { ...SMALL_COMPANY_NOTES_CASE_INPUT, registeredOffice });
+    await expect(page.locator("#officeAddressLine1")).toHaveValue("5 Old Street");
+    expect(registeredOfficeOf(revised)).toEqual(registeredOfficeOf(original));
+  });
+
+  for (const [label, typePriorYear, warned] of [
+    ["types no prior-year profit and loss line is warned at the preview", false, true],
+    ["types the prior-year profit and loss lines is not warned", true, false],
+  ]) {
+    test(`a filleted copy revised as a full copy that ${label}`, async ({ page }) => {
+      const input = { ...SMALL_COMPANY_NOTES_CASE_INPUT, filleted: true };
+      await openAmend(page, {
+        kind: "companies-house-accounts",
+        statusCode: "ACCEPT",
+        submissionNumber: "00001A",
+        companyNumber: input.companyNumber,
+        companyNameForProfile: input.companyName,
+        jurisdictionForProfile: "england-wales",
+        rejections: [],
+        filedDocument: buildSmallCompanyAccounts(input),
+      });
+      await expect(page.locator("#revisionCopyFilleted")).toContainText("type the profit and loss lines of both years");
+      await page.check("#copyFull");
+      for (const year of typePriorYear ? ["current", "prior"] : ["current"]) {
+        for (const [line, amount] of Object.entries(input.profitAndLoss[year])) {
+          const box = page.locator(`#${year}${line[0].toUpperCase()}${line.slice(1)}`);
+          if ((await box.count()) && (await box.isEditable())) await box.fill(String(amount));
+        }
+      }
+      await page.evaluate(() => {
+        for (const box of document.querySelectorAll('input[type="checkbox"][id^="statement"]')) box.checked = true;
+      });
+      await page.fill("#revisionNonCompliance", "The profit and loss account was left out.");
+      await page.fill("#revisionAmendments", "The full copy is filed.");
+      await page.fill("#directorDateApproved", "2026-11-20");
+      await page.evaluate(() => document.getElementById("accountsForm").requestSubmit());
+      await expect(page.locator("#previewView")).toBeVisible();
+      const warning = page.locator(".status-warning", {
+        hasText: "This full copy states the prior year's profit and loss lines as nothing",
+      });
+      if (warned) await expect(warning).toBeVisible();
+      else await expect(warning).toHaveCount(0);
     });
   }
 

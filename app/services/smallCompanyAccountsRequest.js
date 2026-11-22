@@ -246,7 +246,7 @@ export function extractAndValidateSmallCompany(smallCompany, statementsAccepted,
     if (text) policies[field] = text;
   }
   const controllingParty = readControllingParty(section.controllingParty, errorMessages);
-  const directorsAdvances = readDirectorsAdvances(section.directorsAdvances, "smallCompany.directorsAdvances", errorMessages);
+  const directorsAdvances = readDirectorsAdvances(section.directorsAdvances, "smallCompany.directorsAdvances", errorMessages, directors);
   const owedByDirectors = [currentBalanceSheet, priorBalanceSheet].some((sheet) => sheet?.amountsOwedByDirectors > 0);
   if (owedByDirectors && !directorsAdvances?.length) {
     errorMessages.push("smallCompany.directorsAdvances is required when a balance sheet shows amountsOwedByDirectors");

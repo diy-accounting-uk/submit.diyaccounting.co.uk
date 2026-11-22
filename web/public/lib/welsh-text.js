@@ -1187,6 +1187,8 @@ window.WELSH_TEXT = {
   "ch.revision.note-policies": "polisïau cyfrifyddu",
   "ch.revision.note-share-capital": "cyfalaf cyfranddaliadau wedi’i alw",
   "ch.revision.notes-to-enter": "Mae’r cyfrifon a ffeiliwyd yn cynnwys y nodiadau hyn, y mae’n rhaid i chi eu rhoi eto: {notes}.",
+  "ch.revision.prior-profit-and-loss-empty":
+    "Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, felly nid oes cyfrif elw a cholled ar gyfer y flwyddyn flaenorol ynddynt. Mae’r copi llawn hwn yn nodi llinellau cyfrif elw a cholled y flwyddyn flaenorol fel dim: teipiwch nhw ar y ffurflen os oedd gan y cwmni rai.",
   "ch.revision.refuse-already-revised":
     "Mae’r cyfrifon hyn eisoes yn gyfrifon diwygiedig, ac nid yw’r wefan hon yn ffeilio ail ddiwygiad eto.",
   "ch.revision.refuse-joint":
@@ -1194,6 +1196,7 @@ window.WELSH_TEXT = {
   "ch.revision.refuse-kind": "Nid ffeilio cyfrifon yw’r dderbynneb honno, felly nid oes cyfrifon i’w diwygio.",
   "ch.revision.refuse-load": "Ni allem lwytho’r dderbynneb honno. Agorwch y ffeilio eto o’ch derbynebau.",
   "ch.revision.refuse-no-document": "Ni chadwyd y ddogfen a ffeiliwyd gyda’r dderbynneb honno, felly ni ellir ei diwygio yma.",
+  "ch.revision.refuse-no-period": "Nid yw’r cyfrifon ar y dderbynneb honno yn nodi eu cyfnod, felly ni all y wefan hon eu diwygio yma.",
   "ch.revision.refuse-not-accepted": "Ni wnaeth Tŷ’r Cwmnïau dderbyn y cyfrifon hynny, felly nid oes dim i’w ddiwygio.",
   "ch.revision.refuse-not-found": "Nid yw’r dderbynneb y mae’r cyfrifon diwygiedig hyn yn ei henwi yn eich cyfrif.",
   "ch.revision.refuse-other-company": "Mae’r dderbynneb y mae’r cyfrifon diwygiedig hyn yn ei henwi ar gyfer cwmni arall.",
@@ -2275,6 +2278,7 @@ window.WELSH_TEXT = {
   "widget.books-hint-ixbrl":
     "Mae dogfen gyfrifon iXBRL (.xhtml) yn llenwi’r un ffurflen. Mae set o ddogfennau iXBRL yn ei llenwi hefyd: dewiswch ei holl ffeiliau gyda’i gilydd, neu un zip.",
   "widget.books-nothing-filled": "Ni lenwyd dim.",
+  "widget.books-other-period": "Mae {file} ar gyfer y cyfnod {from} i {to}; mae’r cyfrifon sy’n cael eu diwygio ar gyfer {start} i {end}.",
   "widget.books-reading": "Yn darllen {file}...",
   "widget.books-reading-saved": "Yn darllen y llyfr a gadwyd...",
   "widget.books-saved-failed": "Methu defnyddio’r llyfr a gadwyd: {reason}.",

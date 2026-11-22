@@ -433,7 +433,7 @@
     const revisedEnd = fieldValue("periodEnd");
     if (periodStart !== revisedStart || periodEnd !== revisedEnd) {
       throw new Refusal(
-        `${fileName} is for the period ${periodStart} to ${periodEnd}; the accounts being revised are for ${revisedStart} to ${revisedEnd}. Nothing filled.`,
+        `${siteText("widget.books-other-period", "{file} is for the period {from} to {to}; the accounts being revised are for {start} to {end}.", { file: fileName, from: periodStart, to: periodEnd, start: revisedStart, end: revisedEnd })} ${siteText("widget.books-nothing-filled", "Nothing filled.")}`,
       );
     }
   }

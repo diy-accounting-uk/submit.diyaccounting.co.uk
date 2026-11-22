@@ -174,6 +174,16 @@ async function fillRevisionTexts(page) {
 }
 
 test.describe("File micro-entity accounts page - revising accounts from a receipt", () => {
+  test("opens with the registered office the filed accounts state, which the customer can change", async ({ page }) => {
+    await openAmend(page, accountsReceipt(microCase.xhtml));
+    await expect(page.locator("#revisionSection")).toBeVisible();
+    await expect(page.locator("#officeAddressLine1")).toHaveValue(MICRO_TEST_CASE.registeredOffice.addressLine1);
+    await expect(page.locator("#officeCityOrTown")).toHaveValue(MICRO_TEST_CASE.registeredOffice.cityOrTown);
+    await expect(page.locator("#officePostalCode")).toHaveValue(MICRO_TEST_CASE.registeredOffice.postalCode);
+    await expect(page.locator("#officeCountry")).toHaveValue(MICRO_TEST_CASE.registeredOffice.country);
+    await expect(page.locator("#officeAddressLine1")).toBeEditable();
+  });
+
   for (const [label, width] of Object.entries(WIDTHS)) {
     test(`fills the form from the document filed and shows the revision section (${label})`, async ({ page }) => {
       await openAmend(page, accountsReceipt(microCase.xhtml), { width });
