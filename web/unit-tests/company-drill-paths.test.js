@@ -26,6 +26,11 @@ describe("company drill-down addresses", () => {
       { view: "accounts-set", periodEnd: "2098-04-30", filingId: "SIMTX00000001AA2098" },
     ],
     [`${company}/confirmation-statement/2098-04-16`, { view: "confirmation-statement", madeUpDate: "2098-04-16" }],
+    [`${company}/reports`, { view: "reports" }],
+    ...["filings", "people", "capital", "charges", "history", "accounts"].map((report) => [
+      `${company}/reports/${report}`,
+      { view: "report", report },
+    ]),
   ];
 
   it.each(views)("reads %s and writes the same path back", (address, expected) => {
@@ -57,6 +62,8 @@ describe("company drill-down addresses", () => {
       `${company}/confirmation-statement`,
       "/companies-house/company/not!valid",
       `${company}/officers/extra`,
+      `${company}/reports/nonsense`,
+      `${company}/reports/filings/extra`,
     ]) {
       expect(paths.parseDrillPath(address).view, address).toBe("unknown");
     }

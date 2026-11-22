@@ -22700,3 +22700,273 @@ cy = '''Methu cyflwyno’r cais ({status})'''
 [strings."help.network-error"]
 hash = "30faad7a2bba"
 cy = '''Gwall rhwydwaith. Rhowch gynnig arall arni neu e-bostiwch support@diyaccounting.co.uk.'''
+
+# Company reports on the lookup's drill-down: the index, the view shell and each report's definitions.
+
+[strings."ch.reports.filings-title"]
+hash = "6927c6d760f4"
+cy = '''Cofnod ffeilio ac amseroldeb'''
+
+[strings."ch.reports.filings-summary"]
+hash = "80c342aeadbe"
+cy = '''Pob ffeilio cyfrifon a datganiad cadarnhau, y dyddiad y gwnaeth Tŷ’r Cwmnïau ei brosesu, a’r terfyn amser arferol ar ei gyfer.'''
+
+[strings."ch.reports.def.made-up-date"]
+hash = "d739b87df88e"
+cy = '''Dyddiad llunio'''
+
+[strings."ch.reports.def.made-up-date-meaning"]
+hash = "eb4d78210108"
+cy = '''Diwrnod olaf y cyfnod y mae’r ffeilio yn ei gwmpasu.'''
+
+[strings."ch.reports.def.processed"]
+hash = "6071b9b565c9"
+cy = '''Proseswyd'''
+
+[strings."ch.reports.def.processed-meaning"]
+hash = "f2204044c8ce"
+cy = '''Y dyddiad y rhoddodd Tŷ’r Cwmnïau y ffeilio ar y gofrestr.'''
+
+[strings."ch.reports.def.time-limit"]
+hash = "38a41ba1fce9"
+cy = '''Terfyn amser arferol'''
+
+[strings."ch.reports.def.time-limit-meaning"]
+hash = "2f7b27172e10"
+cy = '''Yr amser y mae GOV.UK yn ei roi i gwmni preifat ffeilio. Gall newid i’r dyddiad cyfeirnod cyfrifyddu neu estyniad ei symud.'''
+
+[strings."ch.reports.people-title"]
+hash = "1ceafeac1101"
+cy = '''Pobl dros amser'''
+
+[strings."ch.reports.people-summary"]
+hash = "a238ce757e12"
+cy = '''Penodiadau ac ymddiswyddiadau cyfarwyddwyr ac ysgrifenyddion, a phersonau â rheolaeth arwyddocaol a hysbyswyd ac a ddaeth i ben.'''
+
+[strings."ch.reports.def.officer"]
+hash = "192135a8adab"
+cy = '''Swyddog'''
+
+[strings."ch.reports.def.officer-meaning"]
+hash = "c5d91486bc9b"
+cy = '''Cyfarwyddwr neu ysgrifennydd cwmni ar y gofrestr.'''
+
+[strings."ch.reports.def.psc"]
+hash = "f031ed8fea1c"
+cy = '''Person â rheolaeth arwyddocaol'''
+
+[strings."ch.reports.def.psc-meaning"]
+hash = "4581d19b1229"
+cy = '''Rhywun sy’n berchen ar y cwmni neu’n ei reoli yn un o’r ffyrdd y mae’r gyfraith yn eu rhestru, er enghraifft mwy na 25% o’r cyfranddaliadau neu’r pleidleisiau.'''
+
+[strings."ch.reports.def.notified"]
+hash = "3a623a728b2d"
+cy = '''Hysbyswyd'''
+
+[strings."ch.reports.def.notified-meaning"]
+hash = "f6e32b765c82"
+cy = '''Y dyddiad y dywedodd y cwmni wrth Dŷ’r Cwmnïau.'''
+
+[strings."ch.reports.capital-title"]
+hash = "23295126348f"
+cy = '''Cyfalaf cyfranddaliadau'''
+
+[strings."ch.reports.capital-summary"]
+hash = "d7f3f4e07acd"
+cy = '''Dyraniadau cyfranddaliadau, datganiadau cyfalaf, a’r cyfranddaliadau a nodir yn y cyfrifon diwethaf a ffeiliwyd.'''
+
+[strings."ch.reports.def.allotment"]
+hash = "79debe361fff"
+cy = '''Dyraniad'''
+
+[strings."ch.reports.def.allotment-meaning"]
+hash = "204c234fb5d6"
+cy = '''Cyfranddaliadau newydd a gyhoeddwyd gan y cwmni.'''
+
+[strings."ch.reports.def.statement-of-capital"]
+hash = "185b896f521e"
+cy = '''Datganiad cyfalaf'''
+
+[strings."ch.reports.def.statement-of-capital-meaning"]
+hash = "2b56a3ada6b9"
+cy = '''Nifer, dosbarth a gwerth cyfranddaliadau’r cwmni ar ddyddiad.'''
+
+[strings."ch.reports.def.nominal-value"]
+hash = "46f1c64bbd2f"
+cy = '''Gwerth enwol'''
+
+[strings."ch.reports.def.nominal-value-meaning"]
+hash = "6ad74ee199c6"
+cy = '''Gwerth wyneb cyfranddaliad, a all fod yn wahanol i’r hyn y’i gwerthwyd amdano.'''
+
+[strings."ch.reports.charges-title"]
+hash = "a3ab3bdb8912"
+cy = '''Arwystlon ac ansolfedd'''
+
+[strings."ch.reports.charges-summary"]
+hash = "ae0a01741961"
+cy = '''Arwystlon a gofrestrwyd ac a fodlonwyd, ac unrhyw achos ansolfedd gyda’i ymarferwyr.'''
+
+[strings."ch.reports.def.charge"]
+hash = "ff9f88ce353a"
+cy = '''Arwystl'''
+
+[strings."ch.reports.def.charge-meaning"]
+hash = "24bf94fcbd96"
+cy = '''Sicrwydd y mae’r cwmni’n ei roi i fenthyciwr dros ei asedau, wedi’i gofrestru yn Nhŷ’r Cwmnïau.'''
+
+[strings."ch.reports.def.satisfied"]
+hash = "be3bac2c67dc"
+cy = '''Wedi’i fodloni'''
+
+[strings."ch.reports.def.satisfied-meaning"]
+hash = "cec7a65e7c5e"
+cy = '''Dywedodd y cwmni wrth Dŷ’r Cwmnïau fod yr hyn y mae’r arwystl yn ei sicrhau wedi’i dalu neu ei ryddhau.'''
+
+[strings."ch.reports.def.fixed-floating"]
+hash = "be1af9158ae6"
+cy = '''Arwystl sefydlog ac arnawf'''
+
+[strings."ch.reports.def.fixed-floating-meaning"]
+hash = "5730dd23d4e3"
+cy = '''Arwystl dros asedau a enwir, ac arwystl dros asedau sy’n newid, fel stoc.'''
+
+[strings."ch.reports.history-title"]
+hash = "18b8552a455d"
+cy = '''Hanes y swyddfa gofrestredig a’r enw'''
+
+[strings."ch.reports.history-summary"]
+hash = "4bbac628d866"
+cy = '''Enwau blaenorol y cwmni a phob newid i’r swyddfa gofrestredig.'''
+
+[strings."ch.reports.def.registered-office"]
+hash = "bc395eb428a7"
+cy = '''Swyddfa gofrestredig'''
+
+[strings."ch.reports.def.registered-office-meaning"]
+hash = "1781d677da39"
+cy = '''Y cyfeiriad swyddogol ar gyfer llythyrau gan Dŷ’r Cwmnïau a’r llysoedd.'''
+
+[strings."ch.reports.def.previous-name"]
+hash = "02061f49d595"
+cy = '''Enw blaenorol'''
+
+[strings."ch.reports.def.previous-name-meaning"]
+hash = "37c4301ae076"
+cy = '''Enw yr oedd y cwmni wedi’i gofrestru oddi tano o’r blaen.'''
+
+[strings."ch.reports.accounts-title"]
+hash = "834a7a1ad9a7"
+cy = '''Ffigurau’r cyfrifon o flwyddyn i flwyddyn'''
+
+[strings."ch.reports.accounts-summary"]
+hash = "094a52b34ea9"
+cy = '''Y prif ffigurau o bob set o gyfrifon a ffeiliwyd, a’r newid rhwng y ddwy flynedd ddiweddaraf.'''
+
+[strings."ch.reports.def.net-assets"]
+hash = "c1a2137067c4"
+cy = '''Asedau net'''
+
+[strings."ch.reports.def.net-assets-meaning"]
+hash = "9f679396b082"
+cy = '''Yr hyn y mae’r cwmni’n berchen arno llai’r hyn sy’n ddyledus ganddo, o’r fantolen.'''
+
+[strings."ch.reports.def.cash"]
+hash = "42560421b9bf"
+cy = '''Arian yn y banc'''
+
+[strings."ch.reports.def.cash-meaning"]
+hash = "63a8e736ec77"
+cy = '''Arian yn y banc ac mewn llaw ar ddiwedd y flwyddyn.'''
+
+[strings."ch.reports.def.debtors"]
+hash = "ac2230adf999"
+cy = '''Dyledwyr'''
+
+[strings."ch.reports.def.debtors-meaning"]
+hash = "5a491de2c145"
+cy = '''Arian sy’n ddyledus i’r cwmni.'''
+
+[strings."ch.reports.def.creditors-within"]
+hash = "06719ebdc822"
+cy = '''Credydwyr sy’n ddyledus o fewn blwyddyn'''
+
+[strings."ch.reports.def.creditors-within-meaning"]
+hash = "4392beef1fd9"
+cy = '''Arian sy’n ddyledus gan y cwmni ac y mae’n rhaid iddo ei dalu o fewn blwyddyn.'''
+
+[strings."ch.reports.def.creditors-after"]
+hash = "dc8462338c14"
+cy = '''Credydwyr sy’n ddyledus ar ôl blwyddyn'''
+
+[strings."ch.reports.def.creditors-after-meaning"]
+hash = "0818c5747cf7"
+cy = '''Arian sy’n ddyledus gan y cwmni ac y mae’n ei dalu’n ddiweddarach.'''
+
+[strings."ch.reports.def.turnover"]
+hash = "8ecaf1d78b2e"
+cy = '''Trosiant'''
+
+[strings."ch.reports.def.turnover-meaning"]
+hash = "d259ac3c49f8"
+cy = '''Gwerth y gwerthiannau yn y flwyddyn.'''
+
+[strings."ch.reports.def.profit"]
+hash = "511003ddad98"
+cy = '''Elw neu golled am y flwyddyn'''
+
+[strings."ch.reports.def.profit-meaning"]
+hash = "2ed9f0ad06ac"
+cy = '''Yr hyn sy’n weddill ar ôl yr holl gostau a’r dreth. Mae ffigur negyddol yn golled.'''
+
+[strings."ch.reports.def.employees"]
+hash = "d407f9552561"
+cy = '''Nifer cyfartalog y gweithwyr'''
+
+[strings."ch.reports.def.employees-meaning"]
+hash = "d38f42541e07"
+cy = '''Nifer cyfartalog y bobl a gyflogwyd yn y flwyddyn, fel y mae’r cyfrifon yn ei nodi.'''
+
+[strings."ch.reports.needs-bundle"]
+hash = "a741d9f33a30"
+cy = '''Mae’r adroddiadau hyn yn dod gyda {bundles}.'''
+
+[strings."ch.reports.not-offered"]
+hash = "f1519b15dada"
+cy = '''Nid yw’r adroddiadau hyn ar gael yma eto.'''
+
+[strings."ch.reports.terms-heading"]
+hash = "04343e58bec9"
+cy = '''Beth mae’r geiriau hyn yn ei olygu'''
+
+[strings."ch.reports.index-title"]
+hash = "c79a2e45bf78"
+cy = '''Adroddiadau ar y cwmni hwn'''
+
+[strings."ch.reports.index-intro"]
+hash = "3e54bb9f177c"
+cy = '''Mae pob adroddiad yn nodi ffigurau a dyddiadau o ffeilio’r cwmni ei hun yn Nhŷ’r Cwmnïau, gyda’r ffeilio y daw pob un ohono.'''
+
+[strings."ch.reports.all-reports"]
+hash = "bb204bec0c4c"
+cy = '''Pob adroddiad ar y cwmni hwn'''
+
+[strings."ch.reports.not-ready"]
+hash = "6ef98d0803a3"
+cy = '''Nid yw’r adroddiad hwn yn barod eto.'''
+
+[strings."ch.reports.read-at"]
+hash = "b5b456f63a65"
+cy = '''Darllenwyd o Dŷ’r Cwmnïau am {time} ar {date}.'''
+
+[strings."ch.reports.partial"]
+hash = "aeeec562edb2"
+cy = '''Mae’r adroddiad hwn yn dangos dim ond y rhannau yr oedd Submit eisoes wedi’u darllen.'''
+
+[strings."ch.reports.source"]
+hash = "d6666b93962e"
+cy = '''Ffynhonnell: cofrestr Tŷ’r Cwmnïau, a ddarllenwyd am {time} ar {date}. Nid yw Tŷ’r Cwmnïau yn gwirio’r wybodaeth y mae cwmnïau’n ei hanfon ato.'''
+
+[strings."ch.drill.nav-reports"]
+hash = "dacca3cba3f3"
+cy = '''Adroddiadau'''

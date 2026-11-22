@@ -1101,12 +1101,13 @@ const NAV_VIEWS = () => [
   ["psc", window.siteText("ch.drill.pscs", "Persons with significant control")],
   ["filing-history", window.siteText("ch.drill.filing-history", "Filing history")],
   ["accounts", window.siteText("ch.drill.accounts", "Accounts")],
+  ["reports", window.siteText("ch.drill.nav-reports", "Reports")],
 ];
 
 function renderNav(state) {
   const nav = document.getElementById("drillNav");
   nav.innerHTML = "";
-  const current = state.view.startsWith("accounts") ? "accounts" : state.view;
+  const current = state.view.startsWith("accounts") ? "accounts" : state.view.startsWith("report") ? "reports" : state.view;
   NAV_VIEWS().forEach(([view, text]) => {
     const link = viewLink({ companyNumber: state.companyNumber, view }, text);
     if (view === current) link.setAttribute("aria-current", "page");
@@ -1134,7 +1135,26 @@ const VIEW_RENDERERS = {
   "accounts-period": (container, state) => renderAccountsPeriod(container, state.companyNumber, state.periodEnd),
   "accounts-set": (container, state) => renderAccountsSet(container, state.companyNumber, state.periodEnd, state.filingId),
   "confirmation-statement": (container, state) => renderConfirmationStatementView(container, state.companyNumber, state.madeUpDate),
+  "reports": (container, state) =>
+    window.companyReports.renderReportsIndex(container, { companyNumber: state.companyNumber, viewLink, access: reportsAccess() }),
+  "report": (container, state) =>
+    window.companyReports.renderReportView(container, {
+      companyNumber: state.companyNumber,
+      report: state.report,
+      viewLink,
+      access: reportsAccess(),
+    }),
 };
+
+// Whether the account holds the reports activity, and the names of the bundles that have it; null
+// when the entitlement cannot be read.
+const reportsAccess = () =>
+  loadEntitlement()
+    .then((entitlement) => {
+      const access = activityAccess(entitlement, "company-reports");
+      return { held: access.held, bundleNames: access.bundles.map(bundleName) };
+    })
+    .catch(() => null);
 
 async function showView(state) {
   window.showLoading ? window.showLoading() : null;

@@ -207,6 +207,24 @@
   margin-top: 1.5rem;
 }
 
+/* The company reports: each report's line under its link in the index, and a report's definitions */
+.company-reports-list li {
+  margin-bottom: 0.75rem;
+}
+
+.company-reports-summary {
+  display: block;
+}
+
+.company-report-terms dt {
+  font-weight: 700;
+  margin-top: 0.5rem;
+}
+
+.company-report-terms dd {
+  margin-left: 0;
+}
+
 .file-this {
   margin-top: 0.75rem;
 }

@@ -139,6 +139,27 @@ export async function getFiledAccounts(companyNumber) {
   return body;
 }
 
+/**
+ * Get one company report. A report the route has no module for yet answers 404 with the reason
+ * "unknown_report", which the error carries.
+ * @param {string} companyNumber
+ * @param {string} report - filings, people, capital, charges, history or accounts
+ * @returns {Promise<{companyNumber: string, report: string, readAt: string, partial?: boolean, retryAfterSeconds?: number}>}
+ */
+export async function getCompanyReport(companyNumber, report) {
+  const response = await fetchWithIdToken(
+    `/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}/reports/${encodeURIComponent(report)}`,
+    { method: "GET" },
+  );
+  const body = await response.json();
+  if (!response.ok) {
+    const error = await errorFromResponse(response, body);
+    error.reason = body?.reason;
+    throw error;
+  }
+  return body;
+}
+
 // Export on window for backward compatibility
 if (typeof window !== "undefined") {
   window.searchCompanies = searchCompanies;
@@ -147,5 +168,6 @@ if (typeof window !== "undefined") {
   window.getPscs = getPscs;
   window.getFilingHistory = getFilingHistory;
   window.getFiledAccounts = getFiledAccounts;
+  window.getCompanyReport = getCompanyReport;
   window.normaliseCompanyNumber = normaliseCompanyNumber;
 }
