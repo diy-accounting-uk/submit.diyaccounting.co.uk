@@ -10,23 +10,55 @@
 #   collab-loop.sh sync <codename> [<base>]  push origin/main and the base to the work repository, fast-forward only
 #   collab-loop.sh fetch <codename> <row>    fetch claude/<codename>-<row> into refs/remotes/cloud-<codename>/
 #   collab-loop.sh load                      the laptop's load, thermal limit and free memory, one line
+#   state, setup-needed, sync and fetch take --repo submit|spreadsheets (default submit): the pool of
+#   submit-cloud-<codename> against this checkout, or of spreadsheets-cloud-<codename> against the
+#   spreadsheets checkout beside it (SPREADSHEETS_CHECKOUT names another).
 #
 # Bash 3.2 (macOS): no associative arrays. Reads only, except sync and fetch, which write no remote config.
 
 set -uo pipefail
 
 ORG=diy-accounting-uk
-PREFIX=submit-cloud-
 REPO_ROOT=$(git rev-parse --show-toplevel)
-POOL_FILE="$REPO_ROOT/.claude/skills/new-cloud-session/pool.txt"
-# A change to any of these after a worker's last setup means the worker runs an older skill or VM setup.
-SETUP_PATHS=".claude/skills/collaborate .claude/skills/new-cloud-session/environment-setup.sh CLAUDE.md .claude/settings.json"
+MAIN_CHECKOUT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
 STALE_MINUTES=${COLLAB_STALE_MINUTES:-60}
 
 die() { echo "collab-loop: $*" >&2; exit 1; }
+
+# --repo is taken out of the arguments wherever it stands; the rest go to the subcommand.
+REPO_KIND=submit
+ARGS=()
+while [ $# -gt 0 ]; do
+  case $1 in
+    --repo) REPO_KIND=${2:?--repo needs submit or spreadsheets}; shift 2 ;;
+    --repo=*) REPO_KIND=${1#--repo=}; shift ;;
+    *) ARGS+=("$1"); shift ;;
+  esac
+done
+set -- ${ARGS[@]+"${ARGS[@]}"}
+
+# Per pool: the work repository prefix, the pool file and the checkout that its main and the rows land in.
+# SETUP_PATHS: a change to any of these in that checkout after a worker's last setup means the worker runs
+# an older skill or VM setup.
+case $REPO_KIND in
+  submit)
+    PREFIX=submit-cloud-
+    POOL_FILE="$REPO_ROOT/.claude/skills/new-cloud-session/pool.txt"
+    SOURCE_ROOT=$REPO_ROOT
+    SETUP_PATHS=".claude/skills/collaborate .claude/skills/new-cloud-session/environment-setup.sh CLAUDE.md .claude/settings.json"
+    ;;
+  spreadsheets)
+    PREFIX=spreadsheets-cloud-
+    POOL_FILE="$REPO_ROOT/.claude/skills/new-cloud-session/pool-spreadsheets.txt"
+    SOURCE_ROOT=${SPREADSHEETS_CHECKOUT:-$(dirname "$MAIN_CHECKOUT")/spreadsheets.diyaccounting.co.uk}
+    SETUP_PATHS=".claude/skills/collaborate CLAUDE.md .claude/settings.json"
+    ;;
+  *) die "--repo is submit or spreadsheets, not '$REPO_KIND'" ;;
+esac
 repo_of() { printf '%s/%s%s' "$ORG" "$PREFIX" "$1"; }
 url_of() { printf 'git@github.com:%s.git' "$(repo_of "$1")"; }
-pool() { grep -v '^#' "$POOL_FILE" | awk 'NF { print $1 }'; }
+pool() { awk '!/^#/ && NF { print $1 }' "$POOL_FILE"; }
+source_ready() { git -C "$SOURCE_ROOT" rev-parse --git-dir >/dev/null 2>&1 || die "no checkout at $SOURCE_ROOT; set SPREADSHEETS_CHECKOUT to the checkout"; }
 iso_to_epoch() { date -j -u -f '%Y-%m-%dT%H:%M:%SZ' "$1" +%s 2>/dev/null || date -u -d "$1" +%s; }
 raw() { gh api -H 'Accept: application/vnd.github.raw+json' "repos/$(repo_of "$1")/contents/$2?ref=$3" 2>/dev/null; }
 
@@ -36,7 +68,7 @@ branches() {
 }
 
 # The task id in .collab/<codename>.md on the collab branch ("task: <row>"), or nothing.
-current_task() { raw "$1" ".collab/$1.md" collab | sed -n 's/^task: *//p' | head -1 | tr 'A-Z' 'a-z' | tr -d ' '; }
+current_task() { raw "$1" ".collab/$1.md" collab | sed -n 's/^task: *//p' | head -1 | tr '[:upper:]' '[:lower:]' | tr -d ' '; }
 
 # When the task file was last written, as epoch seconds, or 0.
 task_time() {
@@ -55,16 +87,17 @@ tip_status() {
 
 # The main SHA the newest setup branch recorded (claude/<codename>-setup-<sha7>), or nothing.
 last_setup_sha() { branches "$1" | sed -n "s|^claude/$1-setup-||p" | while read -r s; do
-  t=$(git -C "$REPO_ROOT" log -1 --format=%ct "$s" 2>/dev/null) && echo "$t $s"; done | sort -n | tail -1 | awk '{print $2}'; }
+  t=$(git -C "$SOURCE_ROOT" log -1 --format=%ct "$s" 2>/dev/null) && echo "$t $s"; done | sort -n | tail -1 | awk '{print $2}'; }
 
 cmd_setup_needed() {
-  local cn=${1:?codename} s changed
-  git -C "$REPO_ROOT" fetch -q origin main 2>/dev/null
+  local cn=${1:?codename} s changed line
+  source_ready
+  git -C "$SOURCE_ROOT" fetch -q origin main 2>/dev/null
   s=$(last_setup_sha "$cn")
   if [ -z "$s" ]; then echo "$cn: no setup branch yet"; return 0; fi
   # shellcheck disable=SC2086
-  changed=$(git -C "$REPO_ROOT" diff --name-only "$s" origin/main -- $SETUP_PATHS)
-  if [ -n "$changed" ]; then echo "$cn: changed since setup at $s:"; echo "$changed" | sed 's/^/  /'; return 0; fi
+  changed=$(git -C "$SOURCE_ROOT" diff --name-only "$s" origin/main -- $SETUP_PATHS)
+  if [ -n "$changed" ]; then echo "$cn: changed since setup at $s:"; while IFS= read -r line; do printf '  %s\n' "$line"; done <<<"$changed"; return 0; fi
   return 1
 }
 
@@ -72,18 +105,19 @@ cmd_setup_needed() {
 landed() {
   local cn=$1 br=$2 base=$3 ref files
   ref="refs/remotes/cloud-$cn/$br"
-  git -C "$REPO_ROOT" fetch -q "$(url_of "$cn")" "+refs/heads/$br:$ref" 2>/dev/null || { echo "?"; return; }
-  files=$(git -C "$REPO_ROOT" diff --name-only "$(git -C "$REPO_ROOT" merge-base "$ref" "$base")" "$ref" -- . ':!.collab' 2>/dev/null)
+  git -C "$SOURCE_ROOT" fetch -q "$(url_of "$cn")" "+refs/heads/$br:$ref" 2>/dev/null || { echo "?"; return; }
+  files=$(git -C "$SOURCE_ROOT" diff --name-only "$(git -C "$SOURCE_ROOT" merge-base "$ref" "$base")" "$ref" -- . ':!.collab' 2>/dev/null)
   [ -z "$files" ] && { echo "empty"; return; }
   # shellcheck disable=SC2086
-  if git -C "$REPO_ROOT" diff --quiet "$ref" "$base" -- $files; then echo "yes"; else echo "no"; fi
+  if git -C "$SOURCE_ROOT" diff --quiet "$ref" "$base" -- $files; then echo "yes"; else echo "no"; fi
 }
 
 cmd_state() {
   local base="" cn task br ts now st setup age land
   while [ $# -gt 0 ]; do case $1 in --base) base=$2; shift 2 ;; *) die "unknown argument $1" ;; esac; done
   now=$(date +%s)
-  git -C "$REPO_ROOT" fetch -q origin main 2>/dev/null
+  source_ready
+  git -C "$SOURCE_ROOT" fetch -q origin main 2>/dev/null
   printf '%-8s %-14s %-22s %-18s %-9s %s\n' worker setup task branch status landed
   for cn in $(pool); do
     if cmd_setup_needed "$cn" >/dev/null; then setup="needed"; else setup="current"; fi
@@ -104,20 +138,22 @@ cmd_state() {
 
 cmd_sync() {
   local cn=${1:?codename} base=${2:-} url
+  source_ready
   url=$(url_of "$cn")
-  git -C "$REPO_ROOT" fetch -q origin main || die "fetch of origin main failed"
-  git -C "$REPO_ROOT" push -q "$url" "refs/remotes/origin/main:refs/heads/main" || die "push of main to $cn refused (not a fast-forward?)"
+  git -C "$SOURCE_ROOT" fetch -q origin main || die "fetch of origin main failed"
+  git -C "$SOURCE_ROOT" push -q "$url" "refs/remotes/origin/main:refs/heads/main" || die "push of main to $cn refused (not a fast-forward?)"
   if [ -n "$base" ] && [ "$base" != main ]; then
-    git -C "$REPO_ROOT" push -q "$url" "refs/heads/$base:refs/heads/$base" || die "push of $base to $cn refused (not a fast-forward?)"
+    git -C "$SOURCE_ROOT" push -q "$url" "refs/heads/$base:refs/heads/$base" || die "push of $base to $cn refused (not a fast-forward?)"
   fi
-  echo "synced $cn: main $(git -C "$REPO_ROOT" rev-parse --short origin/main)${base:+, $base $(git -C "$REPO_ROOT" rev-parse --short "$base")}"
+  echo "synced $cn: main $(git -C "$SOURCE_ROOT" rev-parse --short origin/main)${base:+, $base $(git -C "$SOURCE_ROOT" rev-parse --short "$base")}"
 }
 
 cmd_fetch() {
   local cn=${1:?codename} row=${2:?row} br
-  br="claude/$cn-$(echo "$row" | tr 'A-Z' 'a-z')"
-  git -C "$REPO_ROOT" fetch -q "$(url_of "$cn")" "+refs/heads/$br:refs/remotes/cloud-$cn/$br" || die "no branch $br in $(repo_of "$cn")"
-  echo "refs/remotes/cloud-$cn/$br $(git -C "$REPO_ROOT" rev-parse --short "refs/remotes/cloud-$cn/$br")"
+  source_ready
+  br="claude/$cn-$(echo "$row" | tr '[:upper:]' '[:lower:]')"
+  git -C "$SOURCE_ROOT" fetch -q "$(url_of "$cn")" "+refs/heads/$br:refs/remotes/cloud-$cn/$br" || die "no branch $br in $(repo_of "$cn")"
+  echo "refs/remotes/cloud-$cn/$br $(git -C "$SOURCE_ROOT" rev-parse --short "refs/remotes/cloud-$cn/$br")"
 }
 
 cmd_load() {
@@ -134,5 +170,5 @@ case ${1:-} in
   sync) shift; cmd_sync "$@" ;;
   fetch) shift; cmd_fetch "$@" ;;
   load) shift; cmd_load "$@" ;;
-  *) sed -n '8,13p' "${BASH_SOURCE[0]}" | sed 's/^# *//' >&2; exit 2 ;;
+  *) sed -n '8,16p' "${BASH_SOURCE[0]}" | sed 's/^# *//' >&2; exit 2 ;;
 esac

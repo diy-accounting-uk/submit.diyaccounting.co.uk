@@ -1,18 +1,18 @@
 ---
 name: collaborate
-description: Run this Claude Code cloud session as a worker for the local coordinator. Checks the VM's tools, then on each task message fetches the named base branch from its own work repository (diy-accounting-uk/submit-cloud-<codename>), builds the row on claude/<codename>-<row>, runs the gates the brief names, and pushes the branch with the report in the last commit's body. Git is the reply. Invoke in the cloud session as /collaborate <codename>, or /collaborate <codename> --loop for the polling fallback.
+description: Run this Claude Code cloud session as a worker for the local coordinator. Checks the VM's tools, then on each task message fetches the named base branch from its own work repository (diy-accounting-uk/submit-cloud-<codename> or spreadsheets-cloud-<codename>), builds the row on claude/<codename>-<row>, runs the gates the brief names, and pushes the branch with the report in the last commit's body. Git is the reply. Invoke in the cloud session as /collaborate <codename>, or /collaborate <codename> --loop for the polling fallback.
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
 <!-- @capability DEV-66 Work rows as a cloud worker for the coordinator
-- **Use when:** a Claude Code cloud session on a submit-cloud-<codename> work repository starts, or a task message from the coordinator arrives in it.
+- **Use when:** a Claude Code cloud session on a submit-cloud-<codename> or spreadsheets-cloud-<codename> work repository starts, or a task message from the coordinator arrives in it.
 - **Does:** collaborate checks Node 24, JDK 25, node_modules, a Playwright browser and the timeout variables, and stops when one is missing. It makes an ssh-ed25519 key pair once per VM and pushes the public key to .collab/<codename>.pub on the collab branch, so the coordinator can hand it AWS credentials. On a task it branches claude/<codename>-<row> from the named base, builds the row, runs the named gates, and pushes to its own work repository. The last commit body carries the report and a Collab-Status trailer. The --loop form polls .collab/<codename>.md on the collab branch every 10 minutes.
 - **Run:** `/collaborate <codename>`; `/collaborate <codename> --loop`
 - **Entry:** `.claude/skills/collaborate/SKILL.md`
 - **Files:** .claude/skills/collaborate/SKILL.md
-- **Keywords:** collaborate, cloud worker, claude code on the web, work repository, submit-cloud, report-back contract, collab branch, poll loop, aws credentials, age, aws-handoff
+- **Keywords:** collaborate, cloud worker, claude code on the web, work repository, submit-cloud, spreadsheets-cloud, npm test router, verdict, report-back contract, collab branch, poll loop, aws credentials, age, aws-handoff
 - **Related:** DEV-65
 @end-capability -->
 
@@ -28,9 +28,11 @@ each message needs the operator's approval (operator, 2026-11-17).
 
 - **Worker name:** the code name in the command, `<codename>` (`/collaborate anvil` makes you
   `anvil`).
-- **Repository:** `diy-accounting-uk/submit-cloud-<codename>`, the only repository of this
-  session. `git remote get-url origin` ends with that name (the GitHub proxy rewrites the host).
-  Stop and say so when it does not.
+- **Repository:** `diy-accounting-uk/submit-cloud-<codename>` or
+  `diy-accounting-uk/spreadsheets-cloud-<codename>`, the only repository of this session.
+  `git remote get-url origin` ends with one of those names (the GitHub proxy rewrites the host).
+  Stop and say so when it does not. A `spreadsheets-cloud-` repository is a spreadsheets clone:
+  follow "In a spreadsheets clone", below, where it differs from this file.
 - **Branches you push:** `claude/<codename>-<row>` only, where `<row>` is the row id in lowercase
   (`claude/anvil-ops12`).
 
@@ -138,6 +140,29 @@ When you cannot do the task (a missing tool, a brief that needs AWS with no cred
 gate that cannot run here),
 push the branch with one commit (`git commit --allow-empty` when nothing changed) whose body says
 why, with `Collab-Status: not-done`.
+
+## In a spreadsheets clone
+
+A `spreadsheets-cloud-<codename>` repository holds the spreadsheets repository. These rules
+replace the rules above where they differ:
+
+- At the start, check `node --version`, `node_modules`, the Playwright Chromium and
+  `soffice --version`. JDK 25 and `mcp/node_modules` are not needed. Without `soffice` the router's
+  calc tier does not run and its verdict is `PARTIAL`: take no task whose gate needs a `PASS`, and
+  give the setup-script line that installs LibreOffice (`environment-setup.sh`).
+- On a task, read that repository's own `CLAUDE.md` (sections "Testing", "Reconciliation-bug
+  method" and the ones the brief names) in place of this repository's. Read the `CONTEXT_*.md` file
+  of the product the row touches.
+- The gate is `npm test`, the router `scripts/test-scope.mjs`. Do not run `npm run bundle`. Run
+  `npm test 2>&1 | tee target/npm-test.log`. Before it, commit and push with
+  `Collab-Status: wip`, because the router can run for most of an hour.
+- Copy the router's `VERDICT` line into the report as it stands. `Collab-Status: done` needs a
+  `PASS` verdict, unless the brief accepts another.
+- The repository's `.githooks/pre-push` runs the router again over what the push adds. When the
+  router has already given its verdict on the commit you push, push with `SKIP_PUSH_TESTS=1`, which
+  runs the hook's gates tier only. Say so in the report.
+- The relay needs `.collab/coordinator.pub` on that repository's `main`. When it is missing, the
+  push is the reply ("Report by the relay").
 
 ## Report by the relay
 

@@ -1,6 +1,6 @@
 ---
 name: collab-loop
-description: Start or steer the /iterate delivery loop so that the cloud workers (the submit-cloud-<codename> sessions running /collaborate) do the compute, and the laptop only coordinates, lands and proves. Idempotent: every tick rebuilds its state from git, so it is safe to run again after a compaction, a restart or mid-loop. Checks that each worker runs the current collaborate skill and VM setup and brings it up to date first. Invoke as /collab-loop [<wave set name>], or when the operator says "collab loop", "offload to the cloud sessions" or "keep the laptop light".
+description: Start or steer the /iterate delivery loop so that the cloud workers (the submit-cloud-<codename> and spreadsheets-cloud-<codename> sessions running /collaborate) do the compute, and the laptop only coordinates, lands and proves. Idempotent: every tick rebuilds its state from git, so it is safe to run again after a compaction, a restart or mid-loop. Checks that each worker runs the current collaborate skill and VM setup and brings it up to date first. Invoke as /collab-loop [<wave set name>], or when the operator says "collab loop", "offload to the cloud sessions" or "keep the laptop light".
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
@@ -12,7 +12,7 @@ description: Start or steer the /iterate delivery loop so that the cloud workers
 - **Run:** `/collab-loop [<wave set>]`
 - **Entry:** `.claude/skills/collab-loop/SKILL.md`
 - **Files:** .claude/skills/collab-loop/SKILL.md, .claude/skills/collab-loop/collab-loop.sh
-- **Keywords:** collab loop, cloud offload, cloud workers, submit-cloud, collaborate, iterate, wave set, idempotent loop, laptop load, setup currency, reload skills
+- **Keywords:** collab loop, cloud offload, cloud workers, submit-cloud, spreadsheets-cloud, spreadsheets rows, collaborate, iterate, wave set, idempotent loop, laptop load, setup currency, reload skills
 - **Related:** DEV-30, DEV-65, DEV-66
 @end-capability -->
 
@@ -314,6 +314,34 @@ arrived 9 s after its push.
   it there: run the tick, which reads the state from git. Then acknowledge the message id:
   `new-cloud-session.sh relay-ack <id>...`, so the next connection does not resend it.
 - `ping` frames carry nothing.
+
+## Spreadsheets rows
+
+A spreadsheets row goes to a worker of the spreadsheets pool (`new-cloud-session.sh --repo
+spreadsheets`, the `new-cloud-session` skill, "The spreadsheets pool"). The loop is the same. These
+commands take `--repo spreadsheets` for that pool:
+
+```bash
+.claude/skills/collab-loop/collab-loop.sh state --repo spreadsheets --base <spreadsheets batch branch>
+.claude/skills/collab-loop/collab-loop.sh setup-needed --repo spreadsheets <codename>
+.claude/skills/collab-loop/collab-loop.sh sync --repo spreadsheets <codename> [<base>]
+.claude/skills/collab-loop/collab-loop.sh fetch --repo spreadsheets <codename> <row>
+```
+
+- The script reads `pool-spreadsheets.txt` and the `spreadsheets-cloud-<codename>` repositories.
+- `sync` pushes `origin/main` and the base from the spreadsheets checkout
+  (`../spreadsheets.diyaccounting.co.uk` beside the primary checkout; `SPREADSHEETS_CHECKOUT` names
+  another). `fetch` and the `landed` column read and write that checkout.
+- `setup-needed` compares the worker's setup commit with spreadsheets `origin/main` over
+  `CLAUDE.md`, `.claude/settings.json` and `.claude/skills/collaborate`.
+- Run `state` once for each pool. The two pools share no code name.
+- The worker's gate is `npm test`, the router. Its report carries the router's `VERDICT` line
+  (the `collaborate` skill, "In a spreadsheets clone"). Land only a `PASS`, unless the brief
+  accepts another.
+- The spreadsheets batch branch lands by "The integrator", above, with a worker of the
+  spreadsheets pool as the integrator and `--repo spreadsheets` on each `sync`.
+- The cloud watcher reads one pool. For the spreadsheets pool, run a second watcher with
+  `pool-spreadsheets.txt` and `spreadsheets-cloud-$c` in place of `pool.txt` and `submit-cloud-$c`.
 
 ## Rules
 
