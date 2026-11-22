@@ -106,7 +106,7 @@ export async function fetchFiledAccountsDocument(companyNumber, transactionId) {
  *   chResponse alone when a read failed
  */
 export async function fetchLastFiledAccounts(companyNumber) {
-  const history = await companiesHouseFilingHistory(companyNumber, { category: "accounts" });
+  const history = await companiesHouseFilingHistory(companyNumber, { category: "accounts", maxPages: 1 });
   if (!history.ok) return { chResponse: history };
   const item = history.data.items.find(isAccountsFiling);
   if (!item) return { problem: "no-accounts" };

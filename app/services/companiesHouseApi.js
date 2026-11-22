@@ -96,19 +96,19 @@ const FILING_HISTORY_PAGE_SIZE = 100;
 const FILING_HISTORY_MAX_PAGES = 5;
 
 /**
- * A company's filing history, newest first, read page by page up to five pages of 100 items. A
- * category narrows the history to one kind of filing (for example "accounts"); without one every
- * category is read.
+ * A company's filing history, newest first, read page by page up to maxPages pages of 100 items
+ * (five unless given). A category narrows the history to one kind of filing (for example
+ * "accounts"); without one every category is read.
  * @param {string} companyNumber
- * @param {{category?: string}} [options]
+ * @param {{category?: string, maxPages?: number}} [options]
  * @returns {Promise<{ok: boolean, status: number, data: object, headers?: object}>} on success, data
  *   holds items, totalCount (Companies House's total) and truncated (true when the company has more
  *   items than were read); on a failed page, the failed response
  */
-export async function companiesHouseFilingHistory(companyNumber, { category } = {}) {
+export async function companiesHouseFilingHistory(companyNumber, { category, maxPages = FILING_HISTORY_MAX_PAGES } = {}) {
   const items = [];
   let totalCount;
-  for (let page = 0; page < FILING_HISTORY_MAX_PAGES; page++) {
+  for (let page = 0; page < maxPages; page++) {
     const response = await companiesHouseHttpGet(`/company/${companyNumber}/filing-history`, {
       category,
       items_per_page: FILING_HISTORY_PAGE_SIZE,

@@ -187,6 +187,33 @@ describe("companiesHousePublicRegisterGet ingestHandler", () => {
     expect(mockFetch.mock.calls.some(([url]) => String(url).startsWith("https://files.example"))).toBe(false);
   });
 
+  test("reads one page of the accounts history for a company with more filings than a page holds, and answers the newest set", async () => {
+    const history = [
+      accountsItem({ transactionId: "TXIXBRL", documentId: "DOCIXBRL" }),
+      ...Array.from({ length: 149 }, (_, index) => accountsItem({ transactionId: `TXOLD${index}`, documentId: "DOCPDF" })),
+    ];
+    const historyReads = [];
+    routes.unshift([
+      (url) => url.startsWith(`${API}/company/00000006/filing-history?`),
+      (url) => {
+        const params = new URL(url).searchParams;
+        const startIndex = Number(params.get("start_index"));
+        historyReads.push(startIndex);
+        return {
+          json: { total_count: history.length, items: history.slice(startIndex, startIndex + Number(params.get("items_per_page"))) },
+        };
+      },
+    ]);
+
+    const response = await get("6");
+
+    expect(response.statusCode).toBe(200);
+    expect(historyReads).toEqual([0]);
+    expect(parseResponseBody(response).filedAccounts).toEqual(expect.objectContaining({ status: "ixbrl", ixbrl: IXBRL }));
+    const companiesHouseCalls = mockFetch.mock.calls.filter(([url]) => [API, DOCUMENT_API].some((host) => String(url).startsWith(host)));
+    expect(companiesHouseCalls).toHaveLength(5);
+  });
+
   test("marks a last set that has a PDF only, and fetches no document content", async () => {
     withHistory([accountsItem({ transactionId: "TXPDF", documentId: "DOCPDF", paperFiled: true })]);
 
