@@ -2882,6 +2882,9 @@ window.WELSH_TEXT = {
   "vat.record-vrn": "Rhif cofrestru TAW {vrn}",
   "vat.see-receipts": "Gweld eich derbynebau",
   "vat.status-accepted": "Derbyniwyd gan CThEF",
+  "vat.status-undecided": "Statws: wrthi’n gwirio’ch cyfrif.",
+  "vat.status-undecided-text":
+    "Ni allai’r dudalen hon ddarllen a yw’ch cyfrif yn defnyddio gwasanaeth prawf CThEF. Nid oes dim yn cael ei anfon at CThEF nes iddi wneud hynny.",
   "vat.vrn": "Rhif cofrestru TAW",
   "widget.access-forbidden": "Dim mynediad. Efallai y bydd angen i chi ychwanegu Bundle i ddefnyddio’r nodwedd hon.",
   "widget.add-a-bundle": "Ychwanegu Bundle",

@@ -26847,3 +26847,13 @@ cy = '''Dychwelyd cyfrannau a glustnodwyd'''
 [strings."receipts.kind-allotment-of-shares"]
 hash = "9d15f3e2ec01"
 cy = '''Dychwelyd cyfrannau a glustnodwyd'''
+
+# == The VAT pages' status line while the HMRC account is not decided (no HMRC Welsh found) ==
+
+[strings."vat.status-undecided"]
+hash = "55c161ec5f72"
+cy = '''Statws: wrthi’n gwirio’ch cyfrif.'''
+
+[strings."vat.status-undecided-text"]
+hash = "80e922830cf4"
+cy = '''Ni allai’r dudalen hon ddarllen a yw’ch cyfrif yn defnyddio gwasanaeth prawf CThEF. Nid oes dim yn cael ei anfon at CThEF nes iddi wneud hynny.'''

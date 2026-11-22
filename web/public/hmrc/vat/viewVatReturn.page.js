@@ -38,18 +38,6 @@ async function initializePage() {
   // The status line says sandbox when this page's HMRC calls go to HMRC's test service
   window.showHmrcStatusForService(siteText("vat-read.status-sandbox-text", "This reads HMRC's test service, not your real records."));
 
-  // Show synthetic indicator if hmrcAccount=synthetic
-  if (hmrcAccount === "synthetic") {
-    const syntheticIndicator = document.getElementById("syntheticIndicator");
-    if (syntheticIndicator) {
-      syntheticIndicator.classList.add("visible");
-    }
-    const testDataLink = document.getElementById("testDataLink");
-    if (testDataLink) {
-      testDataLink.classList.add("visible");
-    }
-  }
-
   // Developer mode is now controlled by the global toggle via developer-mode.js
   // Show developer section based on sessionStorage and listen for changes
   const devSection = document.getElementById("developerSection");

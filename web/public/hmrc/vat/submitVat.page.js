@@ -851,18 +851,6 @@ async function initializePage() {
     document.getElementById("hmrcAssistStatusNote"),
   );
 
-  // Show synthetic indicator if in synthetic mode (determined by bundle qualifiers via sessionStorage)
-  if (hmrcAccount === "synthetic") {
-    const syntheticIndicator = document.getElementById("syntheticIndicator");
-    if (syntheticIndicator) {
-      syntheticIndicator.classList.add("visible");
-    }
-    const testDataLink = document.getElementById("testDataLink");
-    if (testDataLink) {
-      testDataLink.classList.add("visible");
-    }
-  }
-
   // Developer mode is now controlled by the global toggle via developer-mode.js
   // Show developer section based on sessionStorage and listen for changes
   const devSection = document.getElementById("developerSection");

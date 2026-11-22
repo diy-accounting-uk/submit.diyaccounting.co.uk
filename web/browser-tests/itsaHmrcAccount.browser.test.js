@@ -216,10 +216,13 @@ test.describe("An Income Tax page holding a request uses the HMRC account the bu
       expect(await page.evaluate(() => sessionStorage.getItem("hmrcAccount"))).toBe("synthetic");
     });
 
-    test(`${pageName} signs in to live HMRC once the bundle read has had its time, when it never answers`, async ({ page }) => {
+    test(`${pageName} says the account is not decided and signs in nowhere when the bundle read never answers`, async ({ page }) => {
       const seen = await openItsaPage(page, pageName, { synthetic: false, storedAccount: "synthetic", bundleAnswerMs: null });
       await startSignIn(page, form);
-      await expect.poll(() => seen.signIns, { timeout: 20_000 }).toEqual([LIVE_HOST]);
+      const banner = page.locator("p.hint[data-feature-status]").first();
+      await expect(banner).toContainText("Status: checking your account.", { timeout: 20_000 });
+      await page.waitForTimeout(1000);
+      expect(seen.signIns).toEqual([]);
     });
   }
 });
@@ -288,10 +291,13 @@ test.describe("A foreign property period page uses the HMRC account the bundles 
       expect(await page.evaluate(() => sessionStorage.getItem("hmrcAccount"))).toBe("synthetic");
     });
 
-    test(`${pageName} signs in to live HMRC once the bundle read has had its time, when it never answers`, async ({ page }) => {
+    test(`${pageName} says the account is not decided and signs in nowhere when the bundle read never answers`, async ({ page }) => {
       const seen = await openItsaPage(page, pageName, { synthetic: false, storedAccount: "synthetic", bundleAnswerMs: null });
       await startSignIn(page, form, button);
-      await expect.poll(() => seen.signIns, { timeout: 20_000 }).toEqual([LIVE_HOST]);
+      const banner = page.locator("p.hint[data-feature-status]").first();
+      await expect(banner).toContainText("Status: checking your account.", { timeout: 20_000 });
+      await page.waitForTimeout(1000);
+      expect(seen.signIns).toEqual([]);
     });
   }
 });
@@ -342,10 +348,13 @@ test.describe("The other Income Tax pages use the HMRC account the bundles chose
       await expect(page.locator("#syntheticIndicator")).toBeHidden();
     });
 
-    test(`${pageName} signs in to live HMRC once the bundle read has had its time, when it never answers`, async ({ page }) => {
+    test(`${pageName} says the account is not decided and signs in nowhere when the bundle read never answers`, async ({ page }) => {
       const seen = await openItsaPage(page, pageName, { synthetic: false, storedAccount: "synthetic", bundleAnswerMs: null });
       await startSignIn(page, form, undefined, request);
-      await expect.poll(() => seen.signIns, { timeout: 20_000 }).toEqual([LIVE_HOST]);
+      const banner = page.locator("p.hint[data-feature-status]").first();
+      await expect(banner).toContainText("Status: checking your account.", { timeout: 20_000 });
+      await page.waitForTimeout(1000);
+      expect(seen.signIns).toEqual([]);
     });
   }
 });
@@ -399,12 +408,12 @@ test.describe("An Income Tax page's status line follows the HMRC service its cal
     });
   }
 
-  test("the obligations page shows its status once the bundle read has had its time, when it never answers", async ({ page }) => {
+  test("the obligations page says the account is not decided when the bundle read never answers", async ({ page }) => {
     await openItsaPage(page, "obligations.html", { synthetic: false, storedAccount: "synthetic", bundleAnswerMs: null });
     const banner = page.locator("p.hint[data-feature-status]").first();
     await expect(banner).toBeVisible({ timeout: 20_000 });
-    await expect(banner).toHaveAttribute("data-feature-status", "production");
-    await expect(banner).toContainText("Status: production. This uses your real HMRC record.");
+    await expect(banner).toHaveAttribute("data-feature-status", "undecided");
+    await expect(banner).toContainText("Status: checking your account.");
     await expect(page.locator("#syntheticIndicator")).toBeHidden();
   });
 

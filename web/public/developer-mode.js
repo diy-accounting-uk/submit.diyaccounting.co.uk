@@ -17,28 +17,42 @@
   // Read current state
   const isEnabled = () => sessionStorage.getItem(KEY) === "true";
 
-  // Check if user has a synthetic bundle (granted via test pass)
-  // A bundle read that has not answered in this time is a failed read, so a page waiting on the
-  // HMRC account it chooses goes on with the account a failed read gives.
+  // A bundle read that has not answered in this time is a failed read. A failed read decides no HMRC
+  // account, and the read is made again after a wait that doubles up to the longest one.
   const BUNDLE_READ_TIMEOUT_MS = 8000;
+  const BUNDLE_READ_FIRST_RETRY_MS = 2000;
+  const BUNDLE_READ_LONGEST_RETRY_MS = 30000;
+
+  // Whether the user has a synthetic bundle (granted via test pass): true or false from a bundle
+  // read that answered, false for a signed-out reader, and null when the read got no answer, a
+  // server error or a request to slow down.
 
   async function userHasSyntheticBundle() {
     try {
       const idToken = localStorage.getItem("cognitoIdToken");
       if (!idToken) return false;
 
-      const response = await fetch("/api/v1/bundle", {
-        headers: { Authorization: `Bearer ${idToken}` },
-        signal: AbortSignal.timeout(BUNDLE_READ_TIMEOUT_MS),
-      });
-      if (!response.ok) return false;
+      const bundleRead = new AbortController();
+      const timeLimit = setTimeout(() => bundleRead.abort(), BUNDLE_READ_TIMEOUT_MS);
+      try {
+        const response = await fetch("/api/v1/bundle", {
+          headers: { Authorization: `Bearer ${idToken}` },
+          signal: bundleRead.signal,
+        });
+        // A read the server could not answer decides nothing. A refusal (the sign-in is not accepted)
+        // is an answer: the server refuses every HMRC request made with that sign-in too.
+        if (response.status >= 500 || response.status === 429) return null;
+        if (!response.ok) return false;
 
-      const data = await response.json();
-      const bundles = Array.isArray(data?.bundles) ? data.bundles : [];
-      return bundles.some((b) => b?.qualifiers?.synthetic === true);
+        const data = await response.json();
+        const bundles = Array.isArray(data?.bundles) ? data.bundles : [];
+        return bundles.some((b) => b?.qualifiers?.synthetic === true);
+      } finally {
+        clearTimeout(timeLimit);
+      }
     } catch (e) {
       console.warn("Failed to check synthetic bundle for developer mode:", e);
-      return false;
+      return null;
     }
   }
 
@@ -204,8 +218,19 @@
     settleHmrcAccount = resolve;
   });
 
+  // A decision ends only when a bundle read has answered. While the reads fail the account is not
+  // decided: the pages are told, readHmrcAccount keeps waiting, and so no request is built on a guess.
   async function chooseHmrcAccount() {
-    const hasSyntheticBundle = await userHasSyntheticBundle();
+    let hasSyntheticBundle = await userHasSyntheticBundle();
+    let retryMs = BUNDLE_READ_FIRST_RETRY_MS;
+    while (hasSyntheticBundle === null) {
+      window.hmrcAccountUndecided = true;
+      window.dispatchEvent(new CustomEvent("hmrc-account-undecided"));
+      await new Promise((resolve) => setTimeout(resolve, retryMs));
+      retryMs = Math.min(retryMs * 2, BUNDLE_READ_LONGEST_RETRY_MS);
+      hasSyntheticBundle = await userHasSyntheticBundle();
+    }
+    window.hmrcAccountUndecided = false;
     // Set sessionStorage for synthetic mode based on bundle qualifiers (single source of truth)
     if (hasSyntheticBundle) {
       sessionStorage.setItem("hmrcAccount", "synthetic");
