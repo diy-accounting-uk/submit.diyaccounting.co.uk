@@ -171,6 +171,25 @@ describe("data/dynamoDbDueListRepository", () => {
     expect(PutRequest.Item).not.toHaveProperty("sub");
   });
 
+  test("putRows writes a row whose source changed as a new open row", async () => {
+    storeHolds([{ ...VAT_ROW, hashedSub: "hashed-user-1", sk: rowSk(VAT_ROW), source: "computed", status: "closed" }]);
+
+    expect(await putRows("user-1", [VAT_ROW])).toEqual({ written: 1, refreshed: 0, removed: 0 });
+    expect(batchRequests()[0].PutRequest.Item).toMatchObject({ source: "hmrc", status: "open" });
+  });
+
+  test("putRows writes a changed row under the salt version that holds the account's rows during a rotation", async () => {
+    mockSubHashCandidates.mockImplementation((sub) => [
+      { version: "v2", hashedSub: `new-${sub}` },
+      { version: "v1", hashedSub: `hashed-${sub}` },
+    ]);
+    storeHolds([{ ...VAT_ROW, hashedSub: "hashed-user-1", sk: rowSk(VAT_ROW), dueDate: "2026-11-01" }]);
+
+    await putRows("user-1", [VAT_ROW, { ...VAT_ROW, periodEnd: "2026-12-31" }]);
+
+    expect(batchRequests().map((request) => request.PutRequest.Item.hashedSub)).toEqual(["hashed-user-1", "hashed-user-1"]);
+  });
+
   test("putRows replaces the stored rows that the replace selects and that the new rows do not hold", async () => {
     const otherBusiness = { ...VAT_ROW, businessId: "b2", hashedSub: "hashed-user-1" };
     storeHolds([
@@ -214,9 +233,27 @@ describe("data/dynamoDbDueListRepository", () => {
 
     const [update] = sent("Update").map((command) => command.params);
     expect(update.Key).toEqual({ hashedSub: "hashed-user-1", sk: "row#b1#vat-return#2026-09-30" });
-    expect(update.UpdateExpression).toBe("SET #status = :closed REMOVE job, jobOn");
+    expect(update.UpdateExpression).toBe("SET #status = :closed REMOVE job, jobOn, #sub");
+    expect(update.ExpressionAttributeNames).toEqual({ "#status": "status", "#sub": "sub" });
     expect(update.ExpressionAttributeValues).toEqual({ ":closed": "closed" });
     expect(update.ConditionExpression).toBe("attribute_exists(sk)");
+  });
+
+  test("closeRow leaves a business, the feed pointer and a seen filing as they are", async () => {
+    for (const sk of ["business#b1", "feed", "seen#01234567", undefined]) {
+      expect(await closeRow("user-1", sk)).toBe(false);
+    }
+    expect(mockSend).not.toHaveBeenCalled();
+  });
+
+  test("a row with no period end and no date, no type or no business has no sort key, and putRows writes none of its rows", async () => {
+    expect(() => rowSk({ businessId: "b1", type: "sa-payment-on-account" })).toThrow(/periodEnd or a date/);
+    expect(() => rowSk({ businessId: "b1", periodEnd: "2026-09-30" })).toThrow(/type/);
+    expect(() => rowSk({ type: "vat-return", periodEnd: "2026-09-30" })).toThrow(/businessId/);
+
+    storeHolds([]);
+    await expect(putRows("user-1", [VAT_ROW, { ...VAT_ROW, periodEnd: undefined }])).rejects.toThrow(/periodEnd or a date/);
+    expect(sent("BatchWrite")).toEqual([]);
   });
 
   test("closeRow answers false when the account holds no such row", async () => {

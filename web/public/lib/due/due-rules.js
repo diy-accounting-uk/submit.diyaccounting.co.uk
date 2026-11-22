@@ -63,6 +63,10 @@ function addMonths(iso, months) {
   return format(target);
 }
 
+function lastDayOfMonthsFrom(start, months) {
+  return addMonths(addDays(start, -1), months);
+}
+
 function computed(row, rule) {
   return { ...row, rule, source: "computed" };
 }
@@ -77,7 +81,7 @@ export function accountingPeriods({ periodStart, periodEnd }) {
   parse(periodStart, "periodStart");
   parse(periodEnd, "periodEnd");
   if (periodEnd < periodStart) throw new Error("periodEnd must not be before periodStart");
-  const firstEnd = addDays(addMonths(periodStart, 12), -1);
+  const firstEnd = lastDayOfMonthsFrom(periodStart, 12);
   if (periodEnd <= firstEnd) return [{ periodStart, periodEnd }];
   return [
     { periodStart, periodEnd: firstEnd },
@@ -139,7 +143,7 @@ export function expectedNextVatPeriod({ start, end }) {
   const months = (afterEnd.getUTCFullYear() - startDate.getUTCFullYear()) * 12 + afterEnd.getUTCMonth() - startDate.getUTCMonth();
   if (months < 1) throw new Error("a VAT period lasts at least a month");
   const nextStart = format(afterEnd);
-  const nextEnd = addDays(addMonths(nextStart, months), -1);
+  const nextEnd = lastDayOfMonthsFrom(nextStart, months);
   return { ...vatReturnDue(nextEnd), periodStart: nextStart, expected: true };
 }
 

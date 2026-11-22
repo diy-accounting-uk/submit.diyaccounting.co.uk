@@ -240,7 +240,9 @@ export async function cachedCompaniesHouseGet(companyNumber, endpoint, queryPara
 
 /**
  * Every page of a Companies House list through the cache, one page after another, up to maxPages
- * pages of 100 items. An answer that fails part way carries the items read before it.
+ * pages. It asks for 100 items a page and starts each page after the items it holds, so a list that
+ * answers fewer a page is still read to its total. An answer that fails part way carries the items
+ * read before it.
  * @param {string} companyNumber
  * @param {string} endpoint
  * @param {object} queryParams
@@ -257,7 +259,7 @@ export async function cachedCompaniesHouseGetAllPages(companyNumber, endpoint, q
     const answer = await cachedCompaniesHouseGet(
       companyNumber,
       endpoint,
-      { ...queryParams, items_per_page: PAGE_SIZE, start_index: page * PAGE_SIZE },
+      { ...queryParams, items_per_page: PAGE_SIZE, start_index: items.length },
       { kind },
     );
     if (!answer.ok) return { ...answer, partialItems: items };
@@ -266,8 +268,9 @@ export async function cachedCompaniesHouseGetAllPages(companyNumber, endpoint, q
     totalCount = answer.data.total_count ?? answer.data.total_results ?? totalCount;
     if (!oldestReadAt || answer.readAt < oldestReadAt) oldestReadAt = answer.readAt;
     fromCache = fromCache && answer.fromCache;
-    const done = pageItems.length < PAGE_SIZE || (totalCount !== undefined && items.length >= totalCount);
-    if (done) return { ok: true, data: { items, totalCount, truncated: false }, readAt: oldestReadAt, fromCache };
+    const done = pageItems.length === 0 || (totalCount === undefined ? pageItems.length < PAGE_SIZE : items.length >= totalCount);
+    if (done)
+      return { ok: true, data: { items, totalCount, truncated: items.length < (totalCount ?? 0) }, readAt: oldestReadAt, fromCache };
   }
   return { ok: true, data: { items, totalCount, truncated: true }, readAt: oldestReadAt, fromCache };
 }

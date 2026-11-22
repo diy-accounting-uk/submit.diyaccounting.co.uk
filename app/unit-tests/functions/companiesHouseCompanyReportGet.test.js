@@ -68,13 +68,16 @@ describe("functions/companiesHouseCompanyReportGet", () => {
     expect(REPORT_MODULES.filings).not.toHaveBeenCalled();
   });
 
-  test.each(["unknown", "filings"])("answers a JSON 404 for the report %s, which has no module", async (report) => {
-    const response = await ingestHandler(reportEvent("00000001", report));
+  test.each(["unknown", "filings", "toString", "constructor", "__proto__"])(
+    "answers a JSON 404 for the report %s, which has no module",
+    async (report) => {
+      const response = await ingestHandler(reportEvent("00000001", report));
 
-    expect(response.statusCode).toBe(404);
-    expect(bodyOf(response)).toMatchObject({ message: `No company report named ${report}` });
-    expect(mockLookupRefusalSeconds).not.toHaveBeenCalled();
-  });
+      expect(response.statusCode).toBe(404);
+      expect(bodyOf(response)).toMatchObject({ message: `No company report named ${report}` });
+      expect(mockLookupRefusalSeconds).not.toHaveBeenCalled();
+    },
+  );
 
   test("answers the report a module builds, with the company number and the report's name", async () => {
     REPORT_MODULES.filings = vi.fn(async () => ({ rows: [{ type: "AA" }], readAt: "2026-11-22T14:05:00.000Z" }));

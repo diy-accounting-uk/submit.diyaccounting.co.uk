@@ -38,7 +38,9 @@ const feedPartition = (tokenHash) => `feed#${tokenHash}`;
  * @returns {string}
  */
 export function rowSk(row) {
-  return `row#${row.businessId}#${row.type}#${row.periodEnd || row.date}`;
+  const keyDate = row.periodEnd || row.date;
+  if (!row.businessId || !row.type || !keyDate) throw new Error("a due list row needs a businessId, a type, and a periodEnd or a date");
+  return `row#${row.businessId}#${row.type}#${keyDate}`;
 }
 
 async function queryAll(params) {
@@ -177,13 +179,15 @@ export async function putRows(userSub, rows, replace = () => false) {
 }
 
 /**
- * Closes a row: its status becomes closed and it loses its job, so the reminder job no longer finds it.
+ * Closes a row: its status becomes closed and it loses its job and the raw sub that went with it, so
+ * the reminder job no longer finds it.
  * @param {string} userSub
  * @param {string} sk - The row's sort key
- * @returns {Promise<boolean>} False when the account holds no such row
+ * @returns {Promise<boolean>} False when the account holds no such row, or the key is not a row's
  */
 export async function closeRow(userSub, sk) {
   const tableName = getResourceName(TABLE);
+  if (!String(sk).startsWith("row#")) return false;
   for (const { hashedSub } of subHashCandidates(userSub)) {
     try {
       await executeDynamoDbCommand(
@@ -191,9 +195,9 @@ export async function closeRow(userSub, sk) {
           new module.UpdateCommand({
             TableName: tableName,
             Key: { hashedSub, sk },
-            UpdateExpression: "SET #status = :closed REMOVE job, jobOn",
+            UpdateExpression: "SET #status = :closed REMOVE job, jobOn, #sub",
             ConditionExpression: "attribute_exists(sk)",
-            ExpressionAttributeNames: { "#status": "status" },
+            ExpressionAttributeNames: { "#status": "status", "#sub": "sub" },
             ExpressionAttributeValues: { ":closed": "closed" },
           }),
       );

@@ -241,6 +241,69 @@ describe("services/companiesHouseCache", () => {
     expect(answer.data.items).toHaveLength(150);
   });
 
+  test("paging reads a list that answers fewer items a page than it asks for, up to its total", async () => {
+    const page = (start, length) =>
+      ok({ total_results: 120, items: Array.from({ length }, (unused, index) => ({ name: `OFFICER ${start + index}` })) });
+    answers = [
+      (endpoint, queryParams) => page(queryParams.start_index, 50),
+      (endpoint, queryParams) => page(queryParams.start_index, 50),
+      (endpoint, queryParams) => page(queryParams.start_index, 20),
+    ];
+
+    const answer = await cachedCompaniesHouseGetAllPages("00000001", "/company/00000001/officers", {}, { kind: "officers" });
+
+    expect(calls.map((call) => call.queryParams.start_index)).toEqual([0, 50, 100]);
+    expect(answer.data).toMatchObject({ totalCount: 120, truncated: false });
+    expect(answer.data.items.map((item) => item.name)).toEqual(Array.from({ length: 120 }, (unused, index) => `OFFICER ${index}`));
+  });
+
+  test("paging that meets an empty page short of the total answers what it read as truncated", async () => {
+    answers = [ok({ total_count: 150, items: Array.from({ length: 100 }, () => ({})) }), ok({ total_count: 150, items: [] })];
+
+    const answer = await cachedCompaniesHouseGetAllPages("00000001", "/company/00000001/filing-history", {}, { kind: "filingHistory" });
+
+    expect(calls).toHaveLength(2);
+    expect(answer.data.truncated).toBe(true);
+    expect(answer.data.items).toHaveLength(100);
+  });
+
+  test("paging that fails part way answers the failure with the items read before it", async () => {
+    answers = [ok({ total_count: 150, items: Array.from({ length: 100 }, () => ({ type: "AA" })) }), { ok: false, status: 502 }];
+
+    const answer = await cachedCompaniesHouseGetAllPages("00000001", "/company/00000001/filing-history", {}, { kind: "filingHistory" });
+
+    expect(answer).toMatchObject({ ok: false, status: 502 });
+    expect(answer.partialItems).toHaveLength(100);
+  });
+
+  test("a cache that cannot be read or written still answers from Companies House", async () => {
+    vi.spyOn(table, "get").mockImplementationOnce(() => {
+      throw new Error("table unavailable");
+    });
+    vi.spyOn(table, "set").mockImplementationOnce(() => {
+      throw new Error("table unavailable");
+    });
+    answers = [ok({ items: [OFFICER] })];
+
+    const answer = await cachedCompaniesHouseGet("00000001", "/company/00000001/officers", {}, { kind: "officers" });
+
+    expect(answer).toMatchObject({ ok: true, fromCache: false, data: { items: [{ name: "SMITH, Carol" }] } });
+    expect(table.size).toBe(0);
+  });
+
+  test("the figures of a filing keep no director and no signer", () => {
+    const figures = KINDS.figures.trim({
+      transactionId: "T1",
+      period: { end: "2026-03-31" },
+      balanceSheet: { netAssets: 100 },
+      directors: ["SMITH, Carol"],
+      signer: "SMITH, Carol",
+      documentText: "<html></html>",
+    });
+
+    expect(figures).toEqual({ transactionId: "T1", period: { end: "2026-03-31" }, balanceSheet: { netAssets: 100 } });
+  });
+
   test("invalidateCompany deletes the company's entries and keeps its figures", async () => {
     answers = [ok({ company_name: "ACME LIMITED" }), ok({ items: [] }), ok({ company_name: "OTHER" })];
     await cachedCompaniesHouseGet("00000001", "/company/00000001", {}, { kind: "profile" });

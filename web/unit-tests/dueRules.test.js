@@ -61,6 +61,50 @@ describe("due rules", () => {
     expect(vatReturnDue("2028-01-31").due).toBe("2028-03-07");
   });
 
+  test("a period that starts on February's last day runs 12 months to the day before its anniversary", () => {
+    expect(accountingPeriods({ periodStart: "2028-02-29", periodEnd: "2029-02-28" })).toHaveLength(1);
+    expect(accountingPeriods({ periodStart: "2027-02-28", periodEnd: "2028-02-27" })).toHaveLength(1);
+    expect(accountingPeriods({ periodStart: "2027-02-28", periodEnd: "2028-02-28" })).toEqual([
+      { periodStart: "2027-02-28", periodEnd: "2028-02-27" },
+      { periodStart: "2028-02-28", periodEnd: "2028-02-28" },
+    ]);
+    expect(accountingPeriods({ periodStart: "2027-03-01", periodEnd: "2028-02-29" })).toHaveLength(1);
+  });
+
+  test("the expected next VAT period after one that ends in late February keeps its day of the month", () => {
+    expect(expectedNextVatPeriod({ start: "2027-11-29", end: "2028-02-28" })).toMatchObject({
+      periodStart: "2028-02-29",
+      periodEnd: "2028-05-28",
+    });
+    expect(expectedNextVatPeriod({ start: "2026-11-28", end: "2027-02-27" })).toMatchObject({
+      periodStart: "2027-02-28",
+      periodEnd: "2027-05-27",
+    });
+    expect(expectedNextVatPeriod({ start: "2027-12-01", end: "2028-02-29" })).toMatchObject({
+      periodStart: "2028-03-01",
+      periodEnd: "2028-05-31",
+    });
+  });
+
+  test("a period that ends on the 28th, 29th, 30th or 31st, in a leap year and out of one", () => {
+    const due = (periodEnd) => [
+      vatReturnDue(periodEnd).due,
+      ctPaymentRows({ periodStart: periodEnd, periodEnd })[0].due,
+      ct600Rows({ periodStart: periodEnd, periodEnd })[0].due,
+    ];
+    expect(due("2027-02-28")).toEqual(["2027-04-07", "2027-12-01", "2028-02-29"]);
+    expect(due("2028-02-28")).toEqual(["2028-04-04", "2028-11-29", "2029-02-28"]);
+    expect(due("2028-02-29")).toEqual(["2028-04-07", "2028-12-01", "2029-02-28"]);
+    expect(due("2027-01-29")).toEqual(["2027-03-07", "2027-10-30", "2028-01-29"]);
+    expect(due("2028-01-29")).toEqual(["2028-03-07", "2028-10-30", "2029-01-29"]);
+    expect(due("2027-01-30")).toEqual(["2027-03-07", "2027-10-31", "2028-01-30"]);
+    expect(due("2027-05-30")).toEqual(["2027-07-07", "2028-03-01", "2028-05-30"]);
+    expect(due("2027-11-30")).toEqual(["2028-01-07", "2028-09-01", "2028-11-30"]);
+    expect(due("2027-01-31")).toEqual(["2027-03-07", "2027-11-01", "2028-01-31"]);
+    expect(due("2028-01-31")).toEqual(["2028-03-07", "2028-11-01", "2029-01-31"]);
+    expect(due("2027-08-31")).toEqual(["2027-10-07", "2028-06-01", "2028-08-31"]);
+  });
+
   test("a VAT payment is due on its return's deadline", () => {
     expect(vatPaymentDue("2026-03-31")).toEqual({
       kind: "vat-payment",
