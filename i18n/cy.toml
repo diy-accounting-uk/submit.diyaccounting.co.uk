@@ -17244,3 +17244,145 @@ cy = '''Nid oes datganiad cadarnhau wedi’i wneud hyd at {date} ar y gofrestr a
 [strings."ch.drill.no-accounts-period"]
 hash = "efa3b5b6ecda"
 cy = '''Nid oes cyfrifon wedi’u gwneud hyd at {date} ar y gofrestr ar gyfer y cwmni hwn.'''
+
+# == Company watch list: ids ch.watch.*, the watch list page's marks ch-watch-list.*, and the lookup's watch list column and link ==
+
+[strings."ch-watch-list.title"]
+hash = "b64d1cfb9a63"
+cy = '''Rhestr wylio cwmnïau - DIY Accounting Submit'''
+
+[strings."ch-watch-list.company-watch-list-2f5d4e"]
+hash = "2f5d4ecfd9b1"
+cy = '''Rhestr wylio cwmnïau'''
+
+[strings."ch-watch-list.keep-the-companies-you-look-after-ffe960"]
+hash = "ffe960b4f0cb"
+cy = '''Cadwch y cwmnïau rydych yn gofalu amdanynt mewn un rhestr, gyda’u dyddiadau ffeilio nesaf'''
+
+[strings."ch-watch-list.status-production-this-reads-the-live-ea48cf"]
+hash = "ea48cff80613"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae’r dudalen hon yn darllen cofrestr fyw Tŷ’r Cwmnïau.'''
+
+[strings."ch-watch-list.your-companies-15788e"]
+hash = "15788e6ce135"
+cy = '''Eich cwmnïau'''
+
+[strings."ch-watch-list.your-watch-list-is-empty-search-02cda9"]
+hash = "02cda9becd8d"
+cy = '''Mae eich rhestr wylio yn wag. Chwiliwch am gwmni isod a’i ychwanegu.'''
+
+[strings."ch-watch-list.your-watch-list-holds-50-companies-572ee9"]
+hash = "572ee98fb560"
+cy = '''Mae eich rhestr wylio yn dal 50 o gwmnïau, y nifer mwyaf y gall ei dal. Tynnwch un i ychwanegu un arall.'''
+
+[strings."ch-watch-list.add-a-company-c99831"]
+hash = "c99831a21066"
+cy = '''Ychwanegu cwmni'''
+
+[strings."ch-watch-list.company-name-or-number-cd75c6"]
+hash = "cd75c6d8f181"
+cy = '''Enw neu rif y cwmni'''
+
+[strings."ch-watch-list.a-company-name-or-the-8-8782ed"]
+hash = "8782ed4aa91d"
+cy = '''Enw cwmni, neu rif y cwmni sydd ag 8 nod, er enghraifft 00000001.'''
+
+[strings."ch-watch-list.search-49c266"]
+hash = "49c266baaaa7"
+cy = '''Chwilio'''
+
+[strings."ch-watch-list.search-results-e978b0"]
+hash = "e978b00de465"
+cy = '''Canlyniadau chwilio'''
+
+[strings."ch-watch-list.sign-in-to-see-your-watch-98b5c4"]
+hash = "98b5c498ceeb"
+cy = '''Mewngofnodwch i weld eich rhestr wylio'''
+
+[strings."ch-watch-list.sign-in-to-keep-a-list-cf9316"]
+hash = "cf9316834b95"
+cy = '''Mewngofnodwch i gadw rhestr o’r cwmnïau rydych yn gofalu amdanynt.'''
+
+[strings."ch.search.column-watch-list"]
+hash = "fdc52ed3c672"
+cy = '''Rhestr wylio'''
+
+[strings."ch.drill.open-watch-list"]
+hash = "aa1ea2bebe98"
+cy = '''Agor eich rhestr wylio'''
+
+[strings."ch.watch.not-on-register"]
+hash = "3df09c340303"
+cy = '''Nid yw ar y gofrestr'''
+
+[strings."ch.watch.not-read"]
+hash = "f15b0b219e30"
+cy = '''Heb ei ddarllen gan Dŷ’r Cwmnïau'''
+
+[strings."ch.watch.remove"]
+hash = "c3812fc4acb8"
+cy = '''Tynnu'''
+
+[strings."ch.watch.remove-company"]
+hash = "bac4292c1e2f"
+cy = '''Tynnu {number} o’r rhestr wylio'''
+
+[strings."ch.watch.not-saved"]
+hash = "cb7ed85e5700"
+cy = '''Ni chadwyd y rhestr wylio. Rhowch gynnig arall arni.'''
+
+[strings."ch.watch.reading"]
+hash = "874bfa5bedd7"
+cy = '''Yn darllen…'''
+
+[strings."ch.watch.read-at"]
+hash = "f6a19df0fd74"
+cy = '''Darllenwyd am {time}'''
+
+[strings."ch.watch.count"]
+hash = "a49efaeebb5b"
+cy = '''{count} o {cap} cwmni'''
+
+[strings."ch.watch.column-company"]
+hash = "de4743c87973"
+cy = '''Cwmni'''
+
+[strings."ch.watch.column-number"]
+hash = "bd82cf16699b"
+cy = '''Rhif'''
+
+[strings."ch.watch.column-status"]
+hash = "920e413c7d41"
+cy = '''Statws'''
+
+[strings."ch.watch.column-accounts-due"]
+hash = "b038409b1bdb"
+cy = '''Cyfrifon nesaf yn ddyledus'''
+
+[strings."ch.watch.column-confirmation-due"]
+hash = "b80cee8a539f"
+cy = '''Datganiad cadarnhau nesaf yn ddyledus'''
+
+[strings."ch.watch.column-read"]
+hash = "9b9a8d05a7ec"
+cy = '''Darllenwyd'''
+
+[strings."ch.watch.column-action"]
+hash = "64cff1319d2f"
+cy = '''Gweithred'''
+
+[strings."ch.watch.not-loaded"]
+hash = "01cbd45e74d1"
+cy = '''Nid oedd modd darllen eich rhestr wylio. Rhowch gynnig arall arni.'''
+
+[strings."ch.watch.on-list"]
+hash = "ffdc2e750da8"
+cy = '''Ar eich rhestr wylio'''
+
+[strings."ch.watch.list-full"]
+hash = "6b75102365cc"
+cy = '''Mae’r rhestr wylio yn llawn'''
+
+[strings."ch.watch.add"]
+hash = "3f56901b71ee"
+cy = '''Ychwanegu at y rhestr wylio'''

@@ -4,7 +4,7 @@
 // web/browser-tests/companySearch.browser.test.js
 
 import { test, expect } from "@playwright/test";
-import { servePageScripts } from "./hmrcFieldTableAssets.js";
+import { servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
 import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
@@ -125,6 +125,7 @@ test.describe("Company Lookup page", () => {
     await page.setViewportSize({ width: 390, height: 900 });
     setupPage(page);
     await setupRoutes(page);
+    await serveSiteStyles(page);
     await loadPage(page);
 
     await page.fill("#companyQuery", "Simulator Example");
@@ -132,7 +133,7 @@ test.describe("Company Lookup page", () => {
     await delay(300);
 
     const labels = await page.locator("#searchResults tbody td").evaluateAll((cells) => cells.map((cell) => cell.dataset.label));
-    expect(labels).toEqual(["Company", "Number", "Status", "Incorporated", "Address"]);
+    expect(labels).toEqual(["Company", "Number", "Status", "Incorporated", "Address", "Watch list"]);
     const scrollsSideways = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
     expect(scrollsSideways).toBe(false);
   });

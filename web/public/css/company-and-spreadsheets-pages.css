@@ -214,3 +214,8 @@
 .file-this .btn {
   width: auto;
 }
+
+/* The watch list action on the company lookup's profile */
+.watch-list-action {
+  margin: 0.5rem 0 1rem;
+}

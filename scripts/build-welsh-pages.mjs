@@ -114,6 +114,14 @@ export const WELSH_PAGES = [
     markAttributes: CH_MARK_ATTRIBUTES,
   },
   {
+    id: "ch-watch-list",
+    en: "companies-house/watchList.html",
+    cy: "cy/companies-house/watchList.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/watchList.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
     id: "ch-filings",
     en: "companies-house/filings.html",
     cy: "cy/companies-house/filings.html",

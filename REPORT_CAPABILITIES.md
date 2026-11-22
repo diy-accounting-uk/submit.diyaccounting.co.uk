@@ -117,6 +117,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile: use when a filing journey has a company number and needs the company's registered details.
     - [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in) Look up a company's filing deadlines with no sign-in: use when a director with no account wants to know when a company's accounts and confirmation statement are next due.
     - [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in) Read a company's register for a prefilled package with no sign-in: use when a page with no sign-in builds a company's book from what Companies House holds: its profile, its current officers and its last filed accounts.
+    - [CH-23](#ch-23-keep-a-watch-list-of-companies) Keep a watch list of companies: use when a signed-in user wants the companies they look after in one list, with each one's next accounts and confirmation statement dates.
   - [Registered office and email](#registered-office-and-email-ch)
     - [CH-05](#ch-05-file-a-change-of-registered-office-address) File a change of registered office address: use when a company needs to change its registered office address on the public register.
     - [CH-06](#ch-06-file-a-change-of-registered-email-address) File a change of registered email address: use when a company needs to register or change its registered email address with Companies House.
@@ -1569,7 +1570,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area CH -->
 - [OAuth and identity](#oauth-and-identity-ch): [CH-01](#ch-01-exchange-a-companies-house-oauth-token) Exchange a Companies House OAuth token · [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration) Verify the Companies House OAuth app configuration
-- [Company search and profile](#company-search-and-profile-ch): [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register · [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile · [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in) Look up a company's filing deadlines with no sign-in · [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in) Read a company's register for a prefilled package with no sign-in
+- [Company search and profile](#company-search-and-profile-ch): [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register · [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile · [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in) Look up a company's filing deadlines with no sign-in · [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in) Read a company's register for a prefilled package with no sign-in · [CH-23](#ch-23-keep-a-watch-list-of-companies) Keep a watch list of companies
 - [Registered office and email](#registered-office-and-email-ch): [CH-05](#ch-05-file-a-change-of-registered-office-address) File a change of registered office address · [CH-06](#ch-06-file-a-change-of-registered-email-address) File a change of registered email address
 - [Micro-entity accounts filing](#micro-entity-accounts-filing-ch): [CH-07](#ch-07-render-micro-entity-accounts-for-review) Render micro-entity accounts for review · [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House · [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending) Poll Companies House for filings the reader left pending
 - [Company Tax Return filing](#company-tax-return-filing-ch): [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC · [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets) File a Corporation Tax test scenario to TPVS or ETS
@@ -1611,6 +1612,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile
 - [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in) Look up a company's filing deadlines with no sign-in
 - [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in) Read a company's register for a prefilled package with no sign-in
+- [CH-23](#ch-23-keep-a-watch-list-of-companies) Keep a watch list of companies
 <!-- /generated:group company-search-and-profile-ch -->
 
 #### CH-03 Search the Companies House register
@@ -1652,6 +1654,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/companies-house/companiesHousePublicRegisterGet.js, app/unit-tests/functions/companiesHousePublicRegisterGet.test.js, app/services/companiesHouseFiledAccounts.js, app/system-tests/companiesHouseSimulator.system.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/CompaniesHouseStack.java
 - **Keywords:** company register, filed accounts, ixbrl, officers, public lookup, no sign-in, prefilled package, companies house, cache, rate limit
 - **Related:** CH-20
+
+#### CH-23 Keep a watch list of companies
+
+- **Use when:** a signed-in user wants the companies they look after in one list, with each one's next accounts and confirmation statement dates.
+- **Does:** watchList.page.js lists the company numbers of the account's watchedCompanies setting (app/lib/accountSettings.js, at most 50, written by PUT /api/v1/account/settings). It reads each company's profile once per visit, one at a time, and shows its name, status, next accounts and confirmation statement due dates and the time it was read. A 429 shows the lookup's rate-limit message and stops the reads. Each company links to its drill-down address and can be removed. The page searches Companies House and adds a result with watch-list-button.js, which also puts "Add to watch list" on the company lookup's results and profile.
+- **Run:** open `/companies-house/watchList.html` (activity `company-watch-list`, default bundle)
+- **Entry:** `web/public/companies-house/watchList.page.js`; `web/public/lib/watch-list-button.js:button`
+- **Files:** web/public/companies-house/watchList.html, web/public/companies-house/watchList.page.js, web/public/lib/watch-list-button.js, web/public/lib/services/watch-list-service.js, app/lib/accountSettings.js, web/browser-tests/watchList.browser.test.js
+- **Keywords:** watch list, watched companies, company watch list, next accounts due, confirmation statement due, account setting
+- **Related:** CH-03, SITE-24
 
 ### Registered office and email (CH)
 
@@ -7110,6 +7122,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - account link: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect)
 - account linking: [SITE-01](#site-01-sign-customers-in-via-cognito)
 - account policies: [BILL-31](#bill-31-configure-stripe-account-policies)
+- account setting: [CH-23](#ch-23-keep-a-watch-list-of-companies)
 - account settings: [SITE-24](#site-24-change-an-account-setting)
 - account stack: [BILL-36](#bill-36-cdk-account-stack)
 - accounting year-end: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
@@ -7651,6 +7664,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - company register: [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
 - company search: [CH-03](#ch-03-search-the-companies-house-register), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - company tax return: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
+- company watch list: [CH-23](#ch-23-keep-a-watch-list-of-companies)
 - compare prices: [SITE-34](#site-34-check-the-compared-prices-each-month)
 - compare-prices-check.yml: [SITE-34](#site-34-check-the-compared-prices-each-month)
 - comparison page: [SITE-34](#site-34-check-the-compared-prices-each-month)
@@ -7676,7 +7690,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - configuration set: [OPS-182](#ops-182-provision-the-customer-email-sender)
 - configure-aws-credentials: [OPS-145](#ops-145-assume-an-aws-role-by-oidc-with-an-optional-chained-deploy-role)
 - confirmation statement: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages)
-- confirmation statement due: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in)
+- confirmation statement due: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-23](#ch-23-keep-a-watch-list-of-companies)
 - conflict card: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - connector directory: [MCP-27](#mcp-27-sync-the-plugin-folder-to-the-public-plugin-repository)
 - connector listing: [MCP-23](#mcp-23-validate-and-publish-the-mcp-registry-entry)
@@ -8775,6 +8789,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - new applicant: [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets)
 - new-session: [DATA-68](#data-68-sql-view-campaign-results-by-place)
 - newsletters: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
+- next accounts due: [CH-23](#ch-23-keep-a-watch-list-of-companies)
 - next.md: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions), [DEV-27](#dev-27-render-the-open-work-board), [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents), [SS-46](#ss-46-render-the-spreadsheets-work-board)
 - next.md readiness: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
 - next.md shape: [DEV-21](#dev-21-verify-module-wiring-and-repository-shape)
@@ -9947,8 +9962,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - warm route: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - watch: [DEV-31](#dev-31-watch-github-ci-to-green)
 - watch ci: [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli)
+- watch list: [CH-23](#ch-23-keep-a-watch-list-of-companies)
 - watch skill: [SS-50](#ss-50-watch-github-ci-to-green)
 - watchdog: [OPS-148](#ops-148-stop-a-stack-deploy-when-one-resource-stalls-with-no-physical-id)
+- watched companies: [CH-23](#ch-23-keep-a-watch-list-of-companies)
 - wave: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
 - wave branch: [DEV-64](#dev-64-define-a-wave-set-for-local-delivery)
 - wave dispatch: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)

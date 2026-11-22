@@ -60,7 +60,7 @@ describe("account settings route", () => {
     const response = await accountSettingsPutHandler(putEvent({ passGeneration: false }));
 
     expect(response.statusCode).toBe(200);
-    expect(parseResponseBody(response)).toEqual({ settings: { passGeneration: false } });
+    expect(parseResponseBody(response)).toEqual({ settings: { passGeneration: false, watchedCompanies: [] } });
     expect(writtenItems).toHaveLength(1);
     expect(writtenItems[0]).toMatchObject({ bundleId: ACCOUNT_SETTINGS_ITEM_ID, settings: { passGeneration: false } });
     expect(writtenItems[0].hashedSub).toBeTruthy();
@@ -75,7 +75,21 @@ describe("account settings route", () => {
     expect(writtenItems[0].settings).toEqual({ passGeneration: true, kept: "yes" });
   });
 
-  test.each([[{ passGeneration: "off" }], [{ colour: true }], [{}]])("PUT of %j answers 400 and writes nothing", async (body) => {
+  test("PUT writes the watch list of company numbers", async () => {
+    const response = await accountSettingsPutHandler(putEvent({ watchedCompanies: ["00000001", "SC000000"] }));
+
+    expect(response.statusCode).toBe(200);
+    expect(parseResponseBody(response).settings.watchedCompanies).toEqual(["00000001", "SC000000"]);
+    expect(writtenItems[0].settings).toMatchObject({ watchedCompanies: ["00000001", "SC000000"] });
+  });
+
+  test.each([
+    [{ passGeneration: "off" }],
+    [{ colour: true }],
+    [{}],
+    [{ watchedCompanies: ["not-a-number"] }],
+    [{ watchedCompanies: Array.from({ length: 51 }, (_, index) => String(index + 1).padStart(8, "0")) }],
+  ])("PUT of %j answers 400 and writes nothing", async (body) => {
     const response = await accountSettingsPutHandler(putEvent(body));
 
     expect(response.statusCode).toBe(400);
@@ -91,7 +105,7 @@ describe("account settings route", () => {
   test("GET /api/v1/bundle returns pass generation on for a user with no stored settings", async () => {
     const response = await bundleGetHandler(buildEventWithToken(makeIdToken("settings-user"), {}));
 
-    expect(parseResponseBody(response).settings).toEqual({ passGeneration: true });
+    expect(parseResponseBody(response).settings).toEqual({ passGeneration: true, watchedCompanies: [] });
   });
 
   test("GET /api/v1/bundle returns the stored setting and leaves the settings item out of the bundles", async () => {
@@ -100,7 +114,7 @@ describe("account settings route", () => {
     const response = await bundleGetHandler(buildEventWithToken(makeIdToken("settings-user"), {}));
 
     const body = parseResponseBody(response);
-    expect(body.settings).toEqual({ passGeneration: false });
+    expect(body.settings).toEqual({ passGeneration: false, watchedCompanies: [] });
     expect(body.bundles.map((bundle) => bundle.bundleId)).not.toContain(ACCOUNT_SETTINGS_ITEM_ID);
   });
 });

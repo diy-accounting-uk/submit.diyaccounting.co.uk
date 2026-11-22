@@ -11,7 +11,7 @@ export const PREVIEW_FEATURES_HEADER = "x-preview-features";
 const PREVIEW_FEATURES_KEY = "previewFeatures";
 const OPERATOR_FEATURES_KEY = "operatorFeatures";
 
-export const ACCOUNT_SETTING_DEFAULTS = { passGeneration: true };
+export const ACCOUNT_SETTING_DEFAULTS = { passGeneration: true, watchedCompanies: [] };
 
 function readSession(key) {
   try {
@@ -77,7 +77,7 @@ export async function fetchBundleResponse() {
 
 /**
  * The account settings, each with the default when the person is signed out or the read fails.
- * @returns {Promise<{passGeneration: boolean}>}
+ * @returns {Promise<{passGeneration: boolean, watchedCompanies: string[]}>}
  */
 export async function fetchAccountSettings() {
   const response = await fetchBundleResponse();
@@ -87,8 +87,8 @@ export async function fetchAccountSettings() {
 /**
  * Change one account setting on the server.
  * @param {string} name - The setting name
- * @param {boolean} value - The new value
- * @returns {Promise<{passGeneration: boolean}>} The settings after the change
+ * @param {boolean|string[]} value - The new value
+ * @returns {Promise<{passGeneration: boolean, watchedCompanies: string[]}>} The settings after the change
  */
 export async function updateAccountSetting(name, value) {
   const response = await window.fetchWithIdToken("/api/v1/account/settings", {

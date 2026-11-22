@@ -24,6 +24,7 @@ function renderSearchResults(results) {
     window.siteText("ch.search.column-status", "Status"),
     window.siteText("ch.search.column-incorporated", "Incorporated"),
     window.siteText("ch.search.column-address", "Address"),
+    window.siteText("ch.search.column-watch-list", "Watch list"),
   ];
   const thead = table.createTHead().insertRow();
   headings.forEach((heading) => {
@@ -61,6 +62,9 @@ function renderSearchResults(results) {
     row.appendChild(statusCell);
     row.appendChild(incorporatedCell);
     row.appendChild(addressCell);
+    const watchCell = document.createElement("td");
+    watchCell.appendChild(window.watchList.button(item.companyNumber));
+    row.appendChild(watchCell);
     tbody.appendChild(row);
   });
 
@@ -394,6 +398,16 @@ function emptyNote(container, text) {
 const accountsTypeLabel = (type) => (type ? slugText(type) : window.siteText("ch.drill.type-not-stated", "Not stated"));
 
 // -- the overview's sections ----------------------------------------------------------------------
+
+function renderWatchSection(profile) {
+  const section = document.getElementById("watchSection");
+  section.innerHTML = "";
+  section.appendChild(window.watchList.button(profile.companyNumber));
+  const link = document.createElement("a");
+  link.href = `${pagePrefix()}/companies-house/watchList.html`;
+  link.textContent = window.siteText("ch.drill.open-watch-list", "Open your watch list");
+  section.append(" ", link);
+}
 
 async function renderAccountsSection(profile) {
   const section = document.getElementById("accountsSection");
@@ -818,6 +832,7 @@ async function showView(state) {
       overview.style.display = "block";
       view.style.display = "none";
       showOnly("profileView");
+      renderWatchSection(profile);
       await Promise.all([
         renderAccountsSection(profile),
         renderConfirmationSection(profile),

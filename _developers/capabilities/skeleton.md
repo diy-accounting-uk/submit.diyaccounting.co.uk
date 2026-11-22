@@ -191,6 +191,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability CH-04 -->
 <!-- capability CH-20 -->
 <!-- capability CH-22 -->
+<!-- capability CH-23 -->
 ### Registered office and email (CH)
 
 <!-- generated:group registered-office-and-email-ch -->

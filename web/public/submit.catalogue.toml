@@ -528,6 +528,16 @@ paths = ["companies-house/companySearch.html", "^/api/v1/companies-house/search$
 environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
+id = "company-watch-list"
+name = "Company Watch List (Companies House)"
+nameCy = "Rhestr wylio cwmnïau (Tŷ'r Cwmnïau)"
+display = "on-entitlement"
+bundles = ["default"]
+metered = false
+paths = ["companies-house/watchList.html"]
+environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
+
+[[activities]]
 id = "change-registered-office"
 name = "Change Registered Office Address (Companies House)"
 nameCy = "Newid cyfeiriad y swyddfa gofrestredig (Tŷ'r Cwmnïau)"
