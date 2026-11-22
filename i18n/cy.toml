@@ -23677,9 +23677,9 @@ cy = '''Cod dilysu’r cwmni'''
 hash = "48646a151fe7"
 cy = '''Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei ddefnyddio.'''
 
-[strings."ch-remove-officer.companies-house-all-information-on-this-3cd0ef"]
-hash = "3cd0ef8e7a32"
-cy = '''Mae Tŷ’r Cwmnïau yn dweud y bydd yr holl wybodaeth ar y ffurflen hon yn ymddangos ar y cofnod cyhoeddus.
+[strings."ch-remove-officer.companies-house-s-paper-form-says-804049"]
+hash = "8040499a6215"
+cy = '''Mae ffurflen bapur Tŷ’r Cwmnïau yn dweud y bydd yr holl wybodaeth ar y ffurflen yn ymddangos ar y cofnod cyhoeddus. Dim ond mis a blwyddyn geni y mae’r ffurflen bapur yn gofyn amdanynt.
             <a href="https://assets.publishing.service.gov.uk/media/6911ece9e9348ac8fb54f483/TM01_v7.0-FINAL.pdf" lang="en">TM01 Termination of appointment of director</a> <span class="lang-mark">(yn Saesneg)</span> Mae GOV.UK yn cyhoeddi hwn yn Saesneg yn unig.'''
 
 [strings."ch-remove-officer.continue-31fbef"]
@@ -23761,6 +23761,10 @@ cy = '''Dewiswch y cyfarwyddwr neu’r ysgrifennydd sy’n gadael.'''
 [strings."ch.remove-officer.ended-before-appointed"]
 hash = "f692ed8db8c7"
 cy = '''Ni all y penodiad ddod i ben cyn y dyddiad y dechreuodd, {date}.'''
+
+[strings."ch.remove-officer.ended-in-future"]
+hash = "bf829bc06b03"
+cy = '''Ni all y dyddiad y daeth y penodiad i ben fod yn y dyfodol.'''
 
 [strings."ch.remove-officer.review-company"]
 hash = "de4743c87973"

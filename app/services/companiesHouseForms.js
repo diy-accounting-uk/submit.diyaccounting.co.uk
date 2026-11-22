@@ -208,6 +208,8 @@ function extractOfficerResignation(body, errorMessages) {
   const directorPerson = officerRole === "director" && corporate === false;
   if (!resignationDate || !isValidIsoDate(resignationDate)) {
     errorMessages.push("Invalid or missing resignationDate - must be YYYY-MM-DD");
+  } else if (resignationDate > todayInUk()) {
+    errorMessages.push("Invalid resignationDate - must not be in the future");
   }
   if (directorPerson && (!dateOfBirth || !isValidIsoDate(dateOfBirth))) {
     errorMessages.push("Invalid or missing dateOfBirth - a director who is a person needs it as YYYY-MM-DD");

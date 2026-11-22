@@ -179,6 +179,34 @@ describe("companiesHouseOfficerResignationPost ingestHandler", () => {
     expect(JSON.stringify(writes.map((cmd) => cmd.input))).toContain('"kind":"officer-resignation"');
   });
 
+  test("a director's date of birth and name go to the envelope and to no stored record or event", async () => {
+    await ingestHandler(buildEvent());
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const stored = JSON.stringify(
+      mockSend.mock.calls
+        .map(([cmd]) => cmd)
+        .filter((cmd) => cmd instanceof lib.UpdateCommand || cmd instanceof lib.PutCommand)
+        .map((cmd) => cmd.input),
+    );
+    const events = JSON.stringify(mockEventBridgeSend.mock.calls);
+
+    expect(mockBuildFormSubmission.mock.calls[0][0].formXml).toContain("<DOB>1975-02-14</DOB>");
+    for (const record of [stored, events]) {
+      expect(record).not.toContain("1975-02-14");
+      expect(record).not.toContain("TENNANT");
+      expect(record).not.toContain("SIMCS01");
+    }
+  });
+
+  test("a rejected request answers with no date of birth or name in its words", async () => {
+    const response = await ingestHandler(buildEvent({ body: buildResignationBody({ resignationDate: "1975-02-14" }) }));
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toContain("must be before resignationDate");
+    expect(response.body).not.toContain("1975-02-14");
+    expect(response.body).not.toContain("TENNANT");
+  });
+
   test("answers 400 in JSON, sending nothing, for a bad role, a missing name, a director's missing date of birth or bad dates", async () => {
     for (const [overrides, message] of [
       [{ officerRole: "member" }, "Invalid officerRole"],
@@ -188,6 +216,7 @@ describe("companiesHouseOfficerResignationPost ingestHandler", () => {
       [{ dateOfBirth: undefined }, "Invalid or missing dateOfBirth"],
       [{ dateOfBirth: "2026-11-02" }, "must be before resignationDate"],
       [{ resignationDate: "01/11/2026" }, "Invalid or missing resignationDate"],
+      [{ resignationDate: "2999-01-01" }, "Invalid resignationDate - must not be in the future"],
       [{ companyAuthCode: "AB" }, "Invalid companyAuthCode"],
     ]) {
       const response = await ingestHandler(buildEvent({ body: buildResignationBody(overrides) }));

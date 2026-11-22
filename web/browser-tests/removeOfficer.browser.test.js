@@ -55,7 +55,7 @@ const OFFICERS = [
 
 // The real site from disk, signed in with the resident Ltd bundle, and the Companies House routes
 // answered here. Each filing request's body is recorded.
-async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] } } = {}) {
+async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] }, officers = OFFICERS } = {}) {
   await page.addInitScript(() => {
     try {
       localStorage.setItem("consent.analytics", "declined");
@@ -72,7 +72,7 @@ async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT",
     if (pathname === "/api/v1/bundle") return json({ bundles: [{ bundleId: "resident-ltd", allocated: true }], tokensRemaining: 10 });
     if (pathname === "/api/v1/companies-house/company/00000001")
       return json({ companyNumber: "00000001", companyName: "SIMULATOR EXAMPLE COMPANY LIMITED" });
-    if (pathname === "/api/v1/companies-house/company/00000001/officers") return json({ officers: OFFICERS });
+    if (pathname === "/api/v1/companies-house/company/00000001/officers") return json({ officers });
     if (pathname === "/api/v1/companies-house/officer-resignation" && request.method() === "POST") {
       filings.push(JSON.parse(request.postData()));
       return json({ submissionNumber: "000123", pollInterval: 1 }, 201);
@@ -158,6 +158,15 @@ for (const width of [1280, 390]) {
       resignationDate: "2026-11-01",
     });
     expect(await noSideScroll(page)).toBe(true);
+
+    // Once sent, the page holds nothing of the director: no date of birth and no name part, shown or hidden.
+    const held = await page.evaluate(() => ({
+      text: document.body.textContent,
+      values: [...document.querySelectorAll("#resignationForm input[type=text]")].map((input) => input.value),
+    }));
+    expect(held.text).not.toContain("14 February 1975");
+    expect(held.text).not.toContain("1975-02-14");
+    expect(held.values.filter((value) => value !== "SIMCS01")).toEqual(held.values.filter((value) => value !== "SIMCS01").map(() => ""));
   });
 
   test(`a corporate secretary is removed in Welsh at ${width}px`, async ({ page }) => {
@@ -229,6 +238,10 @@ test("a director's missing day of birth and an end date before the appointment a
   await expect(page.locator("#statusMessagesContainer")).toContainText(
     "The appointment cannot end before the date it began, 1 January 2015.",
   );
+
+  await page.locator("#resignationDate").fill("2999-01-01");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#statusMessagesContainer")).toContainText("The date the appointment ended cannot be in the future.");
   await expect(page.locator("#formView")).toBeVisible();
   expect(filings).toHaveLength(0);
 });
@@ -247,4 +260,40 @@ test("a rejection shows Companies House's reason", async ({ page }) => {
   const result = page.locator("#filingResult");
   await expect(result).toContainText("Submission 000123 was rejected.", { timeout: 15000 });
   await expect(result).toContainText("9998: The officer named does not match the register.");
+});
+
+test("one person who is both a director and the secretary is chosen by the appointment the link names", async ({ page }) => {
+  const officers = [
+    { name: "SMITH, John", officerRole: "director", appointedOn: "2015-01-01", dateOfBirth: { month: 3, year: 1980 } },
+    { name: "SMITH, John", officerRole: "secretary", appointedOn: "2016-06-01" },
+    { name: "SMITH, John", officerRole: "director", appointedOn: "2020-02-02", dateOfBirth: { month: 7, year: 1990 } },
+  ];
+  const filings = [];
+  await serveSite(page, { filings, officers });
+
+  const open = async (query) => {
+    await page.goto(`${SITE}/companies-house/removeOfficer.html?companyNumber=00000001&officerName=SMITH%2C%20John&${query}`, {
+      waitUntil: "networkidle",
+    });
+    await page.getByRole("button", { name: "Look up the directors and secretaries" }).click();
+  };
+
+  await open("officerRole=secretary&appointedOn=2016-06-01");
+  await expect(page.locator("#officer-1")).toBeChecked();
+  await expect(page.locator("#dobFields")).toBeHidden();
+
+  await open("officerRole=director&appointedOn=2020-02-02");
+  await expect(page.locator("#officer-2")).toBeChecked();
+  await expect(page.locator("#dobYear")).toHaveValue("1990");
+
+  await open("officerRole=director&appointedOn=2015-01-01");
+  await expect(page.locator("#officer-0")).toBeChecked();
+  await expect(page.locator("#dobYear")).toHaveValue("1980");
+  await page.locator("#dobDay").fill("9");
+  await page.locator("#resignationDate").fill("2026-11-01");
+  await page.locator("#companyAuthCode").fill("SIMCS01");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
+  expect(filings[0]).toMatchObject({ officerRole: "director", surname: "SMITH", dateOfBirth: "1980-03-09" });
 });

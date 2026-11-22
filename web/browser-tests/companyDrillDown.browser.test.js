@@ -783,7 +783,7 @@ test.describe("Company lookup drill-down officer resignation links", () => {
     const link = page.locator("#drillView .remove-officer-links a");
     await expect(link).toHaveText("Remove BRAMWELL, Eleanor (Director)", { timeout: 15000 });
     expect(await link.getAttribute("href")).toBe(
-      "/companies-house/removeOfficer.html?companyNumber=00000001&officerName=BRAMWELL%2C+Eleanor",
+      "/companies-house/removeOfficer.html?companyNumber=00000001&officerName=BRAMWELL%2C+Eleanor&officerRole=director&appointedOn=2015-01-01",
     );
     const control = page.locator('#drillView .file-this[data-activity="remove-officer"]');
     await expect(control.locator("a.btn")).toHaveText("Remove a director or secretary");
@@ -982,7 +982,7 @@ test.describe("Company lookup drill-down officer change of details links", () =>
     const link = page.locator("#drillView .change-officer-links a");
     await expect(link).toHaveText("Change the details of BRAMWELL, Eleanor (Director)", { timeout: 15000 });
     expect(await link.getAttribute("href")).toBe(
-      "/companies-house/changeOfficer.html?companyNumber=00000001&officerName=BRAMWELL%2C+Eleanor",
+      "/companies-house/changeOfficer.html?companyNumber=00000001&officerName=BRAMWELL%2C+Eleanor&officerRole=director&appointedOn=2015-01-01",
     );
     const control = page.locator('#drillView .file-this[data-activity="change-officer"]');
     await expect(control.locator("a.btn")).toHaveText("Change a director's or secretary's details");

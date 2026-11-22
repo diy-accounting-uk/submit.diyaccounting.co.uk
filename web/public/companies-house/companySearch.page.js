@@ -1170,7 +1170,9 @@ async function appendOfficerLinks(container, companyNumber, officers, { activity
   current.forEach((officer) => {
     const item = document.createElement("li");
     const link = document.createElement("a");
-    link.href = `${pagePrefix()}/companies-house/${page}?${new URLSearchParams({ companyNumber, officerName: officer.name })}`;
+    const named = { companyNumber, officerName: officer.name, officerRole: officer.role };
+    if (officer.appointedOn) named.appointedOn = officer.appointedOn;
+    link.href = `${pagePrefix()}/companies-house/${page}?${new URLSearchParams(named)}`;
     link.textContent = linkText(officer);
     item.appendChild(link);
     list.appendChild(item);

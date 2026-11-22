@@ -1532,6 +1532,7 @@ window.WELSH_TEXT = {
   "ch.remove-officer.dob-after": "Rhaid i’r dyddiad geni fod cyn y dyddiad y daeth y penodiad i ben.",
   "ch.remove-officer.dob-invalid": "Rhowch ddyddiad geni’r cyfarwyddwr fel diwrnod, mis a blwyddyn.",
   "ch.remove-officer.ended-before-appointed": "Ni all y penodiad ddod i ben cyn y dyddiad y dechreuodd, {date}.",
+  "ch.remove-officer.ended-in-future": "Ni all y dyddiad y daeth y penodiad i ben fod yn y dyfodol.",
   "ch.remove-officer.lookup-failed": "Methu darllen cyfarwyddwyr ac ysgrifenyddion y cwmni hwn gan Dŷ’r Cwmnïau.",
   "ch.remove-officer.review-appointment": "Penodiad",
   "ch.remove-officer.review-company": "Cwmni",

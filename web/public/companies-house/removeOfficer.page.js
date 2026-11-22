@@ -10,7 +10,8 @@ window.siteText =
 // Remove a director or secretary: companyView -> formView -> reviewView -> resultView. The form
 // names one of the company's current directors or secretaries as the register shows them, so the
 // page reads the register's officers and the reader chooses; a link from the company lookup's
-// officers view names the officer in ?officerName= and the page chooses it.
+// officers view names the officer in ?officerName=, with the role and the appointment date that tell
+// two appointments of one name apart, and the page chooses it.
 //
 // The register answers a person's name as "SURNAME, Forenames" (with a title after a second comma,
 // where it holds one) and a date of birth as month and year only. The form names a person by
@@ -71,7 +72,17 @@ function splitRegisterName(name) {
   return { surname, forename, otherForenames: others.join(" "), title };
 }
 
-function renderOfficerChoices(chosenName) {
+// Whether an officer is the one a link named: the name, and the role and appointment date where the
+// link gives them, so a person who is both a director and the secretary is one or the other.
+function namedBy(officer, named) {
+  return (
+    officer.name === named.name &&
+    (!named.role || officer.officerRole === named.role) &&
+    (!named.appointedOn || officer.appointedOn === named.appointedOn)
+  );
+}
+
+function renderOfficerChoices(named) {
   const holder = document.getElementById("officerChoices");
   holder.replaceChildren();
   const current = officers.filter(removable);
@@ -85,7 +96,7 @@ function renderOfficerChoices(chosenName) {
     input.name = "officer";
     input.id = `officer-${index}`;
     input.value = String(officers.indexOf(officer));
-    input.checked = chosenName ? officer.name === chosenName : current.length === 1;
+    input.checked = named.name ? current.find((candidate) => namedBy(candidate, named)) === officer : current.length === 1;
     input.addEventListener("change", showOfficerFields);
     const label = document.createElement("label");
     label.htmlFor = input.id;
@@ -139,7 +150,8 @@ async function handleCompanySubmit(event) {
     officers = answer.officers || [];
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
-    renderOfficerChoices(new URLSearchParams(window.location.search).get("officerName"));
+    const address = new URLSearchParams(window.location.search);
+    renderOfficerChoices({ name: address.get("officerName"), role: address.get("officerRole"), appointedOn: address.get("appointedOn") });
     showView("formView");
   } catch (error) {
     console.error("Could not read the company's officers:", error);
@@ -163,6 +175,9 @@ function dateOfBirthFromParts() {
 }
 
 const fieldValue = (id) => document.getElementById(id).value.trim();
+
+// Today's date in the United Kingdom, as YYYY-MM-DD.
+const todayInTheUk = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
 
 // The form's own fields for the chosen officer, as the filing route reads them, or null after
 // showing what is wrong.
@@ -203,6 +218,10 @@ function handleResignationSubmit(event) {
   }
   if (!window.formErrors.requireFields(["resignationDate", "companyAuthCode"])) return;
   const resignationDate = document.getElementById("resignationDate").value;
+  if (resignationDate > todayInTheUk()) {
+    showError(window.siteText("ch.remove-officer.ended-in-future", "The date the appointment ended cannot be in the future."));
+    return;
+  }
   if (officer.appointedOn && resignationDate < officer.appointedOn) {
     showError(
       window.siteText("ch.remove-officer.ended-before-appointed", "The appointment cannot end before the date it began, {date}.", {
@@ -270,8 +289,21 @@ async function handleFile() {
       headers,
     });
   } finally {
+    forgetOfficer();
     hideLoading();
   }
+}
+
+// Once the filing is sent the page keeps nothing of the officer: the day of birth the reader typed,
+// the name parts and the review all go, so none of it stays in the page behind the result.
+function forgetOfficer() {
+  filing = null;
+  document.getElementById("reviewList").replaceChildren();
+  ["dobDay", "dobMonth", "dobYear", "officerTitle", "officerForename", "officerOtherForenames", "officerSurname", "corporateName"].forEach(
+    (id) => {
+      document.getElementById(id).value = "";
+    },
+  );
 }
 
 function startAgain() {
