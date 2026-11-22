@@ -24,6 +24,15 @@ describe("isValidCompaniesHousePersonalCode", () => {
     expect(normalised).toBe("CWMPS832223");
   });
 
+  test("accepts the printed groups separated by spaces or slashes, and sends the code without them", () => {
+    for (const typed of ["CWMP S832 223", "CWMP/S832/223", " cwmp  s832 / 223 ", "CWMP-S832 223"]) {
+      const { valid, normalised } = isValidCompaniesHousePersonalCode(typed);
+      expect(valid, typed).toBe(true);
+      expect(normalised, typed).toBe("CWMPS832223");
+    }
+    expect(isValidCompaniesHousePersonalCode("CWMP.S832.223").valid).toBe(false);
+  });
+
   test("accepts the display grouping with hyphens, stripping them before validating", () => {
     const { valid, normalised } = isValidCompaniesHousePersonalCode("CWM-PS8-32223");
     expect(valid).toBe(true);

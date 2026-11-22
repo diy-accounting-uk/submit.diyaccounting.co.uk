@@ -26883,6 +26883,12 @@ cy = '''Ni all y dyddiad peidio â bod yn PRhA fod ar ôl heddiw.'''
 hash = "24e74cfc4d09"
 cy = '''Ni all y dyddiad cadarnhau fod ar ôl heddiw.'''
 
+# == The country or state of a relevant legal entity's register, asked for with its place and number ==
+
+[strings."ch.notify-psc.country-or-state-needed"]
+hash = "81555440cb6b"
+cy = '''Os rhowch y gofrestr y mae’r endid wedi’i gofnodi ynddi a’i rif yno, rhowch wlad neu dalaith y gofrestr honno hefyd.'''
+
 # Tell Companies House about a new PSC: control through a firm and through a trust.
 
 [strings."ch-notify-psc.control-through-a-firm-4c1b34"]

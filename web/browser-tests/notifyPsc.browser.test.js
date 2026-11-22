@@ -200,6 +200,12 @@ for (const width of [1280, 390]) {
     await page.locator("#directors").check();
     await page.getByRole("group", { name: "Perchnogaeth cyfranddaliadau" }).locator('input[value="75TO100PERCENT"]').check();
     await fillDates(page);
+    await page.getByRole("button", { name: "Parhau" }).click();
+    await expect(page.locator("#statusMessagesContainer")).toContainText(
+      "Os rhowch y gofrestr y mae’r endid wedi’i gofnodi ynddi a’i rif yno, rhowch wlad neu dalaith y gofrestr honno hefyd.",
+    );
+    expect(filings).toHaveLength(0);
+    await page.locator("#countryOrState").fill("UNITED KINGDOM");
     expect(await noSideScroll(page)).toBe(true);
     await shoot(page, "entity-cy");
     await page.getByRole("button", { name: "Parhau" }).click();
@@ -207,7 +213,7 @@ for (const width of [1280, 390]) {
     const review = page.locator("#reviewList");
     await expect(review).toContainText("Endid cyfreithiol perthnasol");
     await expect(review).toContainText("Ty Teifi, Stryd Fawr, Aberteifi, SA43 1HJ, Cymru");
-    await expect(review).toContainText("Companies House, 09876543");
+    await expect(review).toContainText("Companies House, UNITED KINGDOM, 09876543");
     expect(await noSideScroll(page)).toBe(true);
     await shoot(page, "review-cy");
 
@@ -220,11 +226,11 @@ for (const width of [1280, 390]) {
       legalForm: "Private company limited by shares",
       lawGoverned: "Companies Act 2006",
       placeRegistered: "Companies House",
+      countryOrState: "UNITED KINGDOM",
       registrationNumber: "09876543",
       naturesOfControl: ["OWNERSHIPOFSHARES_75TO100PERCENT", "RIGHTTOAPPOINTANDREMOVEDIRECTORS"],
     });
     expect(filings[0]).not.toHaveProperty("surname");
-    expect(filings[0]).not.toHaveProperty("countryOrState");
     expect(await noSideScroll(page)).toBe(true);
     await shoot(page, "accepted-cy");
   });
@@ -462,4 +468,20 @@ test("an individual's Welsh surname with a lower-case ŷ is stopped before sendi
   await expect(status).toContainText("Surname has characters Companies House does not accept: ŷ");
   await expect(status).not.toContainText("Prŷs");
   expect(filings).toHaveLength(0);
+});
+
+test("a personal code typed in its printed groups with spaces or a slash is taken and sent as eleven characters", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, { filings });
+  await openForm(page);
+  await fillIndividual(page);
+  await page.getByLabel("The person notified as a PSC has verified their identity in accordance with the Companies Act 2006").check();
+  await page.locator("#personalCode").fill("abcd e123/456");
+  await page.locator("#influence").check();
+  await fillDates(page);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#reviewList")).toContainText("ABCDE123456");
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
+  expect(filings[0].personalCode).toBe("ABCDE123456");
 });

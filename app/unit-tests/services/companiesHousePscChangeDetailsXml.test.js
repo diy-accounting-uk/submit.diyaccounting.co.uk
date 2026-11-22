@@ -119,6 +119,23 @@ describe("companiesHousePscChangeDetailsXml", () => {
     expect(natureOfControlProblems(["OWNERSHIPOFSHARES"])).toEqual(["unknown nature of control OWNERSHIPOFSHARES"]);
   });
 
+  test("significant influence held through a firm or a trust may stand beside other controls held the same way, as PSC01's sections 6 and 7 allow", () => {
+    expect(natureOfControlProblems(["SIGINFLUENCECONTROL_AS_FIRM", "OWNERSHIPOFSHARES_25TO50PERCENT_AS_FIRM"])).toEqual([]);
+    expect(
+      natureOfControlProblems([
+        "SIGINFLUENCECONTROL_AS_TRUST",
+        "VOTINGRIGHTS_50TO75PERCENT_AS_TRUST",
+        "RIGHTTOAPPOINTANDREMOVEDIRECTORS_AS_TRUST",
+      ]),
+    ).toEqual([]);
+    expect(natureOfControlProblems(["SIGINFLUENCECONTROL", "RIGHTTOAPPOINTANDREMOVEDIRECTORS"])).toEqual([
+      "SIGINFLUENCECONTROL only when no other nature of control applies",
+    ]);
+    expect(natureOfControlProblems(["OWNERSHIPOFSHARES_25TO50PERCENT_AS_FIRM", "OWNERSHIPOFSHARES_50TO75PERCENT_AS_FIRM"])).toEqual([
+      "more than one band of OWNERSHIPOFSHARES_AS_FIRM",
+    ]);
+  });
+
   test("an address without a premise, a post town or one country is refused", () => {
     expect(addressProblems({ postTown: "Cardiff", country: "GB-WLS" })).toEqual(["an address needs its premise"]);
     expect(addressProblems({ premise: "2", country: "GB-WLS" })).toEqual(["an address needs its post town"]);

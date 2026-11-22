@@ -7,8 +7,11 @@
 // app/services/companiesHouseFormFiling.js, its gateway form identifier, its schema in
 // fixtures/companies-house-xmlgw, its catalogue activity and, where Companies House charges one, its
 // fee. textFields names the form's free-text fields that go to the gateway under the name and
-// address pattern companies-house-gateway-text.js holds; the page and the route both check them. A
-// plain ES module, so the browser and app/ both read it.
+// address pattern companies-house-gateway-text.js holds; the page and the route both check them.
+// gatewayClass is the GovTalk Class the gateway routes the envelope by, from the TIS's list of Class
+// values; formIdentifier is the FormHeader's FormIdentifier, which the gateway matches against the
+// form's root element, so it is spelt as the schema spells that element. A plain ES module, so the
+// browser and app/ both read it.
 
 export const COMPANIES_HOUSE_FORMS = {
   "accounts": {
@@ -43,6 +46,7 @@ export const COMPANIES_HOUSE_FORMS = {
     receiptTitleCy: "Datganiad gwirio PRhA",
     acceptedEvent: "companies-house-psc-verification-statement-accepted",
     acceptedSummary: "Companies House PSC verification statement accepted",
+    gatewayClass: "PSCVerificationStatement",
     formIdentifier: "PSCVerificationStatement",
     schema: "PSCVerificationStatement-v1-0.xsd",
     activityId: "file-psc-verification-statement",
@@ -55,6 +59,7 @@ export const COMPANIES_HOUSE_FORMS = {
     receiptTitleCy: "Peidio â bod yn PRhA",
     acceptedEvent: "companies-house-psc-cessation-accepted",
     acceptedSummary: "Companies House PSC cessation accepted",
+    gatewayClass: "PSCCessation",
     formIdentifier: "PSCCessation",
     schema: "PSCCessation-v1-2.xsd",
     activityId: "cease-psc",
@@ -68,6 +73,7 @@ export const COMPANIES_HOUSE_FORMS = {
     receiptTitleCy: "Newid manylion PRhA",
     acceptedEvent: "companies-house-psc-change-details-accepted",
     acceptedSummary: "Companies House PSC change of details accepted",
+    gatewayClass: "PSCChangeDetails",
     formIdentifier: "PSCChangeDetails",
     schema: "PSCChangeDetails-v1-2.xsd",
     activityId: "change-psc-details",
@@ -81,6 +87,7 @@ export const COMPANIES_HOUSE_FORMS = {
     receiptTitleCy: "Newid dyddiad cyfeirnod cyfrifyddu",
     acceptedEvent: "companies-house-accounting-reference-date-accepted",
     acceptedSummary: "Companies House change of accounting reference date accepted",
+    gatewayClass: "ChangeAccountingReferenceDate",
     formIdentifier: "ChangeAccountingReferenceDate",
     schema: "ChangeAccountingReferenceDate-v2-7.xsd",
     activityId: "change-accounting-reference-date",
@@ -94,6 +101,7 @@ export const COMPANIES_HOUSE_FORMS = {
     receiptTitleCy: "Cyfarwyddwr neu ysgrifennydd wedi’i dynnu",
     acceptedEvent: "companies-house-officer-resignation-accepted",
     acceptedSummary: "Companies House officer resignation accepted",
+    gatewayClass: "OfficerResignation",
     formIdentifier: "OfficerResignation",
     schema: "OfficerResignation-v2-6.xsd",
     activityId: "remove-officer",
@@ -107,6 +115,7 @@ export const COMPANIES_HOUSE_FORMS = {
     receiptTitleCy: "Cyfeiriad SAIL",
     acceptedEvent: "companies-house-sail-address-accepted",
     acceptedSummary: "Companies House SAIL address accepted",
+    gatewayClass: "SailAddress",
     formIdentifier: "SailAddress",
     schema: "SailAddress-v2-6.xsd",
     activityId: "change-records-location",
@@ -120,6 +129,7 @@ export const COMPANIES_HOUSE_FORMS = {
     receiptTitleCy: "Lleoliad cofnodion y cwmni",
     acceptedEvent: "companies-house-record-location-accepted",
     acceptedSummary: "Companies House location of company records accepted",
+    gatewayClass: "RecordChangeOfLocation",
     formIdentifier: "RecordChangeOfLocation",
     schema: "RecordChangeofLocation-v3-0.xsd",
     activityId: "change-records-location",
@@ -133,6 +143,7 @@ export const COMPANIES_HOUSE_FORMS = {
     receiptTitleCy: "Newid enw’r cwmni",
     acceptedEvent: "companies-house-change-of-name-accepted",
     acceptedSummary: "Companies House change of company name accepted",
+    gatewayClass: "ChangeOfName",
     formIdentifier: "ChangeOfName",
     schema: "ChangeOfName-v2-6.xsd",
     activityId: "change-company-name",
@@ -148,6 +159,7 @@ export const COMPANIES_HOUSE_FORMS = {
     receiptTitleCy: "Datganiad PRhA",
     acceptedEvent: "companies-house-psc-statement-notification-accepted",
     acceptedSummary: "Companies House PSC statement accepted",
+    gatewayClass: "PSCStatementNotification",
     formIdentifier: "PSCStatementNotification",
     schema: "PSCStatementNotification-v1-2.xsd",
     activityId: "psc-statements",
@@ -161,6 +173,7 @@ export const COMPANIES_HOUSE_FORMS = {
     receiptTitleCy: "Tynnu datganiad PRhA yn ôl",
     acceptedEvent: "companies-house-psc-statement-withdrawal-accepted",
     acceptedSummary: "Companies House PSC statement withdrawal accepted",
+    gatewayClass: "PSCStatementWithdrawal",
     formIdentifier: "PSCStatementWithdrawal",
     schema: "PSCStatementWithdrawal-v1-2.xsd",
     activityId: "psc-statements",
@@ -174,6 +187,7 @@ export const COMPANIES_HOUSE_FORMS = {
     receiptTitleCy: "PRhA newydd wedi’i hysbysu",
     acceptedEvent: "companies-house-psc-notification-accepted",
     acceptedSummary: "Companies House PSC notification accepted",
+    gatewayClass: "PSCNotification",
     formIdentifier: "PSCNotification",
     schema: "PSCNotification-v1-2.xsd",
     activityId: "notify-psc",
@@ -203,6 +217,7 @@ export const COMPANIES_HOUSE_FORMS = {
     receiptTitleCy: "Cyfarwyddwr neu ysgrifennydd wedi’i benodi",
     acceptedEvent: "companies-house-officer-appointment-accepted",
     acceptedSummary: "Companies House officer appointment accepted",
+    gatewayClass: "OfficerAppointment",
     formIdentifier: "OfficerAppointment",
     schema: "OfficerAppointment-v2-9.xsd",
     activityId: "appoint-officer",
@@ -231,6 +246,7 @@ export const COMPANIES_HOUSE_FORMS = {
     receiptTitleCy: "Manylion cyfarwyddwr neu ysgrifennydd wedi newid",
     acceptedEvent: "companies-house-officer-change-accepted",
     acceptedSummary: "Companies House officer change of details accepted",
+    gatewayClass: "OfficerChangeDetails",
     formIdentifier: "OfficerChangeDetails",
     schema: "OfficerChangeDetails-v2-10.xsd",
     activityId: "change-officer",
@@ -254,6 +270,7 @@ export const COMPANIES_HOUSE_FORMS = {
     receiptTitleCy: "Dychwelyd cyfrannau a glustnodwyd",
     acceptedEvent: "companies-house-allotment-of-shares-accepted",
     acceptedSummary: "Companies House return of allotment of shares accepted",
+    gatewayClass: "ReturnOfAllotmentShares",
     formIdentifier: "ReturnofAllotmentShares",
     schema: "ReturnofAllotmentShares-v3-0.xsd",
     activityId: "allot-shares",

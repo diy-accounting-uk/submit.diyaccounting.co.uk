@@ -26,6 +26,7 @@ import { nextReferenceDate } from "../../../../web/public/lib/accounting-referen
 import { buildPscStatementNotificationBody, buildPscStatementWithdrawalBody } from "@app/services/companiesHousePscStatementXml.js";
 import { buildMicroEntityAccounts } from "@app/services/microEntityAccountsIxbrl.js";
 import { parseXmlDocument, firstElementText, allElements } from "@app/lib/xmlDom.js";
+import { buildTestSubmission, testSubmissionCases } from "../../../../scripts/companies-house-test-submissions.mjs";
 
 function md5Lowercase(value) {
   return createHash("md5").update(String(value), "utf8").digest("hex").toLowerCase();
@@ -1001,6 +1002,7 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
       companyName: "EXAMPLE PSC LIMITED",
       companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
       packageReference: "0012",
+      gatewayClass: "PSCCessation",
       formIdentifier: "PSCCessation",
       submissionNumber,
       dateSigned: "2026-11-20",
@@ -1060,6 +1062,7 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
       companyName: "EXAMPLE PSC LIMITED",
       companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
       packageReference: "0012",
+      gatewayClass: "PSCChangeDetails",
       formIdentifier: "PSCChangeDetails",
       submissionNumber: "CHG001",
       dateSigned: "2026-11-20",
@@ -1098,6 +1101,7 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
         companyName: "EXAMPLE PSC LIMITED",
         companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
         packageReference: "0012",
+        gatewayClass: formIdentifier,
         formIdentifier,
         submissionNumber,
         dateSigned: "2026-11-20",
@@ -1123,6 +1127,48 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
     expect(firstElementText(retried, "Qualifier")).toBe("acknowledgement");
   });
 
+  test("acknowledges a return of allotment under the Class ReturnOfAllotmentShares, whose body keeps its schema's root element", async () => {
+    const [allotment] = testSubmissionCases().filter((testCase) => testCase.kind === "allotment-of-shares");
+    const { envelopeXml } = buildTestSubmission(allotment, {
+      submissionNumber: "ALT001",
+      presenterId: SIMULATOR_PRESENTER_ID,
+      presenterCode: SIMULATOR_PRESENTER_CODE,
+    });
+    expect(envelopeXml).toContain("<Class>ReturnOfAllotmentShares</Class>");
+    expect(envelopeXml).toContain("<FormIdentifier>ReturnofAllotmentShares</FormIdentifier>");
+    expect(envelopeXml).toContain("<ReturnofAllotmentShares ");
+    const acknowledgement = parseXmlDocument((await post(envelopeXml)).text);
+    expect(allElements(acknowledgement, "GovTalkErrors")).toHaveLength(0);
+  });
+
+  test("answers a FormIdentifier that does not name the Form's element with error 9999, as the gateway does", async () => {
+    const [allotment] = testSubmissionCases().filter((testCase) => testCase.kind === "allotment-of-shares");
+    const { envelopeXml } = buildTestSubmission(allotment, {
+      submissionNumber: "ALT003",
+      presenterId: SIMULATOR_PRESENTER_ID,
+      presenterCode: SIMULATOR_PRESENTER_CODE,
+    });
+    const misnamed = envelopeXml.replace(
+      "<FormIdentifier>ReturnofAllotmentShares</FormIdentifier>",
+      "<FormIdentifier>ReturnOfAllotmentShares</FormIdentifier>",
+    );
+    const response = parseXmlDocument((await post(misnamed)).text);
+    expect(firstElementText(response, "Number")).toBe("9999");
+    expect(firstElementText(response, "Text")).toBe("FormIdentifier does not match content in Form element");
+  });
+
+  test("answers a Class the gateway does not route, such as ReturnofAllotmentShares, with error 501", async () => {
+    const [allotment] = testSubmissionCases().filter((testCase) => testCase.kind === "allotment-of-shares");
+    const { envelopeXml } = buildTestSubmission(allotment, {
+      submissionNumber: "ALT002",
+      presenterId: SIMULATOR_PRESENTER_ID,
+      presenterCode: SIMULATOR_PRESENTER_CODE,
+    });
+    const response = parseXmlDocument((await post(envelopeXml.replaceAll("ReturnOfAllotmentShares", "ReturnofAllotmentShares"))).text);
+    expect(firstElementText(response, "Number")).toBe("501");
+    expect(firstElementText(response, "Text")).toBe("Invalid Gateway Target (Class) supplied [ReturnofAllotmentShares]");
+  });
+
   test("refuses a submission number already used", async () => {
     await post(cessationEnvelope("CES004"));
     const response = await post(cessationEnvelope("CES004"));
@@ -1138,6 +1184,7 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
         companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
         companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
         packageReference: "0012",
+        gatewayClass: "ChangeAccountingReferenceDate",
         formIdentifier: "ChangeAccountingReferenceDate",
         submissionNumber,
         dateSigned: "2098-11-20",
@@ -1231,6 +1278,7 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
         companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
         companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
         packageReference: "0012",
+        gatewayClass: "ChangeOfName",
         formIdentifier: "ChangeOfName",
         submissionNumber,
         dateSigned: "2026-11-22",
@@ -1299,6 +1347,7 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
         companyName: "SIMULATOR YEAR ENDED LIMITED",
         companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
         packageReference: "0012",
+        gatewayClass: "ChangeAccountingReferenceDate",
         formIdentifier: "ChangeAccountingReferenceDate",
         submissionNumber,
         dateSigned: new Date().toISOString().slice(0, 10),

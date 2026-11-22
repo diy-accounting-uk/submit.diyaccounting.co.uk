@@ -122,7 +122,7 @@ async function recordSubmissionFailure({ kind, failure, summary, userSub, detail
  * @param {string} kind - a kind of GATEWAY_FORM_BUILDERS and of COMPANIES_HOUSE_FORMS
  */
 export async function fileCompaniesHouseForm(event, kind) {
-  const { label, formIdentifier, fee } = COMPANIES_HOUSE_FORMS[kind];
+  const { label, gatewayClass, formIdentifier, fee } = COMPANIES_HOUSE_FORMS[kind];
   const { buildFormXml, buildDocument, checkCompany } = GATEWAY_FORM_BUILDERS[kind];
   await initializeSalt();
   validateEnv(["COMPANIES_HOUSE_XMLGW_URI", "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME", "COMPANIES_HOUSE_PACKAGE_REFERENCE"]);
@@ -224,6 +224,7 @@ export async function fileCompaniesHouseForm(event, kind) {
       companyName: form.companyName,
       companyAuthenticationCode: form.companyAuthCode,
       packageReference,
+      gatewayClass,
       formIdentifier,
       submissionNumber,
       dateSigned: form.dateSigned,

@@ -104,6 +104,10 @@ const PERMISSION_LETTER_PDF = Buffer.from(
   ].join("\n"),
 ).toString("base64");
 
+// A company number that matches no company on the public register (checked on
+// find-and-update.company-information.service.gov.uk), for the fictional companies the cases name.
+export const FICTIONAL_COMPANY_NUMBER = "01234567";
+
 const ELEANOR = {
   pscKind: "individual-person-with-significant-control",
   title: "MRS",
@@ -112,7 +116,42 @@ const ELEANOR = {
   dobMonth: 1,
   dobYear: 1970,
 };
-const HARBOUR_HOLDINGS = { pscKind: "corporate-entity-person-with-significant-control", name: "HARBOUR HOLDINGS LIMITED" };
+const HARBOUR_HOLDINGS = { pscKind: "corporate-entity-person-with-significant-control", name: "QUAYSIDE HOLDINGS (ABERTEIFI) LIMITED" };
+const CARDIFF = { premise: "16", street: "Heol y Bont", postTown: "Cardiff", country: "GB-WLS", postcode: "CF10 1AA" };
+const LEEDS = { premise: "1", street: "Station Road", postTown: "Leeds", country: "GB-ENG", postcode: "LS1 4AP" };
+const ABERYSTWYTH = { premise: "14", street: "Heol y Bont", postTown: "Aberystwyth", country: "GB-WLS", postcode: "SY23 1PZ" };
+const CARDIGAN = { premise: "Ty Teifi", street: "Stryd Fawr", postTown: "Cardigan", country: "GB-WLS", postcode: "SA43 1HJ" };
+const GWENLLIAN = {
+  pscKind: "individual-person-with-significant-control",
+  title: "DR",
+  forename: "GWENLLIAN",
+  surname: "PRYCE",
+  dateOfBirth: "1978-03-14",
+  nationality: "British",
+  countryOfResidence: "Wales",
+  serviceAddress: { sameAsRegisteredOffice: true },
+  residentialAddress: { address: ABERYSTWYTH },
+};
+const TEIFI_VALLEY = {
+  pscKind: "corporate-entity-person-with-significant-control",
+  name: "TEIFI VALLEY HOLDINGS LIMITED",
+  address: CARDIGAN,
+  legalForm: "Private company limited by shares",
+  lawGoverned: "Companies Act 2006",
+  placeRegistered: "Companies House",
+  countryOrState: "UNITED KINGDOM",
+  // A number the register gives no company, so the case names no real company.
+  registrationNumber: FICTIONAL_COMPANY_NUMBER,
+};
+const CARYS = { title: "MRS", forename: "CARYS", surname: "LLEWELYN" };
+const DIRECTORCO = {
+  corporate: true,
+  corporateName: "DIRECTORCO LIMITED",
+  address: LEEDS,
+  companyIdentification: { uk: { registrationNumber: FICTIONAL_COMPANY_NUMBER } },
+};
+const ORDINARY_RIGHTS =
+  "Each share has one vote, and ranks equally for dividends and on a return of capital. The shares are not redeemable.";
 
 /**
  * The test cases of every form kind built on this branch, in the order they are run.
@@ -121,7 +160,7 @@ const HARBOUR_HOLDINGS = { pscKind: "corporate-entity-person-with-significant-co
  * @param {string} [input.companyAuthCode]
  * @param {string} [input.today] - YYYY-MM-DD in the United Kingdom
  * @param {string} [input.currentPeriodEnd] - the company's current accounting period end
- * @returns {Array<{kind: string, caseName: string, expectedOutcome: "ACCEPT"|"REJECT", body: object}>}
+ * @returns {Array<{kind: string, caseName: string, expectedOutcome: "ACCEPT"|"REJECT", note?: string, body: object}>}
  */
 export function testSubmissionCases({
   company = DEFAULT_TEST_COMPANY,
@@ -135,6 +174,57 @@ export function testSubmissionCases({
   const sail = {
     address: { premise: "Unit 4, Harbour House", street: "12 Quay Street", postTown: "Bristol", country: "GB-ENG", postcode: "BS1 4DJ" },
   };
+  // A return of allotment in more than one currency: an allotment for cash, fully paid, and a
+  // currency's capital after it.
+  const allottedShares = (shareClass, currency, numShares, nominalValue, amountPaidPerShare) => ({
+    shareClass,
+    currency,
+    numShares,
+    nominalValue,
+    amountPaidPerShare,
+    amountUnpaidPerShare: "0",
+  });
+  const currencyCapital = (currency, classes) => ({
+    currency,
+    totalAmountUnpaid: "0",
+    shares: classes.map(([shareClass, numShares, aggregateNominalValue]) => ({
+      shareClass,
+      prescribedParticulars: ORDINARY_RIGHTS,
+      numShares,
+      aggregateNominalValue,
+    })),
+  });
+  const pscNotification = (caseName, particulars, naturesOfControl) => ({
+    kind: "psc-notification",
+    caseName,
+    body: { ...header, ...particulars, naturesOfControl, notificationDate: eventDate, confirmationDate },
+  });
+  const allotment = (caseName, startDate, { capitalDifferenceConfirmed } = {}) => ({
+    kind: "allotment-of-shares",
+    caseName,
+    body: {
+      ...header,
+      startDate,
+      allotments: [
+        {
+          shareClass: "Ordinary",
+          numShares: "50",
+          amountPaidPerShare: "2.5",
+          amountUnpaidPerShare: "0",
+          currency: "GBP",
+          nominalValue: "1",
+        },
+      ],
+      statementOfCapital: [
+        {
+          currency: "GBP",
+          totalAmountUnpaid: "0",
+          shares: [{ shareClass: "Ordinary", prescribedParticulars: ORDINARY_RIGHTS, numShares: "150", aggregateNominalValue: "150" }],
+        },
+      ],
+      ...(capitalDifferenceConfirmed ? { capitalDifferenceConfirmed } : {}),
+    },
+  });
   const statementCase = (statement, particulars) => ({
     kind: "psc-statement-notification",
     caseName: `statement ${statement.toLowerCase().replaceAll("_", " ")}`,
@@ -234,7 +324,7 @@ export function testSubmissionCases({
       body: {
         ...header,
         method: "resolution",
-        proposedName: `${company.companyName.replace(/ LIMITED$/, "")} SERVICES LIMITED`,
+        proposedName: `${company.companyName.replace(/ LIMITED$/, "")} EXAMPLE SERVICES LIMITED`,
         meetingDate: daysBefore(today, 2),
         noticeGiven: true,
       },
@@ -260,6 +350,172 @@ export function testSubmissionCases({
       kind: "psc-statement-withdrawal",
       caseName: "a withdrawal",
       body: { ...header, statement: "PSC_CONTACTED_BUT_NO_RESPONSE", withdrawalDate: eventDate },
+    },
+    pscNotification("an individual (PSC01)", GWENLLIAN, ["OWNERSHIPOFSHARES_50TO75PERCENT", "VOTINGRIGHTS_50TO75PERCENT"]),
+    pscNotification("an individual whose personal code is typed in its printed groups", { ...GWENLLIAN, personalCode: "CWMP S832 223" }, [
+      "OWNERSHIPOFSHARES_25TO50PERCENT",
+    ]),
+    pscNotification("significant influence through a firm, beside shares held through it", GWENLLIAN, [
+      "SIGINFLUENCECONTROL_AS_FIRM",
+      "OWNERSHIPOFSHARES_25TO50PERCENT_AS_FIRM",
+    ]),
+    pscNotification("significant influence through a trust, beside voting rights held through it", GWENLLIAN, [
+      "SIGINFLUENCECONTROL_AS_TRUST",
+      "VOTINGRIGHTS_50TO75PERCENT_AS_TRUST",
+    ]),
+    pscNotification("a relevant legal entity (PSC02)", TEIFI_VALLEY, ["OWNERSHIPOFSHARES_75TO100PERCENT", "VOTINGRIGHTS_75TO100PERCENT"]),
+    pscNotification(
+      "an other registrable person (PSC03)",
+      {
+        ...TEIFI_VALLEY,
+        pscKind: "legal-person-person-with-significant-control",
+        name: "EXAMPLE COUNTY COUNCIL",
+        legalForm: "Local authority",
+        lawGoverned: "Local Government (Wales) Act 1994",
+        placeRegistered: undefined,
+        registrationNumber: undefined,
+      },
+      ["SIGINFLUENCECONTROL"],
+    ),
+    {
+      kind: "officer-appointment",
+      caseName: "a director who is a person (AP01)",
+      body: {
+        ...header,
+        ...CARYS,
+        officerRole: "director",
+        corporate: false,
+        appointmentDate: eventDate,
+        consentToAct: true,
+        serviceAddress: { sameAsRegisteredOffice: true },
+        dateOfBirth: "1981-06-23",
+        nationality: "Welsh",
+        countryOfResidence: "Wales",
+        residentialAddress: { address: CARDIFF },
+        personalCode: "CWMPS832223",
+        identityVerified: true,
+      },
+    },
+    {
+      kind: "officer-appointment",
+      caseName: "a corporate director (AP02)",
+      body: { ...header, ...DIRECTORCO, officerRole: "director", appointmentDate: eventDate, consentToAct: true },
+    },
+    {
+      kind: "officer-appointment",
+      caseName: "a secretary who is a person (AP03)",
+      body: {
+        ...header,
+        ...CARYS,
+        officerRole: "secretary",
+        corporate: false,
+        appointmentDate: eventDate,
+        consentToAct: true,
+        serviceAddress: { address: CARDIFF },
+      },
+    },
+    {
+      kind: "officer-appointment",
+      caseName: "a corporate secretary registered outside the UK (AP04)",
+      body: {
+        ...header,
+        ...DIRECTORCO,
+        corporateName: "SECRETARIAT B.V.",
+        companyIdentification: { nonUk: { lawGoverned: "Netherlands", legalForm: "Besloten vennootschap" } },
+        officerRole: "secretary",
+        appointmentDate: eventDate,
+        consentToAct: true,
+      },
+    },
+    {
+      kind: "officer-change",
+      caseName: "a director's change of name (CH01)",
+      body: {
+        ...header,
+        officerRole: "director",
+        corporate: false,
+        dateOfChange: eventDate,
+        title: "MRS",
+        forename: "CARYS",
+        surname: "REES",
+        dateOfBirth: "1981-06-23",
+        newName: CARYS,
+      },
+    },
+    {
+      kind: "officer-change",
+      caseName: "a corporate director's new name and address (CH02)",
+      body: {
+        ...header,
+        ...DIRECTORCO,
+        officerRole: "director",
+        dateOfChange: eventDate,
+        newCorporateName: "DIRECTORCO HOLDINGS LIMITED",
+        companyIdentification: undefined,
+      },
+    },
+    {
+      kind: "officer-change",
+      caseName: "a secretary's service address (CH03)",
+      body: {
+        ...header,
+        officerRole: "secretary",
+        corporate: false,
+        dateOfChange: eventDate,
+        title: "MRS",
+        forename: "CARYS",
+        surname: "REES",
+        serviceAddress: { sameAsRegisteredOffice: true },
+      },
+    },
+    {
+      kind: "officer-change",
+      caseName: "a corporate secretary's new address (CH04)",
+      body: {
+        ...header,
+        ...DIRECTORCO,
+        corporateName: "TEIFI SECRETARIAL SERVICES (EXAMPLE) LIMITED",
+        officerRole: "secretary",
+        dateOfChange: eventDate,
+        companyIdentification: undefined,
+      },
+    },
+    allotment("an allotment of ordinary shares (SH01)", eventDate),
+    allotment("a late return, filed three months after the allotment, with the capital confirmed", daysBefore(today, 95), {
+      capitalDifferenceConfirmed: true,
+    }),
+    {
+      kind: "change-of-name",
+      caseName: "a Welsh company's name ending CYFYNGEDIG",
+      expectedOutcome: "REJECT",
+      note: "GOV.UK allows the Welsh endings Cyfyngedig and Cyf only for a company registered in Wales, and the test company is registered in England; the first test-service run checks that the gateway refuses it.",
+      body: {
+        ...header,
+        method: "resolution",
+        proposedName: `${company.companyName.replace(/ LIMITED$/, "")} CYMRU CYFYNGEDIG`,
+        meetingDate: daysBefore(today, 2),
+        noticeGiven: true,
+      },
+    },
+    {
+      kind: "allotment-of-shares",
+      caseName: "a company with pounds capital allots dollar shares",
+      body: {
+        ...header,
+        startDate: eventDate,
+        allotments: [allottedShares("Ordinary", "USD", "50", "1", "1")],
+        statementOfCapital: [currencyCapital("GBP", [["Ordinary", "100", "100"]]), currencyCapital("USD", [["Ordinary", "50", "50"]])],
+      },
+    },
+    {
+      kind: "allotment-of-shares",
+      caseName: "a company with pounds and euro capital allots in both",
+      body: {
+        ...header,
+        startDate: eventDate,
+        allotments: [allottedShares("Ordinary", "GBP", "20", "1", "1.5"), allottedShares("Euro Ordinary", "EUR", "5", "1", "1")],
+        statementOfCapital: [currencyCapital("GBP", [["Ordinary", "120", "120"]]), currencyCapital("EUR", [["Euro Ordinary", "15", "15"]])],
+      },
     },
   ];
   return cases.map((testCase) => ({ expectedOutcome: "ACCEPT", ...testCase }));
@@ -290,7 +546,7 @@ export function buildTestSubmission(testCase, { submissionNumber, ...overrides }
     packageReference: VALIDATION_PACKAGE_REFERENCE,
     ...overrides,
   };
-  const { formIdentifier } = COMPANIES_HOUSE_FORMS[testCase.kind];
+  const { gatewayClass, formIdentifier } = COMPANIES_HOUSE_FORMS[testCase.kind];
   const { extractAndValidate, buildFormXml, buildDocument } = GATEWAY_FORM_BUILDERS[testCase.kind];
   const requestErrors = [];
   const form = { ...testCase.body, ...extractAndValidate(testCase.body, requestErrors) };
@@ -303,6 +559,7 @@ export function buildTestSubmission(testCase, { submissionNumber, ...overrides }
     companyName: form.companyName,
     companyAuthenticationCode: form.companyAuthCode,
     packageReference,
+    gatewayClass,
     formIdentifier,
     submissionNumber,
     dateSigned: form.dateSigned,
@@ -525,6 +782,7 @@ async function main() {
       formIdentifier,
       caseName: testCase.caseName,
       expectedOutcome: testCase.expectedOutcome,
+      ...(testCase.note ? { note: testCase.note } : {}),
       valid,
       requestErrors: built.requestErrors,
       bodyErrors,

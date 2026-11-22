@@ -36,11 +36,13 @@ import { submitGatewayForm, pollGatewayForm, completedGatewayFormStatuses } from
 import { COMPANIES_HOUSE_FORMS } from "../../../web/public/lib/companies-house-forms.js";
 import { gatewayFormSchemaErrors, formElementXml } from "../gatewayFormSchema.js";
 
-// The schema of each form filed through the shared filing route, by its form identifier; each is answered by gateway-forms.js.
-const GATEWAY_FORM_SCHEMAS = new Map(
+// Each form filed through the shared filing route, by the GovTalk Class the gateway routes it by:
+// its FormIdentifier, which names its root element, and its schema; each is answered by
+// gateway-forms.js.
+const GATEWAY_FORMS = new Map(
   Object.values(COMPANIES_HOUSE_FORMS)
     .filter((form) => form.sharedPoll)
-    .map((form) => [form.formIdentifier, form.schema]),
+    .map((form) => [form.gatewayClass, { formIdentifier: form.formIdentifier, schema: form.schema }]),
 );
 
 const GATEWAY_PATH = "/v1-0/xmlgw/Gateway";
@@ -427,21 +429,27 @@ function handlePscVerificationStatement(document, { senderIdHash, authValueHash,
   };
 }
 
-// A form filed through the shared filing route: its FormHeader, and a Form that holds the form's
-// own root element, named as its form identifier and valid against the form's schema.
-async function handleGatewayForm(document, envelopeXml, formIdentifier, { senderIdHash, authValueHash, scenario }) {
+// A form filed through the shared filing route: its FormHeader, whose FormIdentifier names the
+// form's root element, and a Form that holds that element, valid against the form's schema.
+async function handleGatewayForm(document, envelopeXml, gatewayClass, { senderIdHash, authValueHash, scenario }) {
+  const { formIdentifier, schema } = GATEWAY_FORMS.get(gatewayClass);
   const formHeader = firstElement(document, "FormHeader");
   if (!formHeader) return schemaFailureFor("Body/FormSubmission/FormHeader");
   const companyNumber = firstElementText(formHeader, "CompanyNumber");
   const submissionNumber = firstElementText(formHeader, "SubmissionNumber");
   if (!companyNumber) return schemaFailureFor("Body/FormSubmission/FormHeader/CompanyNumber");
   if (!firstElementText(formHeader, "CompanyName")) return schemaFailureFor("Body/FormSubmission/FormHeader/CompanyName");
-  if (firstElementText(formHeader, "FormIdentifier") !== formIdentifier)
-    return schemaFailureFor("Body/FormSubmission/FormHeader/FormIdentifier");
+  if (!firstElementText(formHeader, "FormIdentifier")) return schemaFailureFor("Body/FormSubmission/FormHeader/FormIdentifier");
   if (!submissionNumber) return schemaFailureFor("Body/FormSubmission/FormHeader/SubmissionNumber");
-  const formXml = firstElement(document, formIdentifier) && formElementXml(envelopeXml, formIdentifier);
+  // The live gateway answers a FormIdentifier that does not name the Form's element with a 9999.
+  if (firstElementText(formHeader, "FormIdentifier") !== formIdentifier || !firstElement(document, formIdentifier)) {
+    return {
+      errors: [{ raisedBy: gatewayClass, number: 9999, type: "fatal", text: "FormIdentifier does not match content in Form element" }],
+    };
+  }
+  const formXml = formElementXml(envelopeXml, formIdentifier);
   if (!formXml) return schemaFailureFor("Body/FormSubmission/Form");
-  const schemaErrors = await gatewayFormSchemaErrors(formXml, GATEWAY_FORM_SCHEMAS.get(formIdentifier));
+  const schemaErrors = await gatewayFormSchemaErrors(formXml, schema);
   if (schemaErrors.length) {
     console.log(`[http-simulator:companies-house-xmlgw] ${formIdentifier} refused by its schema: ${schemaErrors[0]}`);
     return schemaFailureFor(`Body/FormSubmission/Form/${formIdentifier}`);
@@ -529,7 +537,7 @@ export function apiEndpoint(app) {
       outcome = handleConfirmationStatement(document, { ...credentials, scenario: govTestScenario });
     } else if (requestClass === "PSCVerificationStatement") {
       outcome = handlePscVerificationStatement(document, { ...credentials, scenario: govTestScenario });
-    } else if (GATEWAY_FORM_SCHEMAS.has(requestClass)) {
+    } else if (GATEWAY_FORMS.has(requestClass)) {
       outcome = await handleGatewayForm(document, req.body, requestClass, { ...credentials, scenario: govTestScenario });
     } else if (requestClass === "CompanyDataRequest") {
       outcome = handleCompanyDataRequest(document, { ...credentials, scenario: govTestScenario });
@@ -540,7 +548,10 @@ export function apiEndpoint(app) {
     } else if (requestClass === "StatusAck") {
       outcome = handleStatusAck(document, { ...credentials, scenario: govTestScenario });
     } else {
-      outcome = schemaFailureFor("Header/MessageDetails/Class");
+      // TIS v5.3 appendix b: the gateway answers a Class it does not route with error 501.
+      outcome = {
+        errors: [{ raisedBy: "Gateway", number: 501, type: "fatal", text: `Invalid Gateway Target (Class) supplied [${requestClass}]` }],
+      };
     }
 
     const responseXml = buildResponseEnvelope({

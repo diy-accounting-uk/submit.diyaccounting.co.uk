@@ -145,7 +145,10 @@ function particulars(kind) {
       residentialAddress: homeIsService ? { sameAsServiceAddress: true } : { address: addressFrom("home") },
     };
     if (field("verified").checked) {
-      fields.personalCode = value("personalCode").toUpperCase();
+      // PSC01 prints the code in groups; a space, slash or hyphen between them is not part of it.
+      fields.personalCode = value("personalCode")
+        .toUpperCase()
+        .replace(/[\s/-]/g, "");
       if (field("nameMismatchReason").value) fields.nameMismatchReason = field("nameMismatchReason").value;
     }
     let problem = null;
@@ -200,6 +203,11 @@ function particulars(kind) {
     problem = window.siteText(
       "ch.notify-psc.number-needed",
       "Where you give the register the entity is entered in, give its number in that register too.",
+    );
+  } else if (fields.placeRegistered && fields.registrationNumber && !fields.countryOrState) {
+    problem = window.siteText(
+      "ch.notify-psc.country-or-state-needed",
+      "Where you give the register the entity is entered in and its number there, give the country or state of that register too.",
     );
   }
   return { fields, problem };

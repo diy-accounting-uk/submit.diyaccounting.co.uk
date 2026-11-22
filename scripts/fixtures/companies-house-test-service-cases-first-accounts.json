@@ -1,0 +1,45 @@
+[
+  {
+    "name": "micro-entity-accounts-first",
+    "type": "accounts",
+    "companyNumber": "04549236",
+    "companyName": "MORGAN TECHNICAL LIMITED",
+    "registeredOffice": {
+      "addressLine1": "Unit 4 Morgan Court",
+      "cityOrTown": "Cardiff",
+      "postalCode": "CF10 1AA",
+      "country": "Wales"
+    },
+    "companyAuthCode": "AUTH09",
+    "periodStart": "2025-04-01",
+    "periodEnd": "2026-03-31",
+    "dateOfIncorporation": "2025-04-01",
+    "balanceSheet": {
+      "currentYear": {
+        "fixedAssets": 800,
+        "currentAssets": 6000,
+        "creditorsWithinOneYear": 1968,
+        "creditorsAfterOneYear": 0,
+        "calledUpShareCapital": 100,
+        "profitAndLossAccount": 4732,
+        "capitalAndReserves": 4832
+      }
+    },
+    "averageEmployees": 0,
+    "director": {
+      "name": "Alan James Morgan",
+      "dateApproved": "2026-09-15"
+    },
+    "statementsAccepted": {
+      "section477Exemption": true,
+      "membersNotRequiredAudit": true,
+      "directorsResponsibilities": true,
+      "microEntityProvisions": true
+    },
+    "expectedOutcome": {
+      "status": "TERMINAL",
+      "pinned": false,
+      "note": "Not yet filed. Files on the test service's company 04549236, which the earlier runs filed on (the PSC verification cases); the registered office and the director, Alan James Morgan, are invented, as in those cases, and the authentication code is a placeholder. The figures are synthetic. The register shows 04549236 incorporated long before the period this case calls the first, so the first run shows whether the test service checks a first accounts set's date of incorporation: an ACCEPT or a REJECT is the answer either way."
+    }
+  }
+]

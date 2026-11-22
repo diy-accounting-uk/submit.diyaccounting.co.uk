@@ -13,6 +13,7 @@ import {
   LAG_READ_INTERVAL_MS,
   LAG_READ_LIMIT_MS,
   DEFAULT_TEST_COMPANY,
+  FICTIONAL_COMPANY_NUMBER,
 } from "../../../scripts/companies-house-test-submissions.mjs";
 import { GATEWAY_FORM_BUILDERS } from "../../services/companiesHouseForms.js";
 import { COMPANIES_HOUSE_FORMS } from "../../../web/public/lib/companies-house-forms.js";
@@ -35,20 +36,74 @@ describe("the Companies House test submissions", () => {
     expect(countBy("officer-resignation")).toBe(2);
     expect(countBy("sail-address")).toBe(1);
     expect(countBy("record-location")).toBe(2);
-    expect(countBy("change-of-name")).toBe(2);
+    expect(countBy("change-of-name")).toBe(3);
     expect(countBy("psc-statement-notification")).toBe(5);
     expect(countBy("psc-statement-withdrawal")).toBe(1);
+    expect(countBy("psc-notification")).toBe(6);
+    expect(countBy("officer-appointment")).toBe(4);
+    expect(countBy("officer-change")).toBe(4);
+    expect(countBy("allotment-of-shares")).toBe(4);
   });
 
-  test("expect a rejection only for the extension past 18 months", () => {
+  test("hold PSC01's firm and trust influence beside another control held the same way, and a personal code typed in groups", () => {
+    const notifications = cases.filter((testCase) => testCase.kind === "psc-notification").map((testCase) => testCase.body);
+    expect(notifications.map((body) => body.naturesOfControl)).toContainEqual([
+      "SIGINFLUENCECONTROL_AS_FIRM",
+      "OWNERSHIPOFSHARES_25TO50PERCENT_AS_FIRM",
+    ]);
+    expect(notifications.map((body) => body.naturesOfControl)).toContainEqual([
+      "SIGINFLUENCECONTROL_AS_TRUST",
+      "VOTINGRIGHTS_50TO75PERCENT_AS_TRUST",
+    ]);
+    expect(notifications.map((body) => body.personalCode)).toContain("CWMP S832 223");
+  });
+
+  test("expect a rejection only for the extension past 18 months and the Welsh name ending on an English company", () => {
     expect(cases.filter((testCase) => testCase.expectedOutcome === "REJECT").map((testCase) => testCase.caseName)).toEqual([
       "an extension past 18 months",
+      "a Welsh company's name ending CYFYNGEDIG",
     ]);
+    const welsh = cases.find((testCase) => testCase.caseName === "a Welsh company's name ending CYFYNGEDIG");
+    expect(welsh.note).toMatch(/registered in Wales/);
+    expect(welsh.note).toMatch(/first test-service run checks/);
   });
 
   test("name each case once within its form kind", () => {
     const names = cases.map((testCase) => `${testCase.kind}: ${testCase.caseName}`);
     expect(new Set(names).size).toBe(names.length);
+  });
+
+  test("name no real company: each registration number a fictional company carries matches no company on the register", () => {
+    const numbersIn = (value) =>
+      value && typeof value === "object"
+        ? Object.entries(value).flatMap(([key, inner]) =>
+            key === "registrationNumber" && typeof inner === "string" ? [inner] : numbersIn(inner),
+          )
+        : [];
+    const given = cases.flatMap((testCase) => numbersIn(testCase.body));
+    expect(given.length).toBeGreaterThan(0);
+    expect([...new Set(given)]).toEqual([FICTIONAL_COMPANY_NUMBER]);
+  });
+
+  test("name no company or public body the live register or the country holds, and ask for no name already registered", () => {
+    // Each is a register entry (HARBOUR HOLDINGS LIMITED 00333059, SECRETARIAT
+    // LIMITED 04947224, MORGAN TECHNICAL SERVICES LIMITED SC114128) or a real council.
+    const sent = JSON.stringify(cases.map((testCase) => testCase.body));
+    for (const name of [
+      "HARBOUR HOLDINGS LIMITED",
+      '"SECRETARIAT LIMITED"',
+      "MORGAN TECHNICAL SERVICES LIMITED",
+      "CEREDIGION COUNTY COUNCIL",
+    ]) {
+      expect(sent, name).not.toContain(name);
+    }
+  });
+
+  test("send the late return of allotment with the capital confirmed, as its name says", () => {
+    const late = cases.find((testCase) => testCase.caseName.startsWith("a late return"));
+    expect(late.body.capitalDifferenceConfirmed).toBe(true);
+    const plain = cases.find((testCase) => testCase.caseName === "an allotment of ordinary shares (SH01)");
+    expect(plain.body).not.toHaveProperty("capitalDifferenceConfirmed");
   });
 
   test("file on the test company by default", () => {
@@ -70,10 +125,19 @@ describe("the Companies House test submissions", () => {
       expect(requestErrors).toEqual([]);
       expect(elementText(envelopeXml, "GatewayTest")).toBe("1");
       expect(elementText(envelopeXml, "FormIdentifier")).toBe(COMPANIES_HOUSE_FORMS[testCase.kind].formIdentifier);
-      expect(elementText(envelopeXml, "Class")).toBe(COMPANIES_HOUSE_FORMS[testCase.kind].formIdentifier);
+      expect(elementText(envelopeXml, "Class")).toBe(COMPANIES_HOUSE_FORMS[testCase.kind].gatewayClass);
       return elementText(envelopeXml, "SubmissionNumber");
     });
     expect(sent).toEqual(numbers);
+  });
+
+  test("give every form a FormIdentifier that names the root element of the XML its builder writes", () => {
+    for (const kind of new Set(cases.map((testCase) => testCase.kind))) {
+      const testCase = cases.find((candidate) => candidate.kind === kind);
+      const { formXml } = buildTestSubmission(testCase, { submissionNumber: "ROOT01" });
+      const [, rootElement] = /^<([A-Za-z]+)[\s>]/.exec(formXml);
+      expect(rootElement, kind).toBe(COMPANIES_HOUSE_FORMS[kind].formIdentifier);
+    }
   });
 
   test("attach the letter of permission to the sensitive-word change of name only", () => {
@@ -81,6 +145,27 @@ describe("the Companies House test submissions", () => {
       buildTestSubmission(testCase, { submissionNumber: numbers[index] }).envelopeXml.includes("<Document>"),
     );
     expect(withDocument.map((testCase) => testCase.caseName)).toEqual(["a sensitive word with its letter of permission"]);
+  });
+
+  test("state each currency's capital in its own Capital, and allot each class in its own currency", async () => {
+    const names = ["a company with pounds capital allots dollar shares", "a company with pounds and euro capital allots in both"];
+    const allotmentCases = names.map((name) =>
+      cases.find((testCase) => testCase.kind === "allotment-of-shares" && testCase.caseName === name),
+    );
+    expect(allotmentCases.every(Boolean)).toBe(true);
+    const built = allotmentCases.map((testCase) => buildTestSubmission(testCase, { submissionNumber: "SH0001" }));
+    const currenciesOf = (xml, element) =>
+      [...xml.matchAll(new RegExp(`<${element}>[\\s\\S]*?<ShareCurrency>(\\w+)</ShareCurrency>`, "g"))].map((match) => match[1]);
+    expect(built.map(({ requestErrors }) => requestErrors)).toEqual([[], []]);
+    expect(currenciesOf(built[0].formXml, "Capital")).toEqual(["GBP", "USD"]);
+    expect(currenciesOf(built[0].formXml, "Allotment")).toEqual(["USD"]);
+    expect(currenciesOf(built[1].formXml, "Capital")).toEqual(["GBP", "EUR"]);
+    expect(currenciesOf(built[1].formXml, "Allotment")).toEqual(["GBP", "EUR"]);
+    expect(built[1].formXml).toContain("<TotalNumberOfIssuedShares>120</TotalNumberOfIssuedShares><ShareCurrency>GBP</ShareCurrency>");
+    expect(built[1].formXml).toContain("<TotalNumberOfIssuedShares>15</TotalNumberOfIssuedShares><ShareCurrency>EUR</ShareCurrency>");
+    for (const submission of built) {
+      expect(await validateTestSubmission(submission, "ReturnofAllotmentShares-v3-0.xsd")).toEqual({ bodyErrors: [], envelopeErrors: [] });
+    }
   });
 
   test("report a request the form's own check refuses, and build nothing for it", () => {

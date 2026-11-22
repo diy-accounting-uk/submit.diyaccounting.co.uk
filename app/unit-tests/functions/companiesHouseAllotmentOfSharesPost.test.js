@@ -182,13 +182,14 @@ describe("companiesHouseAllotmentOfSharesPost ingestHandler", () => {
     );
   });
 
-  test("an allotment for cash is built as ReturnofAllotmentShares and answered with its submission number", async () => {
+  test("an allotment for cash is filed under the Class ReturnOfAllotmentShares with the FormIdentifier ReturnofAllotmentShares, and answered with its submission number", async () => {
     const response = await ingestHandler(buildEvent());
 
     expect(response.statusCode).toBe(201);
     expect(parseResponseBody(response)).toMatchObject({ submissionNumber: "00001A", pollInterval: 1 });
     const [submissionArgs] = mockBuildFormSubmission.mock.calls[0];
     expect(submissionArgs).toMatchObject({
+      gatewayClass: "ReturnOfAllotmentShares",
       formIdentifier: "ReturnofAllotmentShares",
       companyNumber: "06846849",
       companyAuthenticationCode: "SIMCS01",

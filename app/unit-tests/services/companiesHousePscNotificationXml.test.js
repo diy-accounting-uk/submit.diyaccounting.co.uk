@@ -206,4 +206,11 @@ describe("companiesHousePscNotificationXml", () => {
     ]);
     expect(entityProblems({ ...COUNCIL, name: "" }, false)).toEqual(["an other registrable person needs its name"]);
   });
+
+  test("refuses an entity entered in a register with its number but not the register's country or state, as the gateway does", () => {
+    expect(entityProblems({ ...HOLDING, countryOrState: "" }, true)).toEqual([
+      "an entity entered in a register needs the country or state of that register",
+    ]);
+    expect(entityProblems(HOLDING, true)).toEqual([]);
+  });
 });

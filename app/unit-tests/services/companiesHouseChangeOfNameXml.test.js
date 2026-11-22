@@ -74,6 +74,7 @@ describe("companiesHouseChangeOfNameXml", () => {
       companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
       companyAuthenticationCode: "SIMCS01",
       packageReference: "0012",
+      gatewayClass: "ChangeOfName",
       formIdentifier: "ChangeOfName",
       submissionNumber: "NAM001",
       dateSigned: "2026-11-22",

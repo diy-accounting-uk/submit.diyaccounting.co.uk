@@ -23,8 +23,8 @@ const CONFIRMATION_STATEMENT_FEE_DISPLAY = "£61.35";
 // note above - so a return from checkout re-collects them through the normal authView step.
 const CHECKOUT_RESUME_KEY = "companiesHouseConfirmationStatementResumeCompanyNumber";
 
-// Companies House shows a personal code grouped with hyphens for readability but the XML
-// Gateway takes 11 characters with none - a pasted code needs its hyphens stripped before
+// Companies House shows a personal code in groups for readability but the XML Gateway takes 11
+// characters with no separator - a code typed with hyphens, spaces or slashes needs them stripped before
 // the length or format check runs. A real code is 5 or 6 uppercase letters followed by 6 or
 // 5 digits (e.g. CWMPS832223); the same check runs server side (companiesHouseApi.js's
 // isValidCompaniesHousePersonalCode); it exists here too so a wrongly formatted code (e.g.
@@ -63,7 +63,10 @@ function syncOwnPresenterFields() {
 }
 
 function normalisePersonalCode(rawValue) {
-  return (rawValue || "").trim().toUpperCase().replace(/-/g, "");
+  return (rawValue || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s/-]/g, "");
 }
 
 function isValidPersonalCode(rawValue) {
@@ -439,7 +442,10 @@ function buildDirectorRow(index, director) {
     ),
     textInput(`directorOtherForenames-${index}`, director.otherForenames, { spellcheck: "false" }),
     element("label", { for: `directorPersonalCode-${index}` }, window.siteText("ch.cs.personal-code", "Companies House personal code")),
-    textInput(`directorPersonalCode-${index}`, "", { maxlength: "13", spellcheck: "false" }),
+    textInput(`directorPersonalCode-${index}`, "", {
+      maxlength: "16",
+      spellcheck: "false",
+    }),
     element("label", { for: `directorNameMismatchReason-${index}` }, window.siteText("ch.cs.mismatch-reason", "Name mismatch reason")),
     element(
       "p",
@@ -914,7 +920,7 @@ function buildPscFollowUpRow({ director, index, psc }, matches) {
   const input = document.createElement("input");
   input.type = "text";
   input.id = `pscPersonalCode-${index}`;
-  input.maxLength = 11;
+  input.maxLength = 16;
   input.spellcheck = false;
   const buttonGroup = document.createElement("div");
   buttonGroup.className = "button-group";

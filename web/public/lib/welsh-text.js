@@ -1493,6 +1493,8 @@ window.WELSH_TEXT = {
   "ch.notify-psc.code-needed": "Mae cod personol Tŷ’r Cwmnïau yn 11 nod: llythrennau, yna rhifau.",
   "ch.notify-psc.confirmation-before": "Ni all y dyddiad cadarnhau fod cyn y dyddiad y daethant yn berson â rheolaeth arwyddocaol.",
   "ch.notify-psc.control-needed": "Dewiswch o leiaf un ffordd y mae’r person yn rheoli’r cwmni.",
+  "ch.notify-psc.country-or-state-needed":
+    "Os rhowch y gofrestr y mae’r endid wedi’i gofnodi ynddi a’i rif yno, rhowch wlad neu dalaith y gofrestr honno hefyd.",
   "ch.notify-psc.date-too-early": "Ni all y dyddiad y daethant yn berson â rheolaeth arwyddocaol fod cyn 6 Ebrill 2016.",
   "ch.notify-psc.entity-needed": "Rhowch yr enw, y ffurf gyfreithiol a’r gyfraith lywodraethol.",
   "ch.notify-psc.home-needed": "Rhowch enw neu rif adeilad y cyfeiriad preswyl arferol, ei dref bost a’i wlad.",

@@ -101,6 +101,10 @@ export function entityProblems(entity, corporate) {
     if (entity.placeRegistered && !entity.registrationNumber) {
       problems.push("an entity entered in a register needs its registration number there");
     }
+    // The gateway refuses PSCRegistrationNumber and PSCPlaceRegistered without CountryOrState.
+    if (entity.placeRegistered && entity.registrationNumber && !entity.countryOrState) {
+      problems.push("an entity entered in a register needs the country or state of that register");
+    }
   }
   return problems;
 }

@@ -115,6 +115,7 @@ const ENTITY = {
   lawGoverned: "Companies Act 2006",
   placeRegistered: "Companies House",
   registrationNumber: "09876543",
+  countryOrState: "UNITED KINGDOM",
 };
 
 function buildEvent({ body = buildNotificationBody(), headers = {}, authorizer, method = "POST" } = {}) {
@@ -189,6 +190,29 @@ describe("companiesHousePscNotificationPost ingestHandler", () => {
     );
   });
 
+  test("a personal code typed in its printed groups, with spaces or slashes, is sent as eleven characters", async () => {
+    for (const personalCode of ["ABCD E123 456", "abcd/e123/456"]) {
+      mockBuildFormSubmission.mockClear();
+      const response = await ingestHandler(buildEvent({ body: buildNotificationBody({ personalCode }) }));
+      expect(response.statusCode, personalCode).toBe(201);
+      expect(mockBuildFormSubmission.mock.calls[0][0].formXml).toContain(
+        "<CompaniesHousePersonalCode>ABCDE123456</CompaniesHousePersonalCode>",
+      );
+    }
+  });
+
+  test("significant influence held through a firm or a trust is sent beside other controls held the same way", async () => {
+    for (const naturesOfControl of [
+      ["SIGINFLUENCECONTROL_AS_FIRM", "OWNERSHIPOFSHARES_25TO50PERCENT_AS_FIRM"],
+      ["SIGINFLUENCECONTROL_AS_TRUST", "VOTINGRIGHTS_50TO75PERCENT_AS_TRUST"],
+    ]) {
+      mockBuildFormSubmission.mockClear();
+      const response = await ingestHandler(buildEvent({ body: buildNotificationBody({ naturesOfControl }) }));
+      expect(response.statusCode, naturesOfControl.join()).toBe(201);
+      for (const code of naturesOfControl) expect(mockBuildFormSubmission.mock.calls[0][0].formXml).toContain(code);
+    }
+  });
+
   test("a relevant legal entity's notice sends its principal office, trimmed, and none of an individual's particulars", async () => {
     const response = await ingestHandler(
       buildEvent({ body: buildNotificationBody({ ...ENTITY, address: { ...OFFICE, street: "  Stryd Fawr  ", county: "" } }) }),
@@ -243,6 +267,7 @@ describe("companiesHousePscNotificationPost ingestHandler", () => {
       [{ personalCode: "ABCDE123456", nameMismatchReason: "<script>" }, "nameMismatchReason is not one of the reasons"],
       [{ ...ENTITY, legalForm: "" }, "legalForm is needed"],
       [{ ...ENTITY, registrationNumber: "" }, "needs its registration number there"],
+      [{ ...ENTITY, countryOrState: "" }, "needs the country or state of that register"],
       [{ naturesOfControl: ["SIGINFLUENCECONTROL", "VOTINGRIGHTS_25TO50PERCENT"] }, "Invalid naturesOfControl - SIGINFLUENCECONTROL only"],
       [{ naturesOfControl: undefined }, "Invalid naturesOfControl - at least one nature of control is needed"],
       [{ notificationDate: "2016-04-05", confirmationDate: "2016-04-06" }, "must not be before 2016-04-06"],

@@ -210,6 +210,7 @@ describe("services/companiesHouseXmlGateway", () => {
       companyName: "TEST COMPANY LIMITED",
       companyAuthenticationCode: "ABC123",
       packageReference: "0012",
+      gatewayClass: "ConfirmationAndVerificationStatement",
       formIdentifier: "ConfirmationAndVerificationStatement",
       submissionNumber: "AAA001",
       dateSigned: "2026-06-30",
@@ -217,11 +218,19 @@ describe("services/companiesHouseXmlGateway", () => {
       transactionId: "1700000000000",
     };
 
-    test("carries FormIdentifier and Class as the given formIdentifier", () => {
-      const xml = buildFormSubmission(baseInput);
-      const document = parseXmlDocument(xml);
+    test("carries the given gatewayClass as Class and the given formIdentifier as FormIdentifier", () => {
+      const document = parseXmlDocument(buildFormSubmission(baseInput));
       expect(firstElementText(document, "Class")).toBe("ConfirmationAndVerificationStatement");
       expect(firstElementText(document, "FormIdentifier")).toBe("ConfirmationAndVerificationStatement");
+      const allotment = parseXmlDocument(
+        buildFormSubmission({ ...baseInput, gatewayClass: "ReturnOfAllotmentShares", formIdentifier: "ReturnofAllotmentShares" }),
+      );
+      expect(firstElementText(allotment, "Class")).toBe("ReturnOfAllotmentShares");
+      expect(firstElementText(allotment, "FormIdentifier")).toBe("ReturnofAllotmentShares");
+    });
+
+    test("refuses an envelope with no Class, which the gateway could not route", () => {
+      expect(() => buildFormSubmission({ ...baseInput, gatewayClass: undefined })).toThrow("Missing gatewayClass");
     });
 
     test("carries the given formXml inside Form and no Document when none is given", () => {
@@ -234,6 +243,7 @@ describe("services/companiesHouseXmlGateway", () => {
     test("carries a given document inside Document", () => {
       const xml = buildFormSubmission({
         ...baseInput,
+        gatewayClass: "Accounts",
         formIdentifier: "Accounts",
         formXml: "",
         document: { data: "ZGF0YQ==", date: "2026-06-30", filename: "Accounts.xml", contentType: "application/xml", category: "ACCOUNTS" },

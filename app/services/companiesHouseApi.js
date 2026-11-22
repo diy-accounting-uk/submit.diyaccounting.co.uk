@@ -153,7 +153,11 @@ export function isValidCompaniesHousePersonalCode(value) {
   if (value === undefined || value === null) {
     return { valid: false, normalised: "" };
   }
-  const normalised = String(value).trim().toUpperCase().replace(/-/g, "");
+  // A code is printed in groups; a space, slash or hyphen between them is not part of it.
+  const normalised = String(value)
+    .trim()
+    .toUpperCase()
+    .replace(/[\s/-]/g, "");
   return { valid: PERSONAL_CODE_PATTERN.test(normalised), normalised };
 }
 
