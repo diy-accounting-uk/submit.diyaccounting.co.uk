@@ -17442,8 +17442,8 @@ hash = "4f3c83c09ef8"
 cy = '''Mae’r dyddiad cymeradwyo isod fwy na 28 diwrnod yn ôl. Cyflwynwch y cyfrifon diwygiedig nawr: mae’r gyfraith yn rhoi 28 diwrnod i’r cyfarwyddwyr o’r adeg y maent yn eu cymeradwyo.'''
 
 [strings."ch.ct.amend-accounts-alone"]
-hash = "f5356c074b06"
-cy = '''Diwygio’r cyfrifon hyn ar y ffurflen gyfrifon'''
+hash = "b3ffa6e907a7"
+cy = '''Agorwch y cyfrifon hyn, yna dewiswch Diwygio'''
 
 [strings."ch.ct.refuse-accounts-alone-title"]
 hash = "f06d50a824f1"
@@ -17534,3 +17534,53 @@ cy = '''Mae hwn yn dangos y {shown} ffeilio diweddaraf o {total} ffeilio’r cwm
 [strings."ch.drill.accounts-truncated"]
 hash = "7eecad4d4ea8"
 cy = '''Mae hwn yn dangos y cyfrifon ymhlith ffeilio diweddaraf y cwmni. Mae gwasanaeth Tŷ’r Cwmnïau ei hun yn dangos pob set:'''
+
+# == Revised small company accounts from a receipt: the revision section of ch-small-company.* and ch.revision.not-small ==
+
+[strings."ch-small-company.you-are-revising-the-accounts-filed-372107"]
+hash = "372107377421"
+cy = '''<strong>Rydych yn diwygio’r cyfrifon a ffeiliwyd yn Nhŷ’r Cwmnïau</strong>'''
+
+[strings."ch-small-company.the-original-accounts-stay-on-the-0de121"]
+hash = "0de12153df89"
+cy = '''Mae’r cyfrifon gwreiddiol yn aros ar y gofrestr gyhoeddus, ac mae’r cyfrifon diwygiedig yn cael eu ffeilio wrth eu hochr.'''
+
+[strings."ch-small-company.the-revision-cc28da"]
+hash = "cc28daaf757e"
+cy = '''Y diwygiad'''
+
+[strings."ch-small-company.a-revision-corrects-what-was-wrong-59c335"]
+hash = "59c335a6f9da"
+cy = '''Mae diwygiad yn cywiro’r hyn a oedd yn anghywir yn y cyfrifon gwreiddiol, a’r hyn sy’n gorfod newid o’i herwydd, a dim byd arall.'''
+
+[strings."ch-small-company.the-directors-must-deliver-the-revised-bf000b"]
+hash = "bf000b2ab79c"
+cy = '''Rhaid i’r cyfarwyddwyr gyflwyno’r cyfrifon diwygiedig i Dŷ’r Cwmnïau o fewn 28 diwrnod i’w cymeradwyo.'''
+
+[strings."ch-small-company.date-the-original-accounts-were-approved-a469b4"]
+hash = "a469b4343713"
+cy = '''Dyddiad cymeradwyo’r cyfrifon gwreiddiol'''
+
+[strings."ch-small-company.companies-house-prints-both-texts-on-fe3e14"]
+hash = "fe3e146ebe5e"
+cy = '''Mae Tŷ’r Cwmnïau yn argraffu’r ddau destun ar y cyfrifon diwygiedig, ar y gofrestr gyhoeddus.'''
+
+[strings."ch-small-company.what-was-wrong-with-the-original-b6637a"]
+hash = "b6637a6b53ee"
+cy = '''Beth oedd yn anghywir yn y cyfrifon gwreiddiol?'''
+
+[strings."ch-small-company.what-do-the-revised-accounts-change-ff3c9b"]
+hash = "ff3c9b4ea7bf"
+cy = '''Beth mae’r cyfrifon diwygiedig yn ei newid?'''
+
+[strings."ch-small-company.the-date-approved-below-is-more-4f3c83"]
+hash = "4f3c83c09ef8"
+cy = '''Mae’r dyddiad cymeradwyo isod fwy na 28 diwrnod yn ôl. Cyflwynwch y cyfrifon diwygiedig nawr: mae’r gyfraith yn rhoi 28 diwrnod i’r cyfarwyddwyr o’r adeg y maent yn eu cymeradwyo.'''
+
+[strings."ch-small-company.the-accounts-filed-were-a-filleted-2cd0d6"]
+hash = "2cd0d667ce2a"
+cy = '''Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, ac nid oes cyfrif elw a cholled ynddo. Teipiwch linellau’r cyfrif elw a cholled isod, neu ollwng llyfr y cwmni ar y cerdyn uchod.'''
+
+[strings."ch.revision.not-small"]
+hash = "9d271c1998af"
+cy = '''Cyfrifon micro-endid yw’r rheini, felly maent yn cael eu diwygio ar dudalen cyfrifon micro-endid.'''

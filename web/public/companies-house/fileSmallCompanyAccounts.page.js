@@ -93,6 +93,8 @@ const INTANGIBLE_ASSET_FIELDS = [
 ];
 
 let company = null;
+// The revision this page is filing, or null for original accounts.
+let revision = null;
 
 function views() {
   return {
@@ -437,6 +439,7 @@ function buildAccountsPayload() {
       ...(controllingParty ? { controllingParty } : {}),
       ...(directorsAdvances ? { directorsAdvances } : {}),
     },
+    ...(revision ? { revision: revision.module.revisionPayload(revisionElements()) } : {}),
   };
 }
 
@@ -510,6 +513,7 @@ async function handleAccountsFormSubmit(event) {
   const form = event.currentTarget;
   if (!window.formErrors.requireFormFields(form)) return;
   if (window.formErrors.reportMoneyProblems(form)) return;
+  if (revision && reportRevisionProblems()) return;
   const problem = formProblem();
   if (problem) {
     showStatus(problem, "error");
@@ -618,6 +622,8 @@ async function checkOutcome(submission, headers) {
           status: outcome.statusCode,
         }),
   );
+  const revisionHeadline = revision && !notReceived ? revisionOutcomeHeadline(outcome.statusCode) : null;
+  if (revisionHeadline) result.prepend(paragraphWithValues(revisionHeadline, {}));
   result.className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
   renderRejections(outcome.rejections);
   showFilingCopyLink(outcome);
@@ -688,6 +694,7 @@ updateGovTestScenarioVisibility();
 window.addEventListener("developer-mode-changed", updateGovTestScenarioVisibility);
 
 function startAgain() {
+  endRevision();
   company = null;
   document.getElementById("companyForm").reset();
   document.getElementById("accountsForm").reset();
@@ -718,3 +725,121 @@ document.getElementById("changeCompanyLink").addEventListener("click", (event) =
 
 applyProfitAndLossFormat();
 window.booksImport.mount(document.getElementById("booksImport"), { kind: "small-company-accounts" });
+
+// The request, the checks and the result of a revision of accounts already filed. ?amend=<receipt name>
+// opens the form from the receipt of the accepted filing.
+function revisionElements() {
+  return {
+    section: document.getElementById("revisionSection"),
+    originalDate: document.getElementById("revisionOriginalDate"),
+    nonCompliance: document.getElementById("revisionNonCompliance"),
+    amendments: document.getElementById("revisionAmendments"),
+  };
+}
+
+function revisionOutcomeHeadline(statusCode) {
+  if (statusCode === "ACCEPT") return window.siteText("ch.revision.accepted", "Companies House accepted the revised accounts.");
+  if (statusCode === "REJECT") return window.siteText("ch.revision.rejected", "Companies House rejected the revised accounts.");
+  return null;
+}
+
+function refuseRevision(text) {
+  showStatus(text, "error");
+  showView("companyView");
+}
+
+function showRevisionLateNote() {
+  const dateApproved = document.getElementById("directorDateApproved").value;
+  document.getElementById("revisionLateNote").hidden = !(revision && revision.module.isPastDeliveryDays(dateApproved, new Date()));
+}
+
+// Shows each problem with the revision beside its field; answers true when there is one.
+function reportRevisionProblems() {
+  const elements = revisionElements();
+  const problems = revision.module.checkRevision({
+    ...revision.module.revisionPayload(elements),
+    dateApproved: document.getElementById("directorDateApproved").value,
+  });
+  if (problems.length === 0) return false;
+  const inputs = {
+    nonCompliance: elements.nonCompliance,
+    amendments: elements.amendments,
+    dateApproved: document.getElementById("directorDateApproved"),
+  };
+  window.formErrors.showFormErrors(problems.map(({ field, message }) => ({ input: inputs[field], message })));
+  return true;
+}
+
+async function startRevision(receiptName) {
+  showLoading();
+  hideStatus();
+  try {
+    const module = await import("../lib/accounts-revision.js");
+    if (!(await module.isRevisionOfferedHere())) {
+      refuseRevision(
+        window.siteText("ch.revision.not-offered", "Revised accounts cannot be filed here yet, so these accounts cannot be amended."),
+      );
+      return;
+    }
+    const read = await module.readRevisionSource(receiptName, {
+      fetchReceipt: (name) => window.fetchWithIdToken(`/api/v1/hmrc/receipt/${encodeURIComponent(name)}`, {}),
+      loadBundle: window.booksImport.loadBundle,
+    });
+    if (read.refusal) {
+      refuseRevision(read.refusal);
+      return;
+    }
+    if (read.source.regime !== "small") {
+      refuseRevision(
+        window.siteText("ch.revision.not-small", "Those are micro-entity accounts, so they are revised on the micro-entity accounts page."),
+      );
+      return;
+    }
+    const profile = await window.getCompanyProfile(read.source.companyNumber);
+    company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
+    window.accountsFormSections.fillRegisteredOffice(profile.registeredOffice);
+    document.getElementById("formCompanyName").textContent = company.companyName;
+    document.getElementById("formCompanyNumber").textContent = company.companyNumber;
+    showDocumentLanguageChoice(profile.jurisdiction);
+    window.booksImport.fillSmallCompanyFormFromMapped(read.source.mapped);
+    toggleSections();
+    renderTotals();
+    revision = { module, source: read.source };
+    module.showRevisionSection(revisionElements(), read.source);
+    document.getElementById("revisionFilletedNote").hidden = !read.source.mapped.filleted;
+    document.getElementById("revisionBanner").hidden = false;
+    document.getElementById("changeCompanyLink").hidden = true;
+    showRevisionLateNote();
+    showView("formView");
+  } catch (error) {
+    console.error("Failed to open the accounts to revise:", error);
+    refuseRevision(
+      error.message ||
+        window.siteText("ch.revision.load-failed", "We could not open those accounts to revise. Open the filing again from your receipts."),
+    );
+  } finally {
+    hideLoading();
+  }
+}
+
+function endRevision() {
+  if (!revision) return;
+  revision = null;
+  const elements = revisionElements();
+  elements.section.hidden = true;
+  elements.nonCompliance.required = false;
+  elements.amendments.required = false;
+  document.getElementById("revisionBanner").hidden = true;
+  document.getElementById("revisionLateNote").hidden = true;
+  document.getElementById("revisionFilletedNote").hidden = true;
+  document.getElementById("changeCompanyLink").hidden = false;
+}
+
+document.getElementById("directorDateApproved").addEventListener("input", showRevisionLateNote);
+
+const amendReceiptName = new URLSearchParams(window.location.search).get("amend");
+if (amendReceiptName && window.__submitReady__) {
+  startRevision(amendReceiptName);
+} else if (amendReceiptName) {
+  document.addEventListener("submit-ready", () => startRevision(amendReceiptName), { once: true });
+}

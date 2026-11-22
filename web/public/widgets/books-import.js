@@ -666,6 +666,20 @@
 
   async function fillSmallCompanyAccountsFromIxbrl({ bundle, source, fileName }) {
     const mapped = await mapIxbrlForPage(bundle, source.ixbrl, "small");
+    const filled = fillSmallCompanyFormFromMapped(mapped);
+    return ixbrlStatus(
+      filled,
+      fileName,
+      mapped,
+      "Check the figures, add the accounting policies, the date approved and the statements, then preview.",
+      true,
+    );
+  }
+
+  // Fills the small company form from mapped iXBRL accounts: the period, the copy, the profit and
+  // loss account a full copy holds, both years' balance sheets, the fixed asset note, the employees,
+  // the principal activity and the directors. Answers how many fields it filled.
+  function fillSmallCompanyFormFromMapped(mapped) {
     const { currentYear, priorYear } = mapped.balanceSheet;
     let filled = 0;
     setField("periodStart", mapped.period.start);
@@ -708,13 +722,7 @@
       setField("directorName", mapped.signer);
       filled += 1;
     }
-    return ixbrlStatus(
-      filled,
-      fileName,
-      mapped,
-      "Check the figures, add the accounting policies, the date approved and the statements, then preview.",
-      true,
-    );
+    return filled;
   }
 
   async function fillSmallCompanyAccounts({ bundle, source, fileName }) {
@@ -1289,5 +1297,13 @@
     return undefined;
   }
 
-  window.booksImport = { mount, parseHandoff, applyPendingHandoff, showSavedBooksFor, fillMicroEntityFormFromMapped, loadBundle };
+  window.booksImport = {
+    mount,
+    parseHandoff,
+    applyPendingHandoff,
+    showSavedBooksFor,
+    fillMicroEntityFormFromMapped,
+    fillSmallCompanyFormFromMapped,
+    loadBundle,
+  };
 })();

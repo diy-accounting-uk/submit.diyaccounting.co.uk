@@ -241,18 +241,22 @@ test.describe("Filings page - customer copy", () => {
     await expect(page.locator("#amendFilingLink")).toBeHidden();
   });
 
-  test("offers no amend link here for accounts filed with a Company Tax Return, or for small company accounts", async ({ page }) => {
+  test("offers no amend link here for accounts filed with a Company Tax Return", async ({ page }) => {
     await openFiling(page, ACCOUNTS_RECEIPT_NAME, { ...ACCOUNTS_RECEIPT, jointFilingId: "joint-1" }, { revisionOffered: true });
     await expect(page.locator("#amendFilingLink")).toBeHidden();
     await expect(page.locator("#filingContent .customer-copy-links a").first()).toHaveText("File accounts again with corrected figures");
+  });
 
+  test("offers to amend accepted small company accounts on the small company form", async ({ page }) => {
     await openFiling(
       page,
       ACCOUNTS_RECEIPT_NAME,
       { ...ACCOUNTS_RECEIPT, filedDocument: smallCompanyCase.xhtml },
       { revisionOffered: true },
     );
-    await expect(page.locator("#amendFilingLink")).toBeHidden();
+    const amendHref = `fileSmallCompanyAccounts.html?amend=${encodeURIComponent(ACCOUNTS_RECEIPT_NAME)}`;
+    await expect(page.locator("#amendFilingLink")).toHaveAttribute("href", amendHref);
+    await expect(page.locator("#filingContent .customer-copy-links a").first()).toHaveAttribute("href", amendHref);
   });
 
   for (const width of [1280, 390]) {

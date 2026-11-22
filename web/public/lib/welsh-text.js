@@ -322,7 +322,7 @@ window.WELSH_TEXT = {
   "ch.ct.agent-authorised":
     "Mae’r cwmni wedi awdurdodi’r practis hwn i weithredu ar ei ran ar gyfer Treth Gorfforaeth (ffurflen 64-8 neu ar-lein), ac mae wedi cymeradwyo’r Ffurflen hon.",
   "ch.ct.aia-most": "Yr uchafswm ar gyfer {range} yw £{amount}.",
-  "ch.ct.amend-accounts-alone": "Diwygio’r cyfrifon hyn ar y ffurflen gyfrifon",
+  "ch.ct.amend-accounts-alone": "Agorwch y cyfrifon hyn, yna dewiswch Diwygio",
   "ch.ct.amend-load-failed": "Methwyd â llwytho’r ffeilio i’w ddiwygio.",
   "ch.ct.amended-return": "Ffurflen ddiwygiedig",
   "ch.ct.amount-released": "Y swm a ryddhawyd neu a ddilëwyd",
@@ -1144,6 +1144,7 @@ window.WELSH_TEXT = {
   "ch.revision.need-non-compliance": "Dywedwch beth oedd yn anghywir yn y cyfrifon gwreiddiol",
   "ch.revision.not-micro": "Cyfrifon cwmni bach yw’r rheini, felly maent yn cael eu diwygio ar dudalen cyfrifon cwmni bach.",
   "ch.revision.not-offered": "Ni ellir ffeilio cyfrifon diwygiedig yma eto, felly ni ellir diwygio’r cyfrifon hyn.",
+  "ch.revision.not-small": "Cyfrifon micro-endid yw’r rheini, felly maent yn cael eu diwygio ar dudalen cyfrifon micro-endid.",
   "ch.revision.refuse-joint":
     "Cafodd y cyfrifon hynny eu ffeilio gyda Ffurflen Dreth y Cwmni, felly diwygiwch nhw ar dudalen Ffurflen Dreth y Cwmni.",
   "ch.revision.refuse-kind": "Nid ffeilio cyfrifon yw’r dderbynneb honno, felly nid oes cyfrifon i’w diwygio.",
