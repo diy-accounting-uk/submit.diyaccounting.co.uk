@@ -16950,5 +16950,15 @@ cy = '''{label} (Ffurflen 1)'''
 hash = "4bf4a158956f"
 cy = '''A yw’r cyfnod cyfrifyddu cyntaf yn dechrau ar {start}?'''
 
+# == Revised accounts on mtd-calendar.html: ids mtd-calendar.revised-accounts-* and mtd-calendar.when-the-directors-revise-* ==
+
+[strings."mtd-calendar.revised-accounts-at-companies-house-03636d"]
+hash = "03636d8deccc"
+cy = '''Cyfrifon diwygiedig yn Nhŷ’r Cwmnïau'''
+
+[strings."mtd-calendar.when-the-directors-revise-accounts-already-611816"]
+hash = "6118163cb73f"
+cy = '''Pan fydd y cyfarwyddwyr yn diwygio cyfrifon sydd eisoes wedi’u ffeilio, rhaid iddynt gyflwyno’r cyfrifon diwygiedig i Dŷ’r Cwmnïau o fewn 28 diwrnod i ddyddiad y diwygio.'''
+
 # == Marketing site (MKT8) ==
 # ids marketing.*; add entries below this line.

@@ -5,7 +5,7 @@ import { describe, test, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { PAGE_PATH, allFactIds, renderMtdCalendar, renderCalendarHtml } from "../../scripts/build-mtd-calendar.mjs";
-import { loadSources, formatIsoDate } from "../../scripts/tax-sources.mjs";
+import { loadSources, formatIsoDate, sourcePublisher } from "../../scripts/tax-sources.mjs";
 
 const sources = loadSources();
 const calendarFactIds = new Set(allFactIds());
@@ -26,7 +26,7 @@ describe("MTD calendar page", () => {
       .replace(/<\/a >/g, "</a>");
     for (const s of calendarSources) {
       expect(html).toContain(s.url);
-      expect(html).toContain(`GOV.UK, ${s.title}</a> (checked ${formatIsoDate(s.retrieved)})`);
+      expect(html).toContain(`${sourcePublisher(s.url)}, ${s.title}</a> (checked ${formatIsoDate(s.retrieved)})`);
     }
   });
 

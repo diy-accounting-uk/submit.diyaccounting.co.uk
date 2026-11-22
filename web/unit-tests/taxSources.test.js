@@ -13,6 +13,7 @@ import {
   pageTitle,
   normaliseText,
   quoteAppearsIn,
+  sourcePublisher,
 } from "../../scripts/tax-sources.mjs";
 import { allFactIds } from "../../scripts/build-mtd-calendar.mjs";
 import { RATES_FACT_IDS } from "../../scripts/rates-fact-ids.mjs";
@@ -36,9 +37,9 @@ describe("tax sources", () => {
     expect(orphaned).toEqual([]);
   });
 
-  test("every source is a gov.uk page with a title, a quote and an ISO retrieval date", () => {
+  test("every source is a gov.uk or legislation.gov.uk page with a title, a quote and an ISO retrieval date", () => {
     for (const s of sources) {
-      expect(s.url, s.name).toMatch(/^https:\/\/www\.gov\.uk\//);
+      expect(s.url, s.name).toMatch(/^https:\/\/www\.(legislation\.)?gov\.uk\//);
       expect(s.title.length, s.name).toBeGreaterThan(5);
       expect(s.title, s.name).not.toMatch(/GOV\.UK$/);
       expect(s.quote.length, s.name).toBeGreaterThan(20);
@@ -85,6 +86,22 @@ describe("tax source helpers", () => {
     expect(normaliseText("<p>Rate&nbsp;is &pound;5 <b>now</b> .</p><script>x()</script>")).toBe("Rate is £5 now.");
   });
 
+  test("normaliseText decodes hex character references as well as decimal ones", () => {
+    expect(normaliseText("registrar&#x2014;&#xD; (a) the auditor&#39;s report&#X2019;s")).toBe("registrar— (a) the auditor's report’s");
+  });
+
+  test("sourcePublisher names GOV.UK for www.gov.uk and legislation.gov.uk for the statute, and refuses any other host", () => {
+    expect(sourcePublisher("https://www.gov.uk/a")).toBe("GOV.UK");
+    expect(sourcePublisher("https://www.legislation.gov.uk/uksi/2008/373/regulation/14")).toBe("legislation.gov.uk");
+    expect(() => sourcePublisher("https://www.example.com/a")).toThrow(/www\.gov\.uk or www\.legislation\.gov\.uk/);
+    expect(() => sourcePublisher("https://legislation.gov.uk/a")).toThrow();
+    expect(() => sourcePublisher("http://www.gov.uk/a")).toThrow();
+  });
+
+  test("every source names a publisher", () => {
+    for (const s of sources) expect(() => sourcePublisher(s.url), s.name).not.toThrow();
+  });
+
   test("quoteAppearsIn ignores whitespace and markup differences", () => {
     expect(quoteAppearsIn("the rate is 20%", "<td>the  rate\nis <em>20%</em></td>")).toBe(true);
     expect(quoteAppearsIn("the rate is 25%", "<td>the rate is 20%</td>")).toBe(false);
@@ -98,6 +115,19 @@ describe("tax source helpers", () => {
     );
     expect(html).toContain("Source: <a");
     expect(html).not.toContain("Retrieved");
+  });
+
+  test("sourceQuoteHtml names legislation.gov.uk in the link line of a statute", () => {
+    const html = sourceQuoteHtml({
+      url: "https://www.legislation.gov.uk/uksi/2008/373/regulation/14",
+      title: "The Companies (Revision of Defective Accounts and Reports) Regulations 2008",
+      retrieved: "2026-11-22",
+      quote: "The directors of the company must deliver.",
+    });
+    expect(html).toContain(
+      'rel="noopener">legislation.gov.uk, The Companies (Revision of Defective Accounts and Reports) Regulations 2008</a> (checked 22 November 2026)',
+    );
+    expect(html).not.toContain("GOV.UK,");
   });
 
   test("sourceQuoteHtml prints a table source as a link line without its words", () => {

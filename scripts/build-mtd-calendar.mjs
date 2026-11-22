@@ -111,6 +111,11 @@ export const COMPANY_YEARLY_FACTS = [
     pageLabel: "Look up when a company's accounts and confirmation statement are due",
   },
   {
+    id: "ch-revised-accounts-28-days",
+    title: "Revised accounts at Companies House",
+    text: "When the directors revise accounts already filed, they must deliver the revised accounts to Companies House within 28 days of the date of revision.",
+  },
+  {
     id: "ct600-12-months",
     title: "Company Tax Return (CT600)",
     text: "File the Company Tax Return with HMRC 12 months after the end of the accounting period it covers. A period of account longer than 12 months, up to 18 months, files as two returns, both due 12 months after the period of account ends.",
@@ -243,6 +248,7 @@ export const RELEVANT_FOR = {
   "ch-identity-verification-2025-11": COMPANIES,
   "ch-confirmation-statement-12-months": COMPANIES,
   "ch-accounts-9-months": COMPANIES,
+  "ch-revised-accounts-28-days": COMPANIES,
   "ct600-12-months": COMPANIES,
   "ct-payment-9-months-1-day": COMPANIES,
 };

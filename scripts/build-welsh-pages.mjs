@@ -443,7 +443,8 @@ function relocate(url, pages, page) {
 
 // HMRC's Welsh services. The HMRC Assist line names the VAT Return, so only the VAT pages and the
 // receipts page carry it.
-// The line under a GOV.UK quote that tax-sources.mjs writes: "Source: <a>GOV.UK, title</a> (checked 13 November 2026)".
+// The line under a source quote that tax-sources.mjs writes: "Source: <a>GOV.UK, title</a> (checked 13 November 2026)",
+// or legislation.gov.uk in place of GOV.UK for a statute.
 // The quote keeps its English words, each paragraph marked lang="en-GB"; the line is ours, so the copy
 // writes it in Welsh with the date in Welsh month names, and marks only the linked GOV.UK title as English.
 const SOURCE_FOOTER_PATTERN =
