@@ -11,9 +11,30 @@ vi.mock("@app/services/companiesHouseApi.js", async (importOriginal) => ({
   companiesHouseFilingHistory: (...args) => mockFilingHistory(...args),
 }));
 
+// The security state table that holds each account's share of the API key and the stop a Companies
+// House 429 sets, as a map of counters and a map of values.
+const counters = new Map();
+const cachedValues = new Map();
+vi.mock("@app/data/dynamoDbSecurityStateRepository.js", () => ({
+  incrementRateCounter: async ({ identifier, minute, hits }) => {
+    const key = `${identifier}|${minute}`;
+    counters.set(key, (counters.get(key) || 0) + hits);
+    return counters.get(key);
+  },
+  getCachedValue: async (key) => cachedValues.get(key),
+  putCachedValue: async (key, value) => cachedValues.set(key, value),
+}));
+vi.mock("@app/services/subHasher.js", () => ({ hashSub: (sub) => `hashed-${sub}` }));
+
 import { refuseRevisionWithNothingToReplace } from "@app/services/revisedAccountsRegister.js";
 
-const FILING = { request: "POST /api/v1/companies-house/accounts", headers: {}, companyNumber: "00000001", periodEnd: "2025-12-31" };
+const FILING = {
+  request: "POST /api/v1/companies-house/accounts",
+  headers: {},
+  userSub: "user-1",
+  companyNumber: "00000001",
+  periodEnd: "2025-12-31",
+};
 
 function history(items) {
   return { ok: true, status: 200, data: { items, totalCount: items.length, truncated: false } };
@@ -26,6 +47,9 @@ describe("the register check of revised accounts that name no receipt", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    counters.clear();
+    cachedValues.clear();
+    process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state-table";
     delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
   });
 
@@ -73,6 +97,40 @@ describe("the register check of revised accounts that name no receipt", () => {
     const response = await refuseRevisionWithNothingToReplace(FILING);
     expect(response.statusCode).toBe(answered);
     expect(() => bodyOf(response)).not.toThrow();
+  });
+
+  test("answers a JSON 502 with a reason, never a pass, when the register read cannot be made at all", async () => {
+    mockFilingHistory.mockRejectedValue(new Error("Missing required environment variable COMPANIES_HOUSE_BASE_URI"));
+    const response = await refuseRevisionWithNothingToReplace(FILING);
+    expect(response.statusCode).toBe(502);
+    expect(bodyOf(response)).toMatchObject({ reason: "revision-register-not-read" });
+    expect(response.body).not.toContain("COMPANIES_HOUSE_BASE_URI");
+  });
+
+  test("charges the read to the account's share of the API key, and refuses with no read once the share is spent", async () => {
+    mockFilingHistory.mockResolvedValue(history([{ type: "AA", description_values: { made_up_date: "2025-12-31" } }]));
+    for (let read = 0; read < 30; read += 1) expect(await refuseRevisionWithNothingToReplace(FILING)).toBeUndefined();
+    expect([...counters.entries()].filter(([key]) => key.startsWith("hashed-user-1|"))).toEqual([[expect.any(String), 150]]);
+
+    const response = await refuseRevisionWithNothingToReplace(FILING);
+
+    expect(response.statusCode).toBe(429);
+    expect(Number(response.headers["Retry-After"])).toBeGreaterThan(0);
+    expect(() => bodyOf(response)).not.toThrow();
+    expect(mockFilingHistory).toHaveBeenCalledTimes(30);
+    expect(await refuseRevisionWithNothingToReplace({ ...FILING, userSub: "user-2" })).toBeUndefined();
+  });
+
+  test("a 429 from Companies House sets the stop every lookup reads, and the next revision is refused with no read", async () => {
+    mockFilingHistory.mockResolvedValue({ ok: false, status: 429, data: {}, headers: { "retry-after": "30" } });
+    expect((await refuseRevisionWithNothingToReplace(FILING)).statusCode).toBe(429);
+    expect(cachedValues.get("chlookup#stopped").until).toBeGreaterThan(Date.now());
+
+    const response = await refuseRevisionWithNothingToReplace({ ...FILING, userSub: "user-2" });
+
+    expect(response.statusCode).toBe(429);
+    expect(Number(response.headers["Retry-After"])).toBeGreaterThan(0);
+    expect(mockFilingHistory).toHaveBeenCalledTimes(1);
   });
 
   test("reads nothing and refuses nothing where the envelope goes to the test service", async () => {

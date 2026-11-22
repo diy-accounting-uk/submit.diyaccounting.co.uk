@@ -529,6 +529,7 @@ export async function ingestHandler(event) {
     const registerRefusal = await refuseRevisionWithNothingToReplace({
       request,
       headers: responseHeaders,
+      userSub,
       companyNumber: accounts.companyNumber,
       periodEnd: accounts.periodEnd,
     });

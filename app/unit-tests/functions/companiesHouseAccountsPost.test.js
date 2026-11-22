@@ -1085,6 +1085,33 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
     expect(submissionArgs.companyNumber).toBe("00000099");
   });
 
+  test("checks a client's revised accounts with no receipt against the client's company, whatever company the body names", async () => {
+    delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
+    mockPracticeAndClient({
+      clientId: "c1",
+      identifiers: { companyNumber: "00000099" },
+      authorisations: { "CH-ACCOUNTS": { status: "authorised" } },
+      archivedAt: null,
+    });
+    // The company the body names holds accounts for the period; the client's company holds none.
+    mockFilingHistory.mockImplementation(async (companyNumber) => accountsHistory(...(companyNumber === "00000001" ? ["2025-12-31"] : [])));
+    const revision = {
+      originalDateOfApproval: "2026-01-10",
+      nonCompliance: "The turnover was understated.",
+      amendments: "Turnover is restated.",
+    };
+
+    const response = await companiesHouseAccountsPostHandler(
+      buildEvent({ body: buildAccountsBody({ clientId: "c1", companyNumber: "00000001", revision }) }),
+    );
+
+    expect(mockFilingHistory).toHaveBeenCalledWith("00000099", { category: "accounts" });
+    expect(mockFilingHistory).not.toHaveBeenCalledWith("00000001", expect.anything());
+    expect(response.statusCode).toBe(400);
+    expect(parseResponseBody(response)).toMatchObject({ reason: "revision-period-not-on-register", companyNumber: "00000099" });
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
   test("keeps the client id on the pending request, so the receipt of an accepted filing is the client's", async () => {
     mockPracticeAndClient({
       clientId: "c1",
