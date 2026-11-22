@@ -660,7 +660,7 @@ export async function renderWelshPage(page, catalogue = loadCatalogue(), pages =
     `</main> in ${page.en}`,
   );
   html = html.replace(/<blockquote class="(source-quote[^"]*)">([\s\S]*?)<\/blockquote>/g, (whole, className, inner) => {
-    const quotes = inner.replace(/<p>/g, '<p lang="en-GB">');
+    const quotes = inner.replace(/<(p|ul)>/g, '<$1 lang="en-GB">');
     return `<blockquote class="${className}">${quotes.replace(SOURCE_FOOTER_PATTERN, (footer, link, day, month, year) => welshSourceFooter(catalogue, link, day, month, year))}</blockquote>`;
   });
   html = html.replace(/(\s(?:href|src)=")([^"]*)(")/g, (whole, start, url, end) => `${start}${relocate(url, pages, page)}${end}`);

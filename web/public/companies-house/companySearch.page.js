@@ -550,7 +550,7 @@ function authorityNotes(activityId) {
     "change-company-name": [
       inEnglishOnly(
         "changeOfNameForm",
-        "Director, Secretary, Person authorised, Liquidator, Administrator, Administrative receiver, Receiver, Receiver manager, Charity commission receiver and manager, CIC manager.",
+        "I am authenticating this form on behalf of the company. … Director, Secretary, Person authorised, Liquidator, Administrator, Administrative receiver, Receiver, Receiver manager, Charity commission receiver and manager, CIC manager.",
       ),
       inEnglishOnly("changeOfNameForm", "You may use this form to give notice of an unconditional change of name by the company members."),
       inEnglishOnly("changeOfNameGuide", "Your company name will not officially change until Companies House registers it."),
@@ -821,7 +821,29 @@ function emptyNote(container, text) {
   container.appendChild(note);
 }
 
-const accountsTypeLabel = (type) => (type ? slugText(type) : window.siteText("ch.drill.type-not-stated", "Not stated"));
+// The register's accounts types, in the reader's language; a type outside this list reads as its own words.
+const ACCOUNTS_TYPE_LABELS = {
+  "micro-entity": () => window.siteText("ch.drill.accounts-type-micro-entity", "Micro entity"),
+  "full": () => window.siteText("ch.drill.accounts-type-full", "Full"),
+  "small": () => window.siteText("ch.drill.accounts-type-small", "Small"),
+  "medium": () => window.siteText("ch.drill.accounts-type-medium", "Medium"),
+  "group": () => window.siteText("ch.drill.accounts-type-group", "Group"),
+  "dormant": () => window.siteText("ch.drill.accounts-type-dormant", "Dormant"),
+  "interim": () => window.siteText("ch.drill.accounts-type-interim", "Interim"),
+  "initial": () => window.siteText("ch.drill.accounts-type-initial", "Initial"),
+  "total-exemption-full": () => window.siteText("ch.drill.accounts-type-total-exemption-full", "Total exemption full"),
+  "total-exemption-small": () => window.siteText("ch.drill.accounts-type-total-exemption-small", "Total exemption small"),
+  "partial-exemption": () => window.siteText("ch.drill.accounts-type-partial-exemption", "Partial exemption"),
+  "audit-exemption-subsidiary": () => window.siteText("ch.drill.accounts-type-audit-exemption-subsidiary", "Audit exemption subsidiary"),
+  "filing-exemption-subsidiary": () => window.siteText("ch.drill.accounts-type-filing-exemption-subsidiary", "Filing exemption subsidiary"),
+  "unaudited-abridged": () => window.siteText("ch.drill.accounts-type-unaudited-abridged", "Unaudited abridged"),
+  "audited-abridged": () => window.siteText("ch.drill.accounts-type-audited-abridged", "Audited abridged"),
+};
+
+const accountsTypeLabel = (type) => {
+  if (!type) return window.siteText("ch.drill.type-not-stated", "Not stated");
+  return ACCOUNTS_TYPE_LABELS[type] ? ACCOUNTS_TYPE_LABELS[type]() : slugText(type);
+};
 
 // -- the overview's sections ----------------------------------------------------------------------
 

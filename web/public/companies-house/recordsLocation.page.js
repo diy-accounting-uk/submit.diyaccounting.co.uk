@@ -73,6 +73,8 @@ function recordLabels() {
 }
 
 function showView(name) {
+  // A message belongs to the view it was shown on: a refusal fixed on the form is not shown above the review.
+  window.hideStatus?.();
   ["companyView", "formView", "reviewView", "resultView"].forEach((id) => {
     document.getElementById(id).style.display = id === name ? "block" : "none";
   });

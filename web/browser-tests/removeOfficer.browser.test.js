@@ -246,6 +246,28 @@ test("a director's missing day of birth and an end date before the appointment a
   expect(filings).toHaveLength(0);
 });
 
+test("a refusal fixed on the form is not shown above the review, the result or a new filing", async ({ page }) => {
+  await serveSite(page);
+  await page.goto(`${SITE}/companies-house/removeOfficer.html`, { waitUntil: "networkidle" });
+  await lookUp(page, "Look up the directors and secretaries");
+  await page.getByLabel("TENNANT, Marcus John (Director)").check();
+  await page.locator("#dobDay").fill("14");
+  await page.locator("#resignationDate").fill("2014-12-31");
+  await page.locator("#companyAuthCode").fill("SIMCS01");
+  await page.getByRole("button", { name: "Continue" }).click();
+  const messages = page.locator("#statusMessagesContainer");
+  await expect(messages).toContainText("The appointment cannot end before the date it began");
+
+  await page.locator("#resignationDate").fill("2026-11-01");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#reviewView")).toBeVisible();
+  await expect(messages).not.toContainText("The appointment cannot end before the date it began");
+
+  await page.locator("#submitFilingBtn").click();
+  await expect(page.locator("#resultView")).toBeVisible();
+  await expect(messages).not.toContainText("The appointment cannot end");
+});
+
 test("a rejection shows Companies House's reason", async ({ page }) => {
   await serveSite(page, {
     outcome: { statusCode: "REJECT", rejections: [{ rejectCode: "9998", description: "The officer named does not match the register." }] },

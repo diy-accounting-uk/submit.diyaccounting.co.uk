@@ -222,6 +222,24 @@ for (const width of [1280, 390]) {
   });
 }
 
+for (const [language, address] of [
+  ["English", "/companies-house/changeAccountingRefDate.html"],
+  ["Welsh", "/cy/companies-house/changeAccountingRefDate.html"],
+]) {
+  test(`the quoted five-year rule is followed by the categories it names, in English on the ${language} page`, async ({ page }) => {
+    await serveSite(page);
+    await page.goto(`${SITE}${address}`, { waitUntil: "networkidle" });
+    const quote = page.locator("blockquote.source-quote", { hasText: "more than once in five years" });
+    await expect(quote.locator("li")).toHaveText([
+      "The company is in administration.",
+      "You have specific approval from the Secretary of State (please enclose a copy).",
+      "You are extending the company's accounting reference period to align with that of a parent or subsidiary undertaking established in the United Kingdom.",
+      "You are submitting the form on behalf of an overseas company.",
+    ]);
+    if (language === "Welsh") await expect(quote.locator("ul")).toHaveAttribute("lang", "en-GB");
+  });
+}
+
 test("the last day within 18 months carries no warning", async ({ page }) => {
   await serveSite(page);
   await page.goto(`${SITE}/companies-house/changeAccountingRefDate.html`, { waitUntil: "networkidle" });

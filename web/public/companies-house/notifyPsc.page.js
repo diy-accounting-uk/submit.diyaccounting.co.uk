@@ -25,6 +25,8 @@ const field = (id) => document.getElementById(id);
 const value = (id) => field(id).value.trim();
 
 function showView(name) {
+  // A message belongs to the view it was shown on: a refusal fixed on the form is not shown above the review.
+  window.hideStatus?.();
   ["companyView", "formView", "reviewView", "resultView"].forEach((id) => {
     field(id).style.display = id === name ? "block" : "none";
   });

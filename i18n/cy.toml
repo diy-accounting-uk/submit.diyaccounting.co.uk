@@ -27118,3 +27118,68 @@ cy = '''{name}, ganwyd {born} ({kind})'''
 [strings."ch.change-psc.psc-born"]
 hash = "418f1dc0e6eb"
 cy = '''{name}, ganwyd {born} ({kind})'''
+
+# The company lookup's accounts type, as the register names the last accounts filed.
+#   micro-entity                    micro-endid
+#   exemption                       eithriad
+#   abridged                        cryno
+
+[strings."ch.drill.accounts-type-micro-entity"]
+hash = "42e1d4927055"
+cy = '''Micro-endid'''
+
+[strings."ch.drill.accounts-type-full"]
+hash = "008dacb6d1e8"
+cy = '''Llawn'''
+
+[strings."ch.drill.accounts-type-small"]
+hash = "5263293fc202"
+cy = '''Cwmni bach'''
+
+[strings."ch.drill.accounts-type-medium"]
+hash = "8e588cd18774"
+cy = '''Cwmni canolig'''
+
+[strings."ch.drill.accounts-type-group"]
+hash = "34ca0e766088"
+cy = '''Grŵp'''
+
+[strings."ch.drill.accounts-type-dormant"]
+hash = "027d0e4cfb06"
+cy = '''Segur'''
+
+[strings."ch.drill.accounts-type-interim"]
+hash = "93539c1892e5"
+cy = '''Interim'''
+
+[strings."ch.drill.accounts-type-initial"]
+hash = "1f397413e439"
+cy = '''Cychwynnol'''
+
+[strings."ch.drill.accounts-type-total-exemption-full"]
+hash = "cbd1088df874"
+cy = '''Eithriad llwyr, llawn'''
+
+[strings."ch.drill.accounts-type-total-exemption-small"]
+hash = "9cc1de624d39"
+cy = '''Eithriad llwyr, cwmni bach'''
+
+[strings."ch.drill.accounts-type-partial-exemption"]
+hash = "f5214baef22a"
+cy = '''Eithriad rhannol'''
+
+[strings."ch.drill.accounts-type-audit-exemption-subsidiary"]
+hash = "6bbe33793de6"
+cy = '''Is-gwmni wedi’i eithrio rhag archwiliad'''
+
+[strings."ch.drill.accounts-type-filing-exemption-subsidiary"]
+hash = "f3c63ab02b67"
+cy = '''Is-gwmni wedi’i eithrio rhag ffeilio'''
+
+[strings."ch.drill.accounts-type-unaudited-abridged"]
+hash = "d27cffe8fc57"
+cy = '''Cryno, heb ei archwilio'''
+
+[strings."ch.drill.accounts-type-audited-abridged"]
+hash = "d73ff0ffa7da"
+cy = '''Cryno, wedi’i archwilio'''

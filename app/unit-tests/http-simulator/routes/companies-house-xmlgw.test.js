@@ -1043,6 +1043,7 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
     const final = parseXmlDocument((await post(statusEnvelope({ submissionNumber: "CES002" }))).text);
     expect(firstElementText(final, "StatusCode")).toBe("REJECT");
     expect(firstElementText(final, "RejectCode")).toBe("9998");
+    expect(firstElementText(final, "Description")).toBe("The details on this form do not match the company's record at Companies House.");
   });
 
   test("refuses a PSCCessation envelope whose Form does not hold the PSCCessation element", async () => {

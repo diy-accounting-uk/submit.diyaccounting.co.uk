@@ -39,11 +39,11 @@ function schemaFailureError(text, location) {
   return { raisedBy: "Gateway", number: 604, type: "fatal", text, ...(location ? { location } : {}) };
 }
 
-// The rejection the REJECT scenario answers: a reason Companies House gives for a form whose
-// person is not on the register as named.
+// The rejection the REJECT scenario answers for every form on the shared route, so its reason names
+// no one kind of form: the form's details do not match the company's record.
 const SIMULATED_REJECTION = {
   rejectCode: "9998",
-  description: "The person named on this form does not match a person with significant control on the register.",
+  description: "The details on this form do not match the company's record at Companies House.",
   instanceNumber: "1",
 };
 

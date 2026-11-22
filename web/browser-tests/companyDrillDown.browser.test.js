@@ -630,6 +630,30 @@ test.describe("Company lookup drill-down edit links", () => {
     await expect(page.locator('#accountsSection .file-this[data-activity="file-company-tax-return"]')).toHaveCount(0);
   });
 
+  for (const [language, prefix] of [
+    ["English", ""],
+    ["Welsh", "/cy"],
+  ]) {
+    test(`at phone width the link to the watch list is not broken across lines, in ${language}`, async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await serveSite(page, { bundles: ["resident-ltd"] });
+      await page.goto(`${BASE}${prefix}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+      const link = page.locator("#watchSection > a");
+      await expect(link).toBeVisible({ timeout: 15000 });
+      expect(await link.evaluate((element) => element.getClientRects().length)).toBe(1);
+      const [section, box] = [await page.locator("#watchSection").boundingBox(), await link.boundingBox()];
+      expect(box.x + box.width).toBeLessThanOrEqual(section.x + section.width + 0.5);
+    });
+  }
+
+  test("the Welsh overview names the type of the last accounts in Welsh", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/cy/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    const accounts = page.locator("#accountsSection");
+    await expect(accounts).toContainText("Micro-endid", { timeout: 15000 });
+    await expect(accounts).not.toContainText("Micro entity");
+  });
+
   test("the Welsh overview carries the edit links and the authority in Welsh", async ({ page }) => {
     await serveSite(page, { bundles: ["resident-ltd"] });
     await page.goto(`${BASE}/cy/companies-house/company/00000001`, { waitUntil: "networkidle" });
@@ -1034,6 +1058,9 @@ test.describe("Company lookup drill-down change of company name link", () => {
     );
     await expect(control.locator(".file-this-authority")).toContainText(
       "“You may use this form to give notice of an unconditional change of name by the company members.”",
+    );
+    await expect(control.locator(".file-this-authority li").first()).toHaveText(
+      /^“I am authenticating this form on behalf of the company\. … Director, Secretary, Person authorised, .*, CIC manager\.”/,
     );
     const sources = await control.locator(".file-this-authority a").evaluateAll((links) => links.map((anchor) => anchor.href));
     expect(sources).toContain("https://assets.publishing.service.gov.uk/media/6912090f663088df8f54f4b7/NM01_v7.0-FINAL.pdf");
