@@ -26,7 +26,6 @@ import {
   http403ForbiddenResponse,
   http400BadRequestResponse,
   http500ServerErrorResponse,
-  http502BadGatewayResponse,
   getHeader,
 } from "../../lib/httpResponseHelper.js";
 import {
@@ -323,22 +322,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
 // register must agree: the company was incorporated on that date, which is the period's start, and
 // it holds no accounts but, on a revision, these. A request cannot make an established company's
 // accounts one year by naming its period's start as the incorporation date.
-async function refuseFirstAccountsTheRegisterDoesNotHold(request, responseHeaders, accounts) {
-  let profile;
-  let chResponse;
-  try {
-    ({ profile, chResponse } = await getCompanyProfile(accounts.companyNumber));
-  } catch (error) {
-    logger.error({ message: "The register read for first accounts could not be made", error: error.message });
-  }
-  if (!profile && chResponse?.status !== 404) {
-    return http502BadGatewayResponse({
-      request,
-      headers: { ...responseHeaders },
-      message: "The Companies House register could not be read, so these first accounts were not filed. Try again later.",
-      error: { reason: "first-accounts-register-not-read" },
-    });
-  }
+function refuseFirstAccountsTheRegisterDoesNotHold(request, responseHeaders, accounts, profile) {
   if (profile?.dateOfCreation === accounts.dateOfIncorporation && isFirstAccountsPeriod(profile, accounts.periodStart)) return undefined;
   return buildValidationError(
     request,
@@ -484,8 +468,9 @@ async function recordSubmissionFailure({ failure, summary, userSub, detail = {},
   });
 }
 
-// The register's profile gives the registered office a request leaves out and the jurisdiction Welsh
-// accounts need. A filing reads it once, as one of the limited lookups. Answers {failure} with the
+// The register's profile gives the registered office a request leaves out, the jurisdiction Welsh
+// accounts need and whether accounts that give a date of incorporation are the company's first. A
+// filing reads it once, as one of the limited lookups. Answers {failure} with the
 // JSON error of a read that was refused, failed or could not be made, and otherwise {profile}, which
 // is null for a company the register does not hold.
 async function readFilingProfile({ request, responseHeaders, userSub, companyNumber }) {
@@ -587,9 +572,11 @@ export async function ingestHandler(event) {
   if (clientId) {
     accounts.companyNumber = client.identifiers?.companyNumber;
   }
-  if (!accounts.registeredOffice?.addressLine1 || accounts.documentLanguage === "cy") {
+  let filingProfile = null;
+  if (!accounts.registeredOffice?.addressLine1 || accounts.documentLanguage === "cy" || accounts.dateOfIncorporation) {
     const read = await readFilingProfile({ request, responseHeaders, userSub, companyNumber: accounts.companyNumber });
     if (read.failure) return read.failure;
+    filingProfile = read.profile;
     await fillRegisteredOffice(accounts, errorMessages, { readProfile: async () => ({ profile: read.profile }) });
     if (accounts.documentLanguage === "cy") checkWelshCompany(read.profile?.jurisdiction, errorMessages);
   }
@@ -619,7 +606,7 @@ export async function ingestHandler(event) {
     if (registerRefusal) return registerRefusal;
   }
   if (accounts.dateOfIncorporation) {
-    const notFirst = await refuseFirstAccountsTheRegisterDoesNotHold(request, responseHeaders, accounts);
+    const notFirst = refuseFirstAccountsTheRegisterDoesNotHold(request, responseHeaders, accounts, filingProfile);
     if (notFirst) return notFirst;
   }
 

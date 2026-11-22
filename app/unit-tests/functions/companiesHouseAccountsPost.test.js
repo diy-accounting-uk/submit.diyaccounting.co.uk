@@ -1081,13 +1081,13 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       expect((await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }))).statusCode).toBe(201);
     });
 
-    test("answers a JSON 502, and sends nothing, when the register cannot be read; a company the register does not hold is refused", async () => {
+    test("answers a JSON 502 when the register cannot be read, passes on the register's failed answer, and refuses a company it does not hold, sending nothing", async () => {
       mockGetCompanyProfile.mockRejectedValue(new Error("Missing required environment variable COMPANIES_HOUSE_BASE_URI"));
       const unread = await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }));
       expect(unread.statusCode).toBe(502);
-      expect(parseResponseBody(unread)).toMatchObject({ reason: "first-accounts-register-not-read" });
+      expect(parseResponseBody(unread)).toMatchObject({ reason: "company-profile-not-read" });
       mockGetCompanyProfile.mockResolvedValue({ chResponse: { ok: false, status: 500 }, profile: null });
-      expect((await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }))).statusCode).toBe(502);
+      expect((await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }))).statusCode).toBe(500);
       mockGetCompanyProfile.mockResolvedValue({ chResponse: { ok: false, status: 404 }, profile: null });
       expect((await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }))).statusCode).toBe(400);
       expect(mockPostToGateway).not.toHaveBeenCalled();
