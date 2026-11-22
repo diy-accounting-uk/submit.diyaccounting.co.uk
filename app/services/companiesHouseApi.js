@@ -14,6 +14,7 @@ import {
   http404NotFoundResponse,
   http429TooManyRequestsResponse,
   http500ServerErrorResponse,
+  http502BadGatewayResponse,
 } from "../lib/httpResponseHelper.js";
 import { BundleAuthorizationError, BundleEntitlementError } from "./bundleManagement.js";
 
@@ -194,6 +195,14 @@ export function httpResponseFromCompaniesHouseResponse(request, chResponse, resp
       headers: { ...responseHeaders },
       message: "Companies House is rate limiting our lookups",
       retryAfterSeconds,
+    });
+  }
+  if (status === 502) {
+    return http502BadGatewayResponse({
+      request,
+      headers: { ...responseHeaders },
+      message: "Companies House did not give a usable answer",
+      error: { companiesHouseResponseCode: status },
     });
   }
   if (status === 401 || status === 403) {

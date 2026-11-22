@@ -99,6 +99,8 @@ function answer({ status = 200, json, text, headers: map = {} }) {
   };
 }
 
+const SIGNED_S3_FILE = "https://s3.eu-west-2.amazonaws.com/document-api-images/docs/DOCIXBRL/a.xhtml?X-Amz-Signature=SIGNATUREEXAMPLE";
+
 function get(number) {
   return ingestHandler(buildLambdaEvent({ method: "GET", path: "/api/v1/public/company-register", queryStringParameters: { number } }));
 }
@@ -131,9 +133,9 @@ beforeEach(() => {
     [(url) => url.startsWith(`${API}/company/00000006/officers`), () => ({ json: OFFICERS })],
     [
       (url) => url === `${DOCUMENT_API}/document/DOCIXBRL/content`,
-      () => ({ status: 302, json: {}, headers: { location: "https://s3.example/a.xhtml" } }),
+      () => ({ status: 302, json: {}, headers: { location: SIGNED_S3_FILE } }),
     ],
-    [(url) => url === "https://s3.example/a.xhtml", () => ({ text: IXBRL })],
+    [(url) => url === SIGNED_S3_FILE, () => ({ text: IXBRL })],
     [(url) => url.startsWith(`${DOCUMENT_API}/document/`), (url) => ({ json: metadata[url.split("/document/")[1]] })],
   ];
   mockFetch.mockImplementation(async (url, init) => {
@@ -169,6 +171,20 @@ describe("companiesHousePublicRegisterGet ingestHandler", () => {
       officers: [{ name: "EXAMPLE, Alex", officerRole: "director", appointedOn: "2009-04-16" }],
       filedAccounts: { status: "ixbrl", madeUpDate: "2025-06-30", accountsType: "micro-entity", filedOn: "2025-11-02", ixbrl: IXBRL },
     });
+  });
+
+  test("answers a JSON 502, not cached, and fetches nothing when the Document API redirects off Amazon S3", async () => {
+    withHistory([accountsItem({ transactionId: "TXIXBRL", documentId: "DOCIXBRL" })]);
+    routes.unshift([
+      (url) => url === `${DOCUMENT_API}/document/DOCIXBRL/content`,
+      () => ({ status: 302, json: {}, headers: { location: "https://files.example/a.xhtml" } }),
+    ]);
+
+    const response = await get("6");
+
+    expect(response.statusCode).toBe(502);
+    expect(response.headers["Cache-Control"]).not.toMatch(/public/);
+    expect(mockFetch.mock.calls.some(([url]) => String(url).startsWith("https://files.example"))).toBe(false);
   });
 
   test("marks a last set that has a PDF only, and fetches no document content", async () => {

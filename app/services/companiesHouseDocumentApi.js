@@ -51,9 +51,36 @@ export async function companiesHouseDocumentMetadata(documentId) {
 
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
+const HOST_LABEL_PATTERN = /^[a-z0-9-]+$/;
+
+// Amazon S3's regional hosts, path style (s3.<region>.amazonaws.com) or virtual-hosted style
+// (<bucket>.s3.<region>.amazonaws.com), where the Document API keeps its files.
+function isAmazonS3Host(hostname) {
+  const labels = hostname.split(".");
+  if (labels.length < 4 || !labels.every((label) => HOST_LABEL_PATTERN.test(label))) return false;
+  const [s3, region, amazonaws, com] = labels.slice(-4);
+  return s3 === "s3" && region.length > 0 && amazonaws === "amazonaws" && com === "com";
+}
+
+/**
+ * Whether a content request's redirect may be followed: to Amazon S3 over https, or to the
+ * configured Document API's own address, which serves the file itself in the simulator.
+ * @param {URL} fileUrl
+ */
+export function isDocumentFileLocation(fileUrl) {
+  if (fileUrl.origin === new URL(getCompaniesHouseDocumentBaseUrl()).origin) return true;
+  return fileUrl.protocol === "https:" && fileUrl.port === "" && isAmazonS3Host(fileUrl.hostname);
+}
+
+function badGateway(headers) {
+  return { ok: false, status: 502, data: "", headers };
+}
+
 /**
  * A filed document's content in one content type. The Document API answers 302 to the file, which
- * is fetched without the API key, or 406 when it holds no document of that type.
+ * is fetched without the API key and only from the hosts isDocumentFileLocation allows, or 406 when
+ * it holds no document of that type. A redirect anywhere else, or a further redirect from the file's
+ * host, answers 502 and fetches nothing more.
  * @param {string} documentId
  * @param {string} contentType - for example application/xhtml+xml
  * @returns {Promise<{ok: boolean, status: number, data: string, headers: object}>}
@@ -70,13 +97,30 @@ export async function companiesHouseDocumentContent(documentId, contentType) {
     return { ok: answer.ok, status: answer.status, data: answer.ok ? answer.data : "", headers: answer.headers };
   }
   const location = answer.headers?.location;
-  if (!location) {
-    return { ok: false, status: 502, data: "", headers: answer.headers };
+  if (!location) return badGateway(answer.headers);
+  let fileUrl;
+  try {
+    fileUrl = new URL(location, requestUrl);
+  } catch {
+    return badGateway(answer.headers);
   }
-  const fileUrl = new URL(location, requestUrl).toString();
-  const file = await sendTextToCompaniesHouse(fileUrl, { method: "GET", headers: { Accept: contentType } }, DEFAULT_TIMEOUTS.SHORT, {
-    api: "GET /document/{documentId}/file",
-  });
+  if (!isDocumentFileLocation(fileUrl)) {
+    logger.warn({ message: "The Document API redirected to a host the file is not fetched from", host: fileUrl.host });
+    return badGateway(answer.headers);
+  }
+  let file;
+  try {
+    file = await sendTextToCompaniesHouse(
+      fileUrl.toString(),
+      { method: "GET", headers: { Accept: contentType }, redirect: "error" },
+      DEFAULT_TIMEOUTS.SHORT,
+      { api: "GET /document/{documentId}/file" },
+    );
+  } catch (error) {
+    if (error?.name !== "TypeError") throw error;
+    logger.warn({ message: "The Document API's file could not be fetched", host: fileUrl.host, error: error.message });
+    return badGateway({});
+  }
   logger.info({ message: "Response from the Document API's file", status: file.status });
   return { ok: file.ok, status: file.status, data: file.ok ? file.data : "", headers: file.headers };
 }

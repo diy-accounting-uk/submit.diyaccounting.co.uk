@@ -361,10 +361,81 @@ describe("companiesHouseFiledAccountsGet ingestHandler", () => {
   });
 });
 
+const SIGNED_S3_FILE =
+  "https://s3.eu-west-2.amazonaws.com/document-api-images/docs/DOCSOFTWARE/application-xhtml.xhtml?X-Amz-Credential=AKIAEXAMPLE&X-Amz-Security-Token=TOKENEXAMPLE&X-Amz-Signature=SIGNATUREEXAMPLE";
+
 describe("companiesHouseFiledDocumentGet ingestHandler", () => {
   function filing(item) {
     routes.unshift([(url) => url === `${API}/company/00000001/filing-history/${item.transaction_id}`, () => ({ json: item })]);
   }
+
+  function contentRedirectsTo(location) {
+    routes.unshift([
+      (url) => url === `${DOCUMENT_API}/document/DOCSOFTWARE/content`,
+      () => ({ status: 302, json: {}, headers: { location } }),
+    ]);
+  }
+
+  test.each([
+    ["another host", "https://files.example/docs/DOCSOFTWARE.xhtml"],
+    ["http on a host other than the Document API's", "http://s3.eu-west-2.amazonaws.com/document-api-images/docs/DOCSOFTWARE.xhtml"],
+    ["a host that only ends like Amazon S3's", "https://s3.eu-west-2.amazonaws.com.files.example/docs/DOCSOFTWARE.xhtml"],
+    ["Amazon S3 on another port", "https://s3.eu-west-2.amazonaws.com:8443/docs/DOCSOFTWARE.xhtml"],
+  ])("answers a JSON 502 and fetches nothing when the Document API redirects to %s", async (_label, location) => {
+    filing(SOFTWARE_SET);
+    contentRedirectsTo(location);
+    const response = await filedDocumentHandler(event({ companyNumber: "00000001", transactionId: "TXSOFTWARE" }));
+    expect(response.statusCode).toBe(502);
+    expect(response.headers["Content-Type"]).toBe("application/json");
+    expect(mockFetch.mock.calls.map(([url]) => String(url))).not.toContain(location);
+  });
+
+  test("answers a JSON 502 when the file's host redirects again, and follows it nowhere", async () => {
+    filing(SOFTWARE_SET);
+    contentRedirectsTo(SIGNED_S3_FILE);
+    routes.unshift([
+      (url) => url === SIGNED_S3_FILE,
+      (url, init) => {
+        expect(init.redirect).toBe("error");
+        throw new TypeError("fetch failed");
+      },
+    ]);
+    const response = await filedDocumentHandler(event({ companyNumber: "00000001", transactionId: "TXSOFTWARE" }));
+    expect(response.statusCode).toBe(502);
+    expect(response.headers["Content-Type"]).toBe("application/json");
+    expect(mockFetch.mock.calls.at(-1)[0]).toBe(SIGNED_S3_FILE);
+  });
+
+  test.each([
+    ["Amazon S3, path style", SIGNED_S3_FILE],
+    [
+      "Amazon S3, virtual-hosted style",
+      "https://document-api-images.s3.eu-west-2.amazonaws.com/docs/DOCSOFTWARE.xhtml?X-Amz-Signature=SIGNATUREEXAMPLE",
+    ],
+    ["the configured Document API itself", `${DOCUMENT_API}/document/DOCSOFTWARE/file?type=application%2Fxhtml%2Bxml`],
+  ])("fetches the file when the Document API redirects to %s", async (_label, location) => {
+    filing(SOFTWARE_SET);
+    contentRedirectsTo(location);
+    routes.unshift([(url) => url === location, () => ({ text: IXBRL })]);
+    const response = await filedDocumentHandler(event({ companyNumber: "00000001", transactionId: "TXSOFTWARE" }));
+    expect(response.statusCode).toBe(200);
+    expect(parseResponseBody(response).document).toBe(IXBRL);
+  });
+
+  test("records the file fetch by its host and path template, without the signed query", async () => {
+    filing(SOFTWARE_SET);
+    contentRedirectsTo(SIGNED_S3_FILE);
+    routes.unshift([(url) => url === SIGNED_S3_FILE, () => ({ text: IXBRL })]);
+    await filedDocumentHandler(event({ companyNumber: "00000001", transactionId: "TXSOFTWARE" }));
+    const records = mockSend.mock.calls
+      .map(([command]) => command.input)
+      .filter((input) => String(input?.TableName).includes("integration-calls"))
+      .map((input) => input.Item);
+    const fileRecord = records.find((item) => item.api === "GET /document/{documentId}/file");
+    expect(fileRecord).toEqual(expect.objectContaining({ raw: expect.objectContaining({ host: "s3.eu-west-2.amazonaws.com" }) }));
+    const written = JSON.stringify(records);
+    for (const secret of ["SIGNATUREEXAMPLE", "TOKENEXAMPLE", "AKIAEXAMPLE", "X-Amz-"]) expect(written).not.toContain(secret);
+  });
 
   test("answers the iXBRL text of a software-filed set, fetching the file without the API key", async () => {
     filing(SOFTWARE_SET);
@@ -373,13 +444,14 @@ describe("companiesHouseFiledDocumentGet ingestHandler", () => {
       (url, init) => {
         expect(init.headers.Accept).toBe("application/xhtml+xml");
         expect(init.redirect).toBe("manual");
-        return { status: 302, json: {}, headers: { location: "https://s3.example/signed/accounts.xhtml" } };
+        return { status: 302, json: {}, headers: { location: SIGNED_S3_FILE } };
       },
     ]);
     routes.unshift([
-      (url) => url === "https://s3.example/signed/accounts.xhtml",
+      (url) => url === SIGNED_S3_FILE,
       (url, init) => {
         expect(init.headers.Authorization).toBeUndefined();
+        expect(init.redirect).toBe("error");
         return { text: IXBRL };
       },
     ]);
