@@ -27214,3 +27214,29 @@ cy = '''ganwyd {month}'''
 hash = "90d625bc064e"
 cy = '''penodwyd {date}'''
 
+
+# == The return of allotment of shares: the warning that the capital before the allotment differs from the register, with both capitals and the confirmation ==
+
+[strings."ch-allot-shares.the-capital-before-the-allotment-differs-94851d"]
+hash = "94851d227719"
+cy = '''<strong>Mae’r cyfalaf cyn y clustnodiad yn wahanol i gofrestr Tŷ’r Cwmnïau</strong>'''
+
+[strings."ch-allot-shares.companies-house-reads-the-register-as-57d5b4"]
+hash = "57d5b4080e9c"
+cy = '''Mae Tŷ’r Cwmnïau yn darllen y gofrestr fel y mae heddiw. Mae ffurflen ar gyfer clustnodiad a wnaed cyn clustnodiad arall y mae’r gofrestr eisoes yn ei ddangos yn datgan y cyfalaf ar ei dyddiad ei hun, felly gall y ddau fod yn wahanol.'''
+
+[strings."ch-allot-shares.the-capital-this-return-states-is-042672"]
+hash = "042672b5ed7e"
+cy = '''Y cyfalaf y mae’r ffurflen hon yn ei ddatgan yw cyfalaf y cwmni ar y dyddiad y mae’r ffurflen wedi’i gwneud hyd ato'''
+
+[strings."ch.allot.mismatch-unpaid"]
+hash = "5593c98bde1c"
+cy = '''Cyfanswm y swm heb ei dalu yn {currency} cyn y clustnodiad: {stated} yn y ffurflen hon, {register} ar y gofrestr.'''
+
+[strings."ch.allot.mismatch-class"]
+hash = "d7a892533597"
+cy = '''Cyfrannau {currency} {name} cyn y clustnodiad: {returnnumber} o gyfrannau â gwerth nominal agregedig o {returnvalue} yn y ffurflen hon, {registernumber} o gyfrannau â gwerth nominal agregedig o {registervalue} ar y gofrestr.'''
+
+[strings."ch.allot.confirm-capital"]
+hash = "5ac73210b73e"
+cy = '''Ticiwch y cadarnhad mai’r cyfalaf y mae’r ffurflen hon yn ei ddatgan yw cyfalaf y cwmni ar y dyddiad y mae’r ffurflen wedi’i gwneud hyd ato.'''

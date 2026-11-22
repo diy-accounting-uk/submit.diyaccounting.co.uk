@@ -220,6 +220,8 @@ window.WELSH_TEXT = {
     "Nid oes gan Dŷ’r Cwmnïau gyfalaf cyfrannau ar gyfer y cwmni hwn, felly mae’r ffurflen yn dechrau heb ddim. Rhowch y cyfrannau a glustnodwyd yn unig isod.",
   "ch.allot.class": "Dosbarth o gyfrannau",
   "ch.allot.class-hint": "Er enghraifft, Cyffredin neu Ffafriaeth.",
+  "ch.allot.confirm-capital":
+    "Ticiwch y cadarnhad mai’r cyfalaf y mae’r ffurflen hon yn ei ddatgan yw cyfalaf y cwmni ar y dyddiad y mae’r ffurflen wedi’i gwneud hyd ato.",
   "ch.allot.consideration": "Manylion cydnabyddiaeth heblaw arian parod (dewisol)",
   "ch.allot.consideration-hint":
     "Os yw’r cyfrannau a glustnodwyd wedi’u talu’n llawn neu’n rhannol heblaw ag arian parod, nodwch am ba gydnabyddiaeth y cafodd y cyfrannau eu clustnodi.",
@@ -229,6 +231,10 @@ window.WELSH_TEXT = {
   "ch.allot.currency-table": "Cyfrannau a ddelid cynt, mewn un arian cyfred",
   "ch.allot.currency-usd": "Doler yr Unol Daleithiau (USD)",
   "ch.allot.lookup-failed": "Nid oedd modd darllen y cwmni hwn o Dŷ’r Cwmnïau.",
+  "ch.allot.mismatch-class":
+    "Cyfrannau {currency} {name} cyn y clustnodiad: {returnnumber} o gyfrannau â gwerth nominal agregedig o {returnvalue} yn y ffurflen hon, {registernumber} o gyfrannau â gwerth nominal agregedig o {registervalue} ar y gofrestr.",
+  "ch.allot.mismatch-unpaid":
+    "Cyfanswm y swm heb ei dalu yn {currency} cyn y clustnodiad: {stated} yn y ffurflen hon, {register} ar y gofrestr.",
   "ch.allot.new-rights-currency": "Manylion rhagnodedig yr hawliau sydd ynghlwm wrth y dosbarth newydd {name} ({currency})",
   "ch.allot.nominal": "Gwerth nominal pob cyfran",
   "ch.allot.number": "Nifer y cyfrannau a glustnodwyd",

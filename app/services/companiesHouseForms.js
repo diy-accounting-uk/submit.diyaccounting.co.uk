@@ -930,7 +930,17 @@ function extractAllotmentOfShares(body, errorMessages) {
     .slice(0, ALLOTMENT_CURRENCIES.length)
     .map((capital, index) => readCapital(capital, index, errorMessages));
   if (errorMessages.length === before) checkStatementHoldsAllotments(statementOfCapital, allotments, errorMessages);
-  return { startDate, ...(period ? { endDate } : {}), statementOfCapital, allotments };
+  const { capitalDifferenceConfirmed } = body;
+  if (capitalDifferenceConfirmed !== undefined && typeof capitalDifferenceConfirmed !== "boolean") {
+    errorMessages.push("Invalid capitalDifferenceConfirmed - must be true or false");
+  }
+  return {
+    startDate,
+    ...(period ? { endDate } : {}),
+    statementOfCapital,
+    allotments,
+    capitalDifferenceConfirmed: capitalDifferenceConfirmed === true,
+  };
 }
 
 /**

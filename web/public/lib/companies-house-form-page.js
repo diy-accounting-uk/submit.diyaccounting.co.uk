@@ -75,14 +75,17 @@
    * @param {object} input.form - the company fields and the form's own fields
    * @param {HTMLElement} input.result - the element the outcome is written into
    * @param {object} [input.headers] - such as a developer-mode Gov-Test-Scenario, sent with every call
+   * @param {(error: Error) => boolean} [input.onRefusal] - a form's own handling of a refused filing:
+   *   answers true when it showed the refusal itself, and the error is then not written into result
    * @returns {Promise<object|null>} the settled outcome, or null when it is still pending or failed
    */
-  async function fileAndShowOutcome({ kind, form, result, headers = {} }) {
+  async function fileAndShowOutcome({ kind, form, result, headers = {}, onRefusal }) {
     result.replaceChildren();
     let submission;
     try {
       submission = await window.submitCompaniesHouseForm(kind, form, headers);
     } catch (error) {
+      if (onRefusal && onRefusal(error)) return null;
       result.replaceChildren(paragraph(errorText(error), "error-message"));
       return null;
     }

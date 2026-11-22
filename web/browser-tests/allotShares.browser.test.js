@@ -40,7 +40,14 @@ const REGISTER_CAPITAL = {
 // answered here. Each filing request's body and each filing-data read's body is recorded.
 async function serveSite(
   page,
-  { filings = [], reads = [], capitals = [REGISTER_CAPITAL], filingData = 200, outcome = { statusCode: "ACCEPT", rejections: [] } } = {},
+  {
+    filings = [],
+    reads = [],
+    capitals = [REGISTER_CAPITAL],
+    filingData = 200,
+    outcome = { statusCode: "ACCEPT", rejections: [] },
+    refuseUnconfirmed = null,
+  } = {},
 ) {
   await page.addInitScript(() => {
     try {
@@ -71,7 +78,10 @@ async function serveSite(
       return json({ statementOfCapital: capitals[0], statementsOfCapital: capitals });
     }
     if (pathname === "/api/v1/companies-house/allotment-of-shares" && request.method() === "POST") {
-      filings.push(JSON.parse(request.postData()));
+      const body = JSON.parse(request.postData());
+      filings.push(body);
+      // The route's refusal of a capital before the allotment that differs from the register's.
+      if (refuseUnconfirmed && body.capitalDifferenceConfirmed !== true) return json(refuseUnconfirmed, 400);
       return json({ submissionNumber: "000123", pollInterval: 1 }, 201);
     }
     if (pathname === "/api/v1/companies-house/forms/allotment-of-shares/000123") return json({ submissionNumber: "000123", ...outcome });
@@ -631,4 +641,102 @@ test("the register's capital is read dated today, with no company type", async (
   await lookUp(page);
   expect(reads[0].madeUpDate).toBe(new Date().toISOString().slice(0, 10));
   expect(reads[0]).not.toHaveProperty("companyType");
+});
+
+const CAPITAL_REFUSAL = {
+  message: "Before the allotment the GBP Ordinary shares are 100 shares of aggregate nominal value 100 in this return, and 120 ...",
+  reason: "capital-before-differs-from-register",
+  mismatches: [
+    {
+      currency: "GBP",
+      shareClass: "Ordinary",
+      stated: { numShares: "100", aggregateNominalValue: "100" },
+      register: { numShares: "120", aggregateNominalValue: "120" },
+    },
+    { currency: "GBP", totalAmountUnpaid: true, stated: { totalAmountUnpaid: "0" }, register: { totalAmountUnpaid: "5" } },
+  ],
+};
+
+async function reviewACashAllotment(page, { lookUpButton, continueButton }) {
+  await lookUp(page, lookUpButton ? { button: lookUpButton } : {});
+  await page.locator("#startDate").fill("2026-11-02");
+  await fillAllotment(page, { shareClass: "Ordinary", number: "50", nominal: "1", paid: "1" });
+  await page.getByRole("button", { name: continueButton }).click();
+  await expect(page.locator("#reviewView")).toBeVisible();
+}
+
+for (const width of [1280, 390]) {
+  test(`a capital that differs from the register is shown with both capitals and filed once confirmed, in English at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const filings = [];
+    await serveSite(page, { filings, refuseUnconfirmed: CAPITAL_REFUSAL });
+    await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+    await reviewACashAllotment(page, { continueButton: "Continue" });
+    await expect(page.locator("#capitalWarning")).toBeHidden();
+    await page.getByRole("button", { name: "File with Companies House" }).click();
+
+    const warning = page.locator("#capitalWarning");
+    await expect(warning).toBeVisible();
+    await expect(page.locator("#reviewView")).toBeVisible();
+    await expect(warning).toContainText("The capital before the allotment differs from the Companies House register");
+    await expect(page.locator("#capitalWarningList li")).toHaveText([
+      "GBP Ordinary shares before the allotment: 100 shares of aggregate nominal value 100 in this return, 120 shares of aggregate nominal value 120 on the register.",
+      "Total amount unpaid in GBP before the allotment: 0 in this return, 5 on the register.",
+    ]);
+    expect(await noSideScroll(page)).toBe(true);
+    await shoot(page, "capital-warning");
+
+    await page.getByRole("button", { name: "File with Companies House" }).click();
+    await expect(page.locator("#statusMessagesContainer")).toContainText(
+      "Tick the confirmation that the capital this return states is the company's capital at the date the return is made up to.",
+    );
+    expect(filings).toHaveLength(1);
+
+    await page.getByLabel("The capital this return states is the company's capital at the date the return is made up to").check();
+    await page.getByRole("button", { name: "File with Companies House" }).click();
+    await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
+    expect(filings).toHaveLength(2);
+    expect(filings[0]).not.toHaveProperty("capitalDifferenceConfirmed");
+    expect(filings[1].capitalDifferenceConfirmed).toBe(true);
+    expect(filings[1].statementOfCapital).toEqual(filings[0].statementOfCapital);
+  });
+
+  test(`a capital that differs from the register is worded in Welsh from the route's fields, at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const filings = [];
+    await serveSite(page, { filings, refuseUnconfirmed: CAPITAL_REFUSAL });
+    await page.goto(`${SITE}/cy/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+    await reviewACashAllotment(page, { lookUpButton: "Chwilio am gyfrannau’r cwmni", continueButton: "Parhau" });
+    await page.getByRole("button", { name: "Ffeilio gyda Thŷ’r Cwmnïau" }).click();
+    const warning = page.locator("#capitalWarning");
+    await expect(warning).toContainText("Mae’r cyfalaf cyn y clustnodiad yn wahanol i gofrestr Tŷ’r Cwmnïau");
+    await expect(page.locator("#capitalWarningList li")).toHaveText([
+      "Cyfrannau GBP Ordinary cyn y clustnodiad: 100 o gyfrannau â gwerth nominal agregedig o 100 yn y ffurflen hon, 120 o gyfrannau â gwerth nominal agregedig o 120 ar y gofrestr.",
+      "Cyfanswm y swm heb ei dalu yn GBP cyn y clustnodiad: 0 yn y ffurflen hon, 5 ar y gofrestr.",
+    ]);
+    await expect(warning).not.toContainText("Before the allotment");
+    expect(await noSideScroll(page)).toBe(true);
+    await shoot(page, "capital-warning-cy");
+    await page.locator("#confirmCapital").check();
+    await page.getByRole("button", { name: "Ffeilio gyda Thŷ’r Cwmnïau" }).click();
+    await expect(page.locator("#filingResult")).toContainText("Statws cyflwyniad 000123:", { timeout: 15000 });
+    expect(filings[1].capitalDifferenceConfirmed).toBe(true);
+  });
+}
+
+test("a changed return after the warning is reviewed afresh, with the warning gone and no confirmation sent", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, { filings, refuseUnconfirmed: CAPITAL_REFUSAL });
+  await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+  await reviewACashAllotment(page, { continueButton: "Continue" });
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect(page.locator("#capitalWarning")).toBeVisible();
+  await page.getByRole("button", { name: "Change" }).click();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#capitalWarning")).toBeHidden();
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect(page.locator("#capitalWarning")).toBeVisible();
+  expect(filings.every((filing) => filing.capitalDifferenceConfirmed !== true)).toBe(true);
 });

@@ -147,6 +147,18 @@
       <div id="reviewView" class="results-container" style="display: none">
         <h2>Review the filing</h2>
         <dl id="reviewList"></dl>
+        <section id="capitalWarning" class="outcome outcome--error" role="alert" hidden>
+          <p class="outcome__title"><strong>The capital before the allotment differs from the Companies House register</strong></p>
+          <p>
+            Companies House reads the register as it stands today. A return for an allotment made before another allotment the register
+            already shows states the capital at its own date, so the two can differ.
+          </p>
+          <ul id="capitalWarningList"></ul>
+          <div class="choice">
+            <input type="checkbox" id="confirmCapital" name="confirmCapital" />
+            <label for="confirmCapital">The capital this return states is the company's capital at the date the return is made up to</label>
+          </div>
+        </section>
         <div class="form-group" id="govTestScenarioGroup" style="display: none">
           <label for="govTestScenario">Gov-Test-Scenario</label>
           <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />

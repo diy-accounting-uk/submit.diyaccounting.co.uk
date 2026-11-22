@@ -88,14 +88,16 @@ function registerCapitals(statementsOfCapital) {
 }
 
 const NONE = { number: 0n, nominal: 0n };
-const figures = (held) => `${fromMillionths(held.number)} shares of aggregate nominal value ${fromMillionths(held.nominal)}`;
+const sharesOf = (held) => ({ numShares: fromMillionths(held.number), aggregateNominalValue: fromMillionths(held.nominal) });
 
 /**
  * Each difference between the capital before the allotment that a return states and the register's
- * capital, as a sentence that names the class and the two figures.
+ * capital: a class whose shares or nominal value differ ({currency, shareClass, stated, register},
+ * each side {numShares, aggregateNominalValue}), or a total unpaid that differs ({currency,
+ * totalAmountUnpaid: true, stated, register}, each side {totalAmountUnpaid}).
  * @param {ReturnType<typeof capitalBeforeAllotment>} before
  * @param {Array<object>} statementsOfCapital - the register's, as parseCompanyDataResponse answers them
- * @returns {string[]}
+ * @returns {Array<object>}
  */
 export function capitalMismatches(before, statementsOfCapital) {
   const register = registerCapitals(statementsOfCapital);
@@ -107,24 +109,46 @@ export function capitalMismatches(before, statementsOfCapital) {
       const registerClass = held.classes.get(key) ?? NONE;
       const statedClass = stated.classes.get(key) ?? NONE;
       if (registerClass.number === statedClass.number && registerClass.nominal === statedClass.nominal) continue;
-      const shareClass = (stated.classes.get(key) ?? held.classes.get(key)).shareClass;
-      mismatches.push(
-        `Before the allotment the ${currency} ${shareClass} shares are ${figures(statedClass)} in this return, ` +
-          `and ${figures(registerClass)} on the Companies House register`,
-      );
+      mismatches.push({
+        currency,
+        shareClass: (stated.classes.get(key) ?? held.classes.get(key)).shareClass,
+        stated: sharesOf(statedClass),
+        register: sharesOf(registerClass),
+      });
     }
     if (stated.totalAmountUnpaid !== held.totalAmountUnpaid) {
-      mismatches.push(
-        `Before the allotment the total amount unpaid in ${currency} is ${fromMillionths(stated.totalAmountUnpaid)} in this return, ` +
-          `and ${fromMillionths(held.totalAmountUnpaid)} on the Companies House register`,
-      );
+      mismatches.push({
+        currency,
+        totalAmountUnpaid: true,
+        stated: { totalAmountUnpaid: fromMillionths(stated.totalAmountUnpaid) },
+        register: { totalAmountUnpaid: fromMillionths(held.totalAmountUnpaid) },
+      });
     }
   }
   return mismatches;
 }
 
 /**
- * The refusal of a return whose capital before the allotment differs from the register's, or of a
+ * A difference in English, for a caller that reads the message rather than the fields.
+ * @param {object} mismatch - one of capitalMismatches
+ * @returns {string}
+ */
+export function mismatchSentence(mismatch) {
+  if (mismatch.totalAmountUnpaid) {
+    return (
+      `Before the allotment the total amount unpaid in ${mismatch.currency} is ${mismatch.stated.totalAmountUnpaid} in this return, ` +
+      `and ${mismatch.register.totalAmountUnpaid} on the Companies House register`
+    );
+  }
+  const figures = (side) => `${side.numShares} shares of aggregate nominal value ${side.aggregateNominalValue}`;
+  return (
+    `Before the allotment the ${mismatch.currency} ${mismatch.shareClass} shares are ${figures(mismatch.stated)} in this return, ` +
+    `and ${figures(mismatch.register)} on the Companies House register`
+  );
+}
+
+/**
+ * The refusal of an unconfirmed return whose capital before the allotment differs from the register's, or of a
  * read the account's share does not allow or Companies House does not answer; undefined when the two
  * agree.
  * @param {{form: object, request: object, headers: object, userSub: string, ownPresenter?: {presenterId: string, presenterCode: string},
@@ -177,11 +201,16 @@ export async function refuseCapitalUnlikeRegister({ form, request, headers, user
     capitalBeforeAllotment(form.statementOfCapital, form.allotments),
     companyData?.statementsOfCapital ?? [],
   );
-  if (mismatches.length === 0) return undefined;
+  // The register is read as it stands on the day signed. A return for an allotment made before one
+  // the register already shows states the capital at its own date, so a difference is the filer's to
+  // confirm, and a confirmed return is filed.
+  if (mismatches.length === 0 || form.capitalDifferenceConfirmed) return undefined;
   return http400BadRequestResponse({
     request,
     headers: { ...headers },
-    message: mismatches.join(". ") + ".",
+    message:
+      mismatches.map(mismatchSentence).join(". ") +
+      ". If the return is for an allotment made before one the register already shows, confirm the capital and file again.",
     error: { reason: CAPITAL_MISMATCH_REASON, mismatches },
   });
 }

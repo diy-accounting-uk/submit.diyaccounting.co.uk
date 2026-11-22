@@ -178,6 +178,22 @@
       <div id="reviewView" class="results-container" style="display: none">
         <h2 data-i18n="ch-allot-shares.review-the-filing-769b96">Adolygu’r ffeilio</h2>
         <dl id="reviewList"></dl>
+        <section id="capitalWarning" class="outcome outcome--error" role="alert" hidden>
+          <p data-i18n="ch-allot-shares.the-capital-before-the-allotment-differs-94851d" class="outcome__title">
+            <strong>Mae’r cyfalaf cyn y clustnodiad yn wahanol i gofrestr Tŷ’r Cwmnïau</strong>
+          </p>
+          <p data-i18n="ch-allot-shares.companies-house-reads-the-register-as-57d5b4">
+            Mae Tŷ’r Cwmnïau yn darllen y gofrestr fel y mae heddiw. Mae ffurflen ar gyfer clustnodiad a wnaed cyn clustnodiad arall y mae’r
+            gofrestr eisoes yn ei ddangos yn datgan y cyfalaf ar ei dyddiad ei hun, felly gall y ddau fod yn wahanol.
+          </p>
+          <ul id="capitalWarningList"></ul>
+          <div class="choice">
+            <input type="checkbox" id="confirmCapital" name="confirmCapital" />
+            <label data-i18n="ch-allot-shares.the-capital-this-return-states-is-042672" for="confirmCapital"
+              >Y cyfalaf y mae’r ffurflen hon yn ei ddatgan yw cyfalaf y cwmni ar y dyddiad y mae’r ffurflen wedi’i gwneud hyd ato</label
+            >
+          </div>
+        </section>
         <div class="form-group" id="govTestScenarioGroup" style="display: none">
           <label data-i18n="ch-allot-shares.gov-test-scenario-dab532" for="govTestScenario">Gov-Test-Scenario</label>
           <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />

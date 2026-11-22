@@ -563,6 +563,7 @@ function handleAllotmentSubmit(event) {
     },
   };
   if (window.hideStatus) window.hideStatus();
+  document.getElementById("capitalWarning").hidden = true;
   renderReview();
   showView("reviewView");
 }
@@ -640,7 +641,62 @@ function renderReview() {
   });
 }
 
+const CAPITAL_MISMATCH_REASON = "capital-before-differs-from-register";
+
+// One difference between the capital before the allotment that the return states and the register's,
+// in the reader's language.
+function mismatchText(mismatch) {
+  if (mismatch.totalAmountUnpaid) {
+    return window.siteText(
+      "ch.allot.mismatch-unpaid",
+      "Total amount unpaid in {currency} before the allotment: {stated} in this return, {register} on the register.",
+      { currency: mismatch.currency, stated: mismatch.stated.totalAmountUnpaid, register: mismatch.register.totalAmountUnpaid },
+    );
+  }
+  return window.siteText(
+    "ch.allot.mismatch-class",
+    "{currency} {name} shares before the allotment: {returnnumber} shares of aggregate nominal value {returnvalue} in this return, {registernumber} shares of aggregate nominal value {registervalue} on the register.",
+    {
+      currency: mismatch.currency,
+      name: mismatch.shareClass,
+      returnnumber: mismatch.stated.numShares,
+      returnvalue: mismatch.stated.aggregateNominalValue,
+      registernumber: mismatch.register.numShares,
+      registervalue: mismatch.register.aggregateNominalValue,
+    },
+  );
+}
+
+// The route's refusal of a capital that differs from the register: back to the review, with both
+// capitals and the confirmation the filing then needs.
+function showCapitalWarning(error) {
+  if (error?.body?.reason !== CAPITAL_MISMATCH_REASON || !Array.isArray(error.body.mismatches)) return false;
+  document.getElementById("capitalWarningList").replaceChildren(
+    ...error.body.mismatches.map((mismatch) => {
+      const item = document.createElement("li");
+      item.textContent = mismatchText(mismatch);
+      return item;
+    }),
+  );
+  document.getElementById("confirmCapital").checked = false;
+  document.getElementById("capitalWarning").hidden = false;
+  showView("reviewView");
+  document.getElementById("capitalWarning").scrollIntoView({ block: "start" });
+  return true;
+}
+
 async function handleFile() {
+  const warningShown = !document.getElementById("capitalWarning").hidden;
+  if (warningShown && !document.getElementById("confirmCapital").checked) {
+    showError(
+      window.siteText(
+        "ch.allot.confirm-capital",
+        "Tick the confirmation that the capital this return states is the company's capital at the date the return is made up to.",
+      ),
+    );
+    return;
+  }
+  const form = warningShown ? { ...filing.form, capitalDifferenceConfirmed: true } : filing.form;
   const scenario = document.getElementById("govTestScenario").value.trim();
   const headers = scenario ? { "Gov-Test-Scenario": scenario } : {};
   showView("resultView");
@@ -648,9 +704,10 @@ async function handleFile() {
   try {
     await window.companiesHouseFormPage.fileAndShowOutcome({
       kind: FORM_KIND,
-      form: filing.form,
+      form,
       result: document.getElementById("filingResult"),
       headers,
+      onRefusal: showCapitalWarning,
     });
   } finally {
     hideLoading();

@@ -351,7 +351,15 @@ describe("companiesHouseAllotmentOfSharesPost ingestHandler", () => {
       expect(parseResponseBody(response)).toMatchObject({
         message:
           "Before the allotment the GBP Ordinary shares are 100 shares of aggregate nominal value 100 in this return, " +
-          "and 120 shares of aggregate nominal value 120 on the Companies House register.",
+          "and 120 shares of aggregate nominal value 120 on the Companies House register. If the return is for an allotment made before one the register already shows, confirm the capital and file again.",
+        mismatches: [
+          {
+            currency: "GBP",
+            shareClass: "Ordinary",
+            stated: { numShares: "100", aggregateNominalValue: "100" },
+            register: { numShares: "120", aggregateNominalValue: "120" },
+          },
+        ],
         reason: "capital-before-differs-from-register",
       });
       expect(mockBuildFormSubmission).not.toHaveBeenCalled();
@@ -376,8 +384,18 @@ describe("companiesHouseAllotmentOfSharesPost ingestHandler", () => {
       const other = await ingestHandler(buildEvent());
       expect(other.statusCode).toBe(400);
       expect(parseResponseBody(other).mismatches).toEqual([
-        "Before the allotment the EUR Ordinary shares are 0 shares of aggregate nominal value 0 in this return, and 100 shares of aggregate nominal value 100 on the Companies House register",
-        "Before the allotment the GBP Ordinary shares are 100 shares of aggregate nominal value 100 in this return, and 0 shares of aggregate nominal value 0 on the Companies House register",
+        {
+          currency: "EUR",
+          shareClass: "Ordinary",
+          stated: { numShares: "0", aggregateNominalValue: "0" },
+          register: { numShares: "100", aggregateNominalValue: "100" },
+        },
+        {
+          currency: "GBP",
+          shareClass: "Ordinary",
+          stated: { numShares: "100", aggregateNominalValue: "100" },
+          register: { numShares: "0", aggregateNominalValue: "0" },
+        },
       ]);
       expect(mockBuildFormSubmission).not.toHaveBeenCalled();
     });
@@ -385,8 +403,11 @@ describe("companiesHouseAllotmentOfSharesPost ingestHandler", () => {
     test("refuses a total unpaid before the allotment that differs from the register's", async () => {
       registerAnswer = companyDataAnswer([{ currency: "GBP", unpaid: "10", shares: [["Ordinary", "100", "100"]] }]);
       const response = await ingestHandler(buildEvent());
+      expect(parseResponseBody(response).mismatches).toEqual([
+        { currency: "GBP", totalAmountUnpaid: true, stated: { totalAmountUnpaid: "0" }, register: { totalAmountUnpaid: "10" } },
+      ]);
       expect(parseResponseBody(response).message).toBe(
-        "Before the allotment the total amount unpaid in GBP is 0 in this return, and 10 on the Companies House register.",
+        "Before the allotment the total amount unpaid in GBP is 0 in this return, and 10 on the Companies House register. If the return is for an allotment made before one the register already shows, confirm the capital and file again.",
       );
     });
 
@@ -460,9 +481,37 @@ describe("companiesHouseAllotmentOfSharesPost ingestHandler", () => {
       );
       expect(response.statusCode).toBe(400);
       expect(parseResponseBody(response).mismatches).toEqual([
-        "Before the allotment the GBP Ordinary shares are 0 shares of aggregate nominal value 0 in this return, and 100 shares of aggregate nominal value 100 on the Companies House register",
-        "Before the allotment the USD Ordinary shares are 100 shares of aggregate nominal value 100 in this return, and 0 shares of aggregate nominal value 0 on the Companies House register",
+        {
+          currency: "GBP",
+          shareClass: "Ordinary",
+          stated: { numShares: "0", aggregateNominalValue: "0" },
+          register: { numShares: "100", aggregateNominalValue: "100" },
+        },
+        {
+          currency: "USD",
+          shareClass: "Ordinary",
+          stated: { numShares: "100", aggregateNominalValue: "100" },
+          register: { numShares: "0", aggregateNominalValue: "0" },
+        },
       ]);
+    });
+
+    test("files a return whose capital before differs from the register when the filer confirms it, as for an earlier allotment", async () => {
+      registerAnswer = companyDataAnswer([{ currency: "GBP", shares: [["Ordinary", "120", "120"]] }]);
+      const response = await ingestHandler(buildEvent({ body: buildFormBody({ capitalDifferenceConfirmed: true }) }));
+      expect(response.statusCode, JSON.stringify(parseResponseBody(response))).toBe(201);
+      expect(mockBuildFormSubmission).toHaveBeenCalledTimes(1);
+      expect(mockBuildFormSubmission.mock.calls[0][0].formXml).not.toContain("capitalDifferenceConfirmed");
+    });
+
+    test("refuses a return whose confirmation is not true or false, and one confirmed false that differs", async () => {
+      const notBoolean = await ingestHandler(buildEvent({ body: buildFormBody({ capitalDifferenceConfirmed: "yes" }) }));
+      expect(notBoolean.statusCode).toBe(400);
+      expect(parseResponseBody(notBoolean).message).toContain("Invalid capitalDifferenceConfirmed - must be true or false");
+      registerAnswer = companyDataAnswer([{ currency: "GBP", shares: [["Ordinary", "120", "120"]] }]);
+      const unconfirmed = await ingestHandler(buildEvent({ body: buildFormBody({ capitalDifferenceConfirmed: false }) }));
+      expect(parseResponseBody(unconfirmed).reason).toBe("capital-before-differs-from-register");
+      expect(mockBuildFormSubmission).not.toHaveBeenCalled();
     });
 
     test("answers the company authentication code's sentence when Companies House refuses the code, and sends nothing", async () => {
