@@ -288,7 +288,7 @@ A revision that changes regime (micro-entity to small company, or the reverse) i
 - The code that builds a book is in the diya-gl package, so the DIYA-GL app, both MCP servers and Submit's page share one builder.
 - The pages that call Companies House are on Submit. The customer is signed in there, holds the bundle there and types the authentication code there.
 - The DIYA-GL app writes the spreadsheet package. It has the engine and the template workbooks on its own site. Submit hands it the book by a book link.
-- Rejected: a "new book from Companies House" form inside the DIYA-GL app. That app works with no account. The form would need a sign-in, a bundle check, cross-origin access to the Companies House routes and the authentication code on a second site.
+- A new book from a company is built inside the DIYA-GL app (board row SY3). It needs no sign-in, no bundle check and no authentication code, because it reads public data only, through Submit's public register route, whose CloudFront CORS policy allows the DIYA-GL origins. So that book has no shareholders. A book with the members register still needs the authentication code, and that journey stays on Submit (AA31).
 - Rejected: the package written inside Submit's page. It needs the 4.2 MB template set on Submit, or a cross-origin fetch. The fetch needs a change to the content security policy and to the template site's headers.
 - Rejected: the package written by a Submit Lambda. It sends the customer's figures through the server for work that a browser does, and it fetches templates from another site at run time.
 
