@@ -62,6 +62,14 @@ export const WELSH_PAGES = [
   { id: "spreadsheets", en: "spreadsheets.html", cy: "cy/spreadsheets.html", enUrl: `${SITE_ORIGIN}/spreadsheets.html`, marks: "build" },
   { id: "mtd-calendar", en: "mtd-calendar.html", cy: "cy/mtd-calendar.html", enUrl: `${SITE_ORIGIN}/mtd-calendar.html`, marks: "build" },
   { id: "rates", en: "rates.html", cy: "cy/rates.html", enUrl: `${SITE_ORIGIN}/rates.html`, marks: "build" },
+  // The pages a customer relies on. help-page.js reads the questions of the Welsh copy from its own markup.
+  ...["privacy", "terms", "accessibility", "help"].map((id) => ({
+    id,
+    en: `${id}.html`,
+    cy: `cy/${id}.html`,
+    enUrl: `${SITE_ORIGIN}/${id}.html`,
+    marks: "build",
+  })),
   // LANG10a: the HMRC VAT pages and the receipts page, ids vat-* and receipt-*.
   ...[
     ["vat-submit", "hmrc/vat/submitVat.html"],

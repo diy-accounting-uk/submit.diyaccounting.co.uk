@@ -92,6 +92,73 @@
 #          https://www.gov.uk/guidance/defnyddio-r-cynllun-troi-treth-yn-ddigidol-ar-gyfer-treth-incwm/addasu-eich-incwm-o-hunangyflogaeth-ac-eiddo (addasiadau, lwfansau cyfalaf)
 #          https://www.gov.uk/guidance/defnyddio-r-cynllun-troi-treth-yn-ddigidol-ar-gyfer-treth-incwm/cyflwyno-ch-ffurflen-dreth (cyfrifiad treth)
 #          https://assets.publishing.service.gov.uk/media/69c2668513101e9908704b38/SA103F-2026-Cymraeg-.pdf (SA103F 2026: treuliau nas caniateir, colledion, lwfansau cyfalaf)
+#
+# Legal and accessibility terms of the privacy policy, the terms of use, the accessibility statement and the help page,
+# from the Welsh Government's and the ICO's Welsh pages (and Companies House's Welsh personal information charter).
+#   privacy policy                polisi preifatrwydd
+#   privacy notice                hysbysiad preifatrwydd
+#   personal data                 data personol
+#   data protection               diogelu data
+#   UK GDPR                       GDPR y DU
+#   Data Protection Act 2018      Deddf Diogelu Data 2018
+#   data controller               rheolydd data (the ICO's Welsh site writes rheolwr; the Welsh Government and Companies House write rheolydd)
+#   data processor                prosesydd data, proseswyr data
+#   legal basis                   sail gyfreithiol
+#   legal obligation              rhwymedigaeth gyfreithiol
+#   consent                       caniatâd
+#   data retention                cadw data; cyfnod cadw
+#   third parties                 trydydd partïon
+#   international transfers       trosglwyddiadau tramor; trosglwyddo data y tu allan i'r DU
+#   data breach                   torri diogelwch data
+#   subject access request        cais gwrthrych am wybodaeth
+#   right to be informed          hawl i gael eich hysbysu
+#   right of access               hawl i gael mynediad at eich data personol
+#   right to rectification        hawl i gael cywiriad
+#   right to erasure              hawl i gael dileu gwybodaeth
+#   right to restrict processing  hawl i gyfyngu prosesu
+#   right to object               hawl i wrthwynebu prosesu
+#   right to data portability     hawl i gludadwyedd data
+#   Information Commissioner's Office  Swyddfa'r Comisiynydd Gwybodaeth (ICO)
+#   complaint                     cwyn
+#   cookies                       cwcis
+#   accessibility statement       datganiad hygyrchedd
+#   conformance status            statws cydymffurfiaeth
+#   partially conformant          yn cydymffurfio'n rhannol
+#   WCAG                          Canllawiau Hygyrchedd Cynnwys y We (WCAG); Lefel A, Lefel AA
+#   success criterion             maen prawf llwyddiant
+#   enforcement procedure         gweithdrefn gorfodi
+#   screen reader                 rhaglen darllen sgrin
+#   speech recognition software   meddalwedd adnabod llais
+#   assistive technologies        technolegau cynorthwyol
+#   terms and conditions          telerau ac amodau
+#   intellectual property         eiddo deallusol
+#   disclaimer                    ymwadiad
+#   warranty                      gwarant
+#   liable for loss or damage     atebol am golled neu ddifrod
+#   indirect or consequential     anuniongyrchol neu ganlyniadol
+#   governing law                 yn cael eu rheoli a'u dehongli yn unol â chyfreithiau Cymru a Lloegr
+#   jurisdiction of the courts    awdurdod neilltuedig llysoedd Cymru a Lloegr
+#   dispute                       anghydfod
+# Terms those sources do not settle carry the English in brackets at their first use on a page, for a Welsh speaker to check:
+#   legitimate interests          buddiannau cyfreithlon
+#   contract performance          cyflawni contract
+#   data subject                  gwrthrych y data
+#   automated decision-making     gwneud penderfyniadau awtomataidd
+#   limitation of liability       cyfyngu ar atebolrwydd
+#   indemnification               indemnio
+#   termination                   terfynu
+#   dispute resolution            datrys anghydfodau
+#   acceptable use                defnydd derbyniol
+#   terms of use                  telerau defnyddio
+#   force majeure                 force majeure, as in English
+# Sources: https://www.llyw.cymru/help/polisi-preifatrwydd-wefan (data personol, sail gyfreithiol, cadw data, GDPR y DU, cwcis, trydydd partïon)
+#          https://www.llyw.cymru/awdurdod-cyllid-cymru/polisi-preifatrwydd (polisi preifatrwydd, rheolydd data, proseswyr data, rhwymedigaeth gyfreithiol, caniatâd, torri diogelwch data)
+#          https://www.llyw.cymru/hysbysiad-preifatrwydd-grantiau-llywodraeth-cymru (rheolydd data, trosglwyddo y tu allan i'r DU, Swyddfa'r Comisiynydd Gwybodaeth)
+#          https://www.llyw.cymru/datganiad-hygyrchedd-llywcymru (the accessibility terms)
+#          https://www.llyw.cymru/telerau-ac-amodau (telerau ac amodau, eiddo deallusol, ymwadiad, gwarant, atebol, cyfreithiau Cymru a Lloegr)
+#          https://cy.ico.org.uk/global/privacy-notice/your-data-protection-rights/ (the rights)
+#          https://cy.ico.org.uk/for-the-public/getting-copies-of-your-information-subject-access-request/ (cais gwrthrych am wybodaeth)
+#          https://www.gov.uk/government/organisations/companies-house/about/personal-information-charter.cy (rheolydd, prosesydd data, trosglwyddiadau tramor, cyfnod cadw)
 
 [shared."hmrc-welsh-services"]
 cy = '''
@@ -18741,3 +18808,3887 @@ cy = '''Mae cofrestr Tŷ’r Cwmnïau yn rhoi’r swyddfa gofrestredig heddiw fe
 [strings."ch.micro.advance-not-signer"]
 hash = "13d7ec053a2e"
 cy = '''Mae {name} wedi’i enwi ar gyfer blaenswm, ond ar gyfrifon micro-endid mae blaenswm yn enwi’r cyfarwyddwr sy’n llofnodi’r cyfrifon, {signer}. Cywirwch yr enw.'''
+
+# == The privacy policy (privacy.html), ids privacy.* ==
+
+[strings."privacy.title"]
+hash = "68f369707fa5"
+cy = '''Polisi preifatrwydd - DIY Accounting Submit'''
+
+[strings."privacy.privacy-policy-ba445c"]
+hash = "ba445cff3898"
+cy = '''Polisi preifatrwydd'''
+
+[strings."privacy.last-updated-17-november-2026-bcd1c1"]
+hash = "bcd1c1d646a7"
+cy = '''Diweddarwyd ddiwethaf: 17 Tachwedd 2026'''
+
+[strings."privacy.contents-437aea"]
+hash = "437aea62a5bd"
+cy = '''Cynnwys'''
+
+[strings."privacy.what-we-collect-649edd"]
+hash = "649edddf2fc5"
+cy = '''<a href="#what-we-collect">Yr hyn rydym yn ei gasglu</a>'''
+
+[strings."privacy.hmrc-fraud-prevention-headers-f4febc"]
+hash = "f4febcc4b9e6"
+cy = '''<a href="#hmrc-fraud-prevention">Penawdau atal twyll CThEF</a>'''
+
+[strings."privacy.how-and-when-we-collect-it-4bbda9"]
+hash = "4bbda9bcb5ce"
+cy = '''<a href="#how-and-when-we-collect-it">Sut a phryd rydym yn ei gasglu</a>'''
+
+[strings."privacy.what-we-use-it-for-33e9ab"]
+hash = "33e9abaef82d"
+cy = '''<a href="#what-we-use-it-for">At beth rydym yn ei ddefnyddio</a>'''
+
+[strings."privacy.data-retention-566c03"]
+hash = "566c03c07397"
+cy = '''<a href="#data-retention">Cadw data</a>'''
+
+[strings."privacy.cookies-and-browser-storage-2f1602"]
+hash = "2f16027127b5"
+cy = '''<a href="#cookies-and-browser-storage">Cwcis a storfa’r porwr</a>'''
+
+[strings."privacy.your-choices-00bb27"]
+hash = "00bb27ff4cec"
+cy = '''<a href="#your-choices">Eich dewisiadau</a>'''
+
+[strings."privacy.your-data-rights-uk-gdpr-7b7556"]
+hash = "7b75563f8bbb"
+cy = '''<a href="#your-data-rights-uk-gdpr">Eich hawliau ynglŷn â’ch data (GDPR y DU)</a>'''
+
+[strings."privacy.data-recipients-83be3e"]
+hash = "83be3e7798dc"
+cy = '''<a href="#data-recipients">Derbynwyr data</a>'''
+
+[strings."privacy.international-data-transfers-60da0b"]
+hash = "60da0b09dc17"
+cy = '''<a href="#international-data-transfers">Trosglwyddo data y tu allan i’r DU</a>'''
+
+[strings."privacy.ico-registration-disclosure-d2c2ef"]
+hash = "d2c2ef1a139e"
+cy = '''<a href="#ico-disclosure">Datgeliad cofrestru â’r ICO</a>'''
+
+[strings."privacy.security-measures-af8602"]
+hash = "af8602bae9ce"
+cy = '''<a href="#security-measures">Mesurau diogelwch</a>'''
+
+[strings."privacy.security-incidents-c9fb1f"]
+hash = "c9fb1f1a95a1"
+cy = '''<a href="#security-incidents">Digwyddiadau diogelwch</a>'''
+
+[strings."privacy.changes-to-this-policy-035e33"]
+hash = "035e3321934b"
+cy = '''<a href="#changes-to-this-policy">Newidiadau i’r polisi hwn</a>'''
+
+[strings."privacy.referral-and-affiliate-records-2888fe"]
+hash = "2888fe5cbc92"
+cy = '''<a href="#referral-and-affiliate-records">Cofnodion atgyfeirio a phartneriaid cyswllt</a>'''
+
+[strings."privacy.contact-5432ce"]
+hash = "5432ce93786e"
+cy = '''<a href="#contact">Cysylltu</a>'''
+
+[strings."privacy.diy-accounting-submit-is-a-lightweight-b4a842"]
+hash = "b4a842b74fa5"
+cy = '''Rhaglen we ysgafn yw DIY Accounting Submit. Mae’n eich helpu i gyflwyno Ffurflenni TAW y DU drwy wasanaeth Troi Treth yn Ddigidol (MTD) CThEF ac i ffeilio Ffurflenni Treth y Cwmni (CT600) gyda CThEF. Ein nod yw casglu’r lleiaf o ddata sydd ei angen i redeg y gwasanaeth, i gydymffurfio â gofynion cyfreithiol ac i fonitro perfformiad.'''
+
+[strings."privacy.what-we-collect-bef04e"]
+hash = "bef04e58c3f6"
+cy = '''Yr hyn rydym yn ei gasglu'''
+
+[strings."privacy.account-and-authentication-data-e6a466"]
+hash = "e6a4660aacd3"
+cy = '''Data cyfrif a dilysu'''
+
+[strings."privacy.cognito-user-profile-email-address-name-d22138"]
+hash = "d22138b81d47"
+cy = '''<strong>Proffil defnyddiwr Cognito</strong>: Cyfeiriad e-bost, enw, a dynodydd defnyddiwr unigryw (sub) gan y darparwr mewngofnodi a ddewiswch (Google neu Microsoft)'''
+
+[strings."privacy.one-account-per-email-address-if-6941ab"]
+hash = "6941ab5bff8e"
+cy = '''<strong>Un cyfrif i bob cyfeiriad e-bost</strong>: Os byddwch yn mewngofnodi gyda darparwr arall sy’n cadarnhau’r un cyfeiriad e-bost, rydym yn ei gysylltu â’ch cyfrif presennol, felly rydych yn cadw un cyfrif a’r un bwndeli.'''
+
+[strings."privacy.authentication-tokens-jwt-access-identity-and-ea28d6"]
+hash = "ea28d60d3681"
+cy = '''<strong>Tocynnau dilysu</strong>: Tocynnau mynediad, hunaniaeth ac adnewyddu JWT sy’n cael eu storio yn localStorage eich porwr i reoli’r sesiwn'''
+
+[strings."privacy.hmrc-oauth-tokens-temporary-access-tokens-8930ec"]
+hash = "8930ec0f6f81"
+cy = '''<strong>Tocynnau OAuth CThEF</strong>: Tocynnau mynediad dros dro a geir pan fyddwch yn awdurdodi mynediad at CThEF (nid ydynt yn cael eu storio yn y tymor hir)'''
+
+[strings."privacy.vat-submission-data-219169"]
+hash = "2191696fbf6d"
+cy = '''Data cyflwyniad TAW'''
+
+[strings."privacy.vat-return-data-the-figures-you-ae26de"]
+hash = "ae26deed90db"
+cy = '''<strong>Data Ffurflen TAW</strong>: Y ffigurau rydych yn eu nodi i’w cyflwyno (maent yn cael eu prosesu ond nid ydynt yn cael eu storio ar ôl y cais)'''
+
+[strings."privacy.hmrc-submission-receipts-confirmation-receipts-from-4a8e3e"]
+hash = "4a8e3e5e8014"
+cy = '''<strong>Derbynebau cyflwyno CThEF</strong>: Derbynebau cadarnhau gan CThEF, gan gynnwys rhif bwndel y ffurflen, y dyddiad prosesu a’r stamp amser'''
+
+[strings."privacy.subscription-bundles-records-of-your-service-a72ffc"]
+hash = "a72ffcd957a9"
+cy = '''<strong>Bwndeli tanysgrifio</strong>: Cofnodion o’ch hawliau i’r gwasanaeth a’u dyddiadau dod i ben'''
+
+[strings."privacy.corporation-tax-filing-data-db1560"]
+hash = "db15600fd880"
+cy = '''Data ffeilio Treth Gorfforaeth'''
+
+[strings."privacy.company-utr-the-company-s-unique-f7e207"]
+hash = "f7e2077ab1ed"
+cy = '''<strong>UTR y cwmni</strong>: Cyfeirnod Unigryw y Trethdalwr y cwmni, yr ydych yn ei nodi i ffeilio Ffurflen Dreth y Cwmni'''
+
+[strings."privacy.government-gateway-user-id-and-password-de10b0"]
+hash = "de10b04df644"
+cy = '''<strong>Dynodydd Defnyddiwr (ID) a chyfrinair Porth y Llywodraeth</strong>: Rydych yn eu teipio ar gyfer pob ffeilio. Maent yn mynd at CThEF yn y neges ffeilio ac nid ydynt byth yn cael eu logio na’u storio.'''
+
+[strings."privacy.accounts-and-computations-the-accounts-and-40d9f4"]
+hash = "40d9f43ffcea"
+cy = '''<strong>Cyfrifon a chyfrifiannau</strong>: Y cyfrifon a’r cyfrifiannau treth, a ffigurau’r CT600, a lunnir o’r ffigurau rydych yn eu nodi'''
+
+[strings."privacy.hmrc-acceptance-receipts-hmrc-s-confirmation-a5ce1a"]
+hash = "a5ce1ac63e3e"
+cy = '''<strong>Derbynebau derbyn CThEF</strong>: Cadarnhad CThEF o’r ffeilio, a gedwir gyda’r ffigurau, y cyfrifon a’r cyfrifiannau a ffeiliwyd'''
+
+[strings."privacy.while-hmrc-processes-a-filing-the-b4f2d6"]
+hash = "b4f2d6cc1a4b"
+cy = '''Tra bo CThEF yn prosesu ffeilio, mae’r UTR, ffigurau’r CT600, y cyfrifon a’r cyfrifiannau yn cael eu cadw am hyd at awr er mwyn i’r dudalen allu dangos y canlyniad.'''
+
+[strings."privacy.hmrc-assist-67a886"]
+hash = "67a886207161"
+cy = '''HMRC Assist'''
+
+[strings."privacy.when-you-submit-a-vat-return-dd6a25"]
+hash = "dd6a25ed06ef"
+cy = '''Pan fyddwch yn cyflwyno Ffurflen TAW, gallwch ddewis anfon ffurflen ddrafft at HMRC Assist i’w hadolygu cyn ffeilio. Pan fyddwch yn pwyso’r botwm gwirio, mae ffigurau’r naw blwch a’r cyfnod yn cael eu hanfon at CThEF. Mae CThEF yn anfon hyd at bum neges gynghorol yn ôl, gyda dolenni at arweiniad GOV.UK. Dangosir y negeseuon yn union fel y mae CThEF yn eu hanfon.'''
+
+[strings."privacy.this-report-is-kept-with-the-e9777b"]
+hash = "e9777bdff8cb"
+cy = '''Cedwir yr adroddiad hwn gyda derbynneb y Ffurflen am saith mlynedd, yr un fath â’r derbynebau ar gyfer Ffurflenni a gyflwynwyd. Nid oes dim yn cael ei anfon at CThEF nes i chi bwyso’r botwm gwirio, a gellir cyflwyno’r Ffurflen p’un a ddefnyddir y gwiriad ai peidio.'''
+
+[strings."privacy.hmrc-fraud-prevention-data-1640d5"]
+hash = "1640d59afcd5"
+cy = '''Data atal twyll CThEF'''
+
+[strings."privacy.when-you-submit-a-vat-return-d47a82"]
+hash = "d47a8254da4d"
+cy = '''Pan fyddwch yn cyflwyno Ffurflen TAW, mae’r gyfraith yn ei gwneud yn ofynnol i ni gasglu data atal twyll a’i drosglwyddo i CThEF. Gweler yr adran <a href="#hmrc-fraud-prevention">Penawdau Atal Twyll CThEF</a> isod am y manylion llawn.'''
+
+[strings."privacy.real-user-monitoring-rum-135af9"]
+hash = "135af9497203"
+cy = '''Monitro defnyddwyr go iawn (RUM)'''
+
+[strings."privacy.we-use-amazon-cloudwatch-rum-to-1cee0c"]
+hash = "1cee0c895906"
+cy = '''Rydym yn defnyddio Amazon CloudWatch RUM i gasglu data perfformiad a gwallau o’ch porwr. Mae hyn yn ein helpu i wella cyflymder a dibynadwyedd y rhaglen a phrofiad y defnyddiwr. Dim ond ar ôl i chi glicio “Derbyn” yn y faner ganiatâd y mae RUM yn dechrau.'''
+
+[strings."privacy.data-collected-by-rum-cc199e"]
+hash = "cc199efc1cd0"
+cy = '''Data a gesglir gan RUM'''
+
+[strings."privacy.performance-metrics-page-load-times-render-f6988d"]
+hash = "f6988df99a24"
+cy = '''<strong>Metrigau perfformiad</strong>: Amseroedd llwytho tudalennau, amseroedd rendro, oedi wrth ryngweithio (Core Web Vitals: LCP, INP, CLS)'''
+
+[strings."privacy.javascript-errors-unhandled-exceptions-and-error-58e3bb"]
+hash = "58e3bb64680a"
+cy = '''<strong>Gwallau JavaScript</strong>: Eithriadau heb eu trin a negeseuon gwall'''
+
+[strings."privacy.http-requests-api-request-urls-without-2658d5"]
+hash = "2658d5be3980"
+cy = '''<strong>Ceisiadau HTTP</strong>: URLau ceisiadau API (heb baramedrau ymholiad), codau statws, hydoedd'''
+
+[strings."privacy.navigation-events-pages-visited-route-changes-5d7a83"]
+hash = "5d7a833e4a25"
+cy = '''<strong>Digwyddiadau llywio</strong>: Tudalennau yr ymwelwyd â nhw, newidiadau llwybr'''
+
+[strings."privacy.device-information-browser-type-version-operating-84f8ec"]
+hash = "84f8ec5a6b0e"
+cy = '''<strong>Gwybodaeth am y ddyfais</strong>: Math a fersiwn y porwr, system weithredu, cydraniad y sgrin, maint y ffenestr'''
+
+[strings."privacy.session-information-anonymous-session-id-hashed-3b8368"]
+hash = "3b83689fb91e"
+cy = '''<strong>Gwybodaeth am y sesiwn</strong>: ID sesiwn dienw, ID defnyddiwr wedi’i hashio (os ydych wedi mewngofnodi - rydym yn hashio eich dynodydd yn y porwr cyn ei anfon)'''
+
+[strings."privacy.data-not-collected-by-rum-a8fd24"]
+hash = "a8fd245b0f41"
+cy = '''Data nad yw RUM yn ei gasglu'''
+
+[strings."privacy.form-input-data-e-g-vat-a5eee6"]
+hash = "a5eee6a39fd0"
+cy = '''Data a roddir mewn ffurflenni (e.e. rhifau TAW, ffigurau ariannol)'''
+
+[strings."privacy.passwords-or-authentication-tokens-30d965"]
+hash = "30d9650cc400"
+cy = '''Cyfrineiriau neu docynnau dilysu'''
+
+[strings."privacy.full-urls-with-query-parameters-or-5e9f32"]
+hash = "5e9f32b45506"
+cy = '''URLau llawn gyda pharamedrau ymholiad neu ddynodwyr personol'''
+
+[strings."privacy.ip-addresses-aws-receives-them-for-8d35ce"]
+hash = "8d35ce9c8a2e"
+cy = '''Cyfeiriadau IP (mae AWS yn eu derbyn er mwyn llwybro ceisiadau ond nid ydym yn eu storio nac yn eu prosesu ar gyfer RUM)'''
+
+[strings."privacy.google-analytics-4-de7060"]
+hash = "de7060f15e34"
+cy = '''Google Analytics 4'''
+
+[strings."privacy.we-use-google-analytics-4-ga4-c38adb"]
+hash = "c38adbff973e"
+cy = '''Rydym yn defnyddio Google Analytics 4 (GA4) i ddeall sut mae ymwelwyr yn defnyddio ein gwefannau (diyaccounting.co.uk, spreadsheets.diyaccounting.co.uk, a submit.diyaccounting.co.uk). Mae GA4 yn casglu data defnydd dienw i’n helpu i wella ein gwasanaethau.'''
+
+[strings."privacy.data-collected-by-ga4-1bb0b3"]
+hash = "1bb0b37bdc3c"
+cy = '''Data a gesglir gan GA4'''
+
+[strings."privacy.page-views-pages-visited-and-navigation-e8b17f"]
+hash = "e8b17f59becc"
+cy = '''<strong>Ymweliadau â thudalennau</strong>: Tudalennau yr ymwelwyd â nhw a llwybrau llywio ar draws ein tair gwefan'''
+
+[strings."privacy.events-interactions-such-as-product-downloads-1a0514"]
+hash = "1a0514d860c5"
+cy = '''<strong>Digwyddiadau</strong>: Rhyngweithiadau megis lawrlwytho cynnyrch, cwblhau rhodd, a cherrig milltir cyflwyniad TAW'''
+
+[strings."privacy.device-and-browser-information-browser-type-fdc701"]
+hash = "fdc70173b2e7"
+cy = '''<strong>Gwybodaeth am y ddyfais a’r porwr</strong>: Math y porwr, system weithredu, cydraniad y sgrin, iaith'''
+
+[strings."privacy.geographic-information-approximate-location-derived-from-694443"]
+hash = "694443fa5b1c"
+cy = '''<strong>Gwybodaeth ddaearyddol</strong>: Lleoliad bras sy’n deillio o’r cyfeiriad IP (nid yw GA4 yn storio cyfeiriadau IP)'''
+
+[strings."privacy.referral-data-how-you-arrived-at-2d90f5"]
+hash = "2d90f5afcf41"
+cy = '''<strong>Data atgyfeirio</strong>: Sut y cyrhaeddoch ein gwefan (peiriant chwilio, yn uniongyrchol, dolen atgyfeirio)'''
+
+[strings."privacy.data-not-collected-by-ga4-0e1919"]
+hash = "0e1919d9ec96"
+cy = '''Data nad yw GA4 yn ei gasglu'''
+
+[strings."privacy.personal-information-names-email-addresses-vat-097780"]
+hash = "097780ffb0a4"
+cy = '''Gwybodaeth bersonol (enwau, cyfeiriadau e-bost, rhifau TAW)'''
+
+[strings."privacy.financial-data-vat-figures-payment-details-4d792f"]
+hash = "4d792f3481b2"
+cy = '''Data ariannol (ffigurau TAW, manylion talu)'''
+
+[strings."privacy.authentication-tokens-or-passwords-8c2e55"]
+hash = "8c2e55da4af2"
+cy = '''Tocynnau dilysu neu gyfrineiriau'''
+
+[strings."privacy.consent-and-control-46d7b6"]
+hash = "46d7b622008e"
+cy = '''Caniatâd a rheolaeth'''
+
+[strings."privacy.our-lawful-basis-for-analytics-and-795247"]
+hash = "795247980d9f"
+cy = '''Ein sail gyfreithlon dros ddadansoddeg a mesur hysbysebu yw eich <strong>caniatâd</strong>. Nes i chi dderbyn y faner cwcis, nid yw sgriptiau GA4 a Microsoft Advertising yn cael eu llwytho, nid oes cais yn cael ei wneud i Google na Microsoft, ac nid oes dim am eich ymweliad yn cael ei ysgrifennu i’ch porwr at y dibenion hyn. Os byddwch yn gwrthod, mae hynny’n aros yn wir. Gallwch newid eich dewis neu ei dynnu’n ôl unrhyw bryd gyda’r ddolen “Dewisiadau cwcis” yn nhroedyn y dudalen. Mae’n agor y dewis eto.'''
+
+[strings."privacy.when-you-answer-the-banner-accept-a97f81"]
+hash = "a97f81ed6116"
+cy = '''Pan fyddwch yn ateb y faner, drwy dderbyn neu wrthod, rydym yn cyfrif yr ateb. Mae’r cyfrif yn dal yr ateb (derbyniwyd neu gwrthodwyd), ble y’i rhoddwyd (baner neu ddeialog) a’ch gwlad. Nid yw’n dal cwci, dynodydd wedi’i storio na thudalen. Rydym yn ei anfon ar ôl gwrthod hefyd.'''
+
+[strings."privacy.google-ads-measurement-913ab1"]
+hash = "913ab16a8dec"
+cy = '''Mesur Google Ads'''
+
+[strings."privacy.if-you-arrive-from-a-google-742d3a"]
+hash = "742d3ab3afdc"
+cy = '''Os byddwch yn cyrraedd o hysbyseb Google neu Microsoft, mae’r ddolen yn cario dynodydd clic (<code>gclid</code> neu <code>msclkid</code>) a thagiau ymgyrch (<code>utm_*</code>). Gyda’ch caniatâd rydym yn eu cadw yn eich porwr am hyd at 90 diwrnod ac yn eu hanfon gyda’ch sesiwn, er mwyn i ni allu cyfrif pa hysbysebion sy’n arwain at gofrestru a thalu. Heb ganiatâd nid ydynt yn cael eu cadw.'''
+
+[strings."privacy.microsoft-advertising-measurement-38865a"]
+hash = "38865ad9dc86"
+cy = '''Mesur Microsoft Advertising'''
+
+[strings."privacy.with-your-consent-we-load-microsoft-cca3d4"]
+hash = "cca3d44982e8"
+cy = '''Gyda’ch caniatâd rydym yn llwytho tag Universal Event Tracking (UET) Microsoft Advertising o <code>bat.bing.com</code>. Mae’n anfon eich ymweliadau â thudalennau a’r digwyddiadau ar gyfer pryniant, Ffurflen TAW, lawrlwythiad a rhodd at <code>bat.bing.com</code> a <code>bat.bing.net</code>, er mwyn i Microsoft allu cyfrif pa rai o’i hysbysebion sy’n arwain at y gweithredoedd hynny. Gall y tag osod cwci yn eich porwr. Microsoft Corporation yw’r prosesydd; gweler <a href="https://privacy.microsoft.com/privacystatement" target="_blank" rel="noopener">Datganiad Preifatrwydd Microsoft</a> (yn Saesneg).'''
+
+[strings."privacy.data-retention-and-processing-695b1d"]
+hash = "695b1d429731"
+cy = '''Cadw a phrosesu data'''
+
+[strings."privacy.retention-period-14-months-the-maximum-c76d0e"]
+hash = "c76d0e5ea09d"
+cy = '''<strong>Cyfnod cadw</strong>: 14 mis (yr uchafswm y mae GA4 yn ei ganiatáu)'''
+
+[strings."privacy.ip-anonymisation-enabled-by-default-in-a92e8f"]
+hash = "a92e8f02c7b9"
+cy = '''<strong>Gwneud cyfeiriadau IP yn ddienw</strong>: Wedi’i alluogi yn ddiofyn yn GA4 (nid yw cyfeiriadau IP yn cael eu storio)'''
+
+[strings."privacy.data-processor-google-ireland-limited-eu-25820b"]
+hash = "25820bb2dfe1"
+cy = '''<strong>Prosesydd data</strong>: Google Ireland Limited (prosesu data yn yr UE)'''
+
+[strings."privacy.cross-domain-tracking-sessions-are-linked-908070"]
+hash = "908070ab30e2"
+cy = '''<strong>Olrhain ar draws parthau</strong>: Mae sesiynau’n cael eu cysylltu ar draws ein tri pharth i roi un darlun o deithiau defnyddwyr'''
+
+[strings."privacy.for-more-information-see-google-s-b856ed"]
+hash = "b856edc21dd1"
+cy = '''I gael rhagor o wybodaeth, gweler <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Polisi Preifatrwydd Google</a> (yn Saesneg) a <a href="https://support.google.com/analytics/answer/6004245" target="_blank" rel="noopener">Mesurau Diogelu Data Google Analytics</a> (yn Saesneg).'''
+
+[strings."privacy.infrastructure-and-operational-data-00522b"]
+hash = "00522bbdfbfe"
+cy = '''Data seilwaith a gweithredol'''
+
+[strings."privacy.api-gateway-access-logs-request-metadata-271458"]
+hash = "271458968445"
+cy = '''<strong>Logiau mynediad API Gateway</strong>: Metadata ceisiadau, gan gynnwys stampiau amser, llwybrau, codau ymateb ac IDau ceisiadau'''
+
+[strings."privacy.cloudfront-waf-logs-edge-request-logs-bffc1c"]
+hash = "bffc1c6e2803"
+cy = '''<strong>Logiau CloudFront/WAF</strong>: Logiau ceisiadau ar yr ymyl, gan gynnwys cyfeiriadau IP, ar gyfer monitro diogelwch a chyfyngu ar gyfradd y ceisiadau. Rydym hefyd yn cyfrif yr ymwelwyr gwahanol y mae botiau a’n profion awtomataidd ein hunain yn eu creu bob dydd: mae’r cyfeiriad yn cael ei droi’n hash un ffordd gyda halen sy’n newid bob dydd, dim ond y cyfrif sy’n cael ei gadw, ac nid yw’r hash byth yn cael ei storio na’i gymharu ar draws dyddiau.'''
+
+[strings."privacy.lambda-execution-logs-structured-operational-logs-357073"]
+hash = "3570734fe698"
+cy = '''<strong>Logiau gweithredu Lambda</strong>: Logiau gweithredol strwythuredig gydag IDau cydberthyn ar gyfer dadfygio (heb ddata sensitif)'''
+
+[strings."privacy.hmrc-api-audit-trail-masked-records-d2ee28"]
+hash = "d2ee287576f9"
+cy = '''<strong>Trywydd archwilio API CThEF</strong>: Cofnodion wedi’u masgio o geisiadau ac ymatebion API ar gyfer cydymffurfio a datrys problemau (mae data sensitif wedi’i olygu allan)'''
+
+[strings."privacy.google-drive-and-books-7c6792"]
+hash = "7c6792f6ee69"
+cy = '''Google Drive a llyfrau'''
+
+[strings."privacy.you-can-open-a-book-from-81c83e"]
+hash = "81c83eb9b7b3"
+cy = '''Gallwch agor llyfr o’ch Google Drive eich hun, neu gadw llyfr iddo. Mae hyn yn defnyddio mewngofnodi Google a’r caniatâd <code>drive.file</code>, sy’n gadael i’r wefan weld dim ond y ffeiliau rydych yn eu dewis neu’n eu creu gyda hi. Mae’r llyfr yn aros yn eich porwr. Dim ond y ffigurau rydych yn eu ffeilio sy’n cyrraedd gweinyddion Submit.'''
+
+[strings."privacy.google-s-own-privacy-policy-governs-9a8873"]
+hash = "9a8873bb46e1"
+cy = '''Polisi preifatrwydd Google ei hun sy’n llywodraethu eich cyfrif Drive.'''
+
+[strings."privacy.hmrc-fraud-prevention-headers-86aaf0"]
+hash = "86aaf0a0f012"
+cy = '''Penawdau atal twyll CThEF'''
+
+[strings."privacy.under-making-tax-digital-mtd-regulations-c08ff8"]
+hash = "c08ff8405284"
+cy = '''O dan reoliadau Troi Treth yn Ddigidol (MTD), mae CThEF yn ei gwneud yn ofynnol i bob darparwr meddalwedd gasglu data atal twyll a’i drosglwyddo gyda phob cyflwyniad Ffurflen TAW. Mae hwn yn <strong>ofyniad cyfreithiol</strong> na allwn optio allan ohono.'''
+
+[strings."privacy.legal-basis-9c30e2"]
+hash = "9c30e2f645a4"
+cy = '''Sail gyfreithiol'''
+
+[strings."privacy.the-collection-and-transmission-of-fraud-11df43"]
+hash = "11df4331a921"
+cy = '''Mae CThEF yn mynnu bod data atal twyll yn cael ei gasglu a’i drosglwyddo o dan <a href="https://developer.service.hmrc.gov.uk/api-documentation/docs/fraud-prevention" target="_blank" rel="noopener" >Fanyleb Atal Twyll CThEF</a > (yn Saesneg). Mae CThEF yn defnyddio’r data hwn i:'''
+
+[strings."privacy.identify-and-prevent-fraudulent-vat-submissions-c870a6"]
+hash = "c870a64166a1"
+cy = '''Adnabod ac atal cyflwyniadau TAW twyllodrus'''
+
+[strings."privacy.support-criminal-prosecutions-for-tax-fraud-cc36a7"]
+hash = "cc36a7254c6d"
+cy = '''Cefnogi erlyniadau troseddol am dwyll treth'''
+
+[strings."privacy.verify-the-authenticity-of-submissions-aa837f"]
+hash = "aa837f5ac625"
+cy = '''Gwirio dilysrwydd cyflwyniadau'''
+
+[strings."privacy.monitor-for-suspicious-patterns-across-the-865346"]
+hash = "865346170ace"
+cy = '''Monitro am batrymau amheus ar draws ecosystem MTD'''
+
+[strings."privacy.data-points-collected-9981e5"]
+hash = "9981e5627cdf"
+cy = '''Pwyntiau data a gesglir'''
+
+[strings."privacy.the-following-data-is-collected-and-d72c52"]
+hash = "d72c52dc9b82"
+cy = '''Mae’r data canlynol yn cael ei gasglu a’i drosglwyddo i CThEF gyda phob cyflwyniad Ffurflen TAW:'''
+
+[strings."privacy.data-point-fe35fc"]
+hash = "fe35fc07db75"
+cy = '''Pwynt data'''
+
+[strings."privacy.description-526e00"]
+hash = "526e0087cc3f"
+cy = '''Disgrifiad'''
+
+[strings."privacy.how-collected-fa51ef"]
+hash = "fa51ef577813"
+cy = '''Sut y’i cesglir'''
+
+[strings."privacy.public-ip-address-d526f2"]
+hash = "d526f2deaeb5"
+cy = '''Cyfeiriad IP cyhoeddus'''
+
+[strings."privacy.your-internet-facing-ip-address-db5e17"]
+hash = "db5e179e6695"
+cy = '''Eich cyfeiriad IP sy’n wynebu’r rhyngrwyd'''
+
+[strings."privacy.detected-via-webrtc-or-external-ip-e6407c"]
+hash = "e6407c5f84a9"
+cy = '''Wedi’i ganfod drwy WebRTC neu wasanaethau IP allanol, neu wedi’i dynnu o benawdau’r cais'''
+
+[strings."privacy.device-id-6e0a0b"]
+hash = "6e0a0b9d8c5e"
+cy = '''ID y ddyfais'''
+
+[strings."privacy.a-unique-identifier-for-your-browser-e88f68"]
+hash = "e88f685da9e3"
+cy = '''Dynodydd unigryw ar gyfer eich porwr ar y ddyfais hon'''
+
+[strings."privacy.generated-once-with-crypto-randomuuid-and-b6b319"]
+hash = "b6b3196d9d42"
+cy = '''Wedi’i gynhyrchu unwaith gyda <code>crypto.randomUUID()</code> a’i gadw yn localStorage nes i chi ei glirio'''
+
+[strings."privacy.browser-user-agent-d1d812"]
+hash = "d1d812aa3275"
+cy = '''Asiant defnyddiwr y porwr'''
+
+[strings."privacy.your-browser-type-version-and-operating-a3e003"]
+hash = "a3e003b0be4e"
+cy = '''Math a fersiwn eich porwr, a’ch system weithredu'''
+
+[strings."privacy.from-navigator-useragent-0bc606"]
+hash = "0bc606bc3e04"
+cy = '''O <code>navigator.userAgent</code>'''
+
+[strings."privacy.timezone-4ceca1"]
+hash = "4ceca1d52ced"
+cy = '''Cylchfa amser'''
+
+[strings."privacy.your-local-timezone-offset-e-g-cd6276"]
+hash = "cd6276d3255f"
+cy = '''Gwahaniaeth eich cylchfa amser leol (e.e. UTC+00:00)'''
+
+[strings."privacy.calculated-from-javascript-date-api-a267d7"]
+hash = "a267d723b950"
+cy = '''Wedi’i gyfrifo o API Date JavaScript'''
+
+[strings."privacy.screen-information-690fbb"]
+hash = "690fbb68646e"
+cy = '''Gwybodaeth am y sgrin'''
+
+[strings."privacy.screen-resolution-colour-depth-and-device-0fc21e"]
+hash = "0fc21e0fbf25"
+cy = '''Cydraniad y sgrin, dyfnder lliw, a chymhareb picseli’r ddyfais'''
+
+[strings."privacy.from-window-screen-properties-523f2d"]
+hash = "523f2d11c7b2"
+cy = '''O briodweddau <code>window.screen</code>'''
+
+[strings."privacy.window-size-901036"]
+hash = "9010362dc031"
+cy = '''Maint y ffenestr'''
+
+[strings."privacy.browser-window-dimensions-9797dc"]
+hash = "9797dc9787b8"
+cy = '''Dimensiynau ffenestr y porwr'''
+
+[strings."privacy.from-window-innerwidth-and-window-innerheight-6f5fd7"]
+hash = "6f5fd7a3c4a0"
+cy = '''O <code>window.innerWidth</code> a <code>window.innerHeight</code>'''
+
+[strings."privacy.user-identifier-bc2eb4"]
+hash = "bc2eb4a035f4"
+cy = '''Dynodydd defnyddiwr'''
+
+[strings."privacy.your-cognito-user-id-or-anonymous-a459f4"]
+hash = "a459f42e94d0"
+cy = '''Eich ID defnyddiwr Cognito (neu “anonymous” os nad ydych wedi mewngofnodi)'''
+
+[strings."privacy.from-authentication-token-claims-07ee29"]
+hash = "07ee299d8449"
+cy = '''O honiadau’r tocyn dilysu'''
+
+[strings."privacy.vendor-information-975ff4"]
+hash = "975ff4d47d9c"
+cy = '''Gwybodaeth am y gwerthwr'''
+
+[strings."privacy.our-application-name-and-version-e1a9c6"]
+hash = "e1a9c66a413d"
+cy = '''Enw a fersiwn ein rhaglen'''
+
+[strings."privacy.from-application-configuration-20b05a"]
+hash = "20b05a45eb19"
+cy = '''O ffurfweddiad y rhaglen'''
+
+[strings."privacy.connection-method-6d4c5a"]
+hash = "6d4c5a6edc03"
+cy = '''Dull cysylltu'''
+
+[strings."privacy.how-you-connect-to-hmrc-web-9c8626"]
+hash = "9c8626835c1b"
+cy = '''Sut rydych yn cysylltu â CThEF (WEB_APP_VIA_SERVER)'''
+
+[strings."privacy.fixed-value-for-this-application-type-133557"]
+hash = "133557d0ebf4"
+cy = '''Gwerth sefydlog ar gyfer y math hwn o raglen'''
+
+[strings."privacy.how-device-id-works-90ed10"]
+hash = "90ed10cff75e"
+cy = '''Sut mae ID y ddyfais yn gweithio'''
+
+[strings."privacy.hmrc-asks-for-a-device-id-de9e6b"]
+hash = "de9e6bde231f"
+cy = '''Mae CThEF yn gofyn am ID dyfais nad yw’n dod i ben. Mae eich porwr yn creu un UUID gyda’i gynhyrchydd haprifau cryptograffig y tro cyntaf y mae cyflwyniad ei angen, ac yn ei gadw yn localStorage fel <code>hmrcDeviceId</code>. Mae hyn yn golygu:'''
+
+[strings."privacy.no-cookies-are-used-for-the-22acb2"]
+hash = "22acb2b21ee8"
+cy = '''Nid oes cwcis yn cael eu defnyddio ar gyfer ID y ddyfais'''
+
+[strings."privacy.the-same-device-id-goes-with-ca1b5b"]
+hash = "ca1b5b8147cd"
+cy = '''Mae’r un ID dyfais yn mynd gyda phob cyflwyniad o’r porwr hwn'''
+
+[strings."privacy.if-you-clear-your-browser-storage-6a273d"]
+hash = "6a273ddeb069"
+cy = '''Os byddwch yn clirio storfa eich porwr, mae’r cyflwyniad nesaf yn creu ID dyfais newydd'''
+
+[strings."privacy.the-installed-mcp-server-and-the-05ee6d"]
+hash = "05ee6d0d3701"
+cy = '''Y gweinydd MCP sydd wedi’i osod a’r pwynt terfyn MCP a letyir'''
+
+[strings."privacy.when-you-run-our-mcp-server-e07e16"]
+hash = "e07e16eaa82f"
+cy = '''Pan fyddwch yn rhedeg ein gweinydd MCP ar eich cyfrifiadur eich hun ac yn galw CThEF drwyddo, mae’r gweinydd hefyd yn darllen ac yn anfon y data hwn o’r cyfrifiadur hwnnw: ID dyfais a gedwir yn eich ffolder <code>~/.config/diya-submit</code>, eich cyfeiriadau IP lleol, eich cyfeiriadau MAC, eich enw defnyddiwr ar y system weithredu, eich system weithredu a model eich dyfais, a meintiau eich sgriniau. Dyma’r data y mae CThEF yn gofyn amdano ar gyfer rhaglen sydd wedi’i gosod ar gyfrifiadur bwrdd gwaith.'''
+
+[strings."privacy.when-your-ai-client-calls-our-c7aa9c"]
+hash = "c7aa9c230f89"
+cy = '''Pan fydd eich cleient AI yn galw ein pwynt terfyn MCP a letyir, rydym yn anfon at CThEF gyfeiriad IP cyhoeddus a phorth y galwr, a’r amser y gwnaethom eu darllen. Gall cleient AI gysylltu o weinyddion ei gyflenwr, felly gall y cyfeiriad hwn fod yn gyfeiriad y cyflenwr.'''
+
+[strings."privacy.what-the-hosted-mcp-endpoint-sends-cacd9a"]
+hash = "cacd9a1f90bc"
+cy = '''Yr hyn y mae’r pwynt terfyn MCP a letyir yn ei anfon at eich cleient AI'''
+
+[strings."privacy.you-can-connect-an-ai-client-518b03"]
+hash = "518b03969fb9"
+cy = '''Gallwch gysylltu cleient AI, megis ChatGPT, Claude neu Gemini, â’r pwynt terfyn MCP a letyir. Rydych yn mewngofnodi gyda’ch cyfrif Submit. Yna gall y cleient alw chwe offeryn. Mae pob offeryn yn ateb gyda data o’ch cyfrif eich hun yn unig:'''
+
+[strings."privacy.your-saved-books-the-id-title-cffbed"]
+hash = "cffbed94530f"
+cy = '''<strong>Eich llyfrau a gadwyd</strong>: id, teitl a chynnyrch pob llyfr, a’r cyfnod y mae’n ei gwmpasu.'''
+
+[strings."privacy.an-open-book-the-name-of-edb9fa"]
+hash = "edb9fa02aec9"
+cy = '''<strong>Llyfr agored</strong>: enw’r busnes, y cynnyrch, y cyfnod, nifer llinellau’r dyddlyfr a chanlyniadau gwiriadau’r llyfr.'''
+
+[strings."privacy.a-vat-return-worked-out-from-85e2a6"]
+hash = "85e2a61e7425"
+cy = '''<strong>Ffurflen TAW wedi’i chyfrifo o lyfr</strong>: y rhif cofrestru TAW sydd yn y llyfr, y naw blwch TAW, y ffigurau ar gyfer pob mis, y dyddiad dyledus a llinellau’r dyddlyfr y tu ôl i flychau 1, 4, 6 a 7. Ar gyfer pob llinell o’r dyddlyfr, mae’r offeryn yn anfon y dyddiad, y cyfrif, y cyfeirnod, y gwrthbarti a’r symiau. Gwrthbarti yw enw cwsmer neu gyflenwr yn eich llyfr.'''
+
+[strings."privacy.a-link-to-the-vat-form-86587f"]
+hash = "86587fe606b3"
+cy = '''<strong>Dolen at y ffurflen TAW</strong>: cyfeiriad y ffurflen TAW ar y wefan hon. Mae’r rhan o’r ddolen ar ôl y “#” yn dal y cyfnod, y saith ffigur y mae’r ffurflen yn eu cymryd, enw’r llyfr a fersiwn ein peiriant cyfrifo. Eich porwr sy’n darllen y rhan honno. Nid yw’n cyrraedd ein gweinyddion.'''
+
+[strings."privacy.your-vat-receipts-for-each-vat-17f2cc"]
+hash = "17f2cca7571d"
+cy = '''<strong>Eich derbynebau TAW</strong>: ar gyfer pob Ffurflen TAW a ffeilioch drwy Submit, enw’r dderbynneb, rhif bwndel y ffurflen gan CThEF a’r diwrnod y gwnaethoch ffeilio. Ar gyfer un dderbynneb, y dyddiad a’r amser y prosesodd CThEF y Ffurflen, rhif bwndel y ffurflen, y dangosydd talu a chyfeirnod y tâl.'''
+
+[strings."privacy.the-tools-send-no-internal-identifier-ce2c61"]
+hash = "ce2c618ff0b4"
+cy = '''Nid yw’r offer yn anfon unrhyw ddynodydd mewnol o’ch cyfrif, unrhyw ddynodydd sesiwn na chais, nac unrhyw ddata log.'''
+
+[strings."privacy.purpose-the-ai-client-uses-the-511f68"]
+hash = "511f688fb9db"
+cy = '''<strong>Diben</strong>: mae’r cleient AI yn defnyddio’r data i ddangos eich llyfrau i chi ac i gyfrifo Ffurflen TAW. Yna rydych chi’n gwirio’r Ffurflen ac yn ei ffeilio eich hun yn eich porwr. Nid ydym yn defnyddio’r data at unrhyw ddiben arall.'''
+
+[strings."privacy.recipient-the-supplier-of-the-ai-1f9ae4"]
+hash = "1f9ae4aaf7ad"
+cy = '''<strong>Derbynnydd</strong>: cyflenwr y cleient AI rydych yn ei gysylltu. OpenAI yw hwn ar gyfer ChatGPT, Anthropic ar gyfer Claude a Google ar gyfer Gemini. Mae’r cyflenwr yn derbyn pob ateb ac yn ei ddefnyddio o dan ei bolisi preifatrwydd ei hun a gosodiadau eich cyfrif gydag ef. Gall y cyflenwr brosesu’r data y tu allan i’r DU.'''
+
+[strings."privacy.retention-we-keep-no-copy-of-21805c"]
+hash = "21805cc98d33"
+cy = '''<strong>Cadw</strong>: nid ydym yn cadw copi o ateb. Tra byddwch wedi cysylltu, rydym yn cadw cofnod o’r cysylltiad sy’n dal id y llyfr agored. Rydym yn dileu’r cofnod hwnnw 24 awr ar ôl ei ddefnyddio ddiwethaf. Rydym yn dileu llyfr a gadwyd 35 diwrnod ar ôl ei gadw ddiwethaf, oni bai bod eich cyfrif yn cadw llyfrau heb derfyn amser. Rydym yn cadw derbynebau TAW am 7 mlynedd. Cyflenwr y cleient AI sy’n penderfynu am ba hyd y mae’n cadw’r atebion, o dan osodiadau eich cyfrif gydag ef.'''
+
+[strings."privacy.hmrc-consent-2a2a74"]
+hash = "2a2a7452ff24"
+cy = '''Caniatâd CThEF'''
+
+[strings."privacy.when-you-authorise-this-application-to-6abe8a"]
+hash = "6abe8a24e44c"
+cy = '''Pan fyddwch yn awdurdodi’r rhaglen hon i gyflwyno Ffurflenni TAW ar eich rhan, rydych yn gwneud hynny drwy lif awdurdodi OAuth CThEF ei hun. Mae sgrin awdurdodi CThEF yn esbonio y bydd data atal twyll yn cael ei gasglu. Drwy gwblhau’r awdurdodi, rydych yn rhoi caniatâd i’r data hwn gael ei gasglu fel y mae CThEF yn gofyn.'''
+
+[strings."privacy.for-more-information-about-hmrc-s-34faff"]
+hash = "34faffe0b667"
+cy = '''I gael rhagor o wybodaeth am ofynion atal twyll CThEF, gweler <a href="https://developer.service.hmrc.gov.uk/api-documentation/docs/fraud-prevention" target="_blank" rel="noopener" >Dogfennaeth Atal Twyll CThEF</a > (yn Saesneg).'''
+
+[strings."privacy.how-and-when-we-collect-it-10b4aa"]
+hash = "10b4aae7cabe"
+cy = '''Sut a phryd rydym yn ei gasglu'''
+
+[strings."privacy.account-data-collected-when-you-sign-2454de"]
+hash = "2454dead0bdf"
+cy = '''<strong>Data cyfrif</strong>: Yn cael ei gasglu pan fyddwch yn mewngofnodi gyda Google neu Microsoft, a’i storio yn AWS Cognito ac yn localStorage y porwr.'''
+
+[strings."privacy.vat-submission-data-collected-when-you-db56ab"]
+hash = "db56abf24736"
+cy = '''<strong>Data cyflwyniad TAW</strong>: Yn cael ei gasglu pan fyddwch yn cyflwyno Ffurflen TAW; mae derbynebau’n cael eu storio yn DynamoDB am 7 mlynedd.'''
+
+[strings."privacy.email-delivery-data-when-we-send-4ebcd3"]
+hash = "4ebcd3b06e41"
+cy = '''<strong>Data danfon e-bost</strong>: Pan fyddwn yn anfon e-bost atoch, mae Amazon SES yn cofnodi canlyniad y danfon. Os bydd eich cyfeiriad yn bownsio neu os byddwch yn marcio ein e-bost fel sbam, mae SES yn cadw’r cyfeiriad ar restr atal er mwyn i ni roi’r gorau i anfon ato.'''
+
+[strings."privacy.corporation-tax-filing-data-collected-when-d5ce63"]
+hash = "d5ce630993d4"
+cy = '''<strong>Data ffeilio Treth Gorfforaeth</strong>: Yn cael ei gasglu pan fyddwch yn ffeilio Ffurflen Dreth y Cwmni. Mae Dynodydd Defnyddiwr (ID) a chyfrinair Porth y Llywodraeth yn cael eu defnyddio unwaith ac nid ydynt yn cael eu cadw. Mae’r dderbynneb, gyda’r CT600, y cyfrifon a’r cyfrifiannau, yn cael ei storio yn DynamoDB am 7 mlynedd.'''
+
+[strings."privacy.fraud-prevention-data-collected-at-the-fce387"]
+hash = "fce38794dd58"
+cy = '''<strong>Data atal twyll</strong>: Yn cael ei gasglu ar yr eiliad y cyflwynir y Ffurflen TAW a’i drosglwyddo ar unwaith i CThEF.'''
+
+[strings."privacy.rum-data-only-collected-after-you-cd08bd"]
+hash = "cd08bdc68415"
+cy = '''<strong>Data RUM</strong>: Dim ond ar ôl i chi glicio “Derbyn” yn y faner ganiatâd y mae’n cael ei gasglu.'''
+
+[strings."privacy.google-analytics-and-advertising-measurement-data-a93de2"]
+hash = "a93de2213e9d"
+cy = '''<strong>Data Google Analytics a mesur hysbysebu</strong>: Dim ond ar ôl i chi roi caniatâd drwy’r faner cwcis y mae’n cael ei gasglu. Nid oes dim yn cael ei anfon at Google ac nid oes tagiau ymgyrch yn cael eu storio cyn y caniatâd.'''
+
+[strings."privacy.infrastructure-logs-collected-automatically-by-aws-c2d323"]
+hash = "c2d32374b520"
+cy = '''<strong>Logiau seilwaith</strong>: Yn cael eu casglu’n awtomatig gan wasanaethau AWS pan fyddwch yn defnyddio’r wefan, am resymau diogelwch a gweithredol.'''
+
+[strings."privacy.what-we-use-it-for-61ec68"]
+hash = "61ec6863e8f3"
+cy = '''At beth rydym yn ei ddefnyddio'''
+
+[strings."privacy.vat-submissions-to-submit-your-vat-4b40aa"]
+hash = "4b40aa6615a4"
+cy = '''<strong>Cyflwyniadau TAW</strong>: I gyflwyno eich Ffurflenni TAW i CThEF ac i roi derbynebau cadarnhau i chi.'''
+
+[strings."privacy.corporation-tax-filings-to-file-your-76c7b2"]
+hash = "76c7b2a18105"
+cy = '''<strong>Ffeilio Treth Gorfforaeth</strong>: I ffeilio Ffurflen Dreth eich Cwmni, y cyfrifon a’r cyfrifiannau gyda CThEF ac i roi’r dderbynneb derbyn i chi.'''
+
+[strings."privacy.authentication-to-verify-your-identity-and-fff9e0"]
+hash = "fff9e0b72e91"
+cy = '''<strong>Dilysu</strong>: I wirio pwy ydych chi ac i reoli eich sesiwn.'''
+
+[strings."privacy.entitlements-to-track-your-subscription-bundles-6d527e"]
+hash = "6d527edd62d0"
+cy = '''<strong>Hawliau</strong>: I gadw golwg ar eich bwndeli tanysgrifio a’ch mynediad at y gwasanaeth.'''
+
+[strings."privacy.service-emails-to-send-you-the-0cbf57"]
+hash = "0cbf571efe0a"
+cy = '''<strong>E-byst gwasanaeth</strong>: I anfon atoch fanylion tanysgrifiad, copi o dderbynneb ffeilio, a dolen a chod QR tocyn rydych yn ei gynhyrchu neu’n ei ddefnyddio. Mae’r e-byst hyn yn rhan o’r gwasanaeth, ac nid oes marchnata ynddynt. Rydym yn eu hanfon o support@diyaccounting.co.uk, ac mae eich ateb yn cyrraedd ein tîm cymorth.'''
+
+[strings."privacy.support-requests-to-answer-a-request-a8aaba"]
+hash = "a8aaba3f4cd5"
+cy = '''<strong>Ceisiadau am gymorth</strong>: I ateb cais rydych yn ei anfon o’r dudalen gymorth. Rydym yn cadw’r cyfeiriad e-bost rydych yn ei deipio yno gyda’r cais, er mwyn i ni allu ateb. Nid ydym yn gwirio mai chi biau’r cyfeiriad.'''
+
+[strings."privacy.fraud-prevention-compliance-to-fulfill-our-3b6a4b"]
+hash = "3b6a4b616c38"
+cy = '''<strong>Cydymffurfio ag atal twyll</strong>: I gyflawni ein rhwymedigaethau cyfreithiol o dan reoliadau Troi Treth yn Ddigidol.'''
+
+[strings."privacy.performance-monitoring-to-improve-site-speed-133e41"]
+hash = "133e4138712d"
+cy = '''<strong>Monitro perfformiad</strong>: I wella cyflymder a dibynadwyedd y wefan a phrofiad y defnyddiwr.'''
+
+[strings."privacy.error-detection-to-identify-and-fix-6b9fe9"]
+hash = "6b9fe9dc1565"
+cy = '''<strong>Canfod gwallau</strong>: I ganfod a thrwsio bygiau a phroblemau.'''
+
+[strings."privacy.security-to-protect-the-service-and-222dc8"]
+hash = "222dc80f51dd"
+cy = '''<strong>Diogelwch</strong>: I ddiogelu’r gwasanaeth a’r defnyddwyr rhag camddefnydd, ymosodiadau a mynediad heb awdurdod.'''
+
+[strings."privacy.compliance-auditing-to-maintain-audit-trails-4d6878"]
+hash = "4d6878aae793"
+cy = '''<strong>Archwilio cydymffurfiaeth</strong>: I gynnal trywyddion archwilio ar gyfer cydymffurfio rheoleiddiol.'''
+
+[strings."privacy.data-retention-71f7f6"]
+hash = "71f7f6993a05"
+cy = '''Cadw data'''
+
+[strings."privacy.application-data-e24f82"]
+hash = "e24f82cd77e9"
+cy = '''Data’r rhaglen'''
+
+[strings."privacy.data-category-380598"]
+hash = "38059842ef19"
+cy = '''Categori data'''
+
+[strings."privacy.retention-period-111b9e"]
+hash = "111b9efb81de"
+cy = '''Cyfnod cadw'''
+
+[strings."privacy.reason-f81ab8"]
+hash = "f81ab834de5f"
+cy = '''Rheswm'''
+
+[strings."privacy.hmrc-submission-receipts-vat-and-corporation-5306b0"]
+hash = "5306b034d500"
+cy = '''Derbynebau cyflwyno CThEF (TAW a Threth Gorfforaeth, gyda’r CT600, y cyfrifon a’r cyfrifiannau a ffeiliwyd)'''
+
+[strings."privacy.7-years-0634bf"]
+hash = "0634bf831459"
+cy = '''7 mlynedd'''
+
+[strings."privacy.uk-tax-record-keeping-requirements-8e84c9"]
+hash = "8e84c996b1b2"
+cy = '''Gofynion cadw cofnodion treth y DU'''
+
+[strings."privacy.corporation-tax-filing-in-progress-utr-603b64"]
+hash = "603b647e14d9"
+cy = '''Ffeilio Treth Gorfforaeth ar y gweill (UTR, CT600, cyfrifon, cyfrifiannau)'''
+
+[strings."privacy.1-hour-f8b888"]
+hash = "f8b8883f0c9d"
+cy = '''1 awr'''
+
+[strings."privacy.showing-the-result-of-the-filing-ad86ee"]
+hash = "ad86eec4f0c8"
+cy = '''Dangos canlyniad y ffeilio'''
+
+[strings."privacy.government-gateway-user-id-and-password-05c5d1"]
+hash = "05c5d16ade68"
+cy = '''Dynodydd Defnyddiwr (ID) ar gyfer Porth y Llywodraeth a chyfrinair'''
+
+[strings."privacy.not-kept-a6a43d"]
+hash = "a6a43d325fb0"
+cy = '''Heb ei gadw'''
+
+[strings."privacy.sent-once-to-hmrc-to-authenticate-93c3f5"]
+hash = "93c3f5535ca0"
+cy = '''Anfonir unwaith at CThEF i ddilysu’r ffeilio'''
+
+[strings."privacy.user-bundles-entitlements-c554ed"]
+hash = "c554ed1b7be0"
+cy = '''Bundles y defnyddiwr (hawliau)'''
+
+[strings."privacy.1-month-after-expiry-eb0eec"]
+hash = "eb0eecfb01dd"
+cy = '''1 mis ar ôl iddo ddod i ben'''
+
+[strings."privacy.service-access-management-da597f"]
+hash = "da597f4ee607"
+cy = '''Rheoli mynediad i’r gwasanaeth'''
+
+[strings."privacy.subscription-records-the-link-between-a-1318a0"]
+hash = "1318a0cb3892"
+cy = '''Cofnodion tanysgrifio (y cysylltiad rhwng taliad a’ch cyfrif)'''
+
+[strings."privacy.while-the-subscription-runs-then-180-92f544"]
+hash = "92f5444168d7"
+cy = '''Tra bo’r tanysgrifiad yn rhedeg, yna 180 diwrnod ar ôl iddo ddod i ben'''
+
+[strings."privacy.answering-a-payment-dispute-and-checking-96a435"]
+hash = "96a435a92ab7"
+cy = '''Ateb anghydfod ynghylch taliad a gwirio a gafodd tanysgrifiad ei ganslo’n gynnar'''
+
+[strings."privacy.records-made-by-our-own-tests-6f66d6"]
+hash = "6f66d67e88f7"
+cy = '''Cofnodion a wneir gan ein profion ein hunain'''
+
+[strings."privacy.2-days-ec1317"]
+hash = "ec13178b9872"
+cy = '''2 ddiwrnod'''
+
+[strings."privacy.checking-that-the-service-works-ffe9f7"]
+hash = "ffe9f7d0abb4"
+cy = '''Gwirio bod y gwasanaeth yn gweithio'''
+
+[strings."privacy.hmrc-api-audit-logs-masked-2e5577"]
+hash = "2e5577523193"
+cy = '''Logiau archwilio API CThEF (wedi’u masgio)'''
+
+[strings."privacy.28-days-56a795"]
+hash = "56a795b7bdce"
+cy = '''28 diwrnod'''
+
+[strings."privacy.compliance-and-troubleshooting-17ed15"]
+hash = "17ed15284ffd"
+cy = '''Cydymffurfio a datrys problemau'''
+
+[strings."privacy.async-request-tracking-9654f1"]
+hash = "9654f19f3a13"
+cy = '''Olrhain ceisiadau anghydamserol'''
+
+[strings."privacy.request-processing-31d509"]
+hash = "31d5098582cc"
+cy = '''Prosesu ceisiadau'''
+
+[strings."privacy.cognito-user-profile-b46b70"]
+hash = "b46b701f600e"
+cy = '''Proffil defnyddiwr Cognito'''
+
+[strings."privacy.while-account-active-6df617"]
+hash = "6df617a29c08"
+cy = '''Tra bo’r cyfrif yn weithredol'''
+
+[strings."privacy.authentication-66880d"]
+hash = "66880d2d8216"
+cy = '''Dilysu'''
+
+[strings."privacy.email-send-queue-048567"]
+hash = "0485677d785b"
+cy = '''Ciw anfon e-byst'''
+
+[strings."privacy.up-to-4-days-and-up-a12ba2"]
+hash = "a12ba20307a7"
+cy = '''Hyd at 4 diwrnod, a hyd at 14 diwrnod ar ôl i anfon fethu'''
+
+[strings."privacy.delivery-of-a-service-email-7c6ecb"]
+hash = "7c6ecb5da0b3"
+cy = '''Danfon e-bost gwasanaeth'''
+
+[strings."privacy.email-suppression-list-amazon-ses-36edba"]
+hash = "36edba12db96"
+cy = '''Rhestr atal e-byst (Amazon SES)'''
+
+[strings."privacy.until-we-remove-the-address-378091"]
+hash = "378091af050e"
+cy = '''Nes i ni dynnu’r cyfeiriad oddi arni'''
+
+[strings."privacy.stop-mail-to-an-address-that-9009ef"]
+hash = "9009eff481a6"
+cy = '''Atal post i gyfeiriad a fownsiodd neu a gwynodd'''
+
+[strings."privacy.browser-tokens-localstorage-28be7c"]
+hash = "28be7ca036d3"
+cy = '''Tocynnau porwr (localStorage)'''
+
+[strings."privacy.until-sign-out-or-expiry-14ff7f"]
+hash = "14ff7fe45f00"
+cy = '''Nes i chi allgofnodi neu nes iddynt ddod i ben'''
+
+[strings."privacy.session-management-ea63b4"]
+hash = "ea63b4df3b7c"
+cy = '''Rheoli sesiynau'''
+
+[strings."privacy.monitoring-and-infrastructure-data-5c72dd"]
+hash = "5c72dde5a93c"
+cy = '''Data monitro a seilwaith'''
+
+[strings."privacy.google-analytics-data-e11f17"]
+hash = "e11f176c0770"
+cy = '''Data Google Analytics'''
+
+[strings."privacy.14-months-5af4f2"]
+hash = "5af4f2b3e784"
+cy = '''14 mis'''
+
+[strings."privacy.cloudwatch-rum-events-39308c"]
+hash = "39308cd94f8a"
+cy = '''Digwyddiadau CloudWatch RUM'''
+
+[strings."privacy.30-days-raw-longer-for-aggregated-9c49ea"]
+hash = "9c49ea25a6c8"
+cy = '''30 diwrnod (crai), yn hwy ar gyfer metrigau cyfanredol'''
+
+[strings."privacy.api-gateway-access-logs-c38b9e"]
+hash = "c38b9ef5e46d"
+cy = '''Logiau mynediad API Gateway'''
+
+[strings."privacy.30-90-days-configurable-per-environment-5a033f"]
+hash = "5a033f524155"
+cy = '''30-90 diwrnod (gellir ei ffurfweddu fesul amgylchedd)'''
+
+[strings."privacy.cloudfront-waf-logs-ccb492"]
+hash = "ccb492761c0d"
+cy = '''Logiau CloudFront/WAF'''
+
+[strings."privacy.30-days-ffd728"]
+hash = "ffd7280513ce"
+cy = '''30 diwrnod'''
+
+[strings."privacy.lambda-execution-logs-820859"]
+hash = "820859370395"
+cy = '''Logiau gweithredu Lambda'''
+
+[strings."privacy.30-90-days-7a689f"]
+hash = "7a689f0d318f"
+cy = '''30-90 diwrnod'''
+
+[strings."privacy.cloudtrail-audit-logs-5a8212"]
+hash = "5a8212db0464"
+cy = '''Logiau archwilio CloudTrail'''
+
+[strings."privacy.90-days-configurable-98cbac"]
+hash = "98cbac36d975"
+cy = '''90 diwrnod (gellir ei ffurfweddu)'''
+
+[strings."privacy.outbound-api-call-records-masked-ab368e"]
+hash = "ab368e38cf1a"
+cy = '''Cofnodion galwadau API allanol (wedi’u masgio)'''
+
+[strings."privacy.90-days-for-monitoring-and-troubleshooting-716453"]
+hash = "716453ff4acd"
+cy = '''90 diwrnod, ar gyfer monitro a datrys problemau'''
+
+[strings."privacy.cookies-and-browser-storage-38458e"]
+hash = "38458ed6b62e"
+cy = '''Cwcis a storfa’r porwr'''
+
+[strings."privacy.we-use-cookies-only-after-you-d843e0"]
+hash = "d843e064e62f"
+cy = '''Rydym yn defnyddio cwcis dim ond ar ôl i chi dderbyn yn y faner cwcis. Cyn hynny, ac os byddwch yn gwrthod, nid ydym yn gosod yr un ar gyfer dadansoddeg na hysbysebu. Mae’r cwcis yn cael eu gosod gan Amazon CloudWatch RUM (sydd wedi’i osod i ganiatáu cwcis), Google Analytics 4 a thag UET Microsoft Advertising. Nid ydym yn defnyddio cwci ar gyfer ID y ddyfais.'''
+
+[strings."privacy.we-also-use-browser-localstorage-and-01e2da"]
+hash = "01e2dafebbde"
+cy = '''Rydym hefyd yn defnyddio localStorage a sessionStorage y porwr:'''
+
+[strings."privacy.localstorage-persistent-until-cleared-07a2d2"]
+hash = "07a2d25805d2"
+cy = '''localStorage (yn parhau nes iddo gael ei glirio)'''
+
+[strings."privacy.authentication-tokens-cognito-access-identity-and-f34687"]
+hash = "f346875cb106"
+cy = '''<strong>Tocynnau dilysu</strong>: Tocynnau mynediad, hunaniaeth ac adnewyddu Cognito ar gyfer rheoli sesiynau'''
+
+[strings."privacy.user-info-parsed-user-profile-from-14059a"]
+hash = "14059a756d92"
+cy = '''<strong>Gwybodaeth am y defnyddiwr</strong>: Proffil y defnyddiwr wedi’i ddarllen o Cognito (sub, enw, e-bost)'''
+
+[strings."privacy.sign-in-details-sign-in-provider-a89124"]
+hash = "a8912413f5e7"
+cy = '''<strong>Manylion mewngofnodi</strong>: Y darparwr mewngofnodi, amser y diweddariad dilysu diwethaf, a chyflwr OAuth i amddiffyn rhag CSRF wrth fewngofnodi'''
+
+[strings."privacy.consent-rum-and-consent-analytics-your-de4328"]
+hash = "de4328f1d02a"
+cy = '''<strong><code>consent.rum</code> a <code>consent.analytics</code></strong >: Eich dewis yn y faner, fel nad ydym yn gofyn eto'''
+
+[strings."privacy.attribution-landing-stored-only-after-you-7098a6"]
+hash = "7098a6a961f2"
+cy = '''<strong><code>attribution.landing</code></strong >: Caiff ei storio dim ond ar ôl i chi dderbyn. ID y clic, tagiau’r ymgyrch a’r cod atgyfeirio o’r ddolen y daethoch drwyddi, a gedwir am hyd at 90 diwrnod i fesur pa hysbysebion ac atgyfeiriadau sy’n arwain at gofrestru a thaliadau. Caiff ei ddileu os byddwch yn gwrthod.'''
+
+[strings."privacy.rum-config-monitoring-configuration-for-cloudwatch-68001f"]
+hash = "68001f01bedc"
+cy = '''<strong><code>rum.config</code></strong >: Ffurfweddiad monitro ar gyfer CloudWatch RUM, a gaiff ei storio dim ond ar ôl i chi dderbyn'''
+
+[strings."privacy.feedbackengagementregistered-remembers-that-you-have-already-064344"]
+hash = "064344ddafa8"
+cy = '''<strong><code>feedbackEngagementRegistered</code></strong >: Mae’n cofio eich bod eisoes wedi ateb y gwahoddiad i roi adborth'''
+
+[strings."privacy.hmrcdeviceid-a-random-identifier-for-this-fec119"]
+hash = "fec119556a7b"
+cy = '''<strong><code>hmrcDeviceId</code></strong >: Dynodydd ar hap ar gyfer y porwr hwn, a anfonir at CThEF gyda phob cyflwyniad fel pennawd atal twyll'''
+
+[strings."privacy.visitorkind-operator-marks-the-site-operator-a95414"]
+hash = "a9541463d74d"
+cy = '''<strong><code>visitorKind.operator</code></strong >: Mae’n nodi porwr gweithredwr y wefan fel ei fod yn cael ei hepgor o’r cyfrif ymwelwyr'''
+
+[strings."privacy.sessionstorage-cleared-when-browser-tab-closes-92fc52"]
+hash = "92fc526b3fc3"
+cy = '''sessionStorage (yn cael ei glirio pan fydd tab y porwr yn cau)'''
+
+[strings."privacy.mfa-metadata-multi-factor-authentication-information-b05cd6"]
+hash = "b05cd6324767"
+cy = '''<strong>Metadata MFA</strong>: Gwybodaeth dilysu aml-ffactor ar gyfer y penawdau atal twyll (os yw’n berthnasol)'''
+
+[strings."privacy.journey-state-pending-requests-oauth-state-e075c5"]
+hash = "e075c5af0c54"
+cy = '''<strong>Cyflwr y daith</strong>: Ceisiadau sydd ar y gweill, cyflwr OAuth, tocynnau CThEF a Thŷ’r Cwmnïau, drafftiau ffurflenni, a’r dudalen i ddychwelyd iddi ar ôl mewngofnodi, fel bod taith yn goroesi ailgyfeirio'''
+
+[strings."privacy.diy-session-set-after-you-accept-1c72cc"]
+hash = "1c72cc5486ed"
+cy = '''<strong><code>__diy_session__</code></strong >: Caiff ei osod ar ôl i chi dderbyn, pan anfonir y signal ymweliad unwaith-y-sesiwn, fel ei fod yn cael ei anfon unwaith ym mhob sesiwn tab'''
+
+[strings."privacy.rum-may-use-cookies-or-localstorage-a0f7ad"]
+hash = "a0f7ade26547"
+cy = '''Gall RUM ddefnyddio cwcis neu localStorage i sefydlu gwybodaeth am y sesiwn, ond dim ond ar ôl i chi roi caniatâd drwy’r faner. Gallwch newid eich dewis gyda’r ddolen “Dewisiadau cwcis” yn nhroedyn y dudalen. Gallwch glirio’r holl ddata sydd wedi’i storio drwy ddefnyddio swyddogaeth “Clear site data” eich porwr.'''
+
+[strings."privacy.your-choices-0ecda0"]
+hash = "0ecda0421ac7"
+cy = '''Eich dewisiadau'''
+
+[strings."privacy.analytics-consent-you-can-decline-both-03e2d4"]
+hash = "03e2d48fe7f9"
+cy = '''<strong>Caniatâd dadansoddeg</strong>: Gallwch wrthod RUM a Google Analytics ill dau yn y faner caniatâd. Nid oes data dadansoddeg yn cael ei gasglu nes i chi roi caniatâd. Gallwch newid eich dewis unrhyw bryd gyda’r ddolen “Dewisiadau cwcis” yn nhroedyn y dudalen. Rydym yn cyfrif pob ateb, wedi’i dderbyn neu wedi’i wrthod, heb ddynodydd. Gweler Caniatâd a rheolaeth.'''
+
+[strings."privacy.hmrc-authorisation-you-can-revoke-hmrc-b168fb"]
+hash = "b168fbc319bd"
+cy = '''<strong>Awdurdodiad CThEF</strong>: Gallwch ddirymu mynediad CThEF unrhyw bryd drwy eich tudalen <a href="https://www.tax.service.gov.uk/applications-manage-authority" target="_blank" rel="noopener" ><span lang="en-GB">Manage the authority you have granted to software applications</span></a > (yn Saesneg).'''
+
+[strings."privacy.account-deletion-contact-us-to-request-62b193"]
+hash = "62b1936aa54a"
+cy = '''<strong>Dileu cyfrif</strong>: Cysylltwch â ni i ofyn am ddileu eich cyfrif a’r data cysylltiedig (yn amodol ar ofynion cadw cyfreithiol).'''
+
+[strings."privacy.note-you-cannot-opt-out-of-94373c"]
+hash = "94373ce8879d"
+cy = '''<strong>Sylwer:</strong> Ni allwch optio allan o’r casglu data atal twyll ar gyfer cyflwyniadau TAW. Mae hwn yn ofyniad cyfreithiol y mae CThEF yn ei osod ar bob meddalwedd sy’n cydymffurfio â Throi Treth yn Ddigidol.'''
+
+[strings."privacy.your-data-rights-uk-gdpr-1c8aa3"]
+hash = "1c8aa335f9d4"
+cy = '''Eich hawliau data (GDPR y DU)'''
+
+[strings."privacy.under-uk-gdpr-you-have-the-864251"]
+hash = "8642510e2001"
+cy = '''O dan GDPR y DU, mae gennych yr hawliau canlynol ynghylch eich data personol:'''
+
+[strings."privacy.right-of-access-request-a-copy-0bf752"]
+hash = "0bf752a183e5"
+cy = '''<strong>Hawl i gael mynediad at eich data personol</strong>: Gofyn am gopi o’r data personol sydd gennym amdanoch'''
+
+[strings."privacy.right-to-rectification-request-correction-of-51ea25"]
+hash = "51ea251bd1c3"
+cy = '''<strong>Hawl i gael cywiriad</strong>: Gofyn am gywiro data anghywir'''
+
+[strings."privacy.right-to-erasure-right-to-be-4b046d"]
+hash = "4b046d8632cc"
+cy = '''<strong>Hawl i gael dileu gwybodaeth (“yr hawl i gael eich anghofio”)</strong>: Gofyn am ddileu eich cyfrif a’ch data personol'''
+
+[strings."privacy.right-to-data-portability-request-to-0d7960"]
+hash = "0d79602544ad"
+cy = '''<strong>Hawl i gludadwyedd data</strong>: Gofyn am allforio eich data mewn fformat strwythuredig y gall peiriant ei ddarllen (JSON neu CSV) i’w drosglwyddo i wasanaeth arall'''
+
+[strings."privacy.right-to-object-object-to-processing-7a7b47"]
+hash = "7a7b47d9fdee"
+cy = '''<strong>Hawl i wrthwynebu prosesu</strong>: Gwrthwynebu prosesu eich data personol'''
+
+[strings."privacy.right-to-restrict-processing-request-temporary-40bc12"]
+hash = "40bc12e20e8b"
+cy = '''<strong>Hawl i gyfyngu prosesu</strong>: Gofyn am gyfyngu dros dro ar brosesu data'''
+
+[strings."privacy.how-to-exercise-your-rights-f2c65c"]
+hash = "f2c65c268842"
+cy = '''Sut i arfer eich hawliau'''
+
+[strings."privacy.to-exercise-any-of-these-rights-abd68d"]
+hash = "abd68d45b99d"
+cy = '''I arfer unrhyw un o’r hawliau hyn, cysylltwch â ni yn <strong>support@diyaccounting.co.uk</strong> gan roi:'''
+
+[strings."privacy.your-name-and-email-address-associated-d23649"]
+hash = "d236490247d2"
+cy = '''Eich enw a’r cyfeiriad e-bost sy’n gysylltiedig â’ch cyfrif'''
+
+[strings."privacy.the-specific-right-you-wish-to-e5379c"]
+hash = "e5379c6753f5"
+cy = '''Yr hawl benodol yr hoffech ei harfer'''
+
+[strings."privacy.any-additional-details-to-help-us-771aff"]
+hash = "771affaa724b"
+cy = '''Unrhyw fanylion ychwanegol i’n helpu i brosesu eich cais'''
+
+[strings."privacy.we-will-respond-to-your-request-47d998"]
+hash = "47d99892e255"
+cy = '''Byddwn yn ymateb i’ch cais o fewn <strong>30 diwrnod</strong>. Ar gyfer dileu data, byddwn yn dileu eich Bundles, eich data dilysu a’ch logiau archwilio o fewn 30 diwrnod. Bydd derbynebau cyflwyno CThEF yn cael eu cadw am 7 mlynedd yn unol â gofynion cadw cofnodion treth y DU, ond byddant yn cael eu gwneud yn ddienw lle bo modd.'''
+
+[strings."privacy.data-recipients-2e82a4"]
+hash = "2e82a4f61804"
+cy = '''Derbynwyr data'''
+
+[strings."privacy.hmrc-data-controller-9f2b5b"]
+hash = "9f2b5b015612"
+cy = '''CThEF (rheolydd data)'''
+
+[strings."privacy.when-you-submit-a-vat-return-3ef2d5"]
+hash = "3ef2d52e53a7"
+cy = '''Pan fyddwch yn cyflwyno Ffurflen TAW, mae eich ffigurau TAW a’r data atal twyll yn cael eu trosglwyddo’n uniongyrchol i CThEF. Pan fyddwch yn ffeilio Ffurflen Dreth y Cwmni, mae UTR y cwmni, eich Dynodydd Defnyddiwr (ID) ar gyfer Porth y Llywodraeth a’ch cyfrinair, y CT600, y cyfrifon a’r cyfrifiannau yn cael eu trosglwyddo’n uniongyrchol i CThEF. Mae CThEF yn rheolydd data annibynnol ar gyfer y data hwn ac yn ei brosesu yn unol â’i bolisi preifatrwydd ei hun. Nid ydym yn rheoli sut mae CThEF yn defnyddio’r data hwn ar ôl ei drosglwyddo.'''
+
+[strings."privacy.data-shared-vat-return-figures-fraud-696033"]
+hash = "696033daa84d"
+cy = '''<strong>Data a rennir</strong>: Ffigurau’r Ffurflen TAW, y penawdau atal twyll (gweler uchod); ar gyfer Treth Gorfforaeth, yr UTR, manylion mewngofnodi Porth y Llywodraeth, y CT600, y cyfrifon a’r cyfrifiannau'''
+
+[strings."privacy.purpose-vat-and-corporation-tax-return-f7fe2e"]
+hash = "f7fe2e8c0f21"
+cy = '''<strong>Diben</strong>: Prosesu Ffurflenni TAW a Ffurflenni Treth Gorfforaeth ac atal twyll'''
+
+[strings."privacy.legal-basis-legal-obligation-making-tax-9656ed"]
+hash = "9656ed90880d"
+cy = '''<strong>Sail gyfreithiol</strong>: Rhwymedigaeth gyfreithiol (rheoliadau Troi Treth yn Ddigidol)'''
+
+[strings."privacy.hmrc-privacy-notice-hmrc-data-protection-553349"]
+hash = "553349b49003"
+cy = '''<strong>Hysbysiad Preifatrwydd CThEF</strong>: <a href="https://www.gov.uk/government/publications/data-protection-act-dpa-information-hm-revenue-and-customs-hold-about-you" >HMRC Data Protection Information</a > (yn Saesneg)'''
+
+[strings."privacy.amazon-web-services-data-processor-669411"]
+hash = "669411cb1783"
+cy = '''Amazon Web Services (prosesydd data)'''
+
+[strings."privacy.we-use-amazon-web-services-aws-cf6ace"]
+hash = "cf6ace4a77d0"
+cy = '''Rydym yn defnyddio Amazon Web Services (AWS) i letya a rhedeg y wefan, yr API a’r gwasanaethau monitro. Mae AWS yn gweithredu fel prosesydd data ar ein rhan o dan Gytundeb Prosesu Data. Mae’r holl ddata yn cael ei brosesu yn <strong>rhanbarth EU West (Llundain)</strong> oni nodir yn wahanol.'''
+
+[strings."privacy.aws-services-we-use-include-cf0a6d"]
+hash = "cf0a6d0a15a3"
+cy = '''Mae’r gwasanaethau AWS a ddefnyddiwn yn cynnwys:'''
+
+[strings."privacy.amazon-cognito-user-authentication-and-identity-f2feb5"]
+hash = "f2feb570d850"
+cy = '''<strong>Amazon Cognito</strong>: Dilysu defnyddwyr a rheoli hunaniaeth'''
+
+[strings."privacy.amazon-dynamodb-data-storage-for-receipts-b5153f"]
+hash = "b5153f0738fa"
+cy = '''<strong>Amazon DynamoDB</strong>: Storio data ar gyfer derbynebau, Bundles a logiau archwilio'''
+
+[strings."privacy.aws-lambda-serverless-api-functions-29b79f"]
+hash = "29b79f32a4fe"
+cy = '''<strong>AWS Lambda</strong>: Swyddogaethau API di-weinydd'''
+
+[strings."privacy.amazon-cloudfront-content-delivery-and-edge-072f64"]
+hash = "072f646135ff"
+cy = '''<strong>Amazon CloudFront</strong>: Dosbarthu cynnwys a storio dros dro ar yr ymyl (lleoliadau ymyl byd-eang)'''
+
+[strings."privacy.amazon-cloudwatch-logging-monitoring-and-rum-c3eadc"]
+hash = "c3eadcc8d1d2"
+cy = '''<strong>Amazon CloudWatch</strong>: Logio, monitro a RUM'''
+
+[strings."privacy.aws-waf-web-application-firewall-and-950129"]
+hash = "95012918f158"
+cy = '''<strong>AWS WAF</strong>: Mur gwarchod rhaglenni gwe a chyfyngu ar gyfradd y ceisiadau'''
+
+[strings."privacy.aws-secrets-manager-secure-storage-of-63e210"]
+hash = "63e210e44894"
+cy = '''<strong>AWS Secrets Manager</strong>: Storio manylion mewngofnodi API yn ddiogel'''
+
+[strings."privacy.amazon-ses-sending-service-emails-to-eb9c92"]
+hash = "eb9c92882182"
+cy = '''<strong>Amazon SES</strong>: Anfon e-byst gwasanaeth i’ch cyfeiriad'''
+
+[strings."privacy.aws-is-gdpr-compliant-see-aws-357433"]
+hash = "357433c9080a"
+cy = '''Mae AWS yn cydymffurfio â’r GDPR. Gweler <a href="https://aws.amazon.com/compliance/gdpr-center/" target="_blank" rel="noopener">AWS GDPR Center</a> (yn Saesneg) am fanylion.'''
+
+[strings."privacy.google-authentication-provider-and-analytics-processor-d5330c"]
+hash = "d5330cb95eb7"
+cy = '''Google (darparwr dilysu a phrosesydd dadansoddeg)'''
+
+[strings."privacy.if-you-sign-in-with-google-095dde"]
+hash = "095dde325ae3"
+cy = '''Os byddwch yn mewngofnodi gyda Google, mae Google yn prosesu eich data dilysu yn unol â’i bolisi preifatrwydd. Dim ond eich enw, eich cyfeiriad e-bost a dynodydd unigryw a gawn gan Google.'''
+
+[strings."privacy.we-also-use-google-analytics-4-ba031d"]
+hash = "ba031da9ca9c"
+cy = '''Rydym hefyd yn defnyddio Google Analytics 4 i gasglu data defnydd dienw am sut mae ymwelwyr yn defnyddio ein gwefannau. Mae Google yn gweithredu fel prosesydd data ar gyfer data dadansoddeg. Dim ond ar ôl i chi roi caniatâd y caiff data dadansoddeg ei gasglu. Gweler <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a> (yn Saesneg) am fanylion.'''
+
+[strings."privacy.microsoft-authentication-provider-b6445e"]
+hash = "b6445ec7eac6"
+cy = '''Microsoft (darparwr dilysu)'''
+
+[strings."privacy.if-you-sign-in-with-microsoft-54a4a4"]
+hash = "54a4a4beff40"
+cy = '''Os byddwch yn mewngofnodi gyda Microsoft, mae Microsoft Ireland Operations Limited yn prosesu eich data dilysu yn unol â datganiad preifatrwydd Microsoft. Dim ond eich enw, eich cyfeiriad e-bost a dynodydd unigryw a gawn gan Microsoft. Gweler <a href="https://privacy.microsoft.com/privacystatement" target="_blank" rel="noopener">Microsoft Privacy Statement</a> (yn Saesneg).'''
+
+[strings."privacy.stripe-data-processor-69971d"]
+hash = "69971df826a1"
+cy = '''Stripe (prosesydd data)'''
+
+[strings."privacy.we-use-stripe-to-process-subscription-0b7e4c"]
+hash = "0b7e4c2115ab"
+cy = '''Rydym yn defnyddio Stripe i brosesu biliau tanysgrifio. Mae Stripe yn gweithredu fel prosesydd data ar ein rhan. Mae’r dudalen dalu yn anfon eich cyfeiriad e-bost a dynodydd wedi’i hashio ar gyfer eich cyfrif at Stripe; mae manylion y cerdyn yn cael eu rhoi’n uniongyrchol yn Stripe Checkout ac nid ydynt byth yn cyrraedd ein systemau.'''
+
+[strings."privacy.stripe-is-gdpr-compliant-see-stripe-676d5f"]
+hash = "676d5f994cdd"
+cy = '''Mae Stripe yn cydymffurfio â’r GDPR. Gweler <a href="https://stripe.com/gb/privacy" target="_blank" rel="noopener">Stripe Privacy Policy</a> (yn Saesneg) am fanylion.'''
+
+[strings."privacy.telegram-data-processor-562a93"]
+hash = "562a937f0410"
+cy = '''Telegram (prosesydd data)'''
+
+[strings."privacy.we-use-telegram-to-deliver-operational-1e0d2b"]
+hash = "1e0d2b14ad85"
+cy = '''Rydym yn defnyddio Telegram i anfon rhybuddion gweithredol a diogelwch at ein tîm. Mae’r negeseuon rhybudd yn cynnwys cyfeiriadau e-bost wedi’u masgio a dynodwyr cyfrif wedi’u hashio, byth fanylion cyfrif llawn na data cyflwyno.'''
+
+[strings."privacy.see-the-telegram-privacy-policy-for-1671fc"]
+hash = "1671fc92c643"
+cy = '''Gweler <a href="https://telegram.org/privacy" target="_blank" rel="noopener">Telegram Privacy Policy</a> (yn Saesneg) am fanylion.'''
+
+[strings."privacy.international-data-transfers-43da39"]
+hash = "43da394657b2"
+cy = '''Trosglwyddiadau data tramor'''
+
+[strings."privacy.the-majority-of-your-data-is-66ede2"]
+hash = "66ede2c8a72e"
+cy = '''Mae’r rhan fwyaf o’ch data yn cael ei phrosesu yn <strong>rhanbarth EU West (Llundain)</strong>. Fodd bynnag, gall y trosglwyddiadau canlynol ddigwydd:'''
+
+[strings."privacy.cloudfront-edge-caching-static-assets-may-8f7a0d"]
+hash = "8f7a0d0d5658"
+cy = '''<strong>Storio dros dro ar ymyl CloudFront</strong>: Gall asedau statig gael eu storio dros dro mewn lleoliadau ymyl byd-eang er mwyn perfformiad. Nid oes data personol yn cael ei storio dros dro.'''
+
+[strings."privacy.ip-detection-services-for-fraud-prevention-4f0678"]
+hash = "4f0678c89a2e"
+cy = '''<strong>Gwasanaethau canfod IP</strong>: Er mwyn atal twyll, gallwn ddefnyddio gwasanaethau allanol (ipify.org, ipapi.co) i ganfod eich cyfeiriad IP cyhoeddus os bydd canfod drwy WebRTC yn methu. Dim ond eich cyfeiriad IP a anfonir at y gwasanaethau hyn.'''
+
+[strings."privacy.all-aws-data-processing-is-covered-2fd2b8"]
+hash = "2fd2b81f5406"
+cy = '''Mae holl brosesu data AWS wedi’i gwmpasu gan Gymalau Contractiol Safonol AWS ar gyfer trosglwyddiadau tramor lle bo’n berthnasol.'''
+
+[strings."privacy.ico-registration-disclosure-239cd9"]
+hash = "239cd9df1f71"
+cy = '''Datgeliad cofrestru â’r ICO'''
+
+[strings."privacy.this-section-provides-a-structured-summary-272af5"]
+hash = "272af51c41fa"
+cy = '''<em >Mae’r adran hon yn rhoi crynodeb strwythuredig sy’n addas ar gyfer cofrestru â Swyddfa’r Comisiynydd Gwybodaeth (ICO) ac ar gyfer datgeliad cyhoeddus.</em >'''
+
+[strings."privacy.data-controller-fd6ee3"]
+hash = "fd6ee323b37d"
+cy = '''Rheolydd data'''
+
+[strings."privacy.organisation-diy-accounting-limited-1779dd"]
+hash = "1779dd9d6614"
+cy = '''<strong>Sefydliad</strong>: DIY Accounting Limited'''
+
+[strings."privacy.ico-registration-number-zb070902-022285"]
+hash = "0222856ec183"
+cy = '''<strong>Rhif Cofrestru â’r ICO</strong>: <a href="https://ico.org.uk/ESDWebPages/Entry/ZB070902" target="_blank" rel="noopener">ZB070902</a> (yn Saesneg)'''
+
+[strings."privacy.contact-email-support-diyaccounting-co-uk-3d67fa"]
+hash = "3d67fae37207"
+cy = '''<strong>E-bost cyswllt</strong>: support@diyaccounting.co.uk'''
+
+[strings."privacy.website-https-submit-diyaccounting-co-uk-76d636"]
+hash = "76d63694f555"
+cy = '''<strong>Gwefan</strong>: https://submit.diyaccounting.co.uk'''
+
+[strings."privacy.categories-of-data-subjects-ca70b1"]
+hash = "ca70b13b397c"
+cy = '''Categorïau gwrthrychau data (<span lang="en-GB">data subjects</span>)'''
+
+[strings."privacy.uk-vat-registered-businesses-and-individuals-ccd250"]
+hash = "ccd25041128e"
+cy = '''Busnesau ac unigolion yn y DU sydd wedi’u cofrestru ar gyfer TAW ac sy’n defnyddio gwasanaethau Troi Treth yn Ddigidol'''
+
+[strings."privacy.website-visitors-4b7b30"]
+hash = "4b7b309bde11"
+cy = '''Ymwelwyr â’r wefan'''
+
+[strings."privacy.categories-of-personal-data-processed-dcc3d7"]
+hash = "dcc3d772d553"
+cy = '''Categorïau’r data personol a brosesir'''
+
+[strings."privacy.category-292c06"]
+hash = "292c06f0045a"
+cy = '''Categori'''
+
+[strings."privacy.examples-e68ee0"]
+hash = "e68ee04dff59"
+cy = '''Enghreifftiau'''
+
+[strings."privacy.identity-data-b32191"]
+hash = "b32191bd071b"
+cy = '''Data hunaniaeth'''
+
+[strings."privacy.name-email-address-user-identifier-7d35ff"]
+hash = "7d35ffed2717"
+cy = '''Enw, cyfeiriad e-bost, dynodydd defnyddiwr'''
+
+[strings."privacy.technical-data-9c13b4"]
+hash = "9c13b4955af8"
+cy = '''Data technegol'''
+
+[strings."privacy.ip-address-browser-type-device-information-456de2"]
+hash = "456de2ee79ef"
+cy = '''Cyfeiriad IP, math o borwr, gwybodaeth am y ddyfais, cylchfa amser'''
+
+[strings."privacy.financial-data-6292fe"]
+hash = "6292fe7cc041"
+cy = '''Data ariannol'''
+
+[strings."privacy.vat-return-figures-processed-not-stored-e0a6a5"]
+hash = "e0a6a59db302"
+cy = '''Ffigurau’r Ffurflen TAW (wedi’u prosesu, heb eu storio)'''
+
+[strings."privacy.transaction-data-9a6129"]
+hash = "9a61299ef2bb"
+cy = '''Data trafodion'''
+
+[strings."privacy.hmrc-submission-receipts-subscription-records-ecbe52"]
+hash = "ecbe5262b2b0"
+cy = '''Derbynebau cyflwyno CThEF, cofnodion tanysgrifio'''
+
+[strings."privacy.usage-data-f5347e"]
+hash = "f5347e6a024a"
+cy = '''Data defnydd'''
+
+[strings."privacy.page-views-performance-metrics-error-logs-d42d95"]
+hash = "d42d95d5c002"
+cy = '''Ymweliadau â thudalennau, metrigau perfformiad, logiau gwallau'''
+
+[strings."privacy.purposes-of-processing-5b001d"]
+hash = "5b001d0e4926"
+cy = '''Dibenion prosesu'''
+
+[strings."privacy.purpose-d4e883"]
+hash = "d4e8830a71c7"
+cy = '''Diben'''
+
+[strings."privacy.legal-basis-f99ab1"]
+hash = "f99ab164ae6f"
+cy = '''Sail gyfreithiol'''
+
+[strings."privacy.vat-return-submission-to-hmrc-16cdf5"]
+hash = "16cdf5ff80d7"
+cy = '''Cyflwyno Ffurflen TAW i CThEF'''
+
+[strings."privacy.contract-performance-legal-obligation-05bb9e"]
+hash = "05bb9e752f33"
+cy = '''Cyflawni contract (<span lang="en-GB">contract performance</span>); Rhwymedigaeth gyfreithiol'''
+
+[strings."privacy.corporation-tax-return-submission-to-hmrc-b8250b"]
+hash = "b8250b70bc0d"
+cy = '''Cyflwyno Ffurflen Treth Gorfforaeth i CThEF'''
+
+[strings."privacy.fraud-prevention-data-transmission-0b17c6"]
+hash = "0b17c6f2b8ff"
+cy = '''Trosglwyddo data atal twyll'''
+
+[strings."privacy.legal-obligation-mtd-regulations-b7eb0c"]
+hash = "b7eb0c28886e"
+cy = '''Rhwymedigaeth gyfreithiol (rheoliadau Troi Treth yn Ddigidol)'''
+
+[strings."privacy.user-authentication-a672ec"]
+hash = "a672ecabeeff"
+cy = '''Dilysu defnyddwyr'''
+
+[strings."privacy.contract-performance-9b8d33"]
+hash = "9b8d33ce73b2"
+cy = '''Cyflawni contract'''
+
+[strings."privacy.subscription-management-c0d85b"]
+hash = "c0d85bc9f55f"
+cy = '''Rheoli tanysgrifiadau'''
+
+[strings."privacy.service-emails-subscription-receipt-copy-pass-be1efb"]
+hash = "be1efb343210"
+cy = '''E-byst gwasanaeth (tanysgrifiad, copi o dderbynneb, tocyn)'''
+
+[strings."privacy.support-requests-reply-by-email-b9180c"]
+hash = "b9180c58fc93"
+cy = '''Ceisiadau am gymorth (ateb drwy e-bost)'''
+
+[strings."privacy.legitimate-interests-5664fb"]
+hash = "5664fbfd85fd"
+cy = '''Buddiannau cyfreithlon (<span lang="en-GB">legitimate interests</span>)'''
+
+[strings."privacy.receipt-storage-7-years-43bbbb"]
+hash = "43bbbbf0c320"
+cy = '''Storio derbynebau (7 mlynedd)'''
+
+[strings."privacy.legal-obligation-tax-records-d8b808"]
+hash = "d8b808575931"
+cy = '''Rhwymedigaeth gyfreithiol (cofnodion treth)'''
+
+[strings."privacy.performance-monitoring-rum-cf4eac"]
+hash = "cf4eac25bbb0"
+cy = '''Monitro perfformiad (RUM)'''
+
+[strings."privacy.consent-d37e0c"]
+hash = "d37e0cd00f18"
+cy = '''Caniatâd'''
+
+[strings."privacy.website-analytics-google-analytics-4-8ae5d7"]
+hash = "8ae5d76365a5"
+cy = '''Dadansoddeg y wefan (Google Analytics 4)'''
+
+[strings."privacy.security-and-fraud-prevention-9186af"]
+hash = "9186af8acad2"
+cy = '''Diogelwch ac atal twyll'''
+
+[strings."privacy.compliance-auditing-f720a0"]
+hash = "f720a0d463f2"
+cy = '''Archwilio cydymffurfiaeth'''
+
+[strings."privacy.legal-obligation-94155f"]
+hash = "94155f84d8f8"
+cy = '''Rhwymedigaeth gyfreithiol'''
+
+[strings."privacy.filing-vat-and-tax-data-on-32eb05"]
+hash = "32eb055e2158"
+cy = '''Ffeilio data TAW a threth ar ran cleientiaid practis'''
+
+[strings."privacy.contract-performance-practice-client-business-relationship-c51101"]
+hash = "c511010d7d09"
+cy = '''Cyflawni contract (y berthynas fusnes rhwng y practis a’r cleient; mae DIY Accounting yn prosesu’r rhestr cleientiaid fel prosesydd ar ran y practis)'''
+
+[strings."privacy.categories-of-recipients-b8527e"]
+hash = "b8527eea9dc3"
+cy = '''Categorïau derbynwyr'''
+
+[strings."privacy.hmrc-vat-return-data-fraud-prevention-88d3f5"]
+hash = "88d3f5e33239"
+cy = '''<strong>CThEF</strong>: Data’r Ffurflen TAW, y penawdau atal twyll a data ffeilio Treth Gorfforaeth (rheolydd data)'''
+
+[strings."privacy.amazon-web-services-all-processing-and-dd0670"]
+hash = "dd0670b1f7d6"
+cy = '''<strong>Amazon Web Services</strong>: Yr holl brosesu a storio (prosesydd data, rhanbarth EU-West Llundain)'''
+
+[strings."privacy.google-authentication-provider-data-controller-for-29b064"]
+hash = "29b064d04654"
+cy = '''<strong>Google</strong>: Darparwr dilysu (rheolydd data ar gyfer y data dilysu) a phrosesydd dadansoddeg (Google Analytics 4, ar sail caniatâd)'''
+
+[strings."privacy.microsoft-authentication-provider-data-controller-for-60ad64"]
+hash = "60ad64ac3a4c"
+cy = '''<strong>Microsoft</strong>: Darparwr dilysu (rheolydd data ar gyfer y data dilysu)'''
+
+[strings."privacy.international-transfers-160511"]
+hash = "160511653cfd"
+cy = '''Trosglwyddiadau tramor'''
+
+[strings."privacy.primary-processing-in-eu-west-london-bd0849"]
+hash = "bd0849da6d86"
+cy = '''Mae’r prif brosesu yn EU West (Llundain). Storio dros dro ar ymyl CloudFront mewn lleoliadau byd-eang (dim data personol yn cael ei storio dros dro). Mae Cymalau Contractiol Safonol AWS yn gymwys lle bo angen.'''
+
+[strings."privacy.retention-periods-4f0e10"]
+hash = "4f0e106f7783"
+cy = '''Cyfnodau cadw'''
+
+[strings."privacy.hmrc-submission-receipts-7-years-legal-2e19b6"]
+hash = "2e19b6fd437e"
+cy = '''<strong>Derbynebau cyflwyno CThEF</strong>: 7 mlynedd (gofyniad cyfreithiol)'''
+
+[strings."privacy.user-account-data-duration-of-account-1851e9"]
+hash = "1851e994d8e7"
+cy = '''<strong>Data cyfrif defnyddiwr</strong>: Cyfnod y cyfrif a 30 diwrnod wedyn'''
+
+[strings."privacy.subscription-records-180-days-after-the-57e7a7"]
+hash = "57e7a7733b49"
+cy = '''<strong>Cofnodion tanysgrifio</strong>: 180 diwrnod ar ôl i’r tanysgrifiad ddod i ben'''
+
+[strings."privacy.records-made-by-our-own-tests-7195b2"]
+hash = "7195b2e7e676"
+cy = '''<strong>Cofnodion a wneir gan ein profion ein hunain</strong>: 2 ddiwrnod'''
+
+[strings."privacy.audit-logs-30-90-days-40ac98"]
+hash = "40ac98495bdb"
+cy = '''<strong>Logiau archwilio</strong>: 30-90 diwrnod'''
+
+[strings."privacy.google-analytics-data-14-months-18a896"]
+hash = "18a89657f02e"
+cy = '''<strong>Data Google Analytics</strong>: 14 mis'''
+
+[strings."privacy.rum-data-30-days-raw-0050fa"]
+hash = "0050fa8ee43a"
+cy = '''<strong>Data RUM</strong>: 30 diwrnod (crai)'''
+
+[strings."privacy.data-subject-rights-3b8f19"]
+hash = "3b8f1968eed8"
+cy = '''Hawliau gwrthrychau data'''
+
+[strings."privacy.data-subjects-may-exercise-rights-of-c06770"]
+hash = "c06770a8fc74"
+cy = '''Gall gwrthrychau data arfer eu hawliau i gael mynediad, cywiriad, dileu a chludadwyedd, i wrthwynebu ac i gyfyngu prosesu drwy gysylltu â support@diyaccounting.co.uk. Caiff ceisiadau eu prosesu o fewn 30 diwrnod.'''
+
+[strings."privacy.security-measures-727f02"]
+hash = "727f022f1738"
+cy = '''Mesurau diogelwch'''
+
+[strings."privacy.encryption-at-rest-and-in-transit-6ac610"]
+hash = "6ac610981f52"
+cy = '''Amgryptio wrth storio ac wrth drosglwyddo (TLS 1.2+, AES-256)'''
+
+[strings."privacy.aws-waf-rate-limiting-and-attack-cdfe02"]
+hash = "cdfe02de1802"
+cy = '''Cyfyngu ar gyfradd y ceisiadau ac amddiffyn rhag ymosodiadau gydag AWS WAF'''
+
+[strings."privacy.jwt-based-authentication-with-token-expiry-2ffac3"]
+hash = "2ffac3e10412"
+cy = '''Dilysu ar sail JWT gyda thocynnau sy’n dod i ben'''
+
+[strings."privacy.hashed-user-identifiers-in-database-storage-b4e4f1"]
+hash = "b4e4f1d7f58f"
+cy = '''Dynodwyr defnyddwyr wedi’u hashio yn storfa’r gronfa ddata'''
+
+[strings."privacy.masked-sensitive-data-in-audit-logs-f4fa69"]
+hash = "f4fa69ce7804"
+cy = '''Data sensitif wedi’i fasgio yn y logiau archwilio'''
+
+[strings."privacy.point-in-time-recovery-for-critical-c372a7"]
+hash = "c372a7f031b6"
+cy = '''Adfer i bwynt mewn amser ar gyfer data hanfodol'''
+
+[strings."privacy.we-implement-industry-standard-security-measures-072a76"]
+hash = "072a76aa7ea5"
+cy = '''Rydym yn gweithredu mesurau diogelwch o safon y diwydiant, gan gynnwys:'''
+
+[strings."privacy.encryption-tls-1-2-for-data-89ed1c"]
+hash = "89ed1c25a53f"
+cy = '''<strong>Amgryptio</strong>: TLS 1.2+ ar gyfer data wrth ei drosglwyddo, AES-256 ar gyfer data wrth ei storio'''
+
+[strings."privacy.access-controls-jwt-based-authentication-with-8762bf"]
+hash = "8762bf573fd1"
+cy = '''<strong>Rheolaethau mynediad</strong>: Dilysu ar sail JWT gyda thocynnau sy’n dod i ben yn awtomatig'''
+
+[strings."privacy.rate-limiting-aws-waf-protection-against-4c40bc"]
+hash = "4c40bcf6e6c1"
+cy = '''<strong>Cyfyngu ar gyfradd y ceisiadau</strong>: Amddiffyniad AWS WAF rhag camddefnydd (2000 o geisiadau bob 5 munud fesul cyfeiriad IP)'''
+
+[strings."privacy.data-minimisation-hashed-user-identifiers-in-52d8d0"]
+hash = "52d8d0880dad"
+cy = '''<strong>Lleihau data</strong>: Dynodwyr defnyddwyr wedi’u hashio yn y gronfa ddata, data sensitif wedi’i fasgio yn y logiau'''
+
+[strings."privacy.monitoring-real-time-security-monitoring-and-620d6e"]
+hash = "620d6ee945b3"
+cy = '''<strong>Monitro</strong>: Monitro diogelwch a rhybuddio mewn amser real'''
+
+[strings."privacy.backup-and-recovery-point-in-time-ab84df"]
+hash = "ab84dfb3916e"
+cy = '''<strong>Copïau wrth gefn ac adfer</strong>: Adfer i bwynt mewn amser wedi’i alluogi ar gyfer data hanfodol'''
+
+[strings."privacy.the-security-statement-gives-the-detail-104c91"]
+hash = "104c91c6bc68"
+cy = '''Mae’r <a href="security.html">datganiad diogelwch</a> (yn Saesneg) yn rhoi’r manylion ac yn rhestru’r gwiriadau diogelwch a redwn.'''
+
+[strings."privacy.content-security-policy-3c6614"]
+hash = "3c661467d580"
+cy = '''Polisi diogelwch cynnwys'''
+
+[strings."privacy.we-use-a-content-security-policy-524e2d"]
+hash = "524e2db60538"
+cy = '''Rydym yn defnyddio Polisi Diogelwch Cynnwys (CSP) i amddiffyn rhag sgriptio traws-safle (XSS) ac ymosodiadau chwistrellu cod eraill. Mae ein polisi yn cyfyngu ffynonellau cynnwys i darddiadau dibynadwy. Nid yw’r gyfarwyddeb script-src yn caniatáu 'unsafe-inline', felly nid yw sgriptiau mewnlin yn rhedeg. Derbynnir un eithriad:'''
+
+[strings."privacy.style-src-unsafe-inline-required-for-9cbafc"]
+hash = "9cbafce5c237"
+cy = '''<strong>style-src 'unsafe-inline'</strong>: Mae ei angen ar gyfer y priodoleddau arddull ar ein tudalennau ac ar gyfer teclynnau trydydd parti. Caiff y risg ei lliniaru gan y canlynol: nid oes gwerthoedd arddull dan reolaeth defnyddwyr, nid oes tudalen sy’n dangos HTML defnyddiwr arall, ac mae terfynau img-src, font-src a connect-src yn atal arddulliau rhag anfon data allan.'''
+
+[strings."privacy.this-exception-is-documented-as-an-4fb503"]
+hash = "4fb5038fe160"
+cy = '''Mae’r eithriad hwn wedi’i gofnodi fel risg a dderbynnir yn ein proses cydymffurfio diogelwch. Rydym yn adolygu’n rheolaidd a ellir ei ddileu drwy ailstrwythuro’r cod.'''
+
+[strings."privacy.security-incidents-d93d36"]
+hash = "d93d365dace0"
+cy = '''Digwyddiadau diogelwch'''
+
+[strings."privacy.in-the-event-of-a-data-f8ebc9"]
+hash = "f8ebc91cb586"
+cy = '''Os bydd achos o dorri diogelwch data sy’n effeithio ar eich data personol, byddwn yn rhoi gwybod i chi ac i Swyddfa’r Comisiynydd Gwybodaeth (ICO) o fewn <strong>72 awr</strong> fel sy’n ofynnol gan GDPR y DU. Byddwn hefyd yn rhoi gwybod i CThEF o fewn 72 awr os yw’r achos yn effeithio ar ddata sy’n ymwneud â CThEF neu ar fanylion OAuth.'''
+
+[strings."privacy.changes-to-this-policy-86cb08"]
+hash = "86cb08a84ff4"
+cy = '''Newidiadau i’r polisi hwn'''
+
+[strings."privacy.we-may-update-this-privacy-policy-61a948"]
+hash = "61a948cf2e3a"
+cy = '''Gallwn ddiweddaru’r Polisi Preifatrwydd hwn o bryd i’w gilydd. Mae’r dyddiad “Diweddarwyd ddiwethaf” ar y brig yn dangos y newidiadau diweddaraf. Byddwn yn rhoi gwybod am newidiadau sylweddol drwy e-bost neu drwy hysbysiad amlwg yn y rhaglen. Mae parhau i ddefnyddio’r gwasanaeth ar ôl newidiadau yn golygu eich bod yn derbyn y polisi wedi’i ddiweddaru.'''
+
+[strings."privacy.referral-and-affiliate-records-57a5d9"]
+hash = "57a5d9098904"
+cy = '''Cofnodion atgyfeirio a phartneriaid cyswllt'''
+
+[strings."privacy.these-terms-take-effect-when-the-4b4ac8"]
+hash = "4b4ac8710742"
+cy = '''<em>Daw’r telerau hyn i rym pan gymeradwyir y partner cyswllt cyntaf.</em>'''
+
+[strings."privacy.when-you-make-a-pass-redeem-bf1b46"]
+hash = "bf1b46914a84"
+cy = '''Pan fyddwch yn gwneud tocyn, yn defnyddio un, neu’n cymryd rhan yn y cynllun partneriaid cyswllt, rydym yn cadw’r cofnodion hyn.'''
+
+[strings."privacy.redemption-record-when-a-pass-was-122475"]
+hash = "122475ff5d6a"
+cy = '''<strong>Cofnod defnyddio tocyn</strong>: pryd y defnyddiwyd tocyn, y tocyn a’i fath, hash unffordd o’r cyfrif a’i defnyddiodd, a hash unffordd o gyfrif perchennog y tocyn. Rydym yn ei ddefnyddio i gyfrif trosiadau ac i atal rhywun rhag defnyddio ei docyn ei hun.'''
+
+[strings."privacy.commission-lines-for-each-payment-from-ef4f9c"]
+hash = "ef4f9c97e1bd"
+cy = '''<strong>Llinellau comisiwn</strong>: ar gyfer pob taliad gan gwsmer a atgyfeiriwyd, y taliad, y swm, y gyfradd, cyflwr y llinell a’r dyddiad y caiff ei rhyddhau. Rydym yn eu defnyddio i dalu neu gredydu’r comisiwn ac i’w wrthdroi ar ôl ad-daliad neu anghydfod.'''
+
+[strings."privacy.affiliate-record-the-tier-the-state-7fd48e"]
+hash = "7fd48e2b50dc"
+cy = '''<strong>Cofnod partner cyswllt</strong>: yr haen, cyflwr y cais ac ID y cyfrif Stripe. Mae Stripe yn casglu eich enw, eich cyfeiriad, eich dyddiad geni a’ch manylion banc ac yn gwirio pwy ydych chi. Nid ydym ni’n eu cadw.'''
+
+[strings."privacy.the-person-who-made-a-pass-b36453"]
+hash = "b36453de2b27"
+cy = '''Mae’r sawl a wnaeth docyn yn gweld cyfrifon o’r hyn a ddaeth drwyddo. Rydym yn dal cyfrif sy’n llai na 3 yn ôl, fel na all nifer bach bwyntio at un person. Nid ydym byth yn dangos enw nac e-bost y person a atgyfeiriwyd. Rydym yn cadw’r cyfriflyfr comisiwn am o leiaf chwe blynedd, fel cofnod treth.'''
+
+[strings."privacy.contact-2b5c3d"]
+hash = "2b5c3d26721a"
+cy = '''Cysylltu'''
+
+[strings."privacy.for-privacy-questions-data-requests-or-8c07bb"]
+hash = "8c07bbd430a7"
+cy = '''Ar gyfer cwestiynau am breifatrwydd, ceisiadau am ddata, neu bryderon am ddiogelwch, cysylltwch â:<br /> <strong>E-bost:</strong> support@diyaccounting.co.uk<br /> <strong>Cwmni:</strong> DIY Accounting Limited'''
+
+[strings."privacy.for-issue-reports-please-include-your-52eef8"]
+hash = "52eef892dec4"
+cy = '''Wrth roi gwybod am broblem, nodwch eich porwr, yr amser yn fras, a’r dudalen yr oeddech arni.'''
+
+[strings."privacy.you-also-have-the-right-to-959dc0"]
+hash = "959dc0c8d1b5"
+cy = '''Mae gennych hefyd yr hawl i gyflwyno cwyn i Swyddfa’r Comisiynydd Gwybodaeth (ICO) yn <a href="https://ico.org.uk/make-a-complaint/" target="_blank" rel="noopener">ico.org.uk</a> (yn Saesneg).'''
+
+[strings."privacy.ico-registration-diy-accounting-limited-s-b20539"]
+hash = "b2053979eb56"
+cy = '''<strong>Cofrestru â’r ICO</strong>: Cyfeirnod cofrestru DIY Accounting Limited â’r ICO yw <a href="https://ico.org.uk/ESDWebPages/Entry/ZB070902" target="_blank" rel="noopener">ZB070902</a> (yn Saesneg).'''
+
+[strings."privacy.description-4e85af"]
+hash = "4e85afa69ad6"
+cy = '''Polisi preifatrwydd DIY Accounting Submit. Sut rydym yn casglu, yn defnyddio ac yn diogelu eich data wrth gyflwyno Ffurflenni TAW a Threth Gorfforaeth i CThEF.'''
+
+[strings."privacy.og-title-68f369"]
+hash = "68f369707fa5"
+cy = '''Polisi preifatrwydd - DIY Accounting Submit'''
+
+[strings."privacy.og-description-4e85af"]
+hash = "4e85afa69ad6"
+cy = '''Polisi preifatrwydd DIY Accounting Submit. Sut rydym yn casglu, yn defnyddio ac yn diogelu eich data wrth gyflwyno Ffurflenni TAW a Threth Gorfforaeth i CThEF.'''
+
+# == The terms of use (terms.html), ids terms.* ==
+
+[strings."terms.title"]
+hash = "65d6ecd45474"
+cy = '''Telerau defnyddio - DIY Accounting Submit'''
+
+[strings."terms.terms-of-use-8c45a4"]
+hash = "8c45a486e4b1"
+cy = '''Telerau defnyddio'''
+
+[strings."terms.last-updated-17-november-2026-bcd1c1"]
+hash = "bcd1c1d646a7"
+cy = '''Diweddarwyd ddiwethaf: 17 Tachwedd 2026'''
+
+[strings."terms.contents-437aea"]
+hash = "437aea62a5bd"
+cy = '''Cynnwys'''
+
+[strings."terms.what-the-service-does-fdcafe"]
+hash = "fdcafe3de584"
+cy = '''<a href="#service-description">Yr hyn y mae’r Gwasanaeth yn ei wneud</a>'''
+
+[strings."terms.eligibility-and-account-a3d609"]
+hash = "a3d6096f9af6"
+cy = '''<a href="#eligibility-and-account">Cymhwysedd a chyfrif</a>'''
+
+[strings."terms.hmrc-integration-and-oauth-b2630c"]
+hash = "b2630cdba35c"
+cy = '''<a href="#hmrc-integration-and-oauth">Integreiddio â CThEF ac OAuth</a>'''
+
+[strings."terms.acceptable-use-220038"]
+hash = "220038bb5d84"
+cy = '''<a href="#acceptable-use">Defnydd derbyniol</a>'''
+
+[strings."terms.data-processing-and-privacy-e1363f"]
+hash = "e1363f680cb6"
+cy = '''<a href="#data-processing-and-privacy">Prosesu data a phreifatrwydd</a>'''
+
+[strings."terms.data-retention-a83739"]
+hash = "a83739c6220e"
+cy = '''<a href="#data-retention">Cadw data</a>'''
+
+[strings."terms.fraud-prevention-headers-69ca56"]
+hash = "69ca5600b683"
+cy = '''<a href="#fraud-prevention-headers">Penawdau atal twyll</a>'''
+
+[strings."terms.hmrc-software-vendor-status-1b413b"]
+hash = "1b413b8733cb"
+cy = '''<a href="#hmrc-software-vendor-status">Statws gwerthwr meddalwedd CThEF</a>'''
+
+[strings."terms.service-availability-f4c72b"]
+hash = "f4c72b50cf01"
+cy = '''<a href="#service-availability">Argaeledd y Gwasanaeth</a>'''
+
+[strings."terms.bundles-tokens-fees-and-subscriptions-3132d5"]
+hash = "3132d559bc0d"
+cy = '''<a href="#fees-and-bundles">Bundles, credydau (tokens), ffioedd a thanysgrifiadau</a>'''
+
+[strings."terms.intellectual-property-f39868"]
+hash = "f398681a8a6b"
+cy = '''<a href="#intellectual-property">Eiddo deallusol</a>'''
+
+[strings."terms.limitation-of-liability-3024e5"]
+hash = "3024e5f353b6"
+cy = '''<a href="#limitation-of-liability">Cyfyngu ar atebolrwydd</a>'''
+
+[strings."terms.indemnification-1063f8"]
+hash = "1063f85bb645"
+cy = '''<a href="#indemnification">Indemnio</a>'''
+
+[strings."terms.force-majeure-164c80"]
+hash = "164c8034bd21"
+cy = '''<a href="#force-majeure">Force majeure</a>'''
+
+[strings."terms.security-incidents-9b4c6a"]
+hash = "9b4c6afd790a"
+cy = '''<a href="#security-incidents">Digwyddiadau diogelwch</a>'''
+
+[strings."terms.termination-e28d2b"]
+hash = "e28d2b1c39da"
+cy = '''<a href="#termination">Terfynu</a>'''
+
+[strings."terms.dispute-resolution-8b6e34"]
+hash = "8b6e34ce996e"
+cy = '''<a href="#dispute-resolution">Datrys anghydfodau</a>'''
+
+[strings."terms.changes-to-terms-3f6add"]
+hash = "3f6adddb541a"
+cy = '''<a href="#changes-to-terms">Newidiadau i’r telerau</a>'''
+
+[strings."terms.governing-law-and-jurisdiction-69007d"]
+hash = "69007dca4320"
+cy = '''<a href="#governing-law-and-jurisdiction">Y gyfraith lywodraethol ac awdurdodaeth</a>'''
+
+[strings."terms.contact-and-legal-entity-8dc23e"]
+hash = "8dc23e2ff87c"
+cy = '''<a href="#contact-and-legal-entity">Cysylltu a’r endid cyfreithiol</a>'''
+
+[strings."terms.source-code-deff47"]
+hash = "deff47fcab40"
+cy = '''<a href="#source-code">Cod ffynhonnell</a>'''
+
+[strings."terms.affiliate-and-referral-passes-efda1e"]
+hash = "efda1e490b12"
+cy = '''<a href="#affiliate-and-referral-passes">Tocynnau partneriaid cyswllt ac atgyfeirio</a>'''
+
+[strings."terms.these-terms-of-use-terms-govern-b50025"]
+hash = "b50025572f03"
+cy = '''Mae’r Telerau Defnyddio hyn (“Telerau”) yn rheoli eich mynediad at DIY Accounting Submit&trade; (“y Gwasanaeth”), a ddarperir gan DIY Accounting Limited (rhif cwmni 06846849), a’ch defnydd ohono. Drwy ddefnyddio’r Gwasanaeth, rydych yn cytuno i’r Telerau hyn ac i’n <a href="./privacy.html">Polisi Preifatrwydd</a>.'''
+
+[strings."terms.1-what-the-service-does-3a7da1"]
+hash = "3a7da1343a4e"
+cy = '''1. Yr hyn y mae’r Gwasanaeth yn ei wneud'''
+
+[strings."terms.diy-accounting-submit-is-a-web-732339"]
+hash = "73233923f9c7"
+cy = '''Rhaglen we yw DIY Accounting Submit sy’n helpu busnesau yn y DU a’u cyfrifwyr i anfon ffeiliadau at CThEF a Thŷ’r Cwmnïau, ac i gadw’r llyfrau sy’n sail iddynt. Mae’r Gwasanaeth yn cynnig:'''
+
+[strings."terms.vat-making-tax-digital-view-vat-6c4117"]
+hash = "6c41179d7329"
+cy = '''<strong>TAW (Troi Treth yn Ddigidol).</strong> Gweld rhwymedigaethau, rhwymedigaethau talu, taliadau a chosbau TAW. Cyflwyno Ffurflenni TAW i CThEF. Gweld Ffurflenni a gyflwynwyd a derbynebau.'''
+
+[strings."terms.income-tax-self-assessment-making-tax-9f8dc2"]
+hash = "9f8dc239ebed"
+cy = '''<strong>Hunanasesiad Treth Incwm (Troi Treth yn Ddigidol ar gyfer Treth Incwm).</strong> Rheoli manylion busnes a rhwymedigaethau, anfon diweddariadau chwarterol ar gyfer hunangyflogaeth ac eiddo yn y DU, gwneud cyflwyniadau blynyddol ac addasiadau, gweithio gyda cholledion a hawliadau, gweld cyfrifiadau treth a gwneud y datganiad terfynol. Mae hyn ar gael yn amgylchedd prawf (sandbox) CThEF nes bydd CThEF yn cymeradwyo’r Gwasanaeth ar gyfer cynhyrchu.'''
+
+[strings."terms.companies-house-search-for-a-company-afb9ad"]
+hash = "afb9adc5ffd4"
+cy = '''<strong>Tŷ’r Cwmnïau.</strong> Chwilio am gwmni. Newid cyfeiriad swyddfa gofrestredig neu gyfeiriad e-bost cofrestredig. Ffeilio cyfrifon micro-endid, cyfrifon cwmni bach a datganiadau cadarnhau. Ffeilio datganiad dilysu PSC. Mae cyfrifon, datganiadau cadarnhau a newidiadau i’r swyddfa gofrestredig a’r cyfeiriad e-bost cofrestredig yn mynd i’r gofrestr fyw. Mae datganiadau dilysu PSC ar gael yn amgylchedd prawf (sandbox) Tŷ’r Cwmnïau nes bydd Tŷ’r Cwmnïau yn cymeradwyo’r Gwasanaeth ar gyfer ffeilio byw.'''
+
+[strings."terms.company-tax-return-ct600-prepare-a-0cdb3b"]
+hash = "0cdb3b1acdc8"
+cy = '''<strong>Ffurflen Dreth y Cwmni (CT600).</strong> Paratoi Ffurflen Dreth y Cwmni ar gyfer CThEF. Rhagolwg (preview) yw hwn.'''
+
+[strings."terms.diya-gl-books-save-and-load-ba7937"]
+hash = "ba79370780b9"
+cy = '''<strong>Llyfrau DIYA-GL.</strong> Cadw a llwytho llyfrau DIYA-GL yn eich cyfrif.'''
+
+[strings."terms.mcp-server-read-and-edit-a-0356f6"]
+hash = "0356f6469947"
+cy = '''<strong>Gweinydd MCP.</strong> Darllen a golygu llyfr, a ffeilio ohono, drwy gynorthwyydd deallusrwydd artiffisial sy’n cefnogi’r Model Context Protocol.'''
+
+[strings."terms.receipts-and-history-view-receipts-of-c864be"]
+hash = "c864bef93b19"
+cy = '''<strong>Derbynebau a hanes.</strong> Gweld derbynebau cyflwyniadau cynharach.'''
+
+[strings."terms.each-feature-shows-its-status-production-23fb92"]
+hash = "23fb929cbe75"
+cy = '''Mae pob nodwedd yn dangos ei statws (cynhyrchu, amgylchedd prawf (sandbox) neu ragolwg (preview)) ar ei thudalen ei hun. Nid yw nodwedd brawf na nodwedd ragolwg yn anfon dim byd at wasanaeth byw CThEF na Thŷ’r Cwmnïau.'''
+
+[strings."terms.2-eligibility-and-account-92374b"]
+hash = "92374bc34920"
+cy = '''2. Cymhwysedd a chyfrif'''
+
+[strings."terms.you-must-be-a-uk-business-9d8c83"]
+hash = "9d8c83e775a9"
+cy = '''Rhaid i chi fod yn fusnes yn y DU, yn unig fasnachwr neu’n gwmni, neu’n asiant neu’n bractis awdurdodedig sy’n gweithredu ar ran un'''
+
+[strings."terms.this-service-is-intended-for-business-d796ac"]
+hash = "d796aceb112a"
+cy = '''<strong>Bwriedir y Gwasanaeth hwn at ddefnydd busnes yn unig.</strong> Os ydych yn unig fasnachwr, rydych yn contractio yn rhinwedd eich busnes, nid fel defnyddiwr. Mae’n bosibl na fydd cyfreithiau diogelu defnyddwyr (gan gynnwys Deddf Hawliau Defnyddwyr 2015) yn gymwys i’ch defnydd o’r Gwasanaeth hwn'''
+
+[strings."terms.you-must-have-valid-hmrc-government-154096"]
+hash = "15409614343e"
+cy = '''Rhaid i chi feddu ar fanylion mewngofnodi dilys ar gyfer Porth y Llywodraeth CThEF, neu’r manylion mewngofnodi Tŷ’r Cwmnïau y mae eu hangen ar gyfer pob ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."terms.you-are-responsible-for-maintaining-the-e2c832"]
+hash = "e2c832f944e9"
+cy = '''Chi sy’n gyfrifol am gadw eich manylion mewngofnodi’n gyfrinachol'''
+
+[strings."terms.you-must-not-share-your-account-818c85"]
+hash = "818c853f231b"
+cy = '''Rhaid i chi beidio â rhannu eich cyfrif ag eraill na chaniatáu mynediad heb awdurdod'''
+
+[strings."terms.3-hmrc-integration-and-oauth-55638b"]
+hash = "55638ba2973d"
+cy = '''3. Integreiddio â CThEF ac OAuth'''
+
+[strings."terms.the-service-uses-hmrc-s-oauth-58e5d9"]
+hash = "58e5d9feaeb1"
+cy = '''Mae’r Gwasanaeth yn defnyddio llif awdurdodi OAuth 2.0 CThEF. Pan fyddwch yn awdurdodi’r Gwasanaeth, rydych yn rhoi caniatâd i ni gael mynediad at APIs CThEF ar eich rhan'''
+
+[strings."terms.we-will-never-request-or-store-dfd7ab"]
+hash = "dfd7abc28445"
+cy = '''Ni fyddwn byth yn gofyn am eich cyfrinair ar gyfer Porth y Llywodraeth CThEF nac yn ei storio'''
+
+[strings."terms.we-store-oauth-access-tokens-securely-2bcedb"]
+hash = "2bcedba8bfe5"
+cy = '''Rydym yn storio tocynnau mynediad OAuth yn ddiogel er mwyn gallu gwneud galwadau API. Gallwch ddirymu’r awdurdodiad unrhyw bryd drwy eich tudalen <a href="https://www.tax.service.gov.uk/applications-manage-authority" target="_blank" rel="noopener" >rhaglenni awdurdodedig CThEF</a >'''
+
+[strings."terms.you-are-responsible-for-the-accuracy-f3c00a"]
+hash = "f3c00a626842"
+cy = '''Chi sy’n gyfrifol am gywirdeb y data rydych yn eu cyflwyno i CThEF drwy’r Gwasanaeth'''
+
+[strings."terms.for-a-companies-house-filing-you-0a8b92"]
+hash = "0a8b922b5964"
+cy = '''Ar gyfer ffeilio gyda Thŷ’r Cwmnïau, rydych yn awdurdodi’r Gwasanaeth i ffeilio ar ran cwmni gyda’r manylion mewngofnodi Tŷ’r Cwmnïau a’r cod dilysu cwmni y mae eu hangen ar gyfer y ffeilio.'''
+
+[strings."terms.if-you-file-on-behalf-of-0734b7"]
+hash = "0734b70c8444"
+cy = '''Os ydych yn ffeilio ar ran cleient fel asiant, rhaid i chi feddu ar awdurdod y cleient cyn i chi ffeilio: awdurdodiad asiant CThEF ar gyfer ffeilio gyda CThEF, a chod dilysu cwmni’r cleient ar gyfer ffeilio gyda Thŷ’r Cwmnïau. Chi sy’n gyfrifol am feddu ar yr awdurdod hwnnw.'''
+
+[strings."terms.4-acceptable-use-d702c6"]
+hash = "d702c60fe4d5"
+cy = '''4. Defnydd derbyniol (<span lang="en-GB">acceptable use</span>)'''
+
+[strings."terms.you-agree-not-to-f8c219"]
+hash = "f8c219d43d4a"
+cy = '''Rydych yn cytuno i beidio â gwneud y canlynol:'''
+
+[strings."terms.use-the-service-for-any-unlawful-c25396"]
+hash = "c25396ff46d9"
+cy = '''Defnyddio’r Gwasanaeth at unrhyw ddiben anghyfreithlon neu’n groes i unrhyw reoliadau'''
+
+[strings."terms.submit-false-inaccurate-or-misleading-information-c725a8"]
+hash = "c725a8aef9f8"
+cy = '''Cyflwyno gwybodaeth ffug, anghywir neu gamarweiniol i CThEF'''
+
+[strings."terms.attempt-to-gain-unauthorised-access-to-69d91c"]
+hash = "69d91cf77916"
+cy = '''Ceisio cael mynediad heb awdurdod at y Gwasanaeth, at gyfrifon defnyddwyr eraill, neu at systemau cysylltiedig'''
+
+[strings."terms.interfere-with-or-disrupt-the-service-03af30"]
+hash = "03af30dfa9d6"
+cy = '''Ymyrryd â’r Gwasanaeth neu’r gweinyddion, neu darfu arnynt'''
+
+[strings."terms.use-the-service-to-transmit-malware-f6928f"]
+hash = "f6928feb61d4"
+cy = '''Defnyddio’r Gwasanaeth i drosglwyddo maleiswedd, feirysau neu god niweidiol'''
+
+[strings."terms.reverse-engineer-or-decompile-the-service-f4e974"]
+hash = "f4e974ad9edf"
+cy = '''Ôl-beiriannu neu ddadgrynhoi’r Gwasanaeth y tu hwnt i’r hyn y mae’r ffeil LICENSE yn ein storfa god yn ei ganiatáu'''
+
+[strings."terms.use-automated-tools-bots-or-scripts-5e93d4"]
+hash = "5e93d430864c"
+cy = '''Defnyddio offer awtomataidd, botiau neu sgriptiau i gael mynediad at y Gwasanaeth heb ein caniatâd ysgrifenedig'''
+
+[strings."terms.attempt-to-circumvent-rate-limits-or-64449e"]
+hash = "64449e39e4bc"
+cy = '''Ceisio osgoi terfynau cyfradd neu gyfyngiadau technegol eraill'''
+
+[strings."terms.use-the-service-to-build-a-1e63e0"]
+hash = "1e63e07b0573"
+cy = '''Defnyddio’r Gwasanaeth i adeiladu cynnyrch sy’n cystadlu neu ailwerthu mynediad API i drydydd partïon heb ein caniatâd ysgrifenedig penodol'''
+
+[strings."terms.scrape-harvest-or-collect-data-from-6551ae"]
+hash = "6551aee7a49c"
+cy = '''Sgrapio, cynaeafu neu gasglu data o’r Gwasanaeth at ddibenion masnachol'''
+
+[strings."terms.5-data-processing-and-privacy-0820b9"]
+hash = "0820b9e82d9b"
+cy = '''5. Prosesu data a phreifatrwydd'''
+
+[strings."terms.we-process-your-personal-data-in-33ae3d"]
+hash = "33ae3d84a214"
+cy = '''Rydym yn prosesu eich data personol yn unol â GDPR y DU a’n <a href="./privacy.html">Polisi Preifatrwydd</a>. Darllenwch ef yn ofalus'''
+
+[strings."terms.data-is-encrypted-at-rest-and-a2537f"]
+hash = "a2537feea017"
+cy = '''Mae data’n cael eu hamgryptio wrth orffwys ac wrth gael eu trosglwyddo gan ddefnyddio protocolau safonol y diwydiant (TLS 1.2+, AES-256)'''
+
+[strings."terms.we-use-amazon-web-services-aws-a7109a"]
+hash = "a7109aabad3e"
+cy = '''Rydym yn defnyddio Amazon Web Services (AWS) fel ein darparwr seilwaith. Mae data’n cael eu prosesu yn rhanbarth <strong>EU West (Llundain)</strong>. Mae AWS yn brosesydd data sy’n cydymffurfio â GDPR'''
+
+[strings."terms.you-have-the-right-to-access-50a43f"]
+hash = "50a43f671d01"
+cy = '''Mae gennych yr hawl i gael mynediad at eich data, eu hallforio a’u dileu. Cysylltwch â support@diyaccounting.co.uk i arfer yr hawliau hyn. Byddwn yn ymateb o fewn 30 diwrnod'''
+
+[strings."terms.6-data-retention-ab54ff"]
+hash = "ab54ff6918ee"
+cy = '''6. Cadw data'''
+
+[strings."terms.user-bundles-retained-while-your-account-5c7fbb"]
+hash = "5c7fbbf06293"
+cy = '''<strong>Bundles defnyddwyr:</strong> Yn cael eu cadw tra bo’ch cyfrif yn weithredol; yn cael eu dileu o fewn 30 diwrnod i gau’r cyfrif'''
+
+[strings."terms.hmrc-submission-receipts-retained-for-7-c39bcc"]
+hash = "c39bcc317bc3"
+cy = '''<strong>Derbynebau cyflwyniadau CThEF:</strong> Yn cael eu cadw am 7 mlynedd yn unol â gofynion cadw cofnodion treth y DU (gofyniad CThEF o dan y rheoliadau TAW)'''
+
+[strings."terms.hmrc-api-audit-logs-retained-for-0394f1"]
+hash = "0394f13a2598"
+cy = '''<strong>Logiau archwilio API CThEF:</strong> Yn cael eu cadw am 30 diwrnod at ddibenion cydymffurfio a datrys problemau; mae data sensitif yn cael eu cuddio'''
+
+[strings."terms.authentication-data-oauth-tokens-expire-per-f6941e"]
+hash = "f6941e24a1b0"
+cy = '''<strong>Data dilysu:</strong> Mae tocynnau OAuth yn dod i ben yn unol â pholisi CThEF; mae tocynnau adnewyddu’n cael eu dileu wrth allgofnodi neu ddirymu'''
+
+[strings."terms.performance-monitoring-data-raw-events-retained-ee2d68"]
+hash = "ee2d684fc404"
+cy = '''<strong>Data monitro perfformiad:</strong> Mae digwyddiadau crai’n cael eu cadw am 30 diwrnod; mae metrigau cyfanredol (dienw) yn cael eu cadw’n hirach'''
+
+[strings."terms.infrastructure-logs-retained-for-30-90-0caab9"]
+hash = "0caab969a228"
+cy = '''<strong>Logiau seilwaith:</strong> Yn cael eu cadw am 30-90 diwrnod at ddibenion diogelwch a gweithredol'''
+
+[strings."terms.7-fraud-prevention-headers-035b9f"]
+hash = "035b9ff4984c"
+cy = '''7. Penawdau atal twyll'''
+
+[strings."terms.in-compliance-with-hmrc-making-tax-b40ef5"]
+hash = "b40ef57be617"
+cy = '''Yn unol â rheoliadau Troi Treth yn Ddigidol (MTD) CThEF, mae’r Gwasanaeth yn casglu ac yn trosglwyddo penawdau atal twyll gyda phob cyflwyniad Ffurflen TAW. Mae hyn yn <strong>ofyniad cyfreithiol</strong> ar gyfer pob meddalwedd sy’n cydymffurfio ag MTD.'''
+
+[strings."terms.data-collected-includes-e6a335"]
+hash = "e6a3358e30d2"
+cy = '''Mae’r data a gesglir yn cynnwys:'''
+
+[strings."terms.public-ip-address-cadf37"]
+hash = "cadf372513fd"
+cy = '''Cyfeiriad IP cyhoeddus'''
+
+[strings."terms.device-identifier-generated-fresh-for-each-c0713b"]
+hash = "c0713b669976"
+cy = '''Dynodydd dyfais (yn cael ei greu o’r newydd ar gyfer pob cyflwyniad, heb ei storio’n barhaol)'''
+
+[strings."terms.browser-user-agent-timezone-screen-resolution-91db51"]
+hash = "91db510658bc"
+cy = '''Asiant defnyddiwr y porwr, cylchfa amser, cydraniad y sgrin, a maint y ffenestr'''
+
+[strings."terms.user-identifier-cognito-user-id-f85efd"]
+hash = "f85efd6e054e"
+cy = '''Dynodydd defnyddiwr (ID defnyddiwr Cognito)'''
+
+[strings."terms.vendor-information-application-name-and-version-edabf3"]
+hash = "edabf3716aaa"
+cy = '''Gwybodaeth am y gwerthwr (enw a fersiwn y rhaglen)'''
+
+[strings."terms.this-data-helps-hmrc-identify-and-d45fa6"]
+hash = "d45fa69726d1"
+cy = '''Mae’r data hyn yn helpu CThEF i ganfod ac atal cyflwyniadau TAW twyllodrus ac yn cefnogi erlyniadau troseddol am dwyll treth. Rydych yn rhoi caniatâd i’r casglu hwn pan fyddwch yn awdurdodi’r Gwasanaeth drwy lif OAuth CThEF. I gael y manylion llawn, gweler <a href="./privacy.html#hmrc-fraud-prevention">adran Atal Twyll CThEF</a> ein Polisi Preifatrwydd.'''
+
+[strings."terms.8-hmrc-software-vendor-status-a32df4"]
+hash = "a32df4e7e5e1"
+cy = '''8. Statws gwerthwr meddalwedd (<span lang="en-GB">software vendor</span>) CThEF'''
+
+[strings."terms.diy-accounting-submit-is-developed-to-f74fce"]
+hash = "f74fce9cfb40"
+cy = '''Mae DIY Accounting Submit wedi’i ddatblygu i gydymffurfio â gofynion Troi Treth yn Ddigidol CThEF. Mae’r Gwasanaeth yn defnyddio APIs swyddogol CThEF a Thŷ’r Cwmnïau ac yn gweithredu’r holl benawdau atal twyll gofynnol.'''
+
+[strings."terms.vat-production-a7879f"]
+hash = "a7879fc91351"
+cy = '''<strong>TAW:</strong> cynhyrchu.'''
+
+[strings."terms.income-tax-self-assessment-sandbox-until-b126f7"]
+hash = "b126f7eb706e"
+cy = '''<strong>Hunanasesiad Treth Incwm:</strong> amgylchedd prawf (sandbox), nes bydd CThEF yn cymeradwyo’r Gwasanaeth ar gyfer cynhyrchu.'''
+
+[strings."terms.companies-house-accounts-and-confirmation-statements-fd4a2c"]
+hash = "fd4a2c8098dd"
+cy = '''<strong>Cyfrifon a datganiadau cadarnhau Tŷ’r Cwmnïau:</strong> cynhyrchu.'''
+
+[strings."terms.companies-house-psc-verification-statements-sandbox-c5d6ec"]
+hash = "c5d6ec97599e"
+cy = '''<strong>Datganiadau dilysu PSC Tŷ’r Cwmnïau:</strong> amgylchedd prawf (sandbox).'''
+
+[strings."terms.companies-house-registered-office-and-registered-e03168"]
+hash = "e0316824e63f"
+cy = '''<strong>Swyddfa gofrestredig a chyfeiriad e-bost cofrestredig Tŷ’r Cwmnïau:</strong> cynhyrchu.'''
+
+[strings."terms.company-tax-return-ct600-preview-b5d2a1"]
+hash = "b5d2a155a694"
+cy = '''<strong>Ffurflen Dreth y Cwmni (CT600):</strong> rhagolwg (preview).'''
+
+[strings."terms.the-availability-table-shows-the-status-9b6266"]
+hash = "9b6266df14a4"
+cy = '''Mae’r <a href="./mtd-calendar.html#availability">tabl argaeledd</a> yn dangos statws pob ffeilio a phob ffordd o’i ffeilio. Rydym wedi ymrwymo i barhau i gydymffurfio â holl ofynion CThEF ar gyfer gwerthwyr meddalwedd MTD, gan gynnwys cydymffurfiaeth barhaus â’r penawdau atal twyll a safonau diogelwch.'''
+
+[strings."terms.9-service-availability-bd143d"]
+hash = "bd143d04e29a"
+cy = '''9. Argaeledd y Gwasanaeth'''
+
+[strings."terms.we-strive-to-maintain-high-availability-5912c8"]
+hash = "5912c8bac590"
+cy = '''Rydym yn ymdrechu i gynnal argaeledd uchel ond nid ydym yn gwarantu mynediad di-dor'''
+
+[strings."terms.the-service-may-be-unavailable-during-ffbe1d"]
+hash = "ffbe1dabb294"
+cy = '''Mae’n bosibl na fydd y Gwasanaeth ar gael yn ystod cyfnodau cynnal a chadw (byddwn yn rhoi gwybod i ddefnyddwyr lle bo modd)'''
+
+[strings."terms.hmrc-api-availability-is-outside-our-48f22e"]
+hash = "48f22ee83120"
+cy = '''Mae argaeledd API CThEF y tu hwnt i’n rheolaeth. Fel arfer mae gan CThEF gyfnodau cynnal a chadw wedi’u cynllunio'''
+
+[strings."terms.we-reserve-the-right-to-modify-489981"]
+hash = "489981f08f72"
+cy = '''Rydym yn cadw’r hawl i addasu nodweddion, eu hatal dros dro neu roi’r gorau iddynt gyda rhybudd rhesymol'''
+
+[strings."terms.10-bundles-tokens-fees-and-subscriptions-832b29"]
+hash = "832b29a1f071"
+cy = '''10. Bundles, credydau (tokens), ffioedd a thanysgrifiadau'''
+
+[strings."terms.bundles-ff042b"]
+hash = "ff042b6ded4e"
+cy = '''Bundles'''
+
+[strings."terms.a-bundle-is-the-set-of-dd4c6e"]
+hash = "dd4c6e3c48e5"
+cy = '''Bundle yw’r set o nodweddion y gall eich cyfrif eu defnyddio. Gallwch weld y bundles sydd ar gael i chi ar y dudalen <a href="./bundles.html">Bundles</a>. Mae gan y Gwasanaeth y bundles hyn:'''
+
+[strings."terms.bundle-f2daa1"]
+hash = "f2daa18861b5"
+cy = '''Bundle'''
+
+[strings."terms.who-it-is-for-bcdecc"]
+hash = "bcdecc549d07"
+cy = '''I bwy y mae'''
+
+[strings."terms.price-93c91c"]
+hash = "93c91c851e7a"
+cy = '''Pris'''
+
+[strings."terms.what-it-gives-303c18"]
+hash = "303c182c2dd7"
+cy = '''Yr hyn y mae’n ei roi'''
+
+[strings."terms.day-pass-cbe35d"]
+hash = "cbe35db34c53"
+cy = '''Tocyn diwrnod'''
+
+[strings."terms.anyone-signed-in-cd574d"]
+hash = "cd574d7cc92c"
+cy = '''Unrhyw un sydd wedi mewngofnodi'''
+
+[strings."terms.free-f411a1"]
+hash = "f411a1fb6275"
+cy = '''Am ddim'''
+
+[strings."terms.3-tokens-for-1-day-limited-e21c71"]
+hash = "e21c71364747"
+cy = '''3 chredyd, am 1 diwrnod. Wedi’i gyfyngu i 100 o docynnau diwrnod gweithredol ar draws yr holl ddefnyddwyr.'''
+
+[strings."terms.invited-guest-c9e119"]
+hash = "c9e1193cbc1b"
+cy = '''Invited Guest'''
+
+[strings."terms.people-we-invite-d28b4d"]
+hash = "d28b4d881c0c"
+cy = '''Pobl rydym yn eu gwahodd'''
+
+[strings."terms.3-tokens-a-month-for-1-36fc92"]
+hash = "36fc92e84301"
+cy = '''3 chredyd y mis, am 1 mis. Mae angen gwahoddiad.'''
+
+[strings."terms.resident-guest-3a43ae"]
+hash = "3a43ae95ff35"
+cy = '''Resident Guest'''
+
+[strings."terms.existing-diy-accounting-customers-and-partners-2bacdf"]
+hash = "2bacdfa21613"
+cy = '''Cwsmeriaid a phartneriaid presennol DIY Accounting'''
+
+[strings."terms.3-tokens-a-month-with-no-170117"]
+hash = "17011749746b"
+cy = '''3 chredyd y mis, heb ddyddiad gorffen. Mae angen gwahoddiad.'''
+
+[strings."terms.resident-vat-0dcc06"]
+hash = "0dcc06e2e3fd"
+cy = '''Resident VAT'''
+
+[strings."terms.businesses-that-file-vat-only-fb0847"]
+hash = "fb084749370f"
+cy = '''Busnesau sy’n ffeilio TAW yn unig'''
+
+[strings."terms.9-99-a-year-or-0-a023d4"]
+hash = "a023d4c2c8e7"
+cy = '''£9.99 y flwyddyn, neu £0.99 y mis'''
+
+[strings."terms.submit-vat-returns-to-hmrc-100-98f71b"]
+hash = "98f71b1705bc"
+cy = '''Cyflwyno Ffurflenni TAW i CThEF. 100 credyd y mis.'''
+
+[strings."terms.resident-ltd-1ae385"]
+hash = "1ae385e341e4"
+cy = '''Resident Ltd'''
+
+[strings."terms.companies-that-file-at-companies-house-2e2ab7"]
+hash = "2e2ab7f52004"
+cy = '''Cwmnïau sy’n ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."terms.file-accounts-and-confirmation-statements-to-e54f46"]
+hash = "e54f46c2adc3"
+cy = '''Ffeilio cyfrifon a datganiadau cadarnhau gyda Thŷ’r Cwmnïau. 100 credyd y mis.'''
+
+[strings."terms.resident-pro-38ef49"]
+hash = "38ef49b9485a"
+cy = '''Resident Pro'''
+
+[strings."terms.businesses-that-file-for-themselves-8de451"]
+hash = "8de451346b38"
+cy = '''Busnesau sy’n ffeilio drostynt eu hunain'''
+
+[strings."terms.39-99-a-year-or-3-f46bba"]
+hash = "f46bba994906"
+cy = '''£39.99 y flwyddyn, neu £3.99 y mis'''
+
+[strings."terms.submit-vat-returns-to-hmrc-and-e6659c"]
+hash = "e6659c0dfe13"
+cy = '''Cyflwyno Ffurflenni TAW i CThEF a Chyfrifon i Dŷ’r Cwmnïau. Popeth yn Resident VAT a Resident Ltd, ynghyd â Hunanasesiad Treth Incwm a chadw a llwytho llyfrau diya-gl. 100 credyd y mis.'''
+
+[strings."terms.resident-tax-agent-ee4318"]
+hash = "ee43181cf79e"
+cy = '''Resident Tax Agent'''
+
+[strings."terms.accountants-and-bookkeepers-ce1cab"]
+hash = "ce1cabd8e452"
+cy = '''Cyfrifwyr a llyfrifwyr'''
+
+[strings."terms.199-99-a-year-or-19-26da0a"]
+hash = "26da0ad50974"
+cy = '''£199.99 y flwyddyn, neu £19.99 y mis'''
+
+[strings."terms.manage-a-practice-s-clients-and-298e47"]
+hash = "298e4744f58b"
+cy = '''Rheoli cleientiaid practis a ffeilio ar eu rhan, gyda phopeth yn Resident Pro a heb derfyn ar gredydau.'''
+
+[strings."terms.resident-tax-agent-complimentary-01ed78"]
+hash = "01ed7869474b"
+cy = '''Resident Tax Agent (Complimentary)'''
+
+[strings."terms.beta-testers-and-partners-800cbe"]
+hash = "800cbe05c6a2"
+cy = '''Profwyr beta a phartneriaid'''
+
+[strings."terms.the-same-as-resident-tax-agent-5592cb"]
+hash = "5592cbf8ef22"
+cy = '''Yr un peth â Resident Tax Agent, drwy wahoddiad.'''
+
+[strings."terms.all-prices-are-in-pounds-sterling-d6ff6b"]
+hash = "d6ff6b6e551b"
+cy = '''Mae pob pris mewn punnoedd sterling.'''
+
+[strings."terms.tokens-a039df"]
+hash = "a039dfb9628b"
+cy = '''Credydau (tokens)'''
+
+[strings."terms.a-token-pays-for-one-filing-1674b5"]
+hash = "1674b5fb9974"
+cy = '''Mae credyd yn talu am un ffeilio. Mae Ffurflen TAW, diweddariad chwarterol, cyflwyniad blynyddol neu ddatganiad terfynol Hunanasesiad, ffeilio gyda Thŷ’r Cwmnïau a Ffurflen Dreth y Cwmni yn costio un credyd yr un. Nid yw gweld rhwymedigaethau, Ffurflenni, derbynebau a chyfrifiadau treth yn costio credyd. Mae bundle yn rhoi ei gredydau i chi pan fydd yn dechrau ac eto bob mis os yw’n adnewyddu’n fisol. Nid yw credydau heb eu defnyddio yn cael eu cario ymlaen. Nid oes terfyn ar gredydau Resident Tax Agent.'''
+
+[strings."terms.creating-a-digital-or-physical-pass-48c465"]
+hash = "48c465576ee6"
+cy = '''Mae creu tocyn digidol neu ffisegol i’w roi i rywun arall yn costio 10 credyd.'''
+
+[strings."terms.filing-fee-bc2748"]
+hash = "bc274891b428"
+cy = '''Ffi ffeilio'''
+
+[strings."terms.filing-a-confirmation-statement-with-companies-ec7aa2"]
+hash = "ec7aa26a5a8f"
+cy = '''Mae ffeilio datganiad cadarnhau gyda Thŷ’r Cwmnïau yn golygu tâl o £61.35 am bob ffeilio, yn ychwanegol at y bundle a’r credyd.'''
+
+[strings."terms.subscriptions-a151f2"]
+hash = "a151f2e912fe"
+cy = '''Tanysgrifiadau'''
+
+[strings."terms.you-buy-resident-vat-resident-ltd-a30063"]
+hash = "a30063b71baa"
+cy = '''Rydych yn prynu Resident VAT, Resident Ltd, Resident Pro a Resident Tax Agent fel tanysgrifiad drwy Stripe. Stripe sy’n cymryd eich manylion talu; nid ydym yn storio rhif eich cerdyn'''
+
+[strings."terms.a-subscription-starts-when-your-payment-dca93c"]
+hash = "dca93c5ad2e4"
+cy = '''Mae tanysgrifiad yn dechrau pan fydd eich taliad yn llwyddo ac yn adnewyddu’n awtomatig ar ddiwedd pob cyfnod (bob mis neu bob blwyddyn) am y pris a ddangoswyd pan wnaethoch danysgrifio, nes i chi ganslo'''
+
+[strings."terms.you-can-cancel-at-any-time-e1c076"]
+hash = "e1c076a4434e"
+cy = '''Gallwch ganslo unrhyw bryd. Mae canslo’n atal yr adnewyddiad nesaf. Rydych yn cadw’r bundle tan ddiwedd y cyfnod rydych wedi talu amdano'''
+
+[strings."terms.we-give-at-least-30-days-ac5eee"]
+hash = "ac5eeeea1257"
+cy = '''Rydym yn rhoi o leiaf <strong>30 diwrnod o rybudd</strong>, drwy e-bost, cyn codi pris. Mae codiad pris yn gymwys o’ch adnewyddiad nesaf ar ôl i’r cyfnod rhybudd ddod i ben. Mae bundles y talwyd amdanynt yn parhau’n ddilys am y cyfnod rydych wedi talu amdano am y pris a dalwyd gennych'''
+
+[strings."terms.if-a-payment-fails-we-may-21347a"]
+hash = "21347a6d5dda"
+cy = '''Os bydd taliad yn methu, gallwn atal y bundle dros dro nes bydd y taliad yn llwyddo'''
+
+[strings."terms.refunds-0942c1"]
+hash = "0942c1799b5a"
+cy = '''Ad-daliadau'''
+
+[strings."terms.we-do-not-refund-a-subscription-f2fad7"]
+hash = "f2fad7b6b979"
+cy = '''Nid ydym yn ad-dalu tanysgrifiad na ffi ffeilio, ac eithrio lle mae’r gyfraith yn mynnu hynny neu lle nad yw’r Gwasanaeth wedi bod ar gael am fwy na 7 diwrnod yn olynol. Mae ffi ffeilio ar gyfer ffeilio gyda Thŷ’r Cwmnïau y mae Tŷ’r Cwmnïau yn ei wrthod, oherwydd nam yn y Gwasanaeth, yn cael ei had-dalu neu mae’r ffeilio’n cael ei wneud eto heb dâl.'''
+
+[strings."terms.this-service-is-for-business-use-b81bfe"]
+hash = "b81bfec9cae4"
+cy = '''Mae’r Gwasanaeth hwn at ddefnydd busnes. Nid yw hawliau canslo defnyddwyr, gan gynnwys y cyfnod ailfeddwl o 14 diwrnod, yn gymwys.'''
+
+[strings."terms.11-intellectual-property-1a4c98"]
+hash = "1a4c98b584c6"
+cy = '''11. Eiddo deallusol'''
+
+[strings."terms.the-service-is-free-to-use-026d0f"]
+hash = "026d0fd59152"
+cy = '''Mae’r Gwasanaeth am ddim i’w ddefnyddio ac mae ei god ffynhonnell ar gael. Mae’r cod ffynhonnell wedi’i drwyddedu o dan y PolyForm Internal Use License 1.0.0, gyda grant ychwanegol sy’n caniatáu i gyfrifydd neu lyfrifydd ddefnyddio’r feddalwedd i baratoi cyfrifon ar gyfer eu cleientiaid eu hunain. Gweler y ffeil LICENSE yn y storfa god'''
+
+[strings."terms.you-may-run-your-own-copy-393a6f"]
+hash = "393a6fdb61c3"
+cy = '''Cewch redeg eich copi eich hun o’r Gwasanaeth ar eich peiriant eich hun, ar gyfer eich busnes mewnol chi neu fusnes mewnol eich cwmni. Ni chewch letya’r Gwasanaeth ar gyfer pobl eraill, o dan ein henw ni nac unrhyw enw arall, ac ni chewch drosglwyddo’r cod ffynhonnell i eraill'''
+
+[strings."terms.diy-accounting-diy-accounting-submit-and-a04d24"]
+hash = "a04d24734194"
+cy = '''Mae DIY Accounting&trade;, DIY Accounting Submit&trade; a DIYA-GL&trade; yn nodau masnach DIY Accounting Limited. Nid yw’r drwydded yn rhoi unrhyw hawl i chi eu defnyddio. Gweler y ffeil TRADEMARKS.md yn y storfa god'''
+
+[strings."terms.third-party-trademarks-including-hmrc-and-3d6f71"]
+hash = "3d6f71170381"
+cy = '''Mae nodau masnach trydydd partïon, gan gynnwys CThEF ac AWS, yn eiddo i’w perchnogion priodol'''
+
+[strings."terms.12-limitation-of-liability-0a0521"]
+hash = "0a0521ddf234"
+cy = '''12. Cyfyngu ar atebolrwydd (<span lang="en-GB">limitation of liability</span>)'''
+
+[strings."terms.to-the-fullest-extent-permitted-by-371a4c"]
+hash = "371a4c93da0d"
+cy = '''<strong>I’r graddau llawnaf a ganiateir gan y gyfraith:</strong>'''
+
+[strings."terms.the-service-is-provided-as-is-2dea33"]
+hash = "2dea33a90aeb"
+cy = '''Mae’r Gwasanaeth yn cael ei ddarparu ‘fel y mae’ heb warant o unrhyw fath, pa un a yw’n ddiamwys neu’n oblygedig'''
+
+[strings."terms.we-do-not-warrant-that-the-a5b4aa"]
+hash = "a5b4aad046d0"
+cy = '''Nid ydym yn gwarantu y bydd y Gwasanaeth yn rhydd rhag gwallau, yn ddiogel nac yn ddi-dor'''
+
+[strings."terms.we-are-not-liable-for-any-5cb3fa"]
+hash = "5cb3fa6e0977"
+cy = '''Nid ydym yn atebol am unrhyw iawndal anuniongyrchol, achlysurol, arbennig, canlyniadol na chosbol sy’n deillio o’ch defnydd o’r Gwasanaeth'''
+
+[strings."terms.our-total-liability-to-you-for-26e298"]
+hash = "26e298871ce9"
+cy = '''Ni fydd cyfanswm ein hatebolrwydd i chi am unrhyw hawliadau sy’n deillio o’r Gwasanaeth yn fwy na’r mwyaf o’r canlynol: (a) y swm a dalwyd gennych am y Gwasanaeth yn y 12 mis cyn yr hawliad, neu (b) <strong>hanner can punt (£50)</strong>'''
+
+[strings."terms.you-are-responsible-for-ensuring-the-8be89a"]
+hash = "8be89ac5d00e"
+cy = '''Chi sy’n gyfrifol am sicrhau cywirdeb y data a gyflwynir i CThEF ac am gydymffurfio â’r holl rwymedigaethau treth. Nid ydym yn gynghorwyr treth'''
+
+[strings."terms.nothing-in-these-terms-excludes-or-baa67e"]
+hash = "baa67e7444b3"
+cy = '''Nid oes dim yn y Telerau hyn yn eithrio nac yn cyfyngu ar ein hatebolrwydd am farwolaeth neu anaf personol a achosir gan esgeulustod, am dwyll, nac am unrhyw atebolrwydd arall na ellir ei eithrio yn ôl y gyfraith'''
+
+[strings."terms.13-indemnification-f3f6f8"]
+hash = "f3f6f88bf741"
+cy = '''13. Indemnio (<span lang="en-GB">indemnification</span>)'''
+
+[strings."terms.you-agree-to-indemnify-and-hold-1ab03b"]
+hash = "1ab03b83a9ac"
+cy = '''Rydych yn cytuno i indemnio DIY Accounting Limited, ei swyddogion, ei gyflogeion a’i asiantau, a’u cadw’n ddiniwed, rhag unrhyw hawliadau, iawndal neu dreuliau sy’n deillio o’ch defnydd o’r Gwasanaeth, o’ch achos o dorri’r Telerau hyn, neu o’ch achos o dorri unrhyw gyfreithiau neu reoliadau.'''
+
+[strings."terms.14-force-majeure-61e608"]
+hash = "61e608134681"
+cy = '''14. Force majeure'''
+
+[strings."terms.neither-party-shall-be-liable-for-880613"]
+hash = "880613ea36fb"
+cy = '''Ni fydd y naill barti na’r llall yn atebol am oedi neu fethiannau wrth gyflawni sy’n deillio o amgylchiadau y tu hwnt i reolaeth resymol, gan gynnwys ond heb fod yn gyfyngedig i’r canlynol:'''
+
+[strings."terms.hmrc-system-outages-maintenance-or-api-0f979d"]
+hash = "0f979d5d4925"
+cy = '''Toriadau yn systemau CThEF, gwaith cynnal a chadw, neu newidiadau i’r API'''
+
+[strings."terms.changes-to-making-tax-digital-regulations-0affb9"]
+hash = "0affb91b92d1"
+cy = '''Newidiadau i reoliadau neu ofynion Troi Treth yn Ddigidol'''
+
+[strings."terms.government-or-regulatory-actions-744c47"]
+hash = "744c47a07f26"
+cy = '''Camau gan y llywodraeth neu gan reoleiddwyr'''
+
+[strings."terms.natural-disasters-pandemics-or-other-acts-05a71d"]
+hash = "05a71daf8b2c"
+cy = '''Trychinebau naturiol, pandemigau, neu weithredoedd eraill gan Dduw'''
+
+[strings."terms.cyber-attacks-denial-of-service-attacks-bbae8c"]
+hash = "bbae8c25c76c"
+cy = '''Ymosodiadau seiber, ymosodiadau atal gwasanaeth, neu ddigwyddiadau diogelwch sy’n effeithio ar seilwaith trydydd parti'''
+
+[strings."terms.failures-of-third-party-infrastructure-providers-602654"]
+hash = "6026541f1399"
+cy = '''Methiannau darparwyr seilwaith trydydd parti (gan gynnwys AWS)'''
+
+[strings."terms.internet-or-telecommunications-failures-c4183c"]
+hash = "c4183c7728af"
+cy = '''Methiannau’r rhyngrwyd neu delathrebu'''
+
+[strings."terms.in-the-event-of-a-force-d8acc1"]
+hash = "d8acc10ce431"
+cy = '''Os bydd digwyddiad force majeure, bydd y parti yr effeithir arno yn hysbysu’r parti arall cyn gynted ag y bo’n rhesymol ymarferol ac yn gwneud ymdrechion rhesymol i liniaru’r effaith.'''
+
+[strings."terms.15-security-incidents-85c5b4"]
+hash = "85c5b4f54a8e"
+cy = '''15. Digwyddiadau diogelwch'''
+
+[strings."terms.we-implement-industry-standard-security-measures-2c3bc0"]
+hash = "2c3bc0a279ec"
+cy = '''Rydym yn gweithredu mesurau diogelwch safonol y diwydiant i ddiogelu eich data, gan gynnwys amgryptio, rheolaethau mynediad, amddiffyniad Mur Gwarchod Rhaglenni Gwe (WAF), a monitro diogelwch rheolaidd'''
+
+[strings."terms.in-the-event-of-a-data-5d4e1b"]
+hash = "5d4e1b0ee5c4"
+cy = '''Os bydd achos o dorri diogelwch data sy’n effeithio ar eich data personol, byddwn yn eich hysbysu chi a’r ICO o fewn 72 awr fel sy’n ofynnol gan GDPR y DU'''
+
+[strings."terms.we-will-also-notify-hmrc-within-ea5b8e"]
+hash = "ea5b8ec55081"
+cy = '''Byddwn hefyd yn hysbysu CThEF o fewn 72 awr os yw’r achos yn effeithio ar ddata sy’n ymwneud â CThEF neu ar fanylion adnabod OAuth'''
+
+[strings."terms.16-termination-7ff7c2"]
+hash = "7ff7c2593db7"
+cy = '''16. Terfynu (<span lang="en-GB">termination</span>)'''
+
+[strings."terms.you-may-terminate-your-account-at-31d456"]
+hash = "31d456ebb136"
+cy = '''Cewch derfynu eich cyfrif unrhyw bryd drwy gysylltu â support@diyaccounting.co.uk'''
+
+[strings."terms.we-may-suspend-or-terminate-your-c3aa67"]
+hash = "c3aa67637310"
+cy = '''Gallwn atal eich mynediad dros dro neu ei derfynu os byddwch yn torri’r Telerau hyn, am resymau diogelwch, neu os yw’n ofynnol yn ôl y gyfraith neu gan CThEF'''
+
+[strings."terms.a-cancelled-subscription-ends-at-the-b6ed4d"]
+hash = "b6ed4d0dbfcf"
+cy = '''Mae tanysgrifiad sydd wedi’i ganslo yn dod i ben ar ddiwedd y cyfnod rydych wedi talu amdano'''
+
+[strings."terms.upon-termination-your-user-data-bundles-cac6cb"]
+hash = "cac6cb98d905"
+cy = '''Ar ôl terfynu, bydd eich data defnyddiwr (bundles, llyfrau DIYA-GL sydd wedi’u cadw a thocynnau dilysu) yn cael eu dileu o fewn 30 diwrnod. Bydd derbynebau CThEF yn cael eu cadw am 7 mlynedd yn unol â gofynion cyfreithiol'''
+
+[strings."terms.17-dispute-resolution-5a0a4f"]
+hash = "5a0a4f31c665"
+cy = '''17. Datrys anghydfodau (<span lang="en-GB">dispute resolution</span>)'''
+
+[strings."terms.if-a-dispute-arises-between-you-673d95"]
+hash = "673d954bd3fb"
+cy = '''Os bydd anghydfod yn codi rhyngoch chi a DIY Accounting Limited:'''
+
+[strings."terms.good-faith-negotiation-both-parties-agree-ccd27b"]
+hash = "ccd27bd97d3a"
+cy = '''<strong>Negodi’n ddidwyll:</strong> Mae’r ddau barti’n cytuno i geisio datrys yr anghydfod drwy negodi’n ddidwyll am gyfnod o <strong>30 diwrnod</strong> cyn dechrau unrhyw achos ffurfiol'''
+
+[strings."terms.mediation-if-negotiation-fails-either-party-2ac914"]
+hash = "2ac914cb1580"
+cy = '''<strong>Cyfryngu:</strong> Os bydd y negodi’n methu, caiff y naill barti neu’r llall gynnig cyfryngu drwy gyfryngwr y cytunir arno neu wasanaeth megis y Centre for Effective Dispute Resolution (CEDR). Bydd costau cyfryngu’n cael eu rhannu’n gyfartal oni chytunir fel arall'''
+
+[strings."terms.small-claims-for-disputes-under-10-f582bc"]
+hash = "f582bc7dfd29"
+cy = '''<strong>Hawliadau bychain:</strong> Ar gyfer anghydfodau o dan £10,000, caiff y naill barti neu’r llall ddwyn hawliad yn Llys Hawliadau Bychain Cymru a Lloegr'''
+
+[strings."terms.court-proceedings-if-mediation-is-unsuccessful-a628da"]
+hash = "a628da2a74b7"
+cy = '''<strong>Achos llys:</strong> Os yw’r cyfryngu’n aflwyddiannus neu’n amhriodol, caiff y naill barti neu’r llall ddechrau achos llys yn unol ag Adran 18 (Y Gyfraith Lywodraethol)'''
+
+[strings."terms.this-clause-does-not-prevent-either-c15065"]
+hash = "c150659b8abb"
+cy = '''Nid yw’r cymal hwn yn atal y naill barti na’r llall rhag ceisio rhyddhad gwaharddol brys lle bo angen.'''
+
+[strings."terms.18-changes-to-terms-6a5018"]
+hash = "6a501801ed98"
+cy = '''18. Newidiadau i’r telerau'''
+
+[strings."terms.we-may-update-these-terms-from-459cde"]
+hash = "459cdec1d510"
+cy = '''Gallwn ddiweddaru’r Telerau hyn o bryd i’w gilydd. Bydd y dyddiad “Diweddarwyd ddiwethaf” yn adlewyrchu’r newidiadau diweddaraf'''
+
+[strings."terms.material-changes-including-changes-to-fees-92fa48"]
+hash = "92fa489b506b"
+cy = '''Byddwn yn rhoi gwybod am <strong>newidiadau perthnasol</strong> (gan gynnwys newidiadau i ffioedd, atebolrwydd neu brosesu data) drwy e-bost o leiaf <strong>30 diwrnod</strong> cyn iddynt ddod i rym'''
+
+[strings."terms.continued-use-of-the-service-after-a84238"]
+hash = "a84238535c35"
+cy = '''Mae parhau i ddefnyddio’r Gwasanaeth ar ôl newidiadau yn gyfystyr â derbyn y Telerau wedi’u diweddaru'''
+
+[strings."terms.if-you-do-not-agree-to-44fb7e"]
+hash = "44fb7e96adea"
+cy = '''Os nad ydych yn cytuno i’r Telerau wedi’u diweddaru, cewch gau eich cyfrif cyn i’r newidiadau ddod i rym'''
+
+[strings."terms.19-governing-law-and-jurisdiction-86d1f7"]
+hash = "86d1f79b557a"
+cy = '''19. Y gyfraith lywodraethol ac awdurdodaeth'''
+
+[strings."terms.these-terms-are-governed-by-the-dddfe4"]
+hash = "dddfe4fd158f"
+cy = '''Mae’r Telerau hyn yn cael eu rheoli gan gyfreithiau Cymru a Lloegr'''
+
+[strings."terms.any-disputes-shall-be-subject-to-421e95"]
+hash = "421e95d6e3ff"
+cy = '''Bydd unrhyw anghydfodau’n ddarostyngedig i awdurdod neilltuedig llysoedd Cymru a Lloegr, yn amodol ar y broses datrys anghydfodau yn Adran 17'''
+
+[strings."terms.20-contact-and-legal-entity-d9c9a9"]
+hash = "d9c9a973b63c"
+cy = '''20. Cysylltu a’r endid cyfreithiol'''
+
+[strings."terms.for-questions-about-these-terms-data-f38587"]
+hash = "f385873e0d4e"
+cy = '''Ar gyfer cwestiynau am y Telerau hyn, ceisiadau am ddata, neu faterion yn ymwneud â’ch cyfrif:'''
+
+[strings."terms.diy-accounting-limited-registered-office-37-7f7402"]
+hash = "7f74028cdaf9"
+cy = '''<strong>DIY Accounting Limited</strong><br /> Swyddfa Gofrestredig: 37 Sutherland Avenue, Leeds, LS8 1BY<br /> Rhif y Cwmni: 06846849<br /> Wedi’i gofrestru yng Nghymru a Lloegr<br /> E-bost: support@diyaccounting.co.uk'''
+
+[strings."terms.as-required-by-the-companies-act-922e34"]
+hash = "922e3436e5e4"
+cy = '''Fel sy’n ofynnol gan Ddeddf Cwmnïau 2006, mae manylion cofrestru ein cwmni wedi’u dangos uchod ac ar bob gohebiaeth swyddogol.'''
+
+[strings."terms.21-source-code-650db1"]
+hash = "650db13f0ce8"
+cy = '''21. Cod ffynhonnell'''
+
+[strings."terms.the-source-code-for-this-service-5a7455"]
+hash = "5a74552509a9"
+cy = '''Mae cod ffynhonnell y Gwasanaeth hwn ar gael yn <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" target="_blank" rel="noopener" >github.com/diy-accounting-uk/submit.diyaccounting.co.uk</a > (yn Saesneg) o dan y PolyForm Internal Use License 1.0.0. Darllenwch ef, rhedwch ef ar eich peiriant eich hun, a gwiriwch beth mae’r Gwasanaeth yn ei wneud â’ch data.'''
+
+[strings."terms.the-repository-does-not-accept-contributions-0a64b5"]
+hash = "0a64b55cfa92"
+cy = '''Nid yw’r storfa god yn derbyn cyfraniadau, felly peidiwch ag anfon cais tynnu (pull request). Os ydych wedi dod o hyd i broblem diogelwch, dywedwch wrthym yn breifat. Mae’r ffeil SECURITY.md yn y storfa god yn dweud sut.'''
+
+[strings."terms.22-affiliate-and-referral-passes-6cf33e"]
+hash = "6cf33e7ba433"
+cy = '''22. Tocynnau partneriaid cyswllt ac atgyfeirio'''
+
+[strings."terms.these-terms-take-effect-when-the-4b4ac8"]
+hash = "4b4ac8710742"
+cy = '''<em>Mae’r telerau hyn yn dod i rym pan gaiff y partner cyswllt cyntaf ei gymeradwyo.</em>'''
+
+[strings."terms.a-pass-is-four-words-or-54dac7"]
+hash = "54dac7f7cb84"
+cy = '''Pedwar gair yw tocyn, neu ddolen sy’n eu dal, y mae rhywun yn eu rhoi i chi. Mae’r hyn y mae tocyn yn ei roi yn dibynnu ar ei fath: y bundle, y credydau a pha mor hir y maent yn para. Mae’r cyfrif a greodd y tocyn yn ennill comisiwn pan ddaw’r person y mae’n ei gyflwyno yn gwsmer sy’n talu.'''
+
+[strings."terms.what-you-earn-44b605"]
+hash = "44b605603588"
+cy = '''Yr hyn rydych yn ei ennill'''
+
+[strings."terms.the-commission-is-33-of-the-8ca81d"]
+hash = "8ca81d02e5a5"
+cy = '''Y comisiwn yw 33% o’r swm net y mae’r cwsmer a atgyfeiriwyd yn ei dalu i ni am ei 3 mis cyntaf. Ar gyfer tanysgrifiad blynyddol, mae cwsmer sy’n rhannu tocyn yn ennill 33% o dair rhan o ddeuddeg o’r taliad blynyddol, ac mae partner cyswllt cymeradwy yn ennill 25% o’r taliad blynyddol, unwaith.'''
+
+[strings."terms.a-customer-who-shares-a-pass-5ec1c1"]
+hash = "5ec1c1ae62d1"
+cy = '''Mae cwsmer sy’n rhannu tocyn yn ennill credyd ariannol ar ei danysgrifiad ei hun. Rydym yn rhyddhau’r credyd ariannol 30 diwrnod ar ôl y taliad y mae’n deillio ohono. Mae’r credyd ariannol yn cael ei gymhwyso’n fisol. Mae terfyn o 12 mis am ddim i gyd ar y credyd ariannol.'''
+
+[strings."terms.an-approved-affiliate-earns-cash-we-007173"]
+hash = "007173d7ead8"
+cy = '''Mae partner cyswllt cymeradwy yn ennill arian parod. Rydym yn rhyddhau arian parod 120 diwrnod ar ôl y taliad y mae’n deillio ohono. Mae terfyn o &pound;100 y mis a &pound;1,000 y flwyddyn dreth ar arian parod, ac rydym yn ei dalu dim ond pan fydd yn cyrraedd &pound;5.'''
+
+[strings."terms.we-hold-a-commission-for-review-6aadb4"]
+hash = "6aadb40796eb"
+cy = '''Rydym yn dal comisiwn yn ôl i’w adolygu pan eir heibio i derfyn, pan fydd un tocyn yn dod â mwy na 5 trosiad mewn diwrnod, neu pan fydd arwydd o dwyll yn ymddangos.'''
+
+[strings."terms.refunds-and-cancellations-b0f030"]
+hash = "b0f030f685c6"
+cy = '''Ad-daliadau a chanslo'''
+
+[strings."terms.if-a-referred-customer-is-refunded-46c514"]
+hash = "46c514e7e60c"
+cy = '''Os caiff cwsmer a atgyfeiriwyd ad-daliad, neu os yw’n herio’r taliad, rydym yn gwrthdroi’r comisiwn cyfatebol. Os nad ydym wedi’i dalu, nid yw’n cael ei dalu. Os ydym wedi’i dalu, rydym yn ei gymryd o’ch comisiwn nesaf. Rydym yn cymryd credyd ariannol heb ei ddefnyddio yn ôl.'''
+
+[strings."terms.who-can-take-part-a5f362"]
+hash = "a5f3621328fe"
+cy = '''Pwy all gymryd rhan'''
+
+[strings."terms.the-scheme-is-for-people-who-afdd41"]
+hash = "afdd41762409"
+cy = '''Mae’r cynllun ar gyfer pobl sy’n byw yn y Deyrnas Unedig ac, ar gyfer arian parod, sydd â chyfrif banc yn y DU.'''
+
+[strings."terms.you-must-be-18-or-over-ee5c2a"]
+hash = "ee5c2afe4f8d"
+cy = '''Rhaid i chi fod yn 18 oed neu’n hŷn i gael eich talu ag arian parod.'''
+
+[strings."terms.you-cannot-refer-yourself-and-you-26978d"]
+hash = "26978db4539a"
+cy = '''Ni allwch eich atgyfeirio eich hun, ac ni allwch ennill o gyfrif rydych yn ei reoli.'''
+
+[strings."terms.we-approve-each-affiliate-we-can-dacb0e"]
+hash = "dacb0e4c504a"
+cy = '''Rydym yn cymeradwyo pob partner cyswllt. Gallwn wrthod cais, a gallwn ddod â statws partner cyswllt i ben unrhyw bryd.'''
+
+[strings."terms.disclosure-a2c6c8"]
+hash = "a2c6c8f120f4"
+cy = '''Datgelu'''
+
+[strings."terms.a-post-message-or-page-that-9f6b27"]
+hash = "9f6b27cb2d66"
+cy = '''Hysbyseb yw postiad, neges neu dudalen sy’n cynnwys eich tocyn. Dechreuwch ef gyda <strong>#ad</strong> neu label sydd yr un mor glir, a dilynwch ein canllawiau marchnata ar sut i ddisgrifio’r Gwasanaeth. Gallwn ddod â statws partner cyswllt nad yw’n gwneud hynny i ben.'''
+
+[strings."terms.no-employment-85acdc"]
+hash = "85acdc55190c"
+cy = '''Dim cyflogaeth'''
+
+[strings."terms.an-affiliate-is-an-independent-person-9cf327"]
+hash = "9cf327234154"
+cy = '''Person annibynnol yw partner cyswllt. Nid ydych yn gyflogai nac yn weithiwr i ni. Nid oes gennych ddyletswydd i hyrwyddo’r Gwasanaeth, dim targedau, a dim dull nac oriau penodedig. Gallwch roi’r gorau iddi unrhyw bryd a gallwn ninnau hefyd. Nid ydym yn talu treuliau. Chi sy’n gyfrifol am unrhyw dreth ar yr hyn rydych yn ei ennill.'''
+
+[strings."terms.our-discretion-ec3ab7"]
+hash = "ec3ab7b2aae8"
+cy = '''Ein disgresiwn'''
+
+[strings."terms.we-decide-each-payment-our-ledger-8a6ca8"]
+hash = "8a6ca85e56e0"
+cy = '''Ni sy’n penderfynu ar bob taliad. Mae ein cyfriflyfr comisiwn yn derfynol. Gallwn newid cyfraddau, terfynau a’r telerau hyn gyda 30 diwrnod o rybudd, a gallwn ddod â’r cynllun i ben. Nid oes gan neb hawl i isafswm nac i gomisiwn yn y dyfodol. Mae symiau nad ydym wedi’u talu, a chredyd ariannol nad ydych wedi’i ddefnyddio, yn darfod pan fyddwch yn torri’r telerau hyn neu pan ddaw eich statws partner cyswllt neu eich cyfrif i ben.'''
+
+[strings."terms.description-845fed"]
+hash = "845fedfc826b"
+cy = '''Telerau defnyddio gwasanaeth cyflwyno TAW DIY Accounting Submit. Yr amodau ar gyfer defnyddio ein hofferyn Troi Treth yn Ddigidol.'''
+
+[strings."terms.og-title-65d6ec"]
+hash = "65d6ecd45474"
+cy = '''Telerau defnyddio - DIY Accounting Submit'''
+
+[strings."terms.og-description-845fed"]
+hash = "845fedfc826b"
+cy = '''Telerau defnyddio gwasanaeth cyflwyno TAW DIY Accounting Submit. Yr amodau ar gyfer defnyddio ein hofferyn Troi Treth yn Ddigidol.'''
+
+# == The accessibility statement (accessibility.html), ids accessibility.* ==
+
+[strings."accessibility.title"]
+hash = "489463866fee"
+cy = '''Datganiad hygyrchedd - DIY Accounting Submit'''
+
+[strings."accessibility.accessibility-statement-340eb8"]
+hash = "340eb8c07fae"
+cy = '''Datganiad hygyrchedd'''
+
+[strings."accessibility.last-updated-17-november-2026-bcd1c1"]
+hash = "bcd1c1d646a7"
+cy = '''Diweddarwyd ddiwethaf: 17 Tachwedd 2026'''
+
+[strings."accessibility.on-3-november-2026-we-ran-39ec9d"]
+hash = "39ec9dee651d"
+cy = '''Ar 3 Tachwedd 2026 fe wnaethom redeg tri offeryn awtomataidd yn erbyn y wefan hon. Ni chanfu Pa11y unrhyw wallau ar 33 tudalen. Ni chanfu axe-core unrhyw achosion o dorri’r rheolau ar 56 tudalen o’r gosodiad prawf. Rhoddodd Lighthouse sgôr hygyrchedd o 100 i’r hafan, y dudalen amdanom ni, y canllaw, y dudalen cyfraddau a’r dudalen cyflwyno TAW. Nid oes neb eto wedi gwirio’r wefan gyda rhaglen darllen sgrin, yn ôl trefn y bysellfwrdd nac ar chwyddiad o 400 y cant.'''
+
+[strings."accessibility.conformance-status-2b7f47"]
+hash = "2b7f47ca189a"
+cy = '''Statws cydymffurfiaeth'''
+
+[strings."accessibility.wcag-2-2-level-aa-9c27a0"]
+hash = "9c27a0c6a1fe"
+cy = '''WCAG 2.2 Lefel AA'''
+
+[strings."accessibility.this-website-is-aiming-for-wcag-9e8b75"]
+hash = "9e8b75b75d32"
+cy = '''Mae’r wefan hon yn anelu at WCAG 2.2 Lefel AA'''
+
+[strings."accessibility.the-web-content-accessibility-guidelines-wcag-6a5eba"]
+hash = "6a5eba6e711b"
+cy = '''Mae <a href="https://www.w3.org/WAI/standards-guidelines/wcag/" target="_blank" rel="noopener" >Canllawiau Hygyrchedd Cynnwys y We (WCAG)</a > (yn Saesneg) yn diffinio gofynion i ddylunwyr a datblygwyr er mwyn gwella hygyrchedd i bobl ag anableddau. Maent yn diffinio tair lefel o gydymffurfiaeth: Lefel A, Lefel AA a Lefel AAA. Mae DIY Accounting Submit&trade; yn cael ei brofi yn erbyn WCAG 2.2 Lefel AA. Nid yw’r offer awtomataidd yn canfod unrhyw achosion o dorri’r rheolau ar y tudalennau a restrir isod. Nid yw’r gwiriadau y mae angen person i’w gwneud, megis profi gyda rhaglen darllen sgrin, adolygu trefn y bysellfwrdd, adolygu ar chwyddiad o 400 y cant ac adolygu iaith glir y gwallau a’r cymorth, wedi’u gwneud ar gyfer y fersiwn hon, felly nid ydym yn honni ein bod yn cydymffurfio’n llawn.'''
+
+[strings."accessibility.assessment-methods-328dc9"]
+hash = "328dc9b4b307"
+cy = '''Dulliau asesu'''
+
+[strings."accessibility.diy-accounting-limited-assessed-the-accessibility-ca3cf7"]
+hash = "ca3cf79d9bed"
+cy = '''Asesodd DIY Accounting Limited hygyrchedd y wefan hon drwy’r dulliau canlynol:'''
+
+[strings."accessibility.automated-testing-tools-d3ebbf"]
+hash = "d3ebbfad3cf8"
+cy = '''Offer profi awtomataidd'''
+
+[strings."accessibility.results-below-are-from-3-november-2e5b4b"]
+hash = "2e5b4b70a2ce"
+cy = '''Mae’r canlyniadau isod yn dod o 3 Tachwedd 2026.'''
+
+[strings."accessibility.tool-2e53bd"]
+hash = "2e53bdcd0740"
+cy = '''Offeryn'''
+
+[strings."accessibility.standard-ef6691"]
+hash = "ef6691545d2c"
+cy = '''Safon'''
+
+[strings."accessibility.result-6e7d50"]
+hash = "6e7d50e84f47"
+cy = '''Canlyniad'''
+
+[strings."accessibility.pa11y-b8646d"]
+hash = "b8646d4c17ab"
+cy = '''<a href="https://pa11y.org/" target="_blank" rel="noopener">Pa11y</a> (yn Saesneg)'''
+
+[strings."accessibility.wcag-2-1-level-aa-0418c6"]
+hash = "0418c6b4b50a"
+cy = '''WCAG 2.1 Lefel AA'''
+
+[strings."accessibility.0-errors-on-the-33-pages-9918c6"]
+hash = "9918c60e0123"
+cy = '''0 gwall ar y 33 tudalen o’r wefan a sganiwyd o’r cod ffynhonnell cyfredol, gan gynnwys y dudalen cyflwyno TAW a’r dudalen cyfraddau. Nid yw’r tudalennau Treth Incwm (MTD) yn y sgan hwn.'''
+
+[strings."accessibility.axe-core-e84302"]
+hash = "e843022b3ce4"
+cy = '''<a href="https://www.deque.com/axe/" target="_blank" rel="noopener">axe-core</a> (yn Saesneg)'''
+
+[strings."accessibility.wcag-2-0-to-2-2-11ebb2"]
+hash = "11ebb2a8ff61"
+cy = '''WCAG 2.0 i 2.2 Lefel A ac AA'''
+
+[strings."accessibility.0-violations-on-56-pages-of-566ace"]
+hash = "566aced7030e"
+cy = '''0 achos o dorri’r rheolau ar 56 tudalen o’r gosodiad prawf'''
+
+[strings."accessibility.google-lighthouse-64fc95"]
+hash = "64fc9523ce6b"
+cy = '''<a href="https://developer.chrome.com/docs/lighthouse/" target="_blank" rel="noopener">Google Lighthouse</a> (yn Saesneg)'''
+
+[strings."accessibility.accessibility-audit-9f870e"]
+hash = "9f870e193288"
+cy = '''Archwiliad hygyrchedd'''
+
+[strings."accessibility.accessibility-score-100-on-the-home-3c9498"]
+hash = "3c9498d39840"
+cy = '''Sgôr hygyrchedd o 100 ar yr hafan, y dudalen amdanom ni, y canllaw, y dudalen cyfraddau a’r dudalen cyflwyno TAW'''
+
+[strings."accessibility.pages-tested-407ec0"]
+hash = "407ec09f9117"
+cy = '''Tudalennau a brofwyd'''
+
+[strings."accessibility.the-assessment-covers-these-pages-and-b05822"]
+hash = "b05822bdfd96"
+cy = '''Mae’r asesiad yn cwmpasu’r tudalennau hyn ac eraill, gan gynnwys y tudalennau cyfraddau a Threth Incwm (MTD):'''
+
+[strings."accessibility.home-page-7c57c6"]
+hash = "7c57c6410352"
+cy = '''Hafan (/)'''
+
+[strings."accessibility.sign-in-page-auth-login-html-6962b8"]
+hash = "6962b8547d94"
+cy = '''Tudalen mewngofnodi (/auth/login.html)'''
+
+[strings."accessibility.bundles-management-bundles-html-d0c481"]
+hash = "d0c4816be80b"
+cy = '''Rheoli Bundles (/bundles.html)'''
+
+[strings."accessibility.vat-submission-hmrc-vat-submitvat-html-3accfd"]
+hash = "3accfddf256c"
+cy = '''Cyflwyno TAW (/hmrc/vat/submitVat.html)'''
+
+[strings."accessibility.vat-obligations-hmrc-vat-vatobligations-html-ea7342"]
+hash = "ea7342fc29c3"
+cy = '''Rhwymedigaethau TAW (/hmrc/vat/vatObligations.html)'''
+
+[strings."accessibility.vat-return-view-hmrc-vat-viewvatreturn-454a6c"]
+hash = "454a6ca1c02b"
+cy = '''Gweld Ffurflen TAW (/hmrc/vat/viewVatReturn.html)'''
+
+[strings."accessibility.receipts-hmrc-receipt-receipts-html-8c477e"]
+hash = "8c477eaf71e5"
+cy = '''Derbynebau (/hmrc/receipt/receipts.html)'''
+
+[strings."accessibility.user-guide-guide-html-9b3766"]
+hash = "9b3766907120"
+cy = '''Canllaw i ddefnyddwyr (/guide.html)'''
+
+[strings."accessibility.about-page-about-html-fc6549"]
+hash = "fc6549a04152"
+cy = '''Tudalen amdanom ni (/about.html)'''
+
+[strings."accessibility.privacy-policy-privacy-html-3b4079"]
+hash = "3b40790e2b09"
+cy = '''Polisi preifatrwydd (/privacy.html)'''
+
+[strings."accessibility.terms-of-use-terms-html-a8d461"]
+hash = "a8d461fe16b2"
+cy = '''Telerau defnyddio (/terms.html)'''
+
+[strings."accessibility.accessibility-statement-accessibility-html-59cb96"]
+hash = "59cb9690f575"
+cy = '''Datganiad hygyrchedd (/accessibility.html)'''
+
+[strings."accessibility.page-not-found-errors-404-html-91bbbf"]
+hash = "91bbbf33864a"
+cy = '''Heb ganfod y dudalen (/errors/404.html), y mae’r wefan yn ei dangos ar gyfer unrhyw gyfeiriad nad oes tudalen iddo'''
+
+[strings."accessibility.accessibility-features-d41593"]
+hash = "d41593be9f3f"
+cy = '''Nodweddion hygyrchedd'''
+
+[strings."accessibility.this-website-includes-the-following-accessibility-b23504"]
+hash = "b23504dbb107"
+cy = '''Mae’r wefan hon yn cynnwys y nodweddion hygyrchedd canlynol:'''
+
+[strings."accessibility.semantic-html-proper-use-of-headings-8de4b2"]
+hash = "8de4b2142ff7"
+cy = '''<strong>HTML semantig:</strong> Defnydd priodol o benawdau, tirnodau, rhestrau ac elfennau semantig eraill'''
+
+[strings."accessibility.keyboard-navigation-all-interactive-elements-are-294299"]
+hash = "294299d27ff8"
+cy = '''<strong>Gwe-lywio â bysellfwrdd:</strong> Mae modd cyrraedd pob elfen ryngweithiol â’r bysellfwrdd'''
+
+[strings."accessibility.focus-indicators-visible-focus-states-for-de9bf3"]
+hash = "de9bf3845d09"
+cy = '''<strong>Dangosyddion ffocws:</strong> Cyflwr ffocws gweladwy ar gyfer pob elfen ryngweithiol'''
+
+[strings."accessibility.colour-contrast-text-meets-wcag-aa-a7e314"]
+hash = "a7e314a117f3"
+cy = '''<strong>Cyferbyniad lliw:</strong> Mae’r testun yn bodloni cymarebau cyferbyniad WCAG AA (o leiaf 4.5:1 ar gyfer testun arferol)'''
+
+[strings."accessibility.responsive-design-content-adapts-to-different-066bcc"]
+hash = "066bccef454e"
+cy = '''<strong>Dyluniad ymatebol:</strong> Mae’r cynnwys yn addasu i wahanol feintiau sgrin ac i lefelau chwyddo hyd at 200%'''
+
+[strings."accessibility.form-labels-all-form-inputs-have-a1997c"]
+hash = "a1997c049a67"
+cy = '''<strong>Labeli ffurflenni:</strong> Mae gan bob maes ffurflen label cysylltiedig'''
+
+[strings."accessibility.error-identification-form-errors-are-clearly-cc4887"]
+hash = "cc48875f93b7"
+cy = '''<strong>Nodi gwallau:</strong> Mae gwallau ffurflenni yn cael eu nodi a’u disgrifio’n glir'''
+
+[strings."accessibility.skip-links-navigation-can-be-bypassed-26da9b"]
+hash = "26da9b03a696"
+cy = '''<strong>Dolenni neidio:</strong> Mae modd neidio heibio’r llywio i gyrraedd y prif gynnwys'''
+
+[strings."accessibility.language-declaration-page-language-is-declared-0a80cc"]
+hash = "0a80cc8109c3"
+cy = '''<strong>Datgan iaith:</strong> Mae iaith y dudalen wedi’i datgan yn yr HTML'''
+
+[strings."accessibility.target-size-touch-targets-meet-the-0cd813"]
+hash = "0cd8134a0616"
+cy = '''<strong>Maint targed:</strong> Mae’r targedau cyffwrdd yn bodloni isafswm WCAG 2.2 o 24x24 picsel CSS'''
+
+[strings."accessibility.known-limitations-a3c71b"]
+hash = "a3c71b90162b"
+cy = '''Cyfyngiadau hysbys'''
+
+[strings."accessibility.a-screen-reader-user-may-meet-38d091"]
+hash = "38d0912ac414"
+cy = '''Gall defnyddiwr rhaglen darllen sgrin ddod ar draws label, trefn penawdau neu neges gwall na all offeryn ei barnu, am nad oes neb wedi profi gyda rhaglen darllen sgrin eto.'''
+
+[strings."accessibility.a-keyboard-user-may-meet-a-320d92"]
+hash = "320d927665b7"
+cy = '''Gall defnyddiwr bysellfwrdd ddod ar draws tudalen lle mae trefn y tabiau’n od, a gall ymwelydd sy’n chwyddo i 400 y cant ddod ar draws cynllun sy’n torri. Ni wiriwyd y naill na’r llall.'''
+
+[strings."accessibility.the-pa11y-scan-of-the-income-e4d83b"]
+hash = "e4d83bbd3e94"
+cy = '''Nid yw sgan Pa11y o’r tudalennau Treth Incwm (MTD) nac o dudalennau Tŷ’r Cwmnïau wedi’i ailadrodd ar y cod ffynhonnell cyfredol. Mae axe-core yn cwmpasu’r tudalennau Treth Incwm (MTD) ac nid yw’n nodi unrhyw achosion o dorri’r rheolau.'''
+
+[strings."accessibility.the-reports-under-compliance-reports-are-8da253"]
+hash = "8da2539147bd"
+cy = '''Mae’r adroddiadau o dan Adroddiadau cydymffurfio yn cael eu hadnewyddu bob wythnos, felly gallant fod yn hŷn na’r datganiad hwn.'''
+
+[strings."accessibility.if-you-meet-an-accessibility-barrier-ace3d5"]
+hash = "ace3d5c6ddf4"
+cy = '''Os dewch ar draws rhwystr hygyrchedd ar y wefan hon, cysylltwch â ni drwy’r manylion isod.'''
+
+[strings."accessibility.third-party-and-generated-content-8653f5"]
+hash = "8653f57b622a"
+cy = '''Cynnwys trydydd parti a chynnwys a gynhyrchir'''
+
+[strings."accessibility.the-following-content-is-excluded-from-605b7d"]
+hash = "605b7d32fb1b"
+cy = '''Mae’r cynnwys canlynol wedi’i eithrio o’r profion hygyrchedd am nad yw wedi’i anelu at ddefnyddwyr terfynol:'''
+
+[strings."accessibility.hmrc-oauth-authorisation-pages-when-you-0217a3"]
+hash = "0217a3cbd32b"
+cy = '''<strong>Tudalennau awdurdodi OAuth CThEF:</strong> Pan fyddwch yn awdurdodi mynediad CThEF, cewch eich ailgyfeirio i dudalennau CThEF ei hun'''
+
+[strings."accessibility.google-and-microsoft-sign-in-the-58a58b"]
+hash = "58a58bf5fe06"
+cy = '''<strong>Mewngofnodi gyda Google a Microsoft:</strong> Google a Microsoft sy’n darparu’r tudalennau mewngofnodi'''
+
+[strings."accessibility.api-documentation-docs-api-swagger-ui-eda869"]
+hash = "eda8692b97db"
+cy = '''<strong>Dogfennaeth yr API (/docs/api/):</strong> Cydran trydydd parti ar gyfer datblygwyr yw Swagger UI'''
+
+[strings."accessibility.test-results-tests-generated-test-reports-097e62"]
+hash = "097e6210173d"
+cy = '''<strong>Canlyniadau profion (/tests/):</strong> Adroddiadau profion a gynhyrchir ar gyfer datblygwyr'''
+
+[strings."accessibility.compatibility-b37ddf"]
+hash = "b37ddf1f6e0f"
+cy = '''Cydnawsedd'''
+
+[strings."accessibility.this-website-is-designed-to-be-853a89"]
+hash = "853a892b4db2"
+cy = '''Mae’r wefan hon wedi’i dylunio i fod yn gydnaws â’r technolegau cynorthwyol canlynol:'''
+
+[strings."accessibility.screen-readers-nvda-jaws-voiceover-talkback-c4d52f"]
+hash = "c4d52f2724b1"
+cy = '''Rhaglenni darllen sgrin (NVDA, JAWS, VoiceOver, TalkBack)'''
+
+[strings."accessibility.screen-magnification-software-006021"]
+hash = "0060213c5562"
+cy = '''Meddalwedd chwyddo sgrin'''
+
+[strings."accessibility.speech-recognition-software-ba309a"]
+hash = "ba309a387e9c"
+cy = '''Meddalwedd adnabod llais'''
+
+[strings."accessibility.keyboard-only-navigation-01f2c0"]
+hash = "01f2c0cb19d9"
+cy = '''Gwe-lywio â bysellfwrdd yn unig'''
+
+[strings."accessibility.browser-support-2bd218"]
+hash = "2bd218b87fe8"
+cy = '''Porwyr a gefnogir'''
+
+[strings."accessibility.this-website-is-tested-and-supported-41b9d3"]
+hash = "41b9d3c8baef"
+cy = '''Mae’r wefan hon yn cael ei phrofi a’i chefnogi ar:'''
+
+[strings."accessibility.google-chrome-latest-66496f"]
+hash = "66496f4a65d4"
+cy = '''Google Chrome (y fersiwn ddiweddaraf)'''
+
+[strings."accessibility.mozilla-firefox-latest-a07096"]
+hash = "a07096d4b3ef"
+cy = '''Mozilla Firefox (y fersiwn ddiweddaraf)'''
+
+[strings."accessibility.apple-safari-latest-49f5f6"]
+hash = "49f5f6b8b51a"
+cy = '''Apple Safari (y fersiwn ddiweddaraf)'''
+
+[strings."accessibility.microsoft-edge-latest-eb29bf"]
+hash = "eb29bf18ffb0"
+cy = '''Microsoft Edge (y fersiwn ddiweddaraf)'''
+
+[strings."accessibility.technical-specifications-9408e6"]
+hash = "9408e60a6743"
+cy = '''Manylebau technegol'''
+
+[strings."accessibility.accessibility-of-this-website-relies-on-808d05"]
+hash = "808d059dd1bf"
+cy = '''Mae hygyrchedd y wefan hon yn dibynnu ar y technolegau canlynol:'''
+
+[strings."accessibility.html5-f090ed"]
+hash = "f090ed3f24ad"
+cy = '''HTML5'''
+
+[strings."accessibility.wai-aria-d22a7f"]
+hash = "d22a7f499338"
+cy = '''WAI-ARIA'''
+
+[strings."accessibility.css-b581e4"]
+hash = "b581e46042cb"
+cy = '''CSS'''
+
+[strings."accessibility.javascript-b27ad0"]
+hash = "b27ad06d123c"
+cy = '''JavaScript'''
+
+[strings."accessibility.these-technologies-are-relied-upon-for-97ef98"]
+hash = "97ef9891ab6a"
+cy = '''Dibynnir ar y technolegau hyn er mwyn cydymffurfio â’r safonau hygyrchedd a ddefnyddir.'''
+
+[strings."accessibility.feedback-and-contact-75451b"]
+hash = "75451bf3e79d"
+cy = '''Adborth a chysylltu'''
+
+[strings."accessibility.we-welcome-your-feedback-on-the-30697e"]
+hash = "30697e833085"
+cy = '''Rydym yn croesawu eich adborth ar hygyrchedd DIY Accounting Submit. Os dewch ar draws rhwystrau hygyrchedd neu os oes gennych awgrymiadau i wella’r wefan, cysylltwch â ni:'''
+
+[strings."accessibility.diy-accounting-limited-registered-office-37-604a86"]
+hash = "604a86c686ca"
+cy = '''<strong>DIY Accounting Limited</strong><br /> Swyddfa gofrestredig: 37 Sutherland Avenue, Leeds, LS8 1BY<br /> Rhif y cwmni: 06846849<br /> Wedi’i gofrestru yng Nghymru a Lloegr<br /> <strong>E-bost:</strong> <a href="mailto:support@diyaccounting.co.uk">support@diyaccounting.co.uk</a>'''
+
+[strings."accessibility.we-aim-to-respond-to-accessibility-506240"]
+hash = "506240bb78f6"
+cy = '''Ein nod yw ymateb i adborth am hygyrchedd cyn pen 5 diwrnod gwaith.'''
+
+[strings."accessibility.enforcement-procedure-7ce04e"]
+hash = "7ce04e46d98f"
+cy = '''Gweithdrefn gorfodi'''
+
+[strings."accessibility.if-you-are-not-satisfied-with-fec9b4"]
+hash = "fec9b4375122"
+cy = '''Os nad ydych yn fodlon â’n hymateb i’ch pryder am hygyrchedd, gallwch godi’r mater gyda’r <a href="https://www.equalityadvisoryservice.com/" target="_blank" rel="noopener">Gwasanaeth Cynghori a Chefnogi Cydraddoldeb (EASS)</a> (yn Saesneg).'''
+
+[strings."accessibility.the-equality-and-human-rights-commission-9ec9d7"]
+hash = "9ec9d7295ec3"
+cy = '''Y Comisiwn Cydraddoldeb a Hawliau Dynol (EHRC) sy’n gyfrifol am orfodi <a href="https://www.legislation.gov.uk/uksi/2018/952/contents/made" target="_blank" rel="noopener" >Rheoliadau Hygyrchedd Cyrff y Sector Cyhoeddus (Gwefannau ac Apiau ar gyfer Dyfeisiau Symudol) (Rhif 2) 2018</a > (yn Saesneg) (y ‘rheoliadau hygyrchedd’). Er nad yw DIY Accounting Limited yn gorff sector cyhoeddus, rydym yn cydymffurfio â’r safonau hyn o’n gwirfodd.'''
+
+[strings."accessibility.compliance-reports-798c08"]
+hash = "798c08bfbe80"
+cy = '''Adroddiadau cydymffurfio'''
+
+[strings."accessibility.our-accessibility-and-security-compliance-is-9631d3"]
+hash = "9631d3218b77"
+cy = '''Mae ein cydymffurfiaeth o ran hygyrchedd a diogelwch yn cael ei monitro’n barhaus. Mae’r adroddiadau ar gael yn:'''
+
+[strings."accessibility.test-results-dashboard-f7c6dc"]
+hash = "f7c6dca31e6d"
+cy = '''<a href="./tests/index.html">Dangosfwrdd canlyniadau’r profion</a> (yn Saesneg)'''
+
+[strings."accessibility.this-application-is-free-to-use-b81ad2"]
+hash = "b81ad2d451b3"
+cy = '''Mae’r rhaglen hon am ddim i’w defnyddio ac mae ei chod ffynhonnell ar gael yn <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" target="_blank" rel="noopener" >github.com/diy-accounting-uk/submit.diyaccounting.co.uk</a > (yn Saesneg) o dan y PolyForm Internal Use License 1.0.0. Gallwch ddarllen y marcio a’r profion sydd y tu ôl i bob honiad ar y dudalen hon.'''
+
+[strings."accessibility.description-c23a16"]
+hash = "c23a16fc2edb"
+cy = '''Datganiad hygyrchedd DIY Accounting Submit. Ein hymrwymiad i gydymffurfio â WCAG 2.2 AA ac i ddylunio cynhwysol.'''
+
+[strings."accessibility.og-title-489463"]
+hash = "489463866fee"
+cy = '''Datganiad hygyrchedd - DIY Accounting Submit'''
+
+[strings."accessibility.og-description-c23a16"]
+hash = "c23a16fc2edb"
+cy = '''Datganiad hygyrchedd DIY Accounting Submit. Ein hymrwymiad i gydymffurfio â WCAG 2.2 AA ac i ddylunio cynhwysol.'''
+
+# == The help page (help.html) and the text its scripts write (lib/help-page.js, lib/support-api.js), ids help.* ==
+
+[strings."help.title"]
+hash = "67d50c4d2f07"
+cy = '''Cymorth a chwestiynau cyffredin - DIY Accounting Submit'''
+
+[strings."help.help-faqs-8f07f0"]
+hash = "8f07f0748204"
+cy = '''Cymorth a chwestiynau cyffredin'''
+
+[strings."help.find-answers-to-common-questions-about-e18696"]
+hash = "e18696361cbf"
+cy = '''Dewch o hyd i atebion i gwestiynau cyffredin am DIY Accounting Submit'''
+
+[strings."help.status-of-each-feature-sandbox-and-4506e5"]
+hash = "4506e5b3700f"
+cy = '''<strong>Statws pob nodwedd.</strong> Nid yw nodweddion prawf (sandbox) a rhagolwg (preview) yn ffeilio dim byd go iawn. <a href="mtd-calendar.html#availability">Gweld y tabl argaeledd</a>.'''
+
+[strings."help.try-it-free-sign-in-and-3686b4"]
+hash = "3686b4687f7a"
+cy = '''Rhowch gynnig arni am ddim: mewngofnodwch a gofynnwch am docyn diwrnod ar y dudalen <a href="bundles.html">Bundles</a>. Mae’n rhoi 3 chredyd (tokens) i chi am 24 awr, digon ar gyfer 3 Ffurflen TAW.'''
+
+[strings."help.showing-every-question-6b5e9c"]
+hash = "6b5e9cb2ce28"
+cy = '''Yn dangos pob cwestiwn'''
+
+[strings."help.submission-8d11f7"]
+hash = "8d11f7f3b359"
+cy = '''Cyflwyno'''
+
+[strings."help.how-do-i-submit-my-vat-870d3f"]
+hash = "870d3f81274e"
+cy = '''Sut ydw i’n cyflwyno fy Ffurflen TAW?'''
+
+[strings."help.sign-in-with-your-google-or-6e2820"]
+hash = "6e2820dc650c"
+cy = '''Mewngofnodwch gyda’ch cyfrif Google neu Microsoft.'''
+
+[strings."help.open-check-vat-obligations-to-see-0acbeb"]
+hash = "0acbeb83e9dc"
+cy = '''Agorwch <strong>Rhwymedigaethau TAW (CThEF)</strong> i weld pa gyfnodau y mae angen Ffurflen TAW ar eu cyfer.'''
+
+[strings."help.click-submit-vat-return-on-the-e83683"]
+hash = "e8368303b263"
+cy = '''Cliciwch <strong>Cyflwyno TAW (CThEF)</strong> ar yr hafan.'''
+
+[strings."help.enter-your-figures-in-boxes-1-2b2d70"]
+hash = "2b2d702cd95f"
+cy = '''Rhowch eich ffigurau ym Mlychau 1 i 9. Mae Blychau 3 a 5 yn cael eu cyfrifo ar eich rhan.'''
+
+[strings."help.tick-the-declaration-that-the-information-079d3d"]
+hash = "079d3d71c777"
+cy = '''Ticiwch y datganiad bod yr wybodaeth yn wir ac yn gyflawn.'''
+
+[strings."help.click-submit-hmrc-asks-you-to-867c6a"]
+hash = "867c6aea24dd"
+cy = '''Cliciwch <strong>Cyflwyno Ffurflen TAW</strong>. Mae CThEF yn gofyn i chi awdurdodi’r cyflwyniad.'''
+
+[strings."help.save-your-receipt-it-shows-the-a16fa3"]
+hash = "a16fa3e1cabb"
+cy = '''Cadwch eich derbynneb. Mae’n dangos Rhif bwndel y ffurflen (Form bundle number) gan CThEF.'''
+
+[strings."help.what-are-vat-obligations-62c5a0"]
+hash = "62c5a01f17ce"
+cy = '''Beth yw rhwymedigaethau TAW?'''
+
+[strings."help.an-obligation-is-a-period-for-56f07e"]
+hash = "56f07e769c81"
+cy = '''Cyfnod y mae CThEF yn disgwyl Ffurflen TAW ar ei gyfer yw rhwymedigaeth. Mae pob un yn dangos tri pheth.'''
+
+[strings."help.vat-period-is-the-range-of-6d8d6f"]
+hash = "6d8d6fff4e38"
+cy = '''<strong>Cyfnod TAW</strong> yw’r ystod o ddyddiadau y mae’r Ffurflen TAW yn ei chwmpasu, er enghraifft 1 Ionawr i 31 Mawrth 2026.'''
+
+[strings."help.due-date-is-the-day-the-bf9612"]
+hash = "bf9612b0834c"
+cy = '''<strong>Dyddiad cau</strong> yw’r diwrnod y mae’n rhaid i’r Ffurflen TAW gyrraedd CThEF.'''
+
+[strings."help.status-is-open-until-you-submit-ee9bad"]
+hash = "ee9badcf9d7b"
+cy = '''<strong>Statws</strong>: Agored nes i chi gyflwyno’r Ffurflen TAW, a Wedi’i chyflawni ar ôl hynny.'''
+
+[strings."help.you-can-submit-a-return-only-12a703"]
+hash = "12a7039b0734"
+cy = '''Dim ond ar gyfer rhwymedigaeth Agored y gallwch gyflwyno Ffurflen TAW. Defnyddiwch <strong>Rhwymedigaethau TAW (CThEF)</strong> i weld eich rhai chi.'''
+
+[strings."help.i-submitted-the-wrong-figures-what-e8b787"]
+hash = "e8b787edec5b"
+cy = '''Cyflwynais y ffigurau anghywir. Beth ddylwn i ei wneud?'''
+
+[strings."help.you-cannot-amend-a-submitted-vat-221e32"]
+hash = "221e329e4699"
+cy = '''Ni allwch ddiwygio Ffurflen TAW sydd wedi’i chyflwyno yn Submit. Mae’r ffordd o’i chywiro yn dibynnu ar faint y gwall.'''
+
+[strings."help.a-small-error-goes-on-your-7db66e"]
+hash = "7db66e6d7fd8"
+cy = '''Mae gwall bach yn mynd ar eich Ffurflen TAW nesaf. Mae’n fach pan fydd ei werth net yn £10,000 neu lai, neu hyd at £50,000 os nad yw’n fwy nag 1% o’ch ffigur Blwch 6 ar gyfer y cyfnod y byddwch yn dod o hyd iddo ynddo. Rhaid iddo fod o fewn y terfyn amser o 4 blynedd a heb fod yn fwriadol.'''
+
+[strings."help.any-other-error-goes-to-hmrc-cedcce"]
+hash = "cedcce0ff92b"
+cy = '''Mae unrhyw wall arall yn mynd at CThEF ar ffurflen VAT652, neu mewn llythyr.'''
+
+[strings."help.see-hmrc-guidance-on-correcting-vat-d4ae54"]
+hash = "d4ae54e7a487"
+cy = '''Gweler <a href="https://www.gov.uk/vat-corrections" target="_blank" rel="noopener">arweiniad CThEF ar gywiro gwallau TAW</a> (yn Saesneg). Cadwch eich derbynneb Submit fel cofnod o’r hyn a gyflwynwyd gennych gyntaf.'''
+
+[strings."help.my-vat-obligations-aren-t-showing-e3d24b"]
+hash = "e3d24b35540a"
+cy = '''Nid yw fy rhwymedigaethau TAW yn ymddangos'''
+
+[strings."help.if-no-obligations-appear-c94c42"]
+hash = "c94c427b959b"
+cy = '''Os nad oes rhwymedigaethau’n ymddangos:'''
+
+[strings."help.widen-the-date-range-obligations-show-c32210"]
+hash = "c322106bde0f"
+cy = '''Ehangwch yr ystod dyddiadau. Dim ond ar gyfer cyfnodau y mae CThEF yn disgwyl Ffurflen TAW ar eu cyfer y mae rhwymedigaethau’n ymddangos.'''
+
+[strings."help.check-the-status-filter-it-shows-39c386"]
+hash = "39c3868336c7"
+cy = '''Gwiriwch yr hidlydd statws. Dim ond rhwymedigaethau Agored y mae’n eu dangos nes i chi ddewis “Pob statws”.'''
+
+[strings."help.wait-after-a-new-registration-hmrc-f3ce1f"]
+hash = "f3ce1fe1bdad"
+cy = '''Arhoswch ar ôl cofrestru o’r newydd. Gall CThEF gymryd 24 i 48 awr i greu eich rhwymedigaeth gyntaf ar ôl i chi gofrestru ar gyfer Troi Treth yn Ddigidol.'''
+
+[strings."help.check-that-the-9-digit-vat-4b54eb"]
+hash = "4b54eb2a6174"
+cy = '''Gwiriwch fod y rhif cofrestru TAW 9 digid yn gywir.'''
+
+[strings."help.my-figures-don-t-match-my-1bdc7a"]
+hash = "1bdc7a4a5cbf"
+cy = '''Nid yw fy ffigurau’n cyfateb i’m taenlen'''
+
+[strings."help.these-causes-explain-most-mismatches-01deac"]
+hash = "01deac42778d"
+cy = '''Yr achosion hyn sy’n egluro’r rhan fwyaf o’r gwahaniaethau:'''
+
+[strings."help.rounding-can-differ-hmrc-accepts-figures-550c0e"]
+hash = "550c0e007e30"
+cy = '''Gall y talgrynnu fod yn wahanol. Mae CThEF yn derbyn ffigurau i 2 le degol ar gyfer Blychau 1 i 5. Gwiriwch fod eich taenlen yn talgrynnu yn yr un ffordd.'''
+
+[strings."help.boxes-3-and-5-calculate-for-4a25e0"]
+hash = "4a25e05b3c4a"
+cy = '''Mae Blychau 3 a 5 yn cael eu cyfrifo ar eich rhan. Blwch 3 yw Blwch 1 a Blwch 2 wedi’u hadio at ei gilydd. Blwch 5 yw’r gwahaniaeth rhwng Blwch 3 a Blwch 4, wedi’i ddangos fel rhif positif. Peidiwch â’u cyfrifo eich hun.'''
+
+[strings."help.boxes-1-to-5-hold-vat-8090ec"]
+hash = "8090ecbb73d4"
+cy = '''Symiau TAW sydd ym Mlychau 1 i 5. Gwerthoedd net heb gynnwys TAW sydd ym Mlychau 6 i 9.'''
+
+[strings."help.boxes-6-to-9-are-whole-484093"]
+hash = "484093809887"
+cy = '''Punnoedd cyfan heb geiniogau yw Blychau 6 i 9.'''
+
+[strings."help.the-period-dates-must-match-the-59c6d6"]
+hash = "59c6d60ce7e5"
+cy = '''Rhaid i ddyddiadau’r cyfnod gyfateb yn union i’r rhwymedigaeth. Gwiriwch fod eich taenlen yn cwmpasu’r un dyddiadau.'''
+
+[strings."help.can-i-submit-vat-for-multiple-fbf911"]
+hash = "fbf911192eb7"
+cy = '''A allaf gyflwyno TAW ar gyfer mwy nag un busnes?'''
+
+[strings."help.yes-a-bundle-holds-no-vat-f5d890"]
+hash = "f5d890de2d7d"
+cy = '''Gallwch. Nid yw Bundle yn dal rhif cofrestru TAW, felly mae un Bundle yn cwmpasu pob busnes yr ydych yn cyflwyno ar ei ran.'''
+
+[strings."help.open-the-vat-form-453b73"]
+hash = "453b73341796"
+cy = '''Agorwch y ffurflen TAW.'''
+
+[strings."help.enter-the-vat-registration-number-of-079620"]
+hash = "079620158d29"
+cy = '''Rhowch rif cofrestru TAW y busnes.'''
+
+[strings."help.submit-your-figures-hmrc-asks-you-4a4f09"]
+hash = "4a4f09966e54"
+cy = '''Cyflwynwch eich ffigurau. Mae CThEF yn gofyn i chi awdurdodi gyda Dynodydd Defnyddiwr (ID) a chyfrinair Porth y Llywodraeth y busnes hwnnw.'''
+
+[strings."help.i-entered-the-wrong-vat-registration-240f26"]
+hash = "240f26617221"
+cy = '''Rhoddais y rhif cofrestru TAW anghywir. Sut ydw i’n ei gywiro?'''
+
+[strings."help.a-bundle-holds-no-vat-registration-290b00"]
+hash = "290b00084d54"
+cy = '''Nid yw Bundle yn dal rhif cofrestru TAW, felly nid oes dim i’w ddileu na’i olygu. Rhowch y rhif 9 digid cywir ar y ffurflen TAW cyn i chi gyflwyno. Nid oes dim yn mynd at CThEF nes i chi gyflwyno.'''
+
+[strings."help.what-if-box-5-shows-a-624a66"]
+hash = "624a66d52260"
+cy = '''Beth os yw Blwch 5 yn dangos swm negyddol (ad-daliad)?'''
+
+[strings."help.a-negative-box-5-means-hmrc-1942af"]
+hash = "1942af62ad57"
+cy = '''Mae Blwch 5 negyddol yn golygu bod ad-daliad yn ddyledus i chi gan CThEF. Mae’n digwydd pan fydd Blwch 4 (y TAW a adhawliwyd) yn fwy na Blwch 3 (y TAW sy’n ddyledus). Mae Submit yn dangos Blwch 5 fel swm positif, sef y gwahaniaeth rhwng Blwch 3 a Blwch 4, ac mae CThEF yn gwybod o’r ffigurau ai taliad ynteu ad-daliad ydyw.'''
+
+[strings."help.hmrc-then-processes-the-refund-by-3730a7"]
+hash = "3730a71a96c1"
+cy = '''Yna mae CThEF yn prosesu’r ad-daliad drwy ei weithdrefn arferol. Mae ad-daliadau fel arfer yn cyrraedd eich cyfrif banc cyn pen 10 diwrnod gwaith. Mae eich cyfrif ar-lein gyda CThEF yn dangos y statws.'''
+
+[strings."help.how-do-i-pay-hmrc-after-4628dc"]
+hash = "4628dc2f3797"
+cy = '''Sut ydw i’n talu CThEF ar ôl cyflwyno fy Ffurflen TAW?'''
+
+[strings."help.submit-sends-your-vat-return-it-169c06"]
+hash = "169c0625ce28"
+cy = '''Mae Submit yn anfon eich Ffurflen TAW. Nid yw’n cymryd taliad. Os oes TAW yn ddyledus gennych, talwch CThEF ar wahân:'''
+
+[strings."help.open-hmrc-s-page-for-paying-f05936"]
+hash = "f059364cc4e1"
+cy = '''Agorwch <a href="https://www.gov.uk/pay-vat" target="_blank" rel="noopener">dudalen CThEF ar gyfer talu TAW</a> (yn Saesneg).'''
+
+[strings."help.choose-a-payment-method-direct-debit-e57b05"]
+hash = "e57b05cbeda9"
+cy = '''Dewiswch ddull talu: Debyd Uniongyrchol, trosglwyddiad banc (defnyddiwch eich rhif cofrestru TAW fel y cyfeirnod), neu gerdyn debyd neu gredyd.'''
+
+[strings."help.the-payment-deadline-is-usually-the-d5802f"]
+hash = "d5802fe33b2b"
+cy = '''Mae’r dyddiad cau ar gyfer talu fel arfer yr un fath â dyddiad cau’r Ffurflen TAW, ac mae eich rhwymedigaethau’n ei ddangos. Mae cosbau gwahanol am dalu’n hwyr ac am gyflwyno’n hwyr.'''
+
+[strings."help.what-do-the-period-codes-like-49e69a"]
+hash = "49e69aefa109"
+cy = '''Beth yw ystyr codau cyfnod fel ‘26AF’?'''
+
+[strings."help.period-codes-such-as-26af-and-acce4a"]
+hash = "acce4a6f62b8"
+cy = '''Cyfeirnodau CThEF ei hun ar gyfer cyfnodau TAW yw codau cyfnod megis 26AF a 26AG. Nid oes angen i chi eu darllen.'''
+
+[strings."help.the-first-two-digits-are-the-c65e1b"]
+hash = "c65e1beca70f"
+cy = '''Y flwyddyn yw’r ddau ddigid cyntaf (26 yw 2026). Mae’r llythrennau’n dangos y chwarter neu’r mis, ac maent yn newid yn ôl y cynllun. Dewiswch gyfnod yn ôl ei ddyddiadau a’i ddyddiad cau, ac anwybyddwch y cod.'''
+
+[strings."help.can-i-file-with-companies-house-2f0342"]
+hash = "2f03427a6e1d"
+cy = '''A allaf ffeilio gyda Thŷ’r Cwmnïau?'''
+
+[strings."help.yes-these-companies-house-services-are-63330b"]
+hash = "63330b3890b0"
+cy = '''Gallwch. Mae’r gwasanaethau Tŷ’r Cwmnïau hyn mewn <strong>Cynhyrchu (production)</strong>: chwilio am gwmni, newid cyfeiriad swyddfa gofrestredig, newid cyfeiriad e-bost cofrestredig, cyfrifon micro-endid, cyfrifon cwmni bach a datganiad cadarnhau.'''
+
+[strings."help.see-the-availability-table-for-the-535784"]
+hash = "5357842fab31"
+cy = '''Gweler y <a href="mtd-calendar.html#availability" target="_blank" rel="noopener">tabl argaeledd</a> am y statws cyfredol.'''
+
+[strings."help.can-i-file-accounts-or-a-9b907e"]
+hash = "9b907e3c9781"
+cy = '''A allaf ffeilio cyfrifon neu ddatganiad cadarnhau gyda Thŷ’r Cwmnïau?'''
+
+[strings."help.yes-micro-entity-accounts-small-company-209627"]
+hash = "209627165e51"
+cy = '''Gallwch. Mae cyfrifon micro-endid, cyfrifon cwmni bach a’r datganiad cadarnhau mewn <strong>Cynhyrchu (production)</strong>. Mae ffeilio yn mynd at Dŷ’r Cwmnïau.'''
+
+[strings."help.each-filing-needs-the-resident-ltd-4e2fb8"]
+hash = "4e2fb81434be"
+cy = '''Mae angen y Bundle <strong>Resident Ltd</strong>, <strong>Resident Pro</strong> neu <strong>Resident Tax Agent</strong> ar gyfer pob ffeilio. Mae ffeilio cyfrifon yn costio un credyd. Nid yw datganiad cadarnhau yn costio credyd, ac mae tâl o £61.35 am bob ffeilio.'''
+
+[strings."help.the-psc-verification-statement-is-in-2d8a7b"]
+hash = "2d8a7b2a4142"
+cy = '''Mae’r datganiad dilysu PSC yn yr <strong>amgylchedd prawf (sandbox)</strong>: mae’n mynd at wasanaeth prawf Tŷ’r Cwmnïau ac nid yw’n ffeilio dim byd go iawn.'''
+
+[strings."help.vat-basics-0d9958"]
+hash = "0d9958dd6900"
+cy = '''Hanfodion TAW'''
+
+[strings."help.what-goes-in-each-vat-return-3656a8"]
+hash = "3656a8ca3de1"
+cy = '''Beth sy’n mynd ym mhob blwch ar y Ffurflen TAW (1-9)?'''
+
+[strings."help.box-512fd3"]
+hash = "512fd3c6042c"
+cy = '''Blwch'''
+
+[strings."help.description-526e00"]
+hash = "526e0087cc3f"
+cy = '''Disgrifiad'''
+
+[strings."help.vat-due-on-sales-and-other-11c781"]
+hash = "11c78101b7bb"
+cy = '''TAW sy’n ddyledus ar werthiannau ac allbynnau eraill'''
+
+[strings."help.vat-due-on-acquisitions-from-eu-8fa804"]
+hash = "8fa804ae4317"
+cy = '''TAW sy’n ddyledus ar gaffaeliadau o’r UE (fel arfer £0 ers Brexit)'''
+
+[strings."help.total-vat-due-box-1-plus-8a4120"]
+hash = "8a4120e2a73e"
+cy = '''Cyfanswm y TAW sy’n ddyledus (Blwch 1 a Blwch 2), wedi’i gyfrifo’n awtomatig'''
+
+[strings."help.vat-reclaimed-on-purchases-and-other-1b7cef"]
+hash = "1b7cef3b5a48"
+cy = '''TAW a adhawliwyd ar bryniannau a mewnbynnau eraill'''
+
+[strings."help.net-vat-to-pay-or-reclaim-7566dd"]
+hash = "7566dd90b8da"
+cy = '''TAW net i’w thalu neu ei hadennill (Blwch 3 llai Blwch 4), wedi’i chyfrifo’n awtomatig'''
+
+[strings."help.total-value-of-sales-excluding-vat-5220a7"]
+hash = "5220a7aa81ae"
+cy = '''Cyfanswm gwerth y gwerthiannau heb gynnwys TAW (punnoedd cyfan)'''
+
+[strings."help.total-value-of-purchases-excluding-vat-bcc590"]
+hash = "bcc5907da0ab"
+cy = '''Cyfanswm gwerth y pryniannau heb gynnwys TAW (punnoedd cyfan)'''
+
+[strings."help.total-value-of-supplies-to-eu-05ef4b"]
+hash = "05ef4b56860c"
+cy = '''Cyfanswm gwerth y cyflenwadau i’r UE heb gynnwys TAW (fel arfer £0 ers Brexit)'''
+
+[strings."help.total-value-of-acquisitions-from-eu-d21e31"]
+hash = "d21e3196b9c9"
+cy = '''Cyfanswm gwerth y caffaeliadau o’r UE heb gynnwys TAW (fel arfer £0 ers Brexit)'''
+
+[strings."help.you-enter-boxes-1-2-4-7be65d"]
+hash = "7be65d07d28f"
+cy = '''Chi sy’n llenwi Blychau 1, 2, 4, 6, 7, 8 a 9. Mae Blychau 3 a 5 yn cael eu cyfrifo ar eich rhan.'''
+
+[strings."help.what-format-should-my-vat-registration-537cc7"]
+hash = "537cc76c65b6"
+cy = '''Ym mha fformat y dylai fy rhif cofrestru TAW fod?'''
+
+[strings."help.your-vat-registration-number-is-9-656d13"]
+hash = "656d1330aeb5"
+cy = '''Mae eich rhif cofrestru TAW yn 9 digid, heb fylchau, llythrennau na’r rhagddodiad GB. Mae ar eich tystysgrif cofrestru TAW gan CThEF.'''
+
+[strings."help.if-your-certificate-shows-gb-123-221535"]
+hash = "22153579228a"
+cy = '''Os yw eich tystysgrif yn dangos “GB 123 456 789”, rhowch 123456789.'''
+
+[strings."help.submit-rejects-these-forms-0fc772"]
+hash = "0fc772276fe1"
+cy = '''Mae Submit yn gwrthod y ffurfiau hyn:'''
+
+[strings."help.gb123456789-which-has-a-gb-prefix-16e81f"]
+hash = "16e81fb87a72"
+cy = '''GB123456789, sydd â’r rhagddodiad GB.'''
+
+[strings."help.123-456-789-which-has-spaces-7120ee"]
+hash = "7120eeab7d35"
+cy = '''123 456 789, sydd â bylchau.'''
+
+[strings."help.12345678-which-has-8-digits-11a615"]
+hash = "11a61520f729"
+cy = '''12345678, sydd ag 8 digid.'''
+
+[strings."help.i-m-on-the-flat-rate-3eea0f"]
+hash = "3eea0f1a3124"
+cy = '''Rwyf ar y Cynllun Cyfradd Unffurf. A allaf ddefnyddio’r ap hwn?'''
+
+[strings."help.yes-the-flat-rate-scheme-changes-2d82aa"]
+hash = "2d82aa20ab60"
+cy = '''Gallwch. Mae’r Cynllun Cyfradd Unffurf yn newid sut rydych yn cyfrifo eich TAW, nid sut rydych yn ei chyflwyno. Rhowch y ffigurau hyn:'''
+
+[strings."help.box-1-is-your-flat-rate-9f8959"]
+hash = "9f8959a58a61"
+cy = '''<strong>Blwch 1</strong> yw eich TAW cyfradd unffurf: eich trosiant gros wedi’i luosi â’ch canran cyfradd unffurf.'''
+
+[strings."help.box-6-is-your-gross-turnover-80d555"]
+hash = "80d555e65db1"
+cy = '''<strong>Blwch 6</strong> yw eich trosiant gros gan gynnwys TAW.'''
+
+[strings."help.boxes-2-4-7-8-and-e4db26"]
+hash = "e4db26cadb0f"
+cy = '''Mae <strong>Blychau 2, 4, 7, 8 a 9</strong> fel arfer yn £0. Gwiriwch arweiniad CThEF am eithriadau.'''
+
+[strings."help.i-m-on-annual-accounting-how-88d7c9"]
+hash = "88d7c92151df"
+cy = '''Rwyf ar y Cynllun Cyfrifyddu Blynyddol (Annual Accounting). Sut mae hyn yn gweithio?'''
+
+[strings."help.annual-accounting-means-you-submit-one-26afc0"]
+hash = "26afc07acf90"
+cy = '''Mae’r Cynllun Cyfrifyddu Blynyddol yn golygu eich bod yn cyflwyno un Ffurflen TAW y flwyddyn yn lle un bob chwarter. Rydych yn gweld un rhwymedigaeth ar gyfer y flwyddyn, ac rydych yn ei chyflwyno yn yr un ffordd â Ffurflen TAW chwarterol. Mae eich taliadau interim i CThEF yn ystod y flwyddyn ar wahân i’r Ffurflen TAW.'''
+
+[strings."help.what-accessibility-features-does-this-app-b7d24f"]
+hash = "b7d24f42aa29"
+cy = '''Pa nodweddion hygyrchedd sydd gan yr ap hwn?'''
+
+[strings."help.diy-accounting-submit-is-designed-to-eace94"]
+hash = "eace94c8bc64"
+cy = '''Mae DIY Accounting Submit wedi’i ddylunio i fodloni safonau hygyrchedd WCAG 2.2 Lefel AA:'''
+
+[strings."help.keyboard-navigation-b84d4f"]
+hash = "b84d4fa6913a"
+cy = '''<strong>Gwe-lywio â bysellfwrdd</strong>'''
+
+[strings."help.all-functions-accessible-via-keyboard-76e186"]
+hash = "76e186ac2204"
+cy = '''Mae modd cyrraedd pob swyddogaeth â’r bysellfwrdd'''
+
+[strings."help.tab-order-follows-logical-reading-order-8aff08"]
+hash = "8aff08531fd9"
+cy = '''Mae trefn y tabiau’n dilyn trefn ddarllen resymegol'''
+
+[strings."help.skip-link-to-main-content-on-1bf8f0"]
+hash = "1bf8f0f8c2f0"
+cy = '''Dolen neidio i’r prif gynnwys ar bob tudalen'''
+
+[strings."help.screen-reader-support-762560"]
+hash = "76256087ce91"
+cy = '''<strong>Cefnogaeth i raglenni darllen sgrin</strong>'''
+
+[strings."help.all-form-fields-have-accessible-labels-425c15"]
+hash = "425c15e36d90"
+cy = '''Mae gan bob maes ffurflen label hygyrch'''
+
+[strings."help.error-messages-announced-immediately-3a52b8"]
+hash = "3a52b85eb637"
+cy = '''Mae negeseuon gwall yn cael eu cyhoeddi ar unwaith'''
+
+[strings."help.status-updates-use-aria-live-regions-7ff277"]
+hash = "7ff277710e03"
+cy = '''Mae diweddariadau statws yn defnyddio rhanbarthau byw ARIA'''
+
+[strings."help.visual-design-7fda0b"]
+hash = "7fda0b8e09da"
+cy = '''<strong>Dyluniad gweledol</strong>'''
+
+[strings."help.colour-contrast-meets-4-5-1-c93cf4"]
+hash = "c93cf409a070"
+cy = '''Mae’r cyferbyniad lliw yn bodloni cymhareb o 4.5:1 o leiaf'''
+
+[strings."help.text-resizable-to-200-without-loss-f36bfe"]
+hash = "f36bfe69e4fe"
+cy = '''Mae modd newid maint y testun hyd at 200% heb golli dim'''
+
+[strings."help.focus-states-clearly-visible-42fa2e"]
+hash = "42fa2e50c773"
+cy = '''Mae’r cyflwr ffocws i’w weld yn glir'''
+
+[strings."help.for-issues-or-suggestions-see-our-257b94"]
+hash = "257b945caccb"
+cy = '''Am broblemau neu awgrymiadau, gweler ein <a href="https://submit.diyaccounting.co.uk/cy/accessibility.html" target="_blank" rel="noopener">datganiad hygyrchedd</a >.'''
+
+[strings."help.where-is-my-data-stored-is-624ca1"]
+hash = "624ca1732ca9"
+cy = '''Ble mae fy nata’n cael ei storio? A yw’n ddiogel?'''
+
+[strings."help.submit-stores-your-data-in-the-43b2d7"]
+hash = "43b2d7e517d0"
+cy = '''Mae Submit yn storio eich data yn rhanbarth AWS eu-west-2 (Llundain). Gweler <a href="security.html" target="_blank" rel="noopener">Diogelwch</a> (yn Saesneg) am y lletya a’r mesurau diogelu.'''
+
+[strings."help.we-store-b696ae"]
+hash = "b696ae04b218"
+cy = '''Rydym yn storio:'''
+
+[strings."help.your-bundles-and-token-balances-117a08"]
+hash = "117a083fc7c0"
+cy = '''Eich Bundles a’ch balansau credydau.'''
+
+[strings."help.your-submission-receipts-in-your-account-63caef"]
+hash = "63caefb01c00"
+cy = '''Derbynebau eich cyflwyniadau, yn eich cyfrif.'''
+
+[strings."help.we-do-not-store-d6f593"]
+hash = "d6f593b935a5"
+cy = '''Nid ydym yn storio:'''
+
+[strings."help.your-vat-figures-they-go-directly-4eb093"]
+hash = "4eb093580d14"
+cy = '''Eich ffigurau TAW. Maent yn mynd yn syth at CThEF ac nid ydynt yn cael eu cadw ar ein gweinyddion.'''
+
+[strings."help.your-government-gateway-credentials-you-enter-1bcdc7"]
+hash = "1bcdc70d3e0e"
+cy = '''Eich manylion mewngofnodi Porth y Llywodraeth. Rydych yn eu rhoi ar wefan CThEF ei hun.'''
+
+[strings."help.protections-a2de61"]
+hash = "a2de61f87326"
+cy = '''Mesurau diogelu:'''
+
+[strings."help.every-connection-uses-https-encryption-822f37"]
+hash = "822f37f1cc2f"
+cy = '''Mae pob cysylltiad yn defnyddio amgryptio HTTPS.'''
+
+[strings."help.hmrc-authorisation-uses-oauth-2-0-61cf7f"]
+hash = "61cf7f105433"
+cy = '''Mae awdurdodi CThEF yn defnyddio OAuth 2.0.'''
+
+[strings."help.your-hmrc-access-tokens-are-stored-7172ec"]
+hash = "7172ec5e2548"
+cy = '''Mae eich tocynnau mynediad CThEF yn cael eu storio’n ddiogel ac nid ydynt byth yn agored i JavaScript.'''
+
+[strings."help.see-our-privacy-policy-for-full-3ba093"]
+hash = "3ba0932b6196"
+cy = '''Gweler ein <a href="https://submit.diyaccounting.co.uk/cy/privacy.html" target="_blank" rel="noopener">polisi preifatrwydd</a> am y manylion llawn.'''
+
+[strings."help.can-i-use-this-on-my-a76f5c"]
+hash = "a76f5ca5505b"
+cy = '''A allaf ddefnyddio hwn ar fy ffôn neu fy llechen?'''
+
+[strings."help.yes-diy-accounting-submit-works-in-0b3fc5"]
+hash = "0b3fc5ba4bea"
+cy = '''Gallwch. Mae DIY Accounting Submit yn gweithio mewn porwr ar gyfrifiadur, llechen neu ffôn. Defnyddiwch Chrome, Firefox, Safari neu Edge. Mae’r dudalen yn addasu i faint eich sgrin, ac mae sgrin fwy yn haws ar gyfer rhoi ffigurau TAW.'''
+
+[strings."help.hmrc-s-authorisation-page-opens-in-44680f"]
+hash = "44680f194c7a"
+cy = '''Mae tudalen awdurdodi CThEF yn agor yn yr un tab ac yn dod â chi yn ôl i Submit.'''
+
+[strings."help.bundles-ff042b"]
+hash = "ff042b6ded4e"
+cy = '''Bundles'''
+
+[strings."help.what-is-a-bundle-71e8dc"]
+hash = "71e8dc5db0b5"
+cy = '''Beth yw Bundle?'''
+
+[strings."help.a-bundle-is-what-your-account-8346cc"]
+hash = "8346cc9976d2"
+cy = '''Bundle yw’r hyn y gall eich cyfrif ei ffeilio a faint o gredydau (tokens) y mae’n eu cael. Nid yw’n dal rhif cofrestru TAW na chysylltiad â CThEF. Rydych yn rhoi’r rhif ar y ffurflen TAW, ac mae CThEF yn gofyn i chi awdurdodi pob cyflwyniad.'''
+
+[strings."help.to-get-a-bundle-request-a-242e1d"]
+hash = "242e1d83bde0"
+cy = '''I gael Bundle, gofynnwch am docyn diwrnod neu dewiswch un ar y dudalen <a href="bundles.html" target="_blank" rel="noopener">Bundles</a>.'''
+
+[strings."help.what-do-the-bundles-cost-79cba2"]
+hash = "79cba22bccee"
+cy = '''Faint mae’r Bundles yn ei gostio?'''
+
+[strings."help.resident-vat-costs-9-99-a-48c66d"]
+hash = "48c66de37567"
+cy = '''Mae <strong>Resident VAT</strong> yn costio £9.99 y flwyddyn neu £0.99 y mis ac yn rhoi 100 credyd (tokens) bob mis. Gallwch gyflwyno Ffurflenni TAW i CThEF a chreu dolenni tocyn ar gyfer pobl eraill.'''
+
+[strings."help.resident-ltd-costs-9-99-a-f9777d"]
+hash = "f9777dcb247e"
+cy = '''Mae <strong>Resident Ltd</strong> yn costio £9.99 y flwyddyn neu £0.99 y mis ac yn rhoi 100 credyd (tokens) bob mis. Ffeiliwch gyfrifon a datganiadau cadarnhau gyda Thŷ’r Cwmnïau.'''
+
+[strings."help.resident-pro-costs-39-99-a-5aa453"]
+hash = "5aa453af2a4a"
+cy = '''Mae <strong>Resident Pro</strong> yn costio £39.99 y flwyddyn neu £3.99 y mis ac yn rhoi 100 credyd (tokens) bob mis. Gallwch gyflwyno Ffurflenni TAW i CThEF, ffeilio cyfrifon gyda Thŷ’r Cwmnïau, a chreu dolenni tocyn ar gyfer pobl eraill.'''
+
+[strings."help.day-pass-is-free-and-gives-66a8eb"]
+hash = "66a8ebf922de"
+cy = '''Mae’r <strong>Tocyn diwrnod</strong> am ddim ac yn rhoi 3 chredyd (tokens) am 24 awr. Gallwch gyflwyno Ffurflenni TAW i CThEF.'''
+
+[strings."help.each-filing-uses-one-token-cancel-630a47"]
+hash = "630a47c2a7c1"
+cy = '''Mae pob ffeilio yn defnyddio 1 credyd. Canslwch unrhyw bryd. Gweler y dudalen <a href="bundles.html" target="_blank" rel="noopener">Bundles</a> i danysgrifio.'''
+
+[strings."help.how-do-i-cancel-my-subscription-2acad2"]
+hash = "2acad2bd0017"
+cy = '''Sut ydw i’n canslo fy nhanysgrifiad?'''
+
+[strings."help.sign-in-and-open-the-bundles-184994"]
+hash = "18499415d2fb"
+cy = '''Mewngofnodwch ac agorwch y dudalen <a href="bundles.html" target="_blank" rel="noopener">Bundles</a>.'''
+
+[strings."help.click-manage-subscription-on-the-bundle-bffb0d"]
+hash = "bffb0db8925b"
+cy = '''Cliciwch <strong>Rheoli’r tanysgrifiad</strong> ar y Bundle. Mae hyn yn agor porth bilio Stripe.'''
+
+[strings."help.cancel-the-subscription-in-the-portal-03a7ed"]
+hash = "03a7ed543f2f"
+cy = '''Canslwch y tanysgrifiad yn y porth.'''
+
+[strings."help.remove-takes-a-bundle-off-your-60f93d"]
+hash = "60f93d204764"
+cy = '''Mae <strong>Dileu</strong> yn tynnu Bundle oddi ar eich cyfrif. Nid yw’n canslo’r tanysgrifiad, ac mae’r botwm Rheoli’r tanysgrifiad ar res y Bundle. Canslwch yn y porth cyn i chi ddileu’r Bundle.'''
+
+[strings."help.how-do-i-delete-my-account-39c965"]
+hash = "39c9658206ff"
+cy = '''Sut ydw i’n dileu fy nghyfrif?'''
+
+[strings."help.no-page-deletes-an-account-write-1f95a1"]
+hash = "1f95a1f12234"
+cy = '''Nid oes tudalen sy’n dileu cyfrif. Ysgrifennwch at support@diyaccounting.co.uk o gyfeiriad e-bost eich cyfrif a gofynnwch iddo gael ei ddileu. Canslwch unrhyw danysgrifiad yn gyntaf.'''
+
+[strings."help.we-delete-your-bundles-sign-in-551c06"]
+hash = "551c06790b95"
+cy = '''Rydym yn dileu eich Bundles, eich data mewngofnodi a’ch logiau archwilio cyn pen 30 diwrnod. Mae’r gyfraith yn ei gwneud yn ofynnol i ni gadw derbynebau cyflwyniadau CThEF am 7 mlynedd, ac rydym yn eu gwneud yn ddienw lle gallwn. Gweler y <a href="https://submit.diyaccounting.co.uk/cy/privacy.html" target="_blank" rel="noopener">polisi preifatrwydd</a> am yr hyn sy’n cael ei gadw.'''
+
+[strings."help.connection-639a40"]
+hash = "639a40e82b9a"
+cy = '''Cysylltu'''
+
+[strings."help.why-can-t-i-connect-to-e273a7"]
+hash = "e273a749dcf0"
+cy = '''Pam na allaf gysylltu â CThEF?'''
+
+[strings."help.submit-sends-you-to-hmrc-s-5d21a3"]
+hash = "5d21a31e51c7"
+cy = '''Mae Submit yn eich anfon i dudalen CThEF yn yr un tab ac yn dod â chi yn ôl ar ôl i chi awdurdodi. Os yw hynny’n methu:'''
+
+[strings."help.refresh-the-page-and-try-again-f61ce4"]
+hash = "f61ce430c607"
+cy = '''Adnewyddwch y dudalen a rhowch gynnig arall arni. Efallai fod eich mewngofnodiad wedi dod i ben tra oedd y dudalen ar agor.'''
+
+[strings."help.check-hmrc-service-availability-for-a-ee7320"]
+hash = "ee73202442b4"
+cy = '''Gwiriwch <a href="https://www.gov.uk/government/collections/hm-revenue-and-customs-service-availability-and-issues" target="_blank" rel="noopener" >argaeledd gwasanaethau CThEF</a > (yn Saesneg) am nam.'''
+
+[strings."help.try-a-different-browser-or-clear-2a56f4"]
+hash = "2a56f480b8d5"
+cy = '''Rhowch gynnig ar borwr gwahanol, neu cliriwch y cwcis ar gyfer y wefan hon.'''
+
+[strings."help.i-ve-never-submitted-digitally-before-6f02b2"]
+hash = "6f02b2f31cda"
+cy = '''Nid wyf erioed wedi cyflwyno’n ddigidol o’r blaen. Ble ydw i’n dechrau?'''
+
+[strings."help.sign-up-for-making-tax-digital-73ab32"]
+hash = "73ab32ffc3d3"
+cy = '''Cofrestrwch ar gyfer Troi Treth yn Ddigidol ar gyfer TAW yn <a href="https://www.gov.uk/vat-record-keeping/sign-up-for-making-tax-digital-for-vat" target="_blank" rel="noopener" >gov.uk/vat-record-keeping</a > (yn Saesneg), os nad ydych wedi gwneud hynny eisoes.'''
+
+[strings."help.wait-24-to-48-hours-hmrc-ae99f4"]
+hash = "ae99f4f9528b"
+cy = '''Arhoswch 24 i 48 awr. Mae angen amser ar CThEF i ddechrau eich mynediad at Troi Treth yn Ddigidol.'''
+
+[strings."help.sign-in-to-diy-accounting-submit-072b75"]
+hash = "072b7587410e"
+cy = '''Mewngofnodwch i DIY Accounting Submit gyda’ch cyfrif Google neu Microsoft.'''
+
+[strings."help.request-a-day-pass-or-choose-1166d3"]
+hash = "1166d3f8586f"
+cy = '''Gofynnwch am docyn diwrnod neu dewiswch Bundle ar y dudalen <a href="bundles.html" target="_blank" rel="noopener">Bundles</a>.'''
+
+[strings."help.check-your-obligations-to-see-which-8c1187"]
+hash = "8c118775f33c"
+cy = '''Gwiriwch eich rhwymedigaethau i weld ar gyfer pa gyfnodau TAW y mae CThEF yn disgwyl Ffurflenni TAW.'''
+
+[strings."help.enter-your-9-digit-vat-registration-473204"]
+hash = "473204984848"
+cy = '''Rhowch eich rhif cofrestru TAW 9 digid a’ch ffigurau ar y ffurflen TAW.'''
+
+[strings."help.submit-your-return-d5d1db"]
+hash = "d5d1db6b559d"
+cy = '''Cyflwynwch eich Ffurflen TAW.'''
+
+[strings."help.keep-your-government-gateway-user-id-5683a7"]
+hash = "5683a72b3849"
+cy = '''Cadwch eich Dynodydd Defnyddiwr (ID) a’ch cyfrinair ar gyfer Porth y Llywodraeth wrth law. Mae CThEF yn gofyn amdanynt pan fyddwch yn awdurdodi.'''
+
+[strings."help.my-hmrc-authorisation-has-expired-537f1e"]
+hash = "537f1eac5081"
+cy = '''Mae fy awdurdodiad CThEF wedi dod i ben'''
+
+[strings."help.an-hmrc-authorisation-lasts-18-months-095dd7"]
+hash = "095dd720fe2b"
+cy = '''Mae awdurdodiad CThEF yn para 18 mis, neu’n dod i ben pan fyddwch yn tynnu awdurdod y feddalwedd yn ôl.'''
+
+[strings."help.to-authorise-again-42ae10"]
+hash = "42ae103a3ff4"
+cy = '''I awdurdodi eto:'''
+
+[strings."help.start-a-submission-submit-sends-you-b7a356"]
+hash = "b7a356f16131"
+cy = '''Dechreuwch gyflwyniad. Mae Submit yn eich anfon at CThEF.'''
+
+[strings."help.enter-your-government-gateway-user-id-fdae21"]
+hash = "fdae21681322"
+cy = '''Rhowch eich Dynodydd Defnyddiwr (ID) a’ch cyfrinair ar gyfer <strong>Porth y Llywodraeth</strong> ar dudalen CThEF.'''
+
+[strings."help.give-diy-accounting-submit-permission-to-5f94df"]
+hash = "5f94dfacda41"
+cy = '''Rhowch ganiatâd i DIY Accounting Submit weithredu ar eich rhan.'''
+
+[strings."help.a-business-checks-or-removes-the-4e443c"]
+hash = "4e443c668b0d"
+cy = '''Mae busnes yn gwirio neu’n tynnu awdurdod y feddalwedd yn ôl yn <a href="https://www.tax.service.gov.uk/applications-manage-authority" target="_blank" rel="noopener" >tax.service.gov.uk/applications-manage-authority</a > (yn Saesneg). Mae asiant yn defnyddio’r <a href="https://www.tax.service.gov.uk/agent-services-account" target="_blank" rel="noopener">cyfrif gwasanaethau asiant</a> (yn Saesneg).'''
+
+[strings."help.what-is-the-difference-between-sandbox-cd1f17"]
+hash = "cd1f175700e8"
+cy = '''Beth yw’r gwahaniaeth rhwng Prawf (sandbox), Rhagolwg (preview) a Chynhyrchu (production)?'''
+
+[strings."help.production-sends-your-filing-to-hmrc-b2ec11"]
+hash = "b2ec117b691d"
+cy = '''Mae Cynhyrchu yn anfon eich ffeilio at CThEF go iawn. Mae Prawf yn ei anfon at wasanaeth prawf CThEF, ac nid oes dim byd go iawn yn cael ei ffeilio. Mae Rhagolwg yn gadael i chi roi cynnig ar y sgriniau, ac nid oes dim yn cael ei anfon.'''
+
+[strings."help.production-needs-your-government-gateway-user-195484"]
+hash = "195484913ce0"
+cy = '''Mae angen eich Dynodydd Defnyddiwr (ID) a’ch cyfrinair ar gyfer Porth y Llywodraeth ar <strong>Cynhyrchu</strong>. Mae cyflwyniad yn Ffurflen TAW sy’n rhwymo mewn cyfraith.'''
+
+[strings."help.sandbox-uses-test-credentials-and-any-fc8c68"]
+hash = "fc8c6826329b"
+cy = '''Mae <strong>Prawf</strong> yn defnyddio manylion mewngofnodi prawf, ac mae unrhyw rif cofrestru TAW yn gweithio. Nid yw cyflwyniad yn effeithio ar gofnodion treth go iawn.'''
+
+[strings."help.preview-shows-the-screens-of-a-7848fc"]
+hash = "7848fcafb526"
+cy = '''Mae <strong>Rhagolwg</strong> yn dangos sgriniau ffeilio nad yw ar gael eto. Nid oes dim yn mynd at CThEF nac at Dŷ’r Cwmnïau.'''
+
+[strings."help.the-availability-table-gives-the-status-2aba3e"]
+hash = "2aba3e340d57"
+cy = '''Mae’r <a href="mtd-calendar.html#availability" target="_blank" rel="noopener">tabl argaeledd</a> yn rhoi statws pob ffeilio.'''
+
+[strings."help.what-if-i-can-t-access-c0044a"]
+hash = "c0044a2fb99b"
+cy = '''Beth os na allaf gael mynediad at fy nghyfrif Google neu Microsoft?'''
+
+[strings."help.if-you-lose-access-to-the-8828ac"]
+hash = "8828acf1bbd5"
+cy = '''Os byddwch yn colli mynediad at y cyfrif yr ydych yn mewngofnodi ag ef, nid oes dim yn cael ei golli yn CThEF. Mae eich awdurdodiad CThEF yn perthyn i’ch Porth y Llywodraeth, nid i’ch darparwr mewngofnodi, ac mae CThEF yn cadw ei gofnod o bob Ffurflen TAW a gyflwynwyd gennych.'''
+
+[strings."help.to-carry-on-ee7d52"]
+hash = "ee7d523572a5"
+cy = '''I barhau:'''
+
+[strings."help.recover-the-account-with-its-provider-ba1149"]
+hash = "ba11499ffda9"
+cy = '''Adferwch y cyfrif gyda’i ddarparwr: proses adfer cyfrif Google ar gyfer cyfrif Google, neu broses adfer cyfrif Microsoft ar gyfer cyfrif Microsoft.'''
+
+[strings."help.or-sign-in-with-a-new-2ef198"]
+hash = "2ef19809c170"
+cy = '''Neu mewngofnodwch gyda chyfrif Google neu Microsoft newydd.'''
+
+[strings."help.request-a-day-pass-or-choose-027936"]
+hash = "027936577e62"
+cy = '''Gofynnwch am docyn diwrnod neu dewiswch Bundle ar y dudalen Bundles.'''
+
+[strings."help.authorise-with-hmrc-again-the-next-a7646c"]
+hash = "a7646cdf4c2f"
+cy = '''Awdurdodwch gyda CThEF eto y tro nesaf y byddwch yn cyflwyno.'''
+
+[strings."help.receipts-stay-with-the-account-you-f04abd"]
+hash = "f04abd2a859b"
+cy = '''Mae derbynebau’n aros gyda’r cyfrif y gwnaethoch fewngofnodi ag ef. Os na allwch adfer y cyfrif hwnnw, ysgrifennwch at support@diyaccounting.co.uk.'''
+
+[strings."help.errors-cb7023"]
+hash = "cb702378f315"
+cy = '''Gwallau'''
+
+[strings."help.error-invalid-vat-registration-number-c8e22e"]
+hash = "c8e22ed4057f"
+cy = '''Gwall: Rhif cofrestru TAW annilys'''
+
+[strings."help.this-error-means-the-vat-registration-fec50d"]
+hash = "fec50d2b85f8"
+cy = '''Mae’r gwall hwn yn golygu bod ffurf y rhif cofrestru TAW yn anghywir. Rhaid iddo fod yn 9 digid heb fylchau, llythrennau na’r rhagddodiad GB: 123456789, nid GB123456789 na 123 456 789.'''
+
+[strings."help.if-your-number-is-correct-and-922828"]
+hash = "922828251384"
+cy = '''Os yw eich rhif yn gywir a bod Submit yn dal i’w wrthod:'''
+
+[strings."help.check-that-the-business-is-registered-87bb7d"]
+hash = "87bb7d521de1"
+cy = '''Gwiriwch fod y busnes wedi’i gofrestru ar gyfer <strong>Troi Treth yn Ddigidol ar gyfer TAW</strong>, nid ar gyfer TAW yn unig.'''
+
+[strings."help.wait-24-to-48-hours-after-ad2a83"]
+hash = "ad2a837db488"
+cy = '''Arhoswch 24 i 48 awr ar ôl cofrestru o’r newydd.'''
+
+[strings."help.error-duplicate-submission-4bbe70"]
+hash = "4bbe70dd9b14"
+cy = '''Gwall: Cyflwyniad dyblyg'''
+
+[strings."help.hmrc-rejected-the-submission-because-a-21ce56"]
+hash = "21ce562e4507"
+cy = '''Gwrthododd CThEF y cyflwyniad am fod Ffurflen TAW ar gyfer y cyfnod hwn eisoes yn bodoli. Mae hyn yn digwydd pan fyddwch eisoes wedi cyflwyno ar gyfer y cyfnod, neu pan fydd rhywun arall, megis cyfrifydd, wedi cyflwyno ar gyfer yr un rhif cofrestru TAW. Gwiriwch eich derbynebau. Yn <strong>Rhwymedigaethau TAW</strong> mae’r cyfnod yn dangos fel <strong>Wedi’i chyflawni</strong> gyda dyddiad derbyn.'''
+
+[strings."help.error-obligation-not-found-for-this-9907a3"]
+hash = "9907a3212a7a"
+cy = '''Gwall: Heb ganfod rhwymedigaeth ar gyfer y cyfnod hwn'''
+
+[strings."help.you-are-submitting-for-a-period-f6d6dd"]
+hash = "f6d6dd0891bf"
+cy = '''Rydych yn cyflwyno ar gyfer cyfnod nad yw CThEF yn disgwyl Ffurflen TAW ar ei gyfer. Defnyddiwch <strong>Rhwymedigaethau TAW (CThEF)</strong> i weld pa gyfnodau sy’n agored. Yna:'''
+
+[strings."help.match-the-vat-period-to-an-c019b1"]
+hash = "c019b1e88c49"
+cy = '''Parwch y cyfnod TAW yn union â rhwymedigaeth <strong>Agored</strong>.'''
+
+[strings."help.check-that-you-have-not-already-f8057b"]
+hash = "f8057b9518a1"
+cy = '''Gwiriwch nad ydych eisoes wedi cyflwyno ar gyfer y cyfnod hwn. Byddai’n dangos fel Wedi’i chyflawni.'''
+
+[strings."help.check-that-the-vat-registration-number-877b94"]
+hash = "877b946346d4"
+cy = '''Gwiriwch fod y rhif cofrestru TAW yn gywir.'''
+
+[strings."help.something-s-not-working-should-i-eafad8"]
+hash = "eafad8dc3ea5"
+cy = '''Mae rhywbeth ddim yn gweithio. A ddylwn i glirio data fy mhorwr?'''
+
+[strings."help.clearing-browser-data-signs-you-out-ca578f"]
+hash = "ca578fec7b26"
+cy = '''Mae clirio data’r porwr yn eich allgofnodi ac yn dileu’r gosodiadau y mae’r wefan hon yn eu cadw yn eich porwr. Mae eich derbynebau’n aros yn eich cyfrif. Rhowch gynnig ar y rhain yn gyntaf:'''
+
+[strings."help.open-a-private-or-incognito-window-918006"]
+hash = "91800607c1e0"
+cy = '''Agorwch ffenestr breifat neu anhysbys (incognito).'''
+
+[strings."help.try-a-different-browser-f6dce4"]
+hash = "f6dce44f803f"
+cy = '''Rhowch gynnig ar borwr gwahanol.'''
+
+[strings."help.clear-the-cookies-for-submit-diyaccounting-20c50c"]
+hash = "20c50cf66c80"
+cy = '''Cliriwch y cwcis ar gyfer submit.diyaccounting.co.uk yn unig.'''
+
+[strings."help.if-the-problem-stays-send-us-931844"]
+hash = "931844d44737"
+cy = '''Os yw’r broblem yn parhau, <a href="/help.html" target="_blank" rel="noopener">anfonwch gais am gymorth atom</a> neu e-bostiwch support@diyaccounting.co.uk.'''
+
+[strings."help.receipts-60a627"]
+hash = "60a627df404a"
+cy = '''Derbynebau'''
+
+[strings."help.where-can-i-find-my-submission-0d116f"]
+hash = "0d116f3e3d8e"
+cy = '''Ble alla i ddod o hyd i dderbynneb fy nghyflwyniad?'''
+
+[strings."help.a-receipt-appears-when-the-submission-664331"]
+hash = "664331abf03b"
+cy = '''Mae derbynneb yn ymddangos pan fydd y cyflwyniad yn llwyddo. Mae’n dangos eich <strong>Rhif bwndel y ffurflen (Form bundle number)</strong>. Cadwch hi neu argraffwch hi.'''
+
+[strings."help.click-receipts-in-the-navigation-bar-ee8595"]
+hash = "ee8595fc72f6"
+cy = '''Cliciwch <strong>Derbynebau</strong> yn y bar llywio i weld eich holl gyflwyniadau.'''
+
+[strings."help.each-receipt-shows-the-date-the-21a6a5"]
+hash = "21a6a51bd05f"
+cy = '''Mae pob derbynneb yn dangos y dyddiad, y rhif cofrestru TAW, y cyfnod a chyfeirnod CThEF.'''
+
+[strings."help.receipts-are-stored-in-your-account-b04b61"]
+hash = "b04b614d8b02"
+cy = '''Mae derbynebau’n cael eu storio yn eich cyfrif. Gallwch eu hagor o unrhyw ddyfais pan fyddwch wedi mewngofnodi.'''
+
+[strings."help.hmrc-says-they-haven-t-received-ba4cfa"]
+hash = "ba4cfaa63d0b"
+cy = '''Mae CThEF yn dweud nad ydynt wedi cael fy Ffurflen TAW ond cefais neges llwyddiant'''
+
+[strings."help.if-submit-showed-a-success-message-46fcd5"]
+hash = "46fcd51430e0"
+cy = '''Os dangosodd Submit neges llwyddiant gyda Rhif bwndel y ffurflen, cafodd CThEF y Ffurflen TAW. Fel arfer mae un o’r achosion hyn y tu ôl i wahaniaeth rhwng y ddau:'''
+
+[strings."help.hmrc-s-systems-can-take-a-6502b2"]
+hash = "6502b2573112"
+cy = '''Gall systemau CThEF gymryd ychydig oriau i ddangos Ffurflen TAW newydd. Gwiriwch eto yn nes ymlaen.'''
+
+[strings."help.you-may-be-checking-a-different-65f520"]
+hash = "65f520717aa9"
+cy = '''Efallai eich bod yn gwirio cyfnod gwahanol i’r un a gyflwynwyd gennych.'''
+
+[strings."help.you-may-be-checking-a-different-987e1e"]
+hash = "987e1eb075dc"
+cy = '''Efallai eich bod yn gwirio rhif cofrestru TAW gwahanol. Gwiriwch eich bod yn edrych ar yr un busnes ym mhorth CThEF.'''
+
+[strings."help.your-receipt-shows-the-form-bundle-698495"]
+hash = "698495cd63bf"
+cy = '''Mae eich derbynneb yn dangos <strong>Rhif bwndel y ffurflen (Form bundle number)</strong>, er enghraifft 425379263134. Rhowch ef i CThEF i brofi’r cyflwyniad.'''
+
+[strings."help.still-need-help-5ff7d1"]
+hash = "5ff7d19e7579"
+cy = '''Angen cymorth o hyd?'''
+
+[strings."help.if-you-can-t-find-an-9bb62c"]
+hash = "9bb62c2d2a83"
+cy = '''Os na allwch ddod o hyd i ateb uchod, gallwch:'''
+
+[strings."help.email-support-403151"]
+hash = "403151089cb1"
+cy = '''E-bostio’r tîm cymorth'''
+
+[strings."help.submit-a-support-request-70bdbb"]
+hash = "70bdbba23f97"
+cy = '''Cyflwyno cais am gymorth'''
+
+[strings."help.your-email-address-3fa7c5"]
+hash = "3fa7c5ef191f"
+cy = '''Eich cyfeiriad e-bost'''
+
+[strings."help.we-reply-by-email-to-this-9c4457"]
+hash = "9c4457120e1c"
+cy = '''Rydym yn ateb drwy e-bost i’r cyfeiriad hwn.'''
+
+[strings."help.subject-689712"]
+hash = "68971283841a"
+cy = '''Pwnc'''
+
+[strings."help.describe-your-issue-include-any-error-7f5c79"]
+hash = "7f5c79372e1b"
+cy = '''Disgrifiwch eich problem. Cynhwyswch unrhyw negeseuon gwall a welwch.'''
+
+[strings."help.category-292c06"]
+hash = "292c06f0045a"
+cy = '''Categori'''
+
+[strings."help.select-a-category-b11f4a"]
+hash = "b11f4a82b989"
+cy = '''Dewiswch gategori'''
+
+[strings."help.connecting-to-hmrc-8439d0"]
+hash = "8439d01244c0"
+cy = '''Cysylltu â CThEF'''
+
+[strings."help.vat-submission-a37aeb"]
+hash = "a37aeb91abe2"
+cy = '''Cyflwyniad TAW'''
+
+[strings."help.bundles-and-subscriptions-64a0cf"]
+hash = "64a0cfd568bf"
+cy = '''Bundles a thanysgrifiadau'''
+
+[strings."help.other-f97e9d"]
+hash = "f97e9da0e3b8"
+cy = '''Arall'''
+
+[strings."help.cancel-19766e"]
+hash = "19766ed6ccb2"
+cy = '''Canslo'''
+
+[strings."help.submit-155f81"]
+hash = "155f816c0407"
+cy = '''Cyflwyno'''
+
+[strings."help.description-ba5ebd"]
+hash = "ba5ebd555ed9"
+cy = '''Cael cymorth gyda DIY Accounting Submit. Dewch o hyd i atebion i gwestiynau cyffredin am gyflwyniadau TAW, cysylltu â CThEF, Bundles, a mwy.'''
+
+[strings."help.og-title-b603f7"]
+hash = "b603f7eb3a5a"
+cy = '''Cymorth a chwestiynau cyffredin - DIY Accounting Submit'''
+
+[strings."help.og-description-ba5ebd"]
+hash = "ba5ebd555ed9"
+cy = '''Cael cymorth gyda DIY Accounting Submit. Dewch o hyd i atebion i gwestiynau cyffredin am gyflwyniadau TAW, cysylltu â CThEF, Bundles, a mwy.'''
+
+[strings."help.search-faqs-5a2f54"]
+hash = "5a2f54a9a86a"
+cy = '''Chwilio’r cwestiynau cyffredin'''
+
+[strings."help.search-the-questions-7564a6"]
+hash = "7564a64e687d"
+cy = '''Chwilio’r cwestiynau'''
+
+[strings."help.load-failed"]
+hash = "e7643548856d"
+cy = '''Methu llwytho’r cwestiynau cyffredin. Adnewyddwch y dudalen.'''
+
+[strings."help.hint-every-question"]
+hash = "6b5e9cb2ce28"
+cy = '''Yn dangos pob cwestiwn'''
+
+[strings."help.hint-no-match"]
+hash = "313c7a0062da"
+cy = '''Nid oes cwestiynau’n cyfateb i’ch chwiliad'''
+
+[strings."help.hint-one-result"]
+hash = "15bf3671f0f0"
+cy = '''1 canlyniad'''
+
+[strings."help.hint-results"]
+hash = "d6c49c40059e"
+cy = '''{count} canlyniad'''
+
+[strings."help.no-match"]
+hash = "56ae596724a8"
+cy = '''Nid oes cwestiynau’n cyfateb i’ch chwiliad.'''
+
+[strings."help.try-other-keywords"]
+hash = "cab4c61d9bfe"
+cy = '''Rhowch gynnig ar eiriau allweddol gwahanol, neu'''
+
+[strings."help.list-every-question"]
+hash = "049533cca5b6"
+cy = '''rhestrwch bob cwestiwn'''
+
+[strings."help.support-request"]
+hash = "70bdbba23f97"
+cy = '''Cyflwyno cais am gymorth'''
+
+[strings."help.submitting"]
+hash = "64115d5b9c79"
+cy = '''Wrthi’n cyflwyno...'''
+
+[strings."help.also-email"]
+hash = "4a7c3f6df55e"
+cy = '''{error} Gallwch hefyd e-bostio support@diyaccounting.co.uk.'''
+
+[strings."help.request-received"]
+hash = "5f2f96451029"
+cy = '''Mae eich cais gennym. Rydym yn ateb drwy e-bost i {email}.'''
+
+[strings."help.request-failed"]
+hash = "bb780070c56b"
+cy = '''Methu cyflwyno’r cais. E-bostiwch support@diyaccounting.co.uk yn lle hynny.'''
+
+[strings."help.submit"]
+hash = "155f816c0407"
+cy = '''Cyflwyno'''
+
+[strings."help.ticket-failed"]
+hash = "4996050ef153"
+cy = '''Methu cyflwyno’r cais ({status})'''
+
+[strings."help.network-error"]
+hash = "30faad7a2bba"
+cy = '''Gwall rhwydwaith. Rhowch gynnig arall arni neu e-bostiwch support@diyaccounting.co.uk.'''

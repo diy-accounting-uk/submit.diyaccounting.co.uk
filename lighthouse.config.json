@@ -56,6 +56,13 @@
       }
     },
     {
+      "path": "/cy/help.html",
+      "thresholds": {
+        "performance": 58,
+        "bestPractices": 92
+      }
+    },
+    {
       "path": "/spreadsheets.html",
       "thresholds": {
         "performance": 49,
@@ -183,6 +190,13 @@
       }
     },
     {
+      "path": "/cy/privacy.html",
+      "thresholds": {
+        "performance": 67,
+        "bestPractices": 92
+      }
+    },
+    {
       "path": "/security.html",
       "thresholds": {
         "bestPractices": 92
@@ -195,7 +209,19 @@
       }
     },
     {
+      "path": "/cy/terms.html",
+      "thresholds": {
+        "bestPractices": 92
+      }
+    },
+    {
       "path": "/accessibility.html",
+      "thresholds": {
+        "bestPractices": 92
+      }
+    },
+    {
+      "path": "/cy/accessibility.html",
       "thresholds": {
         "bestPractices": 92
       }

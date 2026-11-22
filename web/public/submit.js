@@ -204,15 +204,19 @@ function siteText(id, english) {
   return window.siteText ? window.siteText(id, english) : english;
 }
 
-// The privacy policy has no Welsh copy, so in Welsh its link carries the "(yn Saesneg)" mark.
+// In Welsh the link goes to the Welsh copy of the privacy policy; without a copy it carries the "(yn Saesneg)" mark.
 function fillConsentSharedText(element) {
   element.querySelector(".consent-shared-text").textContent = siteText(
     "consent.shared",
     "We use cookies to measure how this site performs and is used, only if you accept. See our",
   );
-  element.querySelector('a[href="/privacy.html"]').textContent = siteText("consent.privacy-link", "privacy policy");
+  const link = element.querySelector('a[href$="/privacy.html"]');
+  link.textContent = siteText("consent.privacy-link", "privacy policy");
   const inWelsh = window.siteLanguage?.chrome() === "cy";
-  element.querySelector(".consent-in-english").textContent = inWelsh ? ` ${siteText("chrome.in-english", "(in English)")}` : "";
+  const hasWelshCopy = (window.WELSH_COPIES || []).includes("privacy.html");
+  link.setAttribute("href", inWelsh && hasWelshCopy ? "/cy/privacy.html" : "/privacy.html");
+  element.querySelector(".consent-in-english").textContent =
+    inWelsh && !hasWelshCopy ? ` ${siteText("chrome.in-english", "(in English)")}` : "";
 }
 
 function hasAdvertClickId() {
