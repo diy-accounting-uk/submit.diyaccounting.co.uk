@@ -127,6 +127,7 @@ input.hmrc-assist-highlight {
 
 .books-import-status {
   white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
 /* The Company Tax Return form: the worked tax is the one emphasised block */

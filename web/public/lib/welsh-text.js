@@ -256,7 +256,7 @@ window.WELSH_TEXT = {
   "ch.cs.holder-street": "Stryd",
   "ch.cs.holder-surname": "Cyfenw’r cyfranddeiliad",
   "ch.cs.holder-thoroughfare": "Tramwyfa",
-  "ch.cs.holding-summary": "{shareClass}, {number} yn cael eu dal",
+  "ch.cs.holding-summary": "{kind}, {number} yn cael eu dal",
   "ch.cs.identity-not-verified": "Hunaniaeth heb ei gwirio",
   "ch.cs.identity-verified": "Hunaniaeth wedi’i gwirio",
   "ch.cs.joint-hint": "Mae daliad a ddelir ar y cyd yn cynnwys pob cyd-ddeiliad isod, hyd at {max}.",
@@ -1216,6 +1216,18 @@ window.WELSH_TEXT = {
   "ch.revision.accepted": "Mae Tŷ’r Cwmnïau wedi derbyn y cyfrifon diwygiedig.",
   "ch.revision.date-before-original":
     "Rhaid cymeradwyo’r cyfrifon diwygiedig ar {date} neu wedi hynny, pan gymeradwywyd y cyfrifon gwreiddiol",
+  "ch.revision.line-accruals": "croniadau",
+  "ch.revision.line-accruals-deferred-income": "atebolrwydd cronedig ac incwm gohiriedig",
+  "ch.revision.line-amounts-owed-to-directors": "symiau sy’n ddyledus i gyfarwyddwyr",
+  "ch.revision.line-amounts-owed-to-group-undertakings": "symiau sy’n ddyledus i ymgymeriadau grŵp",
+  "ch.revision.line-bank-loans-after-one-year": "benthyciadau banc sy’n ddyledus ar ôl mwy na blwyddyn",
+  "ch.revision.line-bank-loans-overdrafts": "benthyciadau banc a gorddrafftiau",
+  "ch.revision.line-creditors-after-one-year": "credydwyr sy’n ddyledus ar ôl mwy na blwyddyn",
+  "ch.revision.line-prepayments": "rhagdaliadau ac incwm cronedig",
+  "ch.revision.line-provisions": "darpariaethau ar gyfer rhwymedigaethau",
+  "ch.revision.line-share-capital-not-paid": "cyfalaf cyfranddaliadau wedi’i alw na thalwyd",
+  "ch.revision.line-taxation-social-security": "trethiant a nawdd cymdeithasol",
+  "ch.revision.line-unreadable": "llinellau’r fantolen",
   "ch.revision.load-failed": "Ni allem agor y cyfrifon hynny i’w diwygio. Agorwch y ffeilio eto o’ch derbynebau.",
   "ch.revision.need-amendments": "Dywedwch beth mae’r cyfrifon diwygiedig yn ei newid",
   "ch.revision.need-non-compliance": "Dywedwch beth oedd yn anghywir yn y cyfrifon gwreiddiol",
@@ -1230,6 +1242,8 @@ window.WELSH_TEXT = {
   "ch.revision.note-policies": "polisïau cyfrifyddu",
   "ch.revision.note-share-capital": "cyfalaf cyfranddaliadau wedi’i alw",
   "ch.revision.notes-to-enter": "Mae’r cyfrifon a ffeiliwyd yn cynnwys y nodiadau hyn, y mae’n rhaid i chi eu rhoi eto: {notes}.",
+  "ch.revision.prior-profit-and-loss-empty":
+    "Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, felly nid oes cyfrif elw a cholled ar gyfer y flwyddyn flaenorol ynddynt. Mae’r copi llawn hwn yn nodi llinellau cyfrif elw a cholled y flwyddyn flaenorol fel dim: teipiwch nhw ar y ffurflen os oedd gan y cwmni rai.",
   "ch.revision.refuse-already-revised":
     "Mae’r cyfrifon hyn eisoes yn gyfrifon diwygiedig, ac nid yw’r wefan hon yn ffeilio ail ddiwygiad eto.",
   "ch.revision.refuse-joint":
@@ -1237,6 +1251,7 @@ window.WELSH_TEXT = {
   "ch.revision.refuse-kind": "Nid ffeilio cyfrifon yw’r dderbynneb honno, felly nid oes cyfrifon i’w diwygio.",
   "ch.revision.refuse-load": "Ni allem lwytho’r dderbynneb honno. Agorwch y ffeilio eto o’ch derbynebau.",
   "ch.revision.refuse-no-document": "Ni chadwyd y ddogfen a ffeiliwyd gyda’r dderbynneb honno, felly ni ellir ei diwygio yma.",
+  "ch.revision.refuse-no-period": "Nid yw’r cyfrifon ar y dderbynneb honno yn nodi eu cyfnod, felly ni all y wefan hon eu diwygio yma.",
   "ch.revision.refuse-not-accepted": "Ni wnaeth Tŷ’r Cwmnïau dderbyn y cyfrifon hynny, felly nid oes dim i’w ddiwygio.",
   "ch.revision.refuse-not-found": "Nid yw’r dderbynneb y mae’r cyfrifon diwygiedig hyn yn ei henwi yn eich cyfrif.",
   "ch.revision.refuse-other-company": "Mae’r dderbynneb y mae’r cyfrifon diwygiedig hyn yn ei henwi ar gyfer cwmni arall.",
@@ -1287,7 +1302,7 @@ window.WELSH_TEXT = {
   "ch.small.notes-must-equal":
     "Rhaid i werth llyfr net nodiadau’r asedion sefydlog fod yn hafal i’r asedion sefydlog cyn gweld y rhagolwg.",
   "ch.small.outcome": "Roedd cyflwyniad {number} yn {status}.",
-  "ch.small.profit-totals": "Elw gweithredol: {operating}. Elw cyn treth: {beforeTax}. Elw am y flwyddyn: {profit}.",
+  "ch.small.profit-totals": "Elw gweithredol: {operating}. Elw cyn treth: {pretax}. Elw am y flwyddyn: {profit}.",
   "ch.status.active": "Gweithredol",
   "ch.status.administration": "Mewn gweinyddiad",
   "ch.status.closed": "Ar gau",
@@ -2319,6 +2334,7 @@ window.WELSH_TEXT = {
   "widget.books-hint-ixbrl":
     "Mae dogfen gyfrifon iXBRL (.xhtml) yn llenwi’r un ffurflen. Mae set o ddogfennau iXBRL yn ei llenwi hefyd: dewiswch ei holl ffeiliau gyda’i gilydd, neu un zip.",
   "widget.books-nothing-filled": "Ni lenwyd dim.",
+  "widget.books-other-period": "Mae {file} ar gyfer y cyfnod {from} i {to}; mae’r cyfrifon sy’n cael eu diwygio ar gyfer {start} i {end}.",
   "widget.books-reading": "Yn darllen {file}...",
   "widget.books-reading-saved": "Yn darllen y llyfr a gadwyd...",
   "widget.books-saved-failed": "Methu defnyddio’r llyfr a gadwyd: {reason}.",

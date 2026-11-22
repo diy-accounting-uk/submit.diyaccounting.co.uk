@@ -13729,10 +13729,6 @@ cy = '''gwall anhysbys'''
 hash = "76741f5822b0"
 cy = '''Elw gros: {amount}. '''
 
-[strings."ch.small.profit-totals"]
-hash = "43c3a0c4b9f0"
-cy = '''Elw gweithredol: {operating}. Elw cyn treth: {beforeTax}. Elw am y flwyddyn: {profit}.'''
-
 [strings."ch.small.matches-capital"]
 hash = "2de562166fa8"
 cy = '''Yn cyfateb i’r cyfalaf cyfrannau a chronfa wrth gefn y cyfrif elw a cholled.'''
@@ -14016,10 +14012,6 @@ cy = '''Wedi newid o’r gofrestr'''
 [strings."ch.cs.summary-shareholders"]
 hash = "da31087015c2"
 cy = '''Cyfranddeiliaid'''
-
-[strings."ch.cs.holding-summary"]
-hash = "ec203c3653a4"
-cy = '''{shareClass}, {number} yn cael eu dal'''
 
 [strings."ch.cs.transfer-label"]
 hash = "23fd3046d616"
@@ -17919,9 +17911,6 @@ cy = '''Statws: ddim mewn cynhyrchu (production) eto.'''
 hash = "b22dbd338dbb"
 cy = '''Nid yw cyfrifon diwygiedig yn cael eu ffeilio go iawn o’r fan hon eto. Mae’r tabl argaeledd yn dweud beth mae pob ffeilio yn ei wneud.'''
 
-[strings."ch-small-company.the-accounts-filed-were-a-full-b98563"]
-hash = "b98563bafa2e"
-cy = '''<span id="revisionCopyFull">Copi llawn oedd y cyfrifon a ffeiliwyd. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod.</span> <span id="revisionCopyFilleted">Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, ac nid oes cyfrif elw a cholled ynddo. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod: ar gyfer copi llawn, teipiwch linellau’r cyfrif elw a cholled, neu ollwng llyfr y cwmni ar y cerdyn uchod.</span>'''
 
 [strings."ch.revision.refuse-other-period"]
 hash = "35efb5496484"
@@ -17964,3 +17953,81 @@ cy = '''(dewisol)'''
 [strings."ch.prior.of-which-qualifier"]
 hash = "124b78a39b3d"
 cy = '''O hynny,'''
+
+# == Revised accounts that carry over every balance sheet line of the accounts they revise ==
+
+[strings."ch.revision.line-bank-loans-overdrafts"]
+hash = "73bb239d69f3"
+cy = '''benthyciadau banc a gorddrafftiau'''
+
+[strings."ch.revision.line-taxation-social-security"]
+hash = "2fcda1e5353c"
+cy = '''trethiant a nawdd cymdeithasol'''
+
+[strings."ch.revision.line-accruals"]
+hash = "53d4caa0165c"
+cy = '''croniadau'''
+
+[strings."ch.revision.line-creditors-after-one-year"]
+hash = "7b89b909e049"
+cy = '''credydwyr sy’n ddyledus ar ôl mwy na blwyddyn'''
+
+[strings."ch.revision.line-bank-loans-after-one-year"]
+hash = "51b02d70b7e1"
+cy = '''benthyciadau banc sy’n ddyledus ar ôl mwy na blwyddyn'''
+
+[strings."ch.revision.line-amounts-owed-to-directors"]
+hash = "43461a6b1f91"
+cy = '''symiau sy’n ddyledus i gyfarwyddwyr'''
+
+[strings."ch.revision.line-amounts-owed-to-group-undertakings"]
+hash = "2a732cce6922"
+cy = '''symiau sy’n ddyledus i ymgymeriadau grŵp'''
+
+[strings."ch.revision.line-provisions"]
+hash = "9dfb0897d1e8"
+cy = '''darpariaethau ar gyfer rhwymedigaethau'''
+
+[strings."ch.revision.line-share-capital-not-paid"]
+hash = "4d2ff1d0dbf6"
+cy = '''cyfalaf cyfranddaliadau wedi’i alw na thalwyd'''
+
+[strings."ch.revision.line-prepayments"]
+hash = "ac094f613972"
+cy = '''rhagdaliadau ac incwm cronedig'''
+
+[strings."ch.revision.line-accruals-deferred-income"]
+hash = "00d08a3dcdbc"
+cy = '''atebolrwydd cronedig ac incwm gohiriedig'''
+
+[strings."ch.revision.line-unreadable"]
+hash = "d7620a4522b1"
+cy = '''llinellau’r fantolen'''
+
+# == The look pass of the revised accounts forms: placeholders the site text fills ==
+
+[strings."ch.small.profit-totals"]
+hash = "03703edf3b77"
+cy = '''Elw gweithredol: {operating}. Elw cyn treth: {pretax}. Elw am y flwyddyn: {profit}.'''
+
+[strings."ch.cs.holding-summary"]
+hash = "e06571e008b2"
+cy = '''{kind}, {number} yn cael eu dal'''
+
+# == Revised accounts: the refusal of a receipt whose accounts state no period, the books card's refusal of another period, the copy sentence and warning for a filleted copy revised as a full copy, and the route's refusals of a revision with no receipt and of an advance to someone who is not a director ==
+
+[strings."ch.revision.refuse-no-period"]
+hash = "2d56f29e596e"
+cy = '''Nid yw’r cyfrifon ar y dderbynneb honno yn nodi eu cyfnod, felly ni all y wefan hon eu diwygio yma.'''
+
+[strings."widget.books-other-period"]
+hash = "e2c63ae380ef"
+cy = '''Mae {file} ar gyfer y cyfnod {from} i {to}; mae’r cyfrifon sy’n cael eu diwygio ar gyfer {start} i {end}.'''
+
+[strings."ch-small-company.the-accounts-filed-were-a-full-78a2db"]
+hash = "78a2dba52fee"
+cy = '''<span id="revisionCopyFull">Copi llawn oedd y cyfrifon a ffeiliwyd. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod.</span> <span id="revisionCopyFilleted">Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, ac nid oes cyfrif elw a cholled ynddo. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod: ar gyfer copi llawn, teipiwch linellau’r cyfrif elw a cholled ar gyfer y ddwy flynedd, neu ollwng llyfr y cwmni ar y cerdyn uchod.</span>'''
+
+[strings."ch.revision.prior-profit-and-loss-empty"]
+hash = "0d8f32fc2a79"
+cy = '''Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, felly nid oes cyfrif elw a cholled ar gyfer y flwyddyn flaenorol ynddynt. Mae’r copi llawn hwn yn nodi llinellau cyfrif elw a cholled y flwyddyn flaenorol fel dim: teipiwch nhw ar y ffurflen os oedd gan y cwmni rai.'''

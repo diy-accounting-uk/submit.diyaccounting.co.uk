@@ -11,6 +11,7 @@ import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { serveHmrcFieldTableAssets, expectCleanFigures, servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
 import { serveSubmissionRecordAssets, recordScreenshotPath, pageScrollsSideways } from "./submissionRecordAssets.js";
+import { screenshotAtBothWidths } from "./revisedAccountsScreenshots.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -305,6 +306,7 @@ test.describe("Receipts page - receipt details", () => {
     await expect(entries.nth(1)).toContainText("Revised accounts: ACC2");
     await expect(entries.nth(2)).toContainText("Company Tax Return: CT1");
     await expect(entries.nth(3)).toContainText("Accounts: ACC1");
+    await screenshotAtBothWidths(page, "receipts-revised-listed");
   });
 
   test("shows a VAT receipt as a record inside the customer copy", async ({ page }) => {

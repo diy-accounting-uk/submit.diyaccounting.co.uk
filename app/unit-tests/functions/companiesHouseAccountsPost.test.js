@@ -872,6 +872,29 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     });
   });
 
+  describe("an advance to someone who is not a director", () => {
+    const ADVANCE = { name: "Sam Lender", terms: "Interest free", balanceAtStart: 0, advanced: 0, repaid: 0, balanceAtEnd: 0 };
+    const SENTENCE = "names Sam Lender, who is not among the directors of these accounts: add them to the directors";
+
+    test("refuses micro-entity accounts with a sentence that names them, and sends nothing", async () => {
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ directorsAdvances: [ADVANCE] }) }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain(`directorsAdvances[0] ${SENTENCE}`);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses small company accounts and revised small company accounts with the same sentence", async () => {
+      for (const extra of [{}, { revision: { originalDateOfApproval: "2026-01-10", nonCompliance: "A", amendments: "B" } }]) {
+        const response = await companiesHouseAccountsPostHandler(
+          buildEvent({ body: buildSmallCompanyBody(extra, { directorsAdvances: [ADVANCE] }) }),
+        );
+        expect(response.statusCode).toBe(400);
+        expect(JSON.stringify(parseResponseBody(response))).toContain(`smallCompany.directorsAdvances[0] ${SENTENCE}`);
+      }
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+  });
+
   describe("the date the directors approved the accounts", () => {
     const AFTER_TODAY = "2099-01-01";
     const SENTENCE = `The date approved, ${AFTER_TODAY}, is after today. Enter the date the directors approved the accounts.`;

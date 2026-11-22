@@ -12,10 +12,12 @@ import {
   accountsDocumentCases,
   SMALL_COMPANY_CASE_INPUT,
   SMALL_COMPANY_NOTES_CASE_INPUT,
+  SMALL_COMPANY_EVERY_LINE_CASE_INPUT,
 } from "@app/test-helpers/accountsDocumentCases.js";
 import { buildSmallCompanyAccounts, SMALL_COMPANY_POLICY_FIELDS } from "@app/services/smallCompanyAccountsIxbrl.js";
 import { inAccountsLanguage } from "@app/services/accountsLanguage.js";
 import { readSubmitCss } from "./submitCss.js";
+import { screenshotAtBothWidths } from "./revisedAccountsScreenshots.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -98,7 +100,7 @@ test.describe("File small company accounts page", () => {
     await expect(page.locator("#currentProfitAndLossTotals")).toContainText("Gross profit: 15000");
     await expect(page.locator("#currentProfitAndLossTotals")).toContainText("Operating profit: 3000");
     await expect(page.locator("#currentProfitAndLossTotals")).toContainText("Profit for the year: 2400");
-    await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Net assets: 4000. Matches");
+    await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Net assets: £4,000. Matches");
     await page.fill("#currentProfitAndLossAccount", "3000");
     await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Does not match");
   });
@@ -175,7 +177,7 @@ test.describe("File small company accounts page", () => {
     await page.fill("#currentBankLoansOverdrafts", "200");
     await page.fill("#currentTaxationSocialSecurity", "150");
     await page.fill("#currentProfitAndLossAccount", "2750");
-    await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Net assets: 2850. Matches");
+    await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Net assets: £2,850. Matches");
     const year = await page.evaluate(() => buildAccountsPayload().smallCompany.balanceSheet.currentYear);
     expect(year).toMatchObject({ bankLoansOverdrafts: 200, taxationSocialSecurity: 150, bankLoansAfterOneYear: 500 });
     await page.fill("#currentBankLoansAfterOneYear", "900");
@@ -208,7 +210,7 @@ test.describe("File small company accounts page", () => {
     await page.fill("#currentAmountsOwedToGroupUndertakings", "100");
     await page.fill("#currentProvisionsForLiabilities", "250");
     await page.fill("#currentProfitAndLossAccount", "2850");
-    await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Net assets: 2950. Matches");
+    await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Net assets: £2,950. Matches");
     const year = await page.evaluate(() => buildAccountsPayload().smallCompany.balanceSheet.currentYear);
     expect(year).toMatchObject({
       tradeDebtors: 1800,
@@ -540,6 +542,7 @@ test.describe("File small company accounts page - revising accounts from a recei
     await expect(page.locator("#currentTurnover")).toHaveValue("");
     await expect(page.locator("#currentCalledUpShareCapital")).not.toHaveValue("");
     await screenshot(page, "small-amend-filleted-note", 1280);
+    await screenshotAtBothWidths(page, "small-amend-copy-filleted");
   });
 
   for (const width of [1280, 390]) {
@@ -595,6 +598,7 @@ test.describe("File small company accounts page - revising accounts from a recei
     await expect(page.locator("#accountantsName")).toHaveValue(ACCOUNTANTS_REPORT.accountantsName);
     await expect(page.locator("#accountantsStatement")).toHaveValue(ACCOUNTANTS_REPORT.statement);
     await expect(page.locator("#revisionAccountantsNote")).toBeHidden();
+    await screenshotAtBothWidths(page, "small-amend-accountants-report");
   });
 
   for (const filleted of [false, true]) {
@@ -623,6 +627,7 @@ test.describe("File small company accounts page - revising accounts from a recei
       await expect(page.locator("#revisionNotesNote")).toHaveText(
         "The filed accounts carry these notes, which you must enter again: called up share capital.",
       );
+      await screenshotAtBothWidths(page, `small-amend-notes-${copy}`);
 
       if (filleted) {
         for (const [line, value] of Object.entries(notesCase.profitAndLoss.current)) {
@@ -644,6 +649,43 @@ test.describe("File small company accounts page - revising accounts from a recei
       expect(sent.smallCompany.intangibleAssetNote).toEqual(notesCase.intangibleAssetNote);
       expect(sent.smallCompany.dividendPolicy).toBe(notesCase.dividendPolicy);
       expect(sent.smallCompany.accountingPolicies).toBe(notesCase.accountingPolicies);
+    });
+  }
+
+  for (const filleted of [false, true]) {
+    const copy = filleted ? "filleted" : "full";
+    test(`opens a ${copy} copy with every balance sheet line of both years filled and files it with nothing retyped`, async ({ page }) => {
+      const input = SMALL_COMPANY_EVERY_LINE_CASE_INPUT;
+      await openAmend(page, accountsReceipt(buildSmallCompanyAccounts({ ...input, filleted })));
+      await expect(page.locator("#revisionSection")).toBeVisible();
+      for (const [year, figures] of Object.entries(input.balanceSheet)) {
+        for (const [line, value] of Object.entries(figures)) {
+          if (line === "capitalAndReserves") continue;
+          await expect(page.locator(`#${year}${line[0].toUpperCase()}${line.slice(1)}`)).toHaveValue(String(value));
+        }
+      }
+      await expect(page.locator("#revisionNotesNote")).toHaveText(
+        "The filed accounts carry these notes, which you must enter again: called up share capital.",
+      );
+      if (filleted) {
+        for (const [line, value] of Object.entries(input.profitAndLoss.current)) {
+          const box = page.locator(`#current${line[0].toUpperCase()}${line.slice(1)}`);
+          if ((await box.count()) && (await box.isEditable())) await box.fill(String(value));
+        }
+      }
+      await page.fill("#revisionNonCompliance", "The original accounts left out the stocks held at the year end.");
+      await page.fill("#revisionAmendments", "Stocks are now shown.");
+      await page.fill("#directorDateApproved", "2026-11-20");
+      await page.evaluate(() => {
+        document.getElementById("companyAuthCode").value = "ABC123";
+        return handleSubmitFiling();
+      });
+      await expect(page.locator("#filingResult")).toContainText("Companies House accepted the revised accounts.");
+      const [sent] = await page.evaluate(() => window.sentAccounts);
+      for (const [year, figures] of Object.entries(input.balanceSheet)) {
+        const sentYear = sent.smallCompany.balanceSheet[`${year}Year`];
+        for (const [line, value] of Object.entries(figures)) expect([year, line, sentYear[line]]).toEqual([year, line, value]);
+      }
     });
   }
 
@@ -677,12 +719,14 @@ test.describe("File small company accounts page - revising accounts from a recei
       "We could not open those accounts to revise. Open the filing again from your receipts.",
     );
     await expect(page.locator("#formView")).toBeHidden();
+    await screenshotAtBothWidths(page, "small-amend-refusal-cannot-open");
   });
 
   test("refuses accounts filed with a Company Tax Return", async ({ page }) => {
     await openAmend(page, accountsReceipt(fullCase.xhtml, { jointFilingId: "joint-1" }));
     await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("revise them on the Company Tax Return page");
     await expect(page.locator("#revisionBanner")).toBeHidden();
+    await screenshotAtBothWidths(page, "small-amend-refusal-joint-filing");
   });
 
   test("asks for both revision texts before the preview", async ({ page }) => {

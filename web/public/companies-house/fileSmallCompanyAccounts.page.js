@@ -249,7 +249,8 @@ function comparativesIncluded() {
   return document.getElementById("includeComparatives").checked;
 }
 
-function renderTotals() {
+async function renderTotals() {
+  const { formatPounds } = await import("../lib/balance-sheet-check.js");
   ["current", "prior"].forEach((prefix) => {
     if (prefix === "prior" && !comparativesIncluded()) return;
     const profitAndLoss = readProfitAndLoss(prefix);
@@ -261,10 +262,10 @@ function renderTotals() {
       grossProfitText +
       window.siteText(
         "ch.small.profit-totals",
-        "Operating profit: {operating}. Profit before tax: {beforeTax}. Profit for the year: {profit}.",
+        "Operating profit: {operating}. Profit before tax: {pretax}. Profit for the year: {profit}.",
         {
           operating: profitAndLoss.operatingProfit,
-          beforeTax: profitAndLoss.profitBeforeTax,
+          pretax: profitAndLoss.profitBeforeTax,
           profit: profitAndLoss.profit,
         },
       );
@@ -276,13 +277,13 @@ function renderTotals() {
         : window.siteText(
             "ch.small.mismatch-capital",
             "Does not match share capital plus the profit and loss reserve ({amount}) - correct this before previewing.",
-            { amount: balanceSheet.capitalAndReserves },
+            { amount: formatPounds(balanceSheet.capitalAndReserves) },
           );
     document.getElementById(prefix + "BalanceSheetTotals").textContent = window.siteText(
       "ch.small.net-assets",
       "Net assets: {amount}. {verdict}",
       {
-        amount: netAssets,
+        amount: formatPounds(netAssets),
         verdict,
       },
     );
@@ -532,6 +533,15 @@ async function handleAccountsFormSubmit(event) {
     document.getElementById("previewRendered").srcdoc = preview.ixbrl;
     showView("previewView");
     document.getElementById("previewView").scrollIntoView();
+    if (revisingFilletedAsFullWithoutPriorYear()) {
+      showStatus(
+        window.siteText(
+          "ch.revision.prior-profit-and-loss-empty",
+          "The accounts filed were a filleted copy, so they hold no profit and loss account for the prior year. This full copy states the prior year's profit and loss lines as nothing: type them on the form if the company had them.",
+        ),
+        "warning",
+      );
+    }
   } catch (error) {
     console.error("Failed to render the accounts preview:", error);
     showStatus(error.message || window.siteText("ch.accounts.preview-failed", "Failed to render the accounts preview."), "error");
@@ -756,6 +766,18 @@ function showRevisionLateNote() {
   document.getElementById("revisionLateNote").hidden = !(revision && revision.module.isPastDeliveryDays(dateApproved, new Date()));
 }
 
+// A filleted original revised as a full copy, with prior-year balance sheet figures filed and no prior-year
+// profit and loss line typed (a box still holding the page's starting value counts as empty): the tax
+// line fills from the filed tax note, so it does not count.
+function revisingFilletedAsFullWithoutPriorYear() {
+  if (!revision?.source.mapped.filleted || document.getElementById("copyFilleted").checked) return false;
+  if (Object.keys(revision.source.mapped.balanceSheet.priorYear).length === 0) return false;
+  return PROFIT_AND_LOSS_INPUT_FIELDS[profitAndLossFormat()]
+    .filter((field) => field !== "tax")
+    .map((field) => document.getElementById(`prior${field[0].toUpperCase()}${field.slice(1)}`))
+    .every((box) => box.value.trim() === "" || box.value === box.defaultValue);
+}
+
 // Shows each problem with the revision beside its field; answers true when there is one.
 function reportRevisionProblems() {
   return revision.module.showRevisionProblems(revisionElements(), document.getElementById("directorDateApproved"));
@@ -788,7 +810,7 @@ async function startRevision(receiptName) {
     }
     const profile = await window.getCompanyProfile(read.source.companyNumber);
     company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
-    window.accountsFormSections.fillRegisteredOffice(profile.registeredOffice);
+    window.accountsFormSections.fillRegisteredOffice(read.source.registeredOffice ?? profile.registeredOffice);
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     showDocumentLanguageChoice(profile.jurisdiction);

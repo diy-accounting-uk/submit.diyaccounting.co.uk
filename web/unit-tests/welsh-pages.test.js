@@ -59,6 +59,13 @@ describe("Welsh text of the site's scripts", () => {
     expect(problems).toContainEqual(expect.stringMatching(/^chrome\.no-such-string: missing/));
   });
 
+  it("every placeholder in a script string is one siteText fills: lowercase letters only", () => {
+    const unfilled = scriptStrings()
+      .filter(({ source }) => /\{[^}]*[^a-z}][^}]*\}/.test(source))
+      .map(({ id, source }) => `${id}: ${source}`);
+    expect(unfilled).toEqual([]);
+  });
+
   it("lib/welsh-text.js is the current build of the catalogue and lists every Welsh copy", async () => {
     const committed = fs.readFileSync(WELSH_TEXT_PATH, "utf-8");
     expect(committed).toBe(await renderWelshText());

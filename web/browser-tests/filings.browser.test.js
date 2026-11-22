@@ -13,6 +13,7 @@ import { accountsDocumentCases, computationsDocumentCase, SMALL_COMPANY_CASE_INP
 import { buildSmallCompanyAccounts } from "@app/services/smallCompanyAccountsIxbrl.js";
 import { serveSiteStyles } from "./hmrcFieldTableAssets.js";
 import { recordScreenshotPath, pageScrollsSideways } from "./submissionRecordAssets.js";
+import { screenshotAtBothWidths } from "./revisedAccountsScreenshots.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -232,9 +233,16 @@ test.describe("Filings page - customer copy", () => {
     const amendHref = `fileMicroEntityAccounts.html?amend=${encodeURIComponent(ACCOUNTS_RECEIPT_NAME)}`;
     await expect(page.locator("#amendFilingLink")).toBeVisible();
     await expect(page.locator("#amendFilingLink")).toHaveAttribute("href", amendHref);
+    const layoutOf = (selector) =>
+      page.locator(selector).evaluate((button) => {
+        const style = getComputedStyle(button);
+        return { display: style.display, alignItems: style.alignItems, height: button.getBoundingClientRect().height };
+      });
+    expect(await layoutOf("#amendFilingLink")).toEqual(await layoutOf("#printFilingBtn"));
     const links = page.locator("#filingContent .customer-copy-links a");
     await expect(links.first()).toHaveText("Amend these accounts");
     await expect(links.first()).toHaveAttribute("href", amendHref);
+    await screenshotAtBothWidths(page, "filing-amend-offered");
   });
 
   test("offers no amend link for accounts where revised accounts are not offered", async ({ page }) => {
@@ -260,6 +268,7 @@ test.describe("Filings page - customer copy", () => {
     await expect(page.locator("#filingNotice")).toHaveText(
       "These accounts were filed without the previous year's figures, so they cannot be amended here yet.",
     );
+    await screenshotAtBothWidths(page, "filing-no-comparatives");
   });
 
   test("says nothing of comparatives when accounts with both years are offered to amend", async ({ page }) => {
@@ -301,6 +310,11 @@ test.describe("Filings page - customer copy", () => {
       await expect(page.locator("#amendFilingLink")).toBeHidden();
       const original = page.locator("#filingContent .customer-copy-links a", { hasText: "See the original accounts these revise" });
       await expect(original).toHaveAttribute("href", `filings.html?receipt=${encodeURIComponent(originalName)}`);
+      const inset = await page.locator(".filed-document-download a").evaluate((link) => {
+        const sheet = link.closest(".customer-copy-sheet").getBoundingClientRect();
+        return link.getBoundingClientRect().left - sheet.left;
+      });
+      expect(inset).toBeGreaterThanOrEqual(16);
       fs.mkdirSync(path.join(process.cwd(), "target/browser-test-results/revised-accounts"), { recursive: true });
       await page.screenshot({
         path: path.join(process.cwd(), "target/browser-test-results/revised-accounts", `receipt-titled-revised-${width}.png`),
