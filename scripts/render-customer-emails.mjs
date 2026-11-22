@@ -3,7 +3,7 @@
 
 // @capability SITE-29 Render the customer emails to files for a visual check
 // - **Use when:** a customer email template changed and a person or a browser test must see each message as a reader does.
-// - **Does:** render-customer-emails.mjs builds each email kind from fixed fixtures (physical pass, digital pass, VAT receipt, ITSA receipt, subscription) with the production template code and writes the HTML and text parts to target/customer-emails/. A pass email writes its QR PNG beside the HTML and points the image at that file, because a cid: image does not load from disk. A physical pass also writes the three print files.
+// - **Does:** render-customer-emails.mjs builds each email kind from fixed fixtures (physical, digital and email-restricted operator pass, each in English and Welsh, VAT receipt, ITSA receipt, subscription) with the production template code and writes the HTML and text parts to target/customer-emails/. A pass email writes its QR PNG beside the HTML and points the image at that file, because a cid: image does not load from disk. A physical pass also writes the three print files.
 // - **Run:** `node scripts/render-customer-emails.mjs`; `npx playwright test --project=browser-tests web/browser-tests/customerEmail.browser.test.js`
 // - **Entry:** `scripts/render-customer-emails.mjs:renderCustomerEmails`
 // - **Files:** scripts/render-customer-emails.mjs, web/browser-tests/customerEmail.browser.test.js, app/lib/customerEmailTemplates.js
@@ -36,12 +36,85 @@ export const CASES = [
       bundleId: "day-guest",
       validUntil: "2026-12-31T00:00:00.000Z",
       maxUses: 1,
+      usesLeft: 1,
+      generatedBy: "user",
+      passSummary: "submit VAT returns to HMRC",
     },
   },
   {
     name: "digital-pass",
     kind: "pass-generated",
-    data: { code: "river-quiet-amber-cloud", passTypeId: "digital-pass", bundleId: "day-guest", validUntil: null, maxUses: null },
+    data: {
+      code: "river-quiet-amber-cloud",
+      passTypeId: "digital-pass",
+      bundleId: "day-guest",
+      validUntil: null,
+      maxUses: null,
+      usesLeft: null,
+      generatedBy: "user",
+      passSummary: "submit VAT returns to HMRC",
+    },
+  },
+  {
+    name: "operator-restricted-pass",
+    kind: "pass-generated",
+    data: {
+      code: "lantern-brisk-meadow-oak",
+      passTypeId: "invited-guest",
+      bundleId: "invited-guest",
+      validUntil: "2026-12-31T00:00:00.000Z",
+      maxUses: 1,
+      usesLeft: 1,
+      generatedBy: "operator",
+      restrictedTo: "j***@example.com",
+      passSummary: "submit VAT returns to HMRC",
+    },
+  },
+  {
+    name: "physical-pass-cy",
+    kind: "pass-generated",
+    data: {
+      code: "tiger-happy-mountain-silver",
+      passTypeId: "physical-pass",
+      bundleId: "day-guest",
+      validUntil: "2026-12-31T00:00:00.000Z",
+      maxUses: 1,
+      usesLeft: 1,
+      generatedBy: "user",
+      passSummary: "cyflwyno Ffurflenni TAW i CThEF",
+      language: "cy",
+    },
+  },
+  {
+    name: "digital-pass-cy",
+    kind: "pass-generated",
+    data: {
+      code: "river-quiet-amber-cloud",
+      passTypeId: "digital-pass",
+      bundleId: "day-guest",
+      validUntil: null,
+      maxUses: null,
+      usesLeft: null,
+      generatedBy: "user",
+      passSummary: "cyflwyno Ffurflenni TAW i CThEF",
+      language: "cy",
+    },
+  },
+  {
+    name: "operator-restricted-pass-cy",
+    kind: "pass-generated",
+    data: {
+      code: "lantern-brisk-meadow-oak",
+      passTypeId: "invited-guest",
+      bundleId: "invited-guest",
+      validUntil: "2026-12-31T00:00:00.000Z",
+      maxUses: 1,
+      usesLeft: 1,
+      generatedBy: "operator",
+      restrictedTo: "j***@example.com",
+      passSummary: "cyflwyno Ffurflenni TAW i CThEF",
+      language: "cy",
+    },
   },
   {
     name: "vat-receipt",
