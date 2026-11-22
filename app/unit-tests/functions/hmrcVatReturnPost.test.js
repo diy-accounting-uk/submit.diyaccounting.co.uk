@@ -69,6 +69,7 @@ import {
   ingestHandler as hmrcVatReturnPostHandler,
   extractAndValidateParameters,
   closeDueListVatRow,
+  DUE_LIST_ROW_CLOSE_LIMIT_MS,
 } from "@app/functions/hmrc/hmrcVatReturnPost.js";
 import { HmrcTimeoutError } from "@app/services/hmrcApi.js";
 
@@ -415,6 +416,23 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     test("leaves a practice's own list as it is when the practice files for a client", async () => {
       await closeDueListVatRow("practice-sub", TEST_PERIOD_END, "client-1");
       expect(mockCloseVatReturnRow).not.toHaveBeenCalled();
+    });
+
+    test("stops waiting for a row close that does not answer within the limit", async () => {
+      vi.useFakeTimers();
+      try {
+        mockCloseVatReturnRow.mockReturnValue(new Promise(() => {}));
+        let settled = false;
+        const closing = closeDueListVatRow("user-1", TEST_PERIOD_END).then(() => (settled = true));
+
+        await vi.advanceTimersByTimeAsync(DUE_LIST_ROW_CLOSE_LIMIT_MS - 1);
+        expect(settled).toBe(false);
+        await vi.advanceTimersByTimeAsync(1);
+        await closing;
+        expect(settled).toBe(true);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     test("answers the same 200 and stores the same receipt when the row close throws", async () => {

@@ -89,10 +89,29 @@ describe("functions/dueListRowsPost", () => {
     [{ ...ROW, dueDate: "07/11/2026" }, "rows[0].dueDate must be YYYY-MM-DD"],
     [{ ...ROW, kind: "reminder" }, "rows[0].kind must be filing or payment"],
     [{ ...ROW, periodEnd: "30/09/2026" }, "rows[0].periodEnd must be YYYY-MM-DD"],
+    [{ ...ROW, periodEnd: "2026-02-31" }, "rows[0].periodEnd must be YYYY-MM-DD"],
+    [{ ...ROW, dueDate: "2026-11-31" }, "rows[0].dueDate must be YYYY-MM-DD"],
   ])("refuses the row %j with a JSON 400", async (row, reason) => {
     const response = await ingestHandler(post({ businessId: "v1", rows: [row] }));
     expect(response.statusCode).toBe(400);
     expect(JSON.stringify(responseBody(response))).toContain(reason);
+  });
+
+  test.each([
+    ["the same type and period end", [ROW, { ...ROW, dueDate: "2026-11-08" }]],
+    [
+      "the same type and due date with no period end",
+      [
+        { type: "sa-balancing-payment", dueDate: "2028-01-31", kind: "payment", source: "hmrc" },
+        { type: "sa-balancing-payment", dueDate: "2028-01-31", kind: "payment", source: "hmrc" },
+      ],
+    ],
+  ])("refuses two rows of %s with a JSON 400 and stores nothing", async (_, rows) => {
+    const response = await ingestHandler(post({ businessId: "v1", rows }));
+
+    expect(response.statusCode).toBe(400);
+    expect(JSON.stringify(responseBody(response))).toContain("rows[1] repeats the type and period of rows[0]");
+    expect(mockPutRows).not.toHaveBeenCalled();
   });
 
   test("keys a row with no period end by its due date", async () => {

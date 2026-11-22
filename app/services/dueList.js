@@ -30,7 +30,12 @@ const MAX_LABEL_LENGTH = 100;
 const ROW_FIELDS = ["type", "filterType", "periodStart", "periodEnd", "dueDate", "kind", "source"];
 const BUSINESS_FIELDS = ["kind", "label", "companyNumber", "itsa"];
 
-const isIsoDate = (value) => typeof value === "string" && ISO_DATE.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
+// A date of the calendar: 2026-02-31 parses to a day in March, so the parsed date must read back the same.
+function isIsoDate(value) {
+  if (typeof value !== "string" || !ISO_DATE.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
 
 /** @returns {boolean} Whether a value can be a business id in the path */
 export function isValidBusinessId(value) {
@@ -95,6 +100,8 @@ export function validateHmrcRows(body) {
   if (!Array.isArray(rows)) errors.push("rows must be a list");
   else if (rows.length > DUE_LIST_ROW_CAP) errors.push(`rows holds at most ${DUE_LIST_ROW_CAP} rows`);
   const valid = [];
+  // The first row of each type and period (or due date): two rows of one request cannot share a row key.
+  const firstOfKey = new Map();
   (Array.isArray(rows) ? rows : []).forEach((row, index) => {
     const where = `rows[${index}]`;
     if (!row || typeof row !== "object" || Array.isArray(row)) {
@@ -112,6 +119,9 @@ export function validateHmrcRows(body) {
     if (row.periodEnd !== undefined && !isIsoDate(row.periodEnd)) errors.push(`${where}.periodEnd must be YYYY-MM-DD`);
     if (row.periodStart !== undefined && !isIsoDate(row.periodStart)) errors.push(`${where}.periodStart must be YYYY-MM-DD`);
     if (!isIsoDate(row.dueDate)) errors.push(`${where}.dueDate must be YYYY-MM-DD`);
+    const key = `${row.type}#${row.periodEnd === undefined ? row.dueDate : row.periodEnd}`;
+    if (firstOfKey.has(key)) errors.push(`${where} repeats the type and period of rows[${firstOfKey.get(key)}]`);
+    else firstOfKey.set(key, index);
     // A row with no period (a final declaration, a payment on account, an identity verification)
     // is keyed by its due date, which the row key takes as the date in place of a period end.
     if (outside.length === 0) valid.push({ ...row, businessId, ...(row.periodEnd === undefined ? { date: row.dueDate } : {}) });
