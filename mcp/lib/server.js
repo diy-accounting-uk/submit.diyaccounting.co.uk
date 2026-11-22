@@ -714,8 +714,9 @@ export const TOOLS = {
       "accounts already filed: each accepted filing answers the receipt name that revision.revisesReceipt takes, the " +
       "company number, the period, the type of accounts, whether it is itself revised accounts, whether it went with a " +
       "Company Tax Return, and revisable, true when the accounts tools can revise it. Rejected filings answer their " +
-      "submission number and Companies House's reasons, and have no receipt to revise. clientId narrows the list to " +
-      "one of the practice's clients.",
+      "submission number and Companies House's reasons, and have no receipt to revise. A receipt that cannot be read, " +
+      "or whose filed document does not read as accounts, answers problem with the reason and is not revisable. " +
+      "clientId narrows the list to one of the practice's clients.",
     inputSchema: {
       clientId: z.string().optional().describe("A practice client's id, to list that client's accounts filings"),
     },

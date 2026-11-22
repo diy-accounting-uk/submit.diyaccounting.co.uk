@@ -405,10 +405,39 @@ export async function listAccountsReceipts(session, params = {}) {
     receipts
       .filter((row) => row.kind === ACCOUNTS_RECEIPT_KIND)
       .map(async (row) => {
-        const stored = await callSubmitApi(session, `/api/v1/hmrc/receipt/${encodeURIComponent(row.name)}${query}`);
-        const mapped = stored.filedDocument ? mapIxbrlAccounts(stored.filedDocument, { regime: "any" }) : null;
         const revisedAccounts = row.amended === true;
         const filedWithCompanyTaxReturn = Boolean(row.jointFilingId);
+        const filedOn = String(row.timestamp ?? "").slice(0, 10);
+        let stored;
+        try {
+          stored = await callSubmitApi(session, `/api/v1/hmrc/receipt/${encodeURIComponent(row.name)}${query}`);
+        } catch (error) {
+          // A receipt that cannot be read is named with the reason, and the rest of the list still answers.
+          return {
+            name: row.name,
+            companyNumber: null,
+            periodStart: null,
+            periodEnd: null,
+            accountsType: null,
+            status: null,
+            revisedAccounts,
+            filedWithCompanyTaxReturn,
+            revisable: false,
+            filedOn,
+            problem: error.message,
+          };
+        }
+        let mapped = null;
+        let problem;
+        if (stored.filedDocument) {
+          try {
+            mapped = mapIxbrlAccounts(stored.filedDocument, { regime: "any" });
+          } catch (error) {
+            problem = `The document filed with this receipt does not read as accounts: ${error.message}`;
+          }
+        } else {
+          problem = "The document filed with this receipt was not kept.";
+        }
         const status = stored.statusCode === "ACCEPT" ? "accepted" : "rejected";
         return {
           name: row.name,
@@ -420,7 +449,8 @@ export async function listAccountsReceipts(session, params = {}) {
           revisedAccounts,
           filedWithCompanyTaxReturn,
           revisable: status === "accepted" && !filedWithCompanyTaxReturn && !revisedAccounts && Boolean(mapped),
-          filedOn: String(row.timestamp ?? "").slice(0, 10),
+          filedOn,
+          ...(problem ? { problem } : {}),
         };
       }),
   );

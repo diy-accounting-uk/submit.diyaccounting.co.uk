@@ -703,6 +703,40 @@ describe("submit-tools", () => {
       ]);
     });
 
+    it("names a receipt it could not read or map, and still answers the others", async () => {
+      const UNREADABLE_NAME = "2026-02-10T10:00:00.000Z-000008.json";
+      const UNMAPPABLE_NAME = "2026-02-05T10:00:00.000Z-000009.json";
+      vi.stubGlobal(
+        "fetch",
+        receiptsApi({
+          "Bearer session-access-token": {
+            list: { receipts: [receiptRow(UNREADABLE_NAME), receiptRow(UNMAPPABLE_NAME), receiptRow(DORMANT_NAME)], filingsInProgress: [] },
+            stored: {
+              [UNMAPPABLE_NAME]: {
+                statusCode: "ACCEPT",
+                companyNumber: "00000001",
+                kind: "companies-house-accounts",
+                filedDocument: "<html><body>not accounts</body></html>",
+              },
+              [DORMANT_NAME]: OWN_RECEIPTS.stored[DORMANT_NAME],
+            },
+          },
+        }),
+      );
+
+      const result = await listAccountsReceipts(session, {});
+
+      expect(result.receipts.map((row) => [row.name, row.revisable])).toEqual([
+        [UNREADABLE_NAME, false],
+        [UNMAPPABLE_NAME, false],
+        [DORMANT_NAME, true],
+      ]);
+      expect(result.receipts[0].problem).toBe("Receipt not found");
+      expect(result.receipts[1]).toMatchObject({ status: "accepted", companyNumber: "00000001", accountsType: null });
+      expect(result.receipts[1].problem).toEqual(expect.any(String));
+      expect(result.receipts[2]).not.toHaveProperty("problem");
+    });
+
     it("answers a customer only the receipts the route holds for that customer", async () => {
       const otherCustomer = createSession({
         credentials: { accessToken: async () => "other-access-token", idToken: async () => "other-id-token" },
