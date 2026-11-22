@@ -215,9 +215,25 @@
     return hasSyntheticBundle;
   }
 
-  /** The HMRC account this page's calls use, once the bundle read has chosen it: "synthetic" or null. */
+  // Each decision starts once the one before it has ended, so the decision started last is the one
+  // that stands, whatever order the bundle reads answer in.
+  let latestHmrcAccountDecision = Promise.resolve();
+  function decideHmrcAccount() {
+    latestHmrcAccountDecision = latestHmrcAccountDecision.then(chooseHmrcAccount);
+    return latestHmrcAccountDecision;
+  }
+
+  /**
+   * The HMRC account this page's calls use, once every bundle read started so far has chosen it:
+   * "synthetic" or null.
+   */
   window.readHmrcAccount = async function readHmrcAccount() {
     await hmrcAccountSettled;
+    let awaited;
+    do {
+      awaited = latestHmrcAccountDecision;
+      await awaited;
+    } while (awaited !== latestHmrcAccountDecision);
     return sessionStorage.getItem("hmrcAccount");
   };
 
@@ -530,7 +546,7 @@
   // Re-check synthetic bundle and inject/remove icon as needed
   async function refreshToggleVisibility() {
     // The bundles decide the HMRC account again on every page, as at load, and the page redraws for it
-    const hasSyntheticBundle = await chooseHmrcAccount();
+    const hasSyntheticBundle = await decideHmrcAccount();
     window.dispatchEvent(new CustomEvent("hmrc-account-decided"));
 
     const headerLeft = document.querySelector(".header-left");
@@ -553,7 +569,7 @@
   // Run on DOMContentLoaded or immediately if already loaded
   async function init() {
     injectStyles();
-    const hasSyntheticBundle = await chooseHmrcAccount();
+    const hasSyntheticBundle = await decideHmrcAccount();
     settleHmrcAccount();
     await injectToggle(hasSyntheticBundle);
   }

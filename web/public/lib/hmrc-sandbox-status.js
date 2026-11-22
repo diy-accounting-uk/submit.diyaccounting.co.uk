@@ -50,21 +50,22 @@
     } catch {
       env = {};
     }
+    const banner = document.querySelector("p.hint[data-feature-status]");
+    if (!banner) return;
     if (hmrcAccount === "synthetic" || isHmrcTestApi(effectiveHmrcBaseUri(env, hmrcAccount))) {
       showHmrcSandboxStatus(sentence, ...trailing);
+    } else if (drawn && banner.getAttribute("data-feature-status") !== "production") {
+      banner.setAttribute("data-feature-status", "production");
+      banner.replaceChildren(...drawn.production.map((node) => node.cloneNode(true)));
     }
-    const banner = document.querySelector("p.hint[data-feature-status]");
-    if (banner) banner.hidden = false;
+    banner.hidden = false;
   }
 
   // A second decision of the HMRC account (the bundles changed, or the person signed in again in
-  // another tab) draws the line again for the account now decided.
+  // another tab) draws the line again for the account now decided. The line on show stays until
+  // then, so a decision still under way never shows the line of another account.
   window.addEventListener("hmrc-account-decided", () => {
-    const banner = document.querySelector("p.hint[data-feature-status]");
-    if (!drawn || !banner) return;
-    banner.setAttribute("data-feature-status", "production");
-    banner.replaceChildren(...drawn.production.map((node) => node.cloneNode(true)));
-    showHmrcStatusForService(drawn.sentence, ...drawn.trailing);
+    if (drawn) showHmrcStatusForService(drawn.sentence, ...drawn.trailing);
   });
 
   // The synthetic indicator and the test data link show for a synthetic account, once the bundle read

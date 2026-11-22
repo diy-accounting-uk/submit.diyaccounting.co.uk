@@ -65,7 +65,8 @@ const answerLate = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms
 
 // storedAccount is what sessionStorage holds when the page opens: by default the account the bundles
 // choose, as after a page that has read them; null for a new tab. A bundleAnswerMs of null is a bundle
-// read that never answers. bundlesSynthetic says, at each bundle read, whether the bundles are synthetic.
+// read that never answers; a function gives the time for each read. bundlesSynthetic says, as each
+// bundle read is sent, whether the bundles are synthetic.
 async function openVatPage(
   page,
   pageName,
@@ -81,9 +82,10 @@ async function openVatPage(
   await serveRealSite(page);
   await serveSubmitEnv(page, hmrcBaseUri);
   await page.route("**/api/v1/bundle", async (route) => {
-    if (bundleAnswerMs === null) return;
-    await answerLate(bundleAnswerMs);
+    const answerMs = typeof bundleAnswerMs === "function" ? bundleAnswerMs() : bundleAnswerMs;
+    if (answerMs === null) return;
     const bundles = bundlesSynthetic() ? [{ bundleId: "day-guest", qualifiers: { synthetic: true } }] : [];
+    await answerLate(answerMs);
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ bundles }) });
   });
   await page.addInitScript((account) => {
@@ -258,6 +260,85 @@ test.describe("A second decision of the HMRC account draws the status line again
       expect(await banner.textContent()).toBe(productionText);
     });
   }
+});
+
+test.describe("A decision still under way holds the account and the status line", () => {
+  test("the account read while the bundles are read again is the account that read decides", async ({ page }) => {
+    let bundlesAreSynthetic = true;
+    let answerMs = 300;
+    await openVatPage(page, "vatObligations.html", {
+      synthetic: true,
+      bundlesSynthetic: () => bundlesAreSynthetic,
+      bundleAnswerMs: () => answerMs,
+    });
+    await expect(page.locator("p.hint[data-feature-status]").first()).toHaveAttribute("data-feature-status", "sandbox");
+
+    bundlesAreSynthetic = false;
+    answerMs = 1500;
+    const account = await page.evaluate(() => {
+      window.dispatchEvent(new StorageEvent("storage", { key: "cognitoIdToken" }));
+      return window.readHmrcAccount();
+    });
+    expect(account).toBeNull();
+  });
+
+  test("the decision started last stands when an earlier bundle read answers after it", async ({ page }) => {
+    let bundlesAreSynthetic = false;
+    let answerMs = 300;
+    let bundleReads = 0;
+    await openVatPage(page, "vatObligations.html", {
+      synthetic: false,
+      bundlesSynthetic: () => bundlesAreSynthetic,
+      bundleAnswerMs: () => {
+        bundleReads += 1;
+        return answerMs;
+      },
+    });
+    const banner = page.locator("p.hint[data-feature-status]").first();
+    await expect(banner).toHaveAttribute("data-feature-status", "production");
+
+    const readsBefore = bundleReads;
+    bundlesAreSynthetic = true;
+    answerMs = 1500;
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent("bundle-changed")));
+    await expect.poll(() => bundleReads).toBeGreaterThan(readsBefore);
+    bundlesAreSynthetic = false;
+    answerMs = 100;
+    const account = await page.evaluate(() => {
+      window.dispatchEvent(new CustomEvent("bundle-changed"));
+      return window.readHmrcAccount();
+    });
+    expect(account).toBeNull();
+    await page.waitForTimeout(2000);
+    expect(await page.evaluate(() => sessionStorage.getItem("hmrcAccount"))).toBeNull();
+    await expect(banner).toHaveAttribute("data-feature-status", "production");
+    expect(await page.evaluate(() => [...window.__shownStatuses])).toEqual(["production"]);
+  });
+
+  test("a synthetic account sees only the sandbox status while a second bundle read is still under way", async ({ page }) => {
+    let answerMs = 300;
+    let bundleReads = 0;
+    await openVatPage(page, "vatObligations.html", {
+      synthetic: true,
+      bundleAnswerMs: () => {
+        bundleReads += 1;
+        return answerMs;
+      },
+    });
+    const banner = page.locator("p.hint[data-feature-status]").first();
+    await expect(banner).toHaveAttribute("data-feature-status", "sandbox");
+
+    const readsBefore = bundleReads;
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent("bundle-changed")));
+    await expect.poll(() => bundleReads).toBeGreaterThan(readsBefore);
+    answerMs = 1500;
+    await page.evaluate(() => {
+      window.dispatchEvent(new CustomEvent("bundle-changed"));
+      return window.readHmrcAccount();
+    });
+    await expect(banner).toHaveAttribute("data-feature-status", "sandbox");
+    expect(await page.evaluate(() => [...window.__shownStatuses])).toEqual(["sandbox"]);
+  });
 });
 
 test.describe("The status line is announced when it appears", () => {
