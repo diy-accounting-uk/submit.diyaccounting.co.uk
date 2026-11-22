@@ -5,12 +5,13 @@
 // The due list routes against a local DynamoDB: add a business, write its HMRC rows, read the list,
 // close a row through a filed return, and delete the business with its rows.
 
-import { describe, test, expect, vi, beforeAll, afterAll } from "vitest";
+import { describe, test, expect, vi, beforeAll, afterAll, beforeEach } from "vitest";
 
 const USER = "due-list-system-user";
+let signedIn = USER;
 vi.mock("../services/bundleManagement.js", async (importOriginal) => ({
   ...(await importOriginal()),
-  enforceBundles: async () => ({ userSub: USER }),
+  enforceBundles: async () => ({ userSub: signedIn }),
 }));
 
 let stopDynalite;
@@ -48,6 +49,7 @@ beforeAll(async () => {
   const { initializeSalt } = await import("../services/subHasher.js");
   await initializeSalt();
   await ensureDueListTableExists(process.env.DUE_LIST_DYNAMODB_TABLE_NAME, endpoint);
+  await (await import("../test-support/dynaliteTransactions.js")).emulateTransactions();
 
   routes = {
     get: (await import("../functions/account/dueListGet.js")).ingestHandler,
@@ -64,7 +66,7 @@ afterAll(async () => {
 describe("System: the due list against DynamoDB", () => {
   const VAT_ROW = {
     type: "vat-return",
-    filterType: "vat",
+    filterType: "taxes",
     periodStart: "2026-07-01",
     periodEnd: "2026-09-30",
     dueDate: "2026-11-07",
@@ -118,7 +120,7 @@ describe("System: the due list against DynamoDB", () => {
         body: { kind: "sole-trader", label: "Me", itsa: true },
       }),
     );
-    const finalDeclaration = { type: "itsa-final-declaration", filterType: "itsa", dueDate: "2028-01-31", kind: "filing", source: "hmrc" };
+    const finalDeclaration = { type: "itsa-final-declaration", filterType: "taxes", dueDate: "2028-01-31", kind: "filing", source: "hmrc" };
 
     expect(
       (await routes.rows(event("POST", "/api/v1/due-list/rows", { body: { businessId: "s1", rows: [finalDeclaration] } }))).statusCode,
@@ -126,5 +128,158 @@ describe("System: the due list against DynamoDB", () => {
 
     const { rows } = bodyOf(await routes.get(event("GET", "/api/v1/due-list")));
     expect(rows.map((row) => row.sk)).toEqual(["row#s1#itsa-final-declaration#2028-01-31"]);
+  });
+});
+
+describe("System: the due list's limits and removals under writes that overlap", () => {
+  const putBusiness = (id, body = { kind: "vat", label: id }) =>
+    routes.business(event("PUT", `/api/v1/due-list/businesses/${id}`, { pathParameters: { id }, body }));
+  const deleteBusiness = (id) => routes.business(event("DELETE", `/api/v1/due-list/businesses/${id}`, { pathParameters: { id } }));
+  const postRows = (businessId, rows) => routes.rows(event("POST", "/api/v1/due-list/rows", { body: { businessId, rows } }));
+  const list = async () => bodyOf(await routes.get(event("GET", "/api/v1/due-list")));
+  const statusCounts = (responses) =>
+    responses.reduce((counts, { statusCode }) => ({ ...counts, [statusCode]: (counts[statusCode] ?? 0) + 1 }), {});
+  // VAT return rows with a different period end each, from a day number.
+  const vatRows = (count, firstDay) =>
+    Array.from({ length: count }, (_, index) => {
+      const periodEnd = new Date(Date.UTC(2027, 0, 1 + firstDay + index)).toISOString().slice(0, 10);
+      return { type: "vat-return", periodEnd, dueDate: periodEnd, kind: "filing", source: "hmrc" };
+    });
+  let account = 0;
+
+  beforeEach(() => {
+    account += 1;
+    signedIn = `due-list-overlap-user-${account}`;
+  });
+
+  test("60 businesses added at once leave 50 stored and refuse the other 10", async () => {
+    const responses = await Promise.all(Array.from({ length: 60 }, (_, index) => putBusiness(`shop-${index}`)));
+
+    expect(statusCounts(responses)).toEqual({ 200: 50, 409: 10 });
+    expect((await list()).businesses).toHaveLength(50);
+    expect(bodyOf(responses.find(({ statusCode }) => statusCode === 409))).toMatchObject({ reason: "due_list_full" });
+  });
+
+  test("a business replaced at the limit is stored, and a removal makes room for one more", async () => {
+    for (let index = 0; index < 50; index += 1) await putBusiness(`shop-${index}`);
+
+    expect((await putBusiness("shop-50")).statusCode).toBe(409);
+    expect((await putBusiness("shop-0", { kind: "vat", label: "Renamed" })).statusCode).toBe(200);
+    expect((await deleteBusiness("shop-1")).statusCode).toBe(200);
+    expect((await putBusiness("shop-50")).statusCode).toBe(200);
+    expect((await putBusiness("shop-51")).statusCode).toBe(409);
+    expect((await list()).businesses).toHaveLength(50);
+  });
+
+  test("rows written at once for three businesses never pass 500 stored, and a refused write stores none of its rows", async () => {
+    for (const id of ["a", "b", "c"]) await putBusiness(id);
+
+    const responses = await Promise.all([postRows("a", vatRows(300, 0)), postRows("b", vatRows(300, 0)), postRows("c", vatRows(300, 0))]);
+
+    expect(statusCounts(responses)).toEqual({ 200: 1, 409: 2 });
+    expect((await list()).rows).toHaveLength(300);
+    expect(bodyOf(responses.find(({ statusCode }) => statusCode === 409))).toMatchObject({ reason: "due_list_rows_full" });
+  });
+
+  test("a write that replaces a business's 500 rows with 500 others is stored, because its removals go first", async () => {
+    await putBusiness("a");
+    expect((await postRows("a", vatRows(500, 0))).statusCode).toBe(200);
+
+    const response = await postRows("a", vatRows(500, 1000));
+
+    expect(response.statusCode).toBe(200);
+    expect(bodyOf(response)).toMatchObject({ written: 500, removed: 500 });
+    expect((await list()).rows).toHaveLength(500);
+  });
+
+  test("a list whose count item is gone, as after a salt rotation, still refuses a 51st business", async () => {
+    for (let index = 0; index < 50; index += 1) await putBusiness(`shop-${index}`);
+    const { getDynamoDbDocClient } = await import("../lib/dynamoDbClient.js");
+    const { docClient, module } = await getDynamoDbDocClient();
+    const { businesses } = await repository.listBusinessesAndRows(signedIn);
+    await docClient.send(
+      new module.DeleteCommand({
+        TableName: process.env.DUE_LIST_DYNAMODB_TABLE_NAME,
+        Key: { hashedSub: businesses[0].hashedSub, sk: "count" },
+      }),
+    );
+
+    expect((await putBusiness("shop-50")).statusCode).toBe(409);
+    expect((await deleteBusiness("shop-0")).statusCode).toBe(200);
+    expect((await putBusiness("shop-50")).statusCode).toBe(200);
+    expect((await list()).businesses).toHaveLength(50);
+  });
+
+  test("a write over the limit that would take several transactions changes nothing, removals included", async () => {
+    await putBusiness("a");
+    await putBusiness("b");
+    expect((await postRows("a", vatRows(100, 0))).statusCode).toBe(200);
+    expect((await postRows("b", vatRows(350, 0))).statusCode).toBe(200);
+    const before = (await list()).rows.filter((row) => row.businessId === "a").map((row) => row.sk);
+
+    const response = await postRows("a", vatRows(160, 1000));
+
+    expect(response.statusCode).toBe(409);
+    expect(bodyOf(response)).toMatchObject({ reason: "due_list_rows_full" });
+    const after = (await list()).rows;
+    expect(after.filter((row) => row.businessId === "a").map((row) => row.sk)).toEqual(before);
+    expect(after).toHaveLength(450);
+  });
+
+  test("rows that left without a write, as an expired row does, make room again once the count has settled", async () => {
+    await putBusiness("a");
+    await putBusiness("b");
+    expect((await postRows("a", vatRows(500, 0))).statusCode).toBe(200);
+    expect((await postRows("b", vatRows(1, 0))).statusCode).toBe(409);
+
+    const { getDynamoDbDocClient } = await import("../lib/dynamoDbClient.js");
+    const { docClient, module } = await getDynamoDbDocClient();
+    const { rows } = await repository.listBusinessesAndRows(signedIn);
+    for (const row of rows.slice(0, 40)) {
+      await docClient.send(
+        new module.DeleteCommand({ TableName: process.env.DUE_LIST_DYNAMODB_TABLE_NAME, Key: { hashedSub: row.hashedSub, sk: row.sk } }),
+      );
+    }
+    expect((await postRows("b", vatRows(40, 0))).statusCode).toBe(409);
+    // The count settles: no write has moved it for longer than any write takes.
+    await docClient.send(
+      new module.UpdateCommand({
+        TableName: process.env.DUE_LIST_DYNAMODB_TABLE_NAME,
+        Key: { hashedSub: rows[0].hashedSub, sk: "count" },
+        UpdateExpression: "SET countedAt = :then",
+        ExpressionAttributeValues: { ":then": Date.now() - repository.COUNT_SETTLE_MS - 1 },
+      }),
+    );
+
+    expect((await postRows("b", vatRows(40, 0))).statusCode).toBe(200);
+    expect((await postRows("b", vatRows(41, 0))).statusCode).toBe(409);
+    expect((await list()).rows).toHaveLength(500);
+  });
+
+  test("a business removed while its rows are being written stays removed, with no rows, and the write answers 404", async () => {
+    await putBusiness("a");
+    const { getDynamoDbDocClient } = await import("../lib/dynamoDbClient.js");
+    const { docClient, module } = await getDynamoDbDocClient();
+    const send = docClient.send;
+    let removedMeanwhile = false;
+    // The removal lands after the rows write has read the account's items and before it writes.
+    docClient.send = async (command) => {
+      const result = await send(command);
+      if (!removedMeanwhile && command instanceof module.QueryCommand) {
+        removedMeanwhile = true;
+        expect((await deleteBusiness("a")).statusCode).toBe(200);
+      }
+      return result;
+    };
+    try {
+      const response = await postRows("a", vatRows(3, 0));
+
+      expect(removedMeanwhile).toBe(true);
+      expect(response.statusCode).toBe(404);
+      expect(bodyOf(response)).toMatchObject({ message: "No such business on the due list" });
+      expect(await list()).toEqual({ businesses: [], rows: [] });
+    } finally {
+      docClient.send = send;
+    }
   });
 });

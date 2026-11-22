@@ -40,7 +40,15 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gunzipSync, gzipSync } from "node:zlib";
-import { GetCommand, PutCommand, QueryCommand, ScanCommand, TransactWriteCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  DeleteCommand,
+  GetCommand,
+  PutCommand,
+  QueryCommand,
+  ScanCommand,
+  TransactWriteCommand,
+  UpdateCommand,
+} from "@aws-sdk/lib-dynamodb";
 import { generatePassphrase } from "../app/lib/passphrase.js";
 import { SALT_CACHE_TTL_MS } from "../app/services/subHasher.js";
 
@@ -321,11 +329,26 @@ function tally(report, table, outcome, amount = 1) {
   report[table][outcome] = (report[table][outcome] ?? 0) + amount;
 }
 
+// A recounted item (a table's recountedItems, by sort key) holds a count of the partition's other
+// items, which the writes keep in step and which a write counts again when it finds none. A move
+// would carry an old count past writes made under the new hash meanwhile, so the rotation deletes
+// the item under the earlier hash and, once the partition has moved, under the new hash too.
+async function deleteRecountedItem(context, tableName, key) {
+  await context.doc.send(new DeleteCommand({ TableName: tableName, Key: key }));
+}
+
 async function rekeyPartitions(context, manifest, identity, registry, report) {
-  await mapLimit(manifest.partitionTables, TABLE_CONCURRENCY, async ({ table, sortKey }) => {
+  await mapLimit(manifest.partitionTables, TABLE_CONCURRENCY, async ({ table, sortKey, recountedItems = [] }) => {
     const tableName = `${context.envName}-env-${table}`;
+    let changed = false;
     for (const { version, hash } of identity.oldHashes) {
       for (const item of await queryPartition(context, tableName, hash)) {
+        changed = true;
+        if (recountedItems.includes(item[sortKey])) {
+          await deleteRecountedItem(context, tableName, { hashedSub: hash, [sortKey]: item[sortKey] });
+          tally(report, table, "recounted");
+          continue;
+        }
         const outcome = await moveItem(context, {
           tableName,
           partitionKey: "hashedSub",
@@ -337,6 +360,12 @@ async function rekeyPartitions(context, manifest, identity, registry, report) {
         });
         tally(report, table, outcome);
       }
+    }
+    // A rerun after a crash between the last move and this delete finds nothing to move, so a rotation
+    // in flight deletes the item under the new hash whether or not this run moved anything.
+    if (!changed && !registry.rotation) return;
+    for (const recounted of recountedItems) {
+      await deleteRecountedItem(context, tableName, { hashedSub: identity.currentHash, [sortKey]: recounted });
     }
   });
 }

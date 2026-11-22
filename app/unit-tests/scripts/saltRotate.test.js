@@ -97,6 +97,10 @@ function createFakeDynamo() {
           }
           return { Attributes: table.get(key) };
         }
+        case "DeleteCommand":
+          fake.countWrite();
+          tableOf(input.TableName).delete(keyOf(input.TableName, input.Key));
+          return {};
         case "TransactWriteCommand": {
           fake.countWrite();
           const [{ Put }, { Delete }] = input.TransactItems;
@@ -431,6 +435,92 @@ describe("salt-rotate runs", () => {
       tokensConsumed: 3,
       saltVersion: "v2",
     });
+  });
+
+  test("the due list's count item is not carried to the new hash, so the next write counts the account's items", async () => {
+    const DUE_LIST = "ci-env-due-list";
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "business#shop-1", businessId: "shop-1", kind: "vat" });
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "row#shop-1#vat-return#2026-09-30", type: "vat-return" });
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "count", businesses: 1, rows: 1 });
+    const context = createContext(state);
+    const writeRegistry = context.writeRegistry;
+    // A write lands under the new hash during the rotation and counts only what it found there.
+    context.writeRegistry = async (registry) => {
+      await writeRegistry(registry);
+      if (registry.rotation?.state === "cutover") {
+        const newA = hashValue(registry.versions.v2, SUB_A);
+        state.dynamo.seed(DUE_LIST, { hashedSub: newA, sk: "business#shop-2", businessId: "shop-2", kind: "vat" });
+        state.dynamo.seed(DUE_LIST, { hashedSub: newA, sk: "count", businesses: 1, rows: 0 });
+      }
+    };
+
+    const { report } = await runRotation(context, { mode: "rotate" });
+
+    const newA = hashValue(newSaltOf(state), SUB_A);
+    const items = state.dynamo.items(DUE_LIST);
+    expect(
+      items
+        .filter((item) => item.hashedSub === newA)
+        .map((item) => item.sk)
+        .sort(),
+    ).toEqual(["business#shop-1", "business#shop-2", "row#shop-1#vat-return#2026-09-30"]);
+    expect(items.filter((item) => item.sk === "count")).toEqual([]);
+    expect(items.filter((item) => item.hashedSub === hashA)).toEqual([]);
+    expect(report["due-list"]).toMatchObject({ moved: 2, recounted: 1 });
+  });
+
+  test("a count item written under the new hash goes on a rerun after a crash before its delete", async () => {
+    const DUE_LIST = "ci-env-due-list";
+    state.dynamo.seed(DUE_LIST, { hashedSub: hashA, sk: "business#shop-1", businessId: "shop-1", kind: "vat" });
+    const context = createContext(state);
+    const writeRegistry = context.writeRegistry;
+    let newA;
+    context.writeRegistry = async (registry) => {
+      await writeRegistry(registry);
+      if (registry.rotation?.state === "cutover" && !newA) {
+        newA = hashValue(registry.versions.v2, SUB_A);
+        state.dynamo.seed(DUE_LIST, { hashedSub: newA, sk: "business#shop-2", businessId: "shop-2", kind: "vat" });
+        state.dynamo.seed(DUE_LIST, { hashedSub: newA, sk: "count", businesses: 1, rows: 0 });
+      }
+    };
+    const send = state.dynamo.send.bind(state.dynamo);
+    let crashed = false;
+    state.dynamo.send = async (command) => {
+      const { Key } = command.input ?? {};
+      if (!crashed && command.constructor.name === "DeleteCommand" && Key?.sk === "count" && Key.hashedSub === newA) {
+        crashed = true;
+        throw new Error("the process stopped");
+      }
+      return send(command);
+    };
+
+    await expect(runRotation(context, { mode: "rotate" })).rejects.toThrow("the process stopped");
+    await runRotation(context, { mode: "rotate" });
+
+    expect(state.dynamo.items(DUE_LIST).filter((item) => item.sk === "count")).toEqual([]);
+    expect(
+      state.dynamo
+        .items(DUE_LIST)
+        .filter((item) => item.hashedSub === newA)
+        .map((item) => item.sk)
+        .sort(),
+    ).toEqual(["business#shop-1", "business#shop-2"]);
+  });
+
+  test("an account with no due list items has its count item counted again after a rotation", async () => {
+    const DUE_LIST = "ci-env-due-list";
+    const context = createContext(state);
+    const writeRegistry = context.writeRegistry;
+    context.writeRegistry = async (registry) => {
+      await writeRegistry(registry);
+      if (registry.rotation?.state === "cutover") {
+        state.dynamo.seed(DUE_LIST, { hashedSub: hashValue(registry.versions.v2, SUB_A), sk: "count", businesses: 0, rows: 0 });
+      }
+    };
+
+    await runRotation(context, { mode: "rotate" });
+
+    expect(state.dynamo.items(DUE_LIST).filter((item) => item.sk === "count")).toEqual([]);
   });
 
   test("a sweep refuses while a rotation is in flight", async () => {

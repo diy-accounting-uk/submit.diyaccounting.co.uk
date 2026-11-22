@@ -1064,7 +1064,7 @@
           "name" : "id",
           "in" : "path",
           "required" : true,
-          "description" : "The business id the page chose",
+          "description" : "The id the page made up for the business; never a VAT number, UTR, National Insurance number or company number",
           "schema" : {
             "type" : "string"
           }
@@ -1078,7 +1078,7 @@
           "name" : "id",
           "in" : "path",
           "required" : true,
-          "description" : "The business id the page chose",
+          "description" : "The id the page made up for the business; never a VAT number, UTR, National Insurance number or company number",
           "schema" : {
             "type" : "string"
           }

@@ -191,3 +191,24 @@ describe("due rules", () => {
     expect(Object.values(DUE_RULE_FACT_IDS).filter((id) => !listed.has(id))).toEqual([]);
   });
 });
+
+describe("the type of each computed row", () => {
+  test("is the filter that the list of row types gives the row's kind", async () => {
+    const { DUE_ROW_TYPES, DUE_ROW_FILTER_TYPES } = await import("../public/lib/due/due-row-types.js");
+    const rules = await import("../public/lib/due/due-rules.js");
+    const rows = [
+      ...rules.ct600Rows({ periodStart: "2025-04-01", periodEnd: "2026-03-31" }),
+      ...rules.ctPaymentRows({ periodStart: "2025-04-01", periodEnd: "2026-03-31" }),
+      rules.vatReturnDue("2026-09-30"),
+      rules.vatPaymentDue("2026-09-30"),
+      rules.changeDue("2026-11-01", "officer"),
+      rules.changeDue("2026-11-01", "psc"),
+    ];
+
+    expect(rows.map((row) => row.kind)).toEqual(
+      expect.arrayContaining(["ct600", "ct-payment", "vat-return", "vat-payment", "officer-change", "psc-change"]),
+    );
+    for (const row of rows) expect([row.kind, row.type]).toEqual([row.kind, DUE_ROW_TYPES[row.kind]]);
+    expect(Object.values(DUE_ROW_TYPES).every((filter) => DUE_ROW_FILTER_TYPES.includes(filter))).toBe(true);
+  });
+});

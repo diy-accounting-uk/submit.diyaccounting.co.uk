@@ -9,6 +9,8 @@
 import { BundleAuthorizationError, BundleEntitlementError } from "./bundleManagement.js";
 import { http401UnauthorizedResponse, http403ForbiddenResponse, http500ServerErrorResponse } from "../lib/httpResponseHelper.js";
 import { createLogger } from "../lib/logger.js";
+import { DUE_ROW_TYPES, filterTypeOf, isDueRowType } from "../../web/public/lib/due/due-row-types.js";
+import { isValidBusinessId } from "../../web/public/lib/due/due-business-id.js";
 
 const logger = createLogger({ source: "app/services/dueList.js" });
 
@@ -21,9 +23,7 @@ export const BUSINESS_KINDS = ["company", "watched", "vat", "sole-trader"];
 // The kinds a daily job reads again from Companies House or HMRC.
 const REFRESHED_KINDS = ["company", "watched", "sole-trader"];
 
-const BUSINESS_ID = /^[A-Za-z0-9-]{1,40}$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-const ROW_TYPE = /^[a-z0-9-]{1,40}$/;
 const MAX_LABEL_LENGTH = 100;
 
 // The fields a page sends for a row it read from HMRC; the server adds businessId, readAt, status and ttl.
@@ -37,10 +37,8 @@ function isIsoDate(value) {
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
 
-/** @returns {boolean} Whether a value can be a business id in the path */
-export function isValidBusinessId(value) {
-  return typeof value === "string" && BUSINESS_ID.test(value);
-}
+export const BUSINESS_ID_RULE =
+  "The business id must be 1 to 40 letters, digits or hyphens, and not a VAT number, a UTR, a National Insurance number or a company number";
 
 /**
  * Checks a business from a request body.
@@ -96,7 +94,7 @@ export function validateHmrcRows(body) {
     .filter((name) => !["businessId", "rows"].includes(name))
     .map((name) => `The request holds no field ${name}`);
   const { businessId, rows } = body;
-  if (!isValidBusinessId(businessId)) errors.push("businessId must name a business");
+  if (!isValidBusinessId(businessId)) errors.push(BUSINESS_ID_RULE);
   if (!Array.isArray(rows)) errors.push("rows must be a list");
   else if (rows.length > DUE_LIST_ROW_CAP) errors.push(`rows holds at most ${DUE_LIST_ROW_CAP} rows`);
   const valid = [];
@@ -111,9 +109,10 @@ export function validateHmrcRows(body) {
     const outside = Object.keys(row).filter((name) => !ROW_FIELDS.includes(name));
     for (const name of outside) errors.push(`${where} holds a field a due list row does not keep: ${name}`);
     if (row.source !== "hmrc") errors.push(`${where}.source must be hmrc`);
-    if (typeof row.type !== "string" || !ROW_TYPE.test(row.type)) errors.push(`${where}.type must name a filing or payment`);
-    if (row.filterType !== undefined && (typeof row.filterType !== "string" || !ROW_TYPE.test(row.filterType))) {
-      errors.push(`${where}.filterType must name a filter`);
+    const knownType = isDueRowType(row.type);
+    if (!knownType) errors.push(`${where}.type must be one of ${Object.keys(DUE_ROW_TYPES).join(", ")}`);
+    else if (row.filterType !== undefined && row.filterType !== filterTypeOf(row.type)) {
+      errors.push(`${where}.filterType must be ${filterTypeOf(row.type)} for ${row.type}`);
     }
     if (!["filing", "payment"].includes(row.kind)) errors.push(`${where}.kind must be filing or payment`);
     if (row.periodEnd !== undefined && !isIsoDate(row.periodEnd)) errors.push(`${where}.periodEnd must be YYYY-MM-DD`);
@@ -124,7 +123,9 @@ export function validateHmrcRows(body) {
     else firstOfKey.set(key, index);
     // A row with no period (a final declaration, a payment on account, an identity verification)
     // is keyed by its due date, which the row key takes as the date in place of a period end.
-    if (outside.length === 0) valid.push({ ...row, businessId, ...(row.periodEnd === undefined ? { date: row.dueDate } : {}) });
+    if (outside.length === 0 && knownType) {
+      valid.push({ ...row, filterType: filterTypeOf(row.type), businessId, ...(row.periodEnd === undefined ? { date: row.dueDate } : {}) });
+    }
   });
   return { businessId, rows: errors.length ? [] : valid, errors };
 }

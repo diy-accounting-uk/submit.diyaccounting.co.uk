@@ -32,6 +32,7 @@ const dynamoDbModule = {
   QueryCommand: commandClass("Query"),
   UpdateCommand: commandClass("Update"),
   BatchWriteCommand: commandClass("BatchWrite"),
+  DeleteCommand: commandClass("Delete"),
 };
 
 vi.mock("@app/lib/dynamoDbClient.js", () => ({
@@ -71,6 +72,11 @@ function storeHolds(items) {
     if (command.name === "Query") {
       const hashedSub = command.params.ExpressionAttributeValues[":hashedSub"];
       return { Items: items.filter((item) => item.hashedSub === hashedSub) };
+    }
+    if (command.name === "Delete") {
+      const { hashedSub, sk } = command.params.Key;
+      const stored = items.find((item) => item.hashedSub === hashedSub && item.sk === sk);
+      return stored ? { Attributes: stored } : {};
     }
     return {};
   });
@@ -309,12 +315,15 @@ describe("data/dynamoDbDueListRepository", () => {
     });
 
     test("deleteBusiness fails when an item of the business could not be removed", async () => {
-      tableLeavesLastRowUnprocessed([{ hashedSub: "hashed-user-1", sk: "business#b1" }]);
+      tableLeavesLastRowUnprocessed([
+        { hashedSub: "hashed-user-1", sk: "business#b1" },
+        { hashedSub: "hashed-user-1", sk: "row#b1#vat-return#2026-09-30" },
+      ]);
 
       const pending = deleteBusiness("user-1", "b1").catch((error) => error);
       await vi.runAllTimersAsync();
 
-      expect((await pending).message).toBe("1 of the business's 1 due list items could not be removed");
+      expect((await pending).message).toBe("1 of the business's 2 due list items could not be removed");
     });
 
     test("putFeedToken fails when the lookup or the pointer could not be written", async () => {
@@ -369,7 +378,9 @@ describe("data/dynamoDbDueListRepository", () => {
     ]);
 
     expect(await deleteBusiness("user-1", "b1")).toBe(2);
-    expect(batchRequests().map((request) => request.DeleteRequest.Key.sk)).toEqual(["business#b1", "row#b1#vat-return#2026-09-30"]);
+    // The business goes on its own first, so a rows write that lands afterwards finds it gone.
+    expect(sent("Delete").map((command) => command.params.Key.sk)).toEqual(["business#b1"]);
+    expect(batchRequests().map((request) => request.DeleteRequest.Key.sk)).toEqual(["row#b1#vat-return#2026-09-30"]);
   });
 
   test("queryJobsDue reads the job index for the job's items due on or before the date", async () => {
@@ -453,5 +464,205 @@ describe("data/dynamoDbDueListRepository", () => {
 
     expect(await closeVatReturnRow("user-1", "2026-09-30")).toEqual({ matched: 0, closed: false });
     expect(sent("Update")).toHaveLength(0);
+  });
+});
+
+describe("data/dynamoDbDueListRepository limits", () => {
+  const COUNT_KEY = { hashedSub: "hashed-user-1", sk: "count" };
+  const countUpdates = () =>
+    sent("Update")
+      .map((command) => command.params)
+      .filter((update) => update.Key.sk === "count");
+  const rowsOf = (count) =>
+    Array.from({ length: count }, (unused, index) => ({
+      ...VAT_ROW,
+      periodEnd: new Date(Date.UTC(2026, 0, 1 + index)).toISOString().slice(0, 10),
+    }));
+
+  // A store whose count item refuses a reservation; the count read and the items are as given.
+  function countRefuses({ count, items = [] }) {
+    mockSend.mockImplementation(async (command) => {
+      if (command.name === "Query") return { Items: items };
+      if (command.name === "Get") return { Item: count };
+      if (
+        command.name === "Update" &&
+        command.params.UpdateExpression.startsWith("ADD") &&
+        command.params.ConditionExpression.includes(":room")
+      ) {
+        throw new ConditionalCheckFailedException("no room");
+      }
+      return {};
+    });
+  }
+
+  beforeEach(() => {
+    mockSend.mockReset();
+    mockSend.mockResolvedValue({});
+    mockSubHashCandidates.mockImplementation((sub) => [{ version: "v1", hashedSub: `hashed-${sub}` }]);
+    process.env.DUE_LIST_DYNAMODB_TABLE_NAME = TABLE;
+  });
+
+  test("putRows reserves the rows a write adds beyond those it removes on the count, with room under the cap, before any write", async () => {
+    storeHolds([{ ...VAT_ROW, hashedSub: "hashed-user-1", sk: "row#b1#vat-return#2025-12-31", periodEnd: "2025-12-31" }]);
+
+    await putRows("user-1", rowsOf(3), (row) => row.businessId === "b1");
+
+    const [reservation] = countUpdates();
+    expect(reservation).toMatchObject({
+      Key: COUNT_KEY,
+      UpdateExpression: "ADD #counted :change SET countedAt = :now",
+      ConditionExpression: "attribute_exists(#counted) AND #counted <= :room",
+      ExpressionAttributeNames: { "#counted": "rows" },
+      ExpressionAttributeValues: { ":change": 2, ":room": 498 },
+    });
+    const order = mockSend.mock.calls.map(([command]) => command.name);
+    expect(order.indexOf("Update")).toBeLessThan(order.indexOf("BatchWrite"));
+  });
+
+  test("putRows refuses a write the count has no room for, when the count agrees, and writes nothing", async () => {
+    countRefuses({
+      count: { ...COUNT_KEY, businesses: 1, rows: 499, countedAt: 0 },
+      items: rowsOf(499).map((row, index) => ({ ...row, hashedSub: "hashed-user-1", sk: `row#b2#x#${index}` })),
+    });
+
+    await expect(putRows("user-1", rowsOf(2))).rejects.toMatchObject({ name: "DueListFullError", counted: "rows" });
+    expect(sent("BatchWrite")).toHaveLength(0);
+  });
+
+  test("a count moved within the settle window is kept by a recount, because another write's rows may be on their way", async () => {
+    countRefuses({ count: { ...COUNT_KEY, businesses: 1, rows: 499, countedAt: Date.now() } });
+
+    await expect(putRows("user-1", rowsOf(2))).rejects.toMatchObject({ name: "DueListFullError" });
+    expect(sent("Query").filter((command) => command.params.ConsistentRead)).toHaveLength(1);
+    expect(countUpdates().filter((update) => update.UpdateExpression.startsWith("SET"))).toHaveLength(0);
+  });
+
+  test("putRows gives back to the count the rows DynamoDB left unwritten", async () => {
+    mockSend.mockImplementation(async (command) => {
+      if (command.name === "Query") return { Items: [] };
+      if (command.name === "BatchWrite") return { UnprocessedItems: { [TABLE]: command.params.RequestItems[TABLE].slice(-1) } };
+      return {};
+    });
+
+    vi.useFakeTimers();
+    let result;
+    try {
+      const pending = putRows("user-1", rowsOf(3));
+      await vi.runAllTimersAsync();
+      result = await pending;
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(result.unwritten).toHaveLength(1);
+    expect(countUpdates().map((update) => update.ExpressionAttributeValues[":change"])).toEqual([3, -1]);
+  });
+
+  test("putRows for a business removed after the write began takes its new rows back out and throws", async () => {
+    const business = { hashedSub: "hashed-user-1", sk: "business#b1", businessId: "b1", kind: "vat" };
+    mockSend.mockImplementation(async (command) => {
+      if (command.name === "Query") return { Items: [business] };
+      if (command.name === "Update" && command.params.Key.sk === "business#b1") throw new ConditionalCheckFailedException("removed");
+      if (command.name === "Delete") return { Attributes: { sk: command.params.Key.sk } };
+      return {};
+    });
+
+    await expect(
+      putRows("user-1", rowsOf(2), () => false, { forBusiness: { id: "b1", set: { hmrcReadAt: VAT_ROW.readAt } } }),
+    ).rejects.toMatchObject({ name: "DueListBusinessMissingError" });
+    expect(sent("Delete").map((command) => command.params.Key.sk)).toEqual([
+      "row#b1#vat-return#2026-01-01",
+      "row#b1#vat-return#2026-01-02",
+    ]);
+    expect(countUpdates().map((update) => update.ExpressionAttributeValues[":change"])).toEqual([2, -2]);
+  });
+
+  test("putBusiness reserves a new business before writing it, only where none is stored", async () => {
+    storeHolds([]);
+
+    const { created } = await putBusiness("user-1", { id: "b1", kind: "vat", label: "Shop" });
+
+    expect(created).toBe(true);
+    expect(countUpdates()[0].ExpressionAttributeValues).toMatchObject({ ":change": 1, ":room": 49 });
+    expect(sent("Put")[0].params.ConditionExpression).toBe("attribute_not_exists(sk)");
+  });
+
+  test("putBusiness replaces a stored business where it is stored, keeps the time HMRC was read, and moves no count", async () => {
+    storeHolds([
+      {
+        hashedSub: "hashed-user-1",
+        sk: "business#b1",
+        businessId: "b1",
+        kind: "vat",
+        label: "Shop",
+        hmrcReadAt: "2026-11-01T10:00:00.000Z",
+      },
+    ]);
+
+    const { item, created } = await putBusiness("user-1", { id: "b1", kind: "vat", label: "Renamed" });
+
+    expect(created).toBe(false);
+    expect(item).toMatchObject({ label: "Renamed", hmrcReadAt: "2026-11-01T10:00:00.000Z" });
+    expect(sent("Put")[0].params.ConditionExpression).toBe("attribute_exists(sk)");
+    expect(countUpdates()).toHaveLength(0);
+  });
+
+  test("putBusiness refuses a new business when the count is at the cap and a fresh count agrees", async () => {
+    countRefuses({
+      count: { ...COUNT_KEY, businesses: 50, rows: 0, countedAt: 0 },
+      items: Array.from({ length: 50 }, (unused, index) => ({ hashedSub: "hashed-user-1", sk: `business#s${index}` })),
+    });
+
+    await expect(putBusiness("user-1", { id: "b1", kind: "vat", label: "Shop" })).rejects.toMatchObject({
+      name: "DueListFullError",
+      counted: "businesses",
+    });
+    expect(sent("Put")).toHaveLength(0);
+  });
+
+  test("a write that finds no count counts the account's items under every salt version, on the condition that none was written", async () => {
+    mockSubHashCandidates.mockImplementation((sub) => [
+      { version: "v2", hashedSub: `new-${sub}` },
+      { version: "v1", hashedSub: `hashed-${sub}` },
+    ]);
+    let counted = false;
+    mockSend.mockImplementation(async (command) => {
+      if (command.name === "Query") {
+        const hashedSub = command.params.ExpressionAttributeValues[":hashedSub"];
+        return { Items: hashedSub === "hashed-user-1" ? [{ hashedSub, sk: "business#old" }] : [] };
+      }
+      if (command.name === "Get") return {};
+      if (command.name === "Update" && command.params.ConditionExpression === "attribute_not_exists(sk)") counted = true;
+      if (command.name === "Update" && command.params.ConditionExpression?.includes(":room") && !counted)
+        throw new ConditionalCheckFailedException("no count");
+      return {};
+    });
+
+    await putBusiness("user-1", { id: "b1", kind: "vat", label: "Shop" });
+
+    const correction = countUpdates().find((update) => update.ConditionExpression === "attribute_not_exists(sk)");
+    expect(correction.Key).toEqual({ hashedSub: "new-user-1", sk: "count" });
+    expect(correction.ExpressionAttributeValues).toMatchObject({ ":businesses": 1, ":rows": 0 });
+  });
+
+  test("no log line of a business write, a rows write or a removal holds the business id", async () => {
+    const id = "kq7x2m9p-made-up";
+    const row = { ...VAT_ROW, businessId: id };
+    storeHolds([
+      { hashedSub: "hashed-user-1", sk: `business#${id}`, businessId: id },
+      { hashedSub: "hashed-user-1", sk: rowSk(row), ...row },
+    ]);
+    const lines = [];
+    const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => lines.push(String(chunk)) > 0);
+    try {
+      await putBusiness("user-1", { id, kind: "vat", label: "Shop" });
+      await putRows("user-1", [{ ...row, dueDate: "2026-11-08" }], () => true, { forBusiness: { id, set: { hmrcReadAt: row.readAt } } });
+      await deleteBusiness("user-1", id);
+    } finally {
+      write.mockRestore();
+    }
+
+    expect(lines.length).toBeGreaterThanOrEqual(3);
+    expect(lines.join("")).not.toContain(id);
   });
 });

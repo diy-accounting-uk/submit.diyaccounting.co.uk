@@ -2493,8 +2493,16 @@ public class AccountStack extends Stack {
                 .httpMethod(HttpMethod.DELETE)
                 .urlPath(props.sharedNames().account.dueListBusinessDeleteUrlPath)
                 .build());
+        // A new business is reserved on the account's count (UpdateItem, with GetItem and Query to count
+        // again) and put on a condition; a removal deletes the business, then its rows in batches.
         dueListTable.grant(
-                this.dueListBusinessPutLambda, "dynamodb:Query", "dynamodb:PutItem", "dynamodb:BatchWriteItem");
+                this.dueListBusinessPutLambda,
+                "dynamodb:Query",
+                "dynamodb:GetItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:BatchWriteItem");
 
         var dueListRowsPostLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
@@ -2529,11 +2537,15 @@ public class AccountStack extends Stack {
         bundlesTable.grant(this.dueListRowsPostLambda, "dynamodb:Query", "dynamodb:GetItem");
         SubHashSaltHelper.grantSaltAccess(this.dueListRowsPostLambda, region, account, props.envName());
         OperatorEmailsHelper.grantOperatorEmailsAccess(this.dueListRowsPostLambda, region, account, props.envName());
+        // A rows write reserves its rows on the account's count, writes them in batches, sets the
+        // business's read time on a condition, and takes rows back out if the business went meanwhile.
         dueListTable.grant(
                 this.dueListRowsPostLambda,
                 "dynamodb:Query",
+                "dynamodb:GetItem",
                 "dynamodb:PutItem",
                 "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
                 "dynamodb:BatchWriteItem");
         infof(
                 "Created the due list Lambdas %s, %s and %s",

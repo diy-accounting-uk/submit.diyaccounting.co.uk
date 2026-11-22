@@ -1312,21 +1312,33 @@ public class AccountNames {
                 "%s-%s".formatted(root.appLambdaArnPrefix, dueListBusinessPutLambdaHandlerDashed);
         this.dueListBusinessPutIngestProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.dueListBusinessPutIngestLambdaArn, root.provisionedConcurrencyAliasName);
-        root.publishedApiLambdas.add(new PublishedLambda(
-                this.dueListBusinessPutLambdaHttpMethod,
-                this.dueListBusinessPutLambdaUrlPath,
-                "Add or replace a due list business",
-                "Adds a business to the authenticated user's due list, or replaces it",
-                "putDueListBusiness",
-                List.of(new ApiParameter("id", "path", true, "The business id the page chose"))));
+        root.publishedApiLambdas.add(
+                new PublishedLambda(
+                        this.dueListBusinessPutLambdaHttpMethod,
+                        this.dueListBusinessPutLambdaUrlPath,
+                        "Add or replace a due list business",
+                        "Adds a business to the authenticated user's due list, or replaces it",
+                        "putDueListBusiness",
+                        List.of(
+                                new ApiParameter(
+                                        "id",
+                                        "path",
+                                        true,
+                                        "The id the page made up for the business; never a VAT number, UTR, National Insurance number or company number"))));
         this.dueListBusinessDeleteUrlPath = this.dueListBusinessPutLambdaUrlPath;
-        root.publishedApiLambdas.add(new PublishedLambda(
-                HttpMethod.DELETE,
-                this.dueListBusinessDeleteUrlPath,
-                "Remove a due list business",
-                "Removes a business and every date due for it from the authenticated user's due list",
-                "deleteDueListBusiness",
-                List.of(new ApiParameter("id", "path", true, "The business id the page chose"))));
+        root.publishedApiLambdas.add(
+                new PublishedLambda(
+                        HttpMethod.DELETE,
+                        this.dueListBusinessDeleteUrlPath,
+                        "Remove a due list business",
+                        "Removes a business and every date due for it from the authenticated user's due list",
+                        "deleteDueListBusiness",
+                        List.of(
+                                new ApiParameter(
+                                        "id",
+                                        "path",
+                                        true,
+                                        "The id the page made up for the business; never a VAT number, UTR, National Insurance number or company number"))));
 
         this.dueListRowsPostLambdaHttpMethod = HttpMethod.POST;
         this.dueListRowsPostLambdaUrlPath = "/api/v1/due-list/rows";

@@ -64,6 +64,9 @@ COPY web/public/lib/companies-house-company-name.js web/public/lib/companies-hou
 COPY web/public/lib/share-capital.js web/public/lib/share-capital.js
 # The register check of a revision that names no receipt, shared by the accounts route and its page.
 COPY web/public/lib/accounts-revision-register.js web/public/lib/accounts-revision-register.js
+# The due list's business id rule and row types, which the due list routes share with the page.
+COPY web/public/lib/due/due-business-id.js web/public/lib/due/due-business-id.js
+COPY web/public/lib/due/due-row-types.js web/public/lib/due/due-row-types.js
 COPY mcp/package.json mcp/package.json
 COPY mcp/lib mcp/lib
 COPY mcp/bin mcp/bin

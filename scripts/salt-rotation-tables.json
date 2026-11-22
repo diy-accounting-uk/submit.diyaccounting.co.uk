@@ -234,7 +234,8 @@
     },
     {
       "table": "due-list",
-      "sortKey": "sk"
+      "sortKey": "sk",
+      "recountedItems": ["count"]
     }
   ],
   "rowTables": [

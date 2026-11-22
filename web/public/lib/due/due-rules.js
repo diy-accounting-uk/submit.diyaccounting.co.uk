@@ -6,10 +6,12 @@
 // - **Does:** due-rules.js is a plain ES module that the browser and app/ both import. Each function answers rows of ISO dates in UK days, each with the fact id of its rule and source "computed"; every fact id has a source file under .claude/skills/tax-sources/sources with its gov.uk quote. A period of account longer than 12 months splits into accounting periods of 12 months and the rest. A month added to the last day of a month lands on the last day of the later month, as HMRC counts.
 // - **Run:** `npx vitest run web/unit-tests/dueRules.test.js`
 // - **Entry:** `web/public/lib/due/due-rules.js:ct600Rows`; `web/public/lib/due/due-rules.js:ctPaymentRows`; `web/public/lib/due/due-rules.js:vatReturnDue`; `web/public/lib/due/due-rules.js:vatPaymentDue`; `web/public/lib/due/due-rules.js:expectedNextVatPeriod`; `web/public/lib/due/due-rules.js:itsaStandardRows`; `web/public/lib/due/due-rules.js:saPaymentRows`; `web/public/lib/due/due-rules.js:changeDue`
-// - **Files:** web/public/lib/due/due-rules.js, web/unit-tests/dueRules.test.js, .claude/skills/tax-sources/sources/ct-accounting-period-12-months.json, .claude/skills/tax-sources/sources/sa-payments-on-account.json, .claude/skills/tax-sources/sources/sa-balancing-payment.json, .claude/skills/tax-sources/sources/ch-officer-changes-14-days.json, .claude/skills/tax-sources/sources/ch-psc-changes-14-days.json, .claude/skills/tax-sources/sources/vat-payment-same-deadline.json
+// - **Files:** web/public/lib/due/due-rules.js, web/public/lib/due/due-row-types.js, web/unit-tests/dueRules.test.js, .claude/skills/tax-sources/sources/ct-accounting-period-12-months.json, .claude/skills/tax-sources/sources/sa-payments-on-account.json, .claude/skills/tax-sources/sources/sa-balancing-payment.json, .claude/skills/tax-sources/sources/ch-officer-changes-14-days.json, .claude/skills/tax-sources/sources/ch-psc-changes-14-days.json, .claude/skills/tax-sources/sources/vat-payment-same-deadline.json
 // - **Keywords:** due dates, deadline rules, ct600 due date, corporation tax payment date, vat return due date, vat payment date, payments on account, balancing payment, officer change 14 days, psc change, period of account split
 // - **Related:** SITE-22
 // @end-capability
+
+import { filterTypeOf } from "./due-row-types.js";
 
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -67,8 +69,9 @@ function lastDayOfMonthsFrom(start, months) {
   return addMonths(addDays(start, -1), months);
 }
 
+// A computed row: its type is the filter that the list of row types gives its kind.
 function computed(row, rule) {
-  return { ...row, rule, source: "computed" };
+  return { ...row, type: filterTypeOf(row.kind), rule, source: "computed" };
 }
 
 /**
@@ -98,7 +101,7 @@ export function accountingPeriods({ periodStart, periodEnd }) {
 export function ct600Rows({ periodStart, periodEnd }) {
   const due = addMonths(periodEnd, 12);
   return accountingPeriods({ periodStart, periodEnd }).map((accountingPeriod) =>
-    computed({ kind: "ct600", type: "taxes", ...accountingPeriod, due }, DUE_RULE_FACT_IDS.ct600),
+    computed({ kind: "ct600", ...accountingPeriod, due }, DUE_RULE_FACT_IDS.ct600),
   );
 }
 
@@ -110,7 +113,7 @@ export function ct600Rows({ periodStart, periodEnd }) {
 export function ctPaymentRows({ periodStart, periodEnd }) {
   return accountingPeriods({ periodStart, periodEnd }).map((accountingPeriod) =>
     computed(
-      { kind: "ct-payment", type: "taxes", ...accountingPeriod, due: addDays(addMonths(accountingPeriod.periodEnd, 9), 1) },
+      { kind: "ct-payment", ...accountingPeriod, due: addDays(addMonths(accountingPeriod.periodEnd, 9), 1) },
       DUE_RULE_FACT_IDS.ctPayment,
     ),
   );
@@ -122,7 +125,7 @@ export function ctPaymentRows({ periodStart, periodEnd }) {
  */
 export function vatReturnDue(periodEnd) {
   parse(periodEnd, "periodEnd");
-  return computed({ kind: "vat-return", type: "taxes", periodEnd, due: addDays(addMonths(periodEnd, 1), 7) }, DUE_RULE_FACT_IDS.vatReturn);
+  return computed({ kind: "vat-return", periodEnd, due: addDays(addMonths(periodEnd, 1), 7) }, DUE_RULE_FACT_IDS.vatReturn);
 }
 
 /**
@@ -170,12 +173,9 @@ export function itsaStandardRows(taxYear) {
   ];
   return [
     ...quarters.map(([periodEnd, due]) =>
-      computed(
-        { kind: "itsa-quarterly-update", type: "taxes", taxYear, periodStart: `${year}-04-06`, periodEnd, due },
-        DUE_RULE_FACT_IDS.itsaQuarterly,
-      ),
+      computed({ kind: "itsa-quarterly-update", taxYear, periodStart: `${year}-04-06`, periodEnd, due }, DUE_RULE_FACT_IDS.itsaQuarterly),
     ),
-    computed({ kind: "itsa-final-declaration", type: "taxes", taxYear, due: `${year + 2}-01-31` }, DUE_RULE_FACT_IDS.itsaFinalDeclaration),
+    computed({ kind: "itsa-final-declaration", taxYear, due: `${year + 2}-01-31` }, DUE_RULE_FACT_IDS.itsaFinalDeclaration),
   ];
 }
 
@@ -187,9 +187,9 @@ export function itsaStandardRows(taxYear) {
 export function saPaymentRows(taxYear) {
   const year = taxYearStart(taxYear);
   return [
-    computed({ kind: "sa-payment-on-account", type: "taxes", taxYear, due: `${year + 1}-01-31` }, DUE_RULE_FACT_IDS.saPaymentsOnAccount),
-    computed({ kind: "sa-payment-on-account", type: "taxes", taxYear, due: `${year + 1}-07-31` }, DUE_RULE_FACT_IDS.saPaymentsOnAccount),
-    computed({ kind: "sa-balancing-payment", type: "taxes", taxYear, due: `${year + 2}-01-31` }, DUE_RULE_FACT_IDS.saBalancingPayment),
+    computed({ kind: "sa-payment-on-account", taxYear, due: `${year + 1}-01-31` }, DUE_RULE_FACT_IDS.saPaymentsOnAccount),
+    computed({ kind: "sa-payment-on-account", taxYear, due: `${year + 1}-07-31` }, DUE_RULE_FACT_IDS.saPaymentsOnAccount),
+    computed({ kind: "sa-balancing-payment", taxYear, due: `${year + 2}-01-31` }, DUE_RULE_FACT_IDS.saBalancingPayment),
   ];
 }
 
@@ -203,7 +203,7 @@ export function changeDue(changeDate, change) {
   parse(changeDate, "changeDate");
   if (change !== "officer" && change !== "psc") throw new Error('change must be "officer" or "psc"');
   return computed(
-    { kind: `${change}-change`, type: "people", changeDate, due: addDays(changeDate, 14) },
+    { kind: `${change}-change`, changeDate, due: addDays(changeDate, 14) },
     change === "officer" ? DUE_RULE_FACT_IDS.officerChange : DUE_RULE_FACT_IDS.pscChange,
   );
 }

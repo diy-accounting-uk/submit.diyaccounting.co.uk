@@ -11,27 +11,30 @@ vi.mock("@app/services/bundleManagement.js", async (importOriginal) => ({
   ...(await importOriginal()),
   enforceBundles: (...args) => mockEnforceBundles(...args),
 }));
-const mockList = vi.fn();
-const mockPutBusiness = vi.fn(async (userSub, { id, ...fields }) => ({ hashedSub: "h", sk: `business#${id}`, businessId: id, ...fields }));
+const storedAs = (id, fields) => ({ hashedSub: "h", sk: `business#${id}`, businessId: id, ...fields });
+const mockPutBusiness = vi.fn(async (userSub, { id, ...fields }) => ({ item: storedAs(id, fields), created: true }));
 const mockDeleteBusiness = vi.fn();
-vi.mock("@app/data/dynamoDbDueListRepository.js", () => ({
-  listBusinessesAndRows: (...args) => mockList(...args),
-  putBusiness: (...args) => mockPutBusiness(...args),
-  deleteBusiness: (...args) => mockDeleteBusiness(...args),
-}));
+vi.mock("@app/data/dynamoDbDueListRepository.js", async (importOriginal) => {
+  const { DueListFullError, DueListBusyError } = await importOriginal();
+  return {
+    DueListFullError,
+    DueListBusyError,
+    putBusiness: (...args) => mockPutBusiness(...args),
+    deleteBusiness: (...args) => mockDeleteBusiness(...args),
+  };
+});
 vi.mock("@app/services/subHasher.js", async (importOriginal) => ({ ...(await importOriginal()), initializeSalt: async () => {} }));
 
 const { ingestHandler } = await import("@app/functions/account/dueListBusinessPut.js");
 const { BundleEntitlementError } = await import("@app/services/bundleManagement.js");
+const { DueListFullError, DueListBusyError } = await import("@app/data/dynamoDbDueListRepository.js");
 
 const put = (id, body) => dueListEvent({ method: "PUT", path: `/api/v1/due-list/businesses/${id}`, pathParameters: { id }, body });
 const del = (id) => dueListEvent({ method: "DELETE", path: `/api/v1/due-list/businesses/${id}`, pathParameters: { id } });
-const businesses = (count) => Array.from({ length: count }, (unused, index) => ({ businessId: `b${index}`, kind: "vat" }));
 
 describe("functions/dueListBusinessPut", () => {
   beforeEach(() => {
     mockEnforceBundles.mockReset().mockResolvedValue({ userSub: "user-1" });
-    mockList.mockReset().mockResolvedValue({ businesses: [], rows: [] });
     mockPutBusiness.mockClear();
     mockDeleteBusiness.mockReset();
   });
@@ -46,28 +49,36 @@ describe("functions/dueListBusinessPut", () => {
     expect(responseBody(response).business).not.toHaveProperty("hashedSub");
   });
 
-  test("stores a VAT business with no refresh job, and keeps the time HMRC was last read when it replaces one", async () => {
-    mockList.mockResolvedValue({ businesses: [{ businessId: "v1", kind: "vat", hmrcReadAt: "2026-11-01T10:00:00.000Z" }], rows: [] });
+  test("stores a VAT business with no refresh job, and answers the stored business with the time HMRC was last read", async () => {
+    mockPutBusiness.mockResolvedValueOnce({
+      item: storedAs("v1", { kind: "vat", label: "Shop", hmrcReadAt: "2026-11-01T10:00:00.000Z" }),
+      created: false,
+    });
 
-    await ingestHandler(put("v1", { kind: "vat", label: "Shop" }));
+    const response = await ingestHandler(put("v1", { kind: "vat", label: "Shop" }));
 
     const [, stored] = mockPutBusiness.mock.calls[0];
-    expect(stored).toEqual({ id: "v1", kind: "vat", label: "Shop", hmrcReadAt: "2026-11-01T10:00:00.000Z" });
+    expect(stored).toEqual({ id: "v1", kind: "vat", label: "Shop" });
+    expect(responseBody(response).business.hmrcReadAt).toBe("2026-11-01T10:00:00.000Z");
   });
 
-  test("refuses a 51st business with a JSON 409 and stores nothing", async () => {
-    mockList.mockResolvedValue({ businesses: businesses(50), rows: [] });
+  test("answers a JSON 409 when the write is refused because the account holds 50 businesses", async () => {
+    mockPutBusiness.mockRejectedValueOnce(new DueListFullError("businesses"));
 
     const response = await ingestHandler(put("new", { kind: "vat", label: "Shop" }));
 
     expect(response.statusCode).toBe(409);
-    expect(responseBody(response).message).toBe("The due list holds at most 50 businesses");
-    expect(mockPutBusiness).not.toHaveBeenCalled();
+    expect(responseBody(response)).toMatchObject({ message: "The due list holds at most 50 businesses", reason: "due_list_full" });
   });
 
-  test("replaces one of 50 businesses, which the cap does not refuse", async () => {
-    mockList.mockResolvedValue({ businesses: businesses(50), rows: [] });
-    expect((await ingestHandler(put("b3", { kind: "vat", label: "Shop" }))).statusCode).toBe(200);
+  test("answers a JSON 409 when other writes kept changing the same items", async () => {
+    mockPutBusiness.mockRejectedValueOnce(new DueListBusyError());
+    mockDeleteBusiness.mockRejectedValueOnce(new DueListBusyError());
+
+    for (const response of [await ingestHandler(put("b1", { kind: "vat", label: "Shop" })), await ingestHandler(del("b1"))]) {
+      expect(response.statusCode).toBe(409);
+      expect(responseBody(response)).toMatchObject({ reason: "due_list_busy" });
+    }
   });
 
   test.each([
@@ -84,6 +95,46 @@ describe("functions/dueListBusinessPut", () => {
     expect(response.statusCode).toBe(400);
     expect(JSON.stringify(responseBody(response))).toContain(reason);
     expect(mockPutBusiness).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    "123456789",
+    "GB123456789",
+    "1234567890",
+    "1234567890K",
+    "12345678",
+    "SC123456",
+    "R0000001",
+    "AB123456C",
+    "ab123456",
+    "12-34-56-78",
+  ])("refuses the business id %s, which has the form of an identifier, for a write and for a removal", async (id) => {
+    for (const response of [await ingestHandler(put(id, { kind: "vat", label: "Shop" })), await ingestHandler(del(id))]) {
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(responseBody(response))).toContain("not a VAT number, a UTR, a National Insurance number or a company number");
+    }
+    expect(mockPutBusiness).not.toHaveBeenCalled();
+    expect(mockDeleteBusiness).not.toHaveBeenCalled();
+  });
+
+  test.each(["x-1234567890", "vat-gb-123456789", "jane-qq123456c"])(
+    "refuses the business id %s, which holds an identifier inside it, with a JSON 400",
+    async (id) => {
+      const response = await ingestHandler(put(id, { kind: "vat", label: "Shop" }));
+      expect(response.statusCode).toBe(400);
+      expect(mockPutBusiness).not.toHaveBeenCalled();
+    },
+  );
+
+  test.each(["1", "42", "2024", "1234567", "12345678901", "1234567890123"])(
+    "takes the business id %s, a number of no identifier's length",
+    async (id) => {
+      expect((await ingestHandler(put(id, { kind: "vat", label: "Shop" }))).statusCode).toBe(200);
+    },
+  );
+
+  test.each(["3f2b8c1e-9d4a-4f6b-8a2c-5e7d9b1a0c3f", "shop-1", "b1", "kq7x2m9p"])("takes the made-up business id %s", async (id) => {
+    expect((await ingestHandler(put(id, { kind: "vat", label: "Shop" }))).statusCode).toBe(200);
   });
 
   test("refuses a business id that is not letters, digits or hyphens", async () => {

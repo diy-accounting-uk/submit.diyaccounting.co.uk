@@ -18,16 +18,17 @@ import {
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { isValidCompanyNumber } from "../../services/companiesHouseApi.js";
-import { deleteBusiness, listBusinessesAndRows, putBusiness } from "../../data/dynamoDbDueListRepository.js";
+import { deleteBusiness, DueListBusyError, DueListFullError, putBusiness } from "../../data/dynamoDbDueListRepository.js";
 import {
+  BUSINESS_ID_RULE,
   DUE_LIST_BUSINESS_CAP,
   http403ForbiddenFromBundleEnforcement,
-  isValidBusinessId,
   publicItem,
   refreshJobOf,
   validateBusiness,
 } from "../../services/dueList.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { isValidBusinessId } from "../../../web/public/lib/due/due-business-id.js";
 
 const logger = createLogger({ source: "app/functions/account/dueListBusinessPut.js" });
 
@@ -41,9 +42,12 @@ export function apiEndpoint(app) {
 async function putOne(request, responseHeaders, userSub, businessId, body) {
   const { business, errors } = validateBusiness(body, isValidCompanyNumber);
   if (errors.length > 0) return buildValidationError(request, errors, responseHeaders);
-  const { businesses } = await listBusinessesAndRows(userSub);
-  const stored = businesses.find((item) => item.businessId === businessId);
-  if (!stored && businesses.length >= DUE_LIST_BUSINESS_CAP) {
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const { item } = await putBusiness(userSub, { id: businessId, ...business, ...refreshJobOf(business.kind, today) });
+    return http200OkResponse({ request, headers: { ...responseHeaders }, data: { business: publicItem(item) } });
+  } catch (error) {
+    if (!(error instanceof DueListFullError)) throw error;
     return http409ConflictResponse({
       request,
       headers: { ...responseHeaders },
@@ -51,15 +55,6 @@ async function putOne(request, responseHeaders, userSub, businessId, body) {
       error: { reason: "due_list_full" },
     });
   }
-  const today = new Date().toISOString().slice(0, 10);
-  const item = await putBusiness(userSub, {
-    id: businessId,
-    ...business,
-    ...(stored?.hmrcReadAt ? { hmrcReadAt: stored.hmrcReadAt } : {}),
-    ...refreshJobOf(business.kind, today),
-  });
-  logger.info({ message: "Due list business stored", kind: business.kind, replaced: Boolean(stored) });
-  return http200OkResponse({ request, headers: { ...responseHeaders }, data: { business: publicItem(item) } });
 }
 
 export async function ingestHandler(event) {
@@ -77,7 +72,7 @@ export async function ingestHandler(event) {
 
   const businessId = event.pathParameters?.id;
   if (!isValidBusinessId(businessId)) {
-    return buildValidationError(request, ["The business id must be 1 to 40 letters, digits or hyphens"], responseHeaders);
+    return buildValidationError(request, [BUSINESS_ID_RULE], responseHeaders);
   }
 
   try {
@@ -90,6 +85,14 @@ export async function ingestHandler(event) {
     }
     return await putOne(request, responseHeaders, userSub, businessId, parseRequestBody(event));
   } catch (error) {
+    if (error instanceof DueListBusyError) {
+      return http409ConflictResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: error.message,
+        error: { reason: "due_list_busy" },
+      });
+    }
     logger.error({ message: "The due list business could not be changed", method, error: error.message });
     return http500ServerErrorResponse({ request, headers: { ...responseHeaders }, message: "The due list could not be changed" });
   }

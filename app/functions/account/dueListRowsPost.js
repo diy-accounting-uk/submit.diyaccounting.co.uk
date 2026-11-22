@@ -19,7 +19,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { listBusinessesAndRows, putBusiness, putRows, rowSk } from "../../data/dynamoDbDueListRepository.js";
+import { DueListBusinessMissingError, DueListBusyError, DueListFullError, putRows } from "../../data/dynamoDbDueListRepository.js";
 import { DUE_LIST_ROW_CAP, http403ForbiddenFromBundleEnforcement, validateHmrcRows } from "../../services/dueList.js";
 import { initializeSalt } from "../../services/subHasher.js";
 
@@ -47,20 +47,27 @@ export async function ingestHandler(event) {
   if (errors.length > 0) return buildValidationError(request, errors, responseHeaders);
 
   try {
-    const { businesses, rows: storedRows } = await listBusinessesAndRows(userSub);
-    const business = businesses.find((item) => item.businessId === businessId);
-    if (!business) {
-      return http404NotFoundResponse({ request, headers: { ...responseHeaders }, message: "No such business on the due list" });
-    }
-
     const readAt = new Date().toISOString();
     const newRows = rows.map((row) => ({ ...row, readAt }));
     const newTypes = new Set(newRows.map((row) => row.type));
     const replaces = (row) =>
       row.businessId === businessId && (row.source === "hmrc" || (row.source === "computed" && newTypes.has(row.type)));
-    const newSks = new Set(newRows.map(rowSk));
-    const kept = storedRows.filter((row) => !newSks.has(row.sk) && !replaces(row)).length;
-    if (kept + newRows.length > DUE_LIST_ROW_CAP) {
+    // The write records on the business when HMRC was read, only if the business is still on the list.
+    const result = await putRows(userSub, newRows, replaces, { forBusiness: { id: businessId, set: { hmrcReadAt: readAt } } });
+    // The unwritten rows' keys name the business, so the log line holds their count.
+    logger.info({
+      message: "Due list HMRC rows stored",
+      written: result.written,
+      refreshed: result.refreshed,
+      removed: result.removed,
+      unwritten: result.unwritten.length,
+    });
+    return http200OkResponse({ request, headers: { ...responseHeaders }, data: { ...result, readAt } });
+  } catch (error) {
+    if (error instanceof DueListBusinessMissingError) {
+      return http404NotFoundResponse({ request, headers: { ...responseHeaders }, message: "No such business on the due list" });
+    }
+    if (error instanceof DueListFullError) {
       return http409ConflictResponse({
         request,
         headers: { ...responseHeaders },
@@ -68,17 +75,14 @@ export async function ingestHandler(event) {
         error: { reason: "due_list_rows_full" },
       });
     }
-
-    const result = await putRows(userSub, newRows, replaces);
-    const businessFields = ["kind", "label", "companyNumber", "itsa", "job", "jobOn"].filter((name) => business[name] !== undefined);
-    await putBusiness(userSub, {
-      ...Object.fromEntries(businessFields.map((name) => [name, business[name]])),
-      id: businessId,
-      hmrcReadAt: readAt,
-    });
-    logger.info({ message: "Due list HMRC rows stored", ...result });
-    return http200OkResponse({ request, headers: { ...responseHeaders }, data: { ...result, readAt } });
-  } catch (error) {
+    if (error instanceof DueListBusyError) {
+      return http409ConflictResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: error.message,
+        error: { reason: "due_list_busy" },
+      });
+    }
     logger.error({ message: "The due list rows could not be stored", error: error.message });
     return http500ServerErrorResponse({ request, headers: { ...responseHeaders }, message: "The due list could not be changed" });
   }
