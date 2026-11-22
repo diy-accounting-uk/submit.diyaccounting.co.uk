@@ -157,6 +157,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state: use when an operator must approve a referrer as an affiliate, change the referrer's tier, or end the affiliate.
     - [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state: use when an operator must see the tier and state of a referrer before or after changing them.
     - [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review: use when an operator must see every pass held for review, whoever issued it, and release one.
+    - [BILL-59](#bill-59-create-a-custom-campaign-pass) Create a custom campaign pass: use when an operator must create a pass for a campaign with its own bundles, durations, tokens, redemption window and redemption limits, or see the campaign passes and their redemptions.
     - [BILL-10](#bill-10-redeem-a-pass) Redeem a pass: use when a code must be redeemed to grant its bundle, including a pass link with a ?pass= parameter. The pass page web/public/pass.html is where a person redeems.
     - [BILL-58](#bill-58-pass-link-landing-page) Pass link landing page: use when a person opens a pass link and must see what the pass gives, redeem it with one click, and see the bundle that it added.
     - [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow: use when an operator needs one or more passes with QR codes, or a scripted equivalent with no QR output.
@@ -1882,7 +1883,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area BILL -->
 - [Bundle grants and entitlements](#bundle-grants-and-entitlements-bill): [BILL-01](#bill-01-grant-a-bundle-to-a-user) Grant a bundle to a user · [BILL-02](#bill-02-list-a-users-bundles-and-token-balance) List a user's bundles and token balance · [BILL-03](#bill-03-delete-a-bundle) Delete a bundle · [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request) Enforce bundle entitlement on a request · [BILL-05](#bill-05-reconcile-bundle-capacity-counters) Reconcile bundle capacity counters
-- [Passes](#passes-bill): [BILL-06](#bill-06-generate-a-token-charged-pass) Generate a token-charged pass · [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass · [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity · [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes · [BILL-56](#bill-56-delete-generated-passes) Delete generated passes · [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review · [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state · [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state · [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review · [BILL-10](#bill-10-redeem-a-pass) Redeem a pass · [BILL-58](#bill-58-pass-link-landing-page) Pass link landing page · [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
+- [Passes](#passes-bill): [BILL-06](#bill-06-generate-a-token-charged-pass) Generate a token-charged pass · [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass · [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity · [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes · [BILL-56](#bill-56-delete-generated-passes) Delete generated passes · [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review · [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state · [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state · [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review · [BILL-59](#bill-59-create-a-custom-campaign-pass) Create a custom campaign pass · [BILL-10](#bill-10-redeem-a-pass) Redeem a pass · [BILL-58](#bill-58-pass-link-landing-page) Pass link landing page · [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
 - [Practice clients and HMRC authorisation](#practice-clients-and-hmrc-authorisation-bill): [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access) Invite a client to authorise agent access · [BILL-13](#bill-13-check-a-clients-authorisation-status) Check a client's authorisation status · [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite) Cancel a pending client authorisation invite · [BILL-15](#bill-15-move-a-book-to-a-client) Move a book to a client · [BILL-16](#bill-16-manage-practice-clients) Manage practice clients
 - [diya-gl ledger books](#diya-gl-ledger-books-bill): [BILL-17](#bill-17-upload-a-diya-gl-book) Upload a diya-gl book · [BILL-18](#bill-18-delete-a-diya-gl-book) Delete a diya-gl book · [BILL-19](#bill-19-list-a-users-diya-gl-books) List a user's diya-gl books · [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book) Fetch a versioned diya-gl book · [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle) Expire lapsed diya-gl books by S3 lifecycle · [BILL-22](#bill-22-check-diya-gl-retention-entitlement) Check diya-gl retention entitlement · [BILL-23](#bill-23-store-diya-gl-books-in-s3) Store diya-gl books in S3
 - [Stripe billing](#stripe-billing-bill): [BILL-24](#bill-24-create-a-stripe-checkout-session) Create a Stripe checkout session · [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status) Retrieve a Stripe checkout session's status · [BILL-26](#bill-26-open-the-stripe-customer-billing-portal) Open the Stripe customer billing portal · [BILL-27](#bill-27-recover-an-abandoned-checkout) Recover an abandoned checkout · [BILL-28](#bill-28-process-stripe-webhook-events) Process Stripe webhook events · [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration) Assert the PayPal donate button configuration · [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue) Sync the Stripe product/price catalogue · [BILL-31](#bill-31-configure-stripe-account-policies) Configure Stripe account policies
@@ -1963,6 +1964,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state
 - [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state
 - [BILL-50](#bill-50-list-the-passes-held-for-review) List the passes held for review
+- [BILL-59](#bill-59-create-a-custom-campaign-pass) Create a custom campaign pass
 - [BILL-10](#bill-10-redeem-a-pass) Redeem a pass
 - [BILL-58](#bill-58-pass-link-landing-page) Pass link landing page
 - [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
@@ -2058,6 +2060,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** pass, held for review, held pointer, operator, release, issuedBy-index
 - **Related:** BILL-45, BILL-10, DATA-26
 
+#### BILL-59 Create a custom campaign pass
+
+- **Use when:** an operator must create a pass for a campaign with its own bundles, durations, tokens, redemption window and redemption limits, or see the campaign passes and their redemptions.
+- **Does:** web/public/operator/campaign-passes.html is the operator-only page, behind the operator bundle. Its form posts a custom-campaign pass to passAdminPost.js with grants (bundle, duration, tokens, refresh interval), usesPerAccount, maxUses and the window. It shows the new pass's link and QR code, and lists the campaign passes from passCampaignGet.js. passCampaignGet.js Queries the issuedBy-index under the key "campaign", where passService writes a pointer for each campaign pass. passPost.js counts each account's redemptions of every pass and refuses past usesPerAccount with account_limit_reached. grantBundle takes each grant's duration and tokens over the catalogue's. resident-vat-comp grants resident-vat through includes.
+- **Run:** `GET /api/v1/pass/campaign`; `POST /api/v1/pass/admin` with `grants`
+- **Entry:** `web/public/operator/campaign-passes.html:`; `app/functions/account/passCampaignGet.js:ingestHandler`
+- **Files:** web/public/operator/campaign-passes.html, web/public/operator/campaign-passes.page.js, web/public/lib/pass-card.js, app/functions/account/passCampaignGet.js, app/unit-tests/functions/passCampaignGet.test.js, app/functions/account/passAdminPost.js, app/functions/account/passPost.js, app/functions/account/bundlePost.js, app/services/passService.js, app/data/dynamoDbPassRepository.js, web/browser-tests/operatorCampaignPasses.browser.test.js
+- **Keywords:** campaign pass, custom pass, operator, usesPerAccount, grants, duration override, token override, resident-vat-comp, issuedBy-index
+- **Related:** BILL-07, BILL-10, BILL-50, SITE-19
+
 #### BILL-10 Redeem a pass
 
 - **Use when:** a code must be redeemed to grant its bundle, including a pass link with a ?pass= parameter. The pass page web/public/pass.html is where a person redeems.
@@ -2071,7 +2083,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### BILL-58 Pass link landing page
 
 - **Use when:** a person opens a pass link and must see what the pass gives, redeem it with one click, and see the bundle that it added.
-- **Does:** pass.html reads `?pass=`, checks it with the public `GET /api/v1/pass`, and shows the bundle, its passSummary from submit.catalogue.toml, its tokens and its end date. "Redeem pass" reads `/api/v1/bundle`, stops when the account holds the bundle, and otherwise posts to `/api/v1/pass`. A signed-out click stores `postLoginRedirect` and `passAddOnReturn` in sessionStorage and goes to the sign-in page. A link from an activity page adds `next=<path>`; a path on this site becomes the "Continue" button of the redeemed state, and the page never follows it without a click. "Sign out and use another account" stores the pass link in `passReturnAfterSignOut`, and signed-out.html forwards to it once. On return the page posts once when `passAddOnReturn` equals the code in the URL, and never posts on load without that flag. The result for the code stays in sessionStorage, so a reload makes no call. Each refusal reason has one sentence and one next step. bundles.html with `?pass=` forwards here.
+- **Does:** pass.html reads `?pass=`, checks it with the public `GET /api/v1/pass`, and shows the bundle, its passSummary from submit.catalogue.toml, its tokens and its end date. "Redeem pass" posts to `/api/v1/pass`, and the server decides: an account that holds the bundle on terms at least as good gets the already_held state from the answer, and a pass that would give better terms replaces the held bundle. A signed-out click stores `postLoginRedirect` and `passAddOnReturn` in sessionStorage and goes to the sign-in page. A link from an activity page adds `next=<path>`; a path on this site becomes the "Continue" button of the redeemed state, and the page never follows it without a click. "Sign out and use another account" stores the pass link in `passReturnAfterSignOut`, and signed-out.html forwards to it once. On return the page posts once when `passAddOnReturn` equals the code in the URL, and never posts on load without that flag. The result for the code stays in sessionStorage, so a reload makes no call. Each refusal reason has one sentence and one next step. bundles.html with `?pass=` forwards here.
 - **Run:** open `/pass.html?pass=<code>`; `npx playwright test --project=browser-tests web/browser-tests/pass.browser.test.js`
 - **Entry:** `web/public/pass.page.js`
 - **Files:** web/public/pass.html, web/public/pass.page.js, web/public/widgets/pass-redeemer.js, web/public/auth/signed-out.page.js, web/public/css/pass-page.css, web/browser-tests/pass.browser.test.js
@@ -7477,6 +7489,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - callsubmitapi: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - campaign: [DATA-68](#data-68-sql-view-campaign-results-by-place), [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
 - campaign bidding: [DATA-32](#data-32-sync-the-google-ads-account)
+- campaign pass: [BILL-59](#bill-59-create-a-custom-campaign-pass)
 - campaign threads: [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - cancel invitation: [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite)
 - cancel run: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
@@ -7814,6 +7827,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - curated stripe: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
 - currency conversion: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - custom amount: [SS-22](#ss-22-take-stripe-and-paypal-donations)
+- custom pass: [BILL-59](#bill-59-create-a-custom-campaign-pass)
 - custom resource: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - customer balance: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
 - customer copy: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
@@ -8028,6 +8042,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - duplicate workflow: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
 - durable user: [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - duration: [OPS-164](#ops-164-record-an-outbound-call-to-hmrc-companies-house-or-stripe)
+- duration override: [BILL-59](#bill-59-create-a-custom-campaign-pass)
 - dynalite: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - dynamodb: [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - dynamodb backup: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
@@ -8335,6 +8350,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - grant: [BILL-01](#bill-01-grant-a-bundle-to-a-user)
 - grant flow: [DEV-03](#dev-03-simulate-hmrc-oauth)
 - grantbundle: [BILL-01](#bill-01-grant-a-bundle-to-a-user)
+- grants: [BILL-59](#bill-59-create-a-custom-campaign-pass)
 - green build: [DEV-31](#dev-31-watch-github-ci-to-green)
 - gross fee net: [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
 - grouping strategy: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
@@ -8515,7 +8531,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - issue pass: [BILL-07](#bill-07-admin-issue-a-pass)
 - issue template: [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links)
 - issued passes: [BILL-09](#bill-09-list-a-users-issued-passes)
-- issuedby-index: [BILL-50](#bill-50-list-the-passes-held-for-review)
+- issuedby-index: [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-59](#bill-59-create-a-custom-campaign-pass)
 - issues and comments: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens)
 - item counts: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - iterate: [DEV-30](#dev-30-run-the-delivery-cycle-unattended), [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute)
@@ -8892,7 +8908,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - openid discovery: [DEV-02](#dev-02-simulate-local-app-oauth)
 - opening balances: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - openx deserializer: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
-- operator: [BILL-07](#bill-07-admin-issue-a-pass), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
+- operator: [BILL-07](#bill-07-admin-issue-a-pass), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-50](#bill-50-list-the-passes-held-for-review), [BILL-59](#bill-59-create-a-custom-campaign-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - operator asks: [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board)
 - operator bundle: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
 - operator bundle entitlement: [DATA-66](#data-66-serve-a-captured-aws-console-image-to-operators), [DATA-26](#data-26-render-the-operator-objectives-dashboard)
@@ -9288,6 +9304,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - resident-pro: [BILL-22](#bill-22-check-diya-gl-retention-entitlement)
 - resident-tax-agent: [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request), [BILL-22](#bill-22-check-diya-gl-retention-entitlement)
 - resident-tax-agent licence: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
+- resident-vat-comp: [BILL-59](#bill-59-create-a-custom-campaign-pass)
 - resource manager: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)
 - resource name: [OPS-82](#ops-82-provide-a-shared-dynamodb-client)
 - resource naming: [OPS-125](#ops-125-name-and-tag-cdk-resources-consistently)
@@ -9793,6 +9810,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - token counts: [DEV-37](#dev-37-write-the-session-report)
 - token exchange: [CH-01](#ch-01-exchange-a-companies-house-oauth-token)
 - token limit: [OPS-72](#ops-72-forward-bedrock-budget-alerts)
+- token override: [BILL-59](#bill-59-create-a-custom-campaign-pass)
 - token refresh: [SITE-01](#site-01-sign-customers-in-via-cognito), [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh)
 - token refresh retry: [SITE-09](#site-09-track-and-poll-async-api-requests)
 - toml parser: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
@@ -9886,6 +9904,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - user provisioning role: [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning)
 - user-agent classification: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic)
 - user-restricted api: [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts)
+- usesperaccount: [BILL-59](#bill-59-create-a-custom-campaign-pass)
 - utm_campaign: [DATA-68](#data-68-sql-view-campaign-results-by-place), [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - utm_source: [DATA-68](#data-68-sql-view-campaign-results-by-place), [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - utr: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)

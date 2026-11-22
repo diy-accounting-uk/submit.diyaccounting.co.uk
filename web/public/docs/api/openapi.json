@@ -4255,6 +4255,13 @@
         "operationId" : "generatePass"
       }
     },
+    "/pass/campaign" : {
+      "get" : {
+        "summary" : "List campaign passes",
+        "description" : "Lists the campaign passes with their redemption window, limits, granted bundles and redemptions so far (operator only)",
+        "operationId" : "listCampaignPasses"
+      }
+    },
     "/pass/delete" : {
       "post" : {
         "summary" : "Delete generated passes",

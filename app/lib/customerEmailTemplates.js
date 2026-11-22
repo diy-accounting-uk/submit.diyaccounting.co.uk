@@ -429,10 +429,20 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
       const passUrl = `${siteUrl(baseUrl, "pass.html")}?pass=${encodeURIComponent(data.code)}`;
       const physical = data.passTypeId === PHYSICAL_PASS_TYPE_ID;
       const welsh = data.language === "cy";
-      const bundle = catalog?.bundles?.find((b) => b.id === data.bundleId);
+      // A campaign pass names each bundle it grants, with the duration and tokens it sets; any other
+      // pass names its one bundle with the catalogue's terms.
+      const terms = (data.grants ?? [{ bundleId: data.bundleId, summary: data.passSummary }]).map((grant) => {
+        const bundle = catalog?.bundles?.find((b) => b.id === grant.bundleId);
+        return {
+          name: bundleName(catalog, grant.bundleId),
+          summary: grant.summary,
+          tokensGranted: grant.tokens ?? bundle?.tokensGranted,
+          timeout: grant.duration ?? bundle?.timeout,
+        };
+      });
       const recipient = passRecipientSection(
         {
-          bundles: [{ name, summary: data.passSummary, tokensGranted: bundle?.tokensGranted, timeout: bundle?.timeout }],
+          bundles: terms,
           code: data.code,
           validUntil: data.validUntil,
           usesLeft: data.usesLeft,
@@ -462,22 +472,26 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
         passQr: { code: data.code, url: passUrl, physical },
       };
     }
-    case "pass-redeemed":
+    case "pass-redeemed": {
+      // Each bundle the pass granted, with its own end date.
+      const granted = data.bundles ?? [{ bundleId: data.bundleId, expiry: data.expiry }];
+      const several = granted.length > 1;
       return {
         ...renderEmail({
           subject: `Your ${name} is ready`,
           preheader: `Your ${name} is ready to use.`,
           heading: `Your ${name} is ready`,
-          intro: "You redeemed your pass. You can use the bundle now.",
-          rows: [
-            { label: "Bundle", value: name },
-            { label: "Ends on", value: data.expiry ? formatDate(data.expiry) : "No end date" },
-          ],
+          intro: several ? "You redeemed your pass. You can use the bundles now." : "You redeemed your pass. You can use the bundle now.",
+          rows: granted.flatMap((grant) => [
+            { label: "Bundle", value: bundleName(catalog, grant.bundleId) },
+            { label: "Ends on", value: grant.expiry ? formatDate(grant.expiry) : "No end date" },
+          ]),
           actions: [{ href: home, text: "Open the site" }],
           reason,
         }),
         passQr: null,
       };
+    }
     default:
       throw new Error("UnknownEmailKind");
   }

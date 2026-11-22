@@ -220,10 +220,12 @@ export async function retrieveUserBundles(userId, requestId = null, userEmail = 
         !isUnlimitedTokenGrant(bundle.tokensGranted)
       ) {
         const catBundle = (catalog.bundles || []).find((b) => b.id === bundle.bundleId);
-        if (catBundle?.tokenRefreshInterval) {
+        // A bundle granted with a pass's own tokens names its own interval and keeps its tokens.
+        const refreshInterval = bundle.tokenRefreshInterval ?? catBundle?.tokenRefreshInterval;
+        if (refreshInterval) {
           const { resetTokens, BUNDLE_MISSING } = await import("../../data/dynamoDbBundleRepository.js");
-          const nextReset = parseIsoDurationToDate(new Date(), catBundle.tokenRefreshInterval);
-          const tokensGranted = catBundle.tokensGranted ?? bundle.tokensGranted;
+          const nextReset = parseIsoDurationToDate(new Date(), refreshInterval);
+          const tokensGranted = bundle.tokenRefreshInterval ? bundle.tokensGranted : (catBundle?.tokensGranted ?? bundle.tokensGranted);
           const reset = await resetTokens(userId, bundle.bundleId, tokensGranted, nextReset.toISOString());
           if (reset.reason === BUNDLE_MISSING) {
             // The item was deleted after it was read: show the bundle as read, and write nothing.

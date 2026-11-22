@@ -1,0 +1,126 @@
+<!-- campaign-passes.html -->
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
+<!-- @capability BILL-59 Create a custom campaign pass
+- **Use when:** an operator must create a pass for a campaign with its own bundles, durations, tokens, redemption window and redemption limits, or see the campaign passes and their redemptions.
+- **Does:** web/public/operator/campaign-passes.html is the operator-only page, behind the operator bundle. Its form posts a custom-campaign pass to passAdminPost.js with grants (bundle, duration, tokens, refresh interval), usesPerAccount, maxUses and the window. It shows the new pass's link and QR code, and lists the campaign passes from passCampaignGet.js. passCampaignGet.js Queries the issuedBy-index under the key "campaign", where passService writes a pointer for each campaign pass. passPost.js counts each account's redemptions of every pass and refuses past usesPerAccount with account_limit_reached. grantBundle takes each grant's duration and tokens over the catalogue's. resident-vat-comp grants resident-vat through includes.
+- **Run:** `GET /api/v1/pass/campaign`; `POST /api/v1/pass/admin` with `grants`
+- **Entry:** `web/public/operator/campaign-passes.html:`; `app/functions/account/passCampaignGet.js:ingestHandler`
+- **Files:** web/public/operator/campaign-passes.html, web/public/operator/campaign-passes.page.js, web/public/lib/pass-card.js, app/functions/account/passCampaignGet.js, app/unit-tests/functions/passCampaignGet.test.js, app/functions/account/passAdminPost.js, app/functions/account/passPost.js, app/functions/account/bundlePost.js, app/services/passService.js, app/data/dynamoDbPassRepository.js, web/browser-tests/operatorCampaignPasses.browser.test.js
+- **Keywords:** campaign pass, custom pass, operator, usesPerAccount, grants, duration override, token override, resident-vat-comp, issuedBy-index
+- **Related:** BILL-07, BILL-10, BILL-50, SITE-19
+@end-capability -->
+
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>Campaign passes - DIY Accounting Submit</title>
+    <link rel="icon" href="../favicon.ico" sizes="any" />
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png" />
+    <link rel="manifest" href="../site.webmanifest" />
+    <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../lib/analytics.js"></script>
+    <script src="../lib/qrcode.min.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
+      <h1>Campaign passes</h1>
+      <p class="subtitle">Create a pass for a campaign with its own terms, and see each campaign pass's redemptions.</p>
+    </header>
+
+    <main id="mainContent" data-activity-view="operator-campaign-passes">
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <section class="form-container pass-panel" aria-labelledby="campaignFormHeading">
+        <h2 id="campaignFormHeading">New campaign pass</h2>
+        <form id="campaignPassForm" novalidate>
+          <fieldset>
+            <legend>When the link can be redeemed</legend>
+            <div class="pass-field">
+              <label for="cpValidFrom">From</label>
+              <input type="date" id="cpValidFrom" required />
+            </div>
+            <div class="pass-field">
+              <label for="cpValidUntil">Until</label>
+              <input type="date" id="cpValidUntil" required />
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>How many redemptions</legend>
+            <div class="pass-field">
+              <label for="cpMaxUses">In total (leave empty for no limit)</label>
+              <input type="number" id="cpMaxUses" min="1" step="1" inputmode="numeric" />
+            </div>
+            <div class="pass-field">
+              <label for="cpUsesPerAccount">Per account</label>
+              <input type="number" id="cpUsesPerAccount" min="1" step="1" value="1" inputmode="numeric" required />
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Bundles granted</legend>
+            <p class="hint">
+              Each grant lasts from the day of redemption. Leave a field empty to use the bundle's own duration, tokens or refresh interval.
+              A bundle sold by subscription is granted through its complimentary bundle.
+            </p>
+            <div id="cpGrants"></div>
+            <button type="button" id="cpAddGrant" class="btn btn-small btn-secondary">Add another bundle</button>
+          </fieldset>
+
+          <div class="pass-field">
+            <label for="cpNotes">Notes (optional)</label>
+            <input type="text" id="cpNotes" placeholder="e.g. FSB members' year" autocomplete="off" />
+          </div>
+
+          <div class="pass-actions">
+            <button type="submit" id="cpCreate" class="btn">Create campaign pass</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="cpNewPass" class="form-container pass-panel" aria-labelledby="cpNewPassHeading" hidden>
+        <h2 id="cpNewPassHeading">New pass</h2>
+        <p>Code: <span id="cpNewPassCode" class="pass-code"></span></p>
+        <p>Link: <a id="cpNewPassLink" href="#"></a></p>
+        <div class="pass-actions">
+          <button type="button" id="cpCopyLink" class="btn btn-small btn-secondary">Copy link</button>
+        </div>
+        <img id="cpNewPassQr" alt="QR code for the new pass" width="250" height="250" hidden />
+      </section>
+
+      <section aria-labelledby="cpListHeading">
+        <h2 id="cpListHeading">Campaign passes</h2>
+        <p id="cpListEmpty" hidden>No campaign passes yet.</p>
+        <div id="cpList"></div>
+      </section>
+    </main>
+
+    <footer></footer>
+
+    <script src="../widgets/page-chrome.js"></script>
+    <script src="../lib/env-loader.js"></script>
+    <script type="module" src="../submit.js"></script>
+    <script src="../developer-mode.js"></script>
+    <script src="../lib/request-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
+    <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script type="module" src="../widgets/view-source-link.js"></script>
+    <script src="../lib/pass-card.js"></script>
+    <script src="campaign-passes.page.js"></script>
+  </body>
+</html>

@@ -18,7 +18,7 @@ vi.mock("@app/services/subHasher.js", () => ({
   hashSub: vi.fn((sub) => `hashed_${sub}`),
 }));
 
-import { ingestHandler } from "@app/functions/account/passMyPassesGet.js";
+import { ingestHandler, toPassCard } from "@app/functions/account/passMyPassesGet.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -185,5 +185,29 @@ describe("passMyPassesGet", () => {
     const body = JSON.parse(result.body);
     expect(body.passes.map((pass) => pass.code)).toEqual(["kept"]);
     expect(body.count).toBe(1);
+  });
+
+  describe("toPassCard", () => {
+    const base = { code: "a-b", passTypeId: "digital-pass", bundleId: "day-guest", validFrom: "2026-11-01T00:00:00.000Z", useCount: 2 };
+
+    test("a pass that names no per-account limit or grants shows one redemption per account and no grants", () => {
+      const card = toPassCard(base, undefined);
+      expect(card.usesPerAccount).toBe(1);
+      expect(card.grants).toBeNull();
+      expect(card.validUntil).toBeNull();
+      expect(card.maxUses).toBeNull();
+    });
+
+    test("a campaign pass shows its window, its two limits and each bundle with its duration and tokens", () => {
+      const grants = [{ bundleId: "resident-vat-comp", duration: "P1Y", tokens: 50 }];
+      const card = toPassCard({ ...base, validUntil: "2027-05-01T00:00:00.000Z", maxUses: 1000, usesPerAccount: 2, grants }, undefined);
+      expect(card).toMatchObject({
+        validFrom: "2026-11-01T00:00:00.000Z",
+        validUntil: "2027-05-01T00:00:00.000Z",
+        maxUses: 1000,
+        usesPerAccount: 2,
+        grants,
+      });
+    });
   });
 });

@@ -131,6 +131,7 @@ import { apiEndpoint as affiliateGetApiEndpoint } from "../functions/account/aff
 import { apiEndpoint as affiliateApplicationPostApiEndpoint } from "../functions/account/affiliateApplicationPost.js";
 import { apiEndpoint as affiliateApplicationGetApiEndpoint } from "../functions/account/affiliateApplicationGet.js";
 import { apiEndpoint as passHeldGetApiEndpoint } from "../functions/account/passHeldGet.js";
+import { apiEndpoint as passCampaignGetApiEndpoint } from "../functions/account/passCampaignGet.js";
 import { apiEndpoint as passGeneratePostApiEndpoint } from "../functions/account/passGeneratePost.js";
 import { apiEndpoint as passMyPassesGetApiEndpoint } from "../functions/account/passMyPassesGet.js";
 import { apiEndpoint as commissionMineGetApiEndpoint } from "../functions/account/commissionMineGet.js";
@@ -463,6 +464,7 @@ affiliateGetApiEndpoint(app);
 affiliateApplicationPostApiEndpoint(app);
 affiliateApplicationGetApiEndpoint(app);
 passHeldGetApiEndpoint(app);
+passCampaignGetApiEndpoint(app);
 passGeneratePostApiEndpoint(app);
 passMyPassesGetApiEndpoint(app);
 commissionMineGetApiEndpoint(app);

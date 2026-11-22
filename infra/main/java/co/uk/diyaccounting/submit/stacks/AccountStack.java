@@ -150,6 +150,9 @@ public class AccountStack extends Stack {
     public AbstractApiLambdaProps passHeldGetLambdaProps;
     public Function passHeldGetLambda;
     public ILogGroup passHeldGetLambdaLogGroup;
+    public AbstractApiLambdaProps passCampaignGetLambdaProps;
+    public Function passCampaignGetLambda;
+    public ILogGroup passCampaignGetLambdaLogGroup;
 
     public AbstractApiLambdaProps passGeneratePostLambdaProps;
     public Function passGeneratePostLambda;
@@ -1727,6 +1730,47 @@ public class AccountStack extends Stack {
                 this.passHeldGetLambda.getNode().getId());
 
         // ============================================================================
+        // Pass Campaign GET Lambda (JWT auth - an operator lists the campaign passes)
+        // ============================================================================
+        var passCampaignGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var passCampaignGetApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.passCampaignGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.passCampaignGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.passCampaignGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.passCampaignGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().account.passCampaignGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().account.passCampaignGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.passCampaignGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.passCampaignGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.passCampaignGetLambdaCustomAuthorizer)
+                        .environment(passCampaignGetLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(passCampaignGetApiLambda);
+        this.passCampaignGetLambdaProps = passCampaignGetApiLambda.apiProps;
+        this.passCampaignGetLambda = passCampaignGetApiLambda.ingestLambda;
+        this.passCampaignGetLambdaLogGroup = passCampaignGetApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.passCampaignGetLambdaProps);
+        // The list is a Query on the issuedBy-index under the campaign key, then the pass and
+        // figures items by key; the index needs its own grant
+        passesTable.grant(this.passCampaignGetLambda, "dynamodb:Query", "dynamodb:BatchGetItem");
+        grantTableIndexActions(passesTable, this.passCampaignGetLambda, "issuedBy-index", "dynamodb:Query");
+        // passCampaignGet admits operators only, so it reads the operator list
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.passCampaignGetLambda, region, account, props.envName());
+        infof(
+                "Created Pass Campaign GET Lambda %s",
+                this.passCampaignGetLambda.getNode().getId());
+
+        // ============================================================================
         // Pass Generate POST Lambda (JWT auth - user pass generation using tokens)
         // ============================================================================
         var passGeneratePostLambdaEnv = new PopulatedMap<String, String>()
@@ -2282,6 +2326,7 @@ public class AccountStack extends Stack {
         cfnOutput(this, "AffiliateApplicationPostLambdaArn", this.affiliateApplicationPostLambda.getFunctionArn());
         cfnOutput(this, "AffiliateApplicationGetLambdaArn", this.affiliateApplicationGetLambda.getFunctionArn());
         cfnOutput(this, "PassHeldGetLambdaArn", this.passHeldGetLambda.getFunctionArn());
+        cfnOutput(this, "PassCampaignGetLambdaArn", this.passCampaignGetLambda.getFunctionArn());
         cfnOutput(this, "PassGeneratePostLambdaArn", this.passGeneratePostLambda.getFunctionArn());
         cfnOutput(this, "CommissionMineGetLambdaArn", this.commissionMineGetLambda.getFunctionArn());
         cfnOutput(this, "PassMyPassesGetLambdaArn", this.passMyPassesGetLambda.getFunctionArn());

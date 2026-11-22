@@ -300,6 +300,71 @@ describe("lib/customerEmailTemplates", () => {
     });
   });
 
+  test("a campaign pass's email names each granted bundle with the duration and tokens the pass sets", () => {
+    const campaignCatalog = {
+      bundles: [
+        { id: "resident-vat-comp", name: "Resident VAT (Complimentary)", tokensGranted: 100, timeout: "P1Y" },
+        { id: "invited-guest", name: "Invited Guest", tokensGranted: 3, timeout: "P1M" },
+      ],
+    };
+    const m = buildCustomerEmail({
+      kind: "pass-generated",
+      data: {
+        code: "lantern-brisk-meadow-oak",
+        passTypeId: "custom-campaign",
+        bundleId: "resident-vat-comp",
+        usesLeft: 1000,
+        generatedBy: "operator",
+        grants: [
+          { bundleId: "resident-vat-comp", duration: "P6M", summary: "submit VAT returns to HMRC" },
+          { bundleId: "invited-guest", tokens: 10 },
+        ],
+      },
+      baseUrl,
+      catalog: campaignCatalog,
+    });
+    expect(m.text).toContain(
+      "It gives the Resident VAT (Complimentary): you can submit VAT returns to HMRC. It comes with 100 tokens. It lasts 6 months from when you redeem it.",
+    );
+    expect(m.text).toContain("It gives the Invited Guest. It comes with 10 tokens. It lasts 1 month from when you redeem it.");
+  });
+
+  test("the redeemed email states each granted bundle's end date", () => {
+    const campaignCatalog = {
+      bundles: [
+        { id: "resident-vat-comp", name: "Resident VAT (Complimentary)" },
+        { id: "invited-guest", name: "Invited Guest" },
+      ],
+    };
+    const m = buildCustomerEmail({
+      kind: "pass-redeemed",
+      data: {
+        bundleId: "resident-vat-comp",
+        bundles: [
+          { bundleId: "resident-vat-comp", expiry: "2027-11-22T00:00:00.000Z" },
+          { bundleId: "invited-guest", expiry: null },
+        ],
+      },
+      baseUrl,
+      catalog: campaignCatalog,
+    });
+    expect(m.text).toContain("You can use the bundles now.");
+    expect(m.text).toContain(
+      "Bundle: Resident VAT (Complimentary)\nEnds on: 22 November 2027\nBundle: Invited Guest\nEnds on: No end date",
+    );
+  });
+
+  test("the redeemed email for a one-bundle pass states that bundle's end date", () => {
+    const m = buildCustomerEmail({
+      kind: "pass-redeemed",
+      data: { bundleId: "day-guest", expiry: "2026-12-01T00:00:00.000Z" },
+      baseUrl,
+      catalog,
+    });
+    expect(m.text).toContain("You can use the bundle now.");
+    expect(m.text).toContain("Bundle: Day pass\nEnds on: 1 December 2026");
+  });
+
   test("a physical pass asks for the media to print", () => {
     const m = buildCustomerEmail({
       kind: "pass-generated",

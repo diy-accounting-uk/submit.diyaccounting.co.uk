@@ -272,19 +272,20 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                 "PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
-        // 36 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1), operatorConsoleImageGet(1),
+        // 37 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1), operatorConsoleImageGet(1),
         // practiceClientsListGet(1), practiceClientsPost(1), practiceClientGet(1),
         // practiceClientDelete(1), practiceClientAuthorisationInvitePost(1),
         // practiceClientAuthorisationGet(1), practiceClientAuthorisationInviteDelete(1),
         // interestPost(1), passGet(1), passPost(1), passAdminPost(1), passReleasePost(1),
         // affiliatePost(1), affiliateGet(1), affiliateApplicationPost(1), affiliateApplicationGet(1),
-        // passHeldGet(1), passGeneratePost(1), passMyPassesGet(1), passDeletePost(1), bundleCapacityReconcile(1),
+        // passHeldGet(1), passCampaignGet(1), passGeneratePost(1), passMyPassesGet(1), passDeletePost(1),
+        // bundleCapacityReconcile(1),
         // commissionRelease(1), commissionMineGet(1),
         // commissionCreditPayout(1), commissionCashPayout(1),
         // sessionBeaconPost(1),
         // sessionSignOutPost(1), activityStartedPost(1), accountSettingsPut(1)
         Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
-        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 36);
+        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 37);
         assertGroupedStackHealthAlarm(
                 accountStackTemplate,
                 List.of(
@@ -329,10 +330,11 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                 bundleGetUpdateItemPolicies);
 
         // Scan and BatchGetItem read a whole table at once, so they are the cheapest way to walk off
-        // with customer data. Two functions use BatchGetItem by key: bundleGet reads several capacity
-        // counters at once, and passMyPassesGet reads the figures item of each of the caller's own
-        // passes. Any other role holding either action has been granted more than it calls.
-        List<String> rolesThatReadInBulk = List.of("bundle-get", "pass-my-passes-get");
+        // with customer data. Three functions use BatchGetItem by key: bundleGet reads several capacity
+        // counters at once, passMyPassesGet reads the figures item of each of the caller's own
+        // passes, and passCampaignGet reads each campaign pass and its figures item for an operator.
+        // Any other role holding either action has been granted more than it calls.
+        List<String> rolesThatReadInBulk = List.of("bundle-get", "pass-my-passes-get", "pass-campaign-get");
         List<String> unexpectedBulkReaders = findRolesGrantedBulkReads(accountStackTemplate, rolesThatReadInBulk);
         if (!unexpectedBulkReaders.isEmpty()) {
             dumpIamPolicies(accountStackTemplate);
@@ -566,9 +568,10 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         // history, filed accounts and filed document routes each sit on their own unshared path and
         // add a primary route and an auto-HEAD route, for 230 + 6 = 236. GET /api/v1/public/company-register
         // sits on its own unshared path with no authorizer and adds a primary route and an auto-HEAD
-        // route, for 236 + 2 = 238.
+        // route, for 236 + 2 = 238. GET /api/v1/pass/campaign sits on its own unshared path and adds a
+        // primary route and an auto-HEAD route, for 238 + 2 = 240.
         assertEquals(
-                238,
+                240,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

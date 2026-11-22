@@ -3,7 +3,7 @@
 
 // @capability BILL-58 Pass link landing page
 // - **Use when:** a person opens a pass link and must see what the pass gives, redeem it with one click, and see the bundle that it added.
-// - **Does:** pass.html reads `?pass=`, checks it with the public `GET /api/v1/pass`, and shows the bundle, its passSummary from submit.catalogue.toml, its tokens and its end date. "Redeem pass" reads `/api/v1/bundle`, stops when the account holds the bundle, and otherwise posts to `/api/v1/pass`. A signed-out click stores `postLoginRedirect` and `passAddOnReturn` in sessionStorage and goes to the sign-in page. A link from an activity page adds `next=<path>`; a path on this site becomes the "Continue" button of the redeemed state, and the page never follows it without a click. "Sign out and use another account" stores the pass link in `passReturnAfterSignOut`, and signed-out.html forwards to it once. On return the page posts once when `passAddOnReturn` equals the code in the URL, and never posts on load without that flag. The result for the code stays in sessionStorage, so a reload makes no call. Each refusal reason has one sentence and one next step. bundles.html with `?pass=` forwards here.
+// - **Does:** pass.html reads `?pass=`, checks it with the public `GET /api/v1/pass`, and shows the bundle, its passSummary from submit.catalogue.toml, its tokens and its end date. "Redeem pass" posts to `/api/v1/pass`, and the server decides: an account that holds the bundle on terms at least as good gets the already_held state from the answer, and a pass that would give better terms replaces the held bundle. A signed-out click stores `postLoginRedirect` and `passAddOnReturn` in sessionStorage and goes to the sign-in page. A link from an activity page adds `next=<path>`; a path on this site becomes the "Continue" button of the redeemed state, and the page never follows it without a click. "Sign out and use another account" stores the pass link in `passReturnAfterSignOut`, and signed-out.html forwards to it once. On return the page posts once when `passAddOnReturn` equals the code in the URL, and never posts on load without that flag. The result for the code stays in sessionStorage, so a reload makes no call. Each refusal reason has one sentence and one next step. bundles.html with `?pass=` forwards here.
 // - **Run:** open `/pass.html?pass=<code>`; `npx playwright test --project=browser-tests web/browser-tests/pass.browser.test.js`
 // - **Entry:** `web/public/pass.page.js`
 // - **Files:** web/public/pass.html, web/public/pass.page.js, web/public/widgets/pass-redeemer.js, web/public/auth/signed-out.page.js, web/public/css/pass-page.css, web/browser-tests/pass.browser.test.js
@@ -78,15 +78,15 @@ const ERROR_SENTENCES = {
   own_pass: "You made this pass. Send the link to someone else to use.",
   referral_already_used: "Your account has already used a pass link from someone. An account uses one.",
   already_redeemed: "Your account has already used this pass.",
+  account_limit_reached: "Your account has used this pass as many times as it allows.",
   network_error: "We could not reach DIY Accounting Submit. Check your connection and try again.",
 };
 
 const durationWords = (isoDuration) => {
-  const match = /^P(\d+)([DM])$/.exec(isoDuration || "");
-  if (!match) return null;
-  const count = Number(match[1]);
-  const unit = match[2] === "D" ? "day" : "month";
-  return `${count} ${unit}${count === 1 ? "" : "s"}`;
+  const match = /^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?$/.exec(isoDuration || "");
+  if (!match || !(match[1] || match[2] || match[3])) return null;
+  const words = (value, unit) => (value ? `${Number(value)} ${unit}${Number(value) === 1 ? "" : "s"}` : null);
+  return [words(match[1], "year"), words(match[2], "month"), words(match[3], "day")].filter(Boolean).join(" ");
 };
 
 const formatDate = (iso) => {
@@ -279,14 +279,28 @@ function showRedeemed(result) {
 function showHeld(info) {
   render({
     heading: "You already have this bundle",
-    message: `Your account already has ${info.name}. This pass is still unused, so you can give it to someone else.`,
+    message: `Your account already has ${info.name} on terms at least as good as this pass gives. This pass is still unused, so you can give it to someone else.`,
     home: true,
     bundles: true,
   });
 }
 
+// A campaign pass sets its own duration and tokens for each bundle it grants, over the catalogue's.
+function withGrantTerms(info, grant) {
+  if (!grant) return info;
+  return {
+    ...info,
+    ...(grant.duration ? { timeout: grant.duration } : {}),
+    ...(grant.tokens !== undefined ? { tokensGranted: grant.tokens } : {}),
+  };
+}
+
 function showValid(check) {
-  const info = bundleInfo(check.bundleId);
+  const info = withGrantTerms(bundleInfo(check.bundleId), check.grants?.[0]);
+  // Each further bundle of a campaign pass, with its own duration and tokens, as the pass card words them.
+  const alsoAdds = window.passCard
+    .grantedBundles({ grants: (check.grants || []).slice(1) }, { bundles: catalogueBundles })
+    .map((bundle) => window.passCard.bundleLine(bundle, { siteText: window.siteText }));
   const signedIn = Boolean(getIdToken());
   const tokens = tokensWords(info.tokensGranted);
   const lasts = durationWords(info.timeout);
@@ -299,6 +313,7 @@ function showValid(check) {
   if (tokens) sentences.push(typeof info.tokensGranted === "number" ? `It comes with ${tokens}.` : "It has no limit on tokens.");
   if (typeof info.tokensGranted === "number" && /VAT/.test(info.summary)) sentences.push("A VAT return uses 1 token.");
   if (lasts) sentences.push(`It lasts ${lasts}.`);
+  if (alsoAdds.length) sentences.push(`It also adds ${alsoAdds.join("; ")}.`);
   let after;
   if (signedIn) {
     const email = getSignedInEmail();
@@ -347,10 +362,6 @@ async function redeem() {
   const info = bundleInfo(passCheck.bundleId);
   showAdding(info);
   try {
-    if (holdsBundle(await readHeldBundles(), info.id)) {
-      showHeld(info);
-      return;
-    }
     const response = await window.fetchWithIdToken("/api/v1/pass", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -389,7 +400,7 @@ async function redeem() {
 
     const reason = body.reason || "";
     if (reason === "already_held") {
-      showHeld(info);
+      showHeld(body.bundleId ? bundleInfo(body.bundleId) : info);
       return;
     }
     if (reason === "exhausted" || reason === "already_redeemed") {

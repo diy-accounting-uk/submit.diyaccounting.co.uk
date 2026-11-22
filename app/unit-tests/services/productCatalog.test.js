@@ -50,6 +50,7 @@ describe("productCatalogHelper", () => {
       "resident-pro",
       "resident-tax-agent",
       "resident-pro-comp",
+      "resident-vat-comp",
     ]);
     // expect(bundlesForActivity(catalog, "vat-obligations")).toEqual(["default"]);
   });

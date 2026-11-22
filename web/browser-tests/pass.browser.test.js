@@ -200,6 +200,21 @@ for (const width of WIDTHS) {
       await expect(page.locator("#passMessage")).toContainText("It lasts 7 days.");
     });
 
+    test("a campaign pass states each further bundle with its own duration and tokens", async ({ page }) => {
+      const grants = [
+        { bundleId: "resident-vat-comp", duration: "P1Y", tokens: 50, tokenRefreshInterval: "P1M" },
+        { bundleId: "week-guest", duration: "P6M", tokens: 10 },
+        { bundleId: "day-guest" },
+      ];
+      await serveRealSite(page, { check: { valid: true, bundleId: "resident-vat-comp", grants } });
+      await open(page, width);
+      await expect(page.locator("#passMessage")).toContainText("It comes with 50 tokens.");
+      await expect(page.locator("#passMessage")).toContainText("It lasts 1 year.");
+      await expect(page.locator("#passMessage")).toContainText(
+        "It also adds Week pass for 6 months from redemption, 10 tokens; Day pass for 1 day from redemption, 3 tokens.",
+      );
+    });
+
     test("adding: the button is disabled and the heading names the bundle", async ({ page }) => {
       await serveRealSite(page, { redeemDelayMs: 1500 });
       await open(page, width);
@@ -259,16 +274,28 @@ for (const width of WIDTHS) {
       await expect(page).toHaveURL(`${SITE}/`);
     });
 
-    test("an account that holds the bundle posts nothing and says so", async ({ page }) => {
-      const calls = await serveRealSite(page, { held: ["resident-pro"] });
+    test("an account that holds the bundle posts the pass and shows the server's already_held answer", async ({ page }) => {
+      const calls = await serveRealSite(page, {
+        held: ["resident-pro"],
+        redeem: { redeemed: false, reason: "already_held", bundleId: "resident-pro" },
+        redeemStatus: 409,
+      });
       await open(page, width);
       await page.getByRole("button", { name: "Redeem pass" }).click();
       await expect(heading(page)).toHaveText("You already have this bundle");
       await expect(page.locator("#passMessage")).toHaveText(
-        "Your account already has Resident Pro. This pass is still unused, so you can give it to someone else.",
+        "Your account already has Resident Pro on terms at least as good as this pass gives. This pass is still unused, so you can give it to someone else.",
       );
-      expect(calls.redeem).toBe(0);
+      expect(calls.redeem).toBe(1);
       await shot(page, "already-held", width);
+    });
+
+    test("an account that holds the bundle on worse terms redeems a better pass", async ({ page }) => {
+      const calls = await serveRealSite(page, { held: ["resident-pro"] });
+      await open(page, width);
+      await page.getByRole("button", { name: "Redeem pass" }).click();
+      await expect(heading(page)).toHaveText("Pass redeemed");
+      expect(calls.redeem).toBe(1);
     });
 
     const GET_REFUSALS = [
@@ -334,10 +361,13 @@ for (const width of WIDTHS) {
     });
 
     test("the server answering already_held shows the already holds state", async ({ page }) => {
-      await serveRealSite(page, { redeem: { redeemed: false, reason: "already_held" }, redeemStatus: 409 });
+      await serveRealSite(page, { redeem: { redeemed: false, reason: "already_held", bundleId: "resident-pro" }, redeemStatus: 409 });
       await open(page, width);
       await page.getByRole("button", { name: "Redeem pass" }).click();
       await expect(heading(page)).toHaveText("You already have this bundle");
+      await expect(page.locator("#passMessage")).toHaveText(
+        "Your account already has Resident Pro on terms at least as good as this pass gives. This pass is still unused, so you can give it to someone else.",
+      );
     });
 
     test("a pass that is used up, for an account that holds the bundle, shows Pass redeemed", async ({ page }) => {

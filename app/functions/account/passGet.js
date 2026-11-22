@@ -72,6 +72,7 @@ export async function ingestHandler(event) {
         bundleId: result.bundleId || undefined,
         usesRemaining: result.usesRemaining !== undefined ? result.usesRemaining : undefined,
         emailRestricted: result.emailRestricted || undefined,
+        grants: result.pass?.grants || undefined,
       },
     });
   } catch (error) {

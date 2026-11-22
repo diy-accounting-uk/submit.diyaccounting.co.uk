@@ -185,7 +185,8 @@ test.describe("Welsh pages in a long-used account's states", () => {
     const card = page.locator("#generatedPassesList [data-pass-code]").first();
     await expect(card.locator('[data-figure="filed"] dt')).toHaveText("Wedi ffeilio");
     await expect(card.locator('[data-figure="last-used"] dd')).toHaveText("28 Hyd 2026");
-    await expect(card).toContainText("Yn dod i ben 1 Awst 2027 · 14 o 25 defnydd");
+    await expect(card.locator(".pass-terms li").nth(0)).toHaveText("Defnyddiwch ef o 1 Awst 2026 tan 1 Awst 2027");
+    await expect(card.locator(".pass-terms li").nth(1)).toHaveText("Hyd at 25 defnydd, 1 i bob cyfrif");
     await expect(card.locator(".pass-copy-link")).toHaveText("Copïo’r ddolen");
     const cardLines = (await card.innerText()).split("\n").map((line) => line.trim());
     for (const english of ["Filed", "Uses", "Subscribers", "Last used", "Copy Link", "View QR", "Post", "Digital"])

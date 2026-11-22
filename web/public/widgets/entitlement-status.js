@@ -207,6 +207,7 @@
     "invited-guest": () => siteText("chrome.bundle-invited-guest", "Invited Guest"),
     "resident-guest": () => siteText("chrome.bundle-resident-guest", "Resident Guest"),
     "resident-pro-comp": () => siteText("chrome.bundle-resident-pro-comp", "Resident Tax Agent (Complimentary)"),
+    "resident-vat-comp": () => siteText("chrome.bundle-resident-vat-comp", "Resident VAT (Complimentary)"),
     "operator": () => siteText("chrome.bundle-operator", "Operator"),
   };
 

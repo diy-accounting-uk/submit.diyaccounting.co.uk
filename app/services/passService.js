@@ -52,6 +52,9 @@ export function addDuration(date, duration) {
  * @param {string} [params.issuedBy] - User who spent tokens to issue (null for admin-created)
  * @param {string} [params.notes] - Optional admin notes
  * @param {string} [params.actor] - Actor classification of the caller that issued this pass
+ * @param {number} [params.usesPerAccount] - Redemptions one account may make (absent: one)
+ * @param {{bundleId: string, duration?: string, tokens?: number|string, tokenRefreshInterval?: string}[]} [params.grants] -
+ *   A campaign pass's bundles, each with how long its grant lasts from redemption and the tokens it adds
  * @returns {Object} The pass record ready for DynamoDB
  */
 export function buildPassRecord({
@@ -69,6 +72,8 @@ export function buildPassRecord({
   issuedBy,
   notes,
   actor,
+  usesPerAccount,
+  grants,
 }) {
   const now = new Date().toISOString();
   const code = generatePassphrase(4);
@@ -125,6 +130,8 @@ export function buildPassRecord({
   if (createdBy) record.createdBy = createdBy;
   if (issuedBy) record.issuedBy = issuedBy;
   if (notes) record.notes = notes;
+  if (usesPerAccount !== undefined) record.usesPerAccount = usesPerAccount;
+  if (grants) record.grants = grants;
   // Every pass names its actor: a test pass with none given is a test user's, and any other pass
   // with none given was issued by the system.
   record.actor = actor || (testPass ? "test-user" : "system");
@@ -147,16 +154,24 @@ export async function createPass(params) {
 
   try {
     await passRepository.putPass(pass);
-    return pass;
   } catch (error) {
-    if (error.message === "Pass code collision") {
-      logger.info({ message: "Pass code collision, retrying with new code" });
-      pass = buildPassRecord(params);
-      await passRepository.putPass(pass);
-      return pass;
-    }
-    throw error;
+    if (error.message !== "Pass code collision") throw error;
+    logger.info({ message: "Pass code collision, retrying with new code" });
+    pass = buildPassRecord(params);
+    await passRepository.putPass(pass);
   }
+  if (pass.grants) await passRepository.putCampaignPointer({ code: pass.code, createdAt: pass.createdAt, ttl: pass.ttl });
+  return pass;
+}
+
+/**
+ * The campaign passes, newest first.
+ *
+ * @returns {Promise<Object[]>} the stored pass records
+ */
+export async function listCampaignPasses() {
+  const { items } = await passRepository.getCampaignPasses();
+  return items;
 }
 
 /**
@@ -414,10 +429,26 @@ export async function claimReferral(hashedSub, code) {
 }
 
 /**
- * The record of one account's redemption of one pass, or null.
+ * The record of one account's redemptions of one pass, or null.
  */
 export async function getRedemption(code, hashedSub) {
   return passRepository.getRedemption(code, hashedSub);
+}
+
+/**
+ * How many times one account has redeemed one pass.
+ */
+export async function countRedemptions(code, hashedSub) {
+  const record = await passRepository.getRedemption(code, hashedSub);
+  if (!record) return 0;
+  return record.redemptions ?? 1;
+}
+
+/**
+ * The redemptions one account may make of a pass: its usesPerAccount, or one when it names none.
+ */
+export function usesPerAccountOf(pass) {
+  return pass?.usesPerAccount ?? 1;
 }
 
 export async function releaseReferral(hashedSub) {
@@ -425,8 +456,11 @@ export async function releaseReferral(hashedSub) {
 }
 
 /**
- * Record a completed redemption of a user-issued pass.
+ * Record one account's redemption of a pass, while the account has made fewer than limit.
+ *
+ * @returns {Promise<number|null>} the account's redemptions of the pass, this one included, or null
+ *   when it has already made limit
  */
-export async function recordRedemption({ code, hashedSub, issuedBy, passTypeId }) {
-  await passRepository.putRedemption({ code, hashedSub, issuedBy, passTypeId, redeemedAt: new Date().toISOString() });
+export async function recordRedemption({ code, hashedSub, issuedBy, passTypeId, limit }) {
+  return passRepository.addRedemption({ code, hashedSub, issuedBy, passTypeId, redeemedAt: new Date().toISOString(), limit });
 }

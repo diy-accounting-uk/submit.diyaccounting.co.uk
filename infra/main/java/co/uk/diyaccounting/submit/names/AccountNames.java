@@ -239,6 +239,14 @@ public class AccountNames {
     public String passHeldGetLambdaUrlPath;
     public boolean passHeldGetLambdaJwtAuthorizer;
     public boolean passHeldGetLambdaCustomAuthorizer;
+    public String passCampaignGetIngestLambdaHandler;
+    public String passCampaignGetIngestLambdaFunctionName;
+    public String passCampaignGetIngestLambdaArn;
+    public String passCampaignGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod passCampaignGetLambdaHttpMethod;
+    public String passCampaignGetLambdaUrlPath;
+    public boolean passCampaignGetLambdaJwtAuthorizer;
+    public boolean passCampaignGetLambdaCustomAuthorizer;
 
     // Pass Generate POST Lambda (JWT auth - user pass generation via tokens)
     public String passGeneratePostIngestLambdaHandler;
@@ -971,6 +979,28 @@ public class AccountNames {
                 "List held passes",
                 "Lists the passes held for review, with their issuer hash, use count, review limit and held time (operator only)",
                 "listHeldPasses"));
+        // Pass Campaign GET Lambda (JWT auth; the handler admits operators only)
+        this.passCampaignGetLambdaHttpMethod = HttpMethod.GET;
+        this.passCampaignGetLambdaUrlPath = "/api/v1/pass/campaign";
+        this.passCampaignGetLambdaJwtAuthorizer = true;
+        this.passCampaignGetLambdaCustomAuthorizer = false;
+        var passCampaignGetLambdaHandlerName = "passCampaignGet.ingestHandler";
+        var passCampaignGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(passCampaignGetLambdaHandlerName);
+        this.passCampaignGetIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, passCampaignGetLambdaHandlerDashed);
+        this.passCampaignGetIngestLambdaHandler =
+                "%s/account/%s".formatted(root.appLambdaHandlerPrefix, passCampaignGetLambdaHandlerName);
+        this.passCampaignGetIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, passCampaignGetLambdaHandlerDashed);
+        this.passCampaignGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.passCampaignGetIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.passCampaignGetLambdaHttpMethod,
+                this.passCampaignGetLambdaUrlPath,
+                "List campaign passes",
+                "Lists the campaign passes with their redemption window, limits, granted bundles and redemptions so far (operator only)",
+                "listCampaignPasses"));
 
         // Pass Generate POST Lambda (JWT auth - user pass generation using tokens)
         this.passGeneratePostLambdaHttpMethod = HttpMethod.POST;

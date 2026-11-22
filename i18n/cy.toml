@@ -910,22 +910,6 @@ cy = '''Digidol'''
 hash = "a89383f1a430"
 cy = '''Ffisegol'''
 
-[strings."bundles.pass-expires"]
-hash = "4bd9e42fe2cf"
-cy = '''Yn dod i ben {date}'''
-
-[strings."bundles.pass-no-expiry"]
-hash = "fe06351db8da"
-cy = '''Dim dyddiad dod i ben'''
-
-[strings."bundles.pass-uses"]
-hash = "71acdccd45fc"
-cy = '''{count} defnydd'''
-
-[strings."bundles.pass-uses-of"]
-hash = "ffe65b24e43a"
-cy = '''{count} o {max} defnydd'''
-
 [strings."bundles.pass-on-hold"]
 hash = "101e09d7bcf1"
 cy = '''wedi’i ddal i’w adolygu'''
@@ -17598,3 +17582,97 @@ cy = '''cynhyrchu (production) <span class="calendar-date">zip pecyn</span>'''
 [strings."mtd-calendar.preview-package-zip-de78a3"]
 hash = "de78a3668798"
 cy = '''rhagolwg (preview) <span class="calendar-date">zip pecyn</span>'''
+
+# == Pass card terms on bundles.html: ids bundles.pass-campaign, bundles.pass-other, bundles.pass-*-year(s), -month(s), -day(s), bundles.pass-grant-*, bundles.pass-window*, bundles.pass-*per-account, bundles.pass-limits* ==
+
+[strings."bundles.pass-campaign"]
+hash = "268286d2ef75"
+cy = '''Ymgyrch'''
+
+[strings."bundles.pass-other"]
+hash = "ebdf8cc00bc4"
+cy = '''Tocyn'''
+
+[strings."bundles.pass-one-year"]
+hash = "91647badc37b"
+cy = '''1 flwyddyn'''
+
+[strings."bundles.pass-years"]
+hash = "8eb7a5a2c714"
+cy = '''{count} blynedd'''
+
+[strings."bundles.pass-one-month"]
+hash = "cd8c117e6dd5"
+cy = '''1 mis'''
+
+[strings."bundles.pass-months"]
+hash = "54c70542726a"
+cy = '''{count} mis'''
+
+[strings."bundles.pass-one-day"]
+hash = "fa665d95d29e"
+cy = '''1 diwrnod'''
+
+[strings."bundles.pass-days"]
+hash = "e9f0a85930cc"
+cy = '''{count} diwrnod'''
+
+[strings."bundles.pass-grant-lasts"]
+hash = "34ea71b72a01"
+cy = '''{name} am {lasts} o’r adeg y caiff ei ddefnyddio'''
+
+[strings."bundles.pass-grant-no-end"]
+hash = "ab08aed5691e"
+cy = '''{name} heb ddyddiad gorffen'''
+
+[strings."bundles.pass-grant-unlimited-tokens"]
+hash = "1476af15c576"
+cy = '''dim terfyn ar gredydau (tokens)'''
+
+[strings."bundles.pass-grant-tokens-every"]
+hash = "46515823a07d"
+cy = '''{count} credyd (tokens) bob {every}'''
+
+[strings."bundles.pass-grant-tokens"]
+hash = "bc17ff48c052"
+cy = '''{count} credyd (tokens)'''
+
+[strings."bundles.pass-window"]
+hash = "8a6ec0720346"
+cy = '''Defnyddiwch ef o {from} tan {until}'''
+
+[strings."bundles.pass-window-open"]
+hash = "9825cbd08536"
+cy = '''Defnyddiwch ef o {from}, heb ddyddiad gorffen'''
+
+[strings."bundles.pass-one-per-account"]
+hash = "d0b2dd411942"
+cy = '''1 i bob cyfrif'''
+
+[strings."bundles.pass-per-account"]
+hash = "4bdaba69bc01"
+cy = '''{count} i bob cyfrif'''
+
+[strings."bundles.pass-limits-open"]
+hash = "b5825e6eb825"
+cy = '''Dim terfyn ar ddefnyddiau, {each}'''
+
+[strings."bundles.pass-limits"]
+hash = "248c589e1d3f"
+cy = '''Hyd at {max} defnydd, {each}'''
+
+[strings."bundles.pass-grant-tokens-monthly"]
+hash = "00b365730503"
+cy = '''{count} credyd (tokens) y mis'''
+
+[strings."bundles.pass-grant-tokens-yearly"]
+hash = "60692db56122"
+cy = '''{count} credyd (tokens) y flwyddyn'''
+
+[strings."bundles.pass-grant-tokens-daily"]
+hash = "4265d2cbf280"
+cy = '''{count} credyd (tokens) y dydd'''
+
+[strings."chrome.bundle-resident-vat-comp"]
+hash = "e911f8f30f7e"
+cy = '''Resident VAT (am ddim)'''

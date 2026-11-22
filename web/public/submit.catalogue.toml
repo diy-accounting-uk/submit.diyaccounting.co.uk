@@ -292,6 +292,25 @@ allocation = "on-email-match"
 listedInEnvironments = ["local", "test", "simulator", "proxy", "ci"]
 tokensGranted = "unlimited"
 
+# resident-vat-comp: Complimentary Resident VAT, granted only through a campaign pass, so a pass
+# never grants the on-subscription resident-vat bundle itself
+# Unlocked by: a custom campaign pass that the operator creates on operator/campaign-passes.html
+# Payment: None
+# Tokens: 100, refreshing monthly, as resident-vat; a campaign pass may set its own duration and tokens
+[[bundles]]
+id = "resident-vat-comp"
+name = "Resident VAT (Complimentary)"
+passSummary = "submit VAT returns to HMRC and make pass links for other people"
+passSummaryCy = "cyflwyno Ffurflenni TAW i CThEF a gwneud dolenni tocyn i bobl eraill"
+includes = ["resident-vat"]
+levelName = "Resident"
+enable = "on-pass"
+hidden = true
+allocation = "on-pass"
+timeout = "P1Y"
+tokensGranted = 100
+tokenRefreshInterval = "P1M"
+
 # operator: The one-stop objectives dashboard, for the site operator only
 # Unlocked by: operator pass (email-restricted, admin-issued to the operator's own account)
 # Payment: None
@@ -740,6 +759,15 @@ display = "on-entitlement"
 bundles = ["operator"]
 metered = false
 paths = ["operator/dashboard.html", "^/api/v1/operator/.*"]
+
+[[activities]]
+id = "operator-campaign-passes"
+name = "Campaign passes"
+nameCy = "Tocynnau ymgyrch"
+display = "on-entitlement"
+bundles = ["operator"]
+metered = false
+paths = ["operator/campaign-passes.html", "^/api/v1/pass/campaign$"]
 
 # Passes:
 # Example invite pass record in DynamoDB:
