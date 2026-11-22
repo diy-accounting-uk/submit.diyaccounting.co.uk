@@ -381,3 +381,41 @@ test("a date of change, or a date of confirmation, after today is refused before
   await expect(page.locator("#formView")).toBeVisible();
   expect(filings).toHaveLength(0);
 });
+
+for (const [language, prefix, lookUp, address, cont, expected] of [
+  [
+    "English",
+    "",
+    "Look up the persons with significant control",
+    "Their address",
+    "Continue",
+    "The new service address: Street has characters Companies House does not accept: ŵ",
+  ],
+  ["Welsh", "/cy", "Chwilio am y personau â rheolaeth arwyddocaol", "Eu cyfeiriad", "Parhau", "nodau nad yw Tŷ’r Cwmnïau yn eu derbyn: ŵ"],
+]) {
+  test(`a Welsh street with a lower-case ŵ is stopped before sending, in ${language}`, async ({ page }) => {
+    const filings = [];
+    await serveSite(page, { filings });
+    await page.goto(`${SITE}${prefix}/companies-house/changePscDetails.html`, { waitUntil: "networkidle" });
+    await page.locator("#companyNumber").fill("00000001");
+    await page.getByRole("button", { name: lookUp }).click();
+    await page.locator("#pscChoices input").first().check();
+    await page.getByLabel(address, { exact: true }).check();
+    await page.locator("#premise").fill("3");
+    await page.locator("#street").fill("Ffordd Glyndŵr");
+    await page.locator("#postTown").fill("Machynlleth");
+    await page.locator("#dateOfChange").fill("2026-11-01");
+    await page.locator("#confirmationDate").fill("2026-11-03");
+    await page.locator("#companyAuthCode").fill("SIMCS01");
+    await page.getByRole("button", { name: cont }).click();
+    const status = page.locator("#statusMessagesContainer");
+    await expect(status).toContainText(expected);
+    await expect(status).not.toContainText("Ffordd");
+    await expect(page.locator("#formView")).toBeVisible();
+    expect(filings).toHaveLength(0);
+
+    await page.locator("#street").fill("Ffordd Glyndwr");
+    await page.getByRole("button", { name: cont }).click();
+    await expect(page.locator("#reviewView")).toBeVisible();
+  });
+}

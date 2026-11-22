@@ -273,7 +273,7 @@ describe("companiesHousePscNotificationPost ingestHandler", () => {
     );
     expect(refused.statusCode).toBe(400);
     const message = JSON.stringify(parseResponseBody(refused));
-    expect(message).toContain("usual residential address street has characters Companies House does not accept: ŵ");
+    expect(message).toContain("residentialAddress.address.street has characters Companies House does not accept: ŵ");
     expect(message).not.toContain("Glynd");
   });
 

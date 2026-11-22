@@ -261,10 +261,7 @@ describe("companiesHouseSailAddressPost ingestHandler", () => {
       [{ address: { ...address, country: ["GB-ENG"] } }, "Invalid address.country"],
       [{ address: { ...address, street: "x".repeat(51) } }, "Invalid address.street - must be at most 50 characters"],
       [{ address: { ...address, postcode: "x".repeat(16) } }, "Invalid address.postcode - must be at most 15 characters"],
-      [
-        { address: { ...address, street: "12 Quay Street | rear" } },
-        "Invalid address.street - has a character Companies House does not take",
-      ],
+      [{ address: { ...address, street: "12 Quay Street | rear" } }, "address.street has characters Companies House does not accept: |"],
       [{ address: { ...address, premise: 12 } }, "Missing address.premise"],
       [{ companyAuthCode: "AB" }, "Invalid companyAuthCode"],
     ]) {

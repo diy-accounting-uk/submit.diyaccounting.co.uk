@@ -55,6 +55,8 @@ import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } 
 import { initializeSalt } from "../../services/subHasher.js";
 import { hasPaidCharge, markChargeUsed } from "../../services/activityCharges.js";
 import { readOwnPresenterFromBody } from "../../services/companiesHouseOwnPresenter.js";
+import { COMPANIES_HOUSE_FORMS } from "../../../web/public/lib/companies-house-forms.js";
+import { gatewayTextProblems } from "../../../web/public/lib/companies-house-gateway-text.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseConfirmationStatementPost.js" });
 
@@ -200,6 +202,13 @@ export function extractAndValidateConfirmationStatementParameters(event, errorMe
   // verification block, so no director row is required.
   const requiresVerificationStatement = selectConfirmationStatementSchema(officers).rootElement === "ConfirmationAndVerificationStatement";
   const normalisedDirectors = requiresVerificationStatement ? validateAndNormaliseDirectors(directors, errorMessages) : directors;
+
+  errorMessages.push(
+    ...gatewayTextProblems(
+      { shareholdings, statementOfCapital, directors: normalisedDirectors },
+      COMPANIES_HOUSE_FORMS["confirmation-statement"].textFields,
+    ),
+  );
 
   return {
     companyNumber: normalisedCompanyNumber,

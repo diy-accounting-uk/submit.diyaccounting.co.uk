@@ -27183,3 +27183,9 @@ cy = '''Cryno, heb ei archwilio'''
 [strings."ch.drill.accounts-type-audited-abridged"]
 hash = "d73ff0ffa7da"
 cy = '''Cryno, wedi’i archwilio'''
+
+# == The gateway's character check on the Companies House form pages: id ch.form.gateway-text ==
+
+[strings."ch.form.gateway-text"]
+hash = "6be4e4274865"
+cy = '''Mae gan {field} nodau nad yw Tŷ’r Cwmnïau yn eu derbyn: {characters}'''

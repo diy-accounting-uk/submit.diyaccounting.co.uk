@@ -286,7 +286,7 @@ describe("companiesHouseAllotmentOfSharesPost ingestHandler", () => {
       ],
       [
         { allotments: [{ ...ALLOTMENT, consideration: "A van\nand a trailer" }] },
-        "allotments[0].consideration - has a character Companies House does not take",
+        "allotments[0].consideration has characters Companies House does not accept",
       ],
       [{ allotments: [{ ...ALLOTMENT, consideration: 125 }] }, "Invalid allotments[0].consideration - must be text"],
       [{ statementOfCapital: [{ ...CAPITAL, totalAmountUnpaid: "nil" }] }, "Invalid statementOfCapital[0].totalAmountUnpaid"],

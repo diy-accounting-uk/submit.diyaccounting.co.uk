@@ -45,6 +45,7 @@ import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } 
 import { initializeSalt } from "./subHasher.js";
 import { readOwnPresenterFromBody } from "./companiesHouseOwnPresenter.js";
 import { COMPANIES_HOUSE_FORMS } from "../../web/public/lib/companies-house-forms.js";
+import { gatewayTextProblems } from "../../web/public/lib/companies-house-gateway-text.js";
 import { GATEWAY_FORM_BUILDERS } from "./companiesHouseForms.js";
 
 const logger = createLogger({ source: "app/services/companiesHouseFormFiling.js" });
@@ -80,14 +81,16 @@ export function extractCompanyFields(body, errorMessages) {
 
 /**
  * The company fields and the form's own fields of a request for one form kind, with every failed
- * check's message.
+ * check's message, the gateway's character check of the row's textFields among them.
  * @param {object} event - the Lambda event
  * @param {string} kind - a kind of GATEWAY_FORM_BUILDERS
  * @param {string[]} errorMessages
  */
 export function extractFormRequest(event, kind, errorMessages) {
   const body = parseRequestBody(event) || {};
-  return { ...extractCompanyFields(body, errorMessages), ...GATEWAY_FORM_BUILDERS[kind].extractAndValidate(body, errorMessages) };
+  const form = { ...extractCompanyFields(body, errorMessages), ...GATEWAY_FORM_BUILDERS[kind].extractAndValidate(body, errorMessages) };
+  errorMessages.push(...gatewayTextProblems(form, COMPANIES_HOUSE_FORMS[kind].textFields));
+  return form;
 }
 
 // A 400 whose message joins every refusal's English, with messageIds naming the refusals a form's

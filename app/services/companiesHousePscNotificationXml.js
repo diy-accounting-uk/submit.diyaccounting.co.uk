@@ -20,7 +20,6 @@
 
 import { optionalElement, pscElementName } from "./companiesHousePscParticularsXml.js";
 import { addressProblems, addressXml, natureOfControlProblems, naturesOfControlXml } from "./companiesHousePscChangeDetailsXml.js";
-import { gatewayTextProblem } from "./companiesHouseGatewayText.js";
 import { isValidCompaniesHousePersonalCode } from "./companiesHouseApi.js";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -34,16 +33,6 @@ export const NAME_MISMATCH_REASONS = ["PREFERRED_NAME", "LEGALLY_CHANGED", "TRAN
 const tooLong = (problems, field, value, max) => {
   if (value && String(value).length > max) problems.push(`${field} is longer than ${max} characters`);
 };
-
-const ADDRESS_TEXT_FIELDS = ["premise", "street", "thoroughfare", "postTown", "county", "otherForeignCountry", "postcode"];
-
-// The gateway's character check of each named field of a value, each failure under its prefix.
-function textProblems(problems, prefix, value, fields) {
-  for (const field of fields) {
-    const problem = gatewayTextProblem(`${prefix}${field}`, value?.[field]);
-    if (problem) problems.push(problem);
-  }
-}
 
 /**
  * The reasons an individual's particulars cannot be filed, or [] when they can.
@@ -62,13 +51,11 @@ export function individualProblems(individual) {
   tooLong(problems, "nationality", individual.nationality, 50);
   if (!individual.countryOfResidence) problems.push("an individual PSC needs a country of residence");
   tooLong(problems, "countryOfResidence", individual.countryOfResidence, 50);
-  textProblems(problems, "", individual, ["title", "forename", "otherForenames", "surname", "nationality", "countryOfResidence"]);
   const service = individual.serviceAddress;
   if (!service || (service.sameAsRegisteredOffice !== true && !service.address)) {
     problems.push("an individual PSC needs a service address or the registered office");
   } else if (service.sameAsRegisteredOffice !== true) {
     addressProblems(service.address).forEach((problem) => problems.push(`service address: ${problem}`));
-    textProblems(problems, "service address ", service.address, ADDRESS_TEXT_FIELDS);
   }
   const residential = individual.residentialAddress;
   if (!residential || (residential.sameAsServiceAddress !== true && !residential.address)) {
@@ -79,7 +66,6 @@ export function individualProblems(individual) {
     }
   } else {
     addressProblems(residential.address).forEach((problem) => problems.push(`usual residential address: ${problem}`));
-    textProblems(problems, "usual residential address ", residential.address, ADDRESS_TEXT_FIELDS);
   }
   const verification = individual.verification;
   if (verification) {
@@ -104,8 +90,6 @@ export function entityProblems(entity, corporate) {
   if (!entity.name) problems.push(corporate ? "a relevant legal entity needs its name" : "an other registrable person needs its name");
   tooLong(problems, "name", entity.name, 160);
   addressProblems(entity.address).forEach((problem) => problems.push(`principal office address: ${problem}`));
-  textProblems(problems, "principal office address ", entity.address, ADDRESS_TEXT_FIELDS);
-  textProblems(problems, "", entity, ["name", "legalForm", "lawGoverned", "placeRegistered", "registrationNumber", "countryOrState"]);
   for (const field of ["legalForm", "lawGoverned"]) {
     if (!entity[field]) problems.push(`${field} is needed`);
     tooLong(problems, field, entity[field], 160);

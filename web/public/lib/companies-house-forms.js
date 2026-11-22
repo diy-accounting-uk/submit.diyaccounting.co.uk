@@ -6,7 +6,9 @@
 // and its events use, and, for a form whose filing route is the shared one in
 // app/services/companiesHouseFormFiling.js, its gateway form identifier, its schema in
 // fixtures/companies-house-xmlgw, its catalogue activity and, where Companies House charges one, its
-// fee. A plain ES module, so the browser and app/ both read it.
+// fee. textFields names the form's free-text fields that go to the gateway under the name and
+// address pattern companies-house-gateway-text.js holds; the page and the route both check them. A
+// plain ES module, so the browser and app/ both read it.
 
 export const COMPANIES_HOUSE_FORMS = {
   "accounts": {
@@ -22,6 +24,18 @@ export const COMPANIES_HOUSE_FORMS = {
     receiptTitleCy: "Datganiad cadarnhau",
     acceptedEvent: "companies-house-confirmation-statement-accepted",
     acceptedSummary: "Companies House confirmation statement accepted",
+    textFields: [
+      "shareholdings[].shareClass",
+      "shareholdings[].shareholders[].surname",
+      "shareholdings[].shareholders[].forename",
+      "shareholdings[].shareholders[].amalgamatedName",
+      "shareholdings[].shareholders[].address.*",
+      "statementOfCapital.shares[].shareClass",
+      "directors[].title",
+      "directors[].forename",
+      "directors[].otherForenames",
+      "directors[].surname",
+    ],
   },
   "psc-verification-statement": {
     routeSegment: "psc-verification-statement",
@@ -33,6 +47,7 @@ export const COMPANIES_HOUSE_FORMS = {
     schema: "PSCVerificationStatement-v1-0.xsd",
     activityId: "file-psc-verification-statement",
     label: "PSC verification statement",
+    textFields: ["title", "forename", "otherForenames", "surname"],
   },
   "psc-cessation": {
     routeSegment: "psc-cessation",
@@ -45,6 +60,7 @@ export const COMPANIES_HOUSE_FORMS = {
     activityId: "cease-psc",
     label: "PSC cessation",
     sharedPoll: true,
+    textFields: ["title", "forename", "otherForenames", "surname", "name"],
   },
   "psc-change-details": {
     routeSegment: "psc-change-details",
@@ -57,6 +73,7 @@ export const COMPANIES_HOUSE_FORMS = {
     activityId: "change-psc-details",
     label: "PSC change of details",
     sharedPoll: true,
+    textFields: ["title", "forename", "otherForenames", "surname", "name", "address.*"],
   },
   "accounting-reference-date": {
     routeSegment: "accounting-reference-date",
@@ -69,6 +86,7 @@ export const COMPANIES_HOUSE_FORMS = {
     activityId: "change-accounting-reference-date",
     label: "change of accounting reference date",
     sharedPoll: true,
+    textFields: [],
   },
   "officer-resignation": {
     routeSegment: "officer-resignation",
@@ -81,6 +99,7 @@ export const COMPANIES_HOUSE_FORMS = {
     activityId: "remove-officer",
     label: "officer resignation",
     sharedPoll: true,
+    textFields: ["corporateName", "title", "forename", "otherForenames", "surname"],
   },
   "sail-address": {
     routeSegment: "sail-address",
@@ -93,6 +112,7 @@ export const COMPANIES_HOUSE_FORMS = {
     activityId: "change-records-location",
     label: "SAIL address",
     sharedPoll: true,
+    textFields: ["address.*"],
   },
   "record-location": {
     routeSegment: "record-location",
@@ -105,6 +125,7 @@ export const COMPANIES_HOUSE_FORMS = {
     activityId: "change-records-location",
     label: "location of company records",
     sharedPoll: true,
+    textFields: [],
   },
   "change-of-name": {
     routeSegment: "change-of-name",
@@ -119,6 +140,7 @@ export const COMPANIES_HOUSE_FORMS = {
     sharedPoll: true,
     // Companies House's fee for the form filed by software, in pounds: the standard service and the same-day service.
     fee: { standard: 20, sameDay: 85 },
+    textFields: [],
   },
   "psc-statement-notification": {
     routeSegment: "psc-statement-notification",
@@ -131,6 +153,7 @@ export const COMPANIES_HOUSE_FORMS = {
     activityId: "psc-statements",
     label: "PSC statement",
     sharedPoll: true,
+    textFields: ["title", "forename", "otherForenames", "surname", "name"],
   },
   "psc-statement-withdrawal": {
     routeSegment: "psc-statement-withdrawal",
@@ -143,6 +166,7 @@ export const COMPANIES_HOUSE_FORMS = {
     activityId: "psc-statements",
     label: "PSC statement withdrawal",
     sharedPoll: true,
+    textFields: ["title", "forename", "otherForenames", "surname", "name"],
   },
   "psc-notification": {
     routeSegment: "psc-notification",
@@ -155,6 +179,23 @@ export const COMPANIES_HOUSE_FORMS = {
     activityId: "notify-psc",
     label: "PSC notification",
     sharedPoll: true,
+    textFields: [
+      "title",
+      "forename",
+      "otherForenames",
+      "surname",
+      "nationality",
+      "countryOfResidence",
+      "serviceAddress.address.*",
+      "residentialAddress.address.*",
+      "name",
+      "address.*",
+      "legalForm",
+      "lawGoverned",
+      "placeRegistered",
+      "registrationNumber",
+      "countryOrState",
+    ],
   },
   "officer-appointment": {
     routeSegment: "officer-appointment",
@@ -167,6 +208,22 @@ export const COMPANIES_HOUSE_FORMS = {
     activityId: "appoint-officer",
     label: "officer appointment",
     sharedPoll: true,
+    textFields: [
+      "corporateName",
+      "address.*",
+      "companyIdentification.uk.*",
+      "companyIdentification.nonUk.*",
+      "title",
+      "forename",
+      "otherForenames",
+      "surname",
+      "serviceAddress.address.*",
+      "previousNames[].forename",
+      "previousNames[].surname",
+      "nationality",
+      "countryOfResidence",
+      "residentialAddress.address.*",
+    ],
   },
   "officer-change": {
     routeSegment: "officer-change",
@@ -179,6 +236,17 @@ export const COMPANIES_HOUSE_FORMS = {
     activityId: "change-officer",
     label: "officer change of details",
     sharedPoll: true,
+    textFields: [
+      "title",
+      "forename",
+      "otherForenames",
+      "surname",
+      "newName.*",
+      "serviceAddress.address.*",
+      "residentialAddress.address.*",
+      "nationality",
+      "countryOfResidence",
+    ],
   },
   "allotment-of-shares": {
     routeSegment: "allotment-of-shares",
@@ -191,6 +259,7 @@ export const COMPANIES_HOUSE_FORMS = {
     activityId: "allot-shares",
     label: "return of allotment of shares",
     sharedPoll: true,
+    textFields: ["allotments[].shareClass", "allotments[].consideration", "statementOfCapital[].shares[].shareClass"],
   },
 };
 

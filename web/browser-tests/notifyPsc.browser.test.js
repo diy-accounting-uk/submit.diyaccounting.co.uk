@@ -446,3 +446,20 @@ test("significant influence through a firm beside another firm control is refuse
   await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
   expect(filings[0].naturesOfControl).toEqual(["RIGHTTOAPPOINTANDREMOVEDIRECTORS", "SIGINFLUENCECONTROL_AS_FIRM"]);
 });
+
+test("an individual's Welsh surname with a lower-case ŷ is stopped before sending, naming the box", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, { filings });
+  await page.goto(`${SITE}/companies-house/notifyPsc.html`, { waitUntil: "networkidle" });
+  await page.locator("#companyNumber").fill("00000001");
+  await page.getByRole("button", { name: "Look up the company" }).click();
+  await fillIndividual(page);
+  await page.locator("#surname").fill("Prŷs");
+  await page.getByRole("group", { name: "Ownership of shares" }).getByLabel("75% or more").check();
+  await fillDates(page);
+  await page.getByRole("button", { name: "Continue" }).click();
+  const status = page.locator("#statusMessagesContainer");
+  await expect(status).toContainText("Surname has characters Companies House does not accept: ŷ");
+  await expect(status).not.toContainText("Prŷs");
+  expect(filings).toHaveLength(0);
+});

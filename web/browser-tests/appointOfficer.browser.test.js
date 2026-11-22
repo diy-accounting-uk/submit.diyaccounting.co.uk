@@ -364,3 +364,29 @@ test("an appointment made just after midnight in London during summer time is da
   await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
   expect(filings[0]).toMatchObject({ appointmentDate: "2026-06-16", dateSigned: "2026-06-16" });
 });
+
+test("a corporate director's Welsh street with a lower-case ŵ is stopped before sending, in Welsh", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, { filings });
+  await page.goto(`${SITE}/cy/companies-house/appointOfficer.html`, { waitUntil: "networkidle" });
+  await lookUp(page, "Chwilio am y cwmni");
+  await page.getByLabel("Cyfarwyddwr corfforaethol (cwmni neu ffyrm)").check();
+  await page.locator("#appointmentDate").fill(APPOINTED);
+  await page.locator("#corporateName").fill("DIRECTORCO LIMITED");
+  await fillAddress(page, "corporate", {
+    premise: "1",
+    street: "Ffordd Glyndŵr",
+    postTown: "Machynlleth",
+    country: "GB-WLS",
+    postcode: "SY20 8AA",
+  });
+  await page.locator("#ukRegistrationNumber").fill("01234567");
+  await page.locator("#consentToAct").check();
+  await page.locator("#companyAuthCode").fill("SIMCS01");
+  await page.getByRole("button", { name: "Parhau" }).click();
+  const status = page.locator("#statusMessagesContainer");
+  await expect(status).toContainText("nodau nad yw Tŷ’r Cwmnïau yn eu derbyn: ŵ");
+  await expect(status).not.toContainText("Ffordd");
+  await expect(page.locator("#formView")).toBeVisible();
+  expect(filings).toHaveLength(0);
+});

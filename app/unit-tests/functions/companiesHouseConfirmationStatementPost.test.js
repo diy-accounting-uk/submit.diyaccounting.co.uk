@@ -351,6 +351,31 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
     expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
+  test("refuses a Welsh lower-case letter in a shareholder's address or a director's name, naming the field and the letter", async () => {
+    const response = await companiesHouseConfirmationStatementPostHandler(
+      buildEvent({
+        body: buildStatementBody({
+          shareholdings: [
+            {
+              shareClass: "ORDINARY",
+              numberHeld: 100,
+              shareholders: [
+                { surname: "JONES", address: { premise: "3", street: "Ffordd Glyndŵr", postTown: "Machynlleth", country: "GB-WLS" } },
+              ],
+            },
+          ],
+          directors: [{ personalCode: "CWMPS832223", forename: "Siân", otherForenames: "MAIR", surname: "EXAMPLE", dob: "1970-01-01" }],
+        }),
+      }),
+    );
+    expect(response.statusCode).toBe(400);
+    const { message } = parseResponseBody(response);
+    expect(message).toContain("shareholdings[0].shareholders[0].address.street has characters Companies House does not accept: ŵ");
+    expect(message).toContain("directors[0].forename has characters Companies House does not accept: â");
+    expect(message).not.toMatch(/Glynd|Siân/);
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
   test("rejects a director's personal code that is not 11 characters", async () => {
     const response = await companiesHouseConfirmationStatementPostHandler(
       buildEvent({

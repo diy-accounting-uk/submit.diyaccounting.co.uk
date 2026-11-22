@@ -239,6 +239,88 @@ describe("the filing route every Companies House form shares", () => {
     mockParseGatewayResponse.mockReturnValue({ errors: [], statuses: [], gatewayTimestamp: "2026-11-20T10:00:00Z", pollInterval: 1 });
   });
 
+  // Each form's request with a Welsh place name, or a person named after one, in a text field the
+  // gateway takes under its name and address pattern, and the field the refusal names.
+  const WELSH_TEXT = {
+    "psc-verification-statement": [{ surname: "Glyndŵr" }, "surname"],
+    "psc-cessation": [{ surname: "Glyndŵr" }, "surname"],
+    "psc-change-details": [
+      { address: { premise: "1", street: "Ffordd Glyndŵr", postTown: "Machynlleth", country: "GB-WLS" } },
+      "address.street",
+    ],
+    "officer-resignation": [{ forename: "Llŷr" }, "forename"],
+    "sail-address": [{ address: { premise: "Uned 4", street: "Stryd y Bŵl", postTown: "Caerdydd", country: "GB-WLS" } }, "address.street"],
+    "psc-statement-notification": [
+      { statement: "PSC_HAS_FAILED_TO_CONFIRM_CHANGED_DETAILS", pscKind: "individual-person-with-significant-control", surname: "Glyndŵr" },
+      "surname",
+    ],
+    "psc-statement-withdrawal": [
+      { statement: "PSC_HAS_FAILED_TO_CONFIRM_CHANGED_DETAILS", pscKind: "individual-person-with-significant-control", surname: "Glyndŵr" },
+      "surname",
+    ],
+    "psc-notification": [
+      {
+        residentialAddress: {
+          address: { premise: "1", street: "Lôn Glyndŵr", postTown: "Bangor", country: "GB-WLS", postcode: "LL57 1AA" },
+        },
+      },
+      "residentialAddress.address.street",
+    ],
+    "officer-appointment": [
+      { residentialAddress: { address: { premise: "16", street: "Ffordd Glyndŵr", postTown: "Caerdydd", country: "GB-WLS" } } },
+      "residentialAddress.address.street",
+    ],
+    "officer-change": [{ newName: { forename: "CARYS", surname: "Glyndŵr" } }, "newName.surname"],
+    "allotment-of-shares": [
+      {
+        allotments: [
+          {
+            shareClass: "Ordinary",
+            numShares: "50",
+            amountPaidPerShare: "2.5",
+            amountUnpaidPerShare: "0",
+            currency: "GBP",
+            nominalValue: "1",
+            consideration: "Fan o Glyndŵr",
+          },
+        ],
+      },
+      "allotments[0].consideration",
+    ],
+  };
+  // The forms with no free text under that pattern: a change of accounting reference date and a move
+  // of records carry dates, codes and choices; a change of name's proposed name is upper case under
+  // its own companyNameString, which the route checks after it upper-cases the name.
+  const NO_GATEWAY_TEXT = ["accounting-reference-date", "record-location", "change-of-name"];
+
+  test("every form's text fields are named, or the form has none", () => {
+    for (const kind of SHARED_ROUTE_KINDS) {
+      expect(COMPANIES_HOUSE_FORMS[kind].textFields, kind).toEqual(expect.any(Array));
+      expect(COMPANIES_HOUSE_FORMS[kind].textFields.length > 0, kind).toBe(!NO_GATEWAY_TEXT.includes(kind));
+    }
+    expect(Object.keys(WELSH_TEXT).sort()).toEqual(SHARED_ROUTE_KINDS.filter((kind) => !NO_GATEWAY_TEXT.includes(kind)).sort());
+  });
+
+  test.each(Object.entries(WELSH_TEXT))(
+    "%s refuses a Welsh lower-case ŵ or ŷ before sending, naming the field and the letter, never the value",
+    async (kind, [overrides, field]) => {
+      const response = await fileCompaniesHouseForm(buildEvent(kind, overrides), kind);
+      expect(response.statusCode).toBe(400);
+      const message = JSON.parse(response.body).message;
+      expect(message).toMatch(new RegExp(`${field.replace(/[.[\]]/g, "\\$&")} has characters Companies House does not accept: [ŵŷô ]+`));
+      expect(everythingKept(response)).not.toMatch(/Glyndŵr|Llŷr|Bŵl/);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    },
+  );
+
+  test("a change of name to a Welsh name is upper-cased and taken", async () => {
+    const response = await fileCompaniesHouseForm(
+      buildEvent("change-of-name", { proposedName: "Cwmni Glyndŵr Cyfyngedig" }),
+      "change-of-name",
+    );
+    expect(response.statusCode).toBe(201);
+  });
+
   test("every form on the route has a request this test files", () => {
     expect(Object.keys(FORM_FIELDS).sort()).toEqual([...SHARED_ROUTE_KINDS].sort());
   });

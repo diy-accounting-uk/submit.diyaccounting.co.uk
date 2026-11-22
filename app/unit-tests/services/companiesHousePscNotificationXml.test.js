@@ -3,6 +3,8 @@
 
 import { describe, test, expect } from "vitest";
 import { buildPscNotificationBody, entityProblems, individualProblems } from "@app/services/companiesHousePscNotificationXml.js";
+import { COMPANIES_HOUSE_FORMS } from "../../../web/public/lib/companies-house-forms.js";
+import { gatewayTextProblems } from "../../../web/public/lib/companies-house-gateway-text.js";
 import { gatewayFormSchemaErrors } from "../helpers/gatewayFormSchema.js";
 
 const SCHEMA = "PSCNotification-v1-2.xsd";
@@ -182,14 +184,15 @@ describe("companiesHousePscNotificationXml", () => {
     ]);
   });
 
-  test("refuses a character the gateway does not accept, naming the field and the character", () => {
+  test("its row's text fields refuse a character the gateway does not accept, naming the field and the character", () => {
+    const { textFields } = COMPANIES_HOUSE_FORMS["psc-notification"];
     expect(
-      individualProblems({ ...GWEN, surname: "Prŷs", residentialAddress: { address: { ...HOME, street: "Ffordd Glyndŵr" } } }),
+      gatewayTextProblems({ ...GWEN, surname: "Prŷs", residentialAddress: { address: { ...HOME, street: "Ffordd Glyndŵr" } } }, textFields),
     ).toEqual([
       "surname has characters Companies House does not accept: ŷ",
-      "usual residential address street has characters Companies House does not accept: ŵ",
+      "residentialAddress.address.street has characters Companies House does not accept: ŵ",
     ]);
-    expect(entityProblems({ ...COUNCIL, name: "Cyngor Sir Ceredigion – Gwasanaethau" }, false)).toEqual([
+    expect(gatewayTextProblems({ ...COUNCIL, name: "Cyngor Sir Ceredigion – Gwasanaethau" }, textFields)).toEqual([
       "name has characters Companies House does not accept: –",
     ]);
     expect(() => buildPscNotificationBody({ ...GWEN, surname: "PRŶS" })).not.toThrow();

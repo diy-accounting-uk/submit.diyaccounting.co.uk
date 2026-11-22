@@ -252,11 +252,6 @@ function extractOfficerResignation(body, errorMessages) {
   };
 }
 
-// The characters the gateway's name and address strings take: the set that the pattern of
-// nameAddressString in the base types names.
-export const NAME_ADDRESS_CHARACTERS =
-  /^[-,.:; 0-9A-Z&@$\u00A3\u00A5\u20AC'"\u00AB\u00BB\u2018\u2019\u201C\u201D?!/\\()[\]{}<>*=#%+\u00C0\u00C1\u00C2\u00C3\u00C4\u00C5\u0100\u0102\u0104\u00C6\u01FC\u00C7\u0106\u0108\u010A\u010C\u00DE\u010E\u00D0\u00C8\u00C9\u00CA\u00CB\u0112\u0114\u0116\u0118\u011A\u011C\u011E\u0120\u0122\u0124\u0126\u00CC\u00CD\u00CE\u00CF\u0128\u012A\u012C\u012E\u0130\u0134\u0136\u0139\u013B\u013D\u013F\u0141\u00D1\u0143\u0145\u0147\u014A\u00D2\u00D3\u00D4\u00D5\u00D6\u00D8\u014C\u014E\u0150\u01FE\u0152\u0154\u0156\u0158\u015A\u015C\u015E\u0160\u0162\u0164\u0166\u00D9\u00DA\u00DB\u00DC\u0168\u016A\u016C\u016E\u0170\u0172\u0174\u1E80\u1E82\u1E84\u1EF2\u00DD\u0176\u0178\u0179\u017B\u017Da-z\u017F\u0192\u01FA\u01FF\u1E85\u1EF3]*$/u;
-
 function extractSailAddress(body, errorMessages) {
   const given = body.address && typeof body.address === "object" && !Array.isArray(body.address) ? body.address : null;
   if (!given) {
@@ -268,8 +263,6 @@ function extractSailAddress(body, errorMessages) {
     const value = trimmed(given[field]);
     if (required && !value) errorMessages.push(`Missing address.${field}`);
     if (value.length > maxLength) errorMessages.push(`Invalid address.${field} - must be at most ${maxLength} characters`);
-    if (!NAME_ADDRESS_CHARACTERS.test(value))
-      errorMessages.push(`Invalid address.${field} - has a character Companies House does not take`);
     if (value) address[field] = value;
   }
   if (typeof given.country !== "string" || !Object.hasOwn(SAIL_ADDRESS_COUNTRIES, given.country)) {
@@ -791,7 +784,6 @@ function readShareClass(value, name, errorMessages) {
   if (!shareClass) errorMessages.push(`Missing ${name}`);
   else if (shareClass.length > MAX_SHARE_CLASS_LENGTH)
     errorMessages.push(`Invalid ${name} - must be at most ${MAX_SHARE_CLASS_LENGTH} characters`);
-  else if (!NAME_ADDRESS_CHARACTERS.test(shareClass)) errorMessages.push(`Invalid ${name} - has a character Companies House does not take`);
   return shareClass;
 }
 
@@ -822,8 +814,6 @@ function readAllotment(given, index, errorMessages) {
     errorMessages.push(`Invalid ${at}.consideration - must be text`);
   } else if (consideration.length > MAX_CONSIDERATION_LENGTH) {
     errorMessages.push(`Invalid ${at}.consideration - must be at most ${MAX_CONSIDERATION_LENGTH} characters`);
-  } else if (!NAME_ADDRESS_CHARACTERS.test(consideration)) {
-    errorMessages.push(`Invalid ${at}.consideration - has a character Companies House does not take, such as a line break`);
   }
   return {
     shareClass,
