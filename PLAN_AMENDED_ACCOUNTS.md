@@ -754,6 +754,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Tests.** Create `web/browser-tests/startCompanyBooks.browser.test.js`: each step; the step without the code; a PDF set; no accounts yet; the answer's dates of birth and addresses are in no output. Add one journey to `behaviour-tests/companiesHouse.behaviour.test.js`: build the book, download it, and drop it on the micro-entity form's books card for the same period end. Update the tests that list activities (`app/unit-tests/services/prodSurface.test.js`, `web/unit-tests/catalogue-names.test.js`, `web/unit-tests/catalog-paths.test.js`).
 - **Run.** `npm run bundle`; `npx playwright test --project=browser-tests web/browser-tests/startCompanyBooks.browser.test.js`; `lockf -k /tmp/submit-simulator.lock npm run test:companiesHouseBehaviour-simulator`.
 - **Visual definition of done.** A new page. Run the `visual-review` skill on the passing run's screenshots.
+- **Capital in more than one currency.** `parseCompanyDataResponse` in `app/services/companiesHouseXmlGateway.js` reads the first `Capital` element only, and the schema allows one for each currency. Read every element here; until then the builder writes a `capital-currency` entry (section 11).
 - **Waits on**: AA23, AA28, AA29, AA30. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~18 files.
 
 #### AA32. MCP tools for the filed accounts and the book

@@ -32,7 +32,7 @@ for spreadsheets.
   AA11, AA4, WL1, SY2 (the route), AA5, AA6, AA16, CP1, AA7, AA14, CL2, CL5, LANG12, AA17.
 - **spreadsheets**: 5 rows in one pull request: AA27, AA26, SY1 (the page), SY2 (the engine and the
   page), SY3.
-- **Beside**, with no pull request: AA25, DUE1, CR1, WDM1, GLS1, LANG13, U2.
+- **Beside**, with no pull request: DUE1, CR1, WDM1, GLS1, LANG13, U2.
 - **Left out, because the input needs this set live first**: AA12 (its workflow runs AA10's cases
   from `main`), AA13 (after AA12), AA28 and CL3 (AA27 on the DIYA-GL prod site), AA30 (AA26's npm
   publish), MA1 (the features on prod).
@@ -59,7 +59,7 @@ this order across the waves: rule, lookup, watch, passes, fill, welsh.
 | email | PE1 | Sonnet | `customerEmailTemplates.js`, `customerEmailRequest.js`, `passGeneratePost.js`, `passAdminPost.js`, their tests |
 | edge | SY1 (the route) | Sonnet | `companiesHousePublicDeadlinesGet.js`, `EdgeStack.java`, `EdgeStackTest.java` |
 
-State: building. Wave branch `claude/zeppelin-w01` from `main` at 82a4b97b8, worktree `.claude/worktrees/zeppelin-w01`. Tasks sent 2026-11-22 (each is `.collab/<worker>.md` on the worker's `collab` branch; its result is `claude/<worker>-<row>` in `submit-cloud-<worker>`): anvil AA3, then AA1; bugle AA8; epoch AA2 (built beside AA1 from the plan's six facts; it lands after AA1); cyclone PE1; dusk SY1 (the route). Landed: none. The `companyTaxReturn` simulator suite runs on the wave branch after AA1 and AA2 land.
+State: building. Wave branch `claude/zeppelin-w01` from `main` at 82a4b97b8, worktree `.claude/worktrees/zeppelin-w01`. A task is `.collab/<worker>.md` on the worker's `collab` branch; its result is `claude/<worker>-<task>` in `submit-cloud-<worker>`. Landed: AA3 09b1643e5, AA8 3762c1e7e (the source rule gains www.legislation.gov.uk, because no gov.uk page states the 28 day rule), PE1 59e60c2ad. Built and held: AA2 (epoch, ad0d6e9b5), which lands after AA1. Running: anvil `aa1`; dusk `sy1` (the route); cyclone `pe1-render` (the render script's pass cases, PE1's remainder). After AA1 and AA2 land: the generators, then the gates on the wave head, the `companyTaxReturn` simulator suite among them.
 
 ### Wave 2
 
@@ -68,7 +68,7 @@ State: building. Wave branch `claude/zeppelin-w01` from `main` at 82a4b97b8, wor
 | lookup | CL1 (the routes, then the page) | Sonnet, 2 agents in a chain | the catalogue; the Companies House lookup Lambdas and `companiesHouseApi.js`; `app/bin/server.js`; `CompaniesHouseNames.java` and its stack; the companies simulator; `companySearch.html` and its page script; the page router; the page scripts of the five forms |
 | cases | AA10, then AA11 | Sonnet, then Opus | `scripts/companies-house-test-service-run.js`, the test-service cases fixture, the review scripts; AA11's fixes in the accounts iXBRL services |
 
-State: pending.
+State: started early. bugle builds `cl1-routes` (CL1's routes, AA23 and AA29) from wave 1's tip 59e60c2ad; it lands on `claude/zeppelin-w02` after wave 1 is gated, with the difference of wave 1's later commits. AA23's first step is done: software-filed accounts list `application/pdf` and `application/xhtml+xml`, paper-filed ones `application/pdf` only (`target/aa23-doc-metadata.log`).
 
 ### Wave 3
 
@@ -105,7 +105,7 @@ State: pending.
 | --- | --- | --- | --- |
 | welsh | LANG12 | Opus, sub-agents by section of `i18n/cy.toml` | `i18n/cy.toml`, the `*Cy` fields of the catalogue, the Welsh emails, the Welsh accounts text, `scripts/welsh-proof.mjs`, the rebuilt Welsh pages |
 
-State: pending.
+State: pending. One part started early: epoch builds `lang12-proof` (`scripts/welsh-proof.mjs` only), which lands with this wave. The review also takes `passSummaryCy` in the catalogue ("gallwch cyflwyno" lacks the soft mutation; cyclone's PE1 report).
 
 ### Wave 7: the look wave
 
@@ -133,15 +133,14 @@ repository's `scripts/worktree-add.sh`.
 | 4 | generate | SY2 (the engine and the page) | Sonnet | `scripts/build-diya-gl-bundle.mjs`, `lib/download-page.js`, the round trip test |
 | 5 | newbook | SY3 | Sonnet | `web/diya-gl.co.uk/public/shell.js`, the Ltd product's new book form, a browser test |
 
-AA26 starts when AA25's design is in `PLAN_AMENDED_ACCOUNTS.md`. State: pending.
+State: wave 1 landed and its tests passed on the same content (`claude/zeppelin-w01` at 521494ec6, AA27; 13 browser tests and 154 unit tests). Wave 2: a local agent builds AA26 on `claude/zeppelin-w02-book` from that tip, to the design in `PLAN_AMENDED_ACCOUNTS.md` section 11. Wave 3: SY1's page is built as 47a123354 on `claude/zeppelin-w03-lookup` (54 browser tests, 162 unit tests) and lands when `claude/zeppelin-w03` exists. Worktrees are under `.claude/worktrees/` in that repository.
 
 ## Beside
 
 | Row | Runs when | What it leaves |
 | --- | --- | --- |
-| AA25 | before spreadsheets wave 2 | the design section in `PLAN_AMENDED_ACCOUNTS.md` |
-| DUE1, CR1, WDM1, GLS1 | any time | one `PLAN_*.md` each, then `/plan-review-loop` |
-| U2 | any time; it uses no branch of the set | the rehearsal patch and its record, in the private repository |
+| DUE1, CR1, WDM1, GLS1 | any time | one `PLAN_*.md` each, then `/plan-review-loop`. DUE1: `PLAN_DUE_LIST_v1.md`, review round 1 running. CR1: `PLAN_COMPANY_REPORTS_v1.md`, review round 1 running. WDM1 and GLS1: first drafts being written by local agents. |
+| U2 | any time; it uses no branch of the set | the rehearsal patch and its record, in the private repository. Running: a local agent, worktree `.claude/worktrees/u2-rehearsal` in spreadsheets, branch `claude/ops-u2-rehearsal`. |
 | LANG13 | after wave 6, where a criterion judges the Welsh | the listings and awards file, in the private repository |
 
 ## Gates
