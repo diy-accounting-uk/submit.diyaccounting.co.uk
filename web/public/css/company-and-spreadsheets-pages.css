@@ -189,3 +189,28 @@
 .download-section .btn {
   width: auto;
 }
+
+/* The company lookup's drill-down: the row of view links, the overview's sections and their file controls */
+.drill-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin: 0.5rem 0 1.25rem;
+}
+
+.drill-nav a[aria-current="page"] {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.drill-section {
+  margin-top: 1.5rem;
+}
+
+.file-this {
+  margin-top: 0.75rem;
+}
+
+.file-this .btn {
+  width: auto;
+}

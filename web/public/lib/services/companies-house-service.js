@@ -106,11 +106,46 @@ export async function getPscs(companyNumber) {
   return body;
 }
 
+/**
+ * Get a company's filing history, every category, newest first.
+ * @param {string} companyNumber
+ * @returns {Promise<{companyNumber: string, totalCount: number, filings: object[]}>}
+ */
+export async function getFilingHistory(companyNumber) {
+  const response = await fetchWithIdToken(`/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}/filing-history`, {
+    method: "GET",
+  });
+  const body = await response.json();
+  if (!response.ok) {
+    throw await errorFromResponse(response, body);
+  }
+  return body;
+}
+
+/**
+ * Get the sets of accounts Companies House holds for a company, each with whether it holds an
+ * iXBRL document.
+ * @param {string} companyNumber
+ * @returns {Promise<{companyNumber: string, filedAccounts: object[]}>}
+ */
+export async function getFiledAccounts(companyNumber) {
+  const response = await fetchWithIdToken(`/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}/filed-accounts`, {
+    method: "GET",
+  });
+  const body = await response.json();
+  if (!response.ok) {
+    throw await errorFromResponse(response, body);
+  }
+  return body;
+}
+
 // Export on window for backward compatibility
 if (typeof window !== "undefined") {
   window.searchCompanies = searchCompanies;
   window.getCompanyProfile = getCompanyProfile;
   window.getOfficers = getOfficers;
   window.getPscs = getPscs;
+  window.getFilingHistory = getFilingHistory;
+  window.getFiledAccounts = getFiledAccounts;
   window.normaliseCompanyNumber = normaliseCompanyNumber;
 }

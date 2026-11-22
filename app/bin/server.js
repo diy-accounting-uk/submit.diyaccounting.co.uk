@@ -340,6 +340,11 @@ mcpHarnessApiEndpoint(app);
 mcpCodesEntryApiEndpoint(app);
 mcpHmrcGrantApiEndpoint(app);
 
+// Every view of the company lookup's drill-down is one page, as the edge's page router serves it.
+app.get(/^\/(cy\/)?companies-house\/company\/./, (req, res) => {
+  res.sendFile(path.join(__dirname, "../../web/public", req.params[0] ? "cy" : "", "companies-house/companySearch.html"));
+});
+
 app.use(express.static(path.join(__dirname, "../../web/public"), { dotfiles: "allow" }));
 
 // Register mock OAuth routes in mock/simulator auth environments

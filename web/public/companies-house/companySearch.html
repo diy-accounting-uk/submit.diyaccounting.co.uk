@@ -16,16 +16,16 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <link rel="stylesheet" href="../submit.css" />
+    <link rel="stylesheet" href="/submit.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
-    <script src="../lib/analytics.js"></script>
+    <script src="/lib/analytics.js"></script>
   </head>
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
-      <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
+      <p class="chrome-fallback"><a href="/">DIY Accounting Submit</a></p>
       <h1>Company lookup</h1>
       <p class="subtitle">Search Companies House for a company by name or number</p>
     </header>
@@ -70,32 +70,50 @@
         <div id="searchResults"></div>
       </div>
 
-      <!-- Profile view -->
+      <!-- Company drill-down: the profile and the views of the company, each at its own address -->
       <div id="profileView" class="results-container" style="display: none">
-        <h3>Company profile</h3>
-        <dl id="companyProfile"></dl>
+        <h3 id="drillHeading">Company profile</h3>
+        <nav id="drillNav" class="drill-nav" aria-label="Company views"></nav>
+        <div id="drillOverview">
+          <dl id="companyProfile"></dl>
+          <section id="accountsSection" class="drill-section"></section>
+          <section id="confirmationSection" class="drill-section"></section>
+          <section id="officeSection" class="drill-section"></section>
+          <section id="emailSection" class="drill-section"></section>
+        </div>
+        <div id="drillView" style="display: none"></div>
         <div class="button-group">
           <button type="button" id="newSearchBtn" class="secondary-button">New search</button>
+        </div>
+      </div>
+
+      <!-- The page's own not-found state, for an unknown company or a period with no filing -->
+      <div id="drillNotFound" class="results-container" style="display: none" role="alert">
+        <h3 id="drillNotFoundTitle">Not found</h3>
+        <p id="drillNotFoundText"></p>
+        <div class="button-group">
+          <button type="button" id="notFoundSearchBtn" class="secondary-button">New search</button>
         </div>
       </div>
     </main>
 
     <footer></footer>
 
-    <script src="../widgets/page-chrome.js"></script>
-    <script src="../lib/stacked-table.js"></script>
-    <script src="../lib/env-loader.js"></script>
-    <script type="module" src="../submit.js"></script>
-    <script src="../developer-mode.js"></script>
-    <script src="../lib/request-cache.js"></script>
-    <script src="../lib/toml-parser.js"></script>
-    <script src="../widgets/entitlement-status.js"></script>
-    <script src="../widgets/auth-status.js"></script>
-    <script src="../lib/form-errors.js"></script>
-    <script src="../lib/companies-house-labels.js"></script>
-    <script src="../widgets/status-messages.js"></script>
-    <script src="../widgets/signed-out-panel.js"></script>
-    <script src="../widgets/pass-redeemer.js"></script>
-    <script src="companySearch.page.js"></script>
+    <script src="/widgets/page-chrome.js"></script>
+    <script src="/lib/stacked-table.js"></script>
+    <script src="/lib/env-loader.js"></script>
+    <script type="module" src="/submit.js"></script>
+    <script src="/developer-mode.js"></script>
+    <script src="/lib/request-cache.js"></script>
+    <script src="/lib/toml-parser.js"></script>
+    <script src="/widgets/entitlement-status.js"></script>
+    <script src="/widgets/auth-status.js"></script>
+    <script src="/lib/form-errors.js"></script>
+    <script src="/lib/companies-house-labels.js"></script>
+    <script src="/widgets/status-messages.js"></script>
+    <script src="/widgets/signed-out-panel.js"></script>
+    <script src="/widgets/pass-redeemer.js"></script>
+    <script src="/lib/company-drill-paths.js"></script>
+    <script src="/companies-house/companySearch.page.js"></script>
   </body>
 </html>

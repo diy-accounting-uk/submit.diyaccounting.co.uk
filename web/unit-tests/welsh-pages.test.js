@@ -87,7 +87,7 @@ describe.each(WELSH_PAGES)("Welsh page $cy", (page) => {
 
   it("loads the Welsh text before page-chrome.js", () => {
     expect(welsh).toMatch(
-      /<script src="(\.\.\/)+lib\/welsh-text\.js"><\/script>\s*<script src="(\.\.\/)+widgets\/page-chrome\.js"><\/script>/,
+      /<script src="(\/|(\.\.\/)+)lib\/welsh-text\.js"><\/script>\s*<script src="(\/|(\.\.\/)+)widgets\/page-chrome\.js"><\/script>/,
     );
   });
 

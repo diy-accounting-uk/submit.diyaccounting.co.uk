@@ -73,6 +73,28 @@ describe("page router", () => {
     expect(request.uri).toBe(uri);
   });
 
+  test("every view of the company drill-down is served the company lookup page, English and Welsh", () => {
+    for (const uri of [
+      "/companies-house/company/00000001",
+      "/companies-house/company/00000001/officers",
+      "/companies-house/company/00000001/psc",
+      "/companies-house/company/00000001/filing-history",
+      "/companies-house/company/00000001/accounts",
+      "/companies-house/company/00000001/accounts/2098-04-30",
+      "/companies-house/company/00000001/accounts/2098-04-30/SIMTX00000001AA2098",
+      "/companies-house/company/00000001/confirmation-statement/2098-04-16",
+    ]) {
+      expect(handler(viewerRequest(uri)).uri, uri).toBe("/companies-house/companySearch.html");
+      expect(handler(viewerRequest(`/cy${uri}`)).uri, `/cy${uri}`).toBe("/cy/companies-house/companySearch.html");
+    }
+  });
+
+  test("the drill-down rule leaves the lookup page and its neighbours alone", () => {
+    expect(handler(viewerRequest("/companies-house/companySearch.html")).uri).toBe("/companies-house/companySearch.html");
+    expect(handler(viewerRequest("/companies-house/company")).statusCode).toBe(404);
+    expect(handler(viewerRequest("/companies-house/companies/00000001")).statusCode).toBe(404);
+  });
+
   test("every published page is listed, so no real page answers 404", () => {
     const pages = [];
     const walk = (relativeDir) => {

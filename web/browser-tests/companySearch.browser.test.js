@@ -171,7 +171,7 @@ test.describe("Company Lookup page", () => {
     await expect(page.locator("#companyProfile")).not.toContainText("2009-04-16");
   });
 
-  test("puts the company number in the URL when a result is selected", async ({ page }) => {
+  test("moves to the company's address when a result is selected", async ({ page }) => {
     setupPage(page);
     await setupRoutes(page);
     await loadPage(page);
@@ -183,7 +183,7 @@ test.describe("Company Lookup page", () => {
     await page.click("#searchResults button");
     await delay(200);
 
-    expect(page.url()).toContain("companyNumber=00000001");
+    expect(new URL(page.url()).pathname).toBe("/companies-house/company/00000001");
   });
 
   test("opens the profile view directly when the URL carries a company number", async ({ page }) => {

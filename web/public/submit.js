@@ -49,6 +49,8 @@ import {
   getCompanyProfile,
   getOfficers,
   getPscs,
+  getFilingHistory,
+  getFiledAccounts,
   normaliseCompanyNumber,
 } from "./lib/services/companies-house-service.js";
 // Not aliased on import: scripts/bundle-for-tests.js strips import statements with a plain
@@ -618,6 +620,8 @@ if (typeof window !== "undefined") {
   window.getCompanyProfile = getCompanyProfile;
   window.getOfficers = getOfficers;
   window.getPscs = getPscs;
+  window.getFilingHistory = getFilingHistory;
+  window.getFiledAccounts = getFiledAccounts;
   window.normaliseCompanyNumber = normaliseCompanyNumber;
 
   // Companies House filing service

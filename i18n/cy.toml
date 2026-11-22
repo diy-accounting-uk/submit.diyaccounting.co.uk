@@ -16974,3 +16974,273 @@ cy = '''Pan fydd y cyfarwyddwyr yn diwygio cyfrifon sydd eisoes wedi’u ffeilio
 
 # == Marketing site (MKT8) ==
 # ids marketing.*; add entries below this line.
+
+# == Company lookup drill-down: ids ch.drill.* and the drill-down marks of ch-company-search ==
+
+[strings."ch-company-search.not-found-e3ebaa"]
+hash = "e3ebaa16dd9d"
+cy = '''Heb ei ganfod'''
+
+[strings."ch-company-search.company-views-b025f2"]
+hash = "b025f259bdab"
+cy = '''Golygon y cwmni'''
+
+[strings."ch.drill.needs-bundle"]
+hash = "22989432b9fb"
+cy = '''Mae angen y bwndel {bundles} i {label}.'''
+
+[strings."ch.drill.see-bundles"]
+hash = "248ed4ac959d"
+cy = '''Gweld y bwndeli'''
+
+[strings."ch.drill.type-not-stated"]
+hash = "068109fd3f73"
+cy = '''Heb ei nodi'''
+
+[strings."ch.drill.accounts"]
+hash = "8a7c8b67fe8b"
+cy = '''Cyfrifon'''
+
+[strings."ch.drill.period"]
+hash = "c72e51fdcb01"
+cy = '''{start} i {end}'''
+
+[strings."ch.drill.last-accounts"]
+hash = "493339c42b1b"
+cy = '''Cyfrifon diwethaf wedi’u gwneud hyd at'''
+
+[strings."ch.drill.none-filed"]
+hash = "57fc502428dd"
+cy = '''Dim wedi’u ffeilio'''
+
+[strings."ch.drill.last-accounts-type"]
+hash = "fb607bc3e50f"
+cy = '''Math y cyfrifon diwethaf'''
+
+[strings."ch.drill.next-period"]
+hash = "aa241b146e40"
+cy = '''Cyfnod cyfrifyddu nesaf'''
+
+[strings."ch.drill.next-accounts-due"]
+hash = "b038409b1bdb"
+cy = '''Cyfrifon nesaf yn ddyledus'''
+
+[strings."ch.drill.accounts-overdue"]
+hash = "424c35083cd3"
+cy = '''Mae’r cyfrifon yn hwyr.'''
+
+[strings."ch.drill.all-accounts"]
+hash = "d5d10665dc58"
+cy = '''Pob cyfrif ar y gofrestr'''
+
+[strings."ch.drill.file-micro-entity"]
+hash = "d7e85627b2c7"
+cy = '''Ffeilio cyfrifon micro-endid'''
+
+[strings."ch.drill.file-small-company"]
+hash = "72adc6789f98"
+cy = '''Ffeilio cyfrifon cwmni bach'''
+
+[strings."ch.drill.confirmation-statement"]
+hash = "9e84a7fe6e03"
+cy = '''Datganiad cadarnhau'''
+
+[strings."ch.drill.last-made-up-to"]
+hash = "ec971e234fc5"
+cy = '''Wedi’i wneud hyd at ddiwethaf'''
+
+[strings."ch.drill.next-made-up-to"]
+hash = "95b5cd885910"
+cy = '''Nesaf wedi’i wneud hyd at'''
+
+[strings."ch.drill.next-due"]
+hash = "98440480a76c"
+cy = '''Nesaf yn ddyledus'''
+
+[strings."ch.drill.file-confirmation-statement"]
+hash = "5ed424f12539"
+cy = '''Ffeilio datganiad cadarnhau'''
+
+[strings."ch.drill.registered-office"]
+hash = "bc395eb428a7"
+cy = '''Swyddfa gofrestredig'''
+
+[strings."ch.drill.change-office"]
+hash = "fa0e0d449b6b"
+cy = '''Newid y swyddfa gofrestredig'''
+
+[strings."ch.drill.registered-email"]
+hash = "bd2f6cd0c05d"
+cy = '''Cyfeiriad e-bost cofrestredig'''
+
+[strings."ch.drill.email-not-public"]
+hash = "4504879a5959"
+cy = '''Nid yw Tŷ’r Cwmnïau yn cyhoeddi’r cyfeiriad e-bost cofrestredig.'''
+
+[strings."ch.drill.email-can-change"]
+hash = "68c9ac06683a"
+cy = '''Gellir ffeilio newid i’r cyfeiriad e-bost cofrestredig ar gyfer y cwmni hwn.'''
+
+[strings."ch.drill.email-cannot-change"]
+hash = "038776f09909"
+cy = '''Mae Tŷ’r Cwmnïau yn dweud na ellir ffeilio newid i’r cyfeiriad e-bost cofrestredig ar gyfer y cwmni hwn ({code}).'''
+
+[strings."ch.drill.email-checked-on-filing"]
+hash = "d537b9001c50"
+cy = '''Mae Tŷ’r Cwmnïau yn gwirio a ellir ffeilio newid pan fyddwch yn ei ddechrau.'''
+
+[strings."ch.drill.change-email"]
+hash = "e0c42fa9904c"
+cy = '''Newid y cyfeiriad e-bost cofrestredig'''
+
+[strings."ch.drill.officers"]
+hash = "ffc77e8b8be4"
+cy = '''Swyddogion'''
+
+[strings."ch.drill.no-officers"]
+hash = "fb7c5f56126e"
+cy = '''Nid yw’r gofrestr yn rhestru unrhyw swyddogion.'''
+
+[strings."ch.drill.column-name"]
+hash = "dcd1d5223f73"
+cy = '''Enw'''
+
+[strings."ch.drill.column-role"]
+hash = "14736a2eb9f4"
+cy = '''Rôl'''
+
+[strings."ch.drill.column-appointed"]
+hash = "fb1899d48486"
+cy = '''Penodwyd'''
+
+[strings."ch.drill.pscs"]
+hash = "a9d753d49b58"
+cy = '''Personau â rheolaeth sylweddol'''
+
+[strings."ch.drill.no-pscs"]
+hash = "285c0b38768a"
+cy = '''Nid yw’r gofrestr yn rhestru unrhyw bersonau â rheolaeth sylweddol.'''
+
+[strings."ch.drill.column-control"]
+hash = "74d2a600c189"
+cy = '''Natur y rheolaeth'''
+
+[strings."ch.drill.column-notified"]
+hash = "3a623a728b2d"
+cy = '''Hysbyswyd'''
+
+[strings."ch.drill.made-up-to"]
+hash = "0003dc6e9112"
+cy = '''{description}, wedi’i wneud hyd at {date}'''
+
+[strings."ch.drill.filing-history"]
+hash = "61e2e5e9025e"
+cy = '''Hanes ffeilio'''
+
+[strings."ch.drill.no-filings"]
+hash = "ff07eb6e6e16"
+cy = '''Nid yw’r gofrestr yn rhestru unrhyw ffeilio.'''
+
+[strings."ch.drill.column-date"]
+hash = "99c40ab40592"
+cy = '''Dyddiad'''
+
+[strings."ch.drill.column-form"]
+hash = "2e0e960ab320"
+cy = '''Ffurflen'''
+
+[strings."ch.drill.column-description"]
+hash = "526e0087cc3f"
+cy = '''Disgrifiad'''
+
+[strings."ch.drill.amended"]
+hash = "8d71fe4547a5"
+cy = '''Wedi’i ddiwygio'''
+
+[strings."ch.drill.paper"]
+hash = "56c94dd5ca82"
+cy = '''Wedi’i ffeilio ar bapur'''
+
+[strings."ch.drill.column-made-up-to"]
+hash = "b9a9d425f105"
+cy = '''Wedi’i wneud hyd at'''
+
+[strings."ch.drill.column-type"]
+hash = "baaddf70fb5d"
+cy = '''Math'''
+
+[strings."ch.drill.column-filed"]
+hash = "e7c1f91c1adb"
+cy = '''Ffeiliwyd'''
+
+[strings."ch.drill.column-note"]
+hash = "d8da2c49df39"
+cy = '''Nodyn'''
+
+[strings."ch.drill.accounts-on-register"]
+hash = "b4dd0f01c817"
+cy = '''Cyfrifon ar y gofrestr'''
+
+[strings."ch.drill.no-accounts"]
+hash = "cd9dac7fcb52"
+cy = '''Nid yw’r gofrestr yn rhestru unrhyw gyfrifon ar gyfer y cwmni hwn.'''
+
+[strings."ch.drill.accounts-made-up-to"]
+hash = "f15573e52ae4"
+cy = '''Cyfrifon wedi’u gwneud hyd at {date}'''
+
+[strings."ch.drill.how-filed"]
+hash = "ccc7053376bf"
+cy = '''Sut y’u ffeiliwyd'''
+
+[strings."ch.drill.electronic"]
+hash = "b1834d956f64"
+cy = '''Wedi’u ffeilio’n electronig'''
+
+[strings."ch.drill.filing-id"]
+hash = "23439992c152"
+cy = '''Ffeilio Tŷ’r Cwmnïau'''
+
+[strings."ch.drill.note"]
+hash = "d8da2c49df39"
+cy = '''Nodyn'''
+
+[strings."ch.drill.ixbrl"]
+hash = "6f495d6d3c0c"
+cy = '''Dogfen iXBRL'''
+
+[strings."ch.drill.ixbrl-held"]
+hash = "c83dd1234f43"
+cy = '''Gan Dŷ’r Cwmnïau'''
+
+[strings."ch.drill.ixbrl-not-held"]
+hash = "b824516c2a0d"
+cy = '''Dim gan Dŷ’r Cwmnïau'''
+
+[strings."ch.drill.confirmation-made-up-to"]
+hash = "668c5f0b5371"
+cy = '''Datganiad cadarnhau wedi’i wneud hyd at {date}'''
+
+[strings."ch.drill.nav-overview"]
+hash = "d4b1ea5708dd"
+cy = '''Trosolwg'''
+
+[strings."ch.drill.not-found"]
+hash = "e3ebaa16dd9d"
+cy = '''Heb ei ganfod'''
+
+[strings."ch.drill.no-such-view"]
+hash = "f0cbc0b3b8bf"
+cy = '''Nid oes gan y dudalen hon olwg yn y cyfeiriad hwnnw.'''
+
+[strings."ch.drill.no-such-company"]
+hash = "5a56b1b7c6e9"
+cy = '''Nid oes cwmni â’r rhif {number} ar y gofrestr.'''
+
+[strings."ch.drill.no-confirmation"]
+hash = "f94f8d048b20"
+cy = '''Nid oes datganiad cadarnhau wedi’i wneud hyd at {date} ar y gofrestr ar gyfer y cwmni hwn.'''
+
+[strings."ch.drill.no-accounts-period"]
+hash = "efa3b5b6ecda"
+cy = '''Nid oes cyfrifon wedi’u gwneud hyd at {date} ar y gofrestr ar gyfer y cwmni hwn.'''
