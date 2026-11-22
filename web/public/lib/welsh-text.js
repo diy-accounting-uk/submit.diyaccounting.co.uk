@@ -2018,6 +2018,8 @@ window.WELSH_TEXT = {
   "itsa.show-current-total": "Dangos y cyfanswm presennol",
   "itsa.start-date": "Dyddiad dechrau",
   "itsa.status": "Statws",
+  "itsa.status-sandbox-text":
+    "Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.",
   "itsa.submission-id": "ID y cyflwyniad",
   "itsa.tax-liability-adjustments": "Addasiadau i’r rhwymedigaeth dreth",
   "itsa.tax-year": "Blwyddyn dreth",

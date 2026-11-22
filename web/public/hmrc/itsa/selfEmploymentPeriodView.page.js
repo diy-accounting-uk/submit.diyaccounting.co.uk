@@ -53,7 +53,6 @@ function cancelRequest() {
   sessionStorage.removeItem("pendingSelfEmploymentPeriodViewRequest");
   window.hmrcScopeCheck.clearHmrcToken();
   sessionStorage.removeItem("oauth_state");
-  sessionStorage.removeItem("hmrcAccount");
   sessionStorage.removeItem("currentActivity");
 
   showSearchCriteria();
@@ -62,14 +61,13 @@ function cancelRequest() {
 }
 
 function initializePage() {
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
-
-  if (hmrcAccount === "synthetic") {
-    const syntheticIndicator = document.getElementById("syntheticIndicator");
-    if (syntheticIndicator) {
-      syntheticIndicator.classList.add("visible");
-    }
-  }
+  window.showHmrcStatusForService(
+    siteText(
+      "itsa.status-sandbox-text",
+      "This runs against HMRC's sandbox. Nothing you send reaches your real HMRC record. Production waits on HMRC's recognition of our software after its 2027 update.",
+    ),
+  );
+  window.showSyntheticIndicatorForAccount();
 
   const devSection = document.getElementById("developerSection");
 
@@ -105,7 +103,7 @@ async function fetchPeriod(nino, businessId, taxYear, periodId, testScenario, ru
     ...govClientHeaders,
   };
 
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+  const hmrcAccount = await window.readHmrcAccount();
   if (hmrcAccount) {
     requestHeaders["hmrcAccount"] = hmrcAccount;
   }
@@ -175,7 +173,6 @@ async function continuePeriodViewRetrieval() {
     sessionStorage.removeItem("pendingSelfEmploymentPeriodViewRequest");
     window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("oauth_state");
-    sessionStorage.removeItem("hmrcAccount");
     sessionStorage.removeItem("currentActivity");
   } finally {
     hideLoading();
@@ -214,7 +211,7 @@ async function handleFormSubmission(event) {
       const state = generateRandomState();
       const requestData = { nino, businessId, taxYear, periodId, testScenario, runFraudPreventionHeaderValidation };
 
-      const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+      const hmrcAccount = await window.readHmrcAccount();
       const currentActivity = `${location.pathname}`;
 
       sessionStorage.setItem("oauth_state", state);

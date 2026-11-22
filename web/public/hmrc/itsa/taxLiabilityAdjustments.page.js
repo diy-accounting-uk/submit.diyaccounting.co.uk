@@ -37,12 +37,13 @@ async function showSavedRecord(adjustmentsDetails, correlationId) {
 }
 
 function initializePage() {
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
-
-  if (hmrcAccount === "synthetic") {
-    const syntheticIndicator = document.getElementById("syntheticIndicator");
-    if (syntheticIndicator) syntheticIndicator.classList.add("visible");
-  }
+  window.showHmrcStatusForService(
+    siteText(
+      "itsa.status-sandbox-text",
+      "This runs against HMRC's sandbox. Nothing you send reaches your real HMRC record. Production waits on HMRC's recognition of our software after its 2027 update.",
+    ),
+  );
+  window.showSyntheticIndicatorForAccount();
 
   const devSection = document.getElementById("developerSection");
 
@@ -187,7 +188,7 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
     showLoading();
     showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
     const state = generateRandomState();
-    const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+    const hmrcAccount = await window.readHmrcAccount();
     sessionStorage.setItem("oauth_state", state);
     sessionStorage.setItem(pendingKey, JSON.stringify(pendingValue));
     sessionStorage.setItem("currentActivity", `${location.pathname}`);

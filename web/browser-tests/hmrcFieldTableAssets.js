@@ -139,6 +139,15 @@ export async function serveItsaPageScripts(page) {
       window.hmrcScopeCheck.grantHeaders = window.hmrcScopeCheck.grantHeaders || (() => ({ "x-mcp-hmrc-grant": sessionStorage.getItem("hmrcGrantId") }));`,
     });
   });
+  // The HMRC account the test stored stands for the one the bundle read decides.
+  await page.route("**/developer-mode.js", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: `window.readHmrcAccount = () => Promise.resolve(sessionStorage.getItem("hmrcAccount"));`,
+    });
+  });
+  await serveFile(page, "**/lib/hmrc-sandbox-status.js", "lib/hmrc-sandbox-status.js", "application/javascript");
   await serveFile(page, "**/lib/pending-request.js", "lib/pending-request.js", "application/javascript");
   await serveFile(page, "**/lib/submission-record.js", "lib/submission-record.js", "application/javascript");
   await serveFile(page, "**/lib/review-links.js", "lib/review-links.js", "application/javascript");

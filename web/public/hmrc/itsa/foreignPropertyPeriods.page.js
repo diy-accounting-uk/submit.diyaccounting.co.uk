@@ -43,9 +43,13 @@ function showSearchCriteria() {
 }
 
 function initializePage() {
-  if (sessionStorage.getItem("hmrcAccount") === "synthetic") {
-    document.getElementById("syntheticIndicator")?.classList.add("visible");
-  }
+  window.showHmrcStatusForService(
+    siteText(
+      "itsa.status-sandbox-text",
+      "This runs against HMRC's sandbox. Nothing you send reaches your real HMRC record. Production waits on HMRC's recognition of our software after its 2027 update.",
+    ),
+  );
+  window.showSyntheticIndicatorForAccount();
   const devSection = document.getElementById("developerSection");
   function updateDeveloperSectionVisibility() {
     const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
@@ -72,7 +76,7 @@ async function fetchResult(criteria, hmrcGrantId) {
   if (isCumulativeTaxYear(criteria.taxYear)) {
     const scenario = window.resolveSyntheticTestScenario(
       criteria.testScenario,
-      sessionStorage.getItem("hmrcAccount"),
+      await window.readHmrcAccount(),
       "FOREIGN_PROPERTY_FULL_EXPENSES",
     );
     return window.getForeignPropertyPeriod(criteria, hmrcGrantId, govClientHeaders, criteria.runFraudPreventionHeaderValidation, scenario);
@@ -149,11 +153,7 @@ async function handleFormSubmission(event) {
     sessionStorage.setItem(PENDING_KEY, JSON.stringify(criteria));
     sessionStorage.setItem("currentActivity", `${location.pathname}`);
     const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "read:self-assessment";
-    const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(
-      state,
-      oauthScope,
-      sessionStorage.getItem("hmrcAccount") || "live",
-    );
+    const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, (await window.readHmrcAccount()) || "live");
     try {
       window.__correlation?.prepareRedirect?.();
     } catch {}
@@ -251,7 +251,6 @@ document.getElementById("cancelRequestBtn")?.addEventListener("click", () => {
   window.hmrcScopeCheck.clearHmrcToken();
   sessionStorage.removeItem("hmrcTokenScope");
   sessionStorage.removeItem("oauth_state");
-  sessionStorage.removeItem("hmrcAccount");
   sessionStorage.removeItem("currentActivity");
   showSearchCriteria();
   document.getElementById("periodsResults").style.display = "none";

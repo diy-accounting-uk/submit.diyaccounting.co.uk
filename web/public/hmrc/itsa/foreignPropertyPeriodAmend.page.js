@@ -65,19 +65,22 @@ function showSearchCriteria() {
   document.getElementById("cancelRequestBtn").style.display = "none";
 }
 
-function clearSession() {
+function clearHeldRequest() {
   sessionStorage.removeItem(PENDING_KEY);
   window.hmrcScopeCheck.clearHmrcToken();
   sessionStorage.removeItem("hmrcTokenScope");
   sessionStorage.removeItem("oauth_state");
-  sessionStorage.removeItem("hmrcAccount");
   sessionStorage.removeItem("currentActivity");
 }
 
 function initializePage() {
-  if (sessionStorage.getItem("hmrcAccount") === "synthetic") {
-    document.getElementById("syntheticIndicator")?.classList.add("visible");
-  }
+  window.showHmrcStatusForService(
+    siteText(
+      "itsa.status-sandbox-text",
+      "This runs against HMRC's sandbox. Nothing you send reaches your real HMRC record. Production waits on HMRC's recognition of our software after its 2027 update.",
+    ),
+  );
+  window.showSyntheticIndicatorForAccount();
   const devSection = document.getElementById("developerSection");
   function updateDeveloperSectionVisibility() {
     const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
@@ -120,7 +123,7 @@ async function loadFromHmrc(criteria, hmrcGrantId) {
   const govClientHeaders = await getGovClientHeaders();
   const scenario = window.resolveSyntheticTestScenario(
     criteria.testScenario,
-    sessionStorage.getItem("hmrcAccount"),
+    await window.readHmrcAccount(),
     isCumulative(criteria.taxYear) ? "FOREIGN_PROPERTY_FULL_EXPENSES" : "FOREIGN_PROPERTY",
   );
   const summary = await window.getForeignPropertyPeriod(
@@ -203,11 +206,7 @@ async function ensureAuthorizedThen(request) {
       sessionStorage.setItem(PENDING_KEY, JSON.stringify(request));
       sessionStorage.setItem("currentActivity", `${location.pathname}`);
       const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "write:self-assessment";
-      const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(
-        state,
-        oauthScope,
-        sessionStorage.getItem("hmrcAccount") || "live",
-      );
+      const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, (await window.readHmrcAccount()) || "live");
       try {
         window.__correlation?.prepareRedirect?.();
       } catch {}
@@ -265,7 +264,7 @@ async function handleFormSubmission(event) {
 document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", showSearchCriteria);
 
 document.getElementById("cancelRequestBtn")?.addEventListener("click", () => {
-  clearSession();
+  clearHeldRequest();
   showSearchCriteria();
   document.getElementById("periodAmendResults").style.display = "none";
   hideStatus();
