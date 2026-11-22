@@ -531,7 +531,7 @@ test("Click through: file filleted small company accounts and see the filing acc
   await goToFileSmallCompanyAccounts(page, screenshotPath);
   await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
   await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
-  await fillInSmallCompanyAccountsForm(page, buildSmallCompanyAccounts(), { filleted: true }, screenshotPath);
+  await fillInSmallCompanyAccountsForm(page, buildSmallCompanyAccounts({ withComparatives: true }), { filleted: true }, screenshotPath);
   await previewAccounts(page, screenshotPath);
   await verifyPreviewContains(
     page,

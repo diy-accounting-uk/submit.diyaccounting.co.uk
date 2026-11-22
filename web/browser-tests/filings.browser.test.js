@@ -65,6 +65,7 @@ const LIBRARIES = [
   "ct600-fields.js",
   "long-period.js",
   "accounts-revision.js",
+  "first-accounts.js",
 ];
 
 test.describe("Filings page - customer copy", () => {
@@ -272,10 +273,31 @@ test.describe("Filings page - customer copy", () => {
     );
     await expect(page.locator("#amendFilingLink")).toBeHidden();
     await expect(page.locator("#filingNotice")).toHaveText(
-      "These accounts were filed without the previous year's figures, so they cannot be amended here yet.",
+      "These accounts were filed without the previous year's figures, which accounts show unless they are the company's first. This site reads the previous year back to amend accounts, so they cannot be amended here.",
     );
     await expect(page.locator("#filingContent")).toContainText(`Company number${SMALL_COMPANY_CASE_INPUT.companyNumber}`);
     await screenshotAtBothWidths(page, "filing-no-comparatives");
+  });
+
+  test("says why a company's first accounts, which have one year, have no amend link yet", async ({ page }) => {
+    const firstAccounts = buildSmallCompanyAccounts({
+      ...SMALL_COMPANY_CASE_INPUT,
+      dateOfIncorporation: SMALL_COMPANY_CASE_INPUT.periodStart,
+      balanceSheet: { current: SMALL_COMPANY_CASE_INPUT.balanceSheet.current },
+      profitAndLoss: { ...SMALL_COMPANY_CASE_INPUT.profitAndLoss, prior: undefined },
+      fixedAssetNote: undefined,
+    });
+    await openFiling(
+      page,
+      ACCOUNTS_RECEIPT_NAME,
+      { ...ACCOUNTS_RECEIPT, companyNumber: SMALL_COMPANY_CASE_INPUT.companyNumber, filedDocument: firstAccounts },
+      { revisionOffered: true },
+    );
+    await expect(page.locator("#amendFilingLink")).toBeHidden();
+    await expect(page.locator("#filingNotice")).toHaveText(
+      "These are the company's first accounts, so they have no previous year. This site cannot yet read back accounts with one year, so they cannot be amended here yet.",
+    );
+    await screenshotAtBothWidths(page, "filing-first-accounts");
   });
 
   test("says nothing of comparatives when accounts with both years are offered to amend", async ({ page }) => {

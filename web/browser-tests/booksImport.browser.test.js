@@ -988,7 +988,8 @@ test.describe("books import on the small company accounts page", () => {
     await expect(page.locator("#averageEmployees")).toHaveValue("3");
     await expect(page.locator("#directors")).toHaveValue("Carol Smith\nDavid Brown\nEmma Wilson");
     await expect(page.locator("#directorName")).toHaveValue("Carol Smith");
-    await expect(page.locator("#includeComparatives")).not.toBeChecked();
+    // The company's profile names no first accounts, so the form shows the prior year for the reader to type.
+    await expect(page.locator("#includeComparatives")).toBeChecked();
     await expect(page.locator("#principalActivity")).toHaveValue("");
   });
 });

@@ -169,13 +169,15 @@ function arithmeticProblems(xhtml) {
 
 describe("the arithmetic of every accounts document this repository builds", () => {
   test("covers the validation samples, the test-service accounts cases and the document cases", () => {
-    expect(DOCUMENTS.filter(([name]) => name.startsWith("validation sample"))).toHaveLength(7);
+    expect(DOCUMENTS.filter(([name]) => name.startsWith("validation sample"))).toHaveLength(8);
     expect(DOCUMENTS.filter(([name]) => name.startsWith("test-service"))).toHaveLength(8);
     expect(DOCUMENTS.filter(([name]) => name.startsWith("document case")).length).toBeGreaterThan(3);
   });
 
   test.each(DOCUMENTS)("%s adds up", (_name, xhtml) => {
-    expect(factsOf(xhtml).balanceSheetDates()).toHaveLength(2);
+    // First accounts have no preceding year, so they state one balance sheet.
+    const firstAccounts = xhtml.includes("bus:DateFormationOrIncorporation");
+    expect(factsOf(xhtml).balanceSheetDates()).toHaveLength(firstAccounts ? 1 : 2);
     expect(arithmeticProblems(xhtml)).toEqual([]);
   });
 });

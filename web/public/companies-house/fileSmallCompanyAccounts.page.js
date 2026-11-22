@@ -288,6 +288,36 @@ function comparativesIncluded() {
   return document.getElementById("includeComparatives").checked;
 }
 
+// Accounts show the prior year unless they are the company's first, which the company's profile and
+// the period start show. The box follows that rule, and the line under it says which it is.
+let firstAccountsRule = null;
+import("../lib/first-accounts.js").then((module) => {
+  firstAccountsRule = module;
+  toggleSections();
+});
+
+function isFirstAccounts() {
+  return Boolean(firstAccountsRule?.isFirstAccountsPeriod?.(company ?? {}, document.getElementById("periodStart").value));
+}
+
+function applyFirstAccountsRule() {
+  if (!firstAccountsRule?.isFirstAccountsPeriod) return;
+  const first = isFirstAccounts();
+  const box = document.getElementById("includeComparatives");
+  box.checked = !first;
+  box.disabled = true;
+  document.getElementById("firstAccountsLine").textContent = first
+    ? window.siteText(
+        "ch.small.first-accounts",
+        "These are the company's first accounts: the period starts on the day it was incorporated, {date}, so there is no prior year.",
+        { date: company.dateOfCreation },
+      )
+    : window.siteText(
+        "ch.small.not-first-accounts",
+        "These are not the company's first accounts, so they show the prior year's figures beside this year's. Only first accounts, which start on the day the company was incorporated, leave them out.",
+      );
+}
+
 async function renderTotals() {
   const { formatPounds } = await import("../lib/balance-sheet-check.js");
   ["current", "prior"].forEach((prefix) => {
@@ -374,6 +404,7 @@ async function renderTotals() {
 
 function toggleSections() {
   applyProfitAndLossFormat();
+  applyFirstAccountsRule();
   document.getElementById("comparativeFields").style.display = comparativesIncluded() ? "block" : "none";
   document.getElementById("fixedAssetNoteFields").style.display = document.getElementById("includeFixedAssetNote").checked
     ? "block"
@@ -387,6 +418,16 @@ function toggleSections() {
   renderTotals();
 }
 
+// The company, with the facts of its profile that say whether a period is its first.
+function companyFromProfile(profile) {
+  return {
+    companyNumber: profile.companyNumber,
+    companyName: profile.companyName,
+    dateOfCreation: profile.dateOfCreation,
+    accountsLastPeriodStart: profile.accountsLastPeriodStart,
+  };
+}
+
 async function handleCompanySubmit(event) {
   event.preventDefault();
   if (!window.formErrors.requireFields(["companyNumber"])) return;
@@ -396,7 +437,7 @@ async function handleCompanySubmit(event) {
   hideStatus();
   try {
     const profile = await window.getCompanyProfile(companyNumber);
-    company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
+    company = companyFromProfile(profile);
     window.accountsFormSections.fillRegisteredOffice(profile.registeredOffice);
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
@@ -462,6 +503,7 @@ function buildAccountsPayload() {
     },
     smallCompany: {
       filleted: document.getElementById("copyFilleted").checked,
+      ...(isFirstAccounts() ? { dateOfIncorporation: company.dateOfCreation } : {}),
       principalActivity: document.getElementById("principalActivity").value.trim(),
       accountingPolicies: document.getElementById("accountingPolicies").value.trim(),
       directors: document
@@ -814,6 +856,7 @@ document.getElementById("companyForm").addEventListener("submit", handleCompanyS
 document.getElementById("accountsForm").addEventListener("submit", handleAccountsFormSubmit);
 document.getElementById("accountsForm").addEventListener("input", renderTotals);
 document.getElementById("includeComparatives").addEventListener("change", toggleSections);
+document.getElementById("periodStart").addEventListener("input", toggleSections);
 document.getElementById("includeFixedAssetNote").addEventListener("change", toggleSections);
 document.getElementById("includeIntangibleAssetNote").addEventListener("change", toggleSections);
 document.getElementById("includeShareCapitalNote").addEventListener("change", toggleSections);
@@ -920,7 +963,7 @@ async function startRevision(receiptName) {
       return;
     }
     const profile = await window.getCompanyProfile(read.source.companyNumber);
-    company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
+    company = companyFromProfile(profile);
     window.accountsFormSections.fillFiledRegisteredOffice(read.source.registeredOffice, profile.registeredOffice);
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;

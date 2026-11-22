@@ -11697,10 +11697,6 @@ cy = '''Cronfa wrth gefn y cyfrif elw a cholled, eleni'''
 hash = "26e5423d1499"
 cy = '''Cynnwys ffigurau cymharol y flwyddyn flaenorol'''
 
-[strings."ch-small-company.fill-in-the-prior-year-only-40b9e3"]
-hash = "40b9e367e174"
-cy = '''Llenwch y flwyddyn flaenorol dim ond pan fydd ei ffigurau gennych. Nid oes dim yn cael ei lenwi i chi, ac mae blwyddyn flaenorol a adawyd allan yn cael ei gadael allan o’r cyfrifon.'''
-
 [strings."ch-small-company.prior-year-ff70f6"]
 hash = "ff70f6c507a4"
 cy = '''Y flwyddyn flaenorol'''
@@ -17845,10 +17841,6 @@ cy = '''Mewngofnodwch i’w ychwanegu at eich rhestr wylio'''
 hash = "01c4ffbf80ed"
 cy = '''Mae gan y cyfrifon a ffeiliwyd adroddiad cyfrifwyr na allai’r dudalen hon ei ddarllen. Rhowch adroddiad y cyfrifwyr eto isod.'''
 
-[strings."ch.filing.no-comparatives"]
-hash = "46ad6e4354fd"
-cy = '''Cafodd y cyfrifon hyn eu ffeilio heb ffigurau’r flwyddyn flaenorol, felly ni ellir eu diwygio yma eto.'''
-
 # == Revised accounts that carry over the filed notes and period, and every status of the revised accounts activity ==
 
 [strings."ch.revision.status-not-production-label"]
@@ -23823,3 +23815,25 @@ cy = '''
 [strings."privacy.attribution-landing-posted-set-after-you-1f969e"]
 hash = "1f969e3529d7"
 cy = '''<strong><code>attribution.landing.posted</code></strong >: Caiff ei osod ar ôl i chi fewngofnodi, unwaith y bydd tagiau’r ymgyrch a’r cod atgyfeirio uchod wedi’u cofnodi yn erbyn eich cyfrif, fel eu bod yn cael eu cofnodi unwaith'''
+
+# == First accounts: the small company form leaves out the prior year only for the company's first accounts ==
+
+[strings."ch-small-company.accounts-show-the-prior-year-s-2b78bf"]
+hash = "2b78bf57fdca"
+cy = '''Mae cyfrifon yn dangos ffigurau’r flwyddyn flaenorol wrth ochr ffigurau eleni, oni bai mai cyfrifon cyntaf y cwmni ydynt.'''
+
+[strings."ch.small.first-accounts"]
+hash = "6f1d078e1d3f"
+cy = '''Dyma gyfrifon cyntaf y cwmni: mae’r cyfnod yn dechrau ar y diwrnod y cafodd ei gorffori, {date}, felly nid oes blwyddyn flaenorol.'''
+
+[strings."ch.small.not-first-accounts"]
+hash = "cf6d0bca4819"
+cy = '''Nid dyma gyfrifon cyntaf y cwmni, felly maent yn dangos ffigurau’r flwyddyn flaenorol wrth ochr ffigurau eleni. Dim ond cyfrifon cyntaf, sy’n dechrau ar y diwrnod y cafodd y cwmni ei gorffori, sy’n eu gadael allan.'''
+
+[strings."ch.filing.first-accounts-one-year"]
+hash = "868cdf709abd"
+cy = '''Dyma gyfrifon cyntaf y cwmni, felly nid oes ganddynt flwyddyn flaenorol. Ni all y wefan hon ddarllen yn ôl gyfrifon ag un flwyddyn eto, felly ni ellir eu diwygio yma eto.'''
+
+[strings."ch.filing.no-comparatives-why"]
+hash = "503f3e5ce5ba"
+cy = '''Cafodd y cyfrifon hyn eu ffeilio heb ffigurau’r flwyddyn flaenorol, y mae cyfrifon yn eu dangos oni bai mai cyfrifon cyntaf y cwmni ydynt. Mae’r wefan hon yn darllen y flwyddyn flaenorol yn ôl i ddiwygio cyfrifon, felly ni ellir eu diwygio yma.'''

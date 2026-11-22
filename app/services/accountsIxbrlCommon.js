@@ -62,6 +62,7 @@ const LANGUAGES_NAMESPACE = "http://xbrl.frc.org.uk/cd/2026-01-01/languages";
 //   at its default, undimensioned member).
 export const CONCEPTS = {
   companiesHouseRegisteredNumber: { prefix: "bus", name: "UKCompaniesHouseRegisteredNumber" },
+  dateFormationOrIncorporation: { prefix: "bus", name: "DateFormationOrIncorporation" },
   entityCurrentLegalOrRegisteredName: { prefix: "bus", name: "EntityCurrentLegalOrRegisteredName" },
   balanceSheetDate: { prefix: "bus", name: "BalanceSheetDate" },
   dateAuthorisationFinancialStatementsForIssue: { prefix: "core", name: "DateAuthorisationFinancialStatementsForIssue" },
@@ -839,9 +840,11 @@ export function pageHeading({ companyName, companyNumber, title, subtitleHtml })
 
 /**
  * The cover page: the company name and registered number tagged, the kind of accounts, and the
- * period with its start and end dates tagged.
+ * period with its start and end dates tagged. First accounts say so, with the date of incorporation
+ * tagged; it equals the period's start date, which is how a reader knows the accounts have no
+ * preceding year.
  */
-export function coverPage({ refs, companyName, companyNumber, title, periodStart, periodEnd }) {
+export function coverPage({ refs, companyName, companyNumber, title, periodStart, periodEnd, dateOfIncorporation }) {
   return `<div class="page cover">
 <p class="cover-name">${renderTextFact("entityCurrentLegalOrRegisteredName", refs.current, companyName)}</p>
 <p class="cover-line">${accountsText("Registered number: {number}", { number: renderTextFact("companiesHouseRegisteredNumber", refs.current, companyNumber) })}</p>
@@ -850,7 +853,14 @@ export function coverPage({ refs, companyName, companyNumber, title, periodStart
 <p class="cover-line">${accountsText("Period from {start} to {end}", {
     start: renderDateFact("startDateForPeriodCoveredByReport", refs.periodStartInstant, periodStart),
     end: renderDateFact("endDateForPeriodCoveredByReport", refs.currentInstant, periodEnd),
-  })}</p>
+  })}</p>${
+    dateOfIncorporation
+      ? `
+<p class="cover-line">${accountsText("The company's first accounts, from its incorporation on {date}", {
+          date: renderDateFact("dateFormationOrIncorporation", refs.periodStartInstant, dateOfIncorporation),
+        })}</p>`
+      : ""
+  }
 </div>`;
 }
 

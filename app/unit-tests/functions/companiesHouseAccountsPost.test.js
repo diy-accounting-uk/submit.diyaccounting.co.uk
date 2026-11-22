@@ -198,6 +198,8 @@ function buildSmallCompanyBody(overrides = {}, smallOverrides = {}) {
       principalActivity: "Software consultancy",
       accountingPolicies: "Historical cost convention.",
       directors: ["Jo Director"],
+      // The company's first accounts, so they have no prior year.
+      dateOfIncorporation: "2025-01-01",
       balanceSheet: {
         currentYear: {
           fixedAssets: 1000,
@@ -1375,12 +1377,35 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
 
     test("comparatives render when supplied", async () => {
       const body = buildSmallCompanyBody();
+      delete body.smallCompany.dateOfIncorporation;
       body.smallCompany.balanceSheet.priorYear = { ...body.smallCompany.balanceSheet.currentYear };
       body.smallCompany.profitAndLoss.priorYear = { ...body.smallCompany.profitAndLoss.currentYear };
       await companiesHouseAccountsPostHandler(buildEvent({ body }));
       const [submissionArgs] = mockBuildAccountsSubmission.mock.calls[0];
       expect(submissionArgs.ixbrl).toContain('contextRef="y2024"');
       expect(submissionArgs.ixbrl).toContain('contextRef="e2024"');
+      expect(submissionArgs.ixbrl).not.toContain("bus:DateFormationOrIncorporation");
+    });
+
+    test("refuses accounts that are not the company's first and leave out the prior year's balance sheet", async () => {
+      const body = buildSmallCompanyBody();
+      delete body.smallCompany.dateOfIncorporation;
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("smallCompany.balanceSheet.priorYear is required");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses first accounts that do not start on the day of incorporation, or that carry a prior year", async () => {
+      const late = buildSmallCompanyBody();
+      late.smallCompany.dateOfIncorporation = "2024-06-01";
+      const lateAnswer = JSON.stringify(parseResponseBody(await companiesHouseAccountsPostHandler(buildEvent({ body: late }))));
+      expect(lateAnswer).toContain("smallCompany.dateOfIncorporation must equal periodStart");
+      const withPrior = buildSmallCompanyBody();
+      withPrior.smallCompany.balanceSheet.priorYear = { ...withPrior.smallCompany.balanceSheet.currentYear };
+      const priorAnswer = JSON.stringify(parseResponseBody(await companiesHouseAccountsPostHandler(buildEvent({ body: withPrior }))));
+      expect(priorAnswer).toContain("which have no preceding year");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
     });
 
     test("rejects a balance sheet whose capital and reserves differ from net assets", async () => {

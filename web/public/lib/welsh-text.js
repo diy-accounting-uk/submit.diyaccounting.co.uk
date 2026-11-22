@@ -1138,8 +1138,11 @@ window.WELSH_TEXT = {
   "ch.email.status-blocks": "Mae statws y cwmni hwn yn atal newid i’r cyfeiriad e-bost cofrestredig.",
   "ch.email.type-not-covered": "Nid yw’r ffeilio hwn yn cynnwys y math hwn o gwmni.",
   "ch.filing.choose": "Dewiswch ffeilio o’ch derbynebau i weld eich copi ohono.",
+  "ch.filing.first-accounts-one-year":
+    "Dyma gyfrifon cyntaf y cwmni, felly nid oes ganddynt flwyddyn flaenorol. Ni all y wefan hon ddarllen yn ôl gyfrifon ag un flwyddyn eto, felly ni ellir eu diwygio yma eto.",
   "ch.filing.load-failed": "Nid oeddem yn gallu llwytho’r ffeilio hwn. Ewch yn ôl i’ch derbynebau a rhoi cynnig arall arni.",
-  "ch.filing.no-comparatives": "Cafodd y cyfrifon hyn eu ffeilio heb ffigurau’r flwyddyn flaenorol, felly ni ellir eu diwygio yma eto.",
+  "ch.filing.no-comparatives-why":
+    "Cafodd y cyfrifon hyn eu ffeilio heb ffigurau’r flwyddyn flaenorol, y mae cyfrifon yn eu dangos oni bai mai cyfrifon cyntaf y cwmni ydynt. Mae’r wefan hon yn darllen y flwyddyn flaenorol yn ôl i ddiwygio cyfrifon, felly ni ellir eu diwygio yma.",
   "ch.filing.not-a-filing": "Nid yw’r dderbynneb hon yn ffeilio cyfrifon nac yn Ffurflen Dreth y Cwmni. Agorwch hi o’ch derbynebau.",
   "ch.form.outcome": "Statws cyflwyniad {number}: {status}.",
   "ch.form.sent": "Derbyniodd y porth gyflwyniad {number}. Wrthi’n aros am Dŷ’r Cwmnïau...",
@@ -1478,6 +1481,8 @@ window.WELSH_TEXT = {
   "ch.small.confirm-regime": "Cadarnhewch fod y cyfrifon yn dilyn y drefn cwmnïau bach",
   "ch.small.debtors-split":
     "Rhaid i ddyledwyr masnach, dyledwyr eraill, symiau dyledus gan gyfarwyddwyr a rhagdaliadau adio i’r dyledwyr ar gyfer pob blwyddyn cyn gweld y rhagolwg.",
+  "ch.small.first-accounts":
+    "Dyma gyfrifon cyntaf y cwmni: mae’r cyfnod yn dechrau ar y diwrnod y cafodd ei gorffori, {date}, felly nid oes blwyddyn flaenorol.",
   "ch.small.gross-profit": "Elw gros: {amount}.",
   "ch.small.matches-capital": "Yn cyfateb i’r cyfalaf cyfranddaliadau a chronfa wrth gefn y cyfrif elw a cholled.",
   "ch.small.matches-fixed": "Yn cyfateb i’r asedau sefydlog.",
@@ -1491,6 +1496,8 @@ window.WELSH_TEXT = {
   "ch.small.net-assets-must-equal":
     "Rhaid i’r asedau net fod yn hafal i’r cyfalaf cyfranddaliadau a chronfa wrth gefn y cyfrif elw a cholled ar gyfer pob blwyddyn cyn gweld y rhagolwg.",
   "ch.small.net-book-value": "Gwerth llyfr net: {amount}. {verdict}",
+  "ch.small.not-first-accounts":
+    "Nid dyma gyfrifon cyntaf y cwmni, felly maent yn dangos ffigurau’r flwyddyn flaenorol wrth ochr ffigurau eleni. Dim ond cyfrifon cyntaf, sy’n dechrau ar y diwrnod y cafodd y cwmni ei gorffori, sy’n eu gadael allan.",
   "ch.small.notes-must-equal": "Rhaid i werth llyfr net nodiadau’r asedau sefydlog fod yn hafal i’r asedau sefydlog cyn gweld y rhagolwg.",
   "ch.small.outcome": "Statws cyflwyniad {number}: {status}.",
   "ch.small.profit-totals": "Elw gweithredol: {operating}. Elw cyn treth: {pretax}. Elw am y flwyddyn: {profit}.",

@@ -778,6 +778,7 @@ ${principalActivitySentence(input.principalActivity, refs)}
  * @param {string} input.periodStart - ISO date
  * @param {string} input.periodEnd - ISO date
  * @param {string} [input.priorBalanceSheetDate] - ISO date; defaults to the day before periodStart
+ * @param {string} [input.dateOfIncorporation] - ISO date; given for the company's first accounts, and equal to periodStart
  * @param {string} [input.priorPeriodStart] - ISO date; defaults to a year before periodStart
  * @param {boolean} [input.filleted] - the Companies House copy: section 444(5A) statement, no profit and loss account, no directors' report
  * @param {number} input.averageNumberOfEmployees
@@ -1077,6 +1078,7 @@ export function buildSmallCompanyAccounts(input) {
       title: accountsText("Unaudited financial statements"),
       periodStart: input.periodStart,
       periodEnd: input.periodEnd,
+      dateOfIncorporation: input.dateOfIncorporation,
     }),
   ];
   if (input.revision) {

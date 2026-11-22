@@ -260,7 +260,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
   const revisionField = revision ? { revision } : {};
 
   if (isSmallCompany) {
-    const small = extractAndValidateSmallCompany(smallCompany, statementsAccepted, errorMessages);
+    const small = extractAndValidateSmallCompany(smallCompany, statementsAccepted, errorMessages, periodStart);
     return {
       regime: "small-company",
       companyNumber: normalisedCompanyNumber,

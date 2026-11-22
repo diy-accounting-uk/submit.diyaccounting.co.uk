@@ -61,6 +61,7 @@ export const WELSH_ACCOUNTS_TEXT = {
   "Registered number: {number}": "Rhif cofrestru: {number}",
   "for the {period}": "ar gyfer y {period}",
   "Period from {start} to {end}": "Cyfnod o {start} i {end}",
+  "The company's first accounts, from its incorporation on {date}": "Cyfrifon cyntaf y cwmni, o'i gorffori ar {date}",
   "year ended {date}": "flwyddyn a ddaeth i ben ar {date}",
   "period ended {date}": "cyfnod a ddaeth i ben ar {date}",
   "year": "flwyddyn",

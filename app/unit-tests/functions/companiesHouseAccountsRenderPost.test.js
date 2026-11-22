@@ -147,6 +147,8 @@ function buildSmallCompanyBody(overrides = {}, smallOverrides = {}) {
       principalActivity: "Software consultancy",
       accountingPolicies: "Historical cost convention.",
       directors: ["Jo Director"],
+      // The company's first accounts, so they have no prior year.
+      dateOfIncorporation: "2025-01-01",
       balanceSheet: {
         currentYear: {
           fixedAssets: 1000,

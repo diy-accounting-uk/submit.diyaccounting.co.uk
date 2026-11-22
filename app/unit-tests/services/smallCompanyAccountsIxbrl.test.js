@@ -1206,3 +1206,25 @@ describe("the advances to directors note of a small company", () => {
     expect(xhtml).not.toContain("AmountsOwedByDirectors");
   });
 });
+
+describe("the first accounts of a small company", () => {
+  const firstAccounts = {
+    ...SAMPLE_INPUT,
+    dateOfIncorporation: SAMPLE_INPUT.periodStart,
+    balanceSheet: { current: SAMPLE_INPUT.balanceSheet.current },
+    profitAndLoss: { current: SAMPLE_INPUT.profitAndLoss.current },
+  };
+
+  test("the cover page says they are the first, with the date of incorporation tagged on the period's start instant", () => {
+    const xhtml = buildSmallCompanyAccounts(firstAccounts);
+    expect(xhtml).toContain(
+      `The company's first accounts, from its incorporation on <ix:nonNumeric name="bus:DateFormationOrIncorporation" contextRef="p2026" format="ixt2:datedaymonthyearen">1 July 2025</ix:nonNumeric>`,
+    );
+    expect(xhtml).toContain('<ix:nonNumeric name="bus:StartDateForPeriodCoveredByReport" contextRef="p2026"');
+    expect(ixbrlStructureProblems(xhtml)).toEqual([]);
+  });
+
+  test("accounts that are not the first carry no date of incorporation", () => {
+    expect(buildSmallCompanyAccounts(SAMPLE_INPUT)).not.toContain("DateFormationOrIncorporation");
+  });
+});

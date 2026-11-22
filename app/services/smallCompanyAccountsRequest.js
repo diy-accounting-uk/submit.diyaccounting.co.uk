@@ -23,6 +23,7 @@ import {
 } from "./smallCompanyAccountsIxbrl.js";
 import { SHARE_CLASSES, shareCapitalFindings } from "../../web/public/lib/accounts-notes-check.js";
 import { readDirectorsAdvances } from "./accountsIxbrlCommon.js";
+import { comparativesFinding } from "../../web/public/lib/first-accounts.js";
 import { capitalAndReservesMismatch, capitalAndReservesMessage, YEAR_NAMES } from "../../web/public/lib/balance-sheet-check.js";
 
 const SMALL_COMPANY_STATEMENT_FIELDS = [
@@ -191,7 +192,7 @@ function readShareCapital(values, calledUpShareCapital, errorMessages) {
  * @param {string[]} errorMessages - validation messages are appended here
  * @returns {object} the buildSmallCompanyAccounts input fields this section supplies, plus the accepted statements
  */
-export function extractAndValidateSmallCompany(smallCompany, statementsAccepted, errorMessages) {
+export function extractAndValidateSmallCompany(smallCompany, statementsAccepted, errorMessages, periodStart) {
   const section = smallCompany && typeof smallCompany === "object" ? smallCompany : {};
 
   if (section.filleted !== undefined && typeof section.filleted !== "boolean") {
@@ -227,6 +228,30 @@ export function extractAndValidateSmallCompany(smallCompany, statementsAccepted,
   const priorProfitAndLoss = section.profitAndLoss?.priorYear
     ? readProfitAndLossYear(section.profitAndLoss.priorYear, profitAndLossFormat, "smallCompany.profitAndLoss.priorYear", errorMessages)
     : undefined;
+  const dateOfIncorporation = section.dateOfIncorporation;
+  if (dateOfIncorporation !== undefined && !(typeof dateOfIncorporation === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateOfIncorporation))) {
+    errorMessages.push("Invalid smallCompany.dateOfIncorporation - must be YYYY-MM-DD");
+  }
+  // The prior year's balance sheet is what a revision reads back, so the route requires it; the
+  // Company Tax Return's book publishes no prior-year profit and loss account to require.
+  const comparatives = comparativesFinding({
+    periodStart,
+    dateOfIncorporation,
+    hasPriorYear: dateOfIncorporation ? Boolean(priorBalanceSheet || priorProfitAndLoss) : Boolean(priorBalanceSheet),
+  });
+  if (comparatives === "prior-year-required") {
+    errorMessages.push(
+      "smallCompany.balanceSheet.priorYear is required: accounts show the preceding year's figures unless they are the company's first, which give smallCompany.dateOfIncorporation",
+    );
+  } else if (comparatives === "first-accounts-start-on-incorporation") {
+    errorMessages.push(
+      "smallCompany.dateOfIncorporation must equal periodStart: a company's first accounts start on the day it was incorporated",
+    );
+  } else if (comparatives === "first-accounts-have-no-prior-year") {
+    errorMessages.push(
+      "smallCompany.dateOfIncorporation marks first accounts, which have no preceding year: leave out the priorYear figures",
+    );
+  }
   const intangibleAssetNote = readIntangibleAssetNote(
     section.intangibleAssetNote,
     currentBalanceSheet.fixedAssets,
@@ -265,6 +290,7 @@ export function extractAndValidateSmallCompany(smallCompany, statementsAccepted,
     principalActivity,
     accountingPolicies,
     directors,
+    ...(dateOfIncorporation ? { dateOfIncorporation } : {}),
     balanceSheet: { current: currentBalanceSheet, ...(priorBalanceSheet ? { prior: priorBalanceSheet } : {}) },
     profitAndLoss: { current: currentProfitAndLoss, ...(priorProfitAndLoss ? { prior: priorProfitAndLoss } : {}) },
     ...(fixedAssetNote ? { fixedAssetNote } : {}),

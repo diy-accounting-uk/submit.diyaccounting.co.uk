@@ -24,7 +24,12 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const PAGE_PATH = "companies-house/fileSmallCompanyAccounts.html";
 
-async function openFormView(page) {
+// The company the form opens: its first accounts by default, so the form leaves out the prior year;
+// a company with accounts on the register already shows the prior year.
+const FIRST_ACCOUNTS_COMPANY = { companyNumber: "00000001", companyName: "TEST SMALL LTD", dateOfCreation: "2025-04-01" };
+const ESTABLISHED_COMPANY = { ...FIRST_ACCOUNTS_COMPANY, dateOfCreation: "2019-04-01", accountsLastPeriodStart: "2024-04-01" };
+
+async function openFormView(page, { established = false } = {}) {
   const url = `http://localhost:3000/${PAGE_PATH}`;
   await page.route("**/*.js", async (route) => {
     if (route.request().resourceType() === "script") {
@@ -40,10 +45,14 @@ async function openFormView(page) {
     await route.fulfill({ status: 200, contentType: "text/html", body: html });
   });
   await page.goto(url, { waitUntil: "domcontentloaded" });
-  await page.evaluate(() => {
-    company = { companyNumber: "00000001", companyName: "TEST SMALL LTD" };
-    showView("formView");
-  });
+  await page.evaluate(
+    (openedCompany) => {
+      company = openedCompany;
+      showView("formView");
+    },
+    established ? ESTABLISHED_COMPANY : FIRST_ACCOUNTS_COMPANY,
+  );
+  await page.fill("#periodStart", "2025-04-01");
 }
 
 const CURRENT_BALANCE_SHEET = {
@@ -74,16 +83,39 @@ async function fillCurrentYear(page) {
 }
 
 test.describe("File small company accounts page", () => {
-  test("the comparative and fixed asset note sections stay hidden until chosen", async ({ page }) => {
+  test("first accounts leave out the prior year and say why, and the fixed asset note stays hidden until chosen", async ({ page }) => {
     await openFormView(page);
+    await expect(page.locator("#includeComparatives")).not.toBeChecked();
+    await expect(page.locator("#includeComparatives")).toBeDisabled();
     await expect(page.locator("#comparativeFields")).toBeHidden();
+    await expect(page.locator("#firstAccountsLine")).toHaveText(
+      "These are the company's first accounts: the period starts on the day it was incorporated, 2025-04-01, so there is no prior year.",
+    );
     await expect(page.locator("#fixedAssetNoteFields")).toBeHidden();
-    await page.check("#includeComparatives");
-    await expect(page.locator("#comparativeFields")).toBeVisible();
     await page.check("#includeFixedAssetNote");
     await expect(page.locator("#fixedAssetNoteFields")).toBeVisible();
-    await page.uncheck("#includeComparatives");
-    await expect(page.locator("#comparativeFields")).toBeHidden();
+    const payload = await page.evaluate(() => buildAccountsPayload());
+    expect(payload.smallCompany.dateOfIncorporation).toBe("2025-04-01");
+  });
+
+  test("accounts that are not the company's first show the prior year, and the reader cannot leave it out", async ({ page }) => {
+    await openFormView(page, { established: true });
+    await expect(page.locator("#includeComparatives")).toBeChecked();
+    await expect(page.locator("#includeComparatives")).toBeDisabled();
+    await expect(page.locator("#comparativeFields")).toBeVisible();
+    await expect(page.locator("#firstAccountsLine")).toContainText("These are not the company's first accounts");
+    const payload = await page.evaluate(() => buildAccountsPayload());
+    expect(payload.smallCompany.dateOfIncorporation).toBeUndefined();
+    expect(payload.smallCompany.balanceSheet.priorYear).toBeDefined();
+  });
+
+  test("a period that does not start on the day of incorporation is not first accounts", async ({ page }) => {
+    await openFormView(page);
+    await page.fill("#periodStart", "2025-05-01");
+    await expect(page.locator("#includeComparatives")).toBeChecked();
+    await expect(page.locator("#firstAccountsLine")).toContainText("These are not the company's first accounts");
+    await page.fill("#periodStart", "2025-04-01");
+    await expect(page.locator("#includeComparatives")).not.toBeChecked();
   });
 
   test("on a phone the format 2 lines stay out of sight in format 1", async ({ page }) => {
@@ -123,10 +155,9 @@ test.describe("File small company accounts page", () => {
   });
 
   test("choosing the filleted copy, comparatives and a fixed asset class changes the request", async ({ page }) => {
-    await openFormView(page);
+    await openFormView(page, { established: true });
     await fillCurrentYear(page);
     await page.check("#copyFilleted");
-    await page.check("#includeComparatives");
     await page.fill("#priorTurnover", "10000");
     await page.fill("#priorCostOfSales", "4000");
     await page.fill("#priorAdministrativeExpenses", "5000");
@@ -186,8 +217,7 @@ test.describe("File small company accounts page", () => {
   });
 
   test("the new creditor lines sit in the balance sheet table in both years, next to the lines they split", async ({ page }) => {
-    await openFormView(page);
-    await page.check("#includeComparatives");
+    await openFormView(page, { established: true });
     for (const prefix of ["current", "prior"]) {
       const labels = await page
         .locator(`#${prefix}BankLoansOverdrafts, #${prefix}TaxationSocialSecurity, #${prefix}BankLoansAfterOneYear`)
@@ -232,8 +262,7 @@ test.describe("File small company accounts page", () => {
   test("the debtors, creditors and provisions lines sit in the balance sheet table in both years, next to the lines they split", async ({
     page,
   }) => {
-    await openFormView(page);
-    await page.check("#includeComparatives");
+    await openFormView(page, { established: true });
     for (const prefix of ["current", "prior"]) {
       const labels = await page
         .locator(

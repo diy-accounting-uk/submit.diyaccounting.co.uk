@@ -278,3 +278,34 @@ describe("services/smallCompanyAccountsRequest advances to more than one directo
     ]);
   });
 });
+
+describe("services/smallCompanyAccountsRequest comparatives", () => {
+  function validateFor(section, periodStart) {
+    const errors = [];
+    const result = extractAndValidateSmallCompany(section, STATEMENTS, errors, periodStart);
+    return { result, errors };
+  }
+
+  test("accounts with the prior year's balance sheet need no date of incorporation", () => {
+    const { errors } = validateFor(sectionFrom(SMALL_COMPANY_CASE_INPUT), SMALL_COMPANY_CASE_INPUT.periodStart);
+    expect(errors).toEqual([]);
+  });
+
+  test("first accounts give the date of incorporation, equal to the period start, and keep it for the builder", () => {
+    const section = sectionFrom(SMALL_COMPANY_CASE_INPUT, {
+      dateOfIncorporation: SMALL_COMPANY_CASE_INPUT.periodStart,
+      balanceSheet: { currentYear: SMALL_COMPANY_CASE_INPUT.balanceSheet.current },
+      profitAndLoss: { currentYear: SMALL_COMPANY_CASE_INPUT.profitAndLoss.current },
+    });
+    const { result, errors } = validateFor(section, SMALL_COMPANY_CASE_INPUT.periodStart);
+    expect(errors).toEqual([]);
+    expect(result.dateOfIncorporation).toBe(SMALL_COMPANY_CASE_INPUT.periodStart);
+  });
+
+  test("a date of incorporation that is not a date is refused", () => {
+    const section = sectionFrom(SMALL_COMPANY_CASE_INPUT, { dateOfIncorporation: "first" });
+    expect(validateFor(section, SMALL_COMPANY_CASE_INPUT.periodStart).errors).toContain(
+      "Invalid smallCompany.dateOfIncorporation - must be YYYY-MM-DD",
+    );
+  });
+});
