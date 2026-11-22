@@ -1624,6 +1624,46 @@ class CompaniesHouseStackTest {
         return actions;
     }
 
+    @Test
+    void theCompanyCacheGrantOfTheLambdasThatRecordAnAcceptedFilingNamesTheCacheTableAndNothingElse() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+        Template template = Template.fromStack(stack);
+        String cacheTable = SubmitSharedNames.forDocs().data.companiesHouseCacheTableName;
+        for (String functionName : List.of(
+                stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseFormStatusGetLambdaProps.ingestFunctionName(),
+                pollFunctionName())) {
+            var statements = statementsOnTable(template, functionName, cacheTable);
+            assertEquals(1, statements.size(), functionName + " has one statement on the cache table");
+            String resources = String.valueOf(statements.get(0).get("Resource"));
+            assertEquals(
+                    resources.split("table/", -1).length - 1,
+                    resources.split("table/" + cacheTable, -1).length - 1,
+                    functionName + " names no other table in its cache statement: " + resources);
+            org.junit.jupiter.api.Assertions.assertFalse(
+                    resources.contains("\"*\"") || resources.equals("*"),
+                    functionName + " names no wildcard resource in its cache statement");
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> statementsOnTable(
+            Template template, String functionName, String tableName) {
+        var roleRef = (Map<String, Object>)
+                propertiesOfFunction(template, functionName).get("Role");
+        var roleLogicalId = String.valueOf(((List<Object>) roleRef.get("Fn::GetAtt")).get(0));
+        return template.findResources("AWS::IAM::Policy").values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .filter(properties -> ((List<Map<String, Object>>) properties.get("Roles"))
+                        .stream().anyMatch(role -> roleLogicalId.equals(String.valueOf(role.get("Ref")))))
+                .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .filter(statement -> String.valueOf(statement.get("Resource")).contains("table/" + tableName))
+                .toList();
+    }
+
     // The IAM actions on the Lambda's own role in the statements whose resource names the fragment.
     @SuppressWarnings("unchecked")
     private static java.util.Set<String> actionsOnRoleFor(Template template, String functionName, String fragment) {
