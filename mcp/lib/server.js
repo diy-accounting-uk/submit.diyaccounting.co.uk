@@ -97,9 +97,31 @@ const accountantsReportSchema = z
   .optional()
   .describe("Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report");
 
+const revisionSchema = z
+  .object({
+    originalDateOfApproval: z
+      .string()
+      .describe(
+        "The date the directors approved the accounts already filed, YYYY-MM-DD; Companies House prints it in the statement that the revised accounts replace them",
+      ),
+    nonCompliance: z
+      .string()
+      .describe(
+        'How the accounts already filed did not comply with the Companies Act 2006; Companies House prints it under "What was wrong with the original accounts"',
+      ),
+    amendments: z
+      .string()
+      .describe('The significant amendments the revised accounts make; Companies House prints it under "What the revised accounts change"'),
+  })
+  .optional()
+  .describe(
+    "Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision",
+  );
+
 const accountsFilingInputSchema = {
   registeredOffice: registeredOfficeSchema,
   accountantsReport: accountantsReportSchema,
+  revision: revisionSchema,
   companyNumber: z.string().describe("The 8-character Companies House company number"),
   companyName: z.string().describe("The registered company name"),
   periodStart: z.string().describe("The accounting period's start date, YYYY-MM-DD"),
@@ -166,6 +188,7 @@ const fixedAssetClassSchema = z.object({
 const smallCompanyFilingInputSchema = {
   registeredOffice: registeredOfficeSchema,
   accountantsReport: accountantsReportSchema,
+  revision: revisionSchema,
   companyNumber: z.string().describe("The 8-character Companies House company number"),
   companyName: z.string().describe("The registered company name"),
   periodStart: z.string().describe("The accounting period's start date, YYYY-MM-DD"),
@@ -633,7 +656,8 @@ export const TOOLS = {
     description:
       "The rendered FRS 105 micro-entity iXBRL for confirmed figures (derive_micro_entity_accounts' answer), over the " +
       "deployed API. Never reaches the Companies House XML Gateway. The route never resolves a company from a " +
-      "practice client's row, so this tool takes companyNumber only, not clientId.",
+      "practice client's row, so this tool takes companyNumber only, not clientId. With revision, it renders revised " +
+      "accounts that replace accounts already filed for the same period.",
     inputSchema: accountsFilingInputSchema,
     handler: renderMicroEntityAccounts,
   },
@@ -645,7 +669,8 @@ export const TOOLS = {
       "companyNumber or, when clientId is given instead, for that practice client's own company number; returns the " +
       "submission number. The company authentication code is not an argument: the user types it on the link " +
       "request_companies_house_codes answers, and this call names that entry by codesEntryId. A single entry is used up by this " +
-      "call; a batch entry (clientIds) gives up only this clientId's codes, so run_for_clients can pass one codesEntryId for every client.",
+      "call; a batch entry (clientIds) gives up only this clientId's codes, so run_for_clients can pass one codesEntryId for every client. " +
+      "With revision, it files revised accounts that replace accounts already filed for the same period.",
     inputSchema: {
       ...accountsFilingInputSchema,
       companyNumber: accountsFilingInputSchema.companyNumber.optional().describe("Required unless clientId is given"),
@@ -663,7 +688,7 @@ export const TOOLS = {
       "The rendered FRS 102 section 1A small-company iXBRL for confirmed figures (derive_small_company_accounts' answer, " +
       "with principalActivity and accountingPolicies added), over the deployed API. Never reaches the Companies House XML " +
       "Gateway. The route never resolves a company from a practice client's row, so this tool takes companyNumber only, " +
-      "not clientId.",
+      "not clientId. With revision, it renders revised accounts that replace accounts already filed for the same period.",
     inputSchema: smallCompanyFilingInputSchema,
     handler: renderSmallCompanyAccounts,
   },
@@ -676,7 +701,8 @@ export const TOOLS = {
       "submission number. The company authentication code is not an argument: the user types it on the link " +
       "request_companies_house_codes answers (kind accounts), and this call names that entry by codesEntryId. A single entry " +
       "is used up by this call; a batch entry (clientIds) gives up only this clientId's codes, so run_for_clients can pass " +
-      "one codesEntryId for every client. poll_submission with kind accounts reaches the outcome.",
+      "one codesEntryId for every client. poll_submission with kind accounts reaches the outcome. With revision, it files " +
+      "revised accounts that replace accounts already filed for the same period.",
     inputSchema: {
       ...smallCompanyFilingInputSchema,
       companyNumber: smallCompanyFilingInputSchema.companyNumber.optional().describe("Required unless clientId is given"),

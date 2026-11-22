@@ -612,6 +612,126 @@ describe("submit-tools", () => {
     });
   });
 
+  describe("revised accounts", () => {
+    const REVISION = {
+      originalDateOfApproval: "2026-09-15",
+      nonCompliance: "The original accounts left out a supplier invoice of £240.",
+      amendments: "Creditors falling due within one year rise by £194.",
+    };
+    const SMALL = {
+      ...ACCOUNTS_PARAMS,
+      balanceSheet: undefined,
+      statementsAccepted: {
+        section477Exemption: true,
+        membersNotRequiredAudit: true,
+        directorsResponsibilities: true,
+        smallCompaniesRegime: true,
+      },
+      smallCompany: {
+        principalActivity: "Building",
+        accountingPolicies: "Cost",
+        directors: ["A Director"],
+        balanceSheet: { currentYear: { fixedAssets: 1 } },
+        profitAndLoss: { currentYear: { turnover: 1 } },
+      },
+    };
+
+    it.each([
+      ["render_micro_entity_accounts_sandbox", () => renderMicroEntityAccounts(session, { ...ACCOUNTS_PARAMS, revision: REVISION })],
+      [
+        "submit_micro_entity_accounts_sandbox",
+        () => submitMicroEntityAccounts(session, { ...ACCOUNTS_PARAMS, revision: REVISION, codesEntryId: "entry-1" }),
+      ],
+      ["render_small_company_accounts_sandbox", () => renderSmallCompanyAccounts(session, { ...SMALL, revision: REVISION })],
+      [
+        "submit_small_company_accounts_sandbox",
+        () => submitSmallCompanyAccounts(session, { ...SMALL, revision: REVISION, codesEntryId: "entry-1" }),
+      ],
+    ])("%s sends the revision in the body", async (_name, call) => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      await call();
+
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body).revision).toEqual(REVISION);
+    });
+
+    it("sends no revision for original accounts", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      await submitMicroEntityAccounts(session, { ...ACCOUNTS_PARAMS, codesEntryId: "entry-1" });
+
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body)).not.toHaveProperty("revision");
+    });
+
+    it("answers the route's refusal of a revision with a missing text", async () => {
+      const message = "Missing revision.amendments - say what the revised accounts change";
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(jsonResponse(400, { message })));
+
+      await expect(
+        submitMicroEntityAccounts(session, { ...ACCOUNTS_PARAMS, revision: { ...REVISION, amendments: "" }, codesEntryId: "entry-1" }),
+      ).rejects.toThrow(message);
+    });
+  });
+
+  describe("accounts bodies against their schemas", () => {
+    const REGISTERED_OFFICE = { addressLine1: "1 Brick Lane", cityOrTown: "Leeds", postalCode: "LS1 1AA", country: "England" };
+    const ACCOUNTANTS_REPORT = { accountantsName: "Ledger & Co", statement: "We compiled these accounts from the records." };
+    const REVISION = {
+      originalDateOfApproval: "2026-01-15",
+      nonCompliance: "The original accounts left out a supplier invoice.",
+      amendments: "Creditors falling due within one year rise by £240.",
+    };
+    const OPTIONAL_FIELDS = { registeredOffice: REGISTERED_OFFICE, accountantsReport: ACCOUNTANTS_REPORT, revision: REVISION };
+    const SMALL = {
+      ...ACCOUNTS_PARAMS,
+      balanceSheet: undefined,
+      statementsAccepted: {
+        section477Exemption: true,
+        membersNotRequiredAudit: true,
+        directorsResponsibilities: true,
+        smallCompaniesRegime: true,
+      },
+      smallCompany: {
+        principalActivity: "Building",
+        accountingPolicies: "Cost",
+        directors: ["A Director"],
+        balanceSheet: { currentYear: { fixedAssets: 1 } },
+        profitAndLoss: { currentYear: { turnover: 1 } },
+      },
+    };
+    const FILING = { clientId: "client-1", codesEntryId: "entry-1" };
+    const CASES = [
+      ["render_micro_entity_accounts_sandbox", renderMicroEntityAccounts, { ...ACCOUNTS_PARAMS, ...OPTIONAL_FIELDS }],
+      ["submit_micro_entity_accounts_sandbox", submitMicroEntityAccounts, { ...ACCOUNTS_PARAMS, ...OPTIONAL_FIELDS, ...FILING }],
+      ["render_small_company_accounts_sandbox", renderSmallCompanyAccounts, { ...SMALL, ...OPTIONAL_FIELDS }],
+      ["submit_small_company_accounts_sandbox", submitSmallCompanyAccounts, { ...SMALL, ...OPTIONAL_FIELDS, ...FILING }],
+    ];
+
+    async function bodyOf(handler, params) {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+      await handler(session, params);
+      return JSON.parse(mockFetch.mock.calls[0][1].body);
+    }
+
+    it.each(CASES)("%s sends every field its schema declares", async (name, handler, params) => {
+      const body = await bodyOf(handler, params);
+
+      for (const field of Object.keys(TOOLS[name].inputSchema)) {
+        expect(body, field).toHaveProperty(field);
+        expect(body[field], field).toEqual(params[field]);
+      }
+    });
+
+    it.each(CASES)("%s sends no field its schema lacks", async (name, handler, params) => {
+      const body = await bodyOf(handler, params);
+
+      expect(Object.keys(body).filter((field) => !(field in TOOLS[name].inputSchema))).toEqual([]);
+    });
+  });
+
   describe("poll_submission for accounts", () => {
     it("gets the filing outcome by submission number, pending before Companies House answers", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, POLL_ACCOUNTS_SUBMISSION_PENDING_RESPONSE));

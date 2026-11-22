@@ -54,6 +54,32 @@ describe("the hosted tool set", () => {
     }
   });
 
+  it("gives the four accounts tools an optional revision with its three texts on the hosted server", async () => {
+    const listed = await handleMcpRequest(
+      new Request("https://submit.diyaccounting.co.uk/mcp", {
+        method: "POST",
+        headers: { "content-type": "application/json", "accept": "application/json, text/event-stream" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+      }),
+      { session: createSession(), toolNames: hostedToolNames("ci") },
+    ).then((response) => response.json());
+    const { tools } = listed.result;
+    for (const name of [
+      "render_micro_entity_accounts_sandbox",
+      "submit_micro_entity_accounts_sandbox",
+      "render_small_company_accounts_sandbox",
+      "submit_small_company_accounts_sandbox",
+    ]) {
+      const schema = tools.find((tool) => tool.name === name).inputSchema;
+      expect(Object.keys(schema.properties.revision.properties).sort(), name).toEqual([
+        "amendments",
+        "nonCompliance",
+        "originalDateOfApproval",
+      ]);
+      expect(schema.required ?? [], name).not.toContain("revision");
+    }
+  });
+
   it("refuses the company tax return with no book loaded", async () => {
     await expect(HOSTED_OVERRIDES.derive_company_tax_return.handler(createSession(), {})).rejects.toThrow(/No book is loaded/);
   });

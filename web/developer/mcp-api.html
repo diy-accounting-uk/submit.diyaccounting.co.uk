@@ -1130,12 +1130,13 @@
       </details>
       <details class="tool" id="tool-render_micro_entity_accounts_sandbox">
         <summary><code>render_micro_entity_accounts_sandbox</code></summary>
-        <p>The rendered FRS 105 micro-entity iXBRL for confirmed figures (derive_micro_entity_accounts' answer), over the deployed API. Never reaches the Companies House XML Gateway. The route never resolves a company from a practice client's row, so this tool takes companyNumber only, not clientId.</p>
+        <p>The rendered FRS 105 micro-entity iXBRL for confirmed figures (derive_micro_entity_accounts' answer), over the deployed API. Never reaches the Companies House XML Gateway. The route never resolves a company from a practice client's row, so this tool takes companyNumber only, not clientId. With revision, it renders revised accounts that replace accounts already filed for the same period.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
           <tbody>
             <tr><td><code>registeredOffice</code></td><td>object</td><td>no</td><td>The registered office as address parts; taken from the company's Companies House record when left out</td></tr>
             <tr><td><code>accountantsReport</code></td><td>object</td><td>no</td><td>Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report</td></tr>
+            <tr><td><code>revision</code></td><td>object</td><td>no</td><td>Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision</td></tr>
             <tr><td><code>companyNumber</code></td><td>string</td><td>yes</td><td>The 8-character Companies House company number</td></tr>
             <tr><td><code>companyName</code></td><td>string</td><td>yes</td><td>The registered company name</td></tr>
             <tr><td><code>periodStart</code></td><td>string</td><td>yes</td><td>The accounting period's start date, YYYY-MM-DD</td></tr>
@@ -1197,6 +1198,29 @@
       &quot;required&quot;: [
         &quot;accountantsName&quot;,
         &quot;statement&quot;
+      ]
+    },
+    &quot;revision&quot;: {
+      &quot;description&quot;: &quot;Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;originalDateOfApproval&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;The date the directors approved the accounts already filed, YYYY-MM-DD; Companies House prints it in the statement that the revised accounts replace them&quot;
+        },
+        &quot;nonCompliance&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;How the accounts already filed did not comply with the Companies Act 2006; Companies House prints it under \&quot;What was wrong with the original accounts\&quot;&quot;
+        },
+        &quot;amendments&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;The significant amendments the revised accounts make; Companies House prints it under \&quot;What the revised accounts change\&quot;&quot;
+        }
+      },
+      &quot;required&quot;: [
+        &quot;originalDateOfApproval&quot;,
+        &quot;nonCompliance&quot;,
+        &quot;amendments&quot;
       ]
     },
     &quot;companyNumber&quot;: {
@@ -1357,12 +1381,13 @@
       </details>
       <details class="tool" id="tool-render_small_company_accounts_sandbox">
         <summary><code>render_small_company_accounts_sandbox</code></summary>
-        <p>The rendered FRS 102 section 1A small-company iXBRL for confirmed figures (derive_small_company_accounts' answer, with principalActivity and accountingPolicies added), over the deployed API. Never reaches the Companies House XML Gateway. The route never resolves a company from a practice client's row, so this tool takes companyNumber only, not clientId.</p>
+        <p>The rendered FRS 102 section 1A small-company iXBRL for confirmed figures (derive_small_company_accounts' answer, with principalActivity and accountingPolicies added), over the deployed API. Never reaches the Companies House XML Gateway. The route never resolves a company from a practice client's row, so this tool takes companyNumber only, not clientId. With revision, it renders revised accounts that replace accounts already filed for the same period.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
           <tbody>
             <tr><td><code>registeredOffice</code></td><td>object</td><td>no</td><td>The registered office as address parts; taken from the company's Companies House record when left out</td></tr>
             <tr><td><code>accountantsReport</code></td><td>object</td><td>no</td><td>Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report</td></tr>
+            <tr><td><code>revision</code></td><td>object</td><td>no</td><td>Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision</td></tr>
             <tr><td><code>companyNumber</code></td><td>string</td><td>yes</td><td>The 8-character Companies House company number</td></tr>
             <tr><td><code>companyName</code></td><td>string</td><td>yes</td><td>The registered company name</td></tr>
             <tr><td><code>periodStart</code></td><td>string</td><td>yes</td><td>The accounting period's start date, YYYY-MM-DD</td></tr>
@@ -1424,6 +1449,29 @@
       &quot;required&quot;: [
         &quot;accountantsName&quot;,
         &quot;statement&quot;
+      ]
+    },
+    &quot;revision&quot;: {
+      &quot;description&quot;: &quot;Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;originalDateOfApproval&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;The date the directors approved the accounts already filed, YYYY-MM-DD; Companies House prints it in the statement that the revised accounts replace them&quot;
+        },
+        &quot;nonCompliance&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;How the accounts already filed did not comply with the Companies Act 2006; Companies House prints it under \&quot;What was wrong with the original accounts\&quot;&quot;
+        },
+        &quot;amendments&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;The significant amendments the revised accounts make; Companies House prints it under \&quot;What the revised accounts change\&quot;&quot;
+        }
+      },
+      &quot;required&quot;: [
+        &quot;originalDateOfApproval&quot;,
+        &quot;nonCompliance&quot;,
+        &quot;amendments&quot;
       ]
     },
     &quot;companyNumber&quot;: {
@@ -2502,12 +2550,13 @@
       </details>
       <details class="tool" id="tool-submit_micro_entity_accounts_sandbox">
         <summary><code>submit_micro_entity_accounts_sandbox</code></summary>
-        <p>Files confirmed micro-entity accounts through the Companies House XML Gateway, over the deployed API, for companyNumber or, when clientId is given instead, for that practice client's own company number; returns the submission number. The company authentication code is not an argument: the user types it on the link request_companies_house_codes answers, and this call names that entry by codesEntryId. A single entry is used up by this call; a batch entry (clientIds) gives up only this clientId's codes, so run_for_clients can pass one codesEntryId for every client.</p>
+        <p>Files confirmed micro-entity accounts through the Companies House XML Gateway, over the deployed API, for companyNumber or, when clientId is given instead, for that practice client's own company number; returns the submission number. The company authentication code is not an argument: the user types it on the link request_companies_house_codes answers, and this call names that entry by codesEntryId. A single entry is used up by this call; a batch entry (clientIds) gives up only this clientId's codes, so run_for_clients can pass one codesEntryId for every client. With revision, it files revised accounts that replace accounts already filed for the same period.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
           <tbody>
             <tr><td><code>registeredOffice</code></td><td>object</td><td>no</td><td>The registered office as address parts; taken from the company's Companies House record when left out</td></tr>
             <tr><td><code>accountantsReport</code></td><td>object</td><td>no</td><td>Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report</td></tr>
+            <tr><td><code>revision</code></td><td>object</td><td>no</td><td>Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision</td></tr>
             <tr><td><code>companyNumber</code></td><td>string</td><td>no</td><td>Required unless clientId is given</td></tr>
             <tr><td><code>companyName</code></td><td>string</td><td>yes</td><td>The registered company name</td></tr>
             <tr><td><code>periodStart</code></td><td>string</td><td>yes</td><td>The accounting period's start date, YYYY-MM-DD</td></tr>
@@ -2571,6 +2620,29 @@
       &quot;required&quot;: [
         &quot;accountantsName&quot;,
         &quot;statement&quot;
+      ]
+    },
+    &quot;revision&quot;: {
+      &quot;description&quot;: &quot;Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;originalDateOfApproval&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;The date the directors approved the accounts already filed, YYYY-MM-DD; Companies House prints it in the statement that the revised accounts replace them&quot;
+        },
+        &quot;nonCompliance&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;How the accounts already filed did not comply with the Companies Act 2006; Companies House prints it under \&quot;What was wrong with the original accounts\&quot;&quot;
+        },
+        &quot;amendments&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;The significant amendments the revised accounts make; Companies House prints it under \&quot;What the revised accounts change\&quot;&quot;
+        }
+      },
+      &quot;required&quot;: [
+        &quot;originalDateOfApproval&quot;,
+        &quot;nonCompliance&quot;,
+        &quot;amendments&quot;
       ]
     },
     &quot;companyNumber&quot;: {
@@ -2739,12 +2811,13 @@
       </details>
       <details class="tool" id="tool-submit_small_company_accounts_sandbox">
         <summary><code>submit_small_company_accounts_sandbox</code></summary>
-        <p>Files confirmed small-company accounts through the Companies House XML Gateway, over the deployed API, for companyNumber or, when clientId is given instead, for that practice client's own company number; returns the submission number. The company authentication code is not an argument: the user types it on the link request_companies_house_codes answers (kind accounts), and this call names that entry by codesEntryId. A single entry is used up by this call; a batch entry (clientIds) gives up only this clientId's codes, so run_for_clients can pass one codesEntryId for every client. poll_submission with kind accounts reaches the outcome.</p>
+        <p>Files confirmed small-company accounts through the Companies House XML Gateway, over the deployed API, for companyNumber or, when clientId is given instead, for that practice client's own company number; returns the submission number. The company authentication code is not an argument: the user types it on the link request_companies_house_codes answers (kind accounts), and this call names that entry by codesEntryId. A single entry is used up by this call; a batch entry (clientIds) gives up only this clientId's codes, so run_for_clients can pass one codesEntryId for every client. poll_submission with kind accounts reaches the outcome. With revision, it files revised accounts that replace accounts already filed for the same period.</p>
         <table>
           <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
           <tbody>
             <tr><td><code>registeredOffice</code></td><td>object</td><td>no</td><td>The registered office as address parts; taken from the company's Companies House record when left out</td></tr>
             <tr><td><code>accountantsReport</code></td><td>object</td><td>no</td><td>Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report</td></tr>
+            <tr><td><code>revision</code></td><td>object</td><td>no</td><td>Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision</td></tr>
             <tr><td><code>companyNumber</code></td><td>string</td><td>no</td><td>Required unless clientId is given</td></tr>
             <tr><td><code>companyName</code></td><td>string</td><td>yes</td><td>The registered company name</td></tr>
             <tr><td><code>periodStart</code></td><td>string</td><td>yes</td><td>The accounting period's start date, YYYY-MM-DD</td></tr>
@@ -2808,6 +2881,29 @@
       &quot;required&quot;: [
         &quot;accountantsName&quot;,
         &quot;statement&quot;
+      ]
+    },
+    &quot;revision&quot;: {
+      &quot;description&quot;: &quot;Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision&quot;,
+      &quot;type&quot;: &quot;object&quot;,
+      &quot;properties&quot;: {
+        &quot;originalDateOfApproval&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;The date the directors approved the accounts already filed, YYYY-MM-DD; Companies House prints it in the statement that the revised accounts replace them&quot;
+        },
+        &quot;nonCompliance&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;How the accounts already filed did not comply with the Companies Act 2006; Companies House prints it under \&quot;What was wrong with the original accounts\&quot;&quot;
+        },
+        &quot;amendments&quot;: {
+          &quot;type&quot;: &quot;string&quot;,
+          &quot;description&quot;: &quot;The significant amendments the revised accounts make; Companies House prints it under \&quot;What the revised accounts change\&quot;&quot;
+        }
+      },
+      &quot;required&quot;: [
+        &quot;originalDateOfApproval&quot;,
+        &quot;nonCompliance&quot;,
+        &quot;amendments&quot;
       ]
     },
     &quot;companyNumber&quot;: {
