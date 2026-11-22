@@ -368,18 +368,18 @@ function fillBefore(capitals, { readFailed = false } = {}) {
     held.forEach(addCapitalTable);
     source.textContent = window.siteText(
       "ch.allot.before-from-register",
-      "This is the share capital Companies House holds for the company. Check it, and correct it if an earlier allotment is not on the register yet.",
+      "This is the share capital Companies House holds for the company. The return must start from it: Submit checks it against the register again when you file and sends no return that differs. File an earlier allotment that is not on the register yet first.",
     );
   } else {
     addCapitalTable();
     source.textContent = readFailed
       ? window.siteText(
           "ch.allot.before-read-failed",
-          "Submit could not read the company's share capital from Companies House. Enter each class of shares the company had before the allotment, as its register of members shows it.",
+          "Submit could not read the company's share capital from Companies House. Enter each class of shares the company had before the allotment as the register holds it: Submit checks it against the register when you file and sends no return that differs.",
         )
       : window.siteText(
           "ch.allot.before-typed",
-          "Companies House gave no statement of capital for this company. Enter each class of shares the company had before the allotment.",
+          "Companies House holds no share capital for this company, so the return starts from none. Enter only the shares allotted below.",
         );
   }
 }

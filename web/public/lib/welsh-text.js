@@ -210,14 +210,14 @@ window.WELSH_TEXT = {
   "ch.allot.allotment": "Clustnodiad",
   "ch.allot.before-class": "Dosbarth o gyfrannau a ddelid cynt",
   "ch.allot.before-from-register":
-    "Dyma’r cyfalaf cyfrannau sydd gan Dŷ’r Cwmnïau ar gyfer y cwmni. Gwiriwch ef, a’i gywiro os nad yw clustnodiad cynharach ar y gofrestr eto.",
+    "Dyma’r cyfalaf cyfrannau sydd gan Dŷ’r Cwmnïau ar gyfer y cwmni. Rhaid i’r ffurflen ddechrau ohono: mae Submit yn ei wirio yn erbyn y gofrestr eto pan fyddwch yn ffeilio, ac nid yw’n anfon ffurflen sy’n wahanol. Ffeiliwch yn gyntaf glustnodiad cynharach nad yw ar y gofrestr eto.",
   "ch.allot.before-nominal": "Gwerth nominal agregedig",
   "ch.allot.before-nominal-hint": "Nifer y cyfrannau a ddyroddwyd wedi’i luosi â’r gwerth nominal.",
   "ch.allot.before-number": "Nifer y cyfrannau",
   "ch.allot.before-read-failed":
-    "Nid oedd Submit yn gallu darllen cyfalaf cyfranddaliadau’r cwmni gan Dŷ’r Cwmnïau. Rhowch bob dosbarth o gyfranddaliadau a oedd gan y cwmni cyn y dyraniad, fel y mae ei gofrestr aelodau yn ei ddangos.",
+    "Nid oedd Submit yn gallu darllen cyfalaf cyfrannau’r cwmni gan Dŷ’r Cwmnïau. Rhowch bob dosbarth o gyfrannau oedd gan y cwmni cyn y clustnodiad fel y mae’r gofrestr yn ei ddal: mae Submit yn ei wirio yn erbyn y gofrestr pan fyddwch yn ffeilio, ac nid yw’n anfon ffurflen sy’n wahanol.",
   "ch.allot.before-typed":
-    "Ni roddodd Tŷ’r Cwmnïau ddatganiad cyfalaf ar gyfer y cwmni hwn. Rhowch bob dosbarth o gyfrannau oedd gan y cwmni cyn y clustnodiad.",
+    "Nid oes gan Dŷ’r Cwmnïau gyfalaf cyfrannau ar gyfer y cwmni hwn, felly mae’r ffurflen yn dechrau heb ddim. Rhowch y cyfrannau a glustnodwyd yn unig isod.",
   "ch.allot.class": "Dosbarth o gyfrannau",
   "ch.allot.class-hint": "Er enghraifft, Cyffredin neu Ffafriaeth.",
   "ch.allot.consideration": "Manylion cydnabyddiaeth heblaw arian parod (dewisol)",

@@ -138,7 +138,9 @@ for (const width of [1280, 390]) {
     expect(reads[0]).toMatchObject({ companyAuthCode: "SIMCS01" });
     await expect(page.locator("#formView")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
     await expect(page.locator("#formView")).toContainText("Companies House charges no fee for this filing.");
-    await expect(page.locator("#beforeSource")).toContainText("This is the share capital Companies House holds for the company.");
+    await expect(page.locator("#beforeSource")).toHaveText(
+      "This is the share capital Companies House holds for the company. The return must start from it: Submit checks it against the register again when you file and sends no return that differs. File an earlier allotment that is not on the register yet first.",
+    );
     await expect(page.locator('#beforeTables input[id^="before-class-"]')).toHaveValue("Ordinary");
     await expect(page.locator('#beforeTables input[id^="before-number-"]')).toHaveValue("100");
 
@@ -345,7 +347,9 @@ test("a company whose capital the register does not give starts with an empty cl
   await serveSite(page, { filings, capitals: [] });
   await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
   await lookUp(page);
-  await expect(page.locator("#beforeSource")).toContainText("Companies House gave no statement of capital for this company.");
+  await expect(page.locator("#beforeSource")).toHaveText(
+    "Companies House holds no share capital for this company, so the return starts from none. Enter only the shares allotted below.",
+  );
   await page.locator("#startDate").fill("2026-11-02");
   await fillAllotment(page, { shareClass: "Ordinary", number: "50", nominal: "1", paid: "1" });
   await page.locator('#beforeTables input[id^="before-class-"]').fill("Ordinary");
@@ -371,7 +375,7 @@ for (const filingData of [500, 504]) {
     await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
     await lookUp(page);
     await expect(page.locator("#beforeSource")).toHaveText(
-      "Submit could not read the company's share capital from Companies House. Enter each class of shares the company had before the allotment, as its register of members shows it.",
+      "Submit could not read the company's share capital from Companies House. Enter each class of shares the company had before the allotment as the register holds it: Submit checks it against the register when you file and sends no return that differs.",
     );
     await expect(page.locator('#beforeTables input[id^="before-class-"]')).toHaveValue("");
   });
@@ -384,7 +388,7 @@ test("the failed read's sentence is in Welsh on the Welsh page", async ({ page }
   await page.locator("#companyAuthCode").fill("SIMCS01");
   await page.locator("#companyForm button[type=submit]").click();
   await expect(page.locator("#formView")).toBeVisible();
-  await expect(page.locator("#beforeSource")).toContainText("Nid oedd Submit yn gallu darllen cyfalaf cyfranddaliadau’r cwmni");
+  await expect(page.locator("#beforeSource")).toContainText("Nid oedd Submit yn gallu darllen cyfalaf cyfrannau’r cwmni");
 });
 
 test("a company authentication code Companies House does not accept stops at the company step with its sentence", async ({ page }) => {

@@ -26653,12 +26653,12 @@ hash = "45a884e91eb0"
 cy = '''Hawliau pleidleisio, hawliau i ddifidendau, hawliau i gyfalaf ar ddosraniad (gan gynnwys wrth ddirwyn i ben), ac a yw’r cyfrannau i’w hadbrynu.'''
 
 [strings."ch.allot.before-from-register"]
-hash = "fcdbcc0b2d47"
-cy = '''Dyma’r cyfalaf cyfrannau sydd gan Dŷ’r Cwmnïau ar gyfer y cwmni. Gwiriwch ef, a’i gywiro os nad yw clustnodiad cynharach ar y gofrestr eto.'''
+hash = "d3209a05e733"
+cy = '''Dyma’r cyfalaf cyfrannau sydd gan Dŷ’r Cwmnïau ar gyfer y cwmni. Rhaid i’r ffurflen ddechrau ohono: mae Submit yn ei wirio yn erbyn y gofrestr eto pan fyddwch yn ffeilio, ac nid yw’n anfon ffurflen sy’n wahanol. Ffeiliwch yn gyntaf glustnodiad cynharach nad yw ar y gofrestr eto.'''
 
 [strings."ch.allot.before-typed"]
-hash = "a59799379e2b"
-cy = '''Ni roddodd Tŷ’r Cwmnïau ddatganiad cyfalaf ar gyfer y cwmni hwn. Rhowch bob dosbarth o gyfrannau oedd gan y cwmni cyn y clustnodiad.'''
+hash = "6af487701ff9"
+cy = '''Nid oes gan Dŷ’r Cwmnïau gyfalaf cyfrannau ar gyfer y cwmni hwn, felly mae’r ffurflen yn dechrau heb ddim. Rhowch y cyfrannau a glustnodwyd yn unig isod.'''
 
 [strings."ch.allot.lookup-failed"]
 hash = "85798bd4b10f"
@@ -26777,8 +26777,8 @@ cy = '''Ni allai’r dudalen hon ddarllen a yw’ch cyfrif yn defnyddio gwasanae
 # == Return of allotment of shares: the sentences when the register's capital cannot be read or a product has too many decimal places ==
 
 [strings."ch.allot.before-read-failed"]
-hash = "c8d0a9518dbc"
-cy = '''Nid oedd Submit yn gallu darllen cyfalaf cyfranddaliadau’r cwmni gan Dŷ’r Cwmnïau. Rhowch bob dosbarth o gyfranddaliadau a oedd gan y cwmni cyn y dyraniad, fel y mae ei gofrestr aelodau yn ei ddangos.'''
+hash = "9c3a52f917e1"
+cy = '''Nid oedd Submit yn gallu darllen cyfalaf cyfrannau’r cwmni gan Dŷ’r Cwmnïau. Rhowch bob dosbarth o gyfrannau oedd gan y cwmni cyn y clustnodiad fel y mae’r gofrestr yn ei ddal: mae Submit yn ei wirio yn erbyn y gofrestr pan fyddwch yn ffeilio, ac nid yw’n anfon ffurflen sy’n wahanol.'''
 
 [strings."ch.allot.problem-decimal-places"]
 hash = "05806571f667"

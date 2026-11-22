@@ -413,6 +413,50 @@ describe("companiesHouseAllotmentOfSharesPost ingestHandler", () => {
       expect(response.statusCode, JSON.stringify(parseResponseBody(response))).toBe(201);
     });
 
+    test("three currencies each agree with the register, each class in its own currency, and an allotment in each files its totals per currency", async () => {
+      registerAnswer = companyDataAnswer([
+        { currency: "GBP", shares: [["Ordinary", "100", "100"]] },
+        { currency: "EUR", unpaid: "5", shares: [["Ordinary", "10", "10"]] },
+        { currency: "USD", shares: [["Ordinary", "0.5", "0.5"]] },
+      ]);
+      const allotments = [
+        ALLOTMENT,
+        { ...ALLOTMENT, currency: "EUR", numShares: "10", amountPaidPerShare: "1", amountUnpaidPerShare: "1", nominalValue: "2" },
+        { ...ALLOTMENT, currency: "USD", numShares: "0.25", amountPaidPerShare: "1", nominalValue: "1" },
+      ];
+      const statementOfCapital = [
+        CAPITAL,
+        { currency: "EUR", totalAmountUnpaid: "15", shares: [{ ...ORDINARY, numShares: "20", aggregateNominalValue: "30" }] },
+        { currency: "USD", totalAmountUnpaid: "0", shares: [{ ...ORDINARY, numShares: "0.75", aggregateNominalValue: "0.75" }] },
+      ];
+      const response = await ingestHandler(buildEvent({ body: buildFormBody({ allotments, statementOfCapital }) }));
+      expect(response.statusCode, JSON.stringify(parseResponseBody(response))).toBe(201);
+      const body = mockBuildFormSubmission.mock.calls.at(-1)[0].formXml ?? JSON.stringify(mockBuildFormSubmission.mock.calls.at(-1)[0]);
+      for (const [currency, number, nominal, unpaid] of [
+        ["GBP", "150", "150", "0"],
+        ["EUR", "20", "30", "15"],
+        ["USD", "0.75", "0.75", "0"],
+      ]) {
+        expect(body).toContain(
+          `<TotalAmountUnpaid>${unpaid}</TotalAmountUnpaid><TotalNumberOfIssuedShares>${number}</TotalNumberOfIssuedShares>` +
+            `<ShareCurrency>${currency}</ShareCurrency><TotalAggregateNominalValue>${nominal}</TotalAggregateNominalValue>`,
+        );
+      }
+    });
+
+    test("refuses a class the return puts in another currency than the register's, naming both currencies", async () => {
+      registerAnswer = companyDataAnswer([{ currency: "GBP", shares: [["Ordinary", "100", "100"]] }]);
+      const usd = { ...CAPITAL, currency: "USD" };
+      const response = await ingestHandler(
+        buildEvent({ body: buildFormBody({ allotments: [{ ...ALLOTMENT, currency: "USD" }], statementOfCapital: [usd] }) }),
+      );
+      expect(response.statusCode).toBe(400);
+      expect(parseResponseBody(response).mismatches).toEqual([
+        "Before the allotment the GBP Ordinary shares are 0 shares of aggregate nominal value 0 in this return, and 100 shares of aggregate nominal value 100 on the Companies House register",
+        "Before the allotment the USD Ordinary shares are 100 shares of aggregate nominal value 100 in this return, and 0 shares of aggregate nominal value 0 on the Companies House register",
+      ]);
+    });
+
     test("answers the company authentication code's sentence when Companies House refuses the code, and sends nothing", async () => {
       registerErrors = [{ number: "9999", text: "Invalid CompanyAuthenticationCode" }];
       const response = await ingestHandler(buildEvent());
