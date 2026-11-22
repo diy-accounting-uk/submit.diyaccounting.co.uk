@@ -389,6 +389,24 @@ public class CompaniesHouseNames {
     public boolean companiesHouseChangeOfNamePostLambdaJwtAuthorizer;
     public boolean companiesHouseChangeOfNamePostLambdaCustomAuthorizer;
 
+    public String companiesHouseOfficerAppointmentPostIngestLambdaHandler;
+    public String companiesHouseOfficerAppointmentPostIngestLambdaFunctionName;
+    public String companiesHouseOfficerAppointmentPostIngestLambdaArn;
+    public String companiesHouseOfficerAppointmentPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseOfficerAppointmentPostLambdaHttpMethod;
+    public String companiesHouseOfficerAppointmentPostLambdaUrlPath;
+    public boolean companiesHouseOfficerAppointmentPostLambdaJwtAuthorizer;
+    public boolean companiesHouseOfficerAppointmentPostLambdaCustomAuthorizer;
+
+    public String companiesHouseOfficerChangePostIngestLambdaHandler;
+    public String companiesHouseOfficerChangePostIngestLambdaFunctionName;
+    public String companiesHouseOfficerChangePostIngestLambdaArn;
+    public String companiesHouseOfficerChangePostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseOfficerChangePostLambdaHttpMethod;
+    public String companiesHouseOfficerChangePostLambdaUrlPath;
+    public boolean companiesHouseOfficerChangePostLambdaJwtAuthorizer;
+    public boolean companiesHouseOfficerChangePostLambdaCustomAuthorizer;
+
     public CompaniesHouseNames(SubmitSharedNames.SubmitSharedNamesProps props, SubmitSharedNames root) {
 
         this.companiesHouseSearchGetLambdaHttpMethod = HttpMethod.GET;
@@ -1478,5 +1496,51 @@ public class CompaniesHouseNames {
                 "Submit a change of company name",
                 "Builds the ChangeOfName body, the notice of a change of company name, with any supporting letter, and submits it through the Companies House XML Gateway",
                 "postCompaniesHouseChangeOfName"));
+
+        this.companiesHouseOfficerAppointmentPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHouseOfficerAppointmentPostLambdaUrlPath = "/api/v1/companies-house/officer-appointment";
+        this.companiesHouseOfficerAppointmentPostLambdaJwtAuthorizer = true;
+        this.companiesHouseOfficerAppointmentPostLambdaCustomAuthorizer = false;
+        var companiesHouseOfficerAppointmentPostLambdaHandlerName =
+                "companiesHouseOfficerAppointmentPost.ingestHandler";
+        var companiesHouseOfficerAppointmentPostLambdaHandlerDashed = ResourceNameUtils.convertCamelCaseToDashSeparated(
+                companiesHouseOfficerAppointmentPostLambdaHandlerName);
+        this.companiesHouseOfficerAppointmentPostIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, companiesHouseOfficerAppointmentPostLambdaHandlerDashed);
+        this.companiesHouseOfficerAppointmentPostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(root.appLambdaHandlerPrefix, companiesHouseOfficerAppointmentPostLambdaHandlerName);
+        this.companiesHouseOfficerAppointmentPostIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, companiesHouseOfficerAppointmentPostLambdaHandlerDashed);
+        this.companiesHouseOfficerAppointmentPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.companiesHouseOfficerAppointmentPostIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseOfficerAppointmentPostLambdaHttpMethod,
+                this.companiesHouseOfficerAppointmentPostLambdaUrlPath,
+                "Submit an officer appointment filing",
+                "Builds the OfficerAppointment body, the notice that a director or a secretary has been appointed (AP01, AP02, AP03 or AP04), and submits it through the Companies House XML Gateway",
+                "postCompaniesHouseOfficerAppointment"));
+
+        this.companiesHouseOfficerChangePostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHouseOfficerChangePostLambdaUrlPath = "/api/v1/companies-house/officer-change";
+        this.companiesHouseOfficerChangePostLambdaJwtAuthorizer = true;
+        this.companiesHouseOfficerChangePostLambdaCustomAuthorizer = false;
+        var companiesHouseOfficerChangePostLambdaHandlerName = "companiesHouseOfficerChangePost.ingestHandler";
+        var companiesHouseOfficerChangePostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseOfficerChangePostLambdaHandlerName);
+        this.companiesHouseOfficerChangePostIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, companiesHouseOfficerChangePostLambdaHandlerDashed);
+        this.companiesHouseOfficerChangePostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(root.appLambdaHandlerPrefix, companiesHouseOfficerChangePostLambdaHandlerName);
+        this.companiesHouseOfficerChangePostIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, companiesHouseOfficerChangePostLambdaHandlerDashed);
+        this.companiesHouseOfficerChangePostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHouseOfficerChangePostIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseOfficerChangePostLambdaHttpMethod,
+                this.companiesHouseOfficerChangePostLambdaUrlPath,
+                "Submit an officer change of details filing",
+                "Builds the OfficerChangeDetails body, the notice that a director's or a secretary's details have changed (CH01, CH02, CH03 or CH04), and submits it through the Companies House XML Gateway",
+                "postCompaniesHouseOfficerChange"));
     }
 }

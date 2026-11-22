@@ -134,6 +134,8 @@ import { apiEndpoint as companiesHouseRecordLocationPostApiEndpoint } from "../f
 import { apiEndpoint as companiesHousePscStatementNotificationPostApiEndpoint } from "../functions/companies-house/companiesHousePscStatementNotificationPost.js";
 import { apiEndpoint as companiesHousePscStatementWithdrawalPostApiEndpoint } from "../functions/companies-house/companiesHousePscStatementWithdrawalPost.js";
 import { apiEndpoint as companiesHousePscNotificationPostApiEndpoint } from "../functions/companies-house/companiesHousePscNotificationPost.js";
+import { apiEndpoint as companiesHouseOfficerAppointmentPostApiEndpoint } from "../functions/companies-house/companiesHouseOfficerAppointmentPost.js";
+import { apiEndpoint as companiesHouseOfficerChangePostApiEndpoint } from "../functions/companies-house/companiesHouseOfficerChangePost.js";
 import { apiEndpoint as companiesHouseFormStatusGetApiEndpoint } from "../functions/companies-house/companiesHouseFormStatusGet.js";
 import { apiEndpoint as companiesHouseAccountingReferenceDatePostApiEndpoint } from "../functions/companies-house/companiesHouseAccountingReferenceDatePost.js";
 import { apiEndpoint as companiesHouseChangeOfNamePostApiEndpoint } from "../functions/companies-house/companiesHouseChangeOfNamePost.js";
@@ -484,6 +486,8 @@ companiesHouseRecordLocationPostApiEndpoint(app);
 companiesHousePscStatementNotificationPostApiEndpoint(app);
 companiesHousePscStatementWithdrawalPostApiEndpoint(app);
 companiesHousePscNotificationPostApiEndpoint(app);
+companiesHouseOfficerAppointmentPostApiEndpoint(app);
+companiesHouseOfficerChangePostApiEndpoint(app);
 companiesHouseFormStatusGetApiEndpoint(app);
 companiesHouseAccountingReferenceDatePostApiEndpoint(app);
 companiesHouseChangeOfNamePostApiEndpoint(app);

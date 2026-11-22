@@ -156,6 +156,30 @@ export const COMPANIES_HOUSE_FORMS = {
     label: "PSC notification",
     sharedPoll: true,
   },
+  "officer-appointment": {
+    routeSegment: "officer-appointment",
+    receiptTitle: "Director or secretary appointed",
+    receiptTitleCy: "Cyfarwyddwr neu ysgrifennydd wedi’i benodi",
+    acceptedEvent: "companies-house-officer-appointment-accepted",
+    acceptedSummary: "Companies House officer appointment accepted",
+    formIdentifier: "OfficerAppointment",
+    schema: "OfficerAppointment-v2-9.xsd",
+    activityId: "appoint-officer",
+    label: "officer appointment",
+    sharedPoll: true,
+  },
+  "officer-change": {
+    routeSegment: "officer-change",
+    receiptTitle: "Director's or secretary's details changed",
+    receiptTitleCy: "Manylion cyfarwyddwr neu ysgrifennydd wedi newid",
+    acceptedEvent: "companies-house-officer-change-accepted",
+    acceptedSummary: "Companies House officer change of details accepted",
+    formIdentifier: "OfficerChangeDetails",
+    schema: "OfficerChangeDetails-v2-10.xsd",
+    activityId: "change-officer",
+    label: "officer change of details",
+    sharedPoll: true,
+  },
 };
 
 /** The filing kinds, as the filing state and the receipts carry them. */

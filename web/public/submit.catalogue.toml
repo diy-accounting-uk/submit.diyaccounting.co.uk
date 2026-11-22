@@ -897,6 +897,28 @@ metered = false
 paths = ["companies-house/removeOfficer.html", "^/api/v1/companies-house/officer-resignation.*", "^/api/v1/companies-house/forms/officer-resignation/.*"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
+[[activities]]
+id = "appoint-officer"
+name = "Appoint a director or secretary (Companies House, sandbox)"
+nameCy = "Penodi cyfarwyddwr neu ysgrifennydd (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the OfficerAppointment form type for this presenter.
+paths = ["companies-house/appointOfficer.html", "^/api/v1/companies-house/officer-appointment.*", "^/api/v1/companies-house/forms/officer-appointment/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
+id = "change-officer"
+name = "Change a director's or secretary's details (Companies House, sandbox)"
+nameCy = "Newid manylion cyfarwyddwr neu ysgrifennydd (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the OfficerChangeDetails form type for this presenter.
+paths = ["companies-house/changeOfficer.html", "^/api/v1/companies-house/officer-change.*", "^/api/v1/companies-house/forms/officer-change/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
 # Passes:
 # Example invite pass record in DynamoDB:
 # Do I need a pass admin screen?

@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://xmlgw.companieshouse.gov.uk" elementFormDefault="qualified" attributeFormDefault="unqualified" version="2.9" id="OfficerChangeDetails">
+	<xs:include schemaLocation="../baseTypes-v3-7.xsd"/>
+	<xs:element name="OfficerChangeDetails" type="OfficerChangeDetailsType"/>
+	<xs:complexType name="OfficerChangeDetailsType">
+		<xs:sequence>
+			<xs:element name="DateOfChange" type="xs:date"/>
+			<xs:choice>
+				<xs:element name="Director">
+					<xs:complexType>
+						<xs:choice>
+							<xs:element name="Person">
+								<xs:complexType>
+									<xs:complexContent>
+										<xs:extension base="PersonChangeType">
+											<xs:sequence>
+												<xs:element ref="DOB"/>
+												<xs:element name="Change" minOccurs="0">
+													<xs:complexType>
+														<xs:complexContent>
+															<xs:extension base="PersonChangeDetails">
+																<xs:sequence>
+																	<xs:element name="ResidentialAddress" type="ResidentialAddressType" minOccurs="0"/>
+																	<xs:element ref="Nationality" minOccurs="0"/>
+																	<xs:element name="CountryOfResidence" type="nonEmptyString" minOccurs="0"/>
+																</xs:sequence>
+															</xs:extension>
+														</xs:complexContent>
+													</xs:complexType>
+												</xs:element>
+											</xs:sequence>
+										</xs:extension>
+									</xs:complexContent>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="Corporate" type="CorporateChangeType"/>
+						</xs:choice>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="Secretary">
+					<xs:complexType>
+						<xs:choice>
+							<xs:element name="Person">
+								<xs:complexType>
+									<xs:complexContent>
+										<xs:extension base="PersonChangeType">
+											<xs:sequence>
+												<xs:element name="Change" type="PersonChangeDetails" minOccurs="0"/>
+											</xs:sequence>
+										</xs:extension>
+									</xs:complexContent>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="Corporate" type="CorporateChangeType"/>
+						</xs:choice>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="Member">
+					<xs:complexType>
+						<xs:choice>
+							<xs:element name="Person">
+								<xs:complexType>
+									<xs:complexContent>
+										<xs:extension base="PersonChangeType">
+											<xs:sequence>
+												<xs:element ref="DOB"/>
+												<xs:element name="Change" minOccurs="0">
+													<xs:complexType>
+														<xs:complexContent>
+															<xs:extension base="PersonChangeDetails">
+																<xs:sequence>
+																	<xs:element name="ResidentialAddress" type="ResidentialAddressType" minOccurs="0"/>
+																	<xs:element name="CountryOfResidence" type="nonEmptyString" minOccurs="0"/>
+																	<xs:sequence minOccurs="0">
+																		<xs:element name="DesignatedInd">
+																			<xs:annotation>
+																				<xs:documentation>Designated Member Indicator</xs:documentation>
+																			</xs:annotation>
+																			<xs:simpleType>
+																				<xs:restriction base="xs:string">
+																					<xs:enumeration value="true"/>
+																					<xs:enumeration value="false"/>
+																				</xs:restriction>
+																			</xs:simpleType>
+																		</xs:element>
+																		<xs:element ref="ConsentToAct"/>
+																	</xs:sequence>
+																</xs:sequence>
+															</xs:extension>
+														</xs:complexContent>
+													</xs:complexType>
+												</xs:element>
+											</xs:sequence>
+										</xs:extension>
+									</xs:complexContent>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="Corporate" type="CorporateMemberChangeType"/>
+						</xs:choice>
+					</xs:complexType>
+				</xs:element>
+			</xs:choice>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="CorporateChangeType">
+		<xs:sequence>
+			<xs:element ref="CorporateName"/>
+			<xs:element name="Change" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element ref="CorporateName" minOccurs="0"/>
+						<xs:element name="Address" type="CompanyAddressType" minOccurs="0"/>
+						<xs:element ref="CompanyIdentification" minOccurs="0"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="CorporateMemberChangeType">
+		<xs:sequence>
+			<xs:element ref="CorporateName"/>
+			<xs:element name="Change" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element ref="CorporateName" minOccurs="0"/>
+						<xs:element name="Address" type="CompanyAddressType" minOccurs="0"/>
+						<xs:element ref="CompanyIdentification" minOccurs="0"/>
+						<xs:sequence minOccurs="0">
+							<xs:element name="DesignatedInd">
+								<xs:annotation>
+									<xs:documentation>Designated Member Indicator</xs:documentation>
+								</xs:annotation>
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="true"/>
+										<xs:enumeration value="false"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element ref="ConsentToAct"/>
+						</xs:sequence>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="NewNameDetailsType">
+		<xs:sequence>
+			<xs:element ref="Title" minOccurs="0"/>
+			<xs:element ref="Surname"/>
+			<xs:element ref="Forename" minOccurs="0"/>
+			<xs:element ref="OtherForenames" minOccurs="0"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="PersonChangeDetails">
+		<xs:sequence>
+			<xs:element name="Name" type="NewNameDetailsType" minOccurs="0"/>
+			<xs:element name="ServiceAddress" minOccurs="0">
+				<xs:complexType>
+					<xs:complexContent>
+						<xs:extension base="ServiceAddressType">
+							<xs:sequence>
+								<xs:element name="ResidentialAddressUnchangedInd" minOccurs="0">
+									<xs:annotation>
+										<xs:documentation>If true, Residential Address on CH records will remain unchanged. If Residential Address is currently set Same as the Service Address, then we will retain the link and the Residential Address will move to the new Service Address. To break the link, you must provide a full Residential Address.</xs:documentation>
+									</xs:annotation>
+									<xs:simpleType>
+										<xs:restriction base="xs:string">
+											<xs:length value="4"/>
+											<xs:whiteSpace value="collapse"/>
+											<xs:enumeration value="true"/>
+										</xs:restriction>
+									</xs:simpleType>
+								</xs:element>
+							</xs:sequence>
+						</xs:extension>
+					</xs:complexContent>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

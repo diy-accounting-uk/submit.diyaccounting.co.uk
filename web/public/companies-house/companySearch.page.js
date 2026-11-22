@@ -402,6 +402,22 @@ const AUTHORITY_SOURCES = {
     url: "https://assets.publishing.service.gov.uk/media/6a98253ff5b35599aec190bd/PSC01_v5.0-FINAL.pdf",
     title: "PSC01 Notice of individual person with significant control (PSC)",
   },
+  officerAppointmentDirectorGuidance: {
+    url: "https://www.gov.uk/government/publications/appoint-a-director-ap01",
+    title: "Appoint a director (AP01)",
+  },
+  officerAppointmentCorporateSecretaryForm: {
+    url: "https://assets.publishing.service.gov.uk/media/6911f0e0663088df8f54f486/AP04_v8.0-FINAL.pdf",
+    title: "AP04 Appointment of corporate secretary",
+  },
+  officerChangeDirectorForm: {
+    url: "https://assets.publishing.service.gov.uk/media/6913439e1fcc92b3f349638c/CH01_v8.0-FINAL.pdf",
+    title: "CH01 Change of director’s details",
+  },
+  officerChangeSecretaryGuidance: {
+    url: "https://www.gov.uk/government/publications/change-the-details-of-a-secretary-ch03",
+    title: "Change the details of a secretary (CH03)",
+  },
 };
 
 // A quotation GOV.UK publishes in Welsh as well: its Welsh is GOV.UK's own sentence.
@@ -542,6 +558,29 @@ function authorityNotes(activityId) {
         "pscNotificationForm",
         "You must have obtained confirmation from the individual person with significant control that their particulars are correct before sending this form to Companies House.",
       ),
+      codeOnline,
+    ],
+    "appoint-officer": [
+      inEnglishOnly(
+        "officerAppointmentCorporateSecretaryForm",
+        "This form may be authenticated by: Director, Secretary, Person authorised, Administrator, Administrative receiver, Receiver, Receiver manager, Charity commission receiver and manager, CIC manager, Judicial factor.",
+      ),
+      inEnglishOnly(
+        "officerAppointmentDirectorGuidance",
+        "All directors must verify their identity to prove who they are. You’ll need to give the Companies House personal code for the director and confirm they have verified their identity.",
+      ),
+      codeOnline,
+    ],
+    "change-officer": [
+      inEnglishOnly(
+        "officerChangeDirectorForm",
+        "This form may be authenticated by: Director, Secretary, Person authorised, Administrator, Administrative receiver, Receiver, Receiver manager, Charity commission receiver and manager, CIC manager, Judicial factor.",
+      ),
+      inEnglishOnly(
+        "officerChangeDirectorForm",
+        "Please note that all information on this form will appear on the public record, apart from information relating to usual residential addresses.",
+      ),
+      inEnglishOnly("officerChangeSecretaryGuidance", "This form is not to be used for making new appointments."),
       codeOnline,
     ],
     "file-micro-entity-accounts": accounts,
@@ -1057,7 +1096,10 @@ async function renderRecordsSection(profile) {
 async function renderOfficers(container, companyNumber) {
   sectionHeading(container, window.siteText("ch.drill.officers", "Officers"));
   const officers = await readOfficers(companyNumber);
-  if (officers.length === 0) return emptyNote(container, window.siteText("ch.drill.no-officers", "The register lists no officers."));
+  if (officers.length === 0) {
+    emptyNote(container, window.siteText("ch.drill.no-officers", "The register lists no officers."));
+    return appendAppointOfficer(container, companyNumber);
+  }
   container.appendChild(
     table(
       [
@@ -1075,11 +1117,30 @@ async function renderOfficers(container, companyNumber) {
     label: window.siteText("ch.drill.remove-officer", "Remove a director or secretary"),
     companyNumber,
   });
+  await appendAppointOfficer(container, companyNumber);
+  await appendChangeOfficerLinks(container, companyNumber, officers);
+  await appendFileThis(container, {
+    activityId: "change-officer",
+    page: "changeOfficer.html",
+    label: window.siteText("ch.drill.change-officer", "Change a director's or secretary's details"),
+    companyNumber,
+  });
 }
 
-// The register's officer roles the officer resignation form ends: directors and secretaries, each
-// a person or a company, nominee or not.
-const REMOVABLE_OFFICER_ROLES = [
+// The officers view's File this control for the officer appointment form, shown whether or not the
+// register lists officers now.
+function appendAppointOfficer(container, companyNumber) {
+  return appendFileThis(container, {
+    activityId: "appoint-officer",
+    page: "appointOfficer.html",
+    label: window.siteText("ch.drill.appoint-officer", "Appoint a director or secretary"),
+    companyNumber,
+  });
+}
+
+// The register's officer roles the officer resignation and change of details forms name: directors
+// and secretaries, each a person or a company, nominee or not.
+const OFFICER_FORM_ROLES = [
   "director",
   "nominee-director",
   "corporate-director",
@@ -1090,33 +1151,56 @@ const REMOVABLE_OFFICER_ROLES = [
   "corporate-nominee-secretary",
 ];
 
-// For an account that holds the officer resignation form, a link for each current director or
-// secretary, which opens the form with that officer chosen.
-async function appendRemoveOfficerLinks(container, companyNumber, officers) {
-  const current = officers.filter((officer) => !officer.resignedOn && REMOVABLE_OFFICER_ROLES.includes(officer.role));
+// For an account that holds the activity, a link for each current director or secretary, which opens
+// the activity's page with that officer chosen. Only the company number and the officer's name go in
+// the link.
+async function appendOfficerLinks(container, companyNumber, officers, { activityId, page, className, linkText }) {
+  const current = officers.filter((officer) => !officer.resignedOn && OFFICER_FORM_ROLES.includes(officer.role));
   if (current.length === 0 || !localStorage.getItem("cognitoIdToken")) return;
   let access;
   try {
-    access = activityAccess(await loadEntitlement(), "remove-officer");
+    access = activityAccess(await loadEntitlement(), activityId);
   } catch (error) {
     console.warn("Could not read the catalogue for the officer links:", error);
     return;
   }
   if (!access.shown || !access.held) return;
   const list = document.createElement("ul");
-  list.className = "remove-officer-links";
+  list.className = className;
   current.forEach((officer) => {
     const item = document.createElement("li");
     const link = document.createElement("a");
-    link.href = `${pagePrefix()}/companies-house/removeOfficer.html?${new URLSearchParams({ companyNumber, officerName: officer.name })}`;
-    link.textContent = window.siteText("ch.drill.remove-this-officer", "Remove {name} ({role})", {
-      name: officer.name,
-      role: slugText(officer.role),
-    });
+    link.href = `${pagePrefix()}/companies-house/${page}?${new URLSearchParams({ companyNumber, officerName: officer.name })}`;
+    link.textContent = linkText(officer);
     item.appendChild(link);
     list.appendChild(item);
   });
   container.appendChild(list);
+}
+
+// The officer resignation form's link for each current director or secretary.
+function appendRemoveOfficerLinks(container, companyNumber, officers) {
+  return appendOfficerLinks(container, companyNumber, officers, {
+    activityId: "remove-officer",
+    page: "removeOfficer.html",
+    className: "remove-officer-links",
+    linkText: (officer) =>
+      window.siteText("ch.drill.remove-this-officer", "Remove {name} ({role})", { name: officer.name, role: slugText(officer.role) }),
+  });
+}
+
+// The officer change of details form's link for each current director or secretary.
+function appendChangeOfficerLinks(container, companyNumber, officers) {
+  return appendOfficerLinks(container, companyNumber, officers, {
+    activityId: "change-officer",
+    page: "changeOfficer.html",
+    className: "change-officer-links",
+    linkText: (officer) =>
+      window.siteText("ch.drill.change-this-officer", "Change the details of {name} ({role})", {
+        name: officer.name,
+        role: slugText(officer.role),
+      }),
+  });
 }
 
 async function renderPscs(container, companyNumber) {

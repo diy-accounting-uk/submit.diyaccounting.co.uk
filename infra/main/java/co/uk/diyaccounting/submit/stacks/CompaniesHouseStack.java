@@ -238,6 +238,14 @@ public class CompaniesHouseStack extends Stack {
     public Function companiesHouseChangeOfNamePostLambda;
     public ILogGroup companiesHouseChangeOfNamePostLambdaLogGroup;
 
+    public AbstractApiLambdaProps companiesHouseOfficerAppointmentPostLambdaProps;
+    public Function companiesHouseOfficerAppointmentPostLambda;
+    public ILogGroup companiesHouseOfficerAppointmentPostLambdaLogGroup;
+
+    public AbstractApiLambdaProps companiesHouseOfficerChangePostLambdaProps;
+    public Function companiesHouseOfficerChangePostLambda;
+    public ILogGroup companiesHouseOfficerChangePostLambdaLogGroup;
+
     public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
@@ -2879,6 +2887,140 @@ public class CompaniesHouseStack extends Stack {
         // Seals the filer's sub into the filing state the presenter poll reads.
         codesSealKeySecret.grantRead(this.companiesHouseChangeOfNamePostLambda);
 
+        var companiesHouseOfficerAppointmentPostLambdaEnv = xmlGatewayFilingLambdaEnv(props)
+                .with(
+                        "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
+                        companiesHouseAccountsAsyncRequestsTable.getTableName())
+                .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
+        withPresenterSecretArns(companiesHouseOfficerAppointmentPostLambdaEnv, props);
+        withFilerSealKeyEnv(companiesHouseOfficerAppointmentPostLambdaEnv, codesSealKeySecret);
+        if (xmlGatewayPackageReference(props) != null) {
+            companiesHouseOfficerAppointmentPostLambdaEnv.with(
+                    "COMPANIES_HOUSE_PACKAGE_REFERENCE", xmlGatewayPackageReference(props));
+        }
+        var companiesHouseOfficerAppointmentPostLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseOfficerAppointmentPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseOfficerAppointmentPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseOfficerAppointmentPostIngestLambdaHandler)
+                        .ingestLambdaArn(
+                                props.sharedNames().companiesHouse.companiesHouseOfficerAppointmentPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseOfficerAppointmentPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestMemorySize(256)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(
+                                props.sharedNames().companiesHouse.companiesHouseOfficerAppointmentPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHouseOfficerAppointmentPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseOfficerAppointmentPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseOfficerAppointmentPostLambdaCustomAuthorizer)
+                        .environment(companiesHouseOfficerAppointmentPostLambdaEnv)
+                        .build());
+        this.companiesHouseOfficerAppointmentPostLambdaProps =
+                companiesHouseOfficerAppointmentPostLambdaUrlOrigin.apiProps;
+        this.companiesHouseOfficerAppointmentPostLambda =
+                companiesHouseOfficerAppointmentPostLambdaUrlOrigin.ingestLambda;
+        this.companiesHouseOfficerAppointmentPostLambdaLogGroup =
+                companiesHouseOfficerAppointmentPostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.companiesHouseOfficerAppointmentPostLambdaProps);
+        infof(
+                "Created Lambda %s for Companies House officer appointment submit with ingestHandler %s",
+                this.companiesHouseOfficerAppointmentPostLambda.getNode().getId(),
+                props.sharedNames().companiesHouse.companiesHouseOfficerAppointmentPostIngestLambdaHandler);
+        grantCompaniesHouseLambdaAccess(
+                this.companiesHouseOfficerAppointmentPostLambda,
+                bundlesTable,
+                region,
+                account,
+                props,
+                activityBusArn,
+                false);
+        grantCompaniesHousePresenterSecretsAccess(this.companiesHouseOfficerAppointmentPostLambda, props);
+        companiesHouseAccountsAsyncRequestsTable.grant(
+                this.companiesHouseOfficerAppointmentPostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        // Seals the filer's sub into the filing state the presenter poll reads.
+        codesSealKeySecret.grantRead(this.companiesHouseOfficerAppointmentPostLambda);
+
+        var companiesHouseOfficerChangePostLambdaEnv = xmlGatewayFilingLambdaEnv(props)
+                .with(
+                        "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
+                        companiesHouseAccountsAsyncRequestsTable.getTableName())
+                .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
+        withPresenterSecretArns(companiesHouseOfficerChangePostLambdaEnv, props);
+        withFilerSealKeyEnv(companiesHouseOfficerChangePostLambdaEnv, codesSealKeySecret);
+        if (xmlGatewayPackageReference(props) != null) {
+            companiesHouseOfficerChangePostLambdaEnv.with(
+                    "COMPANIES_HOUSE_PACKAGE_REFERENCE", xmlGatewayPackageReference(props));
+        }
+        var companiesHouseOfficerChangePostLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseOfficerChangePostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseOfficerChangePostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler(
+                                props.sharedNames().companiesHouse.companiesHouseOfficerChangePostIngestLambdaHandler)
+                        .ingestLambdaArn(
+                                props.sharedNames().companiesHouse.companiesHouseOfficerChangePostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseOfficerChangePostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestMemorySize(256)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHouseOfficerChangePostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHouseOfficerChangePostLambdaUrlPath)
+                        .jwtAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseOfficerChangePostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseOfficerChangePostLambdaCustomAuthorizer)
+                        .environment(companiesHouseOfficerChangePostLambdaEnv)
+                        .build());
+        this.companiesHouseOfficerChangePostLambdaProps = companiesHouseOfficerChangePostLambdaUrlOrigin.apiProps;
+        this.companiesHouseOfficerChangePostLambda = companiesHouseOfficerChangePostLambdaUrlOrigin.ingestLambda;
+        this.companiesHouseOfficerChangePostLambdaLogGroup = companiesHouseOfficerChangePostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.companiesHouseOfficerChangePostLambdaProps);
+        infof(
+                "Created Lambda %s for Companies House officer change of details submit with ingestHandler %s",
+                this.companiesHouseOfficerChangePostLambda.getNode().getId(),
+                props.sharedNames().companiesHouse.companiesHouseOfficerChangePostIngestLambdaHandler);
+        grantCompaniesHouseLambdaAccess(
+                this.companiesHouseOfficerChangePostLambda,
+                bundlesTable,
+                region,
+                account,
+                props,
+                activityBusArn,
+                false);
+        grantCompaniesHousePresenterSecretsAccess(this.companiesHouseOfficerChangePostLambda, props);
+        companiesHouseAccountsAsyncRequestsTable.grant(
+                this.companiesHouseOfficerChangePostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        // Seals the filer's sub into the filing state the presenter poll reads.
+        codesSealKeySecret.grantRead(this.companiesHouseOfficerChangePostLambda);
+
         // The scheduled presenter poll: asks the XML Gateway for every submission of our presenter
         // that Companies House has accepted or rejected, records each against its filing as the page
         // poll does, then acknowledges the poll (GetSubmissionStatus option 2, then GetStatusAck).
@@ -3038,7 +3180,9 @@ public class CompaniesHouseStack extends Stack {
                         companiesHouseChangeOfNamePostLambdaUrlOrigin,
                         companiesHousePscStatementNotificationPostLambdaUrlOrigin,
                         companiesHousePscStatementWithdrawalPostLambdaUrlOrigin,
-                        companiesHousePscNotificationPostLambdaUrlOrigin));
+                        companiesHousePscNotificationPostLambdaUrlOrigin,
+                        companiesHouseOfficerAppointmentPostLambdaUrlOrigin,
+                        companiesHouseOfficerChangePostLambdaUrlOrigin));
 
         cfnOutput(this, "CompaniesHouseSearchGetLambdaArn", this.companiesHouseSearchGetLambda.getFunctionArn());
         cfnOutput(this, "CompaniesHouseCompanyGetLambdaArn", this.companiesHouseCompanyGetLambda.getFunctionArn());
@@ -3148,6 +3292,14 @@ public class CompaniesHouseStack extends Stack {
                 this,
                 "CompaniesHouseChangeOfNamePostLambdaArn",
                 this.companiesHouseChangeOfNamePostLambda.getFunctionArn());
+        cfnOutput(
+                this,
+                "CompaniesHouseOfficerAppointmentPostLambdaArn",
+                this.companiesHouseOfficerAppointmentPostLambda.getFunctionArn());
+        cfnOutput(
+                this,
+                "CompaniesHouseOfficerChangePostLambdaArn",
+                this.companiesHouseOfficerChangePostLambda.getFunctionArn());
 
         infof(
                 "CompaniesHouseStack %s created successfully for %s",

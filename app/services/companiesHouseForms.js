@@ -41,6 +41,13 @@ import {
   FIRST_NOTIFICATION_DATE,
   individualProblems,
 } from "./companiesHousePscNotificationXml.js";
+import {
+  buildOfficerAppointmentBody,
+  OFFICER_APPOINTMENT_ROLES,
+  OFFICER_ADDRESS_COUNTRY_CODES,
+  OFFICER_NAME_MISMATCH_REASONS,
+} from "./companiesHouseOfficerAppointmentXml.js";
+import { buildOfficerChangeBody, OFFICER_CHANGE_ROLES } from "./companiesHouseOfficerChangeXml.js";
 
 function extractPscVerificationStatement(body, errorMessages) {
   const { title, forename, otherForenames, surname, dobMonth, dobYear, personalCode } = body;
@@ -430,6 +437,257 @@ function extractPscNotification(body, errorMessages) {
   return { ...form, naturesOfControl, ...dates };
 }
 
+// An address as the officer appointment form carries it, or undefined after naming what is wrong.
+function extractOfficerAddress(address, field, errorMessages) {
+  if (!address || typeof address !== "object") {
+    errorMessages.push(`Missing ${field}`);
+    return undefined;
+  }
+  const premise = trimmed(address.premise);
+  const postTown = trimmed(address.postTown);
+  const country = trimmed(address.country);
+  const otherForeignCountry = trimmed(address.otherForeignCountry);
+  if (!premise) errorMessages.push(`Missing ${field}.premise`);
+  if (!postTown) errorMessages.push(`Missing ${field}.postTown`);
+  if (country && !OFFICER_ADDRESS_COUNTRY_CODES.includes(country)) {
+    errorMessages.push(`Invalid ${field}.country - must be one of ${OFFICER_ADDRESS_COUNTRY_CODES.join(", ")}`);
+  } else if (!country && !otherForeignCountry) {
+    errorMessages.push(`Missing ${field}.country or ${field}.otherForeignCountry`);
+  }
+  return {
+    premise,
+    street: trimmed(address.street) || undefined,
+    thoroughfare: trimmed(address.thoroughfare) || undefined,
+    postTown,
+    county: trimmed(address.county) || undefined,
+    country: country || undefined,
+    otherForeignCountry: country ? undefined : otherForeignCountry,
+    postcode: trimmed(address.postcode) || undefined,
+  };
+}
+
+function extractOfficerPreviousNames(previousNames, errorMessages) {
+  if (previousNames === undefined) return [];
+  if (!Array.isArray(previousNames)) {
+    errorMessages.push("Invalid previousNames - must be a list");
+    return [];
+  }
+  return previousNames.map((previous) => {
+    if (!trimmed(previous?.surname)) errorMessages.push("Missing previousNames surname");
+    return { forename: trimmed(previous?.forename) || undefined, surname: trimmed(previous?.surname) };
+  });
+}
+
+function extractCompanyIdentification(identification, errorMessages) {
+  if (identification?.uk) {
+    const registrationNumber = trimmed(identification.uk.registrationNumber);
+    if (!registrationNumber) errorMessages.push("Missing companyIdentification.uk.registrationNumber");
+    return { uk: { registrationNumber } };
+  }
+  if (identification?.nonUk) {
+    const { placeRegistered, registrationNumber, lawGoverned, legalForm } = identification.nonUk;
+    if (!trimmed(lawGoverned)) errorMessages.push("Missing companyIdentification.nonUk.lawGoverned");
+    if (!trimmed(legalForm)) errorMessages.push("Missing companyIdentification.nonUk.legalForm");
+    if (trimmed(placeRegistered) && !trimmed(registrationNumber)) {
+      errorMessages.push("Missing companyIdentification.nonUk.registrationNumber - a body entered in a register needs its number there");
+    }
+    return {
+      nonUk: {
+        placeRegistered: trimmed(placeRegistered) || undefined,
+        registrationNumber: trimmed(registrationNumber) || undefined,
+        lawGoverned: trimmed(lawGoverned),
+        legalForm: trimmed(legalForm),
+      },
+    };
+  }
+  errorMessages.push("Missing companyIdentification - must give uk or nonUk");
+  return undefined;
+}
+
+function extractOfficerAppointment(body, errorMessages) {
+  const { officerRole, corporate, appointmentDate, consentToAct } = body;
+  if (!OFFICER_APPOINTMENT_ROLES[officerRole]) {
+    errorMessages.push(`Invalid officerRole - must be one of ${Object.keys(OFFICER_APPOINTMENT_ROLES).join(", ")}`);
+  }
+  if (typeof corporate !== "boolean") {
+    errorMessages.push("Invalid corporate - must be true or false");
+  }
+  if (!appointmentDate || !isValidIsoDate(appointmentDate)) {
+    errorMessages.push("Invalid or missing appointmentDate - must be YYYY-MM-DD");
+  } else if (body.dateSigned && isValidIsoDate(body.dateSigned) && appointmentDate > body.dateSigned) {
+    errorMessages.push("Invalid appointmentDate - must not be after dateSigned");
+  }
+  if (consentToAct !== true) {
+    errorMessages.push("Missing consentToAct - the company must confirm the officer has consented to act");
+  }
+  const common = { role: officerRole, corporate, appointmentDate, consentToAct: true };
+  if (corporate === true) {
+    if (!trimmed(body.corporateName)) errorMessages.push("Missing corporateName");
+    return {
+      ...common,
+      corporateName: trimmed(body.corporateName),
+      address: extractOfficerAddress(body.address, "address", errorMessages),
+      companyIdentification: extractCompanyIdentification(body.companyIdentification, errorMessages),
+    };
+  }
+  if (corporate !== false) return common;
+  if (!trimmed(body.surname)) errorMessages.push("Missing surname");
+  const serviceAddress =
+    body.serviceAddress?.sameAsRegisteredOffice === true
+      ? { sameAsRegisteredOffice: true }
+      : { address: extractOfficerAddress(body.serviceAddress?.address, "serviceAddress.address", errorMessages) };
+  const person = {
+    ...common,
+    title: trimmed(body.title) || undefined,
+    forename: trimmed(body.forename) || undefined,
+    otherForenames: trimmed(body.otherForenames) || undefined,
+    surname: trimmed(body.surname),
+    serviceAddress,
+    previousNames: extractOfficerPreviousNames(body.previousNames, errorMessages),
+  };
+  if (officerRole !== "director") return person;
+  const { dateOfBirth, nationality, countryOfResidence, personalCode, identityVerified, nameMismatchReason } = body;
+  if (!dateOfBirth || !isValidIsoDate(dateOfBirth)) {
+    errorMessages.push("Invalid or missing dateOfBirth - a director who is a person needs it as YYYY-MM-DD");
+  } else if (appointmentDate && isValidIsoDate(appointmentDate) && dateOfBirth >= appointmentDate) {
+    errorMessages.push("Invalid dateOfBirth - must be before appointmentDate");
+  }
+  if (!trimmed(nationality)) errorMessages.push("Missing nationality");
+  const { valid: personalCodeValid, normalised: normalisedPersonalCode } = isValidCompaniesHousePersonalCode(personalCode);
+  if (!personalCodeValid) {
+    errorMessages.push("Invalid personalCode - must be the 11-character Companies House personal code, letters and digits");
+  }
+  if (identityVerified !== true) {
+    errorMessages.push("Missing identityVerified - a director must have verified their identity with Companies House");
+  }
+  if (nameMismatchReason !== undefined && !OFFICER_NAME_MISMATCH_REASONS.includes(nameMismatchReason)) {
+    errorMessages.push(`Invalid nameMismatchReason - must be one of ${OFFICER_NAME_MISMATCH_REASONS.join(", ")}`);
+  }
+  const residentialAddress =
+    body.residentialAddress?.sameAsServiceAddress === true
+      ? { sameAsServiceAddress: true }
+      : { address: extractOfficerAddress(body.residentialAddress?.address, "residentialAddress.address", errorMessages) };
+  return {
+    ...person,
+    dateOfBirth,
+    nationality: trimmed(nationality),
+    countryOfResidence: trimmed(countryOfResidence) || undefined,
+    residentialAddress,
+    personalCode: normalisedPersonalCode,
+    identityVerified: true,
+    nameMismatchReason,
+  };
+}
+
+function extractOfficerNewName(newName, errorMessages) {
+  if (newName === undefined) return undefined;
+  if (!trimmed(newName?.surname)) errorMessages.push("Missing newName.surname");
+  return {
+    title: trimmed(newName?.title) || undefined,
+    surname: trimmed(newName?.surname),
+    forename: trimmed(newName?.forename) || undefined,
+    otherForenames: trimmed(newName?.otherForenames) || undefined,
+  };
+}
+
+function extractCorporateOfficerChange(body, common, errorMessages) {
+  if (!trimmed(body.corporateName)) errorMessages.push("Missing corporateName - the name the register holds");
+  const newCorporateName = trimmed(body.newCorporateName) || undefined;
+  const address = body.address === undefined ? undefined : extractOfficerAddress(body.address, "address", errorMessages);
+  const companyIdentification =
+    body.companyIdentification === undefined ? undefined : extractCompanyIdentification(body.companyIdentification, errorMessages);
+  if (!newCorporateName && body.address === undefined && body.companyIdentification === undefined) {
+    errorMessages.push("Missing change - give newCorporateName, address or companyIdentification");
+  }
+  return { ...common, corporateName: trimmed(body.corporateName), newCorporateName, address, companyIdentification };
+}
+
+function extractOfficerChange(body, errorMessages) {
+  const { officerRole, corporate, dateOfChange } = body;
+  if (!OFFICER_CHANGE_ROLES[officerRole]) {
+    errorMessages.push(`Invalid officerRole - must be one of ${Object.keys(OFFICER_CHANGE_ROLES).join(", ")}`);
+  }
+  if (typeof corporate !== "boolean") {
+    errorMessages.push("Invalid corporate - must be true or false");
+  }
+  if (!dateOfChange || !isValidIsoDate(dateOfChange)) {
+    errorMessages.push("Invalid or missing dateOfChange - must be YYYY-MM-DD");
+  } else if (body.dateSigned && isValidIsoDate(body.dateSigned) && dateOfChange > body.dateSigned) {
+    errorMessages.push("Invalid dateOfChange - must not be after dateSigned");
+  }
+  const common = { role: officerRole, corporate, dateOfChange };
+  if (corporate === true) return extractCorporateOfficerChange(body, common, errorMessages);
+  if (corporate !== false) return common;
+  const director = officerRole === "director";
+  if (!trimmed(body.surname)) errorMessages.push("Missing surname - the name the register holds");
+  const { dateOfBirth, residentialAddressUnchanged } = body;
+  if (director && (!dateOfBirth || !isValidIsoDate(dateOfBirth))) {
+    errorMessages.push("Invalid or missing dateOfBirth - a director who is a person needs it as YYYY-MM-DD");
+  } else if (director && dateOfChange && isValidIsoDate(dateOfChange) && dateOfBirth >= dateOfChange) {
+    errorMessages.push("Invalid dateOfBirth - must be before dateOfChange");
+  }
+  const newName = extractOfficerNewName(body.newName, errorMessages);
+  let serviceAddress;
+  if (body.serviceAddress?.sameAsRegisteredOffice === true) serviceAddress = { sameAsRegisteredOffice: true };
+  else if (body.serviceAddress !== undefined) {
+    serviceAddress = { address: extractOfficerAddress(body.serviceAddress?.address, "serviceAddress.address", errorMessages) };
+  }
+  if (residentialAddressUnchanged !== undefined && residentialAddressUnchanged !== true) {
+    errorMessages.push("Invalid residentialAddressUnchanged - must be true when given");
+  }
+  const person = {
+    ...common,
+    title: trimmed(body.title) || undefined,
+    surname: trimmed(body.surname),
+    forename: trimmed(body.forename) || undefined,
+    otherForenames: trimmed(body.otherForenames) || undefined,
+    newName,
+    serviceAddress,
+  };
+  if (!director) {
+    if (
+      body.residentialAddress !== undefined ||
+      body.nationality !== undefined ||
+      body.countryOfResidence !== undefined ||
+      residentialAddressUnchanged
+    ) {
+      errorMessages.push("Invalid change - a secretary's change carries only newName and serviceAddress");
+    }
+    if (!newName && !serviceAddress) errorMessages.push("Missing change - give newName or serviceAddress");
+    return person;
+  }
+  let residentialAddress;
+  if (body.residentialAddress?.sameAsServiceAddress === true) residentialAddress = { sameAsServiceAddress: true };
+  else if (body.residentialAddress !== undefined) {
+    residentialAddress = { address: extractOfficerAddress(body.residentialAddress?.address, "residentialAddress.address", errorMessages) };
+  }
+  const nationality = trimmed(body.nationality) || undefined;
+  const countryOfResidence = trimmed(body.countryOfResidence) || undefined;
+  if (!newName && !serviceAddress && !residentialAddress && !nationality && !countryOfResidence) {
+    errorMessages.push("Missing change - give newName, serviceAddress, residentialAddress, nationality or countryOfResidence");
+  }
+  if (residentialAddressUnchanged === true && !serviceAddress) {
+    errorMessages.push("Invalid residentialAddressUnchanged - it goes with a new serviceAddress");
+  } else if (residentialAddressUnchanged === true && residentialAddress) {
+    errorMessages.push("Invalid residentialAddressUnchanged - a new residentialAddress is given too");
+  } else if (serviceAddress && residentialAddressUnchanged !== true && !residentialAddress) {
+    errorMessages.push(
+      "Missing residentialAddress - a director's new service address needs residentialAddressUnchanged true or a new residentialAddress",
+    );
+  }
+  if (residentialAddress?.sameAsServiceAddress === true && serviceAddress?.sameAsRegisteredOffice === true) {
+    errorMessages.push("Invalid residentialAddress - it cannot be the same as a service address that is the registered office");
+  }
+  return {
+    ...person,
+    dateOfBirth,
+    residentialAddressUnchanged: residentialAddressUnchanged === true ? true : undefined,
+    residentialAddress,
+    nationality,
+    countryOfResidence,
+  };
+}
+
 /**
  * Each form's request check and body builder, by the kind its filing state carries. A form whose
  * filing carries a document in the envelope has buildDocument as well.
@@ -489,5 +747,13 @@ export const GATEWAY_FORM_BUILDERS = {
   "psc-notification": {
     extractAndValidate: extractPscNotification,
     buildFormXml: (form) => buildPscNotificationBody(form),
+  },
+  "officer-appointment": {
+    extractAndValidate: extractOfficerAppointment,
+    buildFormXml: (form) => buildOfficerAppointmentBody(form),
+  },
+  "officer-change": {
+    extractAndValidate: extractOfficerChange,
+    buildFormXml: (form) => buildOfficerChangeBody(form),
   },
 };

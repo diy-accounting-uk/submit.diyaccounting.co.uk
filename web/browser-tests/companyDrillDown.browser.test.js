@@ -940,3 +940,72 @@ test.describe("Company lookup drill-down change of company name link", () => {
     await expect(page.locator(CONTROL)).toHaveCount(0);
   });
 });
+
+test.describe("Company lookup drill-down officer appointment control", () => {
+  test("an account holding the officer appointment form gets its File this control and the authority AP04 and GOV.UK's AP01 page state", async ({
+    page,
+  }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001/officers`, { waitUntil: "networkidle" });
+
+    const control = page.locator('#drillView .file-this[data-activity="appoint-officer"]');
+    await expect(control.locator("a.btn")).toHaveText("Appoint a director or secretary", { timeout: 15000 });
+    expect(await control.locator("a.btn").getAttribute("href")).toBe("/companies-house/appointOfficer.html?companyNumber=00000001");
+    const authority = control.locator(".file-this-authority");
+    await expect(authority).toContainText(
+      "“This form may be authenticated by: Director, Secretary, Person authorised, Administrator, Administrative receiver, Receiver, Receiver manager, Charity commission receiver and manager, CIC manager, Judicial factor.”",
+    );
+    await expect(authority).toContainText(
+      "“All directors must verify their identity to prove who they are. You’ll need to give the Companies House personal code for the director and confirm they have verified their identity.”",
+    );
+    const sources = await control.locator(".file-this-authority a").evaluateAll((links) => links.map((anchor) => anchor.href));
+    expect(sources).toContain("https://assets.publishing.service.gov.uk/media/6911f0e0663088df8f54f486/AP04_v8.0-FINAL.pdf");
+    expect(sources).toContain("https://www.gov.uk/government/publications/appoint-a-director-ap01");
+    await shoot(page, "officer-appoint-control");
+  });
+
+  test("on prod, where the officer appointment form is not offered, the officers view carries no appointment control", async ({ page }) => {
+    await serveSite(page, { environmentName: "prod", bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001/officers`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillView")).toContainText("BRAMWELL, Eleanor", { timeout: 15000 });
+    await expect(page.locator('#drillView .file-this[data-activity="appoint-officer"]')).toHaveCount(0);
+  });
+});
+
+test.describe("Company lookup drill-down officer change of details links", () => {
+  test("an account holding the officer change form gets a link for each current director or secretary, and the authority CH01 and GOV.UK's CH03 page state", async ({
+    page,
+  }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001/officers`, { waitUntil: "networkidle" });
+
+    const link = page.locator("#drillView .change-officer-links a");
+    await expect(link).toHaveText("Change the details of BRAMWELL, Eleanor (Director)", { timeout: 15000 });
+    expect(await link.getAttribute("href")).toBe(
+      "/companies-house/changeOfficer.html?companyNumber=00000001&officerName=BRAMWELL%2C+Eleanor",
+    );
+    const control = page.locator('#drillView .file-this[data-activity="change-officer"]');
+    await expect(control.locator("a.btn")).toHaveText("Change a director's or secretary's details");
+    expect(await control.locator("a.btn").getAttribute("href")).toBe("/companies-house/changeOfficer.html?companyNumber=00000001");
+    const authority = control.locator(".file-this-authority");
+    await expect(authority).toContainText(
+      "“This form may be authenticated by: Director, Secretary, Person authorised, Administrator, Administrative receiver, Receiver, Receiver manager, Charity commission receiver and manager, CIC manager, Judicial factor.”",
+    );
+    await expect(authority).toContainText(
+      "“Please note that all information on this form will appear on the public record, apart from information relating to usual residential addresses.”",
+    );
+    await expect(authority).toContainText("“This form is not to be used for making new appointments.”");
+    const sources = await control.locator(".file-this-authority a").evaluateAll((links) => links.map((anchor) => anchor.href));
+    expect(sources).toContain("https://assets.publishing.service.gov.uk/media/6913439e1fcc92b3f349638c/CH01_v8.0-FINAL.pdf");
+    expect(sources).toContain("https://www.gov.uk/government/publications/change-the-details-of-a-secretary-ch03");
+    await shoot(page, "officer-change-links");
+  });
+
+  test("on prod, where the officer change form is not offered, the officers view carries no change link or control", async ({ page }) => {
+    await serveSite(page, { environmentName: "prod", bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001/officers`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillView")).toContainText("BRAMWELL, Eleanor", { timeout: 15000 });
+    await expect(page.locator("#drillView .change-officer-links")).toHaveCount(0);
+    await expect(page.locator('#drillView .file-this[data-activity="change-officer"]')).toHaveCount(0);
+  });
+});

@@ -666,6 +666,20 @@
         } ]
       }
     },
+    "/companies-house/officer-appointment" : {
+      "post" : {
+        "summary" : "Submit an officer appointment filing",
+        "description" : "Builds the OfficerAppointment body, the notice that a director or a secretary has been appointed (AP01, AP02, AP03 or AP04), and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseOfficerAppointment"
+      }
+    },
+    "/companies-house/officer-change" : {
+      "post" : {
+        "summary" : "Submit an officer change of details filing",
+        "description" : "Builds the OfficerChangeDetails body, the notice that a director's or a secretary's details have changed (CH01, CH02, CH03 or CH04), and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseOfficerChange"
+      }
+    },
     "/companies-house/officer-resignation" : {
       "post" : {
         "summary" : "Submit an officer resignation filing",

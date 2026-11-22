@@ -25353,3 +25353,1081 @@ cy = '''Dyddiad cadarnhau'''
 [strings."receipts.kind-psc-notification"]
 hash = "993357de75fa"
 cy = '''PRhA newydd wedi’i hysbysu'''
+
+# == The officer appointment page and the drill-down's appoint link: ids ch-appoint-officer.*, ch.appoint-officer.*, ch.drill.appoint-officer, receipts.kind-officer-appointment ==
+
+[strings."ch-appoint-officer.title"]
+hash = "90144cb363c9"
+cy = '''Penodi cyfarwyddwr neu ysgrifennydd - DIY Accounting Submit'''
+
+[strings."ch-appoint-officer.appoint-a-director-or-secretary-5be7fe"]
+hash = "5be7fef9423a"
+cy = '''Penodi cyfarwyddwr neu ysgrifennydd'''
+
+[strings."ch-appoint-officer.tell-companies-house-that-a-director-104587"]
+hash = "104587696334"
+cy = '''Dweud wrth Dŷ’r Cwmnïau fod cyfarwyddwr neu ysgrifennydd wedi’i benodi'''
+
+[strings."ch-appoint-officer.status-sandbox-this-runs-against-companies-3c285c"]
+hash = "3c285c86cda2"
+cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.'''
+
+[strings."ch-appoint-officer.which-company-d9aae4"]
+hash = "d9aae49b05ee"
+cy = '''Pa gwmni?'''
+
+[strings."ch-appoint-officer.company-number-8b121b"]
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
+
+[strings."ch-appoint-officer.8-characters-for-example-00000001-do-090062"]
+hash = "090062b139be"
+cy = '''8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.'''
+
+[strings."ch-appoint-officer.look-up-the-company-570ac0"]
+hash = "570ac0974205"
+cy = '''Chwilio am y cwmni'''
+
+[strings."ch-appoint-officer.who-is-being-appointed-978c9e"]
+hash = "978c9e31cfc1"
+cy = '''Pwy sy’n cael ei benodi?'''
+
+[strings."ch-appoint-officer.company-3bc806"]
+hash = "3bc806ccac3b"
+cy = '''Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).'''
+
+[strings."ch-appoint-officer.appointment-8a4f95"]
+hash = "8a4f957e08cb"
+cy = '''Penodiad'''
+
+[strings."ch-appoint-officer.a-director-who-is-a-person-6ef2be"]
+hash = "6ef2be41af7e"
+cy = '''Cyfarwyddwr sy’n unigolyn'''
+
+[strings."ch-appoint-officer.a-corporate-director-a-company-or-518f84"]
+hash = "518f84fa3da1"
+cy = '''Cyfarwyddwr corfforaethol (cwmni neu ffyrm)'''
+
+[strings."ch-appoint-officer.a-secretary-who-is-a-person-99d507"]
+hash = "99d50711719d"
+cy = '''Ysgrifennydd sy’n unigolyn'''
+
+[strings."ch-appoint-officer.a-corporate-secretary-a-company-or-a8fcbe"]
+hash = "a8fcbe022c87"
+cy = '''Ysgrifennydd corfforaethol (cwmni neu ffyrm)'''
+
+[strings."ch-appoint-officer.date-of-appointment-b92224"]
+hash = "b9222441437a"
+cy = '''Dyddiad y penodiad'''
+
+[strings."ch-appoint-officer.their-name-228e74"]
+hash = "228e741f2d29"
+cy = '''Eu henw'''
+
+[strings."ch-appoint-officer.title-optional-8280fb"]
+hash = "8280fbd6bcff"
+cy = '''Teitl (dewisol)'''
+
+[strings."ch-appoint-officer.first-forename-optional-91a29b"]
+hash = "91a29bef87cc"
+cy = '''Enw cyntaf (dewisol)'''
+
+[strings."ch-appoint-officer.other-forenames-optional-824237"]
+hash = "82423728b6ba"
+cy = '''Enwau cyntaf eraill (dewisol)'''
+
+[strings."ch-appoint-officer.surname-f762da"]
+hash = "f762da05f4d4"
+cy = '''Cyfenw'''
+
+[strings."ch-appoint-officer.former-name-optional-3817f3"]
+hash = "3817f38031b0"
+cy = '''Enw blaenorol (dewisol)'''
+
+[strings."ch-appoint-officer.a-name-used-for-business-in-1d2523"]
+hash = "1d252395e566"
+cy = '''Enw a ddefnyddiwyd ar gyfer busnes yn yr 20 mlynedd diwethaf, fel enw cyn priodi. Gadewch yn wag os nad oes un.'''
+
+[strings."ch-appoint-officer.former-forename-optional-5ebc4b"]
+hash = "5ebc4b0a5744"
+cy = '''Enw cyntaf blaenorol (dewisol)'''
+
+[strings."ch-appoint-officer.former-surname-optional-7042e5"]
+hash = "7042e523fcac"
+cy = '''Cyfenw blaenorol (dewisol)'''
+
+[strings."ch-appoint-officer.their-service-address-is-the-company-afb594"]
+hash = "afb594428e6a"
+cy = '''Swyddfa gofrestredig y cwmni yw eu cyfeiriad gohebiaeth'''
+
+[strings."ch-appoint-officer.service-address-ef36f8"]
+hash = "ef36f8c99826"
+cy = '''Cyfeiriad gohebiaeth'''
+
+[strings."ch-appoint-officer.the-address-that-will-appear-on-3fa883"]
+hash = "3fa8839771a7"
+cy = '''Y cyfeiriad a fydd yn ymddangos ar y cofnod cyhoeddus. Nid oes rhaid iddo fod yn gyfeiriad eu cartref.'''
+
+[strings."ch-appoint-officer.building-name-or-number-bbd5d1"]
+hash = "bbd5d1b67ca7"
+cy = '''Enw neu rif yr adeilad'''
+
+[strings."ch-appoint-officer.street-optional-b8fc5c"]
+hash = "b8fc5c1d4dbe"
+cy = '''Stryd (dewisol)'''
+
+[strings."ch-appoint-officer.town-or-city-9ce565"]
+hash = "9ce56586c728"
+cy = '''Tref neu ddinas'''
+
+[strings."ch-appoint-officer.county-or-region-optional-8c5d96"]
+hash = "8c5d962945a0"
+cy = '''Sir neu ranbarth (dewisol)'''
+
+[strings."ch-appoint-officer.country-701d02"]
+hash = "701d021d08c5"
+cy = '''Gwlad'''
+
+[strings."ch-appoint-officer.country-name-48c90d"]
+hash = "48c90de389a6"
+cy = '''Enw’r wlad'''
+
+[strings."ch-appoint-officer.postcode-optional-042d21"]
+hash = "042d21f31017"
+cy = '''Cod post (dewisol)'''
+
+[strings."ch-appoint-officer.date-of-birth-eb4c4e"]
+hash = "eb4c4e239122"
+cy = '''Dyddiad geni'''
+
+[strings."ch-appoint-officer.nationality-8fb1b6"]
+hash = "8fb1b6a148c2"
+cy = '''Cenedligrwydd'''
+
+[strings."ch-appoint-officer.companies-house-use-our-list-of-a76124"]
+hash = "a7612492144e"
+cy = '''Mae Tŷ’r Cwmnïau yn dweud mai dim ond cenedligrwydd a gwlad o’i restr safonol y mae’n eu derbyn.
+                  <a href="https://www.gov.uk/government/publications/nationalities" lang="en">Nationalities and countries for company filings</a> <span class="lang-mark">(yn Saesneg)</span> Rhowch y cenedligrwydd yn Saesneg, fel y mae yn y rhestr.'''
+
+[strings."ch-appoint-officer.country-where-they-usually-live-optional-abc4e0"]
+hash = "abc4e08922ef"
+cy = '''Y wlad lle maent yn byw fel arfer (dewisol)'''
+
+[strings."ch-appoint-officer.their-home-address-is-the-same-8367eb"]
+hash = "8367eb3d2163"
+cy = '''Mae cyfeiriad eu cartref yr un fath â’u cyfeiriad gohebiaeth'''
+
+[strings."ch-appoint-officer.home-address-63ab85"]
+hash = "63ab85eec033"
+cy = '''Cyfeiriad cartref'''
+
+[strings."ch-appoint-officer.their-usual-home-address-8ae1c9"]
+hash = "8ae1c942d0d0"
+cy = '''Cyfeiriad arferol eu cartref.'''
+
+[strings."ch-appoint-officer.identity-verification-b207ae"]
+hash = "b207ae38ab70"
+cy = '''Gwiriad hunaniaeth'''
+
+[strings."ch-appoint-officer.companies-house-all-directors-must-verify-dd50fd"]
+hash = "dd50fd7937c7"
+cy = '''Mae Tŷ’r Cwmnïau yn dweud bod rhaid i bob cyfarwyddwr wirio ei hunaniaeth i brofi pwy ydyw, a bod angen rhoi cod personol Tŷ’r Cwmnïau y cyfarwyddwr a chadarnhau ei fod wedi gwirio ei hunaniaeth.
+                  <a href="https://www.gov.uk/government/publications/appoint-a-director-ap01" lang="en">Appoint a director (AP01)</a> <span class="lang-mark">(yn Saesneg)</span>'''
+
+[strings."ch-appoint-officer.companies-house-personal-code-07df48"]
+hash = "07df48853a1b"
+cy = '''Cod personol Tŷ’r Cwmnïau'''
+
+[strings."ch-appoint-officer.the-11-character-code-the-director-21e289"]
+hash = "21e289ec1e18"
+cy = '''Y cod o 11 nod a gafodd y cyfarwyddwr ar ôl gwirio ei hunaniaeth, er enghraifft ABCDE123456.
+                    <a href="https://www.gov.uk/guidance/companies-house-personal-codes-for-identity-verification" lang="en">Companies House personal codes for identity verification</a> <span class="lang-mark">(yn Saesneg)</span>'''
+
+[strings."ch-appoint-officer.the-director-has-verified-their-identity-ae2593"]
+hash = "ae2593956b88"
+cy = '''Mae’r cyfarwyddwr wedi gwirio ei hunaniaeth gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-appoint-officer.if-their-name-here-differs-from-37111e"]
+hash = "37111e323013"
+cy = '''Os yw eu henw yma yn wahanol i’r enw a wiriwyd ganddynt, pam (dewisol)'''
+
+[strings."ch-appoint-officer.the-names-match-4dc53d"]
+hash = "4dc53dba0e5a"
+cy = '''Mae’r enwau’n cyfateb'''
+
+[strings."ch-appoint-officer.preferred-name-be5ede"]
+hash = "be5edee54016"
+cy = '''Enw dewisol'''
+
+[strings."ch-appoint-officer.legally-changed-name-for-example-marriage-67aa4f"]
+hash = "67aa4f27c4c3"
+cy = '''Enw wedi’i newid yn gyfreithiol (er enghraifft, priodas neu ysgariad)'''
+
+[strings."ch-appoint-officer.translation-or-a-different-naming-convention-3d40ed"]
+hash = "3d40ed2a1867"
+cy = '''Cyfieithiad neu gonfensiwn enwi gwahanol'''
+
+[strings."ch-appoint-officer.error-on-the-public-register-82b131"]
+hash = "82b131ec0937"
+cy = '''Gwall ar y gofrestr gyhoeddus'''
+
+[strings."ch-appoint-officer.prefer-not-to-say-51fcc5"]
+hash = "51fcc57e9bf9"
+cy = '''Mae’n well gennyf beidio â dweud'''
+
+[strings."ch-appoint-officer.name-of-the-corporate-body-or-f8339a"]
+hash = "f8339a48e0e1"
+cy = '''Enw’r corff corfforaethol neu’r ffyrm'''
+
+[strings."ch-appoint-officer.principal-office-address-5f41b9"]
+hash = "5f41b9c9b64a"
+cy = '''Cyfeiriad y brif swyddfa'''
+
+[strings."ch-appoint-officer.the-address-that-will-appear-on-56b48b"]
+hash = "56b48b94810b"
+cy = '''Y cyfeiriad a fydd yn ymddangos ar y cofnod cyhoeddus. Rhaid iddo fod yn lleoliad ffisegol lle gellir danfon dogfennau.'''
+
+[strings."ch-appoint-officer.is-it-a-limited-company-registered-de63f1"]
+hash = "de63f1df1ace"
+cy = '''Ai cwmni cyfyngedig sydd wedi’i gofrestru yn y DU ydyw?'''
+
+[strings."ch-appoint-officer.yes-85a39a"]
+hash = "85a39ab345d6"
+cy = '''Ie'''
+
+[strings."ch-appoint-officer.no-1ea442"]
+hash = "1ea442a134b2"
+cy = '''Nage'''
+
+[strings."ch-appoint-officer.company-registration-number-4cd520"]
+hash = "4cd520c7150d"
+cy = '''Rhif cofrestru’r cwmni'''
+
+[strings."ch-appoint-officer.legal-form-of-the-corporate-body-c4ccd5"]
+hash = "c4ccd5c701e3"
+cy = '''Ffurf gyfreithiol y corff corfforaethol neu’r ffyrm'''
+
+[strings."ch-appoint-officer.governing-law-da3aaa"]
+hash = "da3aaaff3096"
+cy = '''Y gyfraith lywodraethol'''
+
+[strings."ch-appoint-officer.register-it-is-entered-in-with-77a384"]
+hash = "77a384d982c1"
+cy = '''Y gofrestr y mae wedi’i chofnodi ynddi, gyda’r wladwriaeth (dewisol)'''
+
+[strings."ch-appoint-officer.its-number-in-that-register-optional-feeb97"]
+hash = "feeb9722014b"
+cy = '''Ei rif yn y gofrestr honno (dewisol)'''
+
+[strings."ch-appoint-officer.the-company-confirms-that-the-person-cbc76e"]
+hash = "cbc76e48ede0"
+cy = '''Mae’r cwmni’n cadarnhau bod yr unigolyn neu’r corff a enwir yma wedi cydsynio i weithredu yn y penodiad hwn.'''
+
+[strings."ch-appoint-officer.company-authentication-code-56d0e6"]
+hash = "56d0e640f9f0"
+cy = '''Cod dilysu’r cwmni'''
+
+[strings."ch-appoint-officer.the-6-to-8-character-code-48646a"]
+hash = "48646a151fe7"
+cy = '''Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei ddefnyddio.'''
+
+[strings."ch-appoint-officer.continue-31fbef"]
+hash = "31fbef162594"
+cy = '''Parhau'''
+
+[strings."ch-appoint-officer.review-the-filing-769b96"]
+hash = "769b96283d75"
+cy = '''Adolygu’r ffeilio'''
+
+[strings."ch-appoint-officer.gov-test-scenario-dab532"]
+hash = "dab5326bb25a"
+cy = '''Gov-Test-Scenario'''
+
+[strings."ch-appoint-officer.file-with-companies-house-327c43"]
+hash = "327c43b89de4"
+cy = '''Ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-appoint-officer.change-c0bf75"]
+hash = "c0bf75bd78bf"
+cy = '''Newid'''
+
+[strings."ch-appoint-officer.filing-result-0ecbf7"]
+hash = "0ecbf7d7af61"
+cy = '''Canlyniad y ffeilio'''
+
+[strings."ch-appoint-officer.start-a-new-filing-0a9f24"]
+hash = "0a9f240ab551"
+cy = '''Dechrau ffeilio newydd'''
+
+[strings."ch-appoint-officer.sign-in-to-file-with-companies-5a7303"]
+hash = "5a7303865fa5"
+cy = '''Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-appoint-officer.sign-in-to-look-up-your-eb0bf2"]
+hash = "eb0bf28eeabf"
+cy = '''Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif.'''
+
+[strings."ch.appoint-officer.country-gb-eng"]
+hash = "c0ea960b065c"
+cy = '''Lloegr'''
+
+[strings."ch.appoint-officer.country-gb-wls"]
+hash = "0cf3878b94e1"
+cy = '''Cymru'''
+
+[strings."ch.appoint-officer.country-gb-sct"]
+hash = "a246670dbf76"
+cy = '''Yr Alban'''
+
+[strings."ch.appoint-officer.country-gb-nir"]
+hash = "304a7ea100d7"
+cy = '''Gogledd Iwerddon'''
+
+[strings."ch.appoint-officer.country-gbr"]
+hash = "8d23a6e37e0a"
+cy = '''Y Deyrnas Unedig'''
+
+[strings."ch.appoint-officer.country-usa"]
+hash = "49dca65f362f"
+cy = '''Yr Unol Daleithiau'''
+
+[strings."ch.appoint-officer.country-irl"]
+hash = "02bf1dfa9a03"
+cy = '''Iwerddon'''
+
+[strings."ch.appoint-officer.country-deu"]
+hash = "80db4ccdca10"
+cy = '''Yr Almaen'''
+
+[strings."ch.appoint-officer.country-fra"]
+hash = "7a1ca4ef7515"
+cy = '''Ffrainc'''
+
+[strings."ch.appoint-officer.country-ita"]
+hash = "5a9cf672c8be"
+cy = '''Yr Eidal'''
+
+[strings."ch.appoint-officer.country-esp"]
+hash = "8ef41e6f4b07"
+cy = '''Sbaen'''
+
+[strings."ch.appoint-officer.country-prt"]
+hash = "4c7de2c3da6d"
+cy = '''Portiwgal'''
+
+[strings."ch.appoint-officer.country-nld"]
+hash = "3a386c13d283"
+cy = '''Yr Iseldiroedd'''
+
+[strings."ch.appoint-officer.country-pol"]
+hash = "7f69649ad704"
+cy = '''Gwlad Pwyl'''
+
+[strings."ch.appoint-officer.country-bel"]
+hash = "348841ef53db"
+cy = '''Gwlad Belg'''
+
+[strings."ch.appoint-officer.country-nor"]
+hash = "bea54a349795"
+cy = '''Norwy'''
+
+[strings."ch.appoint-officer.country-swe"]
+hash = "853637136575"
+cy = '''Sweden'''
+
+[strings."ch.appoint-officer.country-dnk"]
+hash = "c52709757760"
+cy = '''Denmarc'''
+
+[strings."ch.appoint-officer.country-aus"]
+hash = "c1ef40ce0484"
+cy = '''Awstralia'''
+
+[strings."ch.appoint-officer.country-nzl"]
+hash = "2898e16d4e4e"
+cy = '''Seland Newydd'''
+
+[strings."ch.appoint-officer.country-can"]
+hash = "be55ef3f4c4e"
+cy = '''Canada'''
+
+[strings."ch.appoint-officer.country-zaf"]
+hash = "3e049d78d958"
+cy = '''De Affrica'''
+
+[strings."ch.appoint-officer.country-aut"]
+hash = "c9cab0238deb"
+cy = '''Awstria'''
+
+[strings."ch.appoint-officer.country-hrv"]
+hash = "7328d3f829b7"
+cy = '''Croatia'''
+
+[strings."ch.appoint-officer.country-cyp"]
+hash = "5f1162c57ecf"
+cy = '''Cyprus'''
+
+[strings."ch.appoint-officer.country-cze"]
+hash = "1c769ecb9e80"
+cy = '''Gweriniaeth Dsiecaidd'''
+
+[strings."ch.appoint-officer.country-est"]
+hash = "10aeba697f6b"
+cy = '''Estonia'''
+
+[strings."ch.appoint-officer.country-hun"]
+hash = "504be3084f44"
+cy = '''Hwngari'''
+
+[strings."ch.appoint-officer.country-grc"]
+hash = "9c93ad439373"
+cy = '''Gwlad Groeg'''
+
+[strings."ch.appoint-officer.country-ltu"]
+hash = "5c83a631bce2"
+cy = '''Lithwania'''
+
+[strings."ch.appoint-officer.mismatch-preferred"]
+hash = "be5edee54016"
+cy = '''Enw dewisol'''
+
+[strings."ch.appoint-officer.mismatch-legally-changed"]
+hash = "67aa4f27c4c3"
+cy = '''Enw wedi’i newid yn gyfreithiol (er enghraifft, priodas neu ysgariad)'''
+
+[strings."ch.appoint-officer.mismatch-translation"]
+hash = "3d40ed2a1867"
+cy = '''Cyfieithiad neu gonfensiwn enwi gwahanol'''
+
+[strings."ch.appoint-officer.mismatch-register-error"]
+hash = "82b131ec0937"
+cy = '''Gwall ar y gofrestr gyhoeddus'''
+
+[strings."ch.appoint-officer.mismatch-not-say"]
+hash = "51fcc57e9bf9"
+cy = '''Mae’n well gennyf beidio â dweud'''
+
+[strings."ch.appoint-officer.country-choose"]
+hash = "19323e2d92e7"
+cy = '''Dewiswch wlad'''
+
+[strings."ch.appoint-officer.country-other"]
+hash = "eea65de9d929"
+cy = '''Gwlad arall'''
+
+[strings."ch.appoint-officer.lookup-failed"]
+hash = "85798bd4b10f"
+cy = '''Methu darllen y cwmni hwn gan Dŷ’r Cwmnïau.'''
+
+[strings."ch.appoint-officer.former-surname"]
+hash = "118c7c13113c"
+cy = '''Rhowch y cyfenw blaenorol, neu gadewch yr enw blaenorol yn wag.'''
+
+[strings."ch.appoint-officer.dob-after"]
+hash = "26e0a0f2bf3c"
+cy = '''Rhaid i’r dyddiad geni fod cyn dyddiad y penodiad.'''
+
+[strings."ch.appoint-officer.personal-code-invalid"]
+hash = "0cb541e21551"
+cy = '''Rhowch god personol Tŷ’r Cwmnïau y cyfarwyddwr: 11 nod, llythrennau ac yna rhifau.'''
+
+[strings."ch.appoint-officer.identity-unconfirmed"]
+hash = "23ad87de0aa9"
+cy = '''Cadarnhewch fod y cyfarwyddwr wedi gwirio ei hunaniaeth gyda Thŷ’r Cwmnïau.'''
+
+[strings."ch.appoint-officer.date-future"]
+hash = "68c861f4053b"
+cy = '''Ni all dyddiad y penodiad fod yn y dyfodol.'''
+
+[strings."ch.appoint-officer.consent-missing"]
+hash = "e285fece3a66"
+cy = '''Cadarnhewch fod gan y cwmni gydsyniad y swyddog i weithredu yn y penodiad hwn.'''
+
+[strings."ch.appoint-officer.kind-corporate-director"]
+hash = "02f51cc20ace"
+cy = '''Cyfarwyddwr corfforaethol'''
+
+[strings."ch.appoint-officer.kind-director"]
+hash = "c149bc14e45c"
+cy = '''Cyfarwyddwr'''
+
+[strings."ch.appoint-officer.kind-corporate-secretary"]
+hash = "cff971c99e33"
+cy = '''Ysgrifennydd corfforaethol'''
+
+[strings."ch.appoint-officer.kind-secretary"]
+hash = "1395996a1068"
+cy = '''Ysgrifennydd'''
+
+[strings."ch.appoint-officer.review-company"]
+hash = "de4743c87973"
+cy = '''Cwmni'''
+
+[strings."ch.appoint-officer.review-appointment"]
+hash = "8a4f957e08cb"
+cy = '''Penodiad'''
+
+[strings."ch.appoint-officer.review-date"]
+hash = "b9222441437a"
+cy = '''Dyddiad y penodiad'''
+
+[strings."ch.appoint-officer.review-corporate-name"]
+hash = "dcd1d5223f73"
+cy = '''Enw'''
+
+[strings."ch.appoint-officer.review-principal-office"]
+hash = "5f41b9c9b64a"
+cy = '''Cyfeiriad y brif swyddfa'''
+
+[strings."ch.appoint-officer.review-registration-number"]
+hash = "4cd520c7150d"
+cy = '''Rhif cofrestru’r cwmni'''
+
+[strings."ch.appoint-officer.review-legal-form"]
+hash = "18f1ebee7ffd"
+cy = '''Ffurf gyfreithiol'''
+
+[strings."ch.appoint-officer.review-law-governed"]
+hash = "da3aaaff3096"
+cy = '''Y gyfraith lywodraethol'''
+
+[strings."ch.appoint-officer.review-register"]
+hash = "bb7234ec1245"
+cy = '''Cofrestr'''
+
+[strings."ch.appoint-officer.review-register-number"]
+hash = "e6a005149b95"
+cy = '''Rhif yn y gofrestr honno'''
+
+[strings."ch.appoint-officer.review-name"]
+hash = "dcd1d5223f73"
+cy = '''Enw'''
+
+[strings."ch.appoint-officer.review-former-name"]
+hash = "8a378b5adb61"
+cy = '''Enw blaenorol'''
+
+[strings."ch.appoint-officer.review-service-address"]
+hash = "ef36f8c99826"
+cy = '''Cyfeiriad gohebiaeth'''
+
+[strings."ch.appoint-officer.review-registered-office"]
+hash = "bf67377c5398"
+cy = '''Swyddfa gofrestredig y cwmni'''
+
+[strings."ch.appoint-officer.review-dob"]
+hash = "eb4c4e239122"
+cy = '''Dyddiad geni'''
+
+[strings."ch.appoint-officer.review-nationality"]
+hash = "8fb1b6a148c2"
+cy = '''Cenedligrwydd'''
+
+[strings."ch.appoint-officer.review-residence"]
+hash = "dc3f40f4b6b7"
+cy = '''Y wlad lle maent yn byw fel arfer'''
+
+[strings."ch.appoint-officer.review-home-address"]
+hash = "63ab85eec033"
+cy = '''Cyfeiriad cartref'''
+
+[strings."ch.appoint-officer.review-same-as-service"]
+hash = "5466e52eba1b"
+cy = '''Yr un fath â’r cyfeiriad gohebiaeth'''
+
+[strings."ch.appoint-officer.review-personal-code"]
+hash = "07df48853a1b"
+cy = '''Cod personol Tŷ’r Cwmnïau'''
+
+[strings."ch.appoint-officer.review-identity"]
+hash = "99b52fb41be2"
+cy = '''Hunaniaeth wedi’i gwirio'''
+
+[strings."ch.appoint-officer.review-identity-yes"]
+hash = "85a39ab345d6"
+cy = '''Do'''
+
+[strings."ch.appoint-officer.review-mismatch"]
+hash = "5e4fcd8b2a9b"
+cy = '''Pam mae’r enw a wiriwyd yn wahanol'''
+
+[strings."ch.appoint-officer.review-consent"]
+hash = "cefb2ccf3850"
+cy = '''Cydsyniad i weithredu'''
+
+[strings."ch.appoint-officer.review-consent-yes"]
+hash = "fe00b67b6dd1"
+cy = '''Wedi’i gadarnhau'''
+
+[strings."ch.drill.appoint-officer"]
+hash = "5be7fef9423a"
+cy = '''Penodi cyfarwyddwr neu ysgrifennydd'''
+
+[strings."receipts.kind-officer-appointment"]
+hash = "2c023326a7f3"
+cy = '''Cyfarwyddwr neu ysgrifennydd wedi’i benodi'''
+
+# == The officer change of details page and the drill-down's change links: ids ch-change-officer.*, ch.change-officer.*, ch.drill.change-officer, ch.drill.change-this-officer, receipts.kind-officer-change ==
+
+[strings."ch-change-officer.title"]
+hash = "843d2a0fffff"
+cy = '''Newid manylion cyfarwyddwr neu ysgrifennydd - DIY Accounting Submit'''
+
+[strings."ch-change-officer.change-a-director-s-or-secretary-79fd11"]
+hash = "79fd113ff327"
+cy = '''Newid manylion cyfarwyddwr neu ysgrifennydd'''
+
+[strings."ch-change-officer.tell-companies-house-that-a-director-7a7eb9"]
+hash = "7a7eb9b7cb06"
+cy = '''Dweud wrth Dŷ’r Cwmnïau fod enw neu gyfeiriad cyfarwyddwr neu ysgrifennydd wedi newid'''
+
+[strings."ch-change-officer.status-sandbox-this-runs-against-companies-3c285c"]
+hash = "3c285c86cda2"
+cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.'''
+
+[strings."ch-change-officer.which-company-d9aae4"]
+hash = "d9aae49b05ee"
+cy = '''Pa gwmni?'''
+
+[strings."ch-change-officer.company-number-8b121b"]
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
+
+[strings."ch-change-officer.8-characters-for-example-00000001-do-090062"]
+hash = "090062b139be"
+cy = '''8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.'''
+
+[strings."ch-change-officer.look-up-the-company-570ac0"]
+hash = "570ac0974205"
+cy = '''Chwilio am y cwmni'''
+
+[strings."ch-change-officer.whose-details-have-changed-057eb5"]
+hash = "057eb50e4a08"
+cy = '''Manylion pwy sydd wedi newid?'''
+
+[strings."ch-change-officer.company-3bc806"]
+hash = "3bc806ccac3b"
+cy = '''Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).'''
+
+[strings."ch-change-officer.director-or-secretary-7944ee"]
+hash = "7944ee1c380d"
+cy = '''Cyfarwyddwr neu ysgrifennydd'''
+
+[strings."ch-change-officer.the-directors-and-secretaries-on-the-67901a"]
+hash = "67901a0a41f8"
+cy = '''Y cyfarwyddwyr a’r ysgrifenyddion sydd ar y gofrestr nawr, fel y mae Tŷ’r Cwmnïau yn eu dangos.'''
+
+[strings."ch-change-officer.the-register-lists-no-current-director-a1de3d"]
+hash = "a1de3d552679"
+cy = '''Nid yw’r gofrestr yn rhestru unrhyw gyfarwyddwr neu ysgrifennydd presennol y gall y ffurflen hon ei enwi.'''
+
+[strings."ch-change-officer.their-name-as-the-register-holds-0c86dc"]
+hash = "0c86dc8b16f9"
+cy = '''Eu henw fel y mae’r gofrestr yn ei gadw'''
+
+[strings."ch-change-officer.split-from-the-register-s-name-1f7fdb"]
+hash = "1f7fdbc5acc7"
+cy = '''Wedi’i rannu o’r enw ar y gofrestr. Gwiriwch bob rhan: mae Tŷ’r Cwmnïau yn ei ddefnyddio i ddod o hyd i’r swyddog ar y gofrestr.'''
+
+[strings."ch-change-officer.title-optional-8280fb"]
+hash = "8280fbd6bcff"
+cy = '''Teitl (dewisol)'''
+
+[strings."ch-change-officer.first-forename-optional-91a29b"]
+hash = "91a29bef87cc"
+cy = '''Enw cyntaf (dewisol)'''
+
+[strings."ch-change-officer.other-forenames-optional-824237"]
+hash = "82423728b6ba"
+cy = '''Enwau cyntaf eraill (dewisol)'''
+
+[strings."ch-change-officer.surname-f762da"]
+hash = "f762da05f4d4"
+cy = '''Cyfenw'''
+
+[strings."ch-change-officer.corporate-name-b5bead"]
+hash = "b5bead73a439"
+cy = '''Enw corfforaethol'''
+
+[strings."ch-change-officer.as-the-register-holds-it-companies-d8719d"]
+hash = "d8719dd690ff"
+cy = '''Fel y mae’r gofrestr yn ei gadw. Mae Tŷ’r Cwmnïau yn ei ddefnyddio i ddod o hyd i’r swyddog ar y gofrestr.'''
+
+[strings."ch-change-officer.date-of-birth-eb4c4e"]
+hash = "eb4c4e239122"
+cy = '''Dyddiad geni'''
+
+[strings."ch-change-officer.companies-house-s-online-form-needs-8532b8"]
+hash = "8532b88ee95c"
+cy = '''Mae ffurflen ar-lein Tŷ’r Cwmnïau angen dyddiad geni llawn cyfarwyddwr. Dim ond y mis a’r flwyddyn y mae’r gofrestr yn eu dangos, ac maent wedi’u llenwi lle mae’n eu rhoi: ychwanegwch y diwrnod.'''
+
+[strings."ch-change-officer.day-8f2364"]
+hash = "8f2364e11b8b"
+cy = '''Diwrnod'''
+
+[strings."ch-change-officer.month-310ca5"]
+hash = "310ca503ef36"
+cy = '''Mis'''
+
+[strings."ch-change-officer.year-89f683"]
+hash = "89f6832560de"
+cy = '''Blwyddyn'''
+
+[strings."ch-change-officer.date-the-details-changed-23ec80"]
+hash = "23ec80c63dae"
+cy = '''Y dyddiad y newidiodd y manylion'''
+
+[strings."ch-change-officer.what-has-changed-88d886"]
+hash = "88d886da7be8"
+cy = '''Beth sydd wedi newid?'''
+
+[strings."ch-change-officer.choose-each-detail-that-has-changed-d9f106"]
+hash = "d9f106d1df62"
+cy = '''Dewiswch bob manylyn sydd wedi newid. Mae Tŷ’r Cwmnïau yn cadw’r lleill fel y maent.'''
+
+[strings."ch-change-officer.their-name-228e74"]
+hash = "228e741f2d29"
+cy = '''Eu henw'''
+
+[strings."ch-change-officer.their-service-address-f8abd2"]
+hash = "f8abd2974ddb"
+cy = '''Eu cyfeiriad gohebiaeth'''
+
+[strings."ch-change-officer.their-home-address-077f2d"]
+hash = "077f2dc2151b"
+cy = '''Cyfeiriad eu cartref'''
+
+[strings."ch-change-officer.their-nationality-a39a71"]
+hash = "a39a71783ce8"
+cy = '''Eu cenedligrwydd'''
+
+[strings."ch-change-officer.the-country-where-they-usually-live-fb8a24"]
+hash = "fb8a241093a3"
+cy = '''Y wlad lle maent yn byw fel arfer'''
+
+[strings."ch-change-officer.its-name-80be99"]
+hash = "80be99282e75"
+cy = '''Ei enw'''
+
+[strings."ch-change-officer.its-principal-office-address-291bc0"]
+hash = "291bc001c950"
+cy = '''Cyfeiriad ei brif swyddfa'''
+
+[strings."ch-change-officer.its-legal-form-governing-law-or-abffa1"]
+hash = "abffa10d7b9b"
+cy = '''Ei ffurf gyfreithiol, y gyfraith lywodraethol neu’r gofrestr'''
+
+[strings."ch-change-officer.their-new-name-ca38fb"]
+hash = "ca38fb20a6bf"
+cy = '''Eu henw newydd'''
+
+[strings."ch-change-officer.their-new-service-address-is-the-ad8e1b"]
+hash = "ad8e1b1bb54c"
+cy = '''Swyddfa gofrestredig y cwmni yw eu cyfeiriad gohebiaeth newydd'''
+
+[strings."ch-change-officer.new-service-address-382165"]
+hash = "38216559293e"
+cy = '''Cyfeiriad gohebiaeth newydd'''
+
+[strings."ch-change-officer.the-address-that-will-appear-on-e4bc12"]
+hash = "e4bc12376429"
+cy = '''Y cyfeiriad a fydd yn ymddangos ar y cofnod cyhoeddus. Nid oes rhaid iddo fod yn gyfeiriad eu cartref. Mae Tŷ’r Cwmnïau yn dweud y bydd cyfeiriad eich cartref yn ymddangos ar y cofnod cyhoeddus os rhowch ef yma.'''
+
+[strings."ch-change-officer.building-name-or-number-bbd5d1"]
+hash = "bbd5d1b67ca7"
+cy = '''Enw neu rif yr adeilad'''
+
+[strings."ch-change-officer.street-optional-b8fc5c"]
+hash = "b8fc5c1d4dbe"
+cy = '''Stryd (dewisol)'''
+
+[strings."ch-change-officer.town-or-city-9ce565"]
+hash = "9ce56586c728"
+cy = '''Tref neu ddinas'''
+
+[strings."ch-change-officer.county-or-region-optional-8c5d96"]
+hash = "8c5d962945a0"
+cy = '''Sir neu ranbarth (dewisol)'''
+
+[strings."ch-change-officer.country-701d02"]
+hash = "701d021d08c5"
+cy = '''Gwlad'''
+
+[strings."ch-change-officer.country-name-48c90d"]
+hash = "48c90de389a6"
+cy = '''Enw’r wlad'''
+
+[strings."ch-change-officer.postcode-optional-042d21"]
+hash = "042d21f31017"
+cy = '''Cod post (dewisol)'''
+
+[strings."ch-change-officer.i-confirm-that-there-has-been-dd043d"]
+hash = "dd043da778c5"
+cy = '''Rwy’n cadarnhau nad yw cyfeiriad cartref y cyfarwyddwr wedi newid'''
+
+[strings."ch-change-officer.their-home-address-is-the-same-8367eb"]
+hash = "8367eb3d2163"
+cy = '''Mae cyfeiriad eu cartref yr un fath â’u cyfeiriad gohebiaeth'''
+
+[strings."ch-change-officer.new-home-address-97034d"]
+hash = "97034d9b3255"
+cy = '''Cyfeiriad cartref newydd'''
+
+[strings."ch-change-officer.their-usual-home-address-companies-house-6b88af"]
+hash = "6b88af51e0b5"
+cy = '''Cyfeiriad arferol eu cartref. Nid yw Tŷ’r Cwmnïau yn ei roi ar y cofnod cyhoeddus.'''
+
+[strings."ch-change-officer.new-nationality-aa3eec"]
+hash = "aa3eec4af37c"
+cy = '''Cenedligrwydd newydd'''
+
+[strings."ch-change-officer.companies-house-use-our-list-of-a76124"]
+hash = "a7612492144e"
+cy = '''Mae Tŷ’r Cwmnïau yn dweud mai dim ond cenedligrwydd a gwlad o’i restr safonol y mae’n eu derbyn.
+                  <a href="https://www.gov.uk/government/publications/nationalities" lang="en">Nationalities and countries for company filings</a> <span class="lang-mark">(yn Saesneg)</span> Rhowch y cenedligrwydd yn Saesneg, fel y mae yn y rhestr.'''
+
+[strings."ch-change-officer.new-country-where-they-usually-live-f7acf6"]
+hash = "f7acf6089031"
+cy = '''Y wlad newydd lle maent yn byw fel arfer'''
+
+[strings."ch-change-officer.new-name-of-the-corporate-body-c64fec"]
+hash = "c64fec55bc48"
+cy = '''Enw newydd y corff corfforaethol neu’r ffyrm'''
+
+[strings."ch-change-officer.new-principal-office-address-b3a850"]
+hash = "b3a850a0a29f"
+cy = '''Cyfeiriad newydd y brif swyddfa'''
+
+[strings."ch-change-officer.the-address-that-will-appear-on-56b48b"]
+hash = "56b48b94810b"
+cy = '''Y cyfeiriad a fydd yn ymddangos ar y cofnod cyhoeddus. Rhaid iddo fod yn lleoliad ffisegol lle gellir danfon dogfennau.'''
+
+[strings."ch-change-officer.is-it-a-limited-company-registered-de63f1"]
+hash = "de63f1df1ace"
+cy = '''Ai cwmni cyfyngedig sydd wedi’i gofrestru yn y DU ydyw?'''
+
+[strings."ch-change-officer.yes-85a39a"]
+hash = "85a39ab345d6"
+cy = '''Ie'''
+
+[strings."ch-change-officer.no-1ea442"]
+hash = "1ea442a134b2"
+cy = '''Nage'''
+
+[strings."ch-change-officer.company-registration-number-4cd520"]
+hash = "4cd520c7150d"
+cy = '''Rhif cofrestru’r cwmni'''
+
+[strings."ch-change-officer.companies-house-where-you-have-provided-99a4e7"]
+hash = "99a4e77b2aa1"
+cy = '''Mae Tŷ’r Cwmnïau yn dweud, os ydych wedi rhoi manylion y gofrestr (gan gynnwys y wladwriaeth) lle mae’r cwmni neu’r ffyrm wedi’i gofrestru, bod rhaid i chi hefyd roi ei rif yn y gofrestr honno.
+                <a href="https://assets.publishing.service.gov.uk/media/6912077abda892e068aa644d/CH02_v7.0-FINAL.pdf" lang="en">CH02 Change of corporate director’s details</a> <span class="lang-mark">(yn Saesneg)</span>'''
+
+[strings."ch-change-officer.legal-form-of-the-corporate-body-c4ccd5"]
+hash = "c4ccd5c701e3"
+cy = '''Ffurf gyfreithiol y corff corfforaethol neu’r ffyrm'''
+
+[strings."ch-change-officer.governing-law-da3aaa"]
+hash = "da3aaaff3096"
+cy = '''Y gyfraith lywodraethol'''
+
+[strings."ch-change-officer.register-it-is-entered-in-with-77a384"]
+hash = "77a384d982c1"
+cy = '''Y gofrestr y mae wedi’i chofnodi ynddi, gyda’r wladwriaeth (dewisol)'''
+
+[strings."ch-change-officer.its-number-in-that-register-optional-feeb97"]
+hash = "feeb9722014b"
+cy = '''Ei rif yn y gofrestr honno (dewisol)'''
+
+[strings."ch-change-officer.company-authentication-code-56d0e6"]
+hash = "56d0e640f9f0"
+cy = '''Cod dilysu’r cwmni'''
+
+[strings."ch-change-officer.the-6-to-8-character-code-48646a"]
+hash = "48646a151fe7"
+cy = '''Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei ddefnyddio.'''
+
+[strings."ch-change-officer.companies-house-please-note-that-all-f9a81d"]
+hash = "f9a81dac6ee7"
+cy = '''Mae Tŷ’r Cwmnïau yn dweud y bydd yr holl wybodaeth ar y ffurflen hon yn ymddangos ar y cofnod cyhoeddus, ar wahân i wybodaeth am gyfeiriadau preswyl arferol.
+            <a href="https://assets.publishing.service.gov.uk/media/6913439e1fcc92b3f349638c/CH01_v8.0-FINAL.pdf" lang="en">CH01 Change of director’s details</a> <span class="lang-mark">(yn Saesneg)</span> Mae GOV.UK yn cyhoeddi hwn yn Saesneg yn unig.'''
+
+[strings."ch-change-officer.continue-31fbef"]
+hash = "31fbef162594"
+cy = '''Parhau'''
+
+[strings."ch-change-officer.review-the-filing-769b96"]
+hash = "769b96283d75"
+cy = '''Adolygu’r ffeilio'''
+
+[strings."ch-change-officer.gov-test-scenario-dab532"]
+hash = "dab5326bb25a"
+cy = '''Gov-Test-Scenario'''
+
+[strings."ch-change-officer.file-with-companies-house-327c43"]
+hash = "327c43b89de4"
+cy = '''Ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-change-officer.change-c0bf75"]
+hash = "c0bf75bd78bf"
+cy = '''Newid'''
+
+[strings."ch-change-officer.filing-result-0ecbf7"]
+hash = "0ecbf7d7af61"
+cy = '''Canlyniad y ffeilio'''
+
+[strings."ch-change-officer.start-a-new-filing-0a9f24"]
+hash = "0a9f240ab551"
+cy = '''Dechrau ffeilio newydd'''
+
+[strings."ch-change-officer.sign-in-to-file-with-companies-5a7303"]
+hash = "5a7303865fa5"
+cy = '''Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-change-officer.sign-in-to-look-up-your-eb0bf2"]
+hash = "eb0bf28eeabf"
+cy = '''Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif.'''
+
+[strings."ch.change-officer.role-corporate-director"]
+hash = "02f51cc20ace"
+cy = '''Cyfarwyddwr corfforaethol'''
+
+[strings."ch.change-officer.role-director"]
+hash = "c149bc14e45c"
+cy = '''Cyfarwyddwr'''
+
+[strings."ch.change-officer.role-corporate-secretary"]
+hash = "cff971c99e33"
+cy = '''Ysgrifennydd corfforaethol'''
+
+[strings."ch.change-officer.role-secretary"]
+hash = "1395996a1068"
+cy = '''Ysgrifennydd'''
+
+[strings."ch.change-officer.lookup-failed"]
+hash = "95e641995c70"
+cy = '''Methu darllen cyfarwyddwyr ac ysgrifenyddion y cwmni hwn gan Dŷ’r Cwmnïau.'''
+
+[strings."ch.change-officer.nothing-changed"]
+hash = "42c35d1bba61"
+cy = '''Dewiswch o leiaf un manylyn sydd wedi newid.'''
+
+[strings."ch.change-officer.residential-unconfirmed"]
+hash = "08a9d2e03f64"
+cy = '''Cadarnhewch nad yw cyfeiriad cartref y cyfarwyddwr wedi newid, neu dewiswch gyfeiriad eu cartref fel manylyn sydd wedi newid.'''
+
+[strings."ch.change-officer.residential-office"]
+hash = "db2616ac6025"
+cy = '''Ni all cyfeiriad y cartref fod yr un fath â chyfeiriad gohebiaeth sef y swyddfa gofrestredig. Rhowch gyfeiriad llawn y cartref.'''
+
+[strings."ch.change-officer.dob-invalid"]
+hash = "c52ea3dd18a9"
+cy = '''Rhowch ddyddiad geni’r cyfarwyddwr fel diwrnod, mis a blwyddyn.'''
+
+[strings."ch.change-officer.dob-after"]
+hash = "fdf09e983359"
+cy = '''Rhaid i’r dyddiad geni fod cyn y dyddiad y newidiodd y manylion.'''
+
+[strings."ch.change-officer.choose"]
+hash = "460b82ab9f35"
+cy = '''Dewiswch y cyfarwyddwr neu’r ysgrifennydd y mae ei fanylion wedi newid.'''
+
+[strings."ch.change-officer.date-future"]
+hash = "d1cd8bba2824"
+cy = '''Ni all y dyddiad y newidiodd y manylion fod yn y dyfodol.'''
+
+[strings."ch.change-officer.review-corporate-name"]
+hash = "d0dbf66c8a6b"
+cy = '''Enw ar y gofrestr'''
+
+[strings."ch.change-officer.review-new-name"]
+hash = "04eea2a4ae80"
+cy = '''Enw newydd'''
+
+[strings."ch.change-officer.review-principal-office"]
+hash = "b3a850a0a29f"
+cy = '''Cyfeiriad newydd y brif swyddfa'''
+
+[strings."ch.change-officer.review-registration-number"]
+hash = "d0905714b991"
+cy = '''Rhif cofrestru newydd y cwmni'''
+
+[strings."ch.change-officer.review-legal-form"]
+hash = "0d6a7aaf651d"
+cy = '''Ffurf gyfreithiol newydd'''
+
+[strings."ch.change-officer.review-law-governed"]
+hash = "f9249f5204c1"
+cy = '''Cyfraith lywodraethol newydd'''
+
+[strings."ch.change-officer.review-register"]
+hash = "d11deeaf564d"
+cy = '''Cofrestr newydd'''
+
+[strings."ch.change-officer.review-register-number"]
+hash = "a4e23d958ef1"
+cy = '''Rhif newydd yn y gofrestr honno'''
+
+[strings."ch.change-officer.review-name"]
+hash = "d0dbf66c8a6b"
+cy = '''Enw ar y gofrestr'''
+
+[strings."ch.change-officer.review-dob"]
+hash = "eb4c4e239122"
+cy = '''Dyddiad geni'''
+
+[strings."ch.change-officer.review-service-address"]
+hash = "38216559293e"
+cy = '''Cyfeiriad gohebiaeth newydd'''
+
+[strings."ch.change-officer.review-registered-office"]
+hash = "bf67377c5398"
+cy = '''Swyddfa gofrestredig y cwmni'''
+
+[strings."ch.change-officer.review-home-address"]
+hash = "63ab85eec033"
+cy = '''Cyfeiriad cartref'''
+
+[strings."ch.change-officer.review-home-unchanged"]
+hash = "99f905fd2533"
+cy = '''Heb newid'''
+
+[strings."ch.change-officer.review-new-home-address"]
+hash = "97034d9b3255"
+cy = '''Cyfeiriad cartref newydd'''
+
+[strings."ch.change-officer.review-same-as-service"]
+hash = "5466e52eba1b"
+cy = '''Yr un fath â’r cyfeiriad gohebiaeth'''
+
+[strings."ch.change-officer.review-nationality"]
+hash = "aa3eec4af37c"
+cy = '''Cenedligrwydd newydd'''
+
+[strings."ch.change-officer.review-residence"]
+hash = "f7acf6089031"
+cy = '''Y wlad newydd lle maent yn byw fel arfer'''
+
+[strings."ch.change-officer.review-company"]
+hash = "de4743c87973"
+cy = '''Cwmni'''
+
+[strings."ch.change-officer.review-appointment"]
+hash = "8a4f957e08cb"
+cy = '''Penodiad'''
+
+[strings."ch.change-officer.review-date"]
+hash = "23ec80c63dae"
+cy = '''Y dyddiad y newidiodd y manylion'''
+
+[strings."ch.drill.change-officer"]
+hash = "79fd113ff327"
+cy = '''Newid manylion cyfarwyddwr neu ysgrifennydd'''
+
+[strings."ch.drill.change-this-officer"]
+hash = "27aed1bfb975"
+cy = '''Newid manylion {name} ({role})'''
+
+[strings."receipts.kind-officer-change"]
+hash = "1f5d8e481f55"
+cy = '''Manylion cyfarwyddwr neu ysgrifennydd wedi newid'''

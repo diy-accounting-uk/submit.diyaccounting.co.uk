@@ -126,6 +126,28 @@ const FORM_FIELDS = {
     notificationDate: "2026-10-28",
     confirmationDate: "2026-11-04",
   },
+  "officer-appointment": {
+    officerRole: "director",
+    corporate: false,
+    appointmentDate: "2026-11-02",
+    consentToAct: true,
+    surname: "LLEWELYN",
+    serviceAddress: { sameAsRegisteredOffice: true },
+    dateOfBirth: "1981-06-23",
+    nationality: "Welsh",
+    countryOfResidence: "Wales",
+    residentialAddress: { address: { premise: "16", street: "Heol y Bont", postTown: "Cardiff", country: "GB-WLS", postcode: "CF10 1AA" } },
+    personalCode: "CWMPS832223",
+    identityVerified: true,
+  },
+  "officer-change": {
+    officerRole: "director",
+    corporate: false,
+    dateOfChange: "2026-11-09",
+    surname: "REES",
+    dateOfBirth: "1981-06-23",
+    newName: { title: "MRS", forename: "CARYS", surname: "LLEWELYN" },
+  },
 };
 
 const SHARED_ROUTE_KINDS = Object.keys(GATEWAY_FORM_BUILDERS);
