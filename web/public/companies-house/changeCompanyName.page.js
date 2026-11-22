@@ -222,12 +222,17 @@ async function handleFile() {
   const scenario = document.getElementById("govTestScenario").value.trim();
   const headers = scenario ? { "Gov-Test-Scenario": scenario } : {};
   document.getElementById("registerNow").style.display = "none";
+  // The letter and the authentication code go into the filing and stay nowhere on the page.
+  const form = filing.form;
+  filing = { method: filing.method, form: { companyNumber: form.companyNumber, proposedName: form.proposedName } };
+  document.getElementById("letterFile").value = "";
+  document.getElementById("companyAuthCode").value = "";
   showView("resultView");
   showLoading();
   try {
     const outcome = await window.companiesHouseFormPage.fileAndShowOutcome({
       kind: FORM_KIND,
-      form: filing.form,
+      form,
       result: document.getElementById("filingResult"),
       headers,
     });

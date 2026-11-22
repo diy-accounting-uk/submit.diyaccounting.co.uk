@@ -244,6 +244,21 @@ describe("companiesHouseChangeOfNamePost ingestHandler", () => {
       expect(mockPostToGateway).not.toHaveBeenCalled();
     });
 
+    test("on a live gateway no request field or header turns the refusal into a test submission", async () => {
+      delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
+      for (const [overrides, headers] of [
+        [{ gatewayTest: true, GatewayTest: "1", testFlag: "1", COMPANIES_HOUSE_GATEWAY_TEST: "true" }, {}],
+        [{ sameDay: false }, { "Gov-Test-Scenario": "ACCEPT" }],
+        [{ ownPresenter: null }, { "X-Presenter-Id": "66666666000", "X-Presenter-Code": "OWNCODE1" }],
+      ]) {
+        const response = await ingestHandler(buildEvent({ body: buildNameBody(overrides), headers }));
+        expect(response.statusCode).toBe(402);
+        expect(response.headers["Content-Type"]).toBe("application/json");
+      }
+      expect(mockAllocateSubmissionNumber).not.toHaveBeenCalled();
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
     test("on a live gateway under the filer's own presenter, whose credit account pays the fee, the filing is sent", async () => {
       delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
       const response = await ingestHandler(buildEvent({ body: buildNameBody({ ownPresenter: { id: "66666666000", code: "OWNCODE1" } }) }));

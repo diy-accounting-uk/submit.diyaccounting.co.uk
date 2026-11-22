@@ -318,3 +318,27 @@ test("the present name, a missing or future resolution date, a letter that is no
   await expect(page.locator("#formView")).toBeVisible();
   expect(filings).toHaveLength(0);
 });
+
+test("once the filing is sent the page holds the letter and the authentication code nowhere", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, { filings });
+  await page.goto(`${SITE}/companies-house/changeCompanyName.html`, { waitUntil: "networkidle" });
+  await lookUpAndFill(page, { lookUp: "Look up the company", proposedName: "ROYAL EXAMPLE TRADING LIMITED" });
+  await page.getByLabel("The name needs a supporting letter").check();
+  await page.locator("#letterFile").setInputFiles(LETTER);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
+  const letterBase64 = LETTER.buffer.toString("base64");
+  expect(filings[0].supportingDocument.contentBase64).toBe(letterBase64);
+  await expect(page.locator("#registerNow")).toBeVisible();
+  const held = await page.evaluate(() => ({
+    record: JSON.stringify(typeof filing === "undefined" ? null : filing),
+    values: [...document.querySelectorAll("input")].map((input) => input.value).join("|"),
+    files: document.getElementById("letterFile").files.length,
+  }));
+  expect(held.record).not.toContain(letterBase64);
+  expect(held.record).not.toContain("SIMCS01");
+  expect(held.values).not.toContain("SIMCS01");
+  expect(held.files).toBe(0);
+});
