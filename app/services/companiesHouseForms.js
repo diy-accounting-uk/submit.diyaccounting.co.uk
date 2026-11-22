@@ -10,7 +10,9 @@
 import { isValidCompaniesHousePersonalCode } from "./companiesHouseApi.js";
 import { isValidIsoDate } from "../lib/hmrcValidation.js";
 import { buildPscVerificationStatementBody } from "./companiesHousePscVerificationStatementXml.js";
-import { buildPscCessationBody, PSC_CESSATION_KINDS } from "./companiesHousePscCessationXml.js";
+import { buildPscCessationBody } from "./companiesHousePscCessationXml.js";
+import { PSC_KIND_ELEMENTS } from "./companiesHousePscParticularsXml.js";
+import { addressProblems, buildPscChangeDetailsBody, natureOfControlProblems } from "./companiesHousePscChangeDetailsXml.js";
 
 function extractPscVerificationStatement(body, errorMessages) {
   const { title, forename, otherForenames, surname, dobMonth, dobYear, personalCode } = body;
@@ -29,11 +31,12 @@ function extractPscVerificationStatement(body, errorMessages) {
 
 const trimmed = (value) => (typeof value === "string" ? value.trim() : "");
 
-function extractPscCessation(body, errorMessages) {
-  const { pscKind, title, forename, otherForenames, surname, name, dobMonth, dobYear, cessationDate, confirmationDate } = body;
-  const elementName = PSC_CESSATION_KINDS[pscKind];
+// The particulars that name one PSC as the register shows it, as every PSC form's request gives them.
+function extractPscParticulars(body, errorMessages) {
+  const { pscKind, title, forename, otherForenames, surname, name, dobMonth, dobYear } = body;
+  const elementName = PSC_KIND_ELEMENTS[pscKind];
   if (!elementName) {
-    errorMessages.push(`Invalid pscKind - must be one of ${Object.keys(PSC_CESSATION_KINDS).join(", ")}`);
+    errorMessages.push(`Invalid pscKind - must be one of ${Object.keys(PSC_KIND_ELEMENTS).join(", ")}`);
   } else if (elementName === "Individual" && !trimmed(surname)) {
     errorMessages.push("Missing surname");
   } else if (elementName !== "Individual" && !trimmed(name)) {
@@ -45,14 +48,6 @@ function extractPscCessation(body, errorMessages) {
   if (dobYear !== undefined && dobYear !== null && (!Number.isInteger(dobYear) || dobYear < 1900 || dobYear > 9999)) {
     errorMessages.push("Invalid dobYear - must be a four-digit year");
   }
-  if (!cessationDate || !isValidIsoDate(cessationDate)) {
-    errorMessages.push("Invalid or missing cessationDate - must be YYYY-MM-DD");
-  }
-  if (!confirmationDate || !isValidIsoDate(confirmationDate)) {
-    errorMessages.push("Invalid or missing confirmationDate - must be YYYY-MM-DD");
-  } else if (cessationDate && isValidIsoDate(cessationDate) && confirmationDate < cessationDate) {
-    errorMessages.push("Invalid confirmationDate - must not be before cessationDate");
-  }
   const individual = elementName === "Individual";
   return {
     kind: pscKind,
@@ -63,8 +58,53 @@ function extractPscCessation(body, errorMessages) {
     name: individual ? undefined : trimmed(name),
     dobMonth: individual ? dobMonth : undefined,
     dobYear: individual ? dobYear : undefined,
-    cessationDate,
-    confirmationDate,
+  };
+}
+
+// A date the event happened on, and the date the company had confirmation of it, which cannot be earlier.
+function extractEventAndConfirmationDates(body, eventField, errorMessages) {
+  const eventDate = body[eventField];
+  const { confirmationDate } = body;
+  if (!eventDate || !isValidIsoDate(eventDate)) {
+    errorMessages.push(`Invalid or missing ${eventField} - must be YYYY-MM-DD`);
+  }
+  if (!confirmationDate || !isValidIsoDate(confirmationDate)) {
+    errorMessages.push("Invalid or missing confirmationDate - must be YYYY-MM-DD");
+  } else if (eventDate && isValidIsoDate(eventDate) && confirmationDate < eventDate) {
+    errorMessages.push(`Invalid confirmationDate - must not be before ${eventField}`);
+  }
+  return { [eventField]: eventDate, confirmationDate };
+}
+
+function extractPscCessation(body, errorMessages) {
+  return {
+    ...extractPscParticulars(body, errorMessages),
+    ...extractEventAndConfirmationDates(body, "cessationDate", errorMessages),
+  };
+}
+
+const ADDRESS_FIELDS = ["premise", "street", "thoroughfare", "postTown", "county", "country", "otherForeignCountry", "postcode"];
+
+function extractPscChangeDetails(body, errorMessages) {
+  const { naturesOfControl, address } = body;
+  if (naturesOfControl === undefined && address === undefined) {
+    errorMessages.push("Missing change - give naturesOfControl, address, or both");
+  }
+  if (naturesOfControl !== undefined) {
+    natureOfControlProblems(naturesOfControl).forEach((problem) => errorMessages.push(`Invalid naturesOfControl - ${problem}`));
+  }
+  const cleanAddress =
+    address === undefined || address === null || typeof address !== "object"
+      ? address
+      : Object.fromEntries(ADDRESS_FIELDS.map((field) => [field, trimmed(address[field]) || undefined]));
+  if (address !== undefined) {
+    addressProblems(cleanAddress).forEach((problem) => errorMessages.push(`Invalid address - ${problem}`));
+  }
+  return {
+    ...extractPscParticulars(body, errorMessages),
+    naturesOfControl,
+    address: cleanAddress,
+    ...extractEventAndConfirmationDates(body, "dateOfChange", errorMessages),
   };
 }
 
@@ -86,5 +126,9 @@ export const GATEWAY_FORM_BUILDERS = {
   "psc-cessation": {
     extractAndValidate: extractPscCessation,
     buildFormXml: (form) => buildPscCessationBody(form),
+  },
+  "psc-change-details": {
+    extractAndValidate: extractPscChangeDetails,
+    buildFormXml: (form) => buildPscChangeDetailsBody(form),
   },
 };

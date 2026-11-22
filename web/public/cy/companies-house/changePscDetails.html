@@ -1,0 +1,348 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from companies-house/changePscDetails.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dweud wrth Dŷ’r Cwmnïau fod manylion PRhA wedi newid - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/companies-house/changePscDetails.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/changePscDetails.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/changePscDetails.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/changePscDetails.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="ch-change-psc.tell-companies-house-a-psc-s-c58d17">Dweud wrth Dŷ’r Cwmnïau fod manylion PRhA wedi newid</h1>
+      <p data-i18n="ch-change-psc.give-notice-of-a-change-to-354ed5" class="subtitle">
+        Rhoi hysbysiad o newid i’r ffordd y mae person â rheolaeth arwyddocaol yn rheoli’r cwmni, neu i’w gyfeiriad
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p
+        data-i18n="ch-change-psc.status-sandbox-this-runs-against-companies-3c285c"
+        class="hint"
+        data-feature-status="sandbox"
+        data-companies-house-service="xml-gateway"
+      >
+        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn
+        ei ffeilio yma yn cyrraedd y gofrestr fyw.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau"
+        data-sign-in-text="Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif."
+        data-i18n-data-sign-in-title="ch-change-psc.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-change-psc.sign-in-to-look-up-your-eb0bf2"
+        data-i18n-data-sign-in-title="ch-change-psc.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-change-psc.sign-in-to-look-up-your-eb0bf2"
+      >
+        <h2 data-i18n="ch-change-psc.which-company-d9aae4">Pa gwmni?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="ch-change-psc.company-number-8b121b" for="companyNumber">Rhif y cwmni</label>
+            <p data-i18n="ch-change-psc.8-characters-for-example-00000001-do-090062" id="companyNumber-hint" class="hint">
+              8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button
+            data-i18n="ch-change-psc.look-up-the-persons-with-significant-37cfbc"
+            type="submit"
+            id="companyLookupBtn"
+            class="btn"
+            data-activity-start="change-psc-details"
+          >
+            Chwilio am y personau â rheolaeth arwyddocaol
+          </button>
+        </form>
+      </div>
+
+      <!-- Change form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2 data-i18n="ch-change-psc.whose-details-have-changed-057eb5">Manylion pwy sydd wedi newid?</h2>
+        <p data-i18n="ch-change-psc.company-3bc806">Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).</p>
+        <form id="changeForm" novalidate>
+          <fieldset class="form-group">
+            <legend data-i18n="ch-change-psc.person-with-significant-control-f031ed">Person â rheolaeth arwyddocaol</legend>
+            <p data-i18n="ch-change-psc.the-persons-with-significant-control-on-a6b66b" id="psc-hint" class="hint">
+              Y personau â rheolaeth arwyddocaol sydd ar y gofrestr nawr, fel y mae Tŷ’r Cwmnïau yn eu dangos.
+            </p>
+            <div id="pscChoices" aria-describedby="psc-hint"></div>
+          </fieldset>
+          <p data-i18n="ch-change-psc.the-register-lists-no-current-person-830525" id="noPscs" class="hint" style="display: none">
+            Nid yw’r gofrestr yn rhestru unrhyw berson presennol â rheolaeth arwyddocaol y gall y ffurflen hon ei enwi.
+          </p>
+          <fieldset class="form-group">
+            <legend data-i18n="ch-change-psc.what-has-changed-88d886">Beth sydd wedi newid?</legend>
+            <div class="choice">
+              <input type="checkbox" id="changeControl" name="changeControl" /><label
+                data-i18n="ch-change-psc.how-they-control-the-company-338350"
+                for="changeControl"
+                >Sut maen nhw’n rheoli’r cwmni</label
+              >
+            </div>
+            <div class="choice">
+              <input type="checkbox" id="changeAddress" name="changeAddress" /><label
+                data-i18n="ch-change-psc.their-address-887fdb"
+                for="changeAddress"
+                >Eu cyfeiriad</label
+              >
+            </div>
+          </fieldset>
+
+          <fieldset id="controlSection" class="form-group" style="display: none">
+            <legend data-i18n="ch-change-psc.how-they-control-the-company-338350">Sut maen nhw’n rheoli’r cwmni</legend>
+            <p data-i18n="ch-change-psc.tick-any-new-conditions-that-apply-7700c1" id="control-hint" class="hint">
+              Ticiwch unrhyw amodau newydd sy’n berthnasol, yn ogystal ag unrhyw rai sy’n parhau i fod yn berthnasol. Mae atebion presennol
+              y gofrestr wedi’u ticio.
+            </p>
+            <fieldset class="form-group" aria-describedby="control-hint">
+              <legend data-i18n="ch-change-psc.ownership-of-shares-232c33">Perchnogaeth cyfranddaliadau</legend>
+              <div class="choice">
+                <input type="radio" id="shares-none" name="shares" value="" checked /><label
+                  data-i18n="ch-change-psc.none-dc937b"
+                  for="shares-none"
+                  >Dim</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-25" name="shares" value="25TO50PERCENT" /><label
+                  data-i18n="ch-change-psc.more-than-25-but-not-more-d87c01"
+                  for="shares-25"
+                  >Mwy na 25% ond dim mwy na 50%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-50" name="shares" value="50TO75PERCENT" /><label
+                  data-i18n="ch-change-psc.more-than-50-but-less-than-6c764a"
+                  for="shares-50"
+                  >Mwy na 50% ond llai na 75%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-75" name="shares" value="75TO100PERCENT" /><label
+                  data-i18n="ch-change-psc.75-or-more-c9f7df"
+                  for="shares-75"
+                  >75% neu fwy</label
+                >
+              </div>
+            </fieldset>
+            <fieldset class="form-group">
+              <legend data-i18n="ch-change-psc.ownership-of-voting-rights-4cd7d9">Perchnogaeth hawliau pleidleisio</legend>
+              <div class="choice">
+                <input type="radio" id="votes-none" name="votes" value="" checked /><label
+                  data-i18n="ch-change-psc.none-dc937b"
+                  for="votes-none"
+                  >Dim</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-25" name="votes" value="25TO50PERCENT" /><label
+                  data-i18n="ch-change-psc.more-than-25-but-not-more-d87c01"
+                  for="votes-25"
+                  >Mwy na 25% ond dim mwy na 50%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-50" name="votes" value="50TO75PERCENT" /><label
+                  data-i18n="ch-change-psc.more-than-50-but-less-than-6c764a"
+                  for="votes-50"
+                  >Mwy na 50% ond llai na 75%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-75" name="votes" value="75TO100PERCENT" /><label
+                  data-i18n="ch-change-psc.75-or-more-c9f7df"
+                  for="votes-75"
+                  >75% neu fwy</label
+                >
+              </div>
+            </fieldset>
+            <div class="choice">
+              <input type="checkbox" id="directors" name="directors" /><label
+                data-i18n="ch-change-psc.the-right-to-appoint-or-remove-0cda88"
+                for="directors"
+                >Yr hawl i benodi neu ddiswyddo mwyafrif bwrdd y cyfarwyddwyr</label
+              >
+            </div>
+            <div class="choice">
+              <input type="checkbox" id="influence" name="influence" /><label
+                data-i18n="ch-change-psc.significant-influence-or-control-only-if-d5a9f6"
+                for="influence"
+                >Dylanwad neu reolaeth arwyddocaol (dim ond os nad oes dim o’r uchod yn berthnasol)</label
+              >
+            </div>
+            <p id="heldOther" class="hint" style="display: none"></p>
+          </fieldset>
+
+          <fieldset id="addressSection" class="form-group" style="display: none">
+            <legend data-i18n="ch-change-psc.the-new-address-9a52e4" id="addressLegend">Y cyfeiriad newydd</legend>
+            <p data-i18n="ch-change-psc.this-is-the-address-that-will-0ad1a2" id="address-hint" class="hint">
+              Dyma’r cyfeiriad a fydd yn ymddangos ar y cofnod cyhoeddus.
+            </p>
+            <div class="form-group">
+              <label data-i18n="ch-change-psc.building-name-or-number-bbd5d1" for="premise">Enw neu rif yr adeilad</label>
+              <input type="text" id="premise" name="premise" maxlength="50" aria-describedby="address-hint" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-change-psc.street-c66659" for="street">Stryd</label>
+              <input type="text" id="street" name="street" maxlength="50" autocomplete="address-line1" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-change-psc.address-line-2-350b2b" for="thoroughfare">Llinell 2 y cyfeiriad</label>
+              <input type="text" id="thoroughfare" name="thoroughfare" maxlength="50" autocomplete="address-line2" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-change-psc.post-town-89cec1" for="postTown">Tref bost</label>
+              <input type="text" id="postTown" name="postTown" maxlength="50" autocomplete="address-level2" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-change-psc.county-or-region-9fe665" for="county">Sir neu ranbarth</label>
+              <input type="text" id="county" name="county" maxlength="50" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-change-psc.postcode-0a4387" for="postcode">Cod post</label>
+              <input type="text" id="postcode" name="postcode" maxlength="15" spellcheck="false" autocomplete="postal-code" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-change-psc.country-701d02" for="country">Gwlad</label>
+              <select id="country" name="country">
+                <option data-i18n="ch-change-psc.england-c0ea96" value="GB-ENG">Lloegr</option>
+                <option data-i18n="ch-change-psc.wales-0cf387" value="GB-WLS">Cymru</option>
+                <option data-i18n="ch-change-psc.scotland-a24667" value="GB-SCT">Yr Alban</option>
+                <option data-i18n="ch-change-psc.northern-ireland-304a7e" value="GB-NIR">Gogledd Iwerddon</option>
+                <option data-i18n="ch-change-psc.united-kingdom-8d23a6" value="GBR" selected>Y Deyrnas Unedig</option>
+                <option data-i18n="ch-change-psc.another-country-eea65d" value="OTHER">Gwlad arall</option>
+              </select>
+            </div>
+            <div class="form-group" id="otherCountryGroup" style="display: none">
+              <label data-i18n="ch-change-psc.which-country-1dd352" for="otherForeignCountry">Pa wlad?</label>
+              <input type="text" id="otherForeignCountry" name="otherForeignCountry" maxlength="50" autocomplete="country-name" />
+            </div>
+          </fieldset>
+
+          <div class="form-group">
+            <label data-i18n="ch-change-psc.date-of-change-4edc2c" for="dateOfChange">Dyddiad y newid</label>
+            <p data-i18n="ch-change-psc.the-date-the-change-occurred-give-2d23a6" id="dateOfChange-hint" class="hint">
+              Y dyddiad y digwyddodd y newid. Rhowch yr holl newidiadau a ddigwyddodd ar y dyddiad hwn. Os oes mwy nag un dyddiad, ffeiliwch
+              unwaith ar gyfer pob dyddiad.
+            </p>
+            <input type="date" id="dateOfChange" name="dateOfChange" required aria-describedby="dateOfChange-hint" />
+          </div>
+          <div class="form-group">
+            <label data-i18n="ch-change-psc.date-of-confirmation-e98c6d" for="confirmationDate">Dyddiad cadarnhau</label>
+            <p data-i18n="ch-change-psc.the-date-the-company-had-confirmation-84e215" id="confirmationDate-hint" class="hint">
+              Y dyddiad y cafodd y cwmni gadarnhad bod newid yn y manylion, sut roedd y manylion wedi newid a dyddiad y newid. Rhaid dweud
+              wrth Dŷ’r Cwmnïau o fewn 14 diwrnod i gadarnhau’r newid.
+            </p>
+            <input type="date" id="confirmationDate" name="confirmationDate" required aria-describedby="confirmationDate-hint" />
+          </div>
+          <div class="form-group">
+            <label data-i18n="ch-change-psc.company-authentication-code-56d0e6" for="companyAuthCode">Cod dilysu’r cwmni</label>
+            <p data-i18n="ch-change-psc.the-6-to-8-character-code-48646a" id="companyAuthCode-hint" class="hint">
+              Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei
+              ddefnyddio.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button data-i18n="ch-change-psc.continue-31fbef" type="submit" id="continueBtn" class="btn">Parhau</button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="reviewView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-change-psc.review-the-filing-769b96">Adolygu’r ffeilio</h2>
+        <dl id="reviewList"></dl>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label data-i18n="ch-change-psc.gov-test-scenario-dab532" for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button data-i18n="ch-change-psc.file-with-companies-house-327c43" type="button" id="submitFilingBtn" class="btn">
+            Ffeilio gyda Thŷ’r Cwmnïau
+          </button>
+          <button data-i18n="ch-change-psc.change-c0bf75" type="button" id="changeBtn" class="secondary-button">Newid</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-change-psc.filing-result-0ecbf7">Canlyniad y ffeilio</h2>
+        <div id="filingResult"></div>
+        <div class="button-group">
+          <button data-i18n="ch-change-psc.start-a-new-filing-0a9f24" type="button" id="startAgainBtn" class="secondary-button">
+            Dechrau ffeilio newydd
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../lib/welsh-text.js"></script>
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/companies-house-lane.js"></script>
+    <script src="../../lib/companies-house-gateway-poll.js"></script>
+    <script src="../../lib/companies-house-rejections.js"></script>
+    <script src="../../lib/companies-house-form-page.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../lib/form-errors.js"></script>
+    <script src="../../lib/companies-house-labels.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
+    <script src="../../lib/company-number-from-address.js"></script>
+    <script src="../../companies-house/changePscDetails.page.js"></script>
+  </body>
+</html>

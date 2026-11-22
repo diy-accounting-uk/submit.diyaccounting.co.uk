@@ -146,7 +146,13 @@ describe("dynamoDbCompaniesHouseFilingStateRepository", () => {
     const filteredKinds = query.input.FilterExpression.match(/#data\.#kind IN \(([^)]*)\)/)[1]
       .split(", ")
       .map((placeholder) => query.input.ExpressionAttributeValues[placeholder]);
-    expect(filteredKinds).toEqual(["accounts", "confirmation-statement", "psc-verification-statement", "psc-cessation"]);
+    expect(filteredKinds).toEqual([
+      "accounts",
+      "confirmation-statement",
+      "psc-verification-statement",
+      "psc-cessation",
+      "psc-change-details",
+    ]);
     expect(nextPage.input.ExclusiveStartKey).toEqual({ hashedSub: "x", requestId: "00001B" });
   });
 

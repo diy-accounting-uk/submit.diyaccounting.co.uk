@@ -727,6 +727,17 @@ paths = ["companies-house/ceasePsc.html", "^/api/v1/companies-house/psc-cessatio
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
+id = "change-psc-details"
+name = "Tell Companies House a PSC's details have changed (Companies House, sandbox)"
+nameCy = "Dweud wrth Dŷ'r Cwmnïau fod manylion PRhA wedi newid (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the PSCChangeDetails form type for this presenter.
+paths = ["companies-house/changePscDetails.html", "^/api/v1/companies-house/psc-change-details.*", "^/api/v1/companies-house/forms/psc-change-details/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
 id = "diya-gl-storage"
 name = "Save diya-gl books (sandbox)"
 nameCy = "Cadw llyfrau diya-gl (amgylchedd prawf)"

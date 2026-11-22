@@ -2,7 +2,8 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, test, expect } from "vitest";
-import { buildPscCessationBody, PSC_CESSATION_KINDS } from "@app/services/companiesHousePscCessationXml.js";
+import { buildPscCessationBody } from "@app/services/companiesHousePscCessationXml.js";
+import { PSC_KIND_ELEMENTS } from "@app/services/companiesHousePscParticularsXml.js";
 import { gatewayFormSchemaErrors } from "../helpers/gatewayFormSchema.js";
 
 const SCHEMA = "PSCCessation-v1-2.xsd";
@@ -71,7 +72,7 @@ describe("companiesHousePscCessationXml", () => {
   });
 
   test("each kind the register shows maps to a choice of PSCCessationType", () => {
-    expect(Object.values(PSC_CESSATION_KINDS)).toEqual(["Individual", "Corporate", "LegalPerson"]);
+    expect(Object.values(PSC_KIND_ELEMENTS)).toEqual(["Individual", "Corporate", "LegalPerson"]);
   });
 
   test("an unknown kind, a missing name, a missing surname or a malformed date is refused", () => {

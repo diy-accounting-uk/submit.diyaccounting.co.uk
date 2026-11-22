@@ -659,6 +659,13 @@
         "operationId" : "postCompaniesHousePscCessation"
       }
     },
+    "/companies-house/psc-change-details" : {
+      "post" : {
+        "summary" : "Submit a PSC change of details filing",
+        "description" : "Builds the PSCChangeDetails body, the notice that a person with significant control's details have changed, and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHousePscChangeDetails"
+      }
+    },
     "/companies-house/psc-verification-statement" : {
       "post" : {
         "summary" : "Submit a PSC verification statement filing",

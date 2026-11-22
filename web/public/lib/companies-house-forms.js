@@ -46,6 +46,18 @@ export const COMPANIES_HOUSE_FORMS = {
     label: "PSC cessation",
     sharedPoll: true,
   },
+  "psc-change-details": {
+    routeSegment: "psc-change-details",
+    receiptTitle: "PSC change of details",
+    receiptTitleCy: "Newid manylion PRhA",
+    acceptedEvent: "companies-house-psc-change-details-accepted",
+    acceptedSummary: "Companies House PSC change of details accepted",
+    formIdentifier: "PSCChangeDetails",
+    schema: "PSCChangeDetails-v1-2.xsd",
+    activityId: "change-psc-details",
+    label: "PSC change of details",
+    sharedPoll: true,
+  },
 };
 
 /** The filing kinds, as the filing state and the receipts carry them. */

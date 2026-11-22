@@ -304,6 +304,14 @@ public class CompaniesHouseNames {
     public String companiesHousePscCessationPostLambdaUrlPath;
     public boolean companiesHousePscCessationPostLambdaJwtAuthorizer;
     public boolean companiesHousePscCessationPostLambdaCustomAuthorizer;
+    public String companiesHousePscChangeDetailsPostIngestLambdaHandler;
+    public String companiesHousePscChangeDetailsPostIngestLambdaFunctionName;
+    public String companiesHousePscChangeDetailsPostIngestLambdaArn;
+    public String companiesHousePscChangeDetailsPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHousePscChangeDetailsPostLambdaHttpMethod;
+    public String companiesHousePscChangeDetailsPostLambdaUrlPath;
+    public boolean companiesHousePscChangeDetailsPostLambdaJwtAuthorizer;
+    public boolean companiesHousePscChangeDetailsPostLambdaCustomAuthorizer;
 
     public String companiesHouseFormStatusGetIngestLambdaHandler;
     public String companiesHouseFormStatusGetIngestLambdaFunctionName;
@@ -1163,6 +1171,29 @@ public class CompaniesHouseNames {
                 "Submit a PSC cessation filing",
                 "Builds the PSCCessation body, the notice that a person with significant control has ceased to be one, and submits it through the Companies House XML Gateway",
                 "postCompaniesHousePscCessation"));
+
+        this.companiesHousePscChangeDetailsPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHousePscChangeDetailsPostLambdaUrlPath = "/api/v1/companies-house/psc-change-details";
+        this.companiesHousePscChangeDetailsPostLambdaJwtAuthorizer = true;
+        this.companiesHousePscChangeDetailsPostLambdaCustomAuthorizer = false;
+        var companiesHousePscChangeDetailsPostLambdaHandlerName = "companiesHousePscChangeDetailsPost.ingestHandler";
+        var companiesHousePscChangeDetailsPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHousePscChangeDetailsPostLambdaHandlerName);
+        this.companiesHousePscChangeDetailsPostIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, companiesHousePscChangeDetailsPostLambdaHandlerDashed);
+        this.companiesHousePscChangeDetailsPostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(root.appLambdaHandlerPrefix, companiesHousePscChangeDetailsPostLambdaHandlerName);
+        this.companiesHousePscChangeDetailsPostIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, companiesHousePscChangeDetailsPostLambdaHandlerDashed);
+        this.companiesHousePscChangeDetailsPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.companiesHousePscChangeDetailsPostIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHousePscChangeDetailsPostLambdaHttpMethod,
+                this.companiesHousePscChangeDetailsPostLambdaUrlPath,
+                "Submit a PSC change of details filing",
+                "Builds the PSCChangeDetails body, the notice that a person with significant control's details have changed, and submits it through the Companies House XML Gateway",
+                "postCompaniesHousePscChangeDetails"));
 
         this.companiesHouseFormStatusGetLambdaHttpMethod = HttpMethod.GET;
         this.companiesHouseFormStatusGetLambdaUrlPath = "/api/v1/companies-house/forms/{kind}/{submissionNumber}";

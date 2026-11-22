@@ -18,6 +18,7 @@ import { resetPscVerificationStatementFilings } from "@app/http-simulator/scenar
 import { resetGatewayFormFilings } from "@app/http-simulator/scenarios/gateway-forms.js";
 import { buildFormSubmission } from "@app/services/companiesHouseXmlGateway.js";
 import { buildPscCessationBody } from "@app/services/companiesHousePscCessationXml.js";
+import { buildPscChangeDetailsBody } from "@app/services/companiesHousePscChangeDetailsXml.js";
 import { buildMicroEntityAccounts } from "@app/services/microEntityAccountsIxbrl.js";
 import { parseXmlDocument, firstElementText, allElements } from "@app/lib/xmlDom.js";
 
@@ -1043,6 +1044,32 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
   test("refuses a PSCCessation envelope whose Form does not hold the PSCCessation element", async () => {
     const response = await post(cessationEnvelope("CES003").replace(/<PSCCessation[\s\S]*<\/PSCCessation>/, ""));
     expect(allElements(parseXmlDocument(response.text), "GovTalkErrors")).toHaveLength(1);
+  });
+
+  test("acknowledges a PSCChangeDetails submission and polls it PENDING then ACCEPT", async () => {
+    const envelope = buildFormSubmission({
+      presenterId: SIMULATOR_PRESENTER_ID,
+      presenterCode: SIMULATOR_PRESENTER_CODE,
+      companyNumber: FIXTURE_COMPANY_NUMBER,
+      companyName: "EXAMPLE PSC LIMITED",
+      companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
+      packageReference: "0012",
+      formIdentifier: "PSCChangeDetails",
+      submissionNumber: "CHG001",
+      dateSigned: "2026-11-20",
+      formXml: buildPscChangeDetailsBody({
+        kind: "individual-person-with-significant-control",
+        surname: "BRAMWELL",
+        naturesOfControl: ["OWNERSHIPOFSHARES_75TO100PERCENT"],
+        dateOfChange: "2026-11-01",
+        confirmationDate: "2026-11-03",
+      }),
+      gatewayTest: true,
+    });
+    const acknowledgement = parseXmlDocument((await post(envelope)).text);
+    expect(allElements(acknowledgement, "GovTalkErrors")).toHaveLength(0);
+    expect(await statusOf("CHG001")).toBe("PENDING");
+    expect(await statusOf("CHG001")).toBe("ACCEPT");
   });
 
   test("refuses a submission number already used", async () => {

@@ -22970,3 +22970,345 @@ cy = '''Ffynhonnell: cofrestr Tŷ’r Cwmnïau, a ddarllenwyd am {time} ar {date
 [strings."ch.drill.nav-reports"]
 hash = "dacca3cba3f3"
 cy = '''Adroddiadau'''
+
+# == The PSC change of details page and the drill-down's links to it: ids ch-change-psc.*, ch.change-psc.*, ch.drill.change-*, receipts.kind-psc-change-details ==
+
+[strings."ch-change-psc.title"]
+hash = "4e16c6ef4273"
+cy = '''Dweud wrth Dŷ’r Cwmnïau fod manylion PRhA wedi newid - DIY Accounting Submit'''
+
+[strings."ch-change-psc.tell-companies-house-a-psc-s-c58d17"]
+hash = "c58d174db26b"
+cy = '''Dweud wrth Dŷ’r Cwmnïau fod manylion PRhA wedi newid'''
+
+[strings."ch-change-psc.give-notice-of-a-change-to-354ed5"]
+hash = "354ed5f1ee37"
+cy = '''Rhoi hysbysiad o newid i’r ffordd y mae person â rheolaeth arwyddocaol yn rheoli’r cwmni, neu i’w gyfeiriad'''
+
+[strings."ch-change-psc.status-sandbox-this-runs-against-companies-3c285c"]
+hash = "3c285c86cda2"
+cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.'''
+
+[strings."ch-change-psc.which-company-d9aae4"]
+hash = "d9aae49b05ee"
+cy = '''Pa gwmni?'''
+
+[strings."ch-change-psc.company-number-8b121b"]
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
+
+[strings."ch-change-psc.8-characters-for-example-00000001-do-090062"]
+hash = "090062b139be"
+cy = '''8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.'''
+
+[strings."ch-change-psc.look-up-the-persons-with-significant-37cfbc"]
+hash = "37cfbc6a906e"
+cy = '''Chwilio am y personau â rheolaeth arwyddocaol'''
+
+[strings."ch-change-psc.whose-details-have-changed-057eb5"]
+hash = "057eb50e4a08"
+cy = '''Manylion pwy sydd wedi newid?'''
+
+[strings."ch-change-psc.company-3bc806"]
+hash = "3bc806ccac3b"
+cy = '''Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).'''
+
+[strings."ch-change-psc.person-with-significant-control-f031ed"]
+hash = "f031ed8fea1c"
+cy = '''Person â rheolaeth arwyddocaol'''
+
+[strings."ch-change-psc.the-persons-with-significant-control-on-a6b66b"]
+hash = "a6b66beaf0cb"
+cy = '''Y personau â rheolaeth arwyddocaol sydd ar y gofrestr nawr, fel y mae Tŷ’r Cwmnïau yn eu dangos.'''
+
+[strings."ch-change-psc.the-register-lists-no-current-person-830525"]
+hash = "8305252f95f6"
+cy = '''Nid yw’r gofrestr yn rhestru unrhyw berson presennol â rheolaeth arwyddocaol y gall y ffurflen hon ei enwi.'''
+
+[strings."ch-change-psc.what-has-changed-88d886"]
+hash = "88d886da7be8"
+cy = '''Beth sydd wedi newid?'''
+
+[strings."ch-change-psc.how-they-control-the-company-338350"]
+hash = "3383501d3d9b"
+cy = '''Sut maen nhw’n rheoli’r cwmni'''
+
+[strings."ch-change-psc.their-address-887fdb"]
+hash = "887fdb5dc78b"
+cy = '''Eu cyfeiriad'''
+
+[strings."ch-change-psc.tick-any-new-conditions-that-apply-7700c1"]
+hash = "7700c1ce782c"
+cy = '''Ticiwch unrhyw amodau newydd sy’n berthnasol, yn ogystal ag unrhyw rai sy’n parhau i fod yn berthnasol. Mae atebion presennol y gofrestr wedi’u ticio.'''
+
+[strings."ch-change-psc.ownership-of-shares-232c33"]
+hash = "232c33a0c889"
+cy = '''Perchnogaeth cyfranddaliadau'''
+
+[strings."ch-change-psc.none-dc937b"]
+hash = "dc937b598926"
+cy = '''Dim'''
+
+[strings."ch-change-psc.more-than-25-but-not-more-d87c01"]
+hash = "d87c01e45fd3"
+cy = '''Mwy na 25% ond dim mwy na 50%'''
+
+[strings."ch-change-psc.more-than-50-but-less-than-6c764a"]
+hash = "6c764aaf15e8"
+cy = '''Mwy na 50% ond llai na 75%'''
+
+[strings."ch-change-psc.75-or-more-c9f7df"]
+hash = "c9f7df5050c7"
+cy = '''75% neu fwy'''
+
+[strings."ch-change-psc.ownership-of-voting-rights-4cd7d9"]
+hash = "4cd7d9981a17"
+cy = '''Perchnogaeth hawliau pleidleisio'''
+
+[strings."ch-change-psc.the-right-to-appoint-or-remove-0cda88"]
+hash = "0cda88ab3bc2"
+cy = '''Yr hawl i benodi neu ddiswyddo mwyafrif bwrdd y cyfarwyddwyr'''
+
+[strings."ch-change-psc.significant-influence-or-control-only-if-d5a9f6"]
+hash = "d5a9f660a679"
+cy = '''Dylanwad neu reolaeth arwyddocaol (dim ond os nad oes dim o’r uchod yn berthnasol)'''
+
+[strings."ch-change-psc.the-new-address-9a52e4"]
+hash = "9a52e4c1add4"
+cy = '''Y cyfeiriad newydd'''
+
+[strings."ch-change-psc.this-is-the-address-that-will-0ad1a2"]
+hash = "0ad1a2ba1da7"
+cy = '''Dyma’r cyfeiriad a fydd yn ymddangos ar y cofnod cyhoeddus.'''
+
+[strings."ch-change-psc.building-name-or-number-bbd5d1"]
+hash = "bbd5d1b67ca7"
+cy = '''Enw neu rif yr adeilad'''
+
+[strings."ch-change-psc.street-c66659"]
+hash = "c666591df053"
+cy = '''Stryd'''
+
+[strings."ch-change-psc.address-line-2-350b2b"]
+hash = "350b2b85c4af"
+cy = '''Llinell 2 y cyfeiriad'''
+
+[strings."ch-change-psc.post-town-89cec1"]
+hash = "89cec1d7722a"
+cy = '''Tref bost'''
+
+[strings."ch-change-psc.county-or-region-9fe665"]
+hash = "9fe665e6f507"
+cy = '''Sir neu ranbarth'''
+
+[strings."ch-change-psc.postcode-0a4387"]
+hash = "0a4387d25c62"
+cy = '''Cod post'''
+
+[strings."ch-change-psc.country-701d02"]
+hash = "701d021d08c5"
+cy = '''Gwlad'''
+
+[strings."ch-change-psc.england-c0ea96"]
+hash = "c0ea960b065c"
+cy = '''Lloegr'''
+
+[strings."ch-change-psc.wales-0cf387"]
+hash = "0cf3878b94e1"
+cy = '''Cymru'''
+
+[strings."ch-change-psc.scotland-a24667"]
+hash = "a246670dbf76"
+cy = '''Yr Alban'''
+
+[strings."ch-change-psc.northern-ireland-304a7e"]
+hash = "304a7ea100d7"
+cy = '''Gogledd Iwerddon'''
+
+[strings."ch-change-psc.united-kingdom-8d23a6"]
+hash = "8d23a6e37e0a"
+cy = '''Y Deyrnas Unedig'''
+
+[strings."ch-change-psc.another-country-eea65d"]
+hash = "eea65de9d929"
+cy = '''Gwlad arall'''
+
+[strings."ch-change-psc.which-country-1dd352"]
+hash = "1dd352b833df"
+cy = '''Pa wlad?'''
+
+[strings."ch-change-psc.date-of-change-4edc2c"]
+hash = "4edc2ce6dad9"
+cy = '''Dyddiad y newid'''
+
+[strings."ch-change-psc.the-date-the-change-occurred-give-2d23a6"]
+hash = "2d23a6386b31"
+cy = '''Y dyddiad y digwyddodd y newid. Rhowch yr holl newidiadau a ddigwyddodd ar y dyddiad hwn. Os oes mwy nag un dyddiad, ffeiliwch unwaith ar gyfer pob dyddiad.'''
+
+[strings."ch-change-psc.date-of-confirmation-e98c6d"]
+hash = "e98c6d770c70"
+cy = '''Dyddiad cadarnhau'''
+
+[strings."ch-change-psc.the-date-the-company-had-confirmation-84e215"]
+hash = "84e2153a8d9f"
+cy = '''Y dyddiad y cafodd y cwmni gadarnhad bod newid yn y manylion, sut roedd y manylion wedi newid a dyddiad y newid. Rhaid dweud wrth Dŷ’r Cwmnïau o fewn 14 diwrnod i gadarnhau’r newid.'''
+
+[strings."ch-change-psc.company-authentication-code-56d0e6"]
+hash = "56d0e640f9f0"
+cy = '''Cod dilysu’r cwmni'''
+
+[strings."ch-change-psc.the-6-to-8-character-code-48646a"]
+hash = "48646a151fe7"
+cy = '''Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei ddefnyddio.'''
+
+[strings."ch-change-psc.continue-31fbef"]
+hash = "31fbef162594"
+cy = '''Parhau'''
+
+[strings."ch-change-psc.review-the-filing-769b96"]
+hash = "769b96283d75"
+cy = '''Adolygu’r ffeilio'''
+
+[strings."ch-change-psc.gov-test-scenario-dab532"]
+hash = "dab5326bb25a"
+cy = '''Gov-Test-Scenario'''
+
+[strings."ch-change-psc.file-with-companies-house-327c43"]
+hash = "327c43b89de4"
+cy = '''Ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-change-psc.change-c0bf75"]
+hash = "c0bf75bd78bf"
+cy = '''Newid'''
+
+[strings."ch-change-psc.filing-result-0ecbf7"]
+hash = "0ecbf7d7af61"
+cy = '''Canlyniad y ffeilio'''
+
+[strings."ch-change-psc.start-a-new-filing-0a9f24"]
+hash = "0a9f240ab551"
+cy = '''Dechrau ffeilio newydd'''
+
+[strings."ch-change-psc.sign-in-to-file-with-companies-5a7303"]
+hash = "5a7303865fa5"
+cy = '''Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-change-psc.sign-in-to-look-up-your-eb0bf2"]
+hash = "eb0bf28eeabf"
+cy = '''Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif.'''
+
+[strings."ch.change-psc.kind-individual"]
+hash = "010dd7b94f5f"
+cy = '''Unigolyn'''
+
+[strings."ch.change-psc.kind-entity"]
+hash = "40dc53b8aab1"
+cy = '''Endid cyfreithiol neu berson cofrestradwy arall'''
+
+[strings."ch.change-psc.held-other"]
+hash = "daa8c7c43b20"
+cy = '''Hefyd yn cael eu cadw fel y mae’r gofrestr yn eu dal: {controls}.'''
+
+[strings."ch.change-psc.address-entity"]
+hash = "134793ea97c9"
+cy = '''Cyfeiriad newydd y brif swyddfa'''
+
+[strings."ch.change-psc.address-individual"]
+hash = "3d93be81431d"
+cy = '''Y cyfeiriad gohebiaeth newydd'''
+
+[strings."ch.change-psc.lookup-failed"]
+hash = "93d03cb73407"
+cy = '''Methu darllen personau â rheolaeth arwyddocaol y cwmni hwn gan Dŷ’r Cwmnïau.'''
+
+[strings."ch.change-psc.choose-psc"]
+hash = "13e3843dfaca"
+cy = '''Dewiswch y person â rheolaeth arwyddocaol y mae ei fanylion wedi newid.'''
+
+[strings."ch.change-psc.choose-change"]
+hash = "b5a5fef954ea"
+cy = '''Dewiswch beth sydd wedi newid.'''
+
+[strings."ch.change-psc.control-needed"]
+hash = "38174d7d5e6c"
+cy = '''Dewiswch o leiaf un ffordd y mae’r person yn rheoli’r cwmni.'''
+
+[strings."ch.change-psc.influence-alone"]
+hash = "830c86a0a351"
+cy = '''Dewiswch ddylanwad neu reolaeth arwyddocaol dim ond os nad oes yr un o’r ffyrdd eraill yn berthnasol.'''
+
+[strings."ch.change-psc.address-needed"]
+hash = "26af8e9b00df"
+cy = '''Rhowch enw neu rif adeilad y cyfeiriad newydd, ei dref bost a’i wlad.'''
+
+[strings."ch.change-psc.confirmation-before"]
+hash = "7d705a52cf9f"
+cy = '''Ni all y dyddiad cadarnhau fod cyn dyddiad y newid.'''
+
+[strings."ch.change-psc.band-25"]
+hash = "3f0bf97ec457"
+cy = '''mwy na 25% ond dim mwy na 50%'''
+
+[strings."ch.change-psc.band-50"]
+hash = "9114fd624100"
+cy = '''mwy na 50% ond llai na 75%'''
+
+[strings."ch.change-psc.band-75"]
+hash = "c9f7df5050c7"
+cy = '''75% neu fwy'''
+
+[strings."ch.change-psc.shares"]
+hash = "7c1a8785fda8"
+cy = '''Cyfranddaliadau: {band}'''
+
+[strings."ch.change-psc.votes"]
+hash = "354204ce3381"
+cy = '''Hawliau pleidleisio: {band}'''
+
+[strings."ch.change-psc.directors"]
+hash = "0cda88ab3bc2"
+cy = '''Yr hawl i benodi neu ddiswyddo mwyafrif bwrdd y cyfarwyddwyr'''
+
+[strings."ch.change-psc.influence"]
+hash = "f726f4b44bc2"
+cy = '''Dylanwad neu reolaeth arwyddocaol'''
+
+[strings."ch.change-psc.as-trust"]
+hash = "37c03324f912"
+cy = '''{control}, drwy ymddiriedolaeth'''
+
+[strings."ch.change-psc.as-firm"]
+hash = "86c12280f953"
+cy = '''{control}, drwy ffyrm'''
+
+[strings."ch.change-psc.review-company"]
+hash = "de4743c87973"
+cy = '''Cwmni'''
+
+[strings."ch.change-psc.review-psc"]
+hash = "f031ed8fea1c"
+cy = '''Person â rheolaeth arwyddocaol'''
+
+[strings."ch.change-psc.review-control"]
+hash = "3383501d3d9b"
+cy = '''Sut maen nhw’n rheoli’r cwmni'''
+
+[strings."ch.change-psc.review-changed"]
+hash = "4edc2ce6dad9"
+cy = '''Dyddiad y newid'''
+
+[strings."ch.change-psc.review-confirmed"]
+hash = "e98c6d770c70"
+cy = '''Dyddiad cadarnhau'''
+
+[strings."ch.drill.change-this-psc"]
+hash = "def401da390c"
+cy = '''Dweud wrth Dŷ’r Cwmnïau fod manylion {name} wedi newid'''
+
+[strings."ch.drill.change-psc"]
+hash = "c58d174db26b"
+cy = '''Dweud wrth Dŷ’r Cwmnïau fod manylion PRhA wedi newid'''
+
+[strings."receipts.kind-psc-change-details"]
+hash = "2088cba0e166"
+cy = '''Newid manylion PRhA'''
