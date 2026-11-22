@@ -329,6 +329,31 @@ public class AccountNames {
     public String sessionSignOutPostLambdaUrlPath;
 
     // Account Settings PUT Lambda (standard JWT auth)
+    public String dueListGetIngestLambdaHandler;
+    public String dueListGetIngestLambdaFunctionName;
+    public String dueListGetIngestLambdaArn;
+    public String dueListGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod dueListGetLambdaHttpMethod;
+    public String dueListGetLambdaUrlPath;
+    public boolean dueListGetLambdaJwtAuthorizer;
+    public boolean dueListGetLambdaCustomAuthorizer;
+    public String dueListBusinessPutIngestLambdaHandler;
+    public String dueListBusinessPutIngestLambdaFunctionName;
+    public String dueListBusinessPutIngestLambdaArn;
+    public String dueListBusinessPutIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod dueListBusinessPutLambdaHttpMethod;
+    public String dueListBusinessPutLambdaUrlPath;
+    public boolean dueListBusinessPutLambdaJwtAuthorizer;
+    public boolean dueListBusinessPutLambdaCustomAuthorizer;
+    public String dueListBusinessDeleteUrlPath;
+    public String dueListRowsPostIngestLambdaHandler;
+    public String dueListRowsPostIngestLambdaFunctionName;
+    public String dueListRowsPostIngestLambdaArn;
+    public String dueListRowsPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod dueListRowsPostLambdaHttpMethod;
+    public String dueListRowsPostLambdaUrlPath;
+    public boolean dueListRowsPostLambdaJwtAuthorizer;
+    public boolean dueListRowsPostLambdaCustomAuthorizer;
     public String accountSettingsPutIngestLambdaHandler;
     public String accountSettingsPutIngestLambdaFunctionName;
     public String accountSettingsPutIngestLambdaArn;
@@ -1250,5 +1275,79 @@ public class AccountNames {
                 "Change account settings",
                 "Changes the account settings of the authenticated user, such as showing or hiding pass generation",
                 "accountSettings"));
+
+        this.dueListGetLambdaHttpMethod = HttpMethod.GET;
+        this.dueListGetLambdaUrlPath = "/api/v1/due-list";
+        this.dueListGetLambdaJwtAuthorizer = true;
+        this.dueListGetLambdaCustomAuthorizer = false;
+        var dueListGetLambdaHandlerName = "dueListGet.ingestHandler";
+        var dueListGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(dueListGetLambdaHandlerName);
+        this.dueListGetIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, dueListGetLambdaHandlerDashed);
+        this.dueListGetIngestLambdaHandler =
+                "%s/account/%s".formatted(root.appLambdaHandlerPrefix, dueListGetLambdaHandlerName);
+        this.dueListGetIngestLambdaArn = "%s-%s".formatted(root.appLambdaArnPrefix, dueListGetLambdaHandlerDashed);
+        this.dueListGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.dueListGetIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.dueListGetLambdaHttpMethod,
+                this.dueListGetLambdaUrlPath,
+                "Get the due list",
+                "Returns the authenticated user's due list: their businesses and the filing and payment dates due for them",
+                "getDueList"));
+
+        this.dueListBusinessPutLambdaHttpMethod = HttpMethod.PUT;
+        this.dueListBusinessPutLambdaUrlPath = "/api/v1/due-list/businesses/{id}";
+        this.dueListBusinessPutLambdaJwtAuthorizer = true;
+        this.dueListBusinessPutLambdaCustomAuthorizer = false;
+        var dueListBusinessPutLambdaHandlerName = "dueListBusinessPut.ingestHandler";
+        var dueListBusinessPutLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(dueListBusinessPutLambdaHandlerName);
+        this.dueListBusinessPutIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, dueListBusinessPutLambdaHandlerDashed);
+        this.dueListBusinessPutIngestLambdaHandler =
+                "%s/account/%s".formatted(root.appLambdaHandlerPrefix, dueListBusinessPutLambdaHandlerName);
+        this.dueListBusinessPutIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, dueListBusinessPutLambdaHandlerDashed);
+        this.dueListBusinessPutIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.dueListBusinessPutIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.dueListBusinessPutLambdaHttpMethod,
+                this.dueListBusinessPutLambdaUrlPath,
+                "Add or replace a due list business",
+                "Adds a business to the authenticated user's due list, or replaces it",
+                "putDueListBusiness",
+                List.of(new ApiParameter("id", "path", true, "The business id the page chose"))));
+        this.dueListBusinessDeleteUrlPath = this.dueListBusinessPutLambdaUrlPath;
+        root.publishedApiLambdas.add(new PublishedLambda(
+                HttpMethod.DELETE,
+                this.dueListBusinessDeleteUrlPath,
+                "Remove a due list business",
+                "Removes a business and every date due for it from the authenticated user's due list",
+                "deleteDueListBusiness",
+                List.of(new ApiParameter("id", "path", true, "The business id the page chose"))));
+
+        this.dueListRowsPostLambdaHttpMethod = HttpMethod.POST;
+        this.dueListRowsPostLambdaUrlPath = "/api/v1/due-list/rows";
+        this.dueListRowsPostLambdaJwtAuthorizer = true;
+        this.dueListRowsPostLambdaCustomAuthorizer = false;
+        var dueListRowsPostLambdaHandlerName = "dueListRowsPost.ingestHandler";
+        var dueListRowsPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(dueListRowsPostLambdaHandlerName);
+        this.dueListRowsPostIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, dueListRowsPostLambdaHandlerDashed);
+        this.dueListRowsPostIngestLambdaHandler =
+                "%s/account/%s".formatted(root.appLambdaHandlerPrefix, dueListRowsPostLambdaHandlerName);
+        this.dueListRowsPostIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, dueListRowsPostLambdaHandlerDashed);
+        this.dueListRowsPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.dueListRowsPostIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.dueListRowsPostLambdaHttpMethod,
+                this.dueListRowsPostLambdaUrlPath,
+                "Store due list dates read from HMRC",
+                "Stores the filing dates the page read from HMRC for one business on the due list, replacing that business's earlier HMRC dates",
+                "postDueListRows"));
     }
 }

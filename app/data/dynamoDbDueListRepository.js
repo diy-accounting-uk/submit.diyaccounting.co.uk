@@ -259,3 +259,18 @@ export async function findFeedByTokenHash(tokenHash) {
   );
   return result.Item ? { sub: result.Item.sub, createdAt: result.Item.createdAt } : null;
 }
+
+/**
+ * Closes the account's open VAT return row for a period end when exactly one matches. With two or
+ * more (two VAT businesses on one stagger, and no business holds a VRN) it leaves them for the next
+ * HMRC read.
+ * @param {string} userSub
+ * @param {string} periodEnd - YYYY-MM-DD
+ * @returns {Promise<{matched: number, closed: boolean}>}
+ */
+export async function closeVatReturnRow(userSub, periodEnd) {
+  const { rows } = await listBusinessesAndRows(userSub);
+  const matching = rows.filter((row) => row.type === "vat-return" && row.periodEnd === periodEnd && row.status === "open");
+  if (matching.length !== 1) return { matched: matching.length, closed: false };
+  return { matched: 1, closed: await closeRow(userSub, matching[0].sk) };
+}

@@ -276,7 +276,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                 "PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
-        // 38 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1), operatorConsoleImageGet(1),
+        // 41 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1), operatorConsoleImageGet(1),
         // practiceClientsListGet(1), practiceClientsPost(1), practiceClientGet(1),
         // practiceClientDelete(1), practiceClientAuthorisationInvitePost(1),
         // practiceClientAuthorisationGet(1), practiceClientAuthorisationInviteDelete(1),
@@ -287,9 +287,10 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         // commissionRelease(1), commissionMineGet(1),
         // commissionCreditPayout(1), commissionCashPayout(1),
         // sessionBeaconPost(1),
-        // sessionSignOutPost(1), activityStartedPost(1), accountAcquisitionPost(1), accountSettingsPut(1)
+        // sessionSignOutPost(1), activityStartedPost(1), accountAcquisitionPost(1), accountSettingsPut(1),
+        // dueListGet(1), dueListBusinessPut(1), dueListRowsPost(1)
         Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
-        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 38);
+        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 41);
         assertGroupedStackHealthAlarm(
                 accountStackTemplate,
                 List.of(
@@ -302,6 +303,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                         "commission-credit-payout",
                         "commission-mine-get",
                         "commission-release",
+                        "due-list",
                         "interest-post",
                         "operator",
                         "pass",
@@ -585,9 +587,12 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         // /api/v1/account/acquisition sits on its own unshared path and adds a primary route and an
         // auto-HEAD route, for 244 + 2 = 246. POST /api/v1/companies-house/psc-cessation and GET
         // /api/v1/companies-house/forms/{kind}/{submissionNumber} each sit on their own unshared path and add a
-        // primary route and an auto-HEAD route, for 246 + 4 = 250.
+        // primary route and an auto-HEAD route, for 246 + 4 = 250. The due list's routes sit on three
+        // unshared paths: GET /api/v1/due-list with its auto-HEAD route, PUT and DELETE on
+        // /api/v1/due-list/businesses/{id} with one auto-HEAD route, and POST /api/v1/due-list/rows with
+        // its auto-HEAD route, for 250 + 7 = 257.
         assertEquals(
-                250,
+                257,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

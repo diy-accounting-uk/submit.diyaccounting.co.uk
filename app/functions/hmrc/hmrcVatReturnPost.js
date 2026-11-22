@@ -31,6 +31,7 @@ import {
 import { validateEnv } from "../../lib/env.js";
 import { processSqsRecords } from "../../lib/sqsWorkerHelper.js";
 import { recordFiledReceipt } from "../../services/filedReceipt.js";
+import { closeVatReturnRow } from "../../data/dynamoDbDueListRepository.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
@@ -140,6 +141,24 @@ export function apiEndpoint(app) {
   });
 }
 /* v8 ignore stop */
+
+/**
+ * Closes the account's due list row for the period a filed return covers. The filing is done by
+ * then, so a failure here is logged, with no personal data, and changes neither the filing's answer
+ * nor its receipt. A practice's filing for a client leaves the practice's own list as it is.
+ * @param {string} userSub
+ * @param {string|undefined} periodEnd
+ * @param {string|undefined} clientId
+ */
+export async function closeDueListVatRow(userSub, periodEnd, clientId) {
+  if (clientId || !periodEnd || !process.env.DUE_LIST_DYNAMODB_TABLE_NAME) return;
+  try {
+    const { matched, closed } = await closeVatReturnRow(userSub, periodEnd);
+    logger.info({ message: "Due list VAT return row after filing", matched, closed });
+  } catch (error) {
+    logger.warn({ message: "The due list VAT return row could not be closed after filing", errorName: error.name });
+  }
+}
 
 // eslint-disable-next-line sonarjs/cognitive-complexity
 export function extractAndValidateParameters(event, errorMessages) {
@@ -697,6 +716,7 @@ export async function ingestHandler(event) {
     requestId,
     traceparent,
     correlationId,
+    periodEnd,
   };
   logger.info({ message: "Handler entry", waitTimeMs, requestId, isInitialRequest });
 
@@ -764,6 +784,7 @@ export async function ingestHandler(event) {
             language: payload.language,
           });
           resultData.receiptId = receiptId;
+          await closeDueListVatRow(payload.userSub, payload.periodEnd, payload.clientId);
         }
 
         return resultData;
@@ -907,6 +928,7 @@ export async function workerHandler(event) {
           language: payload.language,
         });
         result.receiptId = receiptId;
+        await closeDueListVatRow(userSub, payload.periodEnd, payload.clientId);
       }
 
       await asyncApiServices.complete({

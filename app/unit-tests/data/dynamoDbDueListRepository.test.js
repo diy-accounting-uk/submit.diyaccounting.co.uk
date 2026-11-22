@@ -46,8 +46,18 @@ vi.mock("@app/services/subHasher.js", () => ({
   subHashCandidates: (sub) => mockSubHashCandidates(sub),
 }));
 
-const { putBusiness, deleteBusiness, listBusinessesAndRows, putRows, closeRow, queryJobsDue, putFeedToken, findFeedByTokenHash, rowSk } =
-  await import("@app/data/dynamoDbDueListRepository.js");
+const {
+  putBusiness,
+  deleteBusiness,
+  listBusinessesAndRows,
+  putRows,
+  closeRow,
+  closeVatReturnRow,
+  queryJobsDue,
+  putFeedToken,
+  findFeedByTokenHash,
+  rowSk,
+} = await import("@app/data/dynamoDbDueListRepository.js");
 
 const TABLE = "test-due-list-table";
 
@@ -304,5 +314,40 @@ describe("data/dynamoDbDueListRepository", () => {
 
     mockSend.mockResolvedValueOnce({});
     expect(await findFeedByTokenHash("unknown")).toBeNull();
+  });
+
+  test("closeVatReturnRow closes the one open VAT return row with that period end", async () => {
+    storeHolds([
+      { ...VAT_ROW, hashedSub: "hashed-user-1", sk: rowSk(VAT_ROW), type: "vat-return", status: "open" },
+      {
+        ...VAT_ROW,
+        hashedSub: "hashed-user-1",
+        sk: "row#b1#vat-return#2026-06-30",
+        type: "vat-return",
+        periodEnd: "2026-06-30",
+        status: "open",
+      },
+    ]);
+
+    expect(await closeVatReturnRow("user-1", "2026-09-30")).toEqual({ matched: 1, closed: true });
+    expect(sent("Update").map((command) => command.params.Key.sk)).toEqual(["row#b1#vat-return#2026-09-30"]);
+  });
+
+  test("closeVatReturnRow leaves two matching rows open for the next HMRC read", async () => {
+    const other = { ...VAT_ROW, businessId: "b2", type: "vat-return", status: "open" };
+    storeHolds([
+      { ...VAT_ROW, hashedSub: "hashed-user-1", sk: rowSk(VAT_ROW), type: "vat-return", status: "open" },
+      { ...other, hashedSub: "hashed-user-1", sk: rowSk(other) },
+    ]);
+
+    expect(await closeVatReturnRow("user-1", "2026-09-30")).toEqual({ matched: 2, closed: false });
+    expect(sent("Update")).toHaveLength(0);
+  });
+
+  test("closeVatReturnRow closes nothing when no open row matches", async () => {
+    storeHolds([{ ...VAT_ROW, hashedSub: "hashed-user-1", sk: rowSk(VAT_ROW), type: "vat-return", status: "closed" }]);
+
+    expect(await closeVatReturnRow("user-1", "2026-09-30")).toEqual({ matched: 0, closed: false });
+    expect(sent("Update")).toHaveLength(0);
   });
 });

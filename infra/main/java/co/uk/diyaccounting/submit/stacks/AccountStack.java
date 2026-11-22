@@ -45,6 +45,7 @@ import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 import software.amazon.awscdk.services.cognito.IUserPool;
 import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.dynamodb.ITable;
@@ -192,6 +193,15 @@ public class AccountStack extends Stack {
     public Function sessionSignOutPostLambda;
     public ILogGroup sessionSignOutPostLambdaLogGroup;
 
+    public AbstractApiLambdaProps dueListGetLambdaProps;
+    public Function dueListGetLambda;
+    public ILogGroup dueListGetLambdaLogGroup;
+    public AbstractApiLambdaProps dueListBusinessPutLambdaProps;
+    public Function dueListBusinessPutLambda;
+    public ILogGroup dueListBusinessPutLambdaLogGroup;
+    public AbstractApiLambdaProps dueListRowsPostLambdaProps;
+    public Function dueListRowsPostLambda;
+    public ILogGroup dueListRowsPostLambdaLogGroup;
     public AbstractApiLambdaProps accountSettingsPutLambdaProps;
     public Function accountSettingsPutLambda;
     public ILogGroup accountSettingsPutLambdaLogGroup;
@@ -2379,6 +2389,142 @@ public class AccountStack extends Stack {
         infof(
                 "Created Account Settings PUT Lambda %s",
                 this.accountSettingsPutLambda.getNode().getId());
+
+        // ============================================================================
+        // Due list Lambdas (standard JWT auth): the account's businesses and the rows due for them
+        // ============================================================================
+        ITable dueListTable = Table.fromTableName(
+                this,
+                "ImportedDueListTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().data.dueListTableName);
+        var dueListGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("DUE_LIST_DYNAMODB_TABLE_NAME", dueListTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var dueListGetApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.dueListGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.dueListGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.dueListGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.dueListGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().account.dueListGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().account.dueListGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.dueListGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.dueListGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.dueListGetLambdaCustomAuthorizer)
+                        .environment(dueListGetLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(dueListGetApiLambda);
+        this.dueListGetLambdaProps = dueListGetApiLambda.apiProps;
+        this.dueListGetLambda = dueListGetApiLambda.ingestLambda;
+        this.dueListGetLambdaLogGroup = dueListGetApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.dueListGetLambdaProps);
+        // Each route reads the account's bundles and the operator list to check the due list activity.
+        bundlesTable.grant(this.dueListGetLambda, "dynamodb:Query", "dynamodb:GetItem");
+        SubHashSaltHelper.grantSaltAccess(this.dueListGetLambda, region, account, props.envName());
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.dueListGetLambda, region, account, props.envName());
+        dueListTable.grant(this.dueListGetLambda, "dynamodb:Query");
+
+        var dueListBusinessPutLambdaEnv = new PopulatedMap<String, String>()
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("DUE_LIST_DYNAMODB_TABLE_NAME", dueListTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        // The business check reads the company number through companiesHouseApi.js, which records the
+        // calls it sends, so this Lambda carries the integration calls table as every such Lambda does.
+        IntegrationCallAccess.addEnv(
+                dueListBusinessPutLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
+        var dueListBusinessPutApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.dueListBusinessPutIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.dueListBusinessPutIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.dueListBusinessPutIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.dueListBusinessPutIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .account
+                                .dueListBusinessPutIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().account.dueListBusinessPutLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.dueListBusinessPutLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.dueListBusinessPutLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.dueListBusinessPutLambdaCustomAuthorizer)
+                        .environment(dueListBusinessPutLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(dueListBusinessPutApiLambda);
+        this.dueListBusinessPutLambdaProps = dueListBusinessPutApiLambda.apiProps;
+        this.dueListBusinessPutLambda = dueListBusinessPutApiLambda.ingestLambda;
+        this.dueListBusinessPutLambdaLogGroup = dueListBusinessPutApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.dueListBusinessPutLambdaProps);
+        // Each route reads the account's bundles and the operator list to check the due list activity.
+        bundlesTable.grant(this.dueListBusinessPutLambda, "dynamodb:Query", "dynamodb:GetItem");
+        SubHashSaltHelper.grantSaltAccess(this.dueListBusinessPutLambda, region, account, props.envName());
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.dueListBusinessPutLambda, region, account, props.envName());
+        // Removing a business deletes its rows on the same Lambda: a further route, no further function.
+        this.lambdaFunctionProps.add(ApiLambdaProps.builder()
+                .from(this.dueListBusinessPutLambdaProps)
+                .httpMethod(HttpMethod.DELETE)
+                .urlPath(props.sharedNames().account.dueListBusinessDeleteUrlPath)
+                .build());
+        dueListTable.grant(
+                this.dueListBusinessPutLambda, "dynamodb:Query", "dynamodb:PutItem", "dynamodb:BatchWriteItem");
+
+        var dueListRowsPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("DUE_LIST_DYNAMODB_TABLE_NAME", dueListTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var dueListRowsPostApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.dueListRowsPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.dueListRowsPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.dueListRowsPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.dueListRowsPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().account.dueListRowsPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().account.dueListRowsPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.dueListRowsPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.dueListRowsPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.dueListRowsPostLambdaCustomAuthorizer)
+                        .environment(dueListRowsPostLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(dueListRowsPostApiLambda);
+        this.dueListRowsPostLambdaProps = dueListRowsPostApiLambda.apiProps;
+        this.dueListRowsPostLambda = dueListRowsPostApiLambda.ingestLambda;
+        this.dueListRowsPostLambdaLogGroup = dueListRowsPostApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.dueListRowsPostLambdaProps);
+        // Each route reads the account's bundles and the operator list to check the due list activity.
+        bundlesTable.grant(this.dueListRowsPostLambda, "dynamodb:Query", "dynamodb:GetItem");
+        SubHashSaltHelper.grantSaltAccess(this.dueListRowsPostLambda, region, account, props.envName());
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.dueListRowsPostLambda, region, account, props.envName());
+        dueListTable.grant(
+                this.dueListRowsPostLambda,
+                "dynamodb:Query",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:BatchWriteItem");
+        infof(
+                "Created the due list Lambdas %s, %s and %s",
+                this.dueListGetLambda.getNode().getId(),
+                this.dueListBusinessPutLambda.getNode().getId(),
+                this.dueListRowsPostLambda.getNode().getId());
 
         FphCheckAccess.wireSenders(this, props.sharedNames().hmrc.hmrcFphCheckQueueName, Set.of());
 

@@ -964,6 +964,50 @@
         } ]
       }
     },
+    "/due-list" : {
+      "get" : {
+        "summary" : "Get the due list",
+        "description" : "Returns the authenticated user's due list: their businesses and the filing and payment dates due for them",
+        "operationId" : "getDueList"
+      }
+    },
+    "/due-list/businesses/{id}" : {
+      "put" : {
+        "summary" : "Add or replace a due list business",
+        "description" : "Adds a business to the authenticated user's due list, or replaces it",
+        "operationId" : "putDueListBusiness",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "description" : "The business id the page chose",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      },
+      "delete" : {
+        "summary" : "Remove a due list business",
+        "description" : "Removes a business and every date due for it from the authenticated user's due list",
+        "operationId" : "deleteDueListBusiness",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "description" : "The business id the page chose",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/due-list/rows" : {
+      "post" : {
+        "summary" : "Store due list dates read from HMRC",
+        "description" : "Stores the filing dates the page read from HMRC for one business on the due list, replacing that business's earlier HMRC dates",
+        "operationId" : "postDueListRows"
+      }
+    },
     "/hmrc/ct/return" : {
       "post" : {
         "summary" : "Submit a Company Tax Return",

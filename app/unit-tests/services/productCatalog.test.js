@@ -467,6 +467,19 @@ describe("productCatalogHelper", () => {
     expect(matches("/api/v1/companies-house/company/00000001/officers")).toBe(false);
   });
 
+  it("due-list is a default-bundle activity whose paths are the due list API and not its page", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "due-list");
+    expect(activity).toMatchObject({ bundles: ["default"], display: "on-entitlement", metered: false });
+    expect(activity.environments).toEqual(["local", "test", "simulator", "proxy", "ci"]);
+    expect(activity.paths).toEqual(["^/api/v1/due-list.*"]);
+    const matches = (path) => activity.paths.some((pattern) => new RegExp(pattern).test(path));
+    expect(matches("/api/v1/due-list")).toBe(true);
+    expect(matches("/api/v1/due-list/businesses/b1")).toBe(true);
+    expect(matches("/api/v1/due-list/rows")).toBe(true);
+    expect(matches("/due.html")).toBe(false);
+  });
+
   it("company-lookup should be available in prod alongside the register filings", () => {
     const catalog = parseCatalog(tomlText);
     const activity = catalog.activities.find((a) => a.id === "company-lookup");
