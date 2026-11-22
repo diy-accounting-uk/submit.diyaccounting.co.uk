@@ -20,7 +20,7 @@ import {
   NOTE_ADVANCE_FACTS,
   NOTE_INTANGIBLE_FACTS,
   NOTE_DEBTOR_FACTS,
-  NOTE_SHARE_CAPITAL_FACT,
+  NOTE_SHARE_CAPITAL_FACTS,
 } from "../public/lib/accounts-revision.js";
 import { buildMicroEntityAccounts } from "../../app/services/microEntityAccountsIxbrl.js";
 import { inAccountsLanguage } from "../../app/services/accountsLanguage.js";
@@ -215,7 +215,11 @@ describe("the notes a filed document carries over to its revision", () => {
       amountsOwedByDirectors: qname("amountsOwedByDirectors"),
       prepayments: qname("prepaymentsInDebtors"),
     });
-    expect(NOTE_SHARE_CAPITAL_FACT).toBe(qname("numberSharesIssuedFullyPaid"));
+    expect(NOTE_SHARE_CAPITAL_FACTS).toEqual({
+      shares: qname("numberSharesIssuedFullyPaid"),
+      parValue: qname("parValueShare"),
+      nominalValue: qname("nominalValueAllottedShareCapital"),
+    });
   });
 
   for (const filleted of [false, true]) {
@@ -234,7 +238,7 @@ describe("the notes a filed document carries over to its revision", () => {
         });
         expect(notes.directorsAdvances).toEqual(SMALL_COMPANY_NOTES_CASE_INPUT.directorsAdvances);
         expect(notes.intangibleAssetNote).toEqual(SMALL_COMPANY_NOTES_CASE_INPUT.intangibleAssetNote);
-        expect(notes.shareCapital).toBe(true);
+        expect(notes.shareCapital).toEqual(SMALL_COMPANY_NOTES_CASE_INPUT.shareCapital);
         expect(notes.unreadable).toEqual([]);
       });
 
@@ -255,7 +259,7 @@ describe("the notes a filed document carries over to its revision", () => {
     expect(notes.debtors).toBeNull();
     expect(notes.directorsAdvances).toEqual([]);
     expect(notes.intangibleAssetNote).toBeNull();
-    expect(notes.shareCapital).toBe(false);
+    expect(notes.shareCapital).toBeNull();
     expect(notes.unreadable).toEqual([]);
   });
 

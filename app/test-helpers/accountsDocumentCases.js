@@ -337,6 +337,7 @@ export function microInputFromTestServiceCase(testCase) {
     averageNumberOfEmployees: testCase.averageEmployees,
     directorName: testCase.director.name,
     dateOfApproval: testCase.director.dateApproved,
+    ...(testCase.revision ? { revision: testCase.revision } : {}),
     ...(testCase.dormant
       ? {
           dormant: true,

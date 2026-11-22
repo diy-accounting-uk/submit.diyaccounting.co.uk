@@ -175,7 +175,7 @@ window.WELSH_TEXT = {
   "bundles.you-hold": "Mae’r Bundle hwn gennych",
   "ch.accounts.accepted": "Derbyniodd Tŷ’r Cwmnïau y cyfrifon.",
   "ch.accounts.check-failed": "Rhif cyflwyno {number}. Methodd y gwiriad statws: {message}.",
-  "ch.accounts.checking": "Mae cyflwyniad {number} yn {status}. Wrthi’n gwirio eto...",
+  "ch.accounts.checking": "Statws cyflwyniad {number}: {status}. Wrthi’n gwirio eto...",
   "ch.accounts.confirm-477": "Cadarnhewch fod gan y cwmni hawl i eithriad rhag archwiliad o dan adran 477",
   "ch.accounts.confirm-directors": "Cadarnhewch fod y cyfarwyddwyr yn cydnabod eu cyfrifoldebau",
   "ch.accounts.confirm-members": "Cadarnhewch nad yw’r aelodau wedi ei gwneud yn ofynnol i’r cwmni gael archwiliad",
@@ -185,6 +185,7 @@ window.WELSH_TEXT = {
   "ch.accounts.file-failed": "Methwyd â ffeilio’r cyfrifon gyda Thŷ’r Cwmnïau.",
   "ch.accounts.gateway-accepted": "Derbyniodd y porth gyflwyniad {number} am {time}. Wrthi’n aros am Dŷ’r Cwmnïau...",
   "ch.accounts.lookup-failed": "Methwyd â chwilio am y cwmni.",
+  "ch.accounts.not-applicable": "Ddim yn berthnasol",
   "ch.accounts.not-confirmed": "Cyflwynwyd eich cyfrifon. Nid yw Tŷ’r Cwmnïau wedi cadarnhau’r canlyniad eto.",
   "ch.accounts.not-finished": "Mae’r cyfrifon gan Dŷ’r Cwmnïau ac nid yw wedi gorffen eu gwirio.",
   "ch.accounts.preview-failed": "Methwyd â chreu’r rhagolwg o’r cyfrifon.",
@@ -445,8 +446,8 @@ window.WELSH_TEXT = {
   "ch.ct.include-comparatives": "Cynnwys ffigurau’r llynedd",
   "ch.ct.include-fixed-assets-note": "Cynnwys y nodyn asedion sefydlog diriaethol",
   "ch.ct.irmark-part": "IRmark Ffurflen {part} o 2:",
-  "ch.ct.is": "yw",
-  "ch.ct.is-still": "yw",
+  "ch.ct.is": ":",
+  "ch.ct.is-still": ":",
   "ch.ct.joint": "Mae’r ddau ffeilio wedi’u derbyn. Mae eich derbynebau yn eu dangos fel un ffeilio:",
   "ch.ct.joint-amended":
     "Mae’r ddau ffeilio diwygiedig wedi’u derbyn. Mae eich derbynebau yn eu dangos o dan y ffeilio y maent yn ei ddiwygio:",
@@ -625,6 +626,9 @@ window.WELSH_TEXT = {
   "ch.ct.sending-hmrc": "CThEF gyda Ffurflen Dreth y Cwmni",
   "ch.ct.sending-to": "Anfon y cyfrifon i",
   "ch.ct.statements": "Datganiadau",
+  "ch.ct.status-accept": "wedi’i derbyn",
+  "ch.ct.status-pending": "yn aros i gael ei gwirio",
+  "ch.ct.status-reject": "wedi’i gwrthod",
   "ch.ct.submission": "Cyflwyniad",
   "ch.ct.submit-both-of-2": "Cyflwyno {word} 1 o 2, yna {word} 2 o 2",
   "ch.ct.submit-one-of-2": "Cyflwyno {word} {part} o 2 i CThEF",
@@ -1058,6 +1062,10 @@ window.WELSH_TEXT = {
     "Nid yw Tŷ’r Cwmnïau wedi gorffen gwirio cyflwyniad {number}. Mae’n gwirio rhai ffeiliadau â llaw, yn ystod oriau swyddfa.",
   "ch.gateway.pending-note":
     "Nid yw Tŷ’r Cwmnïau wedi gorffen gwirio cyflwyniad {number}. Mae’n gwirio rhai ffeiliadau â llaw, yn ystod oriau swyddfa. Dewiswch Gwirio eto i ofyn am y canlyniad. Unwaith y bydd Tŷ’r Cwmnïau yn derbyn y ffeilio, mae eich copi yn eich ffeiliadau.",
+  "ch.gateway.status-accept": "wedi’i dderbyn",
+  "ch.gateway.status-parked": "wedi’i ddal i’w wirio â llaw",
+  "ch.gateway.status-pending": "yn aros i gael ei wirio",
+  "ch.gateway.status-reject": "wedi’i wrthod",
   "ch.jurisdiction.england-wales": "Lloegr a Chymru",
   "ch.jurisdiction.european-union": "Yr Undeb Ewropeaidd",
   "ch.jurisdiction.noneu": "Y tu allan i’r Undeb Ewropeaidd",
@@ -1177,6 +1185,10 @@ window.WELSH_TEXT = {
   "ch.revision.need-amendments": "Dywedwch beth mae’r cyfrifon diwygiedig yn ei newid",
   "ch.revision.need-non-compliance": "Dywedwch beth oedd yn anghywir yn y cyfrifon gwreiddiol",
   "ch.revision.need-original-date": "Nodwch y dyddiad y cymeradwywyd y cyfrifon gwreiddiol, fel y mae’r cyfrifon a ffeiliwyd yn ei ddangos",
+  "ch.revision.next-micro": "Eu diwygio ar dudalen cyfrifon micro-endid",
+  "ch.revision.next-receipts": "Yn ôl i’ch derbynebau",
+  "ch.revision.next-record": "Gweld y ffeilio",
+  "ch.revision.next-small": "Eu diwygio ar dudalen cyfrifon cwmni bach",
   "ch.revision.not-micro": "Cyfrifon cwmni bach yw’r rheini, felly maent yn cael eu diwygio ar dudalen cyfrifon cwmni bach.",
   "ch.revision.not-offered": "Ni ellir ffeilio cyfrifon diwygiedig yma eto, felly ni ellir diwygio’r cyfrifon hyn.",
   "ch.revision.not-small": "Cyfrifon micro-endid yw’r rheini, felly maent yn cael eu diwygio ar dudalen cyfrifon micro-endid.",
@@ -1202,6 +1214,9 @@ window.WELSH_TEXT = {
   "ch.revision.refuse-other-company": "Mae’r dderbynneb y mae’r cyfrifon diwygiedig hyn yn ei henwi ar gyfer cwmni arall.",
   "ch.revision.refuse-other-period":
     "Mae’r cyfrifon y mae’r dderbynneb yn eu henwi ar gyfer y cyfnod {from} i {to}, felly ni all cyfrifon diwygiedig ar gyfer {start} i {end} gymryd eu lle.",
+  "ch.revision.refuse-unread-heading":
+    "Mae’r cyfrifon hyn yn cynnwys {headings}, na all y wefan hon eu darllen yn ôl eto, felly ni ellir eu diwygio yma eto.",
+  "ch.revision.refused-title": "Ni ellir diwygio’r cyfrifon hyn yma",
   "ch.revision.rejected": "Mae Tŷ’r Cwmnïau wedi gwrthod y cyfrifon diwygiedig.",
   "ch.revision.status-not-production":
     "Nid yw cyfrifon diwygiedig yn cael eu ffeilio go iawn o’r fan hon eto. Mae’r tabl argaeledd yn dweud beth mae pob ffeilio yn ei wneud.",
@@ -1224,6 +1239,8 @@ window.WELSH_TEXT = {
   "ch.search.no-match": "Nid oedd unrhyw gwmni yn cyfateb i’r chwiliad hwnnw.",
   "ch.search.rate-limited": "Mae Tŷ’r Cwmnïau yn cyfyngu ar nifer ein chwiliadau. Rhowch gynnig arall arni ymhen ychydig funudau.",
   "ch.search.rate-limited-seconds": "Mae Tŷ’r Cwmnïau yn cyfyngu ar nifer ein chwiliadau. Rhowch gynnig arall arni ymhen {seconds} eiliad.",
+  "ch.small.advance-not-director":
+    "Mae {name} wedi’i enwi ar gyfer blaenswm, ond nid yw ymhlith y cyfarwyddwyr a restrir. Ychwanegwch nhw at y cyfarwyddwyr, neu cywirwch yr enw.",
   "ch.small.after-one-year-split":
     "Ni all benthyciadau banc, symiau dyledus i gyfarwyddwyr a symiau dyledus i ymgymeriadau grŵp fod yn fwy na’r credydwyr sy’n ddyledus ar ôl blwyddyn.",
   "ch.small.bank-loans-too-big":
@@ -1246,8 +1263,9 @@ window.WELSH_TEXT = {
   "ch.small.net-book-value": "Gwerth llyfr net: {amount}. {verdict}",
   "ch.small.notes-must-equal":
     "Rhaid i werth llyfr net nodiadau’r asedion sefydlog fod yn hafal i’r asedion sefydlog cyn gweld y rhagolwg.",
-  "ch.small.outcome": "Roedd cyflwyniad {number} yn {status}.",
+  "ch.small.outcome": "Statws cyflwyniad {number}: {status}.",
   "ch.small.profit-totals": "Elw gweithredol: {operating}. Elw cyn treth: {pretax}. Elw am y flwyddyn: {profit}.",
+  "ch.small.remove-advance": "Tynnu’r blaenswm hwn",
   "ch.status.active": "Gweithredol",
   "ch.status.administration": "Mewn gweinyddiad",
   "ch.status.closed": "Ar gau",
@@ -2277,6 +2295,11 @@ window.WELSH_TEXT = {
     "Gollyngwch eich llyfr DIYA-GL neu eich zip pecyn taenlen yma, neu dewiswch ffeil. Caiff ei darllen yn y porwr hwn ac ni chaiff byth ei huwchlwytho; dim ond y ffigurau rydych yn eu ffeilio sy’n cael eu hanfon.",
   "widget.books-hint-ixbrl":
     "Mae dogfen gyfrifon iXBRL (.xhtml) yn llenwi’r un ffurflen. Mae set o ddogfennau iXBRL yn ei llenwi hefyd: dewiswch ei holl ffeiliau gyda’i gilydd, neu un zip.",
+  "widget.books-ixbrl-profit-and-loss":
+    "Mae’r ddogfen hefyd yn cynnwys y cyfrif elw a cholled, nad oes gan y ffurflen hon faes ar ei gyfer.",
+  "widget.books-ixbrl-unplaced": "Mae’r ddogfen hefyd yn cynnwys {count} o ffeithiau nad oes gan y ffurflen hon faes ar eu cyfer.",
+  "widget.books-ixbrl-unplaced-names": "Y ffeithiau nad oes gan y ffurflen hon faes ar eu cyfer",
+  "widget.books-ixbrl-unplaced-one": "Mae’r ddogfen hefyd yn cynnwys 1 ffaith nad oes gan y ffurflen hon faes ar ei chyfer.",
   "widget.books-nothing-filled": "Ni lenwyd dim.",
   "widget.books-other-period": "Mae {file} ar gyfer y cyfnod {from} i {to}; mae’r cyfrifon sy’n cael eu diwygio ar gyfer {start} i {end}.",
   "widget.books-reading": "Yn darllen {file}...",

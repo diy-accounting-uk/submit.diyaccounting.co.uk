@@ -142,10 +142,6 @@
                 aria-describedby="revisionTexts-hint"
               ></textarea>
             </div>
-            <p data-i18n="ch-small-company.the-date-approved-below-is-more-4f3c83" id="revisionLateNote" class="hint" hidden>
-              Mae’r dyddiad cymeradwyo isod fwy na 28 diwrnod yn ôl. Cyflwynwch y cyfrifon diwygiedig nawr: mae’r gyfraith yn rhoi 28
-              diwrnod i’r cyfarwyddwyr o’r adeg y maent yn eu cymeradwyo.
-            </p>
             <p data-i18n="ch-small-company.the-accounts-filed-were-a-full-78a2db" id="revisionCopyNote" class="hint" hidden>
               <span id="revisionCopyFull"
                 >Copi llawn oedd y cyfrifon a ffeiliwyd. Gallwch ffeilio’r diwygiad fel copi llawn neu gopi wedi’i hidlo isod.</span
@@ -3261,6 +3257,10 @@
             <div class="form-group">
               <label data-i18n="ch-small-company.date-approved-0410b4" for="directorDateApproved">Dyddiad cymeradwyo</label>
               <input type="date" id="directorDateApproved" name="directorDateApproved" required />
+              <p data-i18n="ch-small-company.the-date-approved-is-more-than-15ec2a" id="revisionLateNote" class="hint" hidden>
+                Mae’r dyddiad cymeradwyo fwy na 28 diwrnod yn ôl. Cyflwynwch y cyfrifon diwygiedig nawr: mae’r gyfraith yn rhoi 28 diwrnod
+                i’r cyfarwyddwyr o’r adeg y maent yn eu cymeradwyo.
+              </p>
             </div>
           </section>
           <section class="form-section">
@@ -3301,103 +3301,146 @@ In accordance with your instructions, we have compiled these unaudited financial
               Llenwch hwn pan fydd y fantolen yn dangos symiau sy’n ddyledus gan gyfarwyddwyr. Mae adran 413 o Ddeddf Cwmnïau 2006 yn gofyn
               am y nodyn.
             </p>
-            <div class="form-group">
-              <label data-i18n="ch-small-company.director-who-owes-the-company-money-3ba594" for="directorsAdvanceName"
-                >Cyfarwyddwr sydd mewn dyled i’r cwmni</label
-              >
-              <input type="text" id="directorsAdvanceName" name="directorsAdvanceName" />
+            <div id="directorsAdvanceRows">
+              <div class="directors-advance-row">
+                <div class="form-group">
+                  <label data-i18n="ch-small-company.director-who-owes-the-company-money-3ba594" for="directorsAdvanceName"
+                    >Cyfarwyddwr sydd mewn dyled i’r cwmni</label
+                  >
+                  <input type="text" id="directorsAdvanceName" data-advance-field="name" name="directorsAdvanceName" />
+                </div>
+                <div class="form-group">
+                  <label data-i18n="ch-small-company.interest-rate-and-main-conditions-of-edab6a" for="directorsAdvanceTerms"
+                    >Cyfradd llog a phrif amodau’r blaenswm</label
+                  >
+                  <input type="text" id="directorsAdvanceTerms" data-advance-field="terms" name="directorsAdvanceTerms" />
+                </div>
+                <p data-i18n="ch-small-company.whole-pounds-for-example-600-or-94af4a" id="ledgerHintAdvances" class="hint">
+                  Punnoedd cyfan. Er enghraifft, £600 neu £1,200.
+                </p>
+                <table class="ledger ledger--one-year">
+                  <thead>
+                    <tr>
+                      <th data-i18n="ch-small-company.line-d7852c" scope="col">Llinell</th>
+                      <th data-i18n="ch-small-company.amount-2d7841" scope="col" class="ledger__figure">Swm (£)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th data-i18n="ch-small-company.owed-by-that-director-at-the-c20cd5" scope="row">
+                        Yn ddyledus gan y cyfarwyddwr hwnnw ar ddechrau’r flwyddyn
+                      </th>
+                      <td class="ledger__figure">
+                        <label
+                          data-i18n="ch-small-company.owed-by-that-director-at-the-c20cd5"
+                          for="directorsAdvanceAtStart"
+                          class="visually-hidden"
+                          >Yn ddyledus gan y cyfarwyddwr hwnnw ar ddechrau’r flwyddyn</label
+                        >
+                        <div class="input-prefix input-prefix--amount">
+                          <span class="prefix" aria-hidden="true">£</span
+                          ><input
+                            aria-describedby="ledgerHintAdvances"
+                            type="text"
+                            id="directorsAdvanceAtStart"
+                            data-advance-field="balanceAtStart"
+                            name="directorsAdvanceAtStart"
+                            inputmode="decimal"
+                            data-money="whole-pounds"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th data-i18n="ch-small-company.advanced-to-that-director-in-the-b70866" scope="row">
+                        Wedi’i roi ymlaen llaw i’r cyfarwyddwr hwnnw yn y flwyddyn
+                      </th>
+                      <td class="ledger__figure">
+                        <label
+                          data-i18n="ch-small-company.advanced-to-that-director-in-the-b70866"
+                          for="directorsAdvanceMade"
+                          class="visually-hidden"
+                          >Wedi’i roi ymlaen llaw i’r cyfarwyddwr hwnnw yn y flwyddyn</label
+                        >
+                        <div class="input-prefix input-prefix--amount">
+                          <span class="prefix" aria-hidden="true">£</span
+                          ><input
+                            aria-describedby="ledgerHintAdvances"
+                            type="text"
+                            id="directorsAdvanceMade"
+                            data-advance-field="advanced"
+                            name="directorsAdvanceMade"
+                            inputmode="decimal"
+                            data-money="whole-pounds"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th data-i18n="ch-small-company.repaid-by-that-director-in-the-51e195" scope="row">
+                        Wedi’i ad-dalu gan y cyfarwyddwr hwnnw yn y flwyddyn
+                      </th>
+                      <td class="ledger__figure">
+                        <label
+                          data-i18n="ch-small-company.repaid-by-that-director-in-the-51e195"
+                          for="directorsAdvanceRepaid"
+                          class="visually-hidden"
+                          >Wedi’i ad-dalu gan y cyfarwyddwr hwnnw yn y flwyddyn</label
+                        >
+                        <div class="input-prefix input-prefix--amount">
+                          <span class="prefix" aria-hidden="true">£</span
+                          ><input
+                            aria-describedby="ledgerHintAdvances"
+                            type="text"
+                            id="directorsAdvanceRepaid"
+                            data-advance-field="repaid"
+                            name="directorsAdvanceRepaid"
+                            inputmode="decimal"
+                            data-money="whole-pounds"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th data-i18n="ch-small-company.owed-by-that-director-at-the-8b5171" scope="row">
+                        Yn ddyledus gan y cyfarwyddwr hwnnw ar ddiwedd y flwyddyn
+                      </th>
+                      <td class="ledger__figure">
+                        <label
+                          data-i18n="ch-small-company.owed-by-that-director-at-the-8b5171"
+                          for="directorsAdvanceAtEnd"
+                          class="visually-hidden"
+                          >Yn ddyledus gan y cyfarwyddwr hwnnw ar ddiwedd y flwyddyn</label
+                        >
+                        <div class="input-prefix input-prefix--amount">
+                          <span class="prefix" aria-hidden="true">£</span
+                          ><input
+                            aria-describedby="ledgerHintAdvances"
+                            type="text"
+                            id="directorsAdvanceAtEnd"
+                            data-advance-field="balanceAtEnd"
+                            name="directorsAdvanceAtEnd"
+                            inputmode="decimal"
+                            data-money="whole-pounds"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div class="form-group">
-              <label data-i18n="ch-small-company.interest-rate-and-main-conditions-of-edab6a" for="directorsAdvanceTerms"
-                >Cyfradd llog a phrif amodau’r blaenswm</label
-              >
-              <input type="text" id="directorsAdvanceTerms" name="directorsAdvanceTerms" />
-            </div>
-            <p data-i18n="ch-small-company.whole-pounds-for-example-600-or-94af4a" id="ledgerHintAdvances" class="hint">
-              Punnoedd cyfan. Er enghraifft, £600 neu £1,200.
+            <p data-i18n="ch-small-company.the-amounts-owed-at-the-end-d8bbd9" class="hint">
+              Mae’r symiau sy’n ddyledus ar ddiwedd y flwyddyn yn adio i’r symiau sy’n ddyledus gan gyfarwyddwyr ar y fantolen.
             </p>
-            <table class="ledger ledger--one-year">
-              <thead>
-                <tr>
-                  <th data-i18n="ch-small-company.line-d7852c" scope="col">Llinell</th>
-                  <th data-i18n="ch-small-company.amount-2d7841" scope="col" class="ledger__figure">Swm (£)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <th data-i18n="ch-small-company.owed-by-that-director-at-the-c20cd5" scope="row">
-                    Yn ddyledus gan y cyfarwyddwr hwnnw ar ddechrau’r flwyddyn
-                  </th>
-                  <td class="ledger__figure">
-                    <label
-                      data-i18n="ch-small-company.owed-by-that-director-at-the-c20cd5"
-                      for="directorsAdvanceAtStart"
-                      class="visually-hidden"
-                      >Yn ddyledus gan y cyfarwyddwr hwnnw ar ddechrau’r flwyddyn</label
-                    >
-                    <div class="input-prefix input-prefix--amount">
-                      <span class="prefix" aria-hidden="true">£</span
-                      ><input
-                        aria-describedby="ledgerHintAdvances"
-                        type="text"
-                        id="directorsAdvanceAtStart"
-                        name="directorsAdvanceAtStart"
-                        inputmode="decimal"
-                        data-money="whole-pounds"
-                      />
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <th data-i18n="ch-small-company.advanced-to-that-director-in-the-b70866" scope="row">
-                    Wedi’i roi ymlaen llaw i’r cyfarwyddwr hwnnw yn y flwyddyn
-                  </th>
-                  <td class="ledger__figure">
-                    <label
-                      data-i18n="ch-small-company.advanced-to-that-director-in-the-b70866"
-                      for="directorsAdvanceMade"
-                      class="visually-hidden"
-                      >Wedi’i roi ymlaen llaw i’r cyfarwyddwr hwnnw yn y flwyddyn</label
-                    >
-                    <div class="input-prefix input-prefix--amount">
-                      <span class="prefix" aria-hidden="true">£</span
-                      ><input
-                        aria-describedby="ledgerHintAdvances"
-                        type="text"
-                        id="directorsAdvanceMade"
-                        name="directorsAdvanceMade"
-                        inputmode="decimal"
-                        data-money="whole-pounds"
-                      />
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <th data-i18n="ch-small-company.repaid-by-that-director-in-the-51e195" scope="row">
-                    Wedi’i ad-dalu gan y cyfarwyddwr hwnnw yn y flwyddyn
-                  </th>
-                  <td class="ledger__figure">
-                    <label
-                      data-i18n="ch-small-company.repaid-by-that-director-in-the-51e195"
-                      for="directorsAdvanceRepaid"
-                      class="visually-hidden"
-                      >Wedi’i ad-dalu gan y cyfarwyddwr hwnnw yn y flwyddyn</label
-                    >
-                    <div class="input-prefix input-prefix--amount">
-                      <span class="prefix" aria-hidden="true">£</span
-                      ><input
-                        aria-describedby="ledgerHintAdvances"
-                        type="text"
-                        id="directorsAdvanceRepaid"
-                        name="directorsAdvanceRepaid"
-                        inputmode="decimal"
-                        data-money="whole-pounds"
-                      />
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <button
+              data-i18n="ch-small-company.add-another-director-s-advance-96f1ee"
+              type="button"
+              id="addDirectorsAdvance"
+              class="secondary-button"
+            >
+              Ychwanegu blaenswm cyfarwyddwr arall
+            </button>
           </section>
           <section class="form-section">
             <h3 data-i18n="ch-small-company.controlling-party-e3b475">Parti sy’n rheoli</h3>
@@ -3443,6 +3486,54 @@ In accordance with your instructions, we have compiled these unaudited financial
                     >Y parti hwn yw’r parti rheoli eithaf</label
                   >
                 </div>
+              </div>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3 data-i18n="ch-small-company.called-up-share-capital-4473b4">Cyfalaf cyfrannau wedi’i alw</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="checkbox"
+                  id="includeShareCapitalNote"
+                  name="includeShareCapitalNote"
+                  aria-describedby="includeShareCapitalNote-hint"
+                /><label data-i18n="ch-small-company.add-a-note-on-the-shares-1e206f" for="includeShareCapitalNote"
+                  >Ychwanegu nodyn ar y cyfrannau a ddyrannwyd</label
+                >
+              </div>
+              <p data-i18n="ch-small-company.the-note-states-the-number-of-d83211" id="includeShareCapitalNote-hint" class="hint">
+                Mae’r nodyn yn nodi nifer y cyfrannau, eu dosbarth a’u gwerth nominal. Y nifer yw’r cyfalaf cyfrannau wedi’i alw wedi’i
+                rannu â’r gwerth nominal.
+              </p>
+            </div>
+            <div id="shareCapitalNoteFields" hidden>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.share-class-acf5ea" for="shareCapitalClass">Dosbarth cyfrannau</label>
+                <select id="shareCapitalClass" name="shareCapitalClass">
+                  <option data-i18n="ch-small-company.ordinary-f46f36" value="ordinaryShares">Cyffredin</option>
+                  <option data-i18n="ch-small-company.preference-a0dc19" value="preferenceShares">Blaengyfrannau</option>
+                  <option data-i18n="ch-small-company.deferred-1fc4d2" value="deferredShares">Gohiriedig</option>
+                  <option data-i18n="ch-small-company.other-f97e9d" value="otherShares">Arall</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label data-i18n="ch-small-company.nominal-value-of-each-share-in-06c00d" for="shareCapitalNominalValue"
+                  >Gwerth nominal pob cyfran, mewn punnoedd</label
+                >
+                <div class="input-prefix">
+                  <span class="prefix">£</span>
+                  <input
+                    type="text"
+                    id="shareCapitalNominalValue"
+                    name="shareCapitalNominalValue"
+                    inputmode="decimal"
+                    aria-describedby="shareCapitalNominalValue-hint"
+                  />
+                </div>
+                <p data-i18n="ch-small-company.for-example-1-or-0-01-6a38c7" id="shareCapitalNominalValue-hint" class="hint">
+                  Er enghraifft, 1 neu 0.01.
+                </p>
               </div>
             </div>
           </section>

@@ -107,7 +107,7 @@ test.describe("A filing Companies House never received", () => {
 
     await expect(shown).toHaveText(`9001: ${COMPANIES_HOUSE_REASON.description}`);
     await expect(page.locator("#filingResult .outcome__title")).not.toHaveText(WELSH_HEADLINE);
-    await expect(page.locator("#filingResult .hint")).toContainText("REJECT");
+    await expect(page.locator("#filingResult .hint")).toHaveText("Statws: wedi’i wrthod. Rhif cyflwyno 00001A.");
   });
 
   test("the English page shows the reason in English, without our code", async ({ page }) => {
@@ -135,7 +135,7 @@ test.describe("A filing Companies House never received", () => {
   test("the small company page keeps the rejected outcome for a reason Companies House sent", async ({ page }) => {
     await serveSite(page, { language: "en" });
     await fileWithOutcome(page, "companies-house/fileSmallCompanyAccounts.html", [COMPANIES_HOUSE_REASON]);
-    await expect(page.locator("#filingResult")).toHaveText("Submission 00001A was REJECT.");
+    await expect(page.locator("#filingResult")).toHaveText("Submission 00001A was rejected.");
   });
 
   test("the Welsh filings list names it as not received, with the reason in Welsh", async ({ page }) => {

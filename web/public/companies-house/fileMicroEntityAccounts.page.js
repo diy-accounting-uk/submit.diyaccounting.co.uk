@@ -165,8 +165,20 @@ function documentLanguagePayload() {
   return welsh ? { documentLanguage: "cy" } : {};
 }
 
+// The advance to the director approving the accounts, when any of its boxes holds something.
+function readDirectorsAdvances() {
+  const terms = document.getElementById("directorsAdvanceTerms").value.trim();
+  const boxes = ["directorsAdvanceAtStart", "directorsAdvanceMade", "directorsAdvanceRepaid", "directorsAdvanceAtEnd"];
+  if (!terms && boxes.every((id) => document.getElementById(id).value.trim() === "")) return undefined;
+  const [balanceAtStart, advanced, repaid, balanceAtEnd] = boxes.map(
+    (id) => window.parseMoneyInput(document.getElementById(id).value, { wholePounds: true }) ?? 0,
+  );
+  return [{ name: document.getElementById("directorName").value.trim(), terms, balanceAtStart, advanced, repaid, balanceAtEnd }];
+}
+
 function buildAccountsPayload() {
   const registeredOffice = window.accountsFormSections.readRegisteredOffice();
+  const directorsAdvances = readDirectorsAdvances();
   const accountantsReport = window.accountsFormSections.readAccountantsReport();
   return {
     ...dormantPayload(),
@@ -192,6 +204,7 @@ function buildAccountsPayload() {
       directorsResponsibilities: document.getElementById("statementDirectorsResponsibilities").checked,
       microEntityProvisions: document.getElementById("statementMicroEntityProvisions").checked,
     },
+    ...(directorsAdvances ? { directorsAdvances } : {}),
     ...(revision ? { revision: revision.module.revisionRequest(revisionElements(), revision.source) } : {}),
   };
 }
@@ -330,7 +343,7 @@ function pollUntilSettled(submission, extraHeaders) {
       showFilingResult(
         window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again...", {
           number: submissionNumber,
-          status: result.statusCode,
+          status: window.companiesHouseGatewayPoll.statusWord(result.statusCode),
         }),
       ),
   });
@@ -361,7 +374,7 @@ async function checkOutcome(submission, headers) {
       notReceived?.detail ||
         (settled
           ? window.siteText("ch.accounts.status-line", "Status: {status}. Submission number {number}.", {
-              status: outcome.statusCode,
+              status: window.companiesHouseGatewayPoll.statusWord(outcome.statusCode),
               number: outcome.submissionNumber,
             })
           : window.companiesHouseGatewayPoll.pendingNote(submission)),
@@ -498,6 +511,7 @@ function startAgain() {
   showView("companyView");
 }
 
+document.getElementById("directorsReportConsistent").value = window.siteText("ch.accounts.not-applicable", "Not applicable");
 document.getElementById("companyForm").addEventListener("submit", handleCompanySubmit);
 document.getElementById("accountsForm").addEventListener("submit", handleAccountsFormSubmit);
 document.getElementById("accountsForm").addEventListener("input", refreshYearTotals);
@@ -526,8 +540,12 @@ function revisionElements() {
   };
 }
 
-function refuseRevision(text) {
-  showStatus(text, "error");
+// A refusal reads as one failure: its sentence and the next step it names, as a link.
+function refuseRevision(text, next) {
+  window.showFailure(
+    { failure: { cause: text, next } },
+    window.siteText("ch.revision.refused-title", "These accounts cannot be revised here"),
+  );
   showView("companyView");
 }
 
@@ -546,9 +564,13 @@ async function startRevision(receiptName) {
   hideStatus();
   try {
     const module = await import("../lib/accounts-revision.js");
+    const statusLine = document.querySelector("[data-feature-status]");
+    const restoreStatus = await module.showRevisionStatus(statusLine);
+    statusLine.hidden = false;
     if (!(await module.isRevisionOfferedHere())) {
       refuseRevision(
         window.siteText("ch.revision.not-offered", "Revised accounts cannot be filed here yet, so these accounts cannot be amended."),
+        module.refusalNextStep("record", receiptName),
       );
       return;
     }
@@ -557,7 +579,7 @@ async function startRevision(receiptName) {
       loadBundle: window.booksImport.loadBundle,
     });
     if (read.refusal) {
-      refuseRevision(read.refusal);
+      refuseRevision(read.refusal, module.refusalNextStep(read.next, receiptName));
       return;
     }
     if (read.source.regime !== "micro") {
@@ -566,6 +588,7 @@ async function startRevision(receiptName) {
           "ch.revision.not-micro",
           "Those are small company accounts, so they are revised on the small company accounts page.",
         ),
+        module.refusalNextStep("small", receiptName),
       );
       return;
     }
@@ -578,7 +601,6 @@ async function startRevision(receiptName) {
     window.booksImport.fillMicroEntityFormFromMapped(read.source.mapped);
     module.fillCarriedOver(read.source);
     refreshYearTotals();
-    const restoreStatus = await module.showRevisionStatus(document.querySelector("[data-feature-status]"));
     revision = { module, source: read.source, restoreStatus };
     module.showRevisionSection(revisionElements(), read.source);
     document.getElementById("revisionBanner").hidden = false;
@@ -589,6 +611,7 @@ async function startRevision(receiptName) {
     console.error("Failed to open the accounts to revise:", error);
     refuseRevision(
       window.siteText("ch.revision.load-failed", "We could not open those accounts to revise. Open the filing again from your receipts."),
+      { label: window.siteText("ch.revision.next-receipts", "Back to your receipts"), href: "/hmrc/receipt/receipts.html" },
     );
   } finally {
     hideLoading();
@@ -609,6 +632,8 @@ function endRevision() {
 document.getElementById("directorDateApproved").addEventListener("input", showRevisionLateNote);
 
 const amendReceiptName = new URLSearchParams(window.location.search).get("amend");
+// An amend address states the revised accounts activity's status, never the page's own.
+if (amendReceiptName) document.querySelector("[data-feature-status]").hidden = true;
 if (amendReceiptName && window.__submitReady__) {
   startRevision(amendReceiptName);
 } else if (amendReceiptName) {

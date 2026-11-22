@@ -98,7 +98,7 @@ test.describe("File micro-entity accounts page - optional balance sheet headings
       await page.fill("#currentPrepaymentsAccruedIncome", "300");
       await page.fill("#currentAccrualsDeferredIncome", "100");
       await page.locator("#currentFixedAssets").scrollIntoViewIfNeeded();
-      await page.locator("section.form-section", { has: page.locator("table.ledger") }).screenshot({
+      await page.locator("section.form-section", { has: page.locator("#currentFixedAssets") }).screenshot({
         path: `target/micro-headings/balance-sheet-${width}.png`,
       });
     });

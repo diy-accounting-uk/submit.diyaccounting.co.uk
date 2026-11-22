@@ -248,7 +248,18 @@ export const NOTE_DEBTOR_FACTS = {
   prepayments: "core:PrepaymentsAccruedIncome",
 };
 
-export const NOTE_SHARE_CAPITAL_FACT = "core:NumberSharesIssuedFullyPaid";
+export const NOTE_SHARE_CAPITAL_FACTS = {
+  shares: "core:NumberSharesIssuedFullyPaid",
+  parValue: "core:ParValueShare",
+  nominalValue: "core:NominalValueAllottedShareCapital",
+};
+
+const SHARE_CLASS_MEMBERS = {
+  "bus:OrdinaryShareClass1": "ordinaryShares",
+  "bus:PreferenceShareClass1": "preferenceShares",
+  "bus:DeferredShareClass1": "deferredShares",
+  "bus:OtherShareClass1": "otherShares",
+};
 
 export const NOTE_TAX_FACT = "core:CurrentTaxForPeriod";
 
@@ -425,6 +436,25 @@ function debtorsOf(document, periodEnd) {
   return { debtors: carried && !unreadable ? debtors : null, unreadable };
 }
 
+// The share capital note: the class is the share class member of the context the number of shares is
+// stated in, and the nominal value is the par value of a small company's note or the nominal value of
+// a dormant micro-entity's.
+function shareCapitalOf(document) {
+  const [shares] = figuresOf(document, NOTE_SHARE_CAPITAL_FACTS.shares);
+  if (!shares) return { shareCapital: null, unreadable: false };
+  const member = membersOf(document, shares.contextRef)
+    .find((pair) => pair.startsWith("bus:EntityShareClassesDimension="))
+    ?.split("=")[1];
+  const nominalText = [NOTE_SHARE_CAPITAL_FACTS.parValue, NOTE_SHARE_CAPITAL_FACTS.nominalValue]
+    .map((name) => new RegExp(`<ix:nonFraction name="${name}"[^>]*>([^<]*)</ix:nonFraction>`).exec(document)?.[1])
+    .find((text) => text !== undefined);
+  const nominalValue = Number(String(nominalText ?? "").replace(/,/g, ""));
+  const shareClass = SHARE_CLASS_MEMBERS[member];
+  return shareClass && nominalValue > 0
+    ? { shareCapital: { shareClass, nominalValue }, unreadable: false }
+    : { shareCapital: null, unreadable: true };
+}
+
 // The tax on profit note of a filleted copy, which holds no profit and loss account: the current tax
 // of each year, by the end date of the year's context.
 function taxNoteOf(document, periodEnd) {
@@ -439,10 +469,11 @@ function taxNoteOf(document, periodEnd) {
 
 /**
  * The notes a filed document carries that the books mapping does not read: the accounting policies,
- * the controlling party, the debtors, the advances to directors, the intangible assets note and
- * whether it has a share capital note. unreadable names each note the document carries that its facts do not give.
+ * the controlling party, the debtors, the advances to directors, the intangible assets note, the
+ * share capital note and a filleted copy's tax note. unreadable names each note the document carries
+ * that its facts do not give.
  * @param {string} document - the filed iXBRL
- * @returns {{policies: Record<string,string>, controllingParty: object|null, debtors: object|null, directorsAdvances: object[], intangibleAssetNote: object|null, shareCapital: boolean, taxNote: {current?: number, prior?: number}|null, unreadable: string[]}}
+ * @returns {{policies: Record<string,string>, controllingParty: object|null, debtors: object|null, directorsAdvances: object[], intangibleAssetNote: object|null, shareCapital: object|null, taxNote: {current?: number, prior?: number}|null, unreadable: string[]}}
  */
 export function notesOf(document) {
   const periodEnd = filedPeriodOf(document)?.periodEnd;
@@ -451,12 +482,14 @@ export function notesOf(document) {
   const debtors = debtorsOf(document, periodEnd);
   const advances = directorsAdvancesOf(document, periodEnd);
   const intangible = intangibleAssetNoteOf(document, periodEnd);
+  const shareCapital = shareCapitalOf(document);
   const unreadable = [
     ["policies", policies.unreadable],
     ["controllingParty", controllingParty.unreadable],
     ["debtors", debtors.unreadable],
     ["directorsAdvances", advances.unreadable],
     ["intangibleAssetNote", intangible.unreadable],
+    ["shareCapital", shareCapital.unreadable],
   ]
     .filter(([, isUnreadable]) => isUnreadable)
     .map(([note]) => note);
@@ -466,27 +499,77 @@ export function notesOf(document) {
     debtors: debtors.debtors,
     directorsAdvances: advances.directorsAdvances,
     intangibleAssetNote: intangible.intangibleAssetNote,
-    shareCapital: carriesFact(document, NOTE_SHARE_CAPITAL_FACT),
+    shareCapital: shareCapital.shareCapital,
     taxNote: taxNoteOf(document, periodEnd),
     unreadable,
   };
 }
 
 /**
+ * The next step of a refusal, as the link its sentence names: back to the receipts, to the filing's
+ * record, or to the other accounts form with the receipt carried.
+ * @param {"receipts"|"record"|"small"|"micro"} step
+ * @param {string} receiptName - the receipt the amend address names
+ * @returns {{label: string, href: string}}
+ */
+export function refusalNextStep(step, receiptName) {
+  const receipt = encodeURIComponent(receiptName);
+  return {
+    receipts: { label: siteText("ch.revision.next-receipts", "Back to your receipts"), href: "/hmrc/receipt/receipts.html" },
+    record: { label: siteText("ch.revision.next-record", "See the filing"), href: `filings.html?receipt=${receipt}` },
+    small: {
+      label: siteText("ch.revision.next-small", "Revise them on the small company accounts page"),
+      href: `fileSmallCompanyAccounts.html?amend=${receipt}`,
+    },
+    micro: {
+      label: siteText("ch.revision.next-micro", "Revise them on the micro-entity accounts page"),
+      href: `fileMicroEntityAccounts.html?amend=${receipt}`,
+    },
+  }[step];
+}
+
+/**
  * Read a receipt and the accounts it filed.
  * @param {string} receiptName - the receipt's stored name
  * @param {{fetchReceipt: (name: string) => Promise<Response>, loadBundle: () => Promise<object>}} io
- * @returns {Promise<{refusal: string}|{source: object}>}
+ * @returns {Promise<{refusal: string, next: "receipts"|"record"}|{source: object}>}
  */
 export async function readRevisionSource(receiptName, { fetchReceipt, loadBundle }) {
   const response = await fetchReceipt(receiptName);
   if (!response.ok) {
-    return { refusal: siteText("ch.revision.refuse-load", "We could not load that receipt. Open the filing again from your receipts.") };
+    return {
+      refusal: siteText("ch.revision.refuse-load", "We could not load that receipt. Open the filing again from your receipts."),
+      next: "receipts",
+    };
   }
   const receipt = await response.json();
   const refusal = refusalOf(receipt);
-  if (refusal) return { refusal };
-  return { source: { ...revisionSourceOf(receipt, await loadBundle()), receiptName } };
+  // A receipt that is missing or not accounts has no accounts record to go back to.
+  if (refusal) return { refusal, next: receipt?.kind === ACCOUNTS_RECEIPT_KIND ? "record" : "receipts" };
+  const bundle = await loadBundle();
+  try {
+    return { source: { ...revisionSourceOf(receipt, bundle), receiptName } };
+  } catch (error) {
+    const headings = unreadHeadingsOf(receipt.filedDocument);
+    if (error?.name !== "IxbrlError" || headings.length === 0) throw error;
+    return {
+      refusal: siteText(
+        "ch.revision.refuse-unread-heading",
+        "These accounts carry {headings}, which this site cannot yet read back, so they cannot be revised here yet.",
+        { headings: headings.join(", ") },
+      ),
+      next: "record",
+    };
+  }
+}
+
+// The books mapping does not yet read back the micro-entity headings outside the balance sheet
+// totals, and refuses accounts that state one; these are the ones a document states.
+const HEADINGS_THE_MAPPING_CANNOT_READ = ["calledUpShareCapitalNotPaid", "prepaymentsAccruedIncome", "accrualsDeferredIncome"];
+
+function unreadHeadingsOf(document) {
+  const { current, prior } = balanceSheetLinesOf(document);
+  return HEADINGS_THE_MAPPING_CANNOT_READ.filter((line) => current[line] || prior[line]).map((line) => BALANCE_SHEET_LINE_TITLE[line]());
 }
 
 const originalDateNeeded = () =>
@@ -603,23 +686,18 @@ const oneLine = (text) =>
     .map((part) => part.trim())
     .join(" ");
 
-// Fill each note into the form's boxes as filed, and answer the titles of the notes this form has no
-// boxes for or the document did not give.
+// Fill each note into the form's boxes as filed, and answer the titles of the notes whose facts the
+// document carries and does not give. Each form has the boxes for every note its builder writes.
 function fillNotes(notes) {
-  const toEnter = new Set(notes.unreadable);
   const policyFields = Object.keys(notes.policies);
-  if (policyFields.length && !policyFields.every((field) => box(field))) toEnter.add("policies");
-  for (const field of policyFields) if (box(field)) box(field).value = notes.policies[field];
+  for (const field of policyFields) box(field).value = notes.policies[field];
   if (policyFields.some((field) => field !== "accountingPolicies") && box("morePolicies")) box("morePolicies").open = true;
 
-  if (notes.controllingParty) {
-    if (!box("controllingPartyNamed")) toEnter.add("controllingParty");
-    else if (notes.controllingParty.name) {
-      box("controllingPartyNamed").checked = true;
-      box("controllingPartyName").value = oneLine(notes.controllingParty.name);
-      box("controllingPartyUltimate").checked = notes.controllingParty.ultimate;
-    } else box("controllingPartyNoUltimate").checked = true;
-  }
+  if (notes.controllingParty?.name) {
+    box("controllingPartyNamed").checked = true;
+    box("controllingPartyName").value = oneLine(notes.controllingParty.name);
+    box("controllingPartyUltimate").checked = notes.controllingParty.ultimate;
+  } else if (notes.controllingParty) box("controllingPartyNoUltimate").checked = true;
 
   // The micro-entity balance sheet has no debtors line to split, and its builder writes no debtors note.
   if (notes.debtors && box("currentDebtors")) {
@@ -628,30 +706,30 @@ function fillNotes(notes) {
     }
   }
 
-  if (notes.directorsAdvances.length) {
-    if (!box("directorsAdvanceName") || notes.directorsAdvances.length > 1) toEnter.add("directorsAdvances");
-    else {
-      const [advance] = notes.directorsAdvances;
-      box("directorsAdvanceName").value = oneLine(advance.name);
-      box("directorsAdvanceTerms").value = oneLine(advance.terms);
-      // A filleted copy has no directors' report, so the director the advance names may be missing from the list.
-      const directors = box("directors")
-        .value.split("\n")
-        .map((line) => line.trim());
-      if (!directors.includes(advance.name)) box("directors").value = [...directors.filter(Boolean), advance.name].join("\n");
-      box("directorsAdvanceAtStart").value = String(advance.balanceAtStart);
-      box("directorsAdvanceMade").value = String(advance.advanced);
-      box("directorsAdvanceRepaid").value = String(advance.repaid);
+  // One advance row per advance: the form adds rows when it can, and a micro-entity row names no
+  // director because its note is for the director approving the accounts.
+  const advanceRows = () => document.querySelectorAll(".directors-advance-row");
+  while (advanceRows().length < notes.directorsAdvances.length) box("addDirectorsAdvance").click();
+  notes.directorsAdvances.forEach((advance, index) => {
+    for (const [field, value] of Object.entries(advance)) {
+      const advanceBox = advanceRows()[index].querySelector(`[data-advance-field="${field}"]`);
+      if (advanceBox) advanceBox.value = typeof value === "string" ? oneLine(value) : String(value);
     }
+  });
+  // A filleted copy has no directors' report, so a director an advance names may be missing from the list.
+  if (box("directors") && notes.directorsAdvances.length) {
+    const directors = box("directors")
+      .value.split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const missing = notes.directorsAdvances.map((advance) => advance.name).filter((name) => !directors.includes(name));
+    if (missing.length) box("directors").value = [...directors, ...new Set(missing)].join("\n");
   }
 
   if (notes.intangibleAssetNote) {
-    if (!box("includeIntangibleAssetNote")) toEnter.add("intangibleAssetNote");
-    else {
-      box("includeIntangibleAssetNote").checked = true;
-      for (const [field, value] of Object.entries(notes.intangibleAssetNote)) {
-        box(`intangibleNote${field[0].toUpperCase()}${field.slice(1)}`).value = String(value);
-      }
+    box("includeIntangibleAssetNote").checked = true;
+    for (const [field, value] of Object.entries(notes.intangibleAssetNote)) {
+      box(`intangibleNote${field[0].toUpperCase()}${field.slice(1)}`).value = String(value);
     }
   }
 
@@ -659,9 +737,14 @@ function fillNotes(notes) {
     for (const [year, value] of Object.entries(notes.taxNote)) box(`${year}Tax`).value = String(value);
   }
 
-  if (notes.shareCapital && !box("nominalValue")) toEnter.add("shareCapital");
+  // A dormant micro-entity's share capital note comes back through the books mapping, into its own boxes.
+  if (notes.shareCapital && box("includeShareCapitalNote")) {
+    box("includeShareCapitalNote").checked = true;
+    box("shareCapitalClass").value = notes.shareCapital.shareClass;
+    box("shareCapitalNominalValue").value = String(notes.shareCapital.nominalValue);
+  }
   return Object.keys(NOTE_TITLE)
-    .filter((note) => toEnter.has(note))
+    .filter((note) => notes.unreadable.includes(note))
     .map((note) => NOTE_TITLE[note]());
 }
 
