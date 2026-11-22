@@ -59,7 +59,7 @@ this order across the waves: rule, lookup, watch, passes, fill, welsh.
 | email | PE1 | Sonnet | `customerEmailTemplates.js`, `customerEmailRequest.js`, `passGeneratePost.js`, `passAdminPost.js`, their tests |
 | edge | SY1 (the route) | Sonnet | `companiesHousePublicDeadlinesGet.js`, `EdgeStack.java`, `EdgeStackTest.java` |
 
-State: landed, not gated. Wave branch `claude/zeppelin-w01` from `main` at 82a4b97b8, worktree `.claude/worktrees/zeppelin-w01`, head dfd173734. A task is `.collab/<worker>.md` on the worker's `collab` branch; its result is `claude/<worker>-<task>` in `submit-cloud-<worker>`. Landed, in order: AA3 09b1643e5, AA8 3762c1e7e (the source rule gains www.legislation.gov.uk, because no gov.uk page states the 28 day rule), PE1 59e60c2ad and its render cases 585fe4c18, SY1 (the route) 89777f7d0, AA3's fix from epoch's review a1e9f0db8, AA1 42a81d641 (the validator answers valid for the four revised samples), AA2 7a893b201, AA3's preview rule dfd173734 (a Companies House path is decided by its own Companies House service). The generators ran on 7a893b201 and changed no file. Gates on the head, running: dusk `gate-core-dfd1737` (the content scan, the bundle, maven verify, `npm test`, the mcp tests, Prettier, Spotless, the ESLint ratchets, then the simulator suites `companyTaxReturn`, `fileMicroEntityAccounts`, `companiesHouse`, `passRedemption`, `generatePassActivity`, `bundle`, `help`); anvil `gate-browser-dfd1737` (`npm run test:browser`). The wave is gated when both are `done` with no failure.
+State: landed, not gated. Wave branch `claude/zeppelin-w01` from `main` at 82a4b97b8, worktree `.claude/worktrees/zeppelin-w01`, head dfd173734. A task is `.collab/<worker>.md` on the worker's `collab` branch; its result is `claude/<worker>-<task>` in `submit-cloud-<worker>`. Landed, in order: AA3 09b1643e5, AA8 3762c1e7e (the source rule gains www.legislation.gov.uk, because no gov.uk page states the 28 day rule), PE1 59e60c2ad and its render cases 585fe4c18, SY1 (the route) 89777f7d0, AA3's fix from epoch's review a1e9f0db8, AA1 42a81d641 (the validator answers valid for the four revised samples), AA2 7a893b201, AA3's preview rule dfd173734 (a Companies House path is decided by its own Companies House service). The generators ran on 7a893b201 and changed no file. Gates on dfd173734: every gate passes (the content scan, the bundle, `npm test`, the mcp tests, Prettier, Spotless, the ESLint gates, the browser suite with 1552 passed, and the seven simulator suites) except maven verify: `LambdaEnvironmentWiringCdkResourceTest` fails, because the preview rule reads `COMPANIES_HOUSE_GATEWAY_TEST` in a module that every handler imports. Running: dusk `aa3-env-wiring`, the fix by the test's own convention, with maven verify and `npm test` on the fixed head. The wave is gated when that fix lands; when it changes runtime code, the simulator suites it reaches run again.
 
 ### Wave 2
 
@@ -68,7 +68,7 @@ State: landed, not gated. Wave branch `claude/zeppelin-w01` from `main` at 82a4b
 | lookup | CL1 (the routes, then the page) | Sonnet, 2 agents in a chain | the catalogue; the Companies House lookup Lambdas and `companiesHouseApi.js`; `app/bin/server.js`; `CompaniesHouseNames.java` and its stack; the companies simulator; `companySearch.html` and its page script; the page router; the page scripts of the five forms |
 | cases | AA10, then AA11 | Sonnet, then Opus | `scripts/companies-house-test-service-run.js`, the test-service cases fixture, the review scripts; AA11's fixes in the accounts iXBRL services |
 
-State: building, ahead of wave 1's gates. Wave branch `claude/zeppelin-w02` from wave 1's head, worktree `.claude/worktrees/zeppelin-w02`, head eed3ae48a (a merge of wave 1's later commit dfd173734; a fix on wave 1 reaches this branch by `git merge claude/zeppelin-w01`). Landed: CL1's routes f20b03a9b (three Lambdas, six API Gateway routes; AA23's first step: software-filed accounts list `application/pdf` and `application/xhtml+xml`, paper-filed ones `application/pdf` only), AA10 ede5d3e4f. AA11 is done with no code: the judge passes the four revised cases (`target/companies-house-review/2026-11-22-revised/`, copied from anvil's branch). Running: bugle `cl1-page` (CL1's page, on this branch). To send, as AA10's remainder (2 files in `scripts/companies-house-review.mjs` and its test): the example facts that the revised cases do not need go into `NOT_CARRIED_REASONS` with the judge's reasons, and the small filleted example rule takes the section 444(5A) statement in words (`SECTION_444_5A`).
+State: building, ahead of wave 1's gates. Wave branch `claude/zeppelin-w02` from wave 1's head, worktree `.claude/worktrees/zeppelin-w02`, head eed3ae48a (a merge of wave 1's later commit dfd173734; a fix on wave 1 reaches this branch by `git merge claude/zeppelin-w01`). Landed: CL1's routes f20b03a9b (three Lambdas, six API Gateway routes; AA23's first step: software-filed accounts list `application/pdf` and `application/xhtml+xml`, paper-filed ones `application/pdf` only), AA10 ede5d3e4f. AA11 is done with no code: the judge passes the four revised cases (`target/companies-house-review/2026-11-22-revised/`, copied from anvil's branch). AA10's remainder is landed as f97ceb4c7 (the review judges the unneeded example facts by kind, and finds the small filleted example unaided). Running: bugle `cl1-page` (CL1's page, on this branch); anvil `review-routes-f97ceb4` (a review of SY1's route and CL1's routes).
 
 ### Wave 3
 
@@ -78,7 +78,7 @@ State: building, ahead of wave 1's gates. Wave branch `claude/zeppelin-w02` from
 | watch | WL1 | Sonnet | the catalogue; `watchList.html` and its page script; `companySearch.page.js`; `app/lib/accountSettings.js` |
 | route | SY2 (the route) | Sonnet | the new public Lambda; `companiesHouseApi.js`; `app/bin/server.js`; `CompaniesHouseNames.java`; `EdgeStack.java`; the companies simulator |
 
-State: pending. Started early: epoch builds `aa4` from wave 2's head eed3ae48a; bugle's `cl1-page` and `aa4` both change `fileMicroEntityAccounts.page.js`, and the coordinator merges them when wave 3 is assembled. SY2's route goes to the next free worker (it needs CL1's routes and SY1's policy, both on wave 2).
+State: pending. Started early: epoch builds `aa4` from wave 2's head eed3ae48a; bugle's `cl1-page` and `aa4` both change `fileMicroEntityAccounts.page.js`, and the coordinator merges them when wave 3 is assembled. cyclone builds `sy2-route` from the same head.
 
 ### Wave 4
 
@@ -88,7 +88,7 @@ State: pending. Started early: epoch builds `aa4` from wave 2's head eed3ae48a; 
 | copy | AA16 | Sonnet | `web/public/faqs.toml`, `CompaniesHouseNames.java`, the capability text of the accounts route |
 | passes | CP1 | Sonnet | the catalogue; the pass handlers and `passService.js`; `bundlePost.js`; the operator's pass page; `bundles.page.js`; `customerEmailTemplates.js`; `app/bin/server.js` |
 
-State: pending. Started early: cyclone builds `cp1` from wave 1's tip 585fe4c18; it lands on `claude/zeppelin-w04`, where its additions to the catalogue, `server.js` and the activity-list tests merge with those of CL1 and WL1.
+State: pending. Built early and held: cyclone's `cp1` (7d68f0516, from wave 1's tip 585fe4c18; 48 files, its unit, browser, Java and three simulator gates passed); it lands on `claude/zeppelin-w04`, where its additions to the catalogue, `server.js` and the activity-list tests merge with those of CL1 and WL1.
 
 ### Wave 5
 
@@ -97,7 +97,7 @@ State: pending. Started early: cyclone builds `cp1` from wave 1's tip 585fe4c18;
 | mcp | AA7, AA14 | Sonnet | `mcp/lib/server.js`, `mcp/lib/submit-tools.js`, `mcp/README.md`, `web/public/mcp.html`, `scripts/build-mtd-calendar.mjs`, the hosted MCP behaviour test, `mcp/scripts/accounts-test-service-proof.js` |
 | fill | CL2, CL5 | Sonnet, then Opus for CL5's interface rows | the catalogue; the new filed-accounts Lambda; the page scripts of the forms; `companySearch.html` and its page script; `app/bin/server.js`; `CompaniesHouseNames.java` |
 
-State: pending.
+State: pending. Built early and held on anvil's branch `claude/anvil-aa7-body-fields` (e634f828b, from wave 2's head f97ceb4c7): AA7 (692b1a6c2, with the body fields fix b8ff6d02b: the tools now send `registeredOffice` and `accountantsReport`) and AA14 (fce0d1c9d: the proof script files the revised case after the original, and enters the code on the codes link). Left for the coordinator when AA4's calendar row is on the branch: the revised row's MCP cell becomes `["production", "micro-entity"]`, then `npm run build:mtd-calendar`. AA14's one test-service run is `AWS_PROFILE=diya-submit-ci MCP_PROOF_TRANSCRIPT=target/accounts-test-service-proof.txt npm run mcp:accounts-test-service-proof` on the laptop (Docker and the ci profile).
 
 ### Wave 6: Welsh, after every English string is final
 
