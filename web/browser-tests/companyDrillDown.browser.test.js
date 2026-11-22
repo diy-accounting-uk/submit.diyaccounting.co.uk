@@ -216,7 +216,7 @@ const VIEWS = [
     name: "filing-history",
     address: "/companies-house/company/00000001/filing-history",
     shows: "#drillView",
-    text: "Confirmation statement with no updates",
+    text: "Confirmation statement made on 16 April 2098 with no updates",
   },
   { name: "accounts", address: "/companies-house/company/00000001/accounts", shows: "#drillView", text: "Total exemption full" },
   { name: "accounts-period", address: "/companies-house/company/00000001/accounts/2098-04-30", shows: "#drillView", text: "30 April 2098" },
@@ -268,13 +268,13 @@ test.describe("Company lookup drill-down", () => {
     await serveSite(page, { bundles: ["resident-ltd"] });
     await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
     await page.locator("#drillNav a", { hasText: "Filing history" }).click();
-    await expect(page.locator("#drillView")).toContainText("Confirmation statement with no updates");
+    await expect(page.locator("#drillView")).toContainText("Confirmation statement made on 16 April 2098 with no updates");
     expect(new URL(page.url()).pathname).toBe("/companies-house/company/00000001/filing-history");
-    await page.locator("#drillView a", { hasText: "Confirmation statement with no updates" }).click();
+    await page.locator("#drillView a", { hasText: "Confirmation statement made on 16 April 2098 with no updates" }).click();
     await expect(page.locator("#drillView")).toContainText("SIMTX00000001CS2098");
     expect(new URL(page.url()).pathname).toBe("/companies-house/company/00000001/confirmation-statement/2098-04-16");
     await page.goBack();
-    await expect(page.locator("#drillView")).toContainText("Confirmation statement with no updates");
+    await expect(page.locator("#drillView")).toContainText("Confirmation statement made on 16 April 2098 with no updates");
     expect(new URL(page.url()).pathname).toBe("/companies-house/company/00000001/filing-history");
   });
 
@@ -434,10 +434,48 @@ test.describe("Company lookup drill-down past the newest filings", () => {
     });
   }
 
+  test("the filing history words each filing as Companies House does, and words a description it has not published from its key", async ({
+    page,
+  }) => {
+    const filings = {
+      ...FILINGS,
+      totalCount: 4,
+      filings: [
+        ...FILINGS.filings,
+        {
+          transactionId: "SIMTX00000001XX2096",
+          date: "2096-05-01",
+          category: "miscellaneous",
+          type: "XX01",
+          description: "a-description-companies-house-has-not-published",
+          paperFiled: false,
+          hasDocument: true,
+        },
+      ],
+    };
+    await serveSite(page, { bundles: ["resident-ltd"], filings });
+    await page.goto(`${BASE}/companies-house/company/00000001/filing-history`, { waitUntil: "networkidle" });
+    const view = page.locator("#drillView");
+    await expect(view).toContainText("Micro company accounts made up to 30 April 2098", { timeout: 15000 });
+    await expect(view).toContainText("Total exemption full accounts made up to 30 April 2097");
+    await expect(view).toContainText("A description companies house has not published");
+    await expect(view).not.toContainText("Accounts with accounts type");
+  });
+
+  test("the Welsh filing history marks Companies House's English words as English", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/cy/companies-house/company/00000001/filing-history`, { waitUntil: "networkidle" });
+    const description = page.locator("#drillView a", { hasText: "Micro company accounts made up to" });
+    await expect(description).toHaveAttribute("lang", "en", { timeout: 15000 });
+    await shoot(page, "cy-filing-history");
+  });
+
   test("a whole filing history carries no note", async ({ page }) => {
     await serveSite(page, { bundles: ["resident-ltd"] });
     await page.goto(`${BASE}/companies-house/company/00000001/filing-history`, { waitUntil: "networkidle" });
-    await expect(page.locator("#drillView")).toContainText("Confirmation statement with no updates", { timeout: 15000 });
+    await expect(page.locator("#drillView")).toContainText("Confirmation statement made on 16 April 2098 with no updates", {
+      timeout: 15000,
+    });
     await expect(page.locator("#drillView .drill-truncated")).toHaveCount(0);
   });
 

@@ -835,7 +835,8 @@ function filingLink(companyNumber, filing, text) {
   return text;
 }
 
-function filingDescription(filing) {
+// A description the register's enumeration lacks, in the words of its description key.
+function descriptionFromKey(filing) {
   const madeUpDate = filing.descriptionValues?.made_up_date;
   const text = slugText(filing.description);
   return madeUpDate
@@ -844,6 +845,28 @@ function filingDescription(filing) {
         date: labels().formatCompanyDate(madeUpDate),
       })
     : text;
+}
+
+// Companies House's words are English only, so the Welsh page marks them as English.
+function markEnglish(content) {
+  if (!isWelshPage()) return content;
+  if (content instanceof Node) {
+    content.lang = "en";
+    return content;
+  }
+  const span = document.createElement("span");
+  span.lang = "en";
+  span.textContent = content;
+  return span;
+}
+
+// A filing's description, in Companies House's own words where its enumeration has them, as a link
+// to the view the filing opens when a company number is given.
+function filingDescription(filing, companyNumber) {
+  const register = window.companiesHouseWords.registerDescription(filing, (isoDate) => labels().formatCompanyDate(isoDate));
+  const text = register ?? descriptionFromKey(filing);
+  const content = companyNumber ? filingLink(companyNumber, filing, text) : text;
+  return register === null ? content : markEnglish(content);
 }
 
 async function renderFilingHistory(container, companyNumber) {
@@ -868,11 +891,7 @@ async function renderFilingHistory(container, companyNumber) {
         window.siteText("ch.drill.column-form", "Form"),
         window.siteText("ch.drill.column-description", "Description"),
       ],
-      filings.map((filing) => [
-        labels().formatCompanyDate(filing.date),
-        filing.type,
-        filingLink(companyNumber, filing, filingDescription(filing)),
-      ]),
+      filings.map((filing) => [labels().formatCompanyDate(filing.date), filing.type, filingDescription(filing, companyNumber)]),
     ),
   );
 }
@@ -990,7 +1009,7 @@ async function renderConfirmationStatementView(container, companyNumber, madeUpD
   );
   const dl = document.createElement("dl");
   appendTerms(dl, [
-    [window.siteText("ch.drill.column-description", "Description"), slugText(filing.description)],
+    [window.siteText("ch.drill.column-description", "Description"), filingDescription(filing)],
     [window.siteText("ch.drill.column-filed", "Filed"), labels().formatCompanyDate(filing.date)],
     [window.siteText("ch.drill.filing-id", "Companies House filing"), filing.transactionId],
   ]);
