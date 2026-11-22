@@ -406,7 +406,6 @@ window.WELSH_TEXT = {
   "ch.cease.review-company": "Cwmni",
   "ch.cease.review-confirmed": "Dyddiad cadarnhau",
   "ch.cease.review-psc": "Person â rheolaeth arwyddocaol",
-  "ch.change-officer.choice-appointed": "{name} ({role}, penodwyd {date})",
   "ch.change-officer.choose": "Dewiswch y cyfarwyddwr neu’r ysgrifennydd y mae ei fanylion wedi newid.",
   "ch.change-officer.date-before-appointment":
     "Ni all y dyddiad y newidiodd y manylion fod cyn {date}, pan mae’r gofrestr yn dangos iddynt gael eu penodi.",
@@ -419,7 +418,6 @@ window.WELSH_TEXT = {
     "Ni all cyfeiriad y cartref fod yr un fath â chyfeiriad gohebiaeth sy’n swyddfa gofrestredig y cwmni. Rhowch gyfeiriad llawn y cartref.",
   "ch.change-officer.residential-unconfirmed":
     "Cadarnhewch nad yw cyfeiriad cartref y cyfarwyddwr wedi newid, neu dewiswch gyfeiriad eu cartref fel manylyn sydd wedi newid.",
-  "ch.change-officer.review-appointment": "Penodiad",
   "ch.change-officer.review-company": "Cwmni",
   "ch.change-officer.review-corporate-name": "Enw ar y gofrestr",
   "ch.change-officer.review-date": "Y dyddiad y newidiodd y manylion",
@@ -432,6 +430,7 @@ window.WELSH_TEXT = {
   "ch.change-officer.review-nationality": "Cenedligrwydd newydd",
   "ch.change-officer.review-new-home-address": "Cyfeiriad cartref newydd",
   "ch.change-officer.review-new-name": "Enw newydd",
+  "ch.change-officer.review-officer": "Swyddog",
   "ch.change-officer.review-principal-office": "Cyfeiriad newydd y brif swyddfa",
   "ch.change-officer.review-register": "Cofrestr newydd",
   "ch.change-officer.review-register-number": "Rhif newydd yn y gofrestr honno",
@@ -1472,6 +1471,8 @@ window.WELSH_TEXT = {
   "ch.name.see-company": "Gweld y cwmni ar y gofrestr",
   "ch.name.service-same-day": "Gwasanaeth yr un diwrnod, £{fee}",
   "ch.name.service-standard": "Gwasanaeth safonol, £{fee}",
+  "ch.namesake.appointed": "penodwyd {date}",
+  "ch.namesake.born": "ganwyd {month}",
   "ch.notes.advances-required":
     "Mae’r fantolen yn dangos symiau sy’n ddyledus gan gyfarwyddwyr. Rhowch res yn y nodyn ar flaensymiau i bob cyfarwyddwr sydd mewn dyled i’r cwmni.",
   "ch.notes.arithmetic":
@@ -1673,12 +1674,12 @@ window.WELSH_TEXT = {
   "ch.remove-officer.ended-before-appointed": "Ni all y penodiad ddod i ben cyn y dyddiad y dechreuodd, {date}.",
   "ch.remove-officer.ended-in-future": "Ni all y dyddiad y daeth y penodiad i ben fod yn y dyfodol.",
   "ch.remove-officer.lookup-failed": "Methu darllen cyfarwyddwyr ac ysgrifenyddion y cwmni hwn gan Dŷ’r Cwmnïau.",
-  "ch.remove-officer.review-appointment": "Penodiad",
   "ch.remove-officer.review-company": "Cwmni",
   "ch.remove-officer.review-corporate-name": "Enw corfforaethol",
   "ch.remove-officer.review-dob": "Dyddiad geni",
   "ch.remove-officer.review-ended": "Dyddiad y daeth y penodiad i ben",
   "ch.remove-officer.review-forename": "Enw cyntaf",
+  "ch.remove-officer.review-officer": "Swyddog",
   "ch.remove-officer.review-other-forenames": "Enwau cyntaf eraill",
   "ch.remove-officer.review-surname": "Cyfenw",
   "ch.remove-officer.review-title": "Teitl",

@@ -174,6 +174,17 @@
     return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
   }
 
+  // A month and year, such as a director's month of birth as the register shows it: "March 1970".
+  function formatMonthYear(month, year) {
+    if (!month || !year) return "";
+    if (welshChrome()) return `${WELSH_MONTHS[Number(month) - 1]} ${year}`;
+    return new Date(Date.UTC(Number(year), Number(month) - 1, 1)).toLocaleDateString("en-GB", {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+  }
+
   function formatSicCode(code) {
     const text = SIC_TEXT[code];
     return text ? `${code} - ${text}` : String(code);
@@ -194,6 +205,7 @@
   window.companiesHouseLabels = {
     formatCompanyDate,
     todayInTheUnitedKingdom,
+    formatMonthYear,
     companyStatusLabel: (value) => labelFrom(companyStatuses(), value),
     companyTypeLabel: (value) => labelFrom(companyTypes(), value),
     jurisdictionLabel: (value) => labelFrom(jurisdictions(), value),

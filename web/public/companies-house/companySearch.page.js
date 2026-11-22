@@ -165,6 +165,7 @@ const officerOf = (officer) => ({
   name: officer.name,
   role: officer.officerRole,
   appointedOn: officer.appointedOn,
+  dateOfBirth: officer.dateOfBirth,
   resignedOn: officer.resignedOn,
 });
 const pscOf = (psc) => ({
@@ -1282,7 +1283,7 @@ async function appendOfficerLinks(container, companyNumber, officers, { activity
     const named = { companyNumber, officerName: officer.name, officerRole: officer.role };
     if (officer.appointedOn) named.appointedOn = officer.appointedOn;
     link.href = `${pagePrefix()}/companies-house/${page}?${new URLSearchParams(named)}`;
-    link.textContent = linkText(officer);
+    link.textContent = linkText({ ...officer, name: window.companiesHouseNamesakes.namedApart(officer, current) });
     item.appendChild(link);
     list.appendChild(item);
   });

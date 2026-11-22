@@ -10,7 +10,8 @@ window.siteText =
 // Change a director's or secretary's details: companyView -> formView -> reviewView -> resultView.
 // The form finds one of the company's current directors or secretaries as the register holds them,
 // so the page reads the register's officers and the reader chooses; a link from the company
-// lookup's officers view names the officer in ?officerName= and the page chooses it. The reader then
+// lookup's officers view names the officer in ?officerName=, with the role and the appointment date
+// that tell two officers of one name apart, and the page chooses it. The reader then
 // ticks what has changed and gives only the new details, as Companies House's online CH01, CH02,
 // CH03 or CH04 asks.
 //
@@ -205,14 +206,28 @@ function fillOfficerFields() {
   setValue("dobYear", officer.dateOfBirth?.year);
 }
 
-function renderOfficerChoices(chosenName) {
+// Whether an officer is the one a link named: the name, and the role and appointment date where the
+// link gives them, so two officers of one name, or one person who is both director and secretary, stay apart.
+function namedBy(officer, named) {
+  return (
+    officer.name === named.name &&
+    (!named.role || officer.officerRole === named.role) &&
+    (!named.appointedOn || officer.appointedOn === named.appointedOn)
+  );
+}
+
+// An officer as the choice and the review name them: the name, the appointment, and what tells them
+// apart from another current officer of the same name.
+function officerText(officer) {
+  return window.companiesHouseNamesakes.namedApart(officer, officers.filter(changeable), roleText(officer));
+}
+
+function renderOfficerChoices(named) {
   const holder = document.getElementById("officerChoices");
   holder.replaceChildren();
   const current = officers.filter(changeable);
   document.getElementById("noOfficers").style.display = current.length === 0 ? "block" : "none";
   document.getElementById("continueBtn").disabled = current.length === 0;
-  // A link names its officer by name; when two current officers share it, the reader chooses.
-  const named = chosenName ? current.filter((officer) => officer.name === chosenName) : [];
   current.forEach((officer, index) => {
     const choice = document.createElement("div");
     choice.className = "choice";
@@ -221,19 +236,11 @@ function renderOfficerChoices(chosenName) {
     input.name = "officer";
     input.id = `officer-${index}`;
     input.value = String(officers.indexOf(officer));
-    input.checked = chosenName ? named.length === 1 && named[0] === officer : current.length === 1;
+    input.checked = named.name ? current.find((candidate) => namedBy(candidate, named)) === officer : current.length === 1;
     input.addEventListener("change", fillOfficerFields);
     const label = document.createElement("label");
     label.htmlFor = input.id;
-    const sharesName = current.filter((other) => other.name === officer.name).length > 1;
-    label.textContent =
-      sharesName && officer.appointedOn
-        ? window.siteText("ch.change-officer.choice-appointed", "{name} ({role}, appointed {date})", {
-            name: officer.name,
-            role: roleText(officer),
-            date: window.companiesHouseLabels.formatCompanyDate(officer.appointedOn),
-          })
-        : `${officer.name} (${roleText(officer)})`;
+    label.textContent = officerText(officer);
     choice.append(input, label);
     holder.appendChild(choice);
   });
@@ -252,7 +259,8 @@ async function handleCompanySubmit(event) {
     officers = answer.officers || [];
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
-    renderOfficerChoices(new URLSearchParams(window.location.search).get("officerName"));
+    const address = new URLSearchParams(window.location.search);
+    renderOfficerChoices({ name: address.get("officerName"), role: address.get("officerRole"), appointedOn: address.get("appointedOn") });
     showView("formView");
   } catch (error) {
     console.error("Could not read the company's officers:", error);
@@ -497,7 +505,7 @@ function renderReview() {
   const form = filing.form;
   const rows = [
     [window.siteText("ch.change-officer.review-company", "Company"), `${company.companyName} (${company.companyNumber})`],
-    [window.siteText("ch.change-officer.review-appointment", "Appointment"), roleText(filing.officer)],
+    [window.siteText("ch.change-officer.review-officer", "Officer"), officerText(filing.officer)],
     [
       window.siteText("ch.change-officer.review-date", "Date the details changed"),
       window.companiesHouseLabels.formatCompanyDate(form.dateOfChange),

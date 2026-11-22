@@ -301,6 +301,11 @@ test("one person who is both a director and the secretary is chosen by the appoi
   };
 
   await open("officerRole=secretary&appointedOn=2016-06-01");
+  await expect(page.locator("#officerChoices label")).toHaveText([
+    "SMITH, John (Director, born March 1980)",
+    "SMITH, John (Secretary, appointed 1 June 2016)",
+    "SMITH, John (Director, born July 1990)",
+  ]);
   await expect(page.locator("#officer-1")).toBeChecked();
   await expect(page.locator("#dobFields")).toBeHidden();
 
@@ -315,6 +320,7 @@ test("one person who is both a director and the secretary is chosen by the appoi
   await page.locator("#resignationDate").fill("2026-11-01");
   await page.locator("#companyAuthCode").fill("SIMCS01");
   await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#reviewList")).toContainText("SMITH, John (Director, born March 1980)");
   await page.getByRole("button", { name: "File with Companies House" }).click();
   await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
   expect(filings[0]).toMatchObject({ officerRole: "director", surname: "SMITH", dateOfBirth: "1980-03-09" });

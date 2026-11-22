@@ -84,6 +84,12 @@ function namedBy(officer, named) {
   );
 }
 
+// An officer as the choice and the review name them: the name, the appointment, and what tells them
+// apart from another current officer of the same name.
+function officerText(officer) {
+  return window.companiesHouseNamesakes.namedApart(officer, officers.filter(removable), roleText(officer));
+}
+
 function renderOfficerChoices(named) {
   const holder = document.getElementById("officerChoices");
   holder.replaceChildren();
@@ -102,7 +108,7 @@ function renderOfficerChoices(named) {
     input.addEventListener("change", showOfficerFields);
     const label = document.createElement("label");
     label.htmlFor = input.id;
-    label.textContent = `${officer.name} (${roleText(officer)})`;
+    label.textContent = officerText(officer);
     choice.append(input, label);
     holder.appendChild(choice);
   });
@@ -256,7 +262,7 @@ function renderReview() {
   const form = filing.form;
   const rows = [
     [window.siteText("ch.remove-officer.review-company", "Company"), `${company.companyName} (${company.companyNumber})`],
-    [window.siteText("ch.remove-officer.review-appointment", "Appointment"), roleText(filing.officer)],
+    [window.siteText("ch.remove-officer.review-officer", "Officer"), officerText(filing.officer)],
   ];
   if (form.corporate) {
     rows.push([window.siteText("ch.remove-officer.review-corporate-name", "Corporate name"), form.corporateName]);

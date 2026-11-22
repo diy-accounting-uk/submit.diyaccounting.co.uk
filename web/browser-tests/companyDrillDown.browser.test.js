@@ -163,6 +163,7 @@ async function serveSite(
     filedAccounts = FILED_ACCOUNTS,
     pscs = PSCS,
     signedIn = true,
+    officers = OFFICERS,
   } = {},
 ) {
   await page.addInitScript((withSignIn) => {
@@ -185,7 +186,7 @@ async function serveSite(
       if (pathname === "/api/v1/public/company-deadlines") return json(route, 200, { companyNumber: "00000001", accountsOverdue: false });
       if (company && company[1] !== "00000001") return json(route, 404, { message: "Not found for the specified query" });
       if (company && !company[2]) return json(route, 200, PROFILE);
-      if (company && company[2] === "/officers") return json(route, 200, OFFICERS);
+      if (company && company[2] === "/officers") return json(route, 200, officers);
       if (company && company[2] === "/persons-with-significant-control") return json(route, 200, pscs);
       if (company && company[2] === "/filing-history") return json(route, 200, filings);
       if (company && company[2] === "/filed-accounts") return json(route, 200, filedAccounts);
@@ -915,6 +916,24 @@ test.describe("Company lookup drill-down officer resignation links", () => {
     expect(sources).toContain("https://assets.publishing.service.gov.uk/media/6911ece9e9348ac8fb54f483/TM01_v7.0-FINAL.pdf");
     expect(sources).toContain("https://assets.publishing.service.gov.uk/media/6911eb9b663088df8f54f482/TM02_v6.0-FINAL.pdf");
     await shoot(page, "officer-remove-links");
+  });
+
+  test("two current officers of one name get links told apart by birth month", async ({ page }) => {
+    const namesakes = {
+      ...OFFICERS,
+      activeCount: 2,
+      officers: [
+        { ...OFFICERS.officers[0] },
+        { ...OFFICERS.officers[0], appointedOn: "2022-03-01", dateOfBirth: { month: 4, year: 1998 } },
+      ],
+    };
+    await serveSite(page, { bundles: ["resident-ltd"], officers: namesakes });
+    await page.goto(`${BASE}/companies-house/company/00000001/officers`, { waitUntil: "networkidle" });
+
+    await expect(page.locator("#drillView .remove-officer-links a")).toHaveText(
+      ["Remove BRAMWELL, Eleanor (born January 1970) (Director)", "Remove BRAMWELL, Eleanor (born April 1998) (Director)"],
+      { timeout: 15000 },
+    );
   });
 
   test("on prod, where the officer resignation form is not offered, the officers view carries no removal link", async ({ page }) => {

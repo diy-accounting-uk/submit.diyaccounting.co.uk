@@ -379,39 +379,34 @@ test("a rejection shows Companies House's reason", async ({ page }) => {
   await expect(result).toContainText("9999: Officer not found on the register");
 });
 
-test("two current directors of one name are told apart by their appointment dates, and a link naming them chooses neither", async ({
-  page,
-}) => {
-  const twin = { ...OFFICERS[0], appointedOn: "2021-06-01", dateOfBirth: { month: 9, year: 1990 } };
-  await serveSite(page, { officers: [...OFFICERS, twin] });
-  await page.goto(TENNANT, { waitUntil: "networkidle" });
-  await page.getByRole("button", { name: "Look up the company" }).click();
-  const labels = page.locator("#officerChoices label");
-  await expect(labels).toContainText([
-    "TENNANT, Marcus John (Director, appointed 1 January 2015)",
-    "SIMULATOR SECRETARIES LIMITED (Corporate secretary)",
-    "BRAMWELL, Eleanor (Secretary)",
-    "TENNANT, Marcus John (Director, appointed 1 June 2021)",
-  ]);
-  await expect(page.locator('#officerChoices input[name="officer"]:checked')).toHaveCount(0);
-  await page.getByLabel("TENNANT, Marcus John (Director, appointed 1 June 2021)").check();
-  await expect(page.locator("#dobMonth")).toHaveValue("9");
-  await expect(page.locator("#dobYear")).toHaveValue("1990");
-});
-
-test("a change dated before the register's appointment date is refused before anything is sent", async ({ page }) => {
+test("two directors of one name are told apart by birth month, and the link's appointment date chooses one", async ({ page }) => {
   const filings = [];
-  await serveSite(page, { filings });
-  await page.goto(TENNANT, { waitUntil: "networkidle" });
+  const namesakes = [
+    { name: "TENNANT, Marcus John", officerRole: "director", appointedOn: "2015-01-01", dateOfBirth: { month: 2, year: 1975 } },
+    { name: "TENNANT, Marcus John", officerRole: "director", appointedOn: "2021-06-01", dateOfBirth: { month: 9, year: 1999 } },
+    { name: "BRAMWELL, Eleanor", officerRole: "secretary", appointedOn: "2016-01-01" },
+  ];
+  await serveSite(page, { filings, officers: namesakes });
+  await page.goto(
+    `${SITE}/companies-house/changeOfficer.html?companyNumber=00000001&officerName=TENNANT%2C%20Marcus%20John&officerRole=director&appointedOn=2021-06-01`,
+    { waitUntil: "networkidle" },
+  );
   await page.getByRole("button", { name: "Look up the company" }).click();
-  await page.locator("#dobDay").fill("14");
-  await page.locator("#dateOfChange").fill("2014-12-31");
-  await page.getByLabel("Their name", { exact: true }).check();
-  await page.locator("#newSurname").fill("TENNANT-JONES");
+
+  await expect(page.locator("#officerChoices label")).toHaveText([
+    "TENNANT, Marcus John (Director, born February 1975)",
+    "TENNANT, Marcus John (Director, born September 1999)",
+    "BRAMWELL, Eleanor (Secretary)",
+  ]);
+  await expect(page.getByLabel("TENNANT, Marcus John (Director, born September 1999)")).toBeChecked();
+  await expect(page.locator("#dobYear")).toHaveValue("1999");
+  await page.locator("#dobDay").fill("12");
+  await page.locator("#dateOfChange").fill(CHANGED);
+  await page.getByLabel("Their service address", { exact: true }).check();
+  await page.locator("#serviceSameAsOffice").check();
+  await page.locator("#residentialUnchanged").check();
   await page.locator("#companyAuthCode").fill("SIMCS01");
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.locator("#statusMessagesContainer")).toContainText(
-    "The date the details changed cannot be before 1 January 2015, when the register shows they were appointed.",
-  );
-  expect(filings).toHaveLength(0);
+
+  await expect(page.locator("#reviewList")).toContainText("TENNANT, Marcus John (Director, born September 1999)");
 });

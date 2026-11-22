@@ -23764,9 +23764,6 @@ cy = '''Ni all y dyddiad y daeth y penodiad i ben fod yn y dyfodol.'''
 hash = "de4743c87973"
 cy = '''Cwmni'''
 
-[strings."ch.remove-officer.review-appointment"]
-hash = "8a4f957e08cb"
-cy = '''Penodiad'''
 
 [strings."ch.remove-officer.review-corporate-name"]
 hash = "b5bead73a439"
@@ -26392,9 +26389,6 @@ cy = '''Y wlad newydd lle maent yn byw fel arfer'''
 hash = "de4743c87973"
 cy = '''Cwmni'''
 
-[strings."ch.change-officer.review-appointment"]
-hash = "8a4f957e08cb"
-cy = '''Penodiad'''
 
 [strings."ch.change-officer.review-date"]
 hash = "23ec80c63dae"
@@ -26780,11 +26774,7 @@ cy = '''Nid oedd Submit yn gallu darllen cyfalaf cyfrannau’r cwmni gan Dŷ’r
 hash = "05806571f667"
 cy = '''Mae nifer y cyfranddaliadau {name} wedi’i luosi â’r gwerth enwol neu’r swm heb ei dalu ar bob cyfranddaliad yn rhoi mwy na 6 lle degol. Mae Tŷ’r Cwmnïau yn derbyn symiau i 6 lle degol.'''
 
-# The officer change page: officers who share a name, and a change dated before the appointment.
-
-[strings."ch.change-officer.choice-appointed"]
-hash = "6c512da93831"
-cy = '''{name} ({role}, penodwyd {date})'''
+# The officer change page: a change dated before the appointment.
 
 [strings."ch.change-officer.date-before-appointment"]
 hash = "6a21d64caeae"
@@ -27205,3 +27195,22 @@ cy = '''Mae ffigurau’r flwyddyn flaenorol a oedd yn y rhain o’r blaen wedi�
 [strings."widget.books-line-part"]
 hash = "af385f2ef235"
 cy = '''{line}, ac o hynny {part}'''
+
+# == Officers of one name told apart ==
+
+[strings."ch.change-officer.review-officer"]
+hash = "192135a8adab"
+cy = '''Swyddog'''
+
+[strings."ch.remove-officer.review-officer"]
+hash = "192135a8adab"
+cy = '''Swyddog'''
+
+[strings."ch.namesake.born"]
+hash = "f1b6083960ed"
+cy = '''ganwyd {month}'''
+
+[strings."ch.namesake.appointed"]
+hash = "90d625bc064e"
+cy = '''penodwyd {date}'''
+
