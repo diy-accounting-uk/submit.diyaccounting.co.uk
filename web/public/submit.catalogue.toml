@@ -738,6 +738,17 @@ paths = ["companies-house/changePscDetails.html", "^/api/v1/companies-house/psc-
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
+id = "change-accounting-reference-date"
+name = "Change the accounting reference date (Companies House, sandbox)"
+nameCy = "Newid y dyddiad cyfeirnod cyfrifyddu (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the ChangeAccountingReferenceDate form type for this presenter.
+paths = ["companies-house/changeAccountingRefDate.html", "^/api/v1/companies-house/accounting-reference-date.*", "^/api/v1/companies-house/forms/accounting-reference-date/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
 id = "diya-gl-storage"
 name = "Save diya-gl books (sandbox)"
 nameCy = "Cadw llyfrau diya-gl (amgylchedd prawf)"

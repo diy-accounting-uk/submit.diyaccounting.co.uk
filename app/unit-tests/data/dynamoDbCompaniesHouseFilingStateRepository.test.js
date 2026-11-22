@@ -6,6 +6,7 @@
 import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { setupTestEnv } from "@app/test-helpers/mockHelpers.js";
+import { COMPANIES_HOUSE_FORM_KINDS } from "../../../web/public/lib/companies-house-forms.js";
 
 const mockSend = vi.fn();
 
@@ -146,13 +147,10 @@ describe("dynamoDbCompaniesHouseFilingStateRepository", () => {
     const filteredKinds = query.input.FilterExpression.match(/#data\.#kind IN \(([^)]*)\)/)[1]
       .split(", ")
       .map((placeholder) => query.input.ExpressionAttributeValues[placeholder]);
-    expect(filteredKinds).toEqual([
-      "accounts",
-      "confirmation-statement",
-      "psc-verification-statement",
-      "psc-cessation",
-      "psc-change-details",
-    ]);
+    expect(filteredKinds).toEqual(COMPANIES_HOUSE_FORM_KINDS);
+    expect(filteredKinds).toEqual(
+      expect.arrayContaining(["accounts", "confirmation-statement", "psc-cessation", "accounting-reference-date"]),
+    );
     expect(nextPage.input.ExclusiveStartKey).toEqual({ hashedSub: "x", requestId: "00001B" });
   });
 

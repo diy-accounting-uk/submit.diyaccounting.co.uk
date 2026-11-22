@@ -6,9 +6,26 @@
 // every form filed through the shared filing route (each row of web/public/lib/companies-house-forms.js
 // with sharedPoll): one registry for all of them, keyed by submission number, which is unique across
 // the presenter. A submission is acknowledged, answers PENDING to its first poll and ACCEPT after,
-// or REJECT under the REJECT scenario.
+// or REJECT under the REJECT scenario. A form with a row in FORM_ANSWERS is also rejected for content
+// Companies House refuses, and its acceptance changes the simulated register.
 
 import { isAuthenticated } from "./accounts-filing.js";
+import {
+  readAccountingReferenceDateForm,
+  accountingReferenceDateRejection,
+  acceptAccountingReferenceDate,
+} from "./accounting-reference-date.js";
+
+// A form whose own content changes the answer, by form identifier: read gives the form's fields from
+// the parsed envelope, rejection the reason Companies House refuses them or null, and accepted what
+// an accepted filing changes on the simulated register. A form with no row is accepted as sent.
+const FORM_ANSWERS = {
+  ChangeAccountingReferenceDate: {
+    read: readAccountingReferenceDateForm,
+    rejection: accountingReferenceDateRejection,
+    accepted: acceptAccountingReferenceDate,
+  },
+};
 
 const AUTHORISATION_FAILURE_ERROR = { raisedBy: "Gateway", number: 502, type: "fatal", text: "Authorisation Failure" };
 
@@ -33,8 +50,9 @@ export function resetGatewayFormFilings() {
 
 /**
  * Handle a parsed form submission. Returns { errors: [...] } or { acknowledged: true, gatewayTimestamp, pollInterval }.
+ * The parsed envelope, when given, is read by the form's row of FORM_ANSWERS.
  */
-export function submitGatewayForm({ senderIdHash, authValueHash, formIdentifier, submissionNumber, companyNumber, scenario }) {
+export function submitGatewayForm({ senderIdHash, authValueHash, formIdentifier, submissionNumber, companyNumber, scenario, document }) {
   if (!isAuthenticated({ senderIdHash, authValueHash }) || scenario === "AUTH_FAILURE") {
     return { errors: [AUTHORISATION_FAILURE_ERROR] };
   }
@@ -47,14 +65,31 @@ export function submitGatewayForm({ senderIdHash, authValueHash, formIdentifier,
   if (submissions.has(submissionNumber)) {
     return { errors: [schemaFailureError("SubmissionNumber has already been used", "SubmissionNumber")] };
   }
-  submissions.set(submissionNumber, { formIdentifier, pollCount: 0, scenario: scenario || null, companyNumber, senderIdHash });
+  const answer = FORM_ANSWERS[formIdentifier];
+  const form = answer && document ? answer.read(document) : null;
+  submissions.set(submissionNumber, {
+    formIdentifier,
+    pollCount: 0,
+    scenario: scenario || null,
+    companyNumber,
+    senderIdHash,
+    form,
+    formRejection: form ? answer.rejection(companyNumber, form) : null,
+    acceptedApplied: false,
+  });
   return { acknowledged: true, gatewayTimestamp: new Date().toISOString(), pollInterval: 1 };
 }
 
 function finalStatus(submissionNumber, record) {
-  return record.scenario === "REJECT"
-    ? { statusCode: "REJECT", submissionNumber, companyNumber: record.companyNumber, rejections: [SIMULATED_REJECTION] }
-    : { statusCode: "ACCEPT", submissionNumber, companyNumber: record.companyNumber, rejections: [] };
+  if (record.scenario === "REJECT" || record.formRejection) {
+    const rejections = [record.scenario === "REJECT" ? SIMULATED_REJECTION : record.formRejection];
+    return { statusCode: "REJECT", submissionNumber, companyNumber: record.companyNumber, rejections };
+  }
+  if (record.form && !record.acceptedApplied) {
+    record.acceptedApplied = true;
+    FORM_ANSWERS[record.formIdentifier].accepted(record.companyNumber, record.form);
+  }
+  return { statusCode: "ACCEPT", submissionNumber, companyNumber: record.companyNumber, rejections: [] };
 }
 
 /**

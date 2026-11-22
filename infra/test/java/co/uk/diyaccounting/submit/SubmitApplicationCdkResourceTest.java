@@ -217,12 +217,13 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 35);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 36);
         // The two previews call no external API and share the /api/v1/companies-house alarm.
         assertGroupedStackHealthAlarm(
                 companiesHouseStackTemplate,
                 List.of(
                         "companies-house",
+                        "companies-house-accounting-reference-date-post",
                         "companies-house-accounts-get",
                         "companies-house-accounts-post",
                         "companies-house-company-get",
@@ -592,9 +593,10 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         // unshared paths: GET /api/v1/due-list with its auto-HEAD route, PUT and DELETE on
         // /api/v1/due-list/businesses/{id} with one auto-HEAD route, and POST /api/v1/due-list/rows with
         // its auto-HEAD route, for 250 + 7 = 257. POST /api/v1/companies-house/psc-change-details sits on
-        // its own unshared path and adds a primary route and an auto-HEAD route, for 257 + 2 = 259.
+        // its own unshared path and adds a primary route and an auto-HEAD route, for 257 + 2 = 259. POST
+        // /api/v1/companies-house/accounting-reference-date does the same, for 259 + 2 = 261.
         assertEquals(
-                259,
+                261,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

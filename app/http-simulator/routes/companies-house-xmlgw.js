@@ -439,7 +439,7 @@ function handleGatewayForm(document, formIdentifier, { senderIdHash, authValueHa
     return schemaFailureFor("Body/FormSubmission/FormHeader/FormIdentifier");
   if (!submissionNumber) return schemaFailureFor("Body/FormSubmission/FormHeader/SubmissionNumber");
   if (!firstElement(document, formIdentifier)) return schemaFailureFor("Body/FormSubmission/Form");
-  const outcome = submitGatewayForm({ senderIdHash, authValueHash, formIdentifier, submissionNumber, companyNumber, scenario });
+  const outcome = submitGatewayForm({ senderIdHash, authValueHash, formIdentifier, submissionNumber, companyNumber, scenario, document });
   if (outcome.errors) return { errors: outcome.errors };
   return { qualifier: "acknowledgement", gatewayTimestamp: outcome.gatewayTimestamp, pollInterval: outcome.pollInterval, bodyXml: "" };
 }

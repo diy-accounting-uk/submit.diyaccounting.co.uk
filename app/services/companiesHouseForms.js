@@ -13,6 +13,11 @@ import { buildPscVerificationStatementBody } from "./companiesHousePscVerificati
 import { buildPscCessationBody } from "./companiesHousePscCessationXml.js";
 import { PSC_KIND_ELEMENTS } from "./companiesHousePscParticularsXml.js";
 import { addressProblems, buildPscChangeDetailsBody, natureOfControlProblems } from "./companiesHousePscChangeDetailsXml.js";
+import {
+  buildAccountingReferenceDateBody,
+  changeToPeriod,
+  FIVE_YEAR_EXTENSION_REASONS,
+} from "./companiesHouseAccountingReferenceDateXml.js";
 
 function extractPscVerificationStatement(body, errorMessages) {
   const { title, forename, otherForenames, surname, dobMonth, dobYear, personalCode } = body;
@@ -118,6 +123,29 @@ function extractPscChangeDetails(body, errorMessages) {
   };
 }
 
+function extractAccountingReferenceDate(body, errorMessages) {
+  const { currentPeriodEnd, newPeriodEnd } = body;
+  const fiveYearExtensionReason = trimmed(body.fiveYearExtensionReason) || undefined;
+  const extensionAuthorisedCode = trimmed(body.extensionAuthorisedCode) || undefined;
+  const currentValid = Boolean(currentPeriodEnd) && isValidIsoDate(currentPeriodEnd);
+  const newValid = Boolean(newPeriodEnd) && isValidIsoDate(newPeriodEnd);
+  if (!currentValid) errorMessages.push("Invalid or missing currentPeriodEnd - must be YYYY-MM-DD");
+  if (!newValid) errorMessages.push("Invalid or missing newPeriodEnd - must be YYYY-MM-DD");
+  const change = currentValid && newValid ? changeToPeriod(currentPeriodEnd, newPeriodEnd) : undefined;
+  if (change === null) errorMessages.push("Invalid newPeriodEnd - must differ from currentPeriodEnd");
+  if (fiveYearExtensionReason && !FIVE_YEAR_EXTENSION_REASONS[fiveYearExtensionReason]) {
+    errorMessages.push(`Invalid fiveYearExtensionReason - must be one of ${Object.keys(FIVE_YEAR_EXTENSION_REASONS).join(", ")}`);
+  } else if (fiveYearExtensionReason && change === "SHORT") {
+    errorMessages.push("Invalid fiveYearExtensionReason - applies only when the period is extended");
+  }
+  if (extensionAuthorisedCode && fiveYearExtensionReason !== "secretary-of-state-approval") {
+    errorMessages.push("Invalid extensionAuthorisedCode - applies only with fiveYearExtensionReason secretary-of-state-approval");
+  } else if (extensionAuthorisedCode && extensionAuthorisedCode.length !== 4) {
+    errorMessages.push("Invalid extensionAuthorisedCode - must be 4 characters");
+  }
+  return { currentPeriodEnd, newPeriodEnd, fiveYearExtensionReason, extensionAuthorisedCode };
+}
+
 /** Each form's request check and body builder, by the kind its filing state carries. */
 export const GATEWAY_FORM_BUILDERS = {
   "psc-verification-statement": {
@@ -140,5 +168,9 @@ export const GATEWAY_FORM_BUILDERS = {
   "psc-change-details": {
     extractAndValidate: extractPscChangeDetails,
     buildFormXml: (form) => buildPscChangeDetailsBody(form),
+  },
+  "accounting-reference-date": {
+    extractAndValidate: extractAccountingReferenceDate,
+    buildFormXml: (form) => buildAccountingReferenceDateBody(form),
   },
 };

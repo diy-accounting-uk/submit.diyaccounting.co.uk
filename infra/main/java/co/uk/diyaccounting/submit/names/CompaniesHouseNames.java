@@ -322,6 +322,15 @@ public class CompaniesHouseNames {
     public boolean companiesHouseFormStatusGetLambdaJwtAuthorizer;
     public boolean companiesHouseFormStatusGetLambdaCustomAuthorizer;
 
+    public String companiesHouseAccountingReferenceDatePostIngestLambdaHandler;
+    public String companiesHouseAccountingReferenceDatePostIngestLambdaFunctionName;
+    public String companiesHouseAccountingReferenceDatePostIngestLambdaArn;
+    public String companiesHouseAccountingReferenceDatePostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseAccountingReferenceDatePostLambdaHttpMethod;
+    public String companiesHouseAccountingReferenceDatePostLambdaUrlPath;
+    public boolean companiesHouseAccountingReferenceDatePostLambdaJwtAuthorizer;
+    public boolean companiesHouseAccountingReferenceDatePostLambdaCustomAuthorizer;
+
     public CompaniesHouseNames(SubmitSharedNames.SubmitSharedNamesProps props, SubmitSharedNames root) {
 
         this.companiesHouseSearchGetLambdaHttpMethod = HttpMethod.GET;
@@ -1219,5 +1228,32 @@ public class CompaniesHouseNames {
                 List.of(
                         new ApiParameter("kind", "path", true, "The form's kind, such as psc-cessation"),
                         new ApiParameter("submissionNumber", "path", true, "The 6-character submission number"))));
+
+        this.companiesHouseAccountingReferenceDatePostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHouseAccountingReferenceDatePostLambdaUrlPath =
+                "/api/v1/companies-house/accounting-reference-date";
+        this.companiesHouseAccountingReferenceDatePostLambdaJwtAuthorizer = true;
+        this.companiesHouseAccountingReferenceDatePostLambdaCustomAuthorizer = false;
+        var companiesHouseAccountingReferenceDatePostLambdaHandlerName =
+                "companiesHouseAccountingReferenceDatePost.ingestHandler";
+        var companiesHouseAccountingReferenceDatePostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(
+                        companiesHouseAccountingReferenceDatePostLambdaHandlerName);
+        this.companiesHouseAccountingReferenceDatePostIngestLambdaFunctionName = "%s-%s"
+                .formatted(root.appResourceNamePrefix, companiesHouseAccountingReferenceDatePostLambdaHandlerDashed);
+        this.companiesHouseAccountingReferenceDatePostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(root.appLambdaHandlerPrefix, companiesHouseAccountingReferenceDatePostLambdaHandlerName);
+        this.companiesHouseAccountingReferenceDatePostIngestLambdaArn = "%s-%s"
+                .formatted(root.appLambdaArnPrefix, companiesHouseAccountingReferenceDatePostLambdaHandlerDashed);
+        this.companiesHouseAccountingReferenceDatePostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.companiesHouseAccountingReferenceDatePostIngestLambdaArn,
+                        root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseAccountingReferenceDatePostLambdaHttpMethod,
+                this.companiesHouseAccountingReferenceDatePostLambdaUrlPath,
+                "Submit a change of accounting reference date",
+                "Builds the ChangeAccountingReferenceDate body, the change of a company's accounting reference date, and submits it through the Companies House XML Gateway",
+                "postCompaniesHouseAccountingReferenceDate"));
     }
 }

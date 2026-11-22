@@ -353,7 +353,7 @@ test.describe("Company lookup drill-down", () => {
   test("an account holding the forms' activities gets a file button for each, opening the form with the company", async ({ page }) => {
     await serveSite(page, { bundles: ["resident-ltd"] });
     await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
-    await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(6, { timeout: 15000 });
+    await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(7, { timeout: 15000 });
     const hrefs = await page
       .locator("#drillOverview .file-this a.btn")
       .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
@@ -365,6 +365,7 @@ test.describe("Company lookup drill-down", () => {
         "/companies-house/fileMicroEntityAccounts.html?companyNumber=00000001&periodStart=2098-05-01&periodEnd=2099-04-30",
         "/companies-house/fileSmallCompanyAccounts.html?companyNumber=00000001&periodStart=2098-05-01&periodEnd=2099-04-30",
         "/companies-house/fileCompanyTaxReturn.html?companyNumber=00000001",
+        "/companies-house/changeAccountingRefDate.html?companyNumber=00000001&currentPeriodEnd=2099-04-30",
       ].sort(),
     );
   });
@@ -573,7 +574,7 @@ test.describe("Company lookup drill-down edit links", () => {
       await page.setViewportSize({ width, height: 900 });
       await serveSite(page, { bundles: ["resident-ltd"] });
       await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
-      await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(6, { timeout: 15000 });
+      await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(7, { timeout: 15000 });
       for (const { section, quotes, sources } of AUTHORITY) {
         await expect(page.locator(`${section} .file-this-authority`).first()).toBeAttached();
         const text = await page.locator(`${section} .file-this-authority`).allInnerTexts();
@@ -736,5 +737,36 @@ test.describe("Company lookup drill-down PSC cessation links", () => {
     await expect(page.locator("#drillView")).toContainText("Eleanor Bramwell", { timeout: 15000 });
     await expect(page.locator("#drillView .cease-psc-links")).toHaveCount(0);
     await expect(page.locator('#drillView .file-this[data-activity="cease-psc"]')).toHaveCount(0);
+  });
+});
+
+test.describe("Company lookup drill-down change of accounting reference date link", () => {
+  const CONTROL = '#accountsSection .file-this[data-activity="change-accounting-reference-date"]';
+
+  test("an account holding the form gets a link that names the current period, and the authority AA01 states", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+
+    const control = page.locator(CONTROL);
+    await expect(control.locator("a.btn")).toHaveText("Change the accounting reference date", { timeout: 15000 });
+    expect(await control.locator("a.btn").getAttribute("href")).toBe(
+      "/companies-house/changeAccountingRefDate.html?companyNumber=00000001&currentPeriodEnd=2099-04-30",
+    );
+    await expect(control.locator(".file-this-authority")).toContainText(
+      "“You cannot extend a period beyond 18 months unless the company is in administration.”",
+    );
+    await expect(control.locator(".file-this-authority")).toContainText(
+      "“This form may be signed by: Director, Secretary, Person authorised,",
+    );
+    const sources = await control.locator(".file-this-authority a").evaluateAll((links) => links.map((anchor) => anchor.href));
+    expect(sources).toContain("https://assets.publishing.service.gov.uk/media/69f9dd2e097169e6a7a76ff4/AA01_V7.0-final.pdf");
+    await shoot(page, "change-accounting-reference-date-link");
+  });
+
+  test("on prod, where the form is not offered, the accounts section carries no link to it", async ({ page }) => {
+    await serveSite(page, { environmentName: "prod", bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    await expect(page.locator("#accountsSection")).toContainText("Next accounting period", { timeout: 15000 });
+    await expect(page.locator(CONTROL)).toHaveCount(0);
   });
 });

@@ -91,6 +91,7 @@ const FORM_FIELDS = {
     dateOfChange: "2026-11-01",
     confirmationDate: "2026-11-03",
   },
+  "accounting-reference-date": { currentPeriodEnd: "2026-03-31", newPeriodEnd: "2026-01-31" },
 };
 
 const SHARED_ROUTE_KINDS = Object.keys(GATEWAY_FORM_BUILDERS);

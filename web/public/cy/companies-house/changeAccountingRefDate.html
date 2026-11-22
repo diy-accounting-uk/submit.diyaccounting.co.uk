@@ -1,0 +1,279 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from companies-house/changeAccountingRefDate.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Newid y dyddiad cyfeirnod cyfrifyddu - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/companies-house/changeAccountingRefDate.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/changeAccountingRefDate.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/changeAccountingRefDate.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/changeAccountingRefDate.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="ch-change-ard.change-the-accounting-reference-date-2df212">Newid y dyddiad cyfeirnod cyfrifyddu</h1>
+      <p data-i18n="ch-change-ard.shorten-or-extend-a-company-s-734e39" class="subtitle">
+        Byrhau neu ymestyn cyfnod cyfrifyddu cwmni yn Nhŷ’r Cwmnïau
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p
+        data-i18n="ch-change-ard.status-sandbox-this-runs-against-companies-3c285c"
+        class="hint"
+        data-feature-status="sandbox"
+        data-companies-house-service="xml-gateway"
+      >
+        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn
+        ei ffeilio yma yn cyrraedd y gofrestr fyw.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau"
+        data-sign-in-text="Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif."
+        data-i18n-data-sign-in-title="ch-change-ard.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-change-ard.sign-in-to-look-up-your-eb0bf2"
+        data-i18n-data-sign-in-title="ch-change-ard.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-change-ard.sign-in-to-look-up-your-eb0bf2"
+      >
+        <h2 data-i18n="ch-change-ard.which-company-d9aae4">Pa gwmni?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="ch-change-ard.company-number-8b121b" for="companyNumber">Rhif y cwmni</label>
+            <p data-i18n="ch-change-ard.8-characters-for-example-00000001-do-090062" id="companyNumber-hint" class="hint">
+              8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button
+            data-i18n="ch-change-ard.look-up-the-accounting-periods-f9d0d9"
+            type="submit"
+            id="companyLookupBtn"
+            class="btn"
+            data-activity-start="change-accounting-reference-date"
+          >
+            Chwilio am y cyfnodau cyfrifyddu
+          </button>
+        </form>
+      </div>
+
+      <!-- Change form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2 data-i18n="ch-change-ard.which-period-and-its-new-end-15eec5">Pa gyfnod, a’i ddyddiad gorffen newydd?</h2>
+        <p data-i18n="ch-change-ard.company-3bc806">Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).</p>
+        <blockquote class="source-quote">
+          <p lang="en-GB">
+            You can shorten your company’s financial year as many times as you like - the minimum period you can shorten it by is 1 day.
+          </p>
+          <p lang="en-GB">You cannot change your company’s year end when its accounts are overdue.</p>
+          <footer>
+            Ffynhonnell:
+            <a lang="en-GB" hreflang="en" href="https://www.gov.uk/change-your-companys-year-end" rel="noopener"
+              >GOV.UK, Change your company’s year end</a
+            >
+            (yn Saesneg), gwiriwyd 22 Tachwedd 2026
+          </footer>
+        </blockquote>
+        <blockquote class="source-quote">
+          <p lang="en-GB">You cannot extend a period beyond 18 months unless the company is in administration.</p>
+          <p lang="en-GB">You may not extend periods more than once in five years unless you fall into one of the following categories.</p>
+          <footer>
+            Ffynhonnell:
+            <a
+              lang="en-GB"
+              hreflang="en"
+              href="https://assets.publishing.service.gov.uk/media/69f9dd2e097169e6a7a76ff4/AA01_V7.0-final.pdf"
+              rel="noopener"
+              >Companies House, AA01 Change of accounting reference date</a
+            >
+            (yn Saesneg), gwiriwyd 22 Tachwedd 2026
+          </footer>
+        </blockquote>
+        <form id="changeForm" novalidate>
+          <fieldset class="form-group">
+            <legend data-i18n="ch-change-ard.accounting-period-to-change-54a87b">Y cyfnod cyfrifyddu i’w newid</legend>
+            <p data-i18n="ch-change-ard.the-current-period-and-the-one-7d81c3" id="period-hint" class="hint">
+              Y cyfnod presennol a’r un o’i flaen, fel y mae Tŷ’r Cwmnïau yn eu dangos. Mae’r ffurflen yn newid un o’r ddau hyn.
+            </p>
+            <div id="periodChoices" aria-describedby="period-hint"></div>
+          </fieldset>
+          <p data-i18n="ch-change-ard.the-register-shows-no-accounting-period-8d3cf2" id="noPeriods" class="hint" style="display: none">
+            Nid yw’r gofrestr yn dangos unrhyw gyfnod cyfrifyddu ar gyfer y cwmni hwn.
+          </p>
+          <div class="form-group">
+            <label data-i18n="ch-change-ard.new-end-date-of-the-period-cca7f1" for="newPeriodEnd">Dyddiad gorffen newydd y cyfnod</label>
+            <p data-i18n="ch-change-ard.an-earlier-date-shortens-the-period-292cf7" id="newPeriodEnd-hint" class="hint">
+              Mae dyddiad cynharach yn byrhau’r cyfnod. Mae dyddiad diweddarach yn ei ymestyn.
+            </p>
+            <input type="date" id="newPeriodEnd" name="newPeriodEnd" required aria-describedby="newPeriodEnd-hint" />
+          </div>
+          <div class="form-group">
+            <div class="choice">
+              <input type="checkbox" id="extendedBefore" name="extendedBefore" />
+              <label data-i18n="ch-change-ard.the-company-has-already-extended-an-930e8b" for="extendedBefore"
+                >Mae’r cwmni eisoes wedi ymestyn cyfnod cyfrifyddu yn ystod y pum mlynedd diwethaf</label
+              >
+            </div>
+          </div>
+          <div id="extensionGroundGroup" style="display: none">
+            <div class="form-group">
+              <label data-i18n="ch-change-ard.why-the-company-may-extend-again-7a861b" for="fiveYearExtensionReason"
+                >Pam y caiff y cwmni ymestyn eto</label
+              >
+              <p data-i18n="ch-change-ard.companies-house-allows-a-second-extension-0afa5b" id="fiveYearExtensionReason-hint" class="hint">
+                Dim ond ar un o’r seiliau hyn y mae Tŷ’r Cwmnïau yn caniatáu ail estyniad o fewn pum mlynedd.
+              </p>
+              <select id="fiveYearExtensionReason" name="fiveYearExtensionReason" aria-describedby="fiveYearExtensionReason-hint">
+                <option data-i18n="ch-change-ard.choose-a-ground-dfed7b" value="">Dewiswch sail</option>
+                <option data-i18n="ch-change-ard.the-company-is-in-administration-a3b98c" value="administration">
+                  Mae’r cwmni yn nwylo gweinyddwyr
+                </option>
+                <option data-i18n="ch-change-ard.the-company-has-specific-approval-from-ff27ab" value="secretary-of-state-approval">
+                  Mae gan y cwmni gymeradwyaeth benodol gan yr Ysgrifennydd Gwladol
+                </option>
+                <option data-i18n="ch-change-ard.the-period-is-extended-to-align-8f7695" value="uk-parent-or-subsidiary">
+                  Mae’r cyfnod yn cael ei ymestyn i gyd-fynd â chyfnod rhiant-ymgymeriad neu is-ymgymeriad a sefydlwyd yn y Deyrnas Unedig
+                </option>
+              </select>
+            </div>
+            <div class="form-group" id="extensionAuthorisedCodeGroup" style="display: none">
+              <label data-i18n="ch-change-ard.approval-code-optional-062bec" for="extensionAuthorisedCode">Cod cymeradwyo (dewisol)</label>
+              <p data-i18n="ch-change-ard.the-4-character-code-given-with-4b482a" id="extensionAuthorisedCode-hint" class="hint">
+                Y cod 4 nod a roddwyd gyda chymeradwyaeth yr Ysgrifennydd Gwladol. Gadewch ef yn wag os nad yw’r gymeradwyaeth yn rhoi un.
+              </p>
+              <input
+                type="text"
+                id="extensionAuthorisedCode"
+                class="input--code"
+                autocomplete="off"
+                name="extensionAuthorisedCode"
+                maxlength="4"
+                aria-describedby="extensionAuthorisedCode-hint"
+                spellcheck="false"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="ch-change-ard.company-authentication-code-56d0e6" for="companyAuthCode">Cod dilysu’r cwmni</label>
+            <p data-i18n="ch-change-ard.the-6-to-8-character-code-48646a" id="companyAuthCode-hint" class="hint">
+              Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei
+              ddefnyddio.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button data-i18n="ch-change-ard.continue-31fbef" type="submit" id="continueBtn" class="btn">Parhau</button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="reviewView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-change-ard.review-the-filing-769b96">Adolygu’r ffeilio</h2>
+        <dl id="reviewList"></dl>
+        <p id="tooLongWarning" class="error-message" role="alert" style="display: none"></p>
+        <blockquote class="source-quote">
+          <p lang="en-GB">
+            You must update your accounting period dates with HM Revenue and Customs (HMRC) if you’ve shortened or lengthened your financial
+            year.
+          </p>
+          <footer>
+            Ffynhonnell:
+            <a lang="en-GB" hreflang="en" href="https://www.gov.uk/change-your-companys-year-end" rel="noopener"
+              >GOV.UK, Change your company’s year end</a
+            >
+            (yn Saesneg), gwiriwyd 22 Tachwedd 2026
+          </footer>
+        </blockquote>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label data-i18n="ch-change-ard.gov-test-scenario-dab532" for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button data-i18n="ch-change-ard.file-with-companies-house-327c43" type="button" id="submitFilingBtn" class="btn">
+            Ffeilio gyda Thŷ’r Cwmnïau
+          </button>
+          <button data-i18n="ch-change-ard.change-c0bf75" type="button" id="changeBtn" class="secondary-button">Newid</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-change-ard.filing-result-0ecbf7">Canlyniad y ffeilio</h2>
+        <div id="filingResult"></div>
+        <p id="registerNow" class="hint" style="display: none"></p>
+        <div class="button-group">
+          <button data-i18n="ch-change-ard.start-a-new-filing-0a9f24" type="button" id="startAgainBtn" class="secondary-button">
+            Dechrau ffeilio newydd
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../lib/welsh-text.js"></script>
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/companies-house-lane.js"></script>
+    <script src="../../lib/companies-house-gateway-poll.js"></script>
+    <script src="../../lib/companies-house-rejections.js"></script>
+    <script src="../../lib/companies-house-form-page.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../lib/form-errors.js"></script>
+    <script src="../../lib/companies-house-labels.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
+    <script src="../../lib/company-number-from-address.js"></script>
+    <script src="../../companies-house/changeAccountingRefDate.page.js"></script>
+  </body>
+</html>

@@ -360,6 +360,13 @@
         }
       }
     },
+    "/companies-house/accounting-reference-date" : {
+      "post" : {
+        "summary" : "Submit a change of accounting reference date",
+        "description" : "Builds the ChangeAccountingReferenceDate body, the change of a company's accounting reference date, and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseAccountingReferenceDate"
+      }
+    },
     "/companies-house/accounts" : {
       "post" : {
         "summary" : "Submit a micro-entity, small company or revised accounts filing",

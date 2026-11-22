@@ -195,6 +195,14 @@ export const WELSH_PAGES = [
     markAttributes: CH_MARK_ATTRIBUTES,
   },
   {
+    id: "ch-change-ard",
+    en: "companies-house/changeAccountingRefDate.html",
+    cy: "cy/companies-house/changeAccountingRefDate.html",
+    enUrl: `${SITE_ORIGIN}/companies-house/changeAccountingRefDate.html`,
+    marks: "build",
+    markAttributes: CH_MARK_ATTRIBUTES,
+  },
+  {
     id: "ch-mcp-codes",
     en: "companies-house/mcpCodes.html",
     cy: "cy/companies-house/mcpCodes.html",

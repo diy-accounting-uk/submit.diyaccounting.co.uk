@@ -23312,3 +23312,249 @@ cy = '''Dweud wrth Dŷ’r Cwmnïau fod manylion PRhA wedi newid'''
 [strings."receipts.kind-psc-change-details"]
 hash = "2088cba0e166"
 cy = '''Newid manylion PRhA'''
+
+# == The change of accounting reference date page and the drill-down's link to it: ids ch-change-ard.*, ch.ard.*, ch.drill.change-ard ==
+
+[strings."ch-change-ard.title"]
+hash = "1c72dc85c020"
+cy = '''Newid y dyddiad cyfeirnod cyfrifyddu - DIY Accounting Submit'''
+
+[strings."ch-change-ard.change-the-accounting-reference-date-2df212"]
+hash = "2df212dc7d03"
+cy = '''Newid y dyddiad cyfeirnod cyfrifyddu'''
+
+[strings."ch-change-ard.shorten-or-extend-a-company-s-734e39"]
+hash = "734e39d0624a"
+cy = '''Byrhau neu ymestyn cyfnod cyfrifyddu cwmni yn Nhŷ’r Cwmnïau'''
+
+[strings."ch-change-ard.status-sandbox-this-runs-against-companies-3c285c"]
+hash = "3c285c86cda2"
+cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.'''
+
+[strings."ch-change-ard.which-company-d9aae4"]
+hash = "d9aae49b05ee"
+cy = '''Pa gwmni?'''
+
+[strings."ch-change-ard.company-number-8b121b"]
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
+
+[strings."ch-change-ard.8-characters-for-example-00000001-do-090062"]
+hash = "090062b139be"
+cy = '''8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.'''
+
+[strings."ch-change-ard.look-up-the-accounting-periods-f9d0d9"]
+hash = "f9d0d930edc4"
+cy = '''Chwilio am y cyfnodau cyfrifyddu'''
+
+[strings."ch-change-ard.which-period-and-its-new-end-15eec5"]
+hash = "15eec587505b"
+cy = '''Pa gyfnod, a’i ddyddiad gorffen newydd?'''
+
+[strings."ch-change-ard.company-3bc806"]
+hash = "3bc806ccac3b"
+cy = '''Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).'''
+
+[strings."ch-change-ard.accounting-period-to-change-54a87b"]
+hash = "54a87b5b24e0"
+cy = '''Y cyfnod cyfrifyddu i’w newid'''
+
+[strings."ch-change-ard.the-current-period-and-the-one-7d81c3"]
+hash = "7d81c33e9206"
+cy = '''Y cyfnod presennol a’r un o’i flaen, fel y mae Tŷ’r Cwmnïau yn eu dangos. Mae’r ffurflen yn newid un o’r ddau hyn.'''
+
+[strings."ch-change-ard.the-register-shows-no-accounting-period-8d3cf2"]
+hash = "8d3cf2eff1cc"
+cy = '''Nid yw’r gofrestr yn dangos unrhyw gyfnod cyfrifyddu ar gyfer y cwmni hwn.'''
+
+[strings."ch-change-ard.new-end-date-of-the-period-cca7f1"]
+hash = "cca7f155e708"
+cy = '''Dyddiad gorffen newydd y cyfnod'''
+
+[strings."ch-change-ard.an-earlier-date-shortens-the-period-292cf7"]
+hash = "292cf7b0cdb0"
+cy = '''Mae dyddiad cynharach yn byrhau’r cyfnod. Mae dyddiad diweddarach yn ei ymestyn.'''
+
+[strings."ch-change-ard.the-company-has-already-extended-an-930e8b"]
+hash = "930e8b206d80"
+cy = '''Mae’r cwmni eisoes wedi ymestyn cyfnod cyfrifyddu yn ystod y pum mlynedd diwethaf'''
+
+[strings."ch-change-ard.why-the-company-may-extend-again-7a861b"]
+hash = "7a861ba257ec"
+cy = '''Pam y caiff y cwmni ymestyn eto'''
+
+[strings."ch-change-ard.companies-house-allows-a-second-extension-0afa5b"]
+hash = "0afa5b483acc"
+cy = '''Dim ond ar un o’r seiliau hyn y mae Tŷ’r Cwmnïau yn caniatáu ail estyniad o fewn pum mlynedd.'''
+
+[strings."ch-change-ard.choose-a-ground-dfed7b"]
+hash = "dfed7bab16be"
+cy = '''Dewiswch sail'''
+
+[strings."ch-change-ard.the-company-is-in-administration-a3b98c"]
+hash = "a3b98cdb499e"
+cy = '''Mae’r cwmni yn nwylo gweinyddwyr'''
+
+[strings."ch-change-ard.the-company-has-specific-approval-from-ff27ab"]
+hash = "ff27ab6275e0"
+cy = '''Mae gan y cwmni gymeradwyaeth benodol gan yr Ysgrifennydd Gwladol'''
+
+[strings."ch-change-ard.the-period-is-extended-to-align-8f7695"]
+hash = "8f7695f8eded"
+cy = '''Mae’r cyfnod yn cael ei ymestyn i gyd-fynd â chyfnod rhiant-ymgymeriad neu is-ymgymeriad a sefydlwyd yn y Deyrnas Unedig'''
+
+[strings."ch-change-ard.approval-code-optional-062bec"]
+hash = "062beca79a54"
+cy = '''Cod cymeradwyo (dewisol)'''
+
+[strings."ch-change-ard.the-4-character-code-given-with-4b482a"]
+hash = "4b482a2e49da"
+cy = '''Y cod 4 nod a roddwyd gyda chymeradwyaeth yr Ysgrifennydd Gwladol. Gadewch ef yn wag os nad yw’r gymeradwyaeth yn rhoi un.'''
+
+[strings."ch-change-ard.company-authentication-code-56d0e6"]
+hash = "56d0e640f9f0"
+cy = '''Cod dilysu’r cwmni'''
+
+[strings."ch-change-ard.the-6-to-8-character-code-48646a"]
+hash = "48646a151fe7"
+cy = '''Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei ddefnyddio.'''
+
+[strings."ch-change-ard.continue-31fbef"]
+hash = "31fbef162594"
+cy = '''Parhau'''
+
+[strings."ch-change-ard.review-the-filing-769b96"]
+hash = "769b96283d75"
+cy = '''Adolygu’r ffeilio'''
+
+[strings."ch-change-ard.gov-test-scenario-dab532"]
+hash = "dab5326bb25a"
+cy = '''Gov-Test-Scenario'''
+
+[strings."ch-change-ard.file-with-companies-house-327c43"]
+hash = "327c43b89de4"
+cy = '''Ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-change-ard.change-c0bf75"]
+hash = "c0bf75bd78bf"
+cy = '''Newid'''
+
+[strings."ch-change-ard.filing-result-0ecbf7"]
+hash = "0ecbf7d7af61"
+cy = '''Canlyniad y ffeilio'''
+
+[strings."ch-change-ard.start-a-new-filing-0a9f24"]
+hash = "0a9f240ab551"
+cy = '''Dechrau ffeilio newydd'''
+
+[strings."ch-change-ard.sign-in-to-file-with-companies-5a7303"]
+hash = "5a7303865fa5"
+cy = '''Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-change-ard.sign-in-to-look-up-your-eb0bf2"]
+hash = "eb0bf28eeabf"
+cy = '''Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif.'''
+
+[strings."ch.ard.period"]
+hash = "c72e51fdcb01"
+cy = '''{start} i {end}'''
+
+[strings."ch.ard.current-period"]
+hash = "bc6fe4e0161f"
+cy = '''{period} (y cyfnod presennol)'''
+
+[strings."ch.ard.previous-period"]
+hash = "3cefcae184ca"
+cy = '''{period} (y cyfnod blaenorol)'''
+
+[strings."ch.ard.lookup-failed"]
+hash = "d1e6ce4e581e"
+cy = '''Methu darllen cyfnodau cyfrifyddu’r cwmni hwn gan Dŷ’r Cwmnïau.'''
+
+[strings."ch.ard.choose-period"]
+hash = "2e4bccf702de"
+cy = '''Dewiswch y cyfnod cyfrifyddu i’w newid.'''
+
+[strings."ch.ard.same-date"]
+hash = "e96011344f8a"
+cy = '''Y dyddiad gorffen newydd yw’r dyddiad y mae’r cyfnod eisoes yn gorffen arno.'''
+
+[strings."ch.ard.before-start"]
+hash = "b8dc30c46c4e"
+cy = '''Rhaid i’r dyddiad gorffen newydd fod ar ôl y dyddiad y mae’r cyfnod yn dechrau.'''
+
+[strings."ch.ard.ground-only-extended"]
+hash = "537b19991cb3"
+cy = '''Nid oes angen sail ar gyfnod sydd wedi’i fyrhau. Dad-diciwch y blwch am ymestyn yn ystod y pum mlynedd diwethaf.'''
+
+[strings."ch.ard.choose-ground"]
+hash = "e154c3f386e4"
+cy = '''Dewiswch pam y caiff y cwmni ymestyn eto.'''
+
+[strings."ch.ard.code-length"]
+hash = "fa679047a6e2"
+cy = '''Mae’r cod cymeradwyo yn 4 nod.'''
+
+[strings."ch.ard.review-company"]
+hash = "de4743c87973"
+cy = '''Cwmni'''
+
+[strings."ch.ard.review-period"]
+hash = "54a87b5b24e0"
+cy = '''Y cyfnod cyfrifyddu i’w newid'''
+
+[strings."ch.ard.review-change"]
+hash = "c0bf75bd78bf"
+cy = '''Newid'''
+
+[strings."ch.ard.extended-to"]
+hash = "5ca28ac73716"
+cy = '''Wedi’i ymestyn i orffen ar {date}'''
+
+[strings."ch.ard.shortened-to"]
+hash = "544f08ab1708"
+cy = '''Wedi’i fyrhau i orffen ar {date}'''
+
+[strings."ch.ard.review-new-period"]
+hash = "4811036073e6"
+cy = '''Y cyfnod ar ôl y newid'''
+
+[strings."ch.ard.review-ground"]
+hash = "efe1ac7427bd"
+cy = '''Sail dros ymestyn eto o fewn pum mlynedd'''
+
+[strings."ch.ard.review-code"]
+hash = "59359f43714f"
+cy = '''Cod cymeradwyo'''
+
+[strings."ch.ard.too-long"]
+hash = "2098844d8a61"
+cy = '''Mae hyn yn gwneud y cyfnod yn hwy na 18 mis. Mae Tŷ’r Cwmnïau yn dweud na allwch ymestyn cyfnod y tu hwnt i 18 mis oni bai bod y cwmni yn nwylo gweinyddwyr, felly disgwyliwch iddo wrthod y ffeilio hwn.'''
+
+[strings."ch.ard.see-company"]
+hash = "f7f91faf549c"
+cy = '''Gweld y cwmni ar y gofrestr'''
+
+[strings."ch.ard.register-now-due"]
+hash = "588442a1c4db"
+cy = '''Mae’r gofrestr bellach yn dangos y cyfnod cyfrifyddu {period}, gyda’i gyfrifon yn ddyledus erbyn {due}.'''
+
+[strings."ch.ard.register-now"]
+hash = "c0bea91aaf00"
+cy = '''Mae’r gofrestr bellach yn dangos y cyfnod cyfrifyddu {period}.'''
+
+[strings."ch.ard.register-not-yet"]
+hash = "5be1e6f6957b"
+cy = '''Nid yw’r gofrestr yn dangos y dyddiad newydd eto. Nid yw Tŷ’r Cwmnïau yn anfon llythyr i gadarnhau’r newid, felly edrychwch ar y cwmni eto yn nes ymlaen.'''
+
+[strings."ch.ard.register-unread"]
+hash = "2e21e305cd69"
+cy = '''Methu darllen y gofrestr eto i ddangos y cyfnod newydd.'''
+
+[strings."ch.drill.change-ard"]
+hash = "2df212dc7d03"
+cy = '''Newid y dyddiad cyfeirnod cyfrifyddu'''
+
+[strings."receipts.kind-accounting-reference-date"]
+hash = "ff856d21c5cd"
+cy = '''Newid dyddiad cyfeirnod cyfrifyddu'''

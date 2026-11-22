@@ -58,6 +58,18 @@ export const COMPANIES_HOUSE_FORMS = {
     label: "PSC change of details",
     sharedPoll: true,
   },
+  "accounting-reference-date": {
+    routeSegment: "accounting-reference-date",
+    receiptTitle: "Change of accounting reference date",
+    receiptTitleCy: "Newid dyddiad cyfeirnod cyfrifyddu",
+    acceptedEvent: "companies-house-accounting-reference-date-accepted",
+    acceptedSummary: "Companies House change of accounting reference date accepted",
+    formIdentifier: "ChangeAccountingReferenceDate",
+    schema: "ChangeAccountingReferenceDate-v2-7.xsd",
+    activityId: "change-accounting-reference-date",
+    label: "change of accounting reference date",
+    sharedPoll: true,
+  },
 };
 
 /** The filing kinds, as the filing state and the receipts carry them. */

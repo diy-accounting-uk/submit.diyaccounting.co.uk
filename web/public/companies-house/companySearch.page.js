@@ -353,6 +353,10 @@ const AUTHORITY_SOURCES = {
     url: "https://www.gov.uk/guidance/people-with-significant-control-pscs",
     title: "People with significant control (PSCs)",
   },
+  accountingReferenceDateForm: {
+    url: "https://assets.publishing.service.gov.uk/media/69f9dd2e097169e6a7a76ff4/AA01_V7.0-final.pdf",
+    title: "AA01 Change of accounting reference date",
+  },
 };
 
 // A quotation GOV.UK publishes in Welsh as well: its Welsh is GOV.UK's own sentence.
@@ -422,6 +426,15 @@ function authorityNotes(activityId) {
         "pscChangeForm",
         "You must have obtained confirmation from the individual person with significant control that their particulars are correct before sending this form to Companies House.",
       ),
+      codeOnline,
+    ],
+    "change-accounting-reference-date": [
+      inEnglishOnly(
+        "accountingReferenceDateForm",
+        "This form may be signed by: Director, Secretary, Person authorised, Permanent representative on behalf of an overseas company, Administrator, Administrative receiver, Receiver, Receiver manager, Charity commission receiver and manager, CIC manager, Judicial factor.",
+      ),
+      inEnglishOnly("accountingReferenceDateForm", "You cannot change a period for which the accounts are overdue."),
+      inEnglishOnly("accountingReferenceDateForm", "You cannot extend a period beyond 18 months unless the company is in administration."),
       codeOnline,
     ],
     "file-micro-entity-accounts": accounts,
@@ -740,6 +753,13 @@ async function renderAccountsSection(profile) {
     page: "fileCompanyTaxReturn.html",
     label: window.siteText("ch.edit.file-company-tax-return", "File a Company Tax Return"),
     companyNumber: profile.companyNumber,
+  });
+  await appendFileThis(section, {
+    activityId: "change-accounting-reference-date",
+    page: "changeAccountingRefDate.html",
+    label: window.siteText("ch.drill.change-ard", "Change the accounting reference date"),
+    companyNumber: profile.companyNumber,
+    prefill: { currentPeriodEnd: profile.accountsNextPeriodEnd },
   });
 }
 

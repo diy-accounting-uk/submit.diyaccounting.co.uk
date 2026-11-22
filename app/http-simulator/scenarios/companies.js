@@ -14,6 +14,8 @@
 // Precision Code Ltd book (mcp/test/fixtures/precision-code-ltd-full/book.toml), with the book's
 // address as its registered office, so the MCP harness files that book's accounts for it.
 
+import { accountsDueNineMonthsAfter } from "../../../web/public/lib/accounting-reference-period.js";
+
 const companies = {
   "00000001": {
     company_name: "SIMULATOR EXAMPLE COMPANY LIMITED",
@@ -216,6 +218,31 @@ const companies = {
 };
 
 const RATE_LIMITED_COMPANY_NUMBER = "42942942";
+
+// Each company's accounts as the fixtures give them, to put back between test runs.
+const fixtureAccounts = structuredClone(
+  Object.fromEntries(Object.entries(companies).map(([number, company]) => [number, company.accounts])),
+);
+
+/** Put every company's accounting period back to its fixture. */
+export function resetCompanyAccounts() {
+  for (const [number, accounts] of Object.entries(fixtureAccounts)) companies[number].accounts = structuredClone(accounts);
+}
+
+/**
+ * Move the end of a company's current accounting period, as an accepted change of accounting
+ * reference date does: the period's end, the accounting reference date's day and month, and the
+ * date the accounts fall due.
+ * @param {string} companyNumber
+ * @param {string} periodEnd - ISO date
+ */
+export function setNextAccountingPeriodEnd(companyNumber, periodEnd) {
+  const accounts = companies[companyNumber]?.accounts;
+  if (!accounts?.next_accounts) return;
+  const [, month, day] = periodEnd.split("-");
+  accounts.accounting_reference_date = { day, month };
+  accounts.next_accounts = { ...accounts.next_accounts, period_end_on: periodEnd, due_on: accountsDueNineMonthsAfter(periodEnd) };
+}
 
 const officersByCompanyNumber = {
   "00000001": {

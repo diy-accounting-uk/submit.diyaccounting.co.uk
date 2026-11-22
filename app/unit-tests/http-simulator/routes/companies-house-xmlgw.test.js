@@ -19,6 +19,8 @@ import { resetGatewayFormFilings } from "@app/http-simulator/scenarios/gateway-f
 import { buildFormSubmission } from "@app/services/companiesHouseXmlGateway.js";
 import { buildPscCessationBody } from "@app/services/companiesHousePscCessationXml.js";
 import { buildPscChangeDetailsBody } from "@app/services/companiesHousePscChangeDetailsXml.js";
+import { buildAccountingReferenceDateBody } from "@app/services/companiesHouseAccountingReferenceDateXml.js";
+import { getCompany, resetCompanyAccounts } from "@app/http-simulator/scenarios/companies.js";
 import { buildMicroEntityAccounts } from "@app/services/microEntityAccountsIxbrl.js";
 import { parseXmlDocument, firstElementText, allElements } from "@app/lib/xmlDom.js";
 
@@ -1076,5 +1078,96 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
     await post(cessationEnvelope("CES004"));
     const response = await post(cessationEnvelope("CES004"));
     expect(firstElementText(parseXmlDocument(response.text), "Text")).toContain("SubmissionNumber has already been used");
+  });
+
+  describe("a change of accounting reference date for company 00000001, whose current period is 1 May 2098 to 30 April 2099", () => {
+    function changeEnvelope(submissionNumber, change) {
+      return buildFormSubmission({
+        presenterId: SIMULATOR_PRESENTER_ID,
+        presenterCode: SIMULATOR_PRESENTER_CODE,
+        companyNumber: "00000001",
+        companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+        companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
+        packageReference: "0012",
+        formIdentifier: "ChangeAccountingReferenceDate",
+        submissionNumber,
+        dateSigned: "2098-11-20",
+        formXml: buildAccountingReferenceDateBody({ currentPeriodEnd: "2099-04-30", ...change }),
+        gatewayTest: true,
+      });
+    }
+
+    async function settled(submissionNumber, change) {
+      const acknowledgement = parseXmlDocument((await post(changeEnvelope(submissionNumber, change))).text);
+      expect(allElements(acknowledgement, "GovTalkErrors")).toHaveLength(0);
+      expect(await statusOf(submissionNumber)).toBe("PENDING");
+      return parseXmlDocument((await post(statusEnvelope({ submissionNumber }))).text);
+    }
+
+    const nextAccounts = () => getCompany("00000001").accounts.next_accounts;
+
+    beforeEach(() => resetCompanyAccounts());
+
+    test("a shortened period is accepted, and the register then shows the period ending on the new date", async () => {
+      const final = await settled("ARD001", { newPeriodEnd: "2099-03-31" });
+
+      expect(firstElementText(final, "StatusCode")).toBe("ACCEPT");
+      expect(nextAccounts()).toEqual({ period_start_on: "2098-05-01", period_end_on: "2099-03-31", due_on: "2099-12-31" });
+      expect(getCompany("00000001").accounts.accounting_reference_date).toEqual({ day: "31", month: "03" });
+    });
+
+    test("the register keeps the old period until Companies House accepts the change", async () => {
+      await post(changeEnvelope("ARD002", { newPeriodEnd: "2099-03-31" }));
+      expect(await statusOf("ARD002")).toBe("PENDING");
+
+      expect(nextAccounts().period_end_on).toBe("2099-04-30");
+    });
+
+    test("a period extended to the last day within 18 months is accepted", async () => {
+      const final = await settled("ARD003", { newPeriodEnd: "2099-10-31" });
+
+      expect(firstElementText(final, "StatusCode")).toBe("ACCEPT");
+      expect(nextAccounts().period_end_on).toBe("2099-10-31");
+    });
+
+    test("a period extended past 18 months is rejected with the reason, and the register does not change", async () => {
+      const final = await settled("ARD004", { newPeriodEnd: "2099-12-31" });
+
+      expect(firstElementText(final, "StatusCode")).toBe("REJECT");
+      expect(firstElementText(final, "RejectCode")).toBe("9997");
+      expect(firstElementText(final, "Description")).toContain("beyond 18 months");
+      expect(nextAccounts().period_end_on).toBe("2099-04-30");
+    });
+
+    test("a company in administration extends past 18 months", async () => {
+      const final = await settled("ARD005", { newPeriodEnd: "2099-12-31", fiveYearExtensionReason: "administration" });
+
+      expect(firstElementText(final, "StatusCode")).toBe("ACCEPT");
+    });
+
+    test("a period that is neither the current nor the one before is rejected", async () => {
+      const xml = changeEnvelope("ARD006", { newPeriodEnd: "2099-03-31" }).replace(
+        "<AccountRefDate>2099-04-30</AccountRefDate>",
+        "<AccountRefDate>2096-04-30</AccountRefDate>",
+      );
+      await post(xml);
+      await statusOf("ARD006");
+      const final = parseXmlDocument((await post(statusEnvelope({ submissionNumber: "ARD006" }))).text);
+
+      expect(firstElementText(final, "RejectCode")).toBe("9996");
+    });
+
+    test("the previous period is changed without moving the current one", async () => {
+      const xml = changeEnvelope("ARD007", { newPeriodEnd: "2098-03-31" }).replace(
+        "<AccountRefDate>2099-04-30</AccountRefDate>",
+        "<AccountRefDate>2098-04-30</AccountRefDate>",
+      );
+      await post(xml);
+      await statusOf("ARD007");
+      const final = parseXmlDocument((await post(statusEnvelope({ submissionNumber: "ARD007" }))).text);
+
+      expect(firstElementText(final, "StatusCode")).toBe("ACCEPT");
+      expect(nextAccounts().period_end_on).toBe("2099-04-30");
+    });
   });
 });
