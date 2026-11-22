@@ -11,6 +11,11 @@ window.siteText =
 // Companies House OAuth token: the filing goes through the XML Gateway with the operator's
 // presenter credentials, so only the Cognito id token is needed to reach the API.
 
+const amendReceiptName = new URLSearchParams(window.location.search).get("amend");
+// The status line ships hidden: an original shows the page's own status, and an amend address
+// shows the revised accounts activity's status once startRevision has set it.
+if (!amendReceiptName) document.querySelector("[data-feature-status]").hidden = false;
+
 const BALANCE_SHEET_FIELDS = [
   "fixedAssets",
   "currentAssets",
@@ -176,6 +181,16 @@ function readDirectorsAdvances() {
   return [{ name: document.getElementById("directorName").value.trim(), terms, balanceAtStart, advanced, repaid, balanceAtEnd }];
 }
 
+// The first thing wrong with the advance to the director, by the rules the accounts route applies,
+// as the sentence the page shows; null when nothing is.
+async function notesProblem() {
+  const advances = readDirectorsAdvances();
+  if (!advances) return null;
+  const check = await import("../lib/accounts-notes-check.js");
+  const findings = check.directorsAdvancesFindings(advances, { signerName: document.getElementById("directorName").value.trim() });
+  return findings.length ? check.noteFindingSentence(findings[0]) : null;
+}
+
 function buildAccountsPayload() {
   const registeredOffice = window.accountsFormSections.readRegisteredOffice();
   const directorsAdvances = readDirectorsAdvances();
@@ -266,7 +281,7 @@ async function handleAccountsFormSubmit(event) {
     );
     return;
   }
-  const capitalProblem = await capitalAndReservesProblem(currentYear, priorYear);
+  const capitalProblem = (await capitalAndReservesProblem(currentYear, priorYear)) || (await notesProblem());
   if (capitalProblem) {
     showStatus(capitalProblem, "error");
     return;
@@ -341,10 +356,11 @@ function pollUntilSettled(submission, extraHeaders) {
     poll: () => window.pollMicroEntityAccounts(submissionNumber, extraHeaders),
     onPending: (result) =>
       showFilingResult(
-        window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again...", {
-          number: submissionNumber,
-          status: window.companiesHouseGatewayPoll.statusWord(result.statusCode),
-        }),
+        window.companiesHouseGatewayPoll.statusText(
+          window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again..."),
+          submissionNumber,
+          result.statusCode,
+        ),
       ),
   });
 }
@@ -373,10 +389,11 @@ async function checkOutcome(submission, headers) {
         window.siteText("ch.accounts.not-finished", "Companies House has the accounts and has not finished checking them."),
       notReceived?.detail ||
         (settled
-          ? window.siteText("ch.accounts.status-line", "Status: {status}. Submission number {number}.", {
-              status: window.companiesHouseGatewayPoll.statusWord(outcome.statusCode),
-              number: outcome.submissionNumber,
-            })
+          ? window.companiesHouseGatewayPoll.statusText(
+              window.siteText("ch.accounts.status-line", "Status: {status}. Submission number {number}."),
+              outcome.submissionNumber,
+              outcome.statusCode,
+            )
           : window.companiesHouseGatewayPoll.pendingNote(submission)),
       { ACCEPT: "ok", REJECT: "error" }[outcome.statusCode] || "",
     );
@@ -411,11 +428,17 @@ function readOwnPresenterInputs() {
   const id = idInput.value.trim();
   const code = codeInput.value.trim();
   const problems = [];
-  if (!id) problems.push({ input: idInput, message: window.siteText("ch.accounts.enter-presenter-id", "Enter your presenter id") });
+  if (!id)
+    problems.push({
+      input: idInput,
+      message: window.siteText("ch.accounts.enter-presenter-id", "Enter your presenter id"),
+      passes: () => idInput.value.trim() !== "",
+    });
   if (!code)
     problems.push({
       input: codeInput,
       message: window.siteText("ch.accounts.enter-presenter-code", "Enter your presenter authentication code"),
+      passes: () => codeInput.value.trim() !== "",
     });
   return problems.length > 0 ? { problems } : { presenter: { id, code } };
 }
@@ -433,6 +456,7 @@ async function handleSubmitFiling() {
       {
         input: companyAuthCodeInput,
         message: window.siteText("ch.accounts.enter-auth-code", "Enter the 6 to 8 character company authentication code"),
+        passes: () => companyAuthCodeInput.value.trim().length >= 6 && companyAuthCodeInput.value.trim().length <= 8,
       },
     ]);
     return;
@@ -594,7 +618,7 @@ async function startRevision(receiptName) {
     }
     const profile = await window.getCompanyProfile(read.source.companyNumber);
     company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
-    window.accountsFormSections.fillRegisteredOffice(read.source.registeredOffice ?? profile.registeredOffice);
+    window.accountsFormSections.fillFiledRegisteredOffice(read.source.registeredOffice, profile.registeredOffice);
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     showDocumentLanguageChoice(profile.jurisdiction);
@@ -611,7 +635,7 @@ async function startRevision(receiptName) {
     console.error("Failed to open the accounts to revise:", error);
     refuseRevision(
       window.siteText("ch.revision.load-failed", "We could not open those accounts to revise. Open the filing again from your receipts."),
-      { label: window.siteText("ch.revision.next-receipts", "Back to your receipts"), href: "/hmrc/receipt/receipts.html" },
+      { label: window.siteText("ch.revision.next-receipts", "Back to your receipts"), href: "../hmrc/receipt/receipts.html" },
     );
   } finally {
     hideLoading();
@@ -631,9 +655,6 @@ function endRevision() {
 
 document.getElementById("directorDateApproved").addEventListener("input", showRevisionLateNote);
 
-const amendReceiptName = new URLSearchParams(window.location.search).get("amend");
-// An amend address states the revised accounts activity's status, never the page's own.
-if (amendReceiptName) document.querySelector("[data-feature-status]").hidden = true;
 if (amendReceiptName && window.__submitReady__) {
   startRevision(amendReceiptName);
 } else if (amendReceiptName) {

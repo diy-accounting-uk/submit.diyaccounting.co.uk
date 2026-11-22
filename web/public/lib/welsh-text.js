@@ -368,6 +368,7 @@ window.WELSH_TEXT = {
     "Y cyfrifon llawn, gan gynnwys y cyfrif elw a cholled ac adroddiad y cyfarwyddwyr. Mae Tŷ’r Cwmnïau yn eu cyhoeddi.",
   "ch.ct.ch-gets-micro": "Mantolen a nodiadau’r micro-endid. Mae’r cyfrif elw a cholled yn mynd i CThEF yn unig.",
   "ch.ct.ch-not-settled": "Nid yw Tŷ’r Cwmnïau wedi setlo’r cyfrifon eto. Statws cyflwyniad",
+  "ch.ct.ch-not-settled-alone": "Nid yw Tŷ’r Cwmnïau wedi setlo’r cyfrifon eto.",
   "ch.ct.ch-receives": "Beth mae Tŷ’r Cwmnïau yn ei gael",
   "ch.ct.ch-rejected": "Gwrthododd Tŷ’r Cwmnïau y cyfrifon",
   "ch.ct.ch-rejected-revised": "Gwrthododd Tŷ’r Cwmnïau y cyfrifon diwygiedig",
@@ -1066,6 +1067,7 @@ window.WELSH_TEXT = {
   "ch.gateway.status-parked": "wedi’i ddal i’w wirio â llaw",
   "ch.gateway.status-pending": "yn aros i gael ei wirio",
   "ch.gateway.status-reject": "wedi’i wrthod",
+  "ch.gateway.status-unknown": "Atebodd Tŷ’r Cwmnïau {code} ar gyfer cyflwyniad {number}.",
   "ch.jurisdiction.england-wales": "Lloegr a Chymru",
   "ch.jurisdiction.european-union": "Yr Undeb Ewropeaidd",
   "ch.jurisdiction.noneu": "Y tu allan i’r Undeb Ewropeaidd",
@@ -1080,6 +1082,8 @@ window.WELSH_TEXT = {
     "Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.",
   "ch.lane.status-production": "Statws: cynhyrchu (production).",
   "ch.lane.status-sandbox": "Statws: prawf (sandbox).",
+  "ch.micro.advance-not-signer":
+    "Mae {name} wedi’i enwi ar gyfer blaenswm, ond ar gyfrifon micro-endid mae blaenswm yn enwi’r cyfarwyddwr sy’n llofnodi’r cyfrifon, {signer}. Cywirwch yr enw.",
   "ch.micro.approved-after-today":
     "Mae’r dyddiad cymeradwyo, {date}, ar ôl heddiw. Nodwch y dyddiad y cymeradwyodd y cyfarwyddwyr y cyfrifon.",
   "ch.micro.capital-and-reserves-mismatch":
@@ -1096,7 +1100,26 @@ window.WELSH_TEXT = {
     "Mae gan y cwmni hawl i eithriad rhag archwiliad o dan adran 480 o Ddeddf Cwmnïau 2006 sy’n ymwneud â chwmnïau segur.",
   "ch.micro.the-current-year": "y flwyddyn gyfredol",
   "ch.micro.the-prior-year": "y flwyddyn flaenorol",
+  "ch.notes.arithmetic":
+    "Nid yw’r blaenswm i {name} yn adio: y swm sy’n ddyledus ar y dechrau, ynghyd â’r hyn a roddwyd ymlaen llaw, llai’r hyn a ad-dalwyd, yw £{expected}, felly’r swm sy’n ddyledus ar y diwedd yw £{expected}.",
+  "ch.notes.figure": "Mae symiau’r blaenswm i {name} yn bunnoedd cyfan, ac nid oes yr un yn llai na dim.",
+  "ch.notes.name-missing": "Rhowch enw’r cyfarwyddwr ym mhob rhes blaenswm.",
+  "ch.notes.name-too-long": "Mae enw cyfarwyddwr mewn rhes blaenswm yn {limit} nod ar y mwyaf.",
+  "ch.notes.nominal-value": "Rhowch werth nominal pob cyfran, mewn punnoedd.",
+  "ch.notes.same-director":
+    "Mae gan {name} ddwy res blaenswm. Rhowch un rhes i bob cyfarwyddwr, gyda symiau eu holl flaensymiau wedi’u hadio at ei gilydd.",
+  "ch.notes.share-class": "Dewiswch ddosbarth y cyfrannau.",
+  "ch.notes.sum":
+    "Mae’r symiau sy’n ddyledus ar ddiwedd y blaensymiau yn adio i £{total}, ond mae’r fantolen yn dangos £{owed} sy’n ddyledus gan gyfarwyddwyr.",
+  "ch.notes.terms-missing": "Rhowch gyfradd llog a phrif amodau’r blaenswm i {name}.",
+  "ch.notes.terms-too-long": "Mae cyfradd llog a phrif amodau’r blaenswm i {name} yn {limit} nod ar y mwyaf.",
+  "ch.notes.the-director": "y cyfarwyddwr",
+  "ch.notes.too-many-rows": "Mae’r nodyn ar flaensymiau yn cynnwys {limit} rhes ar y mwyaf, un ar gyfer pob cyfarwyddwr.",
+  "ch.notes.whole-shares": "Rhaid i werth nominal pob cyfran rannu’r cyfalaf cyfrannau wedi’i alw o £{capital} yn gyfrannau cyfan.",
   "ch.office.confirm-statement": "Cadarnhewch y datganiad cyfeiriad priodol o dan adran 86(2)",
+  "ch.office.differs-from-register":
+    "Mae cofrestr Tŷ’r Cwmnïau yn rhoi’r swyddfa gofrestredig heddiw fel {office}. Mae’r cyfrifon diwygiedig yn cadw’r swyddfa a nodir yn y cyfrifon a ffeiliwyd oni bai eich bod yn ei newid.",
+  "ch.office.filled-from-filed": "Wedi’i llenwi o’r cyfrifon a ffeiliwyd gennych. Newidiwch ran i’w chywiro.",
   "ch.office.read-failed": "Methwyd â darllen y cyfeiriad swyddfa gofrestredig presennol.",
   "ch.office.record-title": "Newid cyfeiriad swyddfa gofrestredig",
   "ch.profile.accounts-due": "Cyfrifon nesaf yn ddyledus",
@@ -2338,6 +2361,7 @@ window.WELSH_TEXT = {
   "widget.cost-unlimited": "Mae gennych gredydau diderfyn.",
   "widget.cost-you-can": "Gallwch",
   "widget.date-range": "{start} hyd at {end}",
+  "widget.error-fixed": "Wedi’i gywiro: {message}",
   "widget.error-prefix": "Gwall:",
   "widget.error-summary": "Mae problem wedi codi",
   "widget.failed-add-property": "Methu ychwanegu’r eiddo.",

@@ -16,6 +16,7 @@
   }
 
   const SUMMARY_ID = "form-error-summary";
+  const ANNOUNCER_ID = "form-error-announcer";
   const ERROR_CLASS = "error-message";
 
   const REQUIRED_MESSAGES = {
@@ -56,6 +57,10 @@
       REQUIRED_MESSAGES[input.id] ||
       siteText("widget.required-field", "Enter {label}", { label: labelOf(input) })
     );
+  }
+
+  function filled(input) {
+    return String(input.value ?? "").trim() !== "";
   }
 
   function errorIdOf(input) {
@@ -115,6 +120,22 @@
   }
 
   // errors: [{ input, message }]. Shows the summary and inline messages and focuses the summary.
+  // A live region outside the summary, so a line that goes is announced even when the summary goes with it.
+  function announce(text) {
+    let region = document.getElementById(ANNOUNCER_ID);
+    if (!region) {
+      region = document.createElement("p");
+      region.id = ANNOUNCER_ID;
+      region.className = "visually-hidden";
+      region.setAttribute("aria-live", "polite");
+      document.body.append(region);
+    }
+    region.textContent = text;
+  }
+
+  // errors: [{ input, message, passes? }]. passes() answers whether the field now meets the rule
+  // the message is about: its line leaves the summary, and its message the field, once it does.
+  // A line with no rule stays until the next submit.
   function showFormErrors(errors) {
     clearFormErrors();
     if (errors.length === 0) return;
@@ -130,7 +151,7 @@
     heading.textContent = siteText("widget.error-summary", "There is a problem");
     const list = document.createElement("ul");
     list.className = "error-summary__list";
-    errors.forEach(({ input, message }) => {
+    errors.forEach(({ input, message, passes }) => {
       const item = document.createElement("li");
       const link = document.createElement("a");
       link.href = `#${input.id}`;
@@ -141,14 +162,19 @@
       });
       item.append(link);
       list.append(item);
-      // A corrected field takes its line out of the summary, and the summary goes with its last line.
-      const clearOnChange = () => {
+      if (!passes) return;
+      // A field that now meets its rule takes its line out of the summary, and the summary goes with its last line.
+      const clearWhenPassing = () => {
+        if (!item.isConnected || !passes()) return;
         clearFieldError(input);
         item.remove();
         if (!list.children.length) summary.remove();
+        announce(siteText("widget.error-fixed", "Fixed: {message}", { message }));
+        input.removeEventListener("input", clearWhenPassing);
+        input.removeEventListener("change", clearWhenPassing);
       };
-      input.addEventListener("input", clearOnChange, { once: true });
-      input.addEventListener("change", clearOnChange, { once: true });
+      input.addEventListener("input", clearWhenPassing);
+      input.addEventListener("change", clearWhenPassing);
     });
     summary.append(heading, list);
     summaryHost(errors[0].input).prepend(summary);
@@ -160,7 +186,7 @@
     const errors = ids
       .map((id) => document.getElementById(id))
       .filter((input) => input && String(input.value ?? "").trim() === "")
-      .map((input) => ({ input, message: requiredMessage(input) }));
+      .map((input) => ({ input, message: requiredMessage(input), passes: () => filled(input) }));
     showFormErrors(errors);
     return errors.length === 0;
   }
@@ -170,10 +196,15 @@
     const errors = [vrnId, ...otherIds]
       .map((id) => document.getElementById(id))
       .filter((input) => input && String(input.value ?? "").trim() === "")
-      .map((input) => ({ input, message: requiredMessage(input) }));
+      .map((input) => ({ input, message: requiredMessage(input), passes: () => filled(input) }));
     const vrn = document.getElementById(vrnId);
-    if (vrn && vrn.value.trim() !== "" && !/^\d{9}$/.test(vrn.value.trim())) {
-      errors.unshift({ input: vrn, message: siteText("widget.vrn-nine-numbers", "The VAT registration number must be 9 numbers") });
+    const nineNumbers = () => /^\d{9}$/.test(vrn.value.trim());
+    if (vrn && vrn.value.trim() !== "" && !nineNumbers()) {
+      errors.unshift({
+        input: vrn,
+        message: siteText("widget.vrn-nine-numbers", "The VAT registration number must be 9 numbers"),
+        passes: nineNumbers,
+      });
     }
     showFormErrors(errors);
     return errors.length === 0;
@@ -191,7 +222,8 @@
   function requireChecked(messages) {
     const errors = Object.entries(messages)
       .map(([id, message]) => ({ input: document.getElementById(id), message }))
-      .filter(({ input }) => input && !input.checked);
+      .filter(({ input }) => input && !input.checked)
+      .map((error) => ({ ...error, passes: () => error.input.checked }));
     showFormErrors(errors);
     return errors.length === 0;
   }
@@ -219,15 +251,14 @@
     const errors = Array.from(root.querySelectorAll('input[data-money][aria-invalid="true"]')).map((input) => ({
       input,
       message: moneyMessage(input),
+      passes: () => {
+        const amount = window.readMoneyInput(input);
+        return input.value.trim() === "" || (amount !== null && amount >= 0);
+      },
     }));
     showFormErrors(errors);
     return true;
   }
-
-  document.addEventListener("input", (event) => {
-    const input = event.target;
-    if (input?.id && document.getElementById(errorIdOf(input))) clearFieldError(input);
-  });
 
   window.formErrors = {
     showFormErrors,

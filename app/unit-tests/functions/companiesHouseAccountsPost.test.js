@@ -876,10 +876,15 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     const ADVANCE = { name: "Sam Lender", terms: "Interest free", balanceAtStart: 0, advanced: 0, repaid: 0, balanceAtEnd: 0 };
     const SENTENCE = "names Sam Lender, who is not among the directors of these accounts: add them to the directors";
 
-    test("refuses micro-entity accounts with a sentence that names them, and sends nothing", async () => {
-      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ directorsAdvances: [ADVANCE] }) }));
+    test("refuses micro-entity accounts with a sentence that says an advance names the director who signs them, and sends nothing", async () => {
+      const body = buildAccountsBody({ directorsAdvances: [ADVANCE] });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
       expect(response.statusCode).toBe(400);
-      expect(JSON.stringify(parseResponseBody(response))).toContain(`directorsAdvances[0] ${SENTENCE}`);
+      const answer = JSON.stringify(parseResponseBody(response));
+      expect(answer).toContain(
+        `directorsAdvances[0] names Sam Lender: on micro-entity accounts an advance names the director who signs the accounts, ${body.director.name}`,
+      );
+      expect(answer).not.toContain(SENTENCE);
       expect(mockPostToGateway).not.toHaveBeenCalled();
     });
 

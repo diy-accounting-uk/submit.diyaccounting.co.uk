@@ -71,6 +71,13 @@ async function openFormView(page) {
       body: fs.readFileSync(path.join(PUBLIC_DIR, "lib/balance-sheet-check.js"), "utf-8"),
     }),
   );
+  await page.route("**/lib/accounts-notes-check.js", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: fs.readFileSync(path.join(PUBLIC_DIR, "lib/accounts-notes-check.js"), "utf-8"),
+    }),
+  );
   await page.route("**/lib/approval-date-check.js", (route) =>
     route.fulfill({
       status: 200,
@@ -133,6 +140,12 @@ test.describe("File micro-entity accounts page - the balance sheet adds up", () 
     expect(await page.evaluate(() => window.rendered.length)).toBe(0);
   });
 
+  test("an original filing shows the page's own status line", async ({ page }) => {
+    await openFormView(page);
+    await expect(page.locator("[data-feature-status]")).toBeVisible();
+    await expect(page.locator("[data-feature-status]")).toContainText("Status: production.");
+  });
+
   test("refuses a date approved after today, with the date in the sentence, and renders nothing", async ({ page }) => {
     await openFormView(page);
     await fillForm(page, CONSISTENT_YEARS);
@@ -143,6 +156,11 @@ test.describe("File micro-entity accounts page - the balance sheet adds up", () 
       `The date approved, ${tomorrow}, is after today. Enter the date the directors approved the accounts.`,
     );
     expect(await page.evaluate(() => window.rendered.length)).toBe(0);
+    const later = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    await page.fill("#directorDateApproved", later);
+    await expect(page.locator(".error-summary")).toContainText("is after today");
+    await page.fill("#directorDateApproved", new Date().toISOString().slice(0, 10));
+    await expect(page.locator(".error-summary")).toHaveCount(0);
   });
 
   test("an original filing sends the advance to the director, and the accounts it builds carry the advance back", async ({ page }) => {
@@ -186,6 +204,21 @@ test.describe("File micro-entity accounts page - the balance sheet adds up", () 
     );
     expect(errors).toEqual([]);
     expect(notesOf(buildAccountsIxbrl(validated)).directorsAdvances).toEqual([advance]);
+  });
+
+  test("an advance that does not add up is refused before the preview, in a sentence that names the director", async ({ page }) => {
+    await openFormView(page);
+    await fillForm(page, CONSISTENT_YEARS);
+    await page.fill("#directorsAdvanceTerms", "Interest free and repayable on demand");
+    await page.fill("#directorsAdvanceAtStart", "200");
+    await page.fill("#directorsAdvanceMade", "1000");
+    await page.fill("#directorsAdvanceRepaid", "400");
+    await page.fill("#directorsAdvanceAtEnd", "900");
+    await page.click("#previewBtn");
+    await expect(page.locator("#statusMessagesContainer .status-error")).toHaveText(
+      "The advance to Jo Director does not add up: owed at the start, plus advanced, less repaid is £800, so owed at the end is £800.",
+    );
+    expect(await page.evaluate(() => window.rendered.length)).toBe(0);
   });
 
   test("an original filing with the advance boxes left empty sends no advance", async ({ page }) => {

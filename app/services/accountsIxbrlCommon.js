@@ -14,6 +14,13 @@ import { escapeXmlText } from "../lib/xmlDom.js";
 import { recordFigure, recordHeading, recordTable } from "../lib/submissionRecord.js";
 import { RECORD_STYLE } from "../lib/submissionRecordStyle.js";
 import { accountsText, buildingWelshAccounts, welshDisplayDate } from "./accountsLanguage.js";
+import {
+  DIRECTORS_ADVANCE_FIGURES,
+  MAX_ADVANCE_NAME_LENGTH,
+  MAX_ADVANCE_TERMS_LENGTH,
+  MAX_DIRECTORS_ADVANCES,
+  directorsAdvancesFindings,
+} from "../../web/public/lib/accounts-notes-check.js";
 
 const FRS_102_ENTRY_POINT = "https://xbrl.frc.org.uk/FRS-102/2026-01-01/FRS-102-2026-01-01.xsd";
 
@@ -635,36 +642,47 @@ export function controllingPartyNote({ controllingParty, contextRef }) {
   };
 }
 
-const DIRECTORS_ADVANCE_FIELDS = ["balanceAtStart", "advanced", "repaid", "balanceAtEnd"];
+// The message the accounts route gives for each finding of the shared advances rules, under the
+// request path of the rows.
+function advanceFindingMessage(finding, label) {
+  const row = `${label}[${finding.index}]`;
+  switch (finding.rule) {
+    case "too-many-rows":
+      return `${label} lists ${finding.total} rows: the note holds at most ${MAX_DIRECTORS_ADVANCES}, one for each director`;
+    case "name-missing":
+      return `${row}.name is required`;
+    case "name-too-long":
+      return `${row}.name must be at most ${MAX_ADVANCE_NAME_LENGTH} characters`;
+    case "figure":
+      return `${row}.${finding.field} must be a whole number of pounds, not negative`;
+    case "terms-missing":
+      return `${row}.terms is required: state the interest rate and the main conditions`;
+    case "terms-too-long":
+      return `${row}.terms must be at most ${MAX_ADVANCE_TERMS_LENGTH} characters`;
+    case "arithmetic":
+      return `${row}.balanceAtEnd must equal balanceAtStart plus advanced less repaid`;
+    case "same-director":
+      return `${row}.name names ${finding.name} again: give each director one row, with the amounts of all their advances added together`;
+    case "not-a-director":
+      return `${row} names ${finding.name}, who is not among the directors of these accounts: add them to the directors`;
+    case "not-the-signer":
+      return `${row} names ${finding.name}: on micro-entity accounts an advance names the director who signs the accounts, ${finding.signer}`;
+    default:
+      return `${label} balanceAtEnd (${finding.total}) must equal balanceSheet.currentYear.amountsOwedByDirectors`;
+  }
+}
 
 /**
- * The problems in the advances to directors figures: one row per director, whole pounds that are
- * not negative, and a closing balance equal to the opening balance plus the advances less the
- * repayments.
- * @param {Array<{name: string, balanceAtStart: number, advanced: number, repaid: number, balanceAtEnd: number}>} directorsAdvances
+ * The problems in the advances to directors rows, by the rules the accounts forms share: at most
+ * one row for each director the taxonomy can name, a name and terms within their lengths, whole
+ * pounds that are not negative, and a closing balance equal to the opening balance plus the
+ * advances less the repayments.
+ * @param {Array<{name: string, terms: string, balanceAtStart: number, advanced: number, repaid: number, balanceAtEnd: number}>} directorsAdvances
+ * @param {{directorNames?: string[], amountsOwedByDirectors?: number}} [accounts] - as directorsAdvancesFindings takes them
  * @returns {string[]}
  */
-export function directorsAdvancesProblems(directorsAdvances) {
-  const problems = [];
-  directorsAdvances.forEach((row, index) => {
-    const label = `directorsAdvances[${index}]`;
-    if (typeof row?.name !== "string" || row.name.trim() === "") problems.push(`${label}.name is required`);
-    for (const field of DIRECTORS_ADVANCE_FIELDS) {
-      if (!Number.isInteger(row?.[field]) || row[field] < 0) {
-        problems.push(`${label}.${field} must be a whole number of pounds, not negative`);
-      }
-    }
-    if (typeof row?.terms !== "string" || row.terms.trim() === "") {
-      problems.push(`${label}.terms is required: state the interest rate and the main conditions`);
-    }
-    if (
-      DIRECTORS_ADVANCE_FIELDS.every((field) => Number.isInteger(row?.[field])) &&
-      row.balanceAtStart + row.advanced - row.repaid !== row.balanceAtEnd
-    ) {
-      problems.push(`${label}.balanceAtEnd must equal balanceAtStart plus advanced less repaid`);
-    }
-  });
-  return problems;
+export function directorsAdvancesProblems(directorsAdvances, accounts) {
+  return directorsAdvancesFindings(directorsAdvances, accounts).map((finding) => advanceFindingMessage(finding, "directorsAdvances"));
 }
 
 /**
@@ -673,9 +691,11 @@ export function directorsAdvancesProblems(directorsAdvances) {
  * @param {unknown} values
  * @param {string} label - the request path, e.g. "smallCompany.directorsAdvances"
  * @param {string[]} errorMessages
- * @param {string[]} directorNames - the directors the accounts name: each advance is to one of them
+ * @param {{directorNames?: string[], signerName?: string, amountsOwedByDirectors?: number}} accounts - as
+ *   directorsAdvancesFindings takes them: the directors each advance is to one of, or the director
+ *   who signs micro-entity accounts, and the amounts owed by directors the closing balances add up to
  */
-export function readDirectorsAdvances(values, label, errorMessages, directorNames) {
+export function readDirectorsAdvances(values, label, errorMessages, accounts) {
   if (values === undefined || values === null) return undefined;
   if (!Array.isArray(values)) {
     errorMessages.push(`${label} must be a list`);
@@ -684,14 +704,11 @@ export function readDirectorsAdvances(values, label, errorMessages, directorName
   const rows = values.map((row) => ({
     name: typeof row?.name === "string" ? row.name.trim() : "",
     terms: typeof row?.terms === "string" ? row.terms.trim() : "",
-    ...Object.fromEntries(DIRECTORS_ADVANCE_FIELDS.map((field) => [field, Number(row?.[field])])),
+    ...Object.fromEntries(DIRECTORS_ADVANCE_FIGURES.map((field) => [field, Number(row?.[field])])),
   }));
-  for (const problem of directorsAdvancesProblems(rows)) errorMessages.push(`${label}${problem.slice("directorsAdvances".length)}`);
-  rows.forEach(({ name }, index) => {
-    if (name && !directorNames.includes(name)) {
-      errorMessages.push(`${label}[${index}] names ${name}, who is not among the directors of these accounts: add them to the directors`);
-    }
-  });
+  for (const finding of directorsAdvancesFindings(rows, accounts)) {
+    errorMessages.push(advanceFindingMessage(finding, label));
+  }
   return rows;
 }
 

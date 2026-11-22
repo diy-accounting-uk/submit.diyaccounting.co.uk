@@ -43,11 +43,17 @@ function readOwnPresenterInputs() {
   const id = idInput.value.trim();
   const code = codeInput.value.trim();
   const problems = [];
-  if (!id) problems.push({ input: idInput, message: window.siteText("ch.accounts.enter-presenter-id", "Enter your presenter id") });
+  if (!id)
+    problems.push({
+      input: idInput,
+      message: window.siteText("ch.accounts.enter-presenter-id", "Enter your presenter id"),
+      passes: () => idInput.value.trim() !== "",
+    });
   if (!code)
     problems.push({
       input: codeInput,
       message: window.siteText("ch.accounts.enter-presenter-code", "Enter your presenter authentication code"),
+      passes: () => codeInput.value.trim() !== "",
     });
   return problems.length > 0 ? { problems } : { presenter: { id, code } };
 }
@@ -471,6 +477,7 @@ async function handleAuthSubmit(event) {
       {
         input: codeInput,
         message: window.siteText("ch.accounts.enter-auth-code", "Enter the 6 to 8 character company authentication code"),
+        passes: () => codeInput.value.trim().length >= 6 && codeInput.value.trim().length <= 8,
       },
     ]);
     return;
@@ -1014,10 +1021,13 @@ async function handlePscVerificationSubmit(index, matches) {
     }
     resultContainer.replaceChildren(
       buildParagraph(
-        valueParts(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
-          number: outcome.submissionNumber,
-          status: window.companiesHouseGatewayPoll.statusWord(outcome.statusCode),
-        }),
+        valueParts(
+          ...window.companiesHouseGatewayPoll.statusSentence(
+            window.siteText("ch.small.outcome", "Submission {number} was {status}."),
+            outcome.submissionNumber,
+            outcome.statusCode,
+          ),
+        ),
       ),
       ...(outcome.rejections || []).map((rejection) => buildParagraph([window.companiesHouseRejections.rejectionText(rejection)])),
     );
@@ -1047,10 +1057,13 @@ function pollUntilSettled(submission, extraHeaders) {
     pollIntervalSeconds: submission.pollInterval,
     poll: () => window.pollConfirmationStatement(submissionNumber, extraHeaders),
     onPending: (result) =>
-      showSubmissionProgress(window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again..."), {
-        number: submissionNumber,
-        status: window.companiesHouseGatewayPoll.statusWord(result.statusCode),
-      }),
+      showSubmissionProgress(
+        ...window.companiesHouseGatewayPoll.statusSentence(
+          window.siteText("ch.accounts.checking", "Submission {number} is {status}. Checking again..."),
+          submissionNumber,
+          result.statusCode,
+        ),
+      ),
   });
 }
 
@@ -1078,10 +1091,13 @@ async function checkOutcome(submission, headers, payload) {
   if (notReceived) {
     showSubmissionProgress(`${notReceived.title} ${notReceived.detail}`, {});
   } else {
-    showSubmissionProgress(window.siteText("ch.small.outcome", "Submission {number} was {status}."), {
-      number: outcome.submissionNumber,
-      status: window.companiesHouseGatewayPoll.statusWord(outcome.statusCode),
-    });
+    showSubmissionProgress(
+      ...window.companiesHouseGatewayPoll.statusSentence(
+        window.siteText("ch.small.outcome", "Submission {number} was {status}."),
+        outcome.submissionNumber,
+        outcome.statusCode,
+      ),
+    );
   }
   result.className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
   renderRejections(outcome.rejections);

@@ -10,8 +10,8 @@ import {
   MANDATORY_CONCEPT_KEYS,
   STATEMENT_KEYS,
   DORMANT_STATEMENT_KEYS,
-  sharesIssuedFor,
 } from "@app/services/microEntityAccountsIxbrl.js";
+import { sharesIssuedFor } from "../../../web/public/lib/accounts-notes-check.js";
 import {
   buildContexts,
   formatMonetary,
