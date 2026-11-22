@@ -287,7 +287,7 @@ Facts the Companies House form rows OFF1 to LOC1 share (from CL5's walk of the d
 
 - [ ] **WDM9. Campaign sessions and posting.** Brief: `PLAN_WATCH_DUE_CAMPAIGN.md` section 8.2, WDM9 (the deliverable and its proof are in its section 8.2 brief). Blocked on WDM8 and WDM4. **Source**: `PLAN_WATCH_DUE_CAMPAIGN.md` WDM9 (operator, 2026-11-22). **Owner**: Operator. **Model**: none. **Size**: 0 files. **Repository**: none.
 
-- [ ] **WDM10. Links from the spreadsheets site.** Brief: `PLAN_WATCH_DUE_CAMPAIGN.md` section 8.2, WDM10 (the deliverable and its proof are in its section 8.2 brief). Blocked on WDM5 and the operator's yes. **Source**: `PLAN_WATCH_DUE_CAMPAIGN.md` WDM10 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files. **Repository**: spreadsheets.
+- [ ] **WDM10. Links from the spreadsheets site.** Brief: `PLAN_WATCH_DUE_CAMPAIGN.md` section 8.2, WDM10 (the deliverable and its proof are in its section 8.2 brief). The operator approved the links on 2026-11-22: the session builds them when WDM5 is live. Blocked on WDM5. **Source**: `PLAN_WATCH_DUE_CAMPAIGN.md` WDM10 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files. **Repository**: spreadsheets.
 
 - [ ] **WDM11. The listing copy sitting file.** Brief: `PLAN_WATCH_DUE_CAMPAIGN.md` section 8.2, WDM11 (the deliverable and its proof are in its section 8.2 brief). Blocked on MA1, DUE14 and WL1 on prod (the wave set zeppelin on `main` first, then its deploy). **Source**: `PLAN_WATCH_DUE_CAMPAIGN.md` WDM11 (operator, 2026-11-22). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 1 file. **Repository**: private.
 
