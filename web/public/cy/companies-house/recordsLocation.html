@@ -1,0 +1,269 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!-- Built by scripts/build-welsh-pages.mjs from companies-house/recordsLocation.html and i18n/cy.toml: edit those and run npm run build:welsh. -->
+<html lang="cy">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dweud wrth Dŷ’r Cwmnïau ble mae’r cwmni’n cadw ei gofnodion - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/cy/companies-house/recordsLocation.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/recordsLocation.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/recordsLocation.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/recordsLocation.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link" data-i18n="common.skip-link">Neidio i’r prif gynnwys</a>
+    <header>
+      <p class="chrome-fallback"><a href="../index.html">DIY Accounting Submit</a></p>
+      <h1 data-i18n="ch-records-location.tell-companies-house-where-the-company-674184">
+        Dweud wrth Dŷ’r Cwmnïau ble mae’r cwmni’n cadw ei gofnodion
+      </h1>
+      <p data-i18n="ch-records-location.register-an-inspection-location-sail-or-668cae" class="subtitle">
+        Cofrestru lleoliad arolygu amgen (SAIL), neu ddweud pa gofnodion sy’n cael eu cadw yno neu yn y swyddfa gofrestredig
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p
+        data-i18n="ch-records-location.status-sandbox-this-runs-against-companies-3c285c"
+        class="hint"
+        data-feature-status="sandbox"
+        data-companies-house-service="xml-gateway"
+      >
+        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn
+        ei ffeilio yma yn cyrraedd y gofrestr fyw.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau"
+        data-sign-in-text="Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif."
+        data-i18n-data-sign-in-title="ch-records-location.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-records-location.sign-in-to-look-up-your-eb0bf2"
+        data-i18n-data-sign-in-title="ch-records-location.sign-in-to-file-with-companies-5a7303"
+        data-i18n-data-sign-in-text="ch-records-location.sign-in-to-look-up-your-eb0bf2"
+      >
+        <h2 data-i18n="ch-records-location.which-company-d9aae4">Pa gwmni?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label data-i18n="ch-records-location.company-number-8b121b" for="companyNumber">Rhif y cwmni</label>
+            <p data-i18n="ch-records-location.8-characters-for-example-00000001-do-090062" id="companyNumber-hint" class="hint">
+              8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button
+            data-i18n="ch-records-location.look-up-the-company-570ac0"
+            type="submit"
+            id="companyLookupBtn"
+            class="btn"
+            data-activity-start="change-records-location"
+          >
+            Chwilio am y cwmni
+          </button>
+        </form>
+      </div>
+
+      <!-- Records form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2 data-i18n="ch-records-location.what-has-changed-88d886">Beth sydd wedi newid?</h2>
+        <p data-i18n="ch-records-location.company-3bc806">
+          Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).
+        </p>
+        <p data-i18n="ch-records-location.companies-house-charges-no-fee-for-7c9d4d" class="hint">
+          Nid yw Tŷ’r Cwmnïau yn codi ffi am y ffeiliadau hyn.
+        </p>
+        <form id="recordsForm" novalidate>
+          <fieldset class="form-group">
+            <legend data-i18n="ch-records-location.what-are-you-telling-companies-house-bec7e7">
+              Beth ydych chi’n ei ddweud wrth Dŷ’r Cwmnïau?
+            </legend>
+            <div class="choice">
+              <input type="radio" name="change" id="change-sail" value="sail" checked />
+              <label data-i18n="ch-records-location.the-address-of-the-inspection-location-714550" for="change-sail"
+                >Cyfeiriad y lleoliad arolygu amgen (ffurflen AD02)</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" name="change" id="change-to-sail" value="to-sail" />
+              <label data-i18n="ch-records-location.records-are-now-kept-at-the-9bf79f" for="change-to-sail"
+                >Mae cofnodion bellach yn cael eu cadw yn y lleoliad arolygu amgen (ffurflen AD03)</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" name="change" id="change-to-office" value="to-office" />
+              <label data-i18n="ch-records-location.records-are-now-kept-at-the-b3f1fd" for="change-to-office"
+                >Mae cofnodion bellach yn cael eu cadw yn y swyddfa gofrestredig (ffurflen AD04)</label
+              >
+            </div>
+          </fieldset>
+
+          <fieldset id="addressFields" class="form-group">
+            <legend data-i18n="ch-records-location.address-of-the-inspection-location-9c9f3f">Cyfeiriad y lleoliad arolygu amgen</legend>
+            <p data-i18n="ch-records-location.a-company-has-one-inspection-location-54e0a9" id="address-hint" class="hint">
+              Mae gan gwmni un lleoliad arolygu amgen (SAIL, single alternative inspection location). Rhaid iddo fod yn y rhan o’r Deyrnas
+              Unedig lle mae’r cwmni wedi’i gofrestru.
+            </p>
+            <div class="form-group">
+              <label data-i18n="ch-records-location.building-name-or-number-bbd5d1" for="sailPremise">Enw neu rif yr adeilad</label>
+              <input type="text" id="sailPremise" name="sailPremise" maxlength="50" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-records-location.street-optional-b8fc5c" for="sailStreet">Stryd (dewisol)</label>
+              <input type="text" id="sailStreet" name="sailStreet" maxlength="50" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-records-location.locality-optional-523749" for="sailThoroughfare">Ardal (dewisol)</label>
+              <input type="text" id="sailThoroughfare" name="sailThoroughfare" maxlength="50" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-records-location.town-or-city-9ce565" for="sailPostTown">Tref neu ddinas</label>
+              <input type="text" id="sailPostTown" name="sailPostTown" maxlength="50" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-records-location.county-optional-25a6e2" for="sailCounty">Sir (dewisol)</label>
+              <input type="text" id="sailCounty" name="sailCounty" maxlength="50" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-records-location.country-701d02" for="sailCountry">Gwlad</label>
+              <select id="sailCountry" name="sailCountry">
+                <option data-i18n="ch-records-location.england-c0ea96" value="GB-ENG">Lloegr</option>
+                <option data-i18n="ch-records-location.wales-0cf387" value="GB-WLS">Cymru</option>
+                <option data-i18n="ch-records-location.scotland-a24667" value="GB-SCT">Yr Alban</option>
+                <option data-i18n="ch-records-location.northern-ireland-304a7e" value="GB-NIR">Gogledd Iwerddon</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-records-location.postcode-optional-042d21" for="sailPostcode">Cod post (dewisol)</label>
+              <input type="text" id="sailPostcode" name="sailPostcode" class="input--code" maxlength="15" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-records-location.care-of-optional-90dc20" for="sailCareOf">Dan ofal (dewisol)</label>
+              <input type="text" id="sailCareOf" name="sailCareOf" maxlength="100" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-records-location.po-box-optional-203684" for="sailPoBox">Blwch Post (dewisol)</label>
+              <input type="text" id="sailPoBox" name="sailPoBox" maxlength="10" autocomplete="off" />
+            </div>
+          </fieldset>
+
+          <fieldset id="recordFields" class="form-group" style="display: none">
+            <legend data-i18n="ch-records-location.records-now-kept-at-the-inspection-b4976e" id="recordsLegend">
+              Cofnodion sydd bellach yn cael eu cadw yn y lleoliad arolygu amgen
+            </legend>
+            <p data-i18n="ch-records-location.tick-each-record-that-has-moved-24a0df" id="records-hint" class="hint">
+              Ticiwch bob cofnod sydd wedi symud. Peidiwch â chynnwys cofnod y mae ffeiliad cynharach eisoes wedi’i roi yno.
+            </p>
+            <div id="removeSailChoice" class="choice" style="display: none">
+              <input type="checkbox" id="removeSail" name="removeSail" />
+              <label data-i18n="ch-records-location.every-record-is-back-at-the-ef4ecc" for="removeSail"
+                >Mae pob cofnod yn ôl yn y swyddfa gofrestredig: tynnu’r lleoliad arolygu amgen oddi ar y gofrestr</label
+              >
+            </div>
+            <div id="recordChoices" aria-describedby="records-hint"></div>
+          </fieldset>
+
+          <div class="form-group">
+            <label data-i18n="ch-records-location.company-authentication-code-56d0e6" for="companyAuthCode">Cod dilysu’r cwmni</label>
+            <p data-i18n="ch-records-location.the-6-to-8-character-code-48646a" id="companyAuthCode-hint" class="hint">
+              Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei
+              ddefnyddio.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button data-i18n="ch-records-location.continue-31fbef" type="submit" id="continueBtn" class="btn">Parhau</button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="reviewView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-records-location.review-the-filing-769b96">Adolygu’r ffeilio</h2>
+        <dl id="reviewList"></dl>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label data-i18n="ch-records-location.gov-test-scenario-dab532" for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button data-i18n="ch-records-location.file-with-companies-house-327c43" type="button" id="submitFilingBtn" class="btn">
+            Ffeilio gyda Thŷ’r Cwmnïau
+          </button>
+          <button data-i18n="ch-records-location.change-c0bf75" type="button" id="changeBtn" class="secondary-button">Newid</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2 data-i18n="ch-records-location.filing-result-0ecbf7">Canlyniad y ffeilio</h2>
+        <div id="filingResult"></div>
+        <div class="button-group">
+          <button data-i18n="ch-records-location.start-a-new-filing-0a9f24" type="button" id="startAgainBtn" class="secondary-button">
+            Dechrau ffeilio newydd
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../lib/welsh-text.js"></script>
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/companies-house-lane.js"></script>
+    <script src="../../lib/companies-house-gateway-poll.js"></script>
+    <script src="../../lib/companies-house-rejections.js"></script>
+    <script src="../../lib/companies-house-form-page.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../lib/form-errors.js"></script>
+    <script src="../../lib/companies-house-labels.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
+    <script src="../../lib/company-number-from-address.js"></script>
+    <script src="../../companies-house/recordsLocation.page.js"></script>
+  </body>
+</html>

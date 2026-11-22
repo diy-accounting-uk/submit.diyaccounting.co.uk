@@ -129,6 +129,8 @@ import { apiEndpoint as companiesHousePscVerificationStatementPostApiEndpoint } 
 import { apiEndpoint as companiesHousePscCessationPostApiEndpoint } from "../functions/companies-house/companiesHousePscCessationPost.js";
 import { apiEndpoint as companiesHousePscChangeDetailsPostApiEndpoint } from "../functions/companies-house/companiesHousePscChangeDetailsPost.js";
 import { apiEndpoint as companiesHouseOfficerResignationPostApiEndpoint } from "../functions/companies-house/companiesHouseOfficerResignationPost.js";
+import { apiEndpoint as companiesHouseSailAddressPostApiEndpoint } from "../functions/companies-house/companiesHouseSailAddressPost.js";
+import { apiEndpoint as companiesHouseRecordLocationPostApiEndpoint } from "../functions/companies-house/companiesHouseRecordLocationPost.js";
 import { apiEndpoint as companiesHouseFormStatusGetApiEndpoint } from "../functions/companies-house/companiesHouseFormStatusGet.js";
 import { apiEndpoint as companiesHouseAccountingReferenceDatePostApiEndpoint } from "../functions/companies-house/companiesHouseAccountingReferenceDatePost.js";
 import { apiEndpoint as companiesHousePscVerificationStatementGetApiEndpoint } from "../functions/companies-house/companiesHousePscVerificationStatementGet.js";
@@ -473,6 +475,8 @@ companiesHousePscVerificationStatementPostApiEndpoint(app);
 companiesHousePscCessationPostApiEndpoint(app);
 companiesHousePscChangeDetailsPostApiEndpoint(app);
 companiesHouseOfficerResignationPostApiEndpoint(app);
+companiesHouseSailAddressPostApiEndpoint(app);
+companiesHouseRecordLocationPostApiEndpoint(app);
 companiesHouseFormStatusGetApiEndpoint(app);
 companiesHouseAccountingReferenceDatePostApiEndpoint(app);
 companiesHousePscVerificationStatementGetApiEndpoint(app);

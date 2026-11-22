@@ -5,7 +5,8 @@
 // Filing histories and filed documents for the simulator's companies. 00000001 holds two sets of
 // accounts: the latest filed by software, with an iXBRL document built by the micro-entity accounts
 // builder from the company's own profile, and the one before filed on paper, as a PDF only. Its
-// confirmation statement is a PDF. 00000003 holds one set of accounts, filed on paper as a PDF only.
+// confirmation statement is a PDF. 00000003 holds one set of accounts, filed on paper as a PDF only, and
+// after it the notice of an inspection location (SAIL) and of records moved to it.
 // SC000000 holds one set of small company accounts filed by software, with both years and a profit
 // and loss account, built by the small company accounts builder.
 // 12345678 holds more filings than a lookup reads (620 changes of registered office after its
@@ -17,6 +18,7 @@ import { buildSmallCompanyAccounts } from "../../services/smallCompanyAccountsIx
 import { getCompany } from "./companies.js";
 
 const DOCUMENT_API_HOST = "https://document-api.company-information.service.gov.uk";
+const SAIL_ADDRESS = "Unit 4, Harbour House 12 Quay Street Bristol BS1 4DJ";
 const PDF_CONTENT = "%PDF-1.4\n% Simulator filed document\n%%EOF\n";
 
 const IXBRL_DOCUMENT_ID = "SIMDOC00000001AA2098";
@@ -25,13 +27,25 @@ const CONFIRMATION_DOCUMENT_ID = "SIMDOC00000001CS2098";
 const PDF_ONLY_DOCUMENT_ID = "SIMDOC00000003AA2098";
 const SMALL_IXBRL_DOCUMENT_ID = "SIMDOCSC000000AA2098";
 
-function filing({ companyNumber, transactionId, category, type, description, madeUpDate, date, pages, paperFiled, documentId }) {
+function filing({
+  companyNumber,
+  transactionId,
+  category,
+  type,
+  description,
+  madeUpDate,
+  newAddress,
+  date,
+  pages,
+  paperFiled,
+  documentId,
+}) {
   return {
     transaction_id: transactionId,
     category,
     type,
     description,
-    description_values: madeUpDate ? { made_up_date: madeUpDate } : {},
+    description_values: { ...(madeUpDate ? { made_up_date: madeUpDate } : {}), ...(newAddress ? { new_address: newAddress } : {}) },
     date,
     pages,
     ...(paperFiled ? { paper_filed: true } : {}),
@@ -80,6 +94,26 @@ const historyByCompanyNumber = {
     }),
   ],
   "00000003": [
+    filing({
+      companyNumber: "00000003",
+      transactionId: "SIMTX00000003AD032098",
+      category: "address",
+      type: "AD03",
+      description: "move-registers-to-sail-company-with-new-address",
+      newAddress: SAIL_ADDRESS,
+      date: "2098-11-20",
+      pages: 2,
+    }),
+    filing({
+      companyNumber: "00000003",
+      transactionId: "SIMTX00000003AD022098",
+      category: "address",
+      type: "AD02",
+      description: "change-sail-address-company-with-new-address",
+      newAddress: SAIL_ADDRESS,
+      date: "2098-11-20",
+      pages: 1,
+    }),
     filing({
       companyNumber: "00000003",
       transactionId: "SIMTX00000003AA2098",

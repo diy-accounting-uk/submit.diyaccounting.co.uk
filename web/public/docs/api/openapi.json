@@ -703,6 +703,20 @@
         } ]
       }
     },
+    "/companies-house/record-location" : {
+      "post" : {
+        "summary" : "Submit a location of company records filing",
+        "description" : "Builds the RecordChangeOfLocation body, the notice that company records have moved to the single alternative inspection location (SAIL) or back to the registered office, and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseRecordLocation"
+      }
+    },
+    "/companies-house/sail-address" : {
+      "post" : {
+        "summary" : "Submit a SAIL address filing",
+        "description" : "Builds the SailAddress body, the notice of a company's single alternative inspection location (SAIL), and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseSailAddress"
+      }
+    },
     "/companies-house/search" : {
       "get" : {
         "summary" : "Search Companies House",

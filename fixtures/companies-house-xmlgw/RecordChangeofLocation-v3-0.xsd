@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://xmlgw.companieshouse.gov.uk" elementFormDefault="qualified" attributeFormDefault="unqualified" version="3.0" id="RecordMove">
+	<xs:include schemaLocation="../baseTypes-v3-7.xsd"/>
+	<xs:element name="RecordChangeOfLocation">
+		<xs:annotation>
+			<xs:documentation>Change of record location to/from RO and SAIL</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="AddressType">
+					<xs:choice>
+						<xs:sequence>
+							<xs:element name="MoveToSAILAddress">
+								<xs:annotation>
+									<xs:documentation>This will generate a form AD03</xs:documentation>
+								</xs:annotation>
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="true"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element ref="RegisterList" maxOccurs="16"/>
+						</xs:sequence>
+						<xs:sequence>
+							<xs:element name="MoveToRegisteredOffice">
+								<xs:annotation>
+									<xs:documentation>This will generate a form AD04</xs:documentation>
+								</xs:annotation>
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="true"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:sequence>
+								<xs:element name="RemoveSAILAddressInd" type="xs:boolean" minOccurs="0">
+									<xs:annotation>
+										<xs:documentation>Indicator to move all registers to the Registered Office and remove SAIL address from the public record</xs:documentation>
+									</xs:annotation>
+								</xs:element>
+								<xs:element ref="RegisterList" minOccurs="0" maxOccurs="16"/>
+							</xs:sequence>
+						</xs:sequence>
+					</xs:choice>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="RegisterList">
+		<xs:annotation>
+			<xs:documentation>List of registers moved</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="RecordType"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

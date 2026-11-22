@@ -338,6 +338,23 @@ public class CompaniesHouseNames {
     public String companiesHouseOfficerResignationPostLambdaUrlPath;
     public boolean companiesHouseOfficerResignationPostLambdaJwtAuthorizer;
     public boolean companiesHouseOfficerResignationPostLambdaCustomAuthorizer;
+    public String companiesHouseSailAddressPostIngestLambdaHandler;
+    public String companiesHouseSailAddressPostIngestLambdaFunctionName;
+    public String companiesHouseSailAddressPostIngestLambdaArn;
+    public String companiesHouseSailAddressPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseSailAddressPostLambdaHttpMethod;
+    public String companiesHouseSailAddressPostLambdaUrlPath;
+    public boolean companiesHouseSailAddressPostLambdaJwtAuthorizer;
+    public boolean companiesHouseSailAddressPostLambdaCustomAuthorizer;
+
+    public String companiesHouseRecordLocationPostIngestLambdaHandler;
+    public String companiesHouseRecordLocationPostIngestLambdaFunctionName;
+    public String companiesHouseRecordLocationPostIngestLambdaArn;
+    public String companiesHouseRecordLocationPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseRecordLocationPostLambdaHttpMethod;
+    public String companiesHouseRecordLocationPostLambdaUrlPath;
+    public boolean companiesHouseRecordLocationPostLambdaJwtAuthorizer;
+    public boolean companiesHouseRecordLocationPostLambdaCustomAuthorizer;
 
     public CompaniesHouseNames(SubmitSharedNames.SubmitSharedNamesProps props, SubmitSharedNames root) {
 
@@ -1287,5 +1304,49 @@ public class CompaniesHouseNames {
                 "Submit an officer resignation filing",
                 "Builds the OfficerResignation body, the notice that a director or a secretary no longer holds the appointment (TM01 or TM02), and submits it through the Companies House XML Gateway",
                 "postCompaniesHouseOfficerResignation"));
+
+        this.companiesHouseSailAddressPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHouseSailAddressPostLambdaUrlPath = "/api/v1/companies-house/sail-address";
+        this.companiesHouseSailAddressPostLambdaJwtAuthorizer = true;
+        this.companiesHouseSailAddressPostLambdaCustomAuthorizer = false;
+        var companiesHouseSailAddressPostLambdaHandlerName = "companiesHouseSailAddressPost.ingestHandler";
+        var companiesHouseSailAddressPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseSailAddressPostLambdaHandlerName);
+        this.companiesHouseSailAddressPostIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, companiesHouseSailAddressPostLambdaHandlerDashed);
+        this.companiesHouseSailAddressPostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(root.appLambdaHandlerPrefix, companiesHouseSailAddressPostLambdaHandlerName);
+        this.companiesHouseSailAddressPostIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, companiesHouseSailAddressPostLambdaHandlerDashed);
+        this.companiesHouseSailAddressPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHouseSailAddressPostIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseSailAddressPostLambdaHttpMethod,
+                this.companiesHouseSailAddressPostLambdaUrlPath,
+                "Submit a SAIL address filing",
+                "Builds the SailAddress body, the notice of a company's single alternative inspection location (SAIL), and submits it through the Companies House XML Gateway",
+                "postCompaniesHouseSailAddress"));
+
+        this.companiesHouseRecordLocationPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHouseRecordLocationPostLambdaUrlPath = "/api/v1/companies-house/record-location";
+        this.companiesHouseRecordLocationPostLambdaJwtAuthorizer = true;
+        this.companiesHouseRecordLocationPostLambdaCustomAuthorizer = false;
+        var companiesHouseRecordLocationPostLambdaHandlerName = "companiesHouseRecordLocationPost.ingestHandler";
+        var companiesHouseRecordLocationPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseRecordLocationPostLambdaHandlerName);
+        this.companiesHouseRecordLocationPostIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, companiesHouseRecordLocationPostLambdaHandlerDashed);
+        this.companiesHouseRecordLocationPostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(root.appLambdaHandlerPrefix, companiesHouseRecordLocationPostLambdaHandlerName);
+        this.companiesHouseRecordLocationPostIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, companiesHouseRecordLocationPostLambdaHandlerDashed);
+        this.companiesHouseRecordLocationPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHouseRecordLocationPostIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseRecordLocationPostLambdaHttpMethod,
+                this.companiesHouseRecordLocationPostLambdaUrlPath,
+                "Submit a location of company records filing",
+                "Builds the RecordChangeOfLocation body, the notice that company records have moved to the single alternative inspection location (SAIL) or back to the registered office, and submits it through the Companies House XML Gateway",
+                "postCompaniesHouseRecordLocation"));
     }
 }

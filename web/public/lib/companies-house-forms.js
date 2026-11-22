@@ -82,6 +82,30 @@ export const COMPANIES_HOUSE_FORMS = {
     label: "officer resignation",
     sharedPoll: true,
   },
+  "sail-address": {
+    routeSegment: "sail-address",
+    receiptTitle: "SAIL address",
+    receiptTitleCy: "Cyfeiriad SAIL",
+    acceptedEvent: "companies-house-sail-address-accepted",
+    acceptedSummary: "Companies House SAIL address accepted",
+    formIdentifier: "SailAddress",
+    schema: "SailAddress-v2-6.xsd",
+    activityId: "change-records-location",
+    label: "SAIL address",
+    sharedPoll: true,
+  },
+  "record-location": {
+    routeSegment: "record-location",
+    receiptTitle: "Location of company records",
+    receiptTitleCy: "Lleoliad cofnodion y cwmni",
+    acceptedEvent: "companies-house-record-location-accepted",
+    acceptedSummary: "Companies House location of company records accepted",
+    formIdentifier: "RecordChangeOfLocation",
+    schema: "RecordChangeofLocation-v3-0.xsd",
+    activityId: "change-records-location",
+    label: "location of company records",
+    sharedPoll: true,
+  },
 };
 
 /** The filing kinds, as the filing state and the receipts carry them. */

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://xmlgw.companieshouse.gov.uk" elementFormDefault="qualified" attributeFormDefault="unqualified" version="2.6" id="SailAddress">
+	<xs:include schemaLocation="../baseTypes-v2-10.xsd"/>
+	<xs:element name="SailAddress">
+		<xs:annotation>
+			<xs:documentation>Single Alternative Inspection Location (SAIL) address</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="AddressType">
+					<xs:sequence>
+						<xs:element name="Address" type="UKAddressType"/>
+					</xs:sequence>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

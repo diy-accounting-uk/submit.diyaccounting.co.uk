@@ -353,7 +353,7 @@ test.describe("Company lookup drill-down", () => {
   test("an account holding the forms' activities gets a file button for each, opening the form with the company", async ({ page }) => {
     await serveSite(page, { bundles: ["resident-ltd"] });
     await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
-    await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(7, { timeout: 15000 });
+    await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(8, { timeout: 15000 });
     const hrefs = await page
       .locator("#drillOverview .file-this a.btn")
       .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
@@ -366,6 +366,7 @@ test.describe("Company lookup drill-down", () => {
         "/companies-house/fileSmallCompanyAccounts.html?companyNumber=00000001&periodStart=2098-05-01&periodEnd=2099-04-30",
         "/companies-house/fileCompanyTaxReturn.html?companyNumber=00000001",
         "/companies-house/changeAccountingRefDate.html?companyNumber=00000001&currentPeriodEnd=2099-04-30",
+        "/companies-house/recordsLocation.html?companyNumber=00000001",
       ].sort(),
     );
   });
@@ -574,7 +575,7 @@ test.describe("Company lookup drill-down edit links", () => {
       await page.setViewportSize({ width, height: 900 });
       await serveSite(page, { bundles: ["resident-ltd"] });
       await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
-      await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(7, { timeout: 15000 });
+      await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(8, { timeout: 15000 });
       for (const { section, quotes, sources } of AUTHORITY) {
         await expect(page.locator(`${section} .file-this-authority`).first()).toBeAttached();
         const text = await page.locator(`${section} .file-this-authority`).allInnerTexts();
@@ -803,5 +804,107 @@ test.describe("Company lookup drill-down officer resignation links", () => {
     await expect(page.locator("#drillView")).toContainText("BRAMWELL, Eleanor", { timeout: 15000 });
     await expect(page.locator("#drillView .remove-officer-links")).toHaveCount(0);
     await expect(page.locator('#drillView .file-this[data-activity="remove-officer"]')).toHaveCount(0);
+  });
+});
+
+test.describe("Company lookup drill-down records location", () => {
+  const SAIL_FILINGS = {
+    ...FILINGS,
+    filings: [
+      {
+        transactionId: "SIMTX00000001AD042099",
+        date: "2099-02-01",
+        category: "address",
+        type: "AD04",
+        description: "move-registers-to-registered-office-company-with-new-address",
+        descriptionValues: { new_address: "1 Test Street London EC1A 1AA" },
+      },
+      {
+        transactionId: "SIMTX00000001AD032098",
+        date: "2098-11-20",
+        category: "address",
+        type: "AD03",
+        description: "move-registers-to-sail-company-with-new-address",
+        descriptionValues: { new_address: "Unit 4, Harbour House 12 Quay Street Bristol BS1 4DJ" },
+      },
+      {
+        transactionId: "SIMTX00000001AD022098",
+        date: "2098-11-20",
+        category: "address",
+        type: "AD02",
+        description: "change-sail-address-company-with-new-address",
+        descriptionValues: { new_address: "Unit 4, Harbour House 12 Quay Street Bristol BS1 4DJ" },
+      },
+      ...FILINGS.filings,
+    ],
+  };
+
+  test("the overview states the inspection location and the last moves from the filing history, with the form's link and its authority", async ({
+    page,
+  }) => {
+    await serveSite(page, { bundles: ["resident-ltd"], filings: SAIL_FILINGS });
+    await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+
+    const section = page.locator("#recordsSection");
+    await expect(section.locator("h4")).toHaveText("Where the company keeps its records", { timeout: 15000 });
+    await expect(section.locator("dl")).toContainText("Inspection location (SAIL)");
+    await expect(section.locator("dl")).toContainText("Unit 4, Harbour House 12 Quay Street Bristol BS1 4DJ, filed 20 November 2098");
+    await expect(section.locator("dl")).toContainText("Records last moved to the inspection location");
+    await expect(section.locator("dl")).toContainText("Records last moved to the registered office");
+    await expect(section.locator("dl")).toContainText("1 February 2099");
+    const control = section.locator('.file-this[data-activity="change-records-location"]');
+    await expect(control.locator("a.btn")).toHaveText("Tell Companies House where the records are kept");
+    expect(await control.locator("a.btn").getAttribute("href")).toBe("/companies-house/recordsLocation.html?companyNumber=00000001");
+    await expect(control.locator(".file-this-authority")).toContainText(
+      "“You cannot use this form to tell us the address of a location outside of the part of the United Kingdom where the company is registered.”",
+    );
+    const sources = await control.locator(".file-this-authority a").evaluateAll((links) => links.map((anchor) => anchor.href));
+    expect(sources).toEqual(
+      expect.arrayContaining([
+        "https://assets.publishing.service.gov.uk/media/691206b6e9348ac8fb54f4b8/AD02_v6.0-FINAL.pdf",
+        "https://assets.publishing.service.gov.uk/media/69130d692017198896ad7f3c/AD03_v8.0-FINAL.pdf",
+        "https://assets.publishing.service.gov.uk/media/69120af9ece74c08fbaa6456/AD04_v8.0-FINAL.pdf",
+      ]),
+    );
+    await section.scrollIntoViewIfNeeded();
+    await shoot(page, "records-location");
+  });
+
+  test("a company with no such notice says the register holds none", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    await expect(page.locator("#recordsSection")).toContainText(
+      "The register holds no notice of an inspection location (SAIL) for this company.",
+      { timeout: 15000 },
+    );
+    await expect(page.locator("#recordsSection dl")).toHaveCount(0);
+  });
+
+  test("a company with more filings than were read says only what the newest filings hold", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"], filings: { ...FILINGS, truncated: true, totalCount: 620 } });
+    await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    await expect(page.locator("#recordsSection")).toContainText(
+      `The company’s newest ${FILINGS.filings.length} filings hold no notice of an inspection location (SAIL).`,
+      { timeout: 15000 },
+    );
+  });
+
+  test("the Welsh overview states the section in Welsh and marks the form's words as English", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"], filings: SAIL_FILINGS });
+    await page.goto(`${BASE}/cy/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    const section = page.locator("#recordsSection");
+    await expect(section.locator("h4")).toHaveText("Ble mae’r cwmni’n cadw ei gofnodion", { timeout: 15000 });
+    await expect(section.locator("dl")).toContainText("Lleoliad arolygu amgen (SAIL)");
+    await expect(section.locator('.file-this a.btn[href^="/cy/companies-house/recordsLocation.html"]')).toHaveText(
+      "Dweud wrth Dŷ’r Cwmnïau ble mae’r cofnodion yn cael eu cadw",
+    );
+    await expect(section.locator('.file-this-authority span[lang="en"]').first()).toContainText("You may use this form");
+  });
+
+  test("on prod, where the form is not offered, the section states the fact and carries no link", async ({ page }) => {
+    await serveSite(page, { environmentName: "prod", bundles: ["resident-ltd"], filings: SAIL_FILINGS });
+    await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    await expect(page.locator("#recordsSection dl")).toContainText("Inspection location (SAIL)", { timeout: 15000 });
+    await expect(page.locator('#recordsSection .file-this[data-activity="change-records-location"]')).toHaveCount(0);
   });
 });

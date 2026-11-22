@@ -370,6 +370,18 @@ const AUTHORITY_SOURCES = {
     url: "https://assets.publishing.service.gov.uk/media/6911eb9b663088df8f54f482/TM02_v6.0-FINAL.pdf",
     title: "TM02 Termination of appointment of secretary",
   },
+  sailAddressForm: {
+    url: "https://assets.publishing.service.gov.uk/media/691206b6e9348ac8fb54f4b8/AD02_v6.0-FINAL.pdf",
+    title: "AD02 Notification of single alternative inspection location (SAIL)",
+  },
+  recordsToSailForm: {
+    url: "https://assets.publishing.service.gov.uk/media/69130d692017198896ad7f3c/AD03_v8.0-FINAL.pdf",
+    title: "AD03 Change of location of the company records to the single alternative inspection location (SAIL)",
+  },
+  recordsToOfficeForm: {
+    url: "https://assets.publishing.service.gov.uk/media/69120af9ece74c08fbaa6456/AD04_v8.0-FINAL.pdf",
+    title: "AD04 Change of location of the company records to the registered office",
+  },
 };
 
 // A quotation GOV.UK publishes in Welsh as well: its Welsh is GOV.UK's own sentence.
@@ -457,6 +469,22 @@ function authorityNotes(activityId) {
       ),
       inEnglishOnly("officerTerminationDirectorForm", "Only one director appointment can be terminated per form."),
       inEnglishOnly("officerTerminationSecretaryForm", "Only one secretary appointment can be terminated per form."),
+      codeOnline,
+    ],
+    "change-records-location": [
+      inEnglishOnly(
+        "sailAddressForm",
+        "You may use this form to tell us the address of an alternative inspection location where company records may be kept for inspection.",
+      ),
+      inEnglishOnly(
+        "sailAddressForm",
+        "You cannot use this form to tell us the address of a location outside of the part of the United Kingdom where the company is registered.",
+      ),
+      inEnglishOnly("recordsToSailForm", "You may use this form to tell us which of the company records are held at the SAIL."),
+      inEnglishOnly(
+        "recordsToOfficeForm",
+        "You may use this form to tell us which company records are returning to the registered office.",
+      ),
       codeOnline,
     ],
     "file-micro-entity-accounts": accounts,
@@ -885,6 +913,69 @@ async function renderEmailSection(profile) {
     activityId: "change-registered-email",
     page: "changeRegisteredEmail.html",
     label: window.siteText("ch.drill.change-email", "Change the registered email address"),
+    companyNumber: profile.companyNumber,
+  });
+}
+
+// The notices of where the records are kept, as the filing history types them: the inspection
+// location's address, records moved to it, and records moved back to the registered office.
+const SAIL_ADDRESS_FILING = "AD02";
+const RECORDS_TO_SAIL_FILING = "AD03";
+const RECORDS_TO_OFFICE_FILING = "AD04";
+
+// Where the company keeps its records, from the notices in its filing history, newest first. The
+// register publishes the inspection location's address only in the notice that gave it.
+async function renderRecordsSection(profile) {
+  const section = document.getElementById("recordsSection");
+  section.innerHTML = "";
+  sectionHeading(section, window.siteText("ch.drill.records", "Where the company keeps its records"));
+  try {
+    const { filings, truncated } = await readFilingHistoryAnswer(profile.companyNumber);
+    const newest = (type) => filings.find((filing) => filing.type === type);
+    const address = newest(SAIL_ADDRESS_FILING);
+    const toSail = newest(RECORDS_TO_SAIL_FILING);
+    const toOffice = newest(RECORDS_TO_OFFICE_FILING);
+    const filed = (filing) => labels().formatCompanyDate(filing.date);
+    const terms = [];
+    if (address) {
+      terms.push([
+        window.siteText("ch.drill.records-sail", "Inspection location (SAIL)"),
+        address.descriptionValues?.new_address
+          ? window.siteText("ch.drill.records-sail-address", "{address}, filed {date}", {
+              address: address.descriptionValues.new_address,
+              date: filed(address),
+            })
+          : window.siteText("ch.drill.records-sail-filed", "Filed {date}", { date: filed(address) }),
+      ]);
+    }
+    if (toSail) terms.push([window.siteText("ch.drill.records-to-sail", "Records last moved to the inspection location"), filed(toSail)]);
+    if (toOffice) {
+      terms.push([window.siteText("ch.drill.records-to-office", "Records last moved to the registered office"), filed(toOffice)]);
+    }
+    if (terms.length > 0) {
+      const dl = document.createElement("dl");
+      appendTerms(dl, terms);
+      section.appendChild(dl);
+    } else {
+      emptyNote(
+        section,
+        truncated
+          ? window.siteText(
+              "ch.drill.records-none-recent",
+              "The company’s newest {count} filings hold no notice of an inspection location (SAIL).",
+              { count: filings.length },
+            )
+          : window.siteText("ch.drill.records-none", "The register holds no notice of an inspection location (SAIL) for this company."),
+      );
+    }
+  } catch (error) {
+    console.warn("Could not read the filing history for the records' location:", error);
+    emptyNote(section, window.siteText("ch.drill.records-unread", "Could not read the company’s filing history from Companies House."));
+  }
+  await appendFileThis(section, {
+    activityId: "change-records-location",
+    page: "recordsLocation.html",
+    label: window.siteText("ch.drill.change-records", "Tell Companies House where the records are kept"),
     companyNumber: profile.companyNumber,
   });
 }
@@ -1325,6 +1416,7 @@ async function showView(state) {
         renderConfirmationSection(profile),
         renderOfficeSection(profile),
         renderEmailSection(profile),
+        renderRecordsSection(profile),
       ]);
       return;
     }

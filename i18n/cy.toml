@@ -23837,3 +23837,317 @@ cy = '''Dyma gyfrifon cyntaf y cwmni, felly nid oes ganddynt flwyddyn flaenorol.
 [strings."ch.filing.no-comparatives-why"]
 hash = "503f3e5ce5ba"
 cy = '''Cafodd y cyfrifon hyn eu ffeilio heb ffigurau’r flwyddyn flaenorol, y mae cyfrifon yn eu dangos oni bai mai cyfrifon cyntaf y cwmni ydynt. Mae’r wefan hon yn darllen y flwyddyn flaenorol yn ôl i ddiwygio cyfrifon, felly ni ellir eu diwygio yma.'''
+
+# == The records location page (SAIL address and the location of company records) and the drill-down's records section: ids ch-records-location.*, ch.records.*, ch.drill.records*, ch.drill.change-records, receipts.kind-sail-address, receipts.kind-record-location ==
+
+[strings."ch-records-location.title"]
+hash = "b97695851ac3"
+cy = '''Dweud wrth Dŷ’r Cwmnïau ble mae’r cwmni’n cadw ei gofnodion - DIY Accounting Submit'''
+
+[strings."ch-records-location.tell-companies-house-where-the-company-674184"]
+hash = "674184667114"
+cy = '''Dweud wrth Dŷ’r Cwmnïau ble mae’r cwmni’n cadw ei gofnodion'''
+
+[strings."ch-records-location.register-an-inspection-location-sail-or-668cae"]
+hash = "668caed1ed36"
+cy = '''Cofrestru lleoliad arolygu amgen (SAIL), neu ddweud pa gofnodion sy’n cael eu cadw yno neu yn y swyddfa gofrestredig'''
+
+[strings."ch-records-location.status-sandbox-this-runs-against-companies-3c285c"]
+hash = "3c285c86cda2"
+cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.'''
+
+[strings."ch-records-location.which-company-d9aae4"]
+hash = "d9aae49b05ee"
+cy = '''Pa gwmni?'''
+
+[strings."ch-records-location.company-number-8b121b"]
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
+
+[strings."ch-records-location.8-characters-for-example-00000001-do-090062"]
+hash = "090062b139be"
+cy = '''8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.'''
+
+[strings."ch-records-location.look-up-the-company-570ac0"]
+hash = "570ac0974205"
+cy = '''Chwilio am y cwmni'''
+
+[strings."ch-records-location.what-has-changed-88d886"]
+hash = "88d886da7be8"
+cy = '''Beth sydd wedi newid?'''
+
+[strings."ch-records-location.company-3bc806"]
+hash = "3bc806ccac3b"
+cy = '''Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).'''
+
+[strings."ch-records-location.companies-house-charges-no-fee-for-7c9d4d"]
+hash = "7c9d4d73b09e"
+cy = '''Nid yw Tŷ’r Cwmnïau yn codi ffi am y ffeiliadau hyn.'''
+
+[strings."ch-records-location.what-are-you-telling-companies-house-bec7e7"]
+hash = "bec7e76b8d31"
+cy = '''Beth ydych chi’n ei ddweud wrth Dŷ’r Cwmnïau?'''
+
+[strings."ch-records-location.the-address-of-the-inspection-location-714550"]
+hash = "714550496d71"
+cy = '''Cyfeiriad y lleoliad arolygu amgen (ffurflen AD02)'''
+
+[strings."ch-records-location.records-are-now-kept-at-the-9bf79f"]
+hash = "9bf79f8357f0"
+cy = '''Mae cofnodion bellach yn cael eu cadw yn y lleoliad arolygu amgen (ffurflen AD03)'''
+
+[strings."ch-records-location.records-are-now-kept-at-the-b3f1fd"]
+hash = "b3f1fd55d25b"
+cy = '''Mae cofnodion bellach yn cael eu cadw yn y swyddfa gofrestredig (ffurflen AD04)'''
+
+[strings."ch-records-location.address-of-the-inspection-location-9c9f3f"]
+hash = "9c9f3f75a098"
+cy = '''Cyfeiriad y lleoliad arolygu amgen'''
+
+[strings."ch-records-location.a-company-has-one-inspection-location-54e0a9"]
+hash = "54e0a967d2a6"
+cy = '''Mae gan gwmni un lleoliad arolygu amgen (SAIL, single alternative inspection location). Rhaid iddo fod yn y rhan o’r Deyrnas Unedig lle mae’r cwmni wedi’i gofrestru.'''
+
+[strings."ch-records-location.building-name-or-number-bbd5d1"]
+hash = "bbd5d1b67ca7"
+cy = '''Enw neu rif yr adeilad'''
+
+[strings."ch-records-location.street-optional-b8fc5c"]
+hash = "b8fc5c1d4dbe"
+cy = '''Stryd (dewisol)'''
+
+[strings."ch-records-location.locality-optional-523749"]
+hash = "523749a15727"
+cy = '''Ardal (dewisol)'''
+
+[strings."ch-records-location.town-or-city-9ce565"]
+hash = "9ce56586c728"
+cy = '''Tref neu ddinas'''
+
+[strings."ch-records-location.county-optional-25a6e2"]
+hash = "25a6e2959632"
+cy = '''Sir (dewisol)'''
+
+[strings."ch-records-location.country-701d02"]
+hash = "701d021d08c5"
+cy = '''Gwlad'''
+
+[strings."ch-records-location.england-c0ea96"]
+hash = "c0ea960b065c"
+cy = '''Lloegr'''
+
+[strings."ch-records-location.wales-0cf387"]
+hash = "0cf3878b94e1"
+cy = '''Cymru'''
+
+[strings."ch-records-location.scotland-a24667"]
+hash = "a246670dbf76"
+cy = '''Yr Alban'''
+
+[strings."ch-records-location.northern-ireland-304a7e"]
+hash = "304a7ea100d7"
+cy = '''Gogledd Iwerddon'''
+
+[strings."ch-records-location.postcode-optional-042d21"]
+hash = "042d21f31017"
+cy = '''Cod post (dewisol)'''
+
+[strings."ch-records-location.care-of-optional-90dc20"]
+hash = "90dc2088f2f6"
+cy = '''Dan ofal (dewisol)'''
+
+[strings."ch-records-location.po-box-optional-203684"]
+hash = "2036848dc56a"
+cy = '''Blwch Post (dewisol)'''
+
+[strings."ch-records-location.records-now-kept-at-the-inspection-b4976e"]
+hash = "b4976ed9695e"
+cy = '''Cofnodion sydd bellach yn cael eu cadw yn y lleoliad arolygu amgen'''
+
+[strings."ch-records-location.tick-each-record-that-has-moved-24a0df"]
+hash = "24a0df8e6290"
+cy = '''Ticiwch bob cofnod sydd wedi symud. Peidiwch â chynnwys cofnod y mae ffeiliad cynharach eisoes wedi’i roi yno.'''
+
+[strings."ch-records-location.every-record-is-back-at-the-ef4ecc"]
+hash = "ef4ecc9ffb4c"
+cy = '''Mae pob cofnod yn ôl yn y swyddfa gofrestredig: tynnu’r lleoliad arolygu amgen oddi ar y gofrestr'''
+
+[strings."ch-records-location.company-authentication-code-56d0e6"]
+hash = "56d0e640f9f0"
+cy = '''Cod dilysu’r cwmni'''
+
+[strings."ch-records-location.the-6-to-8-character-code-48646a"]
+hash = "48646a151fe7"
+cy = '''Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei ddefnyddio.'''
+
+[strings."ch-records-location.continue-31fbef"]
+hash = "31fbef162594"
+cy = '''Parhau'''
+
+[strings."ch-records-location.review-the-filing-769b96"]
+hash = "769b96283d75"
+cy = '''Adolygu’r ffeilio'''
+
+[strings."ch-records-location.gov-test-scenario-dab532"]
+hash = "dab5326bb25a"
+cy = '''Gov-Test-Scenario'''
+
+[strings."ch-records-location.file-with-companies-house-327c43"]
+hash = "327c43b89de4"
+cy = '''Ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-records-location.change-c0bf75"]
+hash = "c0bf75bd78bf"
+cy = '''Newid'''
+
+[strings."ch-records-location.filing-result-0ecbf7"]
+hash = "0ecbf7d7af61"
+cy = '''Canlyniad y ffeilio'''
+
+[strings."ch-records-location.start-a-new-filing-0a9f24"]
+hash = "0a9f240ab551"
+cy = '''Dechrau ffeilio newydd'''
+
+[strings."ch-records-location.sign-in-to-file-with-companies-5a7303"]
+hash = "5a7303865fa5"
+cy = '''Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-records-location.sign-in-to-look-up-your-eb0bf2"]
+hash = "eb0bf28eeabf"
+cy = '''Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif.'''
+
+[strings."ch.drill.records"]
+hash = "ed175dad1654"
+cy = '''Ble mae’r cwmni’n cadw ei gofnodion'''
+
+[strings."ch.drill.records-sail"]
+hash = "48e88fdd78f1"
+cy = '''Lleoliad arolygu amgen (SAIL)'''
+
+[strings."ch.drill.records-sail-address"]
+hash = "dfabbd8d6bcf"
+cy = '''{address}, ffeiliwyd {date}'''
+
+[strings."ch.drill.records-sail-filed"]
+hash = "3b4a9fa1d264"
+cy = '''Ffeiliwyd {date}'''
+
+[strings."ch.drill.records-to-sail"]
+hash = "2b42ad8df373"
+cy = '''Cofnodion wedi’u symud ddiwethaf i’r lleoliad arolygu amgen'''
+
+[strings."ch.drill.records-to-office"]
+hash = "db73aa22822c"
+cy = '''Cofnodion wedi’u symud ddiwethaf i’r swyddfa gofrestredig'''
+
+[strings."ch.drill.records-none-recent"]
+hash = "880c2bbb2dd3"
+cy = '''Nid oes hysbysiad o leoliad arolygu amgen (SAIL) yn {count} ffeiliad diweddaraf y cwmni.'''
+
+[strings."ch.drill.records-none"]
+hash = "05c58548e2cc"
+cy = '''Nid oes hysbysiad o leoliad arolygu amgen (SAIL) ar y gofrestr ar gyfer y cwmni hwn.'''
+
+[strings."ch.drill.records-unread"]
+hash = "3bc2e58d86fa"
+cy = '''Nid oedd modd darllen hanes ffeilio’r cwmni o Dŷ’r Cwmnïau.'''
+
+[strings."ch.drill.change-records"]
+hash = "c5e3e22be771"
+cy = '''Dweud wrth Dŷ’r Cwmnïau ble mae’r cofnodion yn cael eu cadw'''
+
+[strings."ch.records.record-members"]
+hash = "ee6e42a5bc00"
+cy = '''Cofrestr aelodau'''
+
+[strings."ch.records.record-service-contracts"]
+hash = "09ce724b8f8c"
+cy = '''Contractau gwasanaeth cyfarwyddwyr'''
+
+[strings."ch.records.record-indemnities"]
+hash = "2f9ee12d25fb"
+cy = '''Indemniadau cyfarwyddwyr'''
+
+[strings."ch.records.record-resolutions"]
+hash = "bc2d72759d39"
+cy = '''Cofnodion penderfyniadau ac ati'''
+
+[strings."ch.records.record-own-shares"]
+hash = "2524a2e40e55"
+cy = '''Contractau sy’n ymwneud â phrynu cyfranddaliadau’r cwmni ei hun'''
+
+[strings."ch.records.record-capital"]
+hash = "fc9ef7572aa4"
+cy = '''Dogfennau sy’n ymwneud ag adbrynu neu brynu cyfranddaliadau’r cwmni ei hun allan o gyfalaf gan gwmni preifat'''
+
+[strings."ch.records.record-debentures"]
+hash = "e4e9aff6fe95"
+cy = '''Cofrestr deiliaid dyledebau'''
+
+[strings."ch.records.record-investigation"]
+hash = "4fe58df831d5"
+cy = '''Adroddiad i’r aelodau ar ganlyniad ymchwiliad gan gwmni cyhoeddus i fuddiannau yn ei gyfranddaliadau'''
+
+[strings."ch.records.record-interests"]
+hash = "45c9fb28651a"
+cy = '''Cofrestr buddiannau mewn cyfranddaliadau a ddatgelwyd i gwmni cyhoeddus'''
+
+[strings."ch.records.record-charges"]
+hash = "688fb9387274"
+cy = '''Copïau o offerynnau sy’n creu ac yn diwygio arwystlon'''
+
+[strings."ch.records.legend-office"]
+hash = "aa1ec75f7e7f"
+cy = '''Cofnodion sydd bellach yn cael eu cadw yn y swyddfa gofrestredig'''
+
+[strings."ch.records.legend-sail"]
+hash = "b4976ed9695e"
+cy = '''Cofnodion sydd bellach yn cael eu cadw yn y lleoliad arolygu amgen'''
+
+[strings."ch.records.lookup-failed"]
+hash = "85798bd4b10f"
+cy = '''Nid oedd modd darllen y cwmni hwn o Dŷ’r Cwmnïau.'''
+
+[strings."ch.records.choose-record"]
+hash = "fcfb78e9dd6c"
+cy = '''Ticiwch o leiaf un cofnod sydd wedi symud.'''
+
+[strings."ch.records.review-sail"]
+hash = "714550496d71"
+cy = '''Cyfeiriad y lleoliad arolygu amgen (ffurflen AD02)'''
+
+[strings."ch.records.review-to-sail"]
+hash = "9bf79f8357f0"
+cy = '''Mae cofnodion bellach yn cael eu cadw yn y lleoliad arolygu amgen (ffurflen AD03)'''
+
+[strings."ch.records.review-to-office"]
+hash = "b3f1fd55d25b"
+cy = '''Mae cofnodion bellach yn cael eu cadw yn y swyddfa gofrestredig (ffurflen AD04)'''
+
+[strings."ch.records.review-company"]
+hash = "de4743c87973"
+cy = '''Cwmni'''
+
+[strings."ch.records.review-notice"]
+hash = "65659145569b"
+cy = '''Hysbysiad'''
+
+[strings."ch.records.review-address"]
+hash = "45275bfa752c"
+cy = '''Lleoliad arolygu amgen'''
+
+[strings."ch.records.review-records"]
+hash = "47a84e92d5b2"
+cy = '''Cofnodion'''
+
+[strings."ch.records.review-all-back"]
+hash = "15f62aeef4f1"
+cy = '''Mae pob cofnod yn ôl yn y swyddfa gofrestredig, ac mae’r lleoliad arolygu amgen yn dod oddi ar y gofrestr'''
+
+[strings."receipts.kind-sail-address"]
+hash = "2936337a3139"
+cy = '''Cyfeiriad SAIL'''
+
+[strings."receipts.kind-record-location"]
+hash = "b1a381ad869d"
+cy = '''Lleoliad cofnodion y cwmni'''

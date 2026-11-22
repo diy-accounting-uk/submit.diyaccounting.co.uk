@@ -99,6 +99,10 @@ const FORM_FIELDS = {
     dateOfBirth: "1975-02-14",
     resignationDate: "2026-11-01",
   },
+  "sail-address": {
+    address: { premise: "Unit 4, Harbour House", street: "12 Quay Street", postTown: "Bristol", country: "GB-ENG", postcode: "BS1 4DJ" },
+  },
+  "record-location": { destination: "sail", records: ["MEMBER", "DIRCONTRACT"] },
 };
 
 const SHARED_ROUTE_KINDS = Object.keys(GATEWAY_FORM_BUILDERS);

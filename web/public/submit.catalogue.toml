@@ -749,6 +749,17 @@ paths = ["companies-house/changeAccountingRefDate.html", "^/api/v1/companies-hou
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
+id = "change-records-location"
+name = "Tell Companies House where the company keeps its records (Companies House, sandbox)"
+nameCy = "Dweud wrth Dŷ'r Cwmnïau ble mae'r cwmni'n cadw ei gofnodion (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the SailAddress and RecordChangeOfLocation form types for this presenter.
+paths = ["companies-house/recordsLocation.html", "^/api/v1/companies-house/sail-address.*", "^/api/v1/companies-house/record-location.*", "^/api/v1/companies-house/forms/sail-address/.*", "^/api/v1/companies-house/forms/record-location/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
 id = "diya-gl-storage"
 name = "Save diya-gl books (sandbox)"
 nameCy = "Cadw llyfrau diya-gl (amgylchedd prawf)"

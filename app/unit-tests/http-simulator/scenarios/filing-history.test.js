@@ -33,6 +33,16 @@ describe("simulator filing history", () => {
     expect(getFilingHistory("12345678", { category: "accounts" }).total_count).toBe(0);
   });
 
+  test("00000003 holds the notice of an inspection location and of records moved to it, each with the address", () => {
+    const notices = getFilingHistory("00000003", { category: "address" }).items;
+    expect(notices.map((item) => item.type)).toEqual(["AD03", "AD02"]);
+    expect(notices.map((item) => item.description)).toEqual([
+      "move-registers-to-sail-company-with-new-address",
+      "change-sail-address-company-with-new-address",
+    ]);
+    for (const item of notices) expect(item.description_values.new_address).toBe("Unit 4, Harbour House 12 Quay Street Bristol BS1 4DJ");
+  });
+
   test("00000003 holds one set of accounts, filed on paper as a PDF only", () => {
     const [set] = getFilingHistory("00000003", { category: "accounts" }).items;
     expect(set).toEqual(expect.objectContaining({ type: "AA", paper_filed: true, description_values: { made_up_date: "2098-03-31" } }));
