@@ -5,11 +5,29 @@
 
 import { describe, test, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { refusalOf, documentLanguageOf, accountantsReportOf, checkRevision } from "../public/lib/accounts-revision.js";
+import {
+  refusalOf,
+  documentLanguageOf,
+  accountantsReportOf,
+  checkRevision,
+  filedPeriodOf,
+  notesOf,
+  NOTE_POLICY_FACTS,
+  NOTE_CONTROLLING_PARTY_FACTS,
+  NOTE_ADVANCE_FACTS,
+  NOTE_INTANGIBLE_FACTS,
+  NOTE_DEBTOR_FACTS,
+  NOTE_SHARE_CAPITAL_FACT,
+} from "../public/lib/accounts-revision.js";
 import { buildMicroEntityAccounts } from "../../app/services/microEntityAccountsIxbrl.js";
 import { inAccountsLanguage } from "../../app/services/accountsLanguage.js";
-import { microInputFromTestServiceCase, SMALL_COMPANY_CASE_INPUT } from "../../app/test-helpers/accountsDocumentCases.js";
-import { buildSmallCompanyAccounts } from "../../app/services/smallCompanyAccountsIxbrl.js";
+import {
+  microInputFromTestServiceCase,
+  SMALL_COMPANY_CASE_INPUT,
+  SMALL_COMPANY_NOTES_CASE_INPUT,
+} from "../../app/test-helpers/accountsDocumentCases.js";
+import { buildSmallCompanyAccounts, SMALL_COMPANY_POLICY_FIELDS } from "../../app/services/smallCompanyAccountsIxbrl.js";
+import { CONCEPTS } from "../../app/services/accountsIxbrlCommon.js";
 
 const MICRO_CASE = JSON.parse(readFileSync("scripts/fixtures/companies-house-test-service-cases.json", "utf8")).find(
   (testCase) => testCase.name === "micro-entity-accounts",
@@ -107,4 +125,126 @@ describe("what a filed small company document carries over to its revision", () 
       });
     }
   }
+});
+
+describe("the period a filed document is for", () => {
+  test("is read from the context the company name is stated in, for micro-entity and small company accounts", () => {
+    expect(filedPeriodOf(filedDocument())).toEqual({ periodStart: MICRO_CASE.periodStart, periodEnd: MICRO_CASE.periodEnd });
+    expect(filedPeriodOf(buildSmallCompanyAccounts(SMALL_COMPANY_CASE_INPUT))).toEqual({
+      periodStart: SMALL_COMPANY_CASE_INPUT.periodStart,
+      periodEnd: SMALL_COMPANY_CASE_INPUT.periodEnd,
+    });
+  });
+
+  test("a receipt is refused for revised accounts of another period, and accepted for its own", () => {
+    const receipt = accountsReceipt({ filedDocument: filedDocument() });
+    const own = { periodStart: MICRO_CASE.periodStart, periodEnd: MICRO_CASE.periodEnd };
+    expect(refusalOf(receipt, receipt.companyNumber, own)).toBeNull();
+    expect(refusalOf(receipt, receipt.companyNumber, { ...own, periodEnd: "2027-03-31" })).toContain("cannot replace them");
+  });
+});
+
+describe("the notes a filed document carries over to its revision", () => {
+  const qname = (conceptKey) => `${CONCEPTS[conceptKey].prefix}:${CONCEPTS[conceptKey].name}`;
+  const POLICY_FIELDS = ["accountingPolicies", ...SMALL_COMPANY_POLICY_FIELDS.map(({ field }) => field)];
+
+  test("are read by the facts the builders tag them with", () => {
+    expect(NOTE_POLICY_FACTS).toEqual(
+      Object.fromEntries([
+        ["accountingPolicies", qname("generalDescriptionBasisMeasurement")],
+        ...SMALL_COMPANY_POLICY_FIELDS.map(({ field, conceptKey }) => [field, qname(conceptKey)]),
+      ]),
+    );
+    expect(NOTE_CONTROLLING_PARTY_FACTS).toEqual({ ultimate: qname("controllingPartyIsUltimate"), name: qname("nameControllingParty") });
+    expect(NOTE_ADVANCE_FACTS).toEqual({
+      terms: qname("descriptionAdvanceConditionsDirectors"),
+      balance: qname("advancesCreditsDirectors"),
+      advanced: qname("advancesCreditsMadeDirectors"),
+      repaid: qname("advancesCreditsRepaidDirectors"),
+    });
+    expect(NOTE_INTANGIBLE_FACTS).toEqual({
+      cost: qname("intangibleAssetsGrossCost"),
+      additions: qname("additionsIntangibleAssets"),
+      disposals: qname("disposalsIntangibleAssets"),
+      amortisation: qname("accumulatedAmortisationIntangibleAssets"),
+      amortisationCharge: qname("amortisationChargeIntangibleAssets"),
+      amortisationOnDisposals: qname("amortisationDisposalsIntangibleAssets"),
+    });
+    expect(NOTE_DEBTOR_FACTS).toEqual({
+      tradeDebtors: qname("tradeDebtors"),
+      otherDebtors: qname("otherDebtors"),
+      amountsOwedByDirectors: qname("amountsOwedByDirectors"),
+      prepayments: qname("prepaymentsInDebtors"),
+    });
+    expect(NOTE_SHARE_CAPITAL_FACT).toBe(qname("numberSharesIssuedFullyPaid"));
+  });
+
+  for (const filleted of [false, true]) {
+    for (const language of ["en", "cy"]) {
+      const copy = filleted ? "filleted" : "full";
+      const build = (overrides = {}) =>
+        inAccountsLanguage(language, () => buildSmallCompanyAccounts({ ...SMALL_COMPANY_NOTES_CASE_INPUT, filleted, ...overrides }));
+
+      test(`every note of ${copy} small company accounts filed in ${language} comes back as filed`, () => {
+        const notes = notesOf(build());
+        expect(notes.policies).toEqual(Object.fromEntries(POLICY_FIELDS.map((field) => [field, SMALL_COMPANY_NOTES_CASE_INPUT[field]])));
+        expect(notes.controllingParty).toEqual(SMALL_COMPANY_NOTES_CASE_INPUT.controllingParty);
+        expect(notes.debtors).toEqual({
+          current: { tradeDebtors: 1700, amountsOwedByDirectors: 800 },
+          prior: { tradeDebtors: 0, amountsOwedByDirectors: 0 },
+        });
+        expect(notes.directorsAdvances).toEqual(SMALL_COMPANY_NOTES_CASE_INPUT.directorsAdvances);
+        expect(notes.intangibleAssetNote).toEqual(SMALL_COMPANY_NOTES_CASE_INPUT.intangibleAssetNote);
+        expect(notes.shareCapital).toBe(true);
+        expect(notes.unreadable).toEqual([]);
+      });
+
+      test(`a controlling party of ${copy} accounts filed in ${language} comes back whichever way it was stated`, () => {
+        expect(notesOf(build({ controllingParty: { ultimate: false } })).controllingParty).toEqual({ ultimate: false });
+        expect(notesOf(build({ controllingParty: { name: "Jo Morgan", ultimate: false } })).controllingParty).toEqual({
+          name: "Jo Morgan",
+          ultimate: false,
+        });
+      });
+    }
+  }
+
+  test("small company accounts without the optional notes give none back", () => {
+    const notes = notesOf(buildSmallCompanyAccounts(SMALL_COMPANY_CASE_INPUT));
+    expect(notes.policies).toEqual({ accountingPolicies: SMALL_COMPANY_CASE_INPUT.accountingPolicies });
+    expect(notes.controllingParty).toBeNull();
+    expect(notes.debtors).toBeNull();
+    expect(notes.directorsAdvances).toEqual([]);
+    expect(notes.intangibleAssetNote).toBeNull();
+    expect(notes.shareCapital).toBe(false);
+    expect(notes.unreadable).toEqual([]);
+  });
+
+  for (const language of ["en", "cy"]) {
+    test(`the advances to directors of micro-entity accounts filed in ${language} come back as filed`, () => {
+      const input = microInputFromTestServiceCase(MICRO_CASE);
+      const directorsAdvances = [
+        {
+          name: input.directorName,
+          terms: "Repayable within nine months",
+          balanceAtStart: 0,
+          advanced: 450,
+          repaid: 50,
+          balanceAtEnd: 400,
+        },
+      ];
+      const notes = notesOf(inAccountsLanguage(language, () => buildMicroEntityAccounts({ ...input, directorsAdvances })));
+      expect(notes.directorsAdvances).toEqual(directorsAdvances);
+      expect(notes.policies).toEqual({});
+      expect(notes.unreadable).toEqual([]);
+    });
+  }
+
+  test("a note whose facts are there but cannot be read is named as unreadable", () => {
+    const filed = buildSmallCompanyAccounts(SMALL_COMPANY_NOTES_CASE_INPUT)
+      .replace(/(name="core:DisposalsIntangibleAssets"[^>]*>)[^<]*/, "$1n/a")
+      .replace(/(<ix:nonNumeric name="core:TaxPolicy"[^>]*>)/, "$1<span>")
+      .replace(/<p>Alex Jones: /, "<p><b>Alex Jones</b>: ");
+    expect(notesOf(filed).unreadable).toEqual(["policies", "directorsAdvances", "intangibleAssetNote"]);
+  });
 });

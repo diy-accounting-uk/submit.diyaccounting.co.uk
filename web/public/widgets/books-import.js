@@ -426,6 +426,18 @@
     }
   }
 
+  // While a form revises filed accounts its period is theirs, so a source for another period fills nothing.
+  function refuseOtherPeriod({ periodStart, periodEnd }, fileName) {
+    if (document.getElementById("revisionSection")?.hidden !== false) return;
+    const revisedStart = fieldValue("periodStart");
+    const revisedEnd = fieldValue("periodEnd");
+    if (periodStart !== revisedStart || periodEnd !== revisedEnd) {
+      throw new Refusal(
+        `${fileName} is for the period ${periodStart} to ${periodEnd}; the accounts being revised are for ${revisedStart} to ${revisedEnd}. Nothing filled.`,
+      );
+    }
+  }
+
   function setChecked(id, checked) {
     const box = document.getElementById(id);
     if (!box || box.checked === checked) return;
@@ -546,6 +558,7 @@
 
   async function fillMicroEntityAccountsFromIxbrl({ bundle, source, fileName }) {
     const mapped = await mapIxbrlForPage(bundle, source.ixbrl, "micro");
+    refuseOtherPeriod({ periodStart: mapped.period.start, periodEnd: mapped.period.end }, fileName);
     const filled = fillMicroEntityFormFromMapped(mapped);
     let advice = "Check them, add the date approved and the statements, then preview.";
     if (mapped.dormant) {
@@ -592,6 +605,7 @@
       throw new Refusal(`${withoutFinalStop(error.message)}. Nothing filled.`);
     }
     refuseOtherCompany(accounts, fileName);
+    refuseOtherPeriod(accounts, fileName);
     let filled = 0;
     setField("periodStart", accounts.periodStart);
     setField("periodEnd", accounts.periodEnd);
@@ -666,6 +680,7 @@
 
   async function fillSmallCompanyAccountsFromIxbrl({ bundle, source, fileName }) {
     const mapped = await mapIxbrlForPage(bundle, source.ixbrl, "small");
+    refuseOtherPeriod({ periodStart: mapped.period.start, periodEnd: mapped.period.end }, fileName);
     const filled = fillSmallCompanyFormFromMapped(mapped);
     return ixbrlStatus(
       filled,
@@ -734,6 +749,7 @@
       throw new Refusal(`${withoutFinalStop(error.message)}. Nothing filled.`);
     }
     refuseOtherCompany(accounts, fileName);
+    refuseOtherPeriod(accounts, fileName);
     let filled = 0;
     setField("periodStart", accounts.periodStart);
     setField("periodEnd", accounts.periodEnd);

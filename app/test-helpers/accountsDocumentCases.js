@@ -134,6 +134,59 @@ export const SMALL_COMPANY_CASE_INPUT = {
   },
 };
 
+// The small company case with every note the small company builder writes beyond the figures: each
+// accounting policy, a named controlling party, an advance to the second director, an intangible
+// assets note in place of the tangible one, and a share capital note.
+export const SMALL_COMPANY_NOTES_CASE_INPUT = {
+  ...SMALL_COMPANY_CASE_INPUT,
+  accountingPolicies: "Prepared under the historical cost convention & FRS 102 section 1A <small entities>.",
+  goingConcernStatement: "The directors expect the company to continue trading.",
+  revenueRecognitionPolicy: "Turnover is the value of services supplied, net of VAT.",
+  tangibleFixedAssetsPolicy: "Tangible fixed assets are stated at cost less depreciation.",
+  propertyPlantEquipmentPolicy: "Plant is held at cost.",
+  depreciationMethodPolicy: "Depreciation is charged on a straight line basis.",
+  intangibleAssetsPolicy: "Software licences are amortised over four years.",
+  impairmentPolicy: "Assets are reviewed for impairment each year.",
+  inventoriesPolicy: "Stocks are valued at the lower of cost and selling price.",
+  cashCashEquivalentsPolicy: "Cash is cash at bank and in hand.",
+  financialInstrumentsPolicy: "Basic financial instruments are held at amortised cost.",
+  financialInstrumentsClassificationPolicy: "Debtors and creditors are basic financial instruments.",
+  employeeBenefitsPolicy: "Short term benefits are charged as they are earned.",
+  definedContributionPensionsPolicy: "Pension contributions are charged when payable.",
+  foreignCurrencyTranslationPolicy: "Foreign currency items are translated at the year end rate.",
+  functionalPresentationCurrencyPolicy: "The functional currency is pounds sterling.",
+  leasesPolicy: "Operating lease rentals are charged evenly over the lease.",
+  taxPolicy: "Tax is current and deferred tax.",
+  currentIncomeTaxPolicy: "Current tax is charged at the rates in force.",
+  deferredTaxPolicy: "Deferred tax is provided on timing differences.",
+  dividendPolicy: "Dividends are recognised when paid.",
+  controllingParty: { name: "Morgan Holdings Limited", ultimate: true },
+  directorsAdvances: [
+    {
+      name: "Alex Jones",
+      terms: "Interest free & repayable on demand",
+      balanceAtStart: 300,
+      advanced: 700,
+      repaid: 200,
+      balanceAtEnd: 800,
+    },
+  ],
+  fixedAssetNote: undefined,
+  intangibleAssetNote: {
+    costAtStart: 11000,
+    additions: 2000,
+    disposals: 1000,
+    amortisationAtStart: 1500,
+    amortisationCharge: 700,
+    amortisationOnDisposals: 200,
+  },
+  shareCapital: { shareClass: "ordinaryShares", nominalValue: 1 },
+  balanceSheet: {
+    ...SMALL_COMPANY_CASE_INPUT.balanceSheet,
+    current: { ...SMALL_COMPANY_CASE_INPUT.balanceSheet.current, tradeDebtors: 1700, amountsOwedByDirectors: 800 },
+  },
+};
+
 export const SMALL_COMPANY_BANK_LINES_CASE_INPUT = {
   ...SMALL_COMPANY_CASE_INPUT,
   balanceSheet: {
@@ -299,4 +352,56 @@ export function computationsDocumentCase() {
       adjustedProfit: 4500,
     },
   });
+}
+
+/**
+ * The two-file Inline XBRL document sets the books import tests read: the small company case built
+ * for MILLENNIUM STADIUM PLC, split so the first file holds the header, the contexts, the units and
+ * every page but the profit and loss account, and the second holds the profit and loss account and
+ * defines no context. In the "disagree" set the second file also states the current turnover with
+ * another value.
+ * @returns {Record<string, Record<string, string>>} files by set directory, then by file name
+ */
+export function ixdsTwoFileSets() {
+  const whole = buildSmallCompanyAccounts({
+    ...SMALL_COMPANY_CASE_INPUT,
+    companyNumber: "03176906",
+    companyName: "MILLENNIUM STADIUM PLC",
+    periodStart: "2025-01-01",
+    periodEnd: "2025-12-31",
+    dateOfApproval: "2026-01-15",
+    directors: ["Maldwyn Beynon", "Alex Jones"],
+    directorName: "Maldwyn Beynon",
+  });
+  const pageStarts = [...whole.matchAll(/<div class="page[^"]*">/g)].map((match) => match.index);
+  const profitAndLossStart = pageStarts.find((start) => whole.slice(start, start + 200).includes("<h2>Profit and loss account</h2>"));
+  const profitAndLossEnd = pageStarts.find((start) => start > profitAndLossStart);
+  const profitAndLossPage = whole.slice(profitAndLossStart, profitAndLossEnd);
+  const rootTag = whole.match(/<html\b[^>]*>/)[0];
+  const references = whole.match(/<ix:references>[\s\S]*?<\/ix:references>/)[0];
+  const first = whole.slice(0, profitAndLossStart) + whole.slice(profitAndLossEnd);
+  const second = (page) => `<?xml version="1.0"?>
+${rootTag}
+<head>
+<title>MILLENNIUM STADIUM PLC - Profit and loss account</title>
+</head>
+<body>
+<div style="display:none">
+<ix:header>
+${references}
+</ix:header>
+</div>
+${page}</body>
+</html>
+`;
+  const turnoverRow = profitAndLossPage.match(/<tr>[^\n]*core:TurnoverRevenue[^\n]*<\/tr>\n/)[0];
+  const disagreeingRow =
+    '<tr><td class="label">Turnover</td><td class="figure"><ix:nonFraction name="core:TurnoverRevenue" contextRef="y2025" unitRef="GBP" decimals="0" format="ixt2:numdotdecimal">50,001</ix:nonFraction></td></tr>\n';
+  return {
+    "ixds-two-file": { "accounts-1.xhtml": first, "accounts-2.xhtml": second(profitAndLossPage) },
+    "ixds-two-file-disagree": {
+      "accounts-1.xhtml": first,
+      "accounts-2.xhtml": second(profitAndLossPage.replace(turnoverRow, turnoverRow + disagreeingRow)),
+    },
+  };
 }

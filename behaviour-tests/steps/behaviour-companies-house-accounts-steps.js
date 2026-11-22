@@ -492,8 +492,8 @@ export async function describeTheSmallCompanyRevision(
   screenshotPath = defaultScreenshotPath,
 ) {
   await test.step(`The user corrects the ${filleted ? "filleted" : "full"} small company accounts and states the revision`, async () => {
+    await expect(page.locator(filleted ? "#revisionCopyFilleted" : "#revisionCopyFull")).toBeVisible();
     if (filleted) {
-      await expect(page.locator("#revisionFilletedNote")).toBeVisible();
       for (const field of SMALL_COMPANY_INPUT_FIELDS.profitAndLoss[1]) {
         await loggedFill(page, `#current${upperFirst(field)}`, String(accounts.currentYear.profitAndLoss[field]), `current ${field}`);
       }

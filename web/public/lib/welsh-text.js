@@ -1221,6 +1221,13 @@ window.WELSH_TEXT = {
   "ch.revision.not-micro": "Cyfrifon cwmni bach yw’r rheini, felly maent yn cael eu diwygio ar dudalen cyfrifon cwmni bach.",
   "ch.revision.not-offered": "Ni ellir ffeilio cyfrifon diwygiedig yma eto, felly ni ellir diwygio’r cyfrifon hyn.",
   "ch.revision.not-small": "Cyfrifon micro-endid yw’r rheini, felly maent yn cael eu diwygio ar dudalen cyfrifon micro-endid.",
+  "ch.revision.note-controlling-party": "parti sy’n rheoli",
+  "ch.revision.note-debtors": "dyledwyr",
+  "ch.revision.note-directors-advances": "blaensymiau a chredydau i gyfarwyddwyr",
+  "ch.revision.note-intangible-assets": "asedau anniriaethol",
+  "ch.revision.note-policies": "polisïau cyfrifyddu",
+  "ch.revision.note-share-capital": "cyfalaf cyfranddaliadau wedi’i alw",
+  "ch.revision.notes-to-enter": "Mae’r cyfrifon a ffeiliwyd yn cynnwys y nodiadau hyn, y mae’n rhaid i chi eu rhoi eto: {notes}.",
   "ch.revision.refuse-already-revised":
     "Mae’r cyfrifon hyn eisoes yn gyfrifon diwygiedig, ac nid yw’r wefan hon yn ffeilio ail ddiwygiad eto.",
   "ch.revision.refuse-joint":
@@ -1231,7 +1238,12 @@ window.WELSH_TEXT = {
   "ch.revision.refuse-not-accepted": "Ni wnaeth Tŷ’r Cwmnïau dderbyn y cyfrifon hynny, felly nid oes dim i’w ddiwygio.",
   "ch.revision.refuse-not-found": "Nid yw’r dderbynneb y mae’r cyfrifon diwygiedig hyn yn ei henwi yn eich cyfrif.",
   "ch.revision.refuse-other-company": "Mae’r dderbynneb y mae’r cyfrifon diwygiedig hyn yn ei henwi ar gyfer cwmni arall.",
+  "ch.revision.refuse-other-period":
+    "Mae’r cyfrifon y mae’r dderbynneb yn eu henwi ar gyfer y cyfnod {from} i {to}, felly ni all cyfrifon diwygiedig ar gyfer {start} i {end} gymryd eu lle.",
   "ch.revision.rejected": "Mae Tŷ’r Cwmnïau wedi gwrthod y cyfrifon diwygiedig.",
+  "ch.revision.status-not-production":
+    "Nid yw cyfrifon diwygiedig yn cael eu ffeilio go iawn o’r fan hon eto. Mae’r tabl argaeledd yn dweud beth mae pob ffeilio yn ei wneud.",
+  "ch.revision.status-not-production-label": "Statws: ddim mewn cynhyrchu (production) eto.",
   "ch.revision.status-preview":
     "Rhagolwg yw cyfrifon diwygiedig yma: nid oes dim rydych yn ei ffeilio yn cyrraedd cofrestr fyw Tŷ’r Cwmnïau.",
   "ch.revision.status-preview-label": "Statws: rhagolwg (preview).",

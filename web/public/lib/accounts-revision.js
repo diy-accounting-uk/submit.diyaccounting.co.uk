@@ -3,7 +3,7 @@
 
 // @capability CH-24 File revised accounts to Companies House
 // - **Use when:** a page offers to revise accounts already filed at Companies House, from the receipt of the accepted filing.
-// - **Does:** accounts-revision.js reads an accounts receipt, refuses one that is not accounts, not accepted or part of a joint filing, and maps the filed document with the books bundle's mapIxbrlAccounts for either regime. It answers the regime, the original approval date, the period, the figures, the signer and the dormant facts, and keeps the filed document and the mapped accounts. It shows the page's revision section and checks it: both revision texts, and a new approval date on or after the original. fileMicroEntityAccounts.html and fileSmallCompanyAccounts.html file the revision with the accounts request's revision field; a filleted copy holds no profit and loss account, so the small company form asks for those lines.
+// - **Does:** accounts-revision.js reads an accounts receipt, refuses one that is not accounts, not accepted or part of a joint filing, and maps the filed document with the books bundle's mapIxbrlAccounts for either regime. It answers the regime, the original approval date, the period, the figures, the signer, the dormant facts and the notes the mapping does not read (the accounting policies, the controlling party, the debtors, the advances to directors and the intangible assets note), and keeps the filed document and the mapped accounts; the form opens with each note filled as filed and names any note it cannot carry. It shows the page's revision section and checks it: both revision texts, and a new approval date on or after the original. fileMicroEntityAccounts.html and fileSmallCompanyAccounts.html file the revision with the accounts request's revision field; a filleted copy holds no profit and loss account, so the small company form asks for those lines.
 // - **Run:** `companies-house/fileMicroEntityAccounts.html?amend=<receipt name>` or `companies-house/fileSmallCompanyAccounts.html?amend=<receipt name>`, opened from "Amend" on companies-house/filings.html
 // - **Entry:** `web/public/lib/accounts-revision.js:readRevisionSource`; `web/public/lib/accounts-revision.js:checkRevision`
 // - **Files:** web/public/lib/accounts-revision.js, web/public/companies-house/fileMicroEntityAccounts.page.js, web/public/companies-house/fileSmallCompanyAccounts.page.js, web/public/companies-house/filings.page.js, web/public/lib/filing-record.js, web/browser-tests/fileMicroEntityAccounts.amend.browser.test.js
@@ -51,13 +51,27 @@ export async function isRevisionOfferedHere() {
 }
 
 /**
+ * The period a filed document is for: the duration context its company name is stated in.
+ * @param {string} document - the filed iXBRL
+ * @returns {{periodStart: string, periodEnd: string}|null}
+ */
+export function filedPeriodOf(document) {
+  const contextRef = /<ix:nonNumeric name="bus:EntityCurrentLegalOrRegisteredName" contextRef="([^"]+)"/.exec(document)?.[1];
+  const context = contextRef ? new RegExp(`<xbrli:context id="${contextRef}">([\\s\\S]*?)</xbrli:context>`).exec(document)?.[1] : null;
+  const periodStart = /<xbrli:startDate>([^<]+)</.exec(context ?? "")?.[1];
+  const periodEnd = /<xbrli:endDate>([^<]+)</.exec(context ?? "")?.[1];
+  return periodStart && periodEnd ? { periodStart, periodEnd } : null;
+}
+
+/**
  * Why a receipt cannot be revised here, or null when it can. The page and the accounts route both
- * apply it; the route also names the company the revised accounts are for.
+ * apply it; the route also names the company and the period the revised accounts are for.
  * @param {object|null} receipt - the stored receipt, or null when none was found
  * @param {string} [companyNumber] - the company of the revised accounts
+ * @param {{periodStart: string, periodEnd: string}} [period] - the period of the revised accounts
  * @returns {string|null}
  */
-export function refusalOf(receipt, companyNumber) {
+export function refusalOf(receipt, companyNumber, period) {
   if (!receipt) return siteText("ch.revision.refuse-not-found", "The receipt these revised accounts name is not in your account.");
   if (receipt.kind !== ACCOUNTS_RECEIPT_KIND) {
     return siteText("ch.revision.refuse-kind", "That receipt is not an accounts filing, so there are no accounts to revise.");
@@ -83,6 +97,14 @@ export function refusalOf(receipt, companyNumber) {
   if (companyNumber && String(receipt.companyNumber).toUpperCase() !== String(companyNumber).toUpperCase()) {
     return siteText("ch.revision.refuse-other-company", "The receipt these revised accounts name is for another company.");
   }
+  const filed = period ? filedPeriodOf(receipt.filedDocument) : null;
+  if (period && (filed?.periodStart !== period.periodStart || filed?.periodEnd !== period.periodEnd)) {
+    return siteText(
+      "ch.revision.refuse-other-period",
+      "The accounts the receipt names are for the period {from} to {to}, so revised accounts for {start} to {end} cannot replace them.",
+      { from: filed?.periodStart ?? "", to: filed?.periodEnd ?? "", start: period.periodStart, end: period.periodEnd },
+    );
+  }
   return null;
 }
 
@@ -105,6 +127,7 @@ export function revisionSourceOf(receipt, bundle) {
     dormant: { dormant: mapped.dormant, tradingStatus: mapped.tradingStatus, shareNote: mapped.shareNote },
     language: documentLanguageOf(receipt.filedDocument),
     accountantsReport: accountantsReportOf(receipt.filedDocument),
+    notes: notesOf(receipt.filedDocument),
     filedDocument: receipt.filedDocument,
     mapped,
   };
@@ -120,7 +143,7 @@ export function documentLanguageOf(document) {
 
 function textFactOf(document, name) {
   const match = new RegExp(`<ix:nonNumeric name="${name}"[^>]*>([^<]*)</ix:nonNumeric>`).exec(document);
-  return match ? match[1].replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&") : null;
+  return match ? unescapeXmlText(match[1]) : null;
 }
 
 /**
@@ -133,6 +156,216 @@ export function accountantsReportOf(document) {
   const statement = textFactOf(document, "accrep:StatementOnScopeAccountantsReport");
   if (accountantsName && statement) return { accountantsName, statement };
   return document.includes("AuditExemptWithAccountantsReport") ? { unreadable: true } : null;
+}
+
+// The notes the builders write that the books mapping does not read, by the facts each is tagged with.
+export const NOTE_POLICY_FACTS = {
+  accountingPolicies: "core:GeneralDescriptionBasisMeasurementUsedInPreparingFinancialStatements",
+  goingConcernStatement: "core:DescriptionGoing-concernStatus",
+  revenueRecognitionPolicy: "core:RevenueRecognitionPolicy",
+  tangibleFixedAssetsPolicy: "core:DescriptionMeasurementBasisForPropertyPlantEquipment",
+  propertyPlantEquipmentPolicy: "core:PropertyPlantEquipmentPolicy",
+  depreciationMethodPolicy: "core:DescriptionDepreciationMethodForPropertyPlantEquipment",
+  intangibleAssetsPolicy: "core:IntangibleAssetsPolicy",
+  impairmentPolicy: "core:ImpairmentNon-financialAssetsPolicy",
+  inventoriesPolicy: "core:InventoriesPolicy",
+  cashCashEquivalentsPolicy: "core:CashCashEquivalentsPolicy",
+  financialInstrumentsPolicy: "core:FinancialInstrumentsRecognitionMeasurementPolicy",
+  financialInstrumentsClassificationPolicy: "core:FinancialInstrumentsClassificationPolicy",
+  employeeBenefitsPolicy: "core:EmployeeBenefitsPolicy",
+  definedContributionPensionsPolicy: "core:DefinedContributionPensionsPolicy",
+  foreignCurrencyTranslationPolicy: "core:ForeignCurrencyTranslationOperationsPolicy",
+  functionalPresentationCurrencyPolicy: "core:FunctionalPresentationCurrencyPolicy",
+  leasesPolicy: "core:LeasesPolicy",
+  taxPolicy: "core:TaxPolicy",
+  currentIncomeTaxPolicy: "core:CurrentIncomeTaxPolicy",
+  deferredTaxPolicy: "core:DeferredTaxPolicy",
+  dividendPolicy: "core:DividendPolicy",
+};
+
+export const NOTE_CONTROLLING_PARTY_FACTS = {
+  ultimate: "core:ControllingPartyUltimateControllingPartyTruefalse",
+  name: "core:NameControllingParty",
+};
+
+export const NOTE_ADVANCE_FACTS = {
+  terms: "direp:DescriptionSpecificAdvanceOrCreditItsConditionsIndicativeInterestRateDirectors",
+  balance: "direp:AdvancesCreditsDirectors",
+  advanced: "direp:AdvancesCreditsMadeInPeriodDirectors",
+  repaid: "direp:AdvancesCreditsRepaidInPeriodDirectors",
+};
+
+export const NOTE_INTANGIBLE_FACTS = {
+  cost: "core:IntangibleAssetsGrossCost",
+  additions: "core:AdditionsOtherThanThroughBusinessCombinationsIntangibleAssets",
+  disposals: "core:DisposalsIntangibleAssets",
+  amortisation: "core:AccumulatedAmortisationImpairmentIntangibleAssets",
+  amortisationCharge: "core:IncreaseFromAmortisationChargeForYearIntangibleAssets",
+  amortisationOnDisposals: "core:DisposalsDecreaseInAmortisationImpairmentIntangibleAssets",
+};
+
+export const NOTE_DEBTOR_FACTS = {
+  tradeDebtors: "core:TradeDebtorsTradeReceivables",
+  otherDebtors: "core:OtherDebtors",
+  amountsOwedByDirectors: "core:AmountsOwedByDirectors",
+  prepayments: "core:PrepaymentsAccruedIncome",
+};
+
+export const NOTE_SHARE_CAPITAL_FACT = "core:NumberSharesIssuedFullyPaid";
+
+function unescapeXmlText(text) {
+  return text
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&");
+}
+
+function carriesFact(document, name) {
+  return document.includes(`name="${name}"`);
+}
+
+// Each monetary fact of a concept, with its context and its value in whole pounds.
+function figuresOf(document, name) {
+  const pattern = new RegExp(`<ix:nonFraction name="${name}" contextRef="([^"]+)"([^>]*)>([^<]*)</ix:nonFraction>`, "g");
+  return Array.from(document.matchAll(pattern), ([, contextRef, attributes, text]) => {
+    const digits = text.replace(/[,\s]/g, "");
+    let value = NaN;
+    if (/^\d+$/.test(digits)) value = Number(digits);
+    else if (/^-?$/.test(digits)) value = 0;
+    return { contextRef, value: /\ssign="-"/.test(attributes) ? -value : value };
+  });
+}
+
+function instantOf(document, contextRef) {
+  const context = new RegExp(`<xbrli:context id="${contextRef}">([\\s\\S]*?)</xbrli:context>`).exec(document)?.[1];
+  return /<xbrli:instant>([^<]+)</.exec(context ?? "")?.[1] ?? null;
+}
+
+function policiesOf(document) {
+  const policies = {};
+  let unreadable = false;
+  for (const [field, name] of Object.entries(NOTE_POLICY_FACTS)) {
+    const text = textFactOf(document, name);
+    if (text !== null) policies[field] = text;
+    else if (carriesFact(document, name)) unreadable = true;
+  }
+  return { policies, unreadable };
+}
+
+function controllingPartyOf(document) {
+  const ultimate = textFactOf(document, NOTE_CONTROLLING_PARTY_FACTS.ultimate);
+  if (ultimate === null) return { controllingParty: null, unreadable: carriesFact(document, NOTE_CONTROLLING_PARTY_FACTS.ultimate) };
+  const name = textFactOf(document, NOTE_CONTROLLING_PARTY_FACTS.name);
+  if (name === null) {
+    return {
+      controllingParty: { ultimate: false },
+      unreadable: ultimate !== "false" || carriesFact(document, NOTE_CONTROLLING_PARTY_FACTS.name),
+    };
+  }
+  return { controllingParty: { name, ultimate: ultimate === "true" }, unreadable: false };
+}
+
+// One row per director the note names: the name the terms are written after, and the four figures
+// on the contexts of that director's officer position.
+function directorsAdvancesOf(document, periodEnd) {
+  if (!carriesFact(document, NOTE_ADVANCE_FACTS.balance)) return { directorsAdvances: [], unreadable: false };
+  const termsPattern = new RegExp(
+    `<p>([^<]*): <ix:nonNumeric name="${NOTE_ADVANCE_FACTS.terms}" contextRef="[^"]*-director-(\\d+)-advance-1">([^<]*)</ix:nonNumeric></p>`,
+    "g",
+  );
+  const balances = figuresOf(document, NOTE_ADVANCE_FACTS.balance);
+  const made = figuresOf(document, NOTE_ADVANCE_FACTS.advanced);
+  const repaid = figuresOf(document, NOTE_ADVANCE_FACTS.repaid);
+  const ofDirector = (figures, position) => figures.filter(({ contextRef }) => contextRef.endsWith(`-director-${position}`));
+  const directorsAdvances = Array.from(document.matchAll(termsPattern), ([, name, position, terms]) => {
+    const balance = ofDirector(balances, position);
+    return {
+      name: unescapeXmlText(name),
+      terms: unescapeXmlText(terms),
+      balanceAtStart: balance.find(({ contextRef }) => instantOf(document, contextRef) !== periodEnd)?.value,
+      advanced: ofDirector(made, position)[0]?.value,
+      repaid: ofDirector(repaid, position)[0]?.value,
+      balanceAtEnd: balance.find(({ contextRef }) => instantOf(document, contextRef) === periodEnd)?.value,
+    };
+  });
+  const complete = directorsAdvances.every((row) => Object.values(row).every((value) => value !== undefined && !Number.isNaN(value)));
+  return complete && directorsAdvances.length > 0 ? { directorsAdvances, unreadable: false } : { directorsAdvances: [], unreadable: true };
+}
+
+// The figures of the intangible assets note: the opening cost and amortisation are the facts at the
+// instant before the period, the movements the facts of the period.
+function intangibleAssetNoteOf(document, periodEnd) {
+  if (!Object.values(NOTE_INTANGIBLE_FACTS).some((name) => carriesFact(document, name)))
+    return { intangibleAssetNote: null, unreadable: false };
+  const atStart = (name) =>
+    figuresOf(document, name).find(({ contextRef }) => {
+      const instant = instantOf(document, contextRef);
+      return instant !== null && instant !== periodEnd;
+    })?.value;
+  const inPeriod = (name) => figuresOf(document, name).find(({ contextRef }) => instantOf(document, contextRef) === null)?.value;
+  const note = {
+    costAtStart: atStart(NOTE_INTANGIBLE_FACTS.cost),
+    additions: inPeriod(NOTE_INTANGIBLE_FACTS.additions),
+    disposals: inPeriod(NOTE_INTANGIBLE_FACTS.disposals),
+    amortisationAtStart: atStart(NOTE_INTANGIBLE_FACTS.amortisation),
+    amortisationCharge: inPeriod(NOTE_INTANGIBLE_FACTS.amortisationCharge),
+    amortisationOnDisposals: inPeriod(NOTE_INTANGIBLE_FACTS.amortisationOnDisposals),
+  };
+  const complete = Object.values(note).every((value) => value !== undefined && !Number.isNaN(value));
+  return complete ? { intangibleAssetNote: note, unreadable: false } : { intangibleAssetNote: null, unreadable: true };
+}
+
+// The lines of the debtors note per year: the facts at the balance sheet date and at the date before
+// the period.
+function debtorsOf(document, periodEnd) {
+  const debtors = { current: {}, prior: {} };
+  let unreadable = false;
+  for (const [line, name] of Object.entries(NOTE_DEBTOR_FACTS)) {
+    for (const { contextRef, value } of figuresOf(document, name)) {
+      const instant = instantOf(document, contextRef);
+      if (instant === null) continue;
+      if (Number.isNaN(value)) unreadable = true;
+      else debtors[instant === periodEnd ? "current" : "prior"][line] = value;
+    }
+  }
+  const carried = Object.keys(debtors.current).length + Object.keys(debtors.prior).length > 0;
+  return { debtors: carried && !unreadable ? debtors : null, unreadable };
+}
+
+/**
+ * The notes a filed document carries that the books mapping does not read: the accounting policies,
+ * the controlling party, the debtors, the advances to directors, the intangible assets note and
+ * whether it has a share capital note. unreadable names each note the document carries that its facts do not give.
+ * @param {string} document - the filed iXBRL
+ * @returns {{policies: Record<string,string>, controllingParty: object|null, debtors: object|null, directorsAdvances: object[], intangibleAssetNote: object|null, shareCapital: boolean, unreadable: string[]}}
+ */
+export function notesOf(document) {
+  const periodEnd = filedPeriodOf(document)?.periodEnd;
+  const policies = policiesOf(document);
+  const controllingParty = controllingPartyOf(document);
+  const debtors = debtorsOf(document, periodEnd);
+  const advances = directorsAdvancesOf(document, periodEnd);
+  const intangible = intangibleAssetNoteOf(document, periodEnd);
+  const unreadable = [
+    ["policies", policies.unreadable],
+    ["controllingParty", controllingParty.unreadable],
+    ["debtors", debtors.unreadable],
+    ["directorsAdvances", advances.unreadable],
+    ["intangibleAssetNote", intangible.unreadable],
+  ]
+    .filter(([, isUnreadable]) => isUnreadable)
+    .map(([note]) => note);
+  return {
+    policies: policies.policies,
+    controllingParty: controllingParty.controllingParty,
+    debtors: debtors.debtors,
+    directorsAdvances: advances.directorsAdvances,
+    intangibleAssetNote: intangible.intangibleAssetNote,
+    shareCapital: carriesFact(document, NOTE_SHARE_CAPITAL_FACT),
+    unreadable,
+  };
 }
 
 /**
@@ -206,6 +439,7 @@ export function isPastDeliveryDays(dateApproved, today) {
  * @param {{approvalDate: string}} source
  */
 export function showRevisionSection({ section, originalDate, nonCompliance, amendments }, source) {
+  for (const id of ["periodStart", "periodEnd"]) document.getElementById(id).readOnly = true;
   originalDate.value = source.approvalDate || "";
   originalDate.readOnly = Boolean(source.approvalDate);
   originalDate.required = !source.approvalDate;
@@ -215,13 +449,85 @@ export function showRevisionSection({ section, originalDate, nonCompliance, amen
   section.hidden = false;
 }
 
+const NOTE_TITLE = {
+  policies: () => siteText("ch.revision.note-policies", "accounting policies"),
+  controllingParty: () => siteText("ch.revision.note-controlling-party", "controlling party"),
+  debtors: () => siteText("ch.revision.note-debtors", "debtors"),
+  directorsAdvances: () => siteText("ch.revision.note-directors-advances", "advances and credits to directors"),
+  intangibleAssetNote: () => siteText("ch.revision.note-intangible-assets", "intangible assets"),
+  shareCapital: () => siteText("ch.revision.note-share-capital", "called up share capital"),
+};
+
+const box = (id) => document.getElementById(id);
+
+// Fill each note into the form's boxes as filed, and answer the titles of the notes this form has no
+// boxes for or the document did not give.
+function fillNotes(notes) {
+  const toEnter = new Set(notes.unreadable);
+  const policyFields = Object.keys(notes.policies);
+  if (policyFields.length && !policyFields.every((field) => box(field))) toEnter.add("policies");
+  for (const field of policyFields) if (box(field)) box(field).value = notes.policies[field];
+  if (policyFields.some((field) => field !== "accountingPolicies") && box("morePolicies")) box("morePolicies").open = true;
+
+  if (notes.controllingParty) {
+    if (!box("controllingPartyNamed")) toEnter.add("controllingParty");
+    else if (notes.controllingParty.name) {
+      box("controllingPartyNamed").checked = true;
+      box("controllingPartyName").value = notes.controllingParty.name;
+      box("controllingPartyUltimate").checked = notes.controllingParty.ultimate;
+    } else box("controllingPartyNoUltimate").checked = true;
+  }
+
+  // The micro-entity balance sheet has no debtors line to split, and its builder writes no debtors note.
+  if (notes.debtors && box("currentDebtors")) {
+    for (const [year, lines] of Object.entries(notes.debtors)) {
+      for (const [line, value] of Object.entries(lines)) box(`${year}${line[0].toUpperCase()}${line.slice(1)}`).value = String(value);
+    }
+  }
+
+  if (notes.directorsAdvances.length) {
+    if (!box("directorsAdvanceName") || notes.directorsAdvances.length > 1) toEnter.add("directorsAdvances");
+    else {
+      const [advance] = notes.directorsAdvances;
+      box("directorsAdvanceName").value = advance.name;
+      box("directorsAdvanceTerms").value = advance.terms;
+      box("directorsAdvanceAtStart").value = String(advance.balanceAtStart);
+      box("directorsAdvanceMade").value = String(advance.advanced);
+      box("directorsAdvanceRepaid").value = String(advance.repaid);
+    }
+  }
+
+  if (notes.intangibleAssetNote) {
+    if (!box("includeIntangibleAssetNote")) toEnter.add("intangibleAssetNote");
+    else {
+      box("includeIntangibleAssetNote").checked = true;
+      for (const [field, value] of Object.entries(notes.intangibleAssetNote)) {
+        box(`intangibleNote${field[0].toUpperCase()}${field.slice(1)}`).value = String(value);
+      }
+    }
+  }
+
+  if (notes.shareCapital && !box("nominalValue")) toEnter.add("shareCapital");
+  return Object.keys(NOTE_TITLE)
+    .filter((note) => toEnter.has(note))
+    .map((note) => NOTE_TITLE[note]());
+}
+
 /**
- * Fill the parts of the filed accounts the books mapping does not give: the accountants' report and
- * the language the accounts were filed in. The accounts forms share the boxes this fills, and the
- * revision section's note that asks for a report this could not read.
- * @param {{accountantsReport: object|null, language: string}} source
+ * Fill the parts of the filed accounts the books mapping does not give: the notes, the accountants'
+ * report and the language the accounts were filed in. The accounts forms share the boxes this fills,
+ * and the revision section's notes that name what the customer must enter again.
+ * @param {{accountantsReport: object|null, language: string, notes: object}} source
  */
-export function fillCarriedOver({ accountantsReport, language }) {
+export function fillCarriedOver({ accountantsReport, language, notes }) {
+  const notesToEnter = fillNotes(notes);
+  const notesNote = document.getElementById("revisionNotesNote");
+  notesNote.textContent = notesToEnter.length
+    ? siteText("ch.revision.notes-to-enter", "The filed accounts carry these notes, which you must enter again: {notes}.", {
+        notes: notesToEnter.join(", "),
+      })
+    : "";
+  notesNote.hidden = notesToEnter.length === 0;
   if (accountantsReport?.accountantsName) {
     document.getElementById("includeAccountantsReport").checked = true;
     document.getElementById("accountantsName").value = accountantsReport.accountantsName;
@@ -258,6 +564,7 @@ export function showRevisionProblems(elements, dateApproved) {
  * @param {{section: HTMLElement, originalDate: HTMLInputElement, nonCompliance: HTMLTextAreaElement, amendments: HTMLTextAreaElement}} elements
  */
 export function hideRevisionSection({ section, originalDate, nonCompliance, amendments }) {
+  for (const id of ["periodStart", "periodEnd"]) document.getElementById(id).readOnly = false;
   section.hidden = true;
   nonCompliance.required = false;
   amendments.required = false;
@@ -278,19 +585,28 @@ export function revisionRequest(elements, source) {
 // A form's status line names its own filing; while revising, it states the status the catalogue gives
 // revised accounts instead.
 const REVISION_STATUS_TEXT = {
-  production: () => [
+  "production": () => [
     siteText("ch.revision.status-production-label", "Status: production."),
     siteText("ch.revision.status-production", "Revised accounts you file here reach the live Companies House register."),
   ],
-  sandbox: () => [
+  "sandbox": () => [
     siteText("ch.revision.status-sandbox-label", "Status: sandbox."),
     siteText("ch.revision.status-sandbox", "Revised accounts you file here go to the Companies House test service and file nothing real."),
   ],
-  preview: () => [
+  "preview": () => [
     siteText("ch.revision.status-preview-label", "Status: preview."),
     siteText(
       "ch.revision.status-preview",
       "Revised accounts are a preview here: nothing you file reaches the live Companies House register.",
+    ),
+  ],
+  // activityStatus answers null for an activity that is not listed on prod and whose name carries no
+  // sandbox or preview word.
+  "not-production": () => [
+    siteText("ch.revision.status-not-production-label", "Status: not yet in production."),
+    siteText(
+      "ch.revision.status-not-production",
+      "Revised accounts are not filed for real from here yet. The availability table says what each filing does.",
     ),
   ],
 };
@@ -305,7 +621,8 @@ export async function showRevisionStatus(statusLine) {
   const pageLine = statusLine.cloneNode(true);
   const service = await import("/lib/services/catalog-service.js");
   const catalog = service.parseCatalogueText(await service.fetchCatalogText());
-  const status = service.activityStatus(catalog.activities?.find((activity) => activity.id === "file-revised-accounts"));
+  const status =
+    service.activityStatus(catalog.activities?.find((activity) => activity.id === "file-revised-accounts")) ?? "not-production";
   const [label, sentence] = REVISION_STATUS_TEXT[status]();
   const strong = document.createElement("strong");
   strong.textContent = label;
