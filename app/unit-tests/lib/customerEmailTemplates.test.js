@@ -355,6 +355,14 @@ describe("lib/customerEmailTemplates", () => {
     expect(welsh.section.paragraphs[0]).toContain("Mae’n para 1 flwyddyn o’r adeg y byddwch yn ei ddefnyddio.");
   });
 
+  test.each([
+    ["2027-06-30T22:59:59.999Z", "30 June 2027"],
+    ["2026-12-31T23:59:59.999Z", "31 December 2026"],
+  ])("a pass ending at the end of a UK day, %s, says to redeem it by that day", (validUntil, day) => {
+    const { rows } = passRecipientSection({ bundles: [], code: "a-b", validUntil, usesLeft: null });
+    expect(rows.find((row) => row.label === "Redeem by").value).toBe(day);
+  });
+
   test("the redeemed email states each granted bundle's end date", () => {
     const campaignCatalog = {
       bundles: [
