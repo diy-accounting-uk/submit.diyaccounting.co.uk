@@ -42,12 +42,17 @@ const { mapLastAccounts, readLastAccounts } = await import("@app/services/compan
 
 const FIXTURES = "app/unit-tests/fixtures/filed-accounts";
 const expected = JSON.parse(readFileSync(join(FIXTURES, "expected.json"), "utf8"));
-const documents = readdirSync(FIXTURES).filter((name) => /\.(xhtml|html)$/.test(name));
+const allDocuments = readdirSync(FIXTURES).filter((name) => /\.(xhtml|html)$/.test(name));
+// A document the reader cannot yet read names its message and the gap in expected.json; the test
+// holds the reader to that message, so a reader that starts to read it shows as a failing test.
+const knownGaps = allDocuments.filter((name) => expected[name]?.unreadable);
+const documents = allDocuments.filter((name) => !knownGaps.includes(name));
 
 describe("mapLastAccounts over the filed documents", () => {
   test("the directory holds documents of both regimes, from our builders and from other software", () => {
-    expect(documents.length).toBeGreaterThanOrEqual(4);
-    expect(documents.filter((name) => name.startsWith("other-software-")).length).toBeGreaterThanOrEqual(2);
+    expect(allDocuments.length).toBeGreaterThanOrEqual(4);
+    expect(allDocuments.filter((name) => name.startsWith("other-software-")).length).toBeGreaterThanOrEqual(2);
+    expect(allDocuments.filter((name) => name.startsWith("register-")).length).toBeGreaterThanOrEqual(1);
   });
 
   test.each(documents)("%s maps to the figures of its own year", (name) => {
@@ -62,6 +67,12 @@ describe("mapLastAccounts over the filed documents", () => {
       Object.values(mapped.profitAndLoss.figures).forEach((figure) => expect(Number.isFinite(figure)).toBe(true));
     }
     if (expected[name]) expect(mapped).toMatchObject(expected[name]);
+  });
+
+  test.each(knownGaps)("%s is refused with the message its known gap states", (name) => {
+    const { message, gap } = expected[name].unreadable;
+    expect(gap).toEqual(expect.any(String));
+    expect(() => mapLastAccounts(readFileSync(join(FIXTURES, name), "utf8"))).toThrow(message);
   });
 
   test("another software's prefixes, context ids, scale, sign and repeated fact read as the same figures", () => {
