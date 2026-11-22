@@ -60,7 +60,7 @@ const PSCS = [
 
 // The real site from disk, signed in with the resident Ltd bundle, and the Companies House routes
 // answered here. Each filing request's body is recorded.
-async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] } } = {}) {
+async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] }, pscs = PSCS } = {}) {
   await page.addInitScript(() => {
     try {
       localStorage.setItem("consent.analytics", "declined");
@@ -77,7 +77,7 @@ async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT",
     if (pathname === "/api/v1/bundle") return json({ bundles: [{ bundleId: "resident-ltd", allocated: true }], tokensRemaining: 10 });
     if (pathname === "/api/v1/companies-house/company/00000001")
       return json({ companyNumber: "00000001", companyName: "SIMULATOR EXAMPLE COMPANY LIMITED" });
-    if (pathname === "/api/v1/companies-house/company/00000001/persons-with-significant-control") return json({ pscs: PSCS });
+    if (pathname === "/api/v1/companies-house/company/00000001/persons-with-significant-control") return json({ pscs });
     if (pathname === "/api/v1/companies-house/psc-change-details" && request.method() === "POST") {
       filings.push(JSON.parse(request.postData()));
       return json({ submissionNumber: "000123", pollInterval: 1 }, 201);
@@ -223,6 +223,23 @@ test("a link from the company lookup chooses its PSC and words the address for i
   await expect(page.getByLabel("SIMULATOR HOLDINGS LIMITED (Legal entity or other registrable person)")).toBeChecked();
   await page.getByLabel("Their address").check();
   await expect(page.locator("#addressLegend")).toHaveText("The new principal office address");
+});
+
+test("a link naming a PSC whose name two current PSCs share chooses neither, so the reader chooses", async ({ page }) => {
+  const namesake = (month) => ({
+    name: "Jo Smith",
+    nameElements: { forename: "Jo", surname: "Smith" },
+    kind: "individual-person-with-significant-control",
+    naturesOfControl: ["ownership-of-shares-25-to-50-percent"],
+    notifiedOn: "2016-04-06",
+    ceasedOn: null,
+    dateOfBirth: { month, year: 1970 },
+  });
+  await serveSite(page, { pscs: [namesake(1), namesake(2)] });
+  await page.goto(`${SITE}/companies-house/changePscDetails.html?companyNumber=00000001&pscName=Jo%20Smith`, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: LOOK_UP }).click();
+  await expect(page.locator('#pscChoices input[name="psc"]')).toHaveCount(2);
+  await expect(page.locator('#pscChoices input[name="psc"]:checked')).toHaveCount(0);
 });
 
 test("an address abroad is sent with its country named", async ({ page }) => {

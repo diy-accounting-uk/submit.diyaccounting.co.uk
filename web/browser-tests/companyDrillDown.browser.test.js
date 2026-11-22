@@ -742,6 +742,37 @@ test.describe("Company lookup drill-down PSC cessation links", () => {
     await shoot(page, "psc-cease-links");
   });
 
+  test("an account holding the change of details form gets a link for each current PSC, and the authority PSC04 and GOV.UK state", async ({
+    page,
+  }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
+
+    const link = page.locator("#drillView .change-psc-details-links a");
+    await expect(link).toHaveText("Tell Companies House Eleanor Bramwell's details have changed", { timeout: 15000 });
+    expect(await link.getAttribute("href")).toBe("/companies-house/changePscDetails.html?companyNumber=00000001&pscName=Eleanor+Bramwell");
+    const control = page.locator('#drillView .file-this[data-activity="change-psc-details"]');
+    await expect(control.locator("a.btn")).toHaveText("Tell Companies House a PSC's details have changed");
+    const authority = control.locator(".file-this-authority");
+    await expect(authority).toContainText(
+      "“You must tell Companies House about any changes to your PSC information, such as a change of personal details or nature of control. You must do this within 14 days of confirming the change.”",
+    );
+    await expect(authority).toContainText(
+      "“You must have obtained confirmation from the individual person with significant control that their particulars are correct before sending this form to Companies House.”",
+    );
+    const sources = await authority.locator("a").evaluateAll((links) => links.map((anchor) => anchor.href));
+    expect(sources).toContain("https://assets.publishing.service.gov.uk/media/6a98266bdf4246cf45e467ef/PSC04_v5.0-FINAL.pdf");
+    expect(sources).toContain("https://www.gov.uk/guidance/people-with-significant-control-pscs");
+  });
+
+  test("on prod, where the change of details form is not offered, the PSC view carries no change link", async ({ page }) => {
+    await serveSite(page, { environmentName: "prod", bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillView")).toContainText("Eleanor Bramwell", { timeout: 15000 });
+    await expect(page.locator("#drillView .change-psc-details-links")).toHaveCount(0);
+    await expect(page.locator('#drillView .file-this[data-activity="change-psc-details"]')).toHaveCount(0);
+  });
+
   test("on prod, where the cessation form is not offered, the PSC view carries no cessation link", async ({ page }) => {
     await serveSite(page, { environmentName: "prod", bundles: ["resident-ltd"] });
     await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });

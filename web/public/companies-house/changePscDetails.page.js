@@ -112,6 +112,8 @@ function renderPscChoices(chosenName) {
   const holder = document.getElementById("pscChoices");
   holder.replaceChildren();
   const current = pscs.filter(nameable);
+  // A name the link gives chooses its PSC only when no other current PSC has that name.
+  const named = current.filter((psc) => psc.name === chosenName);
   document.getElementById("noPscs").style.display = current.length === 0 ? "block" : "none";
   document.getElementById("continueBtn").disabled = current.length === 0;
   current.forEach((psc, index) => {
@@ -122,7 +124,7 @@ function renderPscChoices(chosenName) {
     input.name = "psc";
     input.id = `psc-${index}`;
     input.value = String(pscs.indexOf(psc));
-    input.checked = chosenName ? psc.name === chosenName : current.length === 1;
+    input.checked = chosenName ? named.length === 1 && named[0] === psc : current.length === 1;
     input.addEventListener("change", showChosenPsc);
     const label = document.createElement("label");
     label.htmlFor = input.id;

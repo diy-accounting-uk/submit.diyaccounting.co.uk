@@ -110,6 +110,11 @@ describe("companiesHousePscChangeDetailsXml", () => {
       "SIGINFLUENCECONTROL only when no other nature of control applies",
     ]);
     expect(natureOfControlProblems(["SIGINFLUENCECONTROL", "VOTINGRIGHTS_25TO50PERCENT_AS_TRUST"])).toEqual([]);
+  });
+
+  test("a trust's or a firm's significant influence stands beside its other controls, as PSC04 sections 8 and 9 allow", () => {
+    expect(natureOfControlProblems(["OWNERSHIPOFSHARES_25TO50PERCENT_AS_TRUST", "SIGINFLUENCECONTROL_AS_TRUST"])).toEqual([]);
+    expect(natureOfControlProblems(["RIGHTTOAPPOINTANDREMOVEDIRECTORS_AS_FIRM", "SIGINFLUENCECONTROL_AS_FIRM"])).toEqual([]);
     expect(natureOfControlProblems([])).toEqual(["at least one nature of control is needed"]);
     expect(natureOfControlProblems(["OWNERSHIPOFSHARES"])).toEqual(["unknown nature of control OWNERSHIPOFSHARES"]);
   });

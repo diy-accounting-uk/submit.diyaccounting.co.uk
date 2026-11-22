@@ -44,9 +44,9 @@ const holdingOf = (code) => HOLDINGS.find((holding) => holding && code.endsWith(
 
 /**
  * The reasons a set of natures of control cannot be filed, or [] when it can. PSC04 asks for one
- * band of shares and one of voting rights, and for significant influence or control only when none
- * of the other three statements applies; each holds within one way of holding (directly, through a
- * trust, through a firm).
+ * band of shares and one of voting rights within each way of holding (directly, through a trust,
+ * through a firm). It asks for the individual's own significant influence or control only when none
+ * of the other direct statements applies; its sections for a firm and a trust set no such limit.
  * @param {string[]} codes
  * @returns {string[]}
  */
@@ -61,9 +61,8 @@ export function natureOfControlProblems(codes) {
     for (const right of ["OWNERSHIPOFSHARES", "VOTINGRIGHTS"]) {
       if (held.filter((code) => code.startsWith(right)).length > 1) problems.push(`more than one band of ${right}${holding}`);
     }
-    if (held.includes(`SIGINFLUENCECONTROL${holding}`) && held.length > 1) {
-      const heldAs = holding ? " " + holding : "";
-      problems.push(`SIGINFLUENCECONTROL${holding} only when no other nature of control${heldAs} applies`);
+    if (!holding && held.includes("SIGINFLUENCECONTROL") && held.length > 1) {
+      problems.push("SIGINFLUENCECONTROL only when no other nature of control applies");
     }
   }
   return problems;
