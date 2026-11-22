@@ -92,3 +92,54 @@ describe("company number from a form's address", () => {
     expect(await prefill("")).toBe("");
   });
 });
+
+describe("current values from a form's address", () => {
+  async function prefillFields(search, fields) {
+    globalThis.window = { location: { search } };
+    globalThis.document = { getElementById: (id) => fields[id] || null };
+    const url = new URL("../public/lib/company-number-from-address.js", import.meta.url);
+    url.searchParams.set("run", Math.random().toString(36));
+    await import(url.href);
+    return fields;
+  }
+
+  it("fills the registered office's address fields and picks the country the select offers", async () => {
+    const fields = await prefillFields(
+      "?companyNumber=1&premises=1&addressLine1=Example%20Street&locality=Cardiff&postalCode=CF14%203UZ&country=Wales",
+      {
+        premises: { value: "" },
+        addressLine1: { value: "" },
+        locality: { value: "" },
+        postalCode: { value: "" },
+        country: { tagName: "SELECT", value: "United Kingdom", options: [{ value: "Wales" }, { value: "United Kingdom" }] },
+      },
+    );
+    expect(fields.premises.value).toBe("1");
+    expect(fields.addressLine1.value).toBe("Example Street");
+    expect(fields.locality.value).toBe("Cardiff");
+    expect(fields.postalCode.value).toBe("CF14 3UZ");
+    expect(fields.country.value).toBe("Wales");
+  });
+
+  it("fills the accounting period's dates", async () => {
+    const fields = await prefillFields("?periodStart=2098-05-01&periodEnd=2099-04-30", {
+      periodStart: { value: "" },
+      periodEnd: { value: "" },
+    });
+    expect(fields.periodStart.value).toBe("2098-05-01");
+    expect(fields.periodEnd.value).toBe("2099-04-30");
+  });
+
+  it("leaves out a value of the wrong shape, a country the select does not offer, and a field already filled", async () => {
+    const fields = await prefillFields("?periodEnd=30%2F04%2F2099&postalCode=%3Cb%3E&country=Atlantis&locality=Cardiff", {
+      periodEnd: { value: "" },
+      postalCode: { value: "" },
+      country: { tagName: "SELECT", value: "United Kingdom", options: [{ value: "United Kingdom" }] },
+      locality: { value: "Swansea" },
+    });
+    expect(fields.periodEnd.value).toBe("");
+    expect(fields.postalCode.value).toBe("");
+    expect(fields.country.value).toBe("United Kingdom");
+    expect(fields.locality.value).toBe("Swansea");
+  });
+});

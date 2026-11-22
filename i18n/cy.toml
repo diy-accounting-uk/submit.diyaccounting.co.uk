@@ -16969,10 +16969,6 @@ cy = '''Heb ei ganfod'''
 hash = "b025f259bdab"
 cy = '''Golygon y cwmni'''
 
-[strings."ch.drill.needs-bundle"]
-hash = "22989432b9fb"
-cy = '''Mae angen y bwndel {bundles} i {label}.'''
-
 [strings."ch.drill.see-bundles"]
 hash = "248ed4ac959d"
 cy = '''Gweld y bwndeli'''
@@ -17730,3 +17726,99 @@ cy = '''Statws: rhagolwg (preview).'''
 [strings."ch.revision.status-preview"]
 hash = "45eaea3fb634"
 cy = '''Rhagolwg yw cyfrifon diwygiedig yma: nid oes dim rydych yn ei ffeilio yn cyrraedd cofrestr fyw Tŷ’r Cwmnïau.'''
+
+[strings."ch.edit.source-auth-code"]
+hash = "b0972d1c9c90"
+cy = '''Codau dilysu cwmnïau ar gyfer ffeilio ar-lein'''
+
+[strings."ch.edit.source-office"]
+hash = "5f192428a691"
+cy = '''Newid cyfeiriad swyddfa gofrestredig cwmni (AD01)'''
+
+[strings."ch.edit.source-confirmation-service"]
+hash = "4ae7a6be7c1b"
+cy = '''Ffeilio eich datganiad cadarnhau (ffurflen flynyddol) gyda Thŷ’r Cwmnïau'''
+
+[strings."ch.edit.source-confirmation-form"]
+hash = "783a96814093"
+cy = '''CS01 Datganiad cadarnhau'''
+
+[strings."ch.edit.source-accounts"]
+hash = "15ac109f40ed"
+cy = '''Ffeilio cyfrifon blynyddol eich cwmni gyda Thŷ’r Cwmnïau'''
+
+[strings."ch.edit.source-company-tax-returns"]
+hash = "92aa547aa62f"
+cy = '''Ffurflenni Treth Cwmni'''
+
+[strings."ch.edit.code-signature"]
+hash = "95843d7d2e03"
+cy = '''Defnyddir y cod i awdurdodi gwybodaeth a ffeilir ar-lein, ac mae’n cyfateb i lofnod swyddog y cwmni.'''
+
+[strings."ch.edit.code-online"]
+hash = "c4b7e230228a"
+cy = '''Bydd angen cod dilysu cwmni arnoch i ffeilio eich gwybodaeth ar-lein neu i ffeilio gan ddefnyddio meddalwedd fasnachol.'''
+
+[strings."ch.edit.accounts-approved"]
+hash = "591f8fb6c3b0"
+cy = '''Rhaid i gyfarwyddwyr eich cwmni gymeradwyo eich cyfrifon cyn i chi eu ffeilio.'''
+
+[strings."ch.edit.office-code"]
+hash = "a0e76767e0a7"
+cy = '''Bydd angen cod dilysu eich cwmni arnoch.'''
+
+[strings."ch.edit.confirmation-code"]
+hash = "540f99236317"
+cy = '''Bydd angen cyfrinair a chod dilysu Tŷ’r Cwmnïau arnoch.'''
+
+[strings."ch.edit.confirmation-who"]
+hash = "9b28ba58f3e4"
+cy = '''Gall y canlynol ddilysu’r ffurflen hon: Cyfarwyddwr, Ysgrifennydd, Person awdurdodedig, Derbynnydd a rheolwr y Comisiwn Elusennau, Rheolwr CBC, Ffactor barnwrol.'''
+
+[strings."ch.edit.confirmation-identity"]
+hash = "676a2a82f2f2"
+cy = '''Cyn ffeilio eich datganiad cadarnhau, efallai y bydd angen i chi ddilysu pwy ydych gan ddefnyddio GOV.UK One Login.'''
+
+[strings."ch.edit.confirmation-personal-codes"]
+hash = "e0a71a236514"
+cy = '''Os oes gan eich cwmni fwy nag un cyfarwyddwr, rhaid i chi gael cod personol pob cyfarwyddwr.'''
+
+[strings."ch.edit.ct-notice"]
+hash = "b6eae6c313b2"
+cy = '''Rhaid i’ch cwmni neu’ch cymdeithas ffeilio Ffurflen Dreth Cwmni os byddwch yn cael ‘hysbysiad i gyflwyno Ffurflen Dreth Cwmni’ gan Gyllid a Thollau EF (CThEF).'''
+
+[strings."ch.edit.ct-who"]
+hash = "b8f06eaae9e5"
+cy = '''Gallwch naill ai gael cyfrifydd i baratoi a ffeilio eich Ffurflen Dreth, neu ei gwneud eich hun.'''
+
+[strings."ch.edit.authority-hmrc"]
+hash = "fd8786b84616"
+cy = '''Yr hyn y mae CThEF yn dweud sydd ei angen ar gyfer y ffeilio hwn:'''
+
+[strings."ch.edit.authority-companies-house"]
+hash = "66427116b507"
+cy = '''Yr hyn y mae Tŷ’r Cwmnïau yn dweud sydd ei angen ar gyfer y ffeilio hwn:'''
+
+[strings."ch.edit.sign-in"]
+hash = "bfd402b2f6f3"
+cy = '''Mewngofnodwch'''
+
+[strings."ch.edit.sign-in-to"]
+hash = "71ccd19272e5"
+cy = '''i {label}.'''
+
+[strings."ch.edit.needs-bundle"]
+hash = "c7a51e685687"
+cy = '''– mae angen y bwndel {bundles} ar gyfer hyn.'''
+
+[strings."ch.edit.strike-off-title"]
+hash = "8226e3c79fc2"
+cy = '''Dileu eich cwmni cyfyngedig o’r Gofrestr Cwmnïau'''
+
+[strings."ch.edit.status-elsewhere"]
+hash = "46006a6c48c4"
+cy = '''Nid yw’r wefan hon yn newid statws y cwmni. I gau’r cwmni, mae Tŷ’r Cwmnïau yn cymryd ffurflen DS01:'''
+
+[strings."ch.edit.file-company-tax-return"]
+hash = "f72d4fc1888f"
+cy = '''Ffeilio Ffurflen Dreth Cwmni'''

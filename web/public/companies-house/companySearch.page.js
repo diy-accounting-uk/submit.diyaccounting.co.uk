@@ -310,12 +310,134 @@ function activityAccess(entitlement, activityId) {
 
 const bundleName = (bundle) => (isWelshPage() && bundle.nameCy) || bundle.name;
 
+// Where the notes below quote from: Companies House's and HMRC's own guidance on GOV.UK, and the
+// Companies House paper confirmation statement.
+const AUTHORITY_SOURCES = {
+  authCode: "https://www.gov.uk/guidance/company-authentication-codes-for-online-filing",
+  office: "https://www.gov.uk/government/publications/change-a-registered-office-address-ad01",
+  confirmationService: "https://www.gov.uk/file-your-confirmation-statement-with-companies-house",
+  confirmationForm: "https://assets.publishing.service.gov.uk/media/696f5ef05b6060ca6736a07e/CS01_v7.0-FINAL.pdf",
+  accounts: "https://www.gov.uk/file-your-company-annual-accounts",
+  companyTaxReturns: "https://www.gov.uk/company-tax-returns",
+};
+
+const sourceTitles = () => ({
+  authCode: window.siteText("ch.edit.source-auth-code", "Company authentication codes for online filing"),
+  office: window.siteText("ch.edit.source-office", "Change a company's registered office address (AD01)"),
+  confirmationService: window.siteText(
+    "ch.edit.source-confirmation-service",
+    "File your confirmation statement (annual return) with Companies House",
+  ),
+  confirmationForm: window.siteText("ch.edit.source-confirmation-form", "CS01 Confirmation statement"),
+  accounts: window.siteText("ch.edit.source-accounts", "File your company's annual accounts with Companies House"),
+  companyTaxReturns: window.siteText("ch.edit.source-company-tax-returns", "Company Tax Returns"),
+});
+
+// The authority each filing needs, in the words of the body that receives it, with its source.
+function authorityNotes(activityId) {
+  const codeSignature = [
+    "authCode",
+    window.siteText(
+      "ch.edit.code-signature",
+      "The code is used to authorise information filed online and is the equivalent of a company officer’s signature.",
+    ),
+  ];
+  const codeOnline = [
+    "authCode",
+    window.siteText(
+      "ch.edit.code-online",
+      "You’ll need a company authentication code to file your information online or file using commercial software.",
+    ),
+  ];
+  const accounts = [
+    [
+      "accounts",
+      window.siteText("ch.edit.accounts-approved", "You must get your accounts approved by your company directors before you file them."),
+    ],
+    codeOnline,
+  ];
+  const notes = {
+    "change-registered-office": [
+      ["office", window.siteText("ch.edit.office-code", "You’ll need your company authentication code.")],
+      codeSignature,
+    ],
+    "change-registered-email": [codeOnline, codeSignature],
+    "file-confirmation-statement": [
+      [
+        "confirmationService",
+        window.siteText("ch.edit.confirmation-code", "You’ll need a Companies House password and authentication code."),
+      ],
+      [
+        "confirmationForm",
+        window.siteText(
+          "ch.edit.confirmation-who",
+          "This form may be authenticated by: Director, Secretary, Person authorised, Charity commission receiver and manager, CIC manager, Judicial factor.",
+        ),
+      ],
+      [
+        "confirmationService",
+        window.siteText(
+          "ch.edit.confirmation-identity",
+          "Before filing your confirmation statement, you may need to verify your identity using GOV.UK One Login.",
+        ),
+      ],
+      [
+        "confirmationService",
+        window.siteText(
+          "ch.edit.confirmation-personal-codes",
+          "If your company has more than one director, you must have each director’s personal code.",
+        ),
+      ],
+    ],
+    "file-micro-entity-accounts": accounts,
+    "file-small-company-accounts": accounts,
+    "file-company-tax-return": [
+      [
+        "companyTaxReturns",
+        window.siteText(
+          "ch.edit.ct-notice",
+          "Your company or association must file a Company Tax Return if you get a ‘notice to deliver a Company Tax Return’ from HM Revenue and Customs (HMRC).",
+        ),
+      ],
+      [
+        "companyTaxReturns",
+        window.siteText("ch.edit.ct-who", "You can either get an accountant to prepare and file your tax return or do it yourself."),
+      ],
+    ],
+  };
+  return notes[activityId] || [];
+}
+
+function appendAuthority(holder, activityId) {
+  const notes = authorityNotes(activityId);
+  if (notes.length === 0) return;
+  const lead = document.createElement("p");
+  lead.className = "hint file-this-authority-lead";
+  lead.textContent =
+    activityId === "file-company-tax-return"
+      ? window.siteText("ch.edit.authority-hmrc", "What HMRC says this filing needs:")
+      : window.siteText("ch.edit.authority-companies-house", "What Companies House says this filing needs:");
+  const list = document.createElement("ul");
+  list.className = "hint file-this-authority";
+  const titles = sourceTitles();
+  notes.forEach(([sourceId, quote]) => {
+    const item = document.createElement("li");
+    const source = document.createElement("a");
+    source.href = AUTHORITY_SOURCES[sourceId];
+    source.textContent = titles[sourceId];
+    item.append(`“${quote}” `, source);
+    list.appendChild(item);
+  });
+  holder.append(lead, list);
+}
+
 /**
- * A section's "File this" control: a link to the form with the company filled in where the account
- * holds the form's activity, the bundle that has it where it does not, and nothing where this site
- * does not offer the form.
+ * A section's "File this" control: a link to the form with the company and the current values filled
+ * in where the account holds the form's activity; a link to the form's page and the bundle that has
+ * it where it does not; a sign-in prompt for a reader who is signed out; and nothing where this site
+ * does not offer the form. Each carries the authority the filing needs.
  */
-async function appendFileThis(container, { activityId, page, label, companyNumber }) {
+async function appendFileThis(container, { activityId, page, label, companyNumber, prefill = {} }) {
   const holder = document.createElement("div");
   holder.className = "file-this";
   holder.dataset.activity = activityId;
@@ -332,25 +454,49 @@ async function appendFileThis(container, { activityId, page, label, companyNumbe
     holder.remove();
     return;
   }
-  if (access.held) {
+  const query = new URLSearchParams({ companyNumber });
+  Object.entries(prefill).forEach(([name, value]) => {
+    if (value) query.set(name, value);
+  });
+  const formHref = `${pagePrefix()}/companies-house/${page}?${query}`;
+  if (!localStorage.getItem("cognitoIdToken")) {
+    const prompt = document.createElement("p");
+    prompt.className = "hint file-this-sign-in";
+    const signIn = document.createElement("a");
+    signIn.href = window.signInHref("/auth/login.html");
+    signIn.textContent = window.siteText("ch.edit.sign-in", "Sign in");
+    prompt.append(
+      signIn,
+      " ",
+      window.siteText("ch.edit.sign-in-to", "to {label}.", { label: label.charAt(0).toLowerCase() + label.slice(1) }),
+    );
+    holder.appendChild(prompt);
+  } else if (access.held) {
     const link = document.createElement("a");
     link.className = "btn";
-    link.href = `${pagePrefix()}/companies-house/${page}?companyNumber=${encodeURIComponent(companyNumber)}`;
+    link.href = formHref;
     link.textContent = label;
     holder.appendChild(link);
-    return;
+  } else {
+    const note = document.createElement("p");
+    note.className = "hint";
+    const form = document.createElement("a");
+    form.className = "file-this-form";
+    form.href = formHref;
+    form.textContent = label;
+    note.append(
+      form,
+      " ",
+      window.siteText("ch.edit.needs-bundle", "needs the {bundles} bundle.", { bundles: access.bundles.map(bundleName).join(", ") }),
+      " ",
+    );
+    const more = document.createElement("a");
+    more.href = `${pagePrefix()}/bundles.html`;
+    more.textContent = window.siteText("ch.drill.see-bundles", "See the bundles");
+    note.appendChild(more);
+    holder.appendChild(note);
   }
-  const note = document.createElement("p");
-  note.className = "hint";
-  note.textContent = window.siteText("ch.drill.needs-bundle", "{label} needs the {bundles} bundle.", {
-    label,
-    bundles: access.bundles.map(bundleName).join(", "),
-  });
-  const more = document.createElement("a");
-  more.href = `${pagePrefix()}/bundles.html`;
-  more.textContent = window.siteText("ch.drill.see-bundles", "See the bundles");
-  note.append(" ", more);
-  holder.appendChild(note);
+  appendAuthority(holder, activityId);
 }
 
 // -- shared rendering ---------------------------------------------------------------------------
@@ -427,6 +573,24 @@ const accountsTypeLabel = (type) => (type ? slugText(type) : window.siteText("ch
 
 // -- the overview's sections ----------------------------------------------------------------------
 
+// The company's status changes through no filing this site or Companies House's software interfaces
+// make; the note names Companies House's own route for closing a company.
+function renderStatusNote() {
+  const note = document.getElementById("statusChangeNote");
+  note.innerHTML = "";
+  const link = document.createElement("a");
+  link.href = "https://www.gov.uk/strike-off-your-company-from-companies-register";
+  link.textContent = window.siteText("ch.edit.strike-off-title", "Strike off your limited company from the Companies Register");
+  note.append(
+    window.siteText(
+      "ch.edit.status-elsewhere",
+      "This site does not change the company's status. To close the company, Companies House takes form DS01:",
+    ),
+    " ",
+    link,
+  );
+}
+
 function renderWatchSection(profile) {
   const section = document.getElementById("watchSection");
   section.innerHTML = "";
@@ -435,6 +599,23 @@ function renderWatchSection(profile) {
   link.href = `${pagePrefix()}/companies-house/watchList.html`;
   link.textContent = window.siteText("ch.drill.open-watch-list", "Open your watch list");
   section.append(" ", link);
+}
+
+// The accounting period the next accounts cover, as the accounts forms' period fields take it.
+const nextPeriodFields = (profile) => ({ periodStart: profile.accountsNextPeriodStart, periodEnd: profile.accountsNextPeriodEnd });
+
+// The registered office as the change form's new address fields take it, so the reader edits what changed.
+function officeFields(profile) {
+  const address = profile.registeredOfficeAddress || {};
+  return {
+    premises: address.premises,
+    addressLine1: address.address_line_1,
+    addressLine2: address.address_line_2,
+    locality: address.locality,
+    region: address.region,
+    postalCode: address.postal_code,
+    country: address.country,
+  };
 }
 
 async function renderAccountsSection(profile) {
@@ -486,11 +667,19 @@ async function renderAccountsSection(profile) {
     page: "fileMicroEntityAccounts.html",
     label: window.siteText("ch.drill.file-micro-entity", "File micro-entity accounts"),
     companyNumber: profile.companyNumber,
+    prefill: nextPeriodFields(profile),
   });
   await appendFileThis(section, {
     activityId: "file-small-company-accounts",
     page: "fileSmallCompanyAccounts.html",
     label: window.siteText("ch.drill.file-small-company", "File small company accounts"),
+    companyNumber: profile.companyNumber,
+    prefill: nextPeriodFields(profile),
+  });
+  await appendFileThis(section, {
+    activityId: "file-company-tax-return",
+    page: "fileCompanyTaxReturn.html",
+    label: window.siteText("ch.edit.file-company-tax-return", "File a Company Tax Return"),
     companyNumber: profile.companyNumber,
   });
 }
@@ -554,6 +743,7 @@ async function renderOfficeSection(profile) {
     page: "changeRegisteredOffice.html",
     label: window.siteText("ch.drill.change-office", "Change the registered office"),
     companyNumber: profile.companyNumber,
+    prefill: officeFields(profile),
   });
 }
 
@@ -883,6 +1073,7 @@ async function showView(state) {
       view.style.display = "none";
       showOnly("profileView");
       renderWatchSection(profile);
+      renderStatusNote();
       await Promise.all([
         renderAccountsSection(profile),
         renderConfirmationSection(profile),

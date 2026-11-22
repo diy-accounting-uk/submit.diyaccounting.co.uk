@@ -154,14 +154,15 @@ function json(route, status, body) {
 // from the fixtures. bundles is what /api/v1/bundle says the account holds.
 async function serveSite(
   page,
-  { environmentName = "ci", bundles = [], apiRequests = [], filings = FILINGS, filedAccounts = FILED_ACCOUNTS } = {},
+  { environmentName = "ci", bundles = [], apiRequests = [], filings = FILINGS, filedAccounts = FILED_ACCOUNTS, signedIn = true } = {},
 ) {
-  await page.addInitScript(() => {
+  await page.addInitScript((withSignIn) => {
     localStorage.setItem("consent.analytics", "declined");
+    if (!withSignIn) return;
     localStorage.setItem("cognitoIdToken", "id-token");
     localStorage.setItem("cognitoAccessToken", "access-token");
     localStorage.setItem("userInfo", JSON.stringify({ email: "resident@test.diyaccounting.co.uk", given_name: "Alex" }));
-  });
+  }, signedIn);
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     if (url.hostname !== "localhost") return route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
@@ -344,15 +345,18 @@ test.describe("Company lookup drill-down", () => {
   test("an account holding the forms' activities gets a file button for each, opening the form with the company", async ({ page }) => {
     await serveSite(page, { bundles: ["resident-ltd"] });
     await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
-    await expect(page.locator("#drillOverview .file-this a")).toHaveCount(5, { timeout: 15000 });
-    const hrefs = await page.locator("#drillOverview .file-this a").evaluateAll((links) => links.map((link) => link.getAttribute("href")));
+    await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(6, { timeout: 15000 });
+    const hrefs = await page
+      .locator("#drillOverview .file-this a.btn")
+      .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
     expect(hrefs.sort()).toEqual(
       [
         "/companies-house/changeRegisteredEmail.html?companyNumber=00000001",
-        "/companies-house/changeRegisteredOffice.html?companyNumber=00000001",
+        "/companies-house/changeRegisteredOffice.html?companyNumber=00000001&addressLine1=1+Example+Street&locality=Cardiff&postalCode=CF14+3UZ&country=Wales",
         "/companies-house/fileConfirmationStatement.html?companyNumber=00000001",
-        "/companies-house/fileMicroEntityAccounts.html?companyNumber=00000001",
-        "/companies-house/fileSmallCompanyAccounts.html?companyNumber=00000001",
+        "/companies-house/fileMicroEntityAccounts.html?companyNumber=00000001&periodStart=2098-05-01&periodEnd=2099-04-30",
+        "/companies-house/fileSmallCompanyAccounts.html?companyNumber=00000001&periodStart=2098-05-01&periodEnd=2099-04-30",
+        "/companies-house/fileCompanyTaxReturn.html?companyNumber=00000001",
       ].sort(),
     );
   });
@@ -365,6 +369,11 @@ test.describe("Company lookup drill-down", () => {
     await expect(page.locator("#accountsSection .file-this").first()).toContainText(
       "File micro-entity accounts needs the Resident Ltd bundle.",
     );
+    await expect(page.locator("#accountsSection .file-this a.file-this-form").first()).toHaveAttribute(
+      "href",
+      "/companies-house/fileMicroEntityAccounts.html?companyNumber=00000001&periodStart=2098-05-01&periodEnd=2099-04-30",
+    );
+    await shoot(page, "overview-default-bundle");
     await expect(page.locator("#confirmationSection .file-this")).toContainText("needs the Resident Ltd bundle");
     await page.goto(`${BASE}/companies-house/company/00000001/accounts`, { waitUntil: "networkidle" });
     await expect(page.locator("#drillView")).toContainText("Total exemption full");
@@ -472,8 +481,139 @@ test.describe("Company lookup drill-down past the newest filings", () => {
   });
 });
 
+test.describe("Company lookup drill-down edit links", () => {
+  const AUTHORITY = [
+    {
+      section: "#officeSection",
+      quotes: [
+        "You’ll need your company authentication code.",
+        "The code is used to authorise information filed online and is the equivalent of a company officer’s signature.",
+      ],
+      sources: [
+        "https://www.gov.uk/government/publications/change-a-registered-office-address-ad01",
+        "https://www.gov.uk/guidance/company-authentication-codes-for-online-filing",
+      ],
+    },
+    {
+      section: "#emailSection",
+      quotes: ["You’ll need a company authentication code to file your information online or file using commercial software."],
+      sources: ["https://www.gov.uk/guidance/company-authentication-codes-for-online-filing"],
+    },
+    {
+      section: "#confirmationSection",
+      quotes: [
+        "You’ll need a Companies House password and authentication code.",
+        "This form may be authenticated by: Director, Secretary, Person authorised, Charity commission receiver and manager, CIC manager, Judicial factor.",
+        "Before filing your confirmation statement, you may need to verify your identity using GOV.UK One Login.",
+        "If your company has more than one director, you must have each director’s personal code.",
+      ],
+      sources: [
+        "https://www.gov.uk/file-your-confirmation-statement-with-companies-house",
+        "https://assets.publishing.service.gov.uk/media/696f5ef05b6060ca6736a07e/CS01_v7.0-FINAL.pdf",
+      ],
+    },
+    {
+      section: "#accountsSection",
+      quotes: [
+        "You must get your accounts approved by your company directors before you file them.",
+        "Your company or association must file a Company Tax Return if you get a ‘notice to deliver a Company Tax Return’ from HM Revenue and Customs (HMRC).",
+      ],
+      sources: ["https://www.gov.uk/file-your-company-annual-accounts", "https://www.gov.uk/company-tax-returns"],
+    },
+  ];
+
+  for (const width of [1280, 390]) {
+    test(`each edit link carries the authority its filing needs with the source at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await serveSite(page, { bundles: ["resident-ltd"] });
+      await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+      await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(6, { timeout: 15000 });
+      for (const { section, quotes, sources } of AUTHORITY) {
+        await expect(page.locator(`${section} .file-this-authority`).first()).toBeAttached();
+        const text = await page.locator(`${section} .file-this-authority`).allInnerTexts();
+        for (const quote of quotes) expect(text.join("\n")).toContain(`“${quote}”`);
+        const hrefs = await page.locator(`${section} .file-this-authority a`).evaluateAll((links) => links.map((link) => link.href));
+        for (const source of sources) expect(hrefs).toContain(source);
+      }
+      const scrollsSideways = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      expect(scrollsSideways).toBe(false);
+      await shoot(page, "overview-edit-links");
+    });
+  }
+
+  test("a reader who is signed out is asked to sign in, and the authority is still shown", async ({ page }) => {
+    await serveSite(page, { signedIn: false });
+    await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    await expect(page.locator("#officeSection .file-this-sign-in")).toContainText("Sign in to change the registered office.", {
+      timeout: 15000,
+    });
+    await expect(page.locator("#drillOverview .file-this a.btn")).toHaveCount(0);
+    const signIn = await page.locator("#officeSection .file-this-sign-in a").getAttribute("href");
+    expect(signIn).toBe(`/auth/login.html?next=${encodeURIComponent("/companies-house/company/00000001")}`);
+    await expect(page.locator("#officeSection .file-this-authority")).toContainText("company authentication code");
+    await shoot(page, "overview-signed-out");
+  });
+
+  test("the company's status names Companies House's route for closing a company and carries no edit link", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    const note = page.locator("#statusChangeNote");
+    await expect(note).toContainText("To close the company, Companies House takes form DS01:", { timeout: 15000 });
+    await expect(note.locator("a")).toHaveAttribute("href", "https://www.gov.uk/strike-off-your-company-from-companies-register");
+  });
+
+  test("on prod, where the Company Tax Return form is not offered, the accounts section has no link to it", async ({ page }) => {
+    await serveSite(page, { environmentName: "prod", bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    await expect(page.locator("#accountsSection .file-this a.btn")).toHaveCount(2, { timeout: 15000 });
+    await expect(page.locator('#accountsSection .file-this[data-activity="file-company-tax-return"]')).toHaveCount(0);
+  });
+
+  test("the Welsh overview carries the edit links and the authority in Welsh", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/cy/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    await expect(page.locator("#officeSection .file-this a.btn")).toHaveAttribute(
+      "href",
+      /^\/cy\/companies-house\/changeRegisteredOffice\.html\?/,
+      {
+        timeout: 15000,
+      },
+    );
+    await expect(page.locator("#officeSection .file-this-authority")).toContainText("cod dilysu");
+    await shoot(page, "cy-overview-edit-links");
+  });
+
+  for (const width of [1280, 390]) {
+    test(`the registered office link opens the form with the current address in the new address fields at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await serveSite(page, { bundles: ["resident-ltd"] });
+      await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+      await page.locator("#officeSection .file-this a.btn").click();
+      await expect(page.locator("#companyNumber")).toHaveValue("00000001", { timeout: 15000 });
+      await expect(page.locator("#addressLine1")).toHaveValue("1 Example Street");
+      await expect(page.locator("#locality")).toHaveValue("Cardiff");
+      await expect(page.locator("#postalCode")).toHaveValue("CF14 3UZ");
+      await expect(page.locator("#country")).toHaveValue("Wales");
+      await shoot(page, "change-office-from-link");
+    });
+  }
+
+  test("the accounts links open the forms with the next accounting period filled in", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    for (const form of ["fileMicroEntityAccounts", "fileSmallCompanyAccounts"]) {
+      await page.goto(`${BASE}/companies-house/${form}.html?companyNumber=00000001&periodStart=2098-05-01&periodEnd=2099-04-30`, {
+        waitUntil: "networkidle",
+      });
+      await expect(page.locator("#companyNumber")).toHaveValue("00000001", { timeout: 15000 });
+      await expect(page.locator("#periodStart")).toHaveValue("2098-05-01");
+      await expect(page.locator("#periodEnd")).toHaveValue("2099-04-30");
+    }
+  });
+});
+
 test.describe("Companies House forms opened with a company number", () => {
   for (const form of [
+    "fileCompanyTaxReturn",
     "changeRegisteredOffice",
     "changeRegisteredEmail",
     "fileConfirmationStatement",
