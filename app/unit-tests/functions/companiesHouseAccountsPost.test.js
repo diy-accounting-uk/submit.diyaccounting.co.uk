@@ -104,6 +104,17 @@ vi.mock("@app/data/dynamoDbReceiptRepository.js", async (importOriginal) => ({
   getReceipt: (...args) => mockGetReceipt(...args),
 }));
 
+const mockFilingHistory = vi.fn();
+vi.mock("@app/services/companiesHouseApi.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  companiesHouseFilingHistory: (...args) => mockFilingHistory(...args),
+}));
+
+function accountsHistory(...madeUpDates) {
+  const items = madeUpDates.map((madeUpDate) => ({ type: "AA", description_values: { made_up_date: madeUpDate } }));
+  return { ok: true, status: 200, data: { items, totalCount: items.length, truncated: false } };
+}
+
 const mockGetCompanyProfile = vi.fn();
 vi.mock("@app/functions/companies-house/companiesHouseCompanyGet.js", () => ({
   getCompanyProfile: (...args) => mockGetCompanyProfile(...args),
@@ -234,6 +245,7 @@ function buildEvent({ body = buildAccountsBody(), headers = {}, authorizer, meth
 
 describe("companiesHouseAccountsPost ingestHandler", () => {
   beforeEach(() => {
+    delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
     Object.assign(
       process.env,
       setupTestEnv({
@@ -258,6 +270,7 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     mockBuildAccountsSubmission.mockReturnValue("<GovTalkMessage>submission</GovTalkMessage>");
     mockPostToGateway.mockResolvedValue({ ok: true, status: 200, data: "<GovTalkMessage>ack</GovTalkMessage>", headers: {}, duration: 1 });
     mockParseGatewayResponse.mockReturnValue({ errors: [], statuses: [], gatewayTimestamp: "2026-01-15T10:00:00Z", pollInterval: 1 });
+    mockFilingHistory.mockResolvedValue(accountsHistory("2025-12-31", "2024-12-31"));
   });
 
   test("generates the iXBRL, submits the envelope and returns the submission number", async () => {
@@ -830,13 +843,78 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       expect(await pendingData()).toMatchObject({ amended: true, revisesReceipt: RECEIPT_NAME });
     });
 
-    test("files revised accounts that name no receipt, as accounts filed another way have none", async () => {
+    test("files revised accounts that name no receipt when the register holds accounts made up to the period's end", async () => {
       const { revisesReceipt, ...withoutReceipt } = REVISION;
       const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: withoutReceipt }) }));
       expect(response.statusCode).toBe(201);
       expect(mockGetReceipt).not.toHaveBeenCalled();
+      expect(mockFilingHistory).toHaveBeenCalledWith("00000001", { category: "accounts" });
       expect(await pendingData()).not.toHaveProperty("revisesReceipt");
       expect(revisesReceipt).toBe(RECEIPT_NAME);
+    });
+
+    test("reads no register for revised accounts that name a receipt, or for original accounts", async () => {
+      mockGetReceipt.mockResolvedValue(ORIGINAL_RECEIPT);
+      for (const body of [buildAccountsBody({ revision: REVISION }), buildAccountsBody()]) {
+        expect((await companiesHouseAccountsPostHandler(buildEvent({ body }))).statusCode).toBe(201);
+      }
+      expect(mockFilingHistory).not.toHaveBeenCalled();
+    });
+
+    describe("revised accounts that name no receipt", () => {
+      const { revisesReceipt, ...WITHOUT_RECEIPT } = REVISION;
+
+      test("are refused with a sentence and a reason when the register holds no accounts made up to the period's end, and nothing is sent", async () => {
+        mockFilingHistory.mockResolvedValue(accountsHistory("2024-12-31", "2023-12-31"));
+        const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: WITHOUT_RECEIPT }) }));
+        expect(response.statusCode).toBe(400);
+        expect(parseResponseBody(response)).toMatchObject({
+          message:
+            "Companies House holds no accounts for this company made up to 2025-12-31, so there are no accounts for revised accounts to replace.",
+          reason: "revision-period-not-on-register",
+          companyNumber: "00000001",
+          periodEnd: "2025-12-31",
+        });
+        expect(mockPostToGateway).not.toHaveBeenCalled();
+        expect(mockAllocateSubmissionNumber).not.toHaveBeenCalled();
+      });
+
+      test("are refused for a small company too", async () => {
+        mockFilingHistory.mockResolvedValue(accountsHistory());
+        const response = await companiesHouseAccountsPostHandler(
+          buildEvent({ body: buildSmallCompanyBody({ revision: WITHOUT_RECEIPT }) }),
+        );
+        expect(response.statusCode).toBe(400);
+        expect(parseResponseBody(response).reason).toBe("revision-period-not-on-register");
+        expect(mockPostToGateway).not.toHaveBeenCalled();
+      });
+
+      test("are refused with a sentence when the register holds no such company, and nothing is sent", async () => {
+        mockFilingHistory.mockResolvedValue({ ok: false, status: 404, data: {} });
+        const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: WITHOUT_RECEIPT }) }));
+        expect(response.statusCode).toBe(400);
+        expect(parseResponseBody(response)).toMatchObject({
+          message: "Companies House holds no company with the number 00000001, so there are no accounts to revise.",
+          reason: "revision-company-not-on-register",
+        });
+        expect(mockPostToGateway).not.toHaveBeenCalled();
+      });
+
+      test("are not filed when the register cannot be read, and the answer is the failed read", async () => {
+        mockFilingHistory.mockResolvedValue({ ok: false, status: 429, data: {}, headers: { "retry-after": "30" } });
+        const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: WITHOUT_RECEIPT }) }));
+        expect(response.statusCode).toBe(429);
+        expect(response.headers["Content-Type"]).toBe("application/json");
+        expect(mockPostToGateway).not.toHaveBeenCalled();
+      });
+
+      test("are filed without a register read where the accounts go to the Companies House test service", async () => {
+        process.env.COMPANIES_HOUSE_GATEWAY_TEST = "true";
+        mockFilingHistory.mockResolvedValue(accountsHistory());
+        const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: WITHOUT_RECEIPT }) }));
+        expect(response.statusCode).toBe(201);
+        expect(mockFilingHistory).not.toHaveBeenCalled();
+      });
     });
 
     const refusals = [
@@ -967,6 +1045,7 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
   }
 
   beforeEach(() => {
+    delete process.env.COMPANIES_HOUSE_GATEWAY_TEST;
     Object.assign(
       process.env,
       setupTestEnv({

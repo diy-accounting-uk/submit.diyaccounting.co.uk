@@ -607,6 +607,59 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     await screenshotAtBothWidths(page, "micro-amend-result-rejected");
   });
 
+  for (const [language, welsh, sentence] of [
+    [
+      "English",
+      false,
+      "Companies House holds no accounts for this company made up to 2026-03-31, so there are no accounts for revised accounts to replace.",
+    ],
+    [
+      "Welsh",
+      true,
+      "Nid oes gan Dŷ’r Cwmnïau gyfrifon ar gyfer y cwmni hwn hyd at 2026-03-31, felly nid oes cyfrifon i gyfrifon diwygiedig gymryd eu lle.",
+    ],
+  ]) {
+    test(`says in ${language} that the register holds no accounts to replace when the route refuses the filing for that`, async ({
+      page,
+    }) => {
+      await openAmend(page, accountsReceipt(microCase.xhtml), { welsh });
+      await serveFile(page, "**/lib/accounts-revision-register.js", "lib/accounts-revision-register.js");
+      await expect(page.locator("#revisionSection")).toBeVisible();
+      await fillRevisionTexts(page);
+      await page.fill("#directorDateApproved", "2026-11-20");
+      await page.evaluate(() => {
+        window.submitMicroEntityAccounts = async () => {
+          const error = new Error("the route's English sentence");
+          error.status = 400;
+          error.reason = "revision-period-not-on-register";
+          error.body = { reason: error.reason, companyNumber: "06846849", periodEnd: "2026-03-31" };
+          throw error;
+        };
+        document.getElementById("companyAuthCode").value = "ABC123";
+        return handleSubmitFiling();
+      });
+      await expect(page.locator("#statusMessagesContainer .status-error")).toContainText(sentence);
+      await expect(page.locator("#resultView")).toBeHidden();
+      await screenshotAtBothWidths(page, `micro-amend-register-refusal-${language.toLowerCase()}`);
+    });
+  }
+
+  test("shows the route's own message for a filing refused for any other reason", async ({ page }) => {
+    await openAmend(page, accountsReceipt(microCase.xhtml));
+    await serveFile(page, "**/lib/accounts-revision-register.js", "lib/accounts-revision-register.js");
+    await expect(page.locator("#revisionSection")).toBeVisible();
+    await fillRevisionTexts(page);
+    await page.fill("#directorDateApproved", "2026-11-20");
+    await page.evaluate(() => {
+      window.submitMicroEntityAccounts = async () => {
+        throw Object.assign(new Error("Missing director.name"), { status: 400, body: { message: "Missing director.name" } });
+      };
+      document.getElementById("companyAuthCode").value = "ABC123";
+      return handleSubmitFiling();
+    });
+    await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("Missing director.name");
+  });
+
   test("a new filing after the revision files original accounts", async ({ page }) => {
     await openAmend(page, accountsReceipt(microCase.xhtml));
     await expect(page.locator("#revisionSection")).toBeVisible();

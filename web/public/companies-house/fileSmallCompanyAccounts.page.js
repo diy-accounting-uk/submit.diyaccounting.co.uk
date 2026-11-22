@@ -773,7 +773,13 @@ async function handleSubmitFiling() {
     const tokensExhausted = error.status === 403 && error.reason === "tokens_exhausted";
     // The request layer already showed its own refusal; the page's message replaces it.
     if (tokensExhausted) hideStatus();
-    showStatus(error.message || window.siteText("ch.accounts.file-failed", "Failed to file the accounts with Companies House."), "error");
+    const { registerRefusalOfError } = await import("../lib/accounts-revision-register.js");
+    showStatus(
+      registerRefusalOfError(error) ||
+        error.message ||
+        window.siteText("ch.accounts.file-failed", "Failed to file the accounts with Companies House."),
+      "error",
+    );
     if (tokensExhausted) {
       window.dispatchEvent(new CustomEvent("bundle-changed"));
       document.getElementById("statusMessagesContainer").scrollIntoView({ block: "start" });

@@ -945,6 +945,29 @@ test.describe("File small company accounts page - revising accounts from a recei
     await expect(page.locator(".error-summary")).toHaveCount(0);
   });
 
+  test("says that the register holds no such company when the route refuses the filing for that", async ({ page }) => {
+    await openAmend(page, accountsReceipt(fullCase.xhtml));
+    await serveFile(page, "**/lib/accounts-revision-register.js", "lib/accounts-revision-register.js");
+    await expect(page.locator("#revisionSection")).toBeVisible();
+    await page.fill("#revisionNonCompliance", "The original accounts left out the stocks held at the year end.");
+    await page.fill("#revisionAmendments", "Stocks are now shown, and the profit and loss reserve rises by the same amount.");
+    await page.fill("#directorDateApproved", "2026-11-20");
+    await page.evaluate(() => {
+      window.submitMicroEntityAccounts = async () => {
+        const error = new Error("the route's English sentence");
+        error.status = 400;
+        error.reason = "revision-company-not-on-register";
+        error.body = { reason: error.reason, companyNumber: "09999999", periodEnd: "2026-03-31" };
+        throw error;
+      };
+      document.getElementById("companyAuthCode").value = "ABC123";
+      return handleSubmitFiling();
+    });
+    await expect(page.locator("#statusMessagesContainer .status-error")).toContainText(
+      "Companies House holds no company with the number 09999999, so there are no accounts to revise.",
+    );
+  });
+
   for (const width of [1280, 390]) {
     test(`files the revision and names the revised accounts in the result (${width})`, async ({ page }) => {
       await openAmend(page, accountsReceipt(fullCase.xhtml), { width });

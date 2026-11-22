@@ -1279,6 +1279,7 @@ window.WELSH_TEXT = {
     "Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, felly nid oes cyfrif elw a cholled ar gyfer y flwyddyn flaenorol ynddynt. Mae’r copi llawn hwn yn nodi llinellau cyfrif elw a cholled y flwyddyn flaenorol fel dim: teipiwch nhw ar y ffurflen os oedd gan y cwmni rai.",
   "ch.revision.refuse-already-revised":
     "Mae’r cyfrifon hyn eisoes yn gyfrifon diwygiedig, ac nid yw’r wefan hon yn ffeilio ail ddiwygiad eto.",
+  "ch.revision.refuse-company-not-on-register": "Nid oes gan Dŷ’r Cwmnïau gwmni â’r rhif {number}, felly nid oes cyfrifon i’w diwygio.",
   "ch.revision.refuse-joint":
     "Cafodd y cyfrifon hynny eu ffeilio gyda Ffurflen Dreth y Cwmni, felly diwygiwch nhw ar dudalen Ffurflen Dreth y Cwmni.",
   "ch.revision.refuse-kind": "Nid ffeilio cyfrifon yw’r dderbynneb honno, felly nid oes cyfrifon i’w diwygio.",
@@ -1290,6 +1291,8 @@ window.WELSH_TEXT = {
   "ch.revision.refuse-other-company": "Mae’r dderbynneb y mae’r cyfrifon diwygiedig hyn yn ei henwi ar gyfer cwmni arall.",
   "ch.revision.refuse-other-period":
     "Mae’r cyfrifon y mae’r dderbynneb yn eu henwi ar gyfer y cyfnod {from} i {to}, felly ni all cyfrifon diwygiedig ar gyfer {start} i {end} gymryd eu lle.",
+  "ch.revision.refuse-period-not-on-register":
+    "Nid oes gan Dŷ’r Cwmnïau gyfrifon ar gyfer y cwmni hwn hyd at {end}, felly nid oes cyfrifon i gyfrifon diwygiedig gymryd eu lle.",
   "ch.revision.refuse-unread-heading":
     "Mae’r cyfrifon hyn yn cynnwys {headings}, na all y wefan hon eu darllen yn ôl eto, felly ni ellir eu diwygio yma eto.",
   "ch.revision.refused-title": "Ni ellir diwygio’r cyfrifon hyn yma",
