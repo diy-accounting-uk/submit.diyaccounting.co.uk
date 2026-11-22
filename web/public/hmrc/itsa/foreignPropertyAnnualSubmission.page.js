@@ -322,7 +322,7 @@ async function loadAnnual(criteria, hmrcGrantId) {
   }
   // HMRC's retrieve answers not-found when it is sent no Gov-Test-Scenario, so a synthetic account
   // without a chosen scenario sends the named one. A live account never carries a sandbox header.
-  const scenario = window.resolveSyntheticTestScenario(criteria.testScenario, sessionStorage.getItem("hmrcAccount"), "FOREIGN_PROPERTY");
+  const scenario = window.resolveSyntheticTestScenario(criteria.testScenario, await window.readHmrcAccount(), "FOREIGN_PROPERTY");
   let submission = {};
   try {
     submission = await window.getForeignPropertyAnnual(
@@ -393,9 +393,13 @@ async function saveAnnual(request, hmrcGrantId) {
 }
 
 function initializePage() {
-  if (sessionStorage.getItem("hmrcAccount") === "synthetic") {
-    document.getElementById("syntheticIndicator")?.classList.add("visible");
-  }
+  window.showHmrcStatusForService(
+    siteText(
+      "itsa.status-sandbox-text",
+      "This runs against HMRC's sandbox. Nothing you send reaches your real HMRC record. Production waits on HMRC's recognition of our software after its 2027 update.",
+    ),
+  );
+  window.showSyntheticIndicatorForAccount();
   const devSection = document.getElementById("developerSection");
   function updateDeveloperSectionVisibility() {
     const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
@@ -463,11 +467,7 @@ async function ensureAuthorizedThen(request) {
       sessionStorage.setItem(PENDING_KEY, JSON.stringify(request));
       sessionStorage.setItem("currentActivity", `${location.pathname}`);
       const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "write:self-assessment";
-      const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(
-        state,
-        oauthScope,
-        sessionStorage.getItem("hmrcAccount") || "live",
-      );
+      const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, (await window.readHmrcAccount()) || "live");
       try {
         window.__correlation?.prepareRedirect?.();
       } catch {}

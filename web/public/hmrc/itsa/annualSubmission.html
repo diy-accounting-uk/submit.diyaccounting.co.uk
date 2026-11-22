@@ -32,9 +32,8 @@
     </header>
 
     <main id="mainContent">
-      <p class="hint" data-feature-status="sandbox">
-        <strong>Status: sandbox.</strong> This runs against HMRC's sandbox. Nothing you send reaches your real HMRC record. Production waits
-        on HMRC's recognition of our software after its 2027 update.
+      <p class="hint" data-feature-status="production" role="status" hidden>
+        <strong>Status: production.</strong> This uses your real HMRC record.
       </p>
       <div id="syntheticIndicator" class="synthetic-indicator"><span>Synthetic mode - calls go to HMRC's sandbox API</span></div>
 
@@ -487,6 +486,7 @@
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="../../widgets/books-import.js"></script>
     <script src="../../widgets/submission-cost.js"></script>
+    <script src="../../lib/hmrc-sandbox-status.js"></script>
     <script src="annualSubmission.page.js"></script>
   </body>
 </html>
