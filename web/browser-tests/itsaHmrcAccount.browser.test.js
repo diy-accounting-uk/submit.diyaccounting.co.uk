@@ -350,6 +350,30 @@ test.describe("The other Income Tax pages use the HMRC account the bundles chose
   }
 });
 
+// The pages whose requests go through the shared HMRC service functions while an HMRC grant is held,
+// so nothing on the page names the account before the request is sent.
+const GRANT_REQUEST_PAGES = READING_PAGES.filter(
+  ({ page }) => !["dashboard.html", "finalDeclaration.html", "taxCalculation.html"].includes(page),
+);
+
+test.describe("An Income Tax page holding an HMRC grant names the account the bundles chose on its request", () => {
+  for (const { page: pageName, form, request } of GRANT_REQUEST_PAGES) {
+    test(`a live account whose tab holds a synthetic account names no synthetic account on a request from ${pageName}`, async ({
+      page,
+    }) => {
+      await page.addInitScript(() => {
+        sessionStorage.setItem("hmrcGrantId", "test-grant");
+        sessionStorage.setItem("hmrcTokenScope", "read:self-assessment write:self-assessment");
+      });
+      const seen = await openItsaPage(page, pageName, { synthetic: false, storedAccount: "synthetic", bundleAnswerMs: 3000 });
+      await startSignIn(page, form, undefined, request);
+      await expect.poll(() => seen.hmrcCalls.length, { timeout: 10_000 }).toBeGreaterThan(0);
+      expect(seen.hmrcCalls).not.toContain("synthetic");
+      expect(seen.signIns).toEqual([]);
+    });
+  }
+});
+
 const ALL_PAGES = [...REQUEST_PAGES, ...FOREIGN_PROPERTY_PAGES, ...READING_PAGES].map(({ page }) => page);
 
 test.describe("An Income Tax page's status line follows the HMRC service its calls go to", () => {
