@@ -66,6 +66,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability SITE-11 -->
 <!-- capability SITE-12 -->
 <!-- capability SITE-22 -->
+<!-- capability SITE-36 -->
 <!-- capability SITE-25 -->
 <!-- capability SITE-33 -->
 <!-- capability SITE-34 -->

@@ -44,6 +44,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners: use when adding or changing a cross-sell page for a sibling product or an affiliate.
     - [SITE-12](#site-12-map-the-site-structure) Map the site structure: use when adding or moving a page and its place in the header, nav or footer needs checking.
     - [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts: use when a page states a tax date, threshold or rate and each figure needs a gov.uk source, or a source has passed 30 days old.
+    - [SITE-36](#site-36-compute-due-dates-from-sourced-rules) Compute due dates from sourced rules: use when working out a filing or payment date that no service states: a Company Tax Return and its payment from an accounting period, a VAT return or payment from its period end, the next VAT period, the standard Income Tax updates, the Self Assessment payments, a director or PSC change, or the identity verification on a confirmation statement.
     - [SITE-25](#site-25-build-the-marketing-site-data-social-images-brand-shots-and-listing-packs) Build the marketing site data, social images, brand shots and listing packs: use when web/marketing/marketing.toml changes, a brand stylesheet or icon changes, or the social images, logos, brand shots or listing-pack screenshots of marketing.diyaccounting.co.uk need to be made again.
     - [SITE-33](#site-33-check-the-tax-sources-each-week) Check the tax sources each week: use when checking whether a gov.uk page still states a tax fact the site prints, or whether a source file is close to the 30 day limit.
     - [SITE-34](#site-34-check-the-compared-prices-each-month) Check the compared prices each month: use when checking whether a vendor on a comparison page still shows the price that page quotes.
@@ -654,7 +655,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Authentication and authorization](#authentication-and-authorization-site): [SITE-01](#site-01-sign-customers-in-via-cognito) Sign customers in via Cognito · [SITE-02](#site-02-verify-jwts-at-the-api-gateway) Verify JWTs at the API gateway
 - [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event · [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy · [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check · [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages · [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site) Prove the Welsh pages read in Welsh on a running site · [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML · [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages) Write a landing page for each filing that is production on prod, and the article pages
 - [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront) Check that an API request came through CloudFront · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
-- [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts · [SITE-25](#site-25-build-the-marketing-site-data-social-images-brand-shots-and-listing-packs) Build the marketing site data, social images, brand shots and listing packs · [SITE-33](#site-33-check-the-tax-sources-each-week) Check the tax sources each week · [SITE-34](#site-34-check-the-compared-prices-each-month) Check the compared prices each month
+- [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts · [SITE-36](#site-36-compute-due-dates-from-sourced-rules) Compute due dates from sourced rules · [SITE-25](#site-25-build-the-marketing-site-data-social-images-brand-shots-and-listing-packs) Build the marketing site data, social images, brand shots and listing packs · [SITE-33](#site-33-check-the-tax-sources-each-week) Check the tax sources each week · [SITE-34](#site-34-check-the-compared-prices-each-month) Check the compared prices each month
 - [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes · [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style
 - [Business documentation](#business-documentation-site): [SITE-20](#site-20-document-business-governance-and-positioning) Document business governance and positioning · [SITE-21](#site-21-log-growth-experiments) Log growth experiments
 <!-- /generated:area SITE -->
@@ -879,6 +880,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners
 - [SITE-12](#site-12-map-the-site-structure) Map the site structure
 - [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts
+- [SITE-36](#site-36-compute-due-dates-from-sourced-rules) Compute due dates from sourced rules
 - [SITE-25](#site-25-build-the-marketing-site-data-social-images-brand-shots-and-listing-packs) Build the marketing site data, social images, brand shots and listing packs
 - [SITE-33](#site-33-check-the-tax-sources-each-week) Check the tax sources each week
 - [SITE-34](#site-34-check-the-compared-prices-each-month) Check the compared prices each month
@@ -923,6 +925,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/tax-sources/SKILL.md, .claude/skills/tax-sources/sources/, scripts/build-mtd-calendar.mjs, scripts/verify-tax-sources.mjs, scripts/tax-sources.mjs, scripts/rates-fact-ids.mjs, scripts/build-rates-page.mjs, web/public/mtd-calendar.html, web/public/rates.html, web/public/lib/rates/, web/public/lib/diya-gl/tax/, web/unit-tests/mtdCalendar.test.js, web/unit-tests/ratesPage.test.js, web/unit-tests/ratesCompute.test.js, web/unit-tests/taxSources.test.js
 - **Keywords:** tax sources, gov.uk, mtd calendar, thresholds, deadlines, quote, retrieved, rates, sourced facts, rates and allowances, calculator, corporation tax, national insurance, income tax, mileage, cis
 - **Related:** SITE-10, SITE-12
+
+#### SITE-36 Compute due dates from sourced rules
+
+- **Use when:** working out a filing or payment date that no service states: a Company Tax Return and its payment from an accounting period, a VAT return or payment from its period end, the next VAT period, the standard Income Tax updates, the Self Assessment payments, a director or PSC change, or the identity verification on a confirmation statement.
+- **Does:** due-rules.js is a plain ES module that the browser and app/ both import. Each function answers rows of ISO dates in UK days, each with the fact id of its rule and source "computed"; every fact id has a source file under .claude/skills/tax-sources/sources with its gov.uk quote. A period of account longer than 12 months splits into two accounting periods. A month added to the last day of a month lands on the last day of the later month, as HMRC counts.
+- **Run:** `npx vitest run web/unit-tests/dueRules.test.js`
+- **Entry:** `web/public/lib/due/due-rules.js:ct600Rows`; `web/public/lib/due/due-rules.js:ctPaymentRows`; `web/public/lib/due/due-rules.js:vatReturnDue`; `web/public/lib/due/due-rules.js:vatPaymentDue`; `web/public/lib/due/due-rules.js:expectedNextVatPeriod`; `web/public/lib/due/due-rules.js:itsaStandardRows`; `web/public/lib/due/due-rules.js:saPaymentRows`; `web/public/lib/due/due-rules.js:changeDue`; `web/public/lib/due/due-rules.js:identityVerificationRow`
+- **Files:** web/public/lib/due/due-rules.js, web/unit-tests/dueRules.test.js, .claude/skills/tax-sources/sources/sa-payments-on-account.json, .claude/skills/tax-sources/sources/sa-balancing-payment.json, .claude/skills/tax-sources/sources/ch-officer-changes-14-days.json, .claude/skills/tax-sources/sources/ch-psc-changes-14-days.json, .claude/skills/tax-sources/sources/vat-payment-same-deadline.json
+- **Keywords:** due dates, deadline rules, ct600 due date, corporation tax payment date, vat return due date, vat payment date, payments on account, balancing payment, officer change 14 days, psc change, identity verification, period of account split
+- **Related:** SITE-22
 
 #### SITE-25 Build the marketing site data, social images, brand shots and listing packs
 
@@ -7366,6 +7378,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - balance sheet: [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - balance transaction: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
 - balance transactions: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake), [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
+- balancing payment: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - bank line: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
 - bank statement import: [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
 - bankcode: [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
@@ -7782,6 +7795,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - copilot workspace setup: [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup)
 - copyright header: [DEV-20](#dev-20-check-spdx-licence-headers)
 - corporation tax: [SITE-22](#site-22-source-and-publish-sourced-tax-facts), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets), [SS-04](#ss-04-apply-book-edits-and-derivations)
+- corporation tax payment date: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - corpus cli: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - corpus index: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - correlation headers: [SITE-07](#site-07-format-http-responses-and-errors)
@@ -7842,6 +7856,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - csv import: [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file)
 - csv per view: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - ct600: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets)
+- ct600 due date: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - ctr: [DATA-34](#data-34-report-google-ads-campaign-performance)
 - cumulative model: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates), [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - cumulative update: [HMRC-39](#hmrc-39-submit-and-manage-foreign-property-periodic-updates-and-property-details)
@@ -7903,6 +7918,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dead letter queue: [HMRC-43](#hmrc-43-check-a-header-shape-with-hmrcs-validator-using-synthetic-values)
 - dead script: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
 - deadline read: [OPS-188](#ops-188-prove-the-trusted-event-path-on-ci-and-prod)
+- deadline rules: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - deadlines: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - debugger client: [DEV-02](#dev-02-simulate-local-app-oauth)
 - decisions: [DEV-59](#dev-59-check-blockers-and-ask-the-operator-what-moves-the-board)
@@ -8064,7 +8080,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dry run: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [OPS-16](#ops-16-run-dynamodb-data-migrations), [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - dt partition: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - dt partition projection: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
-- due dates: [HMRC-03](#hmrc-03-retrieve-vat-obligations), [HMRC-10](#hmrc-10-retrieve-itsa-obligations)
+- due dates: [SITE-36](#site-36-compute-due-dates-from-sourced-rules), [HMRC-03](#hmrc-03-retrieve-vat-obligations), [HMRC-10](#hmrc-10-retrieve-itsa-obligations)
 - duplicate mechanism: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - duplicate script: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
 - duplicate workflow: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
@@ -8506,6 +8522,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - identity base url: [CH-09](#ch-09-query-and-submit-document-transactions)
 - identity guard: [OPS-28](#ops-28-enforce-commit-identity-allowlist), [SS-39](#ss-39-guard-commit-author-identity-on-prs)
 - identity pool: [SS-34](#ss-34-configure-cloudwatch-rum)
+- identity verification: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - identity-sandbox: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - identity.toml: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud), [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
 - identityprovider google: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
@@ -8918,6 +8935,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - observability stack: [OPS-117](#ops-117-provision-the-observability-stack)
 - observabilitystack: [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets)
 - oembed: [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site)
+- officer change 14 days: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - officers: [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
 - offline: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - offline conversion: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
@@ -9027,6 +9045,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - payable: [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-57](#bill-57-show-a-referrer-the-callers-own-commission-totals)
 - payment history: [HMRC-05](#hmrc-05-retrieve-vat-payments)
 - payments: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
+- payments on account: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - payout: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [BILL-54](#bill-54-pay-referral-commission-in-cash-through-stripe-connect)
 - payout schedule: [BILL-31](#bill-31-configure-stripe-account-policies)
 - payouts: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
@@ -9051,6 +9070,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - performance max: [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
 - period key: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return), [HMRC-03](#hmrc-03-retrieve-vat-obligations), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
 - period key hidden: [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations)
+- period of account split: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - permission grant: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
 - perplexitybot: [DATA-75](#data-75-refresh-the-ai-vendors-published-address-ranges-each-month)
 - personal allowance: [SS-19](#ss-19-update-annual-hmrc-tax-rate-data)
@@ -9187,6 +9207,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - proxy behaviour: [OPS-161](#ops-161-run-the-simulator-proxy-and-exploratory-crawl-behaviour-tests-in-ci)
 - proxy secrets: [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
 - proxy variant: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
+- psc change: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - pubbalsht: [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - public demo: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
 - public lookup: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
@@ -9966,6 +9987,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - vat logic: [OPS-97](#ops-97-compile-the-compliance-audit-report)
 - vat mtd: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - vat obligations: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-03](#hmrc-03-retrieve-vat-obligations)
+- vat payment date: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - vat payments: [HMRC-05](#hmrc-05-retrieve-vat-payments)
 - vat penalties: [HMRC-06](#hmrc-06-retrieve-vat-penalties)
 - vat receipt: [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts)
@@ -9973,6 +9995,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - vat return: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return), [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools), [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - vat return body: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
 - vat return csv: [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file)
+- vat return due date: [SITE-36](#site-36-compute-due-dates-from-sourced-rules)
 - vat return from a spreadsheet: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages)
 - vat scheme: [HMRC-01](#hmrc-01-submit-a-vat-return)
 - vat validation: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
