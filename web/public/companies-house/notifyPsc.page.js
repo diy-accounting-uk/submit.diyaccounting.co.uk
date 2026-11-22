@@ -336,10 +336,17 @@ function renderReview() {
 async function handleFile() {
   const scenario = value("govTestScenario");
   const headers = scenario ? { "Gov-Test-Scenario": scenario } : {};
+  // The home address and full date of birth are not on the public register: once sent, the page
+  // keeps neither, in its review, its inputs or its filing.
+  const form = filing;
+  filing = null;
+  field("reviewList").replaceChildren();
+  field("notifyForm").reset();
+  showSections();
   showView("resultView");
   showLoading();
   try {
-    await window.companiesHouseFormPage.fileAndShowOutcome({ kind: FORM_KIND, form: filing, result: field("filingResult"), headers });
+    await window.companiesHouseFormPage.fileAndShowOutcome({ kind: FORM_KIND, form, result: field("filingResult"), headers });
   } finally {
     hideLoading();
   }

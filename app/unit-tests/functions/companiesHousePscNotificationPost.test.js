@@ -255,6 +255,26 @@ describe("companiesHousePscNotificationPost ingestHandler", () => {
     expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
+  test("the home address and date of birth go into the envelope only: not the filing state, an event or a refusal", async () => {
+    const home = { premise: "9", street: "Lôn Gudd", postTown: "Bangor", country: "GB-WLS" };
+    await ingestHandler(buildEvent({ body: buildNotificationBody({ residentialAddress: { address: { ...home, street: "Lon Gudd" } } }) }));
+    expect(mockBuildFormSubmission.mock.calls[0][0].formXml).toContain("<Street>Lon Gudd</Street>");
+    const stored = JSON.stringify(mockSend.mock.calls.map(([cmd]) => cmd.input));
+    const published = JSON.stringify(mockEventBridgeSend.mock.calls.map(([cmd]) => cmd.input));
+    for (const held of [stored, published]) {
+      expect(held).not.toContain("Lon Gudd");
+      expect(held).not.toContain("1978-03-14");
+    }
+
+    const refused = await ingestHandler(
+      buildEvent({ body: buildNotificationBody({ residentialAddress: { address: { ...home, street: "Ffordd Glyndŵr" } } }) }),
+    );
+    expect(refused.statusCode).toBe(400);
+    const message = JSON.stringify(parseResponseBody(refused));
+    expect(message).toContain("usual residential address street has characters Companies House does not accept: ŵ");
+    expect(message).not.toContain("Glynd");
+  });
+
   test("answers 500 in JSON when the gateway rejects the envelope", async () => {
     mockParseGatewayResponse.mockReturnValue({ errors: [{ number: "604", text: "Invalid Request" }], statuses: [] });
     const response = await ingestHandler(buildEvent());

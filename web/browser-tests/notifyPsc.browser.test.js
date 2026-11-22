@@ -336,3 +336,24 @@ test("a link from the company lookup fills the company number", async ({ page })
   await page.goto(`${SITE}/companies-house/notifyPsc.html?companyNumber=00000001`, { waitUntil: "networkidle" });
   await expect(page.locator("#companyNumber")).toHaveValue("00000001");
 });
+
+test("the home address and full date of birth are on no page once the filing is sent", async ({ page }) => {
+  await serveSite(page);
+  await page.goto(`${SITE}/companies-house/notifyPsc.html`, { waitUntil: "networkidle" });
+  await page.locator("#companyNumber").fill("00000001");
+  await page.getByRole("button", { name: "Look up the company" }).click();
+  await fillIndividual(page);
+  await page.getByRole("group", { name: "Ownership of shares" }).getByLabel("75% or more").check();
+  await fillDates(page);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#reviewList")).toContainText("Heol y Bont");
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
+  const held = await page.evaluate(() => ({
+    html: document.body.innerHTML,
+    values: [...document.querySelectorAll("input")].map((input) => input.value).join(" "),
+  }));
+  expect(held.html).not.toContain("Heol y Bont");
+  expect(held.values).not.toContain("Heol y Bont");
+  expect(held.values).not.toContain("1978-03-14");
+});

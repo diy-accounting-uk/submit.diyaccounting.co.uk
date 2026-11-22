@@ -154,7 +154,15 @@ function json(route, status, body) {
 // from the fixtures. bundles is what /api/v1/bundle says the account holds.
 async function serveSite(
   page,
-  { environmentName = "ci", bundles = [], apiRequests = [], filings = FILINGS, filedAccounts = FILED_ACCOUNTS, signedIn = true } = {},
+  {
+    environmentName = "ci",
+    bundles = [],
+    apiRequests = [],
+    filings = FILINGS,
+    filedAccounts = FILED_ACCOUNTS,
+    pscs = PSCS,
+    signedIn = true,
+  } = {},
 ) {
   await page.addInitScript((withSignIn) => {
     localStorage.setItem("consent.analytics", "declined");
@@ -177,7 +185,7 @@ async function serveSite(
       if (company && company[1] !== "00000001") return json(route, 404, { message: "Not found for the specified query" });
       if (company && !company[2]) return json(route, 200, PROFILE);
       if (company && company[2] === "/officers") return json(route, 200, OFFICERS);
-      if (company && company[2] === "/persons-with-significant-control") return json(route, 200, PSCS);
+      if (company && company[2] === "/persons-with-significant-control") return json(route, 200, pscs);
       if (company && company[2] === "/filing-history") return json(route, 200, filings);
       if (company && company[2] === "/filed-accounts") return json(route, 200, filedAccounts);
       if (company && company[2] === "/registered-email-address/eligibility")
@@ -1116,5 +1124,36 @@ test.describe("Company lookup drill-down shares", () => {
     await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
     await expect(page.locator("#sharesSection dl")).toContainText("Last return of allotment of shares", { timeout: 15000 });
     await expect(page.locator('#sharesSection .file-this[data-activity="allot-shares"]')).toHaveCount(0);
+  });
+});
+
+test.describe("Company lookup drill-down notice of a new PSC", () => {
+  test("a company whose register lists no PSC is offered the notice of a new one, with the authority PSC01 states", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"], pscs: { pscs: [] } });
+    await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
+
+    await expect(page.locator("#drillView")).toContainText("The register lists no persons with significant control.", { timeout: 15000 });
+    const control = page.locator('#drillView .file-this[data-activity="notify-psc"]');
+    await expect(control.locator("a.btn")).toHaveText("Tell Companies House about a new PSC");
+    expect(await control.locator("a.btn").getAttribute("href")).toContain("/companies-house/notifyPsc.html?companyNumber=00000001");
+    await expect(control.locator(".file-this-authority")).toContainText(
+      "“You must have obtained confirmation from the individual person with significant control that their particulars are correct before sending this form to Companies House.”",
+    );
+  });
+
+  test("a company with PSCs on its register is offered the notice too", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillView")).toContainText("Eleanor Bramwell", { timeout: 15000 });
+    await expect(page.locator('#drillView .file-this[data-activity="notify-psc"] a.btn')).toHaveText(
+      "Tell Companies House about a new PSC",
+    );
+  });
+
+  test("on prod, where the notice is not offered, a company with no PSC gets no control for it", async ({ page }) => {
+    await serveSite(page, { environmentName: "prod", bundles: ["resident-ltd"], pscs: { pscs: [] } });
+    await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillView")).toContainText("The register lists no persons with significant control.", { timeout: 15000 });
+    await expect(page.locator('#drillView .file-this[data-activity="notify-psc"]')).toHaveCount(0);
   });
 });
