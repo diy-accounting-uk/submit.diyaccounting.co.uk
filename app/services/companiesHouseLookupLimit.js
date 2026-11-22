@@ -22,6 +22,8 @@ export const LOOKUP_CALLS_PER_ACCOUNT_PER_WINDOW = 150;
 // driven into Companies House's own limit and the public lookups and the filings keep the rest.
 export const LOOKUP_CALLS_FOR_ALL_ACCOUNTS_PER_WINDOW = 450;
 const ALL_ACCOUNTS = "all-signed-in-lookups";
+// The event a refusal by the budget of all logs, which a metric filter counts for the alarm.
+export const LOOKUP_BUDGET_REFUSED_EVENT = "CompaniesHouseLookupBudgetRefused";
 const WINDOW_SECONDS = 300;
 
 // The most Companies House calls each signed-in lookup makes on the shared key.
@@ -69,18 +71,27 @@ export async function lookupLimitReached(userSub, calls) {
   }
   const allUsed = await charge(ALL_ACCOUNTS, window, calls);
   if (allUsed !== null && allUsed > LOOKUP_CALLS_FOR_ALL_ACCOUNTS_PER_WINDOW) {
-    logger.warn({ message: "Companies House lookups refused, signed-in lookups have used their budget of the API key", used: allUsed });
+    logger.warn({
+      message: "Companies House lookups refused, signed-in lookups have used their budget of the API key",
+      event: LOOKUP_BUDGET_REFUSED_EVENT,
+      window,
+      used: allUsed,
+    });
     return true;
   }
   return false;
 }
 
-/** The JSON 429 a lookup answers once the account's share, or the budget of all signed-in lookups, is spent. */
+/**
+ * The JSON 429 a lookup answers once the account's share, or the budget of all signed-in lookups, is
+ * spent. Retry-After is the seconds left in the five-minute window, when both counters start again.
+ */
 export function lookupLimitResponse(request, headers) {
+  const secondsIntoWindow = (Date.now() / 1000) % WINDOW_SECONDS;
   return http429TooManyRequestsResponse({
     request,
     headers: { ...headers },
     message: "Too many Companies House lookups just now. Try again in a few minutes.",
-    retryAfterSeconds: WINDOW_SECONDS,
+    retryAfterSeconds: Math.max(1, Math.ceil(WINDOW_SECONDS - secondsIntoWindow)),
   });
 }

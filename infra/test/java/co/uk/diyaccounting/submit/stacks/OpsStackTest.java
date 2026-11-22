@@ -318,6 +318,44 @@ class OpsStackTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    void lookupBudgetRefusedMetricFiltersCoverEveryCompaniesHouseLookupLogGroup() {
+        OpsStack opsStack = synthOpsStack("prod", null, null);
+        Template template = Template.fromStack(opsStack);
+
+        Map<String, Map<String, Object>> metricFilters =
+                template.findResources("AWS::Logs::MetricFilter").entrySet().stream()
+                        .filter(entry -> entry.getKey().contains("LookupBudgetRefused"))
+                        .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        assertEquals(9, metricFilters.size(), "expected one metric filter per Companies House lookup route");
+
+        for (Map<String, Object> filter : metricFilters.values()) {
+            var properties = (Map<String, Object>) filter.get("Properties");
+            assertEquals("{ $.event = \"CompaniesHouseLookupBudgetRefused\" }", properties.get("FilterPattern"));
+            var metricTransformations = (List<Map<String, Object>>) properties.get("MetricTransformations");
+            assertEquals(1, metricTransformations.size());
+            assertEquals("Submit/Business", metricTransformations.get(0).get("MetricNamespace"));
+            assertEquals(
+                    "CompaniesHouseLookupBudgetRefused",
+                    metricTransformations.get(0).get("MetricName"));
+        }
+
+        var logGroupNames = metricFilters.values().stream()
+                .map(filter -> (Map<String, Object>) filter.get("Properties"))
+                .map(properties -> (String) properties.get("LogGroupName"))
+                .toList();
+        for (String route : List.of(
+                "companies-house-search-get",
+                "companies-house-company-get",
+                "companies-house-officers-get",
+                "companies-house-last-accounts-get")) {
+            assertTrue(
+                    logGroupNames.stream().anyMatch(name -> name.contains(route)),
+                    "expected a metric filter on the " + route + " log group, got " + logGroupNames);
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void tokenChargeUnpaidMetricFiltersCoverEveryHmrcSubmissionEndpointIngestLogGroup() {
         OpsStack opsStack = synthOpsStack("prod", null, null);
         Template template = Template.fromStack(opsStack);

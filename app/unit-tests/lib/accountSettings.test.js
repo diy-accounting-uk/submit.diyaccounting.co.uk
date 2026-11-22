@@ -61,6 +61,7 @@ describe("account settings", () => {
     ],
     [{ watchList: "00000001" }, 'watchList must be { "add": "<company number>" } or { "remove": "<company number>" }'],
     [{ watchList: { replace: ["00000001"] } }, 'watchList must be { "add": "<company number>" } or { "remove": "<company number>" }'],
+    [{ watchList: { add: "00000001" }, passGeneration: false }, "A watch list change is sent on its own, with no other setting"],
   ])("an update of %j is refused", (body, reason) => {
     expect(validateAccountSettingsUpdate(body).errors).toEqual([reason]);
   });

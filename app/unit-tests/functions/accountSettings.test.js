@@ -212,11 +212,23 @@ describe("account settings route", () => {
     [{ watchList: { add: "not-a-number" } }],
     [{ watchList: { add: "00000001", remove: "00000002" } }],
     [{ watchList: ["00000001"] }],
+    [{ watchList: { add: "SC000000" }, passGeneration: false }],
   ])("PUT of %j answers 400 and writes nothing", async (body) => {
     const response = await accountSettingsPutHandler(putEvent(body));
 
     expect(response.statusCode).toBe(400);
     expect(writes).toBe(0);
+  });
+
+  test("PUT of a watch list change with another setting answers 400 saying the change is sent on its own", async () => {
+    storedItem = { bundleId: ACCOUNT_SETTINGS_ITEM_ID, settings: { passGeneration: true, watchedCompanies: ["00000001"] } };
+
+    const response = await accountSettingsPutHandler(putEvent({ passGeneration: false, watchList: { add: "SC000000" } }));
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toContain("A watch list change is sent on its own, with no other setting");
+    expect(writes).toBe(0);
+    expect(storedItem.settings).toEqual({ passGeneration: true, watchedCompanies: ["00000001"] });
   });
 
   test("PUT without a signed-in user answers 401", async () => {

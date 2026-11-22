@@ -196,12 +196,12 @@ class SubmitEnvironmentCdkResourceTest {
         // it lives here instead of in the per-deployment OpsStack so a new deployment doesn't
         // create a fresh alarm (and a fresh GitHub issue) against this environment-wide metric.
         // Alongside RumLcpP75Alarm, RumClsP75Alarm, RumJsErrorAlarm, BundleCapReachedAlarm,
-        // HmrcSubmissionFailureAlarm, ItsaSubmissionFailureAlarm, TokenChargeUnpaidAlarm and
-        // HmrcFraudHeaderViolationAlarm, HmrcFraudHeaderRuleFailureAlarm,
-        // IntegrationCallRecordFailedAlarm, CustomerEmailFailureAlarm and HmrcFphCheckFailedAlarm,
-        // that's 13 alarms, and the trusted event function's two checks make 15 (its composite is
-        // the one composite).
-        observability.resourceCountIs("AWS::CloudWatch::Alarm", 15);
+        // HmrcSubmissionFailureAlarm, ItsaSubmissionFailureAlarm, TokenChargeUnpaidAlarm,
+        // CompaniesHouseLookupBudgetRefusedAlarm and HmrcFraudHeaderViolationAlarm,
+        // HmrcFraudHeaderRuleFailureAlarm, IntegrationCallRecordFailedAlarm,
+        // CustomerEmailFailureAlarm and HmrcFphCheckFailedAlarm, that's 14 alarms, and the trusted
+        // event function's two checks make 16 (its composite is the one composite).
+        observability.resourceCountIs("AWS::CloudWatch::Alarm", 16);
         observability.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 1);
         observability.resourceCountIs("AWS::Lambda::Function", 3);
         observability.resourceCountIs("AWS::IAM::Role", 8);
@@ -284,6 +284,21 @@ class SubmitEnvironmentCdkResourceTest {
                         "AlarmName", "test-env-token-charge-unpaid",
                         "Namespace", "Submit/Business",
                         "MetricName", "TokenChargeUnpaid",
+                        "Period", 300,
+                        "Statistic", "Sum",
+                        "Threshold", 1,
+                        "EvaluationPeriods", 1,
+                        "ComparisonOperator", "GreaterThanOrEqualToThreshold",
+                        "TreatMissingData", "notBreaching")));
+
+        // Companies House lookup budget alarm: any refusal by the budget of all signed-in lookups
+        // in the limit's five-minute window, counted by every deployment's OpsStack metric filters.
+        observability.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName", "test-env-companies-house-lookup-budget-refused",
+                        "Namespace", "Submit/Business",
+                        "MetricName", "CompaniesHouseLookupBudgetRefused",
                         "Period", 300,
                         "Statistic", "Sum",
                         "Threshold", 1,

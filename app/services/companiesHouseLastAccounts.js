@@ -45,9 +45,14 @@ export function mapLastAccounts(document) {
   };
 }
 
-// A filed set's document never changes, and a newer filing has a new transaction id, so the answer
-// for one set is kept a week. It holds only figures from the public register.
-const CACHE_SECONDS = 7 * 24 * 60 * 60;
+// A filed set's document never changes, and a newer filing has a new transaction id, so an answer
+// that the document settles (its figures, or that it has none to read) is kept a week. An answer
+// that depends on our reader or its size limit is kept an hour, so a better reader shows within the
+// hour while a document that cannot be read is still not read again on every call. The cache holds
+// only figures from the public register.
+const SETTLED_CACHE_SECONDS = 7 * 24 * 60 * 60;
+const READER_CACHE_SECONDS = 60 * 60;
+const SETTLED_OUTCOMES = new Set(["mapped", "paper", "no-ixbrl"]);
 
 /**
  * The company's last filed accounts as the next accounts' prior year. outcome says what the form can
@@ -71,7 +76,10 @@ export async function readLastAccounts(companyNumber) {
     if (cached) return cached;
   }
   const answer = await answerOfFiling(newest.item, companyNumber);
-  if (caching && !answer.chResponse) await putCachedValue(cacheKey, answer, CACHE_SECONDS).catch((error) => cacheProblem("written", error));
+  if (caching && !answer.chResponse) {
+    const seconds = SETTLED_OUTCOMES.has(answer.outcome) ? SETTLED_CACHE_SECONDS : READER_CACHE_SECONDS;
+    await putCachedValue(cacheKey, answer, seconds).catch((error) => cacheProblem("written", error));
+  }
   return answer;
 }
 

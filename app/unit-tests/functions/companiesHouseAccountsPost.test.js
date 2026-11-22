@@ -844,6 +844,7 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       ["accounts Companies House did not accept", { ...ORIGINAL_RECEIPT, statusCode: "REJECT" }, "did not accept those accounts"],
       ["accounts filed with a Company Tax Return", { ...ORIGINAL_RECEIPT, jointFilingId: "joint-1" }, "Company Tax Return page"],
       ["accounts that are already revised accounts", { ...ORIGINAL_RECEIPT, amended: true }, "already revised accounts"],
+      ["accounts whose filed document was not kept", { ...ORIGINAL_RECEIPT, filedDocument: undefined }, "was not kept"],
       ["accounts of another company", { ...ORIGINAL_RECEIPT, companyNumber: "09999999" }, "for another company"],
       [
         "accounts for another period",

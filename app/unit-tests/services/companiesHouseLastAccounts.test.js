@@ -86,6 +86,7 @@ describe("readLastAccounts", () => {
     mockNewestAccountsFiling.mockReset();
     mockDocumentOfItem.mockReset();
     cache.clear();
+    mockPutCachedValue.mockClear();
     delete process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
   });
 
@@ -162,6 +163,19 @@ describe("readLastAccounts", () => {
     expect(second).toEqual(first);
     expect(mockDocumentOfItem).toHaveBeenCalledTimes(1);
     expect(mockPutCachedValue).toHaveBeenCalledWith("lastaccounts#09876543#TX1", first, 7 * 24 * 60 * 60);
+  });
+
+  test.each([
+    [{ problem: "no-ixbrl", set: { ...SET, paperFiled: true } }, "paper", 7 * 24 * 60 * 60],
+    [{ problem: "no-ixbrl", set: SET }, "no-ixbrl", 7 * 24 * 60 * 60],
+    [{ problem: "too-large", set: SET }, "too-large", 60 * 60],
+    [{ set: SET, document: "<html><body>Scanned accounts</body></html>" }, "unreadable", 60 * 60],
+  ])("keeps the answer for %j in the cache for as long as its outcome holds", async (read, outcome, seconds) => {
+    process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
+    mockFetchLastFiledAccounts.mockResolvedValue(read);
+    const answer = await readLastAccounts("09876543");
+    expect(answer.outcome).toBe(outcome);
+    expect(mockPutCachedValue).toHaveBeenCalledWith("lastaccounts#09876543#TX1", answer, seconds);
   });
 
   test("reads the document when the cache cannot be read or written", async () => {

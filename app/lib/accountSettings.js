@@ -89,6 +89,9 @@ export function validateAccountSettingsUpdate(body) {
     if (problem) errors.push(problem);
     else update[name] = value;
   }
+  if (watchListOperation && Object.keys(body).length > 1) {
+    errors.push("A watch list change is sent on its own, with no other setting");
+  }
   if (errors.length === 0 && Object.keys(update).length === 0 && !watchListOperation) errors.push("Request body names no setting");
   return { update, watchListOperation, errors };
 }

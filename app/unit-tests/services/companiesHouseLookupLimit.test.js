@@ -10,6 +10,8 @@ vi.mock("@app/data/dynamoDbSecurityStateRepository.js", () => ({
   incrementRateCounter: (...args) => mockIncrementRateCounter(...args),
 }));
 vi.mock("@app/services/subHasher.js", () => ({ hashSub: (sub) => `hashed_${sub}` }));
+const mockLogger = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
+vi.mock("@app/lib/logger.js", async (importOriginal) => ({ ...(await importOriginal()), createLogger: () => mockLogger }));
 
 const {
   lookupLimitReached,
@@ -69,6 +71,21 @@ describe("the Companies House lookup limit per account", () => {
     expect(await lookupLimitReached("user-2", 1)).toBe(true);
   });
 
+  test("logs each refusal by the budget of all as one line with its event name and window", async () => {
+    mockLogger.warn.mockClear();
+    mockIncrementRateCounter.mockResolvedValueOnce(1).mockResolvedValueOnce(451);
+    expect(await lookupLimitReached("user-2", 1)).toBe(true);
+    const lines = mockLogger.warn.mock.calls.map(([line]) => line).filter((line) => line.event === "CompaniesHouseLookupBudgetRefused");
+    expect(lines).toEqual([expect.objectContaining({ window: Math.floor(Date.now() / 1000 / 300), used: 451 })]);
+  });
+
+  test("logs no budget event for a refusal by the account's own share", async () => {
+    mockLogger.warn.mockClear();
+    mockIncrementRateCounter.mockResolvedValueOnce(LOOKUP_CALLS_PER_ACCOUNT_PER_WINDOW + 1);
+    expect(await lookupLimitReached("user-1", 1)).toBe(true);
+    expect(mockLogger.warn.mock.calls.some(([line]) => line.event === "CompaniesHouseLookupBudgetRefused")).toBe(false);
+  });
+
   test("a lookup refused for the account's share is not charged to the budget of all", async () => {
     mockIncrementRateCounter.mockResolvedValueOnce(LOOKUP_CALLS_PER_ACCOUNT_PER_WINDOW + 1);
     expect(await lookupLimitReached("user-1", 1)).toBe(true);
@@ -95,10 +112,28 @@ describe("the Companies House lookup limit per account", () => {
     expect(await lookupLimitReached("user-1", 1)).toBe(false);
   });
 
-  test("answers a JSON 429 with a Retry-After of the window", () => {
-    const response = lookupLimitResponse({}, { "Content-Type": "application/json" });
-    expect(response.statusCode).toBe(429);
-    expect(response.headers["Retry-After"]).toBe("300");
-    expect(JSON.parse(response.body).message).toBe("Too many Companies House lookups just now. Try again in a few minutes.");
+  test("answers a JSON 429 with a Retry-After of the seconds left in the five-minute window", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date(300 * 1000 * 5_000_000 + 100 * 1000));
+      const response = lookupLimitResponse({}, { "Content-Type": "application/json" });
+      expect(response.statusCode).toBe(429);
+      expect(response.headers["Retry-After"]).toBe("200");
+      expect(JSON.parse(response.body).message).toBe("Too many Companies House lookups just now. Try again in a few minutes.");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("answers a Retry-After of at least one second at the end of the window, and the whole window at its start", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date(300 * 1000 * 5_000_001 - 200));
+      expect(lookupLimitResponse({}, {}).headers["Retry-After"]).toBe("1");
+      vi.setSystemTime(new Date(300 * 1000 * 5_000_001));
+      expect(lookupLimitResponse({}, {}).headers["Retry-After"]).toBe("300");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
