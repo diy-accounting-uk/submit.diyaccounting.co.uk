@@ -27083,9 +27083,6 @@ cy = '''Mae Tŷ’r Cwmnïau yn rhestru {name} ({number}) gyda’r enw hwn. Dim 
 hash = "3e82daa75f16"
 cy = '''Mae’r gofrestr yn dangos person â rheolaeth arwyddocaol nad yw wedi peidio â bod yn un: {names}. Dywedwch wrth Dŷ’r Cwmnïau eu bod wedi peidio cyn i chi ddatgan nad oes gan y cwmni un.'''
 
-[strings."ch.psc-statements.psc-born"]
-hash = "418f1dc0e6eb"
-cy = '''{name}, ganwyd {born} ({kind})'''
 
 # == A date after today, refused on the PSC change of details and statements pages: ch.change-psc.*-after-today, ch.psc-statements.date-after-today ==
 
@@ -27101,15 +27098,8 @@ cy = '''Ni all y dyddiad cadarnhau fod ar ôl heddiw.'''
 hash = "da09116b461a"
 cy = '''Ni all y dyddiad perthnasol fod ar ôl heddiw.'''
 
-# == Two PSCs of one name told apart on the cessation and change of details pages: ch.cease.psc-born, ch.change-psc.psc-born ==
 
-[strings."ch.cease.psc-born"]
-hash = "418f1dc0e6eb"
-cy = '''{name}, ganwyd {born} ({kind})'''
 
-[strings."ch.change-psc.psc-born"]
-hash = "418f1dc0e6eb"
-cy = '''{name}, ganwyd {born} ({kind})'''
 
 # The company lookup's accounts type, as the register names the last accounts filed.
 #   micro-entity                    micro-endid
@@ -27205,6 +27195,10 @@ cy = '''Swyddog'''
 [strings."ch.remove-officer.review-officer"]
 hash = "192135a8adab"
 cy = '''Swyddog'''
+
+[strings."ch.namesake.named-with-note"]
+hash = "efed228a6f4a"
+cy = '''{name}, {note} ({described})'''
 
 [strings."ch.namesake.born"]
 hash = "f1b6083960ed"

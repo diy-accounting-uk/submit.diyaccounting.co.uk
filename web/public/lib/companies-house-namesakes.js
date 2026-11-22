@@ -57,5 +57,19 @@
     return parts.length ? `${person.name} (${parts.join(", ")})` : person.name;
   }
 
-  window.companiesHouseNamesakes = { namesakeNote, namedApart };
+  /**
+   * A person's name, then what tells them apart from a namesake, then the other words in brackets:
+   * "Jo Smith, born June 1985 (Individual)". The PSC pages name a person this way.
+   * @param {object} person
+   * @param {object[]} people
+   * @param {string} described - such as the kind of PSC
+   * @returns {string}
+   */
+  function namedApartBefore(person, people, described) {
+    const note = namesakeNote(person, people);
+    if (!note) return `${person.name} (${described})`;
+    return siteText("ch.namesake.named-with-note", "{name}, {note} ({described})", { name: person.name, note, described });
+  }
+
+  window.companiesHouseNamesakes = { namesakeNote, namedApart, namedApartBefore };
 })();

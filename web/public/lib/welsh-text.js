@@ -407,7 +407,6 @@ window.WELSH_TEXT = {
   "ch.cease.kind-entity": "Endid cyfreithiol neu berson cofrestradwy arall",
   "ch.cease.kind-individual": "Unigolyn",
   "ch.cease.lookup-failed": "Methu darllen personau â rheolaeth arwyddocaol y cwmni hwn gan Dŷ’r Cwmnïau.",
-  "ch.cease.psc-born": "{name}, ganwyd {born} ({kind})",
   "ch.cease.review-ceased": "Dyddiad peidio â bod yn PRhA",
   "ch.cease.review-company": "Cwmni",
   "ch.cease.review-confirmed": "Dyddiad cadarnhau",
@@ -473,7 +472,6 @@ window.WELSH_TEXT = {
   "ch.change-psc.lookup-failed": "Methu darllen personau â rheolaeth arwyddocaol y cwmni hwn gan Dŷ’r Cwmnïau.",
   "ch.change-psc.name-needed": "Rhowch yr enw newydd.",
   "ch.change-psc.nationality-needed": "Rhowch y cenedligrwydd newydd.",
-  "ch.change-psc.psc-born": "{name}, ganwyd {born} ({kind})",
   "ch.change-psc.registration-needed": "Rhowch y rhif cofrestru yn y gofrestr a enwyd.",
   "ch.change-psc.residence-country-needed": "Rhowch y wlad neu’r dalaith breswyl newydd.",
   "ch.change-psc.residence-needed": "Rhowch enw neu rif adeilad y cyfeiriad preswyl arferol newydd, ei dref bost a’i wlad.",
@@ -1479,6 +1477,7 @@ window.WELSH_TEXT = {
   "ch.name.service-standard": "Gwasanaeth safonol, £{fee}",
   "ch.namesake.appointed": "penodwyd {date}",
   "ch.namesake.born": "ganwyd {month}",
+  "ch.namesake.named-with-note": "{name}, {note} ({described})",
   "ch.notes.advances-required":
     "Mae’r fantolen yn dangos symiau sy’n ddyledus gan gyfarwyddwyr. Rhowch res yn y nodyn ar flaensymiau i bob cyfarwyddwr sydd mewn dyled i’r cwmni.",
   "ch.notes.arithmetic":
@@ -1589,7 +1588,6 @@ window.WELSH_TEXT = {
   "ch.psc-statements.lookup-failed": "Methu darllen y cwmni hwn o Dŷ’r Cwmnïau.",
   "ch.psc-statements.no-psc-but-current":
     "Mae’r gofrestr yn dangos person â rheolaeth arwyddocaol nad yw wedi peidio â bod yn un: {names}. Dywedwch wrth Dŷ’r Cwmnïau eu bod wedi peidio cyn i chi ddatgan nad oes gan y cwmni un.",
-  "ch.psc-statements.psc-born": "{name}, ganwyd {born} ({kind})",
   "ch.psc-statements.review-company": "Cwmni",
   "ch.psc-statements.review-date": "Dyddiad perthnasol",
   "ch.psc-statements.review-psc": "Person â rheolaeth arwyddocaol",

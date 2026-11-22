@@ -46,20 +46,9 @@ function kindText(kind) {
     : window.siteText("ch.cease.kind-entity", "Legal entity or other registrable person");
 }
 
-// A PSC as the page names it: with its month and year of birth when another current PSC has its name,
-// so two people of one name are told apart.
+// A PSC as the page names it, told apart from another current PSC of the same name.
 function pscLabel(psc) {
-  const namesake = pscs.filter(nameable).some((other) => other !== psc && other.name === psc.name);
-  const born = psc.dateOfBirth;
-  if (!namesake || psc.kind !== INDIVIDUAL || !born?.month || !born?.year) return `${psc.name} (${kindText(psc.kind)})`;
-  const monthAndYear = window.companiesHouseLabels
-    .formatCompanyDate(`${born.year}-${String(born.month).padStart(2, "0")}-01`)
-    .replace(/^1 /, "");
-  return window.siteText("ch.cease.psc-born", "{name}, born {born} ({kind})", {
-    name: psc.name,
-    born: monthAndYear,
-    kind: kindText(psc.kind),
-  });
+  return window.companiesHouseNamesakes.namedApartBefore(psc, pscs.filter(nameable), kindText(psc.kind));
 }
 
 function renderPscChoices(chosenId) {
