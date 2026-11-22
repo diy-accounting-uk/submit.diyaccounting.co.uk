@@ -74,6 +74,7 @@ HMRC_RECEIPT_CERTIFICATE_SHA256 CompaniesHouseStack.java hmrcCtReturnPost and hm
 # scan flagged for that name; the exemption applies to that file only, so a real handler
 # that reads the name for real still fails if it is ever unwired.
 
+PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME  app/functions/account/accountSettingsPut.js  app/data/dynamoDbPracticeClientRepository.js getClient()/createClient(); enforceBundles() reads a client only for a clientId, and this handler passes none
 PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME  app/functions/account/bundleDelete.js  app/data/dynamoDbPracticeClientRepository.js getClient()/createClient(); reached here only via an unrelated re-export (e.g. BundleAuthorizationError from bundleManagement.js), never called by this handler
 PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME  app/functions/analytics/operatorSnapshotGet.js  app/data/dynamoDbPracticeClientRepository.js getClient()/createClient(); reached here only via an unrelated re-export (e.g. BundleAuthorizationError from bundleManagement.js), never called by this handler
 PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME  app/functions/analytics/operatorConsoleImageGet.js  app/data/dynamoDbPracticeClientRepository.js getClient()/createClient(); reached here only via an unrelated re-export (e.g. BundleAuthorizationError from bundleManagement.js), never called by this handler
@@ -256,6 +257,7 @@ COMPANIES_HOUSE_FILING_BASE_URI  app/functions/companies-house/companiesHouseTra
 COMPANIES_HOUSE_FILING_BASE_URI  app/functions/companies-house/companiesHouseTransactionPost.js  app/services/companiesHouseFilingApi.js:36-41 getFilingBaseUrl(); this handler imports companiesHouseFilingApi.js for a different export
 COMPANIES_HOUSE_FILING_BASE_URI  app/functions/companies-house/companiesHouseTransactionPut.js  app/services/companiesHouseFilingApi.js:36-41 getFilingBaseUrl(); this handler imports companiesHouseFilingApi.js for a different export
 
+COMPANIES_HOUSE_GATEWAY_TEST  app/functions/account/accountSettingsPut.js  app/lib/previewFeatures.js:20-22 companiesHouseGatewayIsTestService(), which previewRunsAgainstSandbox() calls only for a Companies House XML gateway path; this handler serves no such path
 COMPANIES_HOUSE_GATEWAY_TEST  app/functions/account/bundleDelete.js  app/lib/previewFeatures.js:20-22 companiesHouseGatewayIsTestService(), which previewRunsAgainstSandbox() calls only for a Companies House XML gateway path; this handler serves no such path
 COMPANIES_HOUSE_GATEWAY_TEST  app/functions/analytics/operatorConsoleImageGet.js  app/lib/previewFeatures.js:20-22 companiesHouseGatewayIsTestService(), which previewRunsAgainstSandbox() calls only for a Companies House XML gateway path; this handler serves no such path
 COMPANIES_HOUSE_GATEWAY_TEST  app/functions/analytics/operatorSnapshotGet.js  app/lib/previewFeatures.js:20-22 companiesHouseGatewayIsTestService(), which previewRunsAgainstSandbox() calls only for a Companies House XML gateway path; this handler serves no such path

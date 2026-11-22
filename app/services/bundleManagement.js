@@ -134,7 +134,7 @@ export async function removeBundles(userId, bundlesToRemove) {
 }
 
 export async function enforceBundles(event, options = {}) {
-  const { hmrcBase = process.env.HMRC_BASE_URI, clientId } = options;
+  const { hmrcBase = process.env.HMRC_BASE_URI, clientId, activityId } = options;
 
   logger.info({
     message: "enforceBundles called",
@@ -146,7 +146,10 @@ export async function enforceBundles(event, options = {}) {
   const requestPath = request?.pathname || "";
   const catalog = loadCatalogFromRoot();
   const environmentName = process.env.ENVIRONMENT_NAME;
-  const pathActivities = findMatchingActivitiesForUrlPath(catalog, requestPath);
+  // A route whose path serves several things names the activity of the one it checks.
+  const pathActivities = activityId
+    ? (catalog.activities || []).filter((activity) => activity.id === activityId)
+    : findMatchingActivitiesForUrlPath(catalog, requestPath);
   const listedActivities = pathActivities.filter((activity) => isActivityListedInEnvironment(activity, environmentName));
   const matchedActivities =
     listedActivities.length === 0 && previewRunsAgainstSandbox(event, requestPath) ? pathActivities : listedActivities;

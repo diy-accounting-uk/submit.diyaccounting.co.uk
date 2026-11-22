@@ -28,15 +28,23 @@ describe("account settings", () => {
     expect(resolveAccountSettings(undefined).watchedCompanies).toEqual([]);
   });
 
-  test("an update of the watch list takes company numbers up to the cap", () => {
-    const full = Array.from({ length: WATCH_LIST_CAP }, (_, index) => String(index + 1).padStart(8, "0"));
+  test("the watch list is capped at 50 companies", () => {
     expect(WATCH_LIST_CAP).toBe(50);
-    expect(validateAccountSettingsUpdate({ watchedCompanies: full })).toEqual({ update: { watchedCompanies: full }, errors: [] });
-    expect(validateAccountSettingsUpdate({ watchedCompanies: [] })).toEqual({ update: { watchedCompanies: [] }, errors: [] });
   });
 
-  test("an update names known settings with boolean values", () => {
-    expect(validateAccountSettingsUpdate({ passGeneration: false })).toEqual({ update: { passGeneration: false }, errors: [] });
+  test("an update names pass generation with a boolean value", () => {
+    expect(validateAccountSettingsUpdate({ passGeneration: false })).toEqual({
+      update: { passGeneration: false },
+      watchListOperation: null,
+      errors: [],
+    });
+  });
+
+  test.each([
+    [{ watchList: { add: "00000001" } }, { op: "add", companyNumber: "00000001" }],
+    [{ watchList: { remove: "SC000000" } }, { op: "remove", companyNumber: "SC000000" }],
+  ])("a watch list operation %j names one company", (body, operation) => {
+    expect(validateAccountSettingsUpdate(body)).toEqual({ update: {}, watchListOperation: operation, errors: [] });
   });
 
   test.each([
@@ -45,14 +53,14 @@ describe("account settings", () => {
     [{}, "Request body names no setting"],
     [null, "Request body must be a JSON object of settings"],
     [[true], "Request body must be a JSON object of settings"],
-    [{ watchedCompanies: "00000001" }, "Setting watchedCompanies must be a list of company numbers"],
-    [{ watchedCompanies: ["00000001", "1"] }, "Setting watchedCompanies must hold 8-character company numbers only"],
-    [{ watchedCompanies: [{ companyNumber: "00000001" }] }, "Setting watchedCompanies must hold 8-character company numbers only"],
-    [{ watchedCompanies: ["00000001", "00000001"] }, "Setting watchedCompanies must not repeat a company number"],
+    [{ watchedCompanies: ["00000001"] }, "Setting watchedCompanies changes one company at a time through watchList"],
+    [{ watchList: { add: "1" } }, "watchList takes an 8-character company number"],
     [
-      { watchedCompanies: Array.from({ length: 51 }, (_, index) => String(index + 1).padStart(8, "0")) },
-      "Setting watchedCompanies holds at most 50 companies",
+      { watchList: { add: "00000001", remove: "00000002" } },
+      'watchList must be { "add": "<company number>" } or { "remove": "<company number>" }',
     ],
+    [{ watchList: "00000001" }, 'watchList must be { "add": "<company number>" } or { "remove": "<company number>" }'],
+    [{ watchList: { replace: ["00000001"] } }, 'watchList must be { "add": "<company number>" } or { "remove": "<company number>" }'],
   ])("an update of %j is refused", (body, reason) => {
     expect(validateAccountSettingsUpdate(body).errors).toEqual([reason]);
   });

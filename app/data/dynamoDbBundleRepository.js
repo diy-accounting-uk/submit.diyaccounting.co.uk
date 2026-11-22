@@ -595,13 +595,15 @@ export async function getAccountSettings(userId) {
   }
 }
 
-export async function updateAccountSettings(userId, settings) {
-  logger.info({ message: `updateAccountSettings [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, settings });
-
+// The settings item of the account under its current hashed sub, created when it does not exist
+// yet with the settings found under an earlier salt, so a change made after a salt rotation keeps
+// them. The creation is conditional, so two first changes at once create it once.
+async function ensureAccountSettingsItem(userId) {
+  const hashedSub = hashSub(userId);
+  const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
+  const now = new Date().toISOString();
+  const earlierSettings = await getAccountSettings(userId);
   try {
-    const hashedSub = hashSub(userId);
-    const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
-    const merged = { ...(await getAccountSettings(userId)), ...settings };
     await executeDynamoDbCommand(
       (module) =>
         new module.PutCommand({
@@ -610,16 +612,159 @@ export async function updateAccountSettings(userId, settings) {
             hashedSub,
             bundleId: ACCOUNT_SETTINGS_ITEM_ID,
             saltVersion: getSaltVersion(),
-            settings: merged,
-            updatedAt: new Date().toISOString(),
+            settings: { ...earlierSettings },
+            updatedAt: now,
           },
+          ConditionExpression: "attribute_not_exists(bundleId)",
         }),
     );
-    return merged;
+  } catch (error) {
+    if (error.name !== "ConditionalCheckFailedException") throw error;
+  }
+}
+
+function isConditionFailure(error) {
+  return error?.name === "ConditionalCheckFailedException";
+}
+
+/**
+ * Change named account settings. Each setting is written on its own path of the settings item, so a
+ * change of one setting never writes another back, whatever changes at the same moment.
+ * @param {string} userId
+ * @param {object} settings - The settings to change, by name
+ * @returns {Promise<object>} The settings as stored after the change
+ */
+export async function updateAccountSettings(userId, settings) {
+  logger.info({ message: `updateAccountSettings [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, settings });
+  const names = Object.keys(settings);
+  const assignments = names.map((_, index) => "#settings.#name" + index + " = :value" + index).join(", ");
+  const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
+  const update = (module) =>
+    new module.UpdateCommand({
+      TableName: tableName,
+      Key: { hashedSub: hashSub(userId), bundleId: ACCOUNT_SETTINGS_ITEM_ID },
+      UpdateExpression: `SET ${assignments}, updatedAt = :now`,
+      ConditionExpression: "attribute_exists(#settings)",
+      ExpressionAttributeNames: { "#settings": "settings", ...Object.fromEntries(names.map((name, index) => [`#name${index}`, name])) },
+      ExpressionAttributeValues: {
+        ":now": new Date().toISOString(),
+        ...Object.fromEntries(names.map((name, index) => [`:value${index}`, settings[name]])),
+      },
+      ReturnValues: "ALL_NEW",
+    });
+  try {
+    try {
+      return (await executeDynamoDbCommand(update)).Attributes.settings;
+    } catch (error) {
+      if (!isConditionFailure(error)) throw error;
+      await ensureAccountSettingsItem(userId);
+      return (await executeDynamoDbCommand(update)).Attributes.settings;
+    }
   } catch (error) {
     logger.error({ message: "Error updating account settings in DynamoDB", error: error.message, userId });
     throw error;
   }
+}
+
+async function readOwnAccountSettings(userId) {
+  const response = await executeDynamoDbCommand(
+    (module) =>
+      new module.GetCommand({
+        TableName: getResourceName("BUNDLE_DYNAMODB_TABLE_NAME"),
+        Key: { hashedSub: hashSub(userId), bundleId: ACCOUNT_SETTINGS_ITEM_ID },
+        ConsistentRead: true,
+      }),
+  );
+  return response.Item?.settings;
+}
+
+// A watch list change whose condition failed because the list changed meanwhile is tried again,
+// at most this many times in all.
+const WATCH_LIST_ATTEMPTS = 5;
+
+/**
+ * Add a company number to the account's watch list in one conditional write: the write appends the
+ * number only while the list holds fewer than cap numbers and does not hold it, so two changes at
+ * once cannot lose either. Only the watch list's path of the settings item is written.
+ * @param {string} userId
+ * @param {string} companyNumber
+ * @param {number} cap - The most numbers the list holds
+ * @returns {Promise<{status: "added"|"unchanged"|"full", settings: object}>} The settings as stored
+ */
+export async function addToWatchedCompanies(userId, companyNumber, cap) {
+  const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
+  for (let attempt = 1; attempt <= WATCH_LIST_ATTEMPTS; attempt++) {
+    try {
+      const response = await executeDynamoDbCommand(
+        (module) =>
+          new module.UpdateCommand({
+            TableName: tableName,
+            Key: { hashedSub: hashSub(userId), bundleId: ACCOUNT_SETTINGS_ITEM_ID },
+            UpdateExpression: "SET #settings.#watched = list_append(if_not_exists(#settings.#watched, :empty), :one), updatedAt = :now",
+            ConditionExpression:
+              "attribute_exists(#settings) AND (attribute_not_exists(#settings.#watched) OR (size(#settings.#watched) < :cap AND NOT contains(#settings.#watched, :number)))",
+            ExpressionAttributeNames: { "#settings": "settings", "#watched": "watchedCompanies" },
+            ExpressionAttributeValues: {
+              ":empty": [],
+              ":one": [companyNumber],
+              ":number": companyNumber,
+              ":cap": cap,
+              ":now": new Date().toISOString(),
+            },
+            ReturnValues: "ALL_NEW",
+          }),
+      );
+      return { status: "added", settings: response.Attributes.settings };
+    } catch (error) {
+      if (!isConditionFailure(error)) throw error;
+    }
+    const settings = await readOwnAccountSettings(userId);
+    if (!settings) {
+      await ensureAccountSettingsItem(userId);
+      continue;
+    }
+    const watched = Array.isArray(settings.watchedCompanies) ? settings.watchedCompanies : [];
+    if (watched.includes(companyNumber)) return { status: "unchanged", settings };
+    if (watched.length >= cap) return { status: "full", settings };
+  }
+  throw new Error("The watch list changed on every attempt to add to it");
+}
+
+/**
+ * Remove a company number from the account's watch list in one conditional write: the write
+ * removes the list entry at the number's place only while that entry still holds the number, so a
+ * change made meanwhile is never undone. Only the watch list's path of the settings item is written.
+ * @param {string} userId
+ * @param {string} companyNumber
+ * @returns {Promise<{status: "removed"|"unchanged", settings: object}>} The settings as stored
+ */
+export async function removeFromWatchedCompanies(userId, companyNumber) {
+  const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
+  for (let attempt = 1; attempt <= WATCH_LIST_ATTEMPTS; attempt++) {
+    const settings = (await readOwnAccountSettings(userId)) ?? (await getAccountSettings(userId));
+    const watched = Array.isArray(settings.watchedCompanies) ? settings.watchedCompanies : [];
+    const index = watched.indexOf(companyNumber);
+    if (index === -1) return { status: "unchanged", settings };
+    await ensureAccountSettingsItem(userId);
+    try {
+      const response = await executeDynamoDbCommand(
+        (module) =>
+          new module.UpdateCommand({
+            TableName: tableName,
+            Key: { hashedSub: hashSub(userId), bundleId: ACCOUNT_SETTINGS_ITEM_ID },
+            UpdateExpression: `REMOVE #settings.#watched[${index}] SET updatedAt = :now`,
+            ConditionExpression: `#settings.#watched[${index}] = :number`,
+            ExpressionAttributeNames: { "#settings": "settings", "#watched": "watchedCompanies" },
+            ExpressionAttributeValues: { ":number": companyNumber, ":now": new Date().toISOString() },
+            ReturnValues: "ALL_NEW",
+          }),
+      );
+      return { status: "removed", settings: response.Attributes.settings };
+    } catch (error) {
+      if (!isConditionFailure(error)) throw error;
+    }
+  }
+  throw new Error("The watch list changed on every attempt to remove from it");
 }
 
 /** Every bundle item of one account, read by its hashed sub; the account settings item is left out. */

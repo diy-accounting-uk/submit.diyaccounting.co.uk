@@ -40,19 +40,48 @@ export function resolveAccountSettings(stored) {
   return settings;
 }
 
+// The settings a request writes whole. The watch list is not among them: it changes one company at
+// a time through watchList, which the server applies to the stored list.
+const WRITTEN_WHOLE = ["passGeneration"];
+
+// The watch list operation in a request body: { add: "<company number>" } or { remove: "<company number>" }.
+function watchListOperationOf(value, errors) {
+  const keys = value && typeof value === "object" && !Array.isArray(value) ? Object.keys(value) : [];
+  if (keys.length !== 1 || !["add", "remove"].includes(keys[0])) {
+    errors.push('watchList must be { "add": "<company number>" } or { "remove": "<company number>" }');
+    return null;
+  }
+  const companyNumber = value[keys[0]];
+  if (typeof companyNumber !== "string" || !COMPANY_NUMBER.test(companyNumber)) {
+    errors.push("watchList takes an 8-character company number");
+    return null;
+  }
+  return { op: keys[0], companyNumber };
+}
+
 /**
  * Check a settings update from a request body.
  * @param {object|null} body - The parsed request body
- * @returns {{update: object, errors: string[]}} The settings to change and the reasons the body is not valid
+ * @returns {{update: object, watchListOperation: {op: "add"|"remove", companyNumber: string}|null, errors: string[]}}
+ *   The settings to write, the watch list change, and the reasons the body is not valid
  */
 export function validateAccountSettingsUpdate(body) {
   const errors = [];
   const update = {};
+  let watchListOperation = null;
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return { update, errors: ["Request body must be a JSON object of settings"] };
+    return { update, watchListOperation, errors: ["Request body must be a JSON object of settings"] };
   }
   for (const [name, value] of Object.entries(body)) {
-    if (!(name in ACCOUNT_SETTING_DEFAULTS)) {
+    if (name === "watchList") {
+      watchListOperation = watchListOperationOf(value, errors);
+      continue;
+    }
+    if (name === "watchedCompanies") {
+      errors.push("Setting watchedCompanies changes one company at a time through watchList");
+      continue;
+    }
+    if (!WRITTEN_WHOLE.includes(name)) {
       errors.push(`Unknown setting: ${name}`);
       continue;
     }
@@ -60,6 +89,6 @@ export function validateAccountSettingsUpdate(body) {
     if (problem) errors.push(problem);
     else update[name] = value;
   }
-  if (errors.length === 0 && Object.keys(update).length === 0) errors.push("Request body names no setting");
-  return { update, errors };
+  if (errors.length === 0 && Object.keys(update).length === 0 && !watchListOperation) errors.push("Request body names no setting");
+  return { update, watchListOperation, errors };
 }

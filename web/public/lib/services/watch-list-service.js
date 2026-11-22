@@ -2,9 +2,10 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // The company watch list: the company numbers the account watches, kept as the watchedCompanies
-// account setting, which comes with the bundles and is written by PUT /api/v1/account/settings.
+// account setting, which comes with the bundles and changes one company at a time through
+// PUT /api/v1/account/settings with watchList, applied by the server to the list it holds.
 
-import { fetchAccountSettings, updateAccountSetting } from "./viewer-settings.js";
+import { fetchAccountSettings, changeWatchList } from "./viewer-settings.js";
 
 // The most companies one watch list holds, as app/lib/accountSettings.js allows.
 export const WATCH_LIST_CAP = 50;
@@ -15,28 +16,20 @@ export async function readWatchList() {
 }
 
 /**
- * Add a company to the watch list.
+ * Add a company to the watch list. A company already on it leaves the list as it is; a full list
+ * refuses the add.
  * @param {string} companyNumber - An 8-character company number
- * @returns {Promise<string[]>} The watch list after the change
+ * @returns {Promise<string[]>} The watch list as stored after the change
  */
 export async function addToWatchList(companyNumber) {
-  const current = await readWatchList();
-  if (current.includes(companyNumber)) return current;
-  if (current.length >= WATCH_LIST_CAP) throw new Error(`The watch list holds at most ${WATCH_LIST_CAP} companies`);
-  return (await updateAccountSetting("watchedCompanies", [...current, companyNumber])).watchedCompanies;
+  return (await changeWatchList("add", companyNumber)).watchedCompanies;
 }
 
 /**
- * Remove a company from the watch list.
+ * Remove a company from the watch list. A company not on it leaves the list as it is.
  * @param {string} companyNumber
- * @returns {Promise<string[]>} The watch list after the change
+ * @returns {Promise<string[]>} The watch list as stored after the change
  */
 export async function removeFromWatchList(companyNumber) {
-  const current = await readWatchList();
-  return (
-    await updateAccountSetting(
-      "watchedCompanies",
-      current.filter((watched) => watched !== companyNumber),
-    )
-  ).watchedCompanies;
+  return (await changeWatchList("remove", companyNumber)).watchedCompanies;
 }

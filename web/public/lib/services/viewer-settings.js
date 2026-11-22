@@ -85,9 +85,32 @@ export async function fetchAccountSettings() {
 }
 
 /**
+ * Add a company to the account's watch list, or remove one, on the server. The server applies the
+ * change to the list it holds and answers the settings as stored. A full list refuses an add with an
+ * error that carries the settings as stored.
+ * @param {"add"|"remove"} op
+ * @param {string} companyNumber - An 8-character company number
+ * @returns {Promise<{passGeneration: boolean, watchedCompanies: string[]}>} The settings after the change
+ */
+export async function changeWatchList(op, companyNumber) {
+  const response = await window.fetchWithIdToken("/api/v1/account/settings", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ watchList: { [op]: companyNumber } }),
+  });
+  window.requestCache?.invalidate?.("/api/v1/bundle");
+  const body = await response.json().catch(() => ({}));
+  if (response.status === 409 && body.reason === "watch_list_full") {
+    throw Object.assign(new Error(body.message), { settings: { ...ACCOUNT_SETTING_DEFAULTS, ...(body.settings ?? {}) } });
+  }
+  if (!response.ok) throw new Error(`The watch list was not saved (HTTP ${response.status})`);
+  return { ...ACCOUNT_SETTING_DEFAULTS, ...(body.settings ?? {}) };
+}
+
+/**
  * Change one account setting on the server.
  * @param {string} name - The setting name
- * @param {boolean|string[]} value - The new value
+ * @param {boolean} value - The new value
  * @returns {Promise<{passGeneration: boolean, watchedCompanies: string[]}>} The settings after the change
  */
 export async function updateAccountSetting(name, value) {

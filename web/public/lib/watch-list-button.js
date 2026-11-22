@@ -35,12 +35,30 @@
     return list;
   }
 
-  async function add(companyNumber) {
-    return changed(await (await service()).addToWatchList(companyNumber));
+  // The server applies each change to the list it holds and answers the list as stored. The page
+  // makes one change at a time so the answers arrive in the order of the changes, and the list it
+  // shows is the last one stored.
+  let changes = Promise.resolve();
+  function inTurn(change) {
+    const next = changes.then(change, change);
+    changes = next.catch(() => {});
+    return next;
   }
 
-  async function remove(companyNumber) {
-    return changed(await (await service()).removeFromWatchList(companyNumber));
+  // A refused add carries the list as stored when the server sent it, and the page shows that list.
+  function add(companyNumber) {
+    return inTurn(async () => {
+      try {
+        return changed(await (await service()).addToWatchList(companyNumber));
+      } catch (error) {
+        if (error.settings) changed(error.settings.watchedCompanies);
+        throw error;
+      }
+    });
+  }
+
+  function remove(companyNumber) {
+    return inTurn(async () => changed(await (await service()).removeFromWatchList(companyNumber)));
   }
 
   async function cap() {

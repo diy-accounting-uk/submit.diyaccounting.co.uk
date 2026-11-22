@@ -2301,9 +2301,16 @@ public class AccountStack extends Stack {
         this.accountSettingsPutLambdaLogGroup = accountSettingsPutApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.accountSettingsPutLambdaProps);
 
-        // The handler reads the settings item and writes it back.
-        bundlesTable.grant(this.accountSettingsPutLambda, "dynamodb:GetItem", "dynamodb:PutItem");
+        // The handler creates the settings item once, changes each setting and the watch list in place,
+        // and reads the account's bundles and the operator list to check the watch list activity.
+        bundlesTable.grant(
+                this.accountSettingsPutLambda,
+                "dynamodb:GetItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.accountSettingsPutLambda, region, account, props.envName());
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.accountSettingsPutLambda, region, account, props.envName());
 
         infof(
                 "Created Account Settings PUT Lambda %s",

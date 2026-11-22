@@ -54,7 +54,9 @@ function json(route, status, body, headers = {}) {
 }
 
 // The site from web/public with the API answered from fixtures. account.watchedCompanies is the
-// stored watch list; account.rateLimitAfter makes every profile read after that many answer 429.
+// stored watch list, which each watch list operation changes as the server does, and
+// account.operations the operations sent; account.rateLimitAfter makes every profile read after
+// that many answer 429.
 async function serveSite(page, account) {
   account.profileReads = [];
   account.inFlight = 0;
@@ -78,7 +80,20 @@ async function serveSite(page, account) {
       });
     }
     if (pathname === "/api/v1/account/settings" && request.method() === "PUT") {
-      account.watchedCompanies = JSON.parse(request.postData()).watchedCompanies;
+      if (account.settingsWriteDelayMs) await new Promise((resolve) => setTimeout(resolve, account.settingsWriteDelayMs));
+      const { watchList } = JSON.parse(request.postData());
+      account.operations = [...(account.operations ?? []), watchList];
+      if (watchList.add && !account.watchedCompanies.includes(watchList.add)) {
+        if (account.watchedCompanies.length >= 50) {
+          return json(route, 409, {
+            message: "The watch list holds at most 50 companies",
+            reason: "watch_list_full",
+            settings: { passGeneration: true, watchedCompanies: account.watchedCompanies },
+          });
+        }
+        account.watchedCompanies = [...account.watchedCompanies, watchList.add];
+      }
+      if (watchList.remove) account.watchedCompanies = account.watchedCompanies.filter((number) => number !== watchList.remove);
       return json(route, 200, { settings: { passGeneration: true, watchedCompanies: account.watchedCompanies } });
     }
     if (pathname === "/api/v1/companies-house/search") {
@@ -239,6 +254,39 @@ test.describe("Company watch list", () => {
     await page.locator("#watchListTable .watch-list-remove").click();
     await expect(page.locator("#watchListEmpty")).toBeVisible();
     expect(account.watchedCompanies).toEqual([]);
+  });
+
+  test("two removes in quick succession both stay removed", async ({ page }) => {
+    const account = { watchedCompanies: ["00000001", "00000003", "SC000000"], settingsWriteDelayMs: 400 };
+    await serveSite(page, account);
+    await page.goto(`${BASE}/companies-house/watchList.html`, { waitUntil: "networkidle" });
+    const rows = page.locator("#watchListTable tbody tr");
+    await expect(rows).toHaveCount(3, { timeout: 15000 });
+
+    await rows.nth(0).locator(".watch-list-remove").click();
+    await rows.nth(1).locator(".watch-list-remove").click();
+
+    await expect(rows).toHaveCount(1, { timeout: 15000 });
+    expect(account.watchedCompanies).toEqual(["SC000000"]);
+    expect(account.operations).toEqual([{ remove: "00000001" }, { remove: "00000003" }]);
+  });
+
+  test("an add the server refuses because the list is full says the list was not saved", async ({ page }) => {
+    const account = { watchedCompanies: Array.from({ length: 49 }, (_, index) => String(index + 100).padStart(8, "0")) };
+    await serveSite(page, account);
+    await page.goto(`${BASE}/companies-house/watchList.html`, { waitUntil: "networkidle" });
+    await expect(page.locator("#watchListCount")).toHaveText("49 of 50 companies", { timeout: 15000 });
+    // Another tab fills the list after this page read it.
+    account.watchedCompanies = [...account.watchedCompanies, "00000999"];
+
+    await page.fill("#companyQuery", "Simulator");
+    await page.click("#searchBtn");
+    await page.locator("#searchResults .watch-list-add").first().click();
+
+    await expect(page.locator("#statusMessagesContainer")).toContainText("The watch list was not saved. Try again.");
+    await expect(page.locator("#watchListCount")).toHaveText("50 of 50 companies");
+    await expect(page.locator("#searchResults .watch-list-add").first()).toHaveText("Watch list full");
+    expect(account.watchedCompanies).toHaveLength(50);
   });
 
   test("reads each profile once per visit, also after an add", async ({ page }) => {

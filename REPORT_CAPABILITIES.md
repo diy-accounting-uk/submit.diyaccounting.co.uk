@@ -732,7 +732,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### SITE-24 Change an account setting
 
 - **Use when:** a signed-in user changes a preference that belongs to the account, such as pass generation, and it must follow them to every browser.
-- **Does:** accountSettingsPut.js validates the named settings against app/lib/accountSettings.js. It merges them into one settings item in the user's own partition of the bundles table. getUserBundles leaves that item out of the bundle list. bundleGet.js returns the settings with the bundles. settings.page.js and viewer-settings.js call the route.
+- **Does:** accountSettingsPut.js validates the named settings against app/lib/accountSettings.js. It writes each named setting on its own path of one settings item in the user's own partition of the bundles table, and applies a watchList add or remove of one company number to the stored list in one conditional write, for an account that holds the company-watch-list activity. getUserBundles leaves that item out of the bundle list. bundleGet.js returns the settings with the bundles. settings.page.js and viewer-settings.js call the route.
 - **Run:** `PUT /api/v1/account/settings`
 - **Entry:** `app/functions/account/accountSettingsPut.js:ingestHandler`; `web/public/lib/services/viewer-settings.js:updateAccountSetting`
 - **Files:** app/functions/account/accountSettingsPut.js, app/lib/accountSettings.js, app/data/dynamoDbBundleRepository.js, app/functions/account/bundleGet.js, web/public/settings.html, web/public/settings.page.js, web/public/lib/services/viewer-settings.js, app/unit-tests/functions/accountSettings.test.js, app/unit-tests/lib/accountSettings.test.js, web/browser-tests/settings.browser.test.js
