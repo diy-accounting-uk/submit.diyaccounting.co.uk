@@ -11,8 +11,13 @@ vi.mock("@app/data/dynamoDbSecurityStateRepository.js", () => ({
 }));
 vi.mock("@app/services/subHasher.js", () => ({ hashSub: (sub) => `hashed_${sub}` }));
 
-const { lookupLimitReached, lookupLimitResponse, LOOKUP_CALLS, LOOKUP_CALLS_PER_ACCOUNT_PER_WINDOW } =
-  await import("@app/services/companiesHouseLookupLimit.js");
+const {
+  lookupLimitReached,
+  lookupLimitResponse,
+  LOOKUP_CALLS,
+  LOOKUP_CALLS_PER_ACCOUNT_PER_WINDOW,
+  LOOKUP_CALLS_FOR_ALL_ACCOUNTS_PER_WINDOW,
+} = await import("@app/services/companiesHouseLookupLimit.js");
 
 describe("the Companies House lookup limit per account", () => {
   beforeEach(() => {
@@ -45,6 +50,40 @@ describe("the Companies House lookup limit per account", () => {
     expect(LOOKUP_CALLS_PER_ACCOUNT_PER_WINDOW * 4).toBe(600);
   });
 
+  test("charges the lookup to the budget of all signed-in lookups under one fixed key for the window", async () => {
+    mockIncrementRateCounter.mockResolvedValue(15);
+    await lookupLimitReached("user-1", LOOKUP_CALLS.filedAccounts);
+    expect(mockIncrementRateCounter).toHaveBeenLastCalledWith({
+      namespace: "chlookup",
+      identifier: "all-signed-in-lookups",
+      minute: Math.floor(Date.now() / 1000 / 300),
+      hits: 15,
+    });
+  });
+
+  test("refuses once all signed-in lookups together have used 450 of the key's 600 calls in the window", async () => {
+    expect(LOOKUP_CALLS_FOR_ALL_ACCOUNTS_PER_WINDOW).toBe(450);
+    mockIncrementRateCounter.mockResolvedValueOnce(1).mockResolvedValueOnce(450);
+    expect(await lookupLimitReached("user-1", 1)).toBe(false);
+    mockIncrementRateCounter.mockResolvedValueOnce(1).mockResolvedValueOnce(451);
+    expect(await lookupLimitReached("user-2", 1)).toBe(true);
+  });
+
+  test("a lookup refused for the account's share is not charged to the budget of all", async () => {
+    mockIncrementRateCounter.mockResolvedValueOnce(LOOKUP_CALLS_PER_ACCOUNT_PER_WINDOW + 1);
+    expect(await lookupLimitReached("user-1", 1)).toBe(true);
+    expect(mockIncrementRateCounter).toHaveBeenCalledTimes(1);
+  });
+
+  test("applies the budget of all when the account's counter cannot be written, and the reverse", async () => {
+    mockIncrementRateCounter.mockRejectedValueOnce(new Error("throttled")).mockResolvedValueOnce(451);
+    expect(await lookupLimitReached("user-1", 1)).toBe(true);
+    mockIncrementRateCounter.mockResolvedValueOnce(LOOKUP_CALLS_PER_ACCOUNT_PER_WINDOW + 1);
+    expect(await lookupLimitReached("user-1", 1)).toBe(true);
+    mockIncrementRateCounter.mockResolvedValueOnce(1).mockRejectedValueOnce(new Error("throttled"));
+    expect(await lookupLimitReached("user-1", 1)).toBe(false);
+  });
+
   test("applies no limit where the security state table is not configured", async () => {
     delete process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
     expect(await lookupLimitReached("user-1", 1)).toBe(false);
@@ -60,6 +99,6 @@ describe("the Companies House lookup limit per account", () => {
     const response = lookupLimitResponse({}, { "Content-Type": "application/json" });
     expect(response.statusCode).toBe(429);
     expect(response.headers["Retry-After"]).toBe("300");
-    expect(JSON.parse(response.body).message).toBe("Too many Companies House lookups from this account. Try again in a few minutes.");
+    expect(JSON.parse(response.body).message).toBe("Too many Companies House lookups just now. Try again in a few minutes.");
   });
 });

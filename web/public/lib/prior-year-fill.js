@@ -311,7 +311,9 @@ async function placedNotes(accounts, set, form, welsh, doc) {
 
 if (typeof window !== "undefined") {
   window.priorYearFill = {
-    fill: (companyNumber, form) =>
+    // The page passes the profile it has just read, so the fill reads none; it reads the profile
+    // itself only when the page passes none.
+    fill: (companyNumber, form, profile) =>
       fillPriorYear({
         companyNumber,
         form,
@@ -321,7 +323,7 @@ if (typeof window !== "undefined") {
         welsh: document.documentElement.lang === "cy",
         fetchLastAccounts: (number) =>
           window.fetchWithIdToken(`/api/v1/companies-house/company/${encodeURIComponent(number)}/last-accounts`, {}),
-        readProfile: (number) => window.getCompanyProfile(number),
+        readProfile: profile ? () => Promise.resolve(profile) : (number) => window.getCompanyProfile(number),
       }).catch((error) => console.error("Failed to fill the prior year from the last accounts:", error)),
   };
 }

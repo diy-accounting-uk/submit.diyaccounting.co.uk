@@ -359,7 +359,7 @@ async function handleCompanySubmit(event) {
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     showDocumentLanguageChoice(profile.jurisdiction);
     showView("formView");
-    window.priorYearFill.fill(company.companyNumber, "small");
+    window.priorYearFill.fill(company.companyNumber, "small", profile);
   } catch (error) {
     console.error("Failed to look up the company:", error);
     showStatus(error.message || window.siteText("ch.accounts.lookup-failed", "Failed to look up the company."), "error");

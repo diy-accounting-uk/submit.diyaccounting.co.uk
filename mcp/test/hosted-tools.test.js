@@ -54,7 +54,7 @@ describe("the hosted tool set", () => {
     }
   });
 
-  it("gives the four accounts tools an optional revision with its three texts on the hosted server", async () => {
+  it("gives the four accounts tools an optional revision with its three texts and an optional receipt name on the hosted server", async () => {
     const listed = await handleMcpRequest(
       new Request("https://submit.diyaccounting.co.uk/mcp", {
         method: "POST",
@@ -75,7 +75,9 @@ describe("the hosted tool set", () => {
         "amendments",
         "nonCompliance",
         "originalDateOfApproval",
+        "revisesReceipt",
       ]);
+      expect(schema.properties.revision.required.sort(), name).toEqual(["amendments", "nonCompliance", "originalDateOfApproval"]);
       expect(schema.required ?? [], name).not.toContain("revision");
     }
   });

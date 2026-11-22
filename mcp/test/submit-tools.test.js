@@ -656,6 +656,25 @@ describe("submit-tools", () => {
       expect(JSON.parse(mockFetch.mock.calls[0][1].body).revision).toEqual(REVISION);
     });
 
+    it("sends the name of the receipt the revision revises when it is given", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+      const revision = { ...REVISION, revisesReceipt: "companies-house-accounts-06846849-2026-03-31-20260915.json" };
+
+      await submitMicroEntityAccounts(session, { ...ACCOUNTS_PARAMS, revision, codesEntryId: "entry-1" });
+
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body).revision).toEqual(revision);
+    });
+
+    it("sends a revision without a receipt name when none is given", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      await submitSmallCompanyAccounts(session, { ...SMALL, revision: REVISION, codesEntryId: "entry-1" });
+
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body).revision).not.toHaveProperty("revisesReceipt");
+    });
+
     it("sends no revision for original accounts", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);

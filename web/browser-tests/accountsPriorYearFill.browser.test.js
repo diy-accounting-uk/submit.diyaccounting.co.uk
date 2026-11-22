@@ -304,6 +304,20 @@ test.describe("Accounts forms' prior year from the last filed accounts", () => {
     await shoot(page, "cy-micro-entity-filled");
   });
 
+  test("each form reads the company's profile once, and the fill uses that profile", async ({ page }) => {
+    for (const [form, companyNumber] of [
+      ["fileMicroEntityAccounts", "00000001"],
+      ["fileSmallCompanyAccounts", "SC000000"],
+    ]) {
+      const apiRequests = [];
+      await page.unrouteAll({ behavior: "ignoreErrors" });
+      await serveSite(page, { apiRequests });
+      await lookUp(page, form, companyNumber);
+      await expect(page.locator("#priorYearNote")).toContainText("prior-year figures are filled in");
+      expect(apiRequests.filter((request) => request === `/api/v1/companies-house/company/${companyNumber}`)).toHaveLength(1);
+    }
+  });
+
   test("an account without either filing activity asks for no last accounts it may not read", async ({ page }) => {
     const apiRequests = [];
     await serveSite(page, { bundles: [], apiRequests });

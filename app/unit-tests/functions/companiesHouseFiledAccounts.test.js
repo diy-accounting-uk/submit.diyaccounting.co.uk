@@ -227,7 +227,7 @@ describe("companiesHouseFilingHistoryGet ingestHandler", () => {
     mockLookupLimitReached.mockResolvedValueOnce(true);
     const response = await filingHistoryHandler(event({ companyNumber: "00000001" }));
     expect(response.statusCode).toBe(429);
-    expect(JSON.parse(response.body).message).toBe("Too many Companies House lookups from this account. Try again in a few minutes.");
+    expect(JSON.parse(response.body).message).toBe("Too many Companies House lookups just now. Try again in a few minutes.");
     expect(mockFetch).not.toHaveBeenCalled();
     expect(mockLookupLimitReached).toHaveBeenLastCalledWith(expect.any(String), 5);
   });

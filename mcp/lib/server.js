@@ -112,6 +112,12 @@ const revisionSchema = z
     amendments: z
       .string()
       .describe('The significant amendments the revised accounts make; Companies House prints it under "What the revised accounts change"'),
+    revisesReceipt: z
+      .string()
+      .optional()
+      .describe(
+        "The name of the receipt of the accepted accounts these revise, ending .json, as the user's receipts page lists it; the filing route refuses one that is not found, not accounts, not accepted, part of a joint filing, already revised or for another company. Leave it out when the user does not have it",
+      ),
   })
   .optional()
   .describe(
