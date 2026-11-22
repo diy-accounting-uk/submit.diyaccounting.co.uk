@@ -1058,7 +1058,7 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     test("refuses one year for an established company that names its period's start as the incorporation date, and sends nothing", async () => {
       for (const profile of [
         { dateOfCreation: "2019-06-01", accountsLastPeriodStart: "2024-01-01" },
-        { dateOfCreation: "2025-01-01", accountsLastPeriodStart: "2024-01-01" },
+        { dateOfCreation: "2025-01-01", accountsLastPeriodStart: "2024-01-01", accountsLastPeriodEnd: "2024-12-31" },
       ]) {
         mockGetCompanyProfile.mockResolvedValue({ profile });
         const response = await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }));
@@ -1067,6 +1067,13 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       }
       expect(mockGetCompanyProfile).toHaveBeenCalledWith("00000001");
       expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("files the revision of first accounts after the register holds a later year", async () => {
+      mockGetCompanyProfile.mockResolvedValue({
+        profile: { dateOfCreation: "2025-01-01", accountsLastPeriodStart: "2026-01-01", accountsLastPeriodEnd: "2026-12-31" },
+      });
+      expect((await companiesHouseAccountsPostHandler(buildEvent({ body: firstAccountsBody() }))).statusCode).toBe(201);
     });
 
     test("files the revision of first accounts, which the register holds as the last accounts for the same period", async () => {
@@ -1541,7 +1548,9 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
     });
 
     test("refuses one year of small company accounts when the register holds accounts filed before", async () => {
-      mockGetCompanyProfile.mockResolvedValue({ profile: { dateOfCreation: "2025-01-01", accountsLastPeriodStart: "2024-01-01" } });
+      mockGetCompanyProfile.mockResolvedValue({
+        profile: { dateOfCreation: "2025-01-01", accountsLastPeriodStart: "2024-01-01", accountsLastPeriodEnd: "2024-12-31" },
+      });
       const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody() }));
       expect(response.statusCode).toBe(400);
       expect(JSON.stringify(parseResponseBody(response))).toContain("must show the prior year");
@@ -1564,6 +1573,14 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
       mockGetCompanyProfile.mockResolvedValue({
         profile: { dateOfCreation: "2025-01-01", accountsLastPeriodStart: "2024-01-01", accountsLastPeriodEnd: "2024-12-31" },
       });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody() }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("Companies House does not hold these as the company's first accounts");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses first accounts when the register's last accounts give only their end, and it is before the period", async () => {
+      mockGetCompanyProfile.mockResolvedValue({ profile: { dateOfCreation: "2025-01-01", accountsLastPeriodEnd: "2024-12-31" } });
       const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody() }));
       expect(response.statusCode).toBe(400);
       expect(JSON.stringify(parseResponseBody(response))).toContain("Companies House does not hold these as the company's first accounts");

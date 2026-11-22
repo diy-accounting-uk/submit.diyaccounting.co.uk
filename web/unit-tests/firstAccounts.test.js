@@ -43,4 +43,13 @@ describe("when small company accounts may leave out the prior year", () => {
     expect(marksFirstAccounts(`${start}${incorporated("1 June 2025")}`)).toBe(false);
     expect(marksFirstAccounts(start)).toBe(false);
   });
+
+  test("a register whose last accounts give their end and no start still shows accounts filed before the period", () => {
+    expect(isFirstAccountsPeriod({ dateOfCreation: "2025-04-01", accountsLastPeriodEnd: "2025-03-31" }, "2025-04-01")).toBe(false);
+  });
+
+  test("a revision of first accounts stays first after the register holds a later year", () => {
+    const profile = { dateOfCreation: "2025-04-01", accountsLastPeriodStart: "2026-04-01", accountsLastPeriodEnd: "2027-03-31" };
+    expect(isFirstAccountsPeriod(profile, "2025-04-01")).toBe(true);
+  });
 });

@@ -10,15 +10,17 @@
 
 /**
  * Whether a period is the company's first, from its Companies House profile: the period starts on
- * the day the company was incorporated, and the register holds no accounts but, on a revision,
- * these same accounts.
- * @param {{dateOfCreation?: string, accountsLastPeriodStart?: string}} profile
+ * the day the company was incorporated, and no accounts on the register end before it starts. The
+ * profile's last accounts always give their end (period_end_on) and do not always give their start.
+ * Accounts the register holds for a later year leave the period the first, so a revision of first
+ * accounts is a revision of first accounts whatever has been filed since.
+ * @param {{dateOfCreation?: string, accountsLastPeriodEnd?: string}} profile
  * @param {string} periodStart - ISO date
  * @returns {boolean}
  */
 export function isFirstAccountsPeriod(profile, periodStart) {
   if (!periodStart || !profile?.dateOfCreation || profile.dateOfCreation !== periodStart) return false;
-  return !profile.accountsLastPeriodStart || profile.accountsLastPeriodStart === periodStart;
+  return !profile.accountsLastPeriodEnd || profile.accountsLastPeriodEnd >= periodStart;
 }
 
 /**

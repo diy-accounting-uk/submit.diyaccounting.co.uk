@@ -26450,10 +26450,6 @@ cy = '''Dyma gyfrifon cyntaf y cwmni, felly nid oes blwyddyn flaenorol i’w lle
 hash = "4d2e0096c8e7"
 cy = '''Mae mantolen y flwyddyn flaenorol wedi’i llenwi o falansau agoriadol y llyfr.'''
 
-[strings."widget.books-small-prior-type"]
-hash = "95010e95ea16"
-cy = '''Nid oes gan y llyfr ffigur ar gyfer y rhain, felly teipiwch nhw: {fields}.'''
-
 # == A revision of accounts that hold more advance rows than the form takes ==
 
 [strings."ch.revision.advance-rows-over"]
@@ -27189,3 +27185,17 @@ cy = '''Cryno, wedi’i archwilio'''
 [strings."ch.form.gateway-text"]
 hash = "6be4e4274865"
 cy = '''Mae gan {field} nodau nad yw Tŷ’r Cwmnïau yn eu derbyn: {characters}'''
+
+# == First accounts and the books card: figures cleared from prior-year fields, and the fields listed under their lines ==
+
+[strings."widget.books-small-prior-type-lines"]
+hash = "12d7eb74fdec"
+cy = '''Nid oes gan y llyfr ffigur blwyddyn flaenorol ar gyfer y rhain, felly teipiwch nhw: {fields}.'''
+
+[strings."widget.books-small-prior-cleared-lines"]
+hash = "5422be831d0d"
+cy = '''Mae ffigurau’r flwyddyn flaenorol a oedd yn y rhain o’r blaen wedi’u clirio: {fields}.'''
+
+[strings."widget.books-line-part"]
+hash = "af385f2ef235"
+cy = '''{line}, ac o hynny {part}'''

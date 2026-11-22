@@ -352,7 +352,7 @@ function applyFirstAccountsRule() {
     ? window.siteText(
         "ch.small.first-accounts",
         "These are the company's first accounts: the period starts on the day it was incorporated, {date}, so there is no prior year.",
-        { date: company.dateOfCreation },
+        { date: window.HmrcDisplayFormat.dateText(new Date(`${company.dateOfCreation}T00:00:00Z`), { utc: true }) },
       )
     : window.siteText(
         "ch.small.not-first-accounts",
@@ -466,7 +466,7 @@ function companyFromProfile(profile) {
     companyNumber: profile.companyNumber,
     companyName: profile.companyName,
     dateOfCreation: profile.dateOfCreation,
-    accountsLastPeriodStart: profile.accountsLastPeriodStart,
+    accountsLastPeriodEnd: profile.accountsLastPeriodEnd,
   };
 }
 

@@ -1011,8 +1011,12 @@ test.describe("books import of the small company prior year", () => {
       await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
       const status = page.locator("#booksImportStatus");
       await expect(status).toContainText("The prior year's balance sheet is filled from the book's opening balances.", { timeout: 60_000 });
-      await expect(status).toContainText("The book holds no figure for these, so type them: Accruals (due within one year), last year;");
-      await expect(status).toContainText("Provisions for liabilities, last year; Turnover, last year; Cost of sales, last year;");
+      await expect(status).toContainText("The book holds no prior-year figure for these, so type them: Accruals (due within one year);");
+      await expect(status).toContainText(
+        "Creditors: amounts falling due after more than one year, of which bank loans; Debtors, of which prepayments and accrued income;",
+      );
+      await expect(status).toContainText("Provisions for liabilities; Turnover; Cost of sales;");
+      await expect(status).not.toContainText("Of which,");
       await expect(page.locator("#includeComparatives")).toBeChecked();
       await expect(page.locator("#priorStocks")).toHaveValue("10000");
       await expect(page.locator("#priorCalledUpShareCapital")).toHaveValue("100");
@@ -1028,11 +1032,27 @@ test.describe("books import of the small company prior year", () => {
       await expect(status).toContainText("Mae mantolen y flwyddyn flaenorol wedi’i llenwi o falansau agoriadol y llyfr.", {
         timeout: 60_000,
       });
-      await expect(status).toContainText("Nid oes gan y llyfr ffigur ar gyfer y rhain, felly teipiwch nhw:");
+      await expect(status).toContainText("Nid oes gan y llyfr ffigur blwyddyn flaenorol ar gyfer y rhain, felly teipiwch nhw:");
+      await expect(status).toContainText(", ac o hynny ");
+      await expect(status).not.toContainText("O hynny,");
       await expect(page.locator("#priorStocks")).toHaveValue("10000");
       await status.screenshot({ path: `target/screenshots/first-accounts/books-small-prior-cy-${width}.png` });
     });
   }
+
+  test("a figure an earlier fill left in a prior-year field the book gives nothing for is cleared, and the card names it", async ({
+    page,
+  }) => {
+    await openAccountsPage(page, SMALL_URL, "12345678", ESTABLISHED);
+    await page.fill("#priorAccruals", "999");
+    await page.fill("#priorTurnover", "123456");
+    await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
+    const status = page.locator("#booksImportStatus");
+    await expect(status).toContainText("The prior year's balance sheet is filled from the book's opening balances.", { timeout: 60_000 });
+    await expect(page.locator("#priorAccruals")).toHaveValue("");
+    await expect(page.locator("#priorTurnover")).toHaveValue("");
+    await expect(status).toContainText("The prior-year figures these held before are cleared: Accruals (due within one year); Turnover.");
+  });
 
   test("a company's first accounts fill no prior year, and the card says why", async ({ page }) => {
     await openAccountsPage(page, SMALL_URL, "12345678", { dateOfCreation: "2025-04-01" });

@@ -89,7 +89,7 @@ test.describe("File small company accounts page", () => {
     await expect(page.locator("#includeComparatives")).toBeDisabled();
     await expect(page.locator("#comparativeFields")).toBeHidden();
     await expect(page.locator("#firstAccountsLine")).toHaveText(
-      "These are the company's first accounts: the period starts on the day it was incorporated, 2025-04-01, so there is no prior year.",
+      "These are the company's first accounts: the period starts on the day it was incorporated, 1 April 2025, so there is no prior year.",
     );
     await expect(page.locator("#fixedAssetNoteFields")).toBeHidden();
     await page.check("#includeFixedAssetNote");

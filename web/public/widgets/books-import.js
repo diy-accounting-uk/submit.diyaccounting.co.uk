@@ -889,6 +889,21 @@
     ].join(" ");
   }
 
+  // A prior-year field as the reader finds it in the form's table: its line's name, or for a sub-line
+  // ("Of which, ..."), the line it is part of and its own name.
+  function priorFieldName(input) {
+    const row = input.closest("tr");
+    const heading = row?.querySelector("th");
+    if (!heading) return (document.querySelector(`label[for="${input.id}"]`)?.textContent ?? input.id).trim();
+    const text = (cell) => cell.textContent.replace(/\s+/g, " ").trim();
+    if (!heading.classList.contains("ledger__part")) return text(heading);
+    let lineRow = row.previousElementSibling;
+    while (lineRow && lineRow.querySelector("th")?.classList.contains("ledger__part")) lineRow = lineRow.previousElementSibling;
+    const line = lineRow?.querySelector("th");
+    const part = text(heading).replace(/^[^,]+,\s*/, "");
+    return line ? siteText("widget.books-line-part", "{line}, of which {part}", { line: text(line), part }) : text(heading);
+  }
+
   // The prior year of the small company form from the book, when the form shows one: the balance
   // sheet from the book's opening balances, and the profit and loss account where the book holds it.
   // Answers how many fields it filled and the sentence that names the prior-year fields left for the
@@ -909,24 +924,35 @@
       setFigures("prior", balanceSheet, SMALL_BALANCE_SHEET_LINES) +
       setFigures("prior", profitAndLoss, SMALL_PROFIT_AND_LOSS_LINES[profitAndLossFormat]);
     const filleted = document.getElementById("copyFilleted")?.checked;
-    const unsourced = [
+    const unsourcedInputs = [
       ...SMALL_BALANCE_SHEET_LINES.filter((name) => typeof balanceSheet[name] !== "number"),
       ...(filleted ? [] : SMALL_PROFIT_AND_LOSS_LINES[profitAndLossFormat].filter((name) => typeof profitAndLoss[name] !== "number")),
     ]
       .map((name) => document.getElementById("prior" + upperFirst(name)))
-      .filter(Boolean)
-      .map((input) => (document.querySelector(`label[for="${input.id}"]`)?.textContent ?? input.id).trim());
+      .filter(Boolean);
+    const labelOf = priorFieldName;
+    // A field the book gives nothing for keeps no figure from an earlier fill: it is cleared and named.
+    // A field that still holds the form's own starting value holds no such figure.
+    const cleared = unsourcedInputs.filter((input) => input.value.trim() !== "" && input.value !== input.defaultValue);
+    cleared.forEach((input) => setField(input.id, ""));
+    const unsourced = unsourcedInputs.map(labelOf);
+    const clearedSentence =
+      cleared.length > 0
+        ? siteText("widget.books-small-prior-cleared-lines", "The prior-year figures these held before are cleared: {fields}.", {
+            fields: cleared.map(labelOf).join("; "),
+          })
+        : "";
     const filledSentence =
       Object.keys(balanceSheet).length > 0
         ? siteText("widget.books-small-prior-filled", "The prior year's balance sheet is filled from the book's opening balances.")
         : "";
     const typeSentence =
       unsourced.length > 0
-        ? siteText("widget.books-small-prior-type", "The book holds no figure for these, so type them: {fields}.", {
+        ? siteText("widget.books-small-prior-type-lines", "The book holds no prior-year figure for these, so type them: {fields}.", {
             fields: unsourced.join("; "),
           })
         : "";
-    return { filled, sentence: [filledSentence, typeSentence].filter(Boolean).join(" ") };
+    return { filled, sentence: [filledSentence, typeSentence, clearedSentence].filter(Boolean).join(" ") };
   }
 
   const HANDOFF_KEY = "booksHandoff";

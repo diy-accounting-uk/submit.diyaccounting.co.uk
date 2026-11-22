@@ -3012,6 +3012,7 @@ window.WELSH_TEXT = {
   "widget.books-ixbrl-unplaced": "Mae’r ddogfen hefyd yn cynnwys {count} o ffeithiau nad oes gan y ffurflen hon faes ar eu cyfer.",
   "widget.books-ixbrl-unplaced-names": "Y ffeithiau nad oes gan y ffurflen hon faes ar eu cyfer",
   "widget.books-ixbrl-unplaced-one": "Mae’r ddogfen hefyd yn cynnwys 1 ffaith nad oes gan y ffurflen hon faes ar ei chyfer.",
+  "widget.books-line-part": "{line}, ac o hynny {part}",
   "widget.books-nothing-filled": "Ni lenwyd dim.",
   "widget.books-other-period": "Mae {file} ar gyfer y cyfnod {from} i {to}; mae’r cyfrifon sy’n cael eu diwygio ar gyfer {start} i {end}.",
   "widget.books-reading": "Yn darllen {file}...",
@@ -3024,8 +3025,9 @@ window.WELSH_TEXT = {
   "widget.books-small-first-accounts": "Dyma gyfrifon cyntaf y cwmni, felly nid oes blwyddyn flaenorol i’w llenwi.",
   "widget.books-small-next":
     "Gwiriwch y ffigurau, ychwanegwch y prif weithgaredd, y polisïau cyfrifyddu, y dyddiad cymeradwyo a’r datganiadau, yna gweld y rhagolwg.",
+  "widget.books-small-prior-cleared-lines": "Mae ffigurau’r flwyddyn flaenorol a oedd yn y rhain o’r blaen wedi’u clirio: {fields}.",
   "widget.books-small-prior-filled": "Mae mantolen y flwyddyn flaenorol wedi’i llenwi o falansau agoriadol y llyfr.",
-  "widget.books-small-prior-type": "Nid oes gan y llyfr ffigur ar gyfer y rhain, felly teipiwch nhw: {fields}.",
+  "widget.books-small-prior-type-lines": "Nid oes gan y llyfr ffigur blwyddyn flaenorol ar gyfer y rhain, felly teipiwch nhw: {fields}.",
   "widget.books-taxonomy": "tacsonomeg {family} {year}",
   "widget.callback-back": "Yn ôl i {activity}",
   "widget.callback-bad-state": "Cyflwr OAuth annilys. Rhowch gynnig arall arni.",

@@ -102,7 +102,7 @@ test.describe("File micro-entity accounts page - first accounts", () => {
     test(`first accounts leave out the prior year column and say why, at ${width} px`, async ({ page }) => {
       await openFormView(page, { width });
       await expect(page.locator("#firstAccountsLine")).toHaveText(
-        "These are the company's first accounts: the period starts on the day it was incorporated, 2025-01-01, so there is no prior year.",
+        "These are the company's first accounts: the period starts on the day it was incorporated, 1 January 2025, so there is no prior year.",
       );
       await expect(page.locator("#currentFixedAssets")).toBeVisible();
       await expect(page.locator("#priorFixedAssets")).toBeHidden();
@@ -115,7 +115,7 @@ test.describe("File micro-entity accounts page - first accounts", () => {
     test(`the Welsh form says the accounts are the company's first, at ${width} px`, async ({ page }) => {
       await openFormView(page, { welsh: true, width });
       await expect(page.locator("#firstAccountsLine")).toHaveText(
-        "Dyma gyfrifon cyntaf y cwmni: mae’r cyfnod yn dechrau ar y diwrnod y cafodd ei gorffori, 2025-01-01, felly nid oes blwyddyn flaenorol.",
+        "Dyma gyfrifon cyntaf y cwmni: mae’r cyfnod yn dechrau ar y diwrnod y cafodd ei gorffori, 1 Ionawr 2025, felly nid oes blwyddyn flaenorol.",
       );
       await expect(page.locator("#priorFixedAssets")).toBeHidden();
       await page.screenshot({ path: `target/screenshots/first-accounts/micro-first-accounts-cy-${width}.png`, fullPage: true });
