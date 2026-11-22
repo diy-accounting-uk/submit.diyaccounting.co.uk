@@ -68,13 +68,9 @@ async function withinBundleReadTimeLimit(read) {
 }
 
 /**
- * The bundle response: the person's bundles, token balance and account settings.
- * @returns {Promise<{bundles: object[], settings: object}|null>} Null when the person is signed out, or the read
- *   fails or gives no answer in BUNDLE_READ_TIMEOUT_MS
- */
-/**
- * The bundle answer of the signed-in person, or null when nobody is signed in. A failed read
- * rejects, so a caller can tell it from an account that holds nothing.
+ * The bundle answer of the signed-in person, or null when nobody is signed in. A failed read, or one
+ * that gives no answer in BUNDLE_READ_TIMEOUT_MS, rejects, so a caller can tell it from an account
+ * that holds nothing.
  * @returns {Promise<object|null>}
  */
 export async function readBundleResponse() {

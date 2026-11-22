@@ -58,6 +58,10 @@ COPY web/public/lib/first-accounts.js web/public/lib/first-accounts.js
 COPY web/public/lib/companies-house-forms.js web/public/lib/companies-house-forms.js
 # The company name rule the change of name route shares with its page.
 COPY web/public/lib/companies-house-company-name.js web/public/lib/companies-house-company-name.js
+# The share capital arithmetic the return of allotment route shares with its page.
+COPY web/public/lib/share-capital.js web/public/lib/share-capital.js
+# The register check of a revision that names no receipt, shared by the accounts route and its page.
+COPY web/public/lib/accounts-revision-register.js web/public/lib/accounts-revision-register.js
 COPY mcp/package.json mcp/package.json
 COPY mcp/lib mcp/lib
 COPY mcp/bin mcp/bin

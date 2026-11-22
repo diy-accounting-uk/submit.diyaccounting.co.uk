@@ -342,7 +342,7 @@ test("a removed allotment leaves the statement, and the reader's correction of t
   await expect(afterRows(page).locator("td")).toHaveText(["Ordinary", "250", "250"]);
 });
 
-test("a company whose capital the register does not give starts with an empty class to type", async ({ page }) => {
+test("a company whose capital the register does not give files only the shares it allots", async ({ page }) => {
   const filings = [];
   await serveSite(page, { filings, capitals: [] });
   await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
@@ -350,20 +350,20 @@ test("a company whose capital the register does not give starts with an empty cl
   await expect(page.locator("#beforeSource")).toHaveText(
     "Companies House holds no share capital for this company, so the return starts from none. Enter only the shares allotted below.",
   );
+  await expect(page.locator('#beforeTables input[id^="before-class-"]')).toHaveValue("");
   await page.locator("#startDate").fill("2026-11-02");
   await fillAllotment(page, { shareClass: "Ordinary", number: "50", nominal: "1", paid: "1" });
-  await page.locator('#beforeTables input[id^="before-class-"]').fill("Ordinary");
-  await page.locator('#beforeTables input[id^="before-number-"]').fill("100");
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.locator("#statusMessagesContainer")).toContainText("Give each class of shares held before the allotment its name");
-  await page.locator('#beforeTables input[id^="before-nominal-"]').fill("100");
-  await page.locator('#beforeTables textarea[id^="before-rights-"]').fill("One vote a share.");
+  await expect(page.locator("#statusMessagesContainer")).toContainText(
+    "Give the prescribed particulars of rights attached to the Ordinary shares.",
+  );
+  await page.locator('textarea[id^="new-rights-"]').fill("One vote a share.");
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.locator("#reviewView")).toBeVisible();
   await page.getByRole("button", { name: "File with Companies House" }).click();
   await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
   expect(filings[0].statementOfCapital[0].shares).toEqual([
-    { shareClass: "Ordinary", prescribedParticulars: "One vote a share.", numShares: "150", aggregateNominalValue: "150" },
+    { shareClass: "Ordinary", prescribedParticulars: "One vote a share.", numShares: "50", aggregateNominalValue: "50" },
   ]);
 });
 

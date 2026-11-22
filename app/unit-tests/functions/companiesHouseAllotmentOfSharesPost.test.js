@@ -400,6 +400,13 @@ describe("companiesHouseAllotmentOfSharesPost ingestHandler", () => {
       expect((await ingestHandler(buildEvent())).statusCode).toBe(201);
     });
 
+    test("refuses shares before the allotment for a company the register holds no shares for", async () => {
+      registerAnswer = companyDataAnswer([]);
+      const refused = await ingestHandler(buildEvent());
+      expect(refused.statusCode).toBe(400);
+      expect(parseResponseBody(refused).message).toContain("on the Companies House register");
+    });
+
     test("two currencies each agree with the register's capital in that currency", async () => {
       registerAnswer = companyDataAnswer([
         { currency: "GBP", shares: [["Ordinary", "100", "100"]] },

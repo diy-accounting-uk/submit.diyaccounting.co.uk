@@ -294,8 +294,8 @@ async function allocatedBundles() {
     ttlMs: 5000,
     init: { headers: { Authorization: `Bearer ${idToken}` } },
   });
-  // requestCache answers the body of a failed request too, so an answer with no bundle list is a
-  // failed read and not an account that holds nothing.
+  // requestCache rejects a failed read; an answer with no bundle list is a failed read too, and not
+  // an account that holds nothing.
   if (!Array.isArray(data?.bundles)) throw new Error("The account's bundles could not be read");
   return data.bundles.filter((bundle) => bundle.allocated).map((bundle) => bundle.bundleId);
 }
