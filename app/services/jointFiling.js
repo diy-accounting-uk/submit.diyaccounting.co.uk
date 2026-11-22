@@ -92,6 +92,9 @@ export function longPeriodFields(longPeriodRecordValue) {
 
 const MAX_REVISION_STATEMENT_LENGTH = 2000;
 
+// A receipt name is a sort key, which DynamoDB bounds well above any name a filing is given.
+const MAX_RECEIPT_NAME_LENGTH = 256;
+
 /**
  * Read the optional revision of accounts already filed: the date the original accounts were
  * approved, the respects in which they did not comply with the Companies Act 2006, and the
@@ -120,7 +123,7 @@ export function readRevision(body, dateApproved, errorMessages) {
   const amendments = readRevisionStatement(value, "amendments", "say what the revised accounts change", errorMessages);
   const revisesReceipt = value.revisesReceipt;
   if (revisesReceipt === undefined || revisesReceipt === null) return { originalDateOfApproval, nonCompliance, amendments };
-  if (typeof revisesReceipt !== "string" || !/^[^/]+\.json$/.test(revisesReceipt)) {
+  if (typeof revisesReceipt !== "string" || revisesReceipt.length > MAX_RECEIPT_NAME_LENGTH || !/^[^/]+\.json$/.test(revisesReceipt)) {
     errorMessages.push("Invalid revision.revisesReceipt - must be a receipt name ending in .json");
   }
   return { originalDateOfApproval, nonCompliance, amendments, revisesReceipt };

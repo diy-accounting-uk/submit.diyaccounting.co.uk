@@ -240,4 +240,17 @@ describe("dynamoDbSecurityStateRepository", () => {
     expect(command.input.TableName).toBe("test-security-state");
     expect(command.input.Key).toEqual({ stateKey: "session#hashed-abc#mcp" });
   });
+  test("getCachedValue answers a value whose time to live has not passed", async () => {
+    const { getCachedValue } = await import("../../../app/data/dynamoDbSecurityStateRepository.js");
+    mockSend.mockResolvedValue({ Item: { stateKey: "k", value: { outcome: "mapped" }, ttl: Math.floor(Date.now() / 1000) + 60 } });
+
+    expect(await getCachedValue("k")).toEqual({ outcome: "mapped" });
+  });
+
+  test("getCachedValue answers null for a value whose time to live has passed but which is not yet deleted", async () => {
+    const { getCachedValue } = await import("../../../app/data/dynamoDbSecurityStateRepository.js");
+    mockSend.mockResolvedValue({ Item: { stateKey: "k", value: { outcome: "unreadable" }, ttl: Math.floor(Date.now() / 1000) - 60 } });
+
+    expect(await getCachedValue("k")).toBeNull();
+  });
 });

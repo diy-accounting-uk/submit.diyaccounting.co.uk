@@ -117,6 +117,12 @@ describe("services/jointFiling revisions and amendments", () => {
     expect(refuse({ ...REVISION, amendments: "x".repeat(2001) })).toEqual(["revision.amendments is longer than 2000 characters"]);
   });
 
+  test("refuses a receipt name longer than any receipt is given", () => {
+    const errors = [];
+    readRevision({ revision: { ...REVISION, revisesReceipt: `${"x".repeat(2000)}.json` } }, "2026-10-20", errors);
+    expect(errors).toEqual(["Invalid revision.revisesReceipt - must be a receipt name ending in .json"]);
+  });
+
   test("reads the amended flag", () => {
     const errors = [];
     expect(readAmended({ amended: true }, errors)).toBe(true);

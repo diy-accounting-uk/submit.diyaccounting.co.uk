@@ -86,6 +86,17 @@ describe("bundleEnforcement.js", () => {
   });
 
   describe("enforceBundles", () => {
+    test("refuses a named activity that the catalogue does not hold", async () => {
+      const authorizerContext = { sub: "user-named-activity", email: "named@example.com" };
+      const event = buildEvent(makeJWT("user-named-activity"), authorizerContext, "/api/v1/account/settings");
+      getUserBundles.mockResolvedValue([]);
+
+      await expect(enforceBundles(event, { activityId: "no-such-activity" })).rejects.toMatchObject({
+        name: "BundleEntitlementError",
+        details: { code: "ACTIVITY_NOT_IN_CATALOGUE", activityId: "no-such-activity" },
+      });
+    });
+
     test("should throw BundleAuthorizationError when no authorization token", async () => {
       const event = buildEvent(null);
 

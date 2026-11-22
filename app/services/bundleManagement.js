@@ -150,6 +150,11 @@ export async function enforceBundles(event, options = {}) {
   const pathActivities = activityId
     ? (catalog.activities || []).filter((activity) => activity.id === activityId)
     : findMatchingActivitiesForUrlPath(catalog, requestPath);
+  if (activityId && pathActivities.length === 0) {
+    const message = `Forbidden: ${activityId} is not an activity in the catalogue`;
+    logger.warn({ message, code: "ACTIVITY_NOT_IN_CATALOGUE", activityId });
+    throw new BundleEntitlementError(message, { code: "ACTIVITY_NOT_IN_CATALOGUE", activityId });
+  }
   const listedActivities = pathActivities.filter((activity) => isActivityListedInEnvironment(activity, environmentName));
   const matchedActivities =
     listedActivities.length === 0 && previewRunsAgainstSandbox(event, requestPath) ? pathActivities : listedActivities;

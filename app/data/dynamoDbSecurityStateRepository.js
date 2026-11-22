@@ -188,14 +188,17 @@ export async function deleteSignInSession(hashedSub, appClient) {
 }
 
 /**
- * Reads a cached value by its key, or null.
+ * Reads a cached value by its key, or null when there is none or its time to live has passed.
+ * DynamoDB deletes an expired item some time after it expires, so the read checks the time itself.
  * @param {string} stateKey
  * @returns {Promise<object|null>}
  */
 export async function getCachedValue(stateKey) {
   const tableName = getResourceName("SECURITY_STATE_DYNAMODB_TABLE_NAME");
   const result = await executeDynamoDbCommand((module) => new module.GetCommand({ TableName: tableName, Key: { stateKey } }));
-  return result.Item?.value ?? null;
+  const item = result.Item;
+  if (!item || typeof item.ttl !== "number" || item.ttl <= Math.floor(Date.now() / 1000)) return null;
+  return item.value ?? null;
 }
 
 /**
