@@ -29,7 +29,8 @@ MAIN_CHECKOUT=$(dirname "$(git -C "$SKILL_DIR" rev-parse --path-format=absolute 
 SESSIONS_DIR=${CLOUD_SESSIONS_DIR:-$(dirname "$MAIN_CHECKOUT")/cloud-sessions}
 POOL_FILE=$SKILL_DIR/pool.txt
 ENV_FILE=$SKILL_DIR/environment.txt
-# A worker session runs on Opus 5.5 at medium effort, whatever model the coordinator session uses (operator, 2026-11-22).
+# A worker session runs on Opus 5.5 at medium effort (operator, 2026-11-22). Both go on the command line: a start that
+# leaves them out takes the coordinator's own model and the effort saved in ~/.claude/settings.json.
 WORKER_MODEL=${CLOUD_WORKER_MODEL:-claude-opus-5-5}
 WORKER_EFFORT=${CLOUD_WORKER_EFFORT:-medium}
 CODENAMES=$REPO_ROOT/CODENAMES.txt
@@ -317,10 +318,8 @@ cmd_start() {
     env_note=${env_note:-the CLI fallback, the Anthropic-hosted Default environment (no environment.txt, no /remote-env pick)}
   fi
   prompt="/collaborate $cn"
-  local settings="{\"model\":\"$WORKER_MODEL\",\"effortLevel\":\"$WORKER_EFFORT\""
-  [ -z "$env_id" ] || settings+=",\"remote\":{\"defaultEnvironmentId\":\"$env_id\"}"
-  settings+="}"
-  local -a launch=(claude --model "$WORKER_MODEL" --effort "$WORKER_EFFORT" --settings "$settings")
+  local -a launch=(claude --model "$WORKER_MODEL" --effort "$WORKER_EFFORT" --permission-mode auto)
+  [ -z "$env_id" ] || launch+=(--settings "{\"remote\":{\"defaultEnvironmentId\":\"$env_id\"}}")
   session_name="submit $cn"
   launch+=(--name "$session_name" --cloud "$prompt")
   deep_link="https://claude.ai/code/new?q=%2Fcollaborate%20$cn&repo=$ORG%2F$PREFIX$cn&branch=main"
