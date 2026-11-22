@@ -379,6 +379,26 @@ export async function listVatReceipts(session, params = {}) {
 // The kind Submit stores on the receipt of accepted accounts, and on a rejected accounts filing.
 const ACCOUNTS_RECEIPT_KIND = "companies-house-accounts";
 const ACCOUNTS_FILING_KIND = "accounts";
+// Each receipt read carries the whole filed document, so the list reads the newest receipts only,
+// a few at a time.
+const ACCOUNTS_RECEIPTS_LISTED = 25;
+const ACCOUNTS_RECEIPT_READS_AT_ONCE = 4;
+
+// fn, with at most limit of its calls running at once; the others wait their turn.
+function atMostAtOnce(limit, fn) {
+  let running = 0;
+  const waiting = [];
+  return async (...args) => {
+    if (running >= limit) await new Promise((resolve) => waiting.push(resolve));
+    running += 1;
+    try {
+      return await fn(...args);
+    } finally {
+      running -= 1;
+      waiting.shift()?.();
+    }
+  };
+}
 
 // The accounts a filed document holds, in the words the accounts forms use.
 function accountsTypeOf(mapped) {
@@ -401,10 +421,11 @@ export async function listAccountsReceipts(session, params = {}) {
   const { clientId } = params;
   const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
   const { receipts = [], filingsInProgress = [] } = await callSubmitApi(session, `/api/v1/hmrc/receipt${query}`);
+  const accountsRows = receipts.filter((row) => row.kind === ACCOUNTS_RECEIPT_KIND);
+  const more = accountsRows.length > ACCOUNTS_RECEIPTS_LISTED;
   const accepted = await Promise.all(
-    receipts
-      .filter((row) => row.kind === ACCOUNTS_RECEIPT_KIND)
-      .map(async (row) => {
+    accountsRows.slice(0, ACCOUNTS_RECEIPTS_LISTED).map(
+      atMostAtOnce(ACCOUNTS_RECEIPT_READS_AT_ONCE, async (row) => {
         const revisedAccounts = row.amended === true;
         const filedWithCompanyTaxReturn = Boolean(row.jointFilingId);
         const filedOn = String(row.timestamp ?? "").slice(0, 10);
@@ -453,6 +474,7 @@ export async function listAccountsReceipts(session, params = {}) {
           ...(problem ? { problem } : {}),
         };
       }),
+    ),
   );
   const rejected = filingsInProgress
     .filter((filing) => filing.kind === ACCOUNTS_FILING_KIND && filing.status === "rejected")
@@ -462,7 +484,12 @@ export async function listAccountsReceipts(session, params = {}) {
       rejectedOn: String(filing.submittedAt ?? "").slice(0, 10),
       rejections: filing.rejections ?? [],
     }));
-  return { receipts: accepted, rejectedFilings: rejected };
+  return {
+    receipts: accepted,
+    rejectedFilings: rejected,
+    more,
+    ...(more ? { moreNote: `Only the newest ${ACCOUNTS_RECEIPTS_LISTED} accounts filings are listed; older filings are not.` } : {}),
+  };
 }
 
 // The fields of dormant micro-entity accounts; the route refuses them with a small company section.

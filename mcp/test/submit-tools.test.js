@@ -737,6 +737,46 @@ describe("submit-tools", () => {
       expect(result.receipts[2]).not.toHaveProperty("problem");
     });
 
+    it("lists only the newest 25 accounts receipts, reading at most four at a time, and says when there are more", async () => {
+      const names = Array.from(
+        { length: 30 },
+        (_, index) => `2026-01-${String(index + 1).padStart(2, "0")}T10:00:00.000Z-${index}.json`,
+      ).reverse();
+      let inFlight = 0;
+      let mostInFlight = 0;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (url) => {
+          const path = new URL(url).pathname;
+          if (path === "/api/v1/hmrc/receipt") {
+            return jsonResponse(200, { receipts: names.map((name) => receiptRow(name)), filingsInProgress: [] });
+          }
+          inFlight += 1;
+          mostInFlight = Math.max(mostInFlight, inFlight);
+          await new Promise((resolve) => setTimeout(resolve, 5));
+          inFlight -= 1;
+          return jsonResponse(200, OWN_RECEIPTS.stored[DORMANT_NAME]);
+        }),
+      );
+
+      const result = await listAccountsReceipts(session, {});
+
+      expect(result.receipts.map((row) => row.name)).toEqual(names.slice(0, 25));
+      expect(result.more).toBe(true);
+      expect(result.moreNote).toEqual(expect.any(String));
+      expect(mostInFlight).toBeLessThanOrEqual(4);
+      expect(mostInFlight).toBeGreaterThan(1);
+    });
+
+    it("answers more false when every accounts receipt is listed", async () => {
+      vi.stubGlobal("fetch", receiptsApi({ "Bearer session-access-token": OWN_RECEIPTS }));
+
+      const result = await listAccountsReceipts(session, {});
+
+      expect(result.more).toBe(false);
+      expect(result).not.toHaveProperty("moreNote");
+    });
+
     it("answers a customer only the receipts the route holds for that customer", async () => {
       const otherCustomer = createSession({
         credentials: { accessToken: async () => "other-access-token", idToken: async () => "other-id-token" },
