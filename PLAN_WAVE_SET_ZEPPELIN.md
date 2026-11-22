@@ -19,6 +19,8 @@ skill, section "How a set is delivered", says how `/iterate` builds it.
 
 > Here "A revision is refused on a form that cannot file a note the original carries" add the fields.
 
+> Add all 27
+
 ## Status
 
 approved 2026-11-22 (the operator's `/collab-loop` on the set). building wave 1. The cloud workers build the rows and run the gates (`collab-loop` skill); the laptop lands them.
@@ -127,6 +129,25 @@ on the guide's pages.
 
 State: pending. The look pass of the settled pages is done (bugle 474df2b5c, on wave 5's head c25fcd18e): 116 screenshots judged by the `visual-review` skill (drill-down 33, watch list 14, campaign pass 39, prior-year fill 10, help and availability 10, emails 10). Two defects fixed and landed on wave 5 as d0e1285a9: the watch list button for a signed-out reader offers the sign-in, and a pass email states the length of a grant of a year or more. Six fails are with bugle as `look2` from d0e1285a9: filing descriptions from Companies House's own enumeration; no focus ring on a heading focused by script; the availability table fits at 1280px; the fill's "Left empty" list and its money format; the browser tests run in the en-GB locale; 390px screenshots where tests lacked them. The seventh, placeholder data in the fixtures and the simulator, is board row LOOK1. The amend forms and the books card in amend mode get their look pass after `amend3`. Built early and held on epoch's `claude/epoch-aa17` (44425213e, on top of AA5 and AA6): the scene script `videos/amend-company-accounts.json` (run end to end on the simulator, 185 s, no narration), the guide journey in `web/public/lib/guide-journeys.js` (shown where revised accounts are listed), the `publish.json` entry with no video id, 13 walkthrough frames. Left for the laptop: `npm run video:record -- amend-company-accounts simulator` with narration (Polly needs AWS), the unlisted upload by the `video-publish` skill, the id, chapters and `npm run video:walkthrough -- --id amend-company-accounts`, then `AWS_PROFILE=diya-submit-prod npm run video:embed-check`. The pages' wording moves with the AA4 fixes, so the take is recorded after they land.
 
+### Wave 8: the rows the operator added on 2026-11-22
+
+The operator asked which board rows outside the set could join it, and said "Add all 27". Each builds on wave 6. Wave 7's look pass, guide, video and proofs are cut after this wave, so that they cover it. The eleven form rows ship with their activities not listed for prod: a new form type is tested through the XML team first (XF1, OXF1).
+
+| Batch | Rows | Model | Files the batch owns |
+| --- | --- | --- | --- |
+| forms | OFF1, OFF2, OFF3, PSC1, PSC2, PSC3, PSC4, SH1, ARD1, NAME1, LOC1 | Sonnet; Opus for SH1's statement of capital | each form's page, XML builder, route and Lambda, simulator answer and tests; they share the catalogue, `app/bin/server.js`, `CompaniesHouseNames.java`, `companySearch.page.js` and `i18n/cy.toml`, so one lands after another |
+| due | DUE2, DUE3, then DUE4 | Sonnet | the due date rules module, the due list table, then its API and activity |
+| reports | CR2, then CR3 | Sonnet | the fetch and cache layer, the cache table, the report route, then the reports views on the drill-down |
+| campaign | WDM2, WDM14 | Sonnet | the account's source at first sign-in; the `resident-ltd-comp` bundle |
+| practice | PRC1 | Sonnet | the filings in progress by client, the receipt route, the receipts page's client choice |
+| amend3 | AA15, AA36 | Sonnet | a revision with no receipt; small company accounts with no comparatives (its reader part follows SB2, its version bump follows the release) |
+| welsh2 | LANG14, then LANG15 | Opus, Sonnet | Welsh copies of privacy, terms, accessibility and help; the section that lists the Welsh services |
+| fixtures | LOOK1 | Sonnet | the browser tests' fixtures and the simulator's companies; the set's last build |
+
+Beside, with no pull request: CR13 (the licence question's draft, in the private repository).
+
+State: defined; no row dispatched yet. Dispatch as workers come free, the batches with no shared file first (due, reports, practice, campaign), the form rows as a chain.
+
 ## Waves: spreadsheets
 
 The same branch names in `../spreadsheets.diyaccounting.co.uk`. Each worktree comes from that
@@ -141,6 +162,8 @@ repository's `scripts/worktree-add.sh`.
 | 5 | newbook | SY3 | Sonnet | `web/diya-gl.co.uk/public/shell.js`, the Ltd product's new book form, a browser test |
 | 8 | mapping | SB1 (waves 6 and 7 are the set's own fixes: the summary book and the browser tests) | Opus | `app/lib/ixbrl-summary-book.js`, `app/lib/ixbrl-accounts.js`, the engine's depreciation, their tests |
 | 9 | reader | SB2 (the reader reads real filings from other accounts software; the operator's word, 2026-11-22) | Opus | `app/lib/ixbrl-accounts.js`, `app/lib/ixbrl-reader.js`, `app/lib/ixbrl-uk-gaap.js`, the five register documents as fixtures, their tests |
+| 10 | properties | GLS2 (added by the operator, 2026-11-22) | Sonnet | the property-test harness and the first properties |
+| 11 | posting | GLS3 (added by the operator, 2026-11-22; follows GLS2) | Opus | the posting rules and the trial balance from the lines |
 
 State: gated 5eec67e93. Seven waves landed; the set branch `claude/zeppelin-set` is 5eec67e93, not pushed. `claude/zeppelin-w01` 521494ec6 (AA27), `claude/zeppelin-w02` 57df16bcb (AA26), `claude/zeppelin-w03` a913fcb8d (SY1's page), `claude/zeppelin-w04` 3ce60aa68 (SY2: the Generate option), `claude/zeppelin-w05` 99c4f730a (SY3: the DIYA-GL app's "New book from a company"), `claude/zeppelin-w06` d4d2fe1f8 (the summary book gives back a filed set's figures: the tax of a year with no profit and loss account runs until it settles, the interest payable account is declared, a Format 2 change in stocks is posted once), `claude/zeppelin-w07` 5eec67e93 (the browser tier's two fixes). The first set gate on 99c4f730a passed every tier but the browser tier, which failed 11 of 585 tests. Six counted the DIYA-GL save menu, which AA27 gave one more item for every book kind, "Download as a spreadsheet package (.zip)"; they now check the menu's labels in order. Five were a product break by SY3: the app reads a company from the address when it starts, and the homepage did not load the two scripts that do it, so the homepage showed its empty state in place of the Ltd example; `index.html` now loads them. All 514 `diya-gl-*` browser tests pass on the fix. The set gate, `npm test` (the router), is green on 5eec67e93: gates, 166 unit files, the four LibreOffice products, all 585 browser tests and the infra build, in 46 minutes. A change to the set branch after this needs the gate again. A gate log never goes under `target/`: the infra tier's Maven clean removes it. Open: the Self Employed downloads test checks the diya-gl zip and the JSON only; the package download is checked in the browser for Ltd only. Board row SB1 is spreadsheets wave 8 of this set, landed: `claude/zeppelin-w08` 62c279339 (four commits: a purchase depreciates at its register entry's class and rate when the entry states a rate; a fixed asset note that opens above the prior balance sheet keeps its figures with a named gap line; the micro-entity headings outside the totals are lines of their own; the provisions are their own line and no longer inside creditors after one year). The set branch `claude/zeppelin-set` is 62c279339, gated: the router's gates, unit (6,304 tests), calc (526) and browser (585) tiers pass on the change from 5eec67e93, and it selects no infra tier. The mapping's field names changed (`provisions` is now `provisionsForLiabilities`; `calledUpShareCapitalNotPaid`, `prepaymentsAccruedIncome` and `accrualsDeferredIncome` are new; `debtors` and `otherCreditors` hold their own fact only), so GLV1 changes Submit's readers with the version bump. Submit's version bump is GLV1. The push waits for the submit set on prod. Worktrees are under `.claude/worktrees/` in that repository.
 
