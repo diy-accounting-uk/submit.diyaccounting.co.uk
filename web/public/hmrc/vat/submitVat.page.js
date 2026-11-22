@@ -47,7 +47,7 @@ function showFieldError(fieldId, message) {
   const field = document.getElementById(fieldId);
   if (!field || validationQuiet) return;
   if (errorSink) {
-    errorSink.push({ input: field, message });
+    errorSink.push({ input: field, message, passes: () => boxPasses(fieldId) });
     return;
   }
 
@@ -257,6 +257,21 @@ function validateAll9BoxFields() {
   return isValid;
 }
 
+// Whether one box now meets its rules, checked without writing beside the field.
+function boxPasses(fieldId) {
+  const value = document.getElementById(fieldId).value;
+  validationQuiet = true;
+  try {
+    if (fieldId === "netVatDue") return validateNetVatDue(value, fieldId);
+    if (["vatDueSales", "vatDueAcquisitions", "vatReclaimedCurrPeriod"].includes(fieldId)) {
+      return validateVatMonetaryAmount(value, fieldId, BOX_NAMES[fieldId]);
+    }
+    return validateVatWholeAmount(value, fieldId, BOX_NAMES[fieldId]);
+  } finally {
+    validationQuiet = false;
+  }
+}
+
 function boxesAreValid() {
   validationQuiet = true;
   try {
@@ -299,27 +314,27 @@ async function handleFormSubmission(event) {
   const vatBoxData = collect9BoxData();
 
   const errors = [];
+  const vatNumberInput = document.getElementById("vatNumber");
   if (!vatNumber) {
     errors.push({
-      input: document.getElementById("vatNumber"),
+      input: vatNumberInput,
       message: siteText("widget.required-vrn", "Enter your VAT registration number"),
+      passes: () => vatNumberInput.value.trim() !== "",
     });
   } else if (!/^\d{9}$/.test(vatNumber)) {
     errors.push({
-      input: document.getElementById("vatNumber"),
+      input: vatNumberInput,
       message: siteText("widget.vrn-nine-numbers", "The VAT registration number must be 9 numbers"),
+      passes: () => /^\d{9}$/.test(vatNumberInput.value.trim()),
     });
   }
-  if (!periodStart)
-    errors.push({
-      input: document.getElementById("periodStart"),
-      message: siteText("widget.required-period-start", "Enter the period start date"),
-    });
-  if (!periodEnd)
-    errors.push({
-      input: document.getElementById("periodEnd"),
-      message: siteText("widget.required-period-end", "Enter the period end date"),
-    });
+  for (const [id, filled, message] of [
+    ["periodStart", periodStart, () => siteText("widget.required-period-start", "Enter the period start date")],
+    ["periodEnd", periodEnd, () => siteText("widget.required-period-end", "Enter the period end date")],
+  ]) {
+    const input = document.getElementById(id);
+    if (!filled) errors.push({ input, message: message(), passes: () => input.value !== "" });
+  }
 
   errorSink = errors;
   try {
@@ -336,9 +351,11 @@ async function handleFormSubmission(event) {
   }
 
   if (!declaration) {
+    const declarationInput = document.getElementById("declaration");
     errors.push({
-      input: document.getElementById("declaration"),
+      input: declarationInput,
       message: siteText("vat-submit.tick-declaration", "Tick the box to confirm the declaration"),
+      passes: () => declarationInput.checked,
     });
   }
   window.formErrors.showFormErrors(errors);

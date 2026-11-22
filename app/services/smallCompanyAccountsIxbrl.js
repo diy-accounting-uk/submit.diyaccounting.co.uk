@@ -53,7 +53,8 @@ import {
   shareNoun,
 } from "./accountsIxbrlCommon.js";
 import { recordAmount, recordFigure, recordTable } from "../lib/submissionRecord.js";
-import { SHARE_CLASS_LABEL, sharesIssuedFor } from "./microEntityAccountsIxbrl.js";
+import { SHARE_CLASS_LABEL } from "./microEntityAccountsIxbrl.js";
+import { sharesIssuedFor } from "../../web/public/lib/accounts-notes-check.js";
 import { accountsText } from "./accountsLanguage.js";
 
 const SMALL_COMPANY_FRAMEWORK_COMPLIANCE =

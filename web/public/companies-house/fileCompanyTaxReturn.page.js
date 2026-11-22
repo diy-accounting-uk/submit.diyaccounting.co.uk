@@ -3019,14 +3019,21 @@ function renderCompaniesHouse() {
     return;
   }
   outcome.className = "outcome";
+  const word = window.companiesHouseGatewayPoll.statusWord(statusCode);
   outcome.replaceChildren(
-    paragraph(
-      siteText("ch.ct.ch-not-settled", "Companies House has not settled the accounts yet. Submission "),
-      { strong: submissionNumber },
-      siteText("ch.ct.is", " is "),
-      { strong: window.companiesHouseGatewayPoll.statusWord(statusCode) },
-      siteText("ch.ct.full-stop", "."),
-    ),
+    word === null
+      ? paragraph(
+          siteText("ch.ct.ch-not-settled-alone", "Companies House has not settled the accounts yet."),
+          " ",
+          window.companiesHouseGatewayPoll.unknownStatusText(submissionNumber, statusCode),
+        )
+      : paragraph(
+          siteText("ch.ct.ch-not-settled", "Companies House has not settled the accounts yet. Submission "),
+          { strong: submissionNumber },
+          siteText("ch.ct.is", " is "),
+          { strong: word },
+          siteText("ch.ct.full-stop", "."),
+        ),
     ...(sending.taxReturnSent
       ? []
       : [

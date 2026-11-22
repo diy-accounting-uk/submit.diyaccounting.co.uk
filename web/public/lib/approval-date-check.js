@@ -47,6 +47,8 @@ export function showApprovalDateAfterToday(input, now) {
     "ch.micro.approved-after-today",
     "The date approved, {date}, is after today. Enter the date the directors approved the accounts.",
   );
-  globalThis.formErrors.showFormErrors([{ input, message: approvalDateAfterTodayMessage(input.value, template) }]);
+  globalThis.formErrors.showFormErrors([
+    { input, message: approvalDateAfterTodayMessage(input.value, template), passes: () => !isApprovedAfterToday(input.value, now) },
+  ]);
   return true;
 }

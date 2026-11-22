@@ -38,12 +38,8 @@ import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { isValidCompanyNumber, http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
 import { isValidIsoDate } from "../../lib/hmrcValidation.js";
-import {
-  buildMicroEntityAccounts,
-  DORMANT_TRADING_STATUSES,
-  SHARE_CLASSES,
-  sharesIssuedFor,
-} from "../../services/microEntityAccountsIxbrl.js";
+import { buildMicroEntityAccounts, DORMANT_TRADING_STATUSES } from "../../services/microEntityAccountsIxbrl.js";
+import { SHARE_CLASSES, sharesIssuedFor } from "../../../web/public/lib/accounts-notes-check.js";
 import { buildSmallCompanyAccounts } from "../../services/smallCompanyAccountsIxbrl.js";
 import { REGISTERED_OFFICE_FIELDS, readDirectorsAdvances } from "../../services/accountsIxbrlCommon.js";
 import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
@@ -282,7 +278,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     };
   }
 
-  const validDirectorsAdvances = readDirectorsAdvances(directorsAdvances, "directorsAdvances", errorMessages, [directorName]);
+  const validDirectorsAdvances = readDirectorsAdvances(directorsAdvances, "directorsAdvances", errorMessages, { signerName: directorName });
   const isDormant = dormant === true;
   const numericNominalValue = Number(nominalValue);
   if (isDormant) {

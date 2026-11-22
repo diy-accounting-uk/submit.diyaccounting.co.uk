@@ -21,7 +21,7 @@ import {
   INTANGIBLE_ASSET_FIELDS,
   intangibleAssetClosingFigures,
 } from "./smallCompanyAccountsIxbrl.js";
-import { SHARE_CLASSES, sharesIssuedFor } from "./microEntityAccountsIxbrl.js";
+import { SHARE_CLASSES, shareCapitalFindings } from "../../web/public/lib/accounts-notes-check.js";
 import { readDirectorsAdvances } from "./accountsIxbrlCommon.js";
 import { capitalAndReservesMismatch, capitalAndReservesMessage, YEAR_NAMES } from "../../web/public/lib/balance-sheet-check.js";
 
@@ -175,14 +175,12 @@ function readShareCapital(values, calledUpShareCapital, errorMessages) {
   if (values === undefined || values === null) return undefined;
   const { shareClass } = values;
   const nominalValue = Number(values.nominalValue);
-  if (!SHARE_CLASSES.includes(shareClass)) {
-    errorMessages.push(`Invalid smallCompany.shareCapital.shareClass - must be one of ${SHARE_CLASSES.join(", ")}`);
-  }
-  if (!Number.isFinite(nominalValue) || nominalValue <= 0) {
-    errorMessages.push("Invalid smallCompany.shareCapital.nominalValue - must be a positive number of pounds per share");
-  } else if (Number.isFinite(calledUpShareCapital) && sharesIssuedFor(calledUpShareCapital, nominalValue) === null) {
-    errorMessages.push("smallCompany.shareCapital.nominalValue must divide calledUpShareCapital into a whole number of shares");
-  }
+  const messages = {
+    "share-class": `Invalid smallCompany.shareCapital.shareClass - must be one of ${SHARE_CLASSES.join(", ")}`,
+    "nominal-value": "Invalid smallCompany.shareCapital.nominalValue - must be a positive number of pounds per share",
+    "whole-shares": "smallCompany.shareCapital.nominalValue must divide calledUpShareCapital into a whole number of shares",
+  };
+  for (const { rule } of shareCapitalFindings({ shareClass, nominalValue }, calledUpShareCapital)) errorMessages.push(messages[rule]);
   return { shareClass, nominalValue };
 }
 
@@ -246,18 +244,13 @@ export function extractAndValidateSmallCompany(smallCompany, statementsAccepted,
     if (text) policies[field] = text;
   }
   const controllingParty = readControllingParty(section.controllingParty, errorMessages);
-  const directorsAdvances = readDirectorsAdvances(section.directorsAdvances, "smallCompany.directorsAdvances", errorMessages, directors);
+  const directorsAdvances = readDirectorsAdvances(section.directorsAdvances, "smallCompany.directorsAdvances", errorMessages, {
+    directorNames: directors,
+    amountsOwedByDirectors: currentBalanceSheet.amountsOwedByDirectors ?? 0,
+  });
   const owedByDirectors = [currentBalanceSheet, priorBalanceSheet].some((sheet) => sheet?.amountsOwedByDirectors > 0);
   if (owedByDirectors && !directorsAdvances?.length) {
     errorMessages.push("smallCompany.directorsAdvances is required when a balance sheet shows amountsOwedByDirectors");
-  }
-  if (directorsAdvances?.length) {
-    const closing = directorsAdvances.reduce((total, advance) => total + advance.balanceAtEnd, 0);
-    if (closing !== (currentBalanceSheet.amountsOwedByDirectors ?? 0)) {
-      errorMessages.push(
-        `smallCompany.directorsAdvances balanceAtEnd (${closing}) must equal balanceSheet.currentYear.amountsOwedByDirectors`,
-      );
-    }
   }
 
   const statements = {};

@@ -18481,3 +18481,83 @@ cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio ei
 [strings."itsa-final.status-production-this-uses-your-real-57175d"]
 hash = "57175db21370"
 cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+# == The rules of the notes on advances and share capital, which the accounts forms and the route share ==
+
+[strings."ch.notes.the-director"]
+hash = "f78e968cdf29"
+cy = '''y cyfarwyddwr'''
+
+[strings."ch.notes.too-many-rows"]
+hash = "716c3272e3e8"
+cy = '''Mae’r nodyn ar flaensymiau yn cynnwys {limit} rhes ar y mwyaf, un ar gyfer pob cyfarwyddwr.'''
+
+[strings."ch.notes.name-missing"]
+hash = "6b244a0f557e"
+cy = '''Rhowch enw’r cyfarwyddwr ym mhob rhes blaenswm.'''
+
+[strings."ch.notes.name-too-long"]
+hash = "33ae6ff1c626"
+cy = '''Mae enw cyfarwyddwr mewn rhes blaenswm yn {limit} nod ar y mwyaf.'''
+
+[strings."ch.notes.figure"]
+hash = "13b720a64bed"
+cy = '''Mae symiau’r blaenswm i {name} yn bunnoedd cyfan, ac nid oes yr un yn llai na dim.'''
+
+[strings."ch.notes.terms-missing"]
+hash = "07cbb3a67cad"
+cy = '''Rhowch gyfradd llog a phrif amodau’r blaenswm i {name}.'''
+
+[strings."ch.notes.terms-too-long"]
+hash = "9fed98da6910"
+cy = '''Mae cyfradd llog a phrif amodau’r blaenswm i {name} yn {limit} nod ar y mwyaf.'''
+
+[strings."ch.notes.arithmetic"]
+hash = "2d8f15f55742"
+cy = '''Nid yw’r blaenswm i {name} yn adio: y swm sy’n ddyledus ar y dechrau, ynghyd â’r hyn a roddwyd ymlaen llaw, llai’r hyn a ad-dalwyd, yw £{expected}, felly’r swm sy’n ddyledus ar y diwedd yw £{expected}.'''
+
+[strings."ch.notes.same-director"]
+hash = "f3ef863a73bd"
+cy = '''Mae gan {name} ddwy res blaenswm. Rhowch un rhes i bob cyfarwyddwr, gyda symiau eu holl flaensymiau wedi’u hadio at ei gilydd.'''
+
+[strings."ch.notes.sum"]
+hash = "63dda564dab0"
+cy = '''Mae’r symiau sy’n ddyledus ar ddiwedd y blaensymiau yn adio i £{total}, ond mae’r fantolen yn dangos £{owed} sy’n ddyledus gan gyfarwyddwyr.'''
+
+[strings."ch.notes.share-class"]
+hash = "7e20c743c32f"
+cy = '''Dewiswch ddosbarth y cyfrannau.'''
+
+[strings."ch.notes.nominal-value"]
+hash = "93cc2b0d9b04"
+cy = '''Rhowch werth nominal pob cyfran, mewn punnoedd.'''
+
+[strings."ch.notes.whole-shares"]
+hash = "db4d8bb95ebd"
+cy = '''Rhaid i werth nominal pob cyfran rannu’r cyfalaf cyfrannau wedi’i alw o £{capital} yn gyfrannau cyfan.'''
+
+# == The error summary that follows each field’s rule, a Companies House status code with no word, the registered office hint on a revision, and the micro-entity advance to a director who does not sign ==
+
+[strings."widget.error-fixed"]
+hash = "239d21b99f19"
+cy = '''Wedi’i gywiro: {message}'''
+
+[strings."ch.gateway.status-unknown"]
+hash = "8b3972d93e73"
+cy = '''Atebodd Tŷ’r Cwmnïau {code} ar gyfer cyflwyniad {number}.'''
+
+[strings."ch.ct.ch-not-settled-alone"]
+hash = "280ce2ac6737"
+cy = '''Nid yw Tŷ’r Cwmnïau wedi setlo’r cyfrifon eto.'''
+
+[strings."ch.office.filled-from-filed"]
+hash = "85c6a990ccd4"
+cy = '''Wedi’i llenwi o’r cyfrifon a ffeiliwyd gennych. Newidiwch ran i’w chywiro.'''
+
+[strings."ch.office.differs-from-register"]
+hash = "965f2ce2ed59"
+cy = '''Mae cofrestr Tŷ’r Cwmnïau yn rhoi’r swyddfa gofrestredig heddiw fel {office}. Mae’r cyfrifon diwygiedig yn cadw’r swyddfa a nodir yn y cyfrifon a ffeiliwyd oni bai eich bod yn ei newid.'''
+
+[strings."ch.micro.advance-not-signer"]
+hash = "13d7ec053a2e"
+cy = '''Mae {name} wedi’i enwi ar gyfer blaenswm, ond ar gyfrifon micro-endid mae blaenswm yn enwi’r cyfarwyddwr sy’n llofnodi’r cyfrifon, {signer}. Cywirwch yr enw.'''
