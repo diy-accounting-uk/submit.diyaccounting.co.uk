@@ -3,7 +3,7 @@
 
 // app/unit-tests/http-simulator/routes/companies-house-xmlgw.test.js
 
-import { describe, test, expect, beforeEach } from "vitest";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { createHash } from "crypto";
 import express from "express";
 import request from "supertest";
@@ -22,6 +22,7 @@ import { buildPscChangeDetailsBody } from "@app/services/companiesHousePscChange
 import { buildAccountingReferenceDateBody } from "@app/services/companiesHouseAccountingReferenceDateXml.js";
 import { buildChangeOfNameBody, supportingDocumentFor } from "@app/services/companiesHouseChangeOfNameXml.js";
 import { getCompany, resetCompanyFixtures } from "@app/http-simulator/scenarios/companies.js";
+import { nextReferenceDate } from "../../../../web/public/lib/accounting-reference-period.js";
 import { buildPscStatementNotificationBody, buildPscStatementWithdrawalBody } from "@app/services/companiesHousePscStatementXml.js";
 import { buildMicroEntityAccounts } from "@app/services/microEntityAccountsIxbrl.js";
 import { parseXmlDocument, firstElementText, allElements } from "@app/lib/xmlDom.js";
@@ -1283,6 +1284,76 @@ describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing
 
       const allowed = await settled("NAM005", taken, "same-as-no-objection");
       expect(firstElementText(allowed, "StatusCode")).toBe("ACCEPT");
+    });
+  });
+
+  describe("a change of accounting reference date for company 00000005, whose next accounts' period has ended and is not filed", () => {
+    const company = () => getCompany("00000005").accounts;
+    let fixture;
+
+    function changeEnvelope(submissionNumber, currentPeriodEnd, newPeriodEnd) {
+      return buildFormSubmission({
+        presenterId: SIMULATOR_PRESENTER_ID,
+        presenterCode: SIMULATOR_PRESENTER_CODE,
+        companyNumber: "00000005",
+        companyName: "SIMULATOR YEAR ENDED LIMITED",
+        companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
+        packageReference: "0012",
+        formIdentifier: "ChangeAccountingReferenceDate",
+        submissionNumber,
+        dateSigned: new Date().toISOString().slice(0, 10),
+        formXml: buildAccountingReferenceDateBody({ currentPeriodEnd, newPeriodEnd }),
+        gatewayTest: true,
+      });
+    }
+
+    async function settled(submissionNumber, currentPeriodEnd, newPeriodEnd) {
+      await post(changeEnvelope(submissionNumber, currentPeriodEnd, newPeriodEnd));
+      expect(await statusOf(submissionNumber)).toBe("PENDING");
+      return parseXmlDocument((await post(statusEnvelope({ submissionNumber }))).text);
+    }
+
+    const dayBefore = (iso) => new Date(Date.parse(`${iso}T00:00:00Z`) - 86400000).toISOString().slice(0, 10);
+
+    beforeEach(() => {
+      resetCompanyFixtures();
+      fixture = structuredClone(company());
+    });
+
+    afterEach(() => vi.useRealTimers());
+
+    test("the period running now, after the ended one, is the current period: a change to it is accepted and moves the reference date", async () => {
+      const currentEnd = nextReferenceDate(fixture.next_accounts.period_end_on, fixture.accounting_reference_date);
+      const final = await settled("ARY001", currentEnd, dayBefore(currentEnd));
+
+      expect(firstElementText(final, "StatusCode")).toBe("ACCEPT");
+      expect(company().next_accounts).toEqual(fixture.next_accounts);
+      expect(company().accounting_reference_date).not.toEqual(fixture.accounting_reference_date);
+    });
+
+    test("the ended period of the next accounts is the previous period: a change to it is accepted and moves that period", async () => {
+      const previousEnd = fixture.next_accounts.period_end_on;
+      const final = await settled("ARY002", previousEnd, dayBefore(previousEnd));
+
+      expect(firstElementText(final, "StatusCode")).toBe("ACCEPT");
+      expect(company().next_accounts.period_end_on).toBe(dayBefore(previousEnd));
+    });
+
+    test("the period of the last filed accounts, two back, is neither and is rejected", async () => {
+      const final = await settled("ARY003", fixture.last_accounts.period_end_on, dayBefore(fixture.last_accounts.period_end_on));
+
+      expect(firstElementText(final, "RejectCode")).toBe("9996");
+      expect(company()).toEqual(fixture);
+    });
+
+    test("once the accounts are overdue no period can be changed", async () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date(Date.parse(`${fixture.next_accounts.due_on}T12:00:00Z`) + 86400000));
+      const final = await settled("ARY004", fixture.next_accounts.period_end_on, dayBefore(fixture.next_accounts.period_end_on));
+
+      expect(firstElementText(final, "RejectCode")).toBe("9993");
+      expect(firstElementText(final, "Description")).toContain("overdue");
+      expect(company()).toEqual(fixture);
     });
   });
 });

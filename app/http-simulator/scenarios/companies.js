@@ -16,6 +16,33 @@
 
 import { accountsDueNineMonthsAfter } from "../../../web/public/lib/accounting-reference-period.js";
 
+// A company whose next accounts' period ended two months ago and is not yet filed, so its current
+// period is the one running after it: its dates follow today, so the case stays reachable.
+function yearEndedCompanyAccounts(now = new Date()) {
+  const iso = (date) => date.toISOString().slice(0, 10);
+  const nextEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 0));
+  const nextStart = new Date(Date.UTC(nextEnd.getUTCFullYear() - 1, nextEnd.getUTCMonth() + 1, 1));
+  const lastEnd = new Date(Date.UTC(nextStart.getUTCFullYear(), nextStart.getUTCMonth(), 0));
+  const lastStart = new Date(Date.UTC(lastEnd.getUTCFullYear() - 1, lastEnd.getUTCMonth() + 1, 1));
+  return {
+    accounting_reference_date: {
+      day: String(nextEnd.getUTCDate()).padStart(2, "0"),
+      month: String(nextEnd.getUTCMonth() + 1).padStart(2, "0"),
+    },
+    next_accounts: {
+      due_on: accountsDueNineMonthsAfter(iso(nextEnd)),
+      period_start_on: iso(nextStart),
+      period_end_on: iso(nextEnd),
+    },
+    last_accounts: {
+      made_up_to: iso(lastEnd),
+      period_start_on: iso(lastStart),
+      period_end_on: iso(lastEnd),
+      type: "micro-entity",
+    },
+  };
+}
+
 const companies = {
   "00000001": {
     company_name: "SIMULATOR EXAMPLE COMPANY LIMITED",
@@ -215,6 +242,26 @@ const companies = {
       next_made_up_to: "2025-09-21",
     },
   },
+  "00000005": {
+    company_name: "SIMULATOR YEAR ENDED LIMITED",
+    company_number: "00000005",
+    company_status: "active",
+    type: "ltd",
+    date_of_creation: "2015-03-02",
+    jurisdiction: "england-wales",
+    registered_office_address: {
+      address_line_1: "5 Example Street",
+      locality: "Cardiff",
+      postal_code: "CF14 3UZ",
+      country: "Wales",
+    },
+    sic_codes: ["62012"],
+    accounts: yearEndedCompanyAccounts(),
+    confirmation_statement: {
+      next_due: "2099-03-16",
+      next_made_up_to: "2099-03-02",
+    },
+  },
 };
 
 const RATE_LIMITED_COMPANY_NUMBER = "42942942";
@@ -248,9 +295,21 @@ export function setCompanyName(companyNumber, name) {
 }
 
 /**
- * Move the end of a company's current accounting period, as an accepted change of accounting
- * reference date does: the period's end, the accounting reference date's day and month, and the
- * date the accounts fall due.
+ * Set a company's accounting reference date to the day and month of a new period end, as an
+ * accepted change to a period the register does not list yet does.
+ * @param {string} companyNumber
+ * @param {string} periodEnd - ISO date
+ */
+export function setAccountingReferenceDate(companyNumber, periodEnd) {
+  const accounts = companies[companyNumber]?.accounts;
+  if (!accounts) return;
+  const [, month, day] = periodEnd.split("-");
+  accounts.accounting_reference_date = { day, month };
+}
+
+/**
+ * Move the end of a company's next accounts period, as an accepted change to that period does: the
+ * period's end, the accounting reference date's day and month, and the date the accounts fall due.
  * @param {string} companyNumber
  * @param {string} periodEnd - ISO date
  */
