@@ -79,13 +79,23 @@
     }
   }
 
+  // The watch list belongs to an account, so a reader who is signed out is offered the sign-in.
+  function signInLink() {
+    const link = document.createElement("a");
+    link.className = "watch-list-sign-in";
+    link.href = window.signInHref("/auth/login.html");
+    link.textContent = siteText("ch.watch.sign-in-to-add", "Sign in to add to your watch list");
+    return link;
+  }
+
   /**
-   * An "Add to watch list" button for one company. It says when the company is on the list already
+   * An "Add to watch list" button for one company, or a sign-in link for a reader who is signed out. It says when the company is on the list already
    * or the list is full, and follows every change to the list.
    * @param {string} companyNumber
    * @returns {HTMLButtonElement}
    */
   function button(companyNumber) {
+    if (!localStorage.getItem("cognitoIdToken")) return signInLink();
     const element = document.createElement("button");
     element.type = "button";
     element.className = "secondary-button watch-list-add";

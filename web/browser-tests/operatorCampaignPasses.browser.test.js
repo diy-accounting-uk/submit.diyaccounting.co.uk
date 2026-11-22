@@ -64,6 +64,7 @@ async function openPage(page, { passes, onCreate }) {
       return undefined;
     },
   });
+  await page.addInitScript(() => localStorage.setItem("consent.analytics", "declined"));
   await page.setViewportSize({ width: 1024, height: 900 });
   await page.goto(`${SITE_ORIGIN}/operator/campaign-passes.html`, { waitUntil: "domcontentloaded" });
   return created;

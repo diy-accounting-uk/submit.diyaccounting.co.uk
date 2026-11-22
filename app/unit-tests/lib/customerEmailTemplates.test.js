@@ -329,6 +329,32 @@ describe("lib/customerEmailTemplates", () => {
     expect(m.text).toContain("It gives the Invited Guest. It comes with 10 tokens. It lasts 1 month from when you redeem it.");
   });
 
+  test("a grant that lasts a year or more says how long it lasts, in English and in Welsh", () => {
+    const { section } = passRecipientSection({
+      bundles: [
+        { name: "Resident VAT (Complimentary)", tokensGranted: 50, timeout: "P1Y" },
+        { name: "Week pass", tokensGranted: 10, timeout: "P1Y6M" },
+        { name: "Day pass", tokensGranted: 3, timeout: "P2Y" },
+      ],
+      code: "a-b",
+      validUntil: null,
+      usesLeft: null,
+    });
+    expect(section.paragraphs[0]).toContain("It lasts 1 year from when you redeem it.");
+    expect(section.paragraphs[1]).toContain("It lasts 1 year 6 months from when you redeem it.");
+    expect(section.paragraphs[2]).toContain("It lasts 2 years from when you redeem it.");
+    const welsh = passRecipientSection(
+      {
+        bundles: [{ name: "Resident VAT (Complimentary)", tokensGranted: 50, timeout: "P1Y" }],
+        code: "a-b",
+        validUntil: null,
+        usesLeft: null,
+      },
+      "cy",
+    );
+    expect(welsh.section.paragraphs[0]).toContain("Mae’n para 1 flwyddyn o’r adeg y byddwch yn ei ddefnyddio.");
+  });
+
   test("the redeemed email states each granted bundle's end date", () => {
     const campaignCatalog = {
       bundles: [

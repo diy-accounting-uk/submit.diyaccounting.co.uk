@@ -63,6 +63,8 @@ test.describe("Company Lookup page", () => {
   async function setupRoutes(page, { searchResult = EXAMPLE_COMPANY_RESULT, profile = EXAMPLE_COMPANY_PROFILE, searchError = null } = {}) {
     await page.addInitScript(
       ({ searchResultArg, profileArg, searchErrorArg }) => {
+        // The lookup shows its results to a reader who is signed in.
+        localStorage.setItem("cognitoIdToken", "id-token");
         window.showStatus = window.showStatus || (() => {});
         window.hideStatus = window.hideStatus || (() => {});
         window.showLoading = window.showLoading || (() => {});

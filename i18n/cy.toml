@@ -17895,3 +17895,9 @@ cy = '''Nid yw Tŷ’r Cwmnïau yn nodi cyfnod cyfrifyddu nesaf ar gyfer y cwmni
 [strings."ch.prior.filing-history"]
 hash = "2ecd6e3f7e86"
 cy = '''hanes ffeilio’r cwmni'''
+
+# == The watch list's sign-in link for a reader who is signed out: id ch.watch.sign-in-to-add ==
+
+[strings."ch.watch.sign-in-to-add"]
+hash = "cae05a1d5bc2"
+cy = '''Mewngofnodwch i’w ychwanegu at eich rhestr wylio'''

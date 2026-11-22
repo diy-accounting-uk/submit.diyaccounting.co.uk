@@ -551,6 +551,8 @@ test.describe("Company lookup drill-down edit links", () => {
     const signIn = await page.locator("#officeSection .file-this-sign-in a").getAttribute("href");
     expect(signIn).toBe(`/auth/login.html?next=${encodeURIComponent("/companies-house/company/00000001")}`);
     await expect(page.locator("#officeSection .file-this-authority")).toContainText("company authentication code");
+    await expect(page.locator("#watchSection .watch-list-add")).toHaveCount(0);
+    await expect(page.locator("#watchSection .watch-list-sign-in")).toHaveText("Sign in to add to your watch list");
     await shoot(page, "overview-signed-out");
   });
 

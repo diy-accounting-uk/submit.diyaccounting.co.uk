@@ -48,6 +48,7 @@ async function serveRealSite(
   const calls = { check: 0, redeem: 0, bundle: 0 };
   await page.addInitScript((isSignedIn) => {
     try {
+      localStorage.setItem("consent.analytics", "declined");
       if (isSignedIn) {
         localStorage.setItem("cognitoIdToken", "mock-id-token");
         localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: "pat@example.com" }));
@@ -213,6 +214,7 @@ for (const width of WIDTHS) {
       await expect(page.locator("#passMessage")).toContainText(
         "It also adds Week pass for 6 months from redemption, 10 tokens; Day pass for 1 day from redemption, 3 tokens.",
       );
+      await shot(page, "valid-campaign", width);
     });
 
     test("adding: the button is disabled and the heading names the bundle", async ({ page }) => {

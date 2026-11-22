@@ -178,6 +178,14 @@ test.describe("Company watch list", () => {
       await shoot(page, "three-companies");
     });
 
+    test(`a company Companies House no longer finds says it is not on the register at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await serveSite(page, { watchedCompanies: ["00000001", "09999999"] });
+      await page.goto(`${BASE}/companies-house/watchList.html`, { waitUntil: "networkidle" });
+      await expect(page.locator("#watchListTable tbody tr").nth(1)).toContainText("Not on the register", { timeout: 15000 });
+      await shoot(page, "not-on-register");
+    });
+
     test(`a full watch list says it holds the most it can and disables adding at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       const account = { watchedCompanies: fullList() };

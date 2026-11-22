@@ -229,14 +229,20 @@ function formatPeriod(value, locale = "en-GB") {
 
 const RECEIPT_FIELD_FORMATTERS = { processingDate: formatDateTime, periodId: formatPeriod };
 
-// "7 days" or "1 month" from an ISO 8601 duration of days or months; null for any other form.
+// "1 year", "6 months", "1 year 6 months" or "7 days" from an ISO 8601 duration of years, months
+// and days, worded as the pass card words it; null for any other form.
 function durationWords(isoDuration, welsh) {
-  const match = /^P(\d+)([DM])$/.exec(isoDuration || "");
-  if (!match) return null;
-  const count = Number(match[1]);
-  if (welsh) return `${count} ${match[2] === "D" ? "diwrnod" : "mis"}`;
-  const unit = match[2] === "D" ? "day" : "month";
-  return `${count} ${unit}${count === 1 ? "" : "s"}`;
+  const match = /^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?$/.exec(isoDuration || "");
+  if (!match || !(match[1] || match[2] || match[3])) return null;
+  const [years, months, days] = [match[1], match[2], match[3]].map((value) => (value ? Number(value) : 0));
+  const parts = welsh
+    ? [years && (years === 1 ? "1 flwyddyn" : `${years} blynedd`), months && `${months} mis`, days && `${days} diwrnod`]
+    : [
+        years && `${years} year${years === 1 ? "" : "s"}`,
+        months && `${months} month${months === 1 ? "" : "s"}`,
+        days && `${days} day${days === 1 ? "" : "s"}`,
+      ];
+  return parts.filter(Boolean).join(" ");
 }
 
 // What one bundle of a pass gives, in a sentence: its summary, its tokens and how long it lasts from redemption.
