@@ -85,11 +85,11 @@ Each item names the check that settles it. The task that needs the answer runs t
 
 | # | Fact | Settles it | Task |
 | --- | --- | --- | --- |
-| N1 | The maximum `items_per_page` of the filing history, officers, PSC and charges lists (100 assumed). | One call of each with `items_per_page=100` on a company with more items than that, through ci's key. | CR2 |
-| N2 | Whether Document API calls, and the 302's file fetch, count toward the 600 a five-minute window. | Companies House's developer forum, or the `X-Ratelimit-Remain` header (if sent) before and after a document fetch. | CR2 |
+| N1 | Settled (CR2, read with ci's key on 2026-11-22): the filing history answers at most 100 items a page (`items_per_page` 101 or 150 answers 100). Officers answered 75 and 31 items in one page and echoed the larger page size; no company read has over 100 officers. Charges answer every item and carry no `items_per_page`. | — | CR2 |
+| N2 | Settled (CR2): the Document API's metadata call, its content call (302) and the file fetch do not lower `X-Ratelimit-Remain`; each public data API call lowers it by one. The API answers `X-Ratelimit-Limit` 600 and `X-Ratelimit-Window` 5m. | — | CR2 |
 | N3 | Whether the 600 limit is for each key or for each account (ci and prod hold different keys). | The forum, or the developer hub's application page. | CR2 |
-| N4 | Whether a filing history item carries `description_values` (for example `made_up_date`, `capital[].figure`, `officer_name`, `old_address`, `new_address`). The published schema does not list it. | Read the filing history of two real companies with a capital filing and an address change. | CR2 |
-| N5 | Whether the confirmation statement category is `confirmation-statement` (the published enum lists `annual-return` and not it). | The same read as N4. | CR2 |
+| N4 | Settled (CR2): a capital filing carries `description_values` (SH01 and SH06: `{ date, capital: [{ currency, figure }] }`; SH03 none). A registered office change (AD01) carries `{ change_date, old_address, new_address }`; a SAIL address change (AD02) `{ old_address, new_address }`. | — | CR2 |
+| N5 | Settled (CR2): a confirmation statement is category `confirmation-statement`, type CS01, description `confirmation-statement-with-updates` or `-with-no-updates`, with `description_values { made_up_date }`. | — | CR2 |
 | N6 | The licence of register data, given the OGL line on GOV.UK and the 2014 answer above. | A question to Companies House (OCR1). | CR13 |
 | N7 | The size and reach back of the monthly Accounts Data Product files (the monthly page answered "Service Unavailable" on 2026-11-22). | Read `https://download.companieshouse.gov.uk/en_monthlyaccountsdata.html` again. | CR10 |
 
@@ -165,6 +165,8 @@ Every report that reads the filing history (2.1, 2.3, 2.5 and 2.6) reads all of 
 ## 3. Being a good citizen of the Companies House API
 
 ### 3.1 The limit and the terms
+
+As built (CR2 and its review, 2026-11-22): the cache layer counts the calls of one report view and stops at 20 (`LOOKUP_CALLS.report`), answering 429 with `callLimitReached` and the items read; a cached value over 300 KB is stored in parts, and over 1.8 MB it is refused with `tooLarge` (413) for the kind's lifetime. CR3's page shows a sentence for each of those two states. The stop after a Companies House 429 is the one shared item `chlookup#stopped` in the security state table (`app/services/companiesHouseLookupLimit.js`), not a `#stop` item in the cache table. Paging reads on while a page is full to its own size, so a list that answers 50 a page is read to its end.
 
 - The limit is 600 requests in five minutes, and every request after that gets a 429 until the window ends (section 1.2). Submit's lookups, filings and the public deadlines route share the key with the reports.
 - Companies House imposes no rules on how register data is used, warns that it is not comprehensive, and bans applications that often exceed the limit (section 1.2).

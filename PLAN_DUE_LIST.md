@@ -152,12 +152,11 @@ Headless means the read can run with no user present. Cost is per business per r
 
 ### 3.3 Identity verification for directors and PSCs
 
-- **Source.** Computed from the confirmation statement date. The fact `ch-identity-verification-2025-11` says the personal code goes on the next confirmation statement.
-- **Headless.** Yes, as part of 3.2.
-- **Cost.** No extra call.
-- **Row.** Type "people", due on the confirmation statement date, text "Directors give their Companies House personal code on this confirmation statement." It closes when the confirmation statement row closes.
+No row. GOV.UK withdrew the transition page on 2026-11-18 ("The 12 month transition period ... has now passed"), and no current page ties a director's personal code to the next confirmation statement: a new director gives it with the appointment filing, and a new PSC within 14 days of being added. `identityVerificationRow` and its fact id are removed from `web/public/lib/due/due-rules.js` (the review of DUE2, 2026-11-22). DUE5 builds no identity verification row; the appointment and PSC forms carry the code.
 
 ### 3.4 CT600 and Corporation Tax payment
+
+As built (2026-11-22): a period of account over 12 months splits into successive 12-month accounting periods and the rest (source `ct-accounting-period-12-months`), also over 24 months. A month added to the last day of a month lands on the last day of the later month. No GOV.UK page read states another CT600 date for a period of account over 18 months, so each return is due 12 months after the period of account ends.
 
 - **Source and interface.** Computed. HMRC offers no obligations read for Corporation Tax that Submit uses (N6).
 - **Inputs.** The accounting period from the profile: `next_accounts.period_start_on` and `period_end_on`.
@@ -236,6 +235,8 @@ A business has an id in the account (`b_<ulid>`). Rows refer to it, so a label c
 ## 5. Storage
 
 ### 5.1 The table
+
+As built (DUE3, DUE4 and their review, 2026-11-22): a row with no period end (a payment on account, a final declaration) is keyed by its due date (`row#<businessId>#<type>#<dueDate>`). The rules' rows carry `kind` (for example "vat-return") and `type` "taxes"; the stored row's `type` is the filing type, so DUE5 and DUE7 map the rules' `kind` to the row's `type` when they store. `putRows` answers the keys it could not write after five tries. `closeRow` refuses a key that is not a row's. The list reads every salt version and merges. `putFeedToken` removes the lookup that it replaces.
 
 One new env table, `{env}-env-due-list`, in `DataStack.java` with `ensureTable`: on demand, PITR on, `RemovalPolicy.DESTROY`, TTL attribute `ttl`.
 
