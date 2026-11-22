@@ -374,3 +374,5 @@ GLS4, GLS5 and GLS6 can run in parallel after their waits. GLS5 and GLS7 both ad
 | D6 | Welsh on diya-gl.co.uk | (a) labels file only, for Submit's Welsh accounts; (b) also translate the books page | (a) now; (b) as its own row if wanted |
 | D7 | Workbook classifications an auditor would query | Long-term debtors on no published line (A5); directors' loan always due after more than one year (A5); loan interest 5803 in legal and professional (A2). For each: (a) change the template and the calculator together; (b) keep the template, warn with the true figure (GLS5 does this for long-term debtors) | (b) for all three, then a workbook row per item if the operator wants the template changed |
 | D8 | When report-only rules start to reject or change figures (GLS17, GLS18) | (a) after GLS5's warnings have shipped, reject for v3 books and leave non-posted lines out of totals; (b) keep both as warnings | (a): Goal 3 asks for an operator decision before a saved book stops opening or a figure changes |
+
+Answers (operator, 2026-11-22): D1 (a), D2 (a), D3 (a), D4 (c), D5 (a), D6 (a), D7 (b) for all three, D8 (a).

@@ -307,7 +307,7 @@ An HMRC row holds the period start and end, the due date, the status and the rea
 | D3 | The privacy policy lines | Approve section 6.3 as written, or change the words. | Approve as written. |
 | D4 | Watched-company alerts | (a) The daily filing history read; free; up to a day late. (b) The streaming API; about £5.70 a month plus a container stack; minutes late. | (a). |
 
-ODUE1 records the answers in this section.
+Answers (operator, 2026-11-22): D1 (a), D2 (a), D3 approved as written, D4 (a).
 
 ## 9. Tasks
 

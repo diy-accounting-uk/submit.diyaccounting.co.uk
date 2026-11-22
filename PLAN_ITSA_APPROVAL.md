@@ -252,15 +252,15 @@ Unhiding one is that rule with `prod` added, and the availability table and date
 operator's approval to enable it for live users on prod.
 
 - [ ] **UH3. Income Tax forms.** Preconditions: HMRC's recognition and production credentials
-  for the ITSA APIs (IA7); each activity in a bundle sold on prod; the operator's approval.
+  for the ITSA APIs (IA7); each activity in a bundle sold on prod; the operator's approval, asked when the other preconditions hold (operator, 2026-11-22: not given ahead).
   **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet. **Size**: ~3 files.
 - [ ] **UH2. Income Tax and diya-gl storage in Resident Pro.** `prod` on the `self-employed*` and
-  `diya-gl-storage` activities. Preconditions: UH3; the operator's approval. Resident Pro and Resident Ltd gain `prod` in their `listedInEnvironments` in RL2d; Companies House is
+  `diya-gl-storage` activities. Preconditions: UH3; the operator's approval, asked when the other preconditions hold (operator, 2026-11-22: not given ahead). Resident Pro and Resident Ltd gain `prod` in their `listedInEnvironments` in RL2d; Companies House is
   `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COMPANIES_HOUSE_APPROVAL.md` UH4, which is live; CT600 is `PLAN_HMRC_CT_APPROVAL.md` UH7, inside Resident Ltd. **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet.
   **Size**: ~3 files.
 - [ ] **UH1. Practice.** Preconditions: HMRC production credentials for the Agent
   Authorisation API on Submit's production application; HMRC's approval of agent use; practice
-  sold in a bundle on prod (Resident Tax Agent: `prod` in its `listedInEnvironments` and on the `practice` activity); the operator's approval. **Owner**: Claude Code
+  sold in a bundle on prod (Resident Tax Agent: `prod` in its `listedInEnvironments` and on the `practice` activity); the operator's approval, asked when the other preconditions hold (operator, 2026-11-22: not given ahead). **Owner**: Claude Code
   (build), Operator (approval). **Model**: Sonnet. **Size**: ~3 files.
 
 ### Dependency graph

@@ -359,3 +359,5 @@ CR4, CR5, CR7 and CR9 can run in parallel after CR3; they share `i18n/cy.toml` a
 | D3 | The streaming API | (a) defer CR11 and CR12 to DUE1's alerts and WL1, and rely on the lifetimes in 3.2; (b) build CR11 and CR12 now, about £5 a month | (a): the six reports read one company on demand |
 | D4 | The Accounts Data Product | (a) defer CR10 until a report reads figures for many companies (WL1, DUE1); (b) build CR10 now, about £1 a month | (a): no report in this plan reads many companies |
 | D5 | The source and licence line | (a) "Source: the Companies House register, read at <time>. Companies House does not check the information companies send it."; (b) (a) plus "Contains public sector information licensed under the Open Government Licence v3.0."; (c) (a) until OCR1's answer, then that answer | (c): the GOV.UK page states the OGL, a 2014 Companies House answer says the register is not under it, and the OGL excludes personal data |
+
+Answers (operator, 2026-11-22): D1 (a), D2 (a), D3 (a), D4 (a), D5 (c).

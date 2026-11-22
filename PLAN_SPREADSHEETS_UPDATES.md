@@ -3,7 +3,7 @@
 
 # PLAN: keeping the spreadsheet packages current
 
-Status: RF1's ltd half is on spreadsheets main (PR #221, b2df63439, 2026-11-20): the ltd pin is 2028-01-31 and its tests moved with it. RF1's se half was rehearsed on 2026-11-22 (U2): the real se, bst and taxi refresh waits on U3 (the se O69 check, see Updates; the operator chooses its fix) and on `main`'s window reaching the Apr28 year end from 2027-01-16. TU1 is on spreadsheets main (PR #215, and the quote-check fix PR #216, 2026-11-20). Repository: `../spreadsheets.diyaccounting.co.uk`. The rollover plan that built the current pipeline is archived at `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SPREADSHEETS_ROLLOVER.md`.
+Status: RF1's ltd half is on spreadsheets main (PR #221, b2df63439, 2026-11-20): the ltd pin is 2028-01-31 and its tests moved with it. RF1's se half was rehearsed on 2026-11-22 (U2): the real se, bst and taxi refresh waits on U3 (the se O69 check, see Updates) and on `main`'s window reaching the Apr28 year end from 2027-01-16. TU1 is on spreadsheets main (PR #215, and the quote-check fix PR #216, 2026-11-20). Repository: `../spreadsheets.diyaccounting.co.uk`. The rollover plan that built the current pipeline is archived at `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SPREADSHEETS_ROLLOVER.md`.
 
 ## Operator assertions (verbatim)
 
@@ -49,7 +49,7 @@ U3, the fix that comes first:
 - The se Apr28 reconcile fails on one check: `Business Details!O69 election does not exceed the untaxed transition balance (para 73(3))`, scenario `se-scenario-advanced`, expected 0, actual 1000, with `O74` (transition profit carried forward) at -1000. 927 of 933 checks pass. The fixture holds an untaxed transition balance of 6000 (`O59`) and an election of 1000 (`O69`).
 - Theory: the fixture's balance and election belong to the transition years, and at the 2028 year end the balance carried forward goes negative.
 - `generate-se.yml`, its reconcile jobs and `refresh-pinned.yml` for se all run this check, and `scripts/refresh-pinned.mjs` stops on a failed reconcile. So the real refresh meets the same failure from 2027-01-16.
-- Two fixes, the operator's choice (board row U3): the fixture carries no balance or election for year ends after the transition years (the O59, O64, O69 and O74 expectations of that scenario then change for those year ends, and its featured values move); or the check's rule accepts the later-year balance (the fixture stays, and the check stays breakable for the transition years: corrupt one cached value and see it flip).
+- The fix (operator, 2026-11-22; board row U3): the fixture carries no balance or election for year ends after the transition years. The O59, O64, O69 and O74 expectations of that scenario then change for those year ends, and its featured values move. The check's rule stays.
 
 The real refresh (RF1), after U3 is on `main`:
 

@@ -184,6 +184,8 @@ A campaign session (WDM9) reads the figures of section 5 and applies these. Each
 | D1 | Paid search for company deadline queries | (a) None. (b) A Google Search campaign for queries such as "when are my company accounts due", landing on `company-filing-deadlines.html`: £2 a day, about £61 a month recurring (£730 a year), about 55 clicks a month at £1.11 a click (not confirmed for these queries). (c) (b) plus Microsoft at £1 a day: about £91 a month recurring in total. | (a) until the free channels show a sign-up rate from the landing pages; then (b), judged by the stop rule. |
 | D2 | What a partner pass gives | (a) No pass; the free watch list and due list are the offer. (b) A CP1 pass per partner that grants Resident Ltd for a year (`P1Y`), up to 500 redemptions; it costs at most £9.99 a year of revenue per redeemer who would have paid, and needs a hidden `resident-ltd-comp` bundle (WDM14). | (b), for partner bodies only, as OOS44 does for VAT. |
 
+Answers (operator, 2026-11-22): D1 (a), D2 (b).
+
 The due list's D2 and the reports' D1 decide whether those features are free with a sign-in. This plan's messages assume both plans' recommendations (`default`); if the operator picks a paid bundle, WDM6 and WDM7 state that bundle and its price.
 
 ## 8. Tasks
