@@ -235,7 +235,7 @@ function handleAppointmentSubmit(event) {
   if (!window.formErrors.requireFormFields(document.getElementById("appointmentForm"))) return;
   const { role, corporate } = chosenKind();
   const appointmentDate = document.getElementById("appointmentDate").value;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
   if (appointmentDate > today) {
     showError(window.siteText("ch.appoint-officer.date-future", "The date of appointment cannot be in the future."));
     return;

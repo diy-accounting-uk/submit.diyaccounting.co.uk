@@ -346,3 +346,21 @@ test("a rejection shows Companies House's reason", async ({ page }) => {
   await expect(result).toContainText("Submission 000123 was rejected.", { timeout: 15000 });
   await expect(result).toContainText("9999: Invalid CompaniesHousePersonalCode format");
 });
+
+test("an appointment made just after midnight in London during summer time is dated and signed that London day", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-06-15T23:30:00Z"));
+  const filings = [];
+  await serveSite(page, { filings });
+  await page.goto(`${SITE}/companies-house/appointOfficer.html?companyNumber=00000001`, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Look up the company" }).click();
+  await page.getByLabel("A secretary who is a person").check();
+  await page.locator("#appointmentDate").fill("2026-06-16");
+  await page.locator("#officerForename").fill("Eleanor");
+  await page.locator("#officerSurname").fill("Bramwell");
+  await fillAddress(page, "service", { premise: "The Old Rectory", postTown: "York", country: "GB-ENG", postcode: "YO1 7HH" });
+  await finishAndReview(page, "Continue");
+  await expect(page.locator("#reviewView")).toBeVisible();
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
+  expect(filings[0]).toMatchObject({ appointmentDate: "2026-06-16", dateSigned: "2026-06-16" });
+});

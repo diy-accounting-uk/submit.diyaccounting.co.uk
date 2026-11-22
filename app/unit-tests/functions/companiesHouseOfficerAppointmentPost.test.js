@@ -270,6 +270,16 @@ describe("companiesHouseOfficerAppointmentPost ingestHandler", () => {
     expect(parseResponseBody(response).message).toBe("Companies House rejected the officer appointment submission envelope");
   });
 
+  test("answers 400 in JSON, sending nothing, for a date after today in London, whatever dateSigned the request gives", async () => {
+    const response = await ingestHandler(
+      buildEvent({ body: buildAppointmentBody({ appointmentDate: "2099-01-01", dateSigned: "2099-01-02" }) }),
+    );
+    expect(response.statusCode).toBe(400);
+    expect(response.headers["Content-Type"]).toBe("application/json");
+    expect(JSON.stringify(parseResponseBody(response))).toContain("Invalid appointmentDate - must not be in the future");
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
   test("returns 401 when the Cognito bearer token is missing", async () => {
     const response = await ingestHandler(buildEvent({ authorizer: {} }));
     expect(response.statusCode).toBe(401);

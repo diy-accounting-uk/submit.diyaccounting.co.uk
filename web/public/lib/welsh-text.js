@@ -291,7 +291,7 @@ window.WELSH_TEXT = {
   "ch.appoint-officer.kind-corporate-secretary": "Ysgrifennydd corfforaethol",
   "ch.appoint-officer.kind-director": "Cyfarwyddwr",
   "ch.appoint-officer.kind-secretary": "Ysgrifennydd",
-  "ch.appoint-officer.lookup-failed": "Methu darllen y cwmni hwn gan Dŷ’r Cwmnïau.",
+  "ch.appoint-officer.lookup-failed": "Methu darllen y cwmni hwn o Dŷ’r Cwmnïau.",
   "ch.appoint-officer.mismatch-legally-changed": "Enw wedi’i newid yn gyfreithiol (er enghraifft, priodas neu ysgariad)",
   "ch.appoint-officer.mismatch-not-say": "Mae’n well gennyf beidio â dweud",
   "ch.appoint-officer.mismatch-preferred": "Enw dewisol",
@@ -371,14 +371,17 @@ window.WELSH_TEXT = {
   "ch.cease.review-company": "Cwmni",
   "ch.cease.review-confirmed": "Dyddiad cadarnhau",
   "ch.cease.review-psc": "Person â rheolaeth arwyddocaol",
+  "ch.change-officer.choice-appointed": "{name} ({role}, penodwyd {date})",
   "ch.change-officer.choose": "Dewiswch y cyfarwyddwr neu’r ysgrifennydd y mae ei fanylion wedi newid.",
+  "ch.change-officer.date-before-appointment":
+    "Ni all y dyddiad y newidiodd y manylion fod cyn {date}, pan mae’r gofrestr yn dangos iddynt gael eu penodi.",
   "ch.change-officer.date-future": "Ni all y dyddiad y newidiodd y manylion fod yn y dyfodol.",
   "ch.change-officer.dob-after": "Rhaid i’r dyddiad geni fod cyn y dyddiad y newidiodd y manylion.",
   "ch.change-officer.dob-invalid": "Rhowch ddyddiad geni’r cyfarwyddwr fel diwrnod, mis a blwyddyn.",
-  "ch.change-officer.lookup-failed": "Methu darllen cyfarwyddwyr ac ysgrifenyddion y cwmni hwn gan Dŷ’r Cwmnïau.",
+  "ch.change-officer.lookup-failed": "Methu darllen cyfarwyddwyr ac ysgrifenyddion y cwmni hwn o Dŷ’r Cwmnïau.",
   "ch.change-officer.nothing-changed": "Dewiswch o leiaf un manylyn sydd wedi newid.",
   "ch.change-officer.residential-office":
-    "Ni all cyfeiriad y cartref fod yr un fath â chyfeiriad gohebiaeth sef y swyddfa gofrestredig. Rhowch gyfeiriad llawn y cartref.",
+    "Ni all cyfeiriad y cartref fod yr un fath â chyfeiriad gohebiaeth sy’n swyddfa gofrestredig y cwmni. Rhowch gyfeiriad llawn y cartref.",
   "ch.change-officer.residential-unconfirmed":
     "Cadarnhewch nad yw cyfeiriad cartref y cyfarwyddwr wedi newid, neu dewiswch gyfeiriad eu cartref fel manylyn sydd wedi newid.",
   "ch.change-officer.review-appointment": "Penodiad",

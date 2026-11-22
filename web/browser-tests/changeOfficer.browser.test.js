@@ -55,7 +55,7 @@ const OFFICERS = [
 
 // The real site from disk, signed in with the resident Ltd bundle, and the Companies House routes
 // answered here. Each filing request's body is recorded.
-async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] } } = {}) {
+async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] }, officers = OFFICERS } = {}) {
   await page.addInitScript(() => {
     try {
       localStorage.setItem("consent.analytics", "declined");
@@ -72,7 +72,7 @@ async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT",
     if (pathname === "/api/v1/bundle") return json({ bundles: [{ bundleId: "resident-ltd", allocated: true }], tokensRemaining: 10 });
     if (pathname === "/api/v1/companies-house/company/00000001")
       return json({ companyNumber: "00000001", companyName: "SIMULATOR EXAMPLE COMPANY LIMITED" });
-    if (pathname === "/api/v1/companies-house/company/00000001/officers") return json({ officers: OFFICERS });
+    if (pathname === "/api/v1/companies-house/company/00000001/officers") return json({ officers });
     if (pathname === "/api/v1/companies-house/officer-change" && request.method() === "POST") {
       filings.push(JSON.parse(request.postData()));
       return json({ submissionNumber: "000123", pollInterval: 1 }, 201);
@@ -377,4 +377,41 @@ test("a rejection shows Companies House's reason", async ({ page }) => {
   const result = page.locator("#filingResult");
   await expect(result).toContainText("Submission 000123 was rejected.", { timeout: 15000 });
   await expect(result).toContainText("9999: Officer not found on the register");
+});
+
+test("two current directors of one name are told apart by their appointment dates, and a link naming them chooses neither", async ({
+  page,
+}) => {
+  const twin = { ...OFFICERS[0], appointedOn: "2021-06-01", dateOfBirth: { month: 9, year: 1990 } };
+  await serveSite(page, { officers: [...OFFICERS, twin] });
+  await page.goto(TENNANT, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Look up the company" }).click();
+  const labels = page.locator("#officerChoices label");
+  await expect(labels).toContainText([
+    "TENNANT, Marcus John (Director, appointed 1 January 2015)",
+    "SIMULATOR SECRETARIES LIMITED (Corporate secretary)",
+    "BRAMWELL, Eleanor (Secretary)",
+    "TENNANT, Marcus John (Director, appointed 1 June 2021)",
+  ]);
+  await expect(page.locator('#officerChoices input[name="officer"]:checked')).toHaveCount(0);
+  await page.getByLabel("TENNANT, Marcus John (Director, appointed 1 June 2021)").check();
+  await expect(page.locator("#dobMonth")).toHaveValue("9");
+  await expect(page.locator("#dobYear")).toHaveValue("1990");
+});
+
+test("a change dated before the register's appointment date is refused before anything is sent", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, { filings });
+  await page.goto(TENNANT, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Look up the company" }).click();
+  await page.locator("#dobDay").fill("14");
+  await page.locator("#dateOfChange").fill("2014-12-31");
+  await page.getByLabel("Their name", { exact: true }).check();
+  await page.locator("#newSurname").fill("TENNANT-JONES");
+  await page.locator("#companyAuthCode").fill("SIMCS01");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#statusMessagesContainer")).toContainText(
+    "The date the details changed cannot be before 1 January 2015, when the register shows they were appointed.",
+  );
+  expect(filings).toHaveLength(0);
 });

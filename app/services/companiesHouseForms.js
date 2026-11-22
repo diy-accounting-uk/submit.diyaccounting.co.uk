@@ -101,6 +101,10 @@ function extractPscParticulars(body, errorMessages) {
 // Today's date in the United Kingdom, as YYYY-MM-DD.
 const todayInUk = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
 
+function refuseFutureDate(field, date, errorMessages) {
+  if (isValidIsoDate(date ?? "") && date > todayInUk()) errorMessages.push(`Invalid ${field} - must not be in the future`);
+}
+
 // A date the event happened on, and the date the company had confirmation of it, which cannot be
 // earlier. The form gives notice of an event that has happened and been confirmed, so neither date
 // is ahead of today.
@@ -521,6 +525,7 @@ function extractOfficerAppointment(body, errorMessages) {
   } else if (body.dateSigned && isValidIsoDate(body.dateSigned) && appointmentDate > body.dateSigned) {
     errorMessages.push("Invalid appointmentDate - must not be after dateSigned");
   }
+  refuseFutureDate("appointmentDate", appointmentDate, errorMessages);
   if (consentToAct !== true) {
     errorMessages.push("Missing consentToAct - the company must confirm the officer has consented to act");
   }
@@ -619,6 +624,7 @@ function extractOfficerChange(body, errorMessages) {
   } else if (body.dateSigned && isValidIsoDate(body.dateSigned) && dateOfChange > body.dateSigned) {
     errorMessages.push("Invalid dateOfChange - must not be after dateSigned");
   }
+  refuseFutureDate("dateOfChange", dateOfChange, errorMessages);
   const common = { role: officerRole, corporate, dateOfChange };
   if (corporate === true) return extractCorporateOfficerChange(body, common, errorMessages);
   if (corporate !== false) return common;

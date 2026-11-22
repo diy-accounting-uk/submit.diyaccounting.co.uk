@@ -209,6 +209,8 @@ function renderOfficerChoices(chosenName) {
   const current = officers.filter(changeable);
   document.getElementById("noOfficers").style.display = current.length === 0 ? "block" : "none";
   document.getElementById("continueBtn").disabled = current.length === 0;
+  // A link names its officer by name; when two current officers share it, the reader chooses.
+  const named = chosenName ? current.filter((officer) => officer.name === chosenName) : [];
   current.forEach((officer, index) => {
     const choice = document.createElement("div");
     choice.className = "choice";
@@ -217,11 +219,19 @@ function renderOfficerChoices(chosenName) {
     input.name = "officer";
     input.id = `officer-${index}`;
     input.value = String(officers.indexOf(officer));
-    input.checked = chosenName ? officer.name === chosenName : current.length === 1;
+    input.checked = chosenName ? named.length === 1 && named[0] === officer : current.length === 1;
     input.addEventListener("change", fillOfficerFields);
     const label = document.createElement("label");
     label.htmlFor = input.id;
-    label.textContent = `${officer.name} (${roleText(officer)})`;
+    const sharesName = current.filter((other) => other.name === officer.name).length > 1;
+    label.textContent =
+      sharesName && officer.appointedOn
+        ? window.siteText("ch.change-officer.choice-appointed", "{name} ({role}, appointed {date})", {
+            name: officer.name,
+            role: roleText(officer),
+            date: window.companiesHouseLabels.formatCompanyDate(officer.appointedOn),
+          })
+        : `${officer.name} (${roleText(officer)})`;
     choice.append(input, label);
     holder.appendChild(choice);
   });
@@ -390,9 +400,19 @@ function handleChangeSubmit(event) {
   if (!window.formErrors.requireFormFields(document.getElementById("changeForm"))) return;
   const { role, corporate } = ROLES[officer.officerRole];
   const dateOfChange = document.getElementById("dateOfChange").value;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
   if (dateOfChange > today) {
     showError(window.siteText("ch.change-officer.date-future", "The date the details changed cannot be in the future."));
+    return;
+  }
+  if (officer.appointedOn && dateOfChange < officer.appointedOn) {
+    showError(
+      window.siteText(
+        "ch.change-officer.date-before-appointment",
+        "The date the details changed cannot be before {date}, when the register shows they were appointed.",
+        { date: window.companiesHouseLabels.formatCompanyDate(officer.appointedOn) },
+      ),
+    );
     return;
   }
   const fields = corporate ? corporateChangeFields() : personChangeFields(role, dateOfChange);
