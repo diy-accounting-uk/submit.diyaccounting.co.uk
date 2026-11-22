@@ -29,6 +29,9 @@ MAIN_CHECKOUT=$(dirname "$(git -C "$SKILL_DIR" rev-parse --path-format=absolute 
 SESSIONS_DIR=${CLOUD_SESSIONS_DIR:-$(dirname "$MAIN_CHECKOUT")/cloud-sessions}
 POOL_FILE=$SKILL_DIR/pool.txt
 ENV_FILE=$SKILL_DIR/environment.txt
+# A worker session runs on Opus 5.5 at medium effort, whatever model the coordinator session uses (operator, 2026-11-22).
+WORKER_MODEL=${CLOUD_WORKER_MODEL:-claude-opus-5-5}
+WORKER_EFFORT=${CLOUD_WORKER_EFFORT:-medium}
 CODENAMES=$REPO_ROOT/CODENAMES.txt
 # The relay: ci-env-CollabRelayStack, ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_CLOUD_COLLABORATION.md "Signed and encrypted messages without polling".
 RELAY_STACK=ci-env-CollabRelayStack
@@ -314,8 +317,10 @@ cmd_start() {
     env_note=${env_note:-the CLI fallback, the Anthropic-hosted Default environment (no environment.txt, no /remote-env pick)}
   fi
   prompt="/collaborate $cn"
-  local -a launch=(claude)
-  [ -z "$env_id" ] || launch+=(--settings "{\"remote\":{\"defaultEnvironmentId\":\"$env_id\"}}")
+  local settings="{\"model\":\"$WORKER_MODEL\",\"effortLevel\":\"$WORKER_EFFORT\""
+  [ -z "$env_id" ] || settings+=",\"remote\":{\"defaultEnvironmentId\":\"$env_id\"}"
+  settings+="}"
+  local -a launch=(claude --model "$WORKER_MODEL" --effort "$WORKER_EFFORT" --settings "$settings")
   session_name="submit $cn"
   launch+=(--name "$session_name" --cloud "$prompt")
   deep_link="https://claude.ai/code/new?q=%2Fcollaborate%20$cn&repo=$ORG%2F$PREFIX$cn&branch=main"
@@ -328,6 +333,7 @@ cmd_start() {
   echo "coordinator:  $coordinator"
   echo "clone:        $dir"
   echo "environment:  $env_note"
+  echo "model:        $WORKER_MODEL, effort $WORKER_EFFORT"
   echo "monitor:      bash $SKILL_DIR/new-cloud-session.sh watch $cn"
   echo "task file:    bash $SKILL_DIR/new-cloud-session.sh post $cn <file>"
   echo "land a row:   git fetch $url claude/$cn-<row> && git merge --squash FETCH_HEAD"
@@ -349,12 +355,12 @@ cmd_start() {
   echo "session: no terminal here, so the link is the start (method b)"
   echo "  b. Open this link, check that the environment is the work environment, and press send:"
   echo "     $deep_link"
-  echo "     The link sets no name: type /rename $session_name as the session's next prompt."
+  echo "     The link sets no name and no model: before you press send, choose $WORKER_MODEL and effort $WORKER_EFFORT in the model picker; then type /rename $session_name as the session's next prompt."
   echo "  a. Or, in a terminal:"
   printf '     cd %q &&' "$dir"
   printf ' %q' "${launch[@]}"
   printf '\n'
-  echo "  c. Or open https://claude.ai/code, choose $repo and branch main, choose the work environment, and type: $prompt, then /rename $session_name"
+  echo "  c. Or open https://claude.ai/code, choose $repo and branch main, choose the work environment, choose $WORKER_MODEL and effort $WORKER_EFFORT in the model picker, and type: $prompt, then /rename $session_name"
   echo "the session URL is the address of the new session in the browser, and in the claude.ai/code sidebar."
 }
 

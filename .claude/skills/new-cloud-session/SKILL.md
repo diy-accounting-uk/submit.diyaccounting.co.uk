@@ -203,6 +203,12 @@ Facts behind the table, read on 2026-11-17:
 - To find the work environment's id: in a local `claude` session run `/remote-env` and pick the
   work environment, then `jq -r .remote.defaultEnvironmentId ~/.claude/settings.json`. Write that
   id to `environment.txt`, or keep the `/remote-env` pick as it is.
+- A worker session runs on Opus 5.5 at medium effort (operator, 2026-11-22), whatever model and
+  effort the coordinator session uses. Without a pin, `claude --cloud` gives the new session the
+  coordinator's own default, and eleven workers started on Fable 5.2 that way. The script passes
+  `--model claude-opus-5-5 --effort medium` and the same two values as `model` and `effortLevel` in
+  `--settings`. `CLOUD_WORKER_MODEL` and `CLOUD_WORKER_EFFORT` change them. The link of method b
+  sets no model, so the operator chooses Opus 5.5 and medium in the model picker before sending.
 
 The session URL is the address of the new session in the browser and in the claude.ai/code
 sidebar. In method a the CLI shows it.
