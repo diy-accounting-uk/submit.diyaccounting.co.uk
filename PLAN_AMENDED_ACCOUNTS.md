@@ -309,9 +309,9 @@ A revision that changes regime (micro-entity to small company, or the reverse) i
 | Capability index | `REPORT_CAPABILITIES.md`, `_developers/capabilities/skeleton.md` | CH-08's text; a new entry CH-20 | AA4, AA16 |
 | Terms | `web/public/terms.html` | Two sentences name revised accounts | AA18 |
 | Customer copy and receipts | `web/public/lib/filing-record.js`, `web/public/hmrc/receipt/receipts.page.js` | The title and the amend link | AA4 |
-| Filing landing pages | `scripts/build-filing-pages.mjs` (board row OS9, not on `main`) | A section on each accounts page | AA21 |
+| Filing landing pages | `scripts/build-filing-pages.mjs` | A section on each accounts page | AA21 |
 | Knowledge base | `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/articles/` | One article, as `.html` with its `.md` copy | AA20 |
-| Listing register | `[[listing]]` tables in `web/marketing/marketing.toml`, read by `scripts/listings-register.mjs` (board row OS21, on `claude/husky-search`) | An entry for the GOV.UK finder | AA19 |
+| Listing register | `[[listing]]` tables in `web/marketing/marketing.toml`, read by `scripts/listings-register.mjs` | An entry for the GOV.UK finder | AA19 |
 | GOV.UK finder | the listing request of board row OOS22 | "Amended accounts: Yes" in place of No | AA19, OAA4 |
 
 Publication points of the two book features:
@@ -493,19 +493,19 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Goal.** The four accounts tools file and render a revision, on the local server and on the hosted connector.
 - **Schemas.** In `mcp/lib/server.js`, add an optional `revision` object to `accountsFilingInputSchema` (about line 96) and `smallCompanyFilingInputSchema` (about line 162). Its three fields are those of AA1. Each field's description says what Companies House prints.
 - **Bodies.** In `mcp/lib/submit-tools.js`, `accountsFilingBody` and `smallCompanyFilingBody` pass `revision` when it is given.
-- **Descriptions.** The four tool descriptions in `TOOLS` say that `revision` files revised accounts that replace accounts already filed. Board row OS14 adds `title` and `annotations` to each tool. Keep them. The two submit tools stay `destructiveHint: true`.
+- **Descriptions.** The four tool descriptions in `TOOLS` say that `revision` files revised accounts that replace accounts already filed. Each tool carries a `title` and `annotations`. Keep them. The two submit tools stay `destructiveHint: true`.
 - **Prod.** `PROD_HOSTED_TOOL_NAMES` in `mcp/lib/hosted-tools.js` does not change. Board row MCP1 decides the hosted set on prod. The local server reaches prod's route, which refuses a revision until AA18.
 - **Pages.** `mcp/README.md`: the four tool rows. `web/public/mcp.html`: one sentence inside a `data-listed-activity="file-revised-accounts"` element. Run `node scripts/build-developer-site.mjs` for `web/developer/mcp-api.html`. The capability comment at the top of `mcp/lib/submit-tools.js` names the tools, so run `npm run capabilities:generate`.
 - **Availability.** Set the MCP cell of the revised row to the status of the accounts row's MCP cell, with the same note. Run `npm run build:mtd-calendar`.
 - **Tests.** `mcp/test/submit-tools.test.js` and `mcp/test/small-company-accounts.test.js`: the body carries `revision`; a revision with a missing text is refused by the route's message. `mcp/test/hosted-tools.test.js`: the hosted schemas hold the field. `web/unit-tests/developer-site.test.js` passes on the regenerated page. Add one case to `behaviour-tests/mcpHosted.behaviour.test.js` that files revised micro-entity accounts.
 - **Run.** `npm ci` and then `npm test` in `mcp/`; `npx vitest run web/unit-tests/developer-site.test.js`; `lockf -k /tmp/submit-simulator.lock npm run test:mcpHostedBehaviour-simulator`.
-- **Waits on**: AA1, AA3, and board row OS14 on `main`. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~11 files.
+- **Waits on**: AA1, AA3. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~11 files.
 
 #### AA8. The 28 day rule on the calendar
 
 - **Goal.** `web/public/mtd-calendar.html` states when revised accounts must reach Companies House, with its source.
 - **Source.** Run the `tax-sources` skill to write `.claude/skills/tax-sources/sources/ch-revised-accounts-28-days.json`. The URL is https://www.legislation.gov.uk/uksi/2008/373/regulation/14. The quote is paragraph (2): the directors deliver the revised accounts "within 28 days of the date of revision".
-- **Fact.** In `scripts/build-mtd-calendar.mjs`, add a fact after the one with `id: "ch-accounts-9-months"`: id `ch-revised-accounts-28-days`, title "Revised accounts at Companies House", and one sentence of text. Give the id the value `COMPANIES` in the map that holds `"ch-accounts-9-months": COMPANIES` (about line 221).
+- **Fact.** In `scripts/build-mtd-calendar.mjs`, add a fact after the one with `id: "ch-accounts-9-months"`: id `ch-revised-accounts-28-days`, title "Revised accounts at Companies House", and one sentence of text. Give the id the value `COMPANIES` in the map that holds `"ch-accounts-9-months": COMPANIES` (about line 245).
 - **Run.** `npm run build:mtd-calendar`; `npx vitest run web/unit-tests/mtdCalendar.test.js`.
 - **Waits on**: nothing. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: 3 files.
 
@@ -617,7 +617,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 #### AA16. Submit's copy
 
 - **FAQ.** Add one entry to `web/public/faqs.toml` after `companies-house-accounts-filings`: id `revised-accounts`, `activity = "file-revised-accounts"`, question "How do I correct accounts I have filed with Companies House?". The answer: open the filing from the receipts, choose Amend, say what was wrong and what changes; Companies House keeps the original; one token when accepted; the 28 days. `web/public/lib/help-page.js` shows an entry only where its activity is listed, so prod shows it after AA18. When AA28 is on `main`, the answer gains one sentence. It says that the customer can download the filed accounts as a DIYA-GL book or a spreadsheet package, and drop the corrected books back.
-- **Help page.** Board row OS7 (on `claude/husky-search`) makes `web/public/help.html` a generated page: `npm run build:static-content` writes into it the FAQ entries whose activity prod lists. This entry's activity lists no `prod` until AA18, so the page does not change here. When OS7 is on `main`, run the command and `npx vitest run web/unit-tests/staticContentPages.test.js` to prove that.
+- **Help page.** `web/public/help.html` is a generated page: `npm run build:static-content` writes into it the FAQ entries whose activity prod lists. This entry's activity lists no `prod` until AA18, so the page does not change here. Run the command and `npx vitest run web/unit-tests/staticContentPages.test.js` to prove that.
 - **API description.** In `infra/main/java/co/uk/diyaccounting/submit/names/CompaniesHouseNames.java`, the summary "Submit a micro-entity accounts filing" and its description name micro-entity, small company and revised accounts. `./mvnw clean verify` runs `OpenApiGenerator`, which rewrites `web/public/docs/api/openapi.json` and `web/public/docs/api/openapi.yaml`.
 - **Capability text.** The `@capability CH-08` header in `app/functions/companies-house/companiesHouseAccountsPost.js` says that a request with `revision` files revised accounts. Run `npm run capabilities:generate`; `npm run capabilities:check` passes.
 - **Tests.** Update any test that counts FAQ entries (`grep -rn "faqs.toml" web/unit-tests behaviour-tests`). `npx vitest run web/unit-tests`.
@@ -652,7 +652,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 #### AA19. The finder answer and the register
 
 - **Draft.** The listing request of board row OOS22 went to the XML team on 2026-11-12 with "Amended accounts: No". Its record is `../private.diyaccounting.co.uk/companies-house/correspondence/EMAIL_ACCOUNTS_SOFTWARE_FINDER.md`. Write a two-sentence follow-up on that thread with the `email-draft` skill on Opus. It says that the answer for the three tables is now Yes. Save it beside the record as `DRAFT_EMAIL_ACCOUNTS_SOFTWARE_FINDER_AMENDED.md`. When the reply to OOS22 names another route for a listing change, prepare the answer for that route.
-- **Register.** When the listing register is on `main` (board row OS21; `[[listing]]` tables in `web/marketing/marketing.toml`), add an entry for the GOV.UK accounts software finder. Copy the fields of an entry there (`id`, `place`, `group`, `products`, `url`, `state`, `date`, `terms`); `state` is one of `LISTING_STATES` in `scripts/listings-register.mjs` (`planned`, `submitted`, `live`). Run that row's listings check on the file.
+- **Register.** In the listing register (`[[listing]]` tables in `web/marketing/marketing.toml`), add an entry for the GOV.UK accounts software finder. Copy the fields of an entry there (`id`, `place`, `group`, `products`, `url`, `state`, `date`, `terms`); `state` is one of `LISTING_STATES` in `scripts/listings-register.mjs` (`planned`, `submitted`, `live`). Run `npm run marketing:build` and `npx vitest run web/unit-tests/marketing-site.test.js`.
 - **Board.** OOS22's row says to change the answer when the joint filing is on prod. When this plan is boarded, that row takes the new condition: Yes when AA18 is on prod.
 - **Waits on**: AA18. **Class**: machine-only. **Repository**: private, submit. **Model**: Opus (the draft). **Size**: 1 to 2 files.
 
@@ -666,17 +666,17 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 
 - **Goal.** One article on the spreadsheets site: "How to correct company accounts after you have filed them".
 - **Pattern.** Follow an existing company article: `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/articles/annual-return-dormant-company.html`, its Markdown copy beside it, and its file `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/data/ref-additions/annual-return-dormant-company.toml`.
-- **The list of articles.** `knowledge-base.toml` in that folder is generated (`npm run build:knowledge-base`, from a content folder outside the repository) and git ignores it. No entry there is edited. Board row OS35 writes the first new article and settles how the knowledge-base page lists one; follow the method OS35 lands. When OS35 is not on `main`, read how the page lists an article before you write this one.
+- **The list of articles.** `knowledge-base.toml` in that folder is generated (`npm run build:knowledge-base`, from a content folder outside the repository) and git ignores it. No entry there is edited. Read how the knowledge-base page lists a new article before you write this one, and follow that method.
 - **Content.** The article states the routes that the GOV.UK page gives, the five statements and the 28 days. It links to Submit's micro-entity form.
 - **Run.** In that repository: `npm run build:sitemaps` and `npx vitest run web/unit-tests/seo-validation.test.js`. Create the worktree with that repository's `scripts/worktree-add.sh`.
-- **Waits on**: AA18. Board rows OS35 and OS45 edit the same folder, so this task lands after them or in their agent. **Class**: machine-only. **Repository**: spreadsheets. **Model**: Sonnet. **Size**: ~4 files.
+- **Waits on**: AA18. **Class**: machine-only. **Repository**: spreadsheets. **Model**: Sonnet. **Size**: ~4 files.
 
 #### AA21. Landing page sections
 
 - **Goal.** Each accounts landing page on Submit has a section "Correct accounts you have filed".
-- **Where.** Board row OS9 adds `scripts/build-filing-pages.mjs`, its data file of copy, and pages for micro-entity, small company and dormant accounts. Add the section to each of the three from the data file, and run the generator and its staleness test as OS9's brief names them.
+- **Where.** `scripts/build-filing-pages.mjs` builds the pages for micro-entity, small company and dormant accounts from its data file `scripts/filing-pages.toml`. Add the section to each of the three in the data file, and run the generator and its staleness test.
 - **Copy.** Two sentences: open the filing from the receipts and choose Amend; Companies House keeps the original accounts on the register. Link to the FAQ entry of AA16.
-- **Waits on**: AA18, and board row OS9 on `main`. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~5 files.
+- **Waits on**: AA18. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~5 files.
 
 #### AA27. Package download in the DIYA-GL app
 
@@ -778,12 +778,12 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Tools.** Add two entries to `TOOLS` in `mcp/lib/server.js`, with handlers in `mcp/lib/accounts-tools.js`. `get_filed_accounts` lists the sets of a company through AA23's list route and, for one set, opens its document as the session's book. `new_book_from_companies_house` calls the profile, officers and filed accounts routes through `callSubmitApi` (`mcp/lib/submit-tools.js`), builds the book with the package's `buildBookFromRegister`, and loads it into the session.
 - **Shareholders.** `new_book_from_companies_house` takes an optional `codesEntryId`. The user types the authentication code on the link that `request_companies_house_codes` answers with the kind `confirmation-statement-data`. That kind serves the `filing-data` route today, for `get_confirmation_statement_data_sandbox`.
 - **What comes back.** On the local server, `save_book` then writes the DIYA-GL zip, the JSON, the workbook or the package to a path. The hosted connector has no `save_book`. There the tool answers the book link for the DIYA-GL app and a summary: the period, the opening balance sheet and the `differences`. A book link is about 3,000 characters.
-- **Annotations.** Board row OS14 gives each tool a `title` and `annotations`. Both tools are `readOnlyHint: true` and `openWorldHint: true`.
+- **Annotations.** Each tool has a `title` and `annotations`. Both tools are `readOnlyHint: true` and `openWorldHint: true`.
 - **Where it is offered.** Add both names to `HOSTED_TOOL_NAMES` in `mcp/lib/hosted-tools.js`. `PROD_HOSTED_TOOL_NAMES` does not change; board row MCP1 and the operator decide it.
 - **Pages.** `mcp/README.md`; one sentence in `web/public/mcp.html` inside a `data-listed-activity="start-company-books"` element; `node scripts/build-developer-site.mjs`; `npm run capabilities:generate` for the changed capability comments.
 - **Tests.** `mcp/test/accounts-tools.test.js` and `mcp/test/hosted-tools.test.js`; one case in `behaviour-tests/mcpHosted.behaviour.test.js`.
 - **Run.** `npm ci` and then `npm test` in `mcp/`; `npx vitest run web/unit-tests/developer-site.test.js`; `lockf -k /tmp/submit-simulator.lock npm run test:mcpHostedBehaviour-simulator`.
-- **Waits on**: AA23, AA29, AA30, AA31 for the activity, and board row OS14 on `main`. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~10 files.
+- **Waits on**: AA23, AA29, AA30, AA31 for the activity. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~10 files.
 
 #### AA33. Copy, guide and video for the new books
 
@@ -792,7 +792,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **Guide.** In `web/public/guide.page.js`, add `{ video: "start-company-books" }` to the Companies House journeys, after `{ video: "company-lookup" }`. Give the video the activity `start-company-books` in `web/public/videos/publish.json`.
 - **Record and upload.** Follow the `site-video-capture` skill, then the `video-publish` skill, and stop at the unlisted upload.
 - **Screenshots.** `npm run video:walkthrough`; then the `visual-review` skill, and the `ui-ux-pro-max` skill on the guide screenshots of this journey.
-- **Static pages.** When board row OS7 is on `main`, run `npm run build:static-content`. The pages gain this copy at AA34.
+- **Static pages.** Run `npm run build:static-content`. The pages gain this copy at AA34.
 - **Tests.** `npx vitest run app/unit-tests/video/scriptSchema.test.js web/unit-tests`; `npm run video:embed-check`.
 - **Waits on**: AA31. **Class**: machine-only. **Repository**: submit. **Model**: Sonnet. **Size**: ~6 files.
 
@@ -804,7 +804,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 #### AA34. Launch the new books on prod
 
 - **Preconditions.** AA31 and AA33 are on `main`. AA27 is on the DIYA-GL prod site. OAA5 said go. The operator approves the launch. No answer from Companies House is needed, because the feature files nothing.
-- **Change.** In `web/public/submit.catalogue.toml`, add `"prod"` to the `environments` of `start-company-books`. Add the page to `.pa11yci.prod.json`. Run `npm run build:static-content` when board row OS7 is on `main`. Flip the video public by the `video-publish` skill.
+- **Change.** In `web/public/submit.catalogue.toml`, add `"prod"` to the `environments` of `start-company-books`. Add the page to `.pa11yci.prod.json`. Run `npm run build:static-content`. Flip the video public by the `video-publish` skill.
 - **Tests.** `npx vitest run app/unit-tests/services/prodSurface.test.js web/unit-tests`; the simulator journey of AA31.
 - **Proof on prod.** The home page lists the activity for a customer with the bundle. The page opens. The routes of AA23 and AA29 answer for a company number. The proof builds no book for a real company on the operator's account unless the operator chooses to.
 - **Waits on**: the preconditions. **Class**: machine-ask (the operator's approval). **Repository**: submit. **Model**: Sonnet. **Size**: ~4 files.
@@ -815,9 +815,9 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 - **App link.** In `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/shell.js`, `renderNewBookForm` draws the form of the product's manifest. For the Company product (`newBook` in `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/products/ltd.js`), add one line under the form: "Start from what Companies House holds". It links to Submit's page through `submitOrigin` of `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/cloud-config.js`.
 - **Home page.** One line on `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/index.html`.
 - **Article.** One knowledge-base article, "Start your company books from the accounts on file at Companies House", by the method of AA20.
-- **Product page.** When board row OS6 has put the Company product page on that repository's `main`, add one line with the link.
+- **Product page.** Add one line with the link to the Company product page.
 - **Tests.** A browser test of the link on the Ltd page's new book form; `npx vitest run web/unit-tests/seo-validation.test.js`; `npm run build:sitemaps`.
-- **Waits on**: AA34, so that each link opens a page that prod serves. Board rows OS35 and OS45 edit the articles folder, so the article lands after them or in their agent. **Class**: machine-only. **Repository**: spreadsheets. **Model**: Sonnet. **Size**: ~7 files.
+- **Waits on**: AA34, so that each link opens a page that prod serves. **Class**: machine-only. **Repository**: spreadsheets. **Model**: Sonnet. **Size**: ~7 files.
 
 ## 6. Dependency graph
 
@@ -833,7 +833,6 @@ graph TD
   AA5 --> AA6
   AA1 --> AA7
   AA3 --> AA7
-  OS14["OS14 on main"] --> AA7
   AA9 --> OAA1
   OAA1 --> AA22
   AA1 --> AA10
@@ -862,11 +861,9 @@ graph TD
   OAA2 --> AA18
   OAA3 --> AA18
   AA18 --> AA19
-  OS21["OS21 on main"] --> AA19
   AA19 --> OAA4
   AA18 --> AA20
   AA18 --> AA21
-  OS9["OS9 on main"] --> AA21
   AA4 --> AA28
   AA27 --> AA28
   AA25 --> AA26
@@ -879,7 +876,6 @@ graph TD
   AA29 --> AA32
   AA30 --> AA32
   AA31 --> AA32
-  OS14 --> AA32
   AA31 --> AA33
   AA33 --> OAA5
   AA27 --> AA34
@@ -890,17 +886,17 @@ graph TD
 ```
 
 - AA1: its merge follows AA3, or shares its pull request.
-- AA2, AA4, AA7, AA10: blocked by AA1. AA4 also by AA2 and AA3. AA7 also by AA3 and by OS14 on `main`.
+- AA2, AA4, AA7, AA10: blocked by AA1. AA4 also by AA2 and AA3. AA7 also by AA3.
 - AA5, AA16 and AA17: blocked by AA4. AA6: blocked by AA5.
 - AA11: blocked by AA10. AA12: blocked by AA11 and the operator's go. AA13: blocked by AA12.
 - AA14: blocked by AA7 and AA10.
 - OAA1: blocked by AA9. AA22: blocked by the reply to OAA1. OAA2: blocked by AA13 and AA22.
 - AA15: blocked by AA22 and AA5. AA23: blocked by AA3. AA24: blocked by AA23 and AA15.
 - AA18: blocked by AA6, AA7, AA11, AA12, AA14, AA16, AA22, OAA2's outcome when Q1's answer asks for tests, OAA3 and the operator's approval.
-- AA19, AA20 and AA21: blocked by AA18. AA19 also by OS21 on `main`; AA21 also by OS9 on `main`. OAA4: blocked by AA19.
+- AA19, AA20 and AA21: blocked by AA18. OAA4: blocked by AA19.
 - AA28: blocked by AA4, and by AA27 on the DIYA-GL prod site for its package action.
 - AA26: blocked by AA25. AA30: blocked by AA26 and its publish to npm. So the order across the two repositories is AA26, the release, AA30.
-- AA31: blocked by AA23, AA28, AA29 and AA30. AA32: blocked by AA23, AA29, AA30, AA31 and by OS14 on `main`.
+- AA31: blocked by AA23, AA28, AA29 and AA30. AA32: blocked by AA23, AA29, AA30 and AA31.
 - AA33: blocked by AA31. OAA5: blocked by AA33. AA34: blocked by AA27, AA31, AA33, OAA5 and the operator's approval. AA35: blocked by AA34.
 - AA8, AA9, AA25, AA27 and AA29 wait on nothing.
 
@@ -909,8 +905,8 @@ graph TD
 - **The simulator lane.** Every behaviour suite on the simulator takes one port. Run one suite at a time under `lockf -k /tmp/submit-simulator.lock <command>`.
 - **Worktrees.** Create each one with `scripts/worktree-add.sh <path> <branch> <base>`, which links `node_modules` and `mcp/node_modules` from the main checkout. `npm run bundle` comes before the unit tests. Every Bash call starts with `cd <worktree>`, and every file tool takes an absolute path under it.
 - **Gates for each change.** `npx eslint <files>` and `npx prettier --check <files>` for JavaScript; `./mvnw spotless:check` for Java, with any `spotless:apply` kept to the task's files. A new file carries the licence header. Comments and test names name no plan, task label or date.
-- **Generated files.** `web/public/mtd-calendar.html` comes from `npm run build:mtd-calendar`. `REPORT_CAPABILITIES.md` comes from `npm run capabilities:generate`. `web/public/lib/books-bundle.js` comes from `npm run bundle:books`. `web/developer/mcp-api.html` comes from `node scripts/build-developer-site.mjs`. `web/public/docs/api/openapi.json` comes from `./mvnw clean verify`. When board row OS7 is on `main`, `web/public/help.html` and `web/public/guide.html` come from `npm run build:static-content` and hold only what prod lists; `web/unit-tests/staticContentPages.test.js` fails when either is stale. Two branches that both regenerate one of these land one after the other, and the second regenerates.
-- **Shared files, in order.** `scripts/build-mtd-calendar.mjs`: AA8, AA4, AA6, AA7, AA18. `web/public/companies-house/filings.page.js` and `web/public/lib/accounts-revision.js`: AA4, then AA5, then AA28, then AA15, then AA24. `web/public/submit.catalogue.toml`: AA3, then AA23, then AA31, then AA18 and AA34. `scripts/build-books-bundle.mjs` and `web/public/lib/books-bundle.js`: AA28, then AA30, then AA31. `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/shell.js`: AA27, then AA35. `web/public/widgets/books-import.js`: AA6 after AA5. `mcp/lib/server.js`: board row OS14, then AA7, then AA32. `web/public/faqs.toml` and `web/public/guide.page.js`: board row OS7, then AA16 and AA17, then AA33. `scripts/fixtures/companies-house-test-service-cases.json`: AA10, then AA12.
+- **Generated files.** `web/public/mtd-calendar.html` comes from `npm run build:mtd-calendar`. `REPORT_CAPABILITIES.md` comes from `npm run capabilities:generate`. `web/public/lib/books-bundle.js` comes from `npm run bundle:books`. `web/developer/mcp-api.html` comes from `node scripts/build-developer-site.mjs`. `web/public/docs/api/openapi.json` comes from `./mvnw clean verify`. `web/public/help.html` and `web/public/guide.html` come from `npm run build:static-content` and hold only what prod lists; `web/unit-tests/staticContentPages.test.js` fails when either is stale. Two branches that both regenerate one of these land one after the other, and the second regenerates.
+- **Shared files, in order.** `scripts/build-mtd-calendar.mjs`: AA8, AA4, AA6, AA7, AA18. `web/public/companies-house/filings.page.js` and `web/public/lib/accounts-revision.js`: AA4, then AA5, then AA28, then AA15, then AA24. `web/public/submit.catalogue.toml`: AA3, then AA23, then AA31, then AA18 and AA34. `scripts/build-books-bundle.mjs` and `web/public/lib/books-bundle.js`: AA28, then AA30, then AA31. `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/shell.js`: AA27, then AA35. `web/public/widgets/books-import.js`: AA6 after AA5. `mcp/lib/server.js`: AA7, then AA32. `web/public/faqs.toml` and `web/public/guide.page.js`: AA16 and AA17, then AA33. `scripts/fixtures/companies-house-test-service-cases.json`: AA10, then AA12.
 - **The revision request.** After AA1, `revision` is `{originalDateOfApproval, nonCompliance, amendments}`. `director.dateApproved` is the date of the revision. The route refuses a revision whose original date is after it.
 - **Cost.** An accepted revision costs one token of `file-micro-entity-accounts` or `file-small-company-accounts`. A rejected one costs nothing. `file-revised-accounts` has `tokenCost = 0` and decides only where a revision is offered.
 - **Environments.** ci files to the Companies House test service, which accepts nothing until the XML team reviews it. Prod files to the live gateway. The simulator is the one place where an amend journey reaches an accepted revision without a person.
