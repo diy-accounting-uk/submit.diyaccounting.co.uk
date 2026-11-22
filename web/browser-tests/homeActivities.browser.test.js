@@ -63,7 +63,7 @@ test.describe("Home page activities for a Resident account", () => {
     await expect(buttons.first()).toBeVisible();
     const count = await buttons.count();
     expect(count).toBeGreaterThan(0);
-    await expect(page.locator("#dynamicActivities")).not.toContainText("PSC");
+    await expect(page.locator("#dynamicActivities")).not.toContainText("PSC Verification Statement");
     await expect(page.locator("#dynamicActivities")).not.toContainText(/Save diya-gl books/i);
 
     if (SCREENSHOT_DIR) {

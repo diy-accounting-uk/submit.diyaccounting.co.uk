@@ -706,6 +706,17 @@ paths = ["^/api/v1/companies-house/psc-verification-statement.*"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
+id = "cease-psc"
+name = "Tell Companies House a PSC has ceased (Companies House, sandbox)"
+nameCy = "Dweud wrth Dŷ'r Cwmnïau fod PRhA wedi peidio â bod yn un (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the PSCCessation form type for this presenter.
+paths = ["companies-house/ceasePsc.html", "^/api/v1/companies-house/psc-cessation.*", "^/api/v1/companies-house/forms/psc-cessation/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
 id = "diya-gl-storage"
 name = "Save diya-gl books (sandbox)"
 nameCy = "Cadw llyfrau diya-gl (amgylchedd prawf)"

@@ -143,7 +143,10 @@ describe("dynamoDbCompaniesHouseFilingStateRepository", () => {
     expect(query.name).toBe("Query");
     expect(query.input.ExpressionAttributeValues[":hashedSub"]).toBe(hashSub("filer-sub-1"));
     expect(query.input.ProjectionExpression).not.toContain("filedDocument");
-    expect(query.input.FilterExpression).toContain("#data.#kind IN (:accounts, :confirmationStatement, :pscVerificationStatement)");
+    const filteredKinds = query.input.FilterExpression.match(/#data\.#kind IN \(([^)]*)\)/)[1]
+      .split(", ")
+      .map((placeholder) => query.input.ExpressionAttributeValues[placeholder]);
+    expect(filteredKinds).toEqual(["accounts", "confirmation-statement", "psc-verification-statement", "psc-cessation"]);
     expect(nextPage.input.ExclusiveStartKey).toEqual({ hashedSub: "x", requestId: "00001B" });
   });
 

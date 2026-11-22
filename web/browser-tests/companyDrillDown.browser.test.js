@@ -711,3 +711,30 @@ test.describe("Companies House forms opened with a company number", () => {
     });
   }
 });
+
+test.describe("Company lookup drill-down PSC cessation links", () => {
+  test("an account holding the cessation form gets a link for each current PSC, and the authority PSC07 states", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
+
+    const link = page.locator("#drillView .cease-psc-links a");
+    await expect(link).toHaveText("Tell Companies House Eleanor Bramwell has ceased to be a PSC", { timeout: 15000 });
+    expect(await link.getAttribute("href")).toBe("/companies-house/ceasePsc.html?companyNumber=00000001&pscName=Eleanor+Bramwell");
+    const control = page.locator('#drillView .file-this[data-activity="cease-psc"]');
+    await expect(control.locator("a.btn")).toHaveText("Tell Companies House a PSC has ceased");
+    await expect(control.locator(".file-this-authority")).toContainText(
+      "“This form may be authenticated by: Director, Secretary, Person authorised, Administrator, Administrative receiver, Receiver, Receiver manager, Charity commission receiver and manager, CIC manager, Judicial factor.”",
+    );
+    const sources = await control.locator(".file-this-authority a").evaluateAll((links) => links.map((anchor) => anchor.href));
+    expect(sources).toContain("https://assets.publishing.service.gov.uk/media/69f30d970bb62e692c5d6e87/PSC07_v4.0-Final.pdf");
+    await shoot(page, "psc-cease-links");
+  });
+
+  test("on prod, where the cessation form is not offered, the PSC view carries no cessation link", async ({ page }) => {
+    await serveSite(page, { environmentName: "prod", bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/companies-house/company/00000001/psc`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillView")).toContainText("Eleanor Bramwell", { timeout: 15000 });
+    await expect(page.locator("#drillView .cease-psc-links")).toHaveCount(0);
+    await expect(page.locator('#drillView .file-this[data-activity="cease-psc"]')).toHaveCount(0);
+  });
+});

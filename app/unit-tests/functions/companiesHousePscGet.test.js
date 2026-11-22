@@ -68,6 +68,7 @@ const EXAMPLE_PSC_RESPONSE = {
   items: [
     {
       name: "Alice Example",
+      name_elements: { title: "Ms", forename: "Alice", middle_name: "Jane", surname: "Example" },
       kind: "individual-person-with-significant-control",
       natures_of_control: ["ownership-of-shares-50-to-75-percent"],
       notified_on: "2016-04-06",
@@ -138,6 +139,7 @@ describe("companiesHousePscGet ingestHandler", () => {
       naturesOfControl: ["ownership-of-shares-50-to-75-percent"],
       notifiedOn: "2016-04-06",
     });
+    expect(body.pscs[0].nameElements).toEqual({ title: "Ms", forename: "Alice", middleName: "Jane", surname: "Example" });
   });
 
   test("requests the persons-with-significant-control path for the given company number", async () => {

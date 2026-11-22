@@ -612,6 +612,30 @@
         } ]
       }
     },
+    "/companies-house/forms/{kind}/{submissionNumber}" : {
+      "get" : {
+        "summary" : "Poll a Companies House form filing",
+        "description" : "Polls the Companies House XML Gateway for the outcome of a form filed through the shared filing route, by the form's kind",
+        "operationId" : "getCompaniesHouseFormStatus",
+        "parameters" : [ {
+          "name" : "kind",
+          "in" : "path",
+          "required" : true,
+          "description" : "The form's kind, such as psc-cessation",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "submissionNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 6-character submission number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/companies-house/grants/{grantId}" : {
       "delete" : {
         "summary" : "End a Companies House grant",
@@ -626,6 +650,13 @@
             "type" : "string"
           }
         } ]
+      }
+    },
+    "/companies-house/psc-cessation" : {
+      "post" : {
+        "summary" : "Submit a PSC cessation filing",
+        "description" : "Builds the PSCCessation body, the notice that a person with significant control has ceased to be one, and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHousePscCessation"
       }
     },
     "/companies-house/psc-verification-statement" : {

@@ -7,6 +7,7 @@ import { escapeRecordText, escapeRecordAttribute } from "./submissionRecord.js";
 import { maskEmail } from "./activityAlert.js";
 import { generatePassQrCodeBuffer, generatePassQrCodeSvgString } from "./qrCodeGenerator.js";
 import { generateBackSvg, generateFrontSvg } from "./passMedia.js";
+import { companiesHouseReceiptTitles } from "../../web/public/lib/companies-house-forms.js";
 
 const SUPPORT_ADDRESS = "support@diyaccounting.co.uk";
 const COMPANY_NAME = "DIY Accounting Limited";
@@ -37,9 +38,7 @@ const RECEIPT_KIND_TITLES = {
   "itsa-tax-liability-adjustments": "Tax liability adjustments",
   "itsa-final-declaration": "Final declaration",
   "ct-return": "Corporation Tax return",
-  "accounts": "Annual accounts",
-  "confirmation-statement": "Confirmation statement",
-  "psc-verification-statement": "PSC verification statement",
+  ...companiesHouseReceiptTitles("en"),
 };
 
 // The receipt email in Welsh, for a filing made with the Welsh language choice. Terms follow HMRC's
@@ -56,9 +55,7 @@ const WELSH_RECEIPT_KIND_TITLES = {
   "itsa-tax-liability-adjustments": "Addasiadau i’r rhwymedigaeth dreth",
   "itsa-final-declaration": "Datganiad terfynol",
   "ct-return": "Ffurflen Dreth Gorfforaeth",
-  "accounts": "Cyfrifon blynyddol",
-  "confirmation-statement": "Datganiad cadarnhau",
-  "psc-verification-statement": "Datganiad gwirio PRhA",
+  ...companiesHouseReceiptTitles("cy"),
 };
 
 const WELSH_RECEIPT_FIELD_LABELS = {

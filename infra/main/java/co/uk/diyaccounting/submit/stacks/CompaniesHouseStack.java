@@ -200,6 +200,14 @@ public class CompaniesHouseStack extends Stack {
     public Function companiesHousePscVerificationStatementGetLambda;
     public ILogGroup companiesHousePscVerificationStatementGetLambdaLogGroup;
 
+    public AbstractApiLambdaProps companiesHousePscCessationPostLambdaProps;
+    public Function companiesHousePscCessationPostLambda;
+    public ILogGroup companiesHousePscCessationPostLambdaLogGroup;
+
+    public AbstractApiLambdaProps companiesHouseFormStatusGetLambdaProps;
+    public Function companiesHouseFormStatusGetLambda;
+    public ILogGroup companiesHouseFormStatusGetLambdaLogGroup;
+
     public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
@@ -2127,6 +2135,115 @@ public class CompaniesHouseStack extends Stack {
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHousePscVerificationStatementGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
+        var companiesHousePscCessationPostLambdaEnv = xmlGatewayFilingLambdaEnv(props)
+                .with(
+                        "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
+                        companiesHouseAccountsAsyncRequestsTable.getTableName())
+                .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
+        withPresenterSecretArns(companiesHousePscCessationPostLambdaEnv, props);
+        withFilerSealKeyEnv(companiesHousePscCessationPostLambdaEnv, codesSealKeySecret);
+        if (xmlGatewayPackageReference(props) != null) {
+            companiesHousePscCessationPostLambdaEnv.with(
+                    "COMPANIES_HOUSE_PACKAGE_REFERENCE", xmlGatewayPackageReference(props));
+        }
+        var companiesHousePscCessationPostLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscCessationPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscCessationPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler(
+                                props.sharedNames().companiesHouse.companiesHousePscCessationPostIngestLambdaHandler)
+                        .ingestLambdaArn(
+                                props.sharedNames().companiesHouse.companiesHousePscCessationPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHousePscCessationPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestMemorySize(256)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHousePscCessationPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHousePscCessationPostLambdaUrlPath)
+                        .jwtAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHousePscCessationPostLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHousePscCessationPostLambdaCustomAuthorizer)
+                        .environment(companiesHousePscCessationPostLambdaEnv)
+                        .build());
+        this.companiesHousePscCessationPostLambdaProps = companiesHousePscCessationPostLambdaUrlOrigin.apiProps;
+        this.companiesHousePscCessationPostLambda = companiesHousePscCessationPostLambdaUrlOrigin.ingestLambda;
+        this.companiesHousePscCessationPostLambdaLogGroup = companiesHousePscCessationPostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.companiesHousePscCessationPostLambdaProps);
+        infof(
+                "Created Lambda %s for Companies House PSC cessation submit with ingestHandler %s",
+                this.companiesHousePscCessationPostLambda.getNode().getId(),
+                props.sharedNames().companiesHouse.companiesHousePscCessationPostIngestLambdaHandler);
+        grantCompaniesHouseLambdaAccess(
+                this.companiesHousePscCessationPostLambda, bundlesTable, region, account, props, activityBusArn, false);
+        grantCompaniesHousePresenterSecretsAccess(this.companiesHousePscCessationPostLambda, props);
+        companiesHouseAccountsAsyncRequestsTable.grant(
+                this.companiesHousePscCessationPostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        // Seals the filer's sub into the filing state the presenter poll reads.
+        codesSealKeySecret.grantRead(this.companiesHousePscCessationPostLambda);
+
+        var companiesHouseFormStatusGetLambdaEnv = xmlGatewayFilingLambdaEnv(props)
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName())
+                .with("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME", activityChargesTable.getTableName())
+                .with(
+                        "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
+                        companiesHouseAccountsAsyncRequestsTable.getTableName())
+                .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
+        withPresenterSecretArns(companiesHouseFormStatusGetLambdaEnv, props);
+        var companiesHouseFormStatusGetLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(
+                                props.sharedNames().companiesHouse.companiesHouseFormStatusGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().companiesHouse.companiesHouseFormStatusGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler(
+                                props.sharedNames().companiesHouse.companiesHouseFormStatusGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouse.companiesHouseFormStatusGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseFormStatusGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestMemorySize(256)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHouseFormStatusGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHouseFormStatusGetLambdaUrlPath)
+                        .jwtAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseFormStatusGetLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseFormStatusGetLambdaCustomAuthorizer)
+                        .environment(companiesHouseFormStatusGetLambdaEnv)
+                        .build());
+        this.companiesHouseFormStatusGetLambdaProps = companiesHouseFormStatusGetLambdaUrlOrigin.apiProps;
+        this.companiesHouseFormStatusGetLambda = companiesHouseFormStatusGetLambdaUrlOrigin.ingestLambda;
+        this.companiesHouseFormStatusGetLambdaLogGroup = companiesHouseFormStatusGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.companiesHouseFormStatusGetLambdaProps);
+        infof(
+                "Created Lambda %s for Companies House form poll, every form on the shared filing route, with ingestHandler %s",
+                this.companiesHouseFormStatusGetLambda.getNode().getId(),
+                props.sharedNames().companiesHouse.companiesHouseFormStatusGetIngestLambdaHandler);
+        grantCompaniesHouseLambdaAccess(
+                this.companiesHouseFormStatusGetLambda, bundlesTable, region, account, props, activityBusArn, false);
+        grantCompaniesHousePresenterSecretsAccess(this.companiesHouseFormStatusGetLambda, props);
+        receiptsTable.grant(
+                this.companiesHouseFormStatusGetLambda, "dynamodb:PutItem", "dynamodb:Query", "dynamodb:UpdateItem");
+        grantTokenCharge(this.companiesHouseFormStatusGetLambda, bundlesTable);
+        companiesHouseAccountsAsyncRequestsTable.grant(
+                this.companiesHouseFormStatusGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
         // The scheduled presenter poll: asks the XML Gateway for every submission of our presenter
         // that Companies House has accepted or rejected, records each against its filing as the page
         // poll does, then acknowledges the poll (GetSubmissionStatus option 2, then GetStatusAck).
@@ -2275,6 +2392,8 @@ public class CompaniesHouseStack extends Stack {
                         companiesHouseConfirmationStatementGetLambdaUrlOrigin,
                         companiesHousePscVerificationStatementPostLambdaUrlOrigin,
                         companiesHousePscVerificationStatementGetLambdaUrlOrigin,
+                        companiesHousePscCessationPostLambdaUrlOrigin,
+                        companiesHouseFormStatusGetLambdaUrlOrigin,
                         companiesHouseSubmissionStatusPollLambdaConstruct));
 
         cfnOutput(this, "CompaniesHouseSearchGetLambdaArn", this.companiesHouseSearchGetLambda.getFunctionArn());
@@ -2343,6 +2462,12 @@ public class CompaniesHouseStack extends Stack {
                 this,
                 "CompaniesHousePscVerificationStatementGetLambdaArn",
                 this.companiesHousePscVerificationStatementGetLambda.getFunctionArn());
+        cfnOutput(
+                this,
+                "CompaniesHousePscCessationPostLambdaArn",
+                this.companiesHousePscCessationPostLambda.getFunctionArn());
+        cfnOutput(
+                this, "CompaniesHouseFormStatusGetLambdaArn", this.companiesHouseFormStatusGetLambda.getFunctionArn());
 
         infof(
                 "CompaniesHouseStack %s created successfully for %s",

@@ -100,6 +100,7 @@ const FILING_IN_PROGRESS_TITLES = {
   "accounts": siteText("receipts.kind-accounts", "Accounts"),
   "confirmation-statement": siteText("receipts.kind-confirmation-statement", "Confirmation statement"),
   "psc-verification-statement": siteText("receipts.kind-psc-verification-statement", "PSC verification statement"),
+  "psc-cessation": siteText("receipts.kind-psc-cessation", "PSC cessation"),
 };
 
 // A Companies House filing that is not a receipt yet: still waiting for Companies House, which checks

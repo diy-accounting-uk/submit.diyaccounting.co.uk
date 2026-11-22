@@ -26,24 +26,11 @@ import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js
 import { jointFilingFields, amendedFields, revisesReceiptFields, formRequestFields } from "./jointFiling.js";
 import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
 import { markChargeUsed } from "./activityCharges.js";
+import { COMPANIES_HOUSE_FORMS } from "../../web/public/lib/companies-house-forms.js";
 
 const ACCOUNTS_RECEIPT_KIND = "companies-house-accounts";
 
 // The activity event each form publishes when Companies House accepts it.
-export const FORM_KINDS = {
-  "accounts": {
-    acceptedEvent: "companies-house-accounts-accepted",
-    acceptedSummary: "Companies House micro-entity accounts accepted",
-  },
-  "confirmation-statement": {
-    acceptedEvent: "companies-house-confirmation-statement-accepted",
-    acceptedSummary: "Companies House confirmation statement accepted",
-  },
-  "psc-verification-statement": {
-    acceptedEvent: "companies-house-psc-verification-statement-accepted",
-    acceptedSummary: "Companies House PSC verification statement accepted",
-  },
-};
 
 const logger = createLogger({ source: "app/services/companiesHouseSubmissionStatus.js" });
 
@@ -65,7 +52,7 @@ export function isGatewayTest() {
  * @param {string} [input.govTestScenario] - forwarded to the gateway call as Gov-Test-Scenario
  * @param {{presenterId: string, presenterCode: string}} [input.ownPresenter] - the customer's own
  *   presenter the submission was filed under; used for this poll only and never recorded
- * @param {string} input.kind - a key of FORM_KINDS
+ * @param {string} input.kind - a key of COMPANIES_HOUSE_FORMS
  * @returns {Promise<{data: object}|{errors: Array, submissionNumber: string}|{notFound: true, submissionNumber: string}>}
  */
 export async function pollSubmission({ userSub, submissionNumber, govTestScenario, ownPresenter, kind, now = new Date() }) {
@@ -74,6 +61,12 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
 
   if (!persistedRequest) {
     logger.warn({ message: "Companies House status poll for a submission this user did not make", submissionNumber });
+    return { notFound: true, submissionNumber };
+  }
+  // A filing is polled as the kind it was filed as, so its outcome is recorded under that kind.
+  const filedKind = persistedRequest.data?.kind;
+  if (filedKind && filedKind !== kind) {
+    logger.warn({ message: "Companies House status poll names another kind than the filing's", submissionNumber, kind, filedKind });
     return { notFound: true, submissionNumber };
   }
 
@@ -232,7 +225,7 @@ function sentRequestData(persistedRequest) {
  * @param {string} input.submissionNumber
  * @param {object} input.persistedRequest - the filer's async request item, as the submit Lambda wrote it
  * @param {{statusCode: string, submissionNumber: string, companyNumber?: string, rejections: Array}} input.status
- * @param {string} input.kind - a key of FORM_KINDS
+ * @param {string} input.kind - a key of COMPANIES_HOUSE_FORMS
  * @returns {Promise<{data: object, recorded: boolean}>} recorded is false when nothing was written
  */
 export async function recordSubmissionStatus({ userSub, submissionNumber, persistedRequest, status, kind }) {
@@ -330,7 +323,7 @@ async function writeFinalStatus({ userSub, submissionNumber, persistedRequest, s
   }
   const data = { ...status, ...jointFiling, receiptId };
   await putAsyncRequest(userSub, submissionNumber, "completed", { ...data, kind }, asyncRequestsTableName, FILING_STATE_RETENTION);
-  const { acceptedEvent, acceptedSummary } = FORM_KINDS[kind];
+  const { acceptedEvent, acceptedSummary } = COMPANIES_HOUSE_FORMS[kind];
   await publishActivityEvent({ event: acceptedEvent, summary: acceptedSummary, userSub });
   return data;
 }

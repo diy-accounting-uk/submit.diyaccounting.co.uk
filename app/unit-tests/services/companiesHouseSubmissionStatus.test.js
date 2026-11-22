@@ -142,6 +142,20 @@ describe("pollSubmission", () => {
     expect(mockEventBridgeSend).not.toHaveBeenCalled();
   });
 
+  test("returns notFound without calling the gateway when the poll names another kind than the filing's", async () => {
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    mockSend.mockImplementation(async (cmd) =>
+      cmd instanceof lib.GetCommand
+        ? { Item: { requestId: "00001A", status: "pending", data: { kind: "psc-verification-statement" } } }
+        : {},
+    );
+
+    const result = await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "psc-cessation" });
+
+    expect(result).toEqual({ notFound: true, submissionNumber: "00001A" });
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
   test("forwards a Gov-Test-Scenario to the gateway call", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [],

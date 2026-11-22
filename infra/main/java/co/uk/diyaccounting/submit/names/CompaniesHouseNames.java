@@ -296,6 +296,24 @@ public class CompaniesHouseNames {
     public boolean companiesHousePscVerificationStatementGetLambdaJwtAuthorizer;
     public boolean companiesHousePscVerificationStatementGetLambdaCustomAuthorizer;
 
+    public String companiesHousePscCessationPostIngestLambdaHandler;
+    public String companiesHousePscCessationPostIngestLambdaFunctionName;
+    public String companiesHousePscCessationPostIngestLambdaArn;
+    public String companiesHousePscCessationPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHousePscCessationPostLambdaHttpMethod;
+    public String companiesHousePscCessationPostLambdaUrlPath;
+    public boolean companiesHousePscCessationPostLambdaJwtAuthorizer;
+    public boolean companiesHousePscCessationPostLambdaCustomAuthorizer;
+
+    public String companiesHouseFormStatusGetIngestLambdaHandler;
+    public String companiesHouseFormStatusGetIngestLambdaFunctionName;
+    public String companiesHouseFormStatusGetIngestLambdaArn;
+    public String companiesHouseFormStatusGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseFormStatusGetLambdaHttpMethod;
+    public String companiesHouseFormStatusGetLambdaUrlPath;
+    public boolean companiesHouseFormStatusGetLambdaJwtAuthorizer;
+    public boolean companiesHouseFormStatusGetLambdaCustomAuthorizer;
+
     public CompaniesHouseNames(SubmitSharedNames.SubmitSharedNamesProps props, SubmitSharedNames root) {
 
         this.companiesHouseSearchGetLambdaHttpMethod = HttpMethod.GET;
@@ -1123,5 +1141,52 @@ public class CompaniesHouseNames {
                         + "statement filing",
                 "getCompaniesHousePscVerificationStatement",
                 List.of(new ApiParameter("submissionNumber", "path", true, "The 6-character submission number"))));
+
+        this.companiesHousePscCessationPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHousePscCessationPostLambdaUrlPath = "/api/v1/companies-house/psc-cessation";
+        this.companiesHousePscCessationPostLambdaJwtAuthorizer = true;
+        this.companiesHousePscCessationPostLambdaCustomAuthorizer = false;
+        var companiesHousePscCessationPostLambdaHandlerName = "companiesHousePscCessationPost.ingestHandler";
+        var companiesHousePscCessationPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHousePscCessationPostLambdaHandlerName);
+        this.companiesHousePscCessationPostIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, companiesHousePscCessationPostLambdaHandlerDashed);
+        this.companiesHousePscCessationPostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(root.appLambdaHandlerPrefix, companiesHousePscCessationPostLambdaHandlerName);
+        this.companiesHousePscCessationPostIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, companiesHousePscCessationPostLambdaHandlerDashed);
+        this.companiesHousePscCessationPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHousePscCessationPostIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHousePscCessationPostLambdaHttpMethod,
+                this.companiesHousePscCessationPostLambdaUrlPath,
+                "Submit a PSC cessation filing",
+                "Builds the PSCCessation body, the notice that a person with significant control has ceased to be one, and submits it through the Companies House XML Gateway",
+                "postCompaniesHousePscCessation"));
+
+        this.companiesHouseFormStatusGetLambdaHttpMethod = HttpMethod.GET;
+        this.companiesHouseFormStatusGetLambdaUrlPath = "/api/v1/companies-house/forms/{kind}/{submissionNumber}";
+        this.companiesHouseFormStatusGetLambdaJwtAuthorizer = true;
+        this.companiesHouseFormStatusGetLambdaCustomAuthorizer = false;
+        var companiesHouseFormStatusGetLambdaHandlerName = "companiesHouseFormStatusGet.ingestHandler";
+        var companiesHouseFormStatusGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseFormStatusGetLambdaHandlerName);
+        this.companiesHouseFormStatusGetIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, companiesHouseFormStatusGetLambdaHandlerDashed);
+        this.companiesHouseFormStatusGetIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(root.appLambdaHandlerPrefix, companiesHouseFormStatusGetLambdaHandlerName);
+        this.companiesHouseFormStatusGetIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, companiesHouseFormStatusGetLambdaHandlerDashed);
+        this.companiesHouseFormStatusGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHouseFormStatusGetIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseFormStatusGetLambdaHttpMethod,
+                this.companiesHouseFormStatusGetLambdaUrlPath,
+                "Poll a Companies House form filing",
+                "Polls the Companies House XML Gateway for the outcome of a form filed through the shared filing route, by the form's kind",
+                "getCompaniesHouseFormStatus",
+                List.of(
+                        new ApiParameter("kind", "path", true, "The form's kind, such as psc-cessation"),
+                        new ApiParameter("submissionNumber", "path", true, "The 6-character submission number"))));
     }
 }

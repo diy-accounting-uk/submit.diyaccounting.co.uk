@@ -18,6 +18,7 @@ import { createLogger } from "../lib/logger.js";
 import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
 import { calculateTtl } from "../lib/dateUtils.js";
 import { hashSub } from "../services/subHasher.js";
+import { COMPANIES_HOUSE_FORM_KINDS } from "../../web/public/lib/companies-house-forms.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbCompaniesHouseFilingStateRepository.js" });
 
@@ -137,6 +138,10 @@ export async function deferPresenterPoll(nextPollAt) {
   }
 }
 
+// The XML gateway forms, as the shared table lists them, as the filter's placeholders and values.
+const FORM_KIND_PLACEHOLDERS = COMPANIES_HOUSE_FORM_KINDS.map((_, index) => `:kind${index}`);
+const FORM_KIND_VALUES = Object.fromEntries(COMPANIES_HOUSE_FORM_KINDS.map((kind, index) => [`:kind${index}`, kind]));
+
 /**
  * The reader's Companies House filings that Companies House has not accepted yet: each one still
  * pending, and each rejection recorded in the last 100 days. An accepted filing is a receipt. As
@@ -159,7 +164,7 @@ export async function listFilingsInProgress(userSub, clientId) {
           KeyConditionExpression: "hashedSub = :hashedSub",
           // The table also holds Company Tax Return requests; only the XML Gateway forms are filings here.
           FilterExpression:
-            "#data.#kind IN (:accounts, :confirmationStatement, :pscVerificationStatement) AND " +
+            `#data.#kind IN (${FORM_KIND_PLACEHOLDERS.join(", ")}) AND ` +
             "(#status = :pending OR (#status = :failed AND #data.#statusCode = :reject))",
           // The pending item carries the filed document; only the fields the list shows are read.
           ProjectionExpression: "requestId, #status, createdAt, #data.#kind, #data.#statusCode, #data.#rejections, #data.#clientId",
@@ -176,9 +181,7 @@ export async function listFilingsInProgress(userSub, clientId) {
             ":pending": "pending",
             ":failed": "failed",
             ":reject": "REJECT",
-            ":accounts": "accounts",
-            ":confirmationStatement": "confirmation-statement",
-            ":pscVerificationStatement": "psc-verification-statement",
+            ...FORM_KIND_VALUES,
           },
           ExclusiveStartKey: exclusiveStartKey,
         }),

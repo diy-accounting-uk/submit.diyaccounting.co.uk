@@ -7,6 +7,7 @@
 // request, not a grant: the server checks the sandbox condition itself.
 
 import { getHeader } from "./httpResponseHelper.js";
+import { COMPANIES_HOUSE_FORMS } from "../../web/public/lib/companies-house-forms.js";
 
 const PREVIEW_FEATURES_HEADER = "x-preview-features";
 
@@ -23,14 +24,15 @@ function companiesHouseGatewayIsTestService() {
 
 // The Companies House routes that file, or read and render, through the XML gateway. Every other
 // Companies House route goes through the REST filing API or its public data lookups.
-const XML_GATEWAY_PATH_PATTERN =
-  /^\/api\/v1\/companies-house\/(accounts|confirmation-statement|psc-verification-statement|company\/[^/]+\/filing-data)(\/|$)/;
+const XML_GATEWAY_PATH_PATTERN = new RegExp(
+  `^/api/v1/companies-house/(${[...Object.values(COMPANIES_HOUSE_FORMS).map((form) => form.routeSegment), "forms", "company/[^/]+/filing-data"].join("|")})(/|$)`,
+);
 
 /**
  * Whether a request for an activity unlisted in this environment may run. It asks for preview
  * features, and the service it reaches is a test service: for a Companies House path, the XML
- * gateway's test service (accounts, confirmation statement, PSC verification statement, filing
- * data) or the sandbox filing API (every other Companies House path), whatever the HMRC account;
+ * gateway's test service (each form in web/public/lib/companies-house-forms.js, the shared form
+ * poll, filing data) or the sandbox filing API (every other Companies House path), whatever the HMRC account;
  * for any other path, the synthetic HMRC account.
  * @param {object} event - The Lambda event
  * @param {string} requestPath - The request path

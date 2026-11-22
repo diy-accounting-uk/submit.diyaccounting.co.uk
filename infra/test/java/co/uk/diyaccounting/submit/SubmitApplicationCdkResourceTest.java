@@ -217,7 +217,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 32);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 34);
         // The two previews call no external API and share the /api/v1/companies-house alarm.
         assertGroupedStackHealthAlarm(
                 companiesHouseStackTemplate,
@@ -235,10 +235,12 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                         "companies-house-filed-document-get",
                         "companies-house-filing-data-post",
                         "companies-house-filing-history-get",
+                        "companies-house-form-status-get",
                         "companies-house-last-accounts-get",
                         "companies-house-office-address-get",
                         "companies-house-office-address-post",
                         "companies-house-officers-get",
+                        "companies-house-psc-cessation-post",
                         "companies-house-psc-get",
                         "companies-house-psc-verification-statement-get",
                         "companies-house-psc-verification-statement-post",
@@ -581,9 +583,11 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         // /api/v1/companies-house/company/{companyNumber}/reports/{report} sits on its own unshared path
         // and adds a primary route and an auto-HEAD route, for 242 + 2 = 244. POST
         // /api/v1/account/acquisition sits on its own unshared path and adds a primary route and an
-        // auto-HEAD route, for 244 + 2 = 246.
+        // auto-HEAD route, for 244 + 2 = 246. POST /api/v1/companies-house/psc-cessation and GET
+        // /api/v1/companies-house/forms/{kind}/{submissionNumber} each sit on their own unshared path and add a
+        // primary route and an auto-HEAD route, for 246 + 4 = 250.
         assertEquals(
-                246,
+                250,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

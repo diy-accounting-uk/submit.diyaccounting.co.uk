@@ -15,6 +15,9 @@ import {
   FIXTURE_COMPANY_AUTHENTICATION_CODE,
 } from "@app/http-simulator/scenarios/confirmation-statement.js";
 import { resetPscVerificationStatementFilings } from "@app/http-simulator/scenarios/psc-verification-statement.js";
+import { resetGatewayFormFilings } from "@app/http-simulator/scenarios/gateway-forms.js";
+import { buildFormSubmission } from "@app/services/companiesHouseXmlGateway.js";
+import { buildPscCessationBody } from "@app/services/companiesHousePscCessationXml.js";
 import { buildMicroEntityAccounts } from "@app/services/microEntityAccountsIxbrl.js";
 import { parseXmlDocument, firstElementText, allElements } from "@app/lib/xmlDom.js";
 
@@ -978,5 +981,73 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
       expect(firstElementText(parseXmlDocument(confirmationStatementPoll.text), "StatusCode")).toBe("PENDING");
       expect(firstElementText(parseXmlDocument(pscVerificationStatementPoll.text), "StatusCode")).toBe("PENDING");
     });
+  });
+});
+
+describe("http-simulator/routes/companies-house-xmlgw forms on the shared filing route", () => {
+  let app;
+
+  function cessationEnvelope(submissionNumber) {
+    return buildFormSubmission({
+      presenterId: SIMULATOR_PRESENTER_ID,
+      presenterCode: SIMULATOR_PRESENTER_CODE,
+      companyNumber: FIXTURE_COMPANY_NUMBER,
+      companyName: "EXAMPLE PSC LIMITED",
+      companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
+      packageReference: "0012",
+      formIdentifier: "PSCCessation",
+      submissionNumber,
+      dateSigned: "2026-11-20",
+      formXml: buildPscCessationBody({
+        kind: "individual-person-with-significant-control",
+        surname: "BRAMWELL",
+        cessationDate: "2026-11-01",
+        confirmationDate: "2026-11-03",
+      }),
+      gatewayTest: true,
+    });
+  }
+
+  const post = (xml, scenario) => {
+    const call = request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml");
+    return (scenario ? call.set("Gov-Test-Scenario", scenario) : call).send(xml);
+  };
+  const statusOf = async (submissionNumber) =>
+    firstElementText(parseXmlDocument((await post(statusEnvelope({ submissionNumber }))).text), "StatusCode");
+
+  beforeEach(() => {
+    resetAccountsFilings();
+    resetConfirmationStatementFilings();
+    resetPscVerificationStatementFilings();
+    resetGatewayFormFilings();
+    app = buildApp();
+  });
+
+  test("acknowledges a PSCCessation submission and polls it PENDING then ACCEPT", async () => {
+    const acknowledgement = parseXmlDocument((await post(cessationEnvelope("CES001"))).text);
+    expect(firstElementText(acknowledgement, "Qualifier")).toBe("acknowledgement");
+    expect(allElements(acknowledgement, "GovTalkErrors")).toHaveLength(0);
+
+    expect(await statusOf("CES001")).toBe("PENDING");
+    expect(await statusOf("CES001")).toBe("ACCEPT");
+  });
+
+  test("answers REJECT with a reason under the REJECT scenario", async () => {
+    await post(cessationEnvelope("CES002"), "REJECT");
+    await statusOf("CES002");
+    const final = parseXmlDocument((await post(statusEnvelope({ submissionNumber: "CES002" }))).text);
+    expect(firstElementText(final, "StatusCode")).toBe("REJECT");
+    expect(firstElementText(final, "RejectCode")).toBe("9998");
+  });
+
+  test("refuses a PSCCessation envelope whose Form does not hold the PSCCessation element", async () => {
+    const response = await post(cessationEnvelope("CES003").replace(/<PSCCessation[\s\S]*<\/PSCCessation>/, ""));
+    expect(allElements(parseXmlDocument(response.text), "GovTalkErrors")).toHaveLength(1);
+  });
+
+  test("refuses a submission number already used", async () => {
+    await post(cessationEnvelope("CES004"));
+    const response = await post(cessationEnvelope("CES004"));
+    expect(firstElementText(parseXmlDocument(response.text), "Text")).toContain("SubmissionNumber has already been used");
   });
 });

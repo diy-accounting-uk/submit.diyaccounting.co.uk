@@ -60,14 +60,14 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
   },
 }));
 
-const mockBuildPscVerificationStatementSubmission = vi.fn();
+const mockBuildFormSubmission = vi.fn();
 const mockAllocateSubmissionNumber = vi.fn();
 const mockResolvePresenterCredentials = vi.fn();
 const mockPostToGateway = vi.fn();
 const mockParseGatewayResponse = vi.fn();
 vi.mock("@app/services/companiesHouseXmlGateway.js", async (importOriginal) => ({
   gatewayRequestNotDelivered: (await importOriginal()).gatewayRequestNotDelivered,
-  buildPscVerificationStatementSubmission: (...args) => mockBuildPscVerificationStatementSubmission(...args),
+  buildFormSubmission: (...args) => mockBuildFormSubmission(...args),
   allocateSubmissionNumber: (...args) => mockAllocateSubmissionNumber(...args),
   postToGateway: (...args) => mockPostToGateway(...args),
   parseGatewayResponse: (...args) => mockParseGatewayResponse(...args),
@@ -128,7 +128,7 @@ describe("companiesHousePscVerificationStatementPost ingestHandler", () => {
     });
     mockAllocateSubmissionNumber.mockResolvedValue("00001A");
     mockResolvePresenterCredentials.mockResolvedValue({ presenterId: "presenter-id", presenterCode: "presenter-code" });
-    mockBuildPscVerificationStatementSubmission.mockReturnValue("<GovTalkMessage>submission</GovTalkMessage>");
+    mockBuildFormSubmission.mockReturnValue("<GovTalkMessage>submission</GovTalkMessage>");
     mockPostToGateway.mockResolvedValue({ ok: true, status: 200, data: "<GovTalkMessage>ack</GovTalkMessage>", headers: {}, duration: 1 });
     mockParseGatewayResponse.mockReturnValue({ errors: [], statuses: [], gatewayTimestamp: "2026-09-24T10:00:00Z", pollInterval: 1 });
   });
@@ -141,8 +141,8 @@ describe("companiesHousePscVerificationStatementPost ingestHandler", () => {
     expect(body.gatewayTimestamp).toBe("2026-09-24T10:00:00Z");
     expect(body.pollInterval).toBe(1);
 
-    expect(mockBuildPscVerificationStatementSubmission).toHaveBeenCalledTimes(1);
-    const [submissionArgs] = mockBuildPscVerificationStatementSubmission.mock.calls[0];
+    expect(mockBuildFormSubmission).toHaveBeenCalledTimes(1);
+    const [submissionArgs] = mockBuildFormSubmission.mock.calls[0];
     expect(submissionArgs).toMatchObject({
       presenterId: "presenter-id",
       presenterCode: "presenter-code",
@@ -151,11 +151,12 @@ describe("companiesHousePscVerificationStatementPost ingestHandler", () => {
       companyAuthenticationCode: "SIMCS01",
       packageReference: "0012",
       submissionNumber: "00001A",
+      formIdentifier: "PSCVerificationStatement",
       dateSigned: "2026-09-24",
       gatewayTest: false,
     });
-    expect(submissionArgs.statementXml).toContain("<Surname>EXAMPLE</Surname>");
-    expect(submissionArgs.statementXml).toContain("<CompaniesHousePersonalCode>CWMPS832223</CompaniesHousePersonalCode>");
+    expect(submissionArgs.formXml).toContain("<Surname>EXAMPLE</Surname>");
+    expect(submissionArgs.formXml).toContain("<CompaniesHousePersonalCode>CWMPS832223</CompaniesHousePersonalCode>");
 
     expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>submission</GovTalkMessage>", {});
   });
@@ -166,7 +167,7 @@ describe("companiesHousePscVerificationStatementPost ingestHandler", () => {
     );
     expect(response.statusCode).toBe(201);
     expect(mockResolvePresenterCredentials).not.toHaveBeenCalled();
-    expect(mockBuildPscVerificationStatementSubmission).toHaveBeenCalledWith(
+    expect(mockBuildFormSubmission).toHaveBeenCalledWith(
       expect.objectContaining({ presenterId: "OWN-PRES-7731", presenterCode: "OwnSecretCode#42" }),
     );
   });
@@ -221,7 +222,7 @@ describe("companiesHousePscVerificationStatementPost ingestHandler", () => {
   test("sets gatewayTest true when COMPANIES_HOUSE_GATEWAY_TEST is true", async () => {
     process.env.COMPANIES_HOUSE_GATEWAY_TEST = "true";
     await companiesHousePscVerificationStatementPostHandler(buildEvent());
-    const [submissionArgs] = mockBuildPscVerificationStatementSubmission.mock.calls[0];
+    const [submissionArgs] = mockBuildFormSubmission.mock.calls[0];
     expect(submissionArgs.gatewayTest).toBe(true);
   });
 

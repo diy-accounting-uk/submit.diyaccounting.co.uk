@@ -79,6 +79,7 @@ import {
   pollConfirmationStatement,
 } from "./lib/services/companies-house-confirmation-service.js";
 import { submitPscVerificationStatement, pollPscVerificationStatement } from "./lib/services/companies-house-psc-verification-service.js";
+import { submitCompaniesHouseForm, pollCompaniesHouseForm } from "./lib/services/companies-house-form-service.js";
 import { previewCtReturn, submitCtReturn, pollCtReturn } from "./lib/services/hmrc-ct-return-service.js";
 import { describeGovTalkError, describeGovTalkErrors } from "./lib/services/companies-house-error-messages.js";
 
@@ -653,6 +654,8 @@ if (typeof window !== "undefined") {
   // Companies House PSC verification statement service
   window.submitPscVerificationStatement = submitPscVerificationStatement;
   window.pollPscVerificationStatement = pollPscVerificationStatement;
+  window.submitCompaniesHouseForm = submitCompaniesHouseForm;
+  window.pollCompaniesHouseForm = pollCompaniesHouseForm;
 
   // Companies House GovTalkErrors plain-word map
   window.describeGovTalkError = describeGovTalkError;

@@ -341,6 +341,10 @@ const AUTHORITY_SOURCES = {
     title: "File your company's annual accounts with Companies House",
   },
   companyTaxReturns: { url: "https://www.gov.uk/company-tax-returns", title: "Company Tax Returns" },
+  pscCessationForm: {
+    url: "https://assets.publishing.service.gov.uk/media/69f30d970bb62e692c5d6e87/PSC07_v4.0-Final.pdf",
+    title: "PSC07 Notice of ceasing to be a person with significant control",
+  },
 };
 
 // A quotation GOV.UK publishes in Welsh as well: its Welsh is GOV.UK's own sentence.
@@ -385,6 +389,17 @@ function authorityNotes(activityId) {
         "Before filing your confirmation statement, you may need to verify your identity using GOV.UK One Login.",
       ),
       inEnglishOnly("confirmationService", "If your company has more than one director, you must have each director’s personal code."),
+    ],
+    "cease-psc": [
+      inEnglishOnly(
+        "pscCessationForm",
+        "This form may be authenticated by: Director, Secretary, Person authorised, Administrator, Administrative receiver, Receiver, Receiver manager, Charity commission receiver and manager, CIC manager, Judicial factor.",
+      ),
+      inEnglishOnly(
+        "pscCessationForm",
+        "You must have obtained confirmation from the individual person with significant control that their particulars are correct before sending this form to Companies House.",
+      ),
+      codeOnline,
     ],
     "file-micro-entity-accounts": accounts,
     "file-small-company-accounts": accounts,
@@ -842,6 +857,46 @@ async function renderPscs(container, companyNumber) {
       pscs.map((psc) => [psc.name, psc.naturesOfControl.map(slugText).join("; "), labels().formatCompanyDate(psc.notifiedOn)]),
     ),
   );
+  await appendCeaseLinks(container, companyNumber, pscs);
+  await appendFileThis(container, {
+    activityId: "cease-psc",
+    page: "ceasePsc.html",
+    label: window.siteText("ch.drill.cease-psc", "Tell Companies House a PSC has ceased"),
+    companyNumber,
+  });
+}
+
+// The register's kinds of PSC the cessation form names.
+const CEASABLE_PSC_KINDS = [
+  "individual-person-with-significant-control",
+  "corporate-entity-person-with-significant-control",
+  "legal-person-person-with-significant-control",
+];
+
+// For an account that holds the cessation form, a link for each current PSC it can name, which opens
+// the form with that PSC chosen.
+async function appendCeaseLinks(container, companyNumber, pscs) {
+  const current = pscs.filter((psc) => !psc.ceasedOn && CEASABLE_PSC_KINDS.includes(psc.kind));
+  if (current.length === 0 || !localStorage.getItem("cognitoIdToken")) return;
+  let access;
+  try {
+    access = activityAccess(await loadEntitlement(), "cease-psc");
+  } catch (error) {
+    console.warn("Could not read the catalogue for the PSC links:", error);
+    return;
+  }
+  if (!access.shown || !access.held) return;
+  const list = document.createElement("ul");
+  list.className = "cease-psc-links";
+  current.forEach((psc) => {
+    const item = document.createElement("li");
+    const link = document.createElement("a");
+    link.href = `${pagePrefix()}/companies-house/ceasePsc.html?${new URLSearchParams({ companyNumber, pscName: psc.name })}`;
+    link.textContent = window.siteText("ch.drill.cease-this-psc", "Tell Companies House {name} has ceased to be a PSC", { name: psc.name });
+    item.appendChild(link);
+    list.appendChild(item);
+  });
+  container.appendChild(list);
 }
 
 // The view a filing opens, where the drill-down has one: a set of accounts or a confirmation statement.

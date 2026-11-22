@@ -44,6 +44,15 @@ export function extractAndValidateParameters(event, errorMessages) {
 function mapPsc(item) {
   return {
     name: item.name,
+    // An individual's name in the parts a filing about the person names them by.
+    nameElements: item.name_elements
+      ? {
+          title: item.name_elements.title,
+          forename: item.name_elements.forename,
+          middleName: item.name_elements.middle_name,
+          surname: item.name_elements.surname,
+        }
+      : undefined,
     kind: item.kind,
     naturesOfControl: item.natures_of_control,
     notifiedOn: item.notified_on,

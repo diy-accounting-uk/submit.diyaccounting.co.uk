@@ -32,6 +32,15 @@ import {
   pollPscVerificationStatement,
   completedPscVerificationStatementStatuses,
 } from "../scenarios/psc-verification-statement.js";
+import { submitGatewayForm, pollGatewayForm, completedGatewayFormStatuses } from "../scenarios/gateway-forms.js";
+import { COMPANIES_HOUSE_FORMS } from "../../../web/public/lib/companies-house-forms.js";
+
+// The form identifiers of the forms filed through the shared filing route, each answered by gateway-forms.js.
+const GATEWAY_FORM_IDENTIFIERS = new Set(
+  Object.values(COMPANIES_HOUSE_FORMS)
+    .filter((form) => form.sharedPoll)
+    .map((form) => form.formIdentifier),
+);
 
 const GATEWAY_PATH = "/v1-0/xmlgw/Gateway";
 
@@ -300,9 +309,12 @@ function handleGetSubmissionStatus(document, { senderIdHash, authValueHash, scen
   const confirmationStatementOutcome = isNoTransactionFound(accountsOutcome)
     ? (pollConfirmationStatement({ senderIdHash, authValueHash, submissionNumber, scenario }) ?? accountsOutcome)
     : accountsOutcome;
-  const outcome = isNoTransactionFound(confirmationStatementOutcome)
+  const pscVerificationOutcome = isNoTransactionFound(confirmationStatementOutcome)
     ? (pollPscVerificationStatement({ senderIdHash, authValueHash, submissionNumber, scenario }) ?? confirmationStatementOutcome)
     : confirmationStatementOutcome;
+  const outcome = isNoTransactionFound(pscVerificationOutcome)
+    ? (pollGatewayForm({ senderIdHash, authValueHash, submissionNumber, scenario }) ?? pscVerificationOutcome)
+    : pscVerificationOutcome;
 
   if (outcome.errors) {
     return { errors: outcome.errors };
@@ -325,6 +337,7 @@ function handlePresenterPoll({ senderIdHash, authValueHash, scenario }) {
     ...completedAccountsStatuses(senderIdHash),
     ...completedConfirmationStatementStatuses(senderIdHash),
     ...completedPscVerificationStatementStatuses(senderIdHash),
+    ...completedGatewayFormStatuses(senderIdHash),
   ]);
   return { qualifier: "response", bodyXml: buildPresenterPollBodyXml(statuses) };
 }
@@ -413,6 +426,24 @@ function handlePscVerificationStatement(document, { senderIdHash, authValueHash,
   };
 }
 
+// A form filed through the shared filing route: its FormHeader, and a Form that holds the form's
+// own root element, named as its form identifier.
+function handleGatewayForm(document, formIdentifier, { senderIdHash, authValueHash, scenario }) {
+  const formHeader = firstElement(document, "FormHeader");
+  if (!formHeader) return schemaFailureFor("Body/FormSubmission/FormHeader");
+  const companyNumber = firstElementText(formHeader, "CompanyNumber");
+  const submissionNumber = firstElementText(formHeader, "SubmissionNumber");
+  if (!companyNumber) return schemaFailureFor("Body/FormSubmission/FormHeader/CompanyNumber");
+  if (!firstElementText(formHeader, "CompanyName")) return schemaFailureFor("Body/FormSubmission/FormHeader/CompanyName");
+  if (firstElementText(formHeader, "FormIdentifier") !== formIdentifier)
+    return schemaFailureFor("Body/FormSubmission/FormHeader/FormIdentifier");
+  if (!submissionNumber) return schemaFailureFor("Body/FormSubmission/FormHeader/SubmissionNumber");
+  if (!firstElement(document, formIdentifier)) return schemaFailureFor("Body/FormSubmission/Form");
+  const outcome = submitGatewayForm({ senderIdHash, authValueHash, formIdentifier, submissionNumber, companyNumber, scenario });
+  if (outcome.errors) return { errors: outcome.errors };
+  return { qualifier: "acknowledgement", gatewayTimestamp: outcome.gatewayTimestamp, pollInterval: outcome.pollInterval, bodyXml: "" };
+}
+
 function handleCompanyDataRequest(document, { senderIdHash, authValueHash, scenario }) {
   const companyDataRequest = firstElement(document, "CompanyDataRequest");
   if (!companyDataRequest) {
@@ -491,6 +522,8 @@ export function apiEndpoint(app) {
       outcome = handleConfirmationStatement(document, { ...credentials, scenario: govTestScenario });
     } else if (requestClass === "PSCVerificationStatement") {
       outcome = handlePscVerificationStatement(document, { ...credentials, scenario: govTestScenario });
+    } else if (GATEWAY_FORM_IDENTIFIERS.has(requestClass)) {
+      outcome = handleGatewayForm(document, requestClass, { ...credentials, scenario: govTestScenario });
     } else if (requestClass === "CompanyDataRequest") {
       outcome = handleCompanyDataRequest(document, { ...credentials, scenario: govTestScenario });
     } else if (requestClass === "PaymentPeriodsRequest") {

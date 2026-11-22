@@ -18495,3 +18495,169 @@ cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio ei
 [strings."itsa-final.status-production-this-uses-your-real-57175d"]
 hash = "57175db21370"
 cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+# == The PSC cessation page, the shared form page and the drill-down's PSC links: ids ch-cease-psc.*, ch.cease.*, ch.form.*, ch.drill.cease-* ==
+
+[strings."ch-cease-psc.title"]
+hash = "806f8929ff57"
+cy = '''Dweud wrth Dŷ’r Cwmnïau fod PRhA wedi peidio â bod yn un - DIY Accounting Submit'''
+
+[strings."ch-cease-psc.tell-companies-house-a-psc-has-720129"]
+hash = "7201294005ba"
+cy = '''Dweud wrth Dŷ’r Cwmnïau fod PRhA wedi peidio â bod yn un'''
+
+[strings."ch-cease-psc.give-notice-that-a-person-with-58bc29"]
+hash = "58bc29f855a1"
+cy = '''Rhoi hysbysiad nad yw person â rheolaeth arwyddocaol yn un mwyach'''
+
+[strings."ch-cease-psc.status-sandbox-this-runs-against-companies-3c285c"]
+hash = "3c285c86cda2"
+cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.'''
+
+[strings."ch-cease-psc.which-company-d9aae4"]
+hash = "d9aae49b05ee"
+cy = '''Pa gwmni?'''
+
+[strings."ch-cease-psc.company-number-8b121b"]
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
+
+[strings."ch-cease-psc.8-characters-for-example-00000001-do-090062"]
+hash = "090062b139be"
+cy = '''8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.'''
+
+[strings."ch-cease-psc.look-up-the-persons-with-significant-37cfbc"]
+hash = "37cfbc6a906e"
+cy = '''Chwilio am y personau â rheolaeth arwyddocaol'''
+
+[strings."ch-cease-psc.who-has-ceased-to-be-a-19f851"]
+hash = "19f8514bf11f"
+cy = '''Pwy sydd wedi peidio â bod yn PRhA?'''
+
+[strings."ch-cease-psc.company-3bc806"]
+hash = "3bc806ccac3b"
+cy = '''Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).'''
+
+[strings."ch-cease-psc.person-with-significant-control-f031ed"]
+hash = "f031ed8fea1c"
+cy = '''Person â rheolaeth arwyddocaol'''
+
+[strings."ch-cease-psc.the-persons-with-significant-control-on-a6b66b"]
+hash = "a6b66beaf0cb"
+cy = '''Y personau â rheolaeth arwyddocaol sydd ar y gofrestr nawr, fel y mae Tŷ’r Cwmnïau yn eu dangos.'''
+
+[strings."ch-cease-psc.the-register-lists-no-current-person-830525"]
+hash = "8305252f95f6"
+cy = '''Nid yw’r gofrestr yn rhestru unrhyw berson presennol â rheolaeth arwyddocaol y gall y ffurflen hon ei enwi.'''
+
+[strings."ch-cease-psc.date-ceased-to-be-a-psc-76e8ce"]
+hash = "76e8ce656d8c"
+cy = '''Dyddiad peidio â bod yn PRhA'''
+
+[strings."ch-cease-psc.date-of-confirmation-e98c6d"]
+hash = "e98c6d770c70"
+cy = '''Dyddiad cadarnhau'''
+
+[strings."ch-cease-psc.the-date-the-company-had-confirmation-1e2e44"]
+hash = "1e2e4418e183"
+cy = '''Y dyddiad y cafodd y cwmni gadarnhad bod y person wedi peidio â bod yn PRhA, ac o’r dyddiad y peidiodd. Os yw’r ddau ddyddiad yn wahanol, rhowch yr un diweddaraf.'''
+
+[strings."ch-cease-psc.company-authentication-code-56d0e6"]
+hash = "56d0e640f9f0"
+cy = '''Cod dilysu’r cwmni'''
+
+[strings."ch-cease-psc.the-6-to-8-character-code-48646a"]
+hash = "48646a151fe7"
+cy = '''Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei ddefnyddio.'''
+
+[strings."ch-cease-psc.continue-31fbef"]
+hash = "31fbef162594"
+cy = '''Parhau'''
+
+[strings."ch-cease-psc.review-the-filing-769b96"]
+hash = "769b96283d75"
+cy = '''Adolygu’r ffeilio'''
+
+[strings."ch-cease-psc.gov-test-scenario-dab532"]
+hash = "dab5326bb25a"
+cy = '''Gov-Test-Scenario'''
+
+[strings."ch-cease-psc.file-with-companies-house-327c43"]
+hash = "327c43b89de4"
+cy = '''Ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-cease-psc.change-c0bf75"]
+hash = "c0bf75bd78bf"
+cy = '''Newid'''
+
+[strings."ch-cease-psc.filing-result-0ecbf7"]
+hash = "0ecbf7d7af61"
+cy = '''Canlyniad y ffeilio'''
+
+[strings."ch-cease-psc.start-a-new-filing-0a9f24"]
+hash = "0a9f240ab551"
+cy = '''Dechrau ffeilio newydd'''
+
+[strings."ch-cease-psc.sign-in-to-file-with-companies-5a7303"]
+hash = "5a7303865fa5"
+cy = '''Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-cease-psc.sign-in-to-look-up-your-eb0bf2"]
+hash = "eb0bf28eeabf"
+cy = '''Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif.'''
+
+[strings."ch.cease.kind-individual"]
+hash = "010dd7b94f5f"
+cy = '''Unigolyn'''
+
+[strings."ch.cease.kind-entity"]
+hash = "40dc53b8aab1"
+cy = '''Endid cyfreithiol neu berson cofrestradwy arall'''
+
+[strings."ch.cease.lookup-failed"]
+hash = "93d03cb73407"
+cy = '''Methu darllen personau â rheolaeth arwyddocaol y cwmni hwn gan Dŷ’r Cwmnïau.'''
+
+[strings."ch.cease.choose-psc"]
+hash = "3989d8bad8a0"
+cy = '''Dewiswch y person â rheolaeth arwyddocaol sydd wedi peidio â bod yn un.'''
+
+[strings."ch.cease.confirmation-before"]
+hash = "66971f64658a"
+cy = '''Ni all y dyddiad cadarnhau fod cyn y dyddiad y peidiodd y person â bod yn PRhA.'''
+
+[strings."ch.cease.review-company"]
+hash = "de4743c87973"
+cy = '''Cwmni'''
+
+[strings."ch.cease.review-psc"]
+hash = "f031ed8fea1c"
+cy = '''Person â rheolaeth arwyddocaol'''
+
+[strings."ch.cease.review-ceased"]
+hash = "76e8ce656d8c"
+cy = '''Dyddiad peidio â bod yn PRhA'''
+
+[strings."ch.cease.review-confirmed"]
+hash = "e98c6d770c70"
+cy = '''Dyddiad cadarnhau'''
+
+[strings."ch.drill.cease-psc"]
+hash = "7201294005ba"
+cy = '''Dweud wrth Dŷ’r Cwmnïau fod PRhA wedi peidio â bod yn un'''
+
+[strings."ch.drill.cease-this-psc"]
+hash = "3e0855421cac"
+cy = '''Dweud wrth Dŷ’r Cwmnïau fod {name} wedi peidio â bod yn PRhA'''
+
+[strings."ch.form.sent"]
+hash = "4cb9fc08493f"
+cy = '''Derbyniodd y porth gyflwyniad {number}. Wrthi’n aros am Dŷ’r Cwmnïau...'''
+
+[strings."ch.form.outcome"]
+hash = "8b29ae1ed641"
+cy = '''Statws cyflwyniad {number}: {status}.'''
+
+[strings."receipts.kind-psc-cessation"]
+hash = "377258c62a57"
+cy = '''Peidio â bod yn PRhA'''
