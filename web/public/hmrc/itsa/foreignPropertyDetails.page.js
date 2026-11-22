@@ -31,9 +31,13 @@ function el(tag, className, text) {
 }
 
 function initializePage() {
-  if (sessionStorage.getItem("hmrcAccount") === "synthetic") {
-    document.getElementById("syntheticIndicator")?.classList.add("visible");
-  }
+  window.showHmrcStatusForService(
+    siteText(
+      "itsa.status-sandbox-text",
+      "This runs against HMRC's sandbox. Nothing you send reaches your real HMRC record. Production waits on HMRC's recognition of our software after its 2027 update.",
+    ),
+  );
+  window.showSyntheticIndicatorForAccount();
   const devSection = document.getElementById("developerSection");
   function updateDeveloperSectionVisibility() {
     const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
@@ -241,7 +245,7 @@ async function ensureAuthorizedThen(request) {
     showLoading();
     showStatus(siteText("widget.hmrc-auth-starting", "Initiating HMRC authentication..."), "info");
     const state = generateRandomState();
-    const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+    const hmrcAccount = await window.readHmrcAccount();
     sessionStorage.setItem("oauth_state", state);
     sessionStorage.setItem(PENDING_KEY, JSON.stringify(request));
     sessionStorage.setItem("currentActivity", `${location.pathname}`);

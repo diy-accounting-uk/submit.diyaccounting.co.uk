@@ -74,7 +74,6 @@ function cancelRequest() {
   sessionStorage.removeItem("pendingSelfEmploymentPeriodAmendRequest");
   window.hmrcScopeCheck.clearHmrcToken();
   sessionStorage.removeItem("oauth_state");
-  sessionStorage.removeItem("hmrcAccount");
   sessionStorage.removeItem("currentActivity");
 
   showSearchCriteria();
@@ -83,14 +82,13 @@ function cancelRequest() {
 }
 
 function initializePage() {
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
-
-  if (hmrcAccount === "synthetic") {
-    const syntheticIndicator = document.getElementById("syntheticIndicator");
-    if (syntheticIndicator) {
-      syntheticIndicator.classList.add("visible");
-    }
-  }
+  window.showHmrcStatusForService(
+    siteText(
+      "itsa.status-sandbox-text",
+      "This runs against HMRC's sandbox. Nothing you send reaches your real HMRC record. Production waits on HMRC's recognition of our software after its 2027 update.",
+    ),
+  );
+  window.showSyntheticIndicatorForAccount();
 
   const devSection = document.getElementById("developerSection");
 
@@ -126,7 +124,7 @@ async function fetchCurrentTotal(nino, businessId, taxYear, hmrcGrantId) {
     "Content-Type": "application/json",
     ...govClientHeaders,
   };
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+  const hmrcAccount = await window.readHmrcAccount();
   if (hmrcAccount) {
     requestHeaders["hmrcAccount"] = hmrcAccount;
   }
@@ -226,7 +224,7 @@ async function handleLoadCurrentTotal() {
       sessionStorage.setItem("currentActivity", `${location.pathname}`);
 
       const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "read:self-assessment";
-      const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+      const hmrcAccount = await window.readHmrcAccount();
       const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
 
       showStatus(
@@ -294,7 +292,7 @@ async function amendPeriod(amendData, testScenario, runFraudPreventionHeaderVali
   };
   if (testScenario) requestHeaders["Gov-Test-Scenario"] = testScenario;
 
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+  const hmrcAccount = await window.readHmrcAccount();
   if (hmrcAccount) {
     requestHeaders["hmrcAccount"] = hmrcAccount;
   }
@@ -364,7 +362,6 @@ async function continuePeriodAmend() {
     sessionStorage.removeItem("pendingSelfEmploymentPeriodAmendRequest");
     window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("oauth_state");
-    sessionStorage.removeItem("hmrcAccount");
     sessionStorage.removeItem("currentActivity");
   } finally {
     hideLoading();
@@ -414,7 +411,7 @@ async function handleFormSubmission(event) {
       const state = generateRandomState();
       const requestData = { amendData, testScenario, runFraudPreventionHeaderValidation };
 
-      const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+      const hmrcAccount = await window.readHmrcAccount();
       const currentActivity = `${location.pathname}`;
 
       sessionStorage.setItem("oauth_state", state);

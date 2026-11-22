@@ -6475,10 +6475,6 @@ cy = '''Troi Treth yn Ddigidol ar gyfer Treth Incwm'''
 hash = "fc9ee3e3ba79"
 cy = '''Diweddariadau chwarterol ar gyfer pobl hunangyflogedig a landlordiaid'''
 
-[strings."itsa-dashboard.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
-
 [strings."itsa-dashboard.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
 cy = '''Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF'''
@@ -6679,10 +6675,6 @@ cy = '''Manylion y busnes'''
 hash = "22ccb869a0c3"
 cy = '''Adalwch eich rhestr o fusnesau hunangyflogaeth ac eiddo gan CThEF'''
 
-[strings."itsa-business-details.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
-
 [strings."itsa-business-details.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
 cy = '''Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF'''
@@ -6750,10 +6742,6 @@ cy = '''Rhwymedigaethau Treth Incwm'''
 [strings."itsa-obligations.retrieve-your-quarterly-update-obligations-from-a11c74"]
 hash = "a11c74ff7dde"
 cy = '''Adalwch eich rhwymedigaethau diweddaru chwarterol gan CThEF'''
-
-[strings."itsa-obligations.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
 
 [strings."itsa-obligations.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
@@ -6975,10 +6963,6 @@ cy = '''Cyflwyno diweddariad chwarterol'''
 hash = "c0ed9074b8eb"
 cy = '''Creu crynodeb o gyfnod hunangyflogaeth gyda CThEF'''
 
-[strings."itsa-se-period.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
-
 [strings."itsa-se-period.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
 cy = '''Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF'''
@@ -7123,10 +7107,6 @@ cy = '''Crynodebau o gyfnodau'''
 hash = "053eac976e2d"
 cy = '''Rhestru’r diweddariadau chwarterol a gyflwynwyd ar gyfer busnes hunangyflogaeth'''
 
-[strings."itsa-se-periods.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
-
 [strings."itsa-se-periods.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
 cy = '''Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF'''
@@ -7210,10 +7190,6 @@ cy = '''Bwrw golwg dros grynodeb o gyfnod'''
 [strings."itsa-se-view.retrieve-one-filed-quarterly-update-by-58e60c"]
 hash = "58e60c6d9ba9"
 cy = '''Adalw un diweddariad chwarterol a gyflwynwyd yn ôl blwyddyn dreth ac ID y cyfnod'''
-
-[strings."itsa-se-view.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
 
 [strings."itsa-se-view.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
@@ -7302,10 +7278,6 @@ cy = '''Diwygio crynodeb o gyfnod'''
 [strings."itsa-se-amend.correct-the-income-and-expenses-on-2d6bdc"]
 hash = "2d6bdc7a4163"
 cy = '''Cywiro’r incwm a’r treuliau ar ddiweddariad chwarterol sydd wedi’i gyflwyno i CThEF yn barod'''
-
-[strings."itsa-se-amend.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
 
 [strings."itsa-se-amend.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
@@ -7438,10 +7410,6 @@ cy = '''Cyflwyniad blynyddol'''
 [strings."itsa-annual.load-and-save-the-year-s-bb1755"]
 hash = "bb17559e69eb"
 cy = '''Llwytho a chadw addasiadau, lwfansau a manylion anariannol y flwyddyn'''
-
-[strings."itsa-annual.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
 
 [strings."itsa-annual.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
@@ -8019,10 +7987,6 @@ cy = '''Cyfrifiad treth'''
 hash = "a7011ce795c2"
 cy = '''Gweld beth sy’n ddyledus ar gyfer y flwyddyn dreth, yn seiliedig ar yr hyn rydych wedi’i gyflwyno hyd yma'''
 
-[strings."itsa-calculation.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
-
 [strings."itsa-calculation.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
 cy = '''Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF'''
@@ -8122,10 +8086,6 @@ cy = '''Cyflwyno diweddariad chwarterol eiddo yn y DU'''
 [strings."itsa-uk-period.create-a-uk-property-period-summary-4e49a8"]
 hash = "4e49a8f4a066"
 cy = '''Creu crynodeb o gyfnod eiddo yn y DU gyda CThEF'''
-
-[strings."itsa-uk-period.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
 
 [strings."itsa-uk-period.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
@@ -8263,10 +8223,6 @@ cy = '''Crynodebau o gyfnodau eiddo yn y DU'''
 hash = "a34e9c9c0880"
 cy = '''Rhestru’r diweddariadau chwarterol a gyflwynwyd ar gyfer busnes eiddo yn y DU'''
 
-[strings."itsa-uk-periods.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
-
 [strings."itsa-uk-periods.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
 cy = '''Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF'''
@@ -8354,10 +8310,6 @@ cy = '''Bwrw golwg dros grynodeb o gyfnod eiddo yn y DU'''
 [strings."itsa-uk-view.retrieve-one-filed-quarterly-update-by-f5e4b5"]
 hash = "f5e4b5c01d9d"
 cy = '''Adalw un diweddariad chwarterol a gyflwynwyd yn ôl blwyddyn dreth ac ID y cyflwyniad'''
-
-[strings."itsa-uk-view.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
 
 [strings."itsa-uk-view.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
@@ -8450,10 +8402,6 @@ cy = '''Diwygio crynodeb o gyfnod eiddo yn y DU'''
 [strings."itsa-uk-amend.correct-the-income-and-expenses-on-2d6bdc"]
 hash = "2d6bdc7a4163"
 cy = '''Cywiro’r incwm a’r treuliau ar ddiweddariad chwarterol sydd wedi’i gyflwyno i CThEF yn barod'''
-
-[strings."itsa-uk-amend.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
 
 [strings."itsa-uk-amend.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
@@ -8570,10 +8518,6 @@ cy = '''Cyflwyniad blynyddol eiddo yn y DU'''
 [strings."itsa-uk-annual.load-and-save-the-year-s-4cbc41"]
 hash = "4cbc41ddf413"
 cy = '''Llwytho a chadw addasiadau a lwfansau eiddo’r flwyddyn'''
-
-[strings."itsa-uk-annual.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
 
 [strings."itsa-uk-annual.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
@@ -8726,10 +8670,6 @@ cy = '''Addasiadau diwedd blwyddyn eiddo yn y DU'''
 [strings."itsa-uk-adjustments.request-the-year-end-summary-review-9bc305"]
 hash = "9bc30562d299"
 cy = '''Gofyn am y crynodeb diwedd blwyddyn, adolygu’r ffigurau a gyfrifodd CThEF, a’u haddasu os oes angen'''
-
-[strings."itsa-uk-adjustments.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
 
 [strings."itsa-uk-adjustments.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
@@ -8959,10 +8899,6 @@ cy = '''Manylion eiddo tramor'''
 hash = "c52f655579dc"
 cy = '''Ychwanegu, ailenwi a dod â’r eiddo rydych yn eu gosod dramor i ben'''
 
-[strings."itsa-fp-details.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
-
 [strings."itsa-fp-details.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
 cy = '''Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF'''
@@ -9099,10 +9035,6 @@ cy = '''Cyflwyno diweddariad chwarterol eiddo tramor'''
 hash = "7782c4e1a54b"
 cy = '''Anfon incwm a threuliau busnes eiddo tramor i CThEF'''
 
-[strings."itsa-fp-period.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
-
 [strings."itsa-fp-period.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
 cy = '''Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF'''
@@ -9231,10 +9163,6 @@ cy = '''Crynodebau o gyfnodau eiddo tramor'''
 hash = "9c17ddfecc27"
 cy = '''Rhestru’r diweddariadau chwarterol a gyflwynwyd ar gyfer busnes eiddo tramor'''
 
-[strings."itsa-fp-periods.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
-
 [strings."itsa-fp-periods.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
 cy = '''Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF'''
@@ -9322,10 +9250,6 @@ cy = '''Bwrw golwg dros grynodeb o gyfnod eiddo tramor'''
 [strings."itsa-fp-view.retrieve-one-filed-quarterly-update-by-f5e4b5"]
 hash = "f5e4b5c01d9d"
 cy = '''Adalw un diweddariad chwarterol a gyflwynwyd yn ôl blwyddyn dreth ac ID y cyflwyniad'''
-
-[strings."itsa-fp-view.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
 
 [strings."itsa-fp-view.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
@@ -9418,10 +9342,6 @@ cy = '''Diwygio crynodeb o gyfnod eiddo tramor'''
 [strings."itsa-fp-amend.correct-the-income-and-expenses-on-2d6bdc"]
 hash = "2d6bdc7a4163"
 cy = '''Cywiro’r incwm a’r treuliau ar ddiweddariad chwarterol sydd wedi’i gyflwyno i CThEF yn barod'''
-
-[strings."itsa-fp-amend.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
 
 [strings."itsa-fp-amend.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
@@ -9527,10 +9447,6 @@ cy = '''Cyflwyniad blynyddol eiddo tramor'''
 hash = "4ca150b915b7"
 cy = '''Llwytho a chadw addasiadau a lwfansau eiddo tramor y flwyddyn'''
 
-[strings."itsa-fp-annual.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
-
 [strings."itsa-fp-annual.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
 cy = '''Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF'''
@@ -9614,10 +9530,6 @@ cy = '''Addasiadau diwedd blwyddyn eiddo tramor'''
 [strings."itsa-fp-adjustments.request-the-year-end-summary-review-9bc305"]
 hash = "9bc30562d299"
 cy = '''Gofyn am y crynodeb diwedd blwyddyn, adolygu’r ffigurau a gyfrifodd CThEF, a’u haddasu os oes angen'''
-
-[strings."itsa-fp-adjustments.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
 
 [strings."itsa-fp-adjustments.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
@@ -10007,10 +9919,6 @@ cy = '''Addasiadau diwedd blwyddyn'''
 hash = "9bc30562d299"
 cy = '''Gofyn am y crynodeb diwedd blwyddyn, adolygu’r ffigurau a gyfrifodd CThEF, a’u haddasu os oes angen'''
 
-[strings."itsa-adjustments.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
-
 [strings."itsa-adjustments.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
 cy = '''Modd synthetig: mae’r galwadau’n mynd i API amgylchedd prawf (sandbox) CThEF'''
@@ -10130,10 +10038,6 @@ cy = '''Addasiadau i’r rhwymedigaeth dreth'''
 [strings."itsa-tla.tell-hmrc-what-a-carry-back-ee4643"]
 hash = "ee46437e49aa"
 cy = '''Dweud wrth CThEF beth mae hawliad i gario’n ôl yn ei arbed, fel bod rhwymedigaeth y flwyddyn hon yn cael ei chredydu'''
-
-[strings."itsa-tla.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
 
 [strings."itsa-tla.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
@@ -10262,10 +10166,6 @@ cy = '''Colledion a hawliadau'''
 [strings."itsa-losses.tell-hmrc-how-a-loss-carries-531604"]
 hash = "5316042c6d1d"
 cy = '''Dweud wrth CThEF sut mae colled yn cael ei chario ymlaen, i’r ochr neu’n ôl ar ôl i’r flwyddyn dreth ddod i ben'''
-
-[strings."itsa-losses.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
 
 [strings."itsa-losses.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
@@ -10450,10 +10350,6 @@ cy = '''Datganiad terfynol'''
 [strings."itsa-final.confirm-the-calculation-and-file-the-4dcff6"]
 hash = "4dcff6791b68"
 cy = '''Cadarnhau’r cyfrifiad a chyflwyno’r Ffurflen Dreth i CThEF'''
-
-[strings."itsa-final.status-sandbox-this-runs-against-hmrc-e3e7dd"]
-hash = "e3e7dd794b5e"
-cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
 
 [strings."itsa-final.synthetic-mode-calls-go-to-hmrc-efa44d"]
 hash = "efa44dee9611"
@@ -18489,3 +18385,113 @@ cy = '''Dangos derbynebau ar gyfer'''
 [strings."receipts.my-own-filings-74b342"]
 hash = "74b342ff3ed3"
 cy = '''Fy ffeiliadau fy hun'''
+
+# The Income Tax pages' status line: shipped as production, swapped for the sandbox sentence while
+# their HMRC calls go to HMRC's test service.
+[strings."itsa.status-sandbox-text"]
+hash = "54ce889c8f0a"
+cy = '''Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei ddiweddariad yn 2027.'''
+
+[strings."itsa-dashboard.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-business-details.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-obligations.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-se-period.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-se-periods.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-se-view.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-se-amend.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-annual.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-calculation.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-uk-period.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-uk-periods.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-uk-view.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-uk-amend.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-uk-annual.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-uk-adjustments.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-fp-details.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-fp-period.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-fp-periods.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-fp-view.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-fp-amend.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-fp-annual.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-fp-adjustments.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-adjustments.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-tla.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-losses.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''
+
+[strings."itsa-final.status-production-this-uses-your-real-57175d"]
+hash = "57175db21370"
+cy = '''<strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.'''

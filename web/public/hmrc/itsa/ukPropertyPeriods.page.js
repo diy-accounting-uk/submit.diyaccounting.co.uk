@@ -61,7 +61,6 @@ function cancelRequest() {
   sessionStorage.removeItem("pendingUkPropertyPeriodsRequest");
   window.hmrcScopeCheck.clearHmrcToken();
   sessionStorage.removeItem("oauth_state");
-  sessionStorage.removeItem("hmrcAccount");
   sessionStorage.removeItem("currentActivity");
 
   showSearchCriteria();
@@ -70,14 +69,13 @@ function cancelRequest() {
 }
 
 function initializePage() {
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
-
-  if (hmrcAccount === "synthetic") {
-    const syntheticIndicator = document.getElementById("syntheticIndicator");
-    if (syntheticIndicator) {
-      syntheticIndicator.classList.add("visible");
-    }
-  }
+  window.showHmrcStatusForService(
+    siteText(
+      "itsa.status-sandbox-text",
+      "This runs against HMRC's sandbox. Nothing you send reaches your real HMRC record. Production waits on HMRC's recognition of our software after its 2027 update.",
+    ),
+  );
+  window.showSyntheticIndicatorForAccount();
 
   const devSection = document.getElementById("developerSection");
 
@@ -112,7 +110,7 @@ async function fetchPeriods(nino, businessId, taxYear, testScenario, runFraudPre
     ...govClientHeaders,
   };
 
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+  const hmrcAccount = await window.readHmrcAccount();
   if (hmrcAccount) {
     requestHeaders["hmrcAccount"] = hmrcAccount;
   }
@@ -147,7 +145,7 @@ async function fetchPeriods(nino, businessId, taxYear, testScenario, runFraudPre
 // (see ukPropertyAdjustments.html's retrieveSummary). A synthetic run with no explicit
 // test scenario needs a named success scenario; a live account must never carry one.
 async function fetchCurrentTotal(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, hmrcGrantId) {
-  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+  const hmrcAccount = await window.readHmrcAccount();
   const effectiveTestScenario = window.resolveSyntheticTestScenario(testScenario, hmrcAccount, "UK_PROPERTY_FULL_EXPENSES");
   const params = new URLSearchParams({ nino, businessId, taxYear });
   if (effectiveTestScenario) params.append("Gov-Test-Scenario", effectiveTestScenario);
@@ -239,7 +237,6 @@ async function continuePeriodsRetrieval() {
     sessionStorage.removeItem("pendingUkPropertyPeriodsRequest");
     window.hmrcScopeCheck.clearHmrcToken();
     sessionStorage.removeItem("oauth_state");
-    sessionStorage.removeItem("hmrcAccount");
     sessionStorage.removeItem("currentActivity");
   } finally {
     hideLoading();
@@ -272,7 +269,7 @@ async function handleFormSubmission(event) {
       const state = generateRandomState();
       const requestData = { nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation };
 
-      const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+      const hmrcAccount = await window.readHmrcAccount();
       const currentActivity = `${location.pathname}`;
 
       sessionStorage.setItem("oauth_state", state);

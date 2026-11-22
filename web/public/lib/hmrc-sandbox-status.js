@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // web/public/lib/hmrc-sandbox-status.js
-// Each VAT page ships with a hidden production status line. showHmrcStatusForService swaps it for the
+// Each VAT and Income Tax page ships with a hidden production status line. showHmrcStatusForService swaps it for the
 // sandbox line when the page's HMRC calls go to HMRC's test service: always for a synthetic account,
 // which uses HMRC_SANDBOX_BASE_URI, and for any account where HMRC_BASE_URI is the test API.
 
@@ -67,6 +67,20 @@
     showHmrcStatusForService(drawn.sentence, ...drawn.trailing);
   });
 
+  // The synthetic indicator and the test data link show for a synthetic account, once the bundle read
+  // has chosen it, and follow a later decision of the account.
+  let followsDecisions = false;
+  async function showSyntheticIndicatorForAccount() {
+    if (!followsDecisions) {
+      followsDecisions = true;
+      window.addEventListener("hmrc-account-decided", showSyntheticIndicatorForAccount);
+    }
+    const synthetic = (await window.readHmrcAccount()) === "synthetic";
+    document.getElementById("syntheticIndicator")?.classList.toggle("visible", synthetic);
+    document.getElementById("testDataLink")?.classList.toggle("visible", synthetic);
+  }
+
   window.showHmrcSandboxStatus = showHmrcSandboxStatus;
+  window.showSyntheticIndicatorForAccount = showSyntheticIndicatorForAccount;
   window.showHmrcStatusForService = showHmrcStatusForService;
 })();

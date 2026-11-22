@@ -34,10 +34,14 @@
     </header>
 
     <main id="mainContent">
-      <p data-i18n="itsa-uk-amend.status-sandbox-this-runs-against-hmrc-e3e7dd" class="hint" data-feature-status="sandbox">
-        <strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hyn yn rhedeg yn erbyn amgylchedd prawf (sandbox) CThEF. Nid yw dim byd a
-        anfonwch yn cyrraedd eich cofnod CThEF go iawn. Mae’r gwasanaeth byw (production) yn aros i CThEF gydnabod ein meddalwedd ar ôl ei
-        ddiweddariad yn 2027.
+      <p
+        data-i18n="itsa-uk-amend.status-production-this-uses-your-real-57175d"
+        class="hint"
+        data-feature-status="production"
+        role="status"
+        hidden
+      >
+        <strong>Statws: cynhyrchu (production).</strong> Mae hyn yn defnyddio eich cofnod CThEF go iawn.
       </p>
       <div id="syntheticIndicator" class="synthetic-indicator">
         <span data-i18n="itsa-uk-amend.synthetic-mode-calls-go-to-hmrc-efa44d"
@@ -244,6 +248,7 @@
     <script src="../../../widgets/signed-out-panel.js"></script>
     <script src="../../../widgets/pass-redeemer.js"></script>
     <script src="../../../widgets/submission-cost.js"></script>
+    <script src="../../../lib/hmrc-sandbox-status.js"></script>
     <script src="../../../hmrc/itsa/ukPropertyPeriodAmend.page.js"></script>
   </body>
 </html>
