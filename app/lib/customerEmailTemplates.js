@@ -66,7 +66,7 @@ const WELSH_RECEIPT_FIELD_LABELS = {
   processingDate: "Dyddiad prosesu",
   paymentIndicator: "Dangosydd talu",
   chargeRefNumber: "Cyfeirnod y tâl",
-  submissionNumber: "Rhif cyflwyno",
+  submissionNumber: "Rhif cyflwyniad",
   correlationId: "ID cydberthynas",
   irmark: "IRmark",
   calculationId: "ID cyfrifiad",
@@ -78,6 +78,9 @@ const WELSH_RECEIPT_FIELD_LABELS = {
 // The explanation under a VAT receipt in Welsh, in HMRC's Welsh terms; HMRC's data stays as returned.
 const WELSH_VAT_RECEIPT_EXPLANATION =
   "Mae CThEF yn rhoi’r dderbynneb hon pan fydd yn derbyn Ffurflen TAW. Rhif bwndel y ffurflen yw cyfeirnod CThEF ar gyfer eich Ffurflen TAW. Cadwch ef: bydd CThEF yn gofyn amdano os byddwch yn holi am y Ffurflen.";
+// Why the customer gets a Welsh email: the same sentence under every Welsh email to the account holder.
+const WELSH_REASON = "Rydych yn cael yr e-bost hwn oherwydd gweithred ar eich cyfrif DIY Accounting Submit.";
+
 const WELSH_PAYMENT_INDICATORS = { DD: "Ystyr DD yw Debyd Uniongyrchol.", BANK: "Ystyr BANK yw taliad drwy’ch banc." };
 
 const RECEIPT_FIELDS = [
@@ -245,12 +248,31 @@ function durationWords(isoDuration, welsh) {
   return parts.filter(Boolean).join(" ");
 }
 
+// Welsh soft mutation of a phrase's first word, as it takes after "gallwch": cyflwyno becomes
+// gyflwyno, gwneud becomes wneud. A word that starts with a vowel or another letter is unchanged.
+const SOFT_MUTATIONS = [
+  ["ll", "l"],
+  ["rh", "r"],
+  ["c", "g"],
+  ["p", "b"],
+  ["t", "d"],
+  ["g", ""],
+  ["b", "f"],
+  ["d", "dd"],
+  ["m", "f"],
+];
+
+export function softMutation(phrase) {
+  const mutation = SOFT_MUTATIONS.find(([radical]) => phrase.startsWith(radical));
+  return mutation ? mutation[1] + phrase.slice(mutation[0].length) : phrase;
+}
+
 // What one bundle of a pass gives, in a sentence: its summary, its tokens and how long it lasts from redemption.
 function passBundleSentence({ name, summary, tokensGranted, timeout }, welsh) {
   const lasts = durationWords(timeout, welsh);
   if (welsh) {
-    const parts = [summary ? `Mae’n rhoi ${name}: gallwch ${summary}.` : `Mae’n rhoi ${name}.`];
-    if (tokensGranted === "unlimited") parts.push("Nid oes terfyn ar gredydau (tokens).");
+    const parts = [summary ? `Mae’n rhoi ${name}: gallwch ${softMutation(summary)}.` : `Mae’n rhoi ${name}.`];
+    if (tokensGranted === "unlimited") parts.push("Nid oes terfyn ar gredyd (tokens).");
     else if (typeof tokensGranted === "number") parts.push(`Mae’n dod gyda ${tokensGranted} credyd (tokens).`);
     parts.push(lasts ? `Mae’n para ${lasts} o’r adeg y byddwch yn ei ddefnyddio.` : "Nid oes ganddo ddyddiad gorffen.");
     return parts.join(" ");
@@ -380,6 +402,27 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
 
   switch (kind) {
     case "subscription-started":
+      if (data.language === "cy") {
+        return {
+          ...renderEmail({
+            subject: `Eich tanysgrifiad: ${name}`,
+            preheader: `Mae eich tanysgrifiad ${name} yn weithredol.`,
+            heading: `Mae eich tanysgrifiad ${name} yn weithredol`,
+            intro: "Diolch am danysgrifio. Gallwch ddefnyddio’r Bundle nawr.",
+            rows: [
+              { label: "Bundle", value: name },
+              { label: "Yn adnewyddu ar", value: data.currentPeriodEnd ? formatDate(data.currentPeriodEnd, "cy-GB") : "Heb ei osod" },
+            ],
+            actions: [
+              { href: siteUrl(baseUrl, "cy/index.html"), text: "Agor y wefan" },
+              { href: siteUrl(baseUrl, "cy/bundles.html"), text: "Rheoli bilio" },
+            ],
+            reason: WELSH_REASON,
+            language: "cy",
+          }),
+          passQr: null,
+        };
+      }
       return {
         ...renderEmail({
           subject: `Your ${name} subscription`,
@@ -410,7 +453,7 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
             rows: receiptRows(receipt, "cy"),
             actions: [{ href: siteUrl(baseUrl, "cy/hmrc/receipt/receipts.html"), text: "Gweld eich derbynebau" }],
             notes: receiptNotes(receipt, "cy"),
-            reason: "Rydych yn cael yr e-bost hwn oherwydd gweithred ar eich cyfrif DIY Accounting Submit.",
+            reason: WELSH_REASON,
             language: "cy",
           }),
           passQr: null,
@@ -432,9 +475,9 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
       };
     }
     case "pass-generated": {
-      const passUrl = `${siteUrl(baseUrl, "pass.html")}?pass=${encodeURIComponent(data.code)}`;
-      const physical = data.passTypeId === PHYSICAL_PASS_TYPE_ID;
       const welsh = data.language === "cy";
+      const passUrl = `${siteUrl(baseUrl, welsh ? "cy/pass.html" : "pass.html")}?pass=${encodeURIComponent(data.code)}`;
+      const physical = data.passTypeId === PHYSICAL_PASS_TYPE_ID;
       // A campaign pass names each bundle it grants, with the duration and tokens it sets; any other
       // pass names its one bundle with the catalogue's terms.
       const terms = (data.grants ?? [{ bundleId: data.bundleId, summary: data.passSummary }]).map((grant) => {
@@ -482,6 +525,26 @@ export function buildCustomerEmail({ kind, data = {}, baseUrl, catalog, receipt 
       // Each bundle the pass granted, with its own end date.
       const granted = data.bundles ?? [{ bundleId: data.bundleId, expiry: data.expiry }];
       const several = granted.length > 1;
+      if (data.language === "cy") {
+        return {
+          ...renderEmail({
+            subject: `Mae eich ${name} yn barod`,
+            preheader: `Mae eich ${name} yn barod i’w ddefnyddio.`,
+            heading: `Mae eich ${name} yn barod`,
+            intro: several
+              ? "Rydych wedi defnyddio eich tocyn. Gallwch ddefnyddio’r Bundles nawr."
+              : "Rydych wedi defnyddio eich tocyn. Gallwch ddefnyddio’r Bundle nawr.",
+            rows: granted.flatMap((grant) => [
+              { label: "Bundle", value: bundleName(catalog, grant.bundleId) },
+              { label: "Yn dod i ben ar", value: grant.expiry ? formatDate(grant.expiry, "cy-GB") : "Dim dyddiad gorffen" },
+            ]),
+            actions: [{ href: siteUrl(baseUrl, "cy/index.html"), text: "Agor y wefan" }],
+            reason: WELSH_REASON,
+            language: "cy",
+          }),
+          passQr: null,
+        };
+      }
       return {
         ...renderEmail({
           subject: `Your ${name} is ready`,

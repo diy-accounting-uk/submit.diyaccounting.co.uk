@@ -386,7 +386,7 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
     to: customerEmail,
     hashedSub,
     synthetic: test,
-    data: { bundleId, currentPeriodEnd },
+    data: { bundleId, currentPeriodEnd, ...(session.metadata?.language === "cy" ? { language: "cy" } : {}) },
   });
 }
 

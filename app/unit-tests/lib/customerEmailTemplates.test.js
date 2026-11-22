@@ -10,6 +10,7 @@ import {
   buildOperatorCopy,
   buildPassAttachments,
   passRecipientSection,
+  softMutation,
 } from "@app/lib/customerEmailTemplates.js";
 
 const catalog = { bundles: [{ id: "day-guest", name: "Day pass" }] };
@@ -157,7 +158,7 @@ describe("lib/customerEmailTemplates", () => {
       },
     });
     expect(m.subject).toBe("Eich derbynneb: Cyfrifon blynyddol");
-    expect(m.text).toContain("Rhif cyflwyno: AB1234");
+    expect(m.text).toContain("Rhif cyflwyniad: AB1234");
     expect(m.text).toContain("Statws: ACCEPT");
     expect(m.text).toContain("5 Tachwedd 2026");
     expect(m.text).toContain("Atebwch yr e-bost hwn neu ysgrifennwch at support@diyaccounting.co.uk");
@@ -270,7 +271,7 @@ describe("lib/customerEmailTemplates", () => {
       expect(m.text).toContain("Ni allwch ei ddefnyddio eich hun.");
       expect(m.text).toContain("I’r person sy’n cael y tocyn hwn");
       expect(m.text).toContain(
-        "Mae’n rhoi Week pass: gallwch cyflwyno Ffurflenni TAW i CThEF. Mae’n dod gyda 3 credyd (tokens). Mae’n para 7 diwrnod",
+        "Mae’n rhoi Week pass: gallwch gyflwyno Ffurflenni TAW i CThEF. Mae’n dod gyda 3 credyd (tokens). Mae’n para 7 diwrnod",
       );
       expect(m.text).toContain("Cod y tocyn: tiger-happy-mountain-silver");
       expect(m.text).toContain("Defnyddiwch ef erbyn: 31 Rhagfyr 2026");
@@ -278,8 +279,44 @@ describe("lib/customerEmailTemplates", () => {
       expect(m.text).toContain("Aeth yr e-bost hwn at y person a greodd y tocyn ar DIY Accounting Submit.");
       expect(m.html).toContain('<html lang="cy">');
       expect(m.text).toContain("Cod QR y tocyn: gweler y ddelwedd sydd ynghlwm.");
+      expect(m.text).toContain("Agor dolen y tocyn: https://submit.example.test/cy/pass.html?pass=tiger-happy-mountain-silver");
+      expect(m.passQr.url).toBe("https://submit.example.test/cy/pass.html?pass=tiger-happy-mountain-silver");
       expect(m.text).not.toContain("A pass to share");
       expect(m.text).not.toContain("see the attached image");
+    });
+
+    test("the Welsh recipient section mutates the summary after gallwch and names unlimited tokens as credyd", () => {
+      const { section } = passRecipientSection(
+        {
+          bundles: [
+            { name: "Week pass", summary: "cyflwyno Ffurflenni TAW i CThEF", tokensGranted: 3, timeout: "P7D" },
+            { name: "Practice", summary: "gwneud popeth yn Resident Pro", tokensGranted: "unlimited", timeout: "P1M" },
+            { name: "Operator", summary: "agor dangosfwrdd y gweithredwr", timeout: "P1M" },
+          ],
+          code: "a-b",
+          validUntil: null,
+          usesLeft: null,
+        },
+        "cy",
+      );
+      expect(section.paragraphs[0]).toContain("gallwch gyflwyno Ffurflenni TAW i CThEF.");
+      expect(section.paragraphs[1]).toContain("gallwch wneud popeth yn Resident Pro. Nid oes terfyn ar gredyd (tokens).");
+      expect(section.paragraphs[2]).toContain("gallwch agor dangosfwrdd y gweithredwr.");
+    });
+
+    test("a Welsh soft mutation changes the first word's radical and leaves a vowel alone", () => {
+      expect(["cyflwyno", "gwneud", "pori", "talu", "bwrw", "dewis", "mynd", "llenwi", "rhoi", "agor"].map(softMutation)).toEqual([
+        "gyflwyno",
+        "wneud",
+        "bori",
+        "dalu",
+        "fwrw",
+        "ddewis",
+        "fynd",
+        "lenwi",
+        "roi",
+        "agor",
+      ]);
     });
 
     test("the recipient section names every bundle the pass terms carry", () => {
@@ -446,6 +483,69 @@ describe("lib/customerEmailTemplates", () => {
   test("pass-redeemed with an expiry gives the date", () => {
     const m = buildCustomerEmail({ kind: "pass-redeemed", data: { bundleId: "day-guest", expiry: "2026-12-01" }, baseUrl, catalog });
     expect(m.text).toContain("Ends on: 1 December 2026");
+  });
+
+  test("subscription-started renders in Welsh for a Welsh account with every fact of the English", () => {
+    const data = { bundleId: "day-guest", currentPeriodEnd: "2026-12-01T00:00:00Z" };
+    const english = buildCustomerEmail({ kind: "subscription-started", data, baseUrl, catalog });
+    const welsh = buildCustomerEmail({ kind: "subscription-started", data: { ...data, language: "cy" }, baseUrl, catalog });
+    expect(welsh.subject).toBe("Eich tanysgrifiad: Day pass");
+    for (const part of [welsh.text, welsh.html]) {
+      expect(part).toContain("Mae eich tanysgrifiad Day pass yn weithredol");
+      expect(part).toContain("Diolch am danysgrifio. Gallwch ddefnyddio’r Bundle nawr.");
+      expect(part).toContain("Day pass");
+      expect(part).toContain("1 Rhagfyr 2026");
+      expect(part).toContain("https://submit.example.test/cy/index.html");
+      expect(part).toContain("https://submit.example.test/cy/bundles.html");
+      expect(part).not.toContain("Your Day pass subscription");
+    }
+    expect(welsh.text).toContain("Yn adnewyddu ar: 1 Rhagfyr 2026");
+    expect(welsh.html).toContain('lang="cy"');
+    expect(english.subject).toBe("Your Day pass subscription");
+    expect(english.text).toContain("Renews on: 1 December 2026");
+    expect(english.html).toContain('lang="en"');
+  });
+
+  test("pass-redeemed renders in Welsh for a Welsh account, each granted bundle with its end date", () => {
+    const campaignCatalog = {
+      bundles: [
+        { id: "resident-vat-comp", name: "Resident VAT (Complimentary)" },
+        { id: "invited-guest", name: "Invited Guest" },
+      ],
+    };
+    const data = {
+      bundleId: "resident-vat-comp",
+      bundles: [
+        { bundleId: "resident-vat-comp", expiry: "2027-11-22T00:00:00.000Z" },
+        { bundleId: "invited-guest", expiry: null },
+      ],
+    };
+    const english = buildCustomerEmail({ kind: "pass-redeemed", data, baseUrl, catalog: campaignCatalog });
+    const welsh = buildCustomerEmail({ kind: "pass-redeemed", data: { ...data, language: "cy" }, baseUrl, catalog: campaignCatalog });
+    expect(welsh.subject).toBe("Mae eich Resident VAT (Complimentary) yn barod");
+    expect(welsh.text).toContain("Rydych wedi defnyddio eich tocyn. Gallwch ddefnyddio’r Bundles nawr.");
+    expect(welsh.text).toContain(
+      "Bundle: Resident VAT (Complimentary)\nYn dod i ben ar: 22 Tachwedd 2027\nBundle: Invited Guest\nYn dod i ben ar: Dim dyddiad gorffen",
+    );
+    expect(welsh.text).toContain("https://submit.example.test/cy/index.html");
+    expect(welsh.html).toContain("Resident VAT (Complimentary)");
+    expect(welsh.html).toContain("22 Tachwedd 2027");
+    expect(welsh.html).toContain('lang="cy"');
+    expect(english.text).toContain(
+      "Bundle: Resident VAT (Complimentary)\nEnds on: 22 November 2027\nBundle: Invited Guest\nEnds on: No end date",
+    );
+    expect(english.text).not.toContain("Yn dod i ben");
+  });
+
+  test("pass-redeemed in Welsh for one bundle says the Bundle in the singular", () => {
+    const m = buildCustomerEmail({
+      kind: "pass-redeemed",
+      data: { bundleId: "day-guest", expiry: "2026-12-01T00:00:00.000Z", language: "cy" },
+      baseUrl,
+      catalog,
+    });
+    expect(m.text).toContain("Gallwch ddefnyddio’r Bundle nawr.");
+    expect(m.text).toContain("Bundle: Day pass\nYn dod i ben ar: 1 Rhagfyr 2026");
   });
 
   test("an unknown kind throws", () => {

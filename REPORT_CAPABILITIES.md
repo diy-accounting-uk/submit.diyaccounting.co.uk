@@ -30,6 +30,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy: use when a handler records the receipt of a filing that HMRC or Companies House accepted.
     - [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check: use when a customer email template changed and a person or a browser test must see each message as a reader does.
     - [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages: use when a page needs a Welsh copy at /cy/, an English string on a Welsh page changed, or a Welsh string needs a fix.
+    - [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site) Prove the Welsh pages read in Welsh on a running site: use when a change to i18n/cy.toml, a Welsh page or a page script has deployed, and every Welsh page must be shown to read in Welsh, signed in.
     - [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML: use when faqs.toml, the guide's journeys or a video walkthrough changed, or a crawler or assistant must read the help page or the guide without JavaScript.
     - [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages) Write a landing page for each filing that is production on prod, and the article pages: use when a filing goes to production, its price or its steps change, or a page must answer the search query for that filing.
   - [Server and API plumbing](#server-and-api-plumbing-site)
@@ -651,7 +652,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area SITE -->
 - [Authentication and authorization](#authentication-and-authorization-site): [SITE-01](#site-01-sign-customers-in-via-cognito) Sign customers in via Cognito · [SITE-02](#site-02-verify-jwts-at-the-api-gateway) Verify JWTs at the API gateway
-- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event · [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy · [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check · [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages · [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML · [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages) Write a landing page for each filing that is production on prod, and the article pages
+- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting · [SITE-27](#site-27-email-the-customer-after-a-key-event) Email the customer after a key event · [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy · [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check · [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages · [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site) Prove the Welsh pages read in Welsh on a running site · [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML · [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages) Write a landing page for each filing that is production on prod, and the article pages
 - [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront) Check that an API request came through CloudFront · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
 - [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts · [SITE-25](#site-25-build-the-marketing-site-data-social-images-brand-shots-and-listing-packs) Build the marketing site data, social images, brand shots and listing packs · [SITE-33](#site-33-check-the-tax-sources-each-week) Check the tax sources each week · [SITE-34](#site-34-check-the-compared-prices-each-month) Check the compared prices each month
 - [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes · [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style
@@ -696,6 +697,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy) Store a filed receipt and email a copy
 - [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check) Render the customer emails to files for a visual check
 - [SITE-30](#site-30-build-the-welsh-pages) Build the Welsh pages
+- [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site) Prove the Welsh pages read in Welsh on a running site
 - [SITE-31](#site-31-write-the-faq-and-the-guide-into-the-page-html) Write the FAQ and the guide into the page HTML
 - [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages) Write a landing page for each filing that is production on prod, and the article pages
 <!-- /generated:group account-and-engagement-apis-site -->
@@ -779,6 +781,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/build-welsh-pages.mjs, i18n/cy.toml, web/public/cy/, web/public/lib/welsh-text.js, web/public/get-started.html, web/public/widgets/page-chrome.js, web/unit-tests/welsh-pages.test.js
 - **Keywords:** welsh, cymraeg, cy, i18n, translation, hreflang, language switch, catalogue, stale translation
 - **Related:** SITE-14
+
+#### SITE-35 Prove the Welsh pages read in Welsh on a running site
+
+- **Use when:** a change to i18n/cy.toml, a Welsh page or a page script has deployed, and every Welsh page must be shown to read in Welsh, signed in.
+- **Does:** welsh-proof.mjs signs in (the Cognito test user from cognito-native-test-credentials.json, or the mock identity provider on a local simulator), chooses Welsh with the site's own language switch, then opens every page under web/public/cy/ that --only selects. It reads each page for lang="cy" on the html element and for English sentences left in the Welsh text. It prints one line per finding and a summary line, and exits 1 on any finding.
+- **Run:** `HMRC_ACCOUNT=synthetic node scripts/welsh-proof.mjs --base https://submit.diyaccounting.co.uk --only both`, between `npm run test:enableCognitoNative -- prod` and `npm run test:disableCognitoNative`; on the simulator, `node scripts/welsh-proof.mjs --base http://localhost:3000/ --only both` beside `TEST_SERVER_HTTP_PORT=3000 npm run start:simulator`
+- **Entry:** `scripts/welsh-proof.mjs:main`; `scripts/welsh-proof.mjs:englishSentences`
+- **Files:** scripts/welsh-proof.mjs, app/unit-tests/scripts/welshProof.test.js
+- **Keywords:** welsh, cymraeg, welsh proof, lang cy, english left in welsh, language switch, cy pages, signed-in welsh
+- **Related:** SITE-30, DEV-49
 
 #### SITE-31 Write the FAQ and the guide into the page HTML
 
@@ -7853,7 +7865,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cut: [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive)
 - cutover: [OPS-169](#ops-169-rotate-the-user-sub-hash-salt-and-re-key-every-store)
 - cy: [SITE-30](#site-30-build-the-welsh-pages)
-- cymraeg: [SITE-30](#site-30-build-the-welsh-pages)
+- cy pages: [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
+- cymraeg: [SITE-30](#site-30-build-the-welsh-pages), [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
 - daily budget: [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DATA-35](#data-35-forecast-google-ads-keyword-performance)
 - daily cap: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
 - daily check: [OPS-48](#ops-48-verify-backup-health-daily)
@@ -8099,6 +8112,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - enforce bundle: [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request)
 - enforce tokens: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
 - engagement: [SITE-03](#site-03-capture-feedback-interest)
+- english left in welsh: [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
 - enhanced measurement: [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events)
 - ensure-cognito-test-user: [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - ensuresession: [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh)
@@ -8623,7 +8637,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - landing page: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages)
 - lane: [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report)
 - lane user: [OPS-12](#ops-12-clean-up-expired-test-users), [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
-- language switch: [SITE-30](#site-30-build-the-welsh-pages)
+- lang cy: [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
+- language switch: [SITE-30](#site-30-build-the-welsh-pages), [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
 - lapse: [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle)
 - laptop load: [DEV-67](#dev-67-run-the-delivery-loop-with-the-cloud-workers-doing-the-compute)
 - last filed accounts: [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts)
@@ -9566,6 +9581,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - sideways relief: [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims)
 - sign in: [SITE-01](#site-01-sign-customers-in-via-cognito), [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito)
 - signature verify: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
+- signed-in welsh: [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
 - signup to first submission: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - silent local failure: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
 - simulator: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
@@ -10051,7 +10067,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - weekly schedule: [OPS-38](#ops-38-run-the-weekly-compliance-test-check)
 - weekly verification: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly)
 - well-known: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
-- welsh: [SITE-30](#site-30-build-the-welsh-pages)
+- welsh: [SITE-30](#site-30-build-the-welsh-pages), [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
+- welsh proof: [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
 - what does the repo do: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - whole-site design pass: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - window globals: [SITE-18](#site-18-bootstrap-the-frontend-module-bundle)

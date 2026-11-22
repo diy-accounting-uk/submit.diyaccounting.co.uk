@@ -17,6 +17,7 @@ import { validateEnv } from "../../lib/env.js";
 import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
+  getHeader,
   http200OkResponse,
   http400BadRequestResponse,
   http401UnauthorizedResponse,
@@ -123,6 +124,9 @@ async function publishRefusal({ reason, code, passTypeId, userSub }) {
     detail: { reason, code, passTypeId },
   });
 }
+
+// The email's language: Welsh when the request comes from the Welsh site, which says so in X-Site-Language.
+const emailLanguage = (event) => (getHeader(event.headers || {}, "X-Site-Language") === "cy" ? { language: "cy" } : {});
 
 export async function ingestHandler(event) {
   await initializeSalt();
@@ -345,6 +349,7 @@ export async function ingestHandler(event) {
         passTypeId: result.pass?.passTypeId,
         expiry: grantResult.expiry,
         bundles: granted.map(({ bundleId, expiry }) => ({ bundleId, expiry })),
+        ...emailLanguage(event),
       },
     });
 

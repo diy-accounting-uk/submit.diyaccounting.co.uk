@@ -166,3 +166,13 @@ describe.each(WELSH_PAGES)("Welsh page $cy", (page) => {
     }
   });
 });
+
+describe("Welsh spreadsheets page", () => {
+  it("marks each customer review, quoted in its English words, as English", () => {
+    const html = read("cy/spreadsheets.html");
+    const reviews = html.slice(html.indexOf('<div class="reviews-quotes">'), html.indexOf('<div class="products">'));
+    const quotes = [...reviews.matchAll(/<blockquote\b([^>]*)>/g)];
+    expect(quotes.length).toBeGreaterThan(0);
+    quotes.forEach(([, attributes]) => expect(attributes).toContain('lang="en"'));
+  });
+});

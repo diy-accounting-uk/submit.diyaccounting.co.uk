@@ -236,7 +236,7 @@ export const STATUS_FEATURES = [
   { activity: "change-registered-office", label: "registered office", labelCy: "swyddfa gofrestredig" },
   { activity: "change-registered-email", label: "registered email", labelCy: "e-bost cofrestredig" },
   { activity: "file-confirmation-statement", label: "Companies House confirmation statement", labelCy: "datganiad cadarnhau Tŷ'r Cwmnïau" },
-  { activity: "file-psc-verification-statement", label: "PSC verification statement", labelCy: "datganiad gwirio PSC" },
+  { activity: "file-psc-verification-statement", label: "PSC verification statement", labelCy: "datganiad gwirio PRhA" },
   { activity: "file-micro-entity-accounts", label: "Companies House accounts", labelCy: "cyfrifon Tŷ'r Cwmnïau" },
   { activity: "file-small-company-accounts", label: "Companies House accounts", labelCy: "cyfrifon Tŷ'r Cwmnïau" },
 ];

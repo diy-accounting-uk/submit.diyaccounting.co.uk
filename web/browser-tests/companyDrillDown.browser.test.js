@@ -627,8 +627,38 @@ test.describe("Company lookup drill-down edit links", () => {
         timeout: 15000,
       },
     );
-    await expect(page.locator("#officeSection .file-this-authority")).toContainText("cod dilysu");
+    const office = page.locator("#officeSection .file-this-authority li");
+    await expect(office.nth(1)).toContainText(
+      "“Defnyddir y cod i awdurdodi gwybodaeth a ffeiliwyd ar-lein ac mae’n gyfatebol i lofnod swyddog cwmni.”",
+    );
+    await expect(office.nth(1).locator("a")).toHaveAttribute(
+      "href",
+      "https://www.gov.uk/guidance/company-authentication-codes-for-online-filing.cy",
+    );
+    await expect(office.nth(1).locator("a")).toHaveText("Codau dilysu cwmni ar gyfer ffeilio ar lein");
     await shootAtWidths(page, "cy-overview-edit-links");
+  });
+
+  test("on the Welsh overview a quotation GOV.UK publishes in English only stays in English, marked as English", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    await page.goto(`${BASE}/cy/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    const office = page.locator("#officeSection .file-this-authority li").first();
+    await expect(office.locator('span[lang="en"]')).toHaveText("“You’ll need your company authentication code.”", { timeout: 15000 });
+    await expect(office.locator('a[lang="en"]')).toHaveAttribute(
+      "href",
+      "https://www.gov.uk/government/publications/change-a-registered-office-address-ad01",
+    );
+    await expect(office).toContainText("(yn Saesneg)");
+    await expect(office).toContainText("Mae GOV.UK yn cyhoeddi hwn yn Saesneg yn unig.");
+    const confirmation = page.locator("#confirmationSection .file-this-authority li");
+    await expect(confirmation.first()).toContainText("“Bydd arnoch angen cyfrinair a chod dilysu gan Dŷ’r Cwmnïau.”");
+    await expect(confirmation.first().locator("a")).toHaveAttribute(
+      "href",
+      "https://www.gov.uk/ffeilio-datganiad-cadarnhau-gyda-thyr-cwmniau",
+    );
+    await expect(confirmation.nth(2).locator('span[lang="en"]')).toContainText("GOV.UK One Login");
+    await expect(page.locator("#statusChangeNote a")).toHaveAttribute("lang", "en");
+    await expect(page.locator("#statusChangeNote")).toContainText("(yn Saesneg)");
   });
 
   for (const width of [1280, 390]) {

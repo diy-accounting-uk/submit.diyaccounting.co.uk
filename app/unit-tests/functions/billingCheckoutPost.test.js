@@ -184,6 +184,7 @@ describe("billingCheckoutPost", () => {
     expect(params.metadata).toEqual({
       hashedSub: params.metadata.hashedSub,
       bundleId: "resident-pro",
+      language: "en",
       acq_gclid: "abc123",
       acq_msclkid: "bing456",
       acq_utmSource: "google",
@@ -199,7 +200,19 @@ describe("billingCheckoutPost", () => {
     await ingestHandler(buildEventWithToken(validToken, { bundleId: "resident-pro" }));
 
     const params = mockCheckoutSessionsCreate.mock.calls[0][0];
-    expect(Object.keys(params.metadata).sort()).toEqual(["bundleId", "hashedSub"]);
+    expect(Object.keys(params.metadata).sort()).toEqual(["bundleId", "hashedSub", "language"]);
+  });
+
+  test("names the reader's language in the session metadata: cy from the Welsh site, en otherwise", async () => {
+    const welsh = buildEventWithToken(validToken, { bundleId: "resident-pro" });
+    welsh.headers["X-Site-Language"] = "cy";
+    await ingestHandler(welsh);
+    await ingestHandler(buildEventWithToken(validToken, { bundleId: "resident-pro" }));
+
+    const [welshParams, englishParams] = mockCheckoutSessionsCreate.mock.calls.map(([params]) => params);
+    expect(welshParams.metadata.language).toBe("cy");
+    expect(englishParams.metadata.language).toBe("en");
+    expect(welshParams.subscription_data.metadata).not.toHaveProperty("language");
   });
 
   test("publishes the checkout-session-created event with the hashed sub, never the raw sub", async () => {

@@ -2080,6 +2080,32 @@ describe("billingWebhookPost", () => {
       expect(request.data.currentPeriodEnd).toEqual(expect.any(String));
     });
 
+    test("a checkout started from the Welsh site asks for the email in Welsh", async () => {
+      const payload = buildCheckoutSessionPayload({
+        metadata: { hashedSub: "hashed_sub_value", bundleId: "resident-pro", language: "cy" },
+      });
+      mockWebhooksConstructEvent.mockReturnValue(payload);
+
+      await ingestHandler(buildWebhookEvent(payload));
+
+      expect(mockRequestCustomerEmail.mock.calls[0][0].data.language).toBe("cy");
+    });
+
+    test("a checkout started in English, or an older session with no language, asks for the email in English", async () => {
+      for (const metadata of [
+        { hashedSub: "hashed_sub_value", bundleId: "resident-pro", language: "en" },
+        { hashedSub: "hashed_sub_value", bundleId: "resident-pro" },
+      ]) {
+        mockRequestCustomerEmail.mockClear();
+        const payload = buildCheckoutSessionPayload({ metadata });
+        mockWebhooksConstructEvent.mockReturnValue(payload);
+
+        await ingestHandler(buildWebhookEvent(payload));
+
+        expect(mockRequestCustomerEmail.mock.calls[0][0].data).not.toHaveProperty("language");
+      }
+    });
+
     test("a Stripe test-mode checkout marks the request synthetic", async () => {
       const payload = { ...buildCheckoutSessionPayload(), livemode: false };
       mockWebhooksConstructEvent.mockReturnValue(payload);

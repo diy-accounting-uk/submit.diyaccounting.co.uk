@@ -42,6 +42,32 @@
 #   small profits rate            cyfradd elw bychan
 #   helpline                      llinell gymorth
 #   bank holidays                 gwyliau banc
+#   sales                         gwerthiannau
+#   purchases                     pryniannau
+#   turnover                      trosiant
+#   deadline (a return's due date) dyddiad cau
+#   due date (of a payment)       dyddiad dyledus
+#   company authentication code   cod dilysu cwmni
+#   personal code (identity)      cod personol
+#   identity verification         gwiriad hunaniaeth
+#   presenter                     cyflwynydd
+#   registered office (address)   (cyfeiriad) swyddfa gofrestredig
+#   micro-entity accounts         cyfrifon micro-endid
+#   abridged accounts             cyfrifon talfyredig
+#   dormant company               cwmni segur
+#   balance sheet                 mantolen
+#   profit and loss account       cyfrif elw a cholled
+#   assets (in accounts)          asedau (FRC); HMRC's CT600 writes asedion for tax
+#   Company Tax Return            Ffurflen Dreth y Cwmni
+#   qualifying donations          cyfraniadau cymhwysol
+#   self-employment               hunangyflogaeth
+#   UK property                   eiddo yn y DU
+#   foreign property              eiddo tramor
+#   adjustments                   addasiadau
+#   capital allowances            lwfansau cyfalaf
+#   disallowable expenses         treuliau nas caniateir
+#   losses                        colledion
+#   tax calculation               cyfrifiad treth
 # Our own terms:
 #   day pass                      tocyn diwrnod
 #   pass link                     dolen tocyn
@@ -55,6 +81,17 @@
 #          https://www.gov.uk/government/organisations/hm-revenue-customs/contact/welsh-language-helplines (updated 19 Rhagfyr 2025)
 #          https://www.gov.uk/government/organisations/hm-revenue-customs/contact/vat-customs-and-excise-and-duties-enquiries-for-welsh-speaking-customers (updated 19 Rhagfyr 2025)
 #          https://assets.publishing.service.gov.uk/media/69c54374cdfd19de13d0f708/ct600_welsh.pdf (CT600(2026) Fersiwn 3: rhyddhad ffiniol, gwariant llawn, cyfradd elw bychan)
+#          https://www.gov.uk/cyflwyno-ffurflen-taw (gwerthiannau a phryniannau, trosiant, dyddiad cau)
+#          https://www.gov.uk/talu-taw (dyddiad cau ar gyfer talu, dyddiad dyledus eich taliad)
+#          https://www.gov.uk/guidance/company-authentication-codes-for-online-filing.cy (cod dilysu cwmni)
+#          https://www.gov.uk/guidance/companies-house-personal-codes-for-identity-verification.cy (cod personol, gwiriad hunaniaeth)
+#          https://www.gov.uk/guidance/filing-your-companies-house-information-online.cy (cyfrifon micro-endid, talfyredig, cwmni segur; swyddfa gofrestredig)
+#          https://www.gov.uk/guidance/apply-to-file-with-companies-house-using-software.cy (cyflwynydd)
+#          https://www.frc.org.uk/documents/8907/FRC-2026-Taxonomy-v1.0.0.zip (mantolen, cyfrif elw a cholled, asedau; as app/services/accountsLanguage.js holds them)
+#          https://www.gov.uk/guidance/defnyddio-r-cynllun-troi-treth-yn-ddigidol-ar-gyfer-treth-incwm/creu-cofnodion-digidol (hunangyflogaeth, eiddo yn y DU, eiddo tramor)
+#          https://www.gov.uk/guidance/defnyddio-r-cynllun-troi-treth-yn-ddigidol-ar-gyfer-treth-incwm/addasu-eich-incwm-o-hunangyflogaeth-ac-eiddo (addasiadau, lwfansau cyfalaf)
+#          https://www.gov.uk/guidance/defnyddio-r-cynllun-troi-treth-yn-ddigidol-ar-gyfer-treth-incwm/cyflwyno-ch-ffurflen-dreth (cyfrifiad treth)
+#          https://assets.publishing.service.gov.uk/media/69c2668513101e9908704b38/SA103F-2026-Cymraeg-.pdf (SA103F 2026: treuliau nas caniateir, colledion, lwfansau cyfalaf)
 
 [shared."hmrc-welsh-services"]
 cy = '''
@@ -115,7 +152,7 @@ cy = '''<a href="get-started.html">Newydd i Submit? Darllenwch sut i ddechrau ar
 
 [strings."index.status"]
 hash = "4506e5b3700f"
-cy = '''<strong>Statws pob nodwedd.</strong> Nid yw nodweddion prawf (sandbox) a rhagolwg (preview) yn cyflwyno dim byd go iawn. <a href="mtd-calendar.html#availability">Gweld y tabl argaeledd</a>.'''
+cy = '''<strong>Statws pob nodwedd.</strong> Nid yw nodweddion prawf (sandbox) a rhagolwg (preview) yn ffeilio dim byd go iawn. <a href="mtd-calendar.html#availability">Gweld y tabl argaeledd</a>.'''
 
 [strings."index.reviews-label"]
 hash = "9d9e7a6d6c12"
@@ -258,7 +295,7 @@ cy = '''Dechrau arni - DIY Accounting Submit'''
 
 [strings."get-started.description"]
 hash = "adf20195665f"
-cy = '''Sut i anfon eich Ffurflen TAW i CThEF gyda DIY Accounting Submit: beth mae’n ei wneud, y pris, y tocyn diwrnod am ddim, Treth Incwm, a ble i gael help.'''
+cy = '''Sut i anfon eich Ffurflen TAW i CThEF gyda DIY Accounting Submit: beth mae’n ei wneud, y pris, y tocyn diwrnod am ddim, Treth Incwm, a ble i gael cymorth.'''
 
 [strings."get-started.heading"]
 hash = "61e8d44ad423"
@@ -278,7 +315,7 @@ cy = '''Mae DIY Accounting Submit yn anfon eich Ffurflen TAW i CThEF o dan y cyn
 
 [strings."get-started.what-2"]
 hash = "3b8d08b8024d"
-cy = '''Gallwch hefyd weld eich rhwymedigaethau TAW a’u dyddiadau dyledus, ac edrych ar y Ffurflenni a anfonoch o’r blaen. Pan fydd CThEF yn derbyn Ffurflen, mae’n anfon derbynneb yn ôl gyda rhif Form Bundle Number. Mae Submit hefyd yn cyflwyno cyfrifon a datganiadau cadarnhau i Dŷ’r Cwmnïau.'''
+cy = '''Gallwch hefyd weld eich rhwymedigaethau TAW a’u dyddiadau dyledus, ac edrych ar y Ffurflenni a anfonoch o’r blaen. Pan fydd CThEF yn derbyn Ffurflen, mae’n anfon derbynneb yn ôl gyda rhif bwndel y ffurflen (Form Bundle Number). Mae Submit hefyd yn cyflwyno cyfrifon a datganiadau cadarnhau i Dŷ’r Cwmnïau.'''
 
 [strings."get-started.price-heading"]
 hash = "93c91c851e7a"
@@ -342,7 +379,7 @@ cy = '''Mae ein gwasanaeth Treth Incwm yn rhedeg yn amgylchedd prawf (sandbox) C
 
 [strings."get-started.help-heading"]
 hash = "00f1193a0417"
-cy = '''Ble i gael help'''
+cy = '''Ble i gael cymorth'''
 
 [strings."get-started.help-1"]
 hash = "a00d9d5e061b"
@@ -407,7 +444,7 @@ cy = '''<a href="rates.html">Cyfraddau a lwfansau treth</a>'''
 
 [strings."tools.the-current-rates-and-allowances-for-dfddf1"]
 hash = "dfddf191d9aa"
-cy = '''Y cyfraddau a’r lwfansau presennol ar gyfer TAW, treth incwm a threth cwmnïau, pob un gyda’i ffynhonnell.'''
+cy = '''Y cyfraddau a’r lwfansau presennol ar gyfer TAW, Treth Incwm a threth cwmnïau, pob un gyda’i ffynhonnell.'''
 
 [strings."tools.mtd-income-tax-checker-for-your-b730ec"]
 hash = "b730ec3dbe2e"
@@ -656,19 +693,19 @@ cy = '''Mae eich Bundles a’ch credydau (tokens) yn cael eu cadw gyda’ch cyfr
 
 [strings."bundles.description-resident-vat"]
 hash = "ac9cf06867fb"
-cy = '''Cyflwyno Ffurflenni TAW i CThEF. £9.99/yr / £0.99/mo, canslo unrhyw bryd.'''
+cy = '''Cyflwyno Ffurflenni TAW i CThEF. £9.99 y flwyddyn / £0.99 y mis, canslo unrhyw bryd.'''
 
 [strings."bundles.description-resident-ltd"]
 hash = "06969571d87b"
-cy = '''Ffeilio cyfrifon a datganiadau cadarnhau gyda Thŷ’r Cwmnïau. £9.99/yr / £0.99/mo, canslo unrhyw bryd.'''
+cy = '''Ffeilio cyfrifon a datganiadau cadarnhau gyda Thŷ’r Cwmnïau. £9.99 y flwyddyn / £0.99 y mis, canslo unrhyw bryd.'''
 
 [strings."bundles.description-resident-pro"]
 hash = "7329b7256561"
-cy = '''Cyflwyno Ffurflenni TAW i CThEF a chyfrifon i Dŷ’r Cwmnïau. £39.99/yr / £3.99/mo, canslo unrhyw bryd.'''
+cy = '''Cyflwyno Ffurflenni TAW i CThEF a chyfrifon i Dŷ’r Cwmnïau. £39.99 y flwyddyn / £3.99 y mis, canslo unrhyw bryd.'''
 
 [strings."bundles.description-resident-tax-agent"]
 hash = "bc839cd690dc"
-cy = '''Rheoli cleientiaid practis a ffeilio ar eu rhan, gyda phopeth yn Resident Pro a dim terfyn ar gredyd. £199.99/yr / £19.99/mo, canslo unrhyw bryd.'''
+cy = '''Rheoli cleientiaid practis a ffeilio ar eu rhan, gyda phopeth yn Resident Pro a dim terfyn ar gredyd. £199.99 y flwyddyn / £19.99 y mis, canslo unrhyw bryd.'''
 
 [strings."bundles.tokens-unlimited"]
 hash = "8848fad3f510"
@@ -1325,7 +1362,7 @@ cy = '''Mae DIY Accounting yn darparu taenlenni Excel ar gyfer cadw cyfrifon a c
 
 [strings."spreadsheets.all-products-are-compatible-with-microsoft-f6a05f"]
 hash = "f6a05f01da6d"
-cy = '''Mae pob cynnyrch yn gweithio gyda Microsoft Excel ac OpenOffice Calc. Gallwch eu llwytho i lawr ar unwaith, ac maen nhw’n cynnwys canllawiau defnyddiwr gam wrth gam. Mae’r taenlenni a’u canllawiau yn Saesneg.'''
+cy = '''Mae pob cynnyrch yn gweithio gyda Microsoft Excel ac OpenOffice Calc. Gallwch eu lawrlwytho ar unwaith, ac maen nhw’n cynnwys canllawiau defnyddiwr gam wrth gam. Mae’r taenlenni a’u canllawiau yn Saesneg.'''
 
 [strings."spreadsheets.file-what-your-spreadsheet-works-out-06de3f"]
 hash = "06de3f0b03bd"
@@ -1393,7 +1430,7 @@ cy = '''Ffurflen Dreth hunangyflogedig'''
 
 [strings."spreadsheets.income-tax-calculation-6cfc44"]
 hash = "6cfc442c5686"
-cy = '''Cyfrifo treth incwm'''
+cy = '''Cyfrifo Treth Incwm'''
 
 [strings."spreadsheets.self-employed-338206"]
 hash = "33820635090f"
@@ -1473,7 +1510,7 @@ cy = '''Cymharu treuliau cerbyd'''
 
 [strings."spreadsheets.income-tax-estimation-8a1833"]
 hash = "8a183370aaca"
-cy = '''Amcangyfrif treth incwm'''
+cy = '''Amcangyfrif Treth Incwm'''
 
 [strings."spreadsheets.payslips-247063"]
 hash = "247063805d34"
@@ -1561,15 +1598,15 @@ cy = '''<a class="btn btn-secondary btn-small" href="policybee.html">Ewch i Poli
 
 [strings."spreadsheets.download-d6eafe"]
 hash = "d6eafe823591"
-cy = '''Llwytho i lawr'''
+cy = '''Lawrlwytho'''
 
 [strings."spreadsheets.all-diy-accounting-spreadsheet-products-are-9f76df"]
 hash = "9f76df35feff"
-cy = '''Gallwch lwytho holl daenlenni DIY Accounting i lawr ar unwaith o’r wefan taenlenni.'''
+cy = '''Gallwch lawrlwytho holl daenlenni DIY Accounting ar unwaith o’r wefan taenlenni.'''
 
 [strings."spreadsheets.visit-spreadsheets-diyaccounting-co-uk-to-22102b"]
 hash = "22102b40d398"
-cy = '''Ewch i spreadsheets.diyaccounting.co.uk i lwytho i lawr (yn Saesneg)'''
+cy = '''Ewch i spreadsheets.diyaccounting.co.uk i lawrlwytho (yn Saesneg)'''
 
 [strings."spreadsheets.support-diy-accounting-with-a-donation-66dbcf"]
 hash = "66dbcff48b28"
@@ -1714,7 +1751,7 @@ cy = '''<a href="#ch-confirmation-statement-12-months">Datganiad cadarnhau</a>''
 
 [strings."mtd-calendar.identity-verification-59435a"]
 hash = "59435a905925"
-cy = '''<a href="#ch-identity-verification-2025-11">Dilysu hunaniaeth</a>'''
+cy = '''<a href="#ch-identity-verification-2025-11">Gwiriad hunaniaeth</a>'''
 
 [strings."mtd-calendar.annual-accounts-287278"]
 hash = "28727865090f"
@@ -1918,11 +1955,11 @@ cy = '''<a href="vat-return-due-date-and-penalty-points.html">Cyfrifo dyddiad dy
 
 [strings."mtd-calendar.18-november-2025-companies-house-director-c6b8ad"]
 hash = "c6b8ad593856"
-cy = '''<span class="calendar-date">18 Tachwedd 2025</span>Tŷ’r Cwmnïau: dilysu hunaniaeth cyfarwyddwyr a PSCs'''
+cy = '''<span class="calendar-date">18 Tachwedd 2025</span>Tŷ’r Cwmnïau: gwiriad hunaniaeth cyfarwyddwyr a PSCs'''
 
 [strings."mtd-calendar.identity-verification-is-a-legal-requirement-6e2a59"]
 hash = "6e2a5922bf17"
-cy = '''Mae dilysu hunaniaeth yn ofyniad cyfreithiol ar gyfer cyfarwyddwyr ac ar gyfer pobl â rheolaeth arwyddocaol (PSCs). Mae cyfarwyddwr yn rhoi’r cod personol gyda datganiad cadarnhau nesaf y cwmni. Mae PSC yn dilysu ac yn rhoi’r cod personol o fewn cyfnod o 14 diwrnod sy’n dibynnu ar sefyllfa’r PSC.'''
+cy = '''Mae gwiriad hunaniaeth yn ofyniad cyfreithiol ar gyfer cyfarwyddwyr ac ar gyfer pobl â rheolaeth arwyddocaol (PSCs). Mae cyfarwyddwr yn rhoi’r cod personol gyda datganiad cadarnhau nesaf y cwmni. Mae PSC yn gwirio ei hunaniaeth ac yn rhoi’r cod personol o fewn cyfnod o 14 diwrnod sy’n dibynnu ar sefyllfa’r PSC.'''
 
 [strings."mtd-calendar.relevant-for-owner-managed-company-with-414f16"]
 hash = "414f162c1af1"
@@ -2263,7 +2300,7 @@ cy = '''Lwfans Personol ar ôl unrhyw ostyngiad'''
 
 [strings."rates.income-tax-de2ae4"]
 hash = "de2ae4a1b305"
-cy = '''Treth incwm'''
+cy = '''Treth Incwm'''
 
 [strings."rates.class-4-national-insurance-5c951c"]
 hash = "5c951c60db22"
@@ -2275,7 +2312,7 @@ cy = '''Dosbarth 2 gwirfoddol (nid yw yn y cyfanswm)'''
 
 [strings."rates.income-tax-and-class-4-national-6af87c"]
 hash = "6af87cf90bcb"
-cy = '''Treth incwm ac Yswiriant Gwladol Dosbarth 4'''
+cy = '''Treth Incwm ac Yswiriant Gwladol Dosbarth 4'''
 
 [strings."rates.cis-deducted-11c760"]
 hash = "11c76081c862"
@@ -2359,7 +2396,7 @@ cy = '''Cyfradd sylfaenol'''
 
 [strings."rates.basic-rate-band-b66dbc"]
 hash = "b66dbcb94168"
-cy = '''Band y gyfradd sylfaenol'''
+cy = '''Haen y gyfradd sylfaenol'''
 
 [strings."rates.higher-rate-ff3553"]
 hash = "ff355308e66d"
@@ -2447,11 +2484,11 @@ cy = '''Milltiroedd busnes ar y gyfradd uwch'''
 
 [strings."rates.registered-subcontractor-3cd832"]
 hash = "3cd832815ccb"
-cy = '''Is-gontractwr sydd wedi cofrestru'''
+cy = '''Isgontractwr sydd wedi cofrestru'''
 
 [strings."rates.subcontractor-not-registered-4c9040"]
 hash = "4c904067df98"
-cy = '''Is-gontractwr heb gofrestru'''
+cy = '''Isgontractwr heb gofrestru'''
 
 [strings."rates.no-deduction-c5adf0"]
 hash = "c5adf0e12bd0"
@@ -2872,7 +2909,7 @@ cy = '''Daeth dolen â chi yma. Os byddwch yn derbyn, rydym yn cadw pa ddolen am
 #   Box 3 Total VAT due (this is the total of box 1 and 2)
 #         Cyfanswm y TAW sy’n ddyledus (dyma gyfanswm blychau 1 a 2)
 #   Box 4 VAT reclaimed in the period on purchases and other inputs (including acquisitions in Northern Ireland from EU member states)
-#         TAW a adenillwyd yn y cyfnod ar bryniadau a mewnbynnau eraill (gan gynnwys caffaeliadau yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE)
+#         TAW a adhawliwyd yn y cyfnod ar bryniadau a mewnbynnau eraill (gan gynnwys caffaeliadau yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE)
 #   Box 5 Net VAT to pay to HMRC or reclaim (this is the difference between box 3 and 4)
 #         TAW net i dalu i CThEF neu ei hadennill (dyma’r gwahaniaeth rhwng blychau 3 a 4)
 #   Box 6 Total value of sales and other supplies, excluding VAT
@@ -3040,7 +3077,7 @@ cy = '''Wedi’i gyfrifo: cyfanswm blychau 1 a 2'''
 
 [strings."vat-submit.box-4-vat-reclaimed-in-the-58efa3"]
 hash = "58efa3ad43a4"
-cy = '''Blwch 4: TAW a adenillwyd yn y cyfnod ar bryniadau a mewnbynnau eraill (gan gynnwys caffaeliadau yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE)'''
+cy = '''Blwch 4: TAW a adhawliwyd yn y cyfnod ar bryniannau a mewnbynnau eraill (gan gynnwys caffaeliadau yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE)'''
 
 [strings."vat-submit.box-5-net-vat-to-pay-fc79f7"]
 hash = "fc79f7804a94"
@@ -3060,7 +3097,7 @@ cy = '''Nodwch rif cyfan heb geiniogau, er enghraifft £15000'''
 
 [strings."vat-submit.box-7-total-value-of-purchases-1ee58e"]
 hash = "1ee58eb6daa8"
-cy = '''Blwch 7: Cyfanswm gwerth y pryniadau a’r holl fewnbynnau eraill, heb gynnwys TAW'''
+cy = '''Blwch 7: Cyfanswm gwerth y pryniannau a’r holl fewnbynnau eraill, heb gynnwys TAW'''
 
 [strings."vat-submit.box-8-total-value-of-all-2b4f8e"]
 hash = "2b4f8e6603c7"
@@ -3080,7 +3117,7 @@ cy = '''Datganiad'''
 
 [strings."vat-submit.when-you-submit-this-vat-information-540c7c"]
 hash = "540c7ce6c03c"
-cy = '''Drwy gyflwyno’r Ffurflen TAW hon, rydych yn gwneud datganiad cyfreithiol bod yr wybodaeth yn gywir ac yn gyflawn hyd eithaf eich gwybodaeth a’ch cred. Gall datganiad ffug arwain at erlyniad.'''
+cy = '''Drwy gyflwyno’r Ffurflen TAW hon, rydych yn gwneud datganiad cyfreithiol bod yr wybodaeth yn gywir ac yn gyflawn. Gall datganiad ffug arwain at erlyniad.'''
 
 [strings."vat-submit.tick-this-box-to-confirm-you-3a13b5"]
 hash = "3a13b5c8e938"
@@ -3168,7 +3205,7 @@ cy = '''Rhwymedigaethau TAW'''
 
 [strings."vat-obligations.retrieve-vat-obligations-from-hmrc-77933d"]
 hash = "77933d598cbe"
-cy = '''Cael eich rhwymedigaethau TAW gan CThEF'''
+cy = '''Adalwch eich rhwymedigaethau TAW gan CThEF'''
 
 [strings."vat-obligations.status-production-this-reads-your-real-8ae5ea"]
 hash = "8ae5ead1596a"
@@ -3188,7 +3225,7 @@ cy = '''Canslo’r cais'''
 
 [strings."vat-obligations.retrieve-vat-obligations-9fc891"]
 hash = "9fc8919e916f"
-cy = '''Cael rhwymedigaethau TAW'''
+cy = '''Adalw rhwymedigaethau TAW'''
 
 [strings."vat-obligations.vat-registration-number-873ba7"]
 hash = "873ba742b4fb"
@@ -3252,7 +3289,7 @@ cy = '''Dilysu’r penawdau atal twyll'''
 
 [strings."vat-obligations.retrieve-obligations-63a80e"]
 hash = "63a80e6fd500"
-cy = '''Cael rhwymedigaethau'''
+cy = '''Adalw rhwymedigaethau'''
 
 [strings."vat-obligations.view-the-chosen-period-s-return-fd6ecc"]
 hash = "fd6ecc3eae51"
@@ -3280,7 +3317,7 @@ cy = '''Rhwymedigaethau talu TAW'''
 
 [strings."vat-liabilities.retrieve-vat-liabilities-from-hmrc-d35f00"]
 hash = "d35f00524b21"
-cy = '''Cael yr hyn sydd arnoch o ran TAW gan CThEF'''
+cy = '''Adalwch yr hyn sydd arnoch o ran TAW gan CThEF'''
 
 [strings."vat-liabilities.status-production-this-reads-your-real-8ae5ea"]
 hash = "8ae5ead1596a"
@@ -3300,7 +3337,7 @@ cy = '''Canslo’r cais'''
 
 [strings."vat-liabilities.retrieve-vat-liabilities-4ea340"]
 hash = "4ea34015441b"
-cy = '''Cael rhwymedigaethau talu TAW'''
+cy = '''Adalw rhwymedigaethau talu TAW'''
 
 [strings."vat-liabilities.vat-registration-number-873ba7"]
 hash = "873ba742b4fb"
@@ -3344,7 +3381,7 @@ cy = '''Dilysu’r penawdau atal twyll'''
 
 [strings."vat-liabilities.retrieve-liabilities-c8d362"]
 hash = "c8d3621a77d5"
-cy = '''Cael rhwymedigaethau talu'''
+cy = '''Adalw rhwymedigaethau talu'''
 
 [strings."vat-liabilities.new-search-4587eb"]
 hash = "4587eb457003"
@@ -3368,7 +3405,7 @@ cy = '''Taliadau TAW'''
 
 [strings."vat-payments.retrieve-vat-payments-from-hmrc-af0000"]
 hash = "af0000c78d51"
-cy = '''Cael eich taliadau TAW gan CThEF'''
+cy = '''Adalwch eich taliadau TAW gan CThEF'''
 
 [strings."vat-payments.status-production-this-reads-your-real-8ae5ea"]
 hash = "8ae5ead1596a"
@@ -3388,7 +3425,7 @@ cy = '''Canslo’r cais'''
 
 [strings."vat-payments.retrieve-vat-payments-b9f603"]
 hash = "b9f60365d984"
-cy = '''Cael taliadau TAW'''
+cy = '''Adalw taliadau TAW'''
 
 [strings."vat-payments.vat-registration-number-873ba7"]
 hash = "873ba742b4fb"
@@ -3432,7 +3469,7 @@ cy = '''Dilysu’r penawdau atal twyll'''
 
 [strings."vat-payments.retrieve-payments-4025b4"]
 hash = "4025b4d27266"
-cy = '''Cael taliadau'''
+cy = '''Adalw taliadau'''
 
 [strings."vat-payments.new-search-4587eb"]
 hash = "4587eb457003"
@@ -3456,7 +3493,7 @@ cy = '''Cosbau TAW'''
 
 [strings."vat-penalties.retrieve-vat-penalties-from-hmrc-507b01"]
 hash = "507b017da61a"
-cy = '''Cael eich cosbau TAW gan CThEF'''
+cy = '''Adalwch eich cosbau TAW gan CThEF'''
 
 [strings."vat-penalties.status-production-this-reads-your-real-8ae5ea"]
 hash = "8ae5ead1596a"
@@ -3476,7 +3513,7 @@ cy = '''Canslo’r cais'''
 
 [strings."vat-penalties.retrieve-vat-penalties-21cde3"]
 hash = "21cde375922b"
-cy = '''Cael cosbau TAW'''
+cy = '''Adalw cosbau TAW'''
 
 [strings."vat-penalties.shows-penalties-hmrc-has-recorded-in-7b5419"]
 hash = "7b5419dfe7f2"
@@ -3508,7 +3545,7 @@ cy = '''Dilysu’r penawdau atal twyll'''
 
 [strings."vat-penalties.retrieve-penalties-03a4b0"]
 hash = "03a4b0fc04cf"
-cy = '''Cael cosbau'''
+cy = '''Adalw cosbau'''
 
 [strings."vat-penalties.new-search-4587eb"]
 hash = "4587eb457003"
@@ -3552,7 +3589,7 @@ cy = '''Canslo’r cais'''
 
 [strings."vat-view-return.retrieve-vat-return-aad595"]
 hash = "aad59558dcf6"
-cy = '''Cael Ffurflen TAW'''
+cy = '''Adalw Ffurflen TAW'''
 
 [strings."vat-view-return.vat-registration-number-873ba7"]
 hash = "873ba742b4fb"
@@ -3704,7 +3741,7 @@ cy = '''Datganiad dilysu PSC'''
 
 [strings."receipts.kind-filing"]
 hash = "23439992c152"
-cy = '''Ffeilio i Dŷ’r Cwmnïau'''
+cy = '''Ffeilio gyda Thŷ’r Cwmnïau'''
 
 [strings."receipts.submission-number"]
 hash = "3b6014a2cff4"
@@ -3728,7 +3765,7 @@ cy = '''Ni chafodd Tŷ’r Cwmnïau ef'''
 
 [strings."receipts.in-progress-heading"]
 hash = "fa66b460081d"
-cy = '''Ffeilio i Dŷ’r Cwmnïau sydd heb ei dderbyn eto'''
+cy = '''Ffeilio gyda Thŷ’r Cwmnïau sydd heb ei dderbyn eto'''
 
 [strings."receipts.in-progress-hint"]
 hash = "50484fbeccc7"
@@ -3940,7 +3977,7 @@ cy = '''y TAW sy’n ddyledus ar gaffaeliadau'''
 
 [strings."vat-submit.box-name-4"]
 hash = "d770b2363fde"
-cy = '''y TAW a adenillwyd'''
+cy = '''y TAW a adhawliwyd'''
 
 [strings."vat-submit.box-name-6"]
 hash = "50664e7a636e"
@@ -3948,7 +3985,7 @@ cy = '''cyfanswm gwerth y gwerthiannau'''
 
 [strings."vat-submit.box-name-7"]
 hash = "f496c1bbb626"
-cy = '''cyfanswm gwerth y pryniadau'''
+cy = '''cyfanswm gwerth y pryniannau'''
 
 [strings."vat-submit.box-name-8"]
 hash = "c1c844073310"
@@ -3968,7 +4005,7 @@ cy = '''Nodwch y TAW sy’n ddyledus ar gaffaeliadau'''
 
 [strings."vat-submit.enter-box-4"]
 hash = "abfce2747a2b"
-cy = '''Nodwch y TAW a adenillwyd'''
+cy = '''Nodwch y TAW a adhawliwyd'''
 
 [strings."vat-submit.enter-box-6"]
 hash = "df7bcdd83bb2"
@@ -3976,7 +4013,7 @@ cy = '''Nodwch gyfanswm gwerth y gwerthiannau'''
 
 [strings."vat-submit.enter-box-7"]
 hash = "435c1a772256"
-cy = '''Nodwch gyfanswm gwerth y pryniadau'''
+cy = '''Nodwch gyfanswm gwerth y pryniannau'''
 
 [strings."vat-submit.enter-box-8"]
 hash = "47e5860bdc4e"
@@ -4132,7 +4169,7 @@ cy = '''Nodwch ddyddiad dechrau’r cyfnod'''
 
 [strings."widget.required-period-end"]
 hash = "88c59e9e30ac"
-cy = '''Nodwch ddyddiad diwedd y cyfnod'''
+cy = '''Nodwch ddyddiad gorffen y cyfnod'''
 
 [strings."vat-submit.tick-declaration"]
 hash = "71cbabb0410d"
@@ -4172,7 +4209,7 @@ cy = '''Blwch 3: Cyfanswm y TAW sy’n ddyledus'''
 
 [strings."vat-submit.receipt-box-4"]
 hash = "f8e8d3d07aac"
-cy = '''Blwch 4: TAW a adenillwyd'''
+cy = '''Blwch 4: TAW a adhawliwyd'''
 
 [strings."vat-submit.receipt-box-5"]
 hash = "dfc6e07cb663"
@@ -4184,7 +4221,7 @@ cy = '''Blwch 6: Cyfanswm y gwerthiannau, heb gynnwys TAW'''
 
 [strings."vat-submit.receipt-box-7"]
 hash = "c3f68a8999ed"
-cy = '''Blwch 7: Cyfanswm y pryniadau, heb gynnwys TAW'''
+cy = '''Blwch 7: Cyfanswm y pryniannau, heb gynnwys TAW'''
 
 [strings."vat-submit.receipt-box-8"]
 hash = "f8ea2fc253b1"
@@ -4237,7 +4274,7 @@ cy = '''Nid yw adborth HMRC Assist ar gael ar hyn o bryd. Gallwch gyflwyno’ch 
 
 [strings."vat-liabilities.retrieving"]
 hash = "b3d03a171183"
-cy = '''Yn cael eich rhwymedigaethau talu TAW...'''
+cy = '''Wrthi’n adalw eich rhwymedigaethau talu TAW...'''
 
 [strings."widget.still-processing"]
 hash = "7de569d46d54"
@@ -4249,11 +4286,11 @@ cy = '''Cafwyd eich rhwymedigaethau talu TAW.'''
 
 [strings."vat-liabilities.retrieve-failed"]
 hash = "170d00ffc96f"
-cy = '''Methu cael eich rhwymedigaethau talu TAW.'''
+cy = '''Methu ag adalw eich rhwymedigaethau talu TAW.'''
 
 [strings."vat-liabilities.could-not-retrieve"]
 hash = "c13ad9a37718"
-cy = '''Methu cael eich rhwymedigaethau talu TAW'''
+cy = '''Methu ag adalw eich rhwymedigaethau talu TAW'''
 
 [strings."vat-liabilities.none-found"]
 hash = "6c7277afcf2a"
@@ -4285,7 +4322,7 @@ cy = '''Dyddiad dyledus'''
 
 [strings."vat-obligations.retrieving"]
 hash = "9db9d3af2b77"
-cy = '''Yn cael eich rhwymedigaethau TAW...'''
+cy = '''Wrthi’n adalw eich rhwymedigaethau TAW...'''
 
 [strings."vat-obligations.retrieved"]
 hash = "fd3030684797"
@@ -4293,11 +4330,11 @@ cy = '''Cafwyd eich rhwymedigaethau TAW.'''
 
 [strings."vat-obligations.retrieve-failed"]
 hash = "bbaca8ef20d4"
-cy = '''Methu cael eich rhwymedigaethau TAW.'''
+cy = '''Methu ag adalw eich rhwymedigaethau TAW.'''
 
 [strings."vat-obligations.could-not-retrieve"]
 hash = "e7748ad052da"
-cy = '''Methu cael eich rhwymedigaethau TAW'''
+cy = '''Methu ag adalw eich rhwymedigaethau TAW'''
 
 [strings."vat-obligations.none-found"]
 hash = "0aecbe810f20"
@@ -4353,7 +4390,7 @@ cy = '''Rydych wedi dewis y cyfnod {period}. Bwriwch olwg dros ei Ffurflen TAW g
 
 [strings."vat-payments.retrieving"]
 hash = "5e7d18b295f5"
-cy = '''Yn cael eich taliadau TAW...'''
+cy = '''Wrthi’n adalw eich taliadau TAW...'''
 
 [strings."vat-payments.retrieved"]
 hash = "9235f59963b1"
@@ -4361,11 +4398,11 @@ cy = '''Cafwyd eich taliadau TAW.'''
 
 [strings."vat-payments.retrieve-failed"]
 hash = "557b8959bb4d"
-cy = '''Methu cael eich taliadau TAW.'''
+cy = '''Methu ag adalw eich taliadau TAW.'''
 
 [strings."vat-payments.could-not-retrieve"]
 hash = "5ff0640a86c0"
-cy = '''Methu cael eich taliadau TAW'''
+cy = '''Methu ag adalw eich taliadau TAW'''
 
 [strings."vat-payments.none-found"]
 hash = "5df517bb881f"
@@ -4381,11 +4418,11 @@ cy = '''Swm'''
 
 [strings."vat-payments.col-received"]
 hash = "49f19beeecf4"
-cy = '''Swm a gafwyd ar'''
+cy = '''Wedi’i gael'''
 
 [strings."vat-penalties.retrieving"]
 hash = "4863bc034b65"
-cy = '''Yn cael eich cosbau TAW...'''
+cy = '''Wrthi’n adalw eich cosbau TAW...'''
 
 [strings."vat-penalties.retrieved"]
 hash = "e2019916a809"
@@ -4393,11 +4430,11 @@ cy = '''Cafwyd eich cosbau TAW.'''
 
 [strings."vat-penalties.retrieve-failed"]
 hash = "500c5a7090ef"
-cy = '''Methu cael eich cosbau TAW.'''
+cy = '''Methu ag adalw eich cosbau TAW.'''
 
 [strings."vat-penalties.could-not-retrieve"]
 hash = "f190796ea4f5"
-cy = '''Methu cael eich cosbau TAW'''
+cy = '''Methu ag adalw eich cosbau TAW'''
 
 [strings."vat-penalties.none-found"]
 hash = "7473a68f781f"
@@ -4524,7 +4561,7 @@ cy = '''Tâl'''
 
 [strings."vat-view-return.retrieving"]
 hash = "6d512426b766"
-cy = '''Yn cael y Ffurflen TAW...'''
+cy = '''Wrthi’n adalw’r Ffurflen TAW...'''
 
 [strings."vat-view-return.retrieved"]
 hash = "930b6d1b450b"
@@ -4532,19 +4569,19 @@ cy = '''Cafwyd y Ffurflen TAW.'''
 
 [strings."vat-view-return.retrieve-failed"]
 hash = "ab3014243dce"
-cy = '''Methu cael y Ffurflen TAW.'''
+cy = '''Methu ag adalw’r Ffurflen TAW.'''
 
 [strings."vat-view-return.could-not-retrieve"]
 hash = "f827fd92cc7f"
-cy = '''Methu cael y Ffurflen TAW'''
+cy = '''Methu ag adalw’r Ffurflen TAW'''
 
 [strings."vat-view-return.explain-amounts"]
 hash = "4b7fa0aaa073"
-cy = '''Mae blychau 1 i 5 yn dangos y TAW sy’n ddyledus ar eich gwerthiannau, y TAW y gallwch ei hadennill ar bryniadau, a’r swm net. Blwch 5 yw blwch 3 llai blwch 4: y TAW rydych yn ei thalu i CThEF neu’n ei hadennill. Mae’r symiau mewn punnoedd a cheiniogau.'''
+cy = '''Mae blychau 1 i 5 yn dangos y TAW sy’n ddyledus ar eich gwerthiannau, y TAW y gallwch ei hadhawlio ar bryniannau, a’r swm net. Blwch 5 yw blwch 3 llai blwch 4: y TAW rydych yn ei thalu i CThEF neu’n ei hadennill. Mae’r symiau mewn punnoedd a cheiniogau.'''
 
 [strings."vat-view-return.explain-turnover"]
 hash = "c29228ff023e"
-cy = '''Mae blychau 6 i 9 yn dangos gwerth eich gwerthiannau a’ch pryniadau heb TAW, mewn punnoedd cyfan. Maen nhw ar wahân i’r TAW ym mlychau 1 i 5.'''
+cy = '''Mae blychau 6 i 9 yn dangos gwerth eich gwerthiannau a’ch pryniannau heb TAW, mewn punnoedd cyfan. Maen nhw ar wahân i’r TAW ym mlychau 1 i 5.'''
 
 [strings."vat-view-return.explain-declaration"]
 hash = "f925b5226246"
@@ -4564,7 +4601,7 @@ cy = '''Blwch {box}: {label}'''
 
 [strings."vat-view-return.notice-box"]
 hash = "3b6dc32f5cbe"
-cy = '''VAT Notice 700/12, blwch {box} (yn Saesneg)'''
+cy = '''VAT Notice 700/12, blwch {box} (yn agor tudalen Saesneg)'''
 
 [strings."vat-view-return.what-each-box-means"]
 hash = "16b056942d28"
@@ -4664,7 +4701,7 @@ cy = '''Ni all y swm fod yn negyddol. Gwiriwch: {labels}.'''
 
 [strings."widget.failed-retrieve-properties"]
 hash = "8136a5143430"
-cy = '''Methu nôl yr eiddo.'''
+cy = '''Methu ag adalw’r eiddo.'''
 
 [strings."widget.failed-add-property"]
 hash = "9a7be839077c"
@@ -4676,23 +4713,23 @@ cy = '''Methu cadw’r eiddo.'''
 
 [strings."widget.failed-file-quarterly-update"]
 hash = "b1e2b8d212a6"
-cy = '''Methu ffeilio’r diweddariad chwarterol.'''
+cy = '''Methu cyflwyno’r diweddariad chwarterol.'''
 
 [strings."widget.failed-save-period-summary"]
 hash = "e57bdce170fb"
-cy = '''Methu cadw crynodeb y cyfnod.'''
+cy = '''Methu cadw’r crynodeb o’r cyfnod.'''
 
 [strings."widget.failed-retrieve-period-summary"]
 hash = "1e37bdff0b12"
-cy = '''Methu nôl crynodeb y cyfnod.'''
+cy = '''Methu ag adalw’r crynodeb o’r cyfnod.'''
 
 [strings."widget.failed-retrieve-period-summaries"]
 hash = "5ef3e8788a26"
-cy = '''Methu nôl crynodebau’r cyfnodau.'''
+cy = '''Methu ag adalw’r crynodebau o gyfnodau.'''
 
 [strings."widget.failed-retrieve-annual-submission"]
 hash = "d3ef73c38f1a"
-cy = '''Methu nôl y cyflwyniad blynyddol.'''
+cy = '''Methu ag adalw’r cyflwyniad blynyddol.'''
 
 [strings."widget.failed-save-annual-submission"]
 hash = "f328de16d59a"
@@ -4700,7 +4737,7 @@ cy = '''Methu cadw’r cyflwyniad blynyddol.'''
 
 [strings."widget.failed-retrieve-year-end-summary"]
 hash = "2efdc2def5e7"
-cy = '''Methu nôl crynodeb diwedd y flwyddyn.'''
+cy = '''Methu ag adalw’r crynodeb diwedd blwyddyn.'''
 
 [strings."widget.failed-submit-year-end-adjustment"]
 hash = "6dfd9f8581ce"
@@ -4736,7 +4773,7 @@ cy = '''Mae gennych {tokens} ar ôl ac mae’r ffeilio hwn yn costio {cost}.'''
 
 [strings."widget.cost-none-left"]
 hash = "7e4993fe1577"
-cy = '''Nid oes gennych gredydau ar ôl.'''
+cy = '''Nid oes gennych gredydau (tokens) ar ôl.'''
 
 [strings."widget.cost-refresh-or"]
 hash = "2a35ae98b4af"
@@ -4748,7 +4785,7 @@ cy = '''Gallwch'''
 
 [strings."widget.cost-add-bundle"]
 hash = "2171cdf3e278"
-cy = '''ychwanegu bwndel'''
+cy = '''ychwanegu Bundle'''
 
 [strings."vat.box-1"]
 hash = "fad75272126a"
@@ -4777,11 +4814,11 @@ cy = '''Dangoswch gyfanswm y TAW sy’n ddyledus, hynny yw, blychau 1 a 2 wedi�
 
 [strings."vat.box-4"]
 hash = "9dedc512e1e3"
-cy = '''TAW a adenillwyd yn y cyfnod ar bryniadau a mewnbynnau eraill (gan gynnwys caffaeliadau yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE)'''
+cy = '''TAW a adhawliwyd yn y cyfnod ar bryniannau a mewnbynnau eraill (gan gynnwys caffaeliadau yng Ngogledd Iwerddon o Aelod-wladwriaethau’r UE)'''
 
 [strings."vat.box-4-definition"]
 hash = "f504772aa45a"
-cy = '''Dangoswch gyfanswm y TAW y gellir ei didynnu a godwyd ar bryniadau eich busnes.'''
+cy = '''Dangoswch gyfanswm y TAW y gellir ei didynnu a godwyd ar bryniannau eich busnes.'''
 
 [strings."vat.box-5"]
 hash = "ca83f7afa2e2"
@@ -4801,11 +4838,11 @@ cy = '''Dangoswch gyfanswm gwerth holl werthiannau eich busnes ac allbynnau peno
 
 [strings."vat.box-7"]
 hash = "6f102035a2ea"
-cy = '''Cyfanswm gwerth y pryniadau a’r holl fewnbynnau eraill, heb gynnwys TAW'''
+cy = '''Cyfanswm gwerth y pryniannau a’r holl fewnbynnau eraill, heb gynnwys TAW'''
 
 [strings."vat.box-7-definition"]
 hash = "08c5755bdc2b"
-cy = '''Dangoswch gyfanswm gwerth eich pryniadau a’ch treuliau, ond heb gynnwys TAW.'''
+cy = '''Dangoswch gyfanswm gwerth eich pryniannau a’ch treuliau, ond heb gynnwys TAW.'''
 
 [strings."vat.box-8"]
 hash = "f657b58caf78"
@@ -5124,7 +5161,7 @@ cy = '''Ni chafodd Tŷ’r Cwmnïau y ffeilio hwn. Ni ffeiliwyd dim. Ffeiliwch e
 
 [strings."widget.ch-not-received-number"]
 hash = "0d24f13b97cc"
-cy = '''Rhif cyflwyno {number}.'''
+cy = '''Rhif cyflwyniad {number}.'''
 
 [strings."widget.ch-not-received-title"]
 hash = "2aff3dacb517"
@@ -5596,7 +5633,7 @@ cy = '''Lwfans cyfalaf arall'''
 
 [strings."itsa.field-zero-emissions-car-allowance"]
 hash = "25a1a87efa61"
-cy = '''Lwfans car allyriadau sero'''
+cy = '''Lwfans ar gyfer car di-allyriadau'''
 
 [strings."itsa.field-property-income-allowance"]
 hash = "ef2a03ba9084"
@@ -5748,7 +5785,7 @@ cy = '''Ni roddwyd gan CThEF'''
 
 [strings."itsa.declaration-wording"]
 hash = "e2acba9fc0dd"
-cy = '''Rwy’n datgan bod yr wybodaeth a’r Hunanasesiad a gyflwynwyd gennyf (o’u hystyried gyda’i gilydd) yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth. Rwy’n deall y gallai fod yn rhaid i mi dalu cosbau ariannol ac wynebu erlyniad os byddaf yn rhoi gwybodaeth anwir.'''
+cy = '''Rwy’n cadarnhau bod yr wybodaeth hon yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth. Rwy’n deall y gallai fod yn rhaid i mi dalu cosbau ariannol ac wynebu erlyniad os byddaf yn rhoi gwybodaeth anwir.'''
 
 [strings."itsa.record-declared-on"]
 hash = "f079025aecc0"
@@ -5864,7 +5901,7 @@ cy = '''Rhentu ystafell: wedi’i gosod ar y cyd'''
 
 [strings."itsa.field-trading-income-allowance"]
 hash = "079a0d79103b"
-cy = '''Lwfans Incwm Masnachu'''
+cy = '''Lwfans incwm masnachu'''
 
 [strings."itsa.field-annual-investment-allowance"]
 hash = "14601134a94d"
@@ -5872,7 +5909,7 @@ cy = '''Lwfans Buddsoddi Blynyddol'''
 
 [strings."itsa.field-capital-allowance-main-pool"]
 hash = "d980adad1c30"
-cy = '''Lwfans cyfalaf, cronfa brif gyfradd'''
+cy = '''Lwfans cyfalaf, prif gronfa'''
 
 [strings."itsa.field-capital-allowance-special-rate-pool"]
 hash = "cf6ba033f295"
@@ -5896,7 +5933,7 @@ cy = '''Lwfans cyfalaf, cronfa ased sengl'''
 
 [strings."itsa.field-zero-emissions-goods-vehicle-allowance"]
 hash = "91dfcac1e140"
-cy = '''Lwfans cerbyd nwyddau allyriadau sero'''
+cy = '''Lwfans ar gyfer cerbyd di-allyriadau sy’n cario nwyddau'''
 
 [strings."itsa.field-electric-charge-point-allowance"]
 hash = "7824661bd93c"
@@ -5912,7 +5949,7 @@ cy = '''Lwfans Strwythurau ac Adeiladau'''
 
 [strings."itsa.field-freeport-structures-and-buildings-allowance"]
 hash = "b2fc418b5887"
-cy = '''Lwfans Strwythurau ac Adeiladau Porthladd Rhydd'''
+cy = '''Lwfans Strwythurau ac Adeiladau Porthladdoedd Rhydd'''
 
 [strings."itsa.field-date-the-building-first-qualified"]
 hash = "966fbb51fd0a"
@@ -5960,7 +5997,7 @@ cy = '''Treuliau car, fan a theithio'''
 
 [strings."itsa.field-rent-rates-power-and-insurance-costs"]
 hash = "6111bda9c8f6"
-cy = '''Costau rhent, ardrethi, pŵer ac yswiriant'''
+cy = '''Rhent, ardrethi, pŵer a chostau yswiriant'''
 
 [strings."itsa.field-repairs-and-renewals-of-property-and"]
 hash = "811e786b1457"
@@ -5972,7 +6009,7 @@ cy = '''Costau ffôn, ffacs, deunydd ysgrifennu a swyddfa eraill'''
 
 [strings."itsa.field-business-entertainment-costs"]
 hash = "982eca9e27be"
-cy = '''Costau adloniant busnes'''
+cy = '''Costau gwesteia’r busnes'''
 
 [strings."itsa.field-advertising-costs"]
 hash = "073929622159"
@@ -5980,7 +6017,7 @@ cy = '''Costau hysbysebu'''
 
 [strings."itsa.field-interest-on-bank-and-other-loans"]
 hash = "0e69b254e5a2"
-cy = '''Llog ar fenthyciadau banc a benthyciadau eraill'''
+cy = '''Llog ar fenthyciadau o’r banc a benthyciadau eraill'''
 
 [strings."itsa.field-bank-credit-card-and-other-financial"]
 hash = "b1ee69923622"
@@ -5988,15 +6025,15 @@ cy = '''Banc, cerdyn credyd a thaliadau ariannol eraill'''
 
 [strings."itsa.field-irrecoverable-debts-written-off"]
 hash = "b027843ea984"
-cy = '''Dyledion anadferadwy a ddilëwyd'''
+cy = '''Dyledion na ellir eu hadfer a ddilëwyd'''
 
 [strings."itsa.field-accountancy-legal-and-other-professional-fees"]
 hash = "3634796290b3"
-cy = '''Ffioedd cyfrifyddu, cyfreithiol a phroffesiynol eraill'''
+cy = '''Ffioedd cyfrifyddiaeth, cyfreithiol a phroffesiynol eraill'''
 
 [strings."itsa.field-depreciation-and-loss-profit-on-sales"]
 hash = "e3e0eaaf77dc"
-cy = '''Dibrisiant a cholled neu elw o werthu asedau'''
+cy = '''Dibrisiant a cholled neu elw wrth werthu asedion'''
 
 [strings."itsa.field-other-expenses"]
 hash = "5caefbb86afb"
@@ -6384,7 +6421,7 @@ cy = '''Nodwch naill ai cyfanswm y treuliau neu’r treuliau wedi’u rhestru, n
 
 [strings."itsa.se-disallowable-with-itemised"]
 hash = "68f09aca326a"
-cy = '''Mae’r treuliau na ellir eu caniatáu yn mynd gyda’r treuliau wedi’u rhestru, nid gyda chyfanswm y treuliau. Cliriwch nhw neu rhestrwch y treuliau.'''
+cy = '''Mae’r treuliau nas caniateir yn mynd gyda’r treuliau wedi’u rhestru, nid gyda chyfanswm y treuliau. Cliriwch nhw neu rhestrwch y treuliau.'''
 
 [strings."itsa.se-expense"]
 hash = "a0417ba8010e"
@@ -6416,7 +6453,7 @@ cy = '''Mae cost nwyddau a threuliau eraill yn cael eu hanfon hyd yn oed pan fyd
 
 [strings."itsa.se-disallowable-expenses"]
 hash = "b64ccc09c2ad"
-cy = '''Treuliau na ellir eu caniatáu'''
+cy = '''Treuliau nas caniateir'''
 
 [strings."itsa.se-disallowable-hint"]
 hash = "ec57a79423d0"
@@ -6728,7 +6765,7 @@ cy = '''Canslo’r cais'''
 
 [strings."itsa-obligations.retrieve-obligations-63a80e"]
 hash = "63a80e6fd500"
-cy = '''Cael rhwymedigaethau'''
+cy = '''Adalw rhwymedigaethau'''
 
 [strings."itsa-obligations.national-insurance-number-21829e"]
 hash = "21829e7b7b1b"
@@ -6860,11 +6897,11 @@ cy = '''Enw masnachu'''
 
 [strings."itsa-dashboard.year-cost-one"]
 hash = "da92f6e41c1f"
-cy = '''Mae eleni’n costio {tokens} tocyn ar gyfer yr {count} busnes a restrwyd gan CThEF: {each} y busnes ar gyfer y diweddariadau chwarterol, a {final} ar gyfer y datganiad terfynol.'''
+cy = '''Mae eleni’n costio {tokens} credyd (tokens) ar gyfer yr {count} busnes a restrwyd gan CThEF: {each} y busnes ar gyfer y diweddariadau chwarterol, a {final} ar gyfer y datganiad terfynol.'''
 
 [strings."itsa-dashboard.year-cost-many"]
 hash = "a624ae2f71e9"
-cy = '''Mae eleni’n costio {tokens} tocyn ar gyfer y {count} busnes a restrwyd gan CThEF: {each} y busnes ar gyfer y diweddariadau chwarterol, a {final} ar gyfer y datganiad terfynol.'''
+cy = '''Mae eleni’n costio {tokens} credyd (tokens) ar gyfer y {count} busnes a restrwyd gan CThEF: {each} y busnes ar gyfer y diweddariadau chwarterol, a {final} ar gyfer y datganiad terfynol.'''
 
 [strings."itsa-dashboard.finding"]
 hash = "c0863b241526"
@@ -7008,7 +7045,7 @@ cy = '''Trosiant'''
 
 [strings."itsa-se-period.the-takings-fees-sales-or-money-796061"]
 hash = "796061870142"
-cy = '''Yr enillion, ffioedd, gwerthiannau neu’r arian a enillwyd gan y busnes ar gyfer y cyfnod hwn. Nodwch 0 os nad oes dim.'''
+cy = '''Y derbyniadau, ffioedd, gwerthiannau neu’r arian a enillwyd gan y busnes ar gyfer y cyfnod hwn. Nodwch 0 os nad oes dim.'''
 
 [strings."itsa-se-period.for-example-600-or-193-54-59a197"]
 hash = "59a197f1c475"
@@ -7328,7 +7365,7 @@ cy = '''Trosiant'''
 
 [strings."itsa-se-amend.the-corrected-takings-fees-sales-or-fafaaf"]
 hash = "fafaaffb980a"
-cy = '''Yr enillion, ffioedd, gwerthiannau neu’r arian wedi’u cywiro a enillwyd gan y busnes ar gyfer y cyfnod hwn.'''
+cy = '''Y derbyniadau, ffioedd, gwerthiannau neu’r arian wedi’u cywiro a enillwyd gan y busnes ar gyfer y cyfnod hwn.'''
 
 [strings."itsa-se-amend.for-example-600-or-193-54-59a197"]
 hash = "59a197f1c475"
@@ -7512,7 +7549,7 @@ cy = '''Dim un'''
 
 [strings."itsa-annual.trading-income-allowance-079a0d"]
 hash = "079a0d79103b"
-cy = '''Lwfans Incwm Masnachu'''
+cy = '''Lwfans incwm masnachu'''
 
 [strings."itsa-annual.itemised-allowances-9b65a5"]
 hash = "9b65a5a63e64"
@@ -7524,7 +7561,7 @@ cy = '''Lwfans Buddsoddi Blynyddol'''
 
 [strings."itsa-annual.capital-allowance-main-pool-d980ad"]
 hash = "d980adad1c30"
-cy = '''Lwfans cyfalaf, cronfa brif gyfradd'''
+cy = '''Lwfans cyfalaf, prif gronfa'''
 
 [strings."itsa-annual.capital-allowance-special-rate-pool-cf6ba0"]
 hash = "cf6ba033f295"
@@ -7548,7 +7585,7 @@ cy = '''Lwfans cyfalaf, cronfa ased sengl'''
 
 [strings."itsa-annual.zero-emissions-car-allowance-25a1a8"]
 hash = "25a1a87efa61"
-cy = '''Lwfans car allyriadau sero'''
+cy = '''Lwfans ar gyfer car di-allyriadau'''
 
 [strings."itsa-annual.non-financial-details-079b30"]
 hash = "079b30836c1e"
@@ -7700,7 +7737,7 @@ cy = '''Cyfanswm y trosiant wedi’i gywiro ar gyfer y flwyddyn dreth hyd yma.''
 
 [strings."itsa-se-amend.turnover-hint"]
 hash = "fafaaffb980a"
-cy = '''Yr enillion, ffioedd, gwerthiannau neu’r arian wedi’u cywiro a enillwyd gan y busnes ar gyfer y cyfnod hwn.'''
+cy = '''Y derbyniadau, ffioedd, gwerthiannau neu’r arian wedi’u cywiro a enillwyd gan y busnes ar gyfer y cyfnod hwn.'''
 
 [strings."itsa-se-amend.current-total-applied"]
 hash = "484a58c6f477"
@@ -8656,7 +8693,7 @@ cy = '''Cost amnewid eitemau domestig'''
 
 [strings."itsa-uk-annual.zero-emissions-car-allowance-25a1a8"]
 hash = "25a1a87efa61"
-cy = '''Lwfans car allyriadau sero'''
+cy = '''Lwfans ar gyfer car di-allyriadau'''
 
 [strings."itsa-uk-annual.save-annual-submission-426ccf"]
 hash = "426ccfe89cc4"
@@ -10264,7 +10301,7 @@ cy = '''Hunangyflogaeth (unig fasnach)'''
 
 [strings."itsa-losses.uk-property-e6602b"]
 hash = "e6602b028ffb"
-cy = '''eiddo yn y DU'''
+cy = '''Eiddo yn y DU'''
 
 [strings."itsa-losses.foreign-property-8a5245"]
 hash = "8a5245dd1469"
@@ -10480,7 +10517,7 @@ cy = '''Pob busnes a gyfrifodd CThEF yn y cyfrifiad hwn, fel bod busnes sydd gen
 
 [strings."itsa-final.i-confirm-this-information-is-correct-e2acba"]
 hash = "e2acba9fc0dd"
-cy = '''Rwy’n datgan bod yr wybodaeth a’r Hunanasesiad a gyflwynwyd gennyf (o’u hystyried gyda’i gilydd) yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth. Rwy’n deall y gallai fod yn rhaid i mi dalu cosbau ariannol ac wynebu erlyniad os byddaf yn rhoi gwybodaeth anwir.'''
+cy = '''Rwy’n cadarnhau bod yr wybodaeth hon yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth. Rwy’n deall y gallai fod yn rhaid i mi dalu cosbau ariannol ac wynebu erlyniad os byddaf yn rhoi gwybodaeth anwir.'''
 
 [strings."itsa-final.hmrc-assist-feedback-was-shown-for-efb24c"]
 hash = "efb24cfbf48d"
@@ -10879,39 +10916,39 @@ cy = '''Y flwyddyn flaenorol (£)'''
 
 [strings."ch-micro-entity.called-up-share-capital-not-paid-30e7aa"]
 hash = "30e7aadacfd0"
-cy = '''Cyfalaf cyfrannau wedi’i alw heb ei dalu (dewisol)'''
+cy = '''Cyfalaf cyfranddaliadau wedi’i alw na thalwyd (dewisol)'''
 
 [strings."ch-micro-entity.called-up-share-capital-not-paid-9f0c82"]
 hash = "9f0c8275a170"
-cy = '''Cyfalaf cyfrannau wedi’i alw heb ei dalu, eleni'''
+cy = '''Cyfalaf cyfranddaliadau wedi’i alw na thalwyd, eleni'''
 
 [strings."ch-micro-entity.called-up-share-capital-not-paid-c1f41d"]
 hash = "c1f41d30497a"
-cy = '''Cyfalaf cyfrannau wedi’i alw heb ei dalu, y llynedd'''
+cy = '''Cyfalaf cyfranddaliadau wedi’i alw na thalwyd, y llynedd'''
 
 [strings."ch-micro-entity.fixed-assets-959c37"]
 hash = "959c37b4f9bd"
-cy = '''Asedion sefydlog'''
+cy = '''Asedau sefydlog'''
 
 [strings."ch-micro-entity.fixed-assets-this-year-9cdb81"]
 hash = "9cdb81e2324f"
-cy = '''Asedion sefydlog, eleni'''
+cy = '''Asedau sefydlog, eleni'''
 
 [strings."ch-micro-entity.fixed-assets-last-year-7a8f8c"]
 hash = "7a8f8ced9765"
-cy = '''Asedion sefydlog, y llynedd'''
+cy = '''Asedau sefydlog, y llynedd'''
 
 [strings."ch-micro-entity.current-assets-ccafff"]
 hash = "ccafff34606e"
-cy = '''Asedion cyfredol'''
+cy = '''Asedau cyfredol'''
 
 [strings."ch-micro-entity.current-assets-this-year-168bc4"]
 hash = "168bc48bd801"
-cy = '''Asedion cyfredol, eleni'''
+cy = '''Asedau cyfredol, eleni'''
 
 [strings."ch-micro-entity.current-assets-last-year-d3e6ca"]
 hash = "d3e6ca1f0f0c"
-cy = '''Asedion cyfredol, y llynedd'''
+cy = '''Asedau cyfredol, y llynedd'''
 
 [strings."ch-micro-entity.prepayments-and-accrued-income-optional-c42ba6"]
 hash = "c42ba6d0267b"
@@ -10975,15 +11012,15 @@ cy = '''Croniadau ac incwm gohiriedig, y llynedd'''
 
 [strings."ch-micro-entity.called-up-share-capital-4473b4"]
 hash = "4473b4128459"
-cy = '''Cyfalaf cyfrannau wedi’i alw'''
+cy = '''Cyfalaf cyfranddaliadau wedi’i alw'''
 
 [strings."ch-micro-entity.called-up-share-capital-this-year-4381cb"]
 hash = "4381cb2d4659"
-cy = '''Cyfalaf cyfrannau wedi’i alw, eleni'''
+cy = '''Cyfalaf cyfranddaliadau wedi’i alw, eleni'''
 
 [strings."ch-micro-entity.called-up-share-capital-last-year-74c14f"]
 hash = "74c14f2a6753"
-cy = '''Cyfalaf cyfrannau wedi’i alw, y llynedd'''
+cy = '''Cyfalaf cyfranddaliadau wedi’i alw, y llynedd'''
 
 [strings."ch-micro-entity.profit-and-loss-account-dd8ab0"]
 hash = "dd8ab0040551"
@@ -11035,7 +11072,7 @@ cy = '''Roedd y cwmni’n segur drwy gydol y cyfnod'''
 
 [strings."ch-micro-entity.under-the-companies-act-2006-a-5ad40f"]
 hash = "5ad40fe99f54"
-cy = '''O dan Ddeddf Cwmnïau 2006, mae cwmni’n segur pan na chafodd unrhyw drafodiad cyfrifyddu sylweddol yn y cyfnod. Nid yw ffioedd ffeilio i Dŷ’r Cwmnïau a chyfrannau a glustnodwyd wrth gorffori yn cyfrif fel rhai sylweddol. Rhaid i’w gyfrif elw a cholled orffen y cyfnod lle y dechreuodd.'''
+cy = '''O dan Ddeddf Cwmnïau 2006, mae cwmni’n segur pan na chafodd unrhyw drafodiad cyfrifyddu sylweddol yn y cyfnod. Nid yw ffioedd ffeilio i Dŷ’r Cwmnïau a chyfranddaliadau a ddyrannwyd wrth gorffori yn cyfrif fel rhai sylweddol. Rhaid i’w gyfrif elw a cholled orffen y cyfnod lle y dechreuodd.'''
 
 [strings."ch-micro-entity.trading-history-c3cb58"]
 hash = "c3cb585e5915"
@@ -11051,7 +11088,7 @@ cy = '''Roedd y cwmni’n masnachu yn y gorffennol ac nid yw’n masnachu mwyach
 
 [strings."ch-micro-entity.share-class-acf5ea"]
 hash = "acf5eaf66e10"
-cy = '''Dosbarth cyfrannau'''
+cy = '''Dosbarth cyfranddaliadau'''
 
 [strings."ch-micro-entity.ordinary-f46f36"]
 hash = "f46f36f72dc6"
@@ -11059,7 +11096,7 @@ cy = '''Cyffredin'''
 
 [strings."ch-micro-entity.preference-a0dc19"]
 hash = "a0dc191bc1d4"
-cy = '''Blaengyfrannau'''
+cy = '''Dewisol'''
 
 [strings."ch-micro-entity.deferred-1fc4d2"]
 hash = "1fc4d2e60ca8"
@@ -11071,11 +11108,11 @@ cy = '''Arall'''
 
 [strings."ch-micro-entity.nominal-value-of-each-share-in-06c00d"]
 hash = "06c00d6c3009"
-cy = '''Gwerth nominal pob cyfran, mewn punnoedd'''
+cy = '''Gwerth nominal pob cyfranddaliad, mewn punnoedd'''
 
 [strings."ch-micro-entity.for-example-1-or-0-01-509697"]
 hash = "509697802c67"
-cy = '''Er enghraifft, 1 neu 0.01. Y cyfalaf cyfrannau wedi’i alw wedi’i rannu â hwn yw nifer y cyfrannau.'''
+cy = '''Er enghraifft, 1 neu 0.01. Y cyfalaf cyfranddaliadau wedi’i alw wedi’i rannu â hwn yw nifer y cyfranddaliadau.'''
 
 [strings."ch-micro-entity.accountants-report-ab913e"]
 hash = "ab913eaa2c6d"
@@ -11087,7 +11124,7 @@ cy = '''Lluniodd cyfrifydd y cyfrifon hyn'''
 
 [strings."ch-micro-entity.the-accounts-gain-a-page-for-ed45c6"]
 hash = "ed45c6fd0f6d"
-cy = '''Mae’r cyfrifon yn cael tudalen ar gyfer adroddiad y cyfrifwyr, ac mae Tŷ’r Cwmnïau yn eu gweld fel rhai wedi eu heithrio rhag archwilio ariannol gydag adroddiad cyfrifydd.'''
+cy = '''Mae’r cyfrifon yn cael tudalen ar gyfer adroddiad y cyfrifwyr, ac mae Tŷ’r Cwmnïau yn eu gweld fel rhai wedi eu heithrio rhag archwiliad gydag adroddiad cyfrifwyr.'''
 
 [strings."ch-micro-entity.name-of-the-accountancy-firm-eb9e0e"]
 hash = "eb9e0e9b74f6"
@@ -11111,7 +11148,7 @@ cy = '''Nid yw’r aelodau wedi ei gwneud yn ofynnol i’r cwmni gael archwiliad
 
 [strings."ch-micro-entity.the-directors-acknowledge-their-responsibilities-for-f16963"]
 hash = "f16963f3bf9a"
-cy = '''Mae’r cyfarwyddwyr yn cydnabod eu cyfrifoldebau am gydymffurfio â gofynion Deddf Cwmnïau 2006 o ran cofnodion cyfrifyddu a pharatoi cyfrifon.'''
+cy = '''Mae pob cyfarwyddwr yn cydnabod eu cyfrifoldebau am gydymffurfio â’r gofynion o dan Ddeddf Cwmnïau 2006 o ran cofnodion cyfrifyddu a pharatoi cyfrifon.'''
 
 [strings."ch-micro-entity.these-accounts-have-been-prepared-in-4b6856"]
 hash = "4b6856bb5834"
@@ -11207,19 +11244,19 @@ cy = '''Y flwyddyn flaenorol'''
 
 [strings."ch-micro-entity.enter-fixed-assets-for-this-year-8a7559"]
 hash = "8a7559bdf062"
-cy = '''Rhowch yr asedion sefydlog ar gyfer eleni'''
+cy = '''Rhowch yr asedau sefydlog ar gyfer eleni'''
 
 [strings."ch-micro-entity.enter-fixed-assets-for-last-year-734c37"]
 hash = "734c379f8e44"
-cy = '''Rhowch yr asedion sefydlog ar gyfer y llynedd'''
+cy = '''Rhowch yr asedau sefydlog ar gyfer y llynedd'''
 
 [strings."ch-micro-entity.enter-current-assets-for-this-year-31782e"]
 hash = "31782ecb994d"
-cy = '''Rhowch yr asedion cyfredol ar gyfer eleni'''
+cy = '''Rhowch yr asedau cyfredol ar gyfer eleni'''
 
 [strings."ch-micro-entity.enter-current-assets-for-last-year-b6359d"]
 hash = "b6359d979e27"
-cy = '''Rhowch yr asedion cyfredol ar gyfer y llynedd'''
+cy = '''Rhowch yr asedau cyfredol ar gyfer y llynedd'''
 
 [strings."ch-micro-entity.enter-creditors-amounts-falling-due-within-a8546c"]
 hash = "a8546c2a65e5"
@@ -11239,11 +11276,11 @@ cy = '''Rhowch y credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn ar gyf
 
 [strings."ch-micro-entity.enter-called-up-share-capital-for-5d8ace"]
 hash = "5d8ace47aa6a"
-cy = '''Rhowch y cyfalaf cyfrannau wedi’i alw ar gyfer eleni'''
+cy = '''Rhowch y cyfalaf cyfranddaliadau wedi’i alw ar gyfer eleni'''
 
 [strings."ch-micro-entity.enter-called-up-share-capital-for-a6cf0f"]
 hash = "a6cf0fc91579"
-cy = '''Rhowch y cyfalaf cyfrannau wedi’i alw ar gyfer y llynedd'''
+cy = '''Rhowch y cyfalaf cyfranddaliadau wedi’i alw ar gyfer y llynedd'''
 
 [strings."ch-micro-entity.enter-profit-and-loss-account-for-b19176"]
 hash = "b1917681d94c"
@@ -11375,7 +11412,7 @@ cy = '''Fformat yr elw a’r golled'''
 
 [strings."ch-small-company.format-1-costs-by-function-cost-eaf911"]
 hash = "eaf9117506f9"
-cy = '''Fformat 1, costau yn ôl swyddogaeth: cost gwerthiant a threuliau gweinyddu'''
+cy = '''Fformat 1, costau yn ôl swyddogaeth: cost gwerthiant a threuliau gweinyddol'''
 
 [strings."ch-small-company.format-2-costs-by-nature-raw-9a6cd8"]
 hash = "9a6cd8a6793a"
@@ -11423,27 +11460,27 @@ cy = '''Gwaith eich hun wedi’i gyfalafu, eleni'''
 
 [strings."ch-small-company.other-operating-income-66b1c9"]
 hash = "66b1c9867144"
-cy = '''Incwm gweithredu arall'''
+cy = '''Incwm gweithredol arall'''
 
 [strings."ch-small-company.other-operating-income-this-year-dd26a5"]
 hash = "dd26a53eb245"
-cy = '''Incwm gweithredu arall, eleni'''
+cy = '''Incwm gweithredol arall, eleni'''
 
 [strings."ch-small-company.raw-materials-and-consumables-8471ca"]
 hash = "8471ca9007cb"
-cy = '''Deunyddiau crai a nwyddau traul'''
+cy = '''Deunyddiau crai a defnyddiau traul'''
 
 [strings."ch-small-company.raw-materials-and-consumables-this-year-b4b8a3"]
 hash = "b4b8a39c9fc8"
-cy = '''Deunyddiau crai a nwyddau traul, eleni'''
+cy = '''Deunyddiau crai a defnyddiau traul, eleni'''
 
 [strings."ch-small-company.other-external-charges-88457e"]
 hash = "88457ef59862"
-cy = '''Taliadau allanol eraill'''
+cy = '''Costau allanol eraill'''
 
 [strings."ch-small-company.other-external-charges-this-year-053a04"]
 hash = "053a04a88da1"
-cy = '''Taliadau allanol eraill, eleni'''
+cy = '''Costau allanol eraill, eleni'''
 
 [strings."ch-small-company.staff-costs-f64e0c"]
 hash = "f64e0cbf55e8"
@@ -11455,19 +11492,19 @@ cy = '''Costau staff, eleni'''
 
 [strings."ch-small-company.depreciation-and-other-amounts-written-off-43b439"]
 hash = "43b4394c94f7"
-cy = '''Dibrisiant a symiau eraill a ddilëwyd oddi ar asedion sefydlog diriaethol ac anniriaethol'''
+cy = '''Dibrisiant a symiau eraill wedi’u dileu oddi ar asedau sefydlog diriaethol ac anniriaethol'''
 
 [strings."ch-small-company.depreciation-and-other-amounts-written-off-16753f"]
 hash = "16753f63880c"
-cy = '''Dibrisiant a symiau eraill a ddilëwyd oddi ar asedion sefydlog diriaethol ac anniriaethol, eleni'''
+cy = '''Dibrisiant a symiau eraill wedi’u dileu oddi ar asedau sefydlog diriaethol ac anniriaethol, eleni'''
 
 [strings."ch-small-company.other-operating-expenses-71c310"]
 hash = "71c31090776d"
-cy = '''Treuliau gweithredu eraill'''
+cy = '''Treuliau gweithredol eraill'''
 
 [strings."ch-small-company.other-operating-expenses-this-year-966848"]
 hash = "966848ec572f"
-cy = '''Treuliau gweithredu eraill, eleni'''
+cy = '''Treuliau gweithredol eraill, eleni'''
 
 [strings."ch-small-company.turnover-8ecaf1"]
 hash = "8ecaf1d78b2e"
@@ -11479,19 +11516,19 @@ cy = '''Trosiant, eleni'''
 
 [strings."ch-small-company.cost-of-sales-9bbf71"]
 hash = "9bbf71f39d4a"
-cy = '''Cost gwerthiant'''
+cy = '''Cost gwerthiannau'''
 
 [strings."ch-small-company.cost-of-sales-this-year-5dfa9c"]
 hash = "5dfa9c0dd571"
-cy = '''Cost gwerthiant, eleni'''
+cy = '''Cost gwerthiannau, eleni'''
 
 [strings."ch-small-company.administrative-expenses-878a5e"]
 hash = "878a5ee632f2"
-cy = '''Treuliau gweinyddu'''
+cy = '''Treuliau gweinyddol'''
 
 [strings."ch-small-company.administrative-expenses-this-year-6fe352"]
 hash = "6fe352a93afa"
-cy = '''Treuliau gweinyddu, eleni'''
+cy = '''Treuliau gweinyddol, eleni'''
 
 [strings."ch-small-company.interest-receivable-and-similar-income-adb8a3"]
 hash = "adb8a32010ba"
@@ -11523,11 +11560,11 @@ cy = '''Mantolen'''
 
 [strings."ch-small-company.fixed-assets-959c37"]
 hash = "959c37b4f9bd"
-cy = '''Asedion sefydlog'''
+cy = '''Asedau sefydlog'''
 
 [strings."ch-small-company.fixed-assets-this-year-9cdb81"]
 hash = "9cdb81e2324f"
-cy = '''Asedion sefydlog, eleni'''
+cy = '''Asedau sefydlog, eleni'''
 
 [strings."ch-small-company.stocks-df09c2"]
 hash = "df09c2fb2400"
@@ -11563,11 +11600,11 @@ cy = '''O hynny, dyledwyr eraill, eleni'''
 
 [strings."ch-small-company.of-which-amounts-owed-by-directors-23911d"]
 hash = "23911d152ec9"
-cy = '''O hynny, symiau dyledus gan gyfarwyddwyr'''
+cy = '''O hynny, symiau sy’n ddyledus gan gyfarwyddwyr'''
 
 [strings."ch-small-company.of-which-amounts-owed-by-directors-307adf"]
 hash = "307adf6fe592"
-cy = '''O hynny, symiau dyledus gan gyfarwyddwyr, eleni'''
+cy = '''O hynny, symiau sy’n ddyledus gan gyfarwyddwyr, eleni'''
 
 [strings."ch-small-company.of-which-prepayments-and-accrued-income-bd5805"]
 hash = "bd5805b9b40c"
@@ -11579,11 +11616,11 @@ cy = '''O hynny, rhagdaliadau ac incwm cronedig, eleni'''
 
 [strings."ch-small-company.cash-at-bank-and-in-hand-658d88"]
 hash = "658d88d6a8a9"
-cy = '''Arian yn y banc a mewn llaw'''
+cy = '''Arian yn y banc ac mewn llaw'''
 
 [strings."ch-small-company.cash-at-bank-and-in-hand-7e3237"]
 hash = "7e32374ea1a9"
-cy = '''Arian yn y banc a mewn llaw, eleni'''
+cy = '''Arian yn y banc ac mewn llaw, eleni'''
 
 [strings."ch-small-company.bank-loans-and-overdrafts-due-within-1a8457"]
 hash = "1a84575d9ee7"
@@ -11651,19 +11688,19 @@ cy = '''O hynny, benthyciadau banc, eleni'''
 
 [strings."ch-small-company.of-which-amounts-owed-to-directors-1c5fcd"]
 hash = "1c5fcd061911"
-cy = '''O hynny, symiau dyledus i gyfarwyddwyr'''
+cy = '''O hynny, symiau sy’n ddyledus i gyfarwyddwyr'''
 
 [strings."ch-small-company.of-which-amounts-owed-to-directors-bdf4c6"]
 hash = "bdf4c666ffc4"
-cy = '''O hynny, symiau dyledus i gyfarwyddwyr, eleni'''
+cy = '''O hynny, symiau sy’n ddyledus i gyfarwyddwyr, eleni'''
 
 [strings."ch-small-company.of-which-amounts-owed-to-group-253346"]
 hash = "253346011d5d"
-cy = '''O hynny, symiau dyledus i ymgymeriadau grŵp'''
+cy = '''O hynny, symiau sy’n ddyledus i ymgymeriadau grŵp'''
 
 [strings."ch-small-company.of-which-amounts-owed-to-group-63a023"]
 hash = "63a0236f3bbd"
-cy = '''O hynny, symiau dyledus i ymgymeriadau grŵp, eleni'''
+cy = '''O hynny, symiau sy’n ddyledus i ymgymeriadau grŵp, eleni'''
 
 [strings."ch-small-company.provisions-for-liabilities-2be61a"]
 hash = "2be61aad53b3"
@@ -11675,11 +11712,11 @@ cy = '''Darpariaethau ar gyfer rhwymedigaethau, eleni'''
 
 [strings."ch-small-company.called-up-share-capital-4473b4"]
 hash = "4473b4128459"
-cy = '''Cyfalaf cyfrannau wedi’i alw'''
+cy = '''Cyfalaf cyfranddaliadau wedi’i alw'''
 
 [strings."ch-small-company.called-up-share-capital-this-year-4381cb"]
 hash = "4381cb2d4659"
-cy = '''Cyfalaf cyfrannau wedi’i alw, eleni'''
+cy = '''Cyfalaf cyfranddaliadau wedi’i alw, eleni'''
 
 [strings."ch-small-company.profit-and-loss-account-reserve-5ad91d"]
 hash = "5ad91d2794c5"
@@ -11711,15 +11748,15 @@ cy = '''Gwaith eich hun wedi’i gyfalafu, y llynedd'''
 
 [strings."ch-small-company.other-operating-income-last-year-f3b05e"]
 hash = "f3b05e7abd3c"
-cy = '''Incwm gweithredu arall, y llynedd'''
+cy = '''Incwm gweithredol arall, y llynedd'''
 
 [strings."ch-small-company.raw-materials-and-consumables-last-year-317537"]
 hash = "31753787b5ff"
-cy = '''Deunyddiau crai a nwyddau traul, y llynedd'''
+cy = '''Deunyddiau crai a defnyddiau traul, y llynedd'''
 
 [strings."ch-small-company.other-external-charges-last-year-7b4a86"]
 hash = "7b4a86b42ad8"
-cy = '''Taliadau allanol eraill, y llynedd'''
+cy = '''Costau allanol eraill, y llynedd'''
 
 [strings."ch-small-company.staff-costs-last-year-0eb0e8"]
 hash = "0eb0e8a7df3d"
@@ -11727,11 +11764,11 @@ cy = '''Costau staff, y llynedd'''
 
 [strings."ch-small-company.depreciation-and-other-amounts-written-off-59da10"]
 hash = "59da104964ee"
-cy = '''Dibrisiant a symiau eraill a ddilëwyd oddi ar asedion sefydlog diriaethol ac anniriaethol, y llynedd'''
+cy = '''Dibrisiant a symiau eraill wedi’u dileu oddi ar asedau sefydlog diriaethol ac anniriaethol, y llynedd'''
 
 [strings."ch-small-company.other-operating-expenses-last-year-42b112"]
 hash = "42b1120b8cbf"
-cy = '''Treuliau gweithredu eraill, y llynedd'''
+cy = '''Treuliau gweithredol eraill, y llynedd'''
 
 [strings."ch-small-company.turnover-last-year-a09b26"]
 hash = "a09b26d4bfba"
@@ -11739,11 +11776,11 @@ cy = '''Trosiant, y llynedd'''
 
 [strings."ch-small-company.cost-of-sales-last-year-cac0d3"]
 hash = "cac0d3ccc279"
-cy = '''Cost gwerthiant, y llynedd'''
+cy = '''Cost gwerthiannau, y llynedd'''
 
 [strings."ch-small-company.administrative-expenses-last-year-fcf586"]
 hash = "fcf586632b12"
-cy = '''Treuliau gweinyddu, y llynedd'''
+cy = '''Treuliau gweinyddol, y llynedd'''
 
 [strings."ch-small-company.interest-receivable-and-similar-income-last-ea72dd"]
 hash = "ea72dde4b1ed"
@@ -11759,7 +11796,7 @@ cy = '''Treth ar elw ar weithgareddau cyffredin, y llynedd'''
 
 [strings."ch-small-company.fixed-assets-last-year-7a8f8c"]
 hash = "7a8f8ced9765"
-cy = '''Asedion sefydlog, y llynedd'''
+cy = '''Asedau sefydlog, y llynedd'''
 
 [strings."ch-small-company.stocks-last-year-377ed2"]
 hash = "377ed25686b6"
@@ -11779,7 +11816,7 @@ cy = '''O hynny, dyledwyr eraill, y llynedd'''
 
 [strings."ch-small-company.of-which-amounts-owed-by-directors-133fac"]
 hash = "133fac076e2a"
-cy = '''O hynny, symiau dyledus gan gyfarwyddwyr, y llynedd'''
+cy = '''O hynny, symiau sy’n ddyledus gan gyfarwyddwyr, y llynedd'''
 
 [strings."ch-small-company.of-which-prepayments-and-accrued-income-31f0bd"]
 hash = "31f0bdd4aafd"
@@ -11787,7 +11824,7 @@ cy = '''O hynny, rhagdaliadau ac incwm cronedig, y llynedd'''
 
 [strings."ch-small-company.cash-at-bank-and-in-hand-2b4d00"]
 hash = "2b4d00875d16"
-cy = '''Arian yn y banc a mewn llaw, y llynedd'''
+cy = '''Arian yn y banc ac mewn llaw, y llynedd'''
 
 [strings."ch-small-company.bank-loans-and-overdrafts-due-within-98901f"]
 hash = "98901fe3256c"
@@ -11823,11 +11860,11 @@ cy = '''O hynny, benthyciadau banc, y llynedd'''
 
 [strings."ch-small-company.of-which-amounts-owed-to-directors-1922bc"]
 hash = "1922bca830eb"
-cy = '''O hynny, symiau dyledus i gyfarwyddwyr, y llynedd'''
+cy = '''O hynny, symiau sy’n ddyledus i gyfarwyddwyr, y llynedd'''
 
 [strings."ch-small-company.of-which-amounts-owed-to-group-f09353"]
 hash = "f09353a05a9f"
-cy = '''O hynny, symiau dyledus i ymgymeriadau grŵp, y llynedd'''
+cy = '''O hynny, symiau sy’n ddyledus i ymgymeriadau grŵp, y llynedd'''
 
 [strings."ch-small-company.provisions-for-liabilities-last-year-495eaa"]
 hash = "495eaa8a5e41"
@@ -11835,7 +11872,7 @@ cy = '''Darpariaethau ar gyfer rhwymedigaethau, y llynedd'''
 
 [strings."ch-small-company.called-up-share-capital-last-year-74c14f"]
 hash = "74c14f2a6753"
-cy = '''Cyfalaf cyfrannau wedi’i alw, y llynedd'''
+cy = '''Cyfalaf cyfranddaliadau wedi’i alw, y llynedd'''
 
 [strings."ch-small-company.profit-and-loss-account-reserve-last-e3c37f"]
 hash = "e3c37f5214c2"
@@ -11843,15 +11880,15 @@ cy = '''Cronfa wrth gefn y cyfrif elw a cholled, y llynedd'''
 
 [strings."ch-small-company.tangible-fixed-assets-note-d14ccc"]
 hash = "d14ccc12c69c"
-cy = '''Nodyn asedion sefydlog diriaethol'''
+cy = '''Nodyn asedau sefydlog diriaethol'''
 
 [strings."ch-small-company.include-the-tangible-fixed-assets-note-38c54e"]
 hash = "38c54eddc911"
-cy = '''Cynnwys y nodyn asedion sefydlog diriaethol'''
+cy = '''Cynnwys y nodyn asedau sefydlog diriaethol'''
 
 [strings."ch-small-company.leave-an-asset-class-at-0-9cc4b7"]
 hash = "9cc4b7aaae2b"
-cy = '''Gadewch ddosbarth o asedion ar 0 i’w adael allan. Rhaid i werth llyfr net y dosbarthiadau fod yn hafal i’r asedion sefydlog uchod.'''
+cy = '''Gadewch ddosbarth o asedau ar 0 i’w adael allan. Rhaid i werth llyfr net y dosbarthiadau fod yn hafal i’r asedau sefydlog uchod.'''
 
 [strings."ch-small-company.land-and-buildings-b6a218"]
 hash = "b6a2189d82fc"
@@ -11883,7 +11920,7 @@ cy = '''Dibrisiant ar warediadau'''
 
 [strings."ch-small-company.plant-and-machinery-01c1ed"]
 hash = "01c1ed161f68"
-cy = '''Peiriannau ac offer'''
+cy = '''Cyfarpar a pheirianwaith'''
 
 [strings."ch-small-company.fixtures-and-fittings-b390a0"]
 hash = "b390a0638b93"
@@ -11891,7 +11928,7 @@ cy = '''Gosodiadau a ffitiadau'''
 
 [strings."ch-small-company.computer-equipment-09cc5b"]
 hash = "09cc5bb1675b"
-cy = '''Offer cyfrifiadurol'''
+cy = '''Cyfarpar cyfrifiadurol'''
 
 [strings."ch-small-company.motor-vehicles-602d25"]
 hash = "602d25f25cca"
@@ -11899,15 +11936,15 @@ cy = '''Cerbydau modur'''
 
 [strings."ch-small-company.intangible-assets-note-2deeb9"]
 hash = "2deeb944408a"
-cy = '''Nodyn asedion anniriaethol'''
+cy = '''Nodyn asedau anniriaethol'''
 
 [strings."ch-small-company.include-the-intangible-assets-note-goodwill-ecee71"]
 hash = "ecee7169d78d"
-cy = '''Cynnwys y nodyn asedion anniriaethol (ewyllys da ac asedion anniriaethol eraill)'''
+cy = '''Cynnwys y nodyn asedau anniriaethol (ewyllys da ac asedau anniriaethol eraill)'''
 
 [strings."ch-small-company.the-net-book-value-of-the-57c739"]
 hash = "57c7390179d9"
-cy = '''Mae gwerth llyfr net yr asedion anniriaethol yn rhan o’r asedion sefydlog uchod, gydag unrhyw nodyn asedion sefydlog diriaethol.'''
+cy = '''Mae gwerth llyfr net yr asedau anniriaethol yn rhan o’r asedau sefydlog uchod, gydag unrhyw nodyn asedau sefydlog diriaethol.'''
 
 [strings."ch-small-company.amortisation-at-the-start-of-the-e33ff3"]
 hash = "e33ff37695b1"
@@ -11923,11 +11960,11 @@ cy = '''Amorteiddiad ar warediadau'''
 
 [strings."ch-small-company.directors-and-activity-72301e"]
 hash = "72301e7638ea"
-cy = '''Cyfarwyddwyr a gweithgarwch'''
+cy = '''Cyfarwyddwyr a gweithgaredd'''
 
 [strings."ch-small-company.principal-activity-72e7d9"]
 hash = "72e7d9d6851e"
-cy = '''Prif weithgarwch'''
+cy = '''Prif weithgaredd'''
 
 [strings."ch-small-company.accounting-policies-0d09e1"]
 hash = "0d09e1eeec54"
@@ -11943,23 +11980,23 @@ cy = '''Mae pob testun yn ymddangos yn y nodyn polisïau cyfrifyddu o dan ei ben
 
 [strings."ch-small-company.going-concern-828746"]
 hash = "828746f1aab6"
-cy = '''Busnes gweithredol (going concern)'''
+cy = '''Busnes gweithredol'''
 
 [strings."ch-small-company.tangible-fixed-assets-286645"]
 hash = "2866458ee90a"
-cy = '''Asedion sefydlog diriaethol'''
+cy = '''Asedau sefydlog diriaethol'''
 
 [strings."ch-small-company.tangible-fixed-assets-accounting-policy-1141ff"]
 hash = "1141ffdd7a7d"
-cy = '''Asedion sefydlog diriaethol: polisi cyfrifyddu'''
+cy = '''Asedau sefydlog diriaethol: polisi cyfrifyddu'''
 
 [strings."ch-small-company.tangible-fixed-assets-depreciation-method-97d497"]
 hash = "97d497417c49"
-cy = '''Asedion sefydlog diriaethol: dull dibrisio'''
+cy = '''Asedau sefydlog diriaethol: dull dibrisio'''
 
 [strings."ch-small-company.intangible-assets-7363ef"]
 hash = "7363efeadc49"
-cy = '''Asedion anniriaethol'''
+cy = '''Asedau anniriaethol'''
 
 [strings."ch-small-company.impairment-240bd7"]
 hash = "240bd778b80b"
@@ -11967,7 +12004,7 @@ cy = '''Amhariad'''
 
 [strings."ch-small-company.cash-and-cash-equivalents-4a6d36"]
 hash = "4a6d36f685ad"
-cy = '''Arian parod a chyfwerth ag arian parod'''
+cy = '''Arian parod a’r hyn sy’n gyfwerth ag arian parod'''
 
 [strings."ch-small-company.financial-instruments-bbc592"]
 hash = "bbc59236838d"
@@ -11979,7 +12016,7 @@ cy = '''Offerynnau ariannol: dosbarthiad'''
 
 [strings."ch-small-company.employee-benefits-22ebc8"]
 hash = "22ebc88c84a7"
-cy = '''Buddion gweithwyr'''
+cy = '''Buddiannau gweithwyr'''
 
 [strings."ch-small-company.pension-costs-defined-contribution-81d0fd"]
 hash = "81d0fd0943f7"
@@ -12019,7 +12056,7 @@ cy = '''Nifer cyfartalog y gweithwyr yn ystod y cyfnod'''
 
 [strings."ch-small-company.directors-who-held-office-during-the-443f2d"]
 hash = "443f2dba251c"
-cy = '''Cyfarwyddwyr a oedd yn y swydd yn ystod y cyfnod'''
+cy = '''Cyfarwyddwyr a oedd yn eu swyddi yn ystod y cyfnod'''
 
 [strings."ch-small-company.one-name-on-each-line-5f69ed"]
 hash = "5f69ede43dbb"
@@ -12043,7 +12080,7 @@ cy = '''Lluniodd cyfrifydd y cyfrifon hyn'''
 
 [strings."ch-small-company.the-accounts-gain-a-page-for-ed45c6"]
 hash = "ed45c6fd0f6d"
-cy = '''Mae’r cyfrifon yn cael tudalen ar gyfer adroddiad y cyfrifwyr, ac mae Tŷ’r Cwmnïau yn eu gweld fel rhai wedi eu heithrio rhag archwilio ariannol gydag adroddiad cyfrifydd.'''
+cy = '''Mae’r cyfrifon yn cael tudalen ar gyfer adroddiad y cyfrifwyr, ac mae Tŷ’r Cwmnïau yn eu gweld fel rhai wedi eu heithrio rhag archwiliad gydag adroddiad cyfrifwyr.'''
 
 [strings."ch-small-company.name-of-the-accountancy-firm-eb9e0e"]
 hash = "eb9e0e9b74f6"
@@ -12091,7 +12128,7 @@ cy = '''Peidio â dweud dim am barti sy’n rheoli'''
 
 [strings."ch-small-company.say-the-company-has-no-ultimate-c46c6c"]
 hash = "c46c6c757a82"
-cy = '''Dweud nad oes gan y cwmni barti rheoli eithaf'''
+cy = '''Dweud nad oes gan y cwmni barti sy’n rheoli yn y pen draw'''
 
 [strings."ch-small-company.name-the-controlling-party-64a42c"]
 hash = "64a42c61527d"
@@ -12103,7 +12140,7 @@ cy = '''Enw’r parti sy’n rheoli'''
 
 [strings."ch-small-company.this-party-is-the-ultimate-controlling-08e9c9"]
 hash = "08e9c9259ef5"
-cy = '''Y parti hwn yw’r parti rheoli eithaf'''
+cy = '''Y parti hwn yw’r parti sy’n rheoli yn y pen draw'''
 
 [strings."ch-small-company.statements-85f86d"]
 hash = "85f86d38c4d6"
@@ -12119,7 +12156,7 @@ cy = '''Nid yw’r aelodau wedi ei gwneud yn ofynnol i’r cwmni gael archwiliad
 
 [strings."ch-small-company.the-directors-acknowledge-their-responsibilities-for-f16963"]
 hash = "f16963f3bf9a"
-cy = '''Mae’r cyfarwyddwyr yn cydnabod eu cyfrifoldebau am gydymffurfio â gofynion Deddf Cwmnïau 2006 o ran cofnodion cyfrifyddu a pharatoi cyfrifon.'''
+cy = '''Mae pob cyfarwyddwr yn cydnabod eu cyfrifoldebau am gydymffurfio â’r gofynion o dan Ddeddf Cwmnïau 2006 o ran cofnodion cyfrifyddu a pharatoi cyfrifon.'''
 
 [strings."ch-small-company.these-accounts-have-been-prepared-in-481edb"]
 hash = "481edbe99dea"
@@ -12199,11 +12236,11 @@ cy = '''Rhowch swm eleni ar gyfer gwaith eich hun wedi’i gyfalafu'''
 
 [strings."ch-small-company.enter-other-operating-income-this-year-4fabac"]
 hash = "4fabac54af62"
-cy = '''Rhowch swm eleni ar gyfer incwm gweithredu arall'''
+cy = '''Rhowch swm eleni ar gyfer incwm gweithredol arall'''
 
 [strings."ch-small-company.enter-raw-materials-and-consumables-this-3e0fce"]
 hash = "3e0fcec7d079"
-cy = '''Rhowch swm eleni ar gyfer deunyddiau crai a nwyddau traul'''
+cy = '''Rhowch swm eleni ar gyfer deunyddiau crai a defnyddiau traul'''
 
 [strings."ch-small-company.enter-other-external-charges-this-year-01296d"]
 hash = "01296dad5df7"
@@ -12215,11 +12252,11 @@ cy = '''Rhowch swm eleni ar gyfer costau staff'''
 
 [strings."ch-small-company.enter-depreciation-and-other-amounts-written-7ed6b4"]
 hash = "7ed6b4e9ac2f"
-cy = '''Rhowch swm eleni ar gyfer dibrisiant a symiau eraill a ddilëwyd oddi ar asedion sefydlog diriaethol ac anniriaethol'''
+cy = '''Rhowch swm eleni ar gyfer dibrisiant a symiau eraill wedi’u dileu oddi ar asedau sefydlog diriaethol ac anniriaethol'''
 
 [strings."ch-small-company.enter-other-operating-expenses-this-year-33f516"]
 hash = "33f516d96a61"
-cy = '''Rhowch swm eleni ar gyfer treuliau gweithredu eraill'''
+cy = '''Rhowch swm eleni ar gyfer treuliau gweithredol eraill'''
 
 [strings."ch-small-company.enter-turnover-this-year-b3db5a"]
 hash = "b3db5aa8acbe"
@@ -12231,7 +12268,7 @@ cy = '''Rhowch swm eleni ar gyfer cost gwerthiant'''
 
 [strings."ch-small-company.enter-administrative-expenses-this-year-90b624"]
 hash = "90b6242f2dba"
-cy = '''Rhowch swm eleni ar gyfer treuliau gweinyddu'''
+cy = '''Rhowch swm eleni ar gyfer treuliau gweinyddol'''
 
 [strings."ch-small-company.enter-interest-receivable-and-similar-income-fa9853"]
 hash = "fa985377bce1"
@@ -12247,7 +12284,7 @@ cy = '''Rhowch swm eleni ar gyfer treth ar elw ar weithgareddau cyffredin'''
 
 [strings."ch-small-company.enter-fixed-assets-this-year-395897"]
 hash = "395897d16ccf"
-cy = '''Rhowch swm eleni ar gyfer asedion sefydlog'''
+cy = '''Rhowch swm eleni ar gyfer asedau sefydlog'''
 
 [strings."ch-small-company.enter-stocks-this-year-3c1c23"]
 hash = "3c1c23fcd0c5"
@@ -12259,7 +12296,7 @@ cy = '''Rhowch swm eleni ar gyfer dyledwyr'''
 
 [strings."ch-small-company.enter-cash-at-bank-and-in-ac5003"]
 hash = "ac5003a7cfa2"
-cy = '''Rhowch swm eleni ar gyfer arian yn y banc a mewn llaw'''
+cy = '''Rhowch swm eleni ar gyfer arian yn y banc ac mewn llaw'''
 
 [strings."ch-small-company.enter-trade-creditors-due-within-one-0ba1eb"]
 hash = "0ba1eb2597ba"
@@ -12279,7 +12316,7 @@ cy = '''Rhowch swm eleni ar gyfer credydwyr: symiau sy’n ddyledus ar ôl mwy n
 
 [strings."ch-small-company.enter-called-up-share-capital-this-4fc206"]
 hash = "4fc206078a36"
-cy = '''Rhowch swm eleni ar gyfer cyfalaf cyfrannau wedi’i alw'''
+cy = '''Rhowch swm eleni ar gyfer cyfalaf cyfranddaliadau wedi’i alw'''
 
 [strings."ch-small-company.enter-profit-and-loss-account-reserve-6f10dc"]
 hash = "6f10dcb576f5"
@@ -12295,11 +12332,11 @@ cy = '''Rhowch swm y llynedd ar gyfer gwaith eich hun wedi’i gyfalafu'''
 
 [strings."ch-small-company.enter-other-operating-income-last-year-ebda0d"]
 hash = "ebda0d5b593c"
-cy = '''Rhowch swm y llynedd ar gyfer incwm gweithredu arall'''
+cy = '''Rhowch swm y llynedd ar gyfer incwm gweithredol arall'''
 
 [strings."ch-small-company.enter-raw-materials-and-consumables-last-5f5fb7"]
 hash = "5f5fb732d175"
-cy = '''Rhowch swm y llynedd ar gyfer deunyddiau crai a nwyddau traul'''
+cy = '''Rhowch swm y llynedd ar gyfer deunyddiau crai a defnyddiau traul'''
 
 [strings."ch-small-company.enter-other-external-charges-last-year-be7390"]
 hash = "be7390cdf681"
@@ -12311,11 +12348,11 @@ cy = '''Rhowch swm y llynedd ar gyfer costau staff'''
 
 [strings."ch-small-company.enter-depreciation-and-other-amounts-written-2829a1"]
 hash = "2829a1064178"
-cy = '''Rhowch swm y llynedd ar gyfer dibrisiant a symiau eraill a ddilëwyd oddi ar asedion sefydlog diriaethol ac anniriaethol'''
+cy = '''Rhowch swm y llynedd ar gyfer dibrisiant a symiau eraill wedi’u dileu oddi ar asedau sefydlog diriaethol ac anniriaethol'''
 
 [strings."ch-small-company.enter-other-operating-expenses-last-year-ceda37"]
 hash = "ceda37632151"
-cy = '''Rhowch swm y llynedd ar gyfer treuliau gweithredu eraill'''
+cy = '''Rhowch swm y llynedd ar gyfer treuliau gweithredol eraill'''
 
 [strings."ch-small-company.enter-turnover-last-year-5d53ba"]
 hash = "5d53bada18e4"
@@ -12327,7 +12364,7 @@ cy = '''Rhowch swm y llynedd ar gyfer cost gwerthiant'''
 
 [strings."ch-small-company.enter-administrative-expenses-last-year-2ffcea"]
 hash = "2ffceac8acca"
-cy = '''Rhowch swm y llynedd ar gyfer treuliau gweinyddu'''
+cy = '''Rhowch swm y llynedd ar gyfer treuliau gweinyddol'''
 
 [strings."ch-small-company.enter-interest-receivable-and-similar-income-0b6368"]
 hash = "0b6368f019d3"
@@ -12343,7 +12380,7 @@ cy = '''Rhowch swm y llynedd ar gyfer treth ar elw ar weithgareddau cyffredin'''
 
 [strings."ch-small-company.enter-fixed-assets-last-year-569ffd"]
 hash = "569ffddcc188"
-cy = '''Rhowch swm y llynedd ar gyfer asedion sefydlog'''
+cy = '''Rhowch swm y llynedd ar gyfer asedau sefydlog'''
 
 [strings."ch-small-company.enter-stocks-last-year-13ce23"]
 hash = "13ce23bbcd23"
@@ -12355,7 +12392,7 @@ cy = '''Rhowch swm y llynedd ar gyfer dyledwyr'''
 
 [strings."ch-small-company.enter-cash-at-bank-and-in-120667"]
 hash = "1206671fc776"
-cy = '''Rhowch swm y llynedd ar gyfer arian yn y banc a mewn llaw'''
+cy = '''Rhowch swm y llynedd ar gyfer arian yn y banc ac mewn llaw'''
 
 [strings."ch-small-company.enter-trade-creditors-due-within-one-6ee4f2"]
 hash = "6ee4f2efb51e"
@@ -12375,7 +12412,7 @@ cy = '''Rhowch swm y llynedd ar gyfer credydwyr: symiau sy’n ddyledus ar ôl m
 
 [strings."ch-small-company.enter-called-up-share-capital-last-309f9f"]
 hash = "309f9fde9b60"
-cy = '''Rhowch swm y llynedd ar gyfer cyfalaf cyfrannau wedi’i alw'''
+cy = '''Rhowch swm y llynedd ar gyfer cyfalaf cyfranddaliadau wedi’i alw'''
 
 [strings."ch-small-company.enter-profit-and-loss-account-reserve-e12fbf"]
 hash = "e12fbf293c9f"
@@ -12515,7 +12552,7 @@ cy = '''Gwiriwch eich atebion. Dyma’r ffigurau y bydd CThEF yn eu cael. Nid oe
 
 [strings."ch-tax-return.the-company-tax-return-guide-explains-1164a1"]
 hash = "1164a114b062"
-cy = '''Mae’r <a id="companyTaxReturnGuideLink" href="https://www.gov.uk/guidance/the-company-tax-return-guide" target="_blank" rel="noopener">canllaw Ffurflen Dreth y Cwmni</a> (yn Saesneg) yn esbonio pob blwch. Y ffurflen ei hun yw’r <a id="ct600FormLink" href="https://assets.publishing.service.gov.uk/media/69c543424a06660f085442bd/ct600.pdf" target="_blank" rel="noopener">CT600 (2026) Fersiwn 3</a> (yn Saesneg).'''
+cy = '''Mae’r <a id="companyTaxReturnGuideLink" href="https://www.gov.uk/guidance/the-company-tax-return-guide.cy" target="_blank" rel="noopener">canllaw Ffurflen Dreth y Cwmni</a> yn esbonio pob blwch. Y ffurflen ei hun yw’r <a id="ct600FormLink" href="https://assets.publishing.service.gov.uk/media/69c54374cdfd19de13d0f708/ct600_welsh.pdf" target="_blank" rel="noopener">CT600 (2026) Fersiwn 3</a>.'''
 
 [strings."ch-tax-return.your-answers-5feb1f"]
 hash = "5feb1f08d245"
@@ -12647,7 +12684,7 @@ cy = '''Diwygio’r cyfrifon a’r Ffurflen'''
 
 [strings."ch-tax-return.where-to-get-help-00f119"]
 hash = "00f1193a0417"
-cy = '''Ble i gael help'''
+cy = '''Ble i gael cymorth'''
 
 [strings."ch-tax-return.a-problem-with-the-live-hmrc-46086f"]
 hash = "46086fc93eae"
@@ -12659,7 +12696,7 @@ cy = '''Problem gyda’r feddalwedd hon: DIY Accounting yn <a href="mailto:suppo
 
 [strings."ch-tax-return.check-the-return-and-try-again-149cf1"]
 hash = "149cf10e83c2"
-cy = '''Gwiriwch y Ffurflen a rhoi cynnig arall arni'''
+cy = '''Gwiriwch y Ffurflen a rhowch gynnig arall arni'''
 
 [strings."ch-tax-return.start-a-new-return-4a07a8"]
 hash = "4a07a825e42e"
@@ -12863,7 +12900,7 @@ cy = '''Gwiriad hunaniaeth y cyfarwyddwr'''
 
 [strings."ch-confirmation-statement.every-current-director-must-have-verified-5de76d"]
 hash = "5de76d15e2ae"
-cy = '''Rhaid i bob cyfarwyddwr presennol fod wedi gwirio ei hunaniaeth gyda Thŷ’r Cwmnïau, ac mae angen ei enw llawn fel y’i gwiriwyd (gan gynnwys unrhyw enwau cyntaf eraill) a’i god personol Tŷ’r Cwmnïau o 11 nod ar y datganiad hwn. Mae rhes wag yn atal cyflwyno’r datganiad hwn. <a href="https://www.gov.uk/guidance/verify-your-identity-for-companies-house">Sut i wirio hunaniaeth</a> (yn Saesneg).'''
+cy = '''Rhaid i bob cyfarwyddwr presennol fod wedi gwirio ei hunaniaeth gyda Thŷ’r Cwmnïau, ac mae angen ei enw llawn fel y’i gwiriwyd (gan gynnwys unrhyw enwau cyntaf eraill) a’i god personol Tŷ’r Cwmnïau o 11 nod ar y datganiad hwn. Mae rhes wag yn atal cyflwyno’r datganiad hwn. <a href="https://www.gov.uk/guidance/verify-your-identity-for-companies-house.cy">Sut i wirio hunaniaeth</a>.'''
 
 [strings."ch-confirmation-statement.if-someone-else-s-code-is-406839"]
 hash = "4068398840fd"
@@ -13023,7 +13060,7 @@ cy = '''Heb ei nodi'''
 
 [strings."ch-registered-office.i-confirm-this-is-an-appropriate-89ef3b"]
 hash = "89ef3ba710e8"
-cy = '''Mae’r cwmni’n cadarnhau bod y cyfeiriad swyddfa gofrestredig newydd yn gyfeiriad priodol fel yr amlinellir yn adran 86(2) o Ddeddf Cwmnïau 2006 - rhywle y gellir cysylltu â swyddogion y cwmni a lle y gellir cofnodi dogfennau a ddanfonir iddynt.'''
+cy = '''Rwy’n cadarnhau bod hwn yn gyfeiriad priodol o dan adran 86(2) o Ddeddf Cwmnïau 2006 - rhywle y gellir cysylltu â swyddogion y cwmni a lle y gellir cofnodi dogfennau a ddanfonir iddynt.'''
 
 [strings."ch-registered-office.continue-31fbef"]
 hash = "31fbef162594"
@@ -13639,7 +13676,7 @@ cy = '''Yn cyfateb i’r cyfalaf a’r cronfeydd wrth gefn.'''
 
 [strings."ch.micro.net-assets"]
 hash = "3b47f8b69df6"
-cy = '''Asedion net: {current} eleni, {prior} y llynedd. {verdict}'''
+cy = '''Asedau net: {current} eleni, {prior} y llynedd. {verdict}'''
 
 [strings."ch.accounts.lookup-failed"]
 hash = "37fdf0338e6b"
@@ -13667,7 +13704,7 @@ cy = '''Cadarnhewch fod y cyfrifon yn dilyn y darpariaethau micro-endid'''
 
 [strings."ch.micro.must-equal"]
 hash = "44e7ec414cbd"
-cy = '''Rhaid i’r cyfalaf a’r cronfeydd wrth gefn fod yn hafal i’r asedion net ar gyfer y ddwy flynedd cyn gweld y rhagolwg.'''
+cy = '''Rhaid i’r cyfalaf a’r cronfeydd wrth gefn fod yn hafal i’r asedau net ar gyfer y ddwy flynedd cyn gweld y rhagolwg.'''
 
 [strings."ch.accounts.preview-failed"]
 hash = "69d9aacfdc24"
@@ -13735,23 +13772,23 @@ cy = '''Elw gweithredol: {operating}. Elw cyn treth: {beforeTax}. Elw am y flwyd
 
 [strings."ch.small.matches-capital"]
 hash = "2de562166fa8"
-cy = '''Yn cyfateb i’r cyfalaf cyfrannau a chronfa wrth gefn y cyfrif elw a cholled.'''
+cy = '''Yn cyfateb i’r cyfalaf cyfranddaliadau a chronfa wrth gefn y cyfrif elw a cholled.'''
 
 [strings."ch.small.mismatch-capital"]
 hash = "99f24c983406"
-cy = '''Nid yw’n cyfateb i’r cyfalaf cyfrannau a chronfa wrth gefn y cyfrif elw a cholled ({amount}) - cywirwch hyn cyn gweld y rhagolwg.'''
+cy = '''Nid yw’n cyfateb i’r cyfalaf cyfranddaliadau a chronfa wrth gefn y cyfrif elw a cholled ({amount}) - cywirwch hyn cyn gweld y rhagolwg.'''
 
 [strings."ch.small.net-assets"]
 hash = "158ec55f6847"
-cy = '''Asedion net: {amount}. {verdict}'''
+cy = '''Asedau net: {amount}. {verdict}'''
 
 [strings."ch.small.matches-fixed"]
 hash = "dc79ff76075e"
-cy = '''Yn cyfateb i’r asedion sefydlog.'''
+cy = '''Yn cyfateb i’r asedau sefydlog.'''
 
 [strings."ch.small.mismatch-fixed"]
 hash = "f2845c8f4190"
-cy = '''Nid yw’n cyfateb i’r asedion sefydlog ({amount}) - cywirwch hyn cyn gweld y rhagolwg.'''
+cy = '''Nid yw’n cyfateb i’r asedau sefydlog ({amount}) - cywirwch hyn cyn gweld y rhagolwg.'''
 
 [strings."ch.small.net-book-value"]
 hash = "06af02b95c6d"
@@ -13759,15 +13796,15 @@ cy = '''Gwerth llyfr net: {amount}. {verdict}'''
 
 [strings."ch.small.matches-fixed-with-note"]
 hash = "8b1d3f12d3e3"
-cy = '''Gyda’r nodyn asedion sefydlog diriaethol, yn cyfateb i’r asedion sefydlog.'''
+cy = '''Gyda’r nodyn asedau sefydlog diriaethol, yn cyfateb i’r asedau sefydlog.'''
 
 [strings."ch.small.mismatch-fixed-with-note"]
 hash = "a63f4b729515"
-cy = '''Gyda’r nodyn asedion sefydlog diriaethol, nid yw’n cyfateb i’r asedion sefydlog ({amount}) - cywirwch hyn cyn gweld y rhagolwg.'''
+cy = '''Gyda’r nodyn asedau sefydlog diriaethol, nid yw’n cyfateb i’r asedau sefydlog ({amount}) - cywirwch hyn cyn gweld y rhagolwg.'''
 
 [strings."ch.small.net-assets-must-equal"]
 hash = "0847c0beb34a"
-cy = '''Rhaid i’r asedion net fod yn hafal i’r cyfalaf cyfrannau a chronfa wrth gefn y cyfrif elw a cholled ar gyfer pob blwyddyn cyn gweld y rhagolwg.'''
+cy = '''Rhaid i’r asedau net fod yn hafal i’r cyfalaf cyfranddaliadau a chronfa wrth gefn y cyfrif elw a cholled ar gyfer pob blwyddyn cyn gweld y rhagolwg.'''
 
 [strings."ch.small.bank-loans-too-big"]
 hash = "83aeea668265"
@@ -13783,7 +13820,7 @@ cy = '''Ni all benthyciadau banc, symiau dyledus i gyfarwyddwyr a symiau dyledus
 
 [strings."ch.small.notes-must-equal"]
 hash = "7965c3d2343c"
-cy = '''Rhaid i werth llyfr net nodiadau’r asedion sefydlog fod yn hafal i’r asedion sefydlog cyn gweld y rhagolwg.'''
+cy = '''Rhaid i werth llyfr net nodiadau’r asedau sefydlog fod yn hafal i’r asedau sefydlog cyn gweld y rhagolwg.'''
 
 [strings."ch.small.confirm-regime"]
 hash = "a86486606865"
@@ -14315,7 +14352,7 @@ cy = '''Mae newid rydych yn ei ffeilio yma yn cyrraedd cofrestr fyw Tŷ’r Cwmn
 
 [strings."ch.lane.status-sandbox"]
 hash = "983109fd7107"
-cy = '''Statws: prawf (sandbox).'''
+cy = '''Statws: amgylchedd prawf (sandbox).'''
 
 [strings."ch.lane.sandbox"]
 hash = "86257ba02943"
@@ -14523,11 +14560,11 @@ cy = '''Mantolen'''
 
 [strings."ch.ct.fixed-assets-note"]
 hash = "d14ccc12c69c"
-cy = '''Nodyn asedion sefydlog diriaethol'''
+cy = '''Nodyn asedau sefydlog diriaethol'''
 
 [strings."ch.ct.include-fixed-assets-note"]
 hash = "38c54eddc911"
-cy = '''Cynnwys y nodyn asedion sefydlog diriaethol'''
+cy = '''Cynnwys y nodyn asedau sefydlog diriaethol'''
 
 [strings."ch.ct.micro-profit-hint"]
 hash = "324855689eed"
@@ -14855,7 +14892,7 @@ cy = '''Ffurflen 2 o 2: '''
 
 [strings."ch.ct.long-order"]
 hash = "0a3c77c7bf34"
-cy = '''Rydych yn anfon Ffurflen 1 yn gyntaf. Rhaid i CThEF ei derbyn cyn i chi anfon Ffurflen 2. Mae’r ddwy Ffurflen yn costio un tocyn rhyngddynt.'''
+cy = '''Rydych yn anfon Ffurflen 1 yn gyntaf. Rhaid i CThEF ei derbyn cyn i chi anfon Ffurflen 2. Mae’r ddwy Ffurflen yn costio un credyd (token) rhyngddynt.'''
 
 [strings."ch.ct.long-tell-hmrc"]
 hash = "5d6a40979ae4"
@@ -15131,23 +15168,23 @@ cy = '''y Ffurflen'''
 
 [strings."ch.ct.cost-accounts-one"]
 hash = "40f112c91eb2"
-cy = '''Mae’r cyfrifon a {returns} yn costio {cost} tocyn.'''
+cy = '''Mae’r cyfrifon a {returns} yn costio {cost} credyd (token).'''
 
 [strings."ch.ct.cost-accounts"]
 hash = "423c9c5e95ec"
-cy = '''Mae’r cyfrifon a {returns} yn costio {cost} tocyn.'''
+cy = '''Mae’r cyfrifon a {returns} yn costio {cost} credyd (tokens).'''
 
 [strings."ch.ct.cost-none"]
 hash = "efce78ca3d14"
-cy = '''Nid yw Ffurflen 2 o 2 yn costio tocyn. Defnyddiodd Ffurflen 1 y tocyn ar gyfer y ddwy.'''
+cy = '''Nid yw Ffurflen 2 o 2 yn costio credyd (token). Defnyddiodd Ffurflen 1 y credyd ar gyfer y ddwy.'''
 
 [strings."ch.ct.cost-two"]
 hash = "9ca4ec7ec9f0"
-cy = '''Mae’r ddwy Ffurflen yn costio 1 tocyn rhyngddynt.'''
+cy = '''Mae’r ddwy Ffurflen yn costio 1 credyd (token) rhyngddynt.'''
 
 [strings."ch.ct.cost-one"]
 hash = "192e1906be66"
-cy = '''Mae’r Ffurflen hon yn costio 1 tocyn.'''
+cy = '''Mae’r Ffurflen hon yn costio 1 credyd (token).'''
 
 [strings."ch.ct.order-accounts-then"]
 hash = "0f2198d86259"
@@ -16179,7 +16216,7 @@ cy = '''Adloniant a adiwyd yn ôl'''
 # no HMRC Welsh found
 [strings."ch.ct600.entertaining-hint"]
 hash = "0b31c95d8cfa"
-cy = '''Dim mwy na chost gwerthiant adio treuliau gweinyddu.'''
+cy = '''Dim mwy na chost gwerthiant adio treuliau gweinyddol.'''
 
 # no HMRC Welsh found for this label; built from HMRC's Welsh terms in the form and guide
 [strings."ch.ct600.donations"]
@@ -16189,7 +16226,7 @@ cy = '''Blwch 305: Rhoddion a adiwyd yn ôl ac a hawliwyd'''
 # no HMRC Welsh found
 [strings."ch.ct600.donations-hint"]
 hash = "1effae2a642d"
-cy = '''Rhoddion cymhwysol i elusennau. Maen nhw’n cael eu hadio’n ôl at yr elw masnachu ac yn cael eu hawlio yn erbyn cyfanswm yr elw. Dim mwy na chost gwerthiant adio treuliau gweinyddu.'''
+cy = '''Cyfraniadau cymhwysol i elusennau. Maen nhw’n cael eu hadio’n ôl at yr elw masnachu ac yn cael eu hawlio yn erbyn cyfanswm yr elw. Dim mwy na chost gwerthiant adio treuliau gweinyddol.'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.annual-investment-allowance-hint"]
@@ -16354,7 +16391,7 @@ cy = '''Blwch 305: Cyfraniadau cymhwysol a dalwyd yn y cyfnod cyfrifyddu'''
 # no HMRC Welsh found
 [strings."ch.ct600.donations-paid-hint"]
 hash = "891aa53292ff"
-cy = '''Rhoddion cymhwysol i elusennau a dalwyd yn y cyfnod cyfrifyddu hwn. Maen nhw’n cael eu hawlio yn erbyn cyfanswm yr elw ym mlwch 305 y Ffurflen Dreth hon.'''
+cy = '''Cyfraniadau cymhwysol i elusennau a dalwyd yn y cyfnod cyfrifyddu hwn. Maen nhw’n cael eu hawlio yn erbyn cyfanswm yr elw ym mlwch 305 y Ffurflen Dreth hon.'''
 
 # as ch-small-company.the-company-is-entitled-to-exemption-f30d0a
 [strings."ch.ct600.statement-section477-exemption"]
@@ -16399,12 +16436,12 @@ cy = '''Trosiant'''
 # no HMRC Welsh found
 [strings."ch.ct600.micro-pl-other-income"]
 hash = "fc7b7bd5e266"
-cy = '''Incwm arall'''
+cy = '''Incwm gweithredol arall'''
 
 # as ch-small-company.raw-materials-and-consumables-8471ca
 [strings."ch.ct600.micro-pl-raw-materials"]
 hash = "8471ca9007cb"
-cy = '''Deunyddiau crai a nwyddau traul'''
+cy = '''Deunyddiau crai a defnyddiau traul'''
 
 # as ch-small-company.staff-costs-f64e0c
 [strings."ch.ct600.micro-pl-staff-costs"]
@@ -16414,12 +16451,12 @@ cy = '''Costau staff'''
 # no HMRC Welsh found
 [strings."ch.ct600.micro-pl-depreciation"]
 hash = "5094d90b2fb9"
-cy = '''Dibrisiant a symiau eraill a ddilëwyd oddi ar asedion'''
+cy = '''Dibrisiad, amorteiddiad ac amhariad'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.micro-pl-other-charges"]
 hash = "b7f81d4b7bbd"
-cy = '''Taliadau eraill'''
+cy = '''Treuliau gweithredol eraill'''
 
 # as rates.tax-47e288
 [strings."ch.ct600.micro-pl-tax"]
@@ -16429,12 +16466,12 @@ cy = '''Treth'''
 # as ch-small-company.fixed-assets-959c37
 [strings."ch.ct600.micro-bs-fixed-assets"]
 hash = "959c37b4f9bd"
-cy = '''Asedion sefydlog'''
+cy = '''Asedau sefydlog'''
 
 # as ch-micro-entity.current-assets-ccafff
 [strings."ch.ct600.micro-bs-current-assets"]
 hash = "ccafff34606e"
-cy = '''Asedion cyfredol'''
+cy = '''Asedau cyfredol'''
 
 # as ch-micro-entity.creditors-amounts-falling-due-within-one-e33d88
 [strings."ch.ct600.micro-bs-creditors-within-one-year"]
@@ -16449,7 +16486,7 @@ cy = '''Credydwyr: symiau sy’n ddyledus ar ôl mwy na blwyddyn'''
 # as ch-small-company.called-up-share-capital-4473b4
 [strings."ch.ct600.micro-bs-called-up-share-capital"]
 hash = "4473b4128459"
-cy = '''Cyfalaf cyfrannau wedi’i alw'''
+cy = '''Cyfalaf cyfranddaliadau wedi’i alw'''
 
 # as ch-small-company.profit-and-loss-account-reserve-5ad91d
 [strings."ch.ct600.micro-bs-profit-and-loss-account"]
@@ -16464,12 +16501,12 @@ cy = '''Trosiant'''
 # as ch-small-company.cost-of-sales-9bbf71
 [strings."ch.ct600.pl-cost-of-sales"]
 hash = "9bbf71f39d4a"
-cy = '''Cost gwerthiant'''
+cy = '''Cost gwerthiannau'''
 
 # as ch-small-company.administrative-expenses-878a5e
 [strings."ch.ct600.pl-administrative-expenses"]
 hash = "878a5ee632f2"
-cy = '''Treuliau gweinyddu'''
+cy = '''Treuliau gweinyddol'''
 
 # as ch-small-company.interest-receivable-and-similar-income-adb8a3
 [strings."ch.ct600.pl-interest-receivable"]
@@ -16484,7 +16521,7 @@ cy = '''Treth ar elw ar weithgareddau cyffredin'''
 # as ch-small-company.fixed-assets-959c37
 [strings."ch.ct600.bs-fixed-assets"]
 hash = "959c37b4f9bd"
-cy = '''Asedion sefydlog'''
+cy = '''Asedau sefydlog'''
 
 # as ch-small-company.stocks-df09c2
 [strings."ch.ct600.bs-stocks"]
@@ -16504,7 +16541,7 @@ cy = '''O hynny, symiau dyledus gan gyfarwyddwyr'''
 # as ch-small-company.cash-at-bank-and-in-hand-658d88
 [strings."ch.ct600.bs-cash-at-bank"]
 hash = "658d88d6a8a9"
-cy = '''Arian yn y banc a mewn llaw'''
+cy = '''Arian yn y banc ac mewn llaw'''
 
 # as ch-small-company.bank-loans-and-overdrafts-due-within-1a8457
 [strings."ch.ct600.bs-bank-loans-overdrafts"]
@@ -16544,7 +16581,7 @@ cy = '''O hynny, benthyciadau banc'''
 # as ch-small-company.called-up-share-capital-4473b4
 [strings."ch.ct600.bs-called-up-share-capital"]
 hash = "4473b4128459"
-cy = '''Cyfalaf cyfrannau wedi’i alw'''
+cy = '''Cyfalaf cyfranddaliadau wedi’i alw'''
 
 # as ch-small-company.profit-and-loss-account-reserve-5ad91d
 [strings."ch.ct600.bs-profit-and-loss-account"]
@@ -16569,7 +16606,7 @@ cy = '''Gosodiadau a ffitiadau'''
 # as ch-small-company.computer-equipment-09cc5b
 [strings."ch.ct600.asset-class-computer-equipment"]
 hash = "09cc5bb1675b"
-cy = '''Offer cyfrifiadurol'''
+cy = '''Cyfarpar cyfrifiadurol'''
 
 # as ch-small-company.motor-vehicles-602d25
 [strings."ch.ct600.asset-class-motor-vehicles"]
@@ -16744,22 +16781,22 @@ cy = '''{label}: {message}'''
 # no HMRC Welsh found
 [strings."ch.ct600.problem-micro-unbalanced-this"]
 hash = "60de9d448d82"
-cy = '''Nid yw’r fantolen ar gyfer eleni yn mantoli: asedion net {net}, cyfalaf cyfrannau adio cronfa wrth gefn y cyfrif elw a cholled {reserves}'''
+cy = '''Nid yw’r fantolen ar gyfer eleni yn mantoli: asedau net {net}, cyfalaf cyfranddaliadau adio cronfa wrth gefn y cyfrif elw a cholled {reserves}'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.problem-micro-unbalanced-last"]
 hash = "42297bc50911"
-cy = '''Nid yw’r fantolen ar gyfer y llynedd yn mantoli: asedion net {net}, cyfalaf cyfrannau adio cronfa wrth gefn y cyfrif elw a cholled {reserves}'''
+cy = '''Nid yw’r fantolen ar gyfer y llynedd yn mantoli: asedau net {net}, cyfalaf cyfranddaliadau adio cronfa wrth gefn y cyfrif elw a cholled {reserves}'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.problem-unbalanced-current"]
 hash = "ad83f649128d"
-cy = '''Nid yw mantolen y flwyddyn gyfredol yn mantoli: asedion net {net}, cyfalaf cyfrannau adio cronfa wrth gefn y cyfrif elw a cholled {reserves}'''
+cy = '''Nid yw mantolen y flwyddyn gyfredol yn mantoli: asedau net {net}, cyfalaf cyfranddaliadau adio cronfa wrth gefn y cyfrif elw a cholled {reserves}'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.problem-unbalanced-prior"]
 hash = "2bdb9a86b9b7"
-cy = '''Nid yw mantolen y flwyddyn flaenorol yn mantoli: asedion net {net}, cyfalaf cyfrannau adio cronfa wrth gefn y cyfrif elw a cholled {reserves}'''
+cy = '''Nid yw mantolen y flwyddyn flaenorol yn mantoli: asedau net {net}, cyfalaf cyfranddaliadau adio cronfa wrth gefn y cyfrif elw a cholled {reserves}'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.problem-advance-name"]
@@ -16784,7 +16821,7 @@ cy = '''Rhaid i’r swm dyledus ar y dechrau {start} adio’r swm a roddwyd ymla
 # no HMRC Welsh found
 [strings."ch.ct600.problem-note-value"]
 hash = "1c3da7044802"
-cy = '''Nid yw gwerth llyfr net y nodyn {value} yn hafal i’r asedion sefydlog {assets}'''
+cy = '''Nid yw gwerth llyfr net y nodyn {value} yn hafal i’r asedau sefydlog {assets}'''
 
 # no HMRC Welsh found
 [strings."ch.ct600.problem-note-depreciation"]
@@ -17095,11 +17132,11 @@ cy = '''Penodwyd'''
 
 [strings."ch.drill.pscs"]
 hash = "a9d753d49b58"
-cy = '''Personau â rheolaeth sylweddol'''
+cy = '''Personau â rheolaeth arwyddocaol'''
 
 [strings."ch.drill.no-pscs"]
 hash = "285c0b38768a"
-cy = '''Nid yw’r gofrestr yn rhestru unrhyw bersonau â rheolaeth sylweddol.'''
+cy = '''Nid yw’r gofrestr yn rhestru unrhyw bersonau â rheolaeth arwyddocaol.'''
 
 [strings."ch.drill.column-control"]
 hash = "74d2a600c189"
@@ -17499,7 +17536,7 @@ cy = '''y flwyddyn flaenorol'''
 
 [strings."ch.micro.capital-and-reserves-mismatch"]
 hash = "b95d3a1bcd14"
-cy = '''Nid yw cyfalaf a chronfeydd wrth gefn o {capital} ar gyfer {year} yn hafal i’r cyfalaf cyfranddaliadau a alwyd i fyny ynghyd â’r cyfrif elw a cholled, sy’n dod i {sum}.'''
+cy = '''Nid yw cyfalaf a chronfeydd wrth gefn o {capital} ar gyfer {year} yn hafal i’r cyfalaf cyfranddaliadau wedi’i alw ynghyd â’r cyfrif elw a cholled, sy’n dod i {sum}.'''
 
 # == Company drill-down edit links and truncated lists: ids ch.drill.find-and-update, ch.drill.*-truncated and ch.edit.* ==
 
@@ -17620,7 +17657,7 @@ cy = '''{name} heb ddyddiad gorffen'''
 
 [strings."bundles.pass-grant-unlimited-tokens"]
 hash = "1476af15c576"
-cy = '''dim terfyn ar gredydau (tokens)'''
+cy = '''dim terfyn ar gredyd (tokens)'''
 
 [strings."bundles.pass-grant-tokens-every"]
 hash = "46515823a07d"
@@ -17726,67 +17763,34 @@ cy = '''Rhagolwg yw cyfrifon diwygiedig yma: nid oes dim rydych yn ei ffeilio yn
 
 [strings."ch.edit.source-auth-code"]
 hash = "b0972d1c9c90"
-cy = '''Codau dilysu cwmnïau ar gyfer ffeilio ar-lein'''
+cy = '''Codau dilysu cwmni ar gyfer ffeilio ar lein'''
 
-[strings."ch.edit.source-office"]
-hash = "5f192428a691"
-cy = '''Newid cyfeiriad swyddfa gofrestredig cwmni (AD01)'''
 
 [strings."ch.edit.source-confirmation-service"]
 hash = "4ae7a6be7c1b"
-cy = '''Ffeilio eich datganiad cadarnhau (ffurflen flynyddol) gyda Thŷ’r Cwmnïau'''
+cy = '''Ffeilio’ch datganiad cadarnhau (ffurflen flynyddol) gyda Thŷ’r Cwmnïau'''
 
-[strings."ch.edit.source-confirmation-form"]
-hash = "783a96814093"
-cy = '''CS01 Datganiad cadarnhau'''
 
-[strings."ch.edit.source-accounts"]
-hash = "15ac109f40ed"
-cy = '''Ffeilio cyfrifon blynyddol eich cwmni gyda Thŷ’r Cwmnïau'''
 
-[strings."ch.edit.source-company-tax-returns"]
-hash = "92aa547aa62f"
-cy = '''Ffurflenni Treth Cwmni'''
 
 [strings."ch.edit.code-signature"]
 hash = "95843d7d2e03"
-cy = '''Defnyddir y cod i awdurdodi gwybodaeth a ffeilir ar-lein, ac mae’n cyfateb i lofnod swyddog y cwmni.'''
+cy = '''Defnyddir y cod i awdurdodi gwybodaeth a ffeiliwyd ar-lein ac mae’n gyfatebol i lofnod swyddog cwmni.'''
 
 [strings."ch.edit.code-online"]
 hash = "c4b7e230228a"
-cy = '''Bydd angen cod dilysu cwmni arnoch i ffeilio eich gwybodaeth ar-lein neu i ffeilio gan ddefnyddio meddalwedd fasnachol.'''
+cy = '''Bydd angen cod dilysu cwmni arnoch i ffeilio’ch gwybodaeth ar-lein neu ddefnyddio meddalwedd masnachol.'''
 
-[strings."ch.edit.accounts-approved"]
-hash = "591f8fb6c3b0"
-cy = '''Rhaid i gyfarwyddwyr eich cwmni gymeradwyo eich cyfrifon cyn i chi eu ffeilio.'''
 
-[strings."ch.edit.office-code"]
-hash = "a0e76767e0a7"
-cy = '''Bydd angen cod dilysu eich cwmni arnoch.'''
 
 [strings."ch.edit.confirmation-code"]
 hash = "540f99236317"
-cy = '''Bydd angen cyfrinair a chod dilysu Tŷ’r Cwmnïau arnoch.'''
+cy = '''Bydd arnoch angen cyfrinair a chod dilysu gan Dŷ’r Cwmnïau.'''
 
-[strings."ch.edit.confirmation-who"]
-hash = "9b28ba58f3e4"
-cy = '''Gall y canlynol ddilysu’r ffurflen hon: Cyfarwyddwr, Ysgrifennydd, Person awdurdodedig, Derbynnydd a rheolwr y Comisiwn Elusennau, Rheolwr CBC, Ffactor barnwrol.'''
 
-[strings."ch.edit.confirmation-identity"]
-hash = "676a2a82f2f2"
-cy = '''Cyn ffeilio eich datganiad cadarnhau, efallai y bydd angen i chi ddilysu pwy ydych gan ddefnyddio GOV.UK One Login.'''
 
-[strings."ch.edit.confirmation-personal-codes"]
-hash = "e0a71a236514"
-cy = '''Os oes gan eich cwmni fwy nag un cyfarwyddwr, rhaid i chi gael cod personol pob cyfarwyddwr.'''
 
-[strings."ch.edit.ct-notice"]
-hash = "b6eae6c313b2"
-cy = '''Rhaid i’ch cwmni neu’ch cymdeithas ffeilio Ffurflen Dreth Cwmni os byddwch yn cael ‘hysbysiad i gyflwyno Ffurflen Dreth Cwmni’ gan Gyllid a Thollau EF (CThEF).'''
 
-[strings."ch.edit.ct-who"]
-hash = "b8f06eaae9e5"
-cy = '''Gallwch naill ai gael cyfrifydd i baratoi a ffeilio eich Ffurflen Dreth, neu ei gwneud eich hun.'''
 
 [strings."ch.edit.authority-hmrc"]
 hash = "fd8786b84616"
@@ -17808,9 +17812,6 @@ cy = '''i {label}.'''
 hash = "c7a51e685687"
 cy = '''– mae angen y bwndel {bundles} ar gyfer hyn.'''
 
-[strings."ch.edit.strike-off-title"]
-hash = "8226e3c79fc2"
-cy = '''Dileu eich cwmni cyfyngedig o’r Gofrestr Cwmnïau'''
 
 [strings."ch.edit.status-elsewhere"]
 hash = "46006a6c48c4"
@@ -17861,7 +17862,7 @@ cy = '''Nid yw cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, yn darllen fe
 
 [strings."ch.prior.reserves"]
 hash = "9992012a2d2f"
-cy = '''Mae’r cyfrifon hynny’n dangos cyfalaf a chronfeydd wrth gefn o {capital}, ond mae cyfalaf cyfranddaliadau a alwyd a’r cyfrif elw a cholled yn dod i {sum}: mae’r gwahaniaeth mewn cronfeydd wrth gefn nad oes llinell ar eu cyfer ar y ffurflen hon. Cywirwch gyfrif elw a cholled y flwyddyn flaenorol fel bod y ddau yn cytuno cyn i chi gael rhagolwg.'''
+cy = '''Mae’r cyfrifon hynny’n dangos cyfalaf a chronfeydd wrth gefn o {capital}, ond mae cyfalaf cyfranddaliadau wedi’i alw a’r cyfrif elw a cholled yn dod i {sum}: mae’r gwahaniaeth mewn cronfeydd wrth gefn nad oes llinell ar eu cyfer ar y ffurflen hon. Cywirwch gyfrif elw a cholled y flwyddyn flaenorol fel bod y ddau yn cytuno cyn gweld y rhagolwg.'''
 
 [strings."ch.prior.read-failed"]
 hash = "5dea5b012a08"
@@ -17964,3 +17965,273 @@ cy = '''(dewisol)'''
 [strings."ch.prior.of-which-qualifier"]
 hash = "124b78a39b3d"
 cy = '''O hynny,'''
+
+# == The pass page: its marks pass.* and the ids pass.* of pass.page.js; redeem as defnyddio, a pass as tocyn, Bundle in English, credyd (tokens) ==
+
+[strings."pass.title"]
+hash = "8c715b9765ef"
+cy = '''Defnyddio tocyn - DIY Accounting Submit'''
+
+[strings."pass.redeem-a-pass-80ed7a"]
+hash = "80ed7a659122"
+cy = '''Defnyddio tocyn'''
+
+[strings."pass.add-the-bundle-that-your-pass-ffdd2a"]
+hash = "ffdd2a7a87d6"
+cy = '''Ychwanegwch y Bundle y mae eich tocyn yn ei roi i chi'''
+
+[strings."pass.checking-your-pass-785894"]
+hash = "785894041fac"
+cy = '''Yn gwirio eich tocyn'''
+
+[strings."pass.pass-ebdf8c"]
+hash = "ebdf8cc00bc4"
+cy = '''Tocyn'''
+
+[strings."pass.four-words-with-hyphens-between-them-ec6631"]
+hash = "ec6631681240"
+cy = '''Pedwar gair gyda chysylltnodau rhyngddynt, er enghraifft word-word-word-word.'''
+
+[strings."pass.redeem-pass-831ca4"]
+hash = "831ca4f189a5"
+cy = '''Defnyddio’r tocyn'''
+
+[strings."pass.go-to-your-activities-bd71e5"]
+hash = "bd71e55c1c1f"
+cy = '''Ewch i’ch gweithgareddau'''
+
+[strings."pass.see-your-bundles-e75eba"]
+hash = "e75ebab00f34"
+cy = '''Gweld eich Bundles'''
+
+[strings."pass.description-82197e"]
+hash = "82197e8d0604"
+cy = '''Agorwch y ddolen hon i weld beth mae eich tocyn yn ei roi i chi, a’i ychwanegu at eich cyfrif.'''
+
+[strings."pass.og-title-611ccc"]
+hash = "611ccc309fcf"
+cy = '''Mae gennych docyn ar gyfer DIY Accounting Submit'''
+
+[strings."pass.og-description-82197e"]
+hash = "82197e8d0604"
+cy = '''Agorwch y ddolen hon i weld beth mae eich tocyn yn ei roi i chi, a’i ychwanegu at eich cyfrif.'''
+
+[strings."pass.error-not-found"]
+hash = "a2e1479c7dff"
+cy = '''Ni allwn ddod o hyd i’r tocyn hwn. Gwiriwch y pedwar gair, neu’r ddolen, neu gofynnwch i’r anfonwr am un newydd.'''
+
+[strings."pass.error-expired"]
+hash = "68cb4e44f028"
+cy = '''Mae’r tocyn hwn wedi dod i ben. Gofynnwch i’r anfonwr am un newydd.'''
+
+[strings."pass.error-exhausted"]
+hash = "624bc3aac4a6"
+cy = '''Mae’r tocyn hwn wedi’i ddefnyddio. Gofynnwch i’r anfonwr am un newydd.'''
+
+[strings."pass.error-revoked"]
+hash = "7b4b69303b5a"
+cy = '''Mae’r tocyn hwn wedi’i ganslo. Gofynnwch i’r anfonwr am un newydd.'''
+
+[strings."pass.error-not-yet-valid"]
+hash = "023d937d7c24"
+cy = '''Nid yw’r tocyn hwn yn dechrau eto. Agorwch y ddolen eto yn nes ymlaen.'''
+
+[strings."pass.error-held-for-review"]
+hash = "1a612cc5199a"
+cy = '''Mae’r tocyn hwn wedi’i atal tra byddwn yn ei wirio. Agorwch y ddolen eto yfory.'''
+
+[strings."pass.error-email-required"]
+hash = "e8117d396800"
+cy = '''Mae’r tocyn hwn ar gyfer un cyfeiriad e-bost. Mewngofnodwch gyda’r cyfrif Google neu Microsoft ar gyfer y cyfeiriad hwnnw.'''
+
+[strings."pass.error-own-pass"]
+hash = "c25d382932da"
+cy = '''Chi wnaeth y tocyn hwn. Anfonwch y ddolen at rywun arall i’w defnyddio.'''
+
+[strings."pass.error-referral-already-used"]
+hash = "7a01ea54a0ff"
+cy = '''Mae eich cyfrif eisoes wedi defnyddio dolen tocyn gan rywun. Mae cyfrif yn defnyddio un.'''
+
+[strings."pass.error-already-redeemed"]
+hash = "6f33ca8e6654"
+cy = '''Mae eich cyfrif eisoes wedi defnyddio’r tocyn hwn.'''
+
+[strings."pass.error-account-limit-reached"]
+hash = "5f97beee22e5"
+cy = '''Mae eich cyfrif wedi defnyddio’r tocyn hwn gynifer o weithiau ag y mae’n ei ganiatáu.'''
+
+[strings."pass.error-network"]
+hash = "fcfb331d3577"
+cy = '''Nid oedd modd cyrraedd DIY Accounting Submit. Gwiriwch eich cysylltiad a rhowch gynnig arall arni.'''
+
+[strings."pass.error-other"]
+hash = "32a6e77a037e"
+cy = '''Ni weithiodd y tocyn hwn. Gofynnwch i’r anfonwr am un newydd.'''
+
+[strings."pass.date-at-time"]
+hash = "d10a2288d770"
+cy = '''{day} am {time}'''
+
+[strings."pass.tokens-unlimited"]
+hash = "fff3234ddb94"
+cy = '''credyd (tokens) diderfyn'''
+
+[strings."pass.tokens-one"]
+hash = "6254d8ee6bcb"
+cy = '''1 credyd (token)'''
+
+[strings."pass.tokens-many"]
+hash = "bc17ff48c052"
+cy = '''{count} credyd (tokens)'''
+
+[strings."pass.note-ends-on"]
+hash = "46a63f8d16e2"
+cy = '''yn dod i ben ar {date}'''
+
+[strings."pass.note-lasts"]
+hash = "1489e1b4ab81"
+cy = '''yn para {lasts}'''
+
+[strings."pass.note-no-end"]
+hash = "4cde242dbfc4"
+cy = '''dim dyddiad gorffen'''
+
+[strings."pass.heading-did-not-work"]
+hash = "e1528f6a99c4"
+cy = '''Ni weithiodd y tocyn hwn'''
+
+[strings."pass.error-wrong-email"]
+hash = "7a6dab33b7a8"
+cy = '''Mae’r tocyn hwn ar gyfer cyfeiriad e-bost gwahanol.'''
+
+[strings."pass.signed-in-as"]
+hash = "e25c06792186"
+cy = '''Rydych wedi mewngofnodi fel {email}.'''
+
+[strings."pass.sign-out-and-switch"]
+hash = "96a4ac9ba931"
+cy = '''Allgofnodi a defnyddio cyfrif arall'''
+
+[strings."pass.try-again"]
+hash = "d8b8392e2c54"
+cy = '''Rhowch gynnig arall arni'''
+
+[strings."pass.continue"]
+hash = "31fbef162594"
+cy = '''Parhau'''
+
+[strings."pass.note-allocated"]
+hash = "bc199b2e6475"
+cy = '''{tokens} wedi’u dyrannu'''
+
+[strings."pass.redeemed-added"]
+hash = "4a93d9e5277d"
+cy = '''Ychwanegodd eich tocyn {name}.'''
+
+[strings."pass.redeemed-can-now"]
+hash = "f7df40c945ce"
+cy = '''Gallwch nawr {summary}.'''
+
+[strings."pass.redeemed-you-have"]
+hash = "c95b06ebca8d"
+cy = '''Mae gennych {tokens}.'''
+
+[strings."pass.redeemed-no-token-limit"]
+hash = "4ee069eab7a8"
+cy = '''Nid oes terfyn ar gredyd (tokens).'''
+
+[strings."pass.redeemed-ends-on"]
+hash = "fd7a70891e31"
+cy = '''Mae’n dod i ben ar {date}.'''
+
+[strings."pass.redeemed-no-end"]
+hash = "5e02d89c9dca"
+cy = '''Nid oes dyddiad gorffen.'''
+
+[strings."pass.heading-redeemed"]
+hash = "305037ca2928"
+cy = '''Mae’r tocyn wedi’i ddefnyddio'''
+
+[strings."pass.heading-held"]
+hash = "29cec24ab4cb"
+cy = '''Mae’r Bundle hwn gennych eisoes'''
+
+[strings."pass.held"]
+hash = "520334b99642"
+cy = '''Mae gan eich cyfrif {name} eisoes ar delerau sydd o leiaf cystal â’r hyn y mae’r tocyn hwn yn ei roi. Nid yw’r tocyn hwn wedi’i ddefnyddio eto, felly gallwch ei roi i rywun arall.'''
+
+[strings."pass.valid-free-filing"]
+hash = "7ddc53ec122a"
+cy = '''Ffeilio TAW am ddim am {lasts}. Nid oes angen cerdyn.'''
+
+[strings."pass.valid-adds"]
+hash = "2cf0757cf9dc"
+cy = '''Mae’r tocyn hwn yn ychwanegu {name} at eich cyfrif DIY Accounting Submit.'''
+
+[strings."pass.valid-with-it"]
+hash = "8d53918460c1"
+cy = '''Gydag ef gallwch {summary}.'''
+
+[strings."pass.valid-comes-with"]
+hash = "8c7d6bae29f3"
+cy = '''Mae’n dod gyda {tokens}.'''
+
+[strings."pass.valid-no-token-limit"]
+hash = "2a8e106b5c8c"
+cy = '''Nid oes ganddo derfyn ar gredyd (tokens).'''
+
+[strings."pass.valid-vat-token"]
+hash = "ec5868141e11"
+cy = '''Mae Ffurflen TAW yn defnyddio 1 credyd (token).'''
+
+[strings."pass.valid-lasts"]
+hash = "364a79bad837"
+cy = '''Mae’n para {lasts}.'''
+
+[strings."pass.valid-also-adds"]
+hash = "4184d47c1800"
+cy = '''Mae hefyd yn ychwanegu {bundles}.'''
+
+[strings."pass.valid-sign-in-next"]
+hash = "52999daae146"
+cy = '''Byddwch yn mewngofnodi gyda chyfrif Google neu Microsoft nesaf. Pan fyddwch yn dod yn ôl, bydd {name} ar eich cyfrif.'''
+
+[strings."pass.valid-email-restricted"]
+hash = "51c70afadd8e"
+cy = '''Defnyddiwch y cyfrif Google neu Microsoft ar gyfer y cyfeiriad e-bost yr anfonwyd y tocyn hwn ato.'''
+
+[strings."pass.heading-valid"]
+hash = "24c0a52bd02d"
+cy = '''Mae gennych docyn ar gyfer {name}'''
+
+[strings."pass.redeem"]
+hash = "831ca4f189a5"
+cy = '''Defnyddio’r tocyn'''
+
+[strings."pass.heading-adding"]
+hash = "0360ab20d47e"
+cy = '''Yn ychwanegu {name}'''
+
+[strings."pass.heading-subscribe"]
+hash = "bc22f7e84af1"
+cy = '''Tanysgrifiwch i ychwanegu {name}'''
+
+[strings."pass.subscribe"]
+hash = "255c786bb19a"
+cy = '''Mae’r tocyn hwn yn gadael i chi danysgrifio i {name}. Agorwch eich Bundles i ddechrau’r tanysgrifiad.'''
+
+[strings."pass.heading-enter"]
+hash = "0dd244c436af"
+cy = '''Rhowch eich tocyn'''
+
+[strings."pass.enter"]
+hash = "ca364a73f30f"
+cy = '''Teipiwch bedwar gair eich tocyn, yna pwyswch Defnyddio’r tocyn.'''
+
+[strings."pass.heading-checking"]
+hash = "785894041fac"
+cy = '''Yn gwirio eich tocyn'''
+
+[strings."ch.edit.english-only"]
+hash = "a11ea4dd9aad"
+cy = '''Mae GOV.UK yn cyhoeddi hwn yn Saesneg yn unig.'''

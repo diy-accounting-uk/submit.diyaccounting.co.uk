@@ -147,12 +147,12 @@ const COST_STATES = [
     bundles: [
       { bundleId: "resident-pro", allocated: true, tokensGranted: 100, tokensRemaining: 0, tokenResetAt: "2026-12-01T00:00:00.000Z" },
     ],
-    welsh: /^Nid oes gennych gredydau ar ôl\. Bydd eich lwfans yn adnewyddu ar 1 Rhagfyr 2026, neu gallwch ychwanegu bwndel\.$/,
+    welsh: /^Nid oes gennych gredydau \(tokens\) ar ôl\. Bydd eich lwfans yn adnewyddu ar 1 Rhagfyr 2026, neu gallwch ychwanegu Bundle\.$/,
   },
   {
     state: "no token left, with no refresh date",
     bundles: [{ bundleId: "resident-pro", allocated: true, tokensGranted: 100, tokensRemaining: 0 }],
-    welsh: /^Nid oes gennych gredydau ar ôl\. Gallwch ychwanegu bwndel\.$/,
+    welsh: /^Nid oes gennych gredydau \(tokens\) ar ôl\. Gallwch ychwanegu Bundle\.$/,
   },
 ];
 

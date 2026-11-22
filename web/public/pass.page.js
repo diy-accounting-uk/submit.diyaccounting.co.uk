@@ -66,33 +66,42 @@ const readPassLandingAttribution = () => {
   }
 };
 
-// One sentence and one next step for each refusal. The key is the reason the API answers.
-const ERROR_SENTENCES = {
-  not_found: "We cannot find this pass. Check the four words, or the link, or ask the sender for a new one.",
-  expired: "This pass has ended. Ask the sender for a new one.",
-  exhausted: "This pass has been used. Ask the sender for a new one.",
-  revoked: "This pass has been cancelled. Ask the sender for a new one.",
-  not_yet_valid: "This pass does not start yet. Open the link again later.",
-  held_for_review: "This pass is paused while we check it. Open the link again tomorrow.",
-  email_required: "This pass is for one email address. Sign in with the Google or Microsoft account for that address.",
-  own_pass: "You made this pass. Send the link to someone else to use.",
-  referral_already_used: "Your account has already used a pass link from someone. An account uses one.",
-  already_redeemed: "Your account has already used this pass.",
-  account_limit_reached: "Your account has used this pass as many times as it allows.",
-  network_error: "We could not reach DIY Accounting Submit. Check your connection and try again.",
-};
+// The language siteText writes in, so the summaries, dates and mutations match the sentences around them.
+const inWelsh = () => window.siteLanguage.chrome() === "cy";
+const locale = () => (inWelsh() ? "cy-GB" : "en-GB");
+const siteText = (id, english, values) => window.siteText(id, english, values);
 
-const durationWords = (isoDuration) => {
-  const match = /^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?$/.exec(isoDuration || "");
-  if (!match || !(match[1] || match[2] || match[3])) return null;
-  const words = (value, unit) => (value ? `${Number(value)} ${unit}${Number(value) === 1 ? "" : "s"}` : null);
-  return [words(match[1], "year"), words(match[2], "month"), words(match[3], "day")].filter(Boolean).join(" ");
-};
+// One sentence and one next step for each refusal. The key is the reason the API answers.
+const errorSentence = (reason) =>
+  ({
+    not_found: () =>
+      siteText("pass.error-not-found", "We cannot find this pass. Check the four words, or the link, or ask the sender for a new one."),
+    expired: () => siteText("pass.error-expired", "This pass has ended. Ask the sender for a new one."),
+    exhausted: () => siteText("pass.error-exhausted", "This pass has been used. Ask the sender for a new one."),
+    revoked: () => siteText("pass.error-revoked", "This pass has been cancelled. Ask the sender for a new one."),
+    not_yet_valid: () => siteText("pass.error-not-yet-valid", "This pass does not start yet. Open the link again later."),
+    held_for_review: () => siteText("pass.error-held-for-review", "This pass is paused while we check it. Open the link again tomorrow."),
+    email_required: () =>
+      siteText(
+        "pass.error-email-required",
+        "This pass is for one email address. Sign in with the Google or Microsoft account for that address.",
+      ),
+    own_pass: () => siteText("pass.error-own-pass", "You made this pass. Send the link to someone else to use."),
+    referral_already_used: () =>
+      siteText("pass.error-referral-already-used", "Your account has already used a pass link from someone. An account uses one."),
+    already_redeemed: () => siteText("pass.error-already-redeemed", "Your account has already used this pass."),
+    account_limit_reached: () =>
+      siteText("pass.error-account-limit-reached", "Your account has used this pass as many times as it allows."),
+    network_error: () => siteText("pass.error-network", "We could not reach DIY Accounting Submit. Check your connection and try again."),
+  })[reason]?.() || siteText("pass.error-other", "This pass did not work. Ask the sender for a new one.");
+
+// "1 year", "6 months", "7 days" in the pass card's wording, in the page's language.
+const durationWords = (isoDuration) => window.passCard.durationWords(isoDuration, { siteText: window.siteText });
 
 const formatDate = (iso) => {
   const date = new Date(iso);
   if (isNaN(date.getTime())) return null;
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  return date.toLocaleDateString(locale(), { day: "numeric", month: "long", year: "numeric" });
 };
 
 // A bundle that lasts under two days is shown with its time, because the date alone hides when a day pass ends.
@@ -101,15 +110,35 @@ const formatEnd = (iso, timeout) => {
   if (isNaN(date.getTime())) return null;
   const days = /^P(\d+)D$/.exec(timeout || "");
   if (!days || Number(days[1]) >= 2) return formatDate(iso);
-  const day = date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
-  const time = date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZoneName: "short" });
-  return `${day} at ${time}`;
+  const day = date.toLocaleDateString(locale(), { day: "numeric", month: "long", year: "numeric" });
+  const time = date.toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit", timeZoneName: "short" });
+  return siteText("pass.date-at-time", "{day} at {time}", { day, time });
 };
 
 const tokensWords = (tokensGranted) => {
-  if (tokensGranted === "unlimited") return "unlimited tokens";
+  if (tokensGranted === "unlimited") return siteText("pass.tokens-unlimited", "unlimited tokens");
   if (typeof tokensGranted !== "number") return null;
-  return `${tokensGranted} token${tokensGranted === 1 ? "" : "s"}`;
+  return tokensGranted === 1
+    ? siteText("pass.tokens-one", "1 token")
+    : siteText("pass.tokens-many", "{count} tokens", { count: tokensGranted });
+};
+
+// Welsh soft mutation of a summary's first word where it follows "gallwch": cyflwyno becomes gyflwyno.
+const SOFT_MUTATIONS = [
+  ["ll", "l"],
+  ["rh", "r"],
+  ["c", "g"],
+  ["p", "b"],
+  ["t", "d"],
+  ["g", ""],
+  ["b", "f"],
+  ["d", "dd"],
+  ["m", "f"],
+];
+const afterGallwch = (summary) => {
+  if (!inWelsh()) return summary;
+  const mutation = SOFT_MUTATIONS.find(([radical]) => summary.startsWith(radical));
+  return mutation ? mutation[1] + summary.slice(mutation[0].length) : summary;
 };
 
 // A pass link from an activity page carries that page as `next`. Only a path on this site is kept.
@@ -149,7 +178,8 @@ const bundleInfo = (bundleId) => {
   return {
     id: bundleId,
     name: entry.name || bundleId,
-    summary: entry.passSummary || "",
+    summary: (inWelsh() && entry.passSummaryCy) || entry.passSummary || "",
+    englishSummary: entry.passSummary || "",
     tokensGranted: entry.tokensGranted,
     timeout: entry.timeout,
     allocation: entry.allocation,
@@ -223,51 +253,71 @@ function bundleCardEl(info, noteParts) {
   return card;
 }
 
+// The end of a granted bundle in the card's note: its end date, how long it lasts, or no end.
 function endDateWords(expiry, timeout) {
-  if (expiry) return formatEnd(expiry, timeout) ? `ends on ${formatEnd(expiry, timeout)}` : null;
+  if (expiry) {
+    const ends = formatEnd(expiry, timeout);
+    return ends ? { words: siteText("pass.note-ends-on", "ends on {date}", { date: ends }), noEnd: false } : null;
+  }
   const lasts = durationWords(timeout);
-  return lasts ? `lasts ${lasts}` : "no end date";
+  if (lasts) return { words: siteText("pass.note-lasts", "lasts {lasts}", { lasts }), noEnd: false };
+  return { words: siteText("pass.note-no-end", "no end date"), noEnd: true };
 }
 
 function showError(reason, { email = getSignedInEmail() } = {}) {
+  const heading = siteText("pass.heading-did-not-work", "This pass did not work");
   if (reason === "wrong_email") {
-    const signedInAs = email ? ` You are signed in as ${email}.` : "";
+    const wrongAddress = siteText("pass.error-wrong-email", "This pass is for a different email address.");
+    const signedInAs = email ? siteText("pass.signed-in-as", "You are signed in as {email}.", { email }) : "";
     render({
-      heading: "This pass did not work",
-      error: `This pass is for a different email address.${signedInAs}`,
-      redeem: { label: "Sign out and use another account", leaves: true, onClick: signOutAndReturn },
+      heading,
+      error: [wrongAddress, signedInAs].filter(Boolean).join(" "),
+      redeem: {
+        label: siteText("pass.sign-out-and-switch", "Sign out and use another account"),
+        leaves: true,
+        onClick: signOutAndReturn,
+      },
     });
     return;
   }
-  const sentence = ERROR_SENTENCES[reason] || "This pass did not work. Ask the sender for a new one.";
+  const sentence = errorSentence(reason);
   if (reason === "network_error") {
     render({
-      heading: "This pass did not work",
+      heading,
       error: sentence,
-      redeem: { label: "Try again", leaves: true, onClick: () => start() },
+      redeem: { label: siteText("pass.try-again", "Try again"), leaves: true, onClick: () => start() },
     });
     return;
   }
   if (reason === "not_found") {
-    render({ heading: "This pass did not work", error: sentence, form: true, typed: currentCode, home: true });
+    render({ heading, error: sentence, form: true, typed: currentCode, home: true });
     return;
   }
-  render({ heading: "This pass did not work", error: sentence, home: true });
+  render({ heading, error: sentence, home: true });
 }
 
 function showRedeemed(result) {
-  const goOn = nextPath ? { label: "Continue", leaves: true, onClick: () => window.location.assign(nextPath) } : null;
+  const goOn = nextPath
+    ? { label: siteText("pass.continue", "Continue"), leaves: true, onClick: () => window.location.assign(nextPath) }
+    : null;
   const info = bundleInfo(result.bundleId);
   const tokens = tokensWords(info.tokensGranted);
-  const endsWords = endDateWords(result.expiry, info.timeout);
-  const noteParts = [tokens && `${tokens} allocated`, endsWords].filter(Boolean);
-  const sentences = [`Your pass added ${info.name}.`];
-  if (info.summary) sentences.push(`You can now ${info.summary}.`);
-  if (tokens) sentences.push(typeof info.tokensGranted === "number" ? `You have ${tokens}.` : "There is no limit on tokens.");
-  if (result.expiry && formatEnd(result.expiry, info.timeout)) sentences.push(`It ends on ${formatEnd(result.expiry, info.timeout)}.`);
-  else if (endsWords === "no end date") sentences.push("There is no end date.");
+  const ends = endDateWords(result.expiry, info.timeout);
+  const noteParts = [tokens && siteText("pass.note-allocated", "{tokens} allocated", { tokens }), ends?.words].filter(Boolean);
+  const sentences = [siteText("pass.redeemed-added", "Your pass added {name}.", { name: info.name })];
+  if (info.summary) sentences.push(siteText("pass.redeemed-can-now", "You can now {summary}.", { summary: afterGallwch(info.summary) }));
+  if (tokens) {
+    sentences.push(
+      typeof info.tokensGranted === "number"
+        ? siteText("pass.redeemed-you-have", "You have {tokens}.", { tokens })
+        : siteText("pass.redeemed-no-token-limit", "There is no limit on tokens."),
+    );
+  }
+  if (result.expiry && formatEnd(result.expiry, info.timeout)) {
+    sentences.push(siteText("pass.redeemed-ends-on", "It ends on {date}.", { date: formatEnd(result.expiry, info.timeout) }));
+  } else if (ends?.noEnd) sentences.push(siteText("pass.redeemed-no-end", "There is no end date."));
   render({
-    heading: "Pass redeemed",
+    heading: siteText("pass.heading-redeemed", "Pass redeemed"),
     message: sentences.join(" "),
     card: bundleCardEl(info, noteParts),
     redeem: goOn,
@@ -278,8 +328,12 @@ function showRedeemed(result) {
 
 function showHeld(info) {
   render({
-    heading: "You already have this bundle",
-    message: `Your account already has ${info.name} on terms at least as good as this pass gives. This pass is still unused, so you can give it to someone else.`,
+    heading: siteText("pass.heading-held", "You already have this bundle"),
+    message: siteText(
+      "pass.held",
+      "Your account already has {name} on terms at least as good as this pass gives. This pass is still unused, so you can give it to someone else.",
+      { name: info.name },
+    ),
     home: true,
     bundles: true,
   });
@@ -305,36 +359,49 @@ function showValid(check) {
   const tokens = tokensWords(info.tokensGranted);
   const lasts = durationWords(info.timeout);
   const noCard = info.allocation !== "on-pass-on-subscription";
-  const freeFiling = noCard && lasts && typeof info.tokensGranted === "number" && /VAT/.test(info.summary);
+  const filesVat = /VAT/.test(info.englishSummary);
+  const freeFiling = noCard && lasts && typeof info.tokensGranted === "number" && filesVat;
   const sentences = [];
-  if (freeFiling) sentences.push(`Free VAT filing for ${lasts}. No card needed.`);
-  sentences.push(`This pass adds ${info.name} to your DIY Accounting Submit account.`);
-  if (info.summary) sentences.push(`With it you can ${info.summary}.`);
-  if (tokens) sentences.push(typeof info.tokensGranted === "number" ? `It comes with ${tokens}.` : "It has no limit on tokens.");
-  if (typeof info.tokensGranted === "number" && /VAT/.test(info.summary)) sentences.push("A VAT return uses 1 token.");
-  if (lasts) sentences.push(`It lasts ${lasts}.`);
-  if (alsoAdds.length) sentences.push(`It also adds ${alsoAdds.join("; ")}.`);
+  if (freeFiling) sentences.push(siteText("pass.valid-free-filing", "Free VAT filing for {lasts}. No card needed.", { lasts }));
+  sentences.push(siteText("pass.valid-adds", "This pass adds {name} to your DIY Accounting Submit account.", { name: info.name }));
+  if (info.summary) sentences.push(siteText("pass.valid-with-it", "With it you can {summary}.", { summary: afterGallwch(info.summary) }));
+  if (tokens) {
+    sentences.push(
+      typeof info.tokensGranted === "number"
+        ? siteText("pass.valid-comes-with", "It comes with {tokens}.", { tokens })
+        : siteText("pass.valid-no-token-limit", "It has no limit on tokens."),
+    );
+  }
+  if (typeof info.tokensGranted === "number" && filesVat) sentences.push(siteText("pass.valid-vat-token", "A VAT return uses 1 token."));
+  if (lasts) sentences.push(siteText("pass.valid-lasts", "It lasts {lasts}.", { lasts }));
+  if (alsoAdds.length) sentences.push(siteText("pass.valid-also-adds", "It also adds {bundles}.", { bundles: alsoAdds.join("; ") }));
   let after;
   if (signedIn) {
     const email = getSignedInEmail();
-    after = email ? `You are signed in as ${email}.` : "";
+    after = email ? siteText("pass.signed-in-as", "You are signed in as {email}.", { email }) : "";
   } else {
-    after = `You sign in with a Google or Microsoft account next. When you come back, ${info.name} is on your account.`;
-    if (check.emailRestricted) after += " Use the Google or Microsoft account for the email address that this pass was sent to.";
+    after = siteText(
+      "pass.valid-sign-in-next",
+      "You sign in with a Google or Microsoft account next. When you come back, {name} is on your account.",
+      { name: info.name },
+    );
+    if (check.emailRestricted) {
+      after += ` ${siteText("pass.valid-email-restricted", "Use the Google or Microsoft account for the email address that this pass was sent to.")}`;
+    }
   }
   render({
-    heading: `You have a pass for ${info.name}`,
+    heading: siteText("pass.heading-valid", "You have a pass for {name}", { name: info.name }),
     message: sentences.join(" "),
-    redeem: { label: "Redeem pass", onClick: () => onRedeemClick() },
+    redeem: { label: siteText("pass.redeem", "Redeem pass"), onClick: () => onRedeemClick() },
     after,
   });
 }
 
 function showAdding(info) {
   render({
-    heading: `Adding ${info.name}`,
+    heading: siteText("pass.heading-adding", "Adding {name}", { name: info.name }),
     message: "",
-    redeem: { label: "Redeem pass", disabled: true },
+    redeem: { label: siteText("pass.redeem", "Redeem pass"), disabled: true },
   });
 }
 
@@ -358,13 +425,18 @@ async function refreshEntitlement() {
   window.dispatchEvent(new CustomEvent("bundle-changed"));
 }
 
+// The reader's language, so the server sends the pass redeemed email in it, as the generate pages do.
+function siteLanguageHeader() {
+  return window.siteLanguage && window.siteLanguage.current() === "cy" ? { "X-Site-Language": "cy" } : {};
+}
+
 async function redeem() {
   const info = bundleInfo(passCheck.bundleId);
   showAdding(info);
   try {
     const response = await window.fetchWithIdToken("/api/v1/pass", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...siteLanguageHeader() },
       body: JSON.stringify({ code: currentCode, acquisition: readPassLandingAttribution() }),
     });
     const body = await response.json().catch(() => ({}));
@@ -378,8 +450,10 @@ async function redeem() {
         if (body.testPass) sessionStorage.setItem("hmrcAccount", "synthetic");
       } catch {}
       render({
-        heading: `Subscribe to add ${info.name}`,
-        message: `This pass lets you subscribe to ${info.name}. Open your bundles to start the subscription.`,
+        heading: siteText("pass.heading-subscribe", "Subscribe to add {name}", { name: info.name }),
+        message: siteText("pass.subscribe", "This pass lets you subscribe to {name}. Open your bundles to start the subscription.", {
+          name: info.name,
+        }),
         bundles: true,
       });
       return;
@@ -436,8 +510,8 @@ async function onRedeemClick() {
 
 function showEntry() {
   render({
-    heading: "Enter your pass",
-    message: "Type the four words of your pass, then press Redeem pass.",
+    heading: siteText("pass.heading-enter", "Enter your pass"),
+    message: siteText("pass.enter", "Type the four words of your pass, then press Redeem pass."),
     form: true,
   });
 }
@@ -461,7 +535,7 @@ async function start() {
     return;
   }
 
-  render({ heading: "Checking your pass", message: "" });
+  render({ heading: siteText("pass.heading-checking", "Checking your pass"), message: "" });
   let check;
   try {
     const [, response] = await Promise.all([loadCatalogue(), fetch(`/api/v1/pass?code=${encodeURIComponent(currentCode)}`)]);

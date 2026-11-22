@@ -311,106 +311,110 @@ function activityAccess(entitlement, activityId) {
 const bundleName = (bundle) => (isWelshPage() && bundle.nameCy) || bundle.name;
 
 // Where the notes below quote from: Companies House's and HMRC's own guidance on GOV.UK, and the
-// Companies House paper confirmation statement.
+// Companies House paper confirmation statement. A source GOV.UK also publishes in Welsh has its Welsh
+// page and title; on a Welsh page its notes quote GOV.UK's Welsh word for word. A source in English
+// only is quoted in English on a Welsh page too, because a quotation is the source's words.
 const AUTHORITY_SOURCES = {
-  authCode: "https://www.gov.uk/guidance/company-authentication-codes-for-online-filing",
-  office: "https://www.gov.uk/government/publications/change-a-registered-office-address-ad01",
-  confirmationService: "https://www.gov.uk/file-your-confirmation-statement-with-companies-house",
-  confirmationForm: "https://assets.publishing.service.gov.uk/media/696f5ef05b6060ca6736a07e/CS01_v7.0-FINAL.pdf",
-  accounts: "https://www.gov.uk/file-your-company-annual-accounts",
-  companyTaxReturns: "https://www.gov.uk/company-tax-returns",
+  authCode: {
+    url: "https://www.gov.uk/guidance/company-authentication-codes-for-online-filing",
+    title: "Company authentication codes for online filing",
+    welshUrl: "https://www.gov.uk/guidance/company-authentication-codes-for-online-filing.cy",
+    welshTitle: () => window.siteText("ch.edit.source-auth-code", "Company authentication codes for online filing"),
+  },
+  office: {
+    url: "https://www.gov.uk/government/publications/change-a-registered-office-address-ad01",
+    title: "Change a company's registered office address (AD01)",
+  },
+  confirmationService: {
+    url: "https://www.gov.uk/file-your-confirmation-statement-with-companies-house",
+    title: "File your confirmation statement (annual return) with Companies House",
+    welshUrl: "https://www.gov.uk/ffeilio-datganiad-cadarnhau-gyda-thyr-cwmniau",
+    welshTitle: () =>
+      window.siteText("ch.edit.source-confirmation-service", "File your confirmation statement (annual return) with Companies House"),
+  },
+  confirmationForm: {
+    url: "https://assets.publishing.service.gov.uk/media/696f5ef05b6060ca6736a07e/CS01_v7.0-FINAL.pdf",
+    title: "CS01 Confirmation statement",
+  },
+  accounts: {
+    url: "https://www.gov.uk/file-your-company-annual-accounts",
+    title: "File your company's annual accounts with Companies House",
+  },
+  companyTaxReturns: { url: "https://www.gov.uk/company-tax-returns", title: "Company Tax Returns" },
 };
 
-const sourceTitles = () => ({
-  authCode: window.siteText("ch.edit.source-auth-code", "Company authentication codes for online filing"),
-  office: window.siteText("ch.edit.source-office", "Change a company's registered office address (AD01)"),
-  confirmationService: window.siteText(
-    "ch.edit.source-confirmation-service",
-    "File your confirmation statement (annual return) with Companies House",
-  ),
-  confirmationForm: window.siteText("ch.edit.source-confirmation-form", "CS01 Confirmation statement"),
-  accounts: window.siteText("ch.edit.source-accounts", "File your company's annual accounts with Companies House"),
-  companyTaxReturns: window.siteText("ch.edit.source-company-tax-returns", "Company Tax Returns"),
-});
+// A quotation GOV.UK publishes in Welsh as well: its Welsh is GOV.UK's own sentence.
+const inWelshToo = (source, quote) => ({ source, quote, welsh: true });
+// A quotation GOV.UK publishes in English only.
+const inEnglishOnly = (source, quote) => ({ source, quote, welsh: false });
 
 // The authority each filing needs, in the words of the body that receives it, with its source.
 function authorityNotes(activityId) {
-  const codeSignature = [
+  const codeSignature = inWelshToo(
     "authCode",
     window.siteText(
       "ch.edit.code-signature",
       "The code is used to authorise information filed online and is the equivalent of a company officer’s signature.",
     ),
-  ];
-  const codeOnline = [
+  );
+  const codeOnline = inWelshToo(
     "authCode",
     window.siteText(
       "ch.edit.code-online",
       "You’ll need a company authentication code to file your information online or file using commercial software.",
     ),
-  ];
+  );
   const accounts = [
-    [
-      "accounts",
-      window.siteText("ch.edit.accounts-approved", "You must get your accounts approved by your company directors before you file them."),
-    ],
+    inEnglishOnly("accounts", "You must get your accounts approved by your company directors before you file them."),
     codeOnline,
   ];
   const notes = {
-    "change-registered-office": [
-      ["office", window.siteText("ch.edit.office-code", "You’ll need your company authentication code.")],
-      codeSignature,
-    ],
+    "change-registered-office": [inEnglishOnly("office", "You’ll need your company authentication code."), codeSignature],
     "change-registered-email": [codeOnline, codeSignature],
     "file-confirmation-statement": [
-      [
+      inWelshToo(
         "confirmationService",
         window.siteText("ch.edit.confirmation-code", "You’ll need a Companies House password and authentication code."),
-      ],
-      [
+      ),
+      inEnglishOnly(
         "confirmationForm",
-        window.siteText(
-          "ch.edit.confirmation-who",
-          "This form may be authenticated by: Director, Secretary, Person authorised, Charity commission receiver and manager, CIC manager, Judicial factor.",
-        ),
-      ],
-      [
+        "This form may be authenticated by: Director, Secretary, Person authorised, Charity commission receiver and manager, CIC manager, Judicial factor.",
+      ),
+      inEnglishOnly(
         "confirmationService",
-        window.siteText(
-          "ch.edit.confirmation-identity",
-          "Before filing your confirmation statement, you may need to verify your identity using GOV.UK One Login.",
-        ),
-      ],
-      [
-        "confirmationService",
-        window.siteText(
-          "ch.edit.confirmation-personal-codes",
-          "If your company has more than one director, you must have each director’s personal code.",
-        ),
-      ],
+        "Before filing your confirmation statement, you may need to verify your identity using GOV.UK One Login.",
+      ),
+      inEnglishOnly("confirmationService", "If your company has more than one director, you must have each director’s personal code."),
     ],
     "file-micro-entity-accounts": accounts,
     "file-small-company-accounts": accounts,
     "file-company-tax-return": [
-      [
+      inEnglishOnly(
         "companyTaxReturns",
-        window.siteText(
-          "ch.edit.ct-notice",
-          "Your company or association must file a Company Tax Return if you get a ‘notice to deliver a Company Tax Return’ from HM Revenue and Customs (HMRC).",
-        ),
-      ],
-      [
-        "companyTaxReturns",
-        window.siteText("ch.edit.ct-who", "You can either get an accountant to prepare and file your tax return or do it yourself."),
-      ],
+        "Your company or association must file a Company Tax Return if you get a ‘notice to deliver a Company Tax Return’ from HM Revenue and Customs (HMRC).",
+      ),
+      inEnglishOnly("companyTaxReturns", "You can either get an accountant to prepare and file your tax return or do it yourself."),
     ],
   };
   return notes[activityId] || [];
 }
 
+// A link to an English-only page from a Welsh page: the English title, marked English, then "(in English)".
+function englishLink(url, title) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.lang = "en";
+  link.textContent = title;
+  const mark = document.createElement("span");
+  mark.className = "lang-mark";
+  mark.textContent = window.siteText("chrome.in-english", "(in English)");
+  return [link, " ", mark];
+}
+
 function appendAuthority(holder, activityId) {
   const notes = authorityNotes(activityId);
   if (notes.length === 0) return;
+  const welshPage = isWelshPage();
   const lead = document.createElement("p");
   lead.className = "hint file-this-authority-lead";
   lead.textContent =
@@ -419,13 +423,28 @@ function appendAuthority(holder, activityId) {
       : window.siteText("ch.edit.authority-companies-house", "What Companies House says this filing needs:");
   const list = document.createElement("ul");
   list.className = "hint file-this-authority";
-  const titles = sourceTitles();
-  notes.forEach(([sourceId, quote]) => {
+  notes.forEach(({ source: sourceId, quote, welsh }) => {
+    const source = AUTHORITY_SOURCES[sourceId];
     const item = document.createElement("li");
-    const source = document.createElement("a");
-    source.href = AUTHORITY_SOURCES[sourceId];
-    source.textContent = titles[sourceId];
-    item.append(`“${quote}” `, source);
+    if (!welshPage) {
+      const link = document.createElement("a");
+      link.href = source.url;
+      link.textContent = source.title;
+      item.append(`“${quote}” `, link);
+    } else if (welsh) {
+      const link = document.createElement("a");
+      link.href = source.welshUrl;
+      link.textContent = source.welshTitle();
+      item.append(`“${quote}” `, link);
+    } else {
+      const words = document.createElement("span");
+      words.lang = "en";
+      words.textContent = `“${quote}”`;
+      const englishOnly = document.createElement("span");
+      englishOnly.className = "file-this-english-only";
+      englishOnly.textContent = window.siteText("ch.edit.english-only", "GOV.UK publishes this in English only.");
+      item.append(words, " ", ...englishLink(source.url, source.title), " ", englishOnly);
+    }
     list.appendChild(item);
   });
   holder.append(lead, list);
@@ -578,16 +597,18 @@ const accountsTypeLabel = (type) => (type ? slugText(type) : window.siteText("ch
 function renderStatusNote() {
   const note = document.getElementById("statusChangeNote");
   note.innerHTML = "";
+  const url = "https://www.gov.uk/strike-off-your-company-from-companies-register";
+  const title = "Strike off your limited company from the Companies Register";
   const link = document.createElement("a");
-  link.href = "https://www.gov.uk/strike-off-your-company-from-companies-register";
-  link.textContent = window.siteText("ch.edit.strike-off-title", "Strike off your limited company from the Companies Register");
+  link.href = url;
+  link.textContent = title;
   note.append(
     window.siteText(
       "ch.edit.status-elsewhere",
       "This site does not change the company's status. To close the company, Companies House takes form DS01:",
     ),
     " ",
-    link,
+    ...(isWelshPage() ? englishLink(url, title) : [link]),
   );
 }
 

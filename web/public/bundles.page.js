@@ -545,7 +545,10 @@ document.addEventListener("click", async (e) => {
 
     const response = await window.fetchWithIdToken("/api/v1/billing/checkout", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(window.siteLanguage && window.siteLanguage.current() === "cy" ? { "X-Site-Language": "cy" } : {}),
+      },
       body: JSON.stringify({ bundleId, ...(interval && { interval }), acquisition: readStoredLandingAttribution() }),
     });
     const body = await response.json().catch(() => ({}));

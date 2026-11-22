@@ -577,6 +577,26 @@ describe("passPost", () => {
       });
     });
 
+    test("a redemption from the Welsh site asks for the email in Welsh", async () => {
+      mockRedeemPass.mockResolvedValue({ valid: true, bundleId: "day-guest", pass: { passTypeId: "day-guest-pass", testPass: false } });
+      const event = buildEventWithToken(validToken, { code: "test-pass-code" });
+      event.headers["X-Site-Language"] = "cy";
+
+      await ingestHandler(event);
+
+      expect(mockRequestCustomerEmail.mock.calls[0][0].data.language).toBe("cy");
+    });
+
+    test("a redemption with another language header asks for the email in English", async () => {
+      mockRedeemPass.mockResolvedValue({ valid: true, bundleId: "day-guest", pass: { passTypeId: "day-guest-pass", testPass: false } });
+      const event = buildEventWithToken(validToken, { code: "test-pass-code" });
+      event.headers["X-Site-Language"] = "en";
+
+      await ingestHandler(event);
+
+      expect(mockRequestCustomerEmail.mock.calls[0][0].data).not.toHaveProperty("language");
+    });
+
     test("a test pass marks the request synthetic", async () => {
       mockRedeemPass.mockResolvedValue({ valid: true, bundleId: "day-guest", pass: { passTypeId: "day-guest-pass", testPass: true } });
 

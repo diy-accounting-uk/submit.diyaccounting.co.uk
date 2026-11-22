@@ -95,7 +95,7 @@ test.describe("A filing Companies House never received", () => {
     await expect(shown).not.toContainText("did not receive");
     const result = page.locator("#filingResult");
     await expect(result.locator(".outcome__title")).toHaveText(WELSH_HEADLINE);
-    await expect(result.locator(".hint")).toHaveText("Rhif cyflwyno 00001A.");
+    await expect(result.locator(".hint")).toHaveText("Rhif cyflwyniad 00001A.");
     await expect(result).toHaveClass(/outcome--error/);
     await expect(result).not.toContainText("REJECT");
   });
@@ -129,7 +129,7 @@ test.describe("A filing Companies House never received", () => {
 
     await serveSite(page, { language: "cy" });
     await fileWithOutcome(page, "cy/companies-house/fileSmallCompanyAccounts.html", [NOT_RECEIVED]);
-    await expect(page.locator("#filingResult")).toHaveText(`${WELSH_HEADLINE} Rhif cyflwyno 00001A.`);
+    await expect(page.locator("#filingResult")).toHaveText(`${WELSH_HEADLINE} Rhif cyflwyniad 00001A.`);
   });
 
   test("the small company page keeps the rejected outcome for a reason Companies House sent", async ({ page }) => {

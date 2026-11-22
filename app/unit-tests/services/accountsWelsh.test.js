@@ -307,7 +307,7 @@ describe("Welsh small company accounts", () => {
     for (const welsh of [
       "Datganiadau ariannol heb eu harchwilio",
       "Adroddiad y cyfarwyddwyr",
-      "Cost gwerthiant",
+      "Cost gwerthiannau",
       "Elw gros",
       "Elw ar gyfer y flwyddyn ariannol",
       "Stociau",
