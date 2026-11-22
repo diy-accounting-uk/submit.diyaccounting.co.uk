@@ -113,7 +113,7 @@ When the stack or `.collab/coordinator.pub` is missing, `watch <codename>` stays
 
 ## The pool
 
-`pool.txt` holds one code name a line (today `anvil`). Each name is the repository
+`pool.txt` holds one code name a line (16 on 2026-11-22). A session's display name is `submit <codename>`: method a sets it with `--name`; after method b or c, type `/rename submit <codename>` in the session (the link has no name parameter). Each name is the repository
 `diy-accounting-uk/submit-cloud-<codename>`, and the worker name is the same code name. The
 operator adds each repository to the Claude GitHub app once, so a leased repository needs no
 permission step.
@@ -184,7 +184,7 @@ applies, and prints the method it used:
 
 | Method | When | What happens |
 | --- | --- | --- |
-| a. `claude --cloud "/collaborate <codename>"` from the clone | stdin and stdout are a terminal, no `--no-launch`, no `--dry-run` | The CLI clones the current directory's GitHub remote at the current branch. It shows a live checklist while the VM starts, so it needs a terminal. |
+| a. `claude --name "submit <codename>" --cloud "/collaborate <codename>"` from the clone | stdin and stdout are a terminal, no `--no-launch`, no `--dry-run` | The CLI clones the current directory's GitHub remote at the current branch. It shows a live checklist while the VM starts, so it needs a terminal. |
 | b. The link `https://claude.ai/code/new?q=%2Fcollaborate%20<codename>&repo=diy-accounting-uk%2Fsubmit-cloud-<codename>&branch=main` | no terminal, which is the case under the Bash tool | The link opens the new-session form with the prompt, repository and branch filled in. The operator checks the environment and presses send. |
 | c. The steps | always printed | Open https://claude.ai/code, choose the repository and branch `main`, choose the work environment, type `/collaborate <codename>`. |
 

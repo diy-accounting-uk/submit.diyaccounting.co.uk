@@ -236,7 +236,7 @@ claude_app_page() {
 }
 
 cmd_start() {
-  local cn="" base=main coordinator="" no_launch=0 state env_id="" env_note prompt deep_link dir repo url
+  local cn="" base=main coordinator="" no_launch=0 state env_id="" env_note prompt deep_link dir repo url session_name
   while [ $# -gt 0 ]; do
     case $1 in
       --base) base=${2:?--base needs a branch}; shift 2 ;;
@@ -316,11 +316,13 @@ cmd_start() {
   prompt="/collaborate $cn"
   local -a launch=(claude)
   [ -z "$env_id" ] || launch+=(--settings "{\"remote\":{\"defaultEnvironmentId\":\"$env_id\"}}")
-  launch+=(--cloud "$prompt")
+  session_name="submit $cn"
+  launch+=(--name "$session_name" --cloud "$prompt")
   deep_link="https://claude.ai/code/new?q=%2Fcollaborate%20$cn&repo=$ORG%2F$PREFIX$cn&branch=main"
 
   echo
   echo "worker:       $cn"
+  echo "session name: $session_name"
   echo "repository:   https://github.com/$repo"
   echo "base branch:  $base"
   echo "coordinator:  $coordinator"
@@ -347,11 +349,12 @@ cmd_start() {
   echo "session: no terminal here, so the link is the start (method b)"
   echo "  b. Open this link, check that the environment is the work environment, and press send:"
   echo "     $deep_link"
+  echo "     The link sets no name: type /rename $session_name as the session's next prompt."
   echo "  a. Or, in a terminal:"
   printf '     cd %q &&' "$dir"
   printf ' %q' "${launch[@]}"
   printf '\n'
-  echo "  c. Or open https://claude.ai/code, choose $repo and branch main, choose the work environment, and type: $prompt"
+  echo "  c. Or open https://claude.ai/code, choose $repo and branch main, choose the work environment, and type: $prompt, then /rename $session_name"
   echo "the session URL is the address of the new session in the browser, and in the claude.ai/code sidebar."
 }
 

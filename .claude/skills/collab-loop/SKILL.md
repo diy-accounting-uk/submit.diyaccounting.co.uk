@@ -21,8 +21,8 @@ description: Start or steer the /iterate delivery loop so that the cloud workers
 `/iterate` with one change of shape: the cloud workers build the rows and run the gates, and the
 laptop coordinates. The laptop is the scarce part. One local batch check with local agents took the
 load to 177 on 16 cores and the CPU speed limit to 20, made 5 s test timeouts fail, and broke the
-spreadsheets pre-push hook three times (2026-11-18). Five cloud workers are paid for by the plan
-and add five 4-vCPU VMs that never touch the laptop.
+spreadsheets pre-push hook three times (2026-11-18). The cloud workers are paid for by the plan:
+each is a 4-vCPU VM that never touches the laptop, and the pool (`pool.txt`) holds 16 code names.
 
 The cycle, its order and its rules are those of `.claude/skills/iterate/SKILL.md` and, for a wave
 set, `.claude/skills/wave-set/SKILL.md`. Read both. This skill changes only where the work runs and
@@ -39,7 +39,9 @@ how the loop survives a compaction.
 | Docker build gate | laptop (29 s) or the CI deploy | the worker VM has no Docker daemon (anvil, 2026-11-18) |
 | Proxy behaviour suites, narrated video capture | cloud worker with `creds` | `new-cloud-session.sh creds <codename>` gives one-hour ci credentials that only the worker can read |
 | Review of a diff, a Companies House judge, a script proved on the simulator | cloud worker | read and run, no AWS |
-| Landing (`git merge --squash`, content proof), `NEXT.md`, plans, PRs, `/auto-merge` | laptop | the coordinator owns them; commits carry the operator's signature |
+| Merging rows onto the wave branch, merging a wave forward, regenerating, resolving registry conflicts, the wave's gate | the integrator worker ("The integrator", below) | each landing cost the laptop 3 to 8 commands and a gate cost a builder 85 minutes (2026-11-22) |
+| Signing a landing (the content proof, the signed commits), `NEXT.md`, plans, PRs, `/auto-merge` | laptop | the coordinator owns them; commits carry the operator's signature |
+| Test-service filings (Companies House test flag 1, HMRC sandbox) and their proofs | cloud worker with `creds` | ci credentials for one hour; the submission numbers and responses come back in the report, and the laptop writes them to the private repository |
 | `-ci` and `-prod` proofs, Cognito scripts, `deploy:app-ci`, AWS reads past ci | laptop | SSO; prod is never given to a worker |
 | Claude in Chrome, claude.ai connector calls, anything the operator signs in to | laptop | the operator's browser |
 | Spreadsheets repository work and its pre-push hook | laptop, one at a time | no worker holds that repository yet; push with `SKIP_PUSH_TESTS=1` when that PR's CI runs the suite (spreadsheets `test.yml` does) |
@@ -75,9 +77,10 @@ on top of a loop already running, and it does only what the state still lacks.
    the wave set plan when one is named. With none, the cycle is `/iterate`'s own, over the board's
    machine-only rows; `/wave-set` defines a set.
 2. `ListAgents`. A restarted worker keeps its old session's name, so send to the `[ref]` of the
-   newest live row of that name. The workers are the cloud peers named for their code names ("Anvil
+   newest live row of that name. A worker's session is named `submit <codename>` (`new-cloud-session.sh` starts it with
+   `--name`). Five sessions started before 2026-11-22 keep their first titles ("Anvil
    collaboration", "Collaborate Bugle", "Cyclone collaboration", "Dusk collaboration", "Collaborate
-   epoch"). A pool code name with no live peer has no session: print the
+   epoch") until `/rename submit <codename>` is typed in each. A pool code name with no live peer has no session: print the
    `/new-cloud-session <codename> --base <batch>` command for the operator, who signs in to start
    it, and carry on with the workers there are.
 3. Run `collab-loop.sh state`. For each worker whose `setup` is `needed`, run "Bring a worker up to
@@ -108,8 +111,10 @@ the batch check ends, I push", no wakeup and three expired Monitors: the loop st
 2. **Setup.** A worker with `setup needed` gets "Bring a worker up to date" now. It takes no task
    until its setup branch exists.
 3. **Land.** For each worker whose status is `done` and `landed` is `no`: `collab-loop.sh fetch
-   <codename> <row>`, read the diff and the report in the tip's body, then squash it onto the
-   batch worktree without `.collab/`, one commit per row with the why in its body:
+   <codename> <row>` and read the diff and the report in the tip's body. Then hand the row to the
+   integrator ("The integrator", below) and sign what it returns. With no integrator session, or
+   for one row that touches no shared file, squash it here onto the batch worktree without
+   `.collab/`, one commit per row with the why in its body:
    ```bash
    git -C <batch-worktree> merge --squash --no-commit refs/remotes/cloud-<codename>/claude/<codename>-<row>
    git -C <batch-worktree> reset -q -- .collab; git -C <batch-worktree> checkout -- .collab 2>/dev/null
@@ -131,8 +136,10 @@ the batch check ends, I push", no wakeup and three expired Monitors: the loop st
    3. the next machine-only row of the wave in board order whose files no running task touches;
    4. a review of a landed row by a worker that did not build it.
    Send each task twice: `new-cloud-session.sh post <codename> <task-file>` (the record), then
-   `SendMessage` to the worker's peer name with the same text (the wake). The task text is in
-   "The task message" below.
+   `SendMessage` to the worker's peer name with a short wake that names the file (`git show
+   origin/collab:.collab/<codename>.md`). The task text is in "The task message" below.
+   **Post a queue, never one task.** A worker's file holds its next two tasks or more ("The
+   queue", below), so a finished task never waits for a tick.
 6. **Stale.** A worker that is `stale` (no push 60 minutes after its task, `COLLAB_STALE_MINUTES`)
    gets one `SendMessage`: "Push what you have with Collab-Status: wip, then carry on." A worker
    still stale after a second interval loses the task: post it to another worker, and name the
@@ -166,6 +173,71 @@ left to the CI deploy. Each is a task with `base: <batch>`, no code change, and 
 task's branch is `claude/<codename>-gate-<name>-<sha7>`, so a second run on a new head is a new
 task. The batch is gated when every gate task on its head is `done` with no failure. A failed gate
 gets its fix as a task on the batch, then the gates run again on the new head.
+
+## The queue
+
+A task file holds several tasks, in order, each in the form of "The task message", separated by a
+line `---`. The worker does them in order and starts the next when it has pushed the last (the
+`collaborate` skill, "The task message"). Each task has its own branch. In a chain, the base of a
+task is the worker's own branch of the task before it (`claude/<codename>-<row>`), so the chain
+needs no landing between its rows.
+
+- Keep two tasks or more in every builder's file. When a worker pushes `done`, append to its queue
+  in the same tick; do not replace a task that it has started.
+- Give a chain to one worker (the DUE rows, the report rows, one family of forms). Give rows with
+  no shared source file to different workers.
+- Rows that share only registry files (`i18n/cy.toml`, the catalogue, `app/bin/server.js`, the Java
+  names classes, the counts in `infra/test/java`) run in parallel on different workers. Each brief
+  says: append your entries, keep a count change in its own commit, and name each count as
+  "from -> to". The integrator merges the registries by union and recounts.
+- A worker's report body stays under 60 lines. Longer detail goes in `docs-out/<task>.md` on its
+  branch, which never lands.
+
+## The integrator
+
+One worker holds the wave branch and nothing else. It builds no row.
+
+1. The coordinator pushes each `done` row to the integrator's repository under a wave name
+   (`git branch -f claude/<set>-<row> <fetched ref>`, then `collab-loop.sh sync <integrator>
+   claude/<set>-<row>`) and appends one task to its queue: `task: integrate-<row>`, `base:` its own
+   branch of the integration before it (the first one names the wave branch).
+2. For each row the integrator merges the row's branch onto its integration branch with one merge
+   commit (`git merge --no-ff`), without `.collab/`. It resolves a conflict in a registry file by
+   keeping both sides, and in a generated file by rebuilding it (`npm run build:welsh`,
+   `npm run scripts:table`, `npm run capabilities:generate`, `npm run build:static-content`,
+   `npm run fixtures:ixds`, the OpenAPI file by `./mvnw package`). A conflict in any other file it
+   resolves only when both sides' tests then pass; otherwise it pushes `not-done` and names the two
+   rows. It sets each count in `infra/test/java` from the run, and names it "from -> to".
+3. A merge of one wave into the next (`integrate-wave-<n>`) is the same task with a wave branch as
+   the row.
+4. **The rolling gate.** When its queue is empty, the integrator runs the whole gate on its
+   newest head: the merge checks and gates of `scripts/batch-check.sh` without the docker build, the
+   Welsh proof, and the simulator suites that the wave touches. It fixes a break by the set as its
+   own commit. With idle workers, split the gate across them ("Gates in the cloud") on the
+   integrator's head, and split all 42 simulator suites across every free worker for the set's
+   final gate.
+5. **The laptop signs.** For each merge commit of the integrator's branch, in order, the
+   coordinator reads the conflict notes, proves the row's content
+   (`git diff <row ref> <merge commit> -- <the row's own files>` is empty, or each difference is a
+   named registry or generated file), and makes the landing commit from that commit's tree, with
+   this session's trailers and the row's why in its body:
+   ```bash
+   c=$(git commit-tree -S "<merge commit>^{tree}" -p <wave head> -m "<message>")
+   git -C <wave-worktree> merge --ff-only "$c"
+   ```
+   The wave branch then equals the integrator's tree, commit for commit, and the gate that the
+   integrator ran on that tree is the wave's gate.
+6. A change that the laptop makes on a wave branch itself (a landing by hand, a fix) goes to the
+   integrator before its next task: push the wave head under a new name and name it as the base.
+
+## Test-service filings from a worker
+
+A filing on a test service needs only ci's credentials: the Companies House test submissions of a
+new form type, the revised accounts cases, an HMRC sandbox proof. Run `new-cloud-session.sh creds
+<codename>` when the task is sent, tell the worker to load the credentials, and ask for each
+submission number and response in the report. The operator's approval of the filings is on the
+row before the task is sent. The laptop writes the numbers under
+`../private.diyaccounting.co.uk/`. A filing or a proof on prod stays on the laptop.
 
 ## Bring a worker up to date
 
@@ -252,7 +324,8 @@ arrived 9 s after its push.
 - Never give a worker prod credentials, a customer identifier or a security finding.
 - Never force-push a work repository. A refused sync is read, never overridden.
 - A worker's own commit never lands as it is: the landing commit is made here, with this
-  session's trailers and the operator's signature.
+  session's trailers and the operator's signature. The tree of a landing commit may be the
+  integrator's, after the content proof.
 - `.collab/` files never land on the batch.
 - Name a worker by its code name in prose, never by a session id.
 

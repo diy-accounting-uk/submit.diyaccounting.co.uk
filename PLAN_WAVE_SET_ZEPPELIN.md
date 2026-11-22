@@ -23,6 +23,12 @@ skill, section "How a set is delivered", says how `/iterate` builds it.
 
 > OSB2 (1) "Accept the total"; OSB2 (2) "Reverse when totals settle it"; OSB2 (3) "Check and fix"; OGLS2 "Schema allows negative"
 
+> let's create items up to a total of 16
+
+> Please rename the sessions to use tidy names like another claude is doing for mechanical-librarian
+
+> do these too: "Change 2: one worker integrates and gates; the laptop only signs" and "Change 3: a queue of tasks per worker, and a rolling gate" and "Change 4: a spreadsheets work repository for the cloud" and "Change 5: test-service filings from a worker" so yes and "write them into .claude/skills/collab-loop/SKILL.md and apply them from the next tick."
+
 ## Status
 
 approved 2026-11-22 (the operator's `/collab-loop` on the set). building wave 1. The cloud workers build the rows and run the gates (`collab-loop` skill); the laptop lands them.

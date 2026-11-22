@@ -3,3 +3,14 @@ bugle
 cyclone
 dusk
 epoch
+flint
+garnet
+harbour
+indigo
+jasper
+kestrel
+lantern
+maple
+nimbus
+onyx
+pebble
