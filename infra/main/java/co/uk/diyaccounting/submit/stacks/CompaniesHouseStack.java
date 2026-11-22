@@ -1103,6 +1103,7 @@ public class CompaniesHouseStack extends Stack {
                         companiesHouseAccountsAsyncRequestsTable.getTableName())
                 .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName())
+                .with("COMPANIES_HOUSE_DOCUMENT_BASE_URI", props.companiesHouseDocumentBaseUri())
                 .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
         withCodesEntryEnv(companiesHouseAccountsPostLambdaEnv, mcpSessionsTable, codesSealKeySecret);
         withPresenterSecretArns(companiesHouseAccountsPostLambdaEnv, props);
