@@ -59,7 +59,7 @@ this order across the waves: rule, lookup, watch, passes, fill, welsh.
 | email | PE1 | Sonnet | `customerEmailTemplates.js`, `customerEmailRequest.js`, `passGeneratePost.js`, `passAdminPost.js`, their tests |
 | edge | SY1 (the route) | Sonnet | `companiesHousePublicDeadlinesGet.js`, `EdgeStack.java`, `EdgeStackTest.java` |
 
-State: building. Wave branch `claude/zeppelin-w01` from `main` at 82a4b97b8, worktree `.claude/worktrees/zeppelin-w01`. A task is `.collab/<worker>.md` on the worker's `collab` branch; its result is `claude/<worker>-<task>` in `submit-cloud-<worker>`. Landed: AA3 09b1643e5, AA8 3762c1e7e (the source rule gains www.legislation.gov.uk, because no gov.uk page states the 28 day rule), PE1 59e60c2ad. Built and held: AA2 (epoch, ad0d6e9b5), which lands after AA1. Running: anvil `aa1`; dusk `sy1` (the route); cyclone `pe1-render` (the render script's pass cases, PE1's remainder). After AA1 and AA2 land: the generators, then the gates on the wave head, the `companyTaxReturn` simulator suite among them.
+State: building. Wave branch `claude/zeppelin-w01` from `main` at 82a4b97b8, worktree `.claude/worktrees/zeppelin-w01`. A task is `.collab/<worker>.md` on the worker's `collab` branch; its result is `claude/<worker>-<task>` in `submit-cloud-<worker>`. Landed, in order: AA3 09b1643e5, AA8 3762c1e7e (the source rule gains www.legislation.gov.uk, because no gov.uk page states the 28 day rule), PE1 59e60c2ad and its render cases 585fe4c18, SY1 (the route) 89777f7d0, AA3's fix from epoch's review a1e9f0db8 (a preview request files a revision only where the accounts go to the test service). Built and held: AA2 (epoch, ad0d6e9b5), which lands after AA1. Running: anvil `aa1`; epoch `aa3-preview-ch` (the preview rule decides a Companies House path by the Companies House sandbox condition alone; AA3's remainder, from the review). After AA1, AA2 and that fix land: the generators, then the gates on the wave head, the `companyTaxReturn` simulator suite among them.
 
 ### Wave 2
 
@@ -88,7 +88,7 @@ State: pending.
 | copy | AA16 | Sonnet | `web/public/faqs.toml`, `CompaniesHouseNames.java`, the capability text of the accounts route |
 | passes | CP1 | Sonnet | the catalogue; the pass handlers and `passService.js`; `bundlePost.js`; the operator's pass page; `bundles.page.js`; `customerEmailTemplates.js`; `app/bin/server.js` |
 
-State: pending.
+State: pending. Started early: cyclone builds `cp1` from wave 1's tip 585fe4c18; it lands on `claude/zeppelin-w04`, where its additions to the catalogue, `server.js` and the activity-list tests merge with those of CL1 and WL1.
 
 ### Wave 5
 
@@ -105,7 +105,7 @@ State: pending.
 | --- | --- | --- | --- |
 | welsh | LANG12 | Opus, sub-agents by section of `i18n/cy.toml` | `i18n/cy.toml`, the `*Cy` fields of the catalogue, the Welsh emails, the Welsh accounts text, `scripts/welsh-proof.mjs`, the rebuilt Welsh pages |
 
-State: pending. One part started early: epoch builds `lang12-proof` (`scripts/welsh-proof.mjs` only), which lands with this wave. The review also takes `passSummaryCy` in the catalogue ("gallwch cyflwyno" lacks the soft mutation; cyclone's PE1 report).
+State: pending. Started early, landing with this wave: `lang12-proof` (`scripts/welsh-proof.mjs`, built: epoch 01ea721ca; on the simulator it finds two English customer reviews with no `lang` on `cy/spreadsheets.html`), and dusk's `lang12-vat` (the review of the VAT sections of `i18n/cy.toml`, with its findings in `welsh-review/vat.md` on the branch for the private repository; it first checks that the VM reaches the term banks and gov.uk's Welsh pages). The review also takes `passSummaryCy` in the catalogue ("gallwch cyflwyno" lacks the soft mutation; cyclone's PE1 report).
 
 ### Wave 7: the look wave
 
@@ -133,14 +133,14 @@ repository's `scripts/worktree-add.sh`.
 | 4 | generate | SY2 (the engine and the page) | Sonnet | `scripts/build-diya-gl-bundle.mjs`, `lib/download-page.js`, the round trip test |
 | 5 | newbook | SY3 | Sonnet | `web/diya-gl.co.uk/public/shell.js`, the Ltd product's new book form, a browser test |
 
-State: wave 1 landed and its tests passed on the same content (`claude/zeppelin-w01` at 521494ec6, AA27; 13 browser tests and 154 unit tests). Wave 2: a local agent builds AA26 on `claude/zeppelin-w02-book` from that tip, to the design in `PLAN_AMENDED_ACCOUNTS.md` section 11. Wave 3: SY1's page is built as 47a123354 on `claude/zeppelin-w03-lookup` (54 browser tests, 162 unit tests) and lands when `claude/zeppelin-w03` exists. Worktrees are under `.claude/worktrees/` in that repository.
+State: waves 1 to 3 landed, each tested by its agent on the same content. `claude/zeppelin-w01` 521494ec6 (AA27), `claude/zeppelin-w02` 57df16bcb (AA26: 47 builder tests, the MCP and spec page tests, the bundle build), `claude/zeppelin-w03` a913fcb8d (SY1's page: 54 browser tests, 162 unit tests). Wave 4 (SY2) starts when SY2's route is built in submit, so that the page is built against the route's real answer; wave 5 (SY3) follows. Worktrees are under `.claude/worktrees/` in that repository.
 
 ## Beside
 
 | Row | Runs when | What it leaves |
 | --- | --- | --- |
-| DUE1, CR1, WDM1, GLS1 | any time | one `PLAN_*.md` each, then `/plan-review-loop`. DUE1: `PLAN_DUE_LIST_v1.md`, review round 1 running. CR1: `PLAN_COMPANY_REPORTS_v1.md`, review round 1 running. WDM1 and GLS1: first drafts being written by local agents. |
-| U2 | any time; it uses no branch of the set | the rehearsal patch and its record, in the private repository. Running: a local agent, worktree `.claude/worktrees/u2-rehearsal` in spreadsheets, branch `claude/ops-u2-rehearsal`. |
+| DUE1, CR1, WDM1, GLS1 | any time | one `PLAN_*.md` each, then `/plan-review-loop`. DUE1: `PLAN_DUE_LIST_v3.md`, review round 3 (the last) running. CR1: `PLAN_COMPANY_REPORTS_v4.md` after three rounds; round 3 still changed scope, so its two findings go to the operator before the tasks are boarded. GLS1: `PLAN_DIYA_GL_STANDARDS_v2.md`, round 2 running. WDM1: `PLAN_WATCH_DUE_CAMPAIGN_v1.md`, round 1 running. |
+| U2 | any time; it uses no branch of the set | the rehearsal patch and its record, in the private repository. Running: a local agent, worktree `.claude/worktrees/u2-rehearsal` in spreadsheets, branch `claude/ops-u2-rehearsal` (on origin). The window move breaks 11 tests that pin the old window (`app/test/generate-list.test.js`, `app/test/generate.test.js`), so the rehearsal branch carries a second commit that moves them; the real refresh does not need it. |
 | LANG13 | after wave 6, where a criterion judges the Welsh | the listings and awards file, in the private repository |
 
 ## Gates
