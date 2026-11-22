@@ -58,8 +58,16 @@ vi.mock("@app/services/companiesHouseLookupLimit.js", () => ({
 const mockEmitMetric = vi.fn();
 vi.mock("@app/lib/emfMetrics.js", () => ({ emitMetric: (metric) => mockEmitMetric(metric) }));
 
-const { cachedCompaniesHouseGet, cachedCompaniesHouseGetAllPages, invalidateCompany, KINDS, NOT_FOUND_SECONDS, figuresSk, cacheSk } =
-  await import("@app/services/companiesHouseCache.js");
+const {
+  cachedCompaniesHouseGet,
+  cachedCompaniesHouseGetAllPages,
+  withCompaniesHouseCallLimit,
+  invalidateCompany,
+  KINDS,
+  NOT_FOUND_SECONDS,
+  figuresSk,
+  cacheSk,
+} = await import("@app/services/companiesHouseCache.js");
 
 const OFFICER = {
   name: "SMITH, Carol",
@@ -289,6 +297,149 @@ describe("services/companiesHouseCache", () => {
 
     expect(answer).toMatchObject({ ok: true, fromCache: false, data: { items: [{ name: "SMITH, Carol" }] } });
     expect(table.size).toBe(0);
+  });
+
+  describe("an answer larger than one item", () => {
+    // A charges answer whose trimmed JSON is about the given number of bytes.
+    const chargesOfBytes = (bytes) =>
+      ok({
+        items: Array.from({ length: Math.ceil(bytes / 10240) }, (unused, index) => ({
+          charge_code: `C${index}`,
+          classification: "é".repeat(5100),
+        })),
+      });
+    const sksOf = (companyNumber) => [...table.values()].filter((item) => item.companyNumber === companyNumber).map((item) => item.sk);
+
+    test("is stored in parts, and the next view reads the same value with no call", async () => {
+      answers = [chargesOfBytes(700 * 1024)];
+
+      const first = await cachedCompaniesHouseGet("00000001", "/company/00000001/charges", {}, { kind: "charges" });
+      const second = await cachedCompaniesHouseGet("00000001", "/company/00000001/charges", {}, { kind: "charges" });
+
+      expect(sksOf("00000001").sort()).toEqual([
+        "/company/00000001/charges",
+        "/company/00000001/charges#part#0",
+        "/company/00000001/charges#part#1",
+        "/company/00000001/charges#part#2",
+      ]);
+      const slices = [...table.values()].filter((item) => item.value.slice).map((item) => item.value.slice.length);
+      expect(Math.max(...slices)).toBeLessThanOrEqual(300 * 1024);
+      expect(calls).toHaveLength(1);
+      expect(second).toMatchObject({ ok: true, fromCache: true });
+      expect(second.data).toEqual(first.data);
+    });
+
+    test("is a miss when one of its parts has gone", async () => {
+      answers = [chargesOfBytes(700 * 1024), chargesOfBytes(700 * 1024)];
+      await cachedCompaniesHouseGet("00000001", "/company/00000001/charges", {}, { kind: "charges" });
+      table.delete("00000001|/company/00000001/charges#part#1");
+
+      const answer = await cachedCompaniesHouseGet("00000001", "/company/00000001/charges", {}, { kind: "charges" });
+
+      expect(answer).toMatchObject({ ok: true, fromCache: false });
+      expect(calls).toHaveLength(2);
+    });
+
+    test("is deleted with its parts when the company's entries are deleted", async () => {
+      answers = [chargesOfBytes(700 * 1024)];
+      await cachedCompaniesHouseGet("00000001", "/company/00000001/charges", {}, { kind: "charges" });
+
+      expect(await invalidateCompany("00000001")).toBe(4);
+      expect(sksOf("00000001")).toEqual([]);
+    });
+
+    test("too large for six parts is answered once, counted, and then refused for its lifetime with no further call", async () => {
+      answers = [chargesOfBytes(2 * 1024 * 1024)];
+
+      const first = await cachedCompaniesHouseGet("00000001", "/company/00000001/charges", {}, { kind: "charges" });
+      const second = await cachedCompaniesHouseGet("00000001", "/company/00000001/charges", {}, { kind: "charges" });
+      const third = await cachedCompaniesHouseGet("00000001", "/company/00000001/charges", {}, { kind: "charges" });
+
+      expect(first).toMatchObject({ ok: true, fromCache: false });
+      expect(second).toMatchObject({ ok: false, status: 413, tooLarge: true, fromCache: true });
+      expect(third).toEqual(second);
+      expect(calls).toHaveLength(1);
+      expect(sksOf("00000001")).toEqual(["/company/00000001/charges"]);
+      expect(table.get("00000001|/company/00000001/charges")).toMatchObject({
+        value: { tooLarge: true },
+        ttlSeconds: KINDS.charges.seconds,
+      });
+      expect(mockEmitMetric).toHaveBeenCalledWith({
+        namespace: "Submit/Business",
+        metricName: "CompanyReportsCacheValueTooLarge",
+        dimensions: { Kind: "charges" },
+      });
+    });
+  });
+
+  describe("the calls of one report view", () => {
+    const fullPage = (endpoint, queryParams) =>
+      ok({ total_count: 5000, items: Array.from({ length: 100 }, (unused, index) => ({ type: `T${queryParams.start_index + index}` })) });
+    // A report that reads two long lists, each of more pages than the view may call for.
+    const twoLongLists = async () => ({
+      filings: await cachedCompaniesHouseGetAllPages(
+        "00000001",
+        "/company/00000001/filing-history",
+        {},
+        { kind: "filingHistory", maxPages: 15 },
+      ),
+      charges: await cachedCompaniesHouseGetAllPages("00000001", "/company/00000001/charges", {}, { kind: "charges", maxPages: 15 }),
+    });
+
+    test("stop at the view's limit, and the list cut short answers the items it read", async () => {
+      answers = Array.from({ length: 40 }, () => fullPage);
+
+      const report = await withCompaniesHouseCallLimit(20, twoLongLists);
+
+      expect(calls).toHaveLength(20);
+      expect(report.filings).toMatchObject({ ok: true, data: { truncated: true } });
+      expect(report.filings.data.items).toHaveLength(1500);
+      expect(report.charges).toMatchObject({ ok: false, status: 429, callLimitReached: true });
+      expect(report.charges.partialItems).toHaveLength(500);
+      expect(mockStop).not.toHaveBeenCalled();
+    });
+
+    test("do not count an answer read from the cache", async () => {
+      answers = Array.from({ length: 40 }, () => fullPage);
+      await withCompaniesHouseCallLimit(20, twoLongLists);
+
+      const second = await withCompaniesHouseCallLimit(20, twoLongLists);
+
+      expect(calls).toHaveLength(30);
+      expect(second.charges).toMatchObject({ ok: true, data: { truncated: true } });
+      expect(second.charges.data.items).toHaveLength(1500);
+    });
+
+    test("are counted apart for each view", async () => {
+      answers = Array.from({ length: 4 }, () => ok({ items: [] }));
+      const view = (companyNumber) =>
+        withCompaniesHouseCallLimit(1, async () => [
+          await cachedCompaniesHouseGet(companyNumber, `/company/${companyNumber}/officers`, {}, { kind: "officers" }),
+          await cachedCompaniesHouseGet(companyNumber, `/company/${companyNumber}/charges`, {}, { kind: "charges" }),
+        ]);
+
+      const first = await view("00000001");
+      const second = await view("00000002");
+
+      expect([first, second].map((answersOfView) => answersOfView.map((answer) => answer.ok))).toEqual([
+        [true, false],
+        [true, false],
+      ]);
+    });
+
+    test("have no limit outside a report view", async () => {
+      answers = Array.from({ length: 25 }, () => fullPage);
+
+      const answer = await cachedCompaniesHouseGetAllPages(
+        "00000001",
+        "/company/00000001/filing-history",
+        {},
+        { kind: "filingHistory", maxPages: 25 },
+      );
+
+      expect(calls).toHaveLength(25);
+      expect(answer.ok).toBe(true);
+    });
   });
 
   test("the figures of a filing keep no director and no signer", () => {

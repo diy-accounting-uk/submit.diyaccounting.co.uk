@@ -37,7 +37,7 @@ export const DATED_FACTS = [
     id: "ch-identity-verification-2025-11",
     date: "2025-11-18",
     title: "Companies House: director and PSC identity verification",
-    text: "Identity verification is a legal requirement for directors and for people with significant control (PSCs). A director gives the personal code with the company's next confirmation statement. A PSC verifies and gives the personal code within a 14 day period that depends on the PSC's situation.",
+    text: "Identity verification is a legal requirement for directors and for people with significant control (PSCs). A new director gives the Companies House personal code as part of the appointment filing, or when the company is incorporated. A new PSC gives the personal code when first added to the Companies House register, or within 14 days of being added.",
   },
   {
     id: "vat-mtd-all-registered-2022-04",

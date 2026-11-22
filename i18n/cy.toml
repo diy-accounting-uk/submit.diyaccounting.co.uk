@@ -2024,9 +2024,9 @@ cy = '''<a href="vat-return-due-date-and-penalty-points.html">Cyfrifo dyddiad dy
 hash = "c6b8ad593856"
 cy = '''<span class="calendar-date">18 Tachwedd 2025</span>Tŷ’r Cwmnïau: gwiriad hunaniaeth cyfarwyddwyr a PSCs'''
 
-[strings."mtd-calendar.identity-verification-is-a-legal-requirement-6e2a59"]
-hash = "6e2a5922bf17"
-cy = '''Mae gwiriad hunaniaeth yn ofyniad cyfreithiol ar gyfer cyfarwyddwyr ac ar gyfer pobl â rheolaeth arwyddocaol (PSCs). Mae cyfarwyddwr yn rhoi’r cod personol gyda datganiad cadarnhau nesaf y cwmni. Mae PSC yn gwirio ei hunaniaeth ac yn rhoi’r cod personol o fewn cyfnod o 14 diwrnod sy’n dibynnu ar sefyllfa’r PSC.'''
+[strings."mtd-calendar.identity-verification-is-a-legal-requirement-df5aa8"]
+hash = "df5aa8535725"
+cy = '''Mae gwiriad hunaniaeth yn ofyniad cyfreithiol ar gyfer cyfarwyddwyr ac ar gyfer pobl â rheolaeth arwyddocaol (PSCs). Mae cyfarwyddwr newydd yn rhoi cod personol Tŷ’r Cwmnïau fel rhan o’r ffeilio penodiad, neu pan gaiff y cwmni ei ymgorffori. Mae PSC newydd yn rhoi’r cod personol pan gaiff ei ychwanegu at gofrestr Tŷ’r Cwmnïau am y tro cyntaf, neu o fewn 14 diwrnod i gael ei ychwanegu.'''
 
 [strings."mtd-calendar.relevant-for-owner-managed-company-with-414f16"]
 hash = "414f162c1af1"

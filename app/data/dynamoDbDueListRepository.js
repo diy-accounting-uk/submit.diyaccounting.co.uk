@@ -25,6 +25,9 @@ const TABLE = "DUE_LIST_DYNAMODB_TABLE_NAME";
 const JOB_INDEX = "job-jobOn-index";
 // The most requests one BatchWriteItem call takes.
 const BATCH_SIZE = 25;
+// The times one batch is sent, and the wait before the second; each later wait is twice the last.
+export const BATCH_ATTEMPTS = 5;
+export const BATCH_FIRST_WAIT_MS = 50;
 const FEED_SK = "feed";
 
 const businessSk = (businessId) => `business#${businessId}`;
@@ -56,31 +59,44 @@ async function queryAll(params) {
   return items;
 }
 
-// Every item of the account under the first salt version of its hash that holds any, the current
-// version first, so a list read during a salt rotation still finds the account's items.
+// Every item of the account. During a salt rotation an account's items can sit under two hashes at
+// once, so every salt version is read and merged; the current version wins for a key held under both.
 async function itemsOfAccount(userSub) {
   const tableName = getResourceName(TABLE);
+  const itemsBySk = new Map();
   for (const { hashedSub } of subHashCandidates(userSub)) {
     const items = await queryAll({
       TableName: tableName,
       KeyConditionExpression: "hashedSub = :hashedSub",
       ExpressionAttributeValues: { ":hashedSub": hashedSub },
     });
-    if (items.length > 0) return items;
-  }
-  return [];
-}
-
-async function batchWrite(requests) {
-  const tableName = getResourceName(TABLE);
-  for (let start = 0; start < requests.length; start += BATCH_SIZE) {
-    let pending = { [tableName]: requests.slice(start, start + BATCH_SIZE) };
-    while (pending && pending[tableName]?.length) {
-      const result = await executeDynamoDbCommand((module) => new module.BatchWriteCommand({ RequestItems: pending }));
-      pending = result.UnprocessedItems && Object.keys(result.UnprocessedItems).length > 0 ? result.UnprocessedItems : null;
+    for (const item of items) {
+      if (!itemsBySk.has(item.sk)) itemsBySk.set(item.sk, item);
     }
   }
+  return [...itemsBySk.values()];
 }
+
+// Sends the requests in batches of 25. DynamoDB can leave part of a batch unprocessed when the table
+// is throttled: those requests are sent again after a wait that doubles each time, at most
+// BATCH_ATTEMPTS times a batch. Answers the requests it could not write.
+async function batchWrite(requests) {
+  const tableName = getResourceName(TABLE);
+  const unwritten = [];
+  for (let start = 0; start < requests.length; start += BATCH_SIZE) {
+    let pending = requests.slice(start, start + BATCH_SIZE);
+    for (let attempt = 1; pending.length > 0 && attempt <= BATCH_ATTEMPTS; attempt += 1) {
+      if (attempt > 1) await new Promise((resolve) => setTimeout(resolve, BATCH_FIRST_WAIT_MS * 2 ** (attempt - 2)));
+      const result = await executeDynamoDbCommand((module) => new module.BatchWriteCommand({ RequestItems: { [tableName]: pending } }));
+      pending = result.UnprocessedItems?.[tableName] || [];
+    }
+    unwritten.push(...pending);
+  }
+  if (unwritten.length > 0) logger.warn({ message: "Due list items left unwritten after every attempt", unwritten: unwritten.length });
+  return unwritten;
+}
+
+const requestSk = (request) => (request.PutRequest ? request.PutRequest.Item.sk : request.DeleteRequest.Key.sk);
 
 // An item that names a job holds the raw sub; an item without one does not.
 function withJobSub(item, userSub) {
@@ -111,7 +127,8 @@ export async function putBusiness(userSub, business) {
 export async function deleteBusiness(userSub, businessId) {
   const items = await itemsOfAccount(userSub);
   const removed = items.filter((item) => item.sk === businessSk(businessId) || item.sk.startsWith(businessRowsPrefix(businessId)));
-  await batchWrite(removed.map((item) => ({ DeleteRequest: { Key: { hashedSub: item.hashedSub, sk: item.sk } } })));
+  const unwritten = await batchWrite(removed.map((item) => ({ DeleteRequest: { Key: { hashedSub: item.hashedSub, sk: item.sk } } })));
+  if (unwritten.length > 0) throw new Error(`${unwritten.length} of the business's ${removed.length} due list items could not be removed`);
   logger.info({ message: "Due list business removed", businessId, removed: removed.length });
   return removed.length;
 }
@@ -137,13 +154,14 @@ export async function listBusinessesAndRows(userSub) {
  * @param {string} userSub
  * @param {object[]} rows - Each with businessId, type, periodEnd (or date), dueDate, source and readAt
  * @param {(storedRow: object) => boolean} [replace] - Selects the stored rows the new rows replace
- * @returns {Promise<{written: number, refreshed: number, removed: number}>}
+ * @returns {Promise<{written: number, refreshed: number, removed: number, unwritten: string[]}>} unwritten holds the
+ *   sort keys of the rows DynamoDB left unprocessed after every attempt
  */
 export async function putRows(userSub, rows, replace = () => false) {
   const tableName = getResourceName(TABLE);
   const { rows: storedRows } = await listBusinessesAndRows(userSub);
   const storedBySk = new Map(storedRows.map((row) => [row.sk, row]));
-  const hashedSub = storedRows[0]?.hashedSub ?? hashSub(userSub);
+  const hashedSub = hashSub(userSub);
   const newSks = new Set();
   const writes = [];
   let refreshed = 0;
@@ -173,9 +191,11 @@ export async function putRows(userSub, rows, replace = () => false) {
   const removals = storedRows
     .filter((row) => !newSks.has(row.sk) && replace(row))
     .map((row) => ({ DeleteRequest: { Key: { hashedSub: row.hashedSub, sk: row.sk } } }));
-  await batchWrite([...writes, ...removals]);
-  logger.info({ message: "Due list rows stored", written: writes.length, refreshed, removed: removals.length });
-  return { written: writes.length, refreshed, removed: removals.length };
+  const unwritten = (await batchWrite([...writes, ...removals])).map(requestSk);
+  const written = writes.filter((request) => !unwritten.includes(requestSk(request))).length;
+  const removed = removals.filter((request) => !unwritten.includes(requestSk(request))).length;
+  logger.info({ message: "Due list rows stored", written, refreshed, removed, unwritten: unwritten.length });
+  return { written, refreshed, removed, unwritten };
 }
 
 /**
@@ -232,19 +252,18 @@ export async function queryJobsDue(job, date) {
  * @param {string} tokenHash - The sha256 of the token
  */
 export async function putFeedToken(userSub, tokenHash) {
-  const tableName = getResourceName(TABLE);
   const hashedSub = hashSub(userSub);
-  const previous = await executeDynamoDbCommand(
-    (module) => new module.GetCommand({ TableName: tableName, Key: { hashedSub, sk: FEED_SK } }),
-  );
-  const previousTokenHash = previous.Item?.tokenHash;
-  await batchWrite([
+  const previous = (await itemsOfAccount(userSub)).find((item) => item.sk === FEED_SK);
+  const previousTokenHash = previous?.tokenHash;
+  const unwritten = await batchWrite([
     { PutRequest: { Item: { hashedSub: feedPartition(tokenHash), sk: FEED_SK, sub: userSub, createdAt: new Date().toISOString() } } },
     { PutRequest: { Item: { hashedSub, sk: FEED_SK, tokenHash } } },
     ...(previousTokenHash && previousTokenHash !== tokenHash
       ? [{ DeleteRequest: { Key: { hashedSub: feedPartition(previousTokenHash), sk: FEED_SK } } }]
       : []),
+    ...(previous && previous.hashedSub !== hashedSub ? [{ DeleteRequest: { Key: { hashedSub: previous.hashedSub, sk: FEED_SK } } }] : []),
   ]);
+  if (unwritten.length > 0) throw new Error(`${unwritten.length} of the calendar feed token's items could not be written`);
   logger.info({ message: "Due list feed token stored" });
 }
 

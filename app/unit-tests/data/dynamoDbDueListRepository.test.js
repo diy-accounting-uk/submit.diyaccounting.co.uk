@@ -3,7 +3,7 @@
 
 // app/unit-tests/data/dynamoDbDueListRepository.test.js
 
-import { describe, test, expect, vi, beforeEach } from "vitest";
+import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -42,7 +42,7 @@ vi.mock("@app/lib/dynamoDbClient.js", () => ({
 const mockSubHashCandidates = vi.fn((sub) => [{ version: "v1", hashedSub: `hashed-${sub}` }]);
 
 vi.mock("@app/services/subHasher.js", () => ({
-  hashSub: vi.fn((sub) => `hashed-${sub}`),
+  hashSub: (sub) => mockSubHashCandidates(sub)[0].hashedSub,
   subHashCandidates: (sub) => mockSubHashCandidates(sub),
 }));
 
@@ -74,6 +74,14 @@ function storeHolds(items) {
     }
     return {};
   });
+}
+
+// A salt rotation in progress: the current version hashes to new-<sub>, the earlier one to hashed-<sub>.
+function saltRotationInProgress() {
+  mockSubHashCandidates.mockImplementation((sub) => [
+    { version: "v2", hashedSub: `new-${sub}` },
+    { version: "v1", hashedSub: `hashed-${sub}` },
+  ]);
 }
 
 const VAT_ROW = {
@@ -161,7 +169,7 @@ describe("data/dynamoDbDueListRepository", () => {
 
     const result = await putRows("user-1", [VAT_ROW]);
 
-    expect(result).toEqual({ written: 0, refreshed: 1, removed: 0 });
+    expect(result).toEqual({ written: 0, refreshed: 1, removed: 0, unwritten: [] });
     const [update] = sent("Update").map((command) => command.params);
     expect(update.Key).toEqual({ hashedSub: "hashed-user-1", sk: "row#b1#vat-return#2026-09-30" });
     expect(update.UpdateExpression).toBe("SET readAt = :readAt");
@@ -174,7 +182,7 @@ describe("data/dynamoDbDueListRepository", () => {
 
     const result = await putRows("user-1", [VAT_ROW]);
 
-    expect(result).toEqual({ written: 1, refreshed: 0, removed: 0 });
+    expect(result).toEqual({ written: 1, refreshed: 0, removed: 0, unwritten: [] });
     const [{ PutRequest }] = batchRequests();
     expect(PutRequest.Item).toMatchObject({ hashedSub: "hashed-user-1", sk: "row#b1#vat-return#2026-09-30", status: "open" });
     expect(PutRequest.Item.ttl).toBe(Date.UTC(2027, 1, 5) / 1000);
@@ -184,20 +192,53 @@ describe("data/dynamoDbDueListRepository", () => {
   test("putRows writes a row whose source changed as a new open row", async () => {
     storeHolds([{ ...VAT_ROW, hashedSub: "hashed-user-1", sk: rowSk(VAT_ROW), source: "computed", status: "closed" }]);
 
-    expect(await putRows("user-1", [VAT_ROW])).toEqual({ written: 1, refreshed: 0, removed: 0 });
+    expect(await putRows("user-1", [VAT_ROW])).toEqual({ written: 1, refreshed: 0, removed: 0, unwritten: [] });
     expect(batchRequests()[0].PutRequest.Item).toMatchObject({ source: "hmrc", status: "open" });
   });
 
-  test("putRows writes a changed row under the salt version that holds the account's rows during a rotation", async () => {
-    mockSubHashCandidates.mockImplementation((sub) => [
-      { version: "v2", hashedSub: `new-${sub}` },
-      { version: "v1", hashedSub: `hashed-${sub}` },
-    ]);
+  test("putRows during a rotation rewrites a changed row where it sits and writes a new row under the current salt version", async () => {
+    saltRotationInProgress();
     storeHolds([{ ...VAT_ROW, hashedSub: "hashed-user-1", sk: rowSk(VAT_ROW), dueDate: "2026-11-01" }]);
 
     await putRows("user-1", [VAT_ROW, { ...VAT_ROW, periodEnd: "2026-12-31" }]);
 
-    expect(batchRequests().map((request) => request.PutRequest.Item.hashedSub)).toEqual(["hashed-user-1", "hashed-user-1"]);
+    expect(batchRequests().map((request) => request.PutRequest.Item.hashedSub)).toEqual(["hashed-user-1", "new-user-1"]);
+  });
+
+  test("a business added during a rotation hides none of the account's older items", async () => {
+    saltRotationInProgress();
+    const stored = [
+      { hashedSub: "hashed-user-1", sk: "business#b1", kind: "company" },
+      { hashedSub: "hashed-user-1", sk: "row#b1#accounts#2026-03-31", dueDate: "2026-12-31" },
+    ];
+    mockSend.mockImplementation(async (command) => {
+      if (command.name === "Put") stored.push(command.params.Item);
+      if (command.name === "Query") {
+        return { Items: stored.filter((item) => item.hashedSub === command.params.ExpressionAttributeValues[":hashedSub"]) };
+      }
+      return {};
+    });
+
+    await putBusiness("user-1", { id: "b2", kind: "vat", label: "Acme VAT" });
+    const { businesses, rows } = await listBusinessesAndRows("user-1");
+
+    expect(businesses.map((business) => [business.hashedSub, business.sk])).toEqual([
+      ["new-user-1", "business#b2"],
+      ["hashed-user-1", "business#b1"],
+    ]);
+    expect(rows).toHaveLength(1);
+  });
+
+  test("an item held under both salt versions is read once, from the current version", async () => {
+    saltRotationInProgress();
+    storeHolds([
+      { hashedSub: "hashed-user-1", sk: "business#b1", label: "before the move" },
+      { hashedSub: "new-user-1", sk: "business#b1", label: "after the move" },
+    ]);
+
+    expect((await listBusinessesAndRows("user-1")).businesses).toEqual([
+      { hashedSub: "new-user-1", sk: "business#b1", label: "after the move" },
+    ]);
   });
 
   test("putRows replaces the stored rows that the replace selects and that the new rows do not hold", async () => {
@@ -211,7 +252,7 @@ describe("data/dynamoDbDueListRepository", () => {
 
     const result = await putRows("user-1", [VAT_ROW], (row) => row.businessId === "b1");
 
-    expect(result).toEqual({ written: 0, refreshed: 1, removed: 2 });
+    expect(result).toEqual({ written: 0, refreshed: 1, removed: 2, unwritten: [] });
     expect(batchRequests().map((request) => request.DeleteRequest.Key.sk)).toEqual([
       "row#b1#vat-return#2026-06-30",
       "row#b1#vat-return#2026-12-31",
@@ -236,6 +277,54 @@ describe("data/dynamoDbDueListRepository", () => {
     await putRows("user-1", rows);
 
     expect(sent("BatchWrite").map((command) => command.params.RequestItems[TABLE].length)).toEqual([25, 2, 5]);
+  });
+
+  describe("a table that keeps leaving items unprocessed", () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    // Leaves the last row of every batch unprocessed, and records when each batch was sent.
+    function tableLeavesLastRowUnprocessed(storedItems = []) {
+      const sentAt = [];
+      mockSend.mockImplementation(async (command) => {
+        if (command.name === "Query") return { Items: storedItems };
+        if (command.name !== "BatchWrite") return {};
+        sentAt.push(Date.now());
+        return { UnprocessedItems: { [TABLE]: command.params.RequestItems[TABLE].slice(-1) } };
+      });
+      return sentAt;
+    }
+
+    test("putRows sends a batch at most five times, waits twice as long each time, and names the rows it could not write", async () => {
+      const sentAt = tableLeavesLastRowUnprocessed();
+      const rows = [VAT_ROW, { ...VAT_ROW, periodEnd: "2026-12-31" }];
+
+      const pending = putRows("user-1", rows);
+      await vi.runAllTimersAsync();
+      const result = await pending;
+
+      expect(sent("BatchWrite").map((command) => command.params.RequestItems[TABLE].length)).toEqual([2, 1, 1, 1, 1]);
+      expect(sentAt.slice(1).map((time, index) => time - sentAt[index])).toEqual([50, 100, 200, 400]);
+      expect(result).toEqual({ written: 1, refreshed: 0, removed: 0, unwritten: ["row#b1#vat-return#2026-12-31"] });
+    });
+
+    test("deleteBusiness fails when an item of the business could not be removed", async () => {
+      tableLeavesLastRowUnprocessed([{ hashedSub: "hashed-user-1", sk: "business#b1" }]);
+
+      const pending = deleteBusiness("user-1", "b1").catch((error) => error);
+      await vi.runAllTimersAsync();
+
+      expect((await pending).message).toBe("1 of the business's 1 due list items could not be removed");
+    });
+
+    test("putFeedToken fails when the lookup or the pointer could not be written", async () => {
+      tableLeavesLastRowUnprocessed();
+
+      const pending = putFeedToken("user-1", "token-hash").catch((error) => error);
+      await vi.runAllTimersAsync();
+
+      expect((await pending).message).toMatch(/could not be written/);
+    });
   });
 
   test("closeRow closes the row and removes its job so the reminder job no longer finds it", async () => {
@@ -297,7 +386,7 @@ describe("data/dynamoDbDueListRepository", () => {
   });
 
   test("putFeedToken stores the lookup and the account's pointer, and removes the token it replaces", async () => {
-    mockSend.mockImplementation(async (command) => (command.name === "Get" ? { Item: { tokenHash: "old" } } : {}));
+    storeHolds([{ hashedSub: "hashed-user-1", sk: "feed", tokenHash: "old" }]);
 
     await putFeedToken("user-1", "new");
 
@@ -305,6 +394,21 @@ describe("data/dynamoDbDueListRepository", () => {
     expect(requests[0].PutRequest.Item).toMatchObject({ hashedSub: "feed#new", sk: "feed", sub: "user-1" });
     expect(requests[1].PutRequest.Item).toEqual({ hashedSub: "hashed-user-1", sk: "feed", tokenHash: "new" });
     expect(requests[2].DeleteRequest.Key).toEqual({ hashedSub: "feed#old", sk: "feed" });
+    expect(requests).toHaveLength(3);
+  });
+
+  test("putFeedToken during a rotation removes the earlier token and its pointer under the earlier salt version", async () => {
+    saltRotationInProgress();
+    storeHolds([{ hashedSub: "hashed-user-1", sk: "feed", tokenHash: "old" }]);
+
+    await putFeedToken("user-1", "new");
+
+    const requests = batchRequests();
+    expect(requests[1].PutRequest.Item).toEqual({ hashedSub: "new-user-1", sk: "feed", tokenHash: "new" });
+    expect(requests.slice(2).map((request) => request.DeleteRequest.Key)).toEqual([
+      { hashedSub: "feed#old", sk: "feed" },
+      { hashedSub: "hashed-user-1", sk: "feed" },
+    ]);
   });
 
   test("findFeedByTokenHash answers the feed's sub, or null for an unknown token", async () => {

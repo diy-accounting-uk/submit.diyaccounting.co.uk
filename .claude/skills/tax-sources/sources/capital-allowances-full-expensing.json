@@ -1,8 +1,9 @@
 {
-  "url": "https://www.gov.uk/capital-allowances/full-expensing",
-  "title": "Claim capital allowances: Full expensing and 50% first-year allowance",
-  "retrieved": "2026-11-13",
-  "quote": "Full expensing lets you deduct 100% of the cost of qualifying plant and machinery from your profits before tax in the year it was bought.",
+  "url": "https://www.gov.uk/capital-allowances/first-year-allowances",
+  "title": "Claim capital allowances: First year allowances",
+  "retrieved": "2026-11-22",
+  "quote": "You can claim 100% with full expensing or 50% with its special rate first year allowance against the cost of plant or machinery if: you’re a company you bought it on or after 1 April 2023 it’s not a car",
+  "table": true,
   "facts": [
     "capital-allowances-full-expensing-fy2025",
     "capital-allowances-full-expensing-fy2026"

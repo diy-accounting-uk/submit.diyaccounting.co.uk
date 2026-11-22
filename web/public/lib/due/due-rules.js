@@ -2,12 +2,12 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // @capability SITE-36 Compute due dates from sourced rules
-// - **Use when:** working out a filing or payment date that no service states: a Company Tax Return and its payment from an accounting period, a VAT return or payment from its period end, the next VAT period, the standard Income Tax updates, the Self Assessment payments, a director or PSC change, or the identity verification on a confirmation statement.
-// - **Does:** due-rules.js is a plain ES module that the browser and app/ both import. Each function answers rows of ISO dates in UK days, each with the fact id of its rule and source "computed"; every fact id has a source file under .claude/skills/tax-sources/sources with its gov.uk quote. A period of account longer than 12 months splits into two accounting periods. A month added to the last day of a month lands on the last day of the later month, as HMRC counts.
+// - **Use when:** working out a filing or payment date that no service states: a Company Tax Return and its payment from an accounting period, a VAT return or payment from its period end, the next VAT period, the standard Income Tax updates, the Self Assessment payments or a director or PSC change.
+// - **Does:** due-rules.js is a plain ES module that the browser and app/ both import. Each function answers rows of ISO dates in UK days, each with the fact id of its rule and source "computed"; every fact id has a source file under .claude/skills/tax-sources/sources with its gov.uk quote. A period of account longer than 12 months splits into accounting periods of 12 months and the rest. A month added to the last day of a month lands on the last day of the later month, as HMRC counts.
 // - **Run:** `npx vitest run web/unit-tests/dueRules.test.js`
-// - **Entry:** `web/public/lib/due/due-rules.js:ct600Rows`; `web/public/lib/due/due-rules.js:ctPaymentRows`; `web/public/lib/due/due-rules.js:vatReturnDue`; `web/public/lib/due/due-rules.js:vatPaymentDue`; `web/public/lib/due/due-rules.js:expectedNextVatPeriod`; `web/public/lib/due/due-rules.js:itsaStandardRows`; `web/public/lib/due/due-rules.js:saPaymentRows`; `web/public/lib/due/due-rules.js:changeDue`; `web/public/lib/due/due-rules.js:identityVerificationRow`
-// - **Files:** web/public/lib/due/due-rules.js, web/unit-tests/dueRules.test.js, .claude/skills/tax-sources/sources/sa-payments-on-account.json, .claude/skills/tax-sources/sources/sa-balancing-payment.json, .claude/skills/tax-sources/sources/ch-officer-changes-14-days.json, .claude/skills/tax-sources/sources/ch-psc-changes-14-days.json, .claude/skills/tax-sources/sources/vat-payment-same-deadline.json
-// - **Keywords:** due dates, deadline rules, ct600 due date, corporation tax payment date, vat return due date, vat payment date, payments on account, balancing payment, officer change 14 days, psc change, identity verification, period of account split
+// - **Entry:** `web/public/lib/due/due-rules.js:ct600Rows`; `web/public/lib/due/due-rules.js:ctPaymentRows`; `web/public/lib/due/due-rules.js:vatReturnDue`; `web/public/lib/due/due-rules.js:vatPaymentDue`; `web/public/lib/due/due-rules.js:expectedNextVatPeriod`; `web/public/lib/due/due-rules.js:itsaStandardRows`; `web/public/lib/due/due-rules.js:saPaymentRows`; `web/public/lib/due/due-rules.js:changeDue`
+// - **Files:** web/public/lib/due/due-rules.js, web/unit-tests/dueRules.test.js, .claude/skills/tax-sources/sources/ct-accounting-period-12-months.json, .claude/skills/tax-sources/sources/sa-payments-on-account.json, .claude/skills/tax-sources/sources/sa-balancing-payment.json, .claude/skills/tax-sources/sources/ch-officer-changes-14-days.json, .claude/skills/tax-sources/sources/ch-psc-changes-14-days.json, .claude/skills/tax-sources/sources/vat-payment-same-deadline.json
+// - **Keywords:** due dates, deadline rules, ct600 due date, corporation tax payment date, vat return due date, vat payment date, payments on account, balancing payment, officer change 14 days, psc change, period of account split
 // - **Related:** SITE-22
 // @end-capability
 
@@ -15,6 +15,7 @@ const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 /** The fact id of each rule, as the source files list them. */
 export const DUE_RULE_FACT_IDS = {
+  ctAccountingPeriod: "ct-accounting-period-12-months",
   ct600: "ct600-12-months",
   ctPayment: "ct-payment-9-months-1-day",
   vatReturn: "vat-return-due-date",
@@ -25,7 +26,6 @@ export const DUE_RULE_FACT_IDS = {
   saBalancingPayment: "sa-balancing-payment",
   officerChange: "ch-officer-changes-14-days",
   pscChange: "ch-psc-changes-14-days",
-  identityVerification: "ch-identity-verification-2025-11",
 };
 
 function parse(iso, name) {
@@ -72,8 +72,8 @@ function computed(row, rule) {
 }
 
 /**
- * The accounting periods of a period of account: itself when it is 12 months or shorter, else the
- * first 12 months and then the rest.
+ * The accounting periods of a period of account. An accounting period is never longer than 12
+ * months, so a longer period of account is its successive 12-month periods and then the rest.
  * @param {{periodStart: string, periodEnd: string}} period
  * @returns {{periodStart: string, periodEnd: string}[]}
  */
@@ -81,12 +81,13 @@ export function accountingPeriods({ periodStart, periodEnd }) {
   parse(periodStart, "periodStart");
   parse(periodEnd, "periodEnd");
   if (periodEnd < periodStart) throw new Error("periodEnd must not be before periodStart");
-  const firstEnd = lastDayOfMonthsFrom(periodStart, 12);
-  if (periodEnd <= firstEnd) return [{ periodStart, periodEnd }];
-  return [
-    { periodStart, periodEnd: firstEnd },
-    { periodStart: addDays(firstEnd, 1), periodEnd },
-  ];
+  const periods = [];
+  let start = periodStart;
+  for (let twelveMonthEnd = lastDayOfMonthsFrom(start, 12); twelveMonthEnd < periodEnd; twelveMonthEnd = lastDayOfMonthsFrom(start, 12)) {
+    periods.push({ periodStart: start, periodEnd: twelveMonthEnd });
+    start = addDays(twelveMonthEnd, 1);
+  }
+  return [...periods, { periodStart: start, periodEnd }];
 }
 
 /**
@@ -205,13 +206,4 @@ export function changeDue(changeDate, change) {
     { kind: `${change}-change`, type: "people", changeDate, due: addDays(changeDate, 14) },
     change === "officer" ? DUE_RULE_FACT_IDS.officerChange : DUE_RULE_FACT_IDS.pscChange,
   );
-}
-
-/**
- * The identity verification that goes with the next confirmation statement: due on its date.
- * @param {string} confirmationStatementDue
- */
-export function identityVerificationRow(confirmationStatementDue) {
-  parse(confirmationStatementDue, "confirmationStatementDue");
-  return computed({ kind: "identity-verification", type: "people", due: confirmationStatementDue }, DUE_RULE_FACT_IDS.identityVerification);
 }

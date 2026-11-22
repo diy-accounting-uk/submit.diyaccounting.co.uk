@@ -3,6 +3,7 @@
 
 import { describe, test, expect } from "vitest";
 import { loadSources } from "../../scripts/tax-sources.mjs";
+import * as dueRules from "../../web/public/lib/due/due-rules.js";
 import {
   DUE_RULE_FACT_IDS,
   accountingPeriods,
@@ -14,7 +15,6 @@ import {
   itsaStandardRows,
   saPaymentRows,
   changeDue,
-  identityVerificationRow,
 } from "../../web/public/lib/due/due-rules.js";
 
 const dues = (rows) => rows.map((row) => row.due);
@@ -39,6 +39,18 @@ describe("due rules", () => {
     ]);
     expect(dues(ct600Rows(period))).toEqual(["2027-06-30", "2027-06-30"]);
     expect(dues(ctPaymentRows(period))).toEqual(["2026-10-01", "2027-04-01"]);
+  });
+
+  test("a period of account over 24 months has no accounting period longer than 12 months", () => {
+    const period = { periodStart: "2025-01-01", periodEnd: "2027-06-30" };
+    expect(accountingPeriods(period)).toEqual([
+      { periodStart: "2025-01-01", periodEnd: "2025-12-31" },
+      { periodStart: "2026-01-01", periodEnd: "2026-12-31" },
+      { periodStart: "2027-01-01", periodEnd: "2027-06-30" },
+    ]);
+    expect(accountingPeriods({ periodStart: "2025-03-01", periodEnd: "2027-02-28" })).toHaveLength(2);
+    expect(dues(ct600Rows(period))).toEqual(["2028-06-30", "2028-06-30", "2028-06-30"]);
+    expect(dues(ctPaymentRows(period))).toEqual(["2026-10-01", "2027-10-01", "2028-04-01"]);
   });
 
   test("a period of exactly 12 months to the day before its start date stays one period", () => {
@@ -162,21 +174,16 @@ describe("due rules", () => {
     expect(changeDue("2028-02-20", "psc")).toMatchObject({ kind: "psc-change", due: "2028-03-05", rule: "ch-psc-changes-14-days" });
   });
 
-  test("identity verification is due with the confirmation statement", () => {
-    expect(identityVerificationRow("2027-04-30")).toEqual({
-      kind: "identity-verification",
-      type: "people",
-      due: "2027-04-30",
-      rule: "ch-identity-verification-2025-11",
-      source: "computed",
-    });
-  });
-
   test("a date that is not a real YYYY-MM-DD day, a reversed period or a malformed tax year is refused", () => {
     expect(() => vatReturnDue("2026-02-30")).toThrow(/YYYY-MM-DD/);
     expect(() => ct600Rows({ periodStart: "2026-04-01", periodEnd: "2026-03-31" })).toThrow(/before periodStart/);
     expect(() => saPaymentRows("2026-28")).toThrow(/2026-27/);
     expect(() => changeDue("2026-01-01", "secretary")).toThrow(/officer/);
+  });
+
+  test("no rule ties identity verification to a confirmation statement", () => {
+    expect(Object.keys(dueRules).filter((name) => /identity/i.test(name))).toEqual([]);
+    expect(Object.values(DUE_RULE_FACT_IDS).filter((id) => id.includes("identity"))).toEqual([]);
   });
 
   test("each rule's fact id has a source file", () => {

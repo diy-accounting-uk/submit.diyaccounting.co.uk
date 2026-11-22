@@ -20,6 +20,7 @@ import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { LOOKUP_CALLS, lookupLimitResponse, lookupRefusalSeconds } from "../../services/companiesHouseLookupLimit.js";
 import { isValidCompanyNumber, http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
+import { withCompaniesHouseCallLimit } from "../../services/companiesHouseCache.js";
 import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseCompanyReportGet.js" });
@@ -28,7 +29,8 @@ const logger = createLogger({ source: "app/functions/companies-house/companiesHo
 export const REPORT_NAMES = ["filings", "people", "capital", "charges", "history", "accounts"];
 
 // Each report's module: (companyNumber) => Promise<object>. A report named here with no module yet
-// answers 404 as an unknown report does.
+// answers 404 as an unknown report does. The route runs a module under a limit of the calls it
+// charges the account for, so a module that reads more lists than that gets a partial answer.
 export const REPORT_MODULES = {};
 
 /* v8 ignore start */
@@ -76,7 +78,7 @@ export async function ingestHandler(event) {
   if (refusalSeconds) return lookupLimitResponse(request, responseHeaders, refusalSeconds);
 
   try {
-    const data = await buildReport(companyNumber);
+    const data = await withCompaniesHouseCallLimit(LOOKUP_CALLS.report, () => buildReport(companyNumber));
     return http200OkResponse({ request, headers: { ...responseHeaders }, data: { companyNumber, report, ...data } });
   } catch (error) {
     logger.error({ message: "Company report failed", report, error: error.message });

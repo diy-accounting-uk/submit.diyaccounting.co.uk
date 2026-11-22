@@ -18,12 +18,29 @@ const mockLookupRefusalSeconds = vi.fn();
 vi.mock("@app/services/companiesHouseLookupLimit.js", async (importOriginal) => ({
   ...(await importOriginal()),
   lookupRefusalSeconds: (...args) => mockLookupRefusalSeconds(...args),
+  companiesHouseStopSecondsLeft: async () => 0,
+}));
+
+// Companies House answers every call with a full page, and the cache holds nothing.
+const mockCompaniesHouseHttpGet = vi.fn(async () => ({
+  ok: true,
+  status: 200,
+  data: { total_count: 5000, items: Array.from({ length: 100 }, () => ({})) },
+}));
+vi.mock("@app/services/companiesHouseApi.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  companiesHouseHttpGet: (...args) => mockCompaniesHouseHttpGet(...args),
+}));
+vi.mock("@app/data/dynamoDbCompaniesHouseCacheRepository.js", () => ({
+  getCacheEntry: async () => null,
+  putCacheEntry: async () => {},
 }));
 
 vi.mock("@app/services/subHasher.js", async (importOriginal) => ({ ...(await importOriginal()), initializeSalt: async () => {} }));
 
 const { ingestHandler, REPORT_MODULES, REPORT_NAMES } = await import("@app/functions/companies-house/companiesHouseCompanyReportGet.js");
 const { BundleEntitlementError } = await import("@app/services/bundleManagement.js");
+const { cachedCompaniesHouseGetAllPages } = await import("@app/services/companiesHouseCache.js");
 
 function reportEvent(companyNumber, report) {
   return {
@@ -40,6 +57,7 @@ describe("functions/companiesHouseCompanyReportGet", () => {
     process.env.COMPANIES_HOUSE_BASE_URI = "https://api.company-information.service.gov.uk";
     mockEnforceBundles.mockReset().mockResolvedValue({ userSub: "user-1" });
     mockLookupRefusalSeconds.mockReset().mockResolvedValue(0);
+    mockCompaniesHouseHttpGet.mockClear();
     for (const name of Object.keys(REPORT_MODULES)) delete REPORT_MODULES[name];
   });
 
@@ -100,6 +118,30 @@ describe("functions/companiesHouseCompanyReportGet", () => {
     expect(response.headers["Retry-After"]).toBe("42");
     expect(() => bodyOf(response)).not.toThrow();
     expect(REPORT_MODULES.people).not.toHaveBeenCalled();
+  });
+
+  test("a module that reads two long lists makes no more calls than the route charged for", async () => {
+    REPORT_MODULES.filings = async (companyNumber) => {
+      const filings = await cachedCompaniesHouseGetAllPages(
+        companyNumber,
+        `/company/${companyNumber}/filing-history`,
+        {},
+        { kind: "filingHistory", maxPages: 15 },
+      );
+      const charges = await cachedCompaniesHouseGetAllPages(
+        companyNumber,
+        `/company/${companyNumber}/charges`,
+        {},
+        { kind: "charges", maxPages: 15 },
+      );
+      return { filings: filings.data.items.length, partial: !charges.ok, charges: charges.partialItems.length };
+    };
+
+    const response = await ingestHandler(reportEvent("00000001", "filings"));
+
+    expect(mockLookupRefusalSeconds).toHaveBeenCalledWith("user-1", 20);
+    expect(mockCompaniesHouseHttpGet).toHaveBeenCalledTimes(20);
+    expect(bodyOf(response)).toMatchObject({ filings: 1500, partial: true, charges: 500 });
   });
 
   test("answers a JSON 500 when a report module fails", async () => {
