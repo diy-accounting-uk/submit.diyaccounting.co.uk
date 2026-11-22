@@ -137,20 +137,11 @@
             </div>
           </fieldset>
 
-          <div class="form-group">
-            <label data-i18n="ch-allot-shares.currency-of-the-shares-77e6d7" for="currency">Arian cyfred y cyfrannau</label>
-            <select id="currency" name="currency">
-              <option data-i18n="ch-allot-shares.pound-sterling-gbp-9a69fd" value="GBP">Punt sterling (GBP)</option>
-              <option data-i18n="ch-allot-shares.euro-eur-de5cde" value="EUR">Ewro (EUR)</option>
-              <option data-i18n="ch-allot-shares.us-dollar-usd-cd1ba8" value="USD">Doler yr Unol Daleithiau (USD)</option>
-            </select>
-          </div>
-
           <fieldset class="form-group">
             <legend data-i18n="ch-allot-shares.shares-allotted-e26a69">Cyfrannau a glustnodwyd</legend>
-            <p data-i18n="ch-allot-shares.give-details-of-the-shares-allotted-2cd5c2" class="hint">
-              Rhowch fanylion y cyfrannau a glustnodwyd, gan gynnwys cyfrannau bonws. Mae’r symiau ar gyfer pob cyfran, yn yr arian cyfred
-              uchod.
+            <p data-i18n="ch-allot-shares.give-details-of-the-shares-allotted-bcdba0" class="hint">
+              Rhowch fanylion y cyfrannau a glustnodwyd, gan gynnwys cyfrannau bonws. Mae’r symiau ar gyfer pob cyfran, yn arian cyfred y
+              cyfrannau.
             </p>
             <div id="allotmentRows"></div>
             <button data-i18n="ch-allot-shares.add-another-allotment-d9759d" type="button" id="addAllotmentBtn" class="btn-small">
@@ -161,46 +152,22 @@
           <fieldset class="form-group">
             <legend data-i18n="ch-allot-shares.share-capital-before-the-allotment-7dc50e">Cyfalaf cyfrannau cyn y clustnodiad</legend>
             <p id="beforeSource" class="hint"></p>
-            <div id="beforeRows"></div>
-            <button data-i18n="ch-allot-shares.add-a-class-of-shares-4f827f" type="button" id="addClassBtn" class="btn-small">
-              Ychwanegu dosbarth o gyfrannau
+            <p data-i18n="ch-allot-shares.a-company-with-shares-in-more-e93e10" class="hint">
+              Mae gan gwmni sydd â chyfrannau mewn mwy nag un arian cyfred dabl ar gyfer pob arian cyfred.
+            </p>
+            <div id="beforeTables"></div>
+            <button data-i18n="ch-allot-shares.add-shares-in-another-currency-f5af23" type="button" id="addCurrencyBtn" class="btn-small">
+              Ychwanegu cyfrannau mewn arian cyfred arall
             </button>
-            <div class="form-group">
-              <label data-i18n="ch-allot-shares.total-aggregate-amount-unpaid-before-the-d77856" for="unpaidBefore"
-                >Cyfanswm y swm agregedig heb ei dalu cyn y clustnodiad</label
-              >
-              <p data-i18n="ch-allot-shares.including-both-the-nominal-value-and-21deb1" id="unpaidBefore-hint" class="hint">
-                Gan gynnwys y gwerth nominal ac unrhyw bremiwm cyfrannau. Rhowch 0 os yw’r cyfrannau wedi’u talu’n llawn.
-              </p>
-              <input type="text" id="unpaidBefore" name="unpaidBefore" inputmode="decimal" value="0" aria-describedby="unpaidBefore-hint" />
-            </div>
           </fieldset>
 
           <section id="afterSection" class="form-group" aria-live="polite">
             <h3 data-i18n="ch-allot-shares.statement-of-capital-after-the-allotment-24b0b9">Datganiad cyfalaf ar ôl y clustnodiad</h3>
-            <p data-i18n="ch-allot-shares.the-issued-share-capital-this-return-6273f6" class="hint">
-              Y cyfalaf cyfrannau a ddyroddwyd y mae’r ffurflen hon yn ei ddatgan: y cyfalaf cynt, gan ychwanegu’r cyfrannau a glustnodwyd.
+            <p data-i18n="ch-allot-shares.the-issued-share-capital-this-return-457401" class="hint">
+              Y cyfalaf cyfrannau a ddyroddwyd y mae’r ffurflen hon yn ei ddatgan: y cyfalaf cynt, gan ychwanegu’r cyfrannau a glustnodwyd,
+              mewn tabl ar gyfer pob arian cyfred.
             </p>
-            <table id="afterTable" class="results-table">
-              <thead>
-                <tr>
-                  <th data-i18n="ch-allot-shares.class-of-shares-3a3d4a" scope="col">Dosbarth o gyfrannau</th>
-                  <th data-i18n="ch-allot-shares.number-of-shares-d215a9" scope="col" class="amount">Nifer y cyfrannau</th>
-                  <th data-i18n="ch-allot-shares.aggregate-nominal-value-2ba6f0" scope="col" class="amount">Gwerth nominal agregedig</th>
-                </tr>
-              </thead>
-              <tbody id="afterBody"></tbody>
-              <tfoot>
-                <tr>
-                  <th data-i18n="ch-allot-shares.totals-6bd6df" scope="row">Cyfansymiau</th>
-                  <td id="afterTotalNumber" class="amount"></td>
-                  <td id="afterTotalNominal" class="amount"></td>
-                </tr>
-              </tfoot>
-            </table>
-            <p data-i18n="ch-allot-shares.total-aggregate-amount-unpaid-8b5c19">
-              Cyfanswm y swm agregedig heb ei dalu: <strong id="afterUnpaid"></strong>
-            </p>
+            <div id="afterTables"></div>
             <div id="newClassParticulars"></div>
           </section>
           <button data-i18n="ch-allot-shares.continue-31fbef" type="submit" id="continueBtn" class="btn">Parhau</button>

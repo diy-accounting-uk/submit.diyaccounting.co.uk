@@ -186,6 +186,17 @@ export async function fileCompaniesHouseForm(event, kind) {
   // Forwarded to the gateway call so the simulator's Gov-Test-Scenario handling can be driven
   // from the page's developer-mode field; the real gateway ignores headers it does not know.
   const govTestScenario = getHeader(event.headers, "Gov-Test-Scenario");
+  const gatewayHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
+
+  const registerRefusal = await GATEWAY_FORM_BUILDERS[kind].refuseAgainstRegister?.({
+    form,
+    request,
+    headers: responseHeaders,
+    userSub,
+    ownPresenter,
+    gatewayHeaders,
+  });
+  if (registerRefusal) return registerRefusal;
 
   let submissionNumber;
   let envelopeSent = false;
@@ -218,7 +229,6 @@ export async function fileCompaniesHouseForm(event, kind) {
       gatewayTest,
     });
 
-    const gatewayHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
     envelopeSent = true;
     const gatewayResponse = await postToGateway(submissionXml, gatewayHeaders);
     const parsed = parseGatewayResponse(gatewayResponse.data);

@@ -199,6 +199,12 @@ window.WELSH_TEXT = {
   "ch.address.postcode": "Cod post",
   "ch.address.premises": "Adeilad",
   "ch.address.town": "Tref neu ddinas",
+  "ch.allot.add-class": "Ychwanegu dosbarth o gyfrannau",
+  "ch.allot.after-class": "Dosbarth o gyfrannau",
+  "ch.allot.after-nominal": "Gwerth nominal agregedig",
+  "ch.allot.after-number": "Nifer y cyfrannau",
+  "ch.allot.after-totals": "Cyfansymiau",
+  "ch.allot.after-unpaid": "Cyfanswm y swm agregedig heb ei dalu: {amount}",
   "ch.allot.allotment": "Clustnodiad",
   "ch.allot.before-class": "Dosbarth o gyfrannau a ddelid cynt",
   "ch.allot.before-from-register":
@@ -215,16 +221,25 @@ window.WELSH_TEXT = {
   "ch.allot.consideration": "Manylion cydnabyddiaeth heblaw arian parod (dewisol)",
   "ch.allot.consideration-hint":
     "Os yw’r cyfrannau a glustnodwyd wedi’u talu’n llawn neu’n rhannol heblaw ag arian parod, nodwch am ba gydnabyddiaeth y cafodd y cyfrannau eu clustnodi.",
+  "ch.allot.currency": "Arian cyfred",
+  "ch.allot.currency-eur": "Ewro (EUR)",
+  "ch.allot.currency-gbp": "Punt sterling (GBP)",
+  "ch.allot.currency-table": "Cyfrannau a ddelid cynt, mewn un arian cyfred",
+  "ch.allot.currency-usd": "Doler yr Unol Daleithiau (USD)",
   "ch.allot.lookup-failed": "Nid oedd modd darllen y cwmni hwn o Dŷ’r Cwmnïau.",
-  "ch.allot.new-rights": "Manylion rhagnodedig yr hawliau sydd ynghlwm wrth y dosbarth newydd {name}",
+  "ch.allot.new-rights-currency": "Manylion rhagnodedig yr hawliau sydd ynghlwm wrth y dosbarth newydd {name} ({currency})",
   "ch.allot.nominal": "Gwerth nominal pob cyfran",
   "ch.allot.number": "Nifer y cyfrannau a glustnodwyd",
+  "ch.allot.other-currency":
+    "Mae gan y cwmni gyfrannau yn {currency}. Mae’r dudalen hon yn ffeilio ffurflen i ddychwelyd cyfrannau a glustnodwyd ar gyfer cyfrannau mewn punnoedd sterling, ewros a doleri’r Unol Daleithiau yn unig.",
   "ch.allot.paid": "Y swm a dalwyd (gan gynnwys y premiwm cyfrannau) ar bob cyfran",
   "ch.allot.problem-allotment":
     "Rhowch i bob clustnodiad ei ddosbarth o gyfrannau, nifer y cyfrannau a glustnodwyd a gwerth nominal pob cyfran.",
   "ch.allot.problem-amounts": "Rhowch y swm a dalwyd a’r swm na thalwyd ar bob cyfran fel rhifau. Rhowch 0 lle nad oes dim.",
   "ch.allot.problem-before":
     "Rhowch i bob dosbarth o gyfrannau a ddelid cyn y clustnodiad ei enw, nifer ei gyfrannau, ei werth nominal agregedig a’r hawliau sydd ynghlwm wrtho.",
+  "ch.allot.problem-currency-twice":
+    "Mae gan y cyfrannau a ddelid cyn y clustnodiad ddau dabl yn {currency}. Rhowch bob dosbarth yn yr arian cyfred hwnnw mewn un tabl.",
   "ch.allot.problem-dates": "Ni all y dyddiad hyd at fod cyn y dyddiad o.",
   "ch.allot.problem-decimal-places":
     "Mae nifer y cyfranddaliadau {name} wedi’i luosi â’r gwerth enwol neu’r swm heb ei dalu ar bob cyfranddaliad yn rhoi mwy na 6 lle degol. Mae Tŷ’r Cwmnïau yn derbyn symiau i 6 lle degol.",
@@ -243,13 +258,16 @@ window.WELSH_TEXT = {
   "ch.allot.review-consideration": "Cydnabyddiaeth heblaw arian parod",
   "ch.allot.review-dates": "Dyddiadau clustnodi",
   "ch.allot.review-period": "{from} i {to}",
-  "ch.allot.review-totals": "Cyfalaf wedyn: cyfansymiau",
+  "ch.allot.review-totals-currency": "Cyfalaf wedyn: cyfansymiau yn {currency}",
   "ch.allot.review-totals-line":
     "{number} o gyfrannau, gwerth nominal agregedig {currency} {nominal}, cyfanswm y swm agregedig heb ei dalu {currency} {unpaid}",
   "ch.allot.rights": "Manylion rhagnodedig yr hawliau sydd ynghlwm wrth y cyfrannau",
   "ch.allot.rights-hint":
     "Hawliau pleidleisio, hawliau i ddifidendau, hawliau i gyfalaf ar ddosraniad (gan gynnwys wrth ddirwyn i ben), ac a yw’r cyfrannau i’w hadbrynu.",
   "ch.allot.unpaid": "Y swm (os oes un) na thalwyd (gan gynnwys y premiwm cyfrannau) ar bob cyfran",
+  "ch.allot.unpaid-before": "Cyfanswm y swm agregedig heb ei dalu cyn y clustnodiad",
+  "ch.allot.unpaid-before-hint":
+    "Gan gynnwys y gwerth nominal ac unrhyw bremiwm cyfrannau. Rhowch 0 os yw’r cyfrannau wedi’u talu’n llawn.",
   "ch.appoint-officer.consent-missing": "Cadarnhewch fod gan y cwmni gydsyniad y swyddog i weithredu yn y penodiad hwn.",
   "ch.appoint-officer.country-aus": "Awstralia",
   "ch.appoint-officer.country-aut": "Awstria",

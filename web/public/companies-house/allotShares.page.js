@@ -8,9 +8,10 @@ window.siteText =
   ((id, english, values) => english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole)));
 
 // Return an allotment of shares: companyView -> formView -> reviewView -> resultView. The return
-// carries the company's statement of capital after the allotment, so the page reads the capital the
-// register holds (the read takes the company authentication code), the reader checks it and types
-// the shares allotted, and the page adds the two up as they type.
+// carries the company's statement of capital after the allotment, a table for each currency, so the
+// page reads the capital the register holds in each currency (the read takes the company
+// authentication code), the reader checks it and types the shares allotted, each in its currency, and
+// the page adds them up as they type, keeping each class in its own currency.
 
 const FORM_KIND = "allotment-of-shares";
 const CURRENCIES = ["GBP", "EUR", "USD"];
@@ -18,8 +19,15 @@ const CURRENCIES = ["GBP", "EUR", "USD"];
 let company = null;
 let filing = null;
 let shareCapital = null;
-// The rights typed for each class the allotment starts, by the class in lower case.
+// The rights typed for each class the allotment starts, by its currency and its class in lower case.
 const newClassRights = new Map();
+const rightsKey = (currency, shareClass) => `${currency} ${shareClass.toLowerCase()}`;
+
+function currencyName(currency) {
+  if (currency === "EUR") return window.siteText("ch.allot.currency-eur", "Euro (EUR)");
+  if (currency === "USD") return window.siteText("ch.allot.currency-usd", "US dollar (USD)");
+  return window.siteText("ch.allot.currency-gbp", "Pound sterling (GBP)");
+}
 
 function showView(name) {
   ["companyView", "formView", "reviewView", "resultView"].forEach((id) => {
@@ -81,6 +89,34 @@ function rowHolder(container, className, heading, removable) {
 
 let rowNumber = 0;
 
+// A labelled choice of the currencies a return is taken in.
+function currencyField(id, value) {
+  const group = document.createElement("div");
+  group.className = "form-group";
+  const label = document.createElement("label");
+  label.htmlFor = id;
+  label.textContent = window.siteText("ch.allot.currency", "Currency");
+  const select = document.createElement("select");
+  select.id = id;
+  select.name = id;
+  CURRENCIES.forEach((currency) => {
+    const option = document.createElement("option");
+    option.value = currency;
+    option.textContent = currencyName(currency);
+    select.appendChild(option);
+  });
+  select.value = CURRENCIES.includes(value) ? value : CURRENCIES[0];
+  select.addEventListener("change", renderAfter);
+  group.append(label, select);
+  return group;
+}
+
+// The currency of the first capital table, which a new allotment starts in.
+function firstTableCurrency() {
+  const select = document.querySelector("#beforeTables .capital-table select");
+  return select ? select.value : CURRENCIES[0];
+}
+
 function addAllotmentRow() {
   const container = document.getElementById("allotmentRows");
   const n = ++rowNumber;
@@ -92,6 +128,7 @@ function addAllotmentRow() {
       label: window.siteText("ch.allot.class", "Class of shares"),
       hint: window.siteText("ch.allot.class-hint", "For example, Ordinary or Preference."),
     }),
+    currencyField(`allot-currency-${n}`, firstTableCurrency()),
     field({ id: `allot-number-${n}`, label: window.siteText("ch.allot.number", "Number of shares allotted") }),
     field({ id: `allot-nominal-${n}`, label: window.siteText("ch.allot.nominal", "Nominal value of each share") }),
     field({ id: `allot-paid-${n}`, label: window.siteText("ch.allot.paid", "Amount paid (including share premium) on each share") }),
@@ -112,8 +149,44 @@ function addAllotmentRow() {
   );
 }
 
-function addBeforeRow(share = {}) {
-  const container = document.getElementById("beforeRows");
+// A table of the classes held before the allotment in one currency, with its total unpaid.
+function addCapitalTable(capital = {}) {
+  const container = document.getElementById("beforeTables");
+  const n = ++rowNumber;
+  const table = rowHolder(
+    container,
+    "capital-table",
+    window.siteText("ch.allot.currency-table", "Shares held before, in one currency"),
+    container.children.length > 0,
+  );
+  table.dataset.table = String(n);
+  const classes = document.createElement("div");
+  classes.className = "capital-classes";
+  const addClass = document.createElement("button");
+  addClass.type = "button";
+  addClass.className = "btn-small";
+  addClass.textContent = window.siteText("ch.allot.add-class", "Add a class of shares");
+  addClass.addEventListener("click", () => addBeforeRow(classes));
+  table.append(
+    currencyField(`capital-currency-${n}`, capital.shareCurrency),
+    classes,
+    addClass,
+    field({
+      id: `capital-unpaid-${n}`,
+      label: window.siteText("ch.allot.unpaid-before", "Total aggregate amount unpaid before the allotment"),
+      hint: window.siteText(
+        "ch.allot.unpaid-before-hint",
+        "Including both the nominal value and any share premium. Enter 0 if the shares are fully paid.",
+      ),
+      value: capital.totalAmountUnpaid || "0",
+    }),
+  );
+  const shares = capital.shares && capital.shares.length > 0 ? capital.shares : [{}];
+  shares.forEach((share) => addBeforeRow(classes, share));
+  return table;
+}
+
+function addBeforeRow(container, share = {}) {
   const n = ++rowNumber;
   const row = rowHolder(container, "before-row", window.siteText("ch.allot.before-class", "Class of shares held before"), true);
   row.dataset.row = String(n);
@@ -147,6 +220,7 @@ function readAllotments() {
     return {
       row: n,
       shareClass: typed(`allot-class-${n}`),
+      currency: typed(`allot-currency-${n}`),
       numShares: typed(`allot-number-${n}`),
       nominalValue: typed(`allot-nominal-${n}`),
       amountPaidPerShare: typed(`allot-paid-${n}`),
@@ -156,101 +230,148 @@ function readAllotments() {
   });
 }
 
+// The capital before the allotment, a table for each currency.
 function readBefore() {
-  return {
-    totalAmountUnpaid: typed("unpaidBefore"),
-    shares: Array.from(document.querySelectorAll("#beforeRows .before-row")).map((row) => {
-      const n = row.dataset.row;
-      return {
-        row: n,
-        shareClass: typed(`before-class-${n}`),
-        numShares: typed(`before-number-${n}`),
-        aggregateNominalValue: typed(`before-nominal-${n}`),
-        prescribedParticulars: typed(`before-rights-${n}`),
-      };
-    }),
-  };
+  return Array.from(document.querySelectorAll("#beforeTables .capital-table")).map((table) => {
+    const n = table.dataset.table;
+    return {
+      currency: typed(`capital-currency-${n}`),
+      totalAmountUnpaid: typed(`capital-unpaid-${n}`),
+      shares: Array.from(table.querySelectorAll(".before-row")).map((row) => {
+        const r = row.dataset.row;
+        return {
+          shareClass: typed(`before-class-${r}`),
+          numShares: typed(`before-number-${r}`),
+          aggregateNominalValue: typed(`before-nominal-${r}`),
+          prescribedParticulars: typed(`before-rights-${r}`),
+        };
+      }),
+    };
+  });
 }
 
-// The capital after the allotment, with the rights typed for each class the allotment starts.
-function capitalAfter() {
-  const after = shareCapital.capitalAfterAllotments(readBefore(), readAllotments());
-  after.shares.forEach((share) => {
-    if (share.added) share.prescribedParticulars = newClassRights.get(share.shareClass.toLowerCase()) || "";
+const isBlankClass = (share) => !share.shareClass && !share.numShares && !share.aggregateNominalValue && !share.prescribedParticulars;
+
+// The capital after the allotment in each currency the company holds or allots shares in, with the
+// rights typed for each class the allotment starts. A currency with no shares after is left out.
+function capitalsAfter() {
+  const before = readBefore();
+  const allotments = readAllotments();
+  const currencies = [...new Set([...before.map((table) => table.currency), ...allotments.map((allotment) => allotment.currency)])];
+  return currencies
+    .map((currency) => {
+      const table = before.find((each) => each.currency === currency) || { totalAmountUnpaid: "0", shares: [] };
+      const after = shareCapital.capitalAfterAllotments(
+        { totalAmountUnpaid: table.totalAmountUnpaid, shares: table.shares.filter((share) => !isBlankClass(share)) },
+        allotments.filter((allotment) => allotment.currency === currency),
+      );
+      after.shares.forEach((share) => {
+        if (share.added) share.prescribedParticulars = newClassRights.get(rightsKey(currency, share.shareClass)) || "";
+      });
+      return { currency, ...after };
+    })
+    .filter((capital) => capital.shares.length > 0);
+}
+
+function afterTable(capital) {
+  const holder = document.createElement("div");
+  holder.className = "after-capital";
+  holder.dataset.currency = capital.currency;
+  const heading = document.createElement("h4");
+  heading.textContent = currencyName(capital.currency);
+  const labels = [
+    window.siteText("ch.allot.after-class", "Class of shares"),
+    window.siteText("ch.allot.after-number", "Number of shares"),
+    window.siteText("ch.allot.after-nominal", "Aggregate nominal value"),
+  ];
+  const table = document.createElement("table");
+  table.className = "results-table";
+  const head = table.createTHead().insertRow();
+  labels.forEach((label, index) => {
+    const th = document.createElement("th");
+    th.scope = "col";
+    if (index > 0) th.className = "amount";
+    th.textContent = label;
+    head.appendChild(th);
   });
-  return after;
+  const body = table.createTBody();
+  const addRow = (values, total) => {
+    const row = body.insertRow();
+    if (total) row.className = "after-totals";
+    values.forEach((value, index) => {
+      const cell = row.insertCell();
+      if (index > 0) cell.className = "amount";
+      if (total && index === 0) {
+        const strong = document.createElement("strong");
+        strong.textContent = value;
+        cell.appendChild(strong);
+        return;
+      }
+      cell.dataset.label = labels[index];
+      cell.textContent = value;
+    });
+  };
+  capital.shares.forEach((share) => addRow([share.shareClass, share.numShares, share.aggregateNominalValue]));
+  addRow([window.siteText("ch.allot.after-totals", "Totals"), capital.totalNumberOfIssuedShares, capital.totalAggregateNominalValue], true);
+  const unpaid = document.createElement("p");
+  unpaid.className = "after-unpaid";
+  unpaid.textContent = window.siteText("ch.allot.after-unpaid", "Total aggregate amount unpaid: {amount}", {
+    amount: capital.totalAmountUnpaid,
+  });
+  holder.append(heading, table, unpaid);
+  return holder;
 }
 
 function renderAfter() {
   if (!shareCapital) return;
-  document
-    .querySelectorAll("#newClassParticulars textarea")
-    .forEach((area) => newClassRights.set(area.dataset.shareClass, area.value.trim()));
-  const after = capitalAfter();
-  const body = document.getElementById("afterBody");
-  body.replaceChildren(
-    ...after.shares.map((share) => {
-      const row = document.createElement("tr");
-      const labels = Array.from(document.querySelectorAll("#afterTable thead th")).map((heading) => heading.textContent.trim());
-      [share.shareClass, share.numShares, share.aggregateNominalValue].forEach((value, index) => {
-        const cell = document.createElement("td");
-        if (index > 0) cell.className = "amount";
-        cell.dataset.label = labels[index];
-        cell.textContent = value;
-        row.appendChild(cell);
-      });
-      return row;
-    }),
-  );
-  const [, numberLabel, nominalLabel] = Array.from(document.querySelectorAll("#afterTable thead th")).map((heading) =>
-    heading.textContent.trim(),
-  );
-  const totalNumber = document.getElementById("afterTotalNumber");
-  totalNumber.textContent = after.totalNumberOfIssuedShares;
-  totalNumber.dataset.label = numberLabel;
-  const totalNominal = document.getElementById("afterTotalNominal");
-  totalNominal.textContent = after.totalAggregateNominalValue;
-  totalNominal.dataset.label = nominalLabel;
-  document.getElementById("afterUnpaid").textContent = after.totalAmountUnpaid;
+  document.querySelectorAll("#newClassParticulars textarea").forEach((area) => newClassRights.set(area.dataset.key, area.value.trim()));
+  const capitals = capitalsAfter();
+  document.getElementById("afterTables").replaceChildren(...capitals.map(afterTable));
+  document.getElementById("addCurrencyBtn").disabled =
+    document.querySelectorAll("#beforeTables .capital-table").length >= CURRENCIES.length;
   const holder = document.getElementById("newClassParticulars");
-  const wanted = after.shares.filter((share) => share.added).map((share) => share.shareClass);
+  const wanted = capitals.flatMap((capital) =>
+    capital.shares.filter((share) => share.added).map((share) => ({ currency: capital.currency, shareClass: share.shareClass })),
+  );
   const shown = Array.from(holder.querySelectorAll("textarea")).map((area) => area.dataset.label);
-  if (wanted.join("\n") === shown.join("\n")) return;
+  const wantedLabels = wanted.map(({ currency, shareClass }) => `${currency} ${shareClass}`);
+  if (wantedLabels.join("\n") === shown.join("\n")) return;
   holder.replaceChildren(
-    ...wanted.map((shareClass, index) => {
+    ...wanted.map(({ currency, shareClass }, index) => {
       const group = field({
         id: `new-rights-${index}`,
-        label: window.siteText("ch.allot.new-rights", "Prescribed particulars of rights attached to the new class {name}", {
-          name: shareClass,
-        }),
+        label: window.siteText(
+          "ch.allot.new-rights-currency",
+          "Prescribed particulars of rights attached to the new class {name} ({currency})",
+          { name: shareClass, currency },
+        ),
         hint: window.siteText(
           "ch.allot.rights-hint",
           "Voting rights, rights to dividends, rights to capital on a distribution (including on winding up), and whether the shares are to be redeemed.",
         ),
-        value: newClassRights.get(shareClass.toLowerCase()) || "",
+        value: newClassRights.get(rightsKey(currency, shareClass)) || "",
         multiline: true,
       });
       const area = group.querySelector("textarea");
-      area.dataset.shareClass = shareClass.toLowerCase();
-      area.dataset.label = shareClass;
+      area.dataset.key = rightsKey(currency, shareClass);
+      area.dataset.label = `${currency} ${shareClass}`;
       return group;
     }),
   );
 }
 
-function fillBefore(capital, { readFailed = false } = {}) {
-  document.getElementById("beforeRows").replaceChildren();
+function fillBefore(capitals, { readFailed = false } = {}) {
+  document.getElementById("beforeTables").replaceChildren();
   const source = document.getElementById("beforeSource");
-  if (capital && capital.shares && capital.shares.length > 0) {
-    capital.shares.forEach(addBeforeRow);
-    document.getElementById("unpaidBefore").value = capital.totalAmountUnpaid || "0";
-    if (CURRENCIES.includes(capital.shareCurrency)) document.getElementById("currency").value = capital.shareCurrency;
+  const held = capitals.filter((capital) => capital.shares && capital.shares.length > 0);
+  if (held.length > 0) {
+    held.forEach(addCapitalTable);
     source.textContent = window.siteText(
       "ch.allot.before-from-register",
       "This is the share capital Companies House holds for the company. Check it, and correct it if an earlier allotment is not on the register yet.",
     );
   } else {
-    addBeforeRow();
+    addCapitalTable();
     source.textContent = readFailed
       ? window.siteText(
           "ch.allot.before-read-failed",
@@ -263,6 +384,12 @@ function fillBefore(capital, { readFailed = false } = {}) {
   }
 }
 
+// The register's capital in each currency; an answer that gives only the first currency's is read as that one.
+function registerCapitalsOf(data) {
+  if (Array.isArray(data.statementsOfCapital)) return data.statementsOfCapital;
+  return data.statementOfCapital ? [data.statementOfCapital] : [];
+}
+
 async function handleCompanySubmit(event) {
   event.preventDefault();
   if (!window.formErrors.requireFields(["companyNumber", "companyAuthCode"])) return;
@@ -273,15 +400,15 @@ async function handleCompanySubmit(event) {
     shareCapital = shareCapital || (await import("/lib/share-capital.js"));
     const profile = await window.getCompanyProfile(companyNumber);
     company = { companyNumber, companyName: profile.companyName, companyAuthCode };
-    let registerCapital = null;
+    let registerCapitals = [];
     let capitalReadFailed = false;
     try {
+      // Dated today, as the filing route's own read of the register is.
       const data = await window.getConfirmationStatementFilingData(companyNumber, {
         companyAuthCode,
-        madeUpDate: profile.confirmationStatementNextMadeUpTo || new Date().toISOString().slice(0, 10),
-        companyType: profile.companyType,
+        madeUpDate: new Date().toISOString().slice(0, 10),
       });
-      registerCapital = data.statementOfCapital || null;
+      registerCapitals = registerCapitalsOf(data);
     } catch (error) {
       console.warn("Could not read the company's share capital from Companies House:", error);
       if (error && error.status === 400) {
@@ -290,12 +417,23 @@ async function handleCompanySubmit(event) {
       }
       capitalReadFailed = true;
     }
+    const otherCurrency = registerCapitals.find((capital) => !CURRENCIES.includes(capital.shareCurrency));
+    if (otherCurrency) {
+      showError(
+        window.siteText(
+          "ch.allot.other-currency",
+          "The company has shares in {currency}. This page files a return of allotment for shares in pounds sterling, euros and US dollars only.",
+          { currency: otherCurrency.shareCurrency },
+        ),
+      );
+      return;
+    }
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     document.getElementById("allotmentRows").replaceChildren();
     newClassRights.clear();
+    fillBefore(registerCapitals, { readFailed: capitalReadFailed });
     addAllotmentRow();
-    fillBefore(registerCapital, { readFailed: capitalReadFailed });
     renderAfter();
     showView("formView");
   } catch (error) {
@@ -307,14 +445,31 @@ async function handleCompanySubmit(event) {
 }
 
 // What is wrong with what the reader typed, as a sentence, or null.
-function problemOf(allotments, before, after) {
+function problemOf(allotments, before, capitals) {
   const number = (value) => shareCapital.toMillionths(value);
-  for (const share of before.shares) {
-    if (!share.shareClass && !share.numShares && !share.aggregateNominalValue && !share.prescribedParticulars) continue;
-    if (!share.shareClass || !number(share.numShares) || !number(share.aggregateNominalValue) || !share.prescribedParticulars) {
+  const currencies = before.map((table) => table.currency);
+  const repeated = currencies.find((currency, index) => currencies.indexOf(currency) !== index);
+  if (repeated) {
+    return window.siteText(
+      "ch.allot.problem-currency-twice",
+      "The shares held before the allotment have two tables in {currency}. Put every class in that currency in one table.",
+      { currency: repeated },
+    );
+  }
+  for (const table of before) {
+    for (const share of table.shares) {
+      if (isBlankClass(share)) continue;
+      if (!share.shareClass || !number(share.numShares) || !number(share.aggregateNominalValue) || !share.prescribedParticulars) {
+        return window.siteText(
+          "ch.allot.problem-before",
+          "Give each class of shares held before the allotment its name, its number of shares, its aggregate nominal value and the rights attached to it.",
+        );
+      }
+    }
+    if (number(table.totalAmountUnpaid) === null) {
       return window.siteText(
-        "ch.allot.problem-before",
-        "Give each class of shares held before the allotment its name, its number of shares, its aggregate nominal value and the rights attached to it.",
+        "ch.allot.problem-unpaid",
+        "Enter the total aggregate amount unpaid before the allotment as a number. Enter 0 if the shares are fully paid.",
       );
     }
   }
@@ -351,13 +506,7 @@ function problemOf(allotments, before, after) {
       );
     }
   }
-  if (number(before.totalAmountUnpaid) === null) {
-    return window.siteText(
-      "ch.allot.problem-unpaid",
-      "Enter the total aggregate amount unpaid before the allotment as a number. Enter 0 if the shares are fully paid.",
-    );
-  }
-  const withoutRights = after.shares.find((share) => !share.prescribedParticulars);
+  const withoutRights = capitals.flatMap((capital) => capital.shares).find((share) => !share.prescribedParticulars);
   if (withoutRights) {
     return window.siteText("ch.allot.problem-rights", "Give the prescribed particulars of rights attached to the {name} shares.", {
       name: withoutRights.shareClass,
@@ -378,15 +527,14 @@ function handleAllotmentSubmit(event) {
   renderAfter();
   const allotments = readAllotments();
   const before = readBefore();
-  const after = capitalAfter();
-  const problem = problemOf(allotments, before, after);
+  const capitals = capitalsAfter();
+  const problem = problemOf(allotments, before, capitals);
   if (problem) {
     showError(problem);
     return;
   }
-  const currency = document.getElementById("currency").value;
   filing = {
-    after,
+    capitals,
     form: {
       companyNumber: company.companyNumber,
       companyName: company.companyName,
@@ -396,21 +544,18 @@ function handleAllotmentSubmit(event) {
       ...(endDate ? { endDate } : {}),
       allotments: allotments.map(({ row, consideration, ...allotment }) => ({
         ...allotment,
-        currency,
         ...(consideration ? { consideration } : {}),
       })),
-      statementOfCapital: [
-        {
-          currency,
-          totalAmountUnpaid: after.totalAmountUnpaid,
-          shares: after.shares.map(({ shareClass, prescribedParticulars, numShares, aggregateNominalValue }) => ({
-            shareClass,
-            prescribedParticulars,
-            numShares,
-            aggregateNominalValue,
-          })),
-        },
-      ],
+      statementOfCapital: capitals.map((capital) => ({
+        currency: capital.currency,
+        totalAmountUnpaid: capital.totalAmountUnpaid,
+        shares: capital.shares.map(({ shareClass, prescribedParticulars, numShares, aggregateNominalValue }) => ({
+          shareClass,
+          prescribedParticulars,
+          numShares,
+          aggregateNominalValue,
+        })),
+      })),
     },
   };
   if (window.hideStatus) window.hideStatus();
@@ -420,8 +565,7 @@ function handleAllotmentSubmit(event) {
 
 function reviewRows() {
   const formatDate = (iso) => window.companiesHouseLabels.formatCompanyDate(iso);
-  const { form, after } = filing;
-  const currency = form.statementOfCapital[0].currency;
+  const { form, capitals } = filing;
   const rows = [
     [window.siteText("ch.allot.review-company", "Company"), `${company.companyName} (${company.companyNumber})`],
     [
@@ -440,7 +584,7 @@ function reviewRows() {
         {
           number: allotment.numShares,
           name: allotment.shareClass,
-          currency,
+          currency: allotment.currency,
           nominal: allotment.nominalValue,
           paid: allotment.amountPaidPerShare,
           unpaid: allotment.amountUnpaidPerShare,
@@ -450,30 +594,33 @@ function reviewRows() {
     if (allotment.consideration)
       rows.push([window.siteText("ch.allot.review-consideration", "Non-cash consideration"), allotment.consideration]);
   });
-  after.shares.forEach((share) => {
+  capitals.forEach((capital) => {
+    const currency = capital.currency;
+    capital.shares.forEach((share) => {
+      rows.push([
+        window.siteText("ch.allot.review-class", "Capital after: {name}", { name: share.shareClass }),
+        window.siteText("ch.allot.review-class-line", "{number} shares, aggregate nominal value {currency} {nominal}. {rights}", {
+          number: share.numShares,
+          currency,
+          nominal: share.aggregateNominalValue,
+          rights: share.prescribedParticulars,
+        }),
+      ]);
+    });
     rows.push([
-      window.siteText("ch.allot.review-class", "Capital after: {name}", { name: share.shareClass }),
-      window.siteText("ch.allot.review-class-line", "{number} shares, aggregate nominal value {currency} {nominal}. {rights}", {
-        number: share.numShares,
-        currency,
-        nominal: share.aggregateNominalValue,
-        rights: share.prescribedParticulars,
-      }),
+      window.siteText("ch.allot.review-totals-currency", "Capital after: totals in {currency}", { currency }),
+      window.siteText(
+        "ch.allot.review-totals-line",
+        "{number} shares, aggregate nominal value {currency} {nominal}, total aggregate amount unpaid {currency} {unpaid}",
+        {
+          number: capital.totalNumberOfIssuedShares,
+          currency,
+          nominal: capital.totalAggregateNominalValue,
+          unpaid: capital.totalAmountUnpaid,
+        },
+      ),
     ]);
   });
-  rows.push([
-    window.siteText("ch.allot.review-totals", "Capital after: totals"),
-    window.siteText(
-      "ch.allot.review-totals-line",
-      "{number} shares, aggregate nominal value {currency} {nominal}, total aggregate amount unpaid {currency} {unpaid}",
-      {
-        number: after.totalNumberOfIssuedShares,
-        currency,
-        nominal: after.totalAggregateNominalValue,
-        unpaid: after.totalAmountUnpaid,
-      },
-    ),
-  ]);
   return rows;
 }
 
@@ -524,7 +671,12 @@ document.getElementById("companyForm").addEventListener("submit", handleCompanyS
 document.getElementById("allotmentForm").addEventListener("submit", handleAllotmentSubmit);
 document.getElementById("allotmentForm").addEventListener("input", renderAfter);
 document.getElementById("addAllotmentBtn").addEventListener("click", addAllotmentRow);
-document.getElementById("addClassBtn").addEventListener("click", () => addBeforeRow());
+document.getElementById("addCurrencyBtn").addEventListener("click", () => {
+  const used = readBefore().map((table) => table.currency);
+  const table = addCapitalTable({ shareCurrency: CURRENCIES.find((currency) => !used.includes(currency)) });
+  table.querySelector("select").focus();
+  renderAfter();
+});
 document.getElementById("submitFilingBtn").addEventListener("click", handleFile);
 document.getElementById("changeBtn").addEventListener("click", () => showView("formView"));
 document.getElementById("startAgainBtn").addEventListener("click", startAgain);

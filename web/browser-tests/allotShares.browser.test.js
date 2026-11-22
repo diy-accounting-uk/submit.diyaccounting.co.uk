@@ -40,7 +40,7 @@ const REGISTER_CAPITAL = {
 // answered here. Each filing request's body and each filing-data read's body is recorded.
 async function serveSite(
   page,
-  { filings = [], reads = [], capital = REGISTER_CAPITAL, filingData = 200, outcome = { statusCode: "ACCEPT", rejections: [] } } = {},
+  { filings = [], reads = [], capitals = [REGISTER_CAPITAL], filingData = 200, outcome = { statusCode: "ACCEPT", rejections: [] } } = {},
 ) {
   await page.addInitScript(() => {
     try {
@@ -68,7 +68,7 @@ async function serveSite(
       reads.push(JSON.parse(request.postData()));
       if (filingData === 400) return json({ message: "Companies House does not accept this company authentication code." }, 400);
       if (filingData !== 200) return json({ message: "Companies House did not answer in time" }, filingData);
-      return json({ statementOfCapital: capital });
+      return json({ statementOfCapital: capitals[0], statementsOfCapital: capitals });
     }
     if (pathname === "/api/v1/companies-house/allotment-of-shares" && request.method() === "POST") {
       filings.push(JSON.parse(request.postData()));
@@ -95,6 +95,12 @@ async function shoot(page, name) {
 
 const noSideScroll = (page) => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
 
+// The statement after the allotment in one currency: its class rows, its totals row and its unpaid line.
+const afterCapital = (page, currency = "GBP") => page.locator(`#afterTables .after-capital[data-currency="${currency}"]`);
+const afterRows = (page, currency) => afterCapital(page, currency).locator("tbody tr:not(.after-totals)");
+const afterTotals = (page, currency) => afterCapital(page, currency).locator("tbody tr.after-totals td");
+const afterUnpaid = (page, currency) => afterCapital(page, currency).locator(".after-unpaid");
+
 async function lookUp(page, { button = "Look up the company's shares" } = {}) {
   await page.locator("#companyNumber").fill("00000001");
   await page.locator("#companyAuthCode").fill("SIMCS01");
@@ -104,7 +110,10 @@ async function lookUp(page, { button = "Look up the company's shares" } = {}) {
 
 // The first allotment row's fields, by the part of their id after the row's prefix.
 const allotmentField = (page, part, row = 0) =>
-  page.locator("#allotmentRows .allotment-row").nth(row).locator(`input[id^="allot-${part}-"], textarea[id^="allot-${part}-"]`);
+  page
+    .locator("#allotmentRows .allotment-row")
+    .nth(row)
+    .locator(`input[id^="allot-${part}-"], textarea[id^="allot-${part}-"], select[id^="allot-${part}-"]`);
 
 async function fillAllotment(page, { shareClass, number, nominal, paid, unpaid = "0", consideration }, row = 0) {
   await allotmentField(page, "class", row).fill(shareClass);
@@ -126,19 +135,19 @@ for (const width of [1280, 390]) {
     await expect(page.locator("h1")).toHaveText("Return an allotment of shares");
     await expect(page.locator("p.hint[data-feature-status]")).toContainText("Status: sandbox.");
     await lookUp(page);
-    expect(reads[0]).toMatchObject({ companyAuthCode: "SIMCS01", madeUpDate: "2027-04-16" });
+    expect(reads[0]).toMatchObject({ companyAuthCode: "SIMCS01" });
     await expect(page.locator("#formView")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
     await expect(page.locator("#formView")).toContainText("Companies House charges no fee for this filing.");
     await expect(page.locator("#beforeSource")).toContainText("This is the share capital Companies House holds for the company.");
-    await expect(page.locator('#beforeRows input[id^="before-class-"]')).toHaveValue("Ordinary");
-    await expect(page.locator('#beforeRows input[id^="before-number-"]')).toHaveValue("100");
+    await expect(page.locator('#beforeTables input[id^="before-class-"]')).toHaveValue("Ordinary");
+    await expect(page.locator('#beforeTables input[id^="before-number-"]')).toHaveValue("100");
 
     await page.locator("#startDate").fill("2026-11-02");
     await fillAllotment(page, { shareClass: "Ordinary", number: "50", nominal: "1", paid: "2.5" });
-    await expect(page.locator("#afterBody tr")).toHaveCount(1);
-    await expect(page.locator("#afterBody tr td")).toHaveText(["Ordinary", "150", "150"]);
-    await expect(page.locator("#afterTotalNumber")).toHaveText("150");
-    await expect(page.locator("#afterUnpaid")).toHaveText("0");
+    await expect(afterRows(page)).toHaveCount(1);
+    await expect(afterRows(page).locator("td")).toHaveText(["Ordinary", "150", "150"]);
+    await expect(afterTotals(page).nth(1)).toHaveText("150");
+    await expect(afterUnpaid(page)).toHaveText("Total aggregate amount unpaid: 0");
     await expect(page.locator("#newClassParticulars textarea")).toHaveCount(0);
     expect(await noSideScroll(page)).toBe(true);
     await shoot(page, "cash-form");
@@ -204,17 +213,17 @@ for (const width of [1280, 390]) {
     await page.locator("#startDate").fill("2026-11-02");
     await page.locator("#endDate").fill("2026-11-09");
     await fillAllotment(page, { shareClass: "A Preference", number: "25", nominal: "0.1", paid: "0", unpaid: "0.1" });
-    await expect(page.locator("#afterBody tr")).toHaveCount(2);
-    await expect(page.locator("#afterBody tr").nth(1).locator("td")).toHaveText(["A Preference", "25", "2.5"]);
-    await expect(page.locator("#afterTotalNumber")).toHaveText("125");
-    await expect(page.locator("#afterBody tr").nth(1).locator("td").nth(1)).toHaveAttribute("data-label", "Nifer y cyfrannau");
-    await expect(page.locator("#afterTotalNominal")).toHaveAttribute("data-label", "Gwerth nominal agregedig");
-    await expect(page.locator("#afterTotalNominal")).toHaveText("102.5");
-    await expect(page.locator("#afterUnpaid")).toHaveText("2.5");
+    await expect(afterRows(page)).toHaveCount(2);
+    await expect(afterRows(page).nth(1).locator("td")).toHaveText(["A Preference", "25", "2.5"]);
+    await expect(afterTotals(page).nth(1)).toHaveText("125");
+    await expect(afterRows(page).nth(1).locator("td").nth(1)).toHaveAttribute("data-label", "Nifer y cyfrannau");
+    await expect(afterTotals(page).nth(2)).toHaveAttribute("data-label", "Gwerth nominal agregedig");
+    await expect(afterTotals(page).nth(2)).toHaveText("102.5");
+    await expect(afterUnpaid(page)).toHaveText("Cyfanswm y swm agregedig heb ei dalu: 2.5");
     const rights = page.locator("#newClassParticulars textarea");
     await expect(rights).toHaveCount(1);
     await expect(page.locator("#newClassParticulars label")).toHaveText(
-      "Manylion rhagnodedig yr hawliau sydd ynghlwm wrth y dosbarth newydd A Preference",
+      "Manylion rhagnodedig yr hawliau sydd ynghlwm wrth y dosbarth newydd A Preference (GBP)",
     );
     expect(await noSideScroll(page)).toBe(true);
 
@@ -302,9 +311,9 @@ test("two allotments, one of a class held and one of a new class, add up in the 
   await fillAllotment(page, { shareClass: "ordinary", number: "0.5", nominal: "1", paid: "1" });
   await page.getByRole("button", { name: "Add another allotment" }).click();
   await fillAllotment(page, { shareClass: "B Ordinary", number: "10", nominal: "0.01", paid: "0.01" }, 1);
-  await expect(page.locator("#afterBody tr").nth(0).locator("td")).toHaveText(["Ordinary", "100.5", "100.5"]);
-  await expect(page.locator("#afterBody tr").nth(1).locator("td")).toHaveText(["B Ordinary", "10", "0.1"]);
-  await expect(page.locator("#afterTotalNominal")).toHaveText("100.6");
+  await expect(afterRows(page).nth(0).locator("td")).toHaveText(["Ordinary", "100.5", "100.5"]);
+  await expect(afterRows(page).nth(1).locator("td")).toHaveText(["B Ordinary", "10", "0.1"]);
+  await expect(afterTotals(page).nth(2)).toHaveText("100.6");
   await page.locator("#newClassParticulars textarea").fill("One vote a share.");
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("button", { name: "File with Companies House" }).click();
@@ -323,28 +332,28 @@ test("a removed allotment leaves the statement, and the reader's correction of t
   await fillAllotment(page, { shareClass: "Ordinary", number: "50", nominal: "1", paid: "1" });
   await page.getByRole("button", { name: "Add another allotment" }).click();
   await fillAllotment(page, { shareClass: "B Ordinary", number: "10", nominal: "1", paid: "1" }, 1);
-  await expect(page.locator("#afterBody tr")).toHaveCount(2);
+  await expect(afterRows(page)).toHaveCount(2);
   await page.locator("#allotmentRows .allotment-row").nth(1).getByRole("button", { name: "Remove" }).click();
-  await expect(page.locator("#afterBody tr")).toHaveCount(1);
-  await page.locator('#beforeRows input[id^="before-number-"]').fill("200");
-  await page.locator('#beforeRows input[id^="before-nominal-"]').fill("200");
-  await expect(page.locator("#afterBody tr td")).toHaveText(["Ordinary", "250", "250"]);
+  await expect(afterRows(page)).toHaveCount(1);
+  await page.locator('#beforeTables input[id^="before-number-"]').fill("200");
+  await page.locator('#beforeTables input[id^="before-nominal-"]').fill("200");
+  await expect(afterRows(page).locator("td")).toHaveText(["Ordinary", "250", "250"]);
 });
 
 test("a company whose capital the register does not give starts with an empty class to type", async ({ page }) => {
   const filings = [];
-  await serveSite(page, { filings, capital: null });
+  await serveSite(page, { filings, capitals: [] });
   await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
   await lookUp(page);
   await expect(page.locator("#beforeSource")).toContainText("Companies House gave no statement of capital for this company.");
   await page.locator("#startDate").fill("2026-11-02");
   await fillAllotment(page, { shareClass: "Ordinary", number: "50", nominal: "1", paid: "1" });
-  await page.locator('#beforeRows input[id^="before-class-"]').fill("Ordinary");
-  await page.locator('#beforeRows input[id^="before-number-"]').fill("100");
+  await page.locator('#beforeTables input[id^="before-class-"]').fill("Ordinary");
+  await page.locator('#beforeTables input[id^="before-number-"]').fill("100");
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.locator("#statusMessagesContainer")).toContainText("Give each class of shares held before the allotment its name");
-  await page.locator('#beforeRows input[id^="before-nominal-"]').fill("100");
-  await page.locator('#beforeRows textarea[id^="before-rights-"]').fill("One vote a share.");
+  await page.locator('#beforeTables input[id^="before-nominal-"]').fill("100");
+  await page.locator('#beforeTables textarea[id^="before-rights-"]').fill("One vote a share.");
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.locator("#reviewView")).toBeVisible();
   await page.getByRole("button", { name: "File with Companies House" }).click();
@@ -364,7 +373,7 @@ for (const filingData of [500, 504]) {
     await expect(page.locator("#beforeSource")).toHaveText(
       "Submit could not read the company's share capital from Companies House. Enter each class of shares the company had before the allotment, as its register of members shows it.",
     );
-    await expect(page.locator('#beforeRows input[id^="before-class-"]')).toHaveValue("");
+    await expect(page.locator('#beforeTables input[id^="before-class-"]')).toHaveValue("");
   });
 }
 
@@ -446,4 +455,132 @@ test("a rejection shows Companies House's reason", async ({ page }) => {
   const result = page.locator("#filingResult");
   await expect(result).toContainText("Submission 000123 was rejected.", { timeout: 15000 });
   await expect(result).toContainText("9998: The statement of capital does not match the register.");
+});
+
+const USD_CAPITAL = {
+  totalAmountUnpaid: "0",
+  totalNumberOfIssuedShares: "10",
+  shareCurrency: "USD",
+  totalAggregateNominalValue: "10",
+  shares: [{ shareClass: "Dollar Ordinary", prescribedParticulars: RIGHTS, numShares: "10", aggregateNominalValue: "10" }],
+};
+
+for (const width of [1280, 390]) {
+  test(`a company with pounds capital that allots dollar shares keeps its pound classes in pounds, in English at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const filings = [];
+    await serveSite(page, { filings });
+    await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+    await lookUp(page);
+    await page.locator("#startDate").fill("2026-11-02");
+    await fillAllotment(page, { shareClass: "Ordinary", number: "50", nominal: "1", paid: "1" });
+    await allotmentField(page, "currency").selectOption("USD");
+    await expect(afterRows(page, "GBP").locator("td")).toHaveText(["Ordinary", "100", "100"]);
+    await expect(afterRows(page, "USD").locator("td")).toHaveText(["Ordinary", "50", "50"]);
+    await expect(afterCapital(page, "USD").locator("h4")).toHaveText("US dollar (USD)");
+    await page.locator("#newClassParticulars textarea").fill("One vote a share.");
+    expect(await noSideScroll(page)).toBe(true);
+    await shoot(page, "pounds-company-allots-dollars-form");
+    await page.getByRole("button", { name: "Continue" }).click();
+    await expect(page.locator("#reviewList")).toContainText("50 Ordinary shares of USD 1 each");
+    await expect(page.locator("#reviewList")).toContainText("Capital after: totals in GBP");
+    await expect(page.locator("#reviewList")).toContainText("Capital after: totals in USD");
+    await shoot(page, "pounds-company-allots-dollars-review");
+    await page.getByRole("button", { name: "File with Companies House" }).click();
+    await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
+    expect(filings[0].allotments[0]).toMatchObject({ shareClass: "Ordinary", currency: "USD" });
+    expect(filings[0].statementOfCapital).toEqual([
+      {
+        currency: "GBP",
+        totalAmountUnpaid: "0",
+        shares: [{ shareClass: "Ordinary", prescribedParticulars: RIGHTS, numShares: "100", aggregateNominalValue: "100" }],
+      },
+      {
+        currency: "USD",
+        totalAmountUnpaid: "0",
+        shares: [{ shareClass: "Ordinary", prescribedParticulars: "One vote a share.", numShares: "50", aggregateNominalValue: "50" }],
+      },
+    ]);
+  });
+
+  test(`a company with pounds and dollar capital shows a table for each and files both, in Welsh at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const filings = [];
+    await serveSite(page, { filings, capitals: [REGISTER_CAPITAL, USD_CAPITAL] });
+    await page.goto(`${SITE}/cy/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+    await lookUp(page, { button: "Chwilio am gyfrannau’r cwmni" });
+    await expect(page.locator("#beforeTables .capital-table")).toHaveCount(2);
+    await expect(page.locator("#beforeTables .capital-table select").nth(1)).toHaveValue("USD");
+    await expect(page.locator("#addCurrencyBtn")).toBeEnabled();
+    await page.locator("#startDate").fill("2026-11-02");
+    await fillAllotment(page, { shareClass: "Dollar Ordinary", number: "5", nominal: "1", paid: "1" });
+    await allotmentField(page, "currency").selectOption("USD");
+    await expect(afterRows(page, "GBP").locator("td")).toHaveText(["Ordinary", "100", "100"]);
+    await expect(afterRows(page, "USD").locator("td")).toHaveText(["Dollar Ordinary", "15", "15"]);
+    await expect(afterCapital(page, "USD").locator("h4")).toHaveText("Doler yr Unol Daleithiau (USD)");
+    await expect(afterTotals(page, "USD").nth(1)).toHaveAttribute("data-label", "Nifer y cyfrannau");
+    await expect(afterTotals(page, "USD").nth(0)).not.toHaveAttribute("data-label");
+    await expect(afterTotals(page, "USD").nth(0)).toHaveText("Cyfansymiau");
+    expect(await noSideScroll(page)).toBe(true);
+    await shoot(page, "two-currencies-form-cy");
+    await page.getByRole("button", { name: "Parhau" }).click();
+    await expect(page.locator("#reviewList")).toContainText("Cyfalaf wedyn: cyfansymiau yn USD");
+    expect(await noSideScroll(page)).toBe(true);
+    await shoot(page, "two-currencies-review-cy");
+    await page.getByRole("button", { name: "Ffeilio gyda Thŷ’r Cwmnïau" }).click();
+    await expect(page.locator("#filingResult")).toContainText("Statws cyflwyniad 000123:", { timeout: 15000 });
+    expect(filings[0].statementOfCapital.map((capital) => [capital.currency, capital.shares.map((share) => share.numShares)])).toEqual([
+      ["GBP", ["100"]],
+      ["USD", ["15"]],
+    ]);
+  });
+}
+
+test("a currency table is added for shares the register does not show, and a currency given two tables is refused", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, { filings });
+  await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+  await lookUp(page);
+  await page.getByRole("button", { name: "Add shares in another currency" }).click();
+  const euro = page.locator("#beforeTables .capital-table").nth(1);
+  await expect(euro.locator("select")).toHaveValue("EUR");
+  await euro.locator('input[id^="before-class-"]').fill("Euro Ordinary");
+  await euro.locator('input[id^="before-number-"]').fill("10");
+  await euro.locator('input[id^="before-nominal-"]').fill("10");
+  await euro.locator('textarea[id^="before-rights-"]').fill("One vote a share.");
+  await page.getByRole("button", { name: "Add shares in another currency" }).click();
+  await expect(page.locator("#addCurrencyBtn")).toBeDisabled();
+  await page.locator("#beforeTables .capital-table").nth(2).locator(":scope > .remove-row").click();
+  await page.locator("#startDate").fill("2026-11-02");
+  await fillAllotment(page, { shareClass: "Ordinary", number: "50", nominal: "1", paid: "1" });
+  await expect(afterRows(page, "EUR").locator("td")).toHaveText(["Euro Ordinary", "10", "10"]);
+  await euro.locator("select").selectOption("GBP");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#statusMessagesContainer")).toContainText(
+    "The shares held before the allotment have two tables in GBP. Put every class in that currency in one table.",
+  );
+  expect(filings).toHaveLength(0);
+});
+
+test("a company with shares in a currency this page does not file stops at the company step with a sentence", async ({ page }) => {
+  await serveSite(page, { capitals: [REGISTER_CAPITAL, { ...USD_CAPITAL, shareCurrency: "JPY" }] });
+  await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+  await page.locator("#companyNumber").fill("00000001");
+  await page.locator("#companyAuthCode").fill("SIMCS01");
+  await page.getByRole("button", { name: "Look up the company's shares" }).click();
+  await expect(page.locator("#statusMessagesContainer")).toContainText(
+    "The company has shares in JPY. This page files a return of allotment for shares in pounds sterling, euros and US dollars only.",
+  );
+  await expect(page.locator("#formView")).toBeHidden();
+});
+
+test("the register's capital is read dated today, with no company type", async ({ page }) => {
+  const reads = [];
+  await serveSite(page, { reads });
+  await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+  await lookUp(page);
+  expect(reads[0].madeUpDate).toBe(new Date().toISOString().slice(0, 10));
+  expect(reads[0]).not.toHaveProperty("companyType");
 });

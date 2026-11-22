@@ -26551,29 +26551,9 @@ cy = '''O ddyddiad'''
 hash = "e1b0adc12fbb"
 cy = '''Hyd at ddyddiad (dewisol)'''
 
-[strings."ch-allot-shares.currency-of-the-shares-77e6d7"]
-hash = "77e6d74ed187"
-cy = '''Arian cyfred y cyfrannau'''
-
-[strings."ch-allot-shares.pound-sterling-gbp-9a69fd"]
-hash = "9a69fdcfed5f"
-cy = '''Punt sterling (GBP)'''
-
-[strings."ch-allot-shares.euro-eur-de5cde"]
-hash = "de5cde137e32"
-cy = '''Ewro (EUR)'''
-
-[strings."ch-allot-shares.us-dollar-usd-cd1ba8"]
-hash = "cd1ba8494e87"
-cy = '''Doler yr Unol Daleithiau (USD)'''
-
 [strings."ch-allot-shares.shares-allotted-e26a69"]
 hash = "e26a69401d70"
 cy = '''Cyfrannau a glustnodwyd'''
-
-[strings."ch-allot-shares.give-details-of-the-shares-allotted-2cd5c2"]
-hash = "2cd5c26fb2e8"
-cy = '''Rhowch fanylion y cyfrannau a glustnodwyd, gan gynnwys cyfrannau bonws. Mae’r symiau ar gyfer pob cyfran, yn yr arian cyfred uchod.'''
 
 [strings."ch-allot-shares.add-another-allotment-d9759d"]
 hash = "d9759ddaaa7e"
@@ -26583,45 +26563,9 @@ cy = '''Ychwanegu clustnodiad arall'''
 hash = "7dc50e2f072d"
 cy = '''Cyfalaf cyfrannau cyn y clustnodiad'''
 
-[strings."ch-allot-shares.add-a-class-of-shares-4f827f"]
-hash = "4f827f71d042"
-cy = '''Ychwanegu dosbarth o gyfrannau'''
-
-[strings."ch-allot-shares.total-aggregate-amount-unpaid-before-the-d77856"]
-hash = "d778566d19df"
-cy = '''Cyfanswm y swm agregedig heb ei dalu cyn y clustnodiad'''
-
-[strings."ch-allot-shares.including-both-the-nominal-value-and-21deb1"]
-hash = "21deb14e9a8c"
-cy = '''Gan gynnwys y gwerth nominal ac unrhyw bremiwm cyfrannau. Rhowch 0 os yw’r cyfrannau wedi’u talu’n llawn.'''
-
 [strings."ch-allot-shares.statement-of-capital-after-the-allotment-24b0b9"]
 hash = "24b0b9eb59cf"
 cy = '''Datganiad cyfalaf ar ôl y clustnodiad'''
-
-[strings."ch-allot-shares.the-issued-share-capital-this-return-6273f6"]
-hash = "6273f6b167d0"
-cy = '''Y cyfalaf cyfrannau a ddyroddwyd y mae’r ffurflen hon yn ei ddatgan: y cyfalaf cynt, gan ychwanegu’r cyfrannau a glustnodwyd.'''
-
-[strings."ch-allot-shares.class-of-shares-3a3d4a"]
-hash = "3a3d4a64695d"
-cy = '''Dosbarth o gyfrannau'''
-
-[strings."ch-allot-shares.number-of-shares-d215a9"]
-hash = "d215a98eb2a3"
-cy = '''Nifer y cyfrannau'''
-
-[strings."ch-allot-shares.aggregate-nominal-value-2ba6f0"]
-hash = "2ba6f070054f"
-cy = '''Gwerth nominal agregedig'''
-
-[strings."ch-allot-shares.totals-6bd6df"]
-hash = "6bd6df68b5e9"
-cy = '''Cyfansymiau'''
-
-[strings."ch-allot-shares.total-aggregate-amount-unpaid-8b5c19"]
-hash = "8b5c19141a67"
-cy = '''Cyfanswm y swm agregedig heb ei dalu: <strong id="afterUnpaid"></strong>'''
 
 [strings."ch-allot-shares.continue-31fbef"]
 hash = "31fbef162594"
@@ -26723,10 +26667,6 @@ cy = '''Manylion rhagnodedig yr hawliau sydd ynghlwm wrth y cyfrannau'''
 hash = "45a884e91eb0"
 cy = '''Hawliau pleidleisio, hawliau i ddifidendau, hawliau i gyfalaf ar ddosraniad (gan gynnwys wrth ddirwyn i ben), ac a yw’r cyfrannau i’w hadbrynu.'''
 
-[strings."ch.allot.new-rights"]
-hash = "eade3d58aae2"
-cy = '''Manylion rhagnodedig yr hawliau sydd ynghlwm wrth y dosbarth newydd {name}'''
-
 [strings."ch.allot.before-from-register"]
 hash = "fcdbcc0b2d47"
 cy = '''Dyma’r cyfalaf cyfrannau sydd gan Dŷ’r Cwmnïau ar gyfer y cwmni. Gwiriwch ef, a’i gywiro os nad yw clustnodiad cynharach ar y gofrestr eto.'''
@@ -26798,10 +26738,6 @@ cy = '''Cyfalaf wedyn: {name}'''
 [strings."ch.allot.review-class-line"]
 hash = "84b29fe31197"
 cy = '''{number} o gyfrannau, gwerth nominal agregedig {currency} {nominal}. {rights}'''
-
-[strings."ch.allot.review-totals"]
-hash = "6c74610d7e52"
-cy = '''Cyfalaf wedyn: cyfansymiau'''
 
 [strings."ch.allot.review-totals-line"]
 hash = "3a5ee1f8f174"
@@ -27025,3 +26961,89 @@ cy = '''Dewiswch ddylanwad neu reolaeth arwyddocaol dim ond os nad oes yr un o�
 [strings."ch.notes.advances-required"]
 hash = "79e97eb9c13d"
 cy = '''Mae’r fantolen yn dangos symiau sy’n ddyledus gan gyfarwyddwyr. Rhowch res yn y nodyn ar flaensymiau i bob cyfarwyddwr sydd mewn dyled i’r cwmni.'''
+
+# == The return of allotment of shares in more than one currency: a capital table for each currency, a currency on each allotment, a statement after for each currency ==
+
+[strings."ch-allot-shares.give-details-of-the-shares-allotted-bcdba0"]
+hash = "bcdba01d5ea9"
+cy = '''Rhowch fanylion y cyfrannau a glustnodwyd, gan gynnwys cyfrannau bonws. Mae’r symiau ar gyfer pob cyfran, yn arian cyfred y cyfrannau.'''
+
+[strings."ch-allot-shares.a-company-with-shares-in-more-e93e10"]
+hash = "e93e10382dd5"
+cy = '''Mae gan gwmni sydd â chyfrannau mewn mwy nag un arian cyfred dabl ar gyfer pob arian cyfred.'''
+
+[strings."ch-allot-shares.add-shares-in-another-currency-f5af23"]
+hash = "f5af23e544fc"
+cy = '''Ychwanegu cyfrannau mewn arian cyfred arall'''
+
+[strings."ch-allot-shares.the-issued-share-capital-this-return-457401"]
+hash = "457401b514cd"
+cy = '''Y cyfalaf cyfrannau a ddyroddwyd y mae’r ffurflen hon yn ei ddatgan: y cyfalaf cynt, gan ychwanegu’r cyfrannau a glustnodwyd, mewn tabl ar gyfer pob arian cyfred.'''
+
+[strings."ch.allot.currency-eur"]
+hash = "de5cde137e32"
+cy = '''Ewro (EUR)'''
+
+[strings."ch.allot.currency-usd"]
+hash = "cd1ba8494e87"
+cy = '''Doler yr Unol Daleithiau (USD)'''
+
+[strings."ch.allot.currency-gbp"]
+hash = "9a69fdcfed5f"
+cy = '''Punt sterling (GBP)'''
+
+[strings."ch.allot.currency"]
+hash = "3ac1a9ec4fa7"
+cy = '''Arian cyfred'''
+
+[strings."ch.allot.currency-table"]
+hash = "a0c205b8e5d0"
+cy = '''Cyfrannau a ddelid cynt, mewn un arian cyfred'''
+
+[strings."ch.allot.add-class"]
+hash = "4f827f71d042"
+cy = '''Ychwanegu dosbarth o gyfrannau'''
+
+[strings."ch.allot.unpaid-before"]
+hash = "d778566d19df"
+cy = '''Cyfanswm y swm agregedig heb ei dalu cyn y clustnodiad'''
+
+[strings."ch.allot.unpaid-before-hint"]
+hash = "21deb14e9a8c"
+cy = '''Gan gynnwys y gwerth nominal ac unrhyw bremiwm cyfrannau. Rhowch 0 os yw’r cyfrannau wedi’u talu’n llawn.'''
+
+[strings."ch.allot.after-class"]
+hash = "3a3d4a64695d"
+cy = '''Dosbarth o gyfrannau'''
+
+[strings."ch.allot.after-number"]
+hash = "d215a98eb2a3"
+cy = '''Nifer y cyfrannau'''
+
+[strings."ch.allot.after-nominal"]
+hash = "2ba6f070054f"
+cy = '''Gwerth nominal agregedig'''
+
+[strings."ch.allot.after-totals"]
+hash = "6bd6df68b5e9"
+cy = '''Cyfansymiau'''
+
+[strings."ch.allot.after-unpaid"]
+hash = "4b39ac8d8999"
+cy = '''Cyfanswm y swm agregedig heb ei dalu: {amount}'''
+
+[strings."ch.allot.new-rights-currency"]
+hash = "5efdb50e2bc8"
+cy = '''Manylion rhagnodedig yr hawliau sydd ynghlwm wrth y dosbarth newydd {name} ({currency})'''
+
+[strings."ch.allot.other-currency"]
+hash = "4e5e7f419018"
+cy = '''Mae gan y cwmni gyfrannau yn {currency}. Mae’r dudalen hon yn ffeilio ffurflen i ddychwelyd cyfrannau a glustnodwyd ar gyfer cyfrannau mewn punnoedd sterling, ewros a doleri’r Unol Daleithiau yn unig.'''
+
+[strings."ch.allot.problem-currency-twice"]
+hash = "eed2aaec0bc2"
+cy = '''Mae gan y cyfrannau a ddelid cyn y clustnodiad ddau dabl yn {currency}. Rhowch bob dosbarth yn yr arian cyfred hwnnw mewn un tabl.'''
+
+[strings."ch.allot.review-totals-currency"]
+hash = "48474a98ed49"
+cy = '''Cyfalaf wedyn: cyfansymiau yn {currency}'''

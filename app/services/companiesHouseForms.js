@@ -55,6 +55,7 @@ import {
 } from "./companiesHouseOfficerAppointmentXml.js";
 import { buildOfficerChangeBody, OFFICER_CHANGE_ROLES } from "./companiesHouseOfficerChangeXml.js";
 import { buildAllotmentOfSharesBody } from "./companiesHouseAllotmentOfSharesXml.js";
+import { refuseCapitalUnlikeRegister } from "./companiesHouseAllotmentRegister.js";
 import { toMillionths, multiplyMillionths, fromMillionths } from "../../web/public/lib/share-capital.js";
 
 function extractPscVerificationStatement(body, errorMessages) {
@@ -945,7 +946,9 @@ function extractAllotmentOfShares(body, errorMessages) {
  * registers with window.companiesHouseFormPage.registerMessages, and text is the route's English.
  *
  * A form whose filing carries a document in the envelope has buildDocument as well, and a form whose
- * fields must agree with the company on the register has checkCompany.
+ * fields must agree with the company on the register has checkCompany. A form whose request states
+ * something only the gateway's company data holds has refuseAgainstRegister, which answers a refusal
+ * or undefined before anything is filed.
  */
 export const GATEWAY_FORM_BUILDERS = {
   "psc-verification-statement": {
@@ -1014,6 +1017,7 @@ export const GATEWAY_FORM_BUILDERS = {
   },
   "allotment-of-shares": {
     extractAndValidate: extractAllotmentOfShares,
+    refuseAgainstRegister: refuseCapitalUnlikeRegister,
     buildFormXml: (form) => buildAllotmentOfSharesBody(form),
   },
 };

@@ -450,6 +450,29 @@ describe("services/companiesHouseXmlGateway", () => {
       expect(parseCompanyDataResponse(xml)).toBeUndefined();
     });
 
+    test("parses every currency's capital into statementsOfCapital, and the first into statementOfCapital", () => {
+      const capital = (currency, shareClass, number) =>
+        `<Capital><TotalAmountUnpaid>0</TotalAmountUnpaid><TotalNumberOfIssuedShares>${number}</TotalNumberOfIssuedShares>` +
+        `<ShareCurrency>${currency}</ShareCurrency><TotalAggregateNominalValue>${number}</TotalAggregateNominalValue>` +
+        `<Shares><ShareClass>${shareClass}</ShareClass><PrescribedParticulars>One vote a share.</PrescribedParticulars>` +
+        `<NumShares>${number}</NumShares><AggregateNominalValue>${number}</AggregateNominalValue></Shares></Capital>`;
+      const xml = COMPANY_DATA_RESPONSE_FIXTURE.replace(
+        /<StatementOfCapital>[\s\S]*?<\/StatementOfCapital>/,
+        `<StatementOfCapital>${capital("GBP", "Ordinary", "100")}${capital("EUR", "Euro Ordinary", "10")}</StatementOfCapital>`,
+      );
+      const result = parseCompanyDataResponse(xml);
+      expect(
+        result.statementsOfCapital.map((each) => [each.shareCurrency, each.shares[0].shareClass, each.totalNumberOfIssuedShares]),
+      ).toEqual([
+        ["GBP", "Ordinary", "100"],
+        ["EUR", "Euro Ordinary", "10"],
+      ]);
+      expect(result.statementOfCapital.shareCurrency).toBe("GBP");
+      const withoutCapital = parseCompanyDataResponse(xml.replace(/<StatementOfCapital>[\s\S]*?<\/StatementOfCapital>/, ""));
+      expect(withoutCapital.statementsOfCapital).toEqual([]);
+      expect(withoutCapital.statementOfCapital).toBeUndefined();
+    });
+
     test("parses statementOfCapital in the shape buildConfirmationStatementBody's builder takes", () => {
       const result = parseCompanyDataResponse(COMPANY_DATA_RESPONSE_FIXTURE);
       expect(result.statementOfCapital).toMatchObject({

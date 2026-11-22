@@ -3061,7 +3061,8 @@ public class CompaniesHouseStack extends Stack {
                 .with(
                         "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
                         companiesHouseAccountsAsyncRequestsTable.getTableName())
-                .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
+                .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props))
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName());
         withPresenterSecretArns(companiesHouseAllotmentOfSharesPostLambdaEnv, props);
         withFilerSealKeyEnv(companiesHouseAllotmentOfSharesPostLambdaEnv, codesSealKeySecret);
         if (xmlGatewayPackageReference(props) != null) {
@@ -3248,6 +3249,10 @@ public class CompaniesHouseStack extends Stack {
                 "dynamodb:UpdateItem",
                 "dynamodb:GetItem",
                 "dynamodb:PutItem");
+        // The return of allotment reads the register's share capital before it files, and charges that read
+        // to the account's share of the lookups in one update, after reading the stop.
+        securityStateTable.grant(
+                this.companiesHouseAllotmentOfSharesPostLambda, "dynamodb:UpdateItem", "dynamodb:GetItem");
 
         FphCheckAccess.wireSenders(this, props.sharedNames().hmrc.hmrcFphCheckQueueName, Set.of());
 

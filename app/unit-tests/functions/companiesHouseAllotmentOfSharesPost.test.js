@@ -63,6 +63,8 @@ const mockPostToGateway = vi.fn();
 const mockParseGatewayResponse = vi.fn();
 vi.mock("@app/services/companiesHouseXmlGateway.js", async (importOriginal) => ({
   gatewayRequestNotDelivered: (await importOriginal()).gatewayRequestNotDelivered,
+  buildCompanyDataRequest: (await importOriginal()).buildCompanyDataRequest,
+  parseCompanyDataResponse: (await importOriginal()).parseCompanyDataResponse,
   buildFormSubmission: (...args) => mockBuildFormSubmission(...args),
   allocateSubmissionNumber: (...args) => mockAllocateSubmissionNumber(...args),
   postToGateway: (...args) => mockPostToGateway(...args),
@@ -71,6 +73,36 @@ vi.mock("@app/services/companiesHouseXmlGateway.js", async (importOriginal) => (
 }));
 
 import { gatewayFormSchemaErrors } from "../helpers/gatewayFormSchema.js";
+import { readFileSync } from "node:fs";
+
+const COMPANY_DATA_FIXTURE = readFileSync(
+  new URL("../../../fixtures/companies-house-xmlgw/CompanyDataResponse_v3-6.xml", import.meta.url),
+  "utf8",
+);
+
+// The register's capital, one Capital for each currency, in the published company data answer.
+function companyDataAnswer(capitals) {
+  const capitalXml = capitals
+    .map(
+      ({ currency, unpaid = "0", shares }) =>
+        `<Capital><TotalAmountUnpaid>${unpaid}</TotalAmountUnpaid><TotalNumberOfIssuedShares>1</TotalNumberOfIssuedShares>` +
+        `<ShareCurrency>${currency}</ShareCurrency><TotalAggregateNominalValue>1</TotalAggregateNominalValue>` +
+        shares
+          .map(
+            ([shareClass, number, nominal]) =>
+              `<Shares><ShareClass>${shareClass}</ShareClass><PrescribedParticulars>Rights</PrescribedParticulars>` +
+              `<NumShares>${number}</NumShares><AggregateNominalValue>${nominal}</AggregateNominalValue></Shares>`,
+          )
+          .join("") +
+        `</Capital>`,
+    )
+    .join("");
+  const statement = capitals.length ? `<StatementOfCapital>${capitalXml}</StatementOfCapital>` : "";
+  return COMPANY_DATA_FIXTURE.replace(/<StatementOfCapital>[\s\S]*?<\/StatementOfCapital>/, statement);
+}
+
+let registerAnswer;
+let registerErrors;
 import { ingestHandler } from "@app/functions/companies-house/companiesHouseAllotmentOfSharesPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -134,8 +166,20 @@ describe("companiesHouseAllotmentOfSharesPost ingestHandler", () => {
     mockAllocateSubmissionNumber.mockResolvedValue("00001A");
     mockResolvePresenterCredentials.mockResolvedValue({ presenterId: "presenter-id", presenterCode: "presenter-code" });
     mockBuildFormSubmission.mockReturnValue("<GovTalkMessage>submission</GovTalkMessage>");
-    mockPostToGateway.mockResolvedValue({ ok: true, status: 200, data: "<GovTalkMessage>ack</GovTalkMessage>", headers: {}, duration: 1 });
-    mockParseGatewayResponse.mockReturnValue({ errors: [], statuses: [], gatewayTimestamp: "2026-11-20T10:00:00Z", pollInterval: 1 });
+    registerAnswer = companyDataAnswer([{ currency: "GBP", shares: [["Ordinary", "100", "100"]] }]);
+    registerErrors = [];
+    mockPostToGateway.mockImplementation(async (xml) => ({
+      ok: true,
+      status: 200,
+      data: xml.includes("CompanyDataRequest") ? registerAnswer : "<GovTalkMessage>ack</GovTalkMessage>",
+      headers: {},
+      duration: 1,
+    }));
+    mockParseGatewayResponse.mockImplementation((data) =>
+      data === registerAnswer
+        ? { errors: registerErrors, statuses: [] }
+        : { errors: [], statuses: [], gatewayTimestamp: "2026-11-20T10:00:00Z", pollInterval: 1 },
+    );
   });
 
   test("an allotment for cash is built as ReturnofAllotmentShares and answered with its submission number", async () => {
@@ -289,6 +333,123 @@ describe("companiesHouseAllotmentOfSharesPost ingestHandler", () => {
     expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
+  describe("the capital before the allotment against the register", () => {
+    test("reads the register's capital with the company authentication code, dated the day the return is signed", async () => {
+      await ingestHandler(buildEvent());
+      const read = mockPostToGateway.mock.calls.map(([xml]) => xml).find((xml) => xml.includes("CompanyDataRequest"));
+      expect(read).toContain("<CompanyNumber>06846849</CompanyNumber>");
+      expect(read).toContain("<CompanyAuthenticationCode>SIMCS01</CompanyAuthenticationCode>");
+      expect(read).toContain("<MadeUpDate>2026-11-20</MadeUpDate>");
+    });
+
+    test("refuses a class whose shares before the allotment differ from the register, naming the class and both figures", async () => {
+      registerAnswer = companyDataAnswer([{ currency: "GBP", shares: [["Ordinary", "120", "120"]] }]);
+      const response = await ingestHandler(buildEvent());
+      expect(response.statusCode).toBe(400);
+      expect(response.headers["Content-Type"]).toBe("application/json");
+      expect(parseResponseBody(response)).toMatchObject({
+        message:
+          "Before the allotment the GBP Ordinary shares are 100 shares of aggregate nominal value 100 in this return, " +
+          "and 120 shares of aggregate nominal value 120 on the Companies House register.",
+        reason: "capital-before-differs-from-register",
+      });
+      expect(mockBuildFormSubmission).not.toHaveBeenCalled();
+      expect(mockAllocateSubmissionNumber).not.toHaveBeenCalled();
+    });
+
+    test("refuses a class the register holds that the return leaves out, and a currency the register does not hold", async () => {
+      registerAnswer = companyDataAnswer([
+        {
+          currency: "GBP",
+          shares: [
+            ["Ordinary", "100", "100"],
+            ["B Ordinary", "5", "5"],
+          ],
+        },
+      ]);
+      const left = await ingestHandler(buildEvent());
+      expect(parseResponseBody(left).message).toContain(
+        "the GBP B Ordinary shares are 0 shares of aggregate nominal value 0 in this return, and 5 shares of aggregate nominal value 5 on the Companies House register",
+      );
+      registerAnswer = companyDataAnswer([{ currency: "EUR", shares: [["Ordinary", "100", "100"]] }]);
+      const other = await ingestHandler(buildEvent());
+      expect(other.statusCode).toBe(400);
+      expect(parseResponseBody(other).mismatches).toEqual([
+        "Before the allotment the EUR Ordinary shares are 0 shares of aggregate nominal value 0 in this return, and 100 shares of aggregate nominal value 100 on the Companies House register",
+        "Before the allotment the GBP Ordinary shares are 100 shares of aggregate nominal value 100 in this return, and 0 shares of aggregate nominal value 0 on the Companies House register",
+      ]);
+      expect(mockBuildFormSubmission).not.toHaveBeenCalled();
+    });
+
+    test("refuses a total unpaid before the allotment that differs from the register's", async () => {
+      registerAnswer = companyDataAnswer([{ currency: "GBP", unpaid: "10", shares: [["Ordinary", "100", "100"]] }]);
+      const response = await ingestHandler(buildEvent());
+      expect(parseResponseBody(response).message).toBe(
+        "Before the allotment the total amount unpaid in GBP is 0 in this return, and 10 on the Companies House register.",
+      );
+    });
+
+    test("files a new class onto a company the register holds no shares for, and a class named in other letter case", async () => {
+      registerAnswer = companyDataAnswer([]);
+      const newClass = { ...ORDINARY, numShares: "50", aggregateNominalValue: "50" };
+      expect(
+        (await ingestHandler(buildEvent({ body: buildFormBody({ statementOfCapital: [{ ...CAPITAL, shares: [newClass] }] }) }))).statusCode,
+      ).toBe(201);
+      registerAnswer = companyDataAnswer([{ currency: "GBP", shares: [["ORDINARY", "100", "100"]] }]);
+      expect((await ingestHandler(buildEvent())).statusCode).toBe(201);
+    });
+
+    test("two currencies each agree with the register's capital in that currency", async () => {
+      registerAnswer = companyDataAnswer([
+        { currency: "GBP", shares: [["Ordinary", "100", "100"]] },
+        { currency: "EUR", shares: [["Euro Ordinary", "10", "10"]] },
+      ]);
+      const euro = {
+        currency: "EUR",
+        totalAmountUnpaid: "0",
+        shares: [{ ...ORDINARY, shareClass: "Euro Ordinary", numShares: "10", aggregateNominalValue: "10" }],
+      };
+      const response = await ingestHandler(buildEvent({ body: buildFormBody({ statementOfCapital: [CAPITAL, euro] }) }));
+      expect(response.statusCode, JSON.stringify(parseResponseBody(response))).toBe(201);
+    });
+
+    test("answers the company authentication code's sentence when Companies House refuses the code, and sends nothing", async () => {
+      registerErrors = [{ number: "9999", text: "Invalid CompanyAuthenticationCode" }];
+      const response = await ingestHandler(buildEvent());
+      expect(response.statusCode).toBe(400);
+      expect(parseResponseBody(response).message).toBe(
+        "Companies House does not accept this company authentication code. Check the 6 to 8 character code and enter it again.",
+      );
+      expect(mockBuildFormSubmission).not.toHaveBeenCalled();
+    });
+
+    test("answers a JSON 502 and sends nothing when the register's capital cannot be read", async () => {
+      registerErrors = [{ number: "502", text: "Service unavailable" }];
+      expect((await ingestHandler(buildEvent())).statusCode).toBe(502);
+      registerErrors = [];
+      mockPostToGateway.mockRejectedValueOnce(new Error("socket hang up"));
+      const response = await ingestHandler(buildEvent());
+      expect(response.statusCode).toBe(502);
+      expect(parseResponseBody(response).message).toBe(
+        "Companies House did not give the company's share capital, so the return was not sent",
+      );
+      expect(mockBuildFormSubmission).not.toHaveBeenCalled();
+    });
+
+    test("answers a JSON 429 and reads nothing when the account has used its share of the lookups", async () => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      mockSend.mockImplementation(async (cmd) => {
+        if (cmd instanceof lib.QueryCommand) return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
+        if (cmd instanceof lib.UpdateCommand && String(cmd.input.TableName).includes("security-state"))
+          return { Attributes: { hits: 151 } };
+        return {};
+      });
+      const response = await ingestHandler(buildEvent());
+      expect(response.statusCode).toBe(429);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+  });
+
   test("a nominal value the schema takes is accepted, at eight significant digits and at a millionth", async () => {
     for (const [nominalValue, numShares] of [
       ["99999999", "1"],
@@ -296,6 +457,7 @@ describe("companiesHouseAllotmentOfSharesPost ingestHandler", () => {
       ["0.000001", "1000000"],
     ]) {
       const total = nominalValue === "99999999" ? "99999999" : nominalValue === "1234567.5" ? "2469135" : "1";
+      registerAnswer = companyDataAnswer([]);
       const body = buildFormBody({
         allotments: [{ ...ALLOTMENT, nominalValue, numShares, amountPaidPerShare: nominalValue }],
         statementOfCapital: [{ ...CAPITAL, shares: [{ ...ORDINARY, numShares, aggregateNominalValue: total }] }],
@@ -310,7 +472,9 @@ describe("companiesHouseAllotmentOfSharesPost ingestHandler", () => {
   });
 
   test("answers 500 in JSON and marks the filing failed when the gateway rejects the envelope", async () => {
-    mockParseGatewayResponse.mockReturnValue({ errors: [{ number: "604", text: "Invalid Request" }], statuses: [] });
+    mockParseGatewayResponse.mockImplementation((data) =>
+      data === registerAnswer ? { errors: [], statuses: [] } : { errors: [{ number: "604", text: "Invalid Request" }], statuses: [] },
+    );
     const response = await ingestHandler(buildEvent());
     expect(response.statusCode).toBe(500);
     expect(parseResponseBody(response).message).toBe("Companies House rejected the return of allotment of shares submission envelope");

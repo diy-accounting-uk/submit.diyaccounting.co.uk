@@ -114,19 +114,10 @@
             </div>
           </fieldset>
 
-          <div class="form-group">
-            <label for="currency">Currency of the shares</label>
-            <select id="currency" name="currency">
-              <option value="GBP">Pound sterling (GBP)</option>
-              <option value="EUR">Euro (EUR)</option>
-              <option value="USD">US dollar (USD)</option>
-            </select>
-          </div>
-
           <fieldset class="form-group">
             <legend>Shares allotted</legend>
             <p class="hint">
-              Give details of the shares allotted, including bonus shares. Amounts are for each share, in the currency above.
+              Give details of the shares allotted, including bonus shares. Amounts are for each share, in the currency of the shares.
             </p>
             <div id="allotmentRows"></div>
             <button type="button" id="addAllotmentBtn" class="btn-small">Add another allotment</button>
@@ -135,38 +126,17 @@
           <fieldset class="form-group">
             <legend>Share capital before the allotment</legend>
             <p id="beforeSource" class="hint"></p>
-            <div id="beforeRows"></div>
-            <button type="button" id="addClassBtn" class="btn-small">Add a class of shares</button>
-            <div class="form-group">
-              <label for="unpaidBefore">Total aggregate amount unpaid before the allotment</label>
-              <p id="unpaidBefore-hint" class="hint">
-                Including both the nominal value and any share premium. Enter 0 if the shares are fully paid.
-              </p>
-              <input type="text" id="unpaidBefore" name="unpaidBefore" inputmode="decimal" value="0" aria-describedby="unpaidBefore-hint" />
-            </div>
+            <p class="hint">A company with shares in more than one currency has a table for each currency.</p>
+            <div id="beforeTables"></div>
+            <button type="button" id="addCurrencyBtn" class="btn-small">Add shares in another currency</button>
           </fieldset>
 
           <section id="afterSection" class="form-group" aria-live="polite">
             <h3>Statement of capital after the allotment</h3>
-            <p class="hint">The issued share capital this return states: the capital before, with the shares allotted added.</p>
-            <table id="afterTable" class="results-table">
-              <thead>
-                <tr>
-                  <th scope="col">Class of shares</th>
-                  <th scope="col" class="amount">Number of shares</th>
-                  <th scope="col" class="amount">Aggregate nominal value</th>
-                </tr>
-              </thead>
-              <tbody id="afterBody"></tbody>
-              <tfoot>
-                <tr>
-                  <th scope="row">Totals</th>
-                  <td id="afterTotalNumber" class="amount"></td>
-                  <td id="afterTotalNominal" class="amount"></td>
-                </tr>
-              </tfoot>
-            </table>
-            <p>Total aggregate amount unpaid: <strong id="afterUnpaid"></strong></p>
+            <p class="hint">
+              The issued share capital this return states: the capital before, with the shares allotted added, in a table for each currency.
+            </p>
+            <div id="afterTables"></div>
             <div id="newClassParticulars"></div>
           </section>
           <button type="submit" id="continueBtn" class="btn">Continue</button>

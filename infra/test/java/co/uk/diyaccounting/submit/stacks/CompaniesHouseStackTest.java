@@ -270,6 +270,17 @@ class CompaniesHouseStackTest {
     }
 
     @Test
+    void theAllotmentOfSharesRouteChargesTheAccountsShareAndReadsTheStopAndWritesNoStop() {
+        Template template = Template.fromStack(synthCompaniesHouseStack());
+        var names = SubmitSharedNames.forDocs().companiesHouse;
+        var actions = actionsOnRoleFor(
+                template,
+                names.companiesHouseAllotmentOfSharesPostIngestLambdaFunctionName,
+                SubmitSharedNames.forDocs().data.securityStateTableName);
+        assertEquals(java.util.Set.of("dynamodb:GetItem", "dynamodb:UpdateItem"), actions);
+    }
+
+    @Test
     void everyLookupOnTheSharedKeyCanChargeItsCounterAndReadAndWriteTheStopACompaniesHouse429Sets() {
         Template template = Template.fromStack(synthCompaniesHouseStack());
         var names = SubmitSharedNames.forDocs().companiesHouse;

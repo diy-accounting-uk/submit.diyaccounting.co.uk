@@ -65,6 +65,13 @@ vi.mock("@app/services/companiesHouseCache.js", () => ({
   cachedCompaniesHouseGet: vi.fn(async () => ({ ok: true, data: { jurisdiction: "england-wales" } })),
 }));
 
+// The allotment's capital check against the register has its own tests with the handler; here the
+// register agrees, so the shared route is what each case exercises.
+vi.mock("@app/services/companiesHouseAllotmentRegister.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  refuseCapitalUnlikeRegister: async () => undefined,
+}));
+
 import { fileCompaniesHouseForm } from "@app/services/companiesHouseFormFiling.js";
 import { GATEWAY_FORM_BUILDERS } from "@app/services/companiesHouseForms.js";
 import { findMatchingActivitiesForUrlPath } from "@app/services/bundleManagement.js";

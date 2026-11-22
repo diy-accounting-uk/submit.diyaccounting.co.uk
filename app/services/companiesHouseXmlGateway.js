@@ -622,10 +622,22 @@ function parseShareClassElement(sharesElement) {
 }
 
 function parseStatementOfCapitalElement(statementOfCapitalElement) {
+  if (!statementOfCapitalElement) {
+    return undefined;
+  }
   const capitalElement = firstElement(statementOfCapitalElement, "Capital");
   if (!capitalElement) {
     return undefined;
   }
+  return parseCapitalElement(capitalElement);
+}
+
+// Every Capital of a statement of capital, one for each currency the company's shares are in.
+function parseStatementsOfCapitalElement(statementOfCapitalElement) {
+  return statementOfCapitalElement ? allElements(statementOfCapitalElement, "Capital").map(parseCapitalElement) : [];
+}
+
+function parseCapitalElement(capitalElement) {
   return {
     totalAmountUnpaid: firstElementText(capitalElement, "TotalAmountUnpaid"),
     totalNumberOfIssuedShares: firstElementText(capitalElement, "TotalNumberOfIssuedShares"),
@@ -705,6 +717,7 @@ export function parseCompanyDataResponse(xml) {
     registeredEmailAddress: firstElementText(companyDataElement, "RegisteredEmailAddress"),
     sicCodes: sicCodesElement ? allElements(sicCodesElement, "SICCode").map((element) => element.textContent) : [],
     statementOfCapital: parseStatementOfCapitalElement(firstElement(companyDataElement, "StatementOfCapital")),
+    statementsOfCapital: parseStatementsOfCapitalElement(firstElement(companyDataElement, "StatementOfCapital")),
     shareholdings: allElements(companyDataElement, "Shareholdings").map(parseShareholdingElement),
     officers: [
       ...allElements(companyDataElement, "Director").map((element) => parseOfficerElement(element, "director")),
