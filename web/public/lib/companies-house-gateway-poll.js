@@ -62,8 +62,8 @@
   }
 
   // A Companies House status code in the word a sentence about the submission reads it as, in the
-  // chosen language. The gateway answers ACCEPT, REJECT, PENDING or PARKED; any code that is not
-  // settled reads as waiting, as the polls treat it.
+  // chosen language, or null for a code with no word here. The gateway answers ACCEPT, REJECT,
+  // PENDING or PARKED.
   function statusWord(statusCode) {
     const words = {
       ACCEPT: () => siteText("ch.gateway.status-accept", "accepted"),
@@ -71,8 +71,43 @@
       PARKED: () => siteText("ch.gateway.status-parked", "held for a check by hand"),
       PENDING: () => siteText("ch.gateway.status-pending", "waiting to be checked"),
     };
-    return (words[statusCode] ?? words.PENDING)();
+    return words[statusCode] ? words[statusCode]() : null;
   }
 
-  window.companiesHouseGatewayPoll = { pollGatewayUntilSettled, pendingNote, mayCheckAgain, isSettled, statusWord, MAX_GATEWAY_POLLS };
+  // The sentence about a submission's status and its values: the page's template, with {number} and
+  // {status}, for a code with a word; for any other code, a sentence of its own that gives the code.
+  function statusSentence(template, number, statusCode) {
+    const word = statusWord(statusCode);
+    if (word !== null) return [template, { number, status: word }];
+    return [
+      siteText("ch.gateway.status-unknown", "Companies House answered {code} for submission {number}."),
+      { number, code: String(statusCode) },
+    ];
+  }
+
+  // The sentence for a status code with no word here, with the code and the submission number in place.
+  function unknownStatusText(number, statusCode) {
+    return siteText("ch.gateway.status-unknown", "Companies House answered {code} for submission {number}.", {
+      number,
+      code: String(statusCode),
+    });
+  }
+
+  // statusSentence's sentence with its values in place, for a page that shows it as plain text.
+  function statusText(template, number, statusCode) {
+    const [text, values] = statusSentence(template, number, statusCode);
+    return text.replace(/\{([a-z]+)\}/g, (whole, name) => (name in values ? String(values[name]) : whole));
+  }
+
+  window.companiesHouseGatewayPoll = {
+    pollGatewayUntilSettled,
+    pendingNote,
+    mayCheckAgain,
+    isSettled,
+    statusWord,
+    statusSentence,
+    statusText,
+    unknownStatusText,
+    MAX_GATEWAY_POLLS,
+  };
 })();

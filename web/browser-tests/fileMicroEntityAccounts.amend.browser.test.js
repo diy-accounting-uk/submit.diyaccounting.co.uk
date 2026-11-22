@@ -184,6 +184,23 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     await expect(page.locator("#officeAddressLine1")).toBeEditable();
   });
 
+  test("says under the office fields when the register's office today differs from the filed office", async ({ page }) => {
+    await openAmend(page, accountsReceipt(microCase.xhtml));
+    await expect(page.locator("#officeHint")).toHaveText("Filled in from the accounts you filed. Change a part to correct it.");
+    await expect(page.locator("#officeDiffersHint")).toBeVisible();
+    await expect(page.locator("#officeDiffersHint")).toHaveText(
+      "The Companies House register gives the registered office today as 1 Test Street, London, EC1A 1AA. The revised accounts keep the office the filed accounts state unless you change it.",
+    );
+    await expect(page.locator("#officeAddressLine1")).toHaveValue(MICRO_TEST_CASE.registeredOffice.addressLine1);
+  });
+
+  test("says in Welsh when the register's office today differs from the filed office", async ({ page }) => {
+    await openAmend(page, accountsReceipt(microCase.xhtml), { welsh: true });
+    await expect(page.locator("#officeDiffersHint")).toContainText(
+      "Mae cofrestr Tŷ’r Cwmnïau yn rhoi’r swyddfa gofrestredig heddiw fel 1 Test Street, London, EC1A 1AA.",
+    );
+  });
+
   for (const [label, width] of Object.entries(WIDTHS)) {
     test(`fills the form from the document filed and shows the revision section (${label})`, async ({ page }) => {
       await openAmend(page, accountsReceipt(microCase.xhtml), { width });
@@ -415,7 +432,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
 
   const record = `filings.html?receipt=${encodeURIComponent(RECEIPT_NAME)}`;
   const refusals = [
-    ["a receipt that is not accounts", { kind: "company-tax-return" }, "not an accounts filing", "/hmrc/receipt/receipts.html"],
+    ["a receipt that is not accounts", { kind: "company-tax-return" }, "not an accounts filing", "../hmrc/receipt/receipts.html"],
     ["accounts Companies House did not accept", { statusCode: "REJECT" }, "did not accept those accounts", record],
     ["accounts filed with a Company Tax Return", { jointFilingId: "joint-1" }, "revise them on the Company Tax Return page", record],
     ["accounts that are already revised accounts", { amended: true }, "already revised accounts", record],
@@ -432,9 +449,17 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     });
   }
 
+  test("the status line ships hidden, so an amend address never paints the page's own status", () => {
+    for (const language of ["", "cy/"]) {
+      const html = fs.readFileSync(path.join(process.cwd(), `web/public/${language}companies-house/fileMicroEntityAccounts.html`), "utf-8");
+      expect(html).toMatch(/<p[^>]*\sdata-feature-status="production"[^>]*\shidden\s*>/);
+    }
+  });
+
   test("states the revised accounts activity's status on a refusal too", async ({ page }) => {
     await openAmend(page, accountsReceipt(microCase.xhtml, { statusCode: "REJECT" }));
     await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("did not accept those accounts");
+    await expect(page.locator("[data-feature-status]")).toBeVisible();
     await expect(page.locator("[data-feature-status]")).toHaveText(
       "Status: preview. Revised accounts are a preview here: nothing you file reaches the live Companies House register.",
     );
@@ -491,7 +516,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
       "We could not open those accounts to revise. Open the filing again from your receipts.",
     );
     await expect(status.locator(".status-message-next")).toHaveText("Back to your receipts");
-    await expect(status.locator(".status-message-next")).toHaveAttribute("href", "/hmrc/receipt/receipts.html");
+    await expect(status.locator(".status-message-next")).toHaveAttribute("href", "../hmrc/receipt/receipts.html");
     await expect(page.locator("#formView")).toBeHidden();
     await screenshotAtBothWidths(page, "micro-amend-refusal-cannot-open");
   });
@@ -539,6 +564,7 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     await openAmend(page, accountsReceipt(microCase.xhtml));
     await serveFile(page, "**/lib/approval-date-check.js", "lib/approval-date-check.js");
     await serveFile(page, "**/lib/balance-sheet-check.js", "lib/balance-sheet-check.js");
+    await serveFile(page, "**/lib/accounts-notes-check.js", "lib/accounts-notes-check.js");
     await expect(page.locator("#revisionSection")).toBeVisible();
     for (const statement of await page.locator('input[type="checkbox"][id^="statement"]').all()) await statement.check();
     await page.evaluate(() => {

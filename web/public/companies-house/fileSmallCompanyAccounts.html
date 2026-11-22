@@ -31,7 +31,7 @@
     </header>
 
     <main id="mainContent">
-      <p class="hint" data-feature-status="production" data-companies-house-service="xml-gateway">
+      <p class="hint" data-feature-status="production" data-companies-house-service="xml-gateway" hidden>
         <strong>Status: production.</strong> Accounts you file here reach the live Companies House register.
       </p>
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
@@ -198,6 +198,7 @@
               <label for="officeCountry">Country (optional)</label>
               <input type="text" id="officeCountry" name="officeCountry" autocomplete="off" />
             </div>
+            <p id="officeDiffersHint" class="hint" hidden></p>
           </section>
           <section class="form-section">
             <h3>What Companies House receives</h3>

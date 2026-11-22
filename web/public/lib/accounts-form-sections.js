@@ -19,6 +19,12 @@
     country: "officeCountry",
   };
 
+  // page-chrome.js gives the text in the chosen language; without it the English stands, with its values.
+  function siteText(id, english, values) {
+    if (window.siteText) return window.siteText(id, english, values);
+    return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
+  }
+
   function boxValue(id) {
     return document.getElementById(id).value.trim();
   }
@@ -27,6 +33,51 @@
     Object.entries(OFFICE_BOXES).forEach(([part, id]) => {
       document.getElementById(id).value = office?.[part] ?? "";
     });
+  }
+
+  // The parts two offices are compared on: the register and a filed document write the country in
+  // different words, so it is left out, and a postcode is compared without its spaces.
+  function officeKey(office) {
+    return ["addressLine1", "addressLine2", "addressLine3", "cityOrTown", "countyRegion", "postalCode"]
+      .map((part) => {
+        const text = String(office?.[part] ?? "")
+          .trim()
+          .replace(/\s+/g, " ")
+          .toLowerCase();
+        return part === "postalCode" ? text.replace(/ /g, "") : text;
+      })
+      .join("|");
+  }
+
+  function officeLine(office) {
+    return Object.keys(OFFICE_BOXES)
+      .map((part) => String(office?.[part] ?? "").trim())
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  // On a revision: fill the office the filed accounts state, and say under the office fields when the
+  // register's office today differs from it. Without a filed office the register's office fills them.
+  function fillFiledRegisteredOffice(filedOffice, registerOffice) {
+    const differs = document.getElementById("officeDiffersHint");
+    if (!filedOffice) {
+      fillRegisteredOffice(registerOffice);
+      differs.hidden = true;
+      return;
+    }
+    fillRegisteredOffice(filedOffice);
+    document.getElementById("officeHint").textContent = siteText(
+      "ch.office.filled-from-filed",
+      "Filled in from the accounts you filed. Change a part to correct it.",
+    );
+    differs.hidden = !registerOffice?.addressLine1 || officeKey(filedOffice) === officeKey(registerOffice);
+    differs.textContent = differs.hidden
+      ? ""
+      : siteText(
+          "ch.office.differs-from-register",
+          "The Companies House register gives the registered office today as {office}. The revised accounts keep the office the filed accounts state unless you change it.",
+          { office: officeLine(registerOffice) },
+        );
   }
 
   function readRegisteredOffice() {
@@ -70,6 +121,7 @@
 
   window.accountsFormSections = {
     fillRegisteredOffice,
+    fillFiledRegisteredOffice,
     readRegisteredOffice,
     showAccountantsReportFields,
     readAccountantsReport,
