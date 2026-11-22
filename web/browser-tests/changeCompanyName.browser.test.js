@@ -37,8 +37,18 @@ const LETTER = {
 // The real site from disk, signed in with the resident Ltd bundle, and the Companies House routes
 // answered here. Each filing request's body is recorded, and an accepted filing gives the company
 // its new name in the profile the next read answers.
-async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT", rejections: [] }, filingAnswer } = {}) {
-  let registerProfile = { ...PROFILE };
+async function serveSite(
+  page,
+  {
+    filings = [],
+    outcome = { statusCode: "ACCEPT", rejections: [] },
+    filingAnswer,
+    profile = PROFILE,
+    searchItems = [],
+    searches = [],
+  } = {},
+) {
+  let registerProfile = { ...profile };
   await page.addInitScript(() => {
     try {
       localStorage.setItem("consent.analytics", "declined");
@@ -62,6 +72,10 @@ async function serveSite(page, { filings = [], outcome = { statusCode: "ACCEPT",
     if (pathname === "/api/v1/companies-house/forms/change-of-name/000123") {
       if (outcome.statusCode === "ACCEPT") registerProfile = { ...registerProfile, companyName: filings.at(-1).proposedName };
       return json({ submissionNumber: "000123", ...outcome });
+    }
+    if (pathname === "/api/v1/companies-house/search") {
+      searches.push(url.searchParams.get("q"));
+      return json({ totalResults: searchItems.length, itemsPerPage: 20, startIndex: 0, items: searchItems });
     }
     if (pathname.startsWith("/api/")) return json({});
     const filePath = path.join(PUBLIC_ROOT, pathname === "/" ? "index.html" : pathname);
@@ -112,7 +126,7 @@ for (const width of [1280, 390]) {
     );
     await expect(page.locator("#formView")).toContainText("It costs £20 to file a change of name online, or £85 for the same-day service.");
     await expect(page.locator("#formView")).toContainText("This site does not file a real change of name until it can take the fee.");
-    await expect(page.getByLabel("By a special resolution")).toBeChecked();
+    await expect(page.locator("#methodGroup")).toContainText("This files a change of name by a special resolution.");
     await expect(page.locator("#letterGroup")).toBeHidden();
     expect(await noSideScroll(page)).toBe(true);
     await shoot(page, "form");
@@ -223,20 +237,24 @@ test("the same-day service shows its fee on the review and is sent", async ({ pa
   expect(filings[0]).toMatchObject({ sameDay: true });
 });
 
-test("a change by the articles asks for no resolution date and sends none", async ({ page }) => {
+test("the page files a change by special resolution only, and quotes GOV.UK on why", async ({ page }) => {
   const filings = [];
   await serveSite(page, { filings });
   await page.goto(`${SITE}/companies-house/changeCompanyName.html`, { waitUntil: "networkidle" });
-  await lookUpAndFill(page, { lookUp: "Look up the company", proposedName: "BRAMWELL TENNANT TRADING LIMITED", meetingDate: null });
-  await page.getByLabel("By permission given in the company's articles of association").check();
-  await expect(page.locator("#meetingDateGroup")).toBeHidden();
+  await lookUpAndFill(page, { lookUp: "Look up the company", proposedName: "BRAMWELL TENNANT TRADING LIMITED" });
+  await expect(page.locator('input[name="method"]')).toHaveCount(0);
+  await expect(page.locator("#methodGroup blockquote")).toContainText(
+    "You can use the Companies House online service to file changes of name by special resolution only.",
+  );
+  await expect(page.locator("#methodGroup blockquote a")).toHaveAttribute(
+    "href",
+    "https://www.gov.uk/make-changes-to-your-limited-company/company-name",
+  );
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.locator("#reviewList")).toContainText("By permission given in the company's articles of association");
-  await expect(page.locator("#reviewList")).not.toContainText("Date the resolution was passed");
+  await expect(page.locator("#reviewList")).toContainText("By a special resolution");
   await page.getByRole("button", { name: "File with Companies House" }).click();
   await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
-  expect(filings[0]).toMatchObject({ method: "articles" });
-  expect(filings[0]).not.toHaveProperty("meetingDate");
+  expect(filings[0]).toMatchObject({ method: "resolution", meetingDate: "2026-11-20" });
 });
 
 test("a letter of no objection to a same-as name is sent as that kind", async ({ page }) => {
@@ -288,9 +306,13 @@ test("the present name, a missing or future resolution date, a letter that is no
   await proceed.click();
   await expect(messages).toContainText("The new name is the name the company already has.");
 
-  await page.locator("#proposedName").fill("AB");
-  await proceed.click();
-  await expect(messages).toContainText("The new name must be 3 to 160 characters.");
+  for (const refused of ["AB", "BRAMWELL_TENNANT LIMITED", "BRAMWELL TENNANT 🚀 LIMITED"]) {
+    await page.locator("#proposedName").fill(refused);
+    await proceed.click();
+    await expect(messages).toContainText(
+      "The new name must be 3 to 160 characters, using only letters, numbers, spaces and the punctuation Companies House allows in a company name.",
+    );
+  }
 
   await page.locator("#proposedName").fill("BRAMWELL TENNANT TRADING LIMITED");
   await proceed.click();
@@ -341,4 +363,105 @@ test("once the filing is sent the page holds the letter and the authentication c
   expect(held.record).not.toContain("SIMCS01");
   expect(held.values).not.toContain("SIMCS01");
   expect(held.files).toBe(0);
+});
+
+test("a name the route refuses by id shows in the page's language", async ({ page }) => {
+  await serveSite(page, {
+    filingAnswer: {
+      status: 400,
+      body: {
+        message: "Invalid proposedName - must be 3 to 160 characters that Companies House allows in a company name",
+        messageIds: ["ch.name.name-characters"],
+      },
+    },
+  });
+  await page.goto(`${SITE}/cy/companies-house/changeCompanyName.html`, { waitUntil: "networkidle" });
+  await page.locator("#companyNumber").fill("00000001");
+  await page.locator("#companyLookupBtn").click();
+  await page.locator("#proposedName").fill("BRAMWELL TENNANT TRADING LIMITED");
+  await page.locator("#meetingDate").fill("2026-11-02");
+  await page.locator("#noticeGiven").check();
+  await page.locator("#companyAuthCode").fill("SIMCS01");
+  await page.locator("#continueBtn").click();
+  await page.locator("#submitFilingBtn").click();
+
+  await expect(page.locator("#filingResult")).toHaveText(
+    "Rhaid i’r enw newydd fod rhwng 3 a 160 nod, gan ddefnyddio llythrennau, rhifau, bylchau a’r atalnodi y mae Tŷ’r Cwmnïau yn ei ganiatáu mewn enw cwmni yn unig.",
+  );
+});
+
+test("a resolution passed today in the United Kingdom is taken between midnight and 1am in summer", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-07-01T23:30:00Z"));
+  const filings = [];
+  await serveSite(page, { filings });
+  await page.goto(`${SITE}/companies-house/changeCompanyName.html`, { waitUntil: "networkidle" });
+  await lookUpAndFill(page, { lookUp: "Look up the company", proposedName: "BRAMWELL TENNANT TRADING LIMITED", meetingDate: "2026-07-02" });
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#reviewView")).toBeVisible();
+  await page.locator("#submitFilingBtn").click();
+
+  await expect.poll(() => filings.length).toBe(1);
+  expect(filings[0]).toMatchObject({ meetingDate: "2026-07-02", dateSigned: "2026-07-02" });
+});
+
+test("a name ending in neither LIMITED nor LTD is filed with a warning, and nothing is refused", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, { filings });
+  await page.goto(`${SITE}/companies-house/changeCompanyName.html`, { waitUntil: "networkidle" });
+  await lookUpAndFill(page, { lookUp: "Look up the company", proposedName: "BRAMWELL TENNANT TRADING" });
+  await expect(page.locator("#walesNote")).toBeHidden();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#nameEndingWarning")).toHaveText(
+    "The new name does not end in LIMITED or LTD. A private limited company's name usually must. Check it before you file.",
+  );
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect.poll(() => filings.length).toBe(1);
+  expect(filings[0]).toMatchObject({ proposedName: "BRAMWELL TENNANT TRADING" });
+});
+
+test("a company registered in Wales is told its name may end in CYFYNGEDIG or CYF, and such a name gets no warning", async ({ page }) => {
+  await serveSite(page, { profile: { ...PROFILE, jurisdiction: "wales" } });
+  await page.goto(`${SITE}/cy/companies-house/changeCompanyName.html`, { waitUntil: "networkidle" });
+  await expect(page.locator("#proposedName-hint")).toContainText("CYFYNGEDIG");
+  await page.locator("#companyNumber").fill("00000001");
+  await page.locator("#companyLookupBtn").click();
+  await expect(page.locator("#walesNote")).toBeVisible();
+  await page.locator("#proposedName").fill("Masnachu Bramwell Tennant Cyf");
+  await page.locator("#meetingDate").fill("2026-11-20");
+  await page.locator("#noticeGiven").check();
+  await page.locator("#companyAuthCode").fill("SIMCS01");
+  await page.locator("#continueBtn").click();
+  await expect(page.locator("#reviewView")).toBeVisible();
+  await expect(page.locator("#nameEndingWarning")).toBeHidden();
+});
+
+test("a name another company holds is caught before sending, and asks for that company's letter of no objection", async ({ page }) => {
+  const filings = [];
+  const searches = [];
+  await serveSite(page, {
+    filings,
+    searches,
+    searchItems: [
+      { companyNumber: "09999999", title: "BRAMWELL TENNANT TRADING LTD", companyStatus: "active" },
+      { companyNumber: "08888888", title: "BRAMWELL TENNANT TRADING HOLDINGS LIMITED", companyStatus: "active" },
+    ],
+  });
+  await page.goto(`${SITE}/companies-house/changeCompanyName.html`, { waitUntil: "networkidle" });
+  await lookUpAndFill(page, { lookUp: "Look up the company", proposedName: "Bramwell Tennant Trading Limited" });
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  await expect(page.locator("#statusMessagesContainer")).toContainText(
+    "Companies House lists BRAMWELL TENNANT TRADING LTD (09999999) with this name.",
+  );
+  await expect(page.locator("#letterGroup")).toBeVisible();
+  await expect(page.locator("#letterKind")).toHaveValue("same-as-no-objection");
+  await expect(page.locator("#formView")).toBeVisible();
+
+  await page.locator("#letterFile").setInputFiles(LETTER);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#reviewView")).toBeVisible();
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect.poll(() => filings.length).toBe(1);
+  expect(filings[0].supportingDocument).toMatchObject({ kind: "same-as-no-objection" });
+  expect(searches).toEqual(["BRAMWELL TENNANT TRADING LIMITED"]);
 });

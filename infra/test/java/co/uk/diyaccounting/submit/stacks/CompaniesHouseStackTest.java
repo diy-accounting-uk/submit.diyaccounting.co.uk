@@ -367,16 +367,20 @@ class CompaniesHouseStackTest {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
-        String fileName = stack.companiesHousePscCessationPostLambdaProps.ingestFunctionName();
-        var fileActions = actionsOnRole(template, fileName);
-        assertTrue(
-                fileActions.contains("dynamodb:UpdateItem"),
-                "the filing route allocates the number and writes the filing");
-        assertTrue(!fileActions.contains("dynamodb:GetItem"), "the filing route reads no item back");
-        assertTrue(
-                !BundlesTableIamAssertions.lambdaRoleCanUpdateBundlesTable(template, fileName),
-                "the filing route charges no token");
-        assertHasEnvironmentVariable(template, fileName, "MCP_OAUTH_BLOB_KEY_SECRET_ARN");
+        for (String fileName : List.of(
+                stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscCessationPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseChangeOfNamePostLambdaProps.ingestFunctionName())) {
+            var fileActions = actionsOnRole(template, fileName);
+            assertTrue(
+                    fileActions.contains("dynamodb:UpdateItem"),
+                    fileName + ": the filing route allocates the number and writes the filing");
+            assertTrue(!fileActions.contains("dynamodb:GetItem"), fileName + ": the filing route reads no item back");
+            assertTrue(
+                    !BundlesTableIamAssertions.lambdaRoleCanUpdateBundlesTable(template, fileName),
+                    fileName + ": the filing route charges no token");
+            assertHasEnvironmentVariable(template, fileName, "MCP_OAUTH_BLOB_KEY_SECRET_ARN");
+        }
 
         String pollName = stack.companiesHouseFormStatusGetLambdaProps.ingestFunctionName();
         var pollActions = actionsOnRole(template, pollName);

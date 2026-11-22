@@ -13,14 +13,16 @@
 // it (supportingDocumentFor).
 
 import { escapeXmlText } from "../lib/xmlDom.js";
+import { isValidProposedCompanyName } from "../../web/public/lib/companies-house-company-name.js";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-// How a company changes its name, and the schema's code for each. The schema's third code, LLP, is
-// for a limited liability partnership, which this site does not file for.
+// How a company changes its name, and the schema's code for each. GOV.UK: "You can use the
+// Companies House online service to file changes of name by special resolution only." A change by
+// the articles is the paper form NM04, and the XML gateway's documents give software no other route,
+// so the schema's ARTICLES is not offered; its LLP is for a limited liability partnership.
 export const NAME_CHANGE_METHODS = {
   resolution: "RESOLUTION",
-  articles: "ARTICLES",
 };
 
 // The letters that may travel with the form, and the envelope's Document category for each.
@@ -28,21 +30,6 @@ export const NAME_SUPPORTING_DOCUMENTS = {
   "sensitive-word-permission": { category: "SUPPNAMEAUTH", filename: "name-permission.pdf" },
   "same-as-no-objection": { category: "SUPPEXISTNAME", filename: "name-no-objection.pdf" },
 };
-
-// baseTypes-v2-10.xsd's companyNameString, as ChangeOfName restricts it: three characters of the
-// first set, then up to 157 of the same set and * = # % +. Upper case only.
-const NAME_CHARACTERS =
-  "-,.:; 0-9A-Z&@$£¥€'\"«»‘’“”?!/\\\\()\\[\\]{}<>ÀÁÂÃÄÅĀĂĄÆǼÇĆĈĊČÞĎÐÈÉÊËĒĔĖĘĚĜĞĠĢĤĦÌÍÎÏĨĪĬĮİĴĶĹĻĽĿŁÑŃŅŇŊÒÓÔÕÖØŌŎŐǾŒŔŖŘŚŜŞŠŢŤŦÙÚÛÜŨŪŬŮŰŲŴẀẂẄỲÝŶŸŹŻŽ";
-const PROPOSED_NAME = new RegExp(`^[${NAME_CHARACTERS}]{3}[${NAME_CHARACTERS}*=#%+]{0,157}$`, "u");
-
-/**
- * Whether a name fits the schema's ProposedCompanyName: 3 to 160 characters of its character set.
- * @param {string} name
- * @returns {boolean}
- */
-export function isValidProposedCompanyName(name) {
-  return typeof name === "string" && PROPOSED_NAME.test(name);
-}
 
 /**
  * Build the ChangeOfName form's root element (namespace http://xmlgw.companieshouse.gov.uk).

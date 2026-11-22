@@ -89,9 +89,26 @@
           <div class="form-group">
             <label for="proposedName">New company name</label>
             <p id="proposedName-hint" class="hint">
-              3 to 160 characters, ending as the company's name must, for example LIMITED or LTD. Companies House records names in capital
-              letters.
+              3 to 160 characters, usually ending in LIMITED or LTD; a company registered in Wales may end it in CYFYNGEDIG or CYF instead.
+              Companies House records names in capital letters.
             </p>
+            <p id="walesNote" class="hint" style="display: none">
+              This company is registered in Wales, so its name may end in CYFYNGEDIG or CYF in place of LIMITED or LTD.
+            </p>
+            <blockquote class="source-quote">
+              <p>
+                Your name must usually end in either ‘Limited’ or ‘Ltd’. You can include the Welsh equivalents ‘Cyfyngedig’ and ‘Cyf’
+                instead if you registered the company in Wales.
+              </p>
+              <p>Your name cannot be the same as another registered company’s name.</p>
+              <footer>
+                Source:
+                <a href="https://www.gov.uk/limited-company-formation/choose-company-name" rel="noopener"
+                  >GOV.UK, Set up a private limited company: choose a company name</a
+                >
+                (checked 22 November 2026)
+              </footer>
+            </blockquote>
             <input
               type="text"
               id="proposedName"
@@ -104,17 +121,24 @@
               spellcheck="false"
             />
           </div>
-          <fieldset class="form-group">
-            <legend>How the company changed its name</legend>
-            <div class="choice">
-              <input type="radio" id="method-resolution" name="method" value="resolution" checked />
-              <label for="method-resolution">By a special resolution</label>
-            </div>
-            <div class="choice">
-              <input type="radio" id="method-articles" name="method" value="articles" />
-              <label for="method-articles">By permission given in the company's articles of association</label>
-            </div>
-          </fieldset>
+          <div class="form-group" id="methodGroup">
+            <p>
+              This files a change of name by a special resolution. A change by the articles of association is filed on paper, on form NM04.
+            </p>
+            <blockquote class="source-quote">
+              <p>
+                A company can change its name either by: a special resolution; permission given in the company’s articles of association.
+              </p>
+              <p>You can use the Companies House online service to file changes of name by special resolution only.</p>
+              <footer>
+                Source:
+                <a href="https://www.gov.uk/make-changes-to-your-limited-company/company-name" rel="noopener"
+                  >GOV.UK, Make changes to your private limited company: Company name</a
+                >
+                (checked 22 November 2026)
+              </footer>
+            </blockquote>
+          </div>
           <div class="form-group" id="meetingDateGroup">
             <label for="meetingDate">Date the resolution was passed</label>
             <input type="date" id="meetingDate" name="meetingDate" />
@@ -204,6 +228,7 @@
       <div id="reviewView" class="results-container" style="display: none">
         <h2>Review the filing</h2>
         <dl id="reviewList"></dl>
+        <p id="nameEndingWarning" class="status-message status-warning" role="alert" style="display: none"></p>
         <blockquote class="source-quote">
           <p>Your company name will not officially change until Companies House registers it.</p>
           <footer>
@@ -243,6 +268,7 @@
     <script src="../lib/companies-house-gateway-poll.js"></script>
     <script src="../lib/companies-house-rejections.js"></script>
     <script src="../lib/companies-house-form-page.js"></script>
+    <script type="module" src="../lib/companies-house-company-name.js"></script>
     <script src="../lib/auth-url-builder.js"></script>
     <script type="module" src="../submit.js"></script>
     <script src="../developer-mode.js"></script>

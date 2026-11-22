@@ -151,15 +151,16 @@ describe("companiesHouseChangeOfNamePost ingestHandler", () => {
     );
   });
 
-  test("the same-day service and a change by the articles are sent as asked", async () => {
+  test("the same-day service is sent as asked", async () => {
     await ingestHandler(buildEvent({ body: buildNameBody({ sameDay: true }) }));
     expect(submission().formXml).toContain("<SameDay>true</SameDay>");
+  });
 
-    mockBuildFormSubmission.mockClear();
+  test("a change by the articles is refused, as the online service files a change by special resolution only", async () => {
     const response = await ingestHandler(buildEvent({ body: buildNameBody({ method: "articles", meetingDate: undefined }) }));
-    expect(response.statusCode).toBe(201);
-    expect(submission().formXml).toContain("<MethodOfChange>ARTICLES</MethodOfChange>");
-    expect(submission().formXml).not.toContain("MeetingDate");
+    expect(response.statusCode).toBe(400);
+    expect(parseResponseBody(response).message).toContain("Invalid method - must be one of resolution");
+    expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
   test("a name with a sensitive word is sent with its permission letter as the envelope's document", async () => {
@@ -196,11 +197,20 @@ describe("companiesHouseChangeOfNamePost ingestHandler", () => {
     expect(JSON.stringify(mockEventBridgeSend.mock.calls)).not.toContain(PDF_BASE64);
   });
 
+  test("names a refused proposed name by the page's message id", async () => {
+    const response = await ingestHandler(buildEvent({ body: buildNameBody({ proposedName: "BRAMWELL 🚀 LIMITED" }) }));
+
+    expect(response.statusCode).toBe(400);
+    expect(parseResponseBody(response).messageIds).toEqual(["ch.name.name-characters"]);
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
   test("answers 400 in JSON, sending nothing, for each field that is wrong", async () => {
     for (const [overrides, message] of [
       [{ method: "llp" }, "Invalid method"],
       [{ proposedName: "AB" }, "Invalid proposedName - must be 3 to 160 characters"],
       [{ proposedName: "BRAMWELL\tTENNANT LTD" }, "Invalid proposedName - must be 3 to 160 characters"],
+      [{ proposedName: "BRAMWELL_TENNANT LTD" }, "Invalid proposedName - must be 3 to 160 characters"],
       [{ proposedName: "simulator example company limited" }, "must differ from the company's present name"],
       [{ meetingDate: undefined }, "Missing meetingDate"],
       [{ meetingDate: "20/11/2026" }, "Invalid meetingDate - must be YYYY-MM-DD"],

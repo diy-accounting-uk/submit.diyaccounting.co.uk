@@ -8,10 +8,10 @@ import { join } from "node:path";
 import {
   buildChangeOfNameBody,
   supportingDocumentFor,
-  isValidProposedCompanyName,
   NAME_CHANGE_METHODS,
   NAME_SUPPORTING_DOCUMENTS,
 } from "@app/services/companiesHouseChangeOfNameXml.js";
+import { isValidProposedCompanyName } from "../../../web/public/lib/companies-house-company-name.js";
 import { buildFormSubmission } from "@app/services/companiesHouseXmlGateway.js";
 import { gatewayFormSchemaErrors } from "../helpers/gatewayFormSchema.js";
 
@@ -51,12 +51,10 @@ describe("companiesHouseChangeOfNameXml", () => {
     expect(xml).toContain("<SameDay>true</SameDay>");
   });
 
-  test("a change by the means the articles provide needs no meeting date and is valid", async () => {
-    const xml = buildChangeOfNameBody({ method: "articles", proposedName: "BRAMWELL TENNANT TRADING LIMITED" });
-
-    expect(await gatewayFormSchemaErrors(xml, SCHEMA)).toEqual([]);
-    expect(xml).toContain("<MethodOfChange>ARTICLES</MethodOfChange>");
-    expect(xml).not.toContain("MeetingDate");
+  test("a change by the articles is not built", () => {
+    expect(() => buildChangeOfNameBody({ method: "articles", proposedName: "BRAMWELL TENNANT TRADING LIMITED" })).toThrow(
+      "unknown method articles",
+    );
   });
 
   test("a name with an ampersand and an apostrophe is escaped and stays valid", async () => {
@@ -138,7 +136,7 @@ describe("companiesHouseChangeOfNameXml", () => {
   });
 
   test("the methods and the letters map to the schema's codes", () => {
-    expect(NAME_CHANGE_METHODS).toEqual({ resolution: "RESOLUTION", articles: "ARTICLES" });
+    expect(NAME_CHANGE_METHODS).toEqual({ resolution: "RESOLUTION" });
     expect(Object.values(NAME_SUPPORTING_DOCUMENTS).map((document) => document.category)).toEqual(["SUPPNAMEAUTH", "SUPPEXISTNAME"]);
     for (const { filename } of Object.values(NAME_SUPPORTING_DOCUMENTS)) expect(filename.length).toBeLessThanOrEqual(32);
   });

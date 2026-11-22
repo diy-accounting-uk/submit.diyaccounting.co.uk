@@ -220,6 +220,8 @@ describe("the filing route every Companies House form shares", () => {
         COMPANIES_HOUSE_XMLGW_URI: "https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway",
         COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME: "test-companies-house-accounts-async-requests-table",
         COMPANIES_HOUSE_PACKAGE_REFERENCE: "0012",
+        // The test gateway, where a form with a fee is sent: the code's path is the same for every form.
+        COMPANIES_HOUSE_GATEWAY_TEST: "true",
         ENVIRONMENT_NAME: "test",
       }),
     );

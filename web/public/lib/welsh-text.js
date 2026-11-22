@@ -1420,6 +1420,10 @@ window.WELSH_TEXT = {
     "Mae gan y cwmni hawl i eithriad rhag archwiliad o dan adran 480 o Ddeddf Cwmnïau 2006 sy’n ymwneud â chwmnïau segur.",
   "ch.micro.the-current-year": "y flwyddyn gyfredol",
   "ch.micro.the-prior-year": "y flwyddyn flaenorol",
+  "ch.name.ending-warning":
+    "Nid yw’r enw newydd yn gorffen gyda LIMITED neu LTD. Fel arfer, rhaid i enw cwmni preifat cyfyngedig wneud hynny. Gwiriwch ef cyn ffeilio.",
+  "ch.name.ending-warning-wales":
+    "Nid yw’r enw newydd yn gorffen gyda LIMITED, LTD, CYFYNGEDIG neu CYF. Fel arfer, rhaid i enw cwmni preifat cyfyngedig wneud hynny. Gwiriwch ef cyn ffeilio.",
   "ch.name.letter-missing": "Dewiswch y llythyr, fel PDF.",
   "ch.name.letter-not-pdf": "Nid PDF yw’r llythyr.",
   "ch.name.letter-summary": "{kind}: {file}",
@@ -1427,7 +1431,9 @@ window.WELSH_TEXT = {
   "ch.name.lookup-failed": "Methu darllen y cwmni hwn gan Dŷ’r Cwmnïau.",
   "ch.name.meeting-date-future": "Ni all dyddiad pasio’r penderfyniad fod yn y dyfodol.",
   "ch.name.meeting-date-missing": "Rhowch y dyddiad y pasiwyd y penderfyniad.",
-  "ch.name.name-length": "Rhaid i’r enw newydd fod rhwng 3 a 160 nod.",
+  "ch.name.method-resolution": "Drwy benderfyniad arbennig",
+  "ch.name.name-characters":
+    "Rhaid i’r enw newydd fod rhwng 3 a 160 nod, gan ddefnyddio llythrennau, rhifau, bylchau a’r atalnodi y mae Tŷ’r Cwmnïau yn ei ganiatáu mewn enw cwmni yn unig.",
   "ch.name.no-letter": "Dim",
   "ch.name.notice-missing": "Cadarnhewch fod hysbysiad o’r newid enw wedi’i roi.",
   "ch.name.register-not-yet":
@@ -1440,6 +1446,8 @@ window.WELSH_TEXT = {
   "ch.name.review-method": "Sut y newidiodd y cwmni ei enw",
   "ch.name.review-new-name": "Enw newydd y cwmni",
   "ch.name.review-service": "Y gwasanaeth a ffi Tŷ’r Cwmnïau",
+  "ch.name.same-as":
+    "Mae Tŷ’r Cwmnïau yn rhestru {name} ({number}) gyda’r enw hwn. Dim ond gyda chadarnhad ysgrifenedig y cwmni hwnnw nad oes ganddo wrthwynebiad y caiff cwmni gymryd enw sydd gan gwmni arall: atodwch y llythyr hwnnw, neu dewiswch enw arall.",
   "ch.name.same-name": "Yr enw newydd yw’r enw sydd gan y cwmni eisoes.",
   "ch.name.see-company": "Gweld y cwmni ar y gofrestr",
   "ch.name.service-same-day": "Gwasanaeth yr un diwrnod, £{fee}",

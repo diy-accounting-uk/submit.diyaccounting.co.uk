@@ -24204,21 +24204,9 @@ cy = '''Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumbe
 hash = "8145ac2cba63"
 cy = '''Enw newydd y cwmni'''
 
-[strings."ch-change-name.3-to-160-characters-ending-as-97d472"]
-hash = "97d472d68916"
-cy = '''3 i 160 nod, yn gorffen fel y mae’n rhaid i enw’r cwmni, er enghraifft LIMITED neu LTD. Mae Tŷ’r Cwmnïau yn cofnodi enwau mewn priflythrennau.'''
 
-[strings."ch-change-name.how-the-company-changed-its-name-b74e10"]
-hash = "b74e104f9918"
-cy = '''Sut y newidiodd y cwmni ei enw'''
 
-[strings."ch-change-name.by-a-special-resolution-915f7a"]
-hash = "915f7a28848e"
-cy = '''Drwy benderfyniad arbennig'''
 
-[strings."ch-change-name.by-permission-given-in-the-company-f0ee6a"]
-hash = "f0ee6a104391"
-cy = '''Drwy ganiatâd a roddir yn erthyglau cymdeithasu’r cwmni'''
 
 [strings."ch-change-name.date-the-resolution-was-passed-7d94ca"]
 hash = "7d94ca2e1676"
@@ -24308,9 +24296,6 @@ cy = '''Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. 
 hash = "85798bd4b10f"
 cy = '''Methu darllen y cwmni hwn gan Dŷ’r Cwmnïau.'''
 
-[strings."ch.name.name-length"]
-hash = "bc6ee0368cc8"
-cy = '''Rhaid i’r enw newydd fod rhwng 3 a 160 nod.'''
 
 [strings."ch.name.same-name"]
 hash = "3499feb56176"
@@ -27065,3 +27050,37 @@ cy = '''Nid oedd modd darllen gosodiadau eich cyfrif, felly ni ellir eu newid na
 [strings."usage.read-failed"]
 hash = "805a68ba8dd4"
 cy = '''Nid oedd modd darllen eich bwndeli a’ch credydau (tokens). Ail-lwythwch y dudalen i roi cynnig arall arni.'''
+
+# == The change of name page's shared rules: the name's characters, its ending, a name already registered, how the company changed it ==
+
+[strings."ch.name.name-characters"]
+hash = "f6834ed3e871"
+cy = '''Rhaid i’r enw newydd fod rhwng 3 a 160 nod, gan ddefnyddio llythrennau, rhifau, bylchau a’r atalnodi y mae Tŷ’r Cwmnïau yn ei ganiatáu mewn enw cwmni yn unig.'''
+
+[strings."ch-change-name.this-files-a-change-of-name-5b1713"]
+hash = "5b171392cdc2"
+cy = '''Mae hwn yn ffeilio newid enw drwy benderfyniad arbennig. Caiff newid drwy’r erthyglau cymdeithasu ei ffeilio ar bapur, ar ffurflen NM04.'''
+
+[strings."ch.name.method-resolution"]
+hash = "915f7a28848e"
+cy = '''Drwy benderfyniad arbennig'''
+
+[strings."ch-change-name.3-to-160-characters-usually-ending-6ab2e9"]
+hash = "6ab2e96750bf"
+cy = '''3 i 160 nod, fel arfer yn gorffen gyda LIMITED neu LTD; caiff cwmni sydd wedi’i gofrestru yng Nghymru ei orffen gyda CYFYNGEDIG neu CYF yn lle hynny. Mae Tŷ’r Cwmnïau yn cofnodi enwau mewn priflythrennau.'''
+
+[strings."ch-change-name.this-company-is-registered-in-wales-d01c08"]
+hash = "d01c08e71c43"
+cy = '''Mae’r cwmni hwn wedi’i gofrestru yng Nghymru, felly caiff ei enw orffen gyda CYFYNGEDIG neu CYF yn lle LIMITED neu LTD.'''
+
+[strings."ch.name.ending-warning"]
+hash = "a8f7db15d473"
+cy = '''Nid yw’r enw newydd yn gorffen gyda LIMITED neu LTD. Fel arfer, rhaid i enw cwmni preifat cyfyngedig wneud hynny. Gwiriwch ef cyn ffeilio.'''
+
+[strings."ch.name.ending-warning-wales"]
+hash = "598efcf1d52f"
+cy = '''Nid yw’r enw newydd yn gorffen gyda LIMITED, LTD, CYFYNGEDIG neu CYF. Fel arfer, rhaid i enw cwmni preifat cyfyngedig wneud hynny. Gwiriwch ef cyn ffeilio.'''
+
+[strings."ch.name.same-as"]
+hash = "c69a2f858822"
+cy = '''Mae Tŷ’r Cwmnïau yn rhestru {name} ({number}) gyda’r enw hwn. Dim ond gyda chadarnhad ysgrifenedig y cwmni hwnnw nad oes ganddo wrthwynebiad y caiff cwmni gymryd enw sydd gan gwmni arall: atodwch y llythyr hwnnw, neu dewiswch enw arall.'''

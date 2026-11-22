@@ -120,12 +120,9 @@ const DATE_MESSAGES = {
 };
 window.companiesHouseFormPage.registerMessages(DATE_MESSAGES);
 
-// Today in the United Kingdom, as YYYY-MM-DD, the latest date either field may hold.
-const todayInUk = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(new Date());
-
 // The first refusal of the two dates, by its id, or null.
 function dateRefusal(cessationDate, confirmationDate) {
-  const today = todayInUk();
+  const today = window.companiesHouseFormPage.todayInLondon();
   if (cessationDate > today) return "ch.cease.future-cessation";
   if (confirmationDate < cessationDate) return "ch.cease.confirmation-before";
   if (confirmationDate > today) return "ch.cease.future-confirmation";
@@ -153,7 +150,7 @@ function handleCessationSubmit(event) {
       companyNumber: company.companyNumber,
       companyName: company.companyName,
       companyAuthCode: document.getElementById("companyAuthCode").value.trim(),
-      dateSigned: new Date().toISOString().slice(0, 10),
+      dateSigned: window.companiesHouseFormPage.todayInLondon(),
       ...pscFields(psc),
       cessationDate,
       confirmationDate,
@@ -217,6 +214,8 @@ document.getElementById("cessationForm").addEventListener("submit", handleCessat
 document.getElementById("submitFilingBtn").addEventListener("click", handleFile);
 document.getElementById("changeBtn").addEventListener("click", () => showView("formView"));
 document.getElementById("startAgainBtn").addEventListener("click", startAgain);
-["cessationDate", "confirmationDate"].forEach((id) => document.getElementById(id).setAttribute("max", todayInUk()));
+["cessationDate", "confirmationDate"].forEach((id) =>
+  document.getElementById(id).setAttribute("max", window.companiesHouseFormPage.todayInLondon()),
+);
 updateGovTestScenarioVisibility();
 window.addEventListener("developer-mode-changed", updateGovTestScenarioVisibility);

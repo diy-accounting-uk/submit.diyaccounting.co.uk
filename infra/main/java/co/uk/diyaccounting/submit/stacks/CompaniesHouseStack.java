@@ -2112,8 +2112,9 @@ public class CompaniesHouseStack extends Stack {
                 activityBusArn,
                 false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHousePscVerificationStatementPostLambda, props);
+        // The filing route writes with UpdateItem and reads nothing back.
         companiesHouseAccountsAsyncRequestsTable.grant(
-                this.companiesHousePscVerificationStatementPostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                this.companiesHousePscVerificationStatementPostLambda, "dynamodb:UpdateItem");
         // Seals the filer's sub into the filing state the presenter poll reads.
         codesSealKeySecret.grantRead(this.companiesHousePscVerificationStatementPostLambda);
 
@@ -2918,8 +2919,9 @@ public class CompaniesHouseStack extends Stack {
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseChangeOfNamePostLambda, bundlesTable, region, account, props, activityBusArn, false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseChangeOfNamePostLambda, props);
+        // The filing route writes with UpdateItem and reads nothing back.
         companiesHouseAccountsAsyncRequestsTable.grant(
-                this.companiesHouseChangeOfNamePostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                this.companiesHouseChangeOfNamePostLambda, "dynamodb:UpdateItem");
         // Seals the filer's sub into the filing state the presenter poll reads.
         codesSealKeySecret.grantRead(this.companiesHouseChangeOfNamePostLambda);
 

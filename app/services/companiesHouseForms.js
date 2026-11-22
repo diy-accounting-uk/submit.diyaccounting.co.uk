@@ -30,7 +30,6 @@ import { buildRecordChangeOfLocationBody, RECORD_DESTINATIONS, RECORD_TYPES } fr
 import {
   buildChangeOfNameBody,
   supportingDocumentFor,
-  isValidProposedCompanyName,
   NAME_CHANGE_METHODS,
   NAME_SUPPORTING_DOCUMENTS,
 } from "./companiesHouseChangeOfNameXml.js";
@@ -57,6 +56,7 @@ import { buildOfficerChangeBody, OFFICER_CHANGE_ROLES } from "./companiesHouseOf
 import { buildAllotmentOfSharesBody } from "./companiesHouseAllotmentOfSharesXml.js";
 import { refuseCapitalUnlikeRegister } from "./companiesHouseAllotmentRegister.js";
 import { toMillionths, multiplyMillionths, fromMillionths } from "../../web/public/lib/share-capital.js";
+import { isValidProposedCompanyName } from "../../web/public/lib/companies-house-company-name.js";
 
 function extractPscVerificationStatement(body, errorMessages) {
   const { title, forename, otherForenames, surname, dobMonth, dobYear, personalCode } = body;
@@ -369,7 +369,10 @@ function extractChangeOfName(body, errorMessages) {
     errorMessages.push(`Invalid method - must be one of ${Object.keys(NAME_CHANGE_METHODS).join(", ")}`);
   }
   if (!isValidProposedCompanyName(proposedName)) {
-    errorMessages.push("Invalid proposedName - must be 3 to 160 characters that Companies House allows in a company name");
+    errorMessages.push({
+      text: "Invalid proposedName - must be 3 to 160 characters that Companies House allows in a company name",
+      id: "ch.name.name-characters",
+    });
   } else if (proposedName === trimmed(body.companyName).toUpperCase()) {
     errorMessages.push("Invalid proposedName - must differ from the company's present name");
   }

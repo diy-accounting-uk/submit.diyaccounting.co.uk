@@ -111,10 +111,27 @@
         <form id="changeForm" novalidate>
           <div class="form-group">
             <label data-i18n="ch-change-name.new-company-name-8145ac" for="proposedName">Enw newydd y cwmni</label>
-            <p data-i18n="ch-change-name.3-to-160-characters-ending-as-97d472" id="proposedName-hint" class="hint">
-              3 i 160 nod, yn gorffen fel y mae’n rhaid i enw’r cwmni, er enghraifft LIMITED neu LTD. Mae Tŷ’r Cwmnïau yn cofnodi enwau mewn
-              priflythrennau.
+            <p data-i18n="ch-change-name.3-to-160-characters-usually-ending-6ab2e9" id="proposedName-hint" class="hint">
+              3 i 160 nod, fel arfer yn gorffen gyda LIMITED neu LTD; caiff cwmni sydd wedi’i gofrestru yng Nghymru ei orffen gyda
+              CYFYNGEDIG neu CYF yn lle hynny. Mae Tŷ’r Cwmnïau yn cofnodi enwau mewn priflythrennau.
             </p>
+            <p data-i18n="ch-change-name.this-company-is-registered-in-wales-d01c08" id="walesNote" class="hint" style="display: none">
+              Mae’r cwmni hwn wedi’i gofrestru yng Nghymru, felly caiff ei enw orffen gyda CYFYNGEDIG neu CYF yn lle LIMITED neu LTD.
+            </p>
+            <blockquote class="source-quote">
+              <p lang="en-GB">
+                Your name must usually end in either ‘Limited’ or ‘Ltd’. You can include the Welsh equivalents ‘Cyfyngedig’ and ‘Cyf’
+                instead if you registered the company in Wales.
+              </p>
+              <p lang="en-GB">Your name cannot be the same as another registered company’s name.</p>
+              <footer>
+                Ffynhonnell:
+                <a lang="en-GB" hreflang="en" href="https://www.gov.uk/limited-company-formation/choose-company-name" rel="noopener"
+                  >GOV.UK, Set up a private limited company: choose a company name</a
+                >
+                (yn Saesneg), gwiriwyd 22 Tachwedd 2026
+              </footer>
+            </blockquote>
             <input
               type="text"
               id="proposedName"
@@ -127,19 +144,25 @@
               spellcheck="false"
             />
           </div>
-          <fieldset class="form-group">
-            <legend data-i18n="ch-change-name.how-the-company-changed-its-name-b74e10">Sut y newidiodd y cwmni ei enw</legend>
-            <div class="choice">
-              <input type="radio" id="method-resolution" name="method" value="resolution" checked />
-              <label data-i18n="ch-change-name.by-a-special-resolution-915f7a" for="method-resolution">Drwy benderfyniad arbennig</label>
-            </div>
-            <div class="choice">
-              <input type="radio" id="method-articles" name="method" value="articles" />
-              <label data-i18n="ch-change-name.by-permission-given-in-the-company-f0ee6a" for="method-articles"
-                >Drwy ganiatâd a roddir yn erthyglau cymdeithasu’r cwmni</label
-              >
-            </div>
-          </fieldset>
+          <div class="form-group" id="methodGroup">
+            <p data-i18n="ch-change-name.this-files-a-change-of-name-5b1713">
+              Mae hwn yn ffeilio newid enw drwy benderfyniad arbennig. Caiff newid drwy’r erthyglau cymdeithasu ei ffeilio ar bapur, ar
+              ffurflen NM04.
+            </p>
+            <blockquote class="source-quote">
+              <p lang="en-GB">
+                A company can change its name either by: a special resolution; permission given in the company’s articles of association.
+              </p>
+              <p lang="en-GB">You can use the Companies House online service to file changes of name by special resolution only.</p>
+              <footer>
+                Ffynhonnell:
+                <a lang="en-GB" hreflang="en" href="https://www.gov.uk/make-changes-to-your-limited-company/company-name" rel="noopener"
+                  >GOV.UK, Make changes to your private limited company: Company name</a
+                >
+                (yn Saesneg), gwiriwyd 22 Tachwedd 2026
+              </footer>
+            </blockquote>
+          </div>
           <div class="form-group" id="meetingDateGroup">
             <label data-i18n="ch-change-name.date-the-resolution-was-passed-7d94ca" for="meetingDate">Dyddiad pasio’r penderfyniad</label>
             <input type="date" id="meetingDate" name="meetingDate" />
@@ -242,6 +265,7 @@
       <div id="reviewView" class="results-container" style="display: none">
         <h2 data-i18n="ch-change-name.review-the-filing-769b96">Adolygu’r ffeilio</h2>
         <dl id="reviewList"></dl>
+        <p id="nameEndingWarning" class="status-message status-warning" role="alert" style="display: none"></p>
         <blockquote class="source-quote">
           <p lang="en-GB">Your company name will not officially change until Companies House registers it.</p>
           <footer>
@@ -286,6 +310,7 @@
     <script src="../../lib/companies-house-gateway-poll.js"></script>
     <script src="../../lib/companies-house-rejections.js"></script>
     <script src="../../lib/companies-house-form-page.js"></script>
+    <script type="module" src="../../lib/companies-house-company-name.js"></script>
     <script src="../../lib/auth-url-builder.js"></script>
     <script type="module" src="../../submit.js"></script>
     <script src="../../developer-mode.js"></script>

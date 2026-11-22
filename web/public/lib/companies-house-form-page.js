@@ -35,6 +35,16 @@
     return p;
   }
 
+  /**
+   * Today's date in the United Kingdom, as YYYY-MM-DD: the latest date a form's dates may hold, and
+   * the date a filing is signed. A UTC date is the day before between midnight and 1am in summer.
+   * @param {Date} [now]
+   * @returns {string}
+   */
+  function todayInLondon(now = new Date()) {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  }
+
   // The refusals a form's page words itself, by the id the route names them by in messageIds.
   const pageMessages = new Map();
 
@@ -115,5 +125,5 @@
     return outcome;
   }
 
-  window.companiesHouseFormPage = { fileAndShowOutcome, errorText, registerMessages };
+  window.companiesHouseFormPage = { fileAndShowOutcome, errorText, registerMessages, todayInLondon };
 })();

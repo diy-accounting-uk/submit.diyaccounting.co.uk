@@ -27,6 +27,16 @@ function showView(name) {
   });
 }
 
+// The refusals the route names by id, in the reader's words.
+const NAME_MESSAGES = {
+  "ch.name.name-characters": () =>
+    window.siteText(
+      "ch.name.name-characters",
+      "The new name must be 3 to 160 characters, using only letters, numbers, spaces and the punctuation Companies House allows in a company name.",
+    ),
+};
+window.companiesHouseFormPage.registerMessages(NAME_MESSAGES);
+
 function showError(text) {
   if (window.showStatus) window.showStatus(text, "error");
 }
@@ -40,7 +50,12 @@ async function handleCompanySubmit(event) {
   showLoading();
   try {
     const profile = await window.getCompanyProfile(companyNumber);
-    company = { companyNumber, companyName: profile.companyName };
+    company = {
+      companyNumber,
+      companyName: profile.companyName,
+      registeredInWales: window.companiesHouseCompanyName.isRegisteredInWales(profile.jurisdiction),
+    };
+    document.getElementById("walesNote").style.display = company.registeredInWales ? "block" : "none";
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     showView("formView");
@@ -52,24 +67,53 @@ async function handleCompanySubmit(event) {
   }
 }
 
-function chosenMethod() {
-  return document.querySelector('input[name="method"]:checked').value;
-}
-
-function updateMethod() {
-  document.getElementById("meetingDateGroup").style.display = chosenMethod() === "resolution" ? "block" : "none";
-}
-
 function updateLetter() {
   document.getElementById("letterGroup").style.display = document.getElementById("needsLetter").checked ? "block" : "none";
 }
 
-function labelText(inputId) {
-  return document.querySelector(`label[for="${inputId}"]`).textContent.trim().replace(/\s+/g, " ");
-}
-
 function optionText(selectId, value) {
   return document.querySelector(`#${selectId} option[value="${value}"]`).textContent.trim().replace(/\s+/g, " ");
+}
+
+// A name compared as Companies House compares a "same as" name here: capitals, single spaces, no
+// full stops or commas, and LTD read as LIMITED.
+function comparableName(name) {
+  return String(name || "")
+    .toUpperCase()
+    .replace(/[.,]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/ LTD$/, " LIMITED");
+}
+
+// The register's search for each proposed name, made once per name: the lookup counts in the
+// account's share of Companies House calls.
+const sameNameLookups = new Map();
+
+/**
+ * Another company the register lists with the proposed name, or null. A search that fails finds none,
+ * so the filing is not held up by it.
+ * @param {string} proposedName
+ */
+function companyWithSameName(proposedName) {
+  if (!sameNameLookups.has(proposedName)) {
+    sameNameLookups.set(
+      proposedName,
+      window
+        .searchCompanies(proposedName, { itemsPerPage: 20 })
+        .then(
+          (answer) =>
+            (answer.items || []).find(
+              (item) => item.companyNumber !== company.companyNumber && comparableName(item.title) === comparableName(proposedName),
+            ) || null,
+        )
+        .catch((error) => {
+          console.warn("Could not look the new name up on the register:", error);
+          return null;
+        }),
+    );
+  }
+  return sameNameLookups.get(proposedName);
 }
 
 // The letter's bytes as base64, read in the page. Rejects for a file that is not a PDF or is too large.
@@ -88,18 +132,34 @@ async function handleChangeSubmit(event) {
   event.preventDefault();
   if (!window.formErrors.requireFields(["proposedName", "companyAuthCode"])) return;
   const proposedName = document.getElementById("proposedName").value.trim().replace(/\s+/g, " ").toUpperCase();
-  if (proposedName.length < 3 || proposedName.length > 160) {
-    showError(window.siteText("ch.name.name-length", "The new name must be 3 to 160 characters."));
+  if (!window.companiesHouseCompanyName.isValidProposedCompanyName(proposedName)) {
+    showError(NAME_MESSAGES["ch.name.name-characters"]());
     return;
   }
   if (proposedName === company.companyName.trim().toUpperCase()) {
     showError(window.siteText("ch.name.same-name", "The new name is the name the company already has."));
     return;
   }
-  const method = chosenMethod();
-  const today = new Date().toISOString().slice(0, 10);
-  const meetingDate = method === "resolution" ? document.getElementById("meetingDate").value : "";
-  if (method === "resolution" && !meetingDate) {
+  const holder = await companyWithSameName(proposedName);
+  const lettered = document.getElementById("needsLetter").checked && document.getElementById("letterKind").value === "same-as-no-objection";
+  if (holder && !lettered) {
+    document.getElementById("needsLetter").checked = true;
+    document.getElementById("letterKind").value = "same-as-no-objection";
+    updateLetter();
+    showError(
+      window.siteText(
+        "ch.name.same-as",
+        "Companies House lists {name} ({number}) with this name. A company can take a name another company holds only with that company's written confirmation that it has no objection: attach that letter, or choose another name.",
+        { name: holder.title, number: holder.companyNumber },
+      ),
+    );
+    return;
+  }
+  // The only way this site files a change of name: GOV.UK files changes by special resolution only.
+  const method = "resolution";
+  const today = window.companiesHouseFormPage.todayInLondon();
+  const meetingDate = document.getElementById("meetingDate").value;
+  if (!meetingDate) {
     showError(window.siteText("ch.name.meeting-date-missing", "Give the date the resolution was passed."));
     return;
   }
@@ -152,7 +212,27 @@ async function handleChangeSubmit(event) {
     },
   };
   renderReview();
+  showNameEndingWarning();
   showView("reviewView");
+}
+
+// A name that ends in none of the words a limited company's name usually ends in is filed as given,
+// with a warning: Companies House says "usually", and it decides.
+function showNameEndingWarning() {
+  const warning = document.getElementById("nameEndingWarning");
+  const usual = window.companiesHouseCompanyName.hasUsualLimitedEnding(filing.form.proposedName, company);
+  warning.textContent = usual
+    ? ""
+    : company.registeredInWales
+      ? window.siteText(
+          "ch.name.ending-warning-wales",
+          "The new name does not end in LIMITED, LTD, CYFYNGEDIG or CYF. A private limited company's name usually must. Check it before you file.",
+        )
+      : window.siteText(
+          "ch.name.ending-warning",
+          "The new name does not end in LIMITED or LTD. A private limited company's name usually must. Check it before you file.",
+        );
+  warning.style.display = usual ? "none" : "block";
 }
 
 function renderReview() {
@@ -163,7 +243,7 @@ function renderReview() {
     [window.siteText("ch.name.review-new-name", "New company name"), filing.form.proposedName],
     [
       window.siteText("ch.name.review-method", "How the company changed its name"),
-      labelText(filing.method === "resolution" ? "method-resolution" : "method-articles"),
+      window.siteText("ch.name.method-resolution", "By a special resolution"),
     ],
   ];
   if (filing.form.meetingDate) {
@@ -246,7 +326,6 @@ function startAgain() {
   company = null;
   filing = null;
   document.getElementById("changeForm").reset();
-  updateMethod();
   updateLetter();
   document.getElementById("filingResult").replaceChildren();
   document.getElementById("registerNow").style.display = "none";
@@ -260,7 +339,6 @@ function updateGovTestScenarioVisibility() {
 
 document.getElementById("companyForm").addEventListener("submit", handleCompanySubmit);
 document.getElementById("changeForm").addEventListener("submit", handleChangeSubmit);
-document.querySelectorAll('input[name="method"]').forEach((input) => input.addEventListener("change", updateMethod));
 document.getElementById("needsLetter").addEventListener("change", updateLetter);
 document.getElementById("submitFilingBtn").addEventListener("click", handleFile);
 document.getElementById("changeBtn").addEventListener("click", () => showView("formView"));
