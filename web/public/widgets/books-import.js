@@ -125,6 +125,19 @@
     return `${count} ${singular}${count === 1 ? "" : "s"}`;
   }
 
+  // How many fields or figures a file filled, as the sentence that reports the fill reads it.
+  function fieldCount(count) {
+    return count === 1
+      ? siteText("widget.books-count-field-one", "1 field")
+      : siteText("widget.books-count-fields", "{count} fields", { count });
+  }
+
+  function figureCount(count) {
+    return count === 1
+      ? siteText("widget.books-count-figure-one", "1 figure")
+      : siteText("widget.books-count-figures", "{count} figures", { count });
+  }
+
   function withoutFinalStop(text) {
     let end = String(text).length;
     while (end > 0 && /[.\s]/.test(text[end - 1])) end -= 1;
@@ -272,7 +285,16 @@
     const filledExpenses = fillExpenseFields(period.periodExpenses, period.periodDisallowableExpenses);
     const lacking = figuresTheFormLacks(period);
     const lackingText = lacking.length ? ` The form has no field for these figures from the book: ${namedList(lacking)}.` : "";
-    return `Filled ${2 + filledExpenses} figures from ${fileName} for the period ending ${periodEnd}. Check them, then submit.${lackingText}`;
+    const filledText = siteText(
+      "itsa.books-filled-quarter",
+      "Filled {figures} from {file} for the period ending {end}. Check them, then submit.",
+      {
+        figures: figureCount(2 + filledExpenses),
+        file: fileName,
+        end: periodEnd,
+      },
+    );
+    return `${filledText}${lackingText}`;
   }
 
   const UK_PROPERTY_PERIOD_FIELDS = {
@@ -329,7 +351,17 @@
       .map(([name, value]) => `${name} ${poundsText(value)}`);
     const lackingText = lacking.length ? ` The form has no field for these figures from the book: ${namedList(lacking)}.` : "";
     const warningText = derived.warnings.map((warning) => ` ${upperFirst(withoutFinalStop(warning))}.`).join("");
-    return `Filled ${plural(filled, "figure")} from ${fileName} for the period ${periodStartDate} to ${periodEndDate}. Check them, then submit.${lackingText}${warningText}`;
+    const filledText = siteText(
+      "itsa.books-filled-period",
+      "Filled {figures} from {file} for the period {start} to {end}. Check them, then submit.",
+      {
+        figures: figureCount(filled),
+        file: fileName,
+        start: periodStartDate,
+        end: periodEndDate,
+      },
+    );
+    return `${filledText}${lackingText}${warningText}`;
   }
 
   async function fillUkPropertyAnnual({ bundle, source, fileName, hooks }) {
@@ -401,7 +433,11 @@
     const { formEntriesFromBook, applyFormEntries } = await import("../lib/ct600-fields.js");
     const filled = applyFormEntries(formEntriesFromBook(figures, accounts, microAccounts));
     hooks.onFilled(figures.workingSheet);
-    return `Filled ${plural(filled, "field")} from ${fileName} for the period ${figures.periodStart} to ${figures.periodEnd}. Check them, add the UTR, the statements and the declaration, then preview.`;
+    return siteText(
+      "ch.books-filled-ct-book",
+      "Filled {fields} from {file} for the period {start} to {end}. Check them, add the UTR, the statements and the declaration, then preview.",
+      { fields: fieldCount(filled), file: fileName, start: figures.periodStart, end: figures.periodEnd },
+    );
   }
 
   // The figures file is derive_company_tax_return's answer: { kind: "ct600", sourceFileName, packageVersion, period, figures }.
@@ -412,7 +448,11 @@
     const { formEntriesFromFigures, applyFormEntries } = await import("../lib/ct600-fields.js");
     const filled = applyFormEntries(formEntriesFromFigures(parsed.figures));
     hooks.onFilled(parsed.figures.workingSheet);
-    return `Filled ${plural(filled, "field")} from ${fileName} for the period ${parsed.figures.periodStart} to ${parsed.figures.periodEnd}. The file carries the profit and loss account only: fill the balance sheet and the rest of the accounts, then preview.`;
+    return siteText(
+      "ch.books-filled-ct-figures",
+      "Filled {fields} from {file} for the period {start} to {end}. The file carries the profit and loss account only: fill the balance sheet and the rest of the accounts, then preview.",
+      { fields: fieldCount(filled), file: fileName, start: parsed.figures.periodStart, end: parsed.figures.periodEnd },
+    );
   }
 
   // Both accounts pages name the company the customer looked up. A book for another company fills nothing.
@@ -477,7 +517,7 @@
   function taxonomyText(suite) {
     const family = String(suite.family || "").replace("-", " ");
     const year = suite.date ? suite.date.slice(0, 4) : "";
-    return [family, year && `${year} taxonomy`].filter(Boolean).join(" ");
+    return year ? siteText("widget.books-taxonomy", "{family} {year} taxonomy", { family, year }) : family;
   }
 
   // Reads an iXBRL accounts document for the regime the page takes. A document for another company or
@@ -562,8 +602,13 @@
     const leftOut = ixbrlLeftOut(mapped, formTakesProfitAndLoss);
     return {
       text:
-        `Filled ${plural(filled, "field")} from ${fileName} (${taxonomyText(mapped.suite)}) for the period ${mapped.period.start} to ${mapped.period.end}.` +
-        `${leftOut.text} ${advice}`,
+        siteText("widget.books-filled-ixbrl", "Filled {fields} from {file} ({taxonomy}) for the period {start} to {end}.", {
+          fields: fieldCount(filled),
+          file: fileName,
+          taxonomy: taxonomyText(mapped.suite),
+          start: mapped.period.start,
+          end: mapped.period.end,
+        }) + `${leftOut.text} ${advice}`,
       unplaced: leftOut.unplaced,
     };
   }
@@ -587,7 +632,7 @@
       filled,
       fileName,
       mapped,
-      "Check the figures, add the UTR, the statements and the declaration, then preview.",
+      siteText("ch.books-advice-ct", "Check the figures, add the UTR, the statements and the declaration, then preview."),
       mapped.regime === "small",
     );
   }
@@ -604,9 +649,9 @@
     const mapped = await mapIxbrlForPage(bundle, source.ixbrl, "micro");
     refuseOtherPeriod({ periodStart: mapped.period.start, periodEnd: mapped.period.end }, fileName);
     const filled = fillMicroEntityFormFromMapped(mapped) + (await fillBalanceSheetLinesFromIxbrl(source.ixbrl));
-    let advice = "Check them, add the date approved and the statements, then preview.";
+    let advice = siteText("ch.books-advice-micro", "Check them, add the date approved and the statements, then preview.");
     if (mapped.dormant) {
-      advice = `The document is for a dormant company, so the dormant box is ticked: confirm the trading history, share class and nominal value. ${advice}`;
+      advice = `${siteText("ch.books-advice-dormant", "The document is for a dormant company, so the dormant box is ticked: confirm the trading history, share class and nominal value.")} ${advice}`;
     }
     return ixbrlStatus(filled, fileName, mapped, advice, false);
   }
@@ -667,7 +712,12 @@
     const dormantText = dormant
       ? " The book shows no turnover, no costs and no change in reserves, so the dormant box is ticked: confirm the company was dormant, then choose its trading history, share class and nominal value."
       : "";
-    return `Filled ${plural(filled, "field")} from ${fileName} for the period ${accounts.periodStart} to ${accounts.periodEnd}. Check them, add the date approved and the statements, then preview.${dormantText}`;
+    const filledText = siteText(
+      "ch.books-filled-micro",
+      "Filled {fields} from {file} for the period {start} to {end}. Check them, add the date approved and the statements, then preview.",
+      { fields: fieldCount(filled), file: fileName, start: accounts.periodStart, end: accounts.periodEnd },
+    );
+    return `${filledText}${dormantText}`;
   }
 
   const SMALL_PROFIT_AND_LOSS_LINES = {
@@ -730,7 +780,10 @@
       filled,
       fileName,
       mapped,
-      "Check the figures, add the accounting policies, the date approved and the statements, then preview.",
+      siteText(
+        "ch.books-advice-small",
+        "Check the figures, add the accounting policies, the date approved and the statements, then preview.",
+      ),
       true,
     );
   }

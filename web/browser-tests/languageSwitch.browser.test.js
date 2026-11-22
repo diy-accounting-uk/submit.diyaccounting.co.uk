@@ -267,7 +267,12 @@ for (const { path, otherName } of [
           expect(item.left, `${item.name} stays inside the account row on the left`).toBeGreaterThanOrEqual(auth.left - 0.5);
           expect(item.right, `${item.name} stays inside the account row on the right`).toBeLessThanOrEqual(auth.right + 0.5);
         }
-        if (width === 375) expect(band.bottom - band.top, "the band keeps its two phone rows").toBeLessThan(100);
+        if (width === 375) {
+          expect(
+            band.bottom - band.top,
+            "the band keeps its three phone rows: the icons, the account row and the account line",
+          ).toBeLessThan(120);
+        }
         expect(switchBox.left, "switch inside the band on the left").toBeGreaterThanOrEqual(band.left);
         expect(switchBox.right, "switch inside the band on the right").toBeLessThanOrEqual(band.right + 0.5);
         expect(switchBox.bottom, "switch inside the band below").toBeLessThanOrEqual(band.bottom);

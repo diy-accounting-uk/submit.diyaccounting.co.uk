@@ -17702,8 +17702,6 @@ hash = "4ae7a6be7c1b"
 cy = '''Ffeilio’ch datganiad cadarnhau (ffurflen flynyddol) gyda Thŷ’r Cwmnïau'''
 
 
-
-
 [strings."ch.edit.code-signature"]
 hash = "95843d7d2e03"
 cy = '''Defnyddir y cod i awdurdodi gwybodaeth a ffeiliwyd ar-lein ac mae’n gyfatebol i lofnod swyddog cwmni.'''
@@ -17712,13 +17710,9 @@ cy = '''Defnyddir y cod i awdurdodi gwybodaeth a ffeiliwyd ar-lein ac mae’n gy
 hash = "c4b7e230228a"
 cy = '''Bydd angen cod dilysu cwmni arnoch i ffeilio’ch gwybodaeth ar-lein neu ddefnyddio meddalwedd masnachol.'''
 
-
-
 [strings."ch.edit.confirmation-code"]
 hash = "540f99236317"
 cy = '''Bydd arnoch angen cyfrinair a chod dilysu gan Dŷ’r Cwmnïau.'''
-
-
 
 
 
@@ -26881,3 +26875,78 @@ cy = '''{name} ({role}, penodwyd {date})'''
 [strings."ch.change-officer.date-before-appointment"]
 hash = "6a21d64caeae"
 cy = '''Ni all y dyddiad y newidiodd y manylion fod cyn {date}, pan mae’r gofrestr yn dangos iddynt gael eu penodi.'''
+
+# The books card's result after a file fills a form: how many fields or figures it filled, from
+# which file and for which period, and what to do next. A count takes the singular noun in Welsh.
+#   field                           maes
+#   figure                          ffigur
+#   taxonomy                        tacsonomeg
+#   preview (the next step)         ewch i’r rhagolwg
+
+[strings."widget.books-count-field-one"]
+hash = "31a111b0cc10"
+cy = '''1 maes'''
+
+[strings."widget.books-count-fields"]
+hash = "38eddedec748"
+cy = '''{count} maes'''
+
+[strings."widget.books-count-figure-one"]
+hash = "696fee473d94"
+cy = '''1 ffigur'''
+
+[strings."widget.books-count-figures"]
+hash = "d19afa410d44"
+cy = '''{count} ffigur'''
+
+[strings."widget.books-taxonomy"]
+hash = "6f6630e5e49f"
+cy = '''tacsonomeg {family} {year}'''
+
+[strings."widget.books-filled-ixbrl"]
+hash = "f833f89f0fc8"
+cy = '''Llenwyd {fields} o {file} ({taxonomy}) ar gyfer y cyfnod {start} hyd at {end}.'''
+
+[strings."itsa.books-filled-quarter"]
+hash = "638e1059102f"
+cy = '''Llenwyd {figures} o {file} ar gyfer y cyfnod sy’n dod i ben ar {end}. Gwiriwch nhw, yna cyflwynwch.'''
+
+[strings."itsa.books-filled-period"]
+hash = "47818e36ba48"
+cy = '''Llenwyd {figures} o {file} ar gyfer y cyfnod {start} hyd at {end}. Gwiriwch nhw, yna cyflwynwch.'''
+
+[strings."ch.books-filled-ct-book"]
+hash = "03e68202bb83"
+cy = '''Llenwyd {fields} o {file} ar gyfer y cyfnod {start} hyd at {end}. Gwiriwch nhw, ychwanegwch yr UTR, datganiadau’r cyfrifon a’r datganiad, yna ewch i’r rhagolwg.'''
+
+[strings."ch.books-filled-ct-figures"]
+hash = "a8cfa492a0d3"
+cy = '''Llenwyd {fields} o {file} ar gyfer y cyfnod {start} hyd at {end}. Dim ond y cyfrif elw a cholled sydd yn y ffeil: llenwch y fantolen a gweddill y cyfrifon, yna ewch i’r rhagolwg.'''
+
+[strings."ch.books-filled-micro"]
+hash = "0e69109f389d"
+cy = '''Llenwyd {fields} o {file} ar gyfer y cyfnod {start} hyd at {end}. Gwiriwch nhw, ychwanegwch y dyddiad cymeradwyo a’r datganiadau, yna ewch i’r rhagolwg.'''
+
+
+[strings."ch.books-advice-ct"]
+hash = "2882977cf1b6"
+cy = '''Gwiriwch y ffigurau, ychwanegwch yr UTR, datganiadau’r cyfrifon a’r datganiad, yna ewch i’r rhagolwg.'''
+
+[strings."ch.books-advice-micro"]
+hash = "60491d706c4a"
+cy = '''Gwiriwch nhw, ychwanegwch y dyddiad cymeradwyo a’r datganiadau, yna ewch i’r rhagolwg.'''
+
+[strings."ch.books-advice-dormant"]
+hash = "45bf12997407"
+cy = '''Mae’r ddogfen ar gyfer cwmni segur, felly mae’r blwch segur wedi’i dicio: cadarnhewch yr hanes masnachu, y dosbarth cyfranddaliadau a’r gwerth enwol.'''
+
+[strings."ch.books-advice-small"]
+hash = "7c026a5c59ce"
+cy = '''Gwiriwch y ffigurau, ychwanegwch y polisïau cyfrifyddu, y dyddiad cymeradwyo a’r datganiadau, yna ewch i’r rhagolwg.'''
+
+# The small company accounts form's advance rows: the heading of each row.
+#   advance (to a director)         blaenswm
+
+[strings."ch.small.advance-number"]
+hash = "63c4618c281e"
+cy = '''Blaenswm {number}'''

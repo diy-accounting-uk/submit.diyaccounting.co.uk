@@ -350,6 +350,18 @@ window.WELSH_TEXT = {
   "ch.ard.shortened-to": "Wedi’i fyrhau i orffen ar {date}",
   "ch.ard.too-long":
     "Mae hyn yn gwneud y cyfnod yn hwy na 18 mis. Mae Tŷ’r Cwmnïau yn dweud na allwch ymestyn cyfnod y tu hwnt i 18 mis oni bai bod y cwmni yn nwylo gweinyddwyr, felly disgwyliwch iddo wrthod y ffeilio hwn.",
+  "ch.books-advice-ct": "Gwiriwch y ffigurau, ychwanegwch yr UTR, datganiadau’r cyfrifon a’r datganiad, yna ewch i’r rhagolwg.",
+  "ch.books-advice-dormant":
+    "Mae’r ddogfen ar gyfer cwmni segur, felly mae’r blwch segur wedi’i dicio: cadarnhewch yr hanes masnachu, y dosbarth cyfranddaliadau a’r gwerth enwol.",
+  "ch.books-advice-micro": "Gwiriwch nhw, ychwanegwch y dyddiad cymeradwyo a’r datganiadau, yna ewch i’r rhagolwg.",
+  "ch.books-advice-small":
+    "Gwiriwch y ffigurau, ychwanegwch y polisïau cyfrifyddu, y dyddiad cymeradwyo a’r datganiadau, yna ewch i’r rhagolwg.",
+  "ch.books-filled-ct-book":
+    "Llenwyd {fields} o {file} ar gyfer y cyfnod {start} hyd at {end}. Gwiriwch nhw, ychwanegwch yr UTR, datganiadau’r cyfrifon a’r datganiad, yna ewch i’r rhagolwg.",
+  "ch.books-filled-ct-figures":
+    "Llenwyd {fields} o {file} ar gyfer y cyfnod {start} hyd at {end}. Dim ond y cyfrif elw a cholled sydd yn y ffeil: llenwch y fantolen a gweddill y cyfrifon, yna ewch i’r rhagolwg.",
+  "ch.books-filled-micro":
+    "Llenwyd {fields} o {file} ar gyfer y cyfnod {start} hyd at {end}. Gwiriwch nhw, ychwanegwch y dyddiad cymeradwyo a’r datganiadau, yna ewch i’r rhagolwg.",
   "ch.callback.back-to-filing": "Yn ôl i’r ffeilio gyda Thŷ’r Cwmnïau",
   "ch.callback.exchanging": "Wrthi’n cyfnewid y cod awdurdodi am docyn mynediad...",
   "ch.callback.heading": "Cysylltu â Thŷ’r Cwmnïau",
@@ -1772,6 +1784,7 @@ window.WELSH_TEXT = {
   "ch.search.rate-limited-seconds": "Mae Tŷ’r Cwmnïau yn cyfyngu ar nifer ein chwiliadau. Rhowch gynnig arall arni ymhen {seconds} eiliad.",
   "ch.small.advance-not-director":
     "Mae {name} wedi’i enwi ar gyfer blaenswm, ond nid yw ymhlith y cyfarwyddwyr a restrir. Ychwanegwch nhw at y cyfarwyddwyr, neu cywirwch yr enw.",
+  "ch.small.advance-number": "Blaenswm {number}",
   "ch.small.after-one-year-split":
     "Ni all benthyciadau banc, symiau dyledus i gyfarwyddwyr a symiau dyledus i ymgymeriadau grŵp fod yn fwy na’r credydwyr sy’n ddyledus ar ôl blwyddyn.",
   "ch.small.bank-loans-too-big":
@@ -2099,6 +2112,8 @@ window.WELSH_TEXT = {
   "itsa.annual-loading": "Wrthi’n llwytho’r cyflwyniad blynyddol...",
   "itsa.annual-save-failed": "Methwyd â chadw’r cyflwyniad blynyddol: {reason}",
   "itsa.annual-saving": "Wrthi’n cadw’r cyflwyniad blynyddol...",
+  "itsa.books-filled-period": "Llenwyd {figures} o {file} ar gyfer y cyfnod {start} hyd at {end}. Gwiriwch nhw, yna cyflwynwch.",
+  "itsa.books-filled-quarter": "Llenwyd {figures} o {file} ar gyfer y cyfnod sy’n dod i ben ar {end}. Gwiriwch nhw, yna cyflwynwch.",
   "itsa.brought-forward-losses": "Colledion a ddygwyd ymlaen",
   "itsa.brought-forward-losses-used": "Colledion a ddygwyd ymlaen ac a ddefnyddiwyd",
   "itsa.business": "Busnes",
@@ -2907,6 +2922,10 @@ window.WELSH_TEXT = {
   "widget.books-choose": "Dewis ffeil",
   "widget.books-could-not-fill": "Methu llenwi o {file}: {reason}.",
   "widget.books-could-not-import": "Methu mewnforio {file}: {reason}.",
+  "widget.books-count-field-one": "1 maes",
+  "widget.books-count-fields": "{count} maes",
+  "widget.books-count-figure-one": "1 ffigur",
+  "widget.books-count-figures": "{count} ffigur",
   "widget.books-covers": "Mae’r llyfr hwn yn cwmpasu {covered}.",
   "widget.books-drive": "Dewis o Google Drive",
   "widget.books-drive-failed": "Methu agor Google Drive: {reason}.",
@@ -2915,6 +2934,7 @@ window.WELSH_TEXT = {
   "widget.books-drive-waiting": "Yn aros am Google Drive...",
   "widget.books-drop": "Gollyngwch lyfr yma",
   "widget.books-file-label": "Ffeil y llyfr i’w mewnforio",
+  "widget.books-filled-ixbrl": "Llenwyd {fields} o {file} ({taxonomy}) ar gyfer y cyfnod {start} hyd at {end}.",
   "widget.books-handoff-sign-in": "Mewngofnodwch a bydd y ffigurau o {file} yn llenwi’r ffurflen hon.",
   "widget.books-handoff-unusable": "Nid oedd modd defnyddio’r ffigurau a anfonwyd o’ch llyfrau: {reason}. Ni lenwyd dim.",
   "widget.books-heading": "Llenwi o’ch llyfrau",
@@ -2943,6 +2963,7 @@ window.WELSH_TEXT = {
     "Gwiriwch y ffigurau, ychwanegwch y prif weithgaredd, y polisïau cyfrifyddu, y dyddiad cymeradwyo a’r datganiadau, yna gweld y rhagolwg.",
   "widget.books-small-prior-filled": "Mae mantolen y flwyddyn flaenorol wedi’i llenwi o falansau agoriadol y llyfr.",
   "widget.books-small-prior-type": "Nid oes gan y llyfr ffigur ar gyfer y rhain, felly teipiwch nhw: {fields}.",
+  "widget.books-taxonomy": "tacsonomeg {family} {year}",
   "widget.callback-back": "Yn ôl i {activity}",
   "widget.callback-bad-state": "Cyflwr OAuth annilys. Rhowch gynnig arall arni.",
   "widget.callback-exchanging": "Yn cyfnewid y cod awdurdodi am docyn mynediad...",

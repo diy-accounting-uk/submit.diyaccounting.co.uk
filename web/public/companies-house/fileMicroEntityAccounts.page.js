@@ -380,7 +380,7 @@ async function handleAccountsFormSubmit(event) {
     const accounts = buildAccountsPayload();
     const preview = await window.renderMicroEntityAccounts(accounts);
     document.getElementById("previewIxbrl").textContent = preview.ixbrl;
-    document.getElementById("previewRendered").srcdoc = preview.ixbrl;
+    document.getElementById("previewRendered").srcdoc = window.accountsFormSections.documentForFrame(preview.ixbrl);
     showView("previewView");
     document.getElementById("previewView").scrollIntoView();
   } catch (error) {

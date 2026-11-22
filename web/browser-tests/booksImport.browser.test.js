@@ -1152,6 +1152,35 @@ test.describe("books import of an iXBRL accounts document", () => {
     await expect(page.locator("#currentCalledUpShareCapital")).toHaveValue("1");
   });
 
+  for (const [form, url, caseName, advice] of [
+    [
+      "micro-entity",
+      MICRO_URL,
+      "micro-entity-accounts",
+      "Gwiriwch nhw, ychwanegwch y dyddiad cymeradwyo a’r datganiadau, yna ewch i’r rhagolwg.",
+    ],
+    [
+      "small company",
+      SMALL_URL,
+      "small-company-accounts-full",
+      "Gwiriwch y ffigurau, ychwanegwch y polisïau cyfrifyddu, y dyddiad cymeradwyo a’r datganiadau, yna ewch i’r rhagolwg.",
+    ],
+  ]) {
+    test(`the Welsh ${form} page reports a document's fill in Welsh, with no English sentence`, async ({ page }) => {
+      await page.addInitScript(() => localStorage.setItem("siteLanguage", "cy"));
+      await openAccountsPage(page, url.replace("/companies-house/", "/cy/companies-house/"), "06846849");
+      await chooseFile(page, "accounts.xhtml", builtAccountsDocument(caseName), "application/xhtml+xml");
+
+      const status = page.locator("#booksImportStatus");
+      await expect(status).toContainText("o accounts.xhtml (tacsonomeg FRS 102 2026) ar gyfer y cyfnod 2025-04-01 hyd at 2026-03-31.", {
+        timeout: 60_000,
+      });
+      await expect(status).toContainText(/^Llenwyd \d+ maes o accounts\.xhtml/);
+      await expect(status).toContainText(advice);
+      await expect(status).not.toContainText(/Filled|Check the|Check them|taxonomy\)/);
+    });
+  }
+
   test("a small company document fills the profit and loss account, the balance sheets, the note and the directors", async ({ page }) => {
     await openAccountsPage(page, SMALL_URL, "06846849");
     await chooseFile(page, "accounts.xhtml", builtAccountsDocument("small-company-accounts-full"), "application/xhtml+xml");

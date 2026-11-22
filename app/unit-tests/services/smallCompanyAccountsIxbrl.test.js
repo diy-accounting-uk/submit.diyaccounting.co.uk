@@ -1066,6 +1066,27 @@ describe("the debtors, directors' loan, group and provisions lines of a small co
     expect(xhtml).not.toContain("core:PrepaymentsAccruedIncome");
   });
 
+  test("a year that states debtors with no split shows the total alone in the debtors note, with no line of 0", () => {
+    const xhtml = buildSmallCompanyAccounts(withYears(split, PRIOR_BALANCE_SHEET));
+    const note = xhtml.slice(xhtml.search(/<h3>\d+\. Debtors<\/h3>/));
+    const row = (label) => note.match(new RegExp(`<tr[^>]*><td class="label">${label}</td>(.*?)</tr>`))[1];
+    expect(row("Trade debtors")).toMatch(/core:TradeDebtorsTradeReceivables" contextRef="e2026"[^>]*>1,800<.*<td class="figure"><\/td>$/);
+    expect(row("Other debtors")).toMatch(/<td class="figure"><\/td>$/);
+    expect(row("Total debtors")).toMatch(/>2,500<.*>2,000<\/td>$/);
+    expect(nonFractionValue(xhtml, "core:Debtors", "e2025")).toBe(PRIOR_BALANCE_SHEET.debtors);
+    for (const name of ["TradeDebtorsTradeReceivables", "OtherDebtors", "PrepaymentsAccruedIncome"]) {
+      expect(xhtml).not.toMatch(new RegExp(`core:${name}" contextRef="e2025"`));
+    }
+    expect(ixbrlStructureProblems(xhtml)).toEqual([]);
+  });
+
+  test("a year with no debtors at all keeps its lines of 0 beside the other year's split", () => {
+    const xhtml = buildSmallCompanyAccounts(
+      withYears(split, { ...PRIOR_BALANCE_SHEET, debtors: 0, cashAtBank: PRIOR_BALANCE_SHEET.cashAtBank + PRIOR_BALANCE_SHEET.debtors }),
+    );
+    expect(nonFractionValue(xhtml, "core:TradeDebtorsTradeReceivables", "e2025")).toBe(0);
+  });
+
   test("refuses a debtors split that does not add up to the debtors", () => {
     expect(() =>
       buildSmallCompanyAccounts({ ...SAMPLE_INPUT, balanceSheet: { current: { ...CURRENT_BALANCE_SHEET, tradeDebtors: 1000 } } }),

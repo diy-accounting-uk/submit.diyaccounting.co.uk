@@ -189,10 +189,53 @@ function readDirectorsAdvances() {
 
 let directorsAdvanceRowsAdded = 0;
 
-// Another advance row: a copy of the first with its own ids, empty, and a button that takes it away.
+function directorsAdvanceRows() {
+  return Array.from(document.querySelectorAll("#directorsAdvanceRows .directors-advance-row"));
+}
+
+// Each row states its number, and offers its removal while another row is left.
+function numberDirectorsAdvanceRows() {
+  const rows = directorsAdvanceRows();
+  rows.forEach((row, index) => {
+    row.querySelector(".directors-advance-row__title").textContent = window.siteText("ch.small.advance-number", "Advance {number}", {
+      number: index + 1,
+    });
+    row.querySelector(".directors-advance-row__remove").hidden = rows.length === 1;
+  });
+}
+
+// Taking a row away moves each later advance up one row and drops the last row, so the first row
+// keeps the ids the form's checks name.
+function removeDirectorsAdvanceRow(row) {
+  const rows = directorsAdvanceRows();
+  for (let index = rows.indexOf(row); index < rows.length - 1; index++) {
+    rows[index].querySelectorAll("[data-advance-field]").forEach((box) => {
+      box.value = rows[index + 1].querySelector(`[data-advance-field="${box.dataset.advanceField}"]`).value;
+      box.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  }
+  rows.at(-1).remove();
+  numberDirectorsAdvanceRows();
+}
+
+// The row's heading and the button that takes the row away.
+function completeDirectorsAdvanceRow(row) {
+  const title = document.createElement("h4");
+  title.className = "directors-advance-row__title";
+  row.prepend(title);
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "secondary-button directors-advance-row__remove";
+  remove.textContent = window.siteText("ch.small.remove-advance", "Remove this advance");
+  remove.addEventListener("click", () => removeDirectorsAdvanceRow(row));
+  row.append(remove);
+}
+
+// Another advance row: a copy of the first with its own ids, empty.
 function addDirectorsAdvanceRow() {
   const rows = document.getElementById("directorsAdvanceRows");
   const row = rows.querySelector(".directors-advance-row").cloneNode(true);
+  row.querySelectorAll(".directors-advance-row__title, .directors-advance-row__remove").forEach((element) => element.remove());
   directorsAdvanceRowsAdded += 1;
   const suffix = `-${directorsAdvanceRowsAdded + 1}`;
   row.querySelectorAll("[id]").forEach((element) => {
@@ -206,15 +249,14 @@ function addDirectorsAdvanceRow() {
     box.value = "";
     box.name += suffix;
   });
-  const remove = document.createElement("button");
-  remove.type = "button";
-  remove.className = "secondary-button";
-  remove.textContent = window.siteText("ch.small.remove-advance", "Remove this advance");
-  remove.addEventListener("click", () => row.remove());
-  row.append(remove);
+  completeDirectorsAdvanceRow(row);
   rows.append(row);
+  numberDirectorsAdvanceRows();
   return row;
 }
+
+completeDirectorsAdvanceRow(document.querySelector("#directorsAdvanceRows .directors-advance-row"));
+numberDirectorsAdvanceRows();
 
 function readBalanceSheet(prefix) {
   const figures = {};
@@ -646,7 +688,7 @@ async function handleAccountsFormSubmit(event) {
   try {
     const preview = await window.renderMicroEntityAccounts(buildAccountsPayload());
     document.getElementById("previewIxbrl").textContent = preview.ixbrl;
-    document.getElementById("previewRendered").srcdoc = preview.ixbrl;
+    document.getElementById("previewRendered").srcdoc = window.accountsFormSections.documentForFrame(preview.ixbrl);
     showView("previewView");
     document.getElementById("previewView").scrollIntoView();
     priorYearWarningShown = revisingFilletedAsFullWithoutPriorYear();

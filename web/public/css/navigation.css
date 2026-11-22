@@ -184,6 +184,7 @@ dd {
 
   .language-switch {
     margin-left: 0;
+    align-self: flex-start;
   }
 
   .language-switch a {
@@ -194,10 +195,11 @@ dd {
     min-width: 0;
   }
 
-  /* Two rows: the 2.75rem icons, the 2.5rem account row, the padding and the rule.
+  /* Three rows: the 2.75rem icons, the 2.5rem account row, the account line, the padding and the rule.
      The fallback reserves the same height so the band's insertion does not move the title. */
   header {
-    --phone-band-height: calc(2.75rem + 2.5rem + var(--space-1) + 3px);
+    --phone-account-line: 1.25rem;
+    --phone-band-height: calc(2.75rem + 2.5rem + var(--phone-account-line) + var(--space-1) + 3px);
   }
 
   .chrome-fallback {
@@ -217,26 +219,21 @@ dd {
     min-height: 2.5rem;
   }
 
-  .login-status {
-    flex: 1 1 0;
-    line-height: 1.1;
-    text-align: left;
-  }
-
-  /* The signed-out line may take two lines ("Heb fewngofnodi" on the narrowest phones); a signed-in
-     name keeps one line and its ellipsis. */
-  .login-status:not([role="group"]) {
-    white-space: normal;
-  }
-
-  /* A synthetic account's wrench takes the room of the signed-in name, which would show as a cut
-     icon; Sign out and the token count still say the reader is signed in. */
-  .header-nav:has(.developer-mode-toggle) .login-status[role="group"] {
-    display: none;
-  }
-
+  /* The account row has no room for a signed-in name beside the token count, settings and Sign out,
+     so the account line takes a line of its own under them, where an email address shows whole.
+     Signed out, the same line says so, and the band is the same height either way. */
   .auth-section {
-    justify-content: space-between;
+    flex-wrap: wrap;
+    row-gap: 0;
+    justify-content: flex-end;
+  }
+
+  .login-status {
+    order: 99;
+    flex: 1 0 100%;
+    height: var(--phone-account-line);
+    line-height: var(--phone-account-line);
+    text-align: right;
   }
 
   header h1 {

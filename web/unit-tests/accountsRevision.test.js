@@ -245,7 +245,7 @@ describe("the notes a filed document carries over to its revision", () => {
         expect(notes.controllingParty).toEqual(SMALL_COMPANY_NOTES_CASE_INPUT.controllingParty);
         expect(notes.debtors).toEqual({
           current: { tradeDebtors: 1700, amountsOwedByDirectors: 800 },
-          prior: { tradeDebtors: 0, amountsOwedByDirectors: 0 },
+          prior: {},
         });
         expect(notes.directorsAdvances).toEqual(SMALL_COMPANY_NOTES_CASE_INPUT.directorsAdvances);
         expect(notes.intangibleAssetNote).toEqual(SMALL_COMPANY_NOTES_CASE_INPUT.intangibleAssetNote);

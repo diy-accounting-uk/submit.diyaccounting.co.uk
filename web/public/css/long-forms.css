@@ -59,6 +59,15 @@ h2 + form > .form-section:first-child {
 }
 
 /* Each director's advance after the first starts below a rule, so the rows read as separate notes. */
+.directors-advance-row__title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--step-0);
+}
+
+.directors-advance-row__remove {
+  margin-top: var(--space-3);
+}
+
 .directors-advance-row + .directors-advance-row {
   border-top: 1px solid var(--c-rule);
   margin-top: var(--space-5);

@@ -119,7 +119,22 @@
     return undefined;
   }
 
+  // The document's own style lays a statement out for paper: wide page margins and a fixed width for
+  // each figure column. In a frame on a phone that pushes the last column past the frame's edge, so
+  // the framed copy alone takes narrower margins and columns as wide as their figures.
+  const NARROW_FRAME_STYLE = `<style>@media (max-width: 40rem) {
+.page { padding: 1rem 0.5rem; }
+table.statement th, table.statement td { padding: 1mm 0.75mm; }
+table.statement th.figure, table.statement td.figure { width: auto; }
+table.statement td.positive { padding-right: 1.5mm; }
+}</style>`;
+
+  function documentForFrame(xhtml) {
+    return xhtml.includes("</head>") ? xhtml.replace("</head>", `${NARROW_FRAME_STYLE}</head>`) : xhtml;
+  }
+
   window.accountsFormSections = {
+    documentForFrame,
     fillRegisteredOffice,
     fillFiledRegisteredOffice,
     readRegisteredOffice,

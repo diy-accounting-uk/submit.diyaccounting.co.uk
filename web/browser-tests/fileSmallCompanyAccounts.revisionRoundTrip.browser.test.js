@@ -292,6 +292,39 @@ test.describe("Revising small company accounts without a change", () => {
     });
   }
 
+  test("at phone width the advances table of the previewed document ends inside the preview frame", async ({ page }) => {
+    const original = buildSmallCompanyAccounts(EVERY_NOTE);
+    await openAmend(page, {
+      kind: "companies-house-accounts",
+      statusCode: "ACCEPT",
+      submissionNumber: "00001A",
+      companyNumber: EVERY_NOTE.companyNumber,
+      companyNameForProfile: EVERY_NOTE.companyName,
+      jurisdictionForProfile: "england-wales",
+      rejections: [],
+      filedDocument: original,
+    });
+    await page.evaluate((ixbrl) => {
+      window.renderMicroEntityAccounts = async () => ({ ixbrl });
+      for (const box of document.querySelectorAll('input[type="checkbox"][id^="statement"]')) box.checked = true;
+    }, original);
+    await page.fill("#revisionNonCompliance", "The interest rate of an advance was stated wrongly.");
+    await page.fill("#revisionAmendments", "The advances note states the rate charged.");
+    await page.fill("#directorDateApproved", "2026-11-20");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.evaluate(() => document.getElementById("accountsForm").requestSubmit());
+    await expect(page.locator("#previewView")).toBeVisible();
+
+    // The whole row, from the director's name to the amount owed at the end, is no wider than the frame,
+    // and with the name at the frame's left the last amount is inside its right edge.
+    const frame = await page.locator("#previewRendered").boundingBox();
+    const row = page.frameLocator("#previewRendered").locator("tr", { hasText: "Alan James Morgan" });
+    await row.locator("td.label").scrollIntoViewIfNeeded();
+    const [name, closing] = [await row.locator("td.label").boundingBox(), await row.locator("td.figure").last().boundingBox()];
+    expect(name.x).toBeGreaterThanOrEqual(frame.x);
+    expect(closing.x + closing.width).toBeLessThanOrEqual(frame.x + frame.width);
+  });
+
   test("a line break in a filed name or the advance's terms comes back as a space in its one-line box", async ({ page }) => {
     const input = {
       ...SMALL_COMPANY_NOTES_CASE_INPUT,

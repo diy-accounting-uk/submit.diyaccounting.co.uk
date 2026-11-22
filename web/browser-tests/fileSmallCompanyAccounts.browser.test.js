@@ -352,6 +352,40 @@ test.describe("File small company accounts page", () => {
     await screenshotAtBothWidths(page, "small-original-share-capital");
   });
 
+  test("each advance row states its number, and any row can be removed while another is left", async ({ page }) => {
+    await serveSiteStyles(page);
+    await openFormView(page);
+    const rows = page.locator(".directors-advance-row");
+    const titles = page.locator(".directors-advance-row__title");
+    const removeButtons = page.getByRole("button", { name: "Remove this advance" });
+    await expect(titles).toHaveText(["Advance 1"]);
+    await expect(removeButtons).toHaveCount(0);
+
+    await page.click("#addDirectorsAdvance");
+    await page.click("#addDirectorsAdvance");
+    await expect(titles).toHaveText(["Advance 1", "Advance 2", "Advance 3"]);
+    await expect(removeButtons).toHaveCount(3);
+    for (const [index, name] of ["Alex Jones", "Alan James Morgan", "Bethan Price"].entries()) {
+      await rows.nth(index).locator('[data-advance-field="name"]').fill(name);
+      await rows
+        .nth(index)
+        .locator('[data-advance-field="balanceAtEnd"]')
+        .fill(String((index + 1) * 100));
+    }
+
+    await rows.nth(0).getByRole("button", { name: "Remove this advance" }).click();
+    await expect(titles).toHaveText(["Advance 1", "Advance 2"]);
+    await expect(rows.nth(0).locator('[data-advance-field="name"]')).toHaveValue("Alan James Morgan");
+    await expect(rows.nth(0).locator('[data-advance-field="balanceAtEnd"]')).toHaveValue("200");
+    await expect(rows.nth(1).locator('[data-advance-field="name"]')).toHaveValue("Bethan Price");
+    await expect(page.locator("#directorsAdvanceName")).toHaveValue("Alan James Morgan");
+
+    await rows.nth(0).getByRole("button", { name: "Remove this advance" }).click();
+    await expect(titles).toHaveText(["Advance 1"]);
+    await expect(rows.nth(0).locator('[data-advance-field="name"]')).toHaveValue("Bethan Price");
+    await expect(removeButtons).toHaveCount(0);
+  });
+
   test("a second director's advance takes its own row, reaches the request, and the accounts it builds carry both back", async ({
     page,
   }) => {

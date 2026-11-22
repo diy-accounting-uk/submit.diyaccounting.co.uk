@@ -653,6 +653,41 @@ test.describe("The VAT return page at phone width", () => {
     expect(button.x + button.width).toBeLessThanOrEqual(nav.x + nav.width + 0.5);
   });
 
+  test("developer mode's tags lie over neither the navigation nor the page title", async ({ page }) => {
+    await openAtPhoneWidth(page, { synthetic: true });
+    await page.locator(".developer-mode-toggle").click();
+    await expect(page.locator("#dev-datetime")).toBeVisible();
+    const overlaps = await page.evaluate(() => {
+      const boxOf = (element) => element.getBoundingClientRect();
+      const meet = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+      const tags = [
+        ...document.querySelectorAll(".dev-float-left, .entitlement-status, #latestTestsLink, #apiDocsLink, #viewSourceLink"),
+      ].filter((tag) => tag.checkVisibility());
+      const covered = [...document.querySelectorAll("nav.main-nav a, header h1, header h1 + p")].filter((element) =>
+        element.checkVisibility(),
+      );
+      return tags.flatMap((tag) =>
+        covered
+          .filter((element) => meet(boxOf(tag), boxOf(element)))
+          .map((element) => `${tag.id || tag.className} over ${element.textContent.trim()}`),
+      );
+    });
+    expect(overlaps).toEqual([]);
+    expect(await page.locator("nav.main-nav a").count()).toBeGreaterThan(0);
+  });
+
+  for (const synthetic of [false, true]) {
+    test(`a ${synthetic ? "synthetic" : "live"} account's header shows the whole signed-in address`, async ({ page }) => {
+      await openAtPhoneWidth(page, { synthetic });
+      const status = page.locator(".login-status");
+      await expect(status).toContainText("helen@morgantechnical.example");
+      expect(await status.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+      const [nav, box] = [await page.locator(".header-nav").boundingBox(), await status.boundingBox()];
+      expect(box.x).toBeGreaterThanOrEqual(nav.x);
+      expect(box.x + box.width).toBeLessThanOrEqual(nav.x + nav.width + 0.5);
+    });
+  }
+
   test("a live account's header keeps the signed-in person icon", async ({ page }) => {
     await openAtPhoneWidth(page, { synthetic: false });
     await expect(page.locator(".login-status .login-person")).toBeVisible();

@@ -425,6 +425,36 @@
         box-shadow: 0 0 8px rgba(0, 255, 0, 0.4);
       }
 
+      /* On a phone the fixed stack would lie over the navigation and the page title, so each tag
+         sits in the page where its element is: the activity line under the account row, the links
+         in the footer, and the rest after the footer. */
+      @media (max-width: 600px) {
+        body.developer-mode .dev-float-left,
+        body.developer-mode .entitlement-status,
+        body.developer-mode #latestTestsLink,
+        body.developer-mode #apiDocsLink,
+        body.developer-mode #viewSourceLink {
+          position: static;
+          width: fit-content;
+          max-width: calc(100% - 2rem);
+          margin: 4px 1rem;
+          border-left: 1px solid rgba(0, 255, 0, 0.4);
+          border-radius: 4px;
+          overflow-wrap: anywhere;
+        }
+
+        body.developer-mode .auth-section {
+          flex-wrap: wrap;
+        }
+
+        body.developer-mode .auth-section > .entitlement-status {
+          order: 99;
+          flex: 1 0 100%;
+          max-width: 100%;
+          margin: 4px 0;
+        }
+      }
+
       /* ================================================================
          TERMINAL STYLING FOR FORM DEVELOPER SECTIONS
          Applied to #developerSection on forms
