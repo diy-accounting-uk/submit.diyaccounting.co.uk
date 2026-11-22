@@ -34,7 +34,7 @@
         </p>
       </section>
       <section class="panel">
-        <h2>Tools (41)</h2>
+        <h2>Tools (42)</h2>
       <details class="tool" id="tool-add_client">
         <summary><code>add_client</code></summary>
         <p>Adds one client to the practice's list, over the deployed API. Every identifier is optional, but a given one must match its HMRC or Companies House format.</p>
@@ -488,6 +488,29 @@
     &quot;service&quot;,
     &quot;knownFact&quot;
   ],
+  &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
+}</code></pre>
+        </details>
+      </details>
+      <details class="tool" id="tool-list_accounts_receipts">
+        <summary><code>list_accounts_receipts</code></summary>
+        <p>The accounts filings of the signed-in account, newest first, over the deployed API. Call it before revising accounts already filed: each accepted filing answers the receipt name that revision.revisesReceipt takes, the company number, the period, the type of accounts, whether it is itself revised accounts, whether it went with a Company Tax Return, and revisable, true when the accounts tools can revise it. Rejected filings answer their submission number and Companies House's reasons, and have no receipt to revise. clientId narrows the list to one of the practice's clients.</p>
+        <table>
+          <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>clientId</code></td><td>string</td><td>no</td><td>A practice client's id, to list that client's accounts filings</td></tr>
+          </tbody>
+        </table>
+        <details>
+          <summary>Input schema (JSON Schema)</summary>
+          <pre><code>{
+  &quot;type&quot;: &quot;object&quot;,
+  &quot;properties&quot;: {
+    &quot;clientId&quot;: {
+      &quot;description&quot;: &quot;A practice client's id, to list that client's accounts filings&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    }
+  },
   &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
 }</code></pre>
         </details>
@@ -1217,7 +1240,7 @@
           &quot;description&quot;: &quot;The significant amendments the revised accounts make; Companies House prints it under \&quot;What the revised accounts change\&quot;&quot;
         },
         &quot;revisesReceipt&quot;: {
-          &quot;description&quot;: &quot;The name of the receipt of the accepted accounts these revise, ending .json, as the user's receipts page lists it; the filing route refuses one that is not found, not accounts, not accepted, part of a joint filing, already revised or for another company. Leave it out when the user does not have it&quot;,
+          &quot;description&quot;: &quot;The name of the receipt of the accepted accounts these revise, ending .json, as list_accounts_receipts answers it; the filing route refuses one that is not found, not accounts, not accepted, part of a joint filing, already revised or for another company. Leave it out when the user does not have it&quot;,
           &quot;type&quot;: &quot;string&quot;
         }
       },
@@ -1472,7 +1495,7 @@
           &quot;description&quot;: &quot;The significant amendments the revised accounts make; Companies House prints it under \&quot;What the revised accounts change\&quot;&quot;
         },
         &quot;revisesReceipt&quot;: {
-          &quot;description&quot;: &quot;The name of the receipt of the accepted accounts these revise, ending .json, as the user's receipts page lists it; the filing route refuses one that is not found, not accounts, not accepted, part of a joint filing, already revised or for another company. Leave it out when the user does not have it&quot;,
+          &quot;description&quot;: &quot;The name of the receipt of the accepted accounts these revise, ending .json, as list_accounts_receipts answers it; the filing route refuses one that is not found, not accounts, not accepted, part of a joint filing, already revised or for another company. Leave it out when the user does not have it&quot;,
           &quot;type&quot;: &quot;string&quot;
         }
       },
@@ -2647,7 +2670,7 @@
           &quot;description&quot;: &quot;The significant amendments the revised accounts make; Companies House prints it under \&quot;What the revised accounts change\&quot;&quot;
         },
         &quot;revisesReceipt&quot;: {
-          &quot;description&quot;: &quot;The name of the receipt of the accepted accounts these revise, ending .json, as the user's receipts page lists it; the filing route refuses one that is not found, not accounts, not accepted, part of a joint filing, already revised or for another company. Leave it out when the user does not have it&quot;,
+          &quot;description&quot;: &quot;The name of the receipt of the accepted accounts these revise, ending .json, as list_accounts_receipts answers it; the filing route refuses one that is not found, not accounts, not accepted, part of a joint filing, already revised or for another company. Leave it out when the user does not have it&quot;,
           &quot;type&quot;: &quot;string&quot;
         }
       },
@@ -2912,7 +2935,7 @@
           &quot;description&quot;: &quot;The significant amendments the revised accounts make; Companies House prints it under \&quot;What the revised accounts change\&quot;&quot;
         },
         &quot;revisesReceipt&quot;: {
-          &quot;description&quot;: &quot;The name of the receipt of the accepted accounts these revise, ending .json, as the user's receipts page lists it; the filing route refuses one that is not found, not accounts, not accepted, part of a joint filing, already revised or for another company. Leave it out when the user does not have it&quot;,
+          &quot;description&quot;: &quot;The name of the receipt of the accepted accounts these revise, ending .json, as list_accounts_receipts answers it; the filing route refuses one that is not found, not accounts, not accepted, part of a joint filing, already revised or for another company. Leave it out when the user does not have it&quot;,
           &quot;type&quot;: &quot;string&quot;
         }
       },

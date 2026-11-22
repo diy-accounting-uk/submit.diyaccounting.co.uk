@@ -43,6 +43,7 @@ import {
   submitVatReturn,
   getVatReceipt,
   listVatReceipts,
+  listAccountsReceipts,
   renderMicroEntityAccounts,
   submitMicroEntityAccounts,
   renderSmallCompanyAccounts,
@@ -116,7 +117,7 @@ const revisionSchema = z
       .string()
       .optional()
       .describe(
-        "The name of the receipt of the accepted accounts these revise, ending .json, as the user's receipts page lists it; the filing route refuses one that is not found, not accounts, not accepted, part of a joint filing, already revised or for another company. Leave it out when the user does not have it",
+        "The name of the receipt of the accepted accounts these revise, ending .json, as list_accounts_receipts answers it; the filing route refuses one that is not found, not accounts, not accepted, part of a joint filing, already revised or for another company. Leave it out when the user does not have it",
       ),
   })
   .optional()
@@ -655,6 +656,21 @@ export const TOOLS = {
       clientId: z.string().optional().describe("A practice client's id, to list that client's receipts"),
     },
     handler: listVatReceipts,
+  },
+  list_accounts_receipts: {
+    title: "List accounts receipts",
+    annotations: READS,
+    description:
+      "The accounts filings of the signed-in account, newest first, over the deployed API. Call it before revising " +
+      "accounts already filed: each accepted filing answers the receipt name that revision.revisesReceipt takes, the " +
+      "company number, the period, the type of accounts, whether it is itself revised accounts, whether it went with a " +
+      "Company Tax Return, and revisable, true when the accounts tools can revise it. Rejected filings answer their " +
+      "submission number and Companies House's reasons, and have no receipt to revise. clientId narrows the list to " +
+      "one of the practice's clients.",
+    inputSchema: {
+      clientId: z.string().optional().describe("A practice client's id, to list that client's accounts filings"),
+    },
+    handler: listAccountsReceipts,
   },
   render_micro_entity_accounts_sandbox: {
     title: "Render micro-entity accounts",

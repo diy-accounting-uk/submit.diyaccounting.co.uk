@@ -44,6 +44,7 @@ export const HOSTED_TOOL_NAMES = [
   "submit_vat_return",
   "get_vat_receipt",
   "list_vat_receipts",
+  "list_accounts_receipts",
   "render_micro_entity_accounts_sandbox",
   "render_small_company_accounts_sandbox",
   "request_companies_house_codes",

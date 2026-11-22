@@ -20,6 +20,7 @@ import {
   submitVatReturn,
   getVatReceipt,
   listVatReceipts,
+  listAccountsReceipts,
   renderMicroEntityAccounts,
   submitMicroEntityAccounts,
   renderSmallCompanyAccounts,
@@ -31,6 +32,9 @@ import {
   requestCompaniesHouseCodes,
 } from "../lib/submit-tools.js";
 import { createSession } from "../lib/book-tools.js";
+import { buildMicroEntityAccounts } from "../../app/services/microEntityAccountsIxbrl.js";
+import { buildSmallCompanyAccounts } from "../../app/services/smallCompanyAccountsIxbrl.js";
+import { SMALL_COMPANY_CASE_INPUT } from "../../app/test-helpers/accountsDocumentCases.js";
 import { TOOLS } from "../lib/server.js";
 
 const GRANT_ID = "11111111-2222-4333-8444-555555555555";
@@ -534,6 +538,223 @@ describe("submit-tools", () => {
       await listVatReceipts(session, { clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV" });
 
       expect(mockFetch.mock.calls[0][0]).toBe("https://submit.diyaccounting.co.uk/api/v1/hmrc/receipt?clientId=01ARZ3NDEKTSV4RRFFQ69G5FAV");
+    });
+  });
+
+  describe("list_accounts_receipts", () => {
+    const MICRO_YEAR = {
+      fixedAssets: 0,
+      currentAssets: 100,
+      creditorsWithinOneYear: 0,
+      creditorsAfterOneYear: 0,
+      calledUpShareCapital: 100,
+      profitAndLossAccount: 0,
+      capitalAndReserves: 100,
+    };
+    const DORMANT_DOCUMENT = buildMicroEntityAccounts({
+      companyNumber: "00000001",
+      companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+      registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
+      periodStart: "2025-01-01",
+      periodEnd: "2025-12-31",
+      averageNumberOfEmployees: 0,
+      directorName: "Jo Smith",
+      dateOfApproval: "2026-01-15",
+      balanceSheet: { current: MICRO_YEAR, prior: MICRO_YEAR },
+      dormant: true,
+      dormantTradingStatus: "neverTraded",
+      shareClass: "ordinaryShares",
+      nominalValue: 1,
+    });
+    const FILLETED_DOCUMENT = buildSmallCompanyAccounts({ ...SMALL_COMPANY_CASE_INPUT, filleted: true });
+    const DORMANT_NAME = "2026-02-01T10:00:00.000Z-000001.json";
+    const REVISED_NAME = "2026-03-01T10:00:00.000Z-000002.json";
+    const SMALL_NAME = "2026-01-20T10:00:00.000Z-000003.json";
+    const JOINT_NAME = "2026-01-10T10:00:00.000Z-000004.json";
+
+    function receiptRow(name, extra = {}) {
+      return { name, timestamp: name.slice(0, 24), kind: "companies-house-accounts", jointFilingId: null, amended: false, ...extra };
+    }
+
+    const OWN_RECEIPTS = {
+      list: {
+        receipts: [
+          receiptRow(REVISED_NAME, { amended: true }),
+          receiptRow(DORMANT_NAME),
+          { name: "2026-01-30T09:15:00.000Z-123456789012.json", timestamp: "2026-01-30T09:15:00.000Z", kind: null },
+          receiptRow(SMALL_NAME),
+          receiptRow(JOINT_NAME, { jointFilingId: "joint-1" }),
+        ],
+        filingsInProgress: [
+          {
+            submissionNumber: "000005",
+            kind: "accounts",
+            status: "rejected",
+            submittedAt: "2026-03-02T08:00:00.000Z",
+            rejections: [{ code: "9999" }],
+          },
+          { submissionNumber: "000006", kind: "accounts", status: "pending", submittedAt: "2026-03-03T08:00:00.000Z", rejections: [] },
+          {
+            submissionNumber: "000007",
+            kind: "confirmation-statement",
+            status: "rejected",
+            submittedAt: "2026-03-04T08:00:00.000Z",
+            rejections: [],
+          },
+        ],
+      },
+      stored: {
+        [REVISED_NAME]: {
+          statusCode: "ACCEPT",
+          companyNumber: "00000001",
+          kind: "companies-house-accounts",
+          filedDocument: DORMANT_DOCUMENT,
+        },
+        [DORMANT_NAME]: {
+          statusCode: "ACCEPT",
+          companyNumber: "00000001",
+          kind: "companies-house-accounts",
+          filedDocument: DORMANT_DOCUMENT,
+        },
+        [SMALL_NAME]: {
+          statusCode: "ACCEPT",
+          companyNumber: "04549236",
+          kind: "companies-house-accounts",
+          filedDocument: FILLETED_DOCUMENT,
+        },
+        [JOINT_NAME]: {
+          statusCode: "ACCEPT",
+          companyNumber: "04549236",
+          kind: "companies-house-accounts",
+          filedDocument: FILLETED_DOCUMENT,
+        },
+      },
+    };
+
+    // A receipts API that answers each bearer only the receipts stored under that user.
+    function receiptsApi(byToken) {
+      return vi.fn(async (url, init) => {
+        const user = byToken[init.headers["Authorization"]];
+        if (!user) return jsonResponse(401, { message: "Unauthorized" });
+        const path = new URL(url).pathname;
+        if (path === "/api/v1/hmrc/receipt") return jsonResponse(200, user.list);
+        const name = decodeURIComponent(path.slice("/api/v1/hmrc/receipt/".length));
+        return user.stored[name] ? jsonResponse(200, user.stored[name]) : jsonResponse(400, { message: "Receipt not found" });
+      });
+    }
+
+    it("answers each accepted accounts filing's receipt name, company, period, type and whether it can be revised", async () => {
+      vi.stubGlobal("fetch", receiptsApi({ "Bearer session-access-token": OWN_RECEIPTS }));
+
+      const result = await listAccountsReceipts(session, {});
+
+      expect(result.receipts).toEqual([
+        {
+          name: REVISED_NAME,
+          companyNumber: "00000001",
+          periodStart: "2025-01-01",
+          periodEnd: "2025-12-31",
+          accountsType: "dormant micro-entity",
+          status: "accepted",
+          revisedAccounts: true,
+          filedWithCompanyTaxReturn: false,
+          revisable: false,
+          filedOn: "2026-03-01",
+        },
+        {
+          name: DORMANT_NAME,
+          companyNumber: "00000001",
+          periodStart: "2025-01-01",
+          periodEnd: "2025-12-31",
+          accountsType: "dormant micro-entity",
+          status: "accepted",
+          revisedAccounts: false,
+          filedWithCompanyTaxReturn: false,
+          revisable: true,
+          filedOn: "2026-02-01",
+        },
+        {
+          name: SMALL_NAME,
+          companyNumber: "04549236",
+          periodStart: "2025-04-01",
+          periodEnd: "2026-03-31",
+          accountsType: "small company, filleted",
+          status: "accepted",
+          revisedAccounts: false,
+          filedWithCompanyTaxReturn: false,
+          revisable: true,
+          filedOn: "2026-01-20",
+        },
+        {
+          name: JOINT_NAME,
+          companyNumber: "04549236",
+          periodStart: "2025-04-01",
+          periodEnd: "2026-03-31",
+          accountsType: "small company, filleted",
+          status: "accepted",
+          revisedAccounts: false,
+          filedWithCompanyTaxReturn: true,
+          revisable: false,
+          filedOn: "2026-01-10",
+        },
+      ]);
+      expect(result.rejectedFilings).toEqual([
+        { submissionNumber: "000005", status: "rejected", rejectedOn: "2026-03-02", rejections: [{ code: "9999" }] },
+      ]);
+    });
+
+    it("answers a customer only the receipts the route holds for that customer", async () => {
+      const otherCustomer = createSession({
+        credentials: { accessToken: async () => "other-access-token", idToken: async () => "other-id-token" },
+      });
+      const OTHER_NAME = "2026-04-01T10:00:00.000Z-000010.json";
+      const fetchMock = receiptsApi({
+        "Bearer session-access-token": OWN_RECEIPTS,
+        "Bearer other-access-token": {
+          list: { receipts: [receiptRow(OTHER_NAME)], filingsInProgress: [] },
+          stored: {
+            [OTHER_NAME]: {
+              statusCode: "ACCEPT",
+              companyNumber: "09999999",
+              kind: "companies-house-accounts",
+              filedDocument: FILLETED_DOCUMENT,
+            },
+          },
+        },
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const own = await listAccountsReceipts(session, {});
+      const other = await listAccountsReceipts(otherCustomer, {});
+
+      expect(own.receipts.map((receipt) => receipt.name)).toEqual([REVISED_NAME, DORMANT_NAME, SMALL_NAME, JOINT_NAME]);
+      expect(other.receipts.map((receipt) => receipt.name)).toEqual([OTHER_NAME]);
+      expect(other.receipts[0].companyNumber).toBe("09999999");
+      expect(other.rejectedFilings).toEqual([]);
+      const ownNames = [REVISED_NAME, DORMANT_NAME, SMALL_NAME, JOINT_NAME].map(encodeURIComponent);
+      for (const [url, init] of fetchMock.mock.calls) {
+        const read = ownNames.filter((name) => String(url).includes(name));
+        if (init.headers["Authorization"] === "Bearer other-access-token") expect(read).toEqual([]);
+        else expect(String(url)).not.toContain(encodeURIComponent(OTHER_NAME));
+      }
+    });
+
+    it("carries clientId on the list and on every receipt it reads", async () => {
+      const fetchMock = receiptsApi({ "Bearer session-access-token": OWN_RECEIPTS });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await listAccountsReceipts(session, { clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV" });
+
+      expect(fetchMock.mock.calls.length).toBe(5);
+      for (const [url] of fetchMock.mock.calls) expect(url).toMatch(/\?clientId=01ARZ3NDEKTSV4RRFFQ69G5FAV$/);
+    });
+
+    it("is offered to an assistant as the way to find the receipt a revision names", () => {
+      expect(TOOLS.list_accounts_receipts.annotations.readOnlyHint).toBe(true);
+      expect(TOOLS.list_accounts_receipts.description).toContain("revision.revisesReceipt");
+      expect(TOOLS.submit_micro_entity_accounts_sandbox.inputSchema.revision.unwrap().shape.revisesReceipt.description).toContain(
+        "list_accounts_receipts",
+      );
     });
   });
 

@@ -34,6 +34,8 @@
 // side, and the tools that call HMRC read the access token back by the grant id for each call.
 // No tool takes the token as an argument, and none answers the grant id or a token to the chat.
 
+import { mapIxbrlAccounts } from "@diy-accounting-uk/diya-gl/dist/app/lib/ixbrl-accounts.js";
+
 function baseUrl() {
   const value = process.env.DIYA_SUBMIT_BASE_URL;
   if (!value) throw new Error("DIYA_SUBMIT_BASE_URL is not set");
@@ -372,6 +374,65 @@ export async function listVatReceipts(session, params = {}) {
       .filter(({ match }) => match)
       .map(({ name, match }) => ({ name, formBundleNumber: match[2], filedOn: match[1] })),
   };
+}
+
+// The kind Submit stores on the receipt of accepted accounts, and on a rejected accounts filing.
+const ACCOUNTS_RECEIPT_KIND = "companies-house-accounts";
+const ACCOUNTS_FILING_KIND = "accounts";
+
+// The accounts a filed document holds, in the words the accounts forms use.
+function accountsTypeOf(mapped) {
+  if (mapped.regime === "micro") return mapped.dormant ? "dormant micro-entity" : "micro-entity";
+  return mapped.filleted ? "small company, filleted" : "small company";
+}
+
+/**
+ * list_accounts_receipts: the signed-in account's accounts filings, newest first. Each accepted
+ * filing answers the receipt name a revision's revisesReceipt takes, the company number, the period
+ * and the type of accounts read from the document filed, whether it is itself revised accounts,
+ * whether it went with a Company Tax Return, and whether it can be revised here: accepted, filed
+ * alone, not already revised, and with its document kept. Rejected filings have no receipt; each
+ * answers its submission number and Companies House's reasons. The route answers only the caller's
+ * own receipts (or, with clientId, one of the practice's clients').
+ * @param {Object} session
+ * @param {{clientId?: string}} params
+ */
+export async function listAccountsReceipts(session, params = {}) {
+  const { clientId } = params;
+  const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
+  const { receipts = [], filingsInProgress = [] } = await callSubmitApi(session, `/api/v1/hmrc/receipt${query}`);
+  const accepted = await Promise.all(
+    receipts
+      .filter((row) => row.kind === ACCOUNTS_RECEIPT_KIND)
+      .map(async (row) => {
+        const stored = await callSubmitApi(session, `/api/v1/hmrc/receipt/${encodeURIComponent(row.name)}${query}`);
+        const mapped = stored.filedDocument ? mapIxbrlAccounts(stored.filedDocument, { regime: "any" }) : null;
+        const revisedAccounts = row.amended === true;
+        const filedWithCompanyTaxReturn = Boolean(row.jointFilingId);
+        const status = stored.statusCode === "ACCEPT" ? "accepted" : "rejected";
+        return {
+          name: row.name,
+          companyNumber: stored.companyNumber,
+          periodStart: mapped?.period?.start ?? null,
+          periodEnd: mapped?.period?.end ?? null,
+          accountsType: mapped ? accountsTypeOf(mapped) : null,
+          status,
+          revisedAccounts,
+          filedWithCompanyTaxReturn,
+          revisable: status === "accepted" && !filedWithCompanyTaxReturn && !revisedAccounts && Boolean(mapped),
+          filedOn: String(row.timestamp ?? "").slice(0, 10),
+        };
+      }),
+  );
+  const rejected = filingsInProgress
+    .filter((filing) => filing.kind === ACCOUNTS_FILING_KIND && filing.status === "rejected")
+    .map((filing) => ({
+      submissionNumber: filing.submissionNumber,
+      status: "rejected",
+      rejectedOn: String(filing.submittedAt ?? "").slice(0, 10),
+      rejections: filing.rejections ?? [],
+    }));
+  return { receipts: accepted, rejectedFilings: rejected };
 }
 
 const ACCOUNTS_STATEMENT_FIELDS = ["section477Exemption", "membersNotRequiredAudit", "directorsResponsibilities", "microEntityProvisions"];
