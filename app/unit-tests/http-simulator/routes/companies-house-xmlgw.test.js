@@ -26,6 +26,36 @@ const VALID_SENDER_ID = md5Lowercase(SIMULATOR_PRESENTER_ID);
 const VALID_AUTH_VALUE = md5Lowercase(SIMULATOR_PRESENTER_CODE);
 const WRONG_HASH = md5Lowercase("not-the-right-credential");
 
+const REVISED_FLAG = "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse";
+const REVISION_STATEMENTS = {
+  "bus:StatementThatRevisedReportReplacesPreviouslyFiledReportForPeriod":
+    "These revised accounts replace the original accounts for the year ended 30 June 2026.",
+  "bus:StatementThatThisReportNowStatutoryAccountsForPeriod": "They are now the statutory accounts of the company for that year.",
+  "bus:StatementThatThisReportHasBeenPreparedAsDatePreviouslyFiledReport": "They are prepared as at the date of the original accounts.",
+  "bus:StatementRespectsInWhichPreviouslyFiledReportDidNotComplyWithCompaniesAct2006":
+    "The original balance sheet omitted the share capital.",
+  "bus:StatementSignificantAmendmentsToPreviouslyFiledReport": "The share capital is now shown.",
+  "bus:DateApprovalRevisionReport": "1 October 2026",
+};
+
+// A minimal iXBRL accounts document holding the given facts, each as visible text.
+function ixbrlDocument(facts) {
+  const factsXml = Object.entries(facts)
+    .map(([name, text]) => `<p><ix:nonNumeric name="${name}" contextRef="current">${text}</ix:nonNumeric></p>`)
+    .join("");
+  return `<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:ix="http://www.xbrl.org/2013/inlineXBRL"><body>${factsXml}</body></html>`;
+}
+
+const REVISED_BY_REPLACEMENT = ixbrlDocument({ [REVISED_FLAG]: "true", ...REVISION_STATEMENTS });
+const REVISED_BY_SUPPLEMENTARY_NOTE = ixbrlDocument({
+  [REVISED_FLAG]: "true",
+  "bus:SupplementaryNote": "Note 3 omitted the share capital, which is £100.",
+});
+const REVISED_WITH_NEITHER = ixbrlDocument({ [REVISED_FLAG]: "true" });
+const ORIGINAL = ixbrlDocument({ [REVISED_FLAG]: "false" });
+
+const base64 = (text) => Buffer.from(text, "utf8").toString("base64");
+
 function accountsEnvelope({
   senderId = VALID_SENDER_ID,
   authValue = VALID_AUTH_VALUE,
@@ -473,6 +503,50 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
     expect(firstElementText(document, "Number")).toBe("9999");
     expect(firstElementText(document, "RaisedBy")).toBe("Accounts");
     expect(firstElementText(document, "Text")).toContain("No element 'Authority'");
+  });
+
+  test("acknowledges a revised Accounts submission that states every fact of a revision by replacement", async () => {
+    const response = await request(app)
+      .post(GATEWAY_PATH)
+      .set("Content-Type", "text/xml")
+      .send(accountsEnvelope({ submissionNumber: "REV001", documentData: base64(REVISED_BY_REPLACEMENT) }));
+
+    const document = parseXmlDocument(response.text);
+    expect(firstElementText(document, "Qualifier")).toBe("acknowledgement");
+    expect(allElements(document, "GovTalkErrors")).toHaveLength(0);
+  });
+
+  test("acknowledges a revised Accounts submission with a non-empty supplementary note", async () => {
+    const response = await request(app)
+      .post(GATEWAY_PATH)
+      .set("Content-Type", "text/xml")
+      .send(accountsEnvelope({ submissionNumber: "REV002", documentData: base64(REVISED_BY_SUPPLEMENTARY_NOTE) }));
+
+    expect(firstElementText(parseXmlDocument(response.text), "Qualifier")).toBe("acknowledgement");
+  });
+
+  test("rejects a revised Accounts submission with neither form of revision, with the validator's text", async () => {
+    const response = await request(app)
+      .post(GATEWAY_PATH)
+      .set("Content-Type", "text/xml")
+      .send(accountsEnvelope({ submissionNumber: "REV003", documentData: base64(REVISED_WITH_NEITHER) }));
+
+    const document = parseXmlDocument(response.text);
+    expect(firstElementText(document, "Qualifier")).toBe("error");
+    expect(firstElementText(document, "RaisedBy")).toBe("Accounts");
+    expect(firstElementText(document, "Number")).toBe("9999");
+    expect(firstElementText(document, "Text")).toBe(
+      "For accounts identified as 'amended/revised' either SupplementaryNote must be provided and be non-empty or all relevant statement items and DateApprovalRevisionReport must be present.",
+    );
+  });
+
+  test("acknowledges an original Accounts submission that states no revision", async () => {
+    const response = await request(app)
+      .post(GATEWAY_PATH)
+      .set("Content-Type", "text/xml")
+      .send(accountsEnvelope({ submissionNumber: "ORI001", documentData: base64(ORIGINAL) }));
+
+    expect(firstElementText(parseXmlDocument(response.text), "Qualifier")).toBe("acknowledgement");
   });
 
   test("polls PENDING on the first poll and ACCEPT afterwards", async () => {

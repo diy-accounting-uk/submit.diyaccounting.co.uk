@@ -256,7 +256,8 @@ function handleAccounts(document, { senderIdHash, authValueHash, scenario }) {
   if (!submissionNumber) return schemaFailureFor("Body/FormSubmission/FormHeader/SubmissionNumber");
   if (!documentData) return schemaFailureFor("Body/FormSubmission/Document/Data");
 
-  const outcome = submitAccounts({ senderIdHash, authValueHash, submissionNumber, companyNumber, scenario });
+  const ixbrl = Buffer.from(documentData, "base64").toString("utf8");
+  const outcome = submitAccounts({ senderIdHash, authValueHash, submissionNumber, companyNumber, scenario, ixbrl });
   if (outcome.errors) {
     return { errors: outcome.errors };
   }
