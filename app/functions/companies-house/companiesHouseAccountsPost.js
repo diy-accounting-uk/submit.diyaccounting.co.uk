@@ -282,7 +282,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     };
   }
 
-  const validDirectorsAdvances = readDirectorsAdvances(directorsAdvances, "directorsAdvances", errorMessages);
+  const validDirectorsAdvances = readDirectorsAdvances(directorsAdvances, "directorsAdvances", errorMessages, [directorName]);
   const isDormant = dormant === true;
   const numericNominalValue = Number(nominalValue);
   if (isDormant) {

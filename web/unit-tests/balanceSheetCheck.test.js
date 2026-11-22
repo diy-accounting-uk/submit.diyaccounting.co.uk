@@ -10,6 +10,7 @@ import {
   YEAR_NAMES,
   capitalAndReservesMismatch,
   capitalAndReservesMessage,
+  formatPounds,
 } from "../public/lib/balance-sheet-check.js";
 
 describe("balance sheet check", () => {
@@ -32,7 +33,24 @@ describe("balance sheet check", () => {
 
   test("names the year and both figures", () => {
     expect(capitalAndReservesMessage({ capital: 2900, sum: 2000 }, YEAR_NAMES.priorYear)).toBe(
-      "Capital and reserves of 2900 for the prior year do not equal called up share capital plus the profit and loss account, which add up to 2000.",
+      "Capital and reserves of £2,900 for the prior year do not equal called up share capital plus the profit and loss account, which add up to £2,000.",
+    );
+  });
+
+  test("writes money as the forms do, with the pound sign and thousands separated", () => {
+    expect(formatPounds(10000)).toBe("£10,000");
+    expect(formatPounds(0)).toBe("£0");
+    expect(formatPounds(-1250)).toBe("-£1,250");
+  });
+
+  test("states the figures as money in the Welsh message too", () => {
+    const welsh = capitalAndReservesMessage(
+      { capital: 10000, sum: 8000 },
+      "y flwyddyn flaenorol",
+      "Nid yw cyfalaf a chronfeydd wrth gefn o {capital} ar gyfer {year} yn hafal i’r cyfalaf cyfranddaliadau a alwyd i fyny ynghyd â’r cyfrif elw a cholled, sy’n dod i {sum}.",
+    );
+    expect(welsh).toBe(
+      "Nid yw cyfalaf a chronfeydd wrth gefn o £10,000 ar gyfer y flwyddyn flaenorol yn hafal i’r cyfalaf cyfranddaliadau a alwyd i fyny ynghyd â’r cyfrif elw a cholled, sy’n dod i £8,000.",
     );
   });
 

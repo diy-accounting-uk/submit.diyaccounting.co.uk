@@ -20,6 +20,8 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { SMALL_COMPANY_BANK_LINES_CASE_INPUT, SMALL_COMPANY_FORMAT_2_CASE_INPUT } from "@app/test-helpers/accountsDocumentCases.js";
 import { buildSmallCompanyAccounts } from "@app/services/smallCompanyAccountsIxbrl.js";
 import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
+import { screenshotAtBothWidths } from "./revisedAccountsScreenshots.js";
+import { pageScrollsSideways } from "./submissionRecordAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -1278,6 +1280,7 @@ test.describe("books import on an accounts form that revises filed accounts", ()
       await expect(page.locator("#booksImportStatus")).toContainText("from precision-code.diya-gl.zip", { timeout: 60_000 });
       await expect(page.locator("#currentFixedAssets")).toHaveValue("208990");
       await expectRevisionKept(page, { originalDate, companyNumber: "12345678" });
+      await screenshotAtBothWidths(page, `books-amend-book-dropped-${form.replace(" ", "-")}`);
     });
 
     test(`a corrected package zip replaces the figures and keeps the revision on the ${form} form`, async ({ page }) => {
@@ -1289,6 +1292,7 @@ test.describe("books import on an accounts form that revises filed accounts", ()
       await expect(page.locator("#booksImportStatus")).toContainText("for the period 2025-04-01 to 2026-03-31.", { timeout: 120_000 });
       await expect(page.locator("#currentFixedAssets")).toHaveValue("208990");
       await expectRevisionKept(page, { originalDate, companyNumber: "12345678" });
+      await screenshotAtBothWidths(page, `books-amend-package-zip-${form.replace(" ", "-")}`);
     });
 
     test(`one workbook of a Company book's package fills nothing and keeps the revision on the ${form} form`, async ({ page }) => {
@@ -1301,6 +1305,7 @@ test.describe("books import on an accounts form that revises filed accounts", ()
       await expect(page.locator("#booksImportStatus")).toContainText("upload the package zip", { timeout: 120_000 });
       await expect(page.locator("#currentFixedAssets")).toHaveValue(filedFixedAssets);
       await expectRevisionKept(page, { originalDate, companyNumber: "12345678" });
+      await screenshotAtBothWidths(page, `books-amend-one-workbook-${form.replace(" ", "-")}`);
     });
   }
 
@@ -1329,6 +1334,22 @@ test.describe("books import on an accounts form that revises filed accounts", ()
       await expect(page.locator("#currentFixedAssets")).toHaveValue(filedFixedAssets);
       await expect(page.locator("#periodEnd")).toHaveValue("2025-03-31");
       await expectRevisionKept(page, { originalDate, companyNumber: "12345678" });
+      await screenshotAtBothWidths(page, `books-amend-another-period-${form.replace(" ", "-")}`);
+    });
+
+    test(`the Welsh ${form} form says in Welsh that an iXBRL document for another year fills nothing`, async ({ page }) => {
+      await openAmendPage(
+        page,
+        url.replace("/companies-house/", "/cy/companies-house/"),
+        builtAccountsDocument(caseName, { companyNumber: "12345678" }).toString("utf8"),
+        "12345678",
+      );
+      await chooseFile(page, "earlier.xhtml", builtAccountsDocument(caseName, earlierYear), "application/xhtml+xml");
+
+      await expect(page.locator("#booksImportStatus")).toContainText(
+        "Mae earlier.xhtml ar gyfer y cyfnod 2024-04-01 i 2025-03-31; mae’r cyfrifon sy’n cael eu diwygio ar gyfer 2025-04-01 i 2026-03-31.",
+        { timeout: 60_000 },
+      );
     });
 
     test(`an iXBRL document for another year fills nothing on the ${form} form`, async ({ page }) => {
@@ -1354,6 +1375,7 @@ test.describe("books import on an accounts form that revises filed accounts", ()
     await expect(page.locator("#booksImportStatus")).toContainText("from corrected.xhtml", { timeout: 60_000 });
     await expect(page.locator("#currentProfitAndLossAccount")).toHaveValue("4538");
     await expectRevisionKept(page, { originalDate, companyNumber: "12345678" });
+    await screenshotAtBothWidths(page, "books-amend-ixbrl-micro-entity");
   });
 
   test("a corrected iXBRL document replaces the figures and keeps the revision on the small company form", async ({ page }) => {
@@ -1365,7 +1387,22 @@ test.describe("books import on an accounts form that revises filed accounts", ()
     await expect(page.locator("#booksImportStatus")).toContainText("from corrected.xhtml", { timeout: 60_000 });
     await expect(page.locator("#currentProfitAndLossAccount")).toHaveValue("4538");
     await expectRevisionKept(page, { originalDate, companyNumber: "12345678" });
+    await screenshotAtBothWidths(page, "books-amend-ixbrl-small-company");
   });
+
+  for (const [form, url, filed, correctedCase] of [
+    ["micro-entity", MICRO_URL, microFiled, "micro-entity-accounts-revised"],
+    ["small company", SMALL_URL, smallFiled, "small-company-accounts-full-revised"],
+  ]) {
+    test(`the status of a corrected iXBRL document stays within a phone screen on the ${form} form`, async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 900 });
+      await openAmendPage(page, url, filed(), "12345678");
+      const corrected = builtAccountsDocument(correctedCase, { companyNumber: "12345678", revision: undefined });
+      await chooseFile(page, "corrected.xhtml", corrected, "application/xhtml+xml");
+      await expect(page.locator("#booksImportStatus")).toContainText("from corrected.xhtml", { timeout: 60_000 });
+      expect(await pageScrollsSideways(page)).toBe(false);
+    });
+  }
 
   test("a book for another company fills nothing and keeps the revision", async ({ page }) => {
     await openAmendPage(page, MICRO_URL, microFiled(), "12345678");
@@ -1378,6 +1415,7 @@ test.describe("books import on an accounts form that revises filed accounts", ()
     });
     await expect(page.locator("#currentFixedAssets")).toHaveValue(filedFixedAssets);
     await expectRevisionKept(page, { originalDate, companyNumber: "12345678" });
+    await screenshotAtBothWidths(page, "books-amend-another-company-micro-entity");
   });
 
   test("a summary book read from the filed document fills the filed figures", async ({ page }) => {

@@ -77,7 +77,7 @@ function filedWithoutComparatives(receipt, bundle) {
 
 function showAmendLink(amendHref) {
   const link = element("amendFilingLink");
-  link.style.display = amendHref ? "inline-block" : "none";
+  link.hidden = !amendHref;
   if (amendHref) link.href = amendHref;
 }
 

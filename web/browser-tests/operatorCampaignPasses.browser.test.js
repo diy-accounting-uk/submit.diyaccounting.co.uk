@@ -32,7 +32,7 @@ const donorPass = {
   passTypeId: "custom-campaign",
   bundleId: "resident-vat-comp",
   validFrom: "2026-11-22T00:00:00.000Z",
-  validUntil: "2027-05-22T23:59:59.999Z",
+  validUntil: "2027-05-22T22:59:59.999Z",
   maxUses: 1000,
   usesPerAccount: 1,
   grants: [{ bundleId: "resident-vat-comp", duration: "P1Y" }],
@@ -138,6 +138,29 @@ test.describe("the operator's campaign pass page", () => {
     await expect(page.locator("#cpList [data-pass-code]")).toHaveCount(2);
   });
 
+  test("a window chosen in summer runs from the start of the first UK day to the end of the last, and the list states those dates", async ({
+    page,
+  }) => {
+    let listed = [];
+    const created = await openPage(page, {
+      passes: () => listed,
+      onCreate: (body) => {
+        listed = [{ ...eventPass, validFrom: body.validFrom, validUntil: body.validUntil, createdAt: body.validFrom }];
+        return { code: eventPass.code, bundleId: "invited-guest", passTypeId: "custom-campaign" };
+      },
+    });
+    await page.fill("#cpValidFrom", "2027-06-01");
+    await page.fill("#cpValidUntil", "2027-06-30");
+    await page.selectOption("#cpGrant0Bundle", "invited-guest");
+    await page.click("#cpCreate");
+    await expect(page.locator("#cpNewPass")).toBeVisible();
+    expect(created[0].body.validFrom).toBe("2027-05-31T23:00:00.000Z");
+    expect(created[0].body.validUntil).toBe("2027-06-30T22:59:59.999Z");
+    await expect(page.locator(`#cpList [data-pass-code="${eventPass.code}"] .pass-terms li`).first()).toHaveText(
+      "Redeem from 1 June 2027 to 30 June 2027",
+    );
+  });
+
   test("lists each campaign pass with its window, its limits and each bundle with its duration and tokens", async ({ page }) => {
     await openPage(page, { passes: () => [eventPass, donorPass], onCreate: () => ({}) });
 
@@ -153,7 +176,7 @@ test.describe("the operator's campaign pass page", () => {
 
     const donor = page.locator(`#cpList [data-pass-code="${donorPass.code}"]`);
     await expect(donor.locator(".pass-terms li")).toHaveText([
-      "Redeem from 22 November 2026 to 23 May 2027",
+      "Redeem from 22 November 2026 to 22 May 2027",
       "Up to 1000 redemptions, 1 per account",
       "Resident VAT (Complimentary) for 1 year from redemption, 100 tokens a month",
     ]);

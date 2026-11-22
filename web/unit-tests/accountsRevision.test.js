@@ -12,6 +12,9 @@ import {
   checkRevision,
   filedPeriodOf,
   notesOf,
+  revisionSourceOf,
+  balanceSheetLinesOf,
+  registeredOfficeOf,
   NOTE_POLICY_FACTS,
   NOTE_CONTROLLING_PARTY_FACTS,
   NOTE_ADVANCE_FACTS,
@@ -25,8 +28,17 @@ import {
   microInputFromTestServiceCase,
   SMALL_COMPANY_CASE_INPUT,
   SMALL_COMPANY_NOTES_CASE_INPUT,
+  SMALL_COMPANY_EVERY_LINE_CASE_INPUT,
+  SMALL_COMPANY_FORMAT_2_CASE_INPUT,
 } from "../../app/test-helpers/accountsDocumentCases.js";
-import { buildSmallCompanyAccounts, SMALL_COMPANY_POLICY_FIELDS } from "../../app/services/smallCompanyAccountsIxbrl.js";
+import {
+  buildSmallCompanyAccounts,
+  SMALL_COMPANY_POLICY_FIELDS,
+  balanceSheetBreakdownProblems,
+  profitAndLossLinesOf,
+} from "../../app/services/smallCompanyAccountsIxbrl.js";
+import { mapIxbrlAccounts } from "@diy-accounting-uk/diya-gl/dist/app/lib/ixbrl-accounts.js";
+import { capitalAndReservesMismatch } from "../public/lib/balance-sheet-check.js";
 import { CONCEPTS } from "../../app/services/accountsIxbrlCommon.js";
 
 const MICRO_CASE = JSON.parse(readFileSync("scripts/fixtures/companies-house-test-service-cases.json", "utf8")).find(
@@ -55,7 +67,13 @@ function accountsReceipt(overrides = {}) {
 
 describe("which accounts receipts can be revised", () => {
   test("accepted accounts filed on their own with their document can be revised", () => {
-    expect(refusalOf(accountsReceipt())).toBeNull();
+    expect(refusalOf(accountsReceipt({ filedDocument: filedDocument() }))).toBeNull();
+  });
+
+  test("accounts whose document states no period are refused with their own sentence", () => {
+    const sentence = "The accounts on that receipt do not state their period, so this site cannot revise them here.";
+    expect(refusalOf(accountsReceipt())).toBe(sentence);
+    expect(refusalOf(accountsReceipt(), "06846849", { periodStart: "2025-04-01", periodEnd: "2026-03-31" })).toBe(sentence);
   });
 
   test("accounts that are already revised accounts are refused, with one sentence", () => {
@@ -125,6 +143,27 @@ describe("what a filed small company document carries over to its revision", () 
       });
     }
   }
+});
+
+describe("the registered office a filed document states", () => {
+  test("is read part by part, with the country written before the postcode, as the accounts were filed", () => {
+    expect(registeredOfficeOf(filedDocument())).toEqual(MICRO_CASE.registeredOffice);
+    const office = {
+      addressLine1: "1 Stryd & Fawr",
+      addressLine2: "Uned 2",
+      cityOrTown: "Caerdydd",
+      countyRegion: "De Morgannwg",
+      postalCode: "CF10 1AA",
+    };
+    const welsh = inAccountsLanguage("cy", () =>
+      buildMicroEntityAccounts({ ...microInputFromTestServiceCase(MICRO_CASE), registeredOffice: office }),
+    );
+    expect(registeredOfficeOf(welsh)).toEqual(office);
+  });
+
+  test("is null for a document that states no office", () => {
+    expect(registeredOfficeOf("<html/>")).toBeNull();
+  });
 });
 
 describe("the period a filed document is for", () => {
@@ -246,5 +285,124 @@ describe("the notes a filed document carries over to its revision", () => {
       .replace(/(<ix:nonNumeric name="core:TaxPolicy"[^>]*>)/, "$1<span>")
       .replace(/<p>Alex Jones: /, "<p><b>Alex Jones</b>: ");
     expect(notesOf(filed).unreadable).toEqual(["policies", "directorsAdvances", "intangibleAssetNote"]);
+  });
+});
+
+// The boxes of a form whose ids start with the year, read from the page itself.
+function formLinesOf(page, year) {
+  const html = readFileSync(`web/public/companies-house/${page}`, "utf8");
+  return Array.from(
+    html.matchAll(new RegExp(`<input[^>]*\\sid="${year}([A-Z][A-Za-z]*)"`, "g")),
+    ([, name]) => name[0].toLowerCase() + name.slice(1),
+  );
+}
+
+// The figure each box of a year holds once the revision has opened: what the books mapping gives for
+// the lines the books card fills, then what the revision module reads over it.
+function filledYear(source, year, lines) {
+  const mappedYear = source.figures[year === "current" ? "currentYear" : "priorYear"];
+  const filled = Object.fromEntries(lines.filter((line) => typeof mappedYear[line] === "number").map((line) => [line, mappedYear[line]]));
+  return { ...filled, ...(source.notes.debtors?.[year] ?? {}), ...source.balanceSheetLines[year] };
+}
+
+describe("the balance sheet of a filed document comes back whole in its revision", () => {
+  const SMALL_FORM = "fileSmallCompanyAccounts.html";
+  const profitAndLossLines = new Set([...profitAndLossLinesOf(1), ...profitAndLossLinesOf(2)]);
+
+  for (const filleted of [false, true]) {
+    const copy = filleted ? "filleted" : "full";
+    test(`every balance sheet line of the small company form comes back equal from ${copy} accounts, and the rules pass`, () => {
+      const input = { ...SMALL_COMPANY_EVERY_LINE_CASE_INPUT, filleted };
+      const filed = buildSmallCompanyAccounts(input);
+      const source = revisionSourceOf({ filedDocument: filed, companyNumber: input.companyNumber }, { mapIxbrlAccounts });
+      const back = {};
+      for (const [year, inputYear] of [
+        ["current", input.balanceSheet.current],
+        ["prior", input.balanceSheet.prior],
+      ]) {
+        const lines = formLinesOf(SMALL_FORM, year).filter((line) => !profitAndLossLines.has(line));
+        expect(lines).toHaveLength(21);
+        const filledFigures = filledYear(source, year, lines);
+        for (const line of lines) expect([year, line, filledFigures[line]]).toEqual([year, line, inputYear[line]]);
+        back[year] = { ...filledFigures, capitalAndReserves: filledFigures.calledUpShareCapital + filledFigures.profitAndLossAccount };
+        expect(balanceSheetBreakdownProblems(back[year])).toEqual([]);
+        expect(capitalAndReservesMismatch(back[year])).toBeNull();
+      }
+      expect(() => buildSmallCompanyAccounts({ ...input, balanceSheet: back })).not.toThrow();
+    });
+  }
+
+  for (const caseInput of [SMALL_COMPANY_EVERY_LINE_CASE_INPUT, SMALL_COMPANY_FORMAT_2_CASE_INPUT]) {
+    const format = caseInput.profitAndLossFormat === 2 ? 2 : 1;
+    test(`every profit and loss line of a full copy in format ${format} comes back equal through the books mapping`, () => {
+      const source = revisionSourceOf(
+        { filedDocument: buildSmallCompanyAccounts(caseInput), companyNumber: caseInput.companyNumber },
+        { mapIxbrlAccounts },
+      );
+      const formLines = formLinesOf(SMALL_FORM, "current").filter((line) => profitAndLossLinesOf(format).includes(line));
+      expect(formLines.length).toBeGreaterThan(4);
+      for (const [year, mappedYear] of [
+        ["current", "currentYear"],
+        ["prior", "priorYear"],
+      ]) {
+        for (const line of formLines) {
+          expect([year, line, source.mapped.profitAndLoss[mappedYear][line] ?? 0]).toEqual([
+            year,
+            line,
+            caseInput.profitAndLoss[year]?.[line] ?? 0,
+          ]);
+        }
+      }
+    });
+  }
+
+  test("every balance sheet line of the micro-entity form comes back equal, and the rule passes", () => {
+    const input = microInputFromTestServiceCase(MICRO_CASE);
+    const withLines = (year) => ({
+      ...year,
+      creditorsAfterOneYear: 200,
+      provisionsForLiabilities: 100,
+      currentAssets: year.currentAssets + 300,
+    });
+    const balanceSheet = { current: withLines(input.balanceSheet.current), prior: withLines(input.balanceSheet.prior) };
+    const source = revisionSourceOf(
+      { filedDocument: buildMicroEntityAccounts({ ...input, balanceSheet }), companyNumber: input.companyNumber },
+      { mapIxbrlAccounts },
+    );
+    const back = {};
+    for (const year of ["current", "prior"]) {
+      const lines = formLinesOf("fileMicroEntityAccounts.html", year).filter((line) => line !== "capitalAndReserves");
+      expect(lines).toHaveLength(10);
+      const filledFigures = filledYear(source, year, lines);
+      for (const line of lines) expect([year, line, filledFigures[line] ?? 0]).toEqual([year, line, balanceSheet[year][line] ?? 0]);
+      back[year] = { ...filledFigures, capitalAndReserves: filledFigures.calledUpShareCapital + filledFigures.profitAndLossAccount };
+      expect(capitalAndReservesMismatch(back[year])).toBeNull();
+    }
+    expect(() => buildMicroEntityAccounts({ ...input, balanceSheet: back })).not.toThrow();
+  });
+
+  test("the micro-entity headings outside the totals are read from the document, in both years", () => {
+    const input = microInputFromTestServiceCase(MICRO_CASE);
+    const withHeadings = (year) => ({
+      ...year,
+      calledUpShareCapitalNotPaid: 50,
+      prepaymentsAccruedIncome: 200,
+      provisionsForLiabilities: 100,
+      accrualsDeferredIncome: 150,
+    });
+    const filed = buildMicroEntityAccounts({
+      ...input,
+      balanceSheet: { current: withHeadings(input.balanceSheet.current), prior: withHeadings(input.balanceSheet.prior) },
+    });
+    const headings = {
+      calledUpShareCapitalNotPaid: 50,
+      prepaymentsAccruedIncome: 200,
+      provisionsForLiabilities: 100,
+      accrualsDeferredIncome: 150,
+    };
+    const lines = balanceSheetLinesOf(filed);
+    expect(lines.current).toEqual({ ...headings, creditorsAfterOneYear: 0 });
+    expect(lines.prior).toEqual({ ...headings, creditorsAfterOneYear: 0 });
+    expect(lines.unreadable).toBe(false);
   });
 });

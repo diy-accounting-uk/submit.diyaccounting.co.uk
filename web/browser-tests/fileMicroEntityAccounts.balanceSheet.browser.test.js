@@ -117,7 +117,7 @@ test.describe("File micro-entity accounts page - the balance sheet adds up", () 
     await page.click("#previewBtn");
 
     await expect(page.locator("#statusMessagesContainer .status-error")).toHaveText(
-      "Capital and reserves of 2900 for the prior year do not equal called up share capital plus the profit and loss account, which add up to 2000.",
+      "Capital and reserves of £2,900 for the prior year do not equal called up share capital plus the profit and loss account, which add up to £2,000.",
     );
     expect(await page.evaluate(() => window.rendered.length)).toBe(0);
   });

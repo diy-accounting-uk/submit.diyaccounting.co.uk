@@ -673,8 +673,9 @@ export function directorsAdvancesProblems(directorsAdvances) {
  * @param {unknown} values
  * @param {string} label - the request path, e.g. "smallCompany.directorsAdvances"
  * @param {string[]} errorMessages
+ * @param {string[]} directorNames - the directors the accounts name: each advance is to one of them
  */
-export function readDirectorsAdvances(values, label, errorMessages) {
+export function readDirectorsAdvances(values, label, errorMessages, directorNames) {
   if (values === undefined || values === null) return undefined;
   if (!Array.isArray(values)) {
     errorMessages.push(`${label} must be a list`);
@@ -686,6 +687,11 @@ export function readDirectorsAdvances(values, label, errorMessages) {
     ...Object.fromEntries(DIRECTORS_ADVANCE_FIELDS.map((field) => [field, Number(row?.[field])])),
   }));
   for (const problem of directorsAdvancesProblems(rows)) errorMessages.push(`${label}${problem.slice("directorsAdvances".length)}`);
+  rows.forEach(({ name }, index) => {
+    if (name && !directorNames.includes(name)) {
+      errorMessages.push(`${label}[${index}] names ${name}, who is not among the directors of these accounts: add them to the directors`);
+    }
+  });
   return rows;
 }
 

@@ -74,17 +74,22 @@ function netAssetsOf(year) {
   );
 }
 
-function renderYearTotals(current, prior) {
+async function renderYearTotals(current, prior) {
+  const { formatPounds } = await import("../lib/balance-sheet-check.js");
   const currentNetAssets = netAssetsOf(current);
   const priorNetAssets = netAssetsOf(prior);
   const mismatches = [];
   if (currentNetAssets !== current.capitalAndReserves)
     mismatches.push(
-      window.siteText("ch.micro.mismatch-this-year", "this year (capital and reserves {amount})", { amount: current.capitalAndReserves }),
+      window.siteText("ch.micro.mismatch-this-year", "this year (capital and reserves {amount})", {
+        amount: formatPounds(current.capitalAndReserves),
+      }),
     );
   if (priorNetAssets !== prior.capitalAndReserves)
     mismatches.push(
-      window.siteText("ch.micro.mismatch-last-year", "last year (capital and reserves {amount})", { amount: prior.capitalAndReserves }),
+      window.siteText("ch.micro.mismatch-last-year", "last year (capital and reserves {amount})", {
+        amount: formatPounds(prior.capitalAndReserves),
+      }),
     );
   const verdict = mismatches.length
     ? window.siteText("ch.micro.mismatch", "Does not match capital and reserves for {years} - correct this before previewing.", {
@@ -95,8 +100,8 @@ function renderYearTotals(current, prior) {
     "ch.micro.net-assets",
     "Net assets: {current} this year, {prior} last year. {verdict}",
     {
-      current: currentNetAssets,
-      prior: priorNetAssets,
+      current: formatPounds(currentNetAssets),
+      prior: formatPounds(priorNetAssets),
       verdict,
     },
   );
@@ -572,7 +577,7 @@ async function startRevision(receiptName) {
     }
     const profile = await window.getCompanyProfile(read.source.companyNumber);
     company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
-    window.accountsFormSections.fillRegisteredOffice(profile.registeredOffice);
+    window.accountsFormSections.fillRegisteredOffice(read.source.registeredOffice ?? profile.registeredOffice);
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     showDocumentLanguageChoice(profile.jurisdiction);

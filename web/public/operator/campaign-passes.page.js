@@ -106,8 +106,8 @@
     const value = (id) => document.getElementById(id).value.trim();
     const request = {
       passTypeId: PASS_TYPE_ID,
-      validFrom: `${value("cpValidFrom")}T00:00:00.000Z`,
-      validUntil: `${value("cpValidUntil")}T23:59:59.999Z`,
+      validFrom: window.londonDay.startOfLondonDay(value("cpValidFrom")),
+      validUntil: window.londonDay.endOfLondonDay(value("cpValidUntil")),
       usesPerAccount: Number(value("cpUsesPerAccount")),
       grants: grantsFromForm(),
     };

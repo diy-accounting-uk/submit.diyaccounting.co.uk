@@ -173,6 +173,10 @@
   max-width: 180mm;
   padding: 1.5rem;
 }
+.customer-copy-sheet .submission-record .filed-document-download {
+  margin: 0;
+  padding: 1rem 1.5rem 1.5rem;
+}
 .customer-copy-sheet .submission-record table.statement td.figure,
 .customer-copy-sheet .submission-record table.statement th.figure {
   font-family: var(--font-figures, inherit);

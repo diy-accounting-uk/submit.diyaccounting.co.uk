@@ -350,14 +350,14 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       (body) => {
         body.balanceSheet.currentYear.profitAndLossAccount = 3800;
       },
-      "Capital and reserves of 4000 for the current year do not equal called up share capital plus the profit and loss account, which add up to 3900.",
+      "Capital and reserves of £4,000 for the current year do not equal called up share capital plus the profit and loss account, which add up to £3,900.",
     ],
     [
       "the prior year",
       (body) => {
         body.balanceSheet.priorYear.profitAndLossAccount = 1900;
       },
-      "Capital and reserves of 2900 for the prior year do not equal called up share capital plus the profit and loss account, which add up to 2000.",
+      "Capital and reserves of £2,900 for the prior year do not equal called up share capital plus the profit and loss account, which add up to £2,000.",
     ],
   ])(
     "refuses capital and reserves in %s that differ from share capital plus the profit and loss account, and sends nothing",
@@ -378,7 +378,7 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
     expect(response.statusCode).toBe(400);
     expect(parseResponseBody(response).message).toContain(
-      "Capital and reserves of 4000 for the current year do not equal called up share capital plus the profit and loss account, which add up to 3900.",
+      "Capital and reserves of £4,000 for the current year do not equal called up share capital plus the profit and loss account, which add up to £3,900.",
     );
     expect(mockPostToGateway).not.toHaveBeenCalled();
   });
@@ -869,6 +869,29 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       expect(response.statusCode).toBe(400);
       expect(JSON.stringify(parseResponseBody(response))).toContain("revision.revisesReceipt");
       expect(mockGetReceipt).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("an advance to someone who is not a director", () => {
+    const ADVANCE = { name: "Sam Lender", terms: "Interest free", balanceAtStart: 0, advanced: 0, repaid: 0, balanceAtEnd: 0 };
+    const SENTENCE = "names Sam Lender, who is not among the directors of these accounts: add them to the directors";
+
+    test("refuses micro-entity accounts with a sentence that names them, and sends nothing", async () => {
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ directorsAdvances: [ADVANCE] }) }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain(`directorsAdvances[0] ${SENTENCE}`);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses small company accounts and revised small company accounts with the same sentence", async () => {
+      for (const extra of [{}, { revision: { originalDateOfApproval: "2026-01-10", nonCompliance: "A", amendments: "B" } }]) {
+        const response = await companiesHouseAccountsPostHandler(
+          buildEvent({ body: buildSmallCompanyBody(extra, { directorsAdvances: [ADVANCE] }) }),
+        );
+        expect(response.statusCode).toBe(400);
+        expect(JSON.stringify(parseResponseBody(response))).toContain(`smallCompany.directorsAdvances[0] ${SENTENCE}`);
+      }
+      expect(mockPostToGateway).not.toHaveBeenCalled();
     });
   });
 
