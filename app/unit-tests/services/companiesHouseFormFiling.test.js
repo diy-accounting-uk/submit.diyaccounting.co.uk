@@ -373,6 +373,36 @@ describe("the filing route every Companies House form shares", () => {
     expect(JSON.parse(response.body).message).toMatch(
       new RegExp(`${field.replace(/[.[\]]/g, "\\$&")} has characters Companies House does not accept: [ŵŷô ]+`),
     );
+  });
+
+  // A corporate officer's change: the name the register holds and each of its new particulars.
+  const CORPORATE_OFFICER_CHANGE = {
+    officerRole: "director",
+    corporate: true,
+    dateOfChange: "2026-11-09",
+    corporateName: "ACME HOLDINGS LIMITED",
+  };
+  test.each([
+    [{ corporateName: "Cwmni Glyndŵr" }, "corporateName"],
+    [{ newCorporateName: "Cwmni Glyndŵr" }, "newCorporateName"],
+    [{ address: { premise: "1", street: "Ffordd Glyndŵr", postTown: "Machynlleth", country: "GB-WLS" } }, "address.street"],
+    [{ companyIdentification: { uk: { registrationNumber: "Rhif Glyndŵr" } } }, "companyIdentification.uk.registrationNumber"],
+  ])("a corporate officer's change refuses a Welsh lower-case ŵ in %j, naming the field", async (change, field) => {
+    const response = await fileCompaniesHouseForm(
+      buildEvent("officer-change", {
+        ...CORPORATE_OFFICER_CHANGE,
+        newName: undefined,
+        forename: undefined,
+        surname: undefined,
+        dateOfBirth: undefined,
+        ...(change.corporateName ? {} : { newCorporateName: "ACME GROUP LIMITED" }),
+        ...change,
+      }),
+      "officer-change",
+    );
+    expect(response.statusCode).toBe(400);
+    expect(JSON.parse(response.body).message).toContain(`${field} has characters Companies House does not accept: ŵ`);
+    expect(everythingKept(response)).not.toMatch(/Glyndŵr/);
     expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
