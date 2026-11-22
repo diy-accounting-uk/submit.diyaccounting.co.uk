@@ -143,6 +143,13 @@ public class EdgeStack extends Stack {
     /** The longest CloudFront keeps a public lookup answer, whatever the origin's Cache-Control asks. */
     static final int PUBLIC_DEADLINES_CACHE_MAX_TTL_SECONDS = 600;
 
+    /** The sites whose pages read the public company deadlines lookup from the browser. */
+    static final List<String> PUBLIC_DEADLINES_ALLOWED_ORIGINS = List.of(
+            "https://spreadsheets.diyaccounting.co.uk",
+            "https://ci-spreadsheets.diyaccounting.co.uk",
+            "https://diya-gl.co.uk",
+            "https://ci.diya-gl.co.uk");
+
     // private static final String CF_LOGS_SOURCE_NAME = "cf-src";
     // private static final String CF_LOGS_DEST_NAME = "cf-dest";
 
@@ -455,6 +462,72 @@ public class EdgeStack extends Stack {
                         .build())
                 .build();
 
+        // The security headers of every API behaviour; the API policies differ only in their CORS.
+        ResponseSecurityHeadersBehavior apiSecurityHeaders = ResponseSecurityHeadersBehavior.builder()
+                .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
+                        .contentSecurityPolicy("default-src 'self'; "
+                                + "script-src 'self' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com https://accounts.google.com https://apis.google.com https://www.gstatic.com https://bat.bing.com https://bat.bing.net; "
+                                + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com https://bat.bing.com https://bat.bing.net; "
+                                + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://*.googleusercontent.com https://ssl.gstatic.com https://www.gstatic.com https://i.ytimg.com https://bat.bing.com https://bat.bing.net; "
+                                + "style-src 'self' 'unsafe-inline' https://www.gstatic.com; "
+                                + "frame-src 'self' https://www.youtube-nocookie.com https://accounts.google.com https://apis.google.com https://docs.google.com; "
+                                + "frame-ancestors 'none'; "
+                                + "form-action 'self';")
+                        .override(true)
+                        .build())
+                .strictTransportSecurity(ResponseHeadersStrictTransportSecurity.builder()
+                        .accessControlMaxAge(software.amazon.awscdk.Duration.days(365))
+                        .includeSubdomains(true)
+                        .override(true)
+                        .build())
+                .contentTypeOptions(ResponseHeadersContentTypeOptions.builder()
+                        .override(true)
+                        .build())
+                .frameOptions(ResponseHeadersFrameOptions.builder()
+                        .frameOption(HeadersFrameOption.DENY)
+                        .override(true)
+                        .build())
+                .referrerPolicy(ResponseHeadersReferrerPolicy.builder()
+                        .referrerPolicy(
+                                software.amazon.awscdk.services.cloudfront.HeadersReferrerPolicy
+                                        .STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+                        .override(true)
+                        .build())
+                .xssProtection(ResponseHeadersXSSProtection.builder()
+                        .protection(true)
+                        .modeBlock(true)
+                        .override(true)
+                        .build())
+                .build();
+        ResponseCustomHeadersBehavior apiCustomHeaders = ResponseCustomHeadersBehavior.builder()
+                .customHeaders(List.of(
+                        ResponseCustomHeader.builder()
+                                .header("Permissions-Policy")
+                                .value("camera=(), microphone=(), geolocation=()")
+                                .override(true)
+                                .build(),
+                        ResponseCustomHeader.builder()
+                                .header("Cross-Origin-Opener-Policy")
+                                .value("same-origin")
+                                .override(true)
+                                .build(),
+                        ResponseCustomHeader.builder()
+                                .header("Cross-Origin-Embedder-Policy")
+                                .value("unsafe-none")
+                                .override(true)
+                                .build(),
+                        ResponseCustomHeader.builder()
+                                .header("Cross-Origin-Resource-Policy")
+                                .value("same-origin")
+                                .override(true)
+                                .build(),
+                        ResponseCustomHeader.builder()
+                                .header("Server")
+                                .value("DIY-Accounting")
+                                .override(true)
+                                .build()))
+                .build();
+
         // CORS for the whole shared HttpApi (/api/v1/*, DIYA-GL routes included) is decided one
         // layer down: ApiStack's own HttpApi.corsPreflight (booksAllowedOrigins) answers for every
         // route, and the DIYA-GL routes additionally echo their own per-request origin
@@ -465,70 +538,30 @@ public class EdgeStack extends Stack {
                         this, props.resourceNamePrefix() + "-DiyaGlWHP")
                 .responseHeadersPolicyName(props.resourceNamePrefix() + "-diya-gl-whp")
                 .comment("Security headers for /api/v1/* API routes, with no CORS override")
-                .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
-                        .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
-                                .contentSecurityPolicy("default-src 'self'; "
-                                        + "script-src 'self' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com https://accounts.google.com https://apis.google.com https://www.gstatic.com https://bat.bing.com https://bat.bing.net; "
-                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com https://bat.bing.com https://bat.bing.net; "
-                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://*.googleusercontent.com https://ssl.gstatic.com https://www.gstatic.com https://i.ytimg.com https://bat.bing.com https://bat.bing.net; "
-                                        + "style-src 'self' 'unsafe-inline' https://www.gstatic.com; "
-                                        + "frame-src 'self' https://www.youtube-nocookie.com https://accounts.google.com https://apis.google.com https://docs.google.com; "
-                                        + "frame-ancestors 'none'; "
-                                        + "form-action 'self';")
-                                .override(true)
-                                .build())
-                        .strictTransportSecurity(ResponseHeadersStrictTransportSecurity.builder()
-                                .accessControlMaxAge(software.amazon.awscdk.Duration.days(365))
-                                .includeSubdomains(true)
-                                .override(true)
-                                .build())
-                        .contentTypeOptions(ResponseHeadersContentTypeOptions.builder()
-                                .override(true)
-                                .build())
-                        .frameOptions(ResponseHeadersFrameOptions.builder()
-                                .frameOption(HeadersFrameOption.DENY)
-                                .override(true)
-                                .build())
-                        .referrerPolicy(ResponseHeadersReferrerPolicy.builder()
-                                .referrerPolicy(
-                                        software.amazon.awscdk.services.cloudfront.HeadersReferrerPolicy
-                                                .STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
-                                .override(true)
-                                .build())
-                        .xssProtection(ResponseHeadersXSSProtection.builder()
-                                .protection(true)
-                                .modeBlock(true)
-                                .override(true)
-                                .build())
+                .securityHeadersBehavior(apiSecurityHeaders)
+                .customHeadersBehavior(apiCustomHeaders)
+                .build();
+
+        // The public company deadlines lookup is read across origins by the spreadsheets download
+        // page and DIYA-GL. CloudFront keeps its answer by path and query string with no header in
+        // the key, so an origin echoed by the Lambda would reach other origins from the cache.
+        // CloudFront sets the CORS header itself for each request, cached or not.
+        ResponseHeadersPolicy publicDeadlinesResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(
+                        this, props.resourceNamePrefix() + "-PublicDeadlinesWHP")
+                .responseHeadersPolicyName(props.resourceNamePrefix() + "-public-deadlines-whp")
+                .comment(
+                        "CORS for the spreadsheets and DIYA-GL sites + security headers for the public company deadlines lookup")
+                .corsBehavior(ResponseHeadersCorsBehavior.builder()
+                        .accessControlAllowCredentials(false)
+                        .accessControlAllowHeaders(List.of("*"))
+                        .accessControlAllowMethods(List.of("GET", "HEAD"))
+                        .accessControlAllowOrigins(PUBLIC_DEADLINES_ALLOWED_ORIGINS)
+                        .accessControlExposeHeaders(List.of())
+                        .accessControlMaxAge(software.amazon.awscdk.Duration.seconds(600))
+                        .originOverride(true)
                         .build())
-                .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
-                        .customHeaders(List.of(
-                                ResponseCustomHeader.builder()
-                                        .header("Permissions-Policy")
-                                        .value("camera=(), microphone=(), geolocation=()")
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Cross-Origin-Opener-Policy")
-                                        .value("same-origin")
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Cross-Origin-Embedder-Policy")
-                                        .value("unsafe-none")
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Cross-Origin-Resource-Policy")
-                                        .value("same-origin")
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Server")
-                                        .value("DIY-Accounting")
-                                        .override(true)
-                                        .build()))
-                        .build())
+                .securityHeadersBehavior(apiSecurityHeaders)
+                .customHeadersBehavior(apiCustomHeaders)
                 .build();
 
         // The consent page answers its form POST with a redirect to the Cognito hosted UI, so it
@@ -883,7 +916,7 @@ public class EdgeStack extends Stack {
                 props.sharedNames().companiesHouse.companiesHousePublicDeadlinesGetLambdaUrlPath,
                 createCachedPublicBehaviorOptionsForApiGateway(
                         props.apiGatewayUrl(),
-                        diyaGlApiResponseHeadersPolicy,
+                        publicDeadlinesResponseHeadersPolicy,
                         fraudPreventionHeadersPolicy,
                         apiOriginHeaders,
                         publicDeadlinesCachePolicy));

@@ -38,8 +38,8 @@ const PROFILE = {
   sic_codes: ["62020"],
   officers: { href: "/company/00000006/officers" },
   accounts: {
-    next_accounts: { due_on: "2027-03-31", period_end_on: "2026-06-30", period_start_on: "2025-07-01" },
-    last_accounts: { type: "micro-entity", made_up_to: "2025-06-30" },
+    next_accounts: { due_on: "2027-03-31", period_end_on: "2026-06-30", period_start_on: "2025-07-01", overdue: false },
+    last_accounts: { type: "micro-entity", made_up_to: "2025-06-30", period_start_on: "2024-07-01", period_end_on: "2025-06-30" },
   },
   confirmation_statement: { next_due: "2027-04-30", last_made_up_to: "2026-04-16" },
 };
@@ -88,7 +88,10 @@ describe("companiesHousePublicDeadlinesGet ingestHandler", () => {
       companyStatus: "active",
       companyType: "ltd",
       accountsNextDue: "2027-03-31",
+      accountsNextPeriodStart: "2025-07-01",
       accountsNextPeriodEnd: "2026-06-30",
+      accountsOverdue: false,
+      accountsLastPeriodEnd: "2025-06-30",
       confirmationStatementNextDue: "2027-04-30",
       lastAccountsType: "micro-entity",
     });
@@ -112,7 +115,36 @@ describe("companiesHousePublicDeadlinesGet ingestHandler", () => {
     upstream(200, { company_number: "00000006", company_name: "X", company_status: "dissolved", type: "ltd" });
     const body = parseResponseBody(await ingestHandler(get({ number: "00000006" })));
     expect(body.accountsNextDue).toBeUndefined();
+    expect(body.accountsNextPeriodStart).toBeUndefined();
+    expect(body.accountsOverdue).toBeUndefined();
+    expect(body.accountsLastPeriodEnd).toBeUndefined();
     expect(body.companyStatus).toBe("dissolved");
+  });
+
+  test("marks a company whose next accounts are late as overdue", async () => {
+    upstream(200, {
+      ...PROFILE,
+      accounts: {
+        next_accounts: { due_on: "2026-03-31", period_end_on: "2025-06-30", period_start_on: "2024-07-01", overdue: true },
+        last_accounts: { type: "micro-entity", made_up_to: "2024-06-30", period_start_on: "2023-07-01", period_end_on: "2024-06-30" },
+      },
+    });
+    const body = parseResponseBody(await ingestHandler(get({ number: "00000006" })));
+    expect(body.accountsOverdue).toBe(true);
+    expect(body.accountsNextPeriodStart).toBe("2024-07-01");
+    expect(body.accountsLastPeriodEnd).toBe("2024-06-30");
+  });
+
+  test("answers a company that has filed no accounts yet with its first period and no last period end", async () => {
+    upstream(200, {
+      ...PROFILE,
+      accounts: { next_accounts: { due_on: "2027-01-16", period_end_on: "2026-04-30", period_start_on: "2025-04-16", overdue: false } },
+    });
+    const body = parseResponseBody(await ingestHandler(get({ number: "00000006" })));
+    expect(body.accountsNextPeriodStart).toBe("2025-04-16");
+    expect(body.accountsOverdue).toBe(false);
+    expect(body.accountsLastPeriodEnd).toBeUndefined();
+    expect(body.lastAccountsType).toBeUndefined();
   });
 
   test("returns at most five matches with public fields only", async () => {
@@ -204,7 +236,10 @@ describe("companiesHousePublicDeadlinesGet ingestHandler", () => {
       "companyStatus",
       "companyType",
       "accountsNextDue",
+      "accountsNextPeriodStart",
       "accountsNextPeriodEnd",
+      "accountsOverdue",
+      "accountsLastPeriodEnd",
       "confirmationStatementNextDue",
       "lastAccountsType",
     ]);

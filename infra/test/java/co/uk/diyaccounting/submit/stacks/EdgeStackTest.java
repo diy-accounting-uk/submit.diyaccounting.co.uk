@@ -376,6 +376,71 @@ class EdgeStackTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void publicDeadlinesPathAnswersCorsForTheSpreadsheetsAndDiyaGlSitesWithTheApiSecurityHeaders() {
+        Template template = Template.fromStack(synthEdgeStack());
+        var policies = template.findResources("AWS::CloudFront::ResponseHeadersPolicy");
+        assertEquals(6, policies.size(), "custom response headers policies of one deployment");
+        template.resourceCountIs("AWS::CloudFront::ResponseHeadersPolicy", 6);
+
+        String deadlinesPolicyId = null;
+        Map<String, Object> deadlinesConfig = null;
+        Map<String, Object> apiConfig = null;
+        for (var entry : policies.entrySet()) {
+            var config = (Map<String, Object>)
+                    ((Map<String, Object>) entry.getValue().get("Properties")).get("ResponseHeadersPolicyConfig");
+            String name = String.valueOf(config.get("Name"));
+            if (name.endsWith("-public-deadlines-whp")) {
+                deadlinesPolicyId = entry.getKey();
+                deadlinesConfig = config;
+            } else if (name.endsWith("-diya-gl-whp")) {
+                apiConfig = config;
+            }
+        }
+        assertTrue(deadlinesConfig != null, "public deadlines policy present");
+        assertTrue(apiConfig != null, "API policy present");
+
+        var cors = (Map<String, Object>) deadlinesConfig.get("CorsConfig");
+        assertEquals(
+                List.of(
+                        "https://spreadsheets.diyaccounting.co.uk",
+                        "https://ci-spreadsheets.diyaccounting.co.uk",
+                        "https://diya-gl.co.uk",
+                        "https://ci.diya-gl.co.uk"),
+                ((Map<String, Object>) cors.get("AccessControlAllowOrigins")).get("Items"));
+        assertEquals(
+                List.of("GET", "HEAD"), ((Map<String, Object>) cors.get("AccessControlAllowMethods")).get("Items"));
+        assertEquals(true, cors.get("OriginOverride"));
+        assertEquals(false, cors.get("AccessControlAllowCredentials"));
+        assertEquals(apiConfig.get("SecurityHeadersConfig"), deadlinesConfig.get("SecurityHeadersConfig"));
+        assertEquals(apiConfig.get("CustomHeadersConfig"), deadlinesConfig.get("CustomHeadersConfig"));
+        assertFalse(
+                apiConfig.containsKey("CorsConfig"), "the shared API policy keeps passing the origin's CORS through");
+
+        var distribution = (Map<String, Object>) template.findResources("AWS::CloudFront::Distribution")
+                .values()
+                .iterator()
+                .next();
+        var behaviours = (List<Map<String, Object>>)
+                ((Map<String, Object>) ((Map<String, Object>) distribution.get("Properties")).get("DistributionConfig"))
+                        .get("CacheBehaviors");
+        var deadlinesBehaviour = behaviours.stream()
+                .filter(b -> "/api/v1/public/company-deadlines".equals(b.get("PathPattern")))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(
+                deadlinesPolicyId,
+                ((Map<String, Object>) deadlinesBehaviour.get("ResponseHeadersPolicyId")).get("Ref"));
+        var generalApiBehaviour = behaviours.stream()
+                .filter(b -> "/api/v1/*".equals(b.get("PathPattern")))
+                .findFirst()
+                .orElseThrow();
+        assertNotEquals(
+                deadlinesPolicyId,
+                ((Map<String, Object>) generalApiBehaviour.get("ResponseHeadersPolicyId")).get("Ref"));
+    }
+
+    @Test
     void publicDeadlinesPathHasItsOwnPerAddressRateRuleTighterThanTheSiteRule() {
         Template template = Template.fromStack(synthEdgeStack());
         Map<String, Object> rateStatement = Map.of(

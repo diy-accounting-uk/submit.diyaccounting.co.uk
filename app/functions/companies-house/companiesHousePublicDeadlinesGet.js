@@ -66,7 +66,10 @@ export function deadlinesFromProfile(data) {
     companyStatus: data.company_status,
     companyType: data.type,
     accountsNextDue: data.accounts?.next_accounts?.due_on,
+    accountsNextPeriodStart: data.accounts?.next_accounts?.period_start_on,
     accountsNextPeriodEnd: data.accounts?.next_accounts?.period_end_on,
+    accountsOverdue: data.accounts?.next_accounts?.overdue,
+    accountsLastPeriodEnd: data.accounts?.last_accounts?.period_end_on,
     confirmationStatementNextDue: data.confirmation_statement?.next_due,
     lastAccountsType: data.accounts?.last_accounts?.type,
   };
