@@ -61,6 +61,10 @@ vi.mock("@app/services/companiesHouseXmlGateway.js", async (importOriginal) => (
   resolvePresenterCredentials: async () => ({ presenterId: "presenter-id", presenterCode: "presenter-code" }),
 }));
 
+vi.mock("@app/services/companiesHouseCache.js", () => ({
+  cachedCompaniesHouseGet: vi.fn(async () => ({ ok: true, data: { jurisdiction: "england-wales" } })),
+}));
+
 import { fileCompaniesHouseForm } from "@app/services/companiesHouseFormFiling.js";
 import { GATEWAY_FORM_BUILDERS } from "@app/services/companiesHouseForms.js";
 import { findMatchingActivitiesForUrlPath } from "@app/services/bundleManagement.js";

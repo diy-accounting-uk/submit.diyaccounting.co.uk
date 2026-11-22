@@ -18,6 +18,16 @@ export const SAIL_ADDRESS_COUNTRIES = {
   "GB-NIR": "Northern Ireland",
 };
 
+// The countries a SAIL may be in, by the jurisdiction the company profile gives: AD02 says "The SAIL
+// must always be in the part of the United Kingdom in which your company is registered", and a
+// company registered in Wales is registered in England and Wales.
+export const SAIL_COUNTRIES_BY_JURISDICTION = {
+  "england-wales": ["GB-ENG", "GB-WLS"],
+  "wales": ["GB-ENG", "GB-WLS"],
+  "scotland": ["GB-SCT"],
+  "northern-ireland": ["GB-NIR"],
+};
+
 // Each part of the address the form takes: its element and the most characters the schema allows.
 export const SAIL_ADDRESS_PARTS = {
   premise: { element: "Premise", maxLength: 50, required: true },

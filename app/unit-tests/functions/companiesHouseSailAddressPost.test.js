@@ -70,7 +70,14 @@ vi.mock("@app/services/companiesHouseXmlGateway.js", async (importOriginal) => (
   resolvePresenterCredentials: (...args) => mockResolvePresenterCredentials(...args),
 }));
 
+const mockCachedCompaniesHouseGet = vi.fn();
+vi.mock("@app/services/companiesHouseCache.js", () => ({
+  cachedCompaniesHouseGet: (...args) => mockCachedCompaniesHouseGet(...args),
+}));
+
 import { ingestHandler } from "@app/functions/companies-house/companiesHouseSailAddressPost.js";
+
+const profileIn = (jurisdiction) => ({ ok: true, data: { company_number: "06846849", jurisdiction }, fromCache: true });
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -127,6 +134,68 @@ describe("companiesHouseSailAddressPost ingestHandler", () => {
     mockBuildFormSubmission.mockReturnValue("<GovTalkMessage>submission</GovTalkMessage>");
     mockPostToGateway.mockResolvedValue({ ok: true, status: 200, data: "<GovTalkMessage>ack</GovTalkMessage>", headers: {}, duration: 1 });
     mockParseGatewayResponse.mockReturnValue({ errors: [], statuses: [], gatewayTimestamp: "2026-11-20T10:00:00Z", pollInterval: 1 });
+    mockCachedCompaniesHouseGet.mockResolvedValue(profileIn("england-wales"));
+  });
+
+  describe("the country, against the part of the UK the company is registered in", () => {
+    const withCountry = (country) => buildFormBody({ address: { ...buildFormBody().address, country } });
+
+    test.each([
+      ["england-wales", ["GB-ENG", "GB-WLS"], ["GB-SCT", "GB-NIR"]],
+      ["wales", ["GB-ENG", "GB-WLS"], ["GB-SCT", "GB-NIR"]],
+      ["scotland", ["GB-SCT"], ["GB-ENG", "GB-WLS", "GB-NIR"]],
+      ["northern-ireland", ["GB-NIR"], ["GB-ENG", "GB-WLS", "GB-SCT"]],
+    ])("a company with jurisdiction %s files a SAIL in %j and is refused one in %j", async (jurisdiction, allowed, refused) => {
+      mockCachedCompaniesHouseGet.mockResolvedValue(profileIn(jurisdiction));
+      for (const country of allowed) {
+        const response = await ingestHandler(buildEvent({ body: withCountry(country) }));
+        expect(response.statusCode, country).toBe(201);
+      }
+      for (const country of refused) {
+        mockPostToGateway.mockClear();
+        const response = await ingestHandler(buildEvent({ body: withCountry(country) }));
+        expect(response.statusCode, country).toBe(400);
+        expect(response.headers["Content-Type"]).toBe("application/json");
+        expect(JSON.stringify(parseResponseBody(response))).toContain(
+          "the SAIL must be in the part of the UK the company is registered in",
+        );
+        expect(mockPostToGateway).not.toHaveBeenCalled();
+      }
+      expect(mockCachedCompaniesHouseGet).toHaveBeenCalledWith("06846849", "/company/06846849", {}, { kind: "profile" });
+    });
+
+    test("a company the profile gives no part of the UK is refused, naming its jurisdiction", async () => {
+      mockCachedCompaniesHouseGet.mockResolvedValue(profileIn("european-union"));
+      const response = await ingestHandler(buildEvent());
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("jurisdiction european-union");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("a profile Companies House does not answer stops the filing with a JSON 502, and nothing is sent or recorded", async () => {
+      mockCachedCompaniesHouseGet.mockResolvedValue({ ok: false, status: 429, retryAfterSeconds: 60 });
+      const response = await ingestHandler(buildEvent());
+      expect(response.statusCode).toBe(502);
+      expect(response.headers["Content-Type"]).toBe("application/json");
+      expect(parseResponseBody(response)).toMatchObject({ code: "company-unread", status: 429 });
+      expect(mockAllocateSubmissionNumber).not.toHaveBeenCalled();
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("a profile read that throws stops the filing with a JSON 502 too", async () => {
+      mockCachedCompaniesHouseGet.mockRejectedValue(new Error("Missing required environment variable COMPANIES_HOUSE_BASE_URI"));
+      const response = await ingestHandler(buildEvent());
+      expect(response.statusCode).toBe(502);
+      expect(response.headers["Content-Type"]).toBe("application/json");
+      expect(parseResponseBody(response)).toMatchObject({ code: "company-unread" });
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("a request whose own fields are wrong is refused before the profile is read", async () => {
+      const response = await ingestHandler(buildEvent({ body: withCountry("GBR") }));
+      expect(response.statusCode).toBe(400);
+      expect(mockCachedCompaniesHouseGet).not.toHaveBeenCalled();
+    });
   });
 
   test("a SAIL address is built as SailAddress, sent in a SailAddress envelope and answered with its submission number", async () => {

@@ -19,7 +19,13 @@ import {
   FIVE_YEAR_EXTENSION_REASONS,
 } from "./companiesHouseAccountingReferenceDateXml.js";
 import { buildOfficerResignationBody, OFFICER_RESIGNATION_ROLES } from "./companiesHouseOfficerResignationXml.js";
-import { buildSailAddressBody, SAIL_ADDRESS_COUNTRIES, SAIL_ADDRESS_PARTS } from "./companiesHouseSailAddressXml.js";
+import {
+  buildSailAddressBody,
+  SAIL_ADDRESS_COUNTRIES,
+  SAIL_ADDRESS_PARTS,
+  SAIL_COUNTRIES_BY_JURISDICTION,
+} from "./companiesHouseSailAddressXml.js";
+import { cachedCompaniesHouseGet } from "./companiesHouseCache.js";
 import { buildRecordChangeOfLocationBody, RECORD_DESTINATIONS, RECORD_TYPES } from "./companiesHouseRecordLocationXml.js";
 import {
   buildChangeOfNameBody,
@@ -269,6 +275,36 @@ function extractSailAddress(body, errorMessages) {
     errorMessages.push(`Invalid address.country - must be one of ${Object.keys(SAIL_ADDRESS_COUNTRIES).join(", ")}`);
   }
   return { address: { ...address, country: given.country } };
+}
+
+/**
+ * The check of a SAIL address against the company: its country must be in the part of the UK the
+ * company is registered in, which the company profile gives as its jurisdiction. The profile is read
+ * once, through the Companies House cache.
+ * @param {object} form - the extracted request, with companyNumber and address.country
+ * @returns {Promise<{errors: string[]} | {unreadable: true}>}
+ */
+async function checkSailAddressCountry(form) {
+  const profile = await cachedCompaniesHouseGet(form.companyNumber, `/company/${form.companyNumber}`, {}, { kind: "profile" });
+  if (!profile.ok) return { unreadable: true, status: profile.status };
+  const jurisdiction = profile.data?.jurisdiction;
+  const allowed = SAIL_COUNTRIES_BY_JURISDICTION[jurisdiction];
+  if (!allowed) {
+    return {
+      errors: [
+        `Invalid address.country - Companies House gives this company no part of the UK a SAIL can be in (jurisdiction ${jurisdiction || "none"})`,
+      ],
+    };
+  }
+  if (!allowed.includes(form.address.country)) {
+    const names = allowed.map((code) => SAIL_ADDRESS_COUNTRIES[code]).join(" or ");
+    return {
+      errors: [
+        `Invalid address.country - the SAIL must be in the part of the UK the company is registered in: ${names}, not ${SAIL_ADDRESS_COUNTRIES[form.address.country]}`,
+      ],
+    };
+  }
+  return { errors: [] };
 }
 
 function extractRecordLocation(body, errorMessages) {
@@ -905,7 +941,8 @@ function extractAllotmentOfShares(body, errorMessages) {
  * page has the refusal in the reader's words: id is the page's siteText id, which the page
  * registers with window.companiesHouseFormPage.registerMessages, and text is the route's English.
  *
- * A form whose filing carries a document in the envelope has buildDocument as well.
+ * A form whose filing carries a document in the envelope has buildDocument as well, and a form whose
+ * fields must agree with the company on the register has checkCompany.
  */
 export const GATEWAY_FORM_BUILDERS = {
   "psc-verification-statement": {
@@ -939,6 +976,7 @@ export const GATEWAY_FORM_BUILDERS = {
   },
   "sail-address": {
     extractAndValidate: extractSailAddress,
+    checkCompany: checkSailAddressCountry,
     buildFormXml: (form) => buildSailAddressBody(form.address),
   },
   "record-location": {

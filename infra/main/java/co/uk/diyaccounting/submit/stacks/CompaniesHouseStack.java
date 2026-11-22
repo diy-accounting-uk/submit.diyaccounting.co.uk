@@ -2734,6 +2734,15 @@ public class CompaniesHouseStack extends Stack {
                         "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
                         companiesHouseAccountsAsyncRequestsTable.getTableName())
                 .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
+        // The SAIL address is checked against the company's jurisdiction, read once through the
+        // Companies House cache on the shared API key.
+        companiesHouseSailAddressPostLambdaEnv
+                .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
+                .with("COMPANIES_HOUSE_CACHE_DYNAMODB_TABLE_NAME", companiesHouseCacheTable.getTableName())
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName());
+        if (StringUtils.isNotBlank(props.companiesHouseApiKeyArn())) {
+            companiesHouseSailAddressPostLambdaEnv.with("COMPANIES_HOUSE_API_KEY_ARN", props.companiesHouseApiKeyArn());
+        }
         withPresenterSecretArns(companiesHouseSailAddressPostLambdaEnv, props);
         withFilerSealKeyEnv(companiesHouseSailAddressPostLambdaEnv, codesSealKeySecret);
         if (xmlGatewayPackageReference(props) != null) {
@@ -2779,7 +2788,14 @@ public class CompaniesHouseStack extends Stack {
                 this.companiesHouseSailAddressPostLambda.getNode().getId(),
                 props.sharedNames().companiesHouse.companiesHouseSailAddressPostIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
-                this.companiesHouseSailAddressPostLambda, bundlesTable, region, account, props, activityBusArn, false);
+                this.companiesHouseSailAddressPostLambda, bundlesTable, region, account, props, activityBusArn, true);
+        companiesHouseCacheTable.grant(
+                this.companiesHouseSailAddressPostLambda, "dynamodb:GetItem", "dynamodb:PutItem");
+        securityStateTable.grant(
+                this.companiesHouseSailAddressPostLambda,
+                "dynamodb:UpdateItem",
+                "dynamodb:GetItem",
+                "dynamodb:PutItem");
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseSailAddressPostLambda, props);
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHouseSailAddressPostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");

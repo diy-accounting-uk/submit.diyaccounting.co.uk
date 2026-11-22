@@ -717,7 +717,8 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseFilingHistoryGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFiledAccountsGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFiledDocumentGetLambdaProps.ingestFunctionName(),
-                stack.companiesHouseLastAccountsGetLambdaProps.ingestFunctionName())) {
+                stack.companiesHouseLastAccountsGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseSailAddressPostLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
             assertEquals(1, functions.size());
@@ -728,7 +729,8 @@ class CompaniesHouseStackTest {
         // The wildcard suffix Secrets Manager requires, granted to the eight signed-in lookup Lambda
         // roles (search, company, officers, PSCs, filing history, filed accounts, the filed
         // document and the last accounts), the company reports Lambda, the public deadlines Lambda,
-        // the public register Lambda and the accounts filing Lambda, and no others; the registered
+        // the public register Lambda, the accounts filing Lambda and the SAIL address filing, which reads
+        // the company's jurisdiction, and no others; the registered
         // office address read takes the filing key with the filing base URI.
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
@@ -741,7 +743,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         API_KEY_ARN + "-*")))))))),
-                12);
+                13);
     }
 
     @Test
@@ -796,7 +798,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         API_KEY_ARN + "-*")))))))),
-                12);
+                13);
     }
 
     @Test

@@ -18,6 +18,7 @@ import {
   http201CreatedResponse,
   http400BadRequestResponse,
   http402PaymentRequiredResponse,
+  http502BadGatewayResponse,
   http500ServerErrorResponse,
   getHeader,
 } from "../lib/httpResponseHelper.js";
@@ -119,7 +120,7 @@ async function recordSubmissionFailure({ kind, failure, summary, userSub, detail
  */
 export async function fileCompaniesHouseForm(event, kind) {
   const { label, formIdentifier, fee } = COMPANIES_HOUSE_FORMS[kind];
-  const { buildFormXml, buildDocument } = GATEWAY_FORM_BUILDERS[kind];
+  const { buildFormXml, buildDocument, checkCompany } = GATEWAY_FORM_BUILDERS[kind];
   await initializeSalt();
   validateEnv(["COMPANIES_HOUSE_XMLGW_URI", "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME", "COMPANIES_HOUSE_PACKAGE_REFERENCE"]);
 
@@ -144,6 +145,27 @@ export async function fileCompaniesHouseForm(event, kind) {
 
   if (errorMessages.length > 0) {
     return validationRefusal(request, errorMessages, responseHeaders);
+  }
+
+  // A form whose fields must agree with the company on the register reads the company before
+  // anything is sent; a register that cannot be read stops the filing.
+  if (checkCompany) {
+    let checked;
+    try {
+      checked = await checkCompany(form);
+    } catch (error) {
+      logger.error({ message: `Could not read the company for a Companies House ${label}`, error: error.message });
+      checked = { unreadable: true };
+    }
+    if (checked.unreadable) {
+      return http502BadGatewayResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: "Could not read the company from Companies House to check the filing, so it has not been sent",
+        error: { code: "company-unread", status: checked.status },
+      });
+    }
+    if (checked.errors.length > 0) return validationRefusal(request, checked.errors, responseHeaders);
   }
 
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
