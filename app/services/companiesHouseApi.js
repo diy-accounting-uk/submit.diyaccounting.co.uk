@@ -38,7 +38,7 @@ async function resolveApiKey() {
   return readSecret(secretArn);
 }
 
-function buildCompaniesHouseHeaders(apiKey) {
+export function buildCompaniesHouseHeaders(apiKey) {
   const basicAuth = Buffer.from(`${apiKey}:`).toString("base64");
   return {
     Authorization: `Basic ${basicAuth}`,
@@ -49,10 +49,29 @@ function buildCompaniesHouseHeaders(apiKey) {
   };
 }
 
-export async function companiesHouseHttpGet(endpoint, queryParams = {}) {
-  const baseUrl = getCompaniesHouseBaseUrl();
+// Sends with the API key; a 401 means the key was rolled, so one forced read of the secret, and one
+// more request, only when the secret now holds another key.
+export async function sendWithApiKey(send) {
   const apiKey = await resolveApiKey();
+  let result = await send(apiKey);
+  if (result.status === 401 && !process.env.COMPANIES_HOUSE_API_KEY) {
+    const refreshedKey = await refreshAfterAuthFailure(process.env.COMPANIES_HOUSE_API_KEY_ARN, apiKey);
+    if (refreshedKey) result = await send(refreshedKey);
+  }
+  return result;
+}
 
+export async function companiesHouseHttpGet(endpoint, queryParams = {}) {
+  return companiesHouseGetJson(getCompaniesHouseBaseUrl(), endpoint, queryParams);
+}
+
+/**
+ * A JSON GET with the API key, against a Companies House service's base URL.
+ * @param {string} baseUrl
+ * @param {string} endpoint
+ * @param {Object} [queryParams] - undefined, null and blank values are left out
+ */
+export async function companiesHouseGetJson(baseUrl, endpoint, queryParams = {}) {
   // Sanitize query params: drop undefined, null, and blank strings
   const cleanParams = Object.fromEntries(
     Object.entries(queryParams || {}).filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== ""),
@@ -61,22 +80,43 @@ export async function companiesHouseHttpGet(endpoint, queryParams = {}) {
   const querySuffix = queryString ? `?${queryString}` : "";
   const requestUrl = `${baseUrl}${endpoint}${querySuffix}`;
 
-  const send = (key) => {
+  const result = await sendWithApiKey((key) => {
     const headers = buildCompaniesHouseHeaders(key);
     logger.info({ message: `Request to GET ${requestUrl}`, url: requestUrl, headers: { ...headers, Authorization: "[redacted]" } });
     return sendJsonToCompaniesHouse(requestUrl, { method: "GET", headers }, DEFAULT_TIMEOUTS.SHORT);
-  };
-  let result = await send(apiKey);
-  if (result.status === 401 && !process.env.COMPANIES_HOUSE_API_KEY) {
-    // A 401 means the key was rolled. One forced read of the secret, and one more request, only
-    // when the secret now holds another key.
-    const refreshedKey = await refreshAfterAuthFailure(process.env.COMPANIES_HOUSE_API_KEY_ARN, apiKey);
-    if (refreshedKey) result = await send(refreshedKey);
-  }
+  });
 
   logger.info({ message: `Response from GET ${requestUrl}`, url: requestUrl, status: result.status });
 
   return { ok: result.ok, status: result.status, data: result.data, headers: result.headers };
+}
+
+const FILING_HISTORY_PAGE_SIZE = 100;
+
+/**
+ * Every item of a company's filing history, read page by page. A category narrows the history to
+ * one kind of filing (for example "accounts"); without one every category is read.
+ * @param {string} companyNumber
+ * @param {{category?: string}} [options]
+ * @returns {Promise<{ok: boolean, status: number, data: object, headers?: object}>} on success, data
+ *   holds items and totalCount; on a failed page, the failed response
+ */
+export async function companiesHouseFilingHistory(companyNumber, { category } = {}) {
+  const items = [];
+  let totalCount;
+  do {
+    const page = await companiesHouseHttpGet(`/company/${companyNumber}/filing-history`, {
+      category,
+      items_per_page: FILING_HISTORY_PAGE_SIZE,
+      start_index: items.length,
+    });
+    if (!page.ok) return page;
+    const pageItems = page.data?.items ?? [];
+    totalCount = page.data?.total_count ?? items.length + pageItems.length;
+    items.push(...pageItems);
+    if (pageItems.length === 0) break;
+  } while (items.length < totalCount);
+  return { ok: true, status: 200, data: { items, totalCount } };
 }
 
 export function isValidCompanyNumber(value) {

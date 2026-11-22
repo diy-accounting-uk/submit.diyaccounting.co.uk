@@ -214,6 +214,31 @@ describe("companiesHouseCompanyGet ingestHandler", () => {
     expect(body.sicCodes).toEqual(["62012"]);
     expect(body.registeredOfficeAddress).toEqual(EXAMPLE_COMPANY_PROFILE.registered_office_address);
   });
+
+  test("answers the reference date, the next period start and the last accounts", async () => {
+    mockCompaniesHouseSuccess(mockFetch, {
+      ...EXAMPLE_COMPANY_PROFILE,
+      accounts: {
+        accounting_reference_date: { day: "30", month: "04" },
+        next_accounts: { due_on: "2027-01-31", period_start_on: "2025-05-01", period_end_on: "2026-04-30" },
+        last_accounts: { period_start_on: "2024-05-01", period_end_on: "2025-04-30", type: "micro-entity" },
+      },
+    });
+    const body = parseResponseBody(await companiesHouseCompanyGetHandler(eventForCompanyNumber("00000001")));
+    expect(body.accountingReferenceDate).toEqual({ day: "30", month: "04" });
+    expect(body.accountsNextPeriodStart).toBe("2025-05-01");
+    expect(body.accountsLastPeriodStart).toBe("2024-05-01");
+    expect(body.accountsLastPeriodEnd).toBe("2025-04-30");
+    expect(body.accountsLastType).toBe("micro-entity");
+  });
+
+  test("answers the last accounts fields as absent for a company that has filed none", async () => {
+    mockCompaniesHouseSuccess(mockFetch, EXAMPLE_COMPANY_PROFILE);
+    const body = parseResponseBody(await companiesHouseCompanyGetHandler(eventForCompanyNumber("00000001")));
+    expect(body).not.toHaveProperty("accountsLastPeriodStart");
+    expect(body).not.toHaveProperty("accountsLastPeriodEnd");
+    expect(body).not.toHaveProperty("accountsLastType");
+  });
 });
 
 describe("registeredOfficeFromAddress", () => {

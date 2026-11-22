@@ -399,11 +399,67 @@
         } ]
       }
     },
+    "/companies-house/company/{companyNumber}/filed-accounts" : {
+      "get" : {
+        "summary" : "List a company's filed accounts",
+        "description" : "Lists the sets of accounts Companies House holds for a company: made-up date, filing date, accounts type, whether a set is amended and whether it has an iXBRL document",
+        "operationId" : "getCompanyFiledAccounts",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/companies-house/company/{companyNumber}/filed-accounts/{transactionId}/document" : {
+      "get" : {
+        "summary" : "Get one set of filed accounts as iXBRL",
+        "description" : "Fetches the iXBRL document of one set of accounts from Companies House and answers its text as JSON",
+        "operationId" : "getCompanyFiledAccountsDocument",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "transactionId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The filing history transaction id of the set of accounts",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/companies-house/company/{companyNumber}/filing-data" : {
       "post" : {
         "summary" : "Read confirmation statement filing data",
         "description" : "Reads the registered details, officers due for confirmation, and whether this period is already paid, that a confirmation statement form is built from",
         "operationId" : "postCompaniesHouseFilingData",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/companies-house/company/{companyNumber}/filing-history" : {
+      "get" : {
+        "summary" : "Get a company's filing history",
+        "description" : "Retrieves every filing on a company's public filing history, every category, newest first",
+        "operationId" : "getCompanyFilingHistory",
         "parameters" : [ {
           "name" : "companyNumber",
           "in" : "path",

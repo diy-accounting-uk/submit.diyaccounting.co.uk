@@ -9,6 +9,9 @@ import { dotenvConfigIfNotBlank } from "../lib/env.js";
 import { startSimulator } from "../http-simulator/index.js";
 import { ingestHandler as companiesHouseSearchGetHandler } from "../functions/companies-house/companiesHouseSearchGet.js";
 import { ingestHandler as companiesHouseCompanyGetHandler } from "../functions/companies-house/companiesHouseCompanyGet.js";
+import { ingestHandler as companiesHouseFilingHistoryGetHandler } from "../functions/companies-house/companiesHouseFilingHistoryGet.js";
+import { ingestHandler as companiesHouseFiledAccountsGetHandler } from "../functions/companies-house/companiesHouseFiledAccountsGet.js";
+import { ingestHandler as companiesHouseFiledDocumentGetHandler } from "../functions/companies-house/companiesHouseFiledDocumentGet.js";
 import { buildHmrcEvent } from "../test-helpers/eventBuilders.js";
 import { parseResponseBody } from "../test-helpers/mockHelpers.js";
 
@@ -23,8 +26,8 @@ function searchEvent(q, extraQuery = {}) {
   return event;
 }
 
-function companyEvent(companyNumber) {
-  const event = buildHmrcEvent({ pathParameters: { companyNumber } });
+function companyEvent(companyNumber, extraPathParameters = {}) {
+  const event = buildHmrcEvent({ pathParameters: { companyNumber, ...extraPathParameters } });
   event.requestContext.http.method = "GET";
   return event;
 }
@@ -62,6 +65,7 @@ describe("System: Companies House Simulator", () => {
 
     simulator = await startSimulator({ port: 0 });
     process.env.COMPANIES_HOUSE_BASE_URI = simulator.baseUrl;
+    process.env.COMPANIES_HOUSE_DOCUMENT_BASE_URI = simulator.baseUrl;
     process.env.COMPANIES_HOUSE_API_KEY = "simulator-companies-house-key";
     delete process.env.COMPANIES_HOUSE_API_KEY_ARN;
   });
@@ -107,6 +111,65 @@ describe("System: Companies House Simulator", () => {
     const response = await companiesHouseCompanyGetHandler(companyEvent("42942942"));
     expect(response.statusCode).toBe(429);
     expect(response.headers["Retry-After"]).toBe("300");
+  });
+
+  it("profile answers the accounting reference date, the next period start and the last accounts", async () => {
+    const body = parseResponseBody(await companiesHouseCompanyGetHandler(companyEvent("00000001")));
+    expect(body.accountingReferenceDate).toEqual({ day: "30", month: "04" });
+    expect(body.accountsNextPeriodStart).toBe("2098-05-01");
+    expect(body.accountsLastPeriodStart).toBe("2097-05-01");
+    expect(body.accountsLastPeriodEnd).toBe("2098-04-30");
+    expect(body.accountsLastType).toBe("micro-entity");
+  });
+
+  it("filing history lists every category of filing, newest first", async () => {
+    const response = await companiesHouseFilingHistoryGetHandler(companyEvent("00000001"));
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    expect(body.totalCount).toBe(3);
+    expect(body.filings.map((filing) => filing.type)).toEqual(["AA", "CS01", "AA"]);
+    expect(body.filings[2].paperFiled).toBe(true);
+  });
+
+  it("filing history returns 404 for an unknown company number", async () => {
+    const response = await companiesHouseFilingHistoryGetHandler(companyEvent("99999999"));
+    expect(response.statusCode).toBe(404);
+  });
+
+  it("filed accounts lists the software-filed set with an iXBRL document and the paper set without", async () => {
+    const response = await companiesHouseFiledAccountsGetHandler(companyEvent("00000001"));
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    expect(body.filedAccounts).toEqual([
+      expect.objectContaining({
+        transactionId: "SIMTX00000001AA2098",
+        madeUpDate: "2098-04-30",
+        accountsType: "micro-entity",
+        ixbrl: true,
+      }),
+      expect.objectContaining({
+        transactionId: "SIMTX00000001AA2097",
+        madeUpDate: "2097-04-30",
+        accountsType: "total-exemption-full",
+        paperFiled: true,
+        ixbrl: false,
+      }),
+    ]);
+  });
+
+  it("filed accounts document answers the iXBRL text of a software-filed set", async () => {
+    const response = await companiesHouseFiledDocumentGetHandler(companyEvent("00000001", { transactionId: "SIMTX00000001AA2098" }));
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    expect(body.contentType).toBe("application/xhtml+xml");
+    expect(body.document).toContain("SIMULATOR EXAMPLE COMPANY LIMITED");
+    expect(body.document).toContain("ix:nonNumeric");
+  });
+
+  it("filed accounts document answers a JSON 404 for a paper-filed set", async () => {
+    const response = await companiesHouseFiledDocumentGetHandler(companyEvent("00000001", { transactionId: "SIMTX00000001AA2097" }));
+    expect(response.statusCode).toBe(404);
+    expect(parseResponseBody(response).code).toBe("NO_IXBRL_DOCUMENT");
   });
 
   it("the simulator rejects a request with no Authorization header", async () => {

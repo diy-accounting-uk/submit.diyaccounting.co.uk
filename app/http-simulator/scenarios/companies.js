@@ -30,9 +30,17 @@ const companies = {
     },
     sic_codes: ["62012", "69201"],
     accounts: {
+      accounting_reference_date: { day: "30", month: "04" },
       next_accounts: {
         due_on: "2099-01-31",
+        period_start_on: "2098-05-01",
         period_end_on: "2099-04-30",
+      },
+      last_accounts: {
+        made_up_to: "2098-04-30",
+        period_start_on: "2097-05-01",
+        period_end_on: "2098-04-30",
+        type: "micro-entity",
       },
     },
     confirmation_statement: {
@@ -55,9 +63,17 @@ const companies = {
     },
     sic_codes: ["62020"],
     accounts: {
+      accounting_reference_date: { day: "30", month: "09" },
       next_accounts: {
         due_on: "2099-06-30",
+        period_start_on: "2098-10-01",
         period_end_on: "2099-09-30",
+      },
+      last_accounts: {
+        made_up_to: "2098-09-30",
+        period_start_on: "2097-10-01",
+        period_end_on: "2098-09-30",
+        type: "total-exemption-full",
       },
     },
     confirmation_statement: {
@@ -80,9 +96,17 @@ const companies = {
     },
     sic_codes: ["62090"],
     accounts: {
+      accounting_reference_date: { day: "30", month: "04" },
       next_accounts: {
         due_on: "2099-01-31",
+        period_start_on: "2098-05-01",
         period_end_on: "2099-04-30",
+      },
+      last_accounts: {
+        made_up_to: "2098-04-30",
+        period_start_on: "2097-05-01",
+        period_end_on: "2098-04-30",
+        type: "micro-entity",
       },
     },
     confirmation_statement: {
@@ -105,9 +129,17 @@ const companies = {
     },
     sic_codes: ["47910"],
     accounts: {
+      accounting_reference_date: { day: "31", month: "03" },
       next_accounts: {
         due_on: "2099-12-31",
+        period_start_on: "2098-04-01",
         period_end_on: "2099-03-31",
+      },
+      last_accounts: {
+        made_up_to: "2098-03-31",
+        period_start_on: "2097-04-01",
+        period_end_on: "2098-03-31",
+        type: "micro-entity",
       },
     },
     confirmation_statement: {
@@ -130,9 +162,17 @@ const companies = {
     },
     sic_codes: ["62020"],
     accounts: {
+      accounting_reference_date: { day: "31", month: "03" },
       next_accounts: {
         due_on: "2099-12-31",
+        period_start_on: "2098-04-01",
         period_end_on: "2099-03-31",
+      },
+      last_accounts: {
+        made_up_to: "2098-03-31",
+        period_start_on: "2097-04-01",
+        period_end_on: "2098-03-31",
+        type: "total-exemption-full",
       },
     },
     confirmation_statement: {
@@ -155,9 +195,17 @@ const companies = {
     },
     sic_codes: ["69201", "69202"],
     accounts: {
+      accounting_reference_date: { day: "30", month: "04" },
       next_accounts: {
         due_on: "2099-01-31",
+        period_start_on: "2098-05-01",
         period_end_on: "2099-04-30",
+      },
+      last_accounts: {
+        made_up_to: "2098-04-30",
+        period_start_on: "2097-05-01",
+        period_end_on: "2098-04-30",
+        type: "micro-entity",
       },
     },
     confirmation_statement: {

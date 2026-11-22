@@ -5,6 +5,7 @@
 
 import { describe, test, expect } from "vitest";
 import { isValidCompaniesHousePersonalCode } from "@app/services/companiesHouseApi.js";
+import { documentIdFromMetadataLink } from "@app/services/companiesHouseDocumentApi.js";
 
 describe("isValidCompaniesHousePersonalCode", () => {
   test("accepts the confirmed Companies House XML Gateway test-service code", () => {
@@ -60,5 +61,22 @@ describe("isValidCompaniesHousePersonalCode", () => {
 
   test("rejects an empty string", () => {
     expect(isValidCompaniesHousePersonalCode("").valid).toBe(false);
+  });
+});
+
+describe("documentIdFromMetadataLink", () => {
+  test("reads the document id from the Document API link a filing history item carries", () => {
+    expect(documentIdFromMetadataLink("https://document-api.company-information.service.gov.uk/document/AbC-12_x")).toBe("AbC-12_x");
+  });
+
+  test("reads the id from a relative link", () => {
+    expect(documentIdFromMetadataLink("/document/AbC123")).toBe("AbC123");
+  });
+
+  test("refuses a link that is not one document's metadata", () => {
+    expect(documentIdFromMetadataLink("https://document-api.company-information.service.gov.uk/document/AbC123/content")).toBeNull();
+    expect(documentIdFromMetadataLink("https://document-api.company-information.service.gov.uk/company/00000001")).toBeNull();
+    expect(documentIdFromMetadataLink("/document/..%2Fsecret")).toBeNull();
+    expect(documentIdFromMetadataLink(undefined)).toBeNull();
   });
 });

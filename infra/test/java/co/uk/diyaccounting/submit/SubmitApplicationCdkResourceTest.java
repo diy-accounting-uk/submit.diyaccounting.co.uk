@@ -217,7 +217,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 26);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 29);
         // The two previews call no external API and share the /api/v1/companies-house alarm.
         assertGroupedStackHealthAlarm(
                 companiesHouseStackTemplate,
@@ -230,7 +230,10 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                         "companies-house-confirmation-statement-post",
                         "companies-house-email-address-post",
                         "companies-house-email-eligibility-get",
+                        "companies-house-filed-accounts-get",
+                        "companies-house-filed-document-get",
                         "companies-house-filing-data-post",
+                        "companies-house-filing-history-get",
                         "companies-house-office-address-get",
                         "companies-house-office-address-post",
                         "companies-house-officers-get",
@@ -466,6 +469,15 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                         "GET /api/v1/companies-house/company/{companyNumber}/persons-with-significant-control"));
         assertApiRoute(
                 apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/company/{companyNumber}/filing-data"));
+        assertApiRoute(
+                apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}/filing-history"));
+        assertApiRoute(
+                apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}/filed-accounts"));
+        assertApiRoute(
+                apiTemplates,
+                Map.of(
+                        "RouteKey",
+                        "GET /api/v1/companies-house/company/{companyNumber}/filed-accounts/{transactionId}/document"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/confirmation-statement/render"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/confirmation-statement"));
         assertApiRoute(
@@ -548,9 +560,11 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         // primary route and an auto-HEAD route, for 224. GET /api/v1/commission/mine sits on its own unshared
         // path and adds a primary route and an auto-HEAD route, for 226. GET /api/v1/public/company-deadlines sits
         // on its own unshared path with no authorizer and adds a primary route and an auto-HEAD route, which
-        // raise the total by 2 over the figure the tests held before it.
+        // raise the total by 2 over the figure the tests held before it. The company lookup's filing
+        // history, filed accounts and filed document routes each sit on their own unshared path and
+        // add a primary route and an auto-HEAD route, for 230 + 6 = 236.
         assertEquals(
-                230,
+                236,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

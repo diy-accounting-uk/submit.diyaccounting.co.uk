@@ -8,11 +8,14 @@
 // Handles: GET /search/companies, GET /company/{companyNumber}, GET
 // /company/{companyNumber}/registered-office-address, GET /company/{companyNumber}/officers, GET
 // /company/{companyNumber}/persons-with-significant-control, GET
+// /company/{companyNumber}/filing-history, GET /company/{companyNumber}/filing-history/{transactionId},
+// GET /document/{documentId}, GET /document/{documentId}/content, GET
 // /registered-email-address/company/{companyNumber}/eligibility, POST /transactions, GET/PUT
 // /transactions/{id}, POST /transactions/{id}/registered-office-address, POST
 // /transactions/{id}/registered-email-address
 
 import { getCompany, searchCompanies, getOfficers, getPscs } from "../scenarios/companies.js";
+import { getFilingHistory, getFiling, getDocumentMetadata, getDocumentContent } from "../scenarios/filing-history.js";
 import {
   getRegisteredOfficeAddress,
   getEligibilityStatusCode,
@@ -132,6 +135,100 @@ export function apiEndpoint(app) {
     }
 
     res.json(result);
+  });
+
+  // GET /company/{companyNumber}/filing-history - public register read, API key authenticated in
+  // the real service, paged by items_per_page and start_index and narrowed by category.
+  app.get("/company/:companyNumber/filing-history", (req, res) => {
+    const { companyNumber } = req.params;
+
+    console.log(`[http-simulator:companies-house] GET /company/${companyNumber}/filing-history`);
+
+    if (!req.headers.authorization) {
+      return res.status(401).json({ errors: [{ error: "invalid-authorization-header", type: "ch:service" }] });
+    }
+
+    const result = getFilingHistory(companyNumber, {
+      category: req.query.category,
+      itemsPerPage: parseInt(req.query.items_per_page, 10) || 25,
+      startIndex: parseInt(req.query.start_index, 10) || 0,
+    });
+    if (!result) {
+      return res.status(404).json({ errors: [{ error: "filing-history-not-found", type: "ch:service" }] });
+    }
+
+    res.json(result);
+  });
+
+  app.get("/company/:companyNumber/filing-history/:transactionId", (req, res) => {
+    const { companyNumber, transactionId } = req.params;
+
+    console.log(`[http-simulator:companies-house] GET /company/${companyNumber}/filing-history/${transactionId}`);
+
+    if (!req.headers.authorization) {
+      return res.status(401).json({ errors: [{ error: "invalid-authorization-header", type: "ch:service" }] });
+    }
+
+    const result = getFiling(companyNumber, transactionId);
+    if (!result) {
+      return res.status(404).json({ errors: [{ error: "filing-history-item-not-found", type: "ch:service" }] });
+    }
+
+    res.json(result);
+  });
+
+  // The Document API: a document's metadata, and its content, which answers 302 to the file in the
+  // type the Accept header asks for, or 406 when the document is not held in that type.
+  app.get("/document/:documentId", (req, res) => {
+    const { documentId } = req.params;
+
+    console.log(`[http-simulator:companies-house] GET /document/${documentId}`);
+
+    if (!req.headers.authorization) {
+      return res.status(401).json({ error: "invalid-authorization-header" });
+    }
+
+    const result = getDocumentMetadata(documentId, `${req.protocol}://${req.get("host")}`);
+    if (!result) {
+      return res.status(404).json({ error: "document-not-found" });
+    }
+
+    res.json(result);
+  });
+
+  app.get("/document/:documentId/content", (req, res) => {
+    const { documentId } = req.params;
+    const contentType = String(req.headers.accept || "application/pdf");
+
+    console.log(`[http-simulator:companies-house] GET /document/${documentId}/content (${contentType})`);
+
+    if (!req.headers.authorization) {
+      return res.status(401).json({ error: "invalid-authorization-header" });
+    }
+
+    const result = getDocumentContent(documentId, contentType);
+    if (!result) {
+      return res.status(404).json({ error: "document-not-found" });
+    }
+    if (result.notAcceptable) {
+      return res.status(406).json({ error: "content-type-not-available" });
+    }
+
+    res.redirect(302, `${req.protocol}://${req.get("host")}/document/${documentId}/file?type=${encodeURIComponent(contentType)}`);
+  });
+
+  // The file a content request redirects to; the live service signs this address, so it takes no
+  // Authorization header.
+  app.get("/document/:documentId/file", (req, res) => {
+    const { documentId } = req.params;
+    const contentType = String(req.query.type || "application/pdf");
+
+    const result = getDocumentContent(documentId, contentType);
+    if (!result || result.notAcceptable) {
+      return res.status(404).json({ error: "document-file-not-found" });
+    }
+
+    res.type(contentType).send(result.content);
   });
 
   // GET /registered-email-address/company/{companyNumber}/eligibility - OAuth authorised, needs

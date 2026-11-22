@@ -244,13 +244,16 @@ describe("productCatalogHelper", () => {
     expect(activity.environments).not.toContain("prod");
   });
 
-  it("file-revised-accounts has no page or route, is granted like the joint filing and is not listed on prod", () => {
+  it("file-revised-accounts has no page, holds the two filed-accounts routes, is granted like the joint filing and is not listed on prod", () => {
     const catalog = parseCatalog(tomlText);
     const activity = catalog.activities.find((a) => a.id === "file-revised-accounts");
     expect(bundlesForActivity(catalog, "file-revised-accounts")).toEqual(
       bundlesForActivity(catalog, "file-company-tax-return-with-accounts"),
     );
-    expect(activity.paths).toBeUndefined();
+    expect(activity.paths).toEqual([
+      "^/api/v1/companies-house/company/[^/]+/filed-accounts$",
+      "^/api/v1/companies-house/company/[^/]+/filed-accounts/[^/]+/document$",
+    ]);
     expect(activity.display).toBe("never");
     expect(activity.tokenCost).toBe(0);
     expect(activity.metered).toBe(false);

@@ -438,15 +438,18 @@ describe("bundleEnforcement.js", () => {
         "/api/v1/companies-house/confirmation-statement",
         "/api/v1/companies-house/confirmation-statement/render",
         "/api/v1/companies-house/confirmation-statement/00001A",
-        "/api/v1/companies-house/company/00000006/officers",
-        "/api/v1/companies-house/company/00000006/persons-with-significant-control",
         "/api/v1/companies-house/company/00000006/filing-data",
+        "/api/v1/companies-house/company/00000006/filed-accounts",
+        "/api/v1/companies-house/company/00000006/filed-accounts/MzAwMDAwMDAwMA/document",
         "/api/v1/companies-house/psc-verification-statement",
         "/api/v1/companies-house/psc-verification-statement/00001A",
       ];
       const lookupRoutes = [
         "/api/v1/companies-house/search",
         "/api/v1/companies-house/company/00000006",
+        "/api/v1/companies-house/company/00000006/officers",
+        "/api/v1/companies-house/company/00000006/persons-with-significant-control",
+        "/api/v1/companies-house/company/00000006/filing-history",
         "/companies-house/companySearch.html",
       ];
       const defaultBundleRoutes = [
@@ -487,6 +490,8 @@ describe("bundleEnforcement.js", () => {
         "/api/v1/companies-house/company/00000006",
         "/api/v1/companies-house/company/00000006/officers",
         "/api/v1/companies-house/company/00000006/persons-with-significant-control",
+        "/api/v1/companies-house/company/00000006/filed-accounts",
+        "/api/v1/companies-house/company/00000006/filed-accounts/MzAwMDAwMDAwMA/document",
       ])("%s is allowed for a resident filer", async (urlPath) => {
         const event = defaultOnlyEvent(urlPath);
         getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", expiry: new Date().toISOString() }]);

@@ -173,6 +173,7 @@ class LambdaEnvironmentWiringCdkResourceTest {
                         .sharedNames(sharedNames)
                         .baseImageTag("latest")
                         .companiesHouseBaseUri("https://api.company-information.service.gov.uk")
+                        .companiesHouseDocumentBaseUri("https://document-api.company-information.service.gov.uk")
                         .companiesHouseApiKeyArn("")
                         .companiesHouseFilingBaseUri("https://api-sandbox.company-information.service.gov.uk")
                         .companiesHouseFilingApiKeyArn("")

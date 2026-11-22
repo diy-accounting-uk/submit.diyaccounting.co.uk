@@ -83,6 +83,7 @@ public class SubmitApplication {
         public String hmrcSandboxBaseUri;
         public String hmrcAgentAuthorisationBaseUri;
         public String companiesHouseBaseUri;
+        public String companiesHouseDocumentBaseUri;
         public String companiesHouseApiKeyArn;
         public String companiesHouseFilingBaseUri;
         public String companiesHouseFilingApiKeyArn;
@@ -238,6 +239,10 @@ public class SubmitApplication {
                 "(from hmrcSandboxClientSecretArn in cdk.json)");
         var companiesHouseBaseUri = envOr(
                 "COMPANIES_HOUSE_BASE_URI", appProps.companiesHouseBaseUri, "(from companiesHouseBaseUri in cdk.json)");
+        var companiesHouseDocumentBaseUri = envOr(
+                "COMPANIES_HOUSE_DOCUMENT_BASE_URI",
+                appProps.companiesHouseDocumentBaseUri,
+                "(from companiesHouseDocumentBaseUri in cdk.json)");
         var companiesHouseApiKeyArn = envOr(
                 "COMPANIES_HOUSE_API_KEY_ARN",
                 appProps.companiesHouseApiKeyArn,
@@ -524,6 +529,7 @@ public class SubmitApplication {
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .companiesHouseBaseUri(companiesHouseBaseUri)
+                        .companiesHouseDocumentBaseUri(companiesHouseDocumentBaseUri)
                         .companiesHouseApiKeyArn(companiesHouseApiKeyArn != null ? companiesHouseApiKeyArn : "")
                         .companiesHouseFilingBaseUri(
                                 companiesHouseFilingBaseUri != null ? companiesHouseFilingBaseUri : "")

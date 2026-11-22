@@ -152,6 +152,11 @@ export async function getCompanyProfile(companyNumber) {
     sicCodes: data.sic_codes,
     accountsNextDue: data.accounts?.next_accounts?.due_on,
     accountsNextPeriodEnd: data.accounts?.next_accounts?.period_end_on,
+    accountsNextPeriodStart: data.accounts?.next_accounts?.period_start_on,
+    accountingReferenceDate: data.accounts?.accounting_reference_date,
+    accountsLastPeriodStart: data.accounts?.last_accounts?.period_start_on,
+    accountsLastPeriodEnd: data.accounts?.last_accounts?.period_end_on,
+    accountsLastType: data.accounts?.last_accounts?.type,
     confirmationStatementNextDue: data.confirmation_statement?.next_due,
     confirmationStatementNextMadeUpTo: data.confirmation_statement?.next_made_up_to,
   };

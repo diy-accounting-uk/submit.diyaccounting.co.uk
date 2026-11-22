@@ -60,6 +60,24 @@ export async function sendJsonToCompaniesHouse(url, init, timeoutMs, { api } = {
 }
 
 /**
+ * Send a request to Companies House and read the body as text into `data`, for a document rather
+ * than a JSON answer.
+ * @param {string} url
+ * @param {Object} init - fetch options
+ * @param {number} timeoutMs
+ * @param {Object} [options]
+ * @param {string} [options.api] - The template of the call, when the URL path would not template well
+ */
+export async function sendTextToCompaniesHouse(url, init, timeoutMs, { api } = {}) {
+  const { response, duration } = await sendRecorded(url, init, timeoutMs, {
+    api: api ?? integrationApi(init.method || "GET", url),
+    target: companiesHouseCallTarget(url),
+  });
+  const data = await response.text();
+  return { ok: response.ok, status: response.status, data, headers: normalizeHeaders(response.headers), duration, response };
+}
+
+/**
  * Send a GovTalk message to the XML Gateway and read the XML text into `data`. The gateway can
  * answer HTTP 200 with an error inside the envelope, and the record keeps that error number.
  * @param {string} url
