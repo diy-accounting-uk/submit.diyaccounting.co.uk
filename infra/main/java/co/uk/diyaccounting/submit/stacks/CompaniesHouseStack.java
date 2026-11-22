@@ -447,9 +447,10 @@ public class CompaniesHouseStack extends Stack {
 
         // Companies House filing deadlines for a visitor with no sign-in. The route has no
         // authorizer, so the Lambda reads no bundle, salt or activity bus: it holds the Companies
-        // House key and writes call records, and nothing else.
+        // House key, writes call records and charges the counter of all public lookups, and nothing else.
         var companiesHousePublicDeadlinesGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
                 .with("ENVIRONMENT_NAME", props.envName());
         IntegrationCallAccess.addEnv(
                 companiesHousePublicDeadlinesGetLambdaEnv,
@@ -508,6 +509,7 @@ public class CompaniesHouseStack extends Stack {
         var companiesHousePublicRegisterGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
                 .with("COMPANIES_HOUSE_DOCUMENT_BASE_URI", props.companiesHouseDocumentBaseUri())
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
                 .with("ENVIRONMENT_NAME", props.envName());
         IntegrationCallAccess.addEnv(
                 companiesHousePublicRegisterGetLambdaEnv,
@@ -2151,6 +2153,11 @@ public class CompaniesHouseStack extends Stack {
                 this.companiesHouseFiledAccountsGetLambda,
                 this.companiesHouseFiledDocumentGetLambda)) {
             securityStateTable.grant(lookup, "dynamodb:UpdateItem");
+        }
+        // Each public lookup charges the counter of all public lookups on the same key in one update.
+        for (Function publicLookup :
+                List.of(this.companiesHousePublicDeadlinesGetLambda, this.companiesHousePublicRegisterGetLambda)) {
+            securityStateTable.grant(publicLookup, "dynamodb:UpdateItem");
         }
         securityStateTable.grant(
                 this.companiesHouseLastAccountsGetLambda,

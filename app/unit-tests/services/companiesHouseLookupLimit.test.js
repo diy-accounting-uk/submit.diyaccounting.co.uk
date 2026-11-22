@@ -14,6 +14,9 @@ const mockLogger = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn(
 vi.mock("@app/lib/logger.js", async (importOriginal) => ({ ...(await importOriginal()), createLogger: () => mockLogger }));
 
 const {
+  publicLookupBudgetSpent,
+  PUBLIC_LOOKUP_CALLS,
+  PUBLIC_LOOKUP_CALLS_PER_WINDOW,
   lookupLimitReached,
   lookupLimitResponse,
   LOOKUP_CALLS,
@@ -135,5 +138,40 @@ describe("the Companies House lookup limit per account", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("the Companies House budget of all public lookups", () => {
+  beforeEach(() => {
+    mockIncrementRateCounter.mockReset();
+    process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
+  });
+  afterEach(() => {
+    delete process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
+  });
+
+  test("charges every public lookup to one counter for the five-minute window, whatever address it comes from", async () => {
+    mockIncrementRateCounter.mockResolvedValue(5);
+    expect(await publicLookupBudgetSpent(PUBLIC_LOOKUP_CALLS.register)).toBe(false);
+    expect(mockIncrementRateCounter).toHaveBeenCalledWith({
+      namespace: "chlookup",
+      identifier: "all-public-lookups",
+      minute: Math.floor(Date.now() / 1000 / 300),
+      hits: 5,
+    });
+  });
+
+  test("is spent once public lookups pass their budget, which leaves the signed-in budget and the filings their calls", async () => {
+    mockIncrementRateCounter.mockResolvedValue(PUBLIC_LOOKUP_CALLS_PER_WINDOW + 1);
+    expect(await publicLookupBudgetSpent(PUBLIC_LOOKUP_CALLS.deadlines)).toBe(true);
+    expect(PUBLIC_LOOKUP_CALLS_PER_WINDOW + LOOKUP_CALLS_FOR_ALL_ACCOUNTS_PER_WINDOW).toBeLessThan(600);
+  });
+
+  test("does not apply where the security state table is not configured, or the counter cannot be written", async () => {
+    mockIncrementRateCounter.mockRejectedValue(new Error("throttled"));
+    expect(await publicLookupBudgetSpent(1)).toBe(false);
+    delete process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
+    expect(await publicLookupBudgetSpent(1)).toBe(false);
+    expect(mockIncrementRateCounter).toHaveBeenCalledTimes(1);
   });
 });

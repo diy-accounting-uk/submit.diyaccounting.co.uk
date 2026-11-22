@@ -26,6 +26,18 @@ const ALL_ACCOUNTS = "all-signed-in-lookups";
 export const LOOKUP_BUDGET_REFUSED_EVENT = "CompaniesHouseLookupBudgetRefused";
 const WINDOW_SECONDS = 300;
 
+// All public lookups together, which need no sign-in, stop at a sixth of the key's 600 calls. The
+// WAF limits each address; this limits every address together, so callers spread over many
+// addresses cannot spend the calls the signed-in lookups and the filings need.
+export const PUBLIC_LOOKUP_CALLS_PER_WINDOW = 100;
+const ALL_PUBLIC = "all-public-lookups";
+
+// The most Companies House calls each public lookup makes on the shared key.
+export const PUBLIC_LOOKUP_CALLS = {
+  deadlines: 1,
+  register: 5,
+};
+
 // The most Companies House calls each signed-in lookup makes on the shared key.
 export const LOOKUP_CALLS = {
   search: 1,
@@ -83,8 +95,26 @@ export async function lookupLimitReached(userSub, calls) {
 }
 
 /**
- * The JSON 429 a lookup answers once the account's share, or the budget of all signed-in lookups, is
- * spent. Retry-After is the seconds left in the five-minute window, when both counters start again.
+ * Charges the calls of one public lookup to the budget of all public lookups, and answers whether
+ * it is now spent. Where the security state table is not configured (the simulator and local
+ * servers), or the counter cannot be written, the budget does not apply.
+ * @param {number} calls - the most Companies House calls the lookup makes
+ * @returns {Promise<boolean>} true when public lookups have passed their budget in this window
+ */
+export async function publicLookupBudgetSpent(calls) {
+  if (!process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME) return false;
+  const window = Math.floor(Date.now() / 1000 / WINDOW_SECONDS);
+  const used = await charge(ALL_PUBLIC, window, calls);
+  if (used !== null && used > PUBLIC_LOOKUP_CALLS_PER_WINDOW) {
+    logger.warn({ message: "Public Companies House lookups refused, they have used their budget of the API key", window, used });
+    return true;
+  }
+  return false;
+}
+
+/**
+ * The JSON 429 a lookup answers once the account's share, the budget of all signed-in lookups or the
+ * budget of all public lookups is spent. Retry-After is the seconds left in the five-minute window, when both counters start again.
  */
 export function lookupLimitResponse(request, headers) {
   const secondsIntoWindow = (Date.now() / 1000) % WINDOW_SECONDS;

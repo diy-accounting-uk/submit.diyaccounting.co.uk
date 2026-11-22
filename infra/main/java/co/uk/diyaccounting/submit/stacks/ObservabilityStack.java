@@ -817,6 +817,25 @@ public class ObservabilityStack extends Stack {
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .build();
 
+        // Public Companies House budget alarm. The two public lookups emit PublicCompaniesHouseBudgetSpent
+        // each time the budget of all public lookups on the shared key refuses one, which happens only
+        // when callers across many addresses read past it. Routed by the alarm-state-change rule.
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-PublicCompaniesHouseBudgetSpentAlarm")
+                .alarmName(props.resourceNamePrefix() + "-public-companies-house-budget-spent")
+                .alarmDescription(
+                        "The budget of all public Companies House lookups refused a lookup >= 1 time in 5 minutes")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/Business")
+                        .metricName("PublicCompaniesHouseBudgetSpent")
+                        .statistic("Sum")
+                        .period(Duration.minutes(5))
+                        .build())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
         // HMRC fraud prevention header violation alarm. app/services/hmrcApi.js sendToHmrc emits
         // HmrcFraudHeaderViolation for every request to the HMRC production API that lacks a
         // required Gov-Client or Gov-Vendor header. The metric is environment-wide and must

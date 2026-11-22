@@ -18,10 +18,15 @@ vi.mock("@aws-sdk/lib-dynamodb", () => ({
   UpdateCommand: class {},
 }));
 vi.mock("@aws-sdk/client-dynamodb", () => ({ DynamoDBClient: class {} }));
+const mockIncrementRateCounter = vi.fn();
+vi.mock("@app/data/dynamoDbSecurityStateRepository.js", () => ({
+  incrementRateCounter: (...args) => mockIncrementRateCounter(...args),
+}));
 
 import {
   ingestHandler,
   COMPANIES_HOUSE_429_METRIC,
+  PUBLIC_BUDGET_SPENT_METRIC,
   FOUND_CACHE_SECONDS,
 } from "@app/functions/companies-house/companiesHousePublicRegisterGet.js";
 import { MAX_DOCUMENT_RESPONSE_BYTES } from "@app/services/companiesHouseFiledAccounts.js";
@@ -306,5 +311,22 @@ describe("companiesHousePublicRegisterGet ingestHandler", () => {
     const response = await get("not-a-number!");
     expect(response.statusCode).toBe(400);
     expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  test("answers a JSON 429, not cached, and calls Companies House not at all once public lookups have spent their budget", async () => {
+    process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
+    mockIncrementRateCounter.mockResolvedValue(101);
+    try {
+      const response = await get("00000006");
+      expect(response.statusCode).toBe(429);
+      expect(response.headers["Cache-Control"]).toBe("no-store");
+      expect(Number(response.headers["Retry-After"])).toBeGreaterThan(0);
+      expect(parseResponseBody(response).message).toMatch(/Try again in a few minutes/);
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockIncrementRateCounter).toHaveBeenCalledWith(expect.objectContaining({ identifier: "all-public-lookups", hits: 5 }));
+      expect(mockEmitMetric).toHaveBeenCalledWith(expect.objectContaining({ metricName: PUBLIC_BUDGET_SPENT_METRIC }));
+    } finally {
+      delete process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
+    }
   });
 });

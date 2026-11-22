@@ -197,11 +197,11 @@ class SubmitEnvironmentCdkResourceTest {
         // create a fresh alarm (and a fresh GitHub issue) against this environment-wide metric.
         // Alongside RumLcpP75Alarm, RumClsP75Alarm, RumJsErrorAlarm, BundleCapReachedAlarm,
         // HmrcSubmissionFailureAlarm, ItsaSubmissionFailureAlarm, TokenChargeUnpaidAlarm,
-        // CompaniesHouseLookupBudgetRefusedAlarm and HmrcFraudHeaderViolationAlarm,
-        // HmrcFraudHeaderRuleFailureAlarm, IntegrationCallRecordFailedAlarm,
-        // CustomerEmailFailureAlarm and HmrcFphCheckFailedAlarm, that's 14 alarms, and the trusted
-        // event function's two checks make 16 (its composite is the one composite).
-        observability.resourceCountIs("AWS::CloudWatch::Alarm", 16);
+        // CompaniesHouseLookupBudgetRefusedAlarm, PublicCompaniesHouseBudgetSpentAlarm and
+        // HmrcFraudHeaderViolationAlarm, HmrcFraudHeaderRuleFailureAlarm, IntegrationCallRecordFailedAlarm,
+        // CustomerEmailFailureAlarm and HmrcFphCheckFailedAlarm, that's 15 alarms, and the trusted
+        // event function's two checks make 17 (its composite is the one composite).
+        observability.resourceCountIs("AWS::CloudWatch::Alarm", 17);
         observability.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 1);
         observability.resourceCountIs("AWS::Lambda::Function", 3);
         observability.resourceCountIs("AWS::IAM::Role", 8);
@@ -299,6 +299,20 @@ class SubmitEnvironmentCdkResourceTest {
                         "AlarmName", "test-env-companies-house-lookup-budget-refused",
                         "Namespace", "Submit/Business",
                         "MetricName", "CompaniesHouseLookupBudgetRefused",
+                        "Period", 300,
+                        "Statistic", "Sum",
+                        "Threshold", 1,
+                        "EvaluationPeriods", 1,
+                        "ComparisonOperator", "GreaterThanOrEqualToThreshold",
+                        "TreatMissingData", "notBreaching")));
+
+        // Public Companies House budget alarm: any refusal by the budget of all public lookups.
+        observability.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName", "test-env-public-companies-house-budget-spent",
+                        "Namespace", "Submit/Business",
+                        "MetricName", "PublicCompaniesHouseBudgetSpent",
                         "Period", 300,
                         "Statistic", "Sum",
                         "Threshold", 1,

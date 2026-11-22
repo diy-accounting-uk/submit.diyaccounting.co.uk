@@ -28,6 +28,7 @@ import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { emitMetric } from "../../lib/emfMetrics.js";
 import { companiesHouseHttpGet, isValidCompanyNumber } from "../../services/companiesHouseApi.js";
 import { fetchLastFiledAccounts } from "../../services/companiesHouseFiledAccounts.js";
+import { PUBLIC_LOOKUP_CALLS, lookupLimitResponse, publicLookupBudgetSpent } from "../../services/companiesHouseLookupLimit.js";
 import { registeredOfficeFromAddress } from "./companiesHouseCompanyGet.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHousePublicRegisterGet.js" });
@@ -35,6 +36,8 @@ const logger = createLogger({ source: "app/functions/companies-house/companiesHo
 export const METRICS_NAMESPACE = "Submit/Business";
 export const ORIGIN_REQUEST_METRIC = "PublicCompanyRegisterOriginRequest";
 export const COMPANIES_HOUSE_429_METRIC = "PublicCompanyRegisterCompaniesHouse429";
+// Counted each time the budget of all public lookups refuses a read; its alarm shows the budget spent.
+export const PUBLIC_BUDGET_SPENT_METRIC = "PublicCompaniesHouseBudgetSpent";
 
 // CloudFront keeps a found answer this long. The register changes when a filing is accepted, and
 // one answer costs up to five Companies House requests on the key the signed-in lookups share.
@@ -122,6 +125,12 @@ export async function ingestHandler(event) {
   if (!valid) {
     countOriginRequest("invalid");
     return http400BadRequestResponse({ request, headers: jsonHeaders(NO_STORE), message: "Invalid company number - must be 8 characters" });
+  }
+
+  if (await publicLookupBudgetSpent(PUBLIC_LOOKUP_CALLS.register)) {
+    countOriginRequest("budget_spent");
+    emitMetric({ namespace: METRICS_NAMESPACE, metricName: PUBLIC_BUDGET_SPENT_METRIC });
+    return lookupLimitResponse(request, jsonHeaders(NO_STORE));
   }
 
   const profileResponse = await companiesHouseHttpGet(`/company/${normalised}`);

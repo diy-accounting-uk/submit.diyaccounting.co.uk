@@ -26,12 +26,15 @@ import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { emitMetric } from "../../lib/emfMetrics.js";
 import { companiesHouseHttpGet, isValidCompanyNumber } from "../../services/companiesHouseApi.js";
+import { PUBLIC_LOOKUP_CALLS, lookupLimitResponse, publicLookupBudgetSpent } from "../../services/companiesHouseLookupLimit.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHousePublicDeadlinesGet.js" });
 
 export const METRICS_NAMESPACE = "Submit/Business";
 export const ORIGIN_REQUEST_METRIC = "PublicCompanyDeadlinesOriginRequest";
 export const COMPANIES_HOUSE_429_METRIC = "PublicCompanyDeadlinesCompaniesHouse429";
+// Counted each time the budget of all public lookups refuses a lookup; its alarm shows the budget spent.
+export const PUBLIC_BUDGET_SPENT_METRIC = "PublicCompaniesHouseBudgetSpent";
 
 const MIN_QUERY_LENGTH = 2;
 const MAX_QUERY_LENGTH = 100;
@@ -113,6 +116,14 @@ function failureResponse(request, kind, chResponse) {
   });
 }
 
+// Charges the lookup to the budget of all public lookups; answers the JSON 429 once it is spent.
+async function budgetRefusal(request, kind) {
+  if (!(await publicLookupBudgetSpent(PUBLIC_LOOKUP_CALLS.deadlines))) return null;
+  countOriginRequest(kind, "budget_spent");
+  emitMetric({ namespace: METRICS_NAMESPACE, metricName: PUBLIC_BUDGET_SPENT_METRIC });
+  return lookupLimitResponse(request, jsonHeaders(NO_STORE));
+}
+
 function badRequest(request, kind, message) {
   countOriginRequest(kind, "invalid");
   return http400BadRequestResponse({ request, headers: jsonHeaders(NO_STORE), message });
@@ -132,6 +143,8 @@ export async function ingestHandler(event) {
   if (hasNumber) {
     const { valid, normalised } = isValidCompanyNumber(params.number);
     if (!valid) return badRequest(request, "lookup", "Invalid company number - must be 8 characters");
+    const refusal = await budgetRefusal(request, "lookup");
+    if (refusal) return refusal;
     const chResponse = await companiesHouseHttpGet(`/company/${normalised}`);
     if (!chResponse.ok) return failureResponse(request, "lookup", chResponse);
     countOriginRequest("lookup", "found");
@@ -146,6 +159,8 @@ export async function ingestHandler(event) {
   if (query.length < MIN_QUERY_LENGTH || query.length > MAX_QUERY_LENGTH) {
     return badRequest(request, "search", `Search term must be between ${MIN_QUERY_LENGTH} and ${MAX_QUERY_LENGTH} characters`);
   }
+  const refusal = await budgetRefusal(request, "search");
+  if (refusal) return refusal;
   const chResponse = await companiesHouseHttpGet("/search/companies", { q: query, items_per_page: MAX_MATCHES });
   if (!chResponse.ok) return failureResponse(request, "search", chResponse);
   countOriginRequest("search", "found");
