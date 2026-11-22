@@ -245,6 +245,7 @@ The live package record is `../private.diyaccounting.co.uk/companies-house/corre
 | Q3 | What does the gateway answer when a second set of accounts arrives for a period and the revised fact is `false`? What does it answer when the fact is `true` and it holds no accounts for the period? | AA15, AA2 |
 | Q4 | Does the gateway refuse revised accounts for a period after some time? | AA4 copy |
 | Q5 | A `CompanyDataRequest` takes a `MadeUpDate`. Are the shareholdings and the statement of capital in the answer the register as at that date, or as at the last confirmation statement? What does the answer hold when the `MadeUpDate` is before the last confirmation statement, or after today? Does it state shareholdings for every private company limited by shares? | AA31 copy (section 11.4, point 5) |
+| Q6 | In revised accounts by replacement, does `core:DateAuthorisationFinancialStatementsForIssue` hold the date the directors approved the revised accounts (as `bus:DateApprovalRevisionReport` does), or the date they approved the original accounts? Four revised documents on the 2026 taxonomy in the Accounts Data Product daily file of 2026-11-21 hold the revision date there, equal to `bus:DateApprovalRevisionReport`. One revised small company document on the 2025 taxonomy in the daily file of 2026-11-20 holds the original approval date there and dates the revision later. Until the answer, Submit follows the 2026 taxonomy examples and puts the revision date there | AA1 |
 
 One point is settled from examples before any question. AA1 reads amended examples in the Accounts Data Product to see which date `core:DateAuthorisationFinancialStatementsForIssue` holds in a revision. It becomes a question only when the examples disagree.
 
@@ -364,9 +365,9 @@ The finder pages were read on 2026-11-12. "Amended accounts" is Yes for 36 of 57
 
 | Label | Task | Delivers | Verified by | Class |
 | --- | --- | --- | --- | --- |
-| AA9 | Draft the questions for the XML team | One draft with Q1 to Q4 | The `email-draft` skill's facts pass | machine-only |
+| AA9 | Draft the questions for the XML team | One draft with Q1 to Q6 | The `email-draft` skill's facts pass | machine-only |
 | OAA1 | Send the questions | The email to the XML team | The send date is in this plan | human-driven |
-| AA22 | Record the XML team's answers | The reply on record; each answer in section 2.3 | Section 2.3 holds an answer for Q1 to Q4 | machine-only |
+| AA22 | Record the XML team's answers | The reply on record; each answer in section 2.3 | Section 2.3 holds an answer for Q1 to Q6 | machine-only |
 | AA10 | Revised cases for the review | Four fixture cases; the review script judges a revision | Unit tests of the review script | machine-only |
 | AA11 | Review and judge the four cases | A review folder with the judge's verdicts | The judge passes all four | machine-only |
 | AA12 | File the four cases on the test service | Four submission numbers | The gateway acknowledges each | machine-only |
@@ -508,7 +509,7 @@ Each brief stands alone. Line numbers drift, so each names its anchor text.
 
 #### AA9. Draft the questions for the XML team
 
-- **Goal.** One short email that asks Q1 to Q4 of section 2.3.
+- **Goal.** One short email that asks Q1 to Q6 of section 2.3.
 - **How.** Use the `email-draft` skill on Opus. It reads the thread and the operator's sent mail from corpus-loom. The email is a reply on the XML team's accounts testing thread, which `../private.diyaccounting.co.uk/companies-house/correspondence/EMAIL_XMLGW_LIVE_PACKAGE_ISSUED.md` names.
 - **Facts the draft may state.** Submit files micro-entity, small company and dormant accounts under its live package. It builds revised accounts by replacement with the six facts of the accounts specification's "Revised Accounts" section. GOV.UK says software can file an amendment "if you used it to file your annual accounts".
 - **Rules.** Four questions, numbered, and nothing else. No request to allow an omission. Paragraphs are unwrapped lines. The operator sent the listing request of board row OOS22 under a subject of its own; the draft's header offers one for this email too.
@@ -935,7 +936,7 @@ graph TD
 
 ## 9. Not confirmed
 
-- Q1 to Q5 of section 2.3.
+- Q1 to Q6 of section 2.3.
 - The error number that the real gateway gives a revised document that fails rule 2. AA2 uses the validator's text.
 - Which date `core:DateAuthorisationFinancialStatementsForIssue` holds in a revision. AA1 reads the examples.
 - Whether a spreadsheets workbook or a package zip fills the accounts forms. AA6 tests it.
