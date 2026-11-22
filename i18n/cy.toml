@@ -22959,6 +22959,14 @@ cy = '''Mae’r adroddiad hwn yn dangos dim ond y rhannau yr oedd Submit eisoes 
 hash = "d6666b93962e"
 cy = '''Ffynhonnell: cofrestr Tŷ’r Cwmnïau, a ddarllenwyd am {time} ar {date}. Nid yw Tŷ’r Cwmnïau yn gwirio’r wybodaeth y mae cwmnïau’n ei hanfon ato.'''
 
+[strings."ch.reports.call-limit"]
+hash = "85944c8b7fd5"
+cy = '''Rhoddodd Submit y gorau i ddarllen cofnod y cwmni hwn ar ôl cyrraedd ei derfyn o alwadau i Dŷ’r Cwmnïau ar gyfer un adroddiad.'''
+
+[strings."ch.reports.too-large"]
+hash = "b7f68c64cabe"
+cy = '''Mae cofnod y cwmni hwn yn rhy fawr i Submit ei ddangos yn yr adroddiad hwn.'''
+
 [strings."ch.drill.nav-reports"]
 hash = "dacca3cba3f3"
 cy = '''Adroddiadau'''

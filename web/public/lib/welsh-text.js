@@ -1358,6 +1358,8 @@ window.WELSH_TEXT = {
   "ch.reports.accounts-summary": "Y prif ffigurau o bob set o gyfrifon a ffeiliwyd, a’r newid rhwng y ddwy flynedd ddiweddaraf.",
   "ch.reports.accounts-title": "Ffigurau’r cyfrifon o flwyddyn i flwyddyn",
   "ch.reports.all-reports": "Pob adroddiad ar y cwmni hwn",
+  "ch.reports.call-limit":
+    "Rhoddodd Submit y gorau i ddarllen cofnod y cwmni hwn ar ôl cyrraedd ei derfyn o alwadau i Dŷ’r Cwmnïau ar gyfer un adroddiad.",
   "ch.reports.capital-summary":
     "Dyraniadau cyfranddaliadau, datganiadau cyfalaf, a’r cyfranddaliadau a nodir yn y cyfrifon diwethaf a ffeiliwyd.",
   "ch.reports.capital-title": "Cyfalaf cyfranddaliadau",
@@ -1429,6 +1431,7 @@ window.WELSH_TEXT = {
   "ch.reports.source":
     "Ffynhonnell: cofrestr Tŷ’r Cwmnïau, a ddarllenwyd am {time} ar {date}. Nid yw Tŷ’r Cwmnïau yn gwirio’r wybodaeth y mae cwmnïau’n ei hanfon ato.",
   "ch.reports.terms-heading": "Beth mae’r geiriau hyn yn ei olygu",
+  "ch.reports.too-large": "Mae cofnod y cwmni hwn yn rhy fawr i Submit ei ddangos yn yr adroddiad hwn.",
   "ch.revision.accepted": "Mae Tŷ’r Cwmnïau wedi derbyn y cyfrifon diwygiedig.",
   "ch.revision.date-before-original":
     "Rhaid cymeradwyo’r cyfrifon diwygiedig ar {date} neu wedi hynny, pan gymeradwywyd y cyfrifon gwreiddiol",

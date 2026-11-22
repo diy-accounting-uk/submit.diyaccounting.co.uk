@@ -241,6 +241,78 @@ test.describe("A company report's view", () => {
     await expect(page.locator(".company-report-source")).toBeVisible();
   });
 
+  test("says the report stopped at its call limit when the route answers 429 with callLimitReached", async ({ page }) => {
+    await serveSite(page, { reportAnswer: { status: 429, body: { message: "The report's call limit", callLimitReached: true } } });
+    await page.goto(`${BASE}${COMPANY}/reports/accounts`, { waitUntil: "networkidle" });
+    await expect(page.locator(".company-report-state")).toHaveText(
+      "Submit stopped reading this company's record at its limit of calls to Companies House for one report.",
+    );
+    await expect(page.locator(".company-report-terms dt")).toHaveCount(8);
+  });
+
+  test("says a report cut short at its call limit shows only what was read", async ({ page }) => {
+    await serveSite(page, { reportAnswer: { status: 200, body: { readAt: READ_AT, callLimitReached: true } } });
+    await page.goto(`${BASE}${COMPANY}/reports/accounts`, { waitUntil: "networkidle" });
+    await expect(page.locator(".company-report-state")).toHaveText(
+      "Submit stopped reading this company's record at its limit of calls to Companies House for one report. This report shows only the parts Submit had already read.",
+    );
+    await expect(page.locator(".company-report-source")).toBeVisible();
+  });
+
+  test("says the record is too large when the route answers 413", async ({ page }) => {
+    await serveSite(page, { reportAnswer: { status: 413, body: { message: "Too large", tooLarge: true } } });
+    await page.goto(`${BASE}${COMPANY}/reports/filings`, { waitUntil: "networkidle" });
+    await expect(page.locator(".company-report-state")).toHaveText("This company's record is too large for Submit to show in this report.");
+    await expect(page.locator("#drillHeading")).toContainText("HARBOUR LANE JOINERY LIMITED");
+  });
+
+  test("gives the call-limit and too-large sentences in Welsh", async ({ page }) => {
+    await serveSite(page, { reportAnswer: { status: 413, body: { message: "Too large", tooLarge: true } } });
+    await page.goto(`${BASE}/cy${COMPANY}/reports/filings`, { waitUntil: "networkidle" });
+    await expect(page.locator(".company-report-state")).toHaveText(
+      "Mae cofnod y cwmni hwn yn rhy fawr i Submit ei ddangos yn yr adroddiad hwn.",
+    );
+    expect(await page.evaluate(() => window.siteText("ch.reports.call-limit", "English"))).toContain("derfyn o alwadau");
+  });
+
+  test("names the bundle on a report's view when the route answers 403", async ({ page }) => {
+    await serveSite(page, {
+      reportAnswer: { status: 403, body: { message: "Forbidden - missing or insufficient bundle entitlement" } },
+      catalogue: (text) => text.replace(/(id = "company-reports"[\s\S]*?bundles = )\["default"\]/, '$1["resident-ltd"]'),
+    });
+    await page.goto(`${BASE}${COMPANY}/reports/people`, { waitUntil: "networkidle" });
+    await expect(page.locator(".company-report-state")).toHaveText("These reports come with Resident Ltd.");
+  });
+
+  test("shows the read time in London time in summer, on London's date", async ({ page }) => {
+    await serveSite(page, { reportAnswer: { status: 200, body: { readAt: "2026-10-24T23:30:00.000Z" } } });
+    await page.goto(`${BASE}${COMPANY}/reports/history`, { waitUntil: "networkidle" });
+    await expect(page.locator(".company-report-read")).toHaveText("Read from Companies House at 00:30 on 25 October 2026.");
+  });
+
+  test("shows the read time in London time in the hour after the clocks go back", async ({ page }) => {
+    await serveSite(page, { reportAnswer: { status: 200, body: { readAt: "2026-10-25T01:30:00.000Z" } } });
+    await page.goto(`${BASE}${COMPANY}/reports/history`, { waitUntil: "networkidle" });
+    await expect(page.locator(".company-report-read")).toHaveText("Read from Companies House at 01:30 on 25 October 2026.");
+  });
+
+  test("moves from a view back to the index and on to another view without reloading or losing the company", async ({ page }) => {
+    const reportRequests = [];
+    await serveSite(page, { reportRequests });
+    await page.goto(`${BASE}${COMPANY}/reports/filings`, { waitUntil: "networkidle" });
+    await page.evaluate(() => (window.__samePage = true));
+    await page.locator("#drillView a", { hasText: "All reports on this company" }).click();
+    await expect(page.locator("#drillView h4")).toHaveText("Reports on this company");
+    await page.locator(".company-reports-list a", { hasText: "Share capital" }).click();
+    await expect(page.locator("#drillView h4")).toHaveText("Share capital");
+    await page.goBack();
+    await expect(page.locator("#drillView h4")).toHaveText("Reports on this company");
+    expect(new URL(page.url()).pathname).toBe(`${COMPANY}/reports`);
+    await expect(page.locator("#drillHeading")).toContainText("04512345");
+    expect(await page.evaluate(() => window.__samePage)).toBe(true);
+    expect(reportRequests).toEqual(["filings", "capital"]);
+  });
+
   test("names an address with a report this page does not have as not found", async ({ page }) => {
     await serveSite(page);
     await page.goto(`${BASE}${COMPANY}/reports/forecast`, { waitUntil: "networkidle" });

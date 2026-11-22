@@ -200,6 +200,12 @@
       : siteText("ch.search.rate-limited", "Companies House is rate limiting our lookups. Try again in a few minutes.");
   }
 
+  const callLimitText = () =>
+    siteText(
+      "ch.reports.call-limit",
+      "Submit stopped reading this company's record at its limit of calls to Companies House for one report.",
+    );
+
   // The note an account without the reports activity sees: the bundle that has it, or that the
   // reports are not offered here.
   function accessNote(access) {
@@ -271,8 +277,12 @@
     } catch (error) {
       const state = element("p", "company-report-state");
       state.setAttribute("role", "status");
-      if (error && error.status === 429) {
+      if (error && error.status === 429 && error.callLimitReached) {
+        state.textContent = callLimitText();
+      } else if (error && error.status === 429) {
         state.textContent = rateLimitText(error.retryAfterSeconds);
+      } else if (error && (error.status === 413 || error.tooLarge)) {
+        state.textContent = siteText("ch.reports.too-large", "This company's record is too large for Submit to show in this report.");
       } else if (error && error.status === 404 && error.reason === "unknown_report") {
         state.textContent = siteText("ch.reports.not-ready", "This report is not ready yet.");
       } else if (error && error.status === 403) {
@@ -292,10 +302,10 @@
         element("p", "company-report-read", siteText("ch.reports.read-at", "Read from Companies House at {time} on {date}.", read)),
       );
     }
-    if (answer.partial) {
+    if (answer.partial || answer.callLimitReached) {
       const partial = element("p", "company-report-state");
       partial.setAttribute("role", "status");
-      partial.textContent = `${rateLimitText(answer.retryAfterSeconds)} ${siteText(
+      partial.textContent = `${answer.callLimitReached ? callLimitText() : rateLimitText(answer.retryAfterSeconds)} ${siteText(
         "ch.reports.partial",
         "This report shows only the parts Submit had already read.",
       )}`;
