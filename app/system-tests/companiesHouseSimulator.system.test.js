@@ -128,8 +128,19 @@ describe("System: Companies House Simulator", () => {
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
     expect(body.totalCount).toBe(3);
+    expect(body.truncated).toBe(false);
     expect(body.filings.map((filing) => filing.type)).toEqual(["AA", "CS01", "AA"]);
     expect(body.filings[2].paperFiled).toBe(true);
+  });
+
+  it("filing history answers five pages of a longer history and says it is truncated", async () => {
+    const response = await companiesHouseFilingHistoryGetHandler(companyEvent("12345678"));
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    expect(body.totalCount).toBe(621);
+    expect(body.truncated).toBe(true);
+    expect(body.filings).toHaveLength(500);
+    expect(body.filings[0].date).toBe("2098-12-31");
   });
 
   it("filing history returns 404 for an unknown company number", async () => {

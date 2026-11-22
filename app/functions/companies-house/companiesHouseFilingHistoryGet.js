@@ -104,6 +104,7 @@ export async function ingestHandler(event) {
     data: {
       companyNumber,
       totalCount: chResponse.data.totalCount,
+      truncated: chResponse.data.truncated,
       filings: chResponse.data.items.map(mapFiling),
     },
   });

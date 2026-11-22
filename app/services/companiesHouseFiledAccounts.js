@@ -32,6 +32,11 @@ export function isAmendedAccounts(item) {
   return item?.type === "AAMD" || String(item?.description ?? "").startsWith("accounts-amended");
 }
 
+// The newest sets of accounts whose document metadata the list reads; an older set's iXBRL mark is
+// unknown, so the list leaves it out.
+export const FILED_ACCOUNTS_METADATA_LIMIT = 10;
+
+// metadata undefined means it was not read, so the set carries no iXBRL mark.
 function filedSet(item, metadata) {
   return {
     transactionId: item.transaction_id,
@@ -41,7 +46,7 @@ function filedSet(item, metadata) {
     amended: isAmendedAccounts(item),
     paperFiled: item.paper_filed === true,
     pages: item.pages,
-    ixbrl: Boolean(metadata?.resources?.[IXBRL_CONTENT_TYPE]),
+    ...(metadata === undefined ? {} : { ixbrl: Boolean(metadata?.resources?.[IXBRL_CONTENT_TYPE]) }),
   };
 }
 
@@ -54,18 +59,28 @@ async function metadataOf(item) {
 
 /**
  * The sets of accounts Companies House holds for a company, newest first as the register lists them.
+ * The newest sets' document metadata is read one set at a time, so each of them carries its iXBRL
+ * mark; an older set carries its dates and type from the filing history alone.
  * @param {string} companyNumber
- * @returns {Promise<{chResponse: object, sets: Array<object>|null}>} sets is null when a read failed;
- *   chResponse is then the failed response
+ * @returns {Promise<{chResponse: object, sets: Array<object>|null, truncated?: boolean}>} sets is null
+ *   when a read failed; chResponse is then the failed response. truncated is true when the company's
+ *   accounts filing history holds more items than were read
  */
 export async function listFiledAccounts(companyNumber) {
   const history = await companiesHouseFilingHistory(companyNumber, { category: "accounts" });
   if (!history.ok) return { chResponse: history, sets: null };
   const items = history.data.items.filter(isAccountsFiling);
-  const read = await Promise.all(items.map(metadataOf));
-  const failed = read.find((entry) => entry.failed)?.failed;
-  if (failed) return { chResponse: failed, sets: null };
-  return { chResponse: history, sets: items.map((item, index) => filedSet(item, read[index].metadata)) };
+  const sets = [];
+  for (const [index, item] of items.entries()) {
+    if (index >= FILED_ACCOUNTS_METADATA_LIMIT) {
+      sets.push(filedSet(item, undefined));
+      continue;
+    }
+    const { metadata, failed } = await metadataOf(item);
+    if (failed) return { chResponse: failed, sets: null };
+    sets.push(filedSet(item, metadata));
+  }
+  return { chResponse: history, sets, truncated: history.data.truncated };
 }
 
 /**

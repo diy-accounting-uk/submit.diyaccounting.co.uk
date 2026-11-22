@@ -68,7 +68,7 @@ export async function ingestHandler(event) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }
 
-  const { chResponse, sets } = await listFiledAccounts(companyNumber);
+  const { chResponse, sets, truncated } = await listFiledAccounts(companyNumber);
 
   if (!sets) {
     logger.warn({ message: "Companies House filed accounts lookup failed", companyNumber, status: chResponse.status });
@@ -84,6 +84,6 @@ export async function ingestHandler(event) {
   return http200OkResponse({
     request,
     headers: { ...responseHeaders },
-    data: { companyNumber, filedAccounts: sets },
+    data: { companyNumber, filedAccounts: sets, truncated },
   });
 }

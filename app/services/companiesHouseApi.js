@@ -92,31 +92,34 @@ export async function companiesHouseGetJson(baseUrl, endpoint, queryParams = {})
 }
 
 const FILING_HISTORY_PAGE_SIZE = 100;
+const FILING_HISTORY_MAX_PAGES = 5;
 
 /**
- * Every item of a company's filing history, read page by page. A category narrows the history to
- * one kind of filing (for example "accounts"); without one every category is read.
+ * A company's filing history, newest first, read page by page up to five pages of 100 items. A
+ * category narrows the history to one kind of filing (for example "accounts"); without one every
+ * category is read.
  * @param {string} companyNumber
  * @param {{category?: string}} [options]
  * @returns {Promise<{ok: boolean, status: number, data: object, headers?: object}>} on success, data
- *   holds items and totalCount; on a failed page, the failed response
+ *   holds items, totalCount (Companies House's total) and truncated (true when the company has more
+ *   items than were read); on a failed page, the failed response
  */
 export async function companiesHouseFilingHistory(companyNumber, { category } = {}) {
   const items = [];
   let totalCount;
-  do {
-    const page = await companiesHouseHttpGet(`/company/${companyNumber}/filing-history`, {
+  for (let page = 0; page < FILING_HISTORY_MAX_PAGES; page++) {
+    const response = await companiesHouseHttpGet(`/company/${companyNumber}/filing-history`, {
       category,
       items_per_page: FILING_HISTORY_PAGE_SIZE,
       start_index: items.length,
     });
-    if (!page.ok) return page;
-    const pageItems = page.data?.items ?? [];
-    totalCount = page.data?.total_count ?? items.length + pageItems.length;
+    if (!response.ok) return response;
+    const pageItems = response.data?.items ?? [];
+    totalCount = response.data?.total_count ?? items.length + pageItems.length;
     items.push(...pageItems);
-    if (pageItems.length === 0) break;
-  } while (items.length < totalCount);
-  return { ok: true, status: 200, data: { items, totalCount } };
+    if (pageItems.length === 0 || items.length >= totalCount) break;
+  }
+  return { ok: true, status: 200, data: { items, totalCount, truncated: items.length < totalCount } };
 }
 
 export function isValidCompanyNumber(value) {

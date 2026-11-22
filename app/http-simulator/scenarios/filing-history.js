@@ -6,7 +6,8 @@
 // accounts: the latest filed by software, with an iXBRL document built by the micro-entity accounts
 // builder from the company's own profile, and the one before filed on paper, as a PDF only. Its
 // confirmation statement is a PDF. 00000003 holds one set of accounts, filed on paper as a PDF only.
-// Each other company holds its incorporation alone. A filing history item links its document as the
+// 12345678 holds more filings than a lookup reads (620 changes of registered office after its
+// incorporation, no accounts). Each other company holds its incorporation alone. A filing history item links its document as the
 // live register does, on the Document API's host.
 
 import { buildMicroEntityAccounts } from "../../services/microEntityAccountsIxbrl.js";
@@ -104,9 +105,31 @@ function incorporationOnly(company) {
   ];
 }
 
+const LONG_HISTORY_COMPANY_NUMBER = "12345678";
+const LONG_HISTORY_ADDRESS_CHANGES = 620;
+
+// Newest first: one change of registered office a day, back from the last day of 2098, then the
+// incorporation.
+function longHistory(company) {
+  const changes = Array.from({ length: LONG_HISTORY_ADDRESS_CHANGES }, (_, index) => {
+    const date = new Date(Date.UTC(2098, 11, 31 - index)).toISOString().slice(0, 10);
+    return filing({
+      companyNumber: company.company_number,
+      transactionId: `SIMTX${company.company_number}AD${String(index).padStart(4, "0")}`,
+      category: "address",
+      type: "AD01",
+      description: "change-registered-office-address-company-with-date-old-address-new-address",
+      date,
+      pages: 1,
+    });
+  });
+  return [...changes, ...incorporationOnly(company)];
+}
+
 function historyOf(companyNumber) {
   const company = getCompany(companyNumber);
   if (!company || company.status) return null;
+  if (companyNumber === LONG_HISTORY_COMPANY_NUMBER) return longHistory(company);
   return historyByCompanyNumber[companyNumber] ?? incorporationOnly(company);
 }
 

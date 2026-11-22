@@ -25,6 +25,14 @@ describe("simulator filing history", () => {
     expect(page.items.map((item) => item.type)).toEqual(["CS01"]);
   });
 
+  test("12345678 holds more filings than five pages of 100, newest first, and no accounts", () => {
+    const history = getFilingHistory("12345678", { itemsPerPage: 100, startIndex: 500 });
+    expect(history.total_count).toBe(621);
+    expect(history.items).toHaveLength(100);
+    expect(getFilingHistory("12345678").items[0].date).toBe("2098-12-31");
+    expect(getFilingHistory("12345678", { category: "accounts" }).total_count).toBe(0);
+  });
+
   test("00000003 holds one set of accounts, filed on paper as a PDF only", () => {
     const [set] = getFilingHistory("00000003", { category: "accounts" }).items;
     expect(set).toEqual(expect.objectContaining({ type: "AA", paper_filed: true, description_values: { made_up_date: "2098-03-31" } }));

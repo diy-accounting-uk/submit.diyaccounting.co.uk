@@ -59,7 +59,7 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
 import { ingestHandler as filingHistoryHandler } from "@app/functions/companies-house/companiesHouseFilingHistoryGet.js";
 import { ingestHandler as filedAccountsHandler } from "@app/functions/companies-house/companiesHouseFiledAccountsGet.js";
 import { ingestHandler as filedDocumentHandler } from "@app/functions/companies-house/companiesHouseFiledDocumentGet.js";
-import { MAX_DOCUMENT_RESPONSE_BYTES } from "@app/services/companiesHouseFiledAccounts.js";
+import { FILED_ACCOUNTS_METADATA_LIMIT, MAX_DOCUMENT_RESPONSE_BYTES } from "@app/services/companiesHouseFiledAccounts.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -195,11 +195,40 @@ describe("companiesHouseFilingHistoryGet ingestHandler", () => {
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
     expect(body.totalCount).toBe(3);
+    expect(body.truncated).toBe(false);
     expect(body.filings.map((filing) => filing.transactionId)).toEqual(["TXSOFTWARE", "TXPAPER", "TXAMENDED"]);
     expect(pages).toEqual([null, null]);
     expect(body.filings[0]).toEqual(
       expect.objectContaining({ transactionId: "TXSOFTWARE", type: "AA", category: "accounts", paperFiled: false, hasDocument: true }),
     );
+  });
+
+  test("reads at most five pages of 100 filings and says the history is truncated", async () => {
+    const totalCount = 750;
+    const all = Array.from({ length: totalCount }, (_, index) => ({
+      ...SOFTWARE_SET,
+      transaction_id: `TX${String(index).padStart(4, "0")}`,
+    }));
+    const reads = [];
+    routes.unshift([
+      (url) => url.startsWith(`${API}/company/00000001/filing-history?`),
+      (url) => {
+        const params = new URL(url).searchParams;
+        const startIndex = Number(params.get("start_index"));
+        const perPage = Number(params.get("items_per_page"));
+        reads.push(startIndex);
+        return { json: { total_count: totalCount, items: all.slice(startIndex, startIndex + perPage) } };
+      },
+    ]);
+    const response = await filingHistoryHandler(event({ companyNumber: "00000001" }));
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    expect(reads).toEqual([0, 100, 200, 300, 400]);
+    expect(body.totalCount).toBe(totalCount);
+    expect(body.truncated).toBe(true);
+    expect(body.filings).toHaveLength(500);
+    expect(body.filings[0].transactionId).toBe("TX0000");
+    expect(body.filings[499].transactionId).toBe("TX0499");
   });
 
   test("answers Companies House's 404 for an unknown company as JSON", async () => {
@@ -263,6 +292,54 @@ describe("companiesHouseFiledAccountsGet ingestHandler", () => {
         },
       ].map((set) => JSON.parse(JSON.stringify(set))),
     );
+  });
+
+  test("reads document metadata for the newest sets one at a time and leaves an older set's iXBRL mark out", async () => {
+    const count = FILED_ACCOUNTS_METADATA_LIMIT + 2;
+    const sets = Array.from({ length: count }, (_, index) => ({
+      ...SOFTWARE_SET,
+      transaction_id: `TXSET${index}`,
+      description_values: { made_up_date: `${2040 - index}-04-30` },
+    }));
+    routes.unshift([
+      (url) => url.startsWith(`${API}/company/00000001/filing-history?`),
+      () => ({ json: { total_count: count, items: sets } }),
+    ]);
+    let inFlight = 0;
+    let mostInFlight = 0;
+    const metadataRoute = routes[routes.length - 1];
+    routes[routes.length - 1] = [
+      metadataRoute[0],
+      (url, init) => {
+        inFlight++;
+        mostInFlight = Math.max(mostInFlight, inFlight);
+        return metadataRoute[1](url, init);
+      },
+    ];
+    mockFetch.mockImplementation(async (url, init) => {
+      const route = routes.find(([test]) => test(String(url), init));
+      if (!route) throw new Error(`unexpected request ${url}`);
+      const result = answer(route[1](String(url), init));
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      inFlight = Math.max(0, inFlight - (String(url).startsWith(`${DOCUMENT_API}/document/`) ? 1 : 0));
+      return result;
+    });
+
+    const response = await filedAccountsHandler(event({ companyNumber: "00000001" }));
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    const metadataReads = mockFetch.mock.calls.filter(([url]) => String(url).startsWith(`${DOCUMENT_API}/document/`));
+    expect(metadataReads).toHaveLength(FILED_ACCOUNTS_METADATA_LIMIT);
+    expect(mostInFlight).toBe(1);
+    expect(body.truncated).toBe(false);
+    expect(body.filedAccounts).toHaveLength(count);
+    expect(body.filedAccounts.slice(0, FILED_ACCOUNTS_METADATA_LIMIT).every((set) => set.ixbrl === true)).toBe(true);
+    for (const older of body.filedAccounts.slice(FILED_ACCOUNTS_METADATA_LIMIT)) {
+      expect(older).not.toHaveProperty("ixbrl");
+      expect(older).toEqual(
+        expect.objectContaining({ madeUpDate: expect.any(String), filedOn: "2025-11-02", accountsType: "micro-entity" }),
+      );
+    }
   });
 
   test("reads the Document API on its configured host, never the host a filing names", async () => {
