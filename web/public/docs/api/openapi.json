@@ -687,6 +687,13 @@
         "operationId" : "postCompaniesHousePscChangeDetails"
       }
     },
+    "/companies-house/psc-notification" : {
+      "post" : {
+        "summary" : "Submit a PSC notification filing",
+        "description" : "Builds the PSCNotification body, the notice of a new person with significant control, and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHousePscNotification"
+      }
+    },
     "/companies-house/psc-statement-notification" : {
       "post" : {
         "summary" : "Submit a PSC statement filing",

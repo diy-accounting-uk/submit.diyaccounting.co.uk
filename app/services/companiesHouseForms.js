@@ -12,7 +12,7 @@ import { isValidIsoDate } from "../lib/hmrcValidation.js";
 import { buildPscVerificationStatementBody } from "./companiesHousePscVerificationStatementXml.js";
 import { buildPscCessationBody } from "./companiesHousePscCessationXml.js";
 import { PSC_KIND_ELEMENTS } from "./companiesHousePscParticularsXml.js";
-import { buildPscChangeDetailsBody, changeDetailsProblems } from "./companiesHousePscChangeDetailsXml.js";
+import { buildPscChangeDetailsBody, changeDetailsProblems, natureOfControlProblems } from "./companiesHousePscChangeDetailsXml.js";
 import {
   buildAccountingReferenceDateBody,
   changeToPeriod,
@@ -35,6 +35,12 @@ import {
   PSC_STATEMENTS,
   RESTRICTIONS_WITHDRAWAL_REASONS,
 } from "./companiesHousePscStatementXml.js";
+import {
+  buildPscNotificationBody,
+  entityProblems,
+  FIRST_NOTIFICATION_DATE,
+  individualProblems,
+} from "./companiesHousePscNotificationXml.js";
 
 function extractPscVerificationStatement(body, errorMessages) {
   const { title, forename, otherForenames, surname, dobMonth, dobYear, personalCode } = body;
@@ -367,6 +373,63 @@ function extractPscStatementWithdrawal(body, errorMessages) {
   };
 }
 
+// An address as a request gives it, each field trimmed and an empty field left out.
+const requestAddress = (address) =>
+  address && typeof address === "object"
+    ? Object.fromEntries(ADDRESS_FIELDS.map((field) => [field, trimmed(address[field]) || undefined]))
+    : undefined;
+
+function extractPscNotification(body, errorMessages) {
+  const { pscKind, naturesOfControl, serviceAddress, residentialAddress, personalCode, nameMismatchReason } = body;
+  const elementName = PSC_KIND_ELEMENTS[pscKind];
+  if (!elementName) errorMessages.push(`Invalid pscKind - must be one of ${Object.keys(PSC_KIND_ELEMENTS).join(", ")}`);
+  const form =
+    elementName === "Individual"
+      ? {
+          kind: pscKind,
+          title: trimmed(body.title) || undefined,
+          forename: trimmed(body.forename) || undefined,
+          otherForenames: trimmed(body.otherForenames) || undefined,
+          surname: trimmed(body.surname),
+          dateOfBirth: body.dateOfBirth,
+          nationality: trimmed(body.nationality),
+          countryOfResidence: trimmed(body.countryOfResidence),
+          serviceAddress:
+            serviceAddress?.sameAsRegisteredOffice === true
+              ? { sameAsRegisteredOffice: true }
+              : { address: requestAddress(serviceAddress?.address) },
+          residentialAddress:
+            residentialAddress?.sameAsServiceAddress === true
+              ? { sameAsServiceAddress: true }
+              : { address: requestAddress(residentialAddress?.address) },
+          verification:
+            personalCode === undefined || personalCode === null || personalCode === ""
+              ? undefined
+              : { personalCode: trimmed(personalCode).toUpperCase(), nameMismatchReason: nameMismatchReason || undefined },
+        }
+      : {
+          kind: pscKind,
+          name: trimmed(body.name),
+          address: requestAddress(body.address),
+          legalForm: trimmed(body.legalForm),
+          lawGoverned: trimmed(body.lawGoverned),
+          placeRegistered: elementName === "Corporate" ? trimmed(body.placeRegistered) || undefined : undefined,
+          registrationNumber: elementName === "Corporate" ? trimmed(body.registrationNumber) || undefined : undefined,
+          countryOrState: elementName === "Corporate" ? trimmed(body.countryOrState) || undefined : undefined,
+        };
+  if (elementName === "Individual") {
+    individualProblems(form).forEach((problem) => errorMessages.push(`Invalid particulars - ${problem}`));
+  } else if (elementName) {
+    entityProblems(form, elementName === "Corporate").forEach((problem) => errorMessages.push(`Invalid particulars - ${problem}`));
+  }
+  natureOfControlProblems(naturesOfControl).forEach((problem) => errorMessages.push(`Invalid naturesOfControl - ${problem}`));
+  const dates = extractEventAndConfirmationDates(body, "notificationDate", errorMessages);
+  if (isValidIsoDate(dates.notificationDate ?? "") && dates.notificationDate < FIRST_NOTIFICATION_DATE) {
+    errorMessages.push(`Invalid notificationDate - must not be before ${FIRST_NOTIFICATION_DATE}`);
+  }
+  return { ...form, naturesOfControl, ...dates };
+}
+
 /**
  * Each form's request check and body builder, by the kind its filing state carries. A form whose
  * filing carries a document in the envelope has buildDocument as well.
@@ -422,5 +485,9 @@ export const GATEWAY_FORM_BUILDERS = {
   "psc-statement-withdrawal": {
     extractAndValidate: extractPscStatementWithdrawal,
     buildFormXml: (form) => buildPscStatementWithdrawalBody(form),
+  },
+  "psc-notification": {
+    extractAndValidate: extractPscNotification,
+    buildFormXml: (form) => buildPscNotificationBody(form),
   },
 };

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2009 sp1 (http://www.altova.com) by Suzanne Wadden (Companies House) -->
+<xs:schema xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://xmlgw.companieshouse.gov.uk" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0" id="PSCNotification">
+	<xs:include schemaLocation="../PSCBaseTypes-v1-4.xsd"/>
+	<xs:include schemaLocation="../baseTypes-v3-7.xsd"/>
+	<xs:element name="PSCNotification">
+		<xs:complexType>
+			<xs:complexContent>
+				<xs:extension base="PSCNotificationType">
+					<xs:sequence>
+						<xs:element name="NotificationDate" type="xs:date">
+							<xs:annotation>
+								<xs:documentation>Date the PSC notified they are a PSC with the company/LLP, this cannot be before 6th April 2016</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+						<xs:element name="ConfirmationDate" type="xs:date">
+							<xs:annotation>
+								<xs:documentation>Date the PSC confirmed they are a PSC and their details with the company/LLP</xs:documentation>
+							</xs:annotation>
+						</xs:element>
+					</xs:sequence>
+				</xs:extension>
+			</xs:complexContent>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

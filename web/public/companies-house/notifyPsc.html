@@ -1,0 +1,534 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tell Companies House about a new PSC - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/companies-house/notifyPsc.html" />
+    <link rel="alternate" hreflang="en-GB" href="https://submit.diyaccounting.co.uk/companies-house/notifyPsc.html" />
+    <link rel="alternate" hreflang="cy" href="https://submit.diyaccounting.co.uk/cy/companies-house/notifyPsc.html" />
+    <link rel="alternate" hreflang="x-default" href="https://submit.diyaccounting.co.uk/companies-house/notifyPsc.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <script src="../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
+      <h1>Tell Companies House about a new PSC</h1>
+      <p class="subtitle">
+        Give notice of a new person with significant control: an individual, a relevant legal entity or an other registrable person
+      </p>
+    </header>
+
+    <main id="mainContent">
+      <p class="hint" data-feature-status="sandbox" data-companies-house-service="xml-gateway">
+        <strong>Status: sandbox.</strong> This runs against Companies House's test service. Nothing you file here reaches the live register.
+      </p>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Sign in to file with Companies House"
+        data-sign-in-text="Sign in to look up your company and file with Companies House. The filing is made from your account."
+      >
+        <h2>Which company?</h2>
+        <form id="companyForm" novalidate>
+          <div class="form-group">
+            <label for="companyNumber">Company number</label>
+            <p id="companyNumber-hint" class="hint">
+              8 characters, for example 00000001. Do not know it? <a href="companySearch.html">Search Companies House</a>.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              name="companyNumber"
+              class="input--code"
+              required
+              value=""
+              autocomplete="off"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="companyLookupBtn" class="btn" data-activity-start="notify-psc">Look up the company</button>
+        </form>
+      </div>
+
+      <!-- Notice form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2>Who is the new person with significant control?</h2>
+        <p>Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).</p>
+        <form id="notifyForm" novalidate>
+          <fieldset class="form-group">
+            <legend>Kind of person with significant control</legend>
+            <div class="choice">
+              <input type="radio" id="kind-individual" name="pscKind" value="individual-person-with-significant-control" checked /><label
+                for="kind-individual"
+                >An individual</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="kind-corporate" name="pscKind" value="corporate-entity-person-with-significant-control" /><label
+                for="kind-corporate"
+                >A relevant legal entity, such as a company</label
+              >
+            </div>
+            <div class="choice">
+              <input type="radio" id="kind-legal-person" name="pscKind" value="legal-person-person-with-significant-control" /><label
+                for="kind-legal-person"
+                >An other registrable person</label
+              >
+            </div>
+            <p id="orp-hint" class="hint">
+              An ‘other registrable person’ is: a corporation sole; a government or government department of a country or territory or a
+              part of a country or territory; an international organisation whose members include two or more countries or territories (or
+              their governments); a local authority or local government body in the UK or elsewhere.
+            </p>
+          </fieldset>
+
+          <div id="individualSection">
+            <div class="form-group">
+              <label for="title">Title (optional)</label>
+              <input type="text" id="title" name="title" maxlength="50" />
+            </div>
+            <div class="form-group">
+              <label for="forename">First name</label>
+              <input type="text" id="forename" name="forename" maxlength="50" />
+            </div>
+            <div class="form-group">
+              <label for="otherForenames">Middle names (optional)</label>
+              <input type="text" id="otherForenames" name="otherForenames" maxlength="50" />
+            </div>
+            <div class="form-group">
+              <label for="surname">Surname</label>
+              <input type="text" id="surname" name="surname" maxlength="160" />
+            </div>
+            <div class="form-group">
+              <label for="dateOfBirth">Date of birth</label>
+              <p id="dateOfBirth-hint" class="hint">
+                You must give the full date of birth. Only the month and year appear on the public record.
+              </p>
+              <input type="date" id="dateOfBirth" name="dateOfBirth" aria-describedby="dateOfBirth-hint" />
+            </div>
+            <div class="form-group">
+              <label for="nationality">Nationality</label>
+              <p id="nationality-hint" class="hint">
+                Use Companies House's list of nationalities and countries, for example British. Companies House will only accept entries
+                from this standard list.
+              </p>
+              <input type="text" id="nationality" name="nationality" maxlength="50" aria-describedby="nationality-hint" />
+            </div>
+            <div class="form-group">
+              <label for="countryOfResidence">Country or state of residence</label>
+              <p id="countryOfResidence-hint" class="hint">The country of the individual's usual residential address, for example Wales.</p>
+              <input
+                type="text"
+                id="countryOfResidence"
+                name="countryOfResidence"
+                maxlength="50"
+                aria-describedby="countryOfResidence-hint"
+              />
+            </div>
+            <fieldset class="form-group">
+              <legend>Service address</legend>
+              <p id="service-hint" class="hint">
+                This is the address that will appear on the public record. It does not have to be the individual's usual residential
+                address.
+              </p>
+              <div class="choice">
+                <input type="radio" id="service-office" name="serviceChoice" value="office" checked aria-describedby="service-hint" /><label
+                  for="service-office"
+                  >The company's registered office</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="service-other" name="serviceChoice" value="other" /><label for="service-other"
+                  >Another address</label
+                >
+              </div>
+            </fieldset>
+            <fieldset id="serviceAddress" class="form-group">
+              <legend>The service address</legend>
+              <p id="service-hint" class="hint">
+                If you give the individual's residential address here, it will appear on the public record.
+              </p>
+              <div class="form-group">
+                <label for="servicePremise">Building name or number</label>
+                <input type="text" id="servicePremise" name="servicePremise" maxlength="50" aria-describedby="service-hint" />
+              </div>
+              <div class="form-group">
+                <label for="serviceStreet">Street</label>
+                <input type="text" id="serviceStreet" name="serviceStreet" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label for="serviceThoroughfare">Address line 2</label>
+                <input type="text" id="serviceThoroughfare" name="serviceThoroughfare" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label for="servicePostTown">Post town</label>
+                <input type="text" id="servicePostTown" name="servicePostTown" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label for="serviceCounty">County or region</label>
+                <input type="text" id="serviceCounty" name="serviceCounty" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label for="servicePostcode">Postcode</label>
+                <input type="text" id="servicePostcode" name="servicePostcode" maxlength="15" spellcheck="false" />
+              </div>
+              <div class="form-group">
+                <label for="serviceCountry">Country</label>
+                <select id="serviceCountry" name="serviceCountry" data-other-country="serviceOtherCountryGroup">
+                  <option value="GB-ENG">England</option>
+                  <option value="GB-WLS">Wales</option>
+                  <option value="GB-SCT">Scotland</option>
+                  <option value="GB-NIR">Northern Ireland</option>
+                  <option value="GBR" selected>United Kingdom</option>
+                  <option value="OTHER">Another country</option>
+                </select>
+              </div>
+              <div class="form-group" id="serviceOtherCountryGroup" style="display: none">
+                <label for="serviceOtherForeignCountry">Which country?</label>
+                <input type="text" id="serviceOtherForeignCountry" name="serviceOtherForeignCountry" maxlength="50" />
+              </div>
+            </fieldset>
+            <fieldset class="form-group">
+              <legend>Usual residential address</legend>
+              <p id="home-choice-hint" class="hint">
+                This address is not shown on the public record. It cannot be the service address when the service address is the company's
+                registered office, and it cannot be a PO Box.
+              </p>
+              <div class="choice">
+                <input type="radio" id="home-other" name="homeChoice" value="other" checked aria-describedby="home-choice-hint" /><label
+                  for="home-other"
+                  >Give the address</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="home-service" name="homeChoice" value="service" /><label for="home-service"
+                  >The same as the service address</label
+                >
+              </div>
+            </fieldset>
+            <fieldset id="homeAddress" class="form-group">
+              <legend>The usual residential address</legend>
+              <p id="home-hint" class="hint">The address where the individual usually lives.</p>
+              <div class="form-group">
+                <label for="homePremise">Building name or number</label>
+                <input type="text" id="homePremise" name="homePremise" maxlength="50" aria-describedby="home-hint" />
+              </div>
+              <div class="form-group">
+                <label for="homeStreet">Street</label>
+                <input type="text" id="homeStreet" name="homeStreet" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label for="homeThoroughfare">Address line 2</label>
+                <input type="text" id="homeThoroughfare" name="homeThoroughfare" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label for="homePostTown">Post town</label>
+                <input type="text" id="homePostTown" name="homePostTown" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label for="homeCounty">County or region</label>
+                <input type="text" id="homeCounty" name="homeCounty" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label for="homePostcode">Postcode</label>
+                <input type="text" id="homePostcode" name="homePostcode" maxlength="15" spellcheck="false" />
+              </div>
+              <div class="form-group">
+                <label for="homeCountry">Country</label>
+                <select id="homeCountry" name="homeCountry" data-other-country="homeOtherCountryGroup">
+                  <option value="GB-ENG">England</option>
+                  <option value="GB-WLS">Wales</option>
+                  <option value="GB-SCT">Scotland</option>
+                  <option value="GB-NIR">Northern Ireland</option>
+                  <option value="GBR" selected>United Kingdom</option>
+                  <option value="OTHER">Another country</option>
+                </select>
+              </div>
+              <div class="form-group" id="homeOtherCountryGroup" style="display: none">
+                <label for="homeOtherForeignCountry">Which country?</label>
+                <input type="text" id="homeOtherForeignCountry" name="homeOtherForeignCountry" maxlength="50" />
+              </div>
+            </fieldset>
+            <fieldset class="form-group">
+              <legend>Identity verification (optional)</legend>
+              <p id="verified-hint" class="hint">
+                Only complete this if the person has verified their identity and shared their personal code with you. A personal code is an
+                11 character code that is given to a person after they've verified their identity with Companies House.
+              </p>
+              <div class="choice">
+                <input type="checkbox" id="verified" name="verified" aria-describedby="verified-hint" /><label for="verified"
+                  >The person notified as a PSC has verified their identity in accordance with the Companies Act 2006</label
+                >
+              </div>
+              <div id="verifiedSection" style="display: none">
+                <div class="form-group">
+                  <label for="personalCode">Companies House personal code</label>
+                  <input
+                    type="text"
+                    id="personalCode"
+                    name="personalCode"
+                    maxlength="11"
+                    class="input--code"
+                    spellcheck="false"
+                    autocomplete="off"
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="nameMismatchReason"
+                    >If the name you've given does not match their verified name, tell us why (optional)</label
+                  >
+                  <select id="nameMismatchReason" name="nameMismatchReason">
+                    <option value="" selected>The names match</option>
+                    <option value="LEGALLY_CHANGED">Legally changed name</option>
+                    <option value="PREFERRED_NAME">Preferred name</option>
+                    <option value="TRANSLATION_OR_DIFF_CONV">Translation or a different naming convention</option>
+                    <option value="NOT_SAY">Prefer not to say</option>
+                  </select>
+                </div>
+              </div>
+            </fieldset>
+          </div>
+
+          <div id="entitySection" style="display: none">
+            <div class="form-group">
+              <label for="entityName">Name</label>
+              <input type="text" id="entityName" name="entityName" maxlength="160" />
+            </div>
+            <fieldset id="officeAddress" class="form-group">
+              <legend>Principal office address</legend>
+              <p id="office-hint" class="hint">This address will appear on the public record.</p>
+              <div class="form-group">
+                <label for="officePremise">Building name or number</label>
+                <input type="text" id="officePremise" name="officePremise" maxlength="50" aria-describedby="office-hint" />
+              </div>
+              <div class="form-group">
+                <label for="officeStreet">Street</label>
+                <input type="text" id="officeStreet" name="officeStreet" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label for="officeThoroughfare">Address line 2</label>
+                <input type="text" id="officeThoroughfare" name="officeThoroughfare" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label for="officePostTown">Post town</label>
+                <input type="text" id="officePostTown" name="officePostTown" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label for="officeCounty">County or region</label>
+                <input type="text" id="officeCounty" name="officeCounty" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label for="officePostcode">Postcode</label>
+                <input type="text" id="officePostcode" name="officePostcode" maxlength="15" spellcheck="false" />
+              </div>
+              <div class="form-group">
+                <label for="officeCountry">Country</label>
+                <select id="officeCountry" name="officeCountry" data-other-country="officeOtherCountryGroup">
+                  <option value="GB-ENG">England</option>
+                  <option value="GB-WLS">Wales</option>
+                  <option value="GB-SCT">Scotland</option>
+                  <option value="GB-NIR">Northern Ireland</option>
+                  <option value="GBR" selected>United Kingdom</option>
+                  <option value="OTHER">Another country</option>
+                </select>
+              </div>
+              <div class="form-group" id="officeOtherCountryGroup" style="display: none">
+                <label for="officeOtherForeignCountry">Which country?</label>
+                <input type="text" id="officeOtherForeignCountry" name="officeOtherForeignCountry" maxlength="50" />
+              </div>
+            </fieldset>
+            <div class="form-group">
+              <label for="legalForm">Legal form</label>
+              <p id="legalForm-hint" class="hint">The legal form of the entity, as defined in the country where it is registered.</p>
+              <input type="text" id="legalForm" name="legalForm" maxlength="160" aria-describedby="legalForm-hint" />
+            </div>
+            <div class="form-group">
+              <label for="lawGoverned">Governing law</label>
+              <p id="lawGoverned-hint" class="hint">The law by which the entity is governed.</p>
+              <input type="text" id="lawGoverned" name="lawGoverned" maxlength="160" aria-describedby="lawGoverned-hint" />
+            </div>
+            <div id="registerSection">
+              <div class="form-group">
+                <label for="placeRegistered">Register in which it is entered (if any)</label>
+                <p id="placeRegistered-hint" class="hint">
+                  For example Companies House. Where you give the register, you must also give the entity's number in that register.
+                </p>
+                <input type="text" id="placeRegistered" name="placeRegistered" maxlength="160" aria-describedby="placeRegistered-hint" />
+              </div>
+              <div class="form-group">
+                <label for="countryOrState">Country or state of that register</label>
+                <input type="text" id="countryOrState" name="countryOrState" maxlength="50" />
+              </div>
+              <div class="form-group">
+                <label for="registrationNumber">Registration number in that register</label>
+                <input type="text" id="registrationNumber" name="registrationNumber" maxlength="160" />
+              </div>
+            </div>
+          </div>
+
+          <fieldset class="form-group">
+            <legend>How they control the company</legend>
+            <p id="control-hint" class="hint">
+              Tick each that applies. Only tick significant influence or control if none of the others apply.
+            </p>
+            <fieldset class="form-group" aria-describedby="control-hint">
+              <legend>Ownership of shares</legend>
+              <div class="choice">
+                <input type="radio" id="shares-none" name="shares" value="" checked /><label for="shares-none">None</label>
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-25" name="shares" value="25TO50PERCENT" /><label for="shares-25"
+                  >More than 25% but not more than 50%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-50" name="shares" value="50TO75PERCENT" /><label for="shares-50"
+                  >More than 50% but less than 75%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-75" name="shares" value="75TO100PERCENT" /><label for="shares-75">75% or more</label>
+              </div>
+            </fieldset>
+            <fieldset class="form-group">
+              <legend>Ownership of voting rights</legend>
+              <div class="choice">
+                <input type="radio" id="votes-none" name="votes" value="" checked /><label for="votes-none">None</label>
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-25" name="votes" value="25TO50PERCENT" /><label for="votes-25"
+                  >More than 25% but not more than 50%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-50" name="votes" value="50TO75PERCENT" /><label for="votes-50"
+                  >More than 50% but less than 75%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-75" name="votes" value="75TO100PERCENT" /><label for="votes-75">75% or more</label>
+              </div>
+            </fieldset>
+            <div class="choice">
+              <input type="checkbox" id="directors" name="directors" /><label for="directors"
+                >The right to appoint or remove a majority of the board of directors</label
+              >
+            </div>
+            <div class="choice">
+              <input type="checkbox" id="influence" name="influence" /><label for="influence"
+                >Significant influence or control (only if none of the above apply)</label
+              >
+            </div>
+          </fieldset>
+
+          <div class="form-group">
+            <label for="notificationDate">Date they became a person with significant control</label>
+            <p id="notificationDate-hint" class="hint">This cannot be before 6 April 2016.</p>
+            <input
+              type="date"
+              id="notificationDate"
+              name="notificationDate"
+              required
+              min="2016-04-06"
+              aria-describedby="notificationDate-hint"
+            />
+          </div>
+          <div class="form-group">
+            <label for="confirmationDate">Date of confirmation</label>
+            <p id="confirmationDate-hint" class="hint">
+              The date the company had confirmation of the person's status as a PSC and of all their required particulars, whichever is the
+              later date. Companies House must be told within 14 days of that date.
+            </p>
+            <input type="date" id="confirmationDate" name="confirmationDate" required aria-describedby="confirmationDate-hint" />
+          </div>
+          <div class="form-group">
+            <label for="companyAuthCode">Company authentication code</label>
+            <p id="companyAuthCode-hint" class="hint">
+              The 6 to 8 character code Companies House issued for this company. Not stored - used only for this filing.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="continueBtn" class="btn">Continue</button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="reviewView" class="results-container" style="display: none">
+        <h2>Review the filing</h2>
+        <dl id="reviewList"></dl>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button type="button" id="submitFilingBtn" class="btn">File with Companies House</button>
+          <button type="button" id="changeBtn" class="secondary-button">Change</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2>Filing result</h2>
+        <div id="filingResult"></div>
+        <div class="button-group">
+          <button type="button" id="startAgainBtn" class="secondary-button">Start a new filing</button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../widgets/page-chrome.js"></script>
+    <script src="../lib/env-loader.js"></script>
+    <script src="../lib/companies-house-lane.js"></script>
+    <script src="../lib/companies-house-gateway-poll.js"></script>
+    <script src="../lib/companies-house-rejections.js"></script>
+    <script src="../lib/companies-house-form-page.js"></script>
+    <script src="../lib/auth-url-builder.js"></script>
+    <script type="module" src="../submit.js"></script>
+    <script src="../developer-mode.js"></script>
+    <script src="../lib/request-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
+    <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../lib/form-errors.js"></script>
+    <script src="../lib/companies-house-labels.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/signed-out-panel.js"></script>
+    <script src="../lib/company-number-from-address.js"></script>
+    <script src="notifyPsc.page.js"></script>
+  </body>
+</html>

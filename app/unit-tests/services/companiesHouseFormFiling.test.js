@@ -114,6 +114,18 @@ const FORM_FIELDS = {
   },
   "psc-statement-notification": { statement: "NO_INDIVIDUAL_OR_ENTITY_WITH_SIGNFICANT_CONTROL", relevantDate: "2026-11-01" },
   "psc-statement-withdrawal": { statement: "PSC_CONTACTED_BUT_NO_RESPONSE", withdrawalDate: "2026-11-05" },
+  "psc-notification": {
+    pscKind: "individual-person-with-significant-control",
+    surname: "PRYCE",
+    dateOfBirth: "1978-03-14",
+    nationality: "British",
+    countryOfResidence: "Wales",
+    serviceAddress: { sameAsRegisteredOffice: true },
+    residentialAddress: { address: { premise: "4", street: "Heol y Bont", postTown: "Cardiff", country: "GB-WLS", postcode: "CF10 1AA" } },
+    naturesOfControl: ["OWNERSHIPOFSHARES_50TO75PERCENT", "VOTINGRIGHTS_50TO75PERCENT"],
+    notificationDate: "2026-10-28",
+    confirmationDate: "2026-11-04",
+  },
 };
 
 const SHARED_ROUTE_KINDS = Object.keys(GATEWAY_FORM_BUILDERS);

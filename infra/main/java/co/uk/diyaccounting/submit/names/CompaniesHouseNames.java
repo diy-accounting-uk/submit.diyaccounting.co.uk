@@ -328,6 +328,14 @@ public class CompaniesHouseNames {
     public String companiesHousePscStatementWithdrawalPostLambdaUrlPath;
     public boolean companiesHousePscStatementWithdrawalPostLambdaJwtAuthorizer;
     public boolean companiesHousePscStatementWithdrawalPostLambdaCustomAuthorizer;
+    public String companiesHousePscNotificationPostIngestLambdaHandler;
+    public String companiesHousePscNotificationPostIngestLambdaFunctionName;
+    public String companiesHousePscNotificationPostIngestLambdaArn;
+    public String companiesHousePscNotificationPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHousePscNotificationPostLambdaHttpMethod;
+    public String companiesHousePscNotificationPostLambdaUrlPath;
+    public boolean companiesHousePscNotificationPostLambdaJwtAuthorizer;
+    public boolean companiesHousePscNotificationPostLambdaCustomAuthorizer;
 
     public String companiesHouseFormStatusGetIngestLambdaHandler;
     public String companiesHouseFormStatusGetIngestLambdaFunctionName;
@@ -1306,6 +1314,28 @@ public class CompaniesHouseNames {
                 "Submit a PSC statement withdrawal filing",
                 "Builds the PSCStatementWithdrawal body, the notice that a PSC statement is no longer true, and submits it through the Companies House XML Gateway",
                 "postCompaniesHousePscStatementWithdrawal"));
+
+        this.companiesHousePscNotificationPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHousePscNotificationPostLambdaUrlPath = "/api/v1/companies-house/psc-notification";
+        this.companiesHousePscNotificationPostLambdaJwtAuthorizer = true;
+        this.companiesHousePscNotificationPostLambdaCustomAuthorizer = false;
+        var companiesHousePscNotificationPostLambdaHandlerName = "companiesHousePscNotificationPost.ingestHandler";
+        var companiesHousePscNotificationPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHousePscNotificationPostLambdaHandlerName);
+        this.companiesHousePscNotificationPostIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, companiesHousePscNotificationPostLambdaHandlerDashed);
+        this.companiesHousePscNotificationPostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(root.appLambdaHandlerPrefix, companiesHousePscNotificationPostLambdaHandlerName);
+        this.companiesHousePscNotificationPostIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, companiesHousePscNotificationPostLambdaHandlerDashed);
+        this.companiesHousePscNotificationPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHousePscNotificationPostIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHousePscNotificationPostLambdaHttpMethod,
+                this.companiesHousePscNotificationPostLambdaUrlPath,
+                "Submit a PSC notification filing",
+                "Builds the PSCNotification body, the notice of a new person with significant control, and submits it through the Companies House XML Gateway",
+                "postCompaniesHousePscNotification"));
 
         this.companiesHouseFormStatusGetLambdaHttpMethod = HttpMethod.GET;
         this.companiesHouseFormStatusGetLambdaUrlPath = "/api/v1/companies-house/forms/{kind}/{submissionNumber}";

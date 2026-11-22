@@ -24819,3 +24819,537 @@ cy = '''Rhowch y cenedligrwydd newydd.'''
 [strings."ch.change-psc.residence-country-needed"]
 hash = "ac7541820dfa"
 cy = '''Rhowch y wlad neu’r dalaith breswyl newydd.'''
+
+# Tell Companies House about a new PSC (the PSCNotification form): its page, its messages and its receipt title.
+
+[strings."ch-notify-psc.title"]
+hash = "98c04ffa47e8"
+cy = '''Dweud wrth Dŷ’r Cwmnïau am PRhA newydd - DIY Accounting Submit'''
+
+[strings."ch-notify-psc.tell-companies-house-about-a-new-a548f9"]
+hash = "a548f9798e29"
+cy = '''Dweud wrth Dŷ’r Cwmnïau am PRhA newydd'''
+
+[strings."ch-notify-psc.give-notice-of-a-new-person-ee2c18"]
+hash = "ee2c18238329"
+cy = '''Rhoi hysbysiad am berson newydd â rheolaeth arwyddocaol: unigolyn, endid cyfreithiol perthnasol neu berson cofrestradwy arall'''
+
+[strings."ch-notify-psc.status-sandbox-this-runs-against-companies-3c285c"]
+hash = "3c285c86cda2"
+cy = '''<strong>Statws: amgylchedd prawf (sandbox).</strong> Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.'''
+
+[strings."ch-notify-psc.which-company-d9aae4"]
+hash = "d9aae49b05ee"
+cy = '''Pa gwmni?'''
+
+[strings."ch-notify-psc.company-number-8b121b"]
+hash = "8b121bb59819"
+cy = '''Rhif y cwmni'''
+
+[strings."ch-notify-psc.8-characters-for-example-00000001-do-090062"]
+hash = "090062b139be"
+cy = '''8 nod, er enghraifft 00000001. Ddim yn ei wybod? <a href="companySearch.html">Chwilio Tŷ’r Cwmnïau</a>.'''
+
+[strings."ch-notify-psc.look-up-the-company-570ac0"]
+hash = "570ac0974205"
+cy = '''Chwilio am y cwmni'''
+
+[strings."ch-notify-psc.who-is-the-new-person-with-32730d"]
+hash = "32730d7e81b9"
+cy = '''Pwy yw’r person newydd â rheolaeth arwyddocaol?'''
+
+[strings."ch-notify-psc.company-3bc806"]
+hash = "3bc806ccac3b"
+cy = '''Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).'''
+
+[strings."ch-notify-psc.kind-of-person-with-significant-control-7752aa"]
+hash = "7752aa9697fb"
+cy = '''Math o berson â rheolaeth arwyddocaol'''
+
+[strings."ch-notify-psc.an-individual-635217"]
+hash = "635217930852"
+cy = '''Unigolyn'''
+
+[strings."ch-notify-psc.a-relevant-legal-entity-such-as-09baac"]
+hash = "09baacd196ec"
+cy = '''Endid cyfreithiol perthnasol, fel cwmni'''
+
+[strings."ch-notify-psc.an-other-registrable-person-4bba5c"]
+hash = "4bba5c713a4a"
+cy = '''Person cofrestradwy arall'''
+
+[strings."ch-notify-psc.an-other-registrable-person-is-a-e3ca68"]
+hash = "e3ca680f1bbc"
+cy = '''Mae ‘person cofrestradwy arall’ yn: gorfforaeth undyn; llywodraeth neu adran o lywodraeth gwlad neu diriogaeth neu ran o wlad neu diriogaeth; sefydliad rhyngwladol y mae ei aelodau’n cynnwys dwy neu fwy o wledydd neu diriogaethau (neu eu llywodraethau); awdurdod lleol neu gorff llywodraeth leol yn y DU neu rywle arall.'''
+
+[strings."ch-notify-psc.title-optional-8280fb"]
+hash = "8280fbd6bcff"
+cy = '''Teitl (dewisol)'''
+
+[strings."ch-notify-psc.first-name-702ef9"]
+hash = "702ef921ed1d"
+cy = '''Enw cyntaf'''
+
+[strings."ch-notify-psc.middle-names-optional-062081"]
+hash = "062081d5d94a"
+cy = '''Enwau canol (dewisol)'''
+
+[strings."ch-notify-psc.surname-f762da"]
+hash = "f762da05f4d4"
+cy = '''Cyfenw'''
+
+[strings."ch-notify-psc.date-of-birth-eb4c4e"]
+hash = "eb4c4e239122"
+cy = '''Dyddiad geni'''
+
+[strings."ch-notify-psc.you-must-give-the-full-date-034a00"]
+hash = "034a00844576"
+cy = '''Rhaid i chi roi’r dyddiad geni llawn. Dim ond y mis a’r flwyddyn sy’n ymddangos ar y cofnod cyhoeddus.'''
+
+[strings."ch-notify-psc.nationality-8fb1b6"]
+hash = "8fb1b6a148c2"
+cy = '''Cenedligrwydd'''
+
+[strings."ch-notify-psc.use-companies-house-s-list-of-9faa4f"]
+hash = "9faa4fa4a1a0"
+cy = '''Defnyddiwch restr Tŷ’r Cwmnïau o genedligrwyddau a gwledydd, er enghraifft British. Dim ond cofnodion o’r rhestr safonol hon y bydd Tŷ’r Cwmnïau yn eu derbyn.'''
+
+[strings."ch-notify-psc.country-or-state-of-residence-dda4cc"]
+hash = "dda4ccf8b55a"
+cy = '''Gwlad neu dalaith breswyl'''
+
+[strings."ch-notify-psc.the-country-of-the-individual-s-1ed5fa"]
+hash = "1ed5fa6be841"
+cy = '''Gwlad cyfeiriad preswyl arferol yr unigolyn, er enghraifft Wales.'''
+
+[strings."ch-notify-psc.service-address-ef36f8"]
+hash = "ef36f8c99826"
+cy = '''Cyfeiriad gohebiaeth'''
+
+[strings."ch-notify-psc.this-is-the-address-that-will-4e5124"]
+hash = "4e512421b065"
+cy = '''Dyma’r cyfeiriad a fydd yn ymddangos ar y cofnod cyhoeddus. Nid oes rhaid iddo fod yn gyfeiriad preswyl arferol yr unigolyn.'''
+
+[strings."ch-notify-psc.the-company-s-registered-office-bf6737"]
+hash = "bf67377c5398"
+cy = '''Swyddfa gofrestredig y cwmni'''
+
+[strings."ch-notify-psc.another-address-0fb92a"]
+hash = "0fb92ac40f1f"
+cy = '''Cyfeiriad arall'''
+
+[strings."ch-notify-psc.the-service-address-310bce"]
+hash = "310bcee7b5ed"
+cy = '''Y cyfeiriad gohebiaeth'''
+
+[strings."ch-notify-psc.if-you-give-the-individual-s-b2b658"]
+hash = "b2b6588a7c29"
+cy = '''Os rhowch gyfeiriad preswyl yr unigolyn yma, bydd yn ymddangos ar y cofnod cyhoeddus.'''
+
+[strings."ch-notify-psc.building-name-or-number-bbd5d1"]
+hash = "bbd5d1b67ca7"
+cy = '''Enw neu rif yr adeilad'''
+
+[strings."ch-notify-psc.street-c66659"]
+hash = "c666591df053"
+cy = '''Stryd'''
+
+[strings."ch-notify-psc.address-line-2-350b2b"]
+hash = "350b2b85c4af"
+cy = '''Llinell 2 y cyfeiriad'''
+
+[strings."ch-notify-psc.post-town-89cec1"]
+hash = "89cec1d7722a"
+cy = '''Tref bost'''
+
+[strings."ch-notify-psc.county-or-region-9fe665"]
+hash = "9fe665e6f507"
+cy = '''Sir neu ranbarth'''
+
+[strings."ch-notify-psc.postcode-0a4387"]
+hash = "0a4387d25c62"
+cy = '''Cod post'''
+
+[strings."ch-notify-psc.country-701d02"]
+hash = "701d021d08c5"
+cy = '''Gwlad'''
+
+[strings."ch-notify-psc.england-c0ea96"]
+hash = "c0ea960b065c"
+cy = '''Lloegr'''
+
+[strings."ch-notify-psc.wales-0cf387"]
+hash = "0cf3878b94e1"
+cy = '''Cymru'''
+
+[strings."ch-notify-psc.scotland-a24667"]
+hash = "a246670dbf76"
+cy = '''Yr Alban'''
+
+[strings."ch-notify-psc.northern-ireland-304a7e"]
+hash = "304a7ea100d7"
+cy = '''Gogledd Iwerddon'''
+
+[strings."ch-notify-psc.united-kingdom-8d23a6"]
+hash = "8d23a6e37e0a"
+cy = '''Y Deyrnas Unedig'''
+
+[strings."ch-notify-psc.another-country-eea65d"]
+hash = "eea65de9d929"
+cy = '''Gwlad arall'''
+
+[strings."ch-notify-psc.which-country-1dd352"]
+hash = "1dd352b833df"
+cy = '''Pa wlad?'''
+
+[strings."ch-notify-psc.usual-residential-address-48bea1"]
+hash = "48bea18fe659"
+cy = '''Cyfeiriad preswyl arferol'''
+
+[strings."ch-notify-psc.this-address-is-not-shown-on-be2f2f"]
+hash = "be2f2f518eec"
+cy = '''Nid yw’r cyfeiriad hwn yn cael ei ddangos ar y cofnod cyhoeddus. Ni all fod yn gyfeiriad gohebiaeth pan mai swyddfa gofrestredig y cwmni yw’r cyfeiriad gohebiaeth, ac ni all fod yn Flwch Post.'''
+
+[strings."ch-notify-psc.give-the-address-9ee29d"]
+hash = "9ee29db0c0d9"
+cy = '''Rhoi’r cyfeiriad'''
+
+[strings."ch-notify-psc.the-same-as-the-service-address-5466e5"]
+hash = "5466e52eba1b"
+cy = '''Yr un fath â’r cyfeiriad gohebiaeth'''
+
+[strings."ch-notify-psc.the-usual-residential-address-02354f"]
+hash = "02354f53d13b"
+cy = '''Y cyfeiriad preswyl arferol'''
+
+[strings."ch-notify-psc.the-address-where-the-individual-usually-728324"]
+hash = "7283243211ec"
+cy = '''Y cyfeiriad lle mae’r unigolyn yn byw fel arfer.'''
+
+[strings."ch-notify-psc.identity-verification-optional-69039b"]
+hash = "69039b6e97c3"
+cy = '''Gwiriad hunaniaeth (dewisol)'''
+
+[strings."ch-notify-psc.only-complete-this-if-the-person-b3934b"]
+hash = "b3934be686ee"
+cy = '''Llenwch hwn dim ond os yw’r person wedi gwirio ei hunaniaeth ac wedi rhannu ei god personol â chi. Cod personol yw cod 11 nod a roddir i berson ar ôl iddo wirio ei hunaniaeth gyda Thŷ’r Cwmnïau.'''
+
+[strings."ch-notify-psc.the-person-notified-as-a-psc-3a01b4"]
+hash = "3a01b4b876da"
+cy = '''Mae’r person a hysbysir fel PRhA wedi gwirio ei hunaniaeth yn unol â Deddf Cwmnïau 2006'''
+
+[strings."ch-notify-psc.companies-house-personal-code-07df48"]
+hash = "07df48853a1b"
+cy = '''Cod personol Tŷ’r Cwmnïau'''
+
+[strings."ch-notify-psc.if-the-name-you-ve-given-d0aaed"]
+hash = "d0aaeda29483"
+cy = '''Os nad yw’r enw a roesoch yn cyfateb i’w enw wedi’i wirio, dywedwch wrthym pam (dewisol)'''
+
+[strings."ch-notify-psc.the-names-match-4dc53d"]
+hash = "4dc53dba0e5a"
+cy = '''Mae’r enwau’n cyfateb'''
+
+[strings."ch-notify-psc.legally-changed-name-76bbec"]
+hash = "76bbec517d09"
+cy = '''Enw wedi’i newid yn gyfreithiol'''
+
+[strings."ch-notify-psc.preferred-name-be5ede"]
+hash = "be5edee54016"
+cy = '''Enw dewisol'''
+
+[strings."ch-notify-psc.translation-or-a-different-naming-convention-3d40ed"]
+hash = "3d40ed2a1867"
+cy = '''Cyfieithiad neu gonfensiwn enwi gwahanol'''
+
+[strings."ch-notify-psc.prefer-not-to-say-51fcc5"]
+hash = "51fcc57e9bf9"
+cy = '''Mae’n well gennyf beidio â dweud'''
+
+[strings."ch-notify-psc.name-dcd1d5"]
+hash = "dcd1d5223f73"
+cy = '''Enw'''
+
+[strings."ch-notify-psc.principal-office-address-5f41b9"]
+hash = "5f41b9c9b64a"
+cy = '''Cyfeiriad y brif swyddfa'''
+
+[strings."ch-notify-psc.this-address-will-appear-on-the-ef905a"]
+hash = "ef905a0104e0"
+cy = '''Bydd y cyfeiriad hwn yn ymddangos ar y cofnod cyhoeddus.'''
+
+[strings."ch-notify-psc.legal-form-18f1eb"]
+hash = "18f1ebee7ffd"
+cy = '''Ffurf gyfreithiol'''
+
+[strings."ch-notify-psc.the-legal-form-of-the-entity-cf20b8"]
+hash = "cf20b81a4688"
+cy = '''Ffurf gyfreithiol yr endid, fel y’i diffinnir yn y wlad lle mae wedi’i gofrestru.'''
+
+[strings."ch-notify-psc.governing-law-da3aaa"]
+hash = "da3aaaff3096"
+cy = '''Cyfraith lywodraethol'''
+
+[strings."ch-notify-psc.the-law-by-which-the-entity-80be3e"]
+hash = "80be3ed546da"
+cy = '''Y gyfraith y mae’r endid yn cael ei lywodraethu ganddi.'''
+
+[strings."ch-notify-psc.register-in-which-it-is-entered-301e8a"]
+hash = "301e8af18f42"
+cy = '''Y gofrestr y mae wedi’i gofnodi ynddi (os oes un)'''
+
+[strings."ch-notify-psc.for-example-companies-house-where-you-0d233c"]
+hash = "0d233c30b27a"
+cy = '''Er enghraifft Tŷ’r Cwmnïau. Os rhowch y gofrestr, rhaid i chi hefyd roi rhif yr endid yn y gofrestr honno.'''
+
+[strings."ch-notify-psc.country-or-state-of-that-register-6f2d80"]
+hash = "6f2d80bec1f9"
+cy = '''Gwlad neu dalaith y gofrestr honno'''
+
+[strings."ch-notify-psc.registration-number-in-that-register-70855b"]
+hash = "70855b57f6c2"
+cy = '''Rhif cofrestru yn y gofrestr honno'''
+
+[strings."ch-notify-psc.how-they-control-the-company-338350"]
+hash = "3383501d3d9b"
+cy = '''Sut maen nhw’n rheoli’r cwmni'''
+
+[strings."ch-notify-psc.tick-each-that-applies-only-tick-43c294"]
+hash = "43c2948b6fed"
+cy = '''Ticiwch bob un sy’n berthnasol. Ticiwch ddylanwad neu reolaeth arwyddocaol dim ond os nad oes yr un o’r lleill yn berthnasol.'''
+
+[strings."ch-notify-psc.ownership-of-shares-232c33"]
+hash = "232c33a0c889"
+cy = '''Perchnogaeth cyfranddaliadau'''
+
+[strings."ch-notify-psc.none-dc937b"]
+hash = "dc937b598926"
+cy = '''Dim'''
+
+[strings."ch-notify-psc.more-than-25-but-not-more-d87c01"]
+hash = "d87c01e45fd3"
+cy = '''Mwy na 25% ond dim mwy na 50%'''
+
+[strings."ch-notify-psc.more-than-50-but-less-than-6c764a"]
+hash = "6c764aaf15e8"
+cy = '''Mwy na 50% ond llai na 75%'''
+
+[strings."ch-notify-psc.75-or-more-c9f7df"]
+hash = "c9f7df5050c7"
+cy = '''75% neu fwy'''
+
+[strings."ch-notify-psc.ownership-of-voting-rights-4cd7d9"]
+hash = "4cd7d9981a17"
+cy = '''Perchnogaeth hawliau pleidleisio'''
+
+[strings."ch-notify-psc.the-right-to-appoint-or-remove-0cda88"]
+hash = "0cda88ab3bc2"
+cy = '''Yr hawl i benodi neu ddiswyddo mwyafrif bwrdd y cyfarwyddwyr'''
+
+[strings."ch-notify-psc.significant-influence-or-control-only-if-d5a9f6"]
+hash = "d5a9f660a679"
+cy = '''Dylanwad neu reolaeth arwyddocaol (dim ond os nad oes dim o’r uchod yn berthnasol)'''
+
+[strings."ch-notify-psc.date-they-became-a-person-with-6f517a"]
+hash = "6f517a1de3c4"
+cy = '''Y dyddiad y daethant yn berson â rheolaeth arwyddocaol'''
+
+[strings."ch-notify-psc.this-cannot-be-before-6-april-d9a7c9"]
+hash = "d9a7c9d7b406"
+cy = '''Ni all hyn fod cyn 6 Ebrill 2016.'''
+
+[strings."ch-notify-psc.date-of-confirmation-e98c6d"]
+hash = "e98c6d770c70"
+cy = '''Dyddiad cadarnhau'''
+
+[strings."ch-notify-psc.the-date-the-company-had-confirmation-60f202"]
+hash = "60f202dfb152"
+cy = '''Y dyddiad y cafodd y cwmni gadarnhad o statws y person fel PRhA ac o’i holl fanylion gofynnol, pa un bynnag yw’r dyddiad hwyraf. Rhaid dweud wrth Dŷ’r Cwmnïau cyn pen 14 diwrnod o’r dyddiad hwnnw.'''
+
+[strings."ch-notify-psc.company-authentication-code-56d0e6"]
+hash = "56d0e640f9f0"
+cy = '''Cod dilysu’r cwmni'''
+
+[strings."ch-notify-psc.the-6-to-8-character-code-48646a"]
+hash = "48646a151fe7"
+cy = '''Y cod o 6 i 8 nod a roddodd Tŷ’r Cwmnïau i’r cwmni hwn. Nid yw’n cael ei gadw - dim ond ar gyfer y ffeilio hwn y caiff ei ddefnyddio.'''
+
+[strings."ch-notify-psc.continue-31fbef"]
+hash = "31fbef162594"
+cy = '''Parhau'''
+
+[strings."ch-notify-psc.review-the-filing-769b96"]
+hash = "769b96283d75"
+cy = '''Adolygu’r ffeilio'''
+
+[strings."ch-notify-psc.gov-test-scenario-dab532"]
+hash = "dab5326bb25a"
+cy = '''Gov-Test-Scenario'''
+
+[strings."ch-notify-psc.file-with-companies-house-327c43"]
+hash = "327c43b89de4"
+cy = '''Ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-notify-psc.change-c0bf75"]
+hash = "c0bf75bd78bf"
+cy = '''Newid'''
+
+[strings."ch-notify-psc.filing-result-0ecbf7"]
+hash = "0ecbf7d7af61"
+cy = '''Canlyniad y ffeilio'''
+
+[strings."ch-notify-psc.start-a-new-filing-0a9f24"]
+hash = "0a9f240ab551"
+cy = '''Dechrau ffeilio newydd'''
+
+[strings."ch-notify-psc.sign-in-to-file-with-companies-5a7303"]
+hash = "5a7303865fa5"
+cy = '''Mewngofnodwch i ffeilio gyda Thŷ’r Cwmnïau'''
+
+[strings."ch-notify-psc.sign-in-to-look-up-your-eb0bf2"]
+hash = "eb0bf28eeabf"
+cy = '''Mewngofnodwch i chwilio am eich cwmni a ffeilio gyda Thŷ’r Cwmnïau. Mae’r ffeilio’n cael ei wneud o’ch cyfrif.'''
+
+[strings."ch.drill.notify-psc"]
+hash = "a548f9798e29"
+cy = '''Dweud wrth Dŷ’r Cwmnïau am PRhA newydd'''
+
+[strings."ch.notify-psc.kind-individual"]
+hash = "635217930852"
+cy = '''Unigolyn'''
+
+[strings."ch.notify-psc.kind-corporate"]
+hash = "7656828ffab2"
+cy = '''Endid cyfreithiol perthnasol'''
+
+[strings."ch.notify-psc.kind-legal-person"]
+hash = "4bba5c713a4a"
+cy = '''Person cofrestradwy arall'''
+
+[strings."ch.notify-psc.lookup-failed"]
+hash = "85798bd4b10f"
+cy = '''Methwyd â darllen y cwmni hwn o Dŷ’r Cwmnïau.'''
+
+[strings."ch.notify-psc.individual-needed"]
+hash = "0e5431921495"
+cy = '''Rhowch gyfenw, dyddiad geni, cenedligrwydd a gwlad breswyl yr unigolyn.'''
+
+[strings."ch.notify-psc.service-needed"]
+hash = "a4891c192890"
+cy = '''Rhowch enw neu rif adeilad y cyfeiriad gohebiaeth, ei dref bost a’i wlad.'''
+
+[strings."ch.notify-psc.home-not-office"]
+hash = "56eedd866bc9"
+cy = '''Ni all y cyfeiriad preswyl arferol fod yn gyfeiriad gohebiaeth pan mai swyddfa gofrestredig y cwmni yw’r cyfeiriad gohebiaeth.'''
+
+[strings."ch.notify-psc.home-needed"]
+hash = "cc0759cd508a"
+cy = '''Rhowch enw neu rif adeilad y cyfeiriad preswyl arferol, ei dref bost a’i wlad.'''
+
+[strings."ch.notify-psc.code-needed"]
+hash = "0ac448dfb494"
+cy = '''Mae cod personol Tŷ’r Cwmnïau yn 11 o lythrennau a rhifau.'''
+
+[strings."ch.notify-psc.entity-needed"]
+hash = "e5193f880d9a"
+cy = '''Rhowch yr enw, y ffurf gyfreithiol a’r gyfraith lywodraethol.'''
+
+[strings."ch.notify-psc.office-needed"]
+hash = "1ce2052ea7c9"
+cy = '''Rhowch enw neu rif adeilad cyfeiriad y brif swyddfa, ei dref bost a’i wlad.'''
+
+[strings."ch.notify-psc.number-needed"]
+hash = "9aa92d835e59"
+cy = '''Os rhowch y gofrestr y mae’r endid wedi’i gofnodi ynddi, rhowch ei rif yn y gofrestr honno hefyd.'''
+
+[strings."ch.notify-psc.control-needed"]
+hash = "38174d7d5e6c"
+cy = '''Dewiswch o leiaf un ffordd y mae’r person yn rheoli’r cwmni.'''
+
+[strings."ch.notify-psc.influence-alone"]
+hash = "830c86a0a351"
+cy = '''Dewiswch ddylanwad neu reolaeth arwyddocaol dim ond os nad oes yr un o’r ffyrdd eraill yn berthnasol.'''
+
+[strings."ch.notify-psc.date-too-early"]
+hash = "674bf92f51f3"
+cy = '''Ni all y dyddiad y daethant yn berson â rheolaeth arwyddocaol fod cyn 6 Ebrill 2016.'''
+
+[strings."ch.notify-psc.confirmation-before"]
+hash = "224085697a3e"
+cy = '''Ni all y dyddiad cadarnhau fod cyn y dyddiad y daethant yn berson â rheolaeth arwyddocaol.'''
+
+[strings."ch.notify-psc.review-company"]
+hash = "de4743c87973"
+cy = '''Cwmni'''
+
+[strings."ch.notify-psc.review-kind"]
+hash = "f5387f9bb6ed"
+cy = '''Math'''
+
+[strings."ch.notify-psc.review-name"]
+hash = "dcd1d5223f73"
+cy = '''Enw'''
+
+[strings."ch.notify-psc.review-born"]
+hash = "eb4c4e239122"
+cy = '''Dyddiad geni'''
+
+[strings."ch.notify-psc.review-nationality"]
+hash = "8fb1b6a148c2"
+cy = '''Cenedligrwydd'''
+
+[strings."ch.notify-psc.review-residence"]
+hash = "dda4ccf8b55a"
+cy = '''Gwlad neu dalaith breswyl'''
+
+[strings."ch.notify-psc.review-service"]
+hash = "ef36f8c99826"
+cy = '''Cyfeiriad gohebiaeth'''
+
+[strings."ch.notify-psc.review-office"]
+hash = "bf67377c5398"
+cy = '''Swyddfa gofrestredig y cwmni'''
+
+[strings."ch.notify-psc.review-home"]
+hash = "48bea18fe659"
+cy = '''Cyfeiriad preswyl arferol'''
+
+[strings."ch.notify-psc.review-same"]
+hash = "5466e52eba1b"
+cy = '''Yr un fath â’r cyfeiriad gohebiaeth'''
+
+[strings."ch.notify-psc.review-code"]
+hash = "07df48853a1b"
+cy = '''Cod personol Tŷ’r Cwmnïau'''
+
+[strings."ch.notify-psc.review-office-address"]
+hash = "5f41b9c9b64a"
+cy = '''Cyfeiriad y brif swyddfa'''
+
+[strings."ch.notify-psc.review-legal-form"]
+hash = "18f1ebee7ffd"
+cy = '''Ffurf gyfreithiol'''
+
+[strings."ch.notify-psc.review-law"]
+hash = "da3aaaff3096"
+cy = '''Cyfraith lywodraethol'''
+
+[strings."ch.notify-psc.review-register"]
+hash = "bb7234ec1245"
+cy = '''Cofrestr'''
+
+[strings."ch.notify-psc.review-control"]
+hash = "3383501d3d9b"
+cy = '''Sut maen nhw’n rheoli’r cwmni'''
+
+[strings."ch.notify-psc.review-became"]
+hash = "a0baed4448f3"
+cy = '''Daeth yn berson â rheolaeth arwyddocaol'''
+
+[strings."ch.notify-psc.review-confirmed"]
+hash = "e98c6d770c70"
+cy = '''Dyddiad cadarnhau'''
+
+[strings."receipts.kind-psc-notification"]
+hash = "993357de75fa"
+cy = '''PRhA newydd wedi’i hysbysu'''

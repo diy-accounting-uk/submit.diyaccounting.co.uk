@@ -398,6 +398,10 @@ const AUTHORITY_SOURCES = {
     url: "https://assets.publishing.service.gov.uk/media/5eac148286650c436060bbe9/PSC09_v2.0.pdf",
     title: "PSC09 Update to PSC statements",
   },
+  pscNotificationForm: {
+    url: "https://assets.publishing.service.gov.uk/media/6a98253ff5b35599aec190bd/PSC01_v5.0-FINAL.pdf",
+    title: "PSC01 Notice of individual person with significant control (PSC)",
+  },
 };
 
 // A quotation GOV.UK publishes in Welsh as well: its Welsh is GOV.UK's own sentence.
@@ -522,6 +526,22 @@ function authorityNotes(activityId) {
         "This form may be authenticated by: Director, Secretary, Person authorised, Liquidator, Administrator, Administrative receiver, Receiver, Receiver manager, Charity Commission receiver and manager, CIC manager, Judicial factor.",
       ),
       inEnglishOnly("pscStatementUpdateForm", "You may use this form to tell us about an update to a PSC statement."),
+      codeOnline,
+    ],
+    "notify-psc": [
+      inEnglishOnly(
+        "pscGuidance",
+        "You must confirm certain details with your PSC, before you can send the information to Companies House.",
+      ),
+      inEnglishOnly("pscGuidance", "If you become a PSC, you must verify your identity for Companies House."),
+      inEnglishOnly(
+        "pscNotificationForm",
+        "This form may be authenticated by: Director, Secretary, Person authorised, Administrator, Administrative receiver, Receiver, Receiver manager, Charity commission receiver and manager, CIC manager, Judicial factor.",
+      ),
+      inEnglishOnly(
+        "pscNotificationForm",
+        "You must have obtained confirmation from the individual person with significant control that their particulars are correct before sending this form to Companies House.",
+      ),
       codeOnline,
     ],
     "file-micro-entity-accounts": accounts,
@@ -1102,8 +1122,11 @@ async function appendRemoveOfficerLinks(container, companyNumber, officers) {
 async function renderPscs(container, companyNumber) {
   sectionHeading(container, window.siteText("ch.drill.pscs", "Persons with significant control"));
   const pscs = await readPscs(companyNumber);
-  if (pscs.length === 0)
-    return emptyNote(container, window.siteText("ch.drill.no-pscs", "The register lists no persons with significant control."));
+  if (pscs.length === 0) {
+    emptyNote(container, window.siteText("ch.drill.no-pscs", "The register lists no persons with significant control."));
+    await appendNotifyPsc(container, companyNumber);
+    return;
+  }
   container.appendChild(
     table(
       [
@@ -1142,6 +1165,17 @@ async function renderPscs(container, companyNumber) {
     activityId: "psc-statements",
     page: "pscStatements.html",
     label: window.siteText("ch.drill.psc-statements", "Give or withdraw a PSC statement"),
+    companyNumber,
+  });
+  await appendNotifyPsc(container, companyNumber);
+}
+
+// The File this control for a new PSC, which a company with no PSC on the register needs too.
+function appendNotifyPsc(container, companyNumber) {
+  return appendFileThis(container, {
+    activityId: "notify-psc",
+    page: "notifyPsc.html",
+    label: window.siteText("ch.drill.notify-psc", "Tell Companies House about a new PSC"),
     companyNumber,
   });
 }

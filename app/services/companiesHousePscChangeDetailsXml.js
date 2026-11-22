@@ -176,7 +176,7 @@ export function changeDetailsProblems(input) {
   return problems;
 }
 
-function addressXml(address) {
+export function addressXml(address) {
   const country = address.country
     ? optionalElement("Country", address.country)
     : optionalElement("OtherForeignCountry", address.otherForeignCountry);
@@ -188,7 +188,7 @@ function addressXml(address) {
   );
 }
 
-function naturesOfControlXml(codes) {
+export function naturesOfControlXml(codes) {
   const controls = codes.map((code) => optionalElement("NatureOfControl", code)).join("");
   return `<NatureOfControls>${controls}</NatureOfControls>`;
 }

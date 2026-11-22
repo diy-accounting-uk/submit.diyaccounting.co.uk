@@ -144,6 +144,18 @@ export const COMPANIES_HOUSE_FORMS = {
     label: "PSC statement withdrawal",
     sharedPoll: true,
   },
+  "psc-notification": {
+    routeSegment: "psc-notification",
+    receiptTitle: "New PSC notified",
+    receiptTitleCy: "PRhA newydd wedi’i hysbysu",
+    acceptedEvent: "companies-house-psc-notification-accepted",
+    acceptedSummary: "Companies House PSC notification accepted",
+    formIdentifier: "PSCNotification",
+    schema: "PSCNotification-v1-2.xsd",
+    activityId: "notify-psc",
+    label: "PSC notification",
+    sharedPoll: true,
+  },
 };
 
 /** The filing kinds, as the filing state and the receipts carry them. */

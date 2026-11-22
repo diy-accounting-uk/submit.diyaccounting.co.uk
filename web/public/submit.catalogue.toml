@@ -782,6 +782,17 @@ paths = ["companies-house/pscStatements.html", "^/api/v1/companies-house/psc-sta
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
+id = "notify-psc"
+name = "Tell Companies House about a new PSC (Companies House, sandbox)"
+nameCy = "Dweud wrth Dŷ'r Cwmnïau am PRhA newydd (Tŷ'r Cwmnïau, amgylchedd prawf)"
+display = "on-entitlement"
+bundles = ["resident-ltd"]
+metered = false
+# Not listed for prod: the XML team has not approved the PSCNotification form type for this presenter.
+paths = ["companies-house/notifyPsc.html", "^/api/v1/companies-house/psc-notification.*", "^/api/v1/companies-house/forms/psc-notification/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
 id = "diya-gl-storage"
 name = "Save diya-gl books (sandbox)"
 nameCy = "Cadw llyfrau diya-gl (amgylchedd prawf)"
