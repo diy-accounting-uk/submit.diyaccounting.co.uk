@@ -58,6 +58,7 @@ async function openPreviewView(page, pagePath, { balance, accountsAnswer = null,
     "lib/services/companies-house-filing-service.js",
     "application/javascript",
   );
+  await serveFromDisk(page, "**/lib/services/json-answer.js", "lib/services/json-answer.js", "application/javascript");
   await page.route("**/lib/services/api-client.js", async (route) => {
     await route.fulfill({
       status: 200,

@@ -24,13 +24,15 @@ function readPublic(relativePath) {
 }
 
 // The real filing service, served as a classic script: its api-client import becomes plain
-// fetch, and its exports drop to bare declarations so the window assignments at the bottom run.
+// fetch, its json-answer import becomes that module's own code, and its exports drop to bare
+// declarations so the window assignments at the bottom run.
 function filingServiceAsClassicScript() {
   return readPublic("lib/services/companies-house-filing-service.js")
     .replace(
       /import \{[^}]*\} from "\.\/api-client\.js";/,
       "const fetchWithIdToken = window.fetch.bind(window); const authorizedFetch = window.fetch.bind(window);",
     )
+    .replace(/import \{[^}]*\} from "\.\/json-answer\.js";/, () => readPublic("lib/services/json-answer.js"))
     .replace(/^export /gm, "");
 }
 
