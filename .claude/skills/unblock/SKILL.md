@@ -72,22 +72,35 @@ only for a command that the session's policy denies or that needs the operator's
 
 ## 3. Sort what the operator can move
 
-From the rows that stay open, make two lists, ordered by how many rows each item unblocks:
+Ask the operator everything that an answer can move (operator, 2026-11-22). From the rows that stay
+open, make three lists, ordered by how many rows each item unblocks:
 
-- **Decisions**: a choice between named alternatives that only the operator can make.
+- **Decisions**: a choice between named alternatives that only the operator can make. The question
+  gives the context and a recommendation.
+- **Approvals**: a step that waits only for the operator's yes (a launch on prod, a test filing, a
+  write to a vendor, a click in the operator's browser). Ask for the approval.
 - **Commands**: an action the session's policy denies, or one needing the operator's identity,
-  that a single command delivers or part-delivers.
+  that a single command delivers or part-delivers. Give the command.
 
-Leave out a row whose only wait is a date, a third party, or a machine step. Leave out a choice
-already built, or a recommendation already followed (`ask-only-open-questions`). Never re-ask a
-decision that `NEXT.md` or the plan already records.
+**Ask ahead.** A row that is blocked now, or that reaches its approval or its command a few tasks
+later, still has its approval asked in this pass. The answer is recorded on the row (section 5), so
+the session does the step when it gets there and does not ask again. Ask ahead for every row whose
+blocker line, Owner line or brief names the operator's approval, the operator's go, the operator
+present, or a command that the operator runs.
+
+Leave out a row whose only wait is a date, a third party, or a machine step, with no approval or
+command after it. Leave out a choice already built, or a recommendation already followed
+(`ask-only-open-questions`). Never re-ask a decision or an approval that `NEXT.md` or the plan
+already records. A question about money states the amount.
 
 ## 4. Ask and print
 
-**Decisions.** With the operator present, ask through `AskUserQuestion`, at most four to a call.
-Each question stands alone, names the row, and puts the recommended option first. During an
-unattended `/iterate` tick, print the decisions as a numbered list and carry on, because a dialog
-in an empty room holds the loop.
+**Decisions and approvals.** With the operator present, ask through `AskUserQuestion`, at most four
+to a call. Each question stands alone, names the row, and puts the recommended option first. Put
+approvals of one kind in one question with `multiSelect`, one option for each row, and say in each
+option what the step does and what it waits on. During an unattended `/iterate` tick, print the
+decisions and approvals as a numbered list and carry on, because a dialog in an empty room holds
+the loop.
 
 **Commands.** Print each in full, in its own fenced block with the `!` prefix, with one line above
 it saying what it unblocks. Print only a command that can run now with no condition attached
@@ -126,6 +139,12 @@ An answer lands on `NEXT.md` in the same turn:
   unblocks, with the date.
 - Move that row to its class's section.
 - Add a machine row for any work the answer creates.
+- An approval given ahead goes into the row that needs it, with the date and its scope: "The
+  operator approved the launch on <date>: the session runs it when the preconditions hold." Take
+  the approval out of the row's blocker line and its Owner line, and change the same words in the
+  row's plan. The row stays blocked on its other preconditions.
+- An approval that the operator keeps ("I'll do it myself") makes that step the operator's: write
+  it as a human-driven step, and split the machine part out as `/refine` Pass 4 says.
 
 Run `npx vitest run app/unit-tests/nextShape.test.js`, commit `NEXT.md` alone, and push it as its
 own command. Public rows name a security finding by its id only.
