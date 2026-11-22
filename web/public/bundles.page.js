@@ -171,6 +171,15 @@ const fetchUserBundles = async () => {
       return __userBundles;
     }
     console.warn("Failed to fetch bundles:", err);
+    if (window.showStatus) {
+      window.showStatus(
+        window.siteText(
+          "bundles.read-failed",
+          "Your bundles could not be read, so this page may offer a bundle you already hold. Reload the page to try again.",
+        ),
+        "error",
+      );
+    }
   } finally {
     if (__fetchBundlesController?.signal === signal) {
       __fetchBundlesController = null;

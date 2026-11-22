@@ -264,6 +264,20 @@ test.describe("A failed read of the account's bundles", () => {
   });
 });
 
+test.describe("A deployment that does not show the reports", () => {
+  test("asks the report route nothing behind the page's not-available panel", async ({ page }) => {
+    const reportRequests = [];
+    await serveSite(page, {
+      reportRequests,
+      reportAnswer: { status: 403, body: { message: "Forbidden" } },
+      catalogue: (text) => text.replace(/(id = "company-reports"[\s\S]*?environments = )\[[^\]]*\]/, '$1["prod"]'),
+    });
+    await page.goto(`${BASE}${COMPANY}/reports/people`, { waitUntil: "networkidle" });
+    await expect(page.getByRole("heading", { name: "Not available here yet" })).toBeVisible();
+    expect(reportRequests).toEqual([]);
+  });
+});
+
 test.describe("A company report's view", () => {
   for (const language of LANGUAGES) {
     for (const width of [1280, 390]) {

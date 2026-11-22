@@ -73,6 +73,7 @@ async function serveSite(page, account) {
     if (url.hostname !== "localhost") return route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
     const pathname = decodeURIComponent(url.pathname);
     if (pathname === "/api/v1/bundle") {
+      if (account.bundleStatus) return json(route, account.bundleStatus, { message: "The bundles could not be read" });
       return json(route, 200, {
         bundles: [],
         tokensRemaining: 10,
@@ -149,6 +150,14 @@ async function shoot(page, name) {
 const fullList = () => Array.from({ length: 50 }, (_, index) => String(index + 1).padStart(8, "0"));
 
 test.describe("Company watch list", () => {
+  test("a failed read of the account says the watch list could not be read, never that it is empty", async ({ page }) => {
+    await serveSite(page, { watchedCompanies: ["00000001"], bundleStatus: 500 });
+    await page.goto(`${BASE}/companies-house/watchList.html`, { waitUntil: "networkidle" });
+    await expect(page.locator("#statusMessagesContainer")).toContainText("Your watch list could not be read. Try again.");
+    await expect(page.locator("#watchListEmpty")).toBeHidden();
+    await expect(page.locator("#watchListCount")).not.toHaveText("0 of 50 companies");
+  });
+
   for (const width of [1280, 390]) {
     test(`an empty watch list says so at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });

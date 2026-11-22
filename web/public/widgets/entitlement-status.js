@@ -117,7 +117,10 @@
           return bundlesCache;
         }
       } catch (err) {
+        // Not kept: the next call reads again, so one failed read does not stand for the page.
         console.warn("Failed to fetch bundles for entitlement status:", err);
+        fetchPromises.bundles = null;
+        return [];
       }
       bundlesCache = [];
       return bundlesCache;

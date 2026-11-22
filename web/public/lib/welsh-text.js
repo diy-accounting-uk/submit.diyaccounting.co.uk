@@ -141,6 +141,8 @@ window.WELSH_TEXT = {
   "bundles.pass-years": "{count} blynedd",
   "bundles.passes-not-deleted": "Ni ddilëwyd y tocynnau ({message})",
   "bundles.portal-failed": "Methu agor porth y tanysgrifiad: {reason}",
+  "bundles.read-failed":
+    "Nid oedd modd darllen eich bwndeli, felly efallai fod y dudalen hon yn cynnig bwndel sydd gennych yn barod. Ail-lwythwch y dudalen i roi cynnig arall arni.",
   "bundles.redirecting": "Yn mynd i’r dudalen dalu...",
   "bundles.remove": "Dileu",
   "bundles.remove-error": "Methu dileu’r Bundle. Rhowch gynnig arall arni.",
@@ -2750,6 +2752,9 @@ window.WELSH_TEXT = {
   "receipts.see-payments": "Gweld eich taliadau TAW",
   "receipts.submission-number": "rhif cyflwyniad {number}",
   "receipts.unnamed": "Derbynneb heb enw",
+  "settings.read-failed":
+    "Nid oedd modd darllen gosodiadau eich cyfrif, felly ni ellir eu newid nawr. Ail-lwythwch y dudalen i roi cynnig arall arni.",
+  "usage.read-failed": "Nid oedd modd darllen eich bwndeli a’ch credydau (tokens). Ail-lwythwch y dudalen i roi cynnig arall arni.",
   "vat-liabilities.col-due": "Dyddiad dyledus",
   "vat-liabilities.col-original": "Swm gwreiddiol",
   "vat-liabilities.col-outstanding": "Yn weddill i’w dalu",

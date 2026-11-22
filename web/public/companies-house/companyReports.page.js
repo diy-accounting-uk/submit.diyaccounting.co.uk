@@ -233,7 +233,7 @@
   /**
    * The reports index: one link and one line for each report.
    * @param {HTMLElement} container
-   * @param {{companyNumber: string, viewLink: Function, access: Promise<{held?: boolean, bundleNames?: string[], checkFailed?: boolean}>}} context
+   * @param {{companyNumber: string, viewLink: Function, access: Promise<{shown?: boolean, held?: boolean, bundleNames?: string[], checkFailed?: boolean}>}} context
    * @returns {Promise<boolean>} true: the index is always found
    */
   async function renderReportsIndex(container, { companyNumber, viewLink, access }) {
@@ -264,13 +264,24 @@
   /**
    * One report's view.
    * @param {HTMLElement} container
-   * @param {{companyNumber: string, report: string, viewLink: Function, access: Promise<{held?: boolean, bundleNames?: string[], checkFailed?: boolean}>}} context
+   * @param {{companyNumber: string, report: string, viewLink: Function, access: Promise<{shown?: boolean, held?: boolean, bundleNames?: string[], checkFailed?: boolean}>}} context
    * @returns {Promise<boolean>} true: every report the address names has a view
    */
   async function renderReportView(container, { companyNumber, report: name, viewLink, access }) {
     const report = reportNamed(name);
     container.appendChild(element("h4", null, report.title));
     container.appendChild(viewLink({ companyNumber, view: "reports" }, siteText("ch.reports.all-reports", "All reports on this company")));
+
+    // A deployment that does not show the reports refuses the route; the page asks it nothing.
+    const accessNow = await access;
+    if (accessNow && accessNow.shown === false) {
+      const state = element("p", "company-report-state");
+      state.setAttribute("role", "status");
+      state.textContent = siteText("ch.reports.not-offered", "These reports are not offered here yet.");
+      container.appendChild(state);
+      appendDefinitions(container, report);
+      return true;
+    }
 
     let answer;
     try {

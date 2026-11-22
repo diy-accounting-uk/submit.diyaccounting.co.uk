@@ -1643,7 +1643,7 @@ const reportsAccess = () =>
   loadEntitlement()
     .then((entitlement) => {
       const access = activityAccess(entitlement, "company-reports");
-      return { held: access.held, bundleNames: access.bundles.map(bundleName) };
+      return { shown: access.shown, held: access.held, bundleNames: access.bundles.map(bundleName) };
     })
     .catch((error) => {
       console.warn("Could not read the account's bundles for the reports:", error);

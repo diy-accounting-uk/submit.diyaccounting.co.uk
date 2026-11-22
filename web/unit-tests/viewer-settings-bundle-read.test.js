@@ -2,7 +2,13 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { BUNDLE_READ_TIMEOUT_MS, fetchBundleResponse } from "../public/lib/services/viewer-settings.js";
+import {
+  BUNDLE_READ_TIMEOUT_MS,
+  fetchAccountSettings,
+  fetchBundleResponse,
+  fetchViewer,
+  readBundleResponse,
+} from "../public/lib/services/viewer-settings.js";
 
 describe("the bundle read the viewer settings make", () => {
   beforeEach(() => {
@@ -33,5 +39,18 @@ describe("the bundle read the viewer settings make", () => {
     const response = { bundles: [], settings: { passGeneration: false } };
     vi.stubGlobal("window", { requestCache: { getJSON: async () => response } });
     await expect(fetchBundleResponse()).resolves.toEqual(response);
+  });
+
+  it("rejects a failed read for a caller that must tell it from an account that holds nothing", async () => {
+    const failed = Object.assign(new Error("The bundles could not be read"), { status: 500 });
+    vi.stubGlobal("window", { requestCache: { getJSON: async () => Promise.reject(failed) } });
+    await expect(readBundleResponse()).rejects.toMatchObject({ status: 500 });
+    await expect(fetchAccountSettings()).rejects.toMatchObject({ status: 500 });
+    await expect(fetchBundleResponse()).resolves.toBeNull();
+  });
+
+  it("gives the catalogue's display rules the default settings when the read fails", async () => {
+    vi.stubGlobal("window", { requestCache: { getJSON: async () => Promise.reject(new Error("failed")) } });
+    await expect(fetchViewer()).resolves.toMatchObject({ account: { passGeneration: expect.any(Boolean), watchedCompanies: [] } });
   });
 });

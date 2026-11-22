@@ -27047,3 +27047,21 @@ cy = '''Mae gan y cyfrannau a ddelid cyn y clustnodiad ddau dabl yn {currency}. 
 [strings."ch.allot.review-totals-currency"]
 hash = "48474a98ed49"
 cy = '''Cyfalaf wedyn: cyfansymiau yn {currency}'''
+
+# == The account's bundles: the sentences when they cannot be read ==
+
+[strings."index.rt-bundles-unread"]
+hash = "b0c659c58711"
+cy = '''Nid oedd modd darllen eich bwndeli, felly efallai fod y rhestr hon yn gadael allan weithgareddau sydd gennych. Ail-lwythwch y dudalen i roi cynnig arall arni.'''
+
+[strings."bundles.read-failed"]
+hash = "c7aaefd23991"
+cy = '''Nid oedd modd darllen eich bwndeli, felly efallai fod y dudalen hon yn cynnig bwndel sydd gennych yn barod. Ail-lwythwch y dudalen i roi cynnig arall arni.'''
+
+[strings."settings.read-failed"]
+hash = "8d89bda94de9"
+cy = '''Nid oedd modd darllen gosodiadau eich cyfrif, felly ni ellir eu newid nawr. Ail-lwythwch y dudalen i roi cynnig arall arni.'''
+
+[strings."usage.read-failed"]
+hash = "805a68ba8dd4"
+cy = '''Nid oedd modd darllen eich bwndeli a’ch credydau (tokens). Ail-lwythwch y dudalen i roi cynnig arall arni.'''

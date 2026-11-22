@@ -6,6 +6,8 @@
 // - Deduplicates in-flight GET requests
 // - TTL-based freshness with optional ETag revalidation
 // - Explicit invalidation by URL substring
+// - Only a 2xx answer is cached or returned; any other status rejects with an error that carries
+//   the status and the JSON body, so a caller never reads a failed request as data
 
 (function () {
   "use strict";
@@ -44,6 +46,15 @@
     return fetch;
   }
 
+  // The error for an answer that is not 2xx: its message from the body when the body has one.
+  async function failedAnswer(res) {
+    const body = await res.json().catch(() => null);
+    const error = new Error((body && body.message) || `Request failed with status ${res.status}`);
+    error.status = res.status;
+    error.body = body;
+    return error;
+  }
+
   async function fetchWithETag(url, init, prevEtag) {
     const headers = new Headers((init && init.headers) || {});
     if (prevEtag) headers.set("If-None-Match", prevEtag);
@@ -52,6 +63,7 @@
     if (res.status === 304) {
       return { status: 304, etag: prevEtag };
     }
+    if (!res.ok) throw await failedAnswer(res);
     const etag = res.headers.get("ETag") || undefined;
     const data = await res.json();
     return { status: res.status, etag, data };
@@ -70,6 +82,7 @@
       // Not a cacheable GET request
       const fetchFn = chooseFetch(init);
       const res = await fetchFn(url, init);
+      if (!res.ok) throw await failedAnswer(res);
       return res.json();
     }
 
@@ -106,6 +119,7 @@
         } else {
           const fetchFn = chooseFetch(init);
           const res = await fetchFn(url, init);
+          if (!res.ok) throw await failedAnswer(res);
           const etag = res.headers.get("ETag") || undefined;
           const data = await res.json();
           const fresh = { ts: Date.now(), ttlMs, data, etag, init, promise: null };

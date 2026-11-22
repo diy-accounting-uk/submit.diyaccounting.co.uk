@@ -38,6 +38,15 @@ async function init() {
   passSwitch.checked = ACCOUNT_SETTING_DEFAULTS.passGeneration;
   passSwitch.disabled = true;
   const response = await fetchBundleResponse();
+  if (!response && window.showStatus) {
+    window.showStatus(
+      window.siteText(
+        "settings.read-failed",
+        "Your account settings could not be read, so they cannot be changed now. Reload the page to try again.",
+      ),
+      "error",
+    );
+  }
   if (response) {
     passSwitch.checked = response.settings?.passGeneration ?? ACCOUNT_SETTING_DEFAULTS.passGeneration;
     passSwitch.disabled = false;

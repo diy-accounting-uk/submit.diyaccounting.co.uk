@@ -72,7 +72,12 @@ async function withinBundleReadTimeLimit(read) {
  * @returns {Promise<{bundles: object[], settings: object}|null>} Null when the person is signed out, or the read
  *   fails or gives no answer in BUNDLE_READ_TIMEOUT_MS
  */
-export async function fetchBundleResponse() {
+/**
+ * The bundle answer of the signed-in person, or null when nobody is signed in. A failed read
+ * rejects, so a caller can tell it from an account that holds nothing.
+ * @returns {Promise<object|null>}
+ */
+export async function readBundleResponse() {
   let idToken;
   try {
     idToken = localStorage.getItem("cognitoIdToken");
@@ -80,16 +85,28 @@ export async function fetchBundleResponse() {
     return null;
   }
   if (!idToken) return null;
-  try {
-    const requestCache = window.requestCache;
-    if (requestCache && typeof requestCache.getJSON === "function") {
-      return await withinBundleReadTimeLimit(
-        requestCache.getJSON("/api/v1/bundle", { ttlMs: 5000, init: { headers: { Authorization: `Bearer ${idToken}` } } }),
-      );
-    }
-    return await withinBundleReadTimeLimit(
-      window.fetchWithIdToken("/api/v1/bundle", {}).then((response) => (response.ok ? response.json() : null)),
+  const requestCache = window.requestCache;
+  if (requestCache && typeof requestCache.getJSON === "function") {
+    return withinBundleReadTimeLimit(
+      requestCache.getJSON("/api/v1/bundle", { ttlMs: 5000, init: { headers: { Authorization: `Bearer ${idToken}` } } }),
     );
+  }
+  return withinBundleReadTimeLimit(
+    window.fetchWithIdToken("/api/v1/bundle", {}).then((response) => {
+      if (!response.ok) throw Object.assign(new Error(`Request failed with status ${response.status}`), { status: response.status });
+      return response.json();
+    }),
+  );
+}
+
+/**
+ * The bundle answer, or null when nobody is signed in or the read fails: for a caller that shows
+ * an extra only when the answer allows it, such as the operator's sections.
+ * @returns {Promise<object|null>}
+ */
+export async function fetchBundleResponse() {
+  try {
+    return await readBundleResponse();
   } catch (err) {
     console.warn("viewer-settings: could not read the account settings", err);
     return null;
@@ -97,11 +114,12 @@ export async function fetchBundleResponse() {
 }
 
 /**
- * The account settings, each with the default when the person is signed out or the read fails.
+ * The account settings, each with the default when the person is signed out. A failed read
+ * rejects, so the watch list is never shown empty for an account whose list could not be read.
  * @returns {Promise<{passGeneration: boolean, watchedCompanies: string[]}>}
  */
 export async function fetchAccountSettings() {
-  const response = await fetchBundleResponse();
+  const response = await readBundleResponse();
   return { ...ACCOUNT_SETTING_DEFAULTS, ...(response?.settings ?? {}) };
 }
 
@@ -150,5 +168,10 @@ export async function updateAccountSetting(name, value) {
  * @returns {Promise<{preview: boolean, operatorFeatures: boolean, account: {passGeneration: boolean}}>}
  */
 export async function fetchViewer() {
-  return { preview: isPreviewOn(), operatorFeatures: isOperatorFeaturesOn(), account: await fetchAccountSettings() };
+  // The catalogue's display rules take the default settings when the read fails.
+  const account = await fetchAccountSettings().catch((err) => {
+    console.warn("viewer-settings: could not read the account settings", err);
+    return { ...ACCOUNT_SETTING_DEFAULTS };
+  });
+  return { preview: isPreviewOn(), operatorFeatures: isOperatorFeaturesOn(), account };
 }
