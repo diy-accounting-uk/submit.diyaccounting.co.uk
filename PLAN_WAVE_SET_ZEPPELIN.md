@@ -32,7 +32,7 @@ for spreadsheets.
   AA11, AA4, WL1, SY2 (the route), AA5, AA6, AA16, CP1, AA7, AA14, CL2, CL5, LANG12, AA17.
 - **spreadsheets**: 5 rows in one pull request: AA27, AA26, SY1 (the page), SY2 (the engine and the
   page), SY3.
-- **Beside**, with no pull request: AA9, AA25, DUE1, CR1, WDM1, GLS1, LANG13, DON1a, U2.
+- **Beside**, with no pull request: AA25, DUE1, CR1, WDM1, GLS1, LANG13, U2.
 - **Left out, because the input needs this set live first**: AA12 (its workflow runs AA10's cases
   from `main`), AA13 (after AA12), AA28 and CL3 (AA27 on the DIYA-GL prod site), AA30 (AA26's npm
   publish), MA1 (the features on prod).
@@ -139,10 +139,8 @@ AA26 starts when AA25's design is in `PLAN_AMENDED_ACCOUNTS.md`. State: pending.
 
 | Row | Runs when | What it leaves |
 | --- | --- | --- |
-| AA9 | first, because the reply takes the longest | the draft for the XML team, in the private repository |
 | AA25 | before spreadsheets wave 2 | the design section in `PLAN_AMENDED_ACCOUNTS.md` |
 | DUE1, CR1, WDM1, GLS1 | any time | one `PLAN_*.md` each, then `/plan-review-loop` |
-| DON1a | any time | the thank-you template, in the private repository |
 | U2 | any time; it uses no branch of the set | the rehearsal patch and its record, in the private repository |
 | LANG13 | after wave 6, where a criterion judges the Welsh | the listings and awards file, in the private repository |
 
