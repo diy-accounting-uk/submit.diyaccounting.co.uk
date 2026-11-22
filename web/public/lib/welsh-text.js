@@ -1440,7 +1440,7 @@ window.WELSH_TEXT = {
   "ch.notes.the-director": "y cyfarwyddwr",
   "ch.notes.too-many-rows": "Mae’r nodyn ar flaensymiau yn cynnwys {limit} rhes ar y mwyaf, un ar gyfer pob cyfarwyddwr.",
   "ch.notes.whole-shares": "Rhaid i werth nominal pob cyfran rannu’r cyfalaf cyfrannau wedi’i alw o £{capital} yn gyfrannau cyfan.",
-  "ch.notify-psc.code-needed": "Mae cod personol Tŷ’r Cwmnïau yn 11 o lythrennau a rhifau.",
+  "ch.notify-psc.code-needed": "Mae cod personol Tŷ’r Cwmnïau yn 11 nod: llythrennau, yna rhifau.",
   "ch.notify-psc.confirmation-before": "Ni all y dyddiad cadarnhau fod cyn y dyddiad y daethant yn berson â rheolaeth arwyddocaol.",
   "ch.notify-psc.control-needed": "Dewiswch o leiaf un ffordd y mae’r person yn rheoli’r cwmni.",
   "ch.notify-psc.date-too-early": "Ni all y dyddiad y daethant yn berson â rheolaeth arwyddocaol fod cyn 6 Ebrill 2016.",
@@ -1449,7 +1449,8 @@ window.WELSH_TEXT = {
   "ch.notify-psc.home-not-office":
     "Ni all y cyfeiriad preswyl arferol fod yn gyfeiriad gohebiaeth pan mai swyddfa gofrestredig y cwmni yw’r cyfeiriad gohebiaeth.",
   "ch.notify-psc.individual-needed": "Rhowch gyfenw, dyddiad geni, cenedligrwydd a gwlad breswyl yr unigolyn.",
-  "ch.notify-psc.influence-alone": "Dewiswch ddylanwad neu reolaeth arwyddocaol dim ond os nad oes yr un o’r ffyrdd eraill yn berthnasol.",
+  "ch.notify-psc.influence-alone-held":
+    "Dewiswch ddylanwad neu reolaeth arwyddocaol dim ond os nad oes yr un o’r ffyrdd eraill yn yr un adran yn berthnasol.",
   "ch.notify-psc.kind-corporate": "Endid cyfreithiol perthnasol",
   "ch.notify-psc.kind-individual": "Unigolyn",
   "ch.notify-psc.kind-legal-person": "Person cofrestradwy arall",

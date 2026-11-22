@@ -21,6 +21,7 @@
 import { optionalElement, pscElementName } from "./companiesHousePscParticularsXml.js";
 import { addressProblems, addressXml, natureOfControlProblems, naturesOfControlXml } from "./companiesHousePscChangeDetailsXml.js";
 import { gatewayTextProblem } from "./companiesHouseGatewayText.js";
+import { isValidCompaniesHousePersonalCode } from "./companiesHouseApi.js";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -29,8 +30,6 @@ export const FIRST_NOTIFICATION_DATE = "2016-04-06";
 
 /** NameMismatchReason's values, the reasons a PSC's name can differ from their verified name. */
 export const NAME_MISMATCH_REASONS = ["PREFERRED_NAME", "LEGALLY_CHANGED", "TRANSLATION_OR_DIFF_CONV", "REGISTER_ERROR", "NOT_SAY"];
-
-const PERSONAL_CODE = /^[A-Z0-9]{11}$/;
 
 const tooLong = (problems, field, value, max) => {
   if (value && String(value).length > max) problems.push(`${field} is longer than ${max} characters`);
@@ -84,9 +83,11 @@ export function individualProblems(individual) {
   }
   const verification = individual.verification;
   if (verification) {
-    if (!PERSONAL_CODE.test(verification.personalCode ?? "")) problems.push("a personal code is 11 letters and digits");
+    if (!isValidCompaniesHousePersonalCode(verification.personalCode).valid) {
+      problems.push("a personal code is the 11-character Companies House personal code, letters then digits");
+    }
     if (verification.nameMismatchReason && !NAME_MISMATCH_REASONS.includes(verification.nameMismatchReason)) {
-      problems.push(`unknown name mismatch reason ${verification.nameMismatchReason}`);
+      problems.push("nameMismatchReason is not one of the reasons Companies House lists");
     }
   }
   return problems;

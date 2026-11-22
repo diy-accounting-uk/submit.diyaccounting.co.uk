@@ -125,7 +125,7 @@ for (const width of [1280, 390]) {
     await expect(page.locator("#serviceAddress")).toBeHidden();
     await fillIndividual(page);
     await page.getByLabel("The person notified as a PSC has verified their identity in accordance with the Companies Act 2006").check();
-    await page.locator("#personalCode").fill("abc12345xyz");
+    await page.locator("#personalCode").fill("abcde123456");
     await page.locator("#nameMismatchReason").selectOption("PREFERRED_NAME");
     await page.getByRole("group", { name: "Ownership of shares" }).getByLabel("More than 50% but less than 75%").check();
     await page.getByRole("group", { name: "Ownership of voting rights" }).getByLabel("More than 50% but less than 75%").check();
@@ -162,7 +162,7 @@ for (const width of [1280, 390]) {
       residentialAddress: {
         address: { premise: "14", street: "Heol y Bont", postTown: "Aberystwyth", postcode: "SY23 1PZ", country: "GB-WLS" },
       },
-      personalCode: "ABC12345XYZ",
+      personalCode: "ABCDE123456",
       nameMismatchReason: "PREFERRED_NAME",
       naturesOfControl: ["OWNERSHIPOFSHARES_50TO75PERCENT", "VOTINGRIGHTS_50TO75PERCENT"],
       notificationDate: "2026-10-28",
@@ -302,7 +302,7 @@ test("what PSC01 refuses is refused before anything is sent", async ({ page }) =
   await page.locator("#directors").check();
   await page.locator("#influence").check();
   await next();
-  await expect(status).toContainText("Choose significant influence or control only if none of the other ways applies.");
+  await expect(status).toContainText("Choose significant influence or control only if none of the other ways in the same section applies.");
 
   await page.locator("#influence").uncheck();
   await fillDates(page, "2016-04-05", "2016-04-05");
@@ -356,4 +356,93 @@ test("the home address and full date of birth are on no page once the filing is 
   expect(held.html).not.toContain("Heol y Bont");
   expect(held.values).not.toContain("Heol y Bont");
   expect(held.values).not.toContain("1978-03-14");
+});
+
+const FIRM_TRUST_DIR = path.join(process.cwd(), "target/psc1-firm-trust");
+
+async function shootFirmTrust(page, name) {
+  fs.mkdirSync(FIRM_TRUST_DIR, { recursive: true });
+  await page.screenshot({ path: path.join(FIRM_TRUST_DIR, `${name}-${page.viewportSize().width}.png`), fullPage: true });
+}
+
+for (const width of [1280, 390]) {
+  test(`an individual who controls the company through a firm and a trust is filed in English at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const filings = [];
+    await serveSite(page, { filings });
+    await openForm(page);
+    await fillIndividual(page);
+    const firm = page.locator("#firmControls");
+    const trust = page.locator("#trustControls");
+    await expect(firm.locator("legend").first()).toHaveText("Control through a firm");
+    await expect(trust.locator("legend").first()).toHaveText("Control through a trust");
+    await firm.locator('input[name="shares-firm"][value="25TO50PERCENT"]').check();
+    await firm.locator("#directors-firm").check();
+    await trust.locator("#influence-trust").check();
+    await fillDates(page);
+    expect(await noSideScroll(page)).toBe(true);
+    await shootFirmTrust(page, "controls");
+    await page.getByRole("button", { name: "Continue" }).click();
+    const review = page.locator("#reviewList");
+    await expect(review).toContainText("Shares: more than 25% but not more than 50%, through a firm");
+    await expect(review).toContainText("The right to appoint or remove a majority of the board of directors, through a firm");
+    await expect(review).toContainText("Significant influence or control, through a trust");
+    expect(await noSideScroll(page)).toBe(true);
+    await shootFirmTrust(page, "review");
+    await page.getByRole("button", { name: "File with Companies House" }).click();
+    await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
+    expect(filings[0].naturesOfControl).toEqual([
+      "OWNERSHIPOFSHARES_25TO50PERCENT_AS_FIRM",
+      "RIGHTTOAPPOINTANDREMOVEDIRECTORS_AS_FIRM",
+      "SIGINFLUENCECONTROL_AS_TRUST",
+    ]);
+  });
+
+  test(`a relevant legal entity's control through a trust is filed in Welsh at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const filings = [];
+    await serveSite(page, { filings });
+    await openForm(page, { welsh: true });
+    await page.getByLabel("Endid cyfreithiol perthnasol, fel cwmni").check();
+    await page.locator("#entityName").fill("TEIFI VALLEY HOLDINGS LIMITED");
+    await fillAddress(page, "office", { premise: "Ty Teifi", postTown: "Aberteifi", country: "GB-WLS" });
+    await page.locator("#legalForm").fill("Private company limited by shares");
+    await page.locator("#lawGoverned").fill("Companies Act 2006");
+    const trust = page.locator("#trustControls");
+    await expect(trust.locator("legend").first()).toHaveText("Rheolaeth drwy ymddiriedolaeth");
+    await trust.locator('input[name="votes-trust"][value="75TO100PERCENT"]').check();
+    await fillDates(page);
+    expect(await noSideScroll(page)).toBe(true);
+    await shootFirmTrust(page, "controls-cy");
+    await page.getByRole("button", { name: "Parhau" }).click();
+    await expect(page.locator("#reviewList")).toContainText("drwy ymddiriedolaeth");
+    expect(await noSideScroll(page)).toBe(true);
+    await shootFirmTrust(page, "review-cy");
+    await page.getByRole("button", { name: "Ffeilio gyda Thŷ’r Cwmnïau" }).click();
+    await expect(page.locator("#filingResult")).toContainText("Statws cyflwyniad 000123:", { timeout: 15000 });
+    expect(filings[0].naturesOfControl).toEqual(["VOTINGRIGHTS_75TO100PERCENT_AS_TRUST"]);
+  });
+}
+
+test("significant influence through a firm beside another firm control is refused, and beside a direct control is allowed", async ({
+  page,
+}) => {
+  const filings = [];
+  await serveSite(page, { filings });
+  await openForm(page);
+  await fillIndividual(page);
+  await fillDates(page);
+  await page.locator("#influence-firm").check();
+  await page.locator("#directors-firm").check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#statusMessagesContainer")).toContainText(
+    "Choose significant influence or control only if none of the other ways in the same section applies.",
+  );
+  await page.locator("#directors-firm").uncheck();
+  await page.locator("#directors").check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#reviewView")).toBeVisible();
+  await page.getByRole("button", { name: "File with Companies House" }).click();
+  await expect(page.locator("#filingResult")).toContainText("Submission 000123 was accepted.", { timeout: 15000 });
+  expect(filings[0].naturesOfControl).toEqual(["RIGHTTOAPPOINTANDREMOVEDIRECTORS", "SIGINFLUENCECONTROL_AS_FIRM"]);
 });

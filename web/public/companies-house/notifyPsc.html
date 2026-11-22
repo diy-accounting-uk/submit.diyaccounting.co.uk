@@ -443,6 +443,144 @@
             </div>
           </fieldset>
 
+          <fieldset class="form-group" id="firmControls">
+            <legend>Control through a firm</legend>
+            <p id="firm-hint" class="hint">
+              Tick each that applies if they have the right to exercise or actually exercise significant influence or control over the
+              activities of a firm that is not a legal person under its governing law.
+            </p>
+            <fieldset class="form-group">
+              <legend>
+                The members of that firm (in their capacity as such) hold, directly or indirectly, the following percentage of shares in the
+                company
+              </legend>
+              <div class="choice">
+                <input type="radio" id="shares-firm-none" name="shares-firm" value="" checked /><label for="shares-firm-none">None</label>
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-firm-25" name="shares-firm" value="25TO50PERCENT" /><label for="shares-firm-25"
+                  >More than 25% but not more than 50%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-firm-50" name="shares-firm" value="50TO75PERCENT" /><label for="shares-firm-50"
+                  >More than 50% but less than 75%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-firm-75" name="shares-firm" value="75TO100PERCENT" /><label for="shares-firm-75"
+                  >75% or more</label
+                >
+              </div>
+            </fieldset>
+            <fieldset class="form-group">
+              <legend>
+                The members of that firm (in their capacity as such) hold, directly or indirectly, the following percentage of voting rights
+                in the company
+              </legend>
+              <div class="choice">
+                <input type="radio" id="votes-firm-none" name="votes-firm" value="" checked /><label for="votes-firm-none">None</label>
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-firm-25" name="votes-firm" value="25TO50PERCENT" /><label for="votes-firm-25"
+                  >More than 25% but not more than 50%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-firm-50" name="votes-firm" value="50TO75PERCENT" /><label for="votes-firm-50"
+                  >More than 50% but less than 75%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-firm-75" name="votes-firm" value="75TO100PERCENT" /><label for="votes-firm-75"
+                  >75% or more</label
+                >
+              </div>
+            </fieldset>
+            <div class="choice">
+              <input type="checkbox" id="directors-firm" name="directors-firm" /><label for="directors-firm"
+                >The members of that firm (in their capacity as such) hold the right, directly or indirectly, to appoint or remove a
+                majority of the board of directors of the company</label
+              >
+            </div>
+            <div class="choice">
+              <input type="checkbox" id="influence-firm" name="influence-firm" /><label for="influence-firm"
+                >The members of that firm (in their capacity as such) have the right to exercise, or actually exercise, significant
+                influence or control over the company (only if none of the above in this section apply)</label
+              >
+            </div>
+          </fieldset>
+
+          <fieldset class="form-group" id="trustControls">
+            <legend>Control through a trust</legend>
+            <p id="trust-hint" class="hint">
+              Tick each that applies if they have the right to exercise or actually exercise significant influence or control over the
+              activities of a trust.
+            </p>
+            <fieldset class="form-group">
+              <legend>
+                The trustees of that trust (in their capacity as such) hold, directly or indirectly, the following percentage of shares in
+                the company
+              </legend>
+              <div class="choice">
+                <input type="radio" id="shares-trust-none" name="shares-trust" value="" checked /><label for="shares-trust-none"
+                  >None</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-trust-25" name="shares-trust" value="25TO50PERCENT" /><label for="shares-trust-25"
+                  >More than 25% but not more than 50%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-trust-50" name="shares-trust" value="50TO75PERCENT" /><label for="shares-trust-50"
+                  >More than 50% but less than 75%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-trust-75" name="shares-trust" value="75TO100PERCENT" /><label for="shares-trust-75"
+                  >75% or more</label
+                >
+              </div>
+            </fieldset>
+            <fieldset class="form-group">
+              <legend>
+                The trustees of that trust (in their capacity as such) hold, directly or indirectly, the following percentage of voting
+                rights in the company
+              </legend>
+              <div class="choice">
+                <input type="radio" id="votes-trust-none" name="votes-trust" value="" checked /><label for="votes-trust-none">None</label>
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-trust-25" name="votes-trust" value="25TO50PERCENT" /><label for="votes-trust-25"
+                  >More than 25% but not more than 50%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-trust-50" name="votes-trust" value="50TO75PERCENT" /><label for="votes-trust-50"
+                  >More than 50% but less than 75%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-trust-75" name="votes-trust" value="75TO100PERCENT" /><label for="votes-trust-75"
+                  >75% or more</label
+                >
+              </div>
+            </fieldset>
+            <div class="choice">
+              <input type="checkbox" id="directors-trust" name="directors-trust" /><label for="directors-trust"
+                >The trustees of that trust (in their capacity as such) hold the right, directly or indirectly, to appoint or remove a
+                majority of the board of directors of the company</label
+              >
+            </div>
+            <div class="choice">
+              <input type="checkbox" id="influence-trust" name="influence-trust" /><label for="influence-trust"
+                >The trustees of that trust (in their capacity as such) have the right to exercise, or actually exercise, significant
+                influence or control over the company (only if none of the above in this section apply)</label
+              >
+            </div>
+          </fieldset>
+
           <div class="form-group">
             <label for="notificationDate">Date they became a person with significant control</label>
             <p id="notificationDate-hint" class="hint">This cannot be before 6 April 2016.</p>

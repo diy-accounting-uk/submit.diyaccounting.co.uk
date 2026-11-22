@@ -522,6 +522,191 @@
             </div>
           </fieldset>
 
+          <fieldset class="form-group" id="firmControls">
+            <legend data-i18n="ch-notify-psc.control-through-a-firm-4c1b34">Rheolaeth drwy ffyrm</legend>
+            <p data-i18n="ch-notify-psc.tick-each-that-applies-if-they-d60ecd" id="firm-hint" class="hint">
+              Ticiwch bob un sy’n berthnasol os oes ganddynt yr hawl i arfer, neu os ydynt yn arfer mewn gwirionedd, ddylanwad neu reolaeth
+              arwyddocaol dros weithgareddau ffyrm nad yw’n berson cyfreithiol o dan y gyfraith sy’n ei llywodraethu.
+            </p>
+            <fieldset class="form-group">
+              <legend data-i18n="ch-notify-psc.the-members-of-that-firm-in-5cef3a">
+                Mae aelodau’r ffyrm honno (yn rhinwedd eu swydd fel aelodau) yn dal, yn uniongyrchol neu’n anuniongyrchol, y ganran ganlynol
+                o gyfranddaliadau yn y cwmni
+              </legend>
+              <div class="choice">
+                <input type="radio" id="shares-firm-none" name="shares-firm" value="" checked /><label
+                  data-i18n="ch-notify-psc.none-dc937b"
+                  for="shares-firm-none"
+                  >Dim</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-firm-25" name="shares-firm" value="25TO50PERCENT" /><label
+                  data-i18n="ch-notify-psc.more-than-25-but-not-more-d87c01"
+                  for="shares-firm-25"
+                  >Mwy na 25% ond dim mwy na 50%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-firm-50" name="shares-firm" value="50TO75PERCENT" /><label
+                  data-i18n="ch-notify-psc.more-than-50-but-less-than-6c764a"
+                  for="shares-firm-50"
+                  >Mwy na 50% ond llai na 75%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-firm-75" name="shares-firm" value="75TO100PERCENT" /><label
+                  data-i18n="ch-notify-psc.75-or-more-c9f7df"
+                  for="shares-firm-75"
+                  >75% neu fwy</label
+                >
+              </div>
+            </fieldset>
+            <fieldset class="form-group">
+              <legend data-i18n="ch-notify-psc.the-members-of-that-firm-in-d3d6e7">
+                Mae aelodau’r ffyrm honno (yn rhinwedd eu swydd fel aelodau) yn dal, yn uniongyrchol neu’n anuniongyrchol, y ganran ganlynol
+                o’r hawliau pleidleisio yn y cwmni
+              </legend>
+              <div class="choice">
+                <input type="radio" id="votes-firm-none" name="votes-firm" value="" checked /><label
+                  data-i18n="ch-notify-psc.none-dc937b"
+                  for="votes-firm-none"
+                  >Dim</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-firm-25" name="votes-firm" value="25TO50PERCENT" /><label
+                  data-i18n="ch-notify-psc.more-than-25-but-not-more-d87c01"
+                  for="votes-firm-25"
+                  >Mwy na 25% ond dim mwy na 50%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-firm-50" name="votes-firm" value="50TO75PERCENT" /><label
+                  data-i18n="ch-notify-psc.more-than-50-but-less-than-6c764a"
+                  for="votes-firm-50"
+                  >Mwy na 50% ond llai na 75%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-firm-75" name="votes-firm" value="75TO100PERCENT" /><label
+                  data-i18n="ch-notify-psc.75-or-more-c9f7df"
+                  for="votes-firm-75"
+                  >75% neu fwy</label
+                >
+              </div>
+            </fieldset>
+            <div class="choice">
+              <input type="checkbox" id="directors-firm" name="directors-firm" /><label
+                data-i18n="ch-notify-psc.the-members-of-that-firm-in-25535f"
+                for="directors-firm"
+                >Mae gan aelodau’r ffyrm honno (yn rhinwedd eu swydd fel aelodau) yr hawl, yn uniongyrchol neu’n anuniongyrchol, i benodi
+                neu ddiswyddo mwyafrif bwrdd cyfarwyddwyr y cwmni</label
+              >
+            </div>
+            <div class="choice">
+              <input type="checkbox" id="influence-firm" name="influence-firm" /><label
+                data-i18n="ch-notify-psc.the-members-of-that-firm-in-3bad51"
+                for="influence-firm"
+                >Mae gan aelodau’r ffyrm honno (yn rhinwedd eu swydd fel aelodau) yr hawl i arfer, neu maent yn arfer mewn gwirionedd,
+                ddylanwad neu reolaeth arwyddocaol dros y cwmni (dim ond os nad oes yr un o’r uchod yn yr adran hon yn berthnasol)</label
+              >
+            </div>
+          </fieldset>
+
+          <fieldset class="form-group" id="trustControls">
+            <legend data-i18n="ch-notify-psc.control-through-a-trust-06d179">Rheolaeth drwy ymddiriedolaeth</legend>
+            <p data-i18n="ch-notify-psc.tick-each-that-applies-if-they-92d0eb" id="trust-hint" class="hint">
+              Ticiwch bob un sy’n berthnasol os oes ganddynt yr hawl i arfer, neu os ydynt yn arfer mewn gwirionedd, ddylanwad neu reolaeth
+              arwyddocaol dros weithgareddau ymddiriedolaeth.
+            </p>
+            <fieldset class="form-group">
+              <legend data-i18n="ch-notify-psc.the-trustees-of-that-trust-in-6ed994">
+                Mae ymddiriedolwyr yr ymddiriedolaeth honno (yn rhinwedd eu swydd fel ymddiriedolwyr) yn dal, yn uniongyrchol neu’n
+                anuniongyrchol, y ganran ganlynol o gyfranddaliadau yn y cwmni
+              </legend>
+              <div class="choice">
+                <input type="radio" id="shares-trust-none" name="shares-trust" value="" checked /><label
+                  data-i18n="ch-notify-psc.none-dc937b"
+                  for="shares-trust-none"
+                  >Dim</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-trust-25" name="shares-trust" value="25TO50PERCENT" /><label
+                  data-i18n="ch-notify-psc.more-than-25-but-not-more-d87c01"
+                  for="shares-trust-25"
+                  >Mwy na 25% ond dim mwy na 50%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-trust-50" name="shares-trust" value="50TO75PERCENT" /><label
+                  data-i18n="ch-notify-psc.more-than-50-but-less-than-6c764a"
+                  for="shares-trust-50"
+                  >Mwy na 50% ond llai na 75%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="shares-trust-75" name="shares-trust" value="75TO100PERCENT" /><label
+                  data-i18n="ch-notify-psc.75-or-more-c9f7df"
+                  for="shares-trust-75"
+                  >75% neu fwy</label
+                >
+              </div>
+            </fieldset>
+            <fieldset class="form-group">
+              <legend data-i18n="ch-notify-psc.the-trustees-of-that-trust-in-51159a">
+                Mae ymddiriedolwyr yr ymddiriedolaeth honno (yn rhinwedd eu swydd fel ymddiriedolwyr) yn dal, yn uniongyrchol neu’n
+                anuniongyrchol, y ganran ganlynol o’r hawliau pleidleisio yn y cwmni
+              </legend>
+              <div class="choice">
+                <input type="radio" id="votes-trust-none" name="votes-trust" value="" checked /><label
+                  data-i18n="ch-notify-psc.none-dc937b"
+                  for="votes-trust-none"
+                  >Dim</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-trust-25" name="votes-trust" value="25TO50PERCENT" /><label
+                  data-i18n="ch-notify-psc.more-than-25-but-not-more-d87c01"
+                  for="votes-trust-25"
+                  >Mwy na 25% ond dim mwy na 50%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-trust-50" name="votes-trust" value="50TO75PERCENT" /><label
+                  data-i18n="ch-notify-psc.more-than-50-but-less-than-6c764a"
+                  for="votes-trust-50"
+                  >Mwy na 50% ond llai na 75%</label
+                >
+              </div>
+              <div class="choice">
+                <input type="radio" id="votes-trust-75" name="votes-trust" value="75TO100PERCENT" /><label
+                  data-i18n="ch-notify-psc.75-or-more-c9f7df"
+                  for="votes-trust-75"
+                  >75% neu fwy</label
+                >
+              </div>
+            </fieldset>
+            <div class="choice">
+              <input type="checkbox" id="directors-trust" name="directors-trust" /><label
+                data-i18n="ch-notify-psc.the-trustees-of-that-trust-in-e16473"
+                for="directors-trust"
+                >Mae gan ymddiriedolwyr yr ymddiriedolaeth honno (yn rhinwedd eu swydd fel ymddiriedolwyr) yr hawl, yn uniongyrchol neu’n
+                anuniongyrchol, i benodi neu ddiswyddo mwyafrif bwrdd cyfarwyddwyr y cwmni</label
+              >
+            </div>
+            <div class="choice">
+              <input type="checkbox" id="influence-trust" name="influence-trust" /><label
+                data-i18n="ch-notify-psc.the-trustees-of-that-trust-in-9f2e17"
+                for="influence-trust"
+                >Mae gan ymddiriedolwyr yr ymddiriedolaeth honno (yn rhinwedd eu swydd fel ymddiriedolwyr) yr hawl i arfer, neu maent yn
+                arfer mewn gwirionedd, ddylanwad neu reolaeth arwyddocaol dros y cwmni (dim ond os nad oes yr un o’r uchod yn yr adran hon
+                yn berthnasol)</label
+              >
+            </div>
+          </fieldset>
+
           <div class="form-group">
             <label data-i18n="ch-notify-psc.date-they-became-a-person-with-6f517a" for="notificationDate"
               >Y dyddiad y daethant yn berson â rheolaeth arwyddocaol</label

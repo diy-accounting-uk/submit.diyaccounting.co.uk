@@ -179,11 +179,11 @@ describe("companiesHousePscNotificationPost ingestHandler", () => {
 
   test("a verified individual's personal code is sent in capitals with the verification statement", async () => {
     await ingestHandler(
-      buildEvent({ body: buildNotificationBody({ personalCode: " abc12345xyz ", nameMismatchReason: "LEGALLY_CHANGED" }) }),
+      buildEvent({ body: buildNotificationBody({ personalCode: " abcde-123456 ", nameMismatchReason: "LEGALLY_CHANGED" }) }),
     );
     const [submissionArgs] = mockBuildFormSubmission.mock.calls[0];
     expect(submissionArgs.formXml).toContain(
-      "<VerificationDetails><CompaniesHousePersonalCode>ABC12345XYZ</CompaniesHousePersonalCode>" +
+      "<VerificationDetails><CompaniesHousePersonalCode>ABCDE123456</CompaniesHousePersonalCode>" +
         "<VerificationStatements><VerificationStatementForIndividual>INDIVIDUAL_VERIFIED</VerificationStatementForIndividual>" +
         "</VerificationStatements><NameMismatchReason>LEGALLY_CHANGED</NameMismatchReason></VerificationDetails>",
     );
@@ -238,7 +238,9 @@ describe("companiesHousePscNotificationPost ingestHandler", () => {
       [{ nationality: " " }, "an individual PSC needs a nationality"],
       [{ residentialAddress: { sameAsServiceAddress: true } }, "cannot be the service address when that is the registered office"],
       [{ residentialAddress: { address: { ...HOME, street: "Ffordd Glyndŵr" } } }, "characters Companies House does not accept: ŵ"],
-      [{ personalCode: "SHORT" }, "a personal code is 11 letters and digits"],
+      [{ personalCode: "SHORT" }, "letters then digits"],
+      [{ personalCode: "ABC12345XYZ" }, "letters then digits"],
+      [{ personalCode: "ABCDE123456", nameMismatchReason: "<script>" }, "nameMismatchReason is not one of the reasons"],
       [{ ...ENTITY, legalForm: "" }, "legalForm is needed"],
       [{ ...ENTITY, registrationNumber: "" }, "needs its registration number there"],
       [{ naturesOfControl: ["SIGINFLUENCECONTROL", "VOTINGRIGHTS_25TO50PERCENT"] }, "Invalid naturesOfControl - SIGINFLUENCECONTROL only"],

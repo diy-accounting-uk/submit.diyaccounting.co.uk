@@ -95,16 +95,34 @@ function addressFrom(prefix) {
 
 const addressComplete = (address) => Boolean(address.premise && address.postTown && (address.country || address.otherForeignCountry));
 
-function chosenControls() {
-  const shares = document.querySelector('input[name="shares"]:checked').value;
-  const votes = document.querySelector('input[name="votes"]:checked').value;
+// The ways of holding control the page offers: directly, through a firm and through a trust, each
+// with its field suffix and the code suffix the form gives it.
+const HOLDINGS = [
+  { fields: "", code: "" },
+  { fields: "-firm", code: "_AS_FIRM" },
+  { fields: "-trust", code: "_AS_TRUST" },
+];
+
+// The controls ticked for one way of holding.
+function controlsHeld({ fields, code }) {
+  const shares = document.querySelector(`input[name="shares${fields}"]:checked`).value;
+  const votes = document.querySelector(`input[name="votes${fields}"]:checked`).value;
   return [
-    shares && `OWNERSHIPOFSHARES_${shares}`,
-    votes && `VOTINGRIGHTS_${votes}`,
-    field("directors").checked && "RIGHTTOAPPOINTANDREMOVEDIRECTORS",
-    field("influence").checked && "SIGINFLUENCECONTROL",
+    shares && `OWNERSHIPOFSHARES_${shares}${code}`,
+    votes && `VOTINGRIGHTS_${votes}${code}`,
+    field(`directors${fields}`).checked && `RIGHTTOAPPOINTANDREMOVEDIRECTORS${code}`,
+    field(`influence${fields}`).checked && `SIGINFLUENCECONTROL${code}`,
   ].filter(Boolean);
 }
+
+const chosenControls = () => HOLDINGS.flatMap(controlsHeld);
+
+// Significant influence or control is chosen beside another control held the same way.
+const influenceNotAlone = () =>
+  HOLDINGS.some((holding) => {
+    const held = controlsHeld(holding);
+    return held.includes(`SIGINFLUENCECONTROL${holding.code}`) && held.length > 1;
+  });
 
 // The particulars of the chosen kind, as the filing route reads them, and the reason they cannot
 // go on in the reader's words, or null.
@@ -149,8 +167,8 @@ function particulars(kind) {
         "ch.notify-psc.home-needed",
         "Give the usual residential address's building name or number, its post town and its country.",
       );
-    } else if (field("verified").checked && !/^[A-Z0-9]{11}$/.test(fields.personalCode)) {
-      problem = window.siteText("ch.notify-psc.code-needed", "A Companies House personal code is 11 letters and numbers.");
+    } else if (field("verified").checked && !/^(?=[A-Z0-9]{11}$)[A-Z]{5,6}\d{5,6}$/.test(fields.personalCode.replace(/-/g, ""))) {
+      problem = window.siteText("ch.notify-psc.code-needed", "A Companies House personal code is 11 characters: letters, then numbers.");
     }
     return { fields, problem };
   }
@@ -198,9 +216,12 @@ function handleNotifySubmit(event) {
     showError(window.siteText("ch.notify-psc.control-needed", "Choose at least one way the person controls the company."));
     return;
   }
-  if (naturesOfControl.includes("SIGINFLUENCECONTROL") && naturesOfControl.length > 1) {
+  if (influenceNotAlone()) {
     showError(
-      window.siteText("ch.notify-psc.influence-alone", "Choose significant influence or control only if none of the other ways applies."),
+      window.siteText(
+        "ch.notify-psc.influence-alone-held",
+        "Choose significant influence or control only if none of the other ways in the same section applies.",
+      ),
     );
     return;
   }
@@ -241,6 +262,12 @@ function handleNotifySubmit(event) {
 
 // One nature of control code in the reader's words.
 function controlText(code) {
+  if (code.endsWith("_AS_FIRM")) {
+    return window.siteText("ch.change-psc.as-firm", "{control}, through a firm", { control: controlText(code.slice(0, -8)) });
+  }
+  if (code.endsWith("_AS_TRUST")) {
+    return window.siteText("ch.change-psc.as-trust", "{control}, through a trust", { control: controlText(code.slice(0, -9)) });
+  }
   const bandText = {
     "25TO50PERCENT": window.siteText("ch.change-psc.band-25", "more than 25% but not more than 50%"),
     "50TO75PERCENT": window.siteText("ch.change-psc.band-50", "more than 50% but less than 75%"),

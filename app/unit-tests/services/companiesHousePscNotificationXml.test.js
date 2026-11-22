@@ -76,12 +76,12 @@ describe("companiesHousePscNotificationXml", () => {
     const xml = buildPscNotificationBody({
       ...GWEN,
       serviceAddress: { sameAsRegisteredOffice: true },
-      verification: { personalCode: "ABC12345XYZ", nameMismatchReason: "PREFERRED_NAME" },
+      verification: { personalCode: "ABCDE123456", nameMismatchReason: "PREFERRED_NAME" },
     });
     expect(await gatewayFormSchemaErrors(xml, SCHEMA)).toEqual([]);
     expect(xml).toContain("<ServiceAddress><SameAsRegisteredOffice>true</SameAsRegisteredOffice></ServiceAddress>");
     expect(xml).toContain(
-      "<VerificationDetails><CompaniesHousePersonalCode>ABC12345XYZ</CompaniesHousePersonalCode><VerificationStatements>" +
+      "<VerificationDetails><CompaniesHousePersonalCode>ABCDE123456</CompaniesHousePersonalCode><VerificationStatements>" +
         "<VerificationStatementForIndividual>INDIVIDUAL_VERIFIED</VerificationStatementForIndividual></VerificationStatements>" +
         "<NameMismatchReason>PREFERRED_NAME</NameMismatchReason></VerificationDetails></Individual>",
     );
@@ -177,8 +177,8 @@ describe("companiesHousePscNotificationXml", () => {
       "usual residential address: an address needs one country",
     ]);
     expect(individualProblems({ ...GWEN, verification: { personalCode: "short", nameMismatchReason: "NICKNAME" } })).toEqual([
-      "a personal code is 11 letters and digits",
-      "unknown name mismatch reason NICKNAME",
+      "a personal code is the 11-character Companies House personal code, letters then digits",
+      "nameMismatchReason is not one of the reasons Companies House lists",
     ]);
   });
 

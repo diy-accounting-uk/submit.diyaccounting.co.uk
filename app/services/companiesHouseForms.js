@@ -465,7 +465,10 @@ function extractPscNotification(body, errorMessages) {
           verification:
             personalCode === undefined || personalCode === null || personalCode === ""
               ? undefined
-              : { personalCode: trimmed(personalCode).toUpperCase(), nameMismatchReason: nameMismatchReason || undefined },
+              : {
+                  personalCode: isValidCompaniesHousePersonalCode(personalCode).normalised,
+                  nameMismatchReason: nameMismatchReason || undefined,
+                },
         }
       : {
           kind: pscKind,

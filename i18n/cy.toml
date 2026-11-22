@@ -25245,8 +25245,8 @@ hash = "cc0759cd508a"
 cy = '''Rhowch enw neu rif adeilad y cyfeiriad preswyl arferol, ei dref bost a’i wlad.'''
 
 [strings."ch.notify-psc.code-needed"]
-hash = "0ac448dfb494"
-cy = '''Mae cod personol Tŷ’r Cwmnïau yn 11 o lythrennau a rhifau.'''
+hash = "a3fdaada13ef"
+cy = '''Mae cod personol Tŷ’r Cwmnïau yn 11 nod: llythrennau, yna rhifau.'''
 
 [strings."ch.notify-psc.entity-needed"]
 hash = "e5193f880d9a"
@@ -25264,9 +25264,6 @@ cy = '''Os rhowch y gofrestr y mae’r endid wedi’i gofnodi ynddi, rhowch ei r
 hash = "38174d7d5e6c"
 cy = '''Dewiswch o leiaf un ffordd y mae’r person yn rheoli’r cwmni.'''
 
-[strings."ch.notify-psc.influence-alone"]
-hash = "830c86a0a351"
-cy = '''Dewiswch ddylanwad neu reolaeth arwyddocaol dim ond os nad oes yr un o’r ffyrdd eraill yn berthnasol.'''
 
 [strings."ch.notify-psc.date-too-early"]
 hash = "674bf92f51f3"
@@ -26968,3 +26965,57 @@ cy = '''Ni all y dyddiad peidio â bod yn PRhA fod ar ôl heddiw.'''
 [strings."ch.cease.future-confirmation"]
 hash = "24e74cfc4d09"
 cy = '''Ni all y dyddiad cadarnhau fod ar ôl heddiw.'''
+
+# Tell Companies House about a new PSC: control through a firm and through a trust.
+
+[strings."ch-notify-psc.control-through-a-firm-4c1b34"]
+hash = "4c1b348609ab"
+cy = '''Rheolaeth drwy ffyrm'''
+
+[strings."ch-notify-psc.tick-each-that-applies-if-they-d60ecd"]
+hash = "d60ecd8bc9b4"
+cy = '''Ticiwch bob un sy’n berthnasol os oes ganddynt yr hawl i arfer, neu os ydynt yn arfer mewn gwirionedd, ddylanwad neu reolaeth arwyddocaol dros weithgareddau ffyrm nad yw’n berson cyfreithiol o dan y gyfraith sy’n ei llywodraethu.'''
+
+[strings."ch-notify-psc.the-members-of-that-firm-in-5cef3a"]
+hash = "5cef3a18b0ae"
+cy = '''Mae aelodau’r ffyrm honno (yn rhinwedd eu swydd fel aelodau) yn dal, yn uniongyrchol neu’n anuniongyrchol, y ganran ganlynol o gyfranddaliadau yn y cwmni'''
+
+[strings."ch-notify-psc.the-members-of-that-firm-in-d3d6e7"]
+hash = "d3d6e7575c05"
+cy = '''Mae aelodau’r ffyrm honno (yn rhinwedd eu swydd fel aelodau) yn dal, yn uniongyrchol neu’n anuniongyrchol, y ganran ganlynol o’r hawliau pleidleisio yn y cwmni'''
+
+[strings."ch-notify-psc.the-members-of-that-firm-in-25535f"]
+hash = "25535f47361c"
+cy = '''Mae gan aelodau’r ffyrm honno (yn rhinwedd eu swydd fel aelodau) yr hawl, yn uniongyrchol neu’n anuniongyrchol, i benodi neu ddiswyddo mwyafrif bwrdd cyfarwyddwyr y cwmni'''
+
+[strings."ch-notify-psc.the-members-of-that-firm-in-3bad51"]
+hash = "3bad51606f3b"
+cy = '''Mae gan aelodau’r ffyrm honno (yn rhinwedd eu swydd fel aelodau) yr hawl i arfer, neu maent yn arfer mewn gwirionedd, ddylanwad neu reolaeth arwyddocaol dros y cwmni (dim ond os nad oes yr un o’r uchod yn yr adran hon yn berthnasol)'''
+
+[strings."ch-notify-psc.control-through-a-trust-06d179"]
+hash = "06d1799d65e4"
+cy = '''Rheolaeth drwy ymddiriedolaeth'''
+
+[strings."ch-notify-psc.tick-each-that-applies-if-they-92d0eb"]
+hash = "92d0ebf01631"
+cy = '''Ticiwch bob un sy’n berthnasol os oes ganddynt yr hawl i arfer, neu os ydynt yn arfer mewn gwirionedd, ddylanwad neu reolaeth arwyddocaol dros weithgareddau ymddiriedolaeth.'''
+
+[strings."ch-notify-psc.the-trustees-of-that-trust-in-6ed994"]
+hash = "6ed99475dbc2"
+cy = '''Mae ymddiriedolwyr yr ymddiriedolaeth honno (yn rhinwedd eu swydd fel ymddiriedolwyr) yn dal, yn uniongyrchol neu’n anuniongyrchol, y ganran ganlynol o gyfranddaliadau yn y cwmni'''
+
+[strings."ch-notify-psc.the-trustees-of-that-trust-in-51159a"]
+hash = "51159a867ef7"
+cy = '''Mae ymddiriedolwyr yr ymddiriedolaeth honno (yn rhinwedd eu swydd fel ymddiriedolwyr) yn dal, yn uniongyrchol neu’n anuniongyrchol, y ganran ganlynol o’r hawliau pleidleisio yn y cwmni'''
+
+[strings."ch-notify-psc.the-trustees-of-that-trust-in-e16473"]
+hash = "e1647304f539"
+cy = '''Mae gan ymddiriedolwyr yr ymddiriedolaeth honno (yn rhinwedd eu swydd fel ymddiriedolwyr) yr hawl, yn uniongyrchol neu’n anuniongyrchol, i benodi neu ddiswyddo mwyafrif bwrdd cyfarwyddwyr y cwmni'''
+
+[strings."ch-notify-psc.the-trustees-of-that-trust-in-9f2e17"]
+hash = "9f2e17e0ac5d"
+cy = '''Mae gan ymddiriedolwyr yr ymddiriedolaeth honno (yn rhinwedd eu swydd fel ymddiriedolwyr) yr hawl i arfer, neu maent yn arfer mewn gwirionedd, ddylanwad neu reolaeth arwyddocaol dros y cwmni (dim ond os nad oes yr un o’r uchod yn yr adran hon yn berthnasol)'''
+
+[strings."ch.notify-psc.influence-alone-held"]
+hash = "96014f36cbaa"
+cy = '''Dewiswch ddylanwad neu reolaeth arwyddocaol dim ond os nad oes yr un o’r ffyrdd eraill yn yr un adran yn berthnasol.'''
