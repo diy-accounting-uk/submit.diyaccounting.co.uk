@@ -26861,3 +26861,14 @@ cy = '''Statws: wrthi’n gwirio’ch cyfrif.'''
 [strings."vat.status-undecided-text"]
 hash = "80e922830cf4"
 cy = '''Ni allai’r dudalen hon ddarllen a yw’ch cyfrif yn defnyddio gwasanaeth prawf CThEF. Nid oes dim yn cael ei anfon at CThEF nes iddi wneud hynny.'''
+
+# == Return of allotment of shares: the sentences when the register's capital cannot be read or a product has too many decimal places ==
+
+[strings."ch.allot.before-read-failed"]
+hash = "c8d0a9518dbc"
+cy = '''Nid oedd Submit yn gallu darllen cyfalaf cyfranddaliadau’r cwmni gan Dŷ’r Cwmnïau. Rhowch bob dosbarth o gyfranddaliadau a oedd gan y cwmni cyn y dyraniad, fel y mae ei gofrestr aelodau yn ei ddangos.'''
+
+[strings."ch.allot.problem-decimal-places"]
+hash = "05806571f667"
+cy = '''Mae nifer y cyfranddaliadau {name} wedi’i luosi â’r gwerth enwol neu’r swm heb ei dalu ar bob cyfranddaliad yn rhoi mwy na 6 lle degol. Mae Tŷ’r Cwmnïau yn derbyn symiau i 6 lle degol.'''
+

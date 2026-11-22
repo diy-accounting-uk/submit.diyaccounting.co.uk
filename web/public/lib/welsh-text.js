@@ -206,6 +206,8 @@ window.WELSH_TEXT = {
   "ch.allot.before-nominal": "Gwerth nominal agregedig",
   "ch.allot.before-nominal-hint": "Nifer y cyfrannau a ddyroddwyd wedi’i luosi â’r gwerth nominal.",
   "ch.allot.before-number": "Nifer y cyfrannau",
+  "ch.allot.before-read-failed":
+    "Nid oedd Submit yn gallu darllen cyfalaf cyfranddaliadau’r cwmni gan Dŷ’r Cwmnïau. Rhowch bob dosbarth o gyfranddaliadau a oedd gan y cwmni cyn y dyraniad, fel y mae ei gofrestr aelodau yn ei ddangos.",
   "ch.allot.before-typed":
     "Ni roddodd Tŷ’r Cwmnïau ddatganiad cyfalaf ar gyfer y cwmni hwn. Rhowch bob dosbarth o gyfrannau oedd gan y cwmni cyn y clustnodiad.",
   "ch.allot.class": "Dosbarth o gyfrannau",
@@ -224,6 +226,8 @@ window.WELSH_TEXT = {
   "ch.allot.problem-before":
     "Rhowch i bob dosbarth o gyfrannau a ddelid cyn y clustnodiad ei enw, nifer ei gyfrannau, ei werth nominal agregedig a’r hawliau sydd ynghlwm wrtho.",
   "ch.allot.problem-dates": "Ni all y dyddiad hyd at fod cyn y dyddiad o.",
+  "ch.allot.problem-decimal-places":
+    "Mae nifer y cyfranddaliadau {name} wedi’i luosi â’r gwerth enwol neu’r swm heb ei dalu ar bob cyfranddaliad yn rhoi mwy na 6 lle degol. Mae Tŷ’r Cwmnïau yn derbyn symiau i 6 lle degol.",
   "ch.allot.problem-discount":
     "Mae’r swm a dalwyd a’r swm na thalwyd ar bob cyfran {name} yn dod i lai na’i gwerth nominal, sef {nominal}.",
   "ch.allot.problem-rights": "Rhowch fanylion rhagnodedig yr hawliau sydd ynghlwm wrth y cyfrannau {name}.",

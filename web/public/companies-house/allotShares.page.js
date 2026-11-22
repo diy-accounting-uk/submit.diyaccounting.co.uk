@@ -238,7 +238,7 @@ function renderAfter() {
   );
 }
 
-function fillBefore(capital) {
+function fillBefore(capital, { readFailed = false } = {}) {
   document.getElementById("beforeRows").replaceChildren();
   const source = document.getElementById("beforeSource");
   if (capital && capital.shares && capital.shares.length > 0) {
@@ -251,10 +251,15 @@ function fillBefore(capital) {
     );
   } else {
     addBeforeRow();
-    source.textContent = window.siteText(
-      "ch.allot.before-typed",
-      "Companies House gave no statement of capital for this company. Enter each class of shares the company had before the allotment.",
-    );
+    source.textContent = readFailed
+      ? window.siteText(
+          "ch.allot.before-read-failed",
+          "Submit could not read the company's share capital from Companies House. Enter each class of shares the company had before the allotment, as its register of members shows it.",
+        )
+      : window.siteText(
+          "ch.allot.before-typed",
+          "Companies House gave no statement of capital for this company. Enter each class of shares the company had before the allotment.",
+        );
   }
 }
 
@@ -269,6 +274,7 @@ async function handleCompanySubmit(event) {
     const profile = await window.getCompanyProfile(companyNumber);
     company = { companyNumber, companyName: profile.companyName, companyAuthCode };
     let registerCapital = null;
+    let capitalReadFailed = false;
     try {
       const data = await window.getConfirmationStatementFilingData(companyNumber, {
         companyAuthCode,
@@ -282,13 +288,14 @@ async function handleCompanySubmit(event) {
         showError(window.companiesHouseFormPage.errorText(error));
         return;
       }
+      capitalReadFailed = true;
     }
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     document.getElementById("allotmentRows").replaceChildren();
     newClassRights.clear();
     addAllotmentRow();
-    fillBefore(registerCapital);
+    fillBefore(registerCapital, { readFailed: capitalReadFailed });
     renderAfter();
     showView("formView");
   } catch (error) {
@@ -324,6 +331,16 @@ function problemOf(allotments, before, after) {
       return window.siteText(
         "ch.allot.problem-amounts",
         "Enter the amount paid and the amount unpaid on each share as numbers. Enter 0 where there is none.",
+      );
+    }
+    if (
+      shareCapital.multiplyDecimals(allotment.numShares, allotment.nominalValue) === null ||
+      shareCapital.multiplyDecimals(allotment.numShares, allotment.amountUnpaidPerShare) === null
+    ) {
+      return window.siteText(
+        "ch.allot.problem-decimal-places",
+        "The number of {name} shares times the nominal value or the amount unpaid on each share has more than 6 decimal places. Companies House takes amounts to 6 decimal places.",
+        { name: allotment.shareClass },
       );
     }
     if (paid + unpaid < number(allotment.nominalValue)) {

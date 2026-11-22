@@ -333,7 +333,7 @@ test("a removed allotment leaves the statement, and the reader's correction of t
 
 test("a company whose capital the register does not give starts with an empty class to type", async ({ page }) => {
   const filings = [];
-  await serveSite(page, { filings, filingData: 504 });
+  await serveSite(page, { filings, capital: null });
   await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
   await lookUp(page);
   await expect(page.locator("#beforeSource")).toContainText("Companies House gave no statement of capital for this company.");
@@ -352,6 +352,30 @@ test("a company whose capital the register does not give starts with an empty cl
   expect(filings[0].statementOfCapital[0].shares).toEqual([
     { shareClass: "Ordinary", prescribedParticulars: "One vote a share.", numShares: "150", aggregateNominalValue: "150" },
   ]);
+});
+
+for (const filingData of [500, 504]) {
+  test(`a read of the register's capital that fails with ${filingData} says Submit could not read it, not that the register has none`, async ({
+    page,
+  }) => {
+    await serveSite(page, { filingData });
+    await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+    await lookUp(page);
+    await expect(page.locator("#beforeSource")).toHaveText(
+      "Submit could not read the company's share capital from Companies House. Enter each class of shares the company had before the allotment, as its register of members shows it.",
+    );
+    await expect(page.locator('#beforeRows input[id^="before-class-"]')).toHaveValue("");
+  });
+}
+
+test("the failed read's sentence is in Welsh on the Welsh page", async ({ page }) => {
+  await serveSite(page, { filingData: 500 });
+  await page.goto(`${SITE}/cy/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+  await page.locator("#companyNumber").fill("00000001");
+  await page.locator("#companyAuthCode").fill("SIMCS01");
+  await page.locator("#companyForm button[type=submit]").click();
+  await expect(page.locator("#formView")).toBeVisible();
+  await expect(page.locator("#beforeSource")).toContainText("Nid oedd Submit yn gallu darllen cyfalaf cyfranddaliadau’r cwmni");
 });
 
 test("a company authentication code Companies House does not accept stops at the company step with its sentence", async ({ page }) => {
@@ -382,6 +406,26 @@ test("shares paid and unpaid below their nominal value, and a to date before the
   await page.locator("#endDate").fill("2026-11-01");
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.locator("#statusMessagesContainer")).toContainText("The to date cannot be before the from date.");
+  await expect(page.locator("#formView")).toBeVisible();
+  expect(filings).toHaveLength(0);
+});
+
+test("an allotment whose aggregate nominal value or amount unpaid has more than 6 decimal places is refused before anything is sent", async ({
+  page,
+}) => {
+  const filings = [];
+  await serveSite(page, { filings });
+  await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+  await lookUp(page);
+  await page.locator("#startDate").fill("2026-11-02");
+  const refusal =
+    "The number of Ordinary shares times the nominal value or the amount unpaid on each share has more than 6 decimal places. Companies House takes amounts to 6 decimal places.";
+  await fillAllotment(page, { shareClass: "Ordinary", number: "0.5", nominal: "0.000001", paid: "0.000001" });
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#statusMessagesContainer")).toContainText(refusal);
+  await fillAllotment(page, { shareClass: "Ordinary", number: "0.5", nominal: "1", paid: "0", unpaid: "1.000001" });
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#statusMessagesContainer")).toContainText(refusal);
   await expect(page.locator("#formView")).toBeVisible();
   expect(filings).toHaveLength(0);
 });
