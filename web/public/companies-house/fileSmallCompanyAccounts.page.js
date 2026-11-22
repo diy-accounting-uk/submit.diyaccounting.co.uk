@@ -249,7 +249,8 @@ function comparativesIncluded() {
   return document.getElementById("includeComparatives").checked;
 }
 
-function renderTotals() {
+async function renderTotals() {
+  const { formatPounds } = await import("../lib/balance-sheet-check.js");
   ["current", "prior"].forEach((prefix) => {
     if (prefix === "prior" && !comparativesIncluded()) return;
     const profitAndLoss = readProfitAndLoss(prefix);
@@ -276,13 +277,13 @@ function renderTotals() {
         : window.siteText(
             "ch.small.mismatch-capital",
             "Does not match share capital plus the profit and loss reserve ({amount}) - correct this before previewing.",
-            { amount: balanceSheet.capitalAndReserves },
+            { amount: formatPounds(balanceSheet.capitalAndReserves) },
           );
     document.getElementById(prefix + "BalanceSheetTotals").textContent = window.siteText(
       "ch.small.net-assets",
       "Net assets: {amount}. {verdict}",
       {
-        amount: netAssets,
+        amount: formatPounds(netAssets),
         verdict,
       },
     );

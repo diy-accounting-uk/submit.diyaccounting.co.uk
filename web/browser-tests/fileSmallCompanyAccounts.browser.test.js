@@ -100,7 +100,7 @@ test.describe("File small company accounts page", () => {
     await expect(page.locator("#currentProfitAndLossTotals")).toContainText("Gross profit: 15000");
     await expect(page.locator("#currentProfitAndLossTotals")).toContainText("Operating profit: 3000");
     await expect(page.locator("#currentProfitAndLossTotals")).toContainText("Profit for the year: 2400");
-    await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Net assets: 4000. Matches");
+    await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Net assets: £4,000. Matches");
     await page.fill("#currentProfitAndLossAccount", "3000");
     await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Does not match");
   });
@@ -177,7 +177,7 @@ test.describe("File small company accounts page", () => {
     await page.fill("#currentBankLoansOverdrafts", "200");
     await page.fill("#currentTaxationSocialSecurity", "150");
     await page.fill("#currentProfitAndLossAccount", "2750");
-    await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Net assets: 2850. Matches");
+    await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Net assets: £2,850. Matches");
     const year = await page.evaluate(() => buildAccountsPayload().smallCompany.balanceSheet.currentYear);
     expect(year).toMatchObject({ bankLoansOverdrafts: 200, taxationSocialSecurity: 150, bankLoansAfterOneYear: 500 });
     await page.fill("#currentBankLoansAfterOneYear", "900");
@@ -210,7 +210,7 @@ test.describe("File small company accounts page", () => {
     await page.fill("#currentAmountsOwedToGroupUndertakings", "100");
     await page.fill("#currentProvisionsForLiabilities", "250");
     await page.fill("#currentProfitAndLossAccount", "2850");
-    await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Net assets: 2950. Matches");
+    await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Net assets: £2,950. Matches");
     const year = await page.evaluate(() => buildAccountsPayload().smallCompany.balanceSheet.currentYear);
     expect(year).toMatchObject({
       tradeDebtors: 1800,

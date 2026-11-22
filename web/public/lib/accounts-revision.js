@@ -214,6 +214,8 @@ export const NOTE_DEBTOR_FACTS = {
 
 export const NOTE_SHARE_CAPITAL_FACT = "core:NumberSharesIssuedFullyPaid";
 
+export const NOTE_TAX_FACT = "core:CurrentTaxForPeriod";
+
 function unescapeXmlText(text) {
   return text
     .replace(/&lt;/g, "<")
@@ -387,12 +389,24 @@ function debtorsOf(document, periodEnd) {
   return { debtors: carried && !unreadable ? debtors : null, unreadable };
 }
 
+// The tax on profit note of a filleted copy, which holds no profit and loss account: the current tax
+// of each year, by the end date of the year's context.
+function taxNoteOf(document, periodEnd) {
+  const taxNote = {};
+  for (const { contextRef, value } of figuresOf(document, NOTE_TAX_FACT)) {
+    const context = new RegExp(`<xbrli:context id="${contextRef}">([\\s\\S]*?)</xbrli:context>`).exec(document)?.[1];
+    const end = /<xbrli:endDate>([^<]+)</.exec(context ?? "")?.[1];
+    if (end && !Number.isNaN(value)) taxNote[end === periodEnd ? "current" : "prior"] = value;
+  }
+  return Object.keys(taxNote).length ? taxNote : null;
+}
+
 /**
  * The notes a filed document carries that the books mapping does not read: the accounting policies,
  * the controlling party, the debtors, the advances to directors, the intangible assets note and
  * whether it has a share capital note. unreadable names each note the document carries that its facts do not give.
  * @param {string} document - the filed iXBRL
- * @returns {{policies: Record<string,string>, controllingParty: object|null, debtors: object|null, directorsAdvances: object[], intangibleAssetNote: object|null, shareCapital: boolean, unreadable: string[]}}
+ * @returns {{policies: Record<string,string>, controllingParty: object|null, debtors: object|null, directorsAdvances: object[], intangibleAssetNote: object|null, shareCapital: boolean, taxNote: {current?: number, prior?: number}|null, unreadable: string[]}}
  */
 export function notesOf(document) {
   const periodEnd = filedPeriodOf(document)?.periodEnd;
@@ -417,6 +431,7 @@ export function notesOf(document) {
     directorsAdvances: advances.directorsAdvances,
     intangibleAssetNote: intangible.intangibleAssetNote,
     shareCapital: carriesFact(document, NOTE_SHARE_CAPITAL_FACT),
+    taxNote: taxNoteOf(document, periodEnd),
     unreadable,
   };
 }
@@ -545,6 +560,13 @@ function fillBalanceSheetLines({ current, prior, unreadable }) {
   return unreadable ? [...titles, siteText("ch.revision.line-unreadable", "balance sheet lines")] : titles;
 }
 
+// A single-line box drops a line break and joins the words either side; the filed document shows it as a space.
+const oneLine = (text) =>
+  text
+    .split(/\n+/)
+    .map((part) => part.trim())
+    .join(" ");
+
 // Fill each note into the form's boxes as filed, and answer the titles of the notes this form has no
 // boxes for or the document did not give.
 function fillNotes(notes) {
@@ -558,7 +580,7 @@ function fillNotes(notes) {
     if (!box("controllingPartyNamed")) toEnter.add("controllingParty");
     else if (notes.controllingParty.name) {
       box("controllingPartyNamed").checked = true;
-      box("controllingPartyName").value = notes.controllingParty.name;
+      box("controllingPartyName").value = oneLine(notes.controllingParty.name);
       box("controllingPartyUltimate").checked = notes.controllingParty.ultimate;
     } else box("controllingPartyNoUltimate").checked = true;
   }
@@ -574,8 +596,13 @@ function fillNotes(notes) {
     if (!box("directorsAdvanceName") || notes.directorsAdvances.length > 1) toEnter.add("directorsAdvances");
     else {
       const [advance] = notes.directorsAdvances;
-      box("directorsAdvanceName").value = advance.name;
-      box("directorsAdvanceTerms").value = advance.terms;
+      box("directorsAdvanceName").value = oneLine(advance.name);
+      box("directorsAdvanceTerms").value = oneLine(advance.terms);
+      // A filleted copy has no directors' report, so the director the advance names may be missing from the list.
+      const directors = box("directors")
+        .value.split("\n")
+        .map((line) => line.trim());
+      if (!directors.includes(advance.name)) box("directors").value = [...directors.filter(Boolean), advance.name].join("\n");
       box("directorsAdvanceAtStart").value = String(advance.balanceAtStart);
       box("directorsAdvanceMade").value = String(advance.advanced);
       box("directorsAdvanceRepaid").value = String(advance.repaid);
@@ -590,6 +617,10 @@ function fillNotes(notes) {
         box(`intangibleNote${field[0].toUpperCase()}${field.slice(1)}`).value = String(value);
       }
     }
+  }
+
+  if (notes.taxNote && box("currentTax")) {
+    for (const [year, value] of Object.entries(notes.taxNote)) box(`${year}Tax`).value = String(value);
   }
 
   if (notes.shareCapital && !box("nominalValue")) toEnter.add("shareCapital");
