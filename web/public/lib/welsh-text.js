@@ -1117,6 +1117,27 @@ window.WELSH_TEXT = {
   "ch.office.confirm-statement": "Cadarnhewch y datganiad cyfeiriad priodol o dan adran 86(2)",
   "ch.office.read-failed": "Methwyd â darllen y cyfeiriad swyddfa gofrestredig presennol.",
   "ch.office.record-title": "Newid cyfeiriad swyddfa gofrestredig",
+  "ch.prior.last-were-micro": "Cyfrifon micro-endid oedd cyfrifon diwethaf y cwmni: ffeiliwch rai eleni ar",
+  "ch.prior.last-were-small": "Cyfrifon cwmni bach oedd cyfrifon diwethaf y cwmni: ffeiliwch rai eleni ar",
+  "ch.prior.left-empty": "Wedi’u gadael yn wag, heb ffigur yn y cyfrifon hynny: {lines}.",
+  "ch.prior.micro-form": "y ffurflen cyfrifon micro-endid",
+  "ch.prior.no-ixbrl":
+    "Mae Tŷ’r Cwmnïau yn cadw cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, heb ddogfen iXBRL, felly mae’r flwyddyn flaenorol yn wag: teipiwch hi o’r cyfrifon hynny.",
+  "ch.prior.none": "Nid oes gan Dŷ’r Cwmnïau unrhyw gyfrifon ar gyfer y cwmni hwn, felly mae’r flwyddyn flaenorol yn wag.",
+  "ch.prior.paper":
+    "Cafodd cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, eu ffeilio ar bapur. Mae Tŷ’r Cwmnïau yn eu cadw fel dogfen wedi’i sganio yn unig, felly mae’r flwyddyn flaenorol yn wag: teipiwch hi o’r cyfrifon hynny.",
+  "ch.prior.placed":
+    "Mae {count} ffigur ar gyfer y flwyddyn flaenorol wedi’u llenwi o gyfrifon diwethaf y cwmni, a luniwyd hyd at {date}. Gwiriwch nhw yn erbyn y cyfrifon hynny.",
+  "ch.prior.placed-approved":
+    "Mae {count} ffigur ar gyfer y flwyddyn flaenorol wedi’u llenwi o gyfrifon diwethaf y cwmni, a luniwyd hyd at {date} ac a gymeradwywyd ar {approved}. Gwiriwch nhw yn erbyn y cyfrifon hynny.",
+  "ch.prior.read-failed": "Nid oedd modd darllen cyfrifon diwethaf y cwmni gan Dŷ’r Cwmnïau, felly mae’r flwyddyn flaenorol yn wag.",
+  "ch.prior.reserves":
+    "Mae’r cyfrifon hynny’n dangos cyfalaf a chronfeydd wrth gefn o {capital}, ond mae cyfalaf cyfranddaliadau a alwyd a’r cyfrif elw a cholled yn dod i {sum}: mae’r gwahaniaeth mewn cronfeydd wrth gefn nad oes llinell ar eu cyfer ar y ffurflen hon. Cywirwch gyfrif elw a cholled y flwyddyn flaenorol fel bod y ddau yn cytuno cyn i chi gael rhagolwg.",
+  "ch.prior.small-form": "y ffurflen cyfrifon cwmni bach",
+  "ch.prior.too-large":
+    "Mae cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, yn rhy fawr i’w darllen yma, felly mae’r flwyddyn flaenorol yn wag: teipiwch hi o’r cyfrifon hynny.",
+  "ch.prior.unreadable":
+    "Nid yw cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, yn darllen fel cyfrifon yma, felly mae’r flwyddyn flaenorol yn wag: teipiwch hi o’r cyfrifon hynny.",
   "ch.profile.accounts-due": "Cyfrifon nesaf yn ddyledus",
   "ch.profile.confirmation-due": "Datganiad cadarnhau nesaf yn ddyledus",
   "ch.profile.incorporated": "Corfforwyd",

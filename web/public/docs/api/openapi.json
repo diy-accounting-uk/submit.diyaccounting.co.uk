@@ -471,6 +471,22 @@
         } ]
       }
     },
+    "/companies-house/company/{companyNumber}/last-accounts" : {
+      "get" : {
+        "summary" : "Get the figures of a company's last filed accounts",
+        "description" : "Reads the newest set of accounts on a company's register, maps its iXBRL document to the figures of its own year for the next accounts' prior year, and says why there are none for accounts filed on paper, without an iXBRL document, over the size limit or unreadable",
+        "operationId" : "getCompanyLastAccounts",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/companies-house/company/{companyNumber}/officers" : {
       "get" : {
         "summary" : "Get a company's officers",

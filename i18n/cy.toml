@@ -17822,3 +17822,62 @@ cy = '''Nid yw’r wefan hon yn newid statws y cwmni. I gau’r cwmni, mae Tŷ�
 [strings."ch.edit.file-company-tax-return"]
 hash = "f72d4fc1888f"
 cy = '''Ffeilio Ffurflen Dreth Cwmni'''
+
+
+# == Accounts forms' prior year from the last filed accounts: ids ch.prior.* ==
+
+[strings."ch.prior.small-form"]
+hash = "68bbde299569"
+cy = '''y ffurflen cyfrifon cwmni bach'''
+
+[strings."ch.prior.last-were-small"]
+hash = "6a81ac4ade5d"
+cy = '''Cyfrifon cwmni bach oedd cyfrifon diwethaf y cwmni: ffeiliwch rai eleni ar'''
+
+[strings."ch.prior.micro-form"]
+hash = "797e58105674"
+cy = '''y ffurflen cyfrifon micro-endid'''
+
+[strings."ch.prior.last-were-micro"]
+hash = "b2c586e4541c"
+cy = '''Cyfrifon micro-endid oedd cyfrifon diwethaf y cwmni: ffeiliwch rai eleni ar'''
+
+[strings."ch.prior.none"]
+hash = "529b801a89f0"
+cy = '''Nid oes gan Dŷ’r Cwmnïau unrhyw gyfrifon ar gyfer y cwmni hwn, felly mae’r flwyddyn flaenorol yn wag.'''
+
+[strings."ch.prior.paper"]
+hash = "674525d3af04"
+cy = '''Cafodd cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, eu ffeilio ar bapur. Mae Tŷ’r Cwmnïau yn eu cadw fel dogfen wedi’i sganio yn unig, felly mae’r flwyddyn flaenorol yn wag: teipiwch hi o’r cyfrifon hynny.'''
+
+[strings."ch.prior.no-ixbrl"]
+hash = "d99b86d7b037"
+cy = '''Mae Tŷ’r Cwmnïau yn cadw cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, heb ddogfen iXBRL, felly mae’r flwyddyn flaenorol yn wag: teipiwch hi o’r cyfrifon hynny.'''
+
+[strings."ch.prior.too-large"]
+hash = "31f17a0081db"
+cy = '''Mae cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, yn rhy fawr i’w darllen yma, felly mae’r flwyddyn flaenorol yn wag: teipiwch hi o’r cyfrifon hynny.'''
+
+[strings."ch.prior.unreadable"]
+hash = "3fcfc5f6e501"
+cy = '''Nid yw cyfrifon diwethaf y cwmni, a luniwyd hyd at {date}, yn darllen fel cyfrifon yma, felly mae’r flwyddyn flaenorol yn wag: teipiwch hi o’r cyfrifon hynny.'''
+
+[strings."ch.prior.reserves"]
+hash = "9992012a2d2f"
+cy = '''Mae’r cyfrifon hynny’n dangos cyfalaf a chronfeydd wrth gefn o {capital}, ond mae cyfalaf cyfranddaliadau a alwyd a’r cyfrif elw a cholled yn dod i {sum}: mae’r gwahaniaeth mewn cronfeydd wrth gefn nad oes llinell ar eu cyfer ar y ffurflen hon. Cywirwch gyfrif elw a cholled y flwyddyn flaenorol fel bod y ddau yn cytuno cyn i chi gael rhagolwg.'''
+
+[strings."ch.prior.read-failed"]
+hash = "5dea5b012a08"
+cy = '''Nid oedd modd darllen cyfrifon diwethaf y cwmni gan Dŷ’r Cwmnïau, felly mae’r flwyddyn flaenorol yn wag.'''
+
+[strings."ch.prior.placed-approved"]
+hash = "6207266da188"
+cy = '''Mae {count} ffigur ar gyfer y flwyddyn flaenorol wedi’u llenwi o gyfrifon diwethaf y cwmni, a luniwyd hyd at {date} ac a gymeradwywyd ar {approved}. Gwiriwch nhw yn erbyn y cyfrifon hynny.'''
+
+[strings."ch.prior.placed"]
+hash = "26a385c7c047"
+cy = '''Mae {count} ffigur ar gyfer y flwyddyn flaenorol wedi’u llenwi o gyfrifon diwethaf y cwmni, a luniwyd hyd at {date}. Gwiriwch nhw yn erbyn y cyfrifon hynny.'''
+
+[strings."ch.prior.left-empty"]
+hash = "e783616427e8"
+cy = '''Wedi’u gadael yn wag, heb ffigur yn y cyfrifon hynny: {lines}.'''

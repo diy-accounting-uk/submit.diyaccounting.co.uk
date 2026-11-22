@@ -169,6 +169,10 @@ public class CompaniesHouseStack extends Stack {
     public Function companiesHouseFiledDocumentGetLambda;
     public ILogGroup companiesHouseFiledDocumentGetLambdaLogGroup;
 
+    public AbstractApiLambdaProps companiesHouseLastAccountsGetLambdaProps;
+    public Function companiesHouseLastAccountsGetLambda;
+    public ILogGroup companiesHouseLastAccountsGetLambdaLogGroup;
+
     public AbstractApiLambdaProps companiesHouseFilingDataPostLambdaProps;
     public Function companiesHouseFilingDataPostLambda;
     public ILogGroup companiesHouseFilingDataPostLambdaLogGroup;
@@ -1568,6 +1572,60 @@ public class CompaniesHouseStack extends Stack {
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseFiledDocumentGetLambda, bundlesTable, region, account, props, activityBusArn, true);
 
+        var companiesHouseLastAccountsGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
+                .with("COMPANIES_HOUSE_DOCUMENT_BASE_URI", props.companiesHouseDocumentBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().data.bundlesTableName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        IntegrationCallAccess.addEnv(
+                companiesHouseLastAccountsGetLambdaEnv,
+                props.sharedNames().data.integrationCallsTableName,
+                props.deploymentName());
+        if (StringUtils.isNotBlank(props.companiesHouseApiKeyArn())) {
+            companiesHouseLastAccountsGetLambdaEnv.with("COMPANIES_HOUSE_API_KEY_ARN", props.companiesHouseApiKeyArn());
+        }
+        var companiesHouseLastAccountsGetLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseLastAccountsGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseLastAccountsGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler(
+                                props.sharedNames().companiesHouse.companiesHouseLastAccountsGetIngestLambdaHandler)
+                        .ingestLambdaArn(
+                                props.sharedNames().companiesHouse.companiesHouseLastAccountsGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouse
+                                .companiesHouseLastAccountsGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestMemorySize(512)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().companiesHouse.companiesHouseLastAccountsGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouse.companiesHouseLastAccountsGetLambdaUrlPath)
+                        .jwtAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseLastAccountsGetLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHouse.companiesHouseLastAccountsGetLambdaCustomAuthorizer)
+                        .environment(companiesHouseLastAccountsGetLambdaEnv)
+                        .build());
+        this.companiesHouseLastAccountsGetLambdaProps = companiesHouseLastAccountsGetLambdaUrlOrigin.apiProps;
+        this.companiesHouseLastAccountsGetLambda = companiesHouseLastAccountsGetLambdaUrlOrigin.ingestLambda;
+        this.companiesHouseLastAccountsGetLambdaLogGroup = companiesHouseLastAccountsGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.companiesHouseLastAccountsGetLambdaProps);
+        infof(
+                "Created Lambda %s for Companies House last filed accounts with ingestHandler %s",
+                this.companiesHouseLastAccountsGetLambda.getNode().getId(),
+                props.sharedNames().companiesHouse.companiesHouseLastAccountsGetIngestLambdaHandler);
+        grantCompaniesHouseLambdaAccess(
+                this.companiesHouseLastAccountsGetLambda, bundlesTable, region, account, props, activityBusArn, true);
+
         var companiesHouseFilingDataPostLambdaEnv =
                 xmlGatewayFilingLambdaEnv(props).with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
         withCodesEntryEnv(companiesHouseFilingDataPostLambdaEnv, mcpSessionsTable, codesSealKeySecret);
@@ -2092,6 +2150,7 @@ public class CompaniesHouseStack extends Stack {
                         companiesHouseFilingHistoryGetLambdaUrlOrigin,
                         companiesHouseFiledAccountsGetLambdaUrlOrigin,
                         companiesHouseFiledDocumentGetLambdaUrlOrigin,
+                        companiesHouseLastAccountsGetLambdaUrlOrigin,
                         companiesHouseFilingDataPostLambdaUrlOrigin,
                         companiesHouseConfirmationStatementRenderPostLambdaUrlOrigin,
                         companiesHouseConfirmationStatementPostLambdaUrlOrigin,

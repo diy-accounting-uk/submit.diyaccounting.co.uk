@@ -6,11 +6,14 @@
 // accounts: the latest filed by software, with an iXBRL document built by the micro-entity accounts
 // builder from the company's own profile, and the one before filed on paper, as a PDF only. Its
 // confirmation statement is a PDF. 00000003 holds one set of accounts, filed on paper as a PDF only.
+// SC000000 holds one set of small company accounts filed by software, with both years and a profit
+// and loss account, built by the small company accounts builder.
 // 12345678 holds more filings than a lookup reads (620 changes of registered office after its
 // incorporation, no accounts). Each other company holds its incorporation alone. A filing history item links its document as the
 // live register does, on the Document API's host.
 
 import { buildMicroEntityAccounts } from "../../services/microEntityAccountsIxbrl.js";
+import { buildSmallCompanyAccounts } from "../../services/smallCompanyAccountsIxbrl.js";
 import { getCompany } from "./companies.js";
 
 const DOCUMENT_API_HOST = "https://document-api.company-information.service.gov.uk";
@@ -20,6 +23,7 @@ const IXBRL_DOCUMENT_ID = "SIMDOC00000001AA2098";
 const PAPER_DOCUMENT_ID = "SIMDOC00000001AA2097";
 const CONFIRMATION_DOCUMENT_ID = "SIMDOC00000001CS2098";
 const PDF_ONLY_DOCUMENT_ID = "SIMDOC00000003AA2098";
+const SMALL_IXBRL_DOCUMENT_ID = "SIMDOCSC000000AA2098";
 
 function filing({ companyNumber, transactionId, category, type, description, madeUpDate, date, pages, paperFiled, documentId }) {
   return {
@@ -87,6 +91,19 @@ const historyByCompanyNumber = {
       pages: 5,
       paperFiled: true,
       documentId: PDF_ONLY_DOCUMENT_ID,
+    }),
+  ],
+  "SC000000": [
+    filing({
+      companyNumber: "SC000000",
+      transactionId: "SIMTXSC000000AA2098",
+      category: "accounts",
+      type: "AA",
+      description: "accounts-with-accounts-type-total-exemption-full",
+      madeUpDate: "2098-09-30",
+      date: "2099-03-02",
+      pages: 9,
+      documentId: SMALL_IXBRL_DOCUMENT_ID,
     }),
   ],
 };
@@ -193,6 +210,82 @@ function ixbrlAccounts() {
   return ixbrlDocument;
 }
 
+let smallIxbrlDocument;
+
+// SC000000's set of small company accounts as the small company accounts builder writes it.
+function smallIxbrlAccounts() {
+  if (smallIxbrlDocument === undefined) {
+    const company = getCompany("SC000000");
+    smallIxbrlDocument = buildSmallCompanyAccounts({
+      companyNumber: company.company_number,
+      companyName: company.company_name,
+      registeredOffice: { addressLine1: "1 Simulator Street", cityOrTown: "Edinburgh", postalCode: "EH1 1AA" },
+      periodStart: company.accounts.last_accounts.period_start_on,
+      periodEnd: company.accounts.last_accounts.period_end_on,
+      averageNumberOfEmployees: 3,
+      principalActivity: "Software development",
+      accountingPolicies:
+        "The financial statements have been prepared under the historical cost convention and in accordance with FRS 102 section 1A.",
+      directors: ["Morag Simulator"],
+      directorName: "Morag Simulator",
+      dateOfApproval: "2099-02-20",
+      balanceSheet: {
+        current: {
+          fixedAssets: 8000,
+          stocks: 600,
+          debtors: 3400,
+          cashAtBank: 9000,
+          tradeCreditors: 1200,
+          corporationTax: 1400,
+          otherCreditors: 400,
+          creditorsAfterOneYear: 3000,
+          calledUpShareCapital: 100,
+          profitAndLossAccount: 14900,
+          capitalAndReserves: 15000,
+        },
+        prior: {
+          fixedAssets: 7000,
+          stocks: 500,
+          debtors: 2500,
+          cashAtBank: 6000,
+          tradeCreditors: 1000,
+          corporationTax: 900,
+          otherCreditors: 600,
+          creditorsAfterOneYear: 2500,
+          calledUpShareCapital: 100,
+          profitAndLossAccount: 10900,
+          capitalAndReserves: 11000,
+        },
+      },
+      profitAndLoss: {
+        current: {
+          turnover: 60000,
+          costOfSales: 24000,
+          grossProfit: 36000,
+          administrativeExpenses: 31000,
+          operatingProfit: 5000,
+          interestReceivable: 0,
+          profitBeforeTax: 5000,
+          tax: 1000,
+          profit: 4000,
+        },
+        prior: {
+          turnover: 52000,
+          costOfSales: 21000,
+          grossProfit: 31000,
+          administrativeExpenses: 28000,
+          operatingProfit: 3000,
+          interestReceivable: 0,
+          profitBeforeTax: 3000,
+          tax: 600,
+          profit: 2400,
+        },
+      },
+    });
+  }
+  return smallIxbrlDocument;
+}
+
 const documents = {
   [IXBRL_DOCUMENT_ID]: {
     companyNumber: "00000001",
@@ -201,6 +294,12 @@ const documents = {
     content: { "application/pdf": () => PDF_CONTENT, "application/xhtml+xml": ixbrlAccounts },
   },
   [PAPER_DOCUMENT_ID]: { companyNumber: "00000001", category: "accounts", pages: 6, content: { "application/pdf": () => PDF_CONTENT } },
+  [SMALL_IXBRL_DOCUMENT_ID]: {
+    companyNumber: "SC000000",
+    category: "accounts",
+    pages: 9,
+    content: { "application/pdf": () => PDF_CONTENT, "application/xhtml+xml": smallIxbrlAccounts },
+  },
   [PDF_ONLY_DOCUMENT_ID]: { companyNumber: "00000003", category: "accounts", pages: 5, content: { "application/pdf": () => PDF_CONTENT } },
   [CONFIRMATION_DOCUMENT_ID]: {
     companyNumber: "00000001",

@@ -207,6 +207,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- capability CH-07 -->
 <!-- capability CH-08 -->
 <!-- capability CH-24 -->
+<!-- capability CH-25 -->
 <!-- capability CH-21 -->
 ### Company Tax Return filing (CH)
 

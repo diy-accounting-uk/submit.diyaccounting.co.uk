@@ -40,6 +40,22 @@ describe("simulator filing history", () => {
     expect(Object.keys(getDocumentMetadata(documentId, "http://localhost").resources)).toEqual(["application/pdf"]);
   });
 
+  test("SC000000 holds one set of small company accounts filed by software, held as iXBRL", () => {
+    const [set] = getFilingHistory("SC000000", { category: "accounts" }).items;
+    expect(set).toEqual(
+      expect.objectContaining({
+        type: "AA",
+        description: "accounts-with-accounts-type-total-exemption-full",
+        description_values: { made_up_date: "2098-09-30" },
+      }),
+    );
+    expect(set.paper_filed).toBeUndefined();
+    const documentId = set.links.document_metadata.split("/document/")[1];
+    const { content } = getDocumentContent(documentId, "application/xhtml+xml");
+    expect(content).toContain("SIMULATOR TEST COMPANY (SCOTLAND) LIMITED");
+    expect(content).toContain("Profit and loss account");
+  });
+
   test("another known company holds its incorporation, and an unknown one has no history", () => {
     expect(getFilingHistory("06846849").items.map((item) => item.type)).toEqual(["NEWINC"]);
     expect(getFilingHistory("99999999")).toBeNull();

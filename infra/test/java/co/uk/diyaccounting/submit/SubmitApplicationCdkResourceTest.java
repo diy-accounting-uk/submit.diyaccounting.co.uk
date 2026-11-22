@@ -217,7 +217,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 30);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 31);
         // The two previews call no external API and share the /api/v1/companies-house alarm.
         assertGroupedStackHealthAlarm(
                 companiesHouseStackTemplate,
@@ -234,6 +234,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                         "companies-house-filed-document-get",
                         "companies-house-filing-data-post",
                         "companies-house-filing-history-get",
+                        "companies-house-last-accounts-get",
                         "companies-house-office-address-get",
                         "companies-house-office-address-post",
                         "companies-house-officers-get",
@@ -482,6 +483,8 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                 Map.of(
                         "RouteKey",
                         "GET /api/v1/companies-house/company/{companyNumber}/filed-accounts/{transactionId}/document"));
+        assertApiRoute(
+                apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}/last-accounts"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/confirmation-statement/render"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/confirmation-statement"));
         assertApiRoute(
@@ -569,9 +572,11 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         // add a primary route and an auto-HEAD route, for 230 + 6 = 236. GET /api/v1/public/company-register
         // sits on its own unshared path with no authorizer and adds a primary route and an auto-HEAD
         // route, for 236 + 2 = 238. GET /api/v1/pass/campaign sits on its own unshared path and adds a
-        // primary route and an auto-HEAD route, for 238 + 2 = 240.
+        // primary route and an auto-HEAD route, for 238 + 2 = 240. GET
+        // /api/v1/companies-house/company/{companyNumber}/last-accounts sits on its own unshared path and
+        // adds a primary route and an auto-HEAD route, for 240 + 2 = 242.
         assertEquals(
-                240,
+                242,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

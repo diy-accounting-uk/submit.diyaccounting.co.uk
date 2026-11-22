@@ -586,7 +586,7 @@ display = "always-with-upsell"
 bundles = ["resident-ltd"]
 tokenCost = 1
 metered = true
-paths = ["companies-house/fileMicroEntityAccounts.html", "^/api/v1/companies-house/accounts.*", "^/api/v1/companies-house/company/[^/]+$"]
+paths = ["companies-house/fileMicroEntityAccounts.html", "^/api/v1/companies-house/accounts.*", "^/api/v1/companies-house/company/[^/]+$", "^/api/v1/companies-house/company/[^/]+/last-accounts$"]
 environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
@@ -597,7 +597,7 @@ display = "always-with-upsell"
 bundles = ["resident-ltd"]
 tokenCost = 1
 metered = true
-paths = ["companies-house/fileSmallCompanyAccounts.html", "^/api/v1/companies-house/accounts.*", "^/api/v1/companies-house/company/[^/]+$"]
+paths = ["companies-house/fileSmallCompanyAccounts.html", "^/api/v1/companies-house/accounts.*", "^/api/v1/companies-house/company/[^/]+$", "^/api/v1/companies-house/company/[^/]+/last-accounts$"]
 environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]

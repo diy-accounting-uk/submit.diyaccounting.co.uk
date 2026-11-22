@@ -12,6 +12,7 @@ import { ingestHandler as companiesHouseCompanyGetHandler } from "../functions/c
 import { ingestHandler as companiesHouseFilingHistoryGetHandler } from "../functions/companies-house/companiesHouseFilingHistoryGet.js";
 import { ingestHandler as companiesHouseFiledAccountsGetHandler } from "../functions/companies-house/companiesHouseFiledAccountsGet.js";
 import { ingestHandler as companiesHouseFiledDocumentGetHandler } from "../functions/companies-house/companiesHouseFiledDocumentGet.js";
+import { ingestHandler as companiesHouseLastAccountsGetHandler } from "../functions/companies-house/companiesHouseLastAccountsGet.js";
 import { ingestHandler as companiesHousePublicRegisterGetHandler } from "../functions/companies-house/companiesHousePublicRegisterGet.js";
 import { buildHmrcEvent } from "../test-helpers/eventBuilders.js";
 import { parseResponseBody } from "../test-helpers/mockHelpers.js";
@@ -182,6 +183,49 @@ describe("System: Companies House Simulator", () => {
     const response = await companiesHouseFiledDocumentGetHandler(companyEvent("00000001", { transactionId: "SIMTX00000001AA2097" }));
     expect(response.statusCode).toBe(404);
     expect(parseResponseBody(response).code).toBe("NO_IXBRL_DOCUMENT");
+  });
+
+  it("last accounts answers the micro-entity figures of 00000001's software-filed set", async () => {
+    const response = await companiesHouseLastAccountsGetHandler(companyEvent("00000001"));
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    expect(body.outcome).toBe("mapped");
+    expect(body.set).toEqual(expect.objectContaining({ transactionId: "SIMTX00000001AA2098", madeUpDate: "2098-04-30" }));
+    expect(body.accounts).toEqual(
+      expect.objectContaining({
+        regime: "micro",
+        approvalDate: "2098-10-20",
+        balanceSheet: expect.objectContaining({ fixedAssets: 10000, profitAndLossAccount: 9900, capitalAndReserves: 10000 }),
+      }),
+    );
+  });
+
+  it("last accounts answers the small company figures and profit and loss account of SC000000's set", async () => {
+    const body = parseResponseBody(await companiesHouseLastAccountsGetHandler(companyEvent("SC000000")));
+    expect(body.outcome).toBe("mapped");
+    expect(body.accounts.regime).toBe("small");
+    expect(body.accounts.balanceSheet).toEqual(
+      expect.objectContaining({ stocks: 600, debtors: 3400, cashAtBank: 9000, capitalAndReserves: 15000 }),
+    );
+    expect(body.accounts.profitAndLoss).toEqual({ format: 1, figures: expect.objectContaining({ turnover: 60000, tax: 1000 }) });
+  });
+
+  it("last accounts answers paper for 00000003, whose last set was filed on paper", async () => {
+    const body = parseResponseBody(await companiesHouseLastAccountsGetHandler(companyEvent("00000003")));
+    expect(body.outcome).toBe("paper");
+    expect(body.set.madeUpDate).toBe("2098-03-31");
+    expect(body.accounts).toBeUndefined();
+  });
+
+  it("last accounts answers none for a company with no accounts on the register", async () => {
+    const body = parseResponseBody(await companiesHouseLastAccountsGetHandler(companyEvent("12345678")));
+    expect(body).toEqual({ companyNumber: "12345678", outcome: "none" });
+  });
+
+  it("last accounts answers a JSON 404 for an unknown company", async () => {
+    const response = await companiesHouseLastAccountsGetHandler(companyEvent("99999999"));
+    expect(response.statusCode).toBe(404);
+    expect(response.headers["Content-Type"]).toBe("application/json");
   });
 
   function registerEvent(number) {

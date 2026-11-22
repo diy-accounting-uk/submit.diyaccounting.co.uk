@@ -197,11 +197,11 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void stackWiresThirtyLambdas() {
+    void stackWiresThirtyOneLambdas() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::Lambda::Function", 30);
+        template.resourceCountIs("AWS::Lambda::Function", 31);
         for (String functionName : List.of(
                 stack.companiesHouseSearchGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseCompanyGetLambdaProps.ingestFunctionName(),
@@ -225,6 +225,7 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseFilingHistoryGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFiledAccountsGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFiledDocumentGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseLastAccountsGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFilingDataPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
@@ -508,10 +509,10 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void lambdaFunctionPropsExposesAllThirtyRoutesForApiStackToConsume() {
+    void lambdaFunctionPropsExposesAllThirtyOneRoutesForApiStackToConsume() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
 
-        assertEquals(30, stack.lambdaFunctionProps.size());
+        assertEquals(31, stack.lambdaFunctionProps.size());
         assertEquals(
                 List.of(
                         "/api/v1/companies-house/search",
@@ -538,6 +539,7 @@ class CompaniesHouseStackTest {
                         "/api/v1/companies-house/company/{companyNumber}/filing-history",
                         "/api/v1/companies-house/company/{companyNumber}/filed-accounts",
                         "/api/v1/companies-house/company/{companyNumber}/filed-accounts/{transactionId}/document",
+                        "/api/v1/companies-house/company/{companyNumber}/last-accounts",
                         "/api/v1/companies-house/company/{companyNumber}/filing-data",
                         "/api/v1/companies-house/confirmation-statement/render",
                         "/api/v1/companies-house/confirmation-statement",
@@ -560,7 +562,8 @@ class CompaniesHouseStackTest {
                 stack.companiesHousePscGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFilingHistoryGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFiledAccountsGetLambdaProps.ingestFunctionName(),
-                stack.companiesHouseFiledDocumentGetLambdaProps.ingestFunctionName())) {
+                stack.companiesHouseFiledDocumentGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseLastAccountsGetLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
             assertEquals(1, functions.size());
@@ -604,7 +607,8 @@ class CompaniesHouseStackTest {
                 stack.companiesHousePscGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFilingHistoryGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFiledAccountsGetLambdaProps.ingestFunctionName(),
-                stack.companiesHouseFiledDocumentGetLambdaProps.ingestFunctionName())) {
+                stack.companiesHouseFiledDocumentGetLambdaProps.ingestFunctionName(),
+                stack.companiesHouseLastAccountsGetLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
             assertEquals(1, functions.size());
@@ -612,9 +616,10 @@ class CompaniesHouseStackTest {
             assertEquals(API_KEY_ARN, env.get("COMPANIES_HOUSE_API_KEY_ARN"));
         }
 
-        // The wildcard suffix Secrets Manager requires, granted to the seven signed-in lookup Lambda
-        // roles (search, company, officers, PSCs, filing history, filed accounts and the filed
-        // document), the public deadlines Lambda and the public register Lambda, and no others; the registered office
+        // The wildcard suffix Secrets Manager requires, granted to the eight signed-in lookup Lambda
+        // roles (search, company, officers, PSCs, filing history, filed accounts, the filed
+        // document and the last accounts), the public deadlines Lambda and the public register Lambda, and no others;
+        // the registered office
         // address
         // read takes the filing key with the filing base URI.
         template.resourcePropertiesCountIs(
@@ -628,7 +633,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         API_KEY_ARN + "-*")))))))),
-                9);
+                10);
     }
 
     @Test
@@ -683,7 +688,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         API_KEY_ARN + "-*")))))))),
-                9);
+                10);
     }
 
     @Test
@@ -691,7 +696,7 @@ class CompaniesHouseStackTest {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
-        // The 27 Lambdas routed through grantCompaniesHouseLambdaAccess call isOperatorEmail() in
+        // The 28 Lambdas routed through grantCompaniesHouseLambdaAccess call isOperatorEmail() in
         // enforceBundles(), and the OAuth token exchange publishes activity events, which label
         // an operator's events from the same list.
         var operatorEmailsArn = Match.objectLike(Map.of(
@@ -704,7 +709,7 @@ class CompaniesHouseStackTest {
                 Match.objectLike(Map.of(
                         "PolicyDocument",
                         Match.objectLike(Map.of("Statement", Match.arrayWith(List.of(operatorEmailsStatement)))))),
-                28);
+                29);
     }
 
     @Test
@@ -748,8 +753,8 @@ class CompaniesHouseStackTest {
         Template template = Template.fromStack(stack);
 
         // Every Lambda except the token exchange queries the bundles table: the two company
-        // lookup routes, the officers, PSC, filing history, filed accounts and filed document
-        // reads, the registered office address read, the six filing routes, the three
+        // lookup routes, the officers, PSC, filing history, filed accounts, filed document and
+        // last accounts reads, the registered office address read, the six filing routes, the three
         // accounts routes, the three Company Tax Return routes, the six confirmation statement
         // routes, and the two PSC verification statement routes, all gated by enforceBundles(), and
         // the presenter poll, whose token charge reads the filer's bundles. The token exchange has
@@ -761,7 +766,7 @@ class CompaniesHouseStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "dynamodb:Query")))))))),
-                27);
+                28);
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -769,7 +774,7 @@ class CompaniesHouseStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "events:PutEvents")))))))),
-                28);
+                29);
     }
 
     @Test
@@ -1053,15 +1058,18 @@ class CompaniesHouseStackTest {
                 List.of(
                         "/api/v1/companies-house/company/{companyNumber}/filing-history",
                         "/api/v1/companies-house/company/{companyNumber}/filed-accounts",
-                        "/api/v1/companies-house/company/{companyNumber}/filed-accounts/{transactionId}/document"),
+                        "/api/v1/companies-house/company/{companyNumber}/filed-accounts/{transactionId}/document",
+                        "/api/v1/companies-house/company/{companyNumber}/last-accounts"),
                 List.of(
                         stack.companiesHouseFilingHistoryGetLambdaProps.urlPath(),
                         stack.companiesHouseFiledAccountsGetLambdaProps.urlPath(),
-                        stack.companiesHouseFiledDocumentGetLambdaProps.urlPath()));
+                        stack.companiesHouseFiledDocumentGetLambdaProps.urlPath(),
+                        stack.companiesHouseLastAccountsGetLambdaProps.urlPath()));
         for (var props : List.of(
                 stack.companiesHouseFilingHistoryGetLambdaProps,
                 stack.companiesHouseFiledAccountsGetLambdaProps,
-                stack.companiesHouseFiledDocumentGetLambdaProps)) {
+                stack.companiesHouseFiledDocumentGetLambdaProps,
+                stack.companiesHouseLastAccountsGetLambdaProps)) {
             assertEquals(HttpMethod.GET, props.httpMethod());
             assertTrue(props.jwtAuthorizer());
             assertFalse(props.customAuthorizer());
@@ -1069,7 +1077,7 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void theTwoFiledAccountsLambdasAloneReadTheDocumentApi() {
+    void theFiledAccountsLambdasAloneReadTheDocumentApi() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
@@ -1077,11 +1085,13 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseFilingHistoryGetLambdaProps,
                 stack.companiesHouseFiledAccountsGetLambdaProps,
                 stack.companiesHouseFiledDocumentGetLambdaProps,
+                stack.companiesHouseLastAccountsGetLambdaProps,
                 stack.companiesHouseOfficersGetLambdaProps)) {
             var env = environmentVariablesOf(template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", props.ingestFunctionName()))));
             boolean readsDocuments = props == stack.companiesHouseFiledAccountsGetLambdaProps
-                    || props == stack.companiesHouseFiledDocumentGetLambdaProps;
+                    || props == stack.companiesHouseFiledDocumentGetLambdaProps
+                    || props == stack.companiesHouseLastAccountsGetLambdaProps;
             assertEquals(
                     readsDocuments ? "https://document-api.company-information.service.gov.uk" : null,
                     env.get("COMPANIES_HOUSE_DOCUMENT_BASE_URI"),

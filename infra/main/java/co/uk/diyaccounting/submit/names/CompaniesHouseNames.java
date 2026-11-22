@@ -225,6 +225,15 @@ public class CompaniesHouseNames {
     public boolean companiesHouseFiledDocumentGetLambdaJwtAuthorizer;
     public boolean companiesHouseFiledDocumentGetLambdaCustomAuthorizer;
 
+    public String companiesHouseLastAccountsGetIngestLambdaHandler;
+    public String companiesHouseLastAccountsGetIngestLambdaFunctionName;
+    public String companiesHouseLastAccountsGetIngestLambdaArn;
+    public String companiesHouseLastAccountsGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseLastAccountsGetLambdaHttpMethod;
+    public String companiesHouseLastAccountsGetLambdaUrlPath;
+    public boolean companiesHouseLastAccountsGetLambdaJwtAuthorizer;
+    public boolean companiesHouseLastAccountsGetLambdaCustomAuthorizer;
+
     public String companiesHouseFilingDataPostIngestLambdaHandler;
     public String companiesHouseFilingDataPostIngestLambdaFunctionName;
     public String companiesHouseFilingDataPostIngestLambdaArn;
@@ -883,6 +892,30 @@ public class CompaniesHouseNames {
                                 "path",
                                 true,
                                 "The filing history transaction id of the set of accounts"))));
+
+        this.companiesHouseLastAccountsGetLambdaHttpMethod = HttpMethod.GET;
+        this.companiesHouseLastAccountsGetLambdaUrlPath =
+                "/api/v1/companies-house/company/{companyNumber}/last-accounts";
+        this.companiesHouseLastAccountsGetLambdaJwtAuthorizer = true;
+        this.companiesHouseLastAccountsGetLambdaCustomAuthorizer = false;
+        var companiesHouseLastAccountsGetLambdaHandlerName = "companiesHouseLastAccountsGet.ingestHandler";
+        var companiesHouseLastAccountsGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseLastAccountsGetLambdaHandlerName);
+        this.companiesHouseLastAccountsGetIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, companiesHouseLastAccountsGetLambdaHandlerDashed);
+        this.companiesHouseLastAccountsGetIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(root.appLambdaHandlerPrefix, companiesHouseLastAccountsGetLambdaHandlerName);
+        this.companiesHouseLastAccountsGetIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, companiesHouseLastAccountsGetLambdaHandlerDashed);
+        this.companiesHouseLastAccountsGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHouseLastAccountsGetIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseLastAccountsGetLambdaHttpMethod,
+                this.companiesHouseLastAccountsGetLambdaUrlPath,
+                "Get the figures of a company's last filed accounts",
+                "Reads the newest set of accounts on a company's register, maps its iXBRL document to the figures of its own year for the next accounts' prior year, and says why there are none for accounts filed on paper, without an iXBRL document, over the size limit or unreadable",
+                "getCompanyLastAccounts",
+                List.of(new ApiParameter("companyNumber", "path", true, "The 8-character company number"))));
 
         this.companiesHouseFilingDataPostLambdaHttpMethod = HttpMethod.POST;
         this.companiesHouseFilingDataPostLambdaUrlPath = "/api/v1/companies-house/company/{companyNumber}/filing-data";

@@ -1,0 +1,32 @@
+{
+  "builder-micro-entity-both-years.xhtml": {
+    "regime": "micro",
+    "period": { "start": "2025-07-01", "end": "2026-06-30" },
+    "approvalDate": "2026-09-12",
+    "balanceSheet": {
+      "fixedAssets": 4200,
+      "currentAssets": 18300,
+      "creditorsWithinOneYear": 6100,
+      "calledUpShareCapital": 1,
+      "profitAndLossAccount": 16399,
+      "capitalAndReserves": 16400
+    }
+  },
+  "builder-small-company-both-years.xhtml": {
+    "regime": "small",
+    "period": { "start": "2025-04-01", "end": "2026-03-31" },
+    "balanceSheet": { "fixedAssets": 10000, "stocks": 500, "debtors": 2500, "cashAtBank": 12000, "capitalAndReserves": 20000 },
+    "profitAndLoss": { "format": 1, "figures": { "turnover": 50000, "costOfSales": 20000, "tax": 1000 } }
+  },
+  "other-software-micro-entity-both-years.xhtml": {
+    "regime": "micro",
+    "period": { "end": "2026-06-30" },
+    "balanceSheet": { "fixedAssets": 1000, "profitAndLossAccount": -600, "capitalAndReserves": -500 }
+  },
+  "other-software-small-company-current-year-only.xhtml": {
+    "regime": "small",
+    "period": { "end": "2026-03-31" },
+    "balanceSheet": { "fixedAssets": 10000, "capitalAndReserves": 20000 },
+    "profitAndLoss": { "format": 1, "figures": { "turnover": 50000 } }
+  }
+}

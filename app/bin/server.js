@@ -116,6 +116,7 @@ import { apiEndpoint as companiesHousePscGetApiEndpoint } from "../functions/com
 import { apiEndpoint as companiesHouseFilingHistoryGetApiEndpoint } from "../functions/companies-house/companiesHouseFilingHistoryGet.js";
 import { apiEndpoint as companiesHouseFiledAccountsGetApiEndpoint } from "../functions/companies-house/companiesHouseFiledAccountsGet.js";
 import { apiEndpoint as companiesHouseFiledDocumentGetApiEndpoint } from "../functions/companies-house/companiesHouseFiledDocumentGet.js";
+import { apiEndpoint as companiesHouseLastAccountsGetApiEndpoint } from "../functions/companies-house/companiesHouseLastAccountsGet.js";
 import { apiEndpoint as companiesHouseFilingDataPostApiEndpoint } from "../functions/companies-house/companiesHouseFilingDataPost.js";
 import { apiEndpoint as companiesHouseConfirmationStatementRenderPostApiEndpoint } from "../functions/companies-house/companiesHouseConfirmationStatementRenderPost.js";
 import { apiEndpoint as companiesHouseConfirmationStatementPostApiEndpoint } from "../functions/companies-house/companiesHouseConfirmationStatementPost.js";
@@ -449,6 +450,7 @@ companiesHousePscGetApiEndpoint(app);
 companiesHouseFilingHistoryGetApiEndpoint(app);
 companiesHouseFiledAccountsGetApiEndpoint(app);
 companiesHouseFiledDocumentGetApiEndpoint(app);
+companiesHouseLastAccountsGetApiEndpoint(app);
 companiesHouseFilingDataPostApiEndpoint(app);
 companiesHouseConfirmationStatementRenderPostApiEndpoint(app);
 companiesHouseConfirmationStatementPostApiEndpoint(app);
