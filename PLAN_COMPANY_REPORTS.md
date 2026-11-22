@@ -138,7 +138,7 @@ Every report that reads the filing history (2.1, 2.3, 2.5 and 2.6) reads all of 
 - **Calls.** Pages of charges (usually 1, none when the profile has no `links.charges`) + 0 or 1 insolvency: 0 to 2.
 - **Does not show.** The charge document and its free-text particulars and secured details (a link to the filing shows them). A practitioner's address.
 - **Wording.** "Charge created 12 March 2018, delivered 20 March 2018. Persons entitled: Example Bank plc. Status: satisfied on 1 October 2024." Never "debt", "secured lender at risk", "in trouble".
-- **Definitions.** Charge: security the company gives a lender over its assets, registered at Companies House. Satisfied: the company told Companies House the debt the charge secures is paid or released. Fixed and floating charge: a charge over named assets, and a charge over assets that change, such as stock.
+- **Definitions.** Charge: security the company gives a lender over its assets, registered at Companies House. Satisfied: the company told Companies House that what the charge secures is paid or released. Fixed and floating charge: a charge over named assets, and a charge over assets that change, such as stock.
 
 ### 2.5 Registered office and name history (`/reports/history`)
 
