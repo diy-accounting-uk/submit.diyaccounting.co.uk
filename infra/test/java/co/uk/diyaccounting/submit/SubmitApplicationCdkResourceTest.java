@@ -217,7 +217,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 29);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 30);
         // The two previews call no external API and share the /api/v1/companies-house alarm.
         assertGroupedStackHealthAlarm(
                 companiesHouseStackTemplate,
@@ -241,6 +241,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                         "companies-house-psc-verification-statement-get",
                         "companies-house-psc-verification-statement-post",
                         "companies-house-public-deadlines-get",
+                        "companies-house-public-register-get",
                         "companies-house-search-get",
                         "companies-house-submission-status-poll",
                         "companies-house-token-post",
@@ -431,6 +432,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/search"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/public/company-deadlines"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/public/company-register"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/token"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "DELETE /api/v1/companies-house/grants/{grantId}"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/transaction"));
@@ -562,9 +564,11 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         // on its own unshared path with no authorizer and adds a primary route and an auto-HEAD route, which
         // raise the total by 2 over the figure the tests held before it. The company lookup's filing
         // history, filed accounts and filed document routes each sit on their own unshared path and
-        // add a primary route and an auto-HEAD route, for 230 + 6 = 236.
+        // add a primary route and an auto-HEAD route, for 230 + 6 = 236. GET /api/v1/public/company-register
+        // sits on its own unshared path with no authorizer and adds a primary route and an auto-HEAD
+        // route, for 236 + 2 = 238.
         assertEquals(
-                236,
+                238,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

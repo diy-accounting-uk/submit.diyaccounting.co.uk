@@ -12,6 +12,7 @@ import { ingestHandler as companiesHouseCompanyGetHandler } from "../functions/c
 import { ingestHandler as companiesHouseFilingHistoryGetHandler } from "../functions/companies-house/companiesHouseFilingHistoryGet.js";
 import { ingestHandler as companiesHouseFiledAccountsGetHandler } from "../functions/companies-house/companiesHouseFiledAccountsGet.js";
 import { ingestHandler as companiesHouseFiledDocumentGetHandler } from "../functions/companies-house/companiesHouseFiledDocumentGet.js";
+import { ingestHandler as companiesHousePublicRegisterGetHandler } from "../functions/companies-house/companiesHousePublicRegisterGet.js";
 import { buildHmrcEvent } from "../test-helpers/eventBuilders.js";
 import { parseResponseBody } from "../test-helpers/mockHelpers.js";
 
@@ -170,6 +171,55 @@ describe("System: Companies House Simulator", () => {
     const response = await companiesHouseFiledDocumentGetHandler(companyEvent("00000001", { transactionId: "SIMTX00000001AA2097" }));
     expect(response.statusCode).toBe(404);
     expect(parseResponseBody(response).code).toBe("NO_IXBRL_DOCUMENT");
+  });
+
+  function registerEvent(number) {
+    const event = buildHmrcEvent({ queryStringParameters: { number } });
+    event.requestContext.http.method = "GET";
+    return event;
+  }
+
+  it("public register answers the profile, the current officers and the last set's iXBRL text for 00000001", async () => {
+    const response = await companiesHousePublicRegisterGetHandler(registerEvent("00000001"));
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    expect(body.profile).toEqual(
+      expect.objectContaining({
+        companyNumber: "00000001",
+        accountsNextPeriodStart: "2098-05-01",
+        accountsLastPeriodStart: "2097-05-01",
+        accountsLastPeriodEnd: "2098-04-30",
+        accountsLastType: "micro-entity",
+      }),
+    );
+    expect(body.officers.map((officer) => Object.keys(officer).sort())).toEqual(
+      body.officers.map(() => ["appointedOn", "name", "officerRole"]),
+    );
+    expect(body.officers[0]).toEqual({ name: "BRAMWELL, Eleanor", officerRole: "director", appointedOn: "2015-01-01" });
+    expect(body.filedAccounts).toEqual(
+      expect.objectContaining({ status: "ixbrl", madeUpDate: "2098-04-30", accountsType: "micro-entity" }),
+    );
+    expect(body.filedAccounts.ixbrl).toContain("ix:nonNumeric");
+    expect(response.body).not.toContain("1970");
+    expect(response.body).not.toContain("British");
+  });
+
+  it("public register marks a last set filed as a PDF only", async () => {
+    const body = parseResponseBody(await companiesHousePublicRegisterGetHandler(registerEvent("00000003")));
+    expect(body.filedAccounts).toEqual({ status: "pdf", madeUpDate: "2098-03-31", accountsType: "micro-entity", filedOn: "2098-10-14" });
+  });
+
+  it("public register marks a company with no accounts filed", async () => {
+    const body = parseResponseBody(await companiesHousePublicRegisterGetHandler(registerEvent("06846849")));
+    expect(body.filedAccounts).toEqual({ status: "none" });
+    expect(body.officers.length).toBeGreaterThan(0);
+  });
+
+  it("public register answers a JSON 404 for an unknown company and a JSON 429 for the throttled fixture", async () => {
+    expect((await companiesHousePublicRegisterGetHandler(registerEvent("99999999"))).statusCode).toBe(404);
+    const throttled = await companiesHousePublicRegisterGetHandler(registerEvent("42942942"));
+    expect(throttled.statusCode).toBe(429);
+    expect(throttled.headers["Retry-After"]).toBe("300");
   });
 
   it("the simulator rejects a request with no Authorization header", async () => {

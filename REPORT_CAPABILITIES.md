@@ -116,6 +116,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register: use when a user types a company name or number and needs matching results to pick from.
     - [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile: use when a filing journey has a company number and needs the company's registered details.
     - [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in) Look up a company's filing deadlines with no sign-in: use when a director with no account wants to know when a company's accounts and confirmation statement are next due.
+    - [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in) Read a company's register for a prefilled package with no sign-in: use when a page with no sign-in builds a company's book from what Companies House holds: its profile, its current officers and its last filed accounts.
   - [Registered office and email](#registered-office-and-email-ch)
     - [CH-05](#ch-05-file-a-change-of-registered-office-address) File a change of registered office address: use when a company needs to change its registered office address on the public register.
     - [CH-06](#ch-06-file-a-change-of-registered-email-address) File a change of registered email address: use when a company needs to register or change its registered email address with Companies House.
@@ -1568,7 +1569,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area CH -->
 - [OAuth and identity](#oauth-and-identity-ch): [CH-01](#ch-01-exchange-a-companies-house-oauth-token) Exchange a Companies House OAuth token · [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration) Verify the Companies House OAuth app configuration
-- [Company search and profile](#company-search-and-profile-ch): [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register · [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile · [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in) Look up a company's filing deadlines with no sign-in
+- [Company search and profile](#company-search-and-profile-ch): [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register · [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile · [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in) Look up a company's filing deadlines with no sign-in · [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in) Read a company's register for a prefilled package with no sign-in
 - [Registered office and email](#registered-office-and-email-ch): [CH-05](#ch-05-file-a-change-of-registered-office-address) File a change of registered office address · [CH-06](#ch-06-file-a-change-of-registered-email-address) File a change of registered email address
 - [Micro-entity accounts filing](#micro-entity-accounts-filing-ch): [CH-07](#ch-07-render-micro-entity-accounts-for-review) Render micro-entity accounts for review · [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House · [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending) Poll Companies House for filings the reader left pending
 - [Company Tax Return filing](#company-tax-return-filing-ch): [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC · [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets) File a Corporation Tax test scenario to TPVS or ETS
@@ -1609,6 +1610,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register
 - [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile
 - [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in) Look up a company's filing deadlines with no sign-in
+- [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in) Read a company's register for a prefilled package with no sign-in
 <!-- /generated:group company-search-and-profile-ch -->
 
 #### CH-03 Search the Companies House register
@@ -1640,6 +1642,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/companies-house/companiesHousePublicDeadlinesGet.js, app/unit-tests/functions/companiesHousePublicDeadlinesGet.test.js, web/public/company-filing-deadlines.html, web/public/lib/company/deadline-rules.js, web/public/lib/company/deadline-lookup.js, web/unit-tests/companyDeadlineRules.test.js, web/browser-tests/filingPages.browser.test.js, scripts/build-filing-pages.mjs, scripts/filing-pages.toml, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java
 - **Keywords:** company filing deadlines, accounts due, confirmation statement due, public lookup, no sign-in, companies house, cache, rate limit
 - **Related:** CH-03, CH-04
+
+#### CH-22 Read a company's register for a prefilled package with no sign-in
+
+- **Use when:** a page with no sign-in builds a company's book from what Companies House holds: its profile, its current officers and its last filed accounts.
+- **Does:** companiesHousePublicRegisterGet.js answers GET /api/v1/public/company-register?number= with no authorizer. It answers profile (company name and number, date of creation, registered office, next and last accounts periods, last accounts type), officers (each current officer's name, role and appointment date) and filedAccounts (the last filed set's iXBRL text, a pdf mark, or a none mark). The profile and officers fields carry the names buildBookFromRegister takes. It reads the profile, the officers and, through fetchLastFiledAccounts, the accounts filing history and the newest set's document. It answers JSON errors for an unknown company, a document over the response limit and a 429 from Companies House. It sets Cache-Control on a found answer so CloudFront keeps it for an hour.
+- **Run:** `curl 'https://submit.diyaccounting.co.uk/api/v1/public/company-register?number=00000001'`
+- **Entry:** `app/functions/companies-house/companiesHousePublicRegisterGet.js:ingestHandler`
+- **Files:** app/functions/companies-house/companiesHousePublicRegisterGet.js, app/unit-tests/functions/companiesHousePublicRegisterGet.test.js, app/services/companiesHouseFiledAccounts.js, app/system-tests/companiesHouseSimulator.system.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/CompaniesHouseStack.java
+- **Keywords:** company register, filed accounts, ixbrl, officers, public lookup, no sign-in, prefilled package, companies house, cache, rate limit
+- **Related:** CH-20
 
 ### Registered office and email (CH)
 
@@ -7425,7 +7437,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - business review: [DEV-55](#dev-55-review-the-operator-dashboard)
 - business source adjustable summary: [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary)
 - business views: [DATA-10](#data-10-create-or-replace-athena-business-views)
-- cache: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in)
+- cache: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
 - cache scope: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - cached formula results: [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
 - cached status: [BILL-13](#bill-13-check-a-clients-authorisation-status)
@@ -7620,7 +7632,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - community page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
 - compaction: [DATA-70](#data-70-compact-closed-days-of-activity-events)
 - compaction alternative: [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now)
-- companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
+- companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - companies house accounts: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - companies house codes: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - companies house deadline: [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events)
@@ -7636,6 +7648,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - company number: [CH-04](#ch-04-fetch-a-company-profile)
 - company package: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - company profile: [CH-04](#ch-04-fetch-a-company-profile)
+- company register: [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
 - company search: [CH-03](#ch-03-search-the-companies-house-register), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - company tax return: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - compare prices: [SITE-34](#site-34-check-the-compared-prices-each-month)
@@ -8126,6 +8139,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - field mappings: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
 - field whitelist: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - file in the browser: [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file)
+- filed accounts: [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
 - filed receipt: [SITE-28](#site-28-store-a-filed-receipt-and-email-a-copy)
 - filing: [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - filing api: [CH-09](#ch-09-query-and-submit-document-transactions)
@@ -8492,7 +8506,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - itsa receipt: [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts)
 - itsa sandbox: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - itsa status: [HMRC-11](#hmrc-11-retrieve-itsa-status)
-- ixbrl: [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
+- ixbrl: [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - ixbrl style: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - java cdk: [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks)
 - java version: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
@@ -8779,7 +8793,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - no key file: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - no recalculation: [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
 - no service account key: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
-- no sign-in: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session)
+- no sign-in: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in), [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session)
 - no stored key: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud)
 - no webhook: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration)
 - no-op verdict: [DEV-33](#dev-33-preview-what-auto-merge-would-do)
@@ -8823,6 +8837,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - observability stack: [OPS-117](#ops-117-provision-the-observability-stack)
 - observabilitystack: [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets)
 - oembed: [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site)
+- officers: [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
 - offline: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - offline conversion: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - offline conversions: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
@@ -9030,6 +9045,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - pre-push hook: [SS-42](#ss-42-route-tests-by-blast-radius)
 - pre-tax profit: [SS-13](#ss-13-cross-check-figures-across-product-packages)
 - prefetch: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts), [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh)
+- prefilled package: [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
 - prepare_vat_return: [MCP-24](#mcp-24-hand-the-vat-figures-to-the-browser-to-file)
 - presenter credential: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - presenter poll: [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending)
@@ -9089,7 +9105,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - proxy variant: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - pubbalsht: [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - public demo: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
-- public lookup: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in)
+- public lookup: [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in)
 - public site: [OPS-94](#ops-94-play-demo-videos-on-the-public-site), [MCP-15](#mcp-15-explain-the-mcp-connector-and-servers-on-the-public-site)
 - public surfaces: [OPS-170](#ops-170-check-public-surfaces-for-keys-in-the-rotation-set)
 - public video: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
@@ -9128,7 +9144,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ranked fixes: [DEV-61](#dev-61-optimise-the-sites-from-the-two-webmaster-tools-and-local-checks)
 - ranked report: [OPS-211](#ops-211-report-the-security-state-of-every-repository-in-one-ranked-report)
 - rate counter: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
-- rate limit: [SITE-05](#site-05-submit-support-tickets), [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
+- rate limit: [SITE-05](#site-05-submit-support-tickets), [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DEV-58](#dev-58-search-community-threads-for-the-campaign-skill)
 - rate limit agent: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
 - rates: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - rates and allowances: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)

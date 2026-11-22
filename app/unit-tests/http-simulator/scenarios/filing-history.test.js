@@ -25,8 +25,15 @@ describe("simulator filing history", () => {
     expect(page.items.map((item) => item.type)).toEqual(["CS01"]);
   });
 
+  test("00000003 holds one set of accounts, filed on paper as a PDF only", () => {
+    const [set] = getFilingHistory("00000003", { category: "accounts" }).items;
+    expect(set).toEqual(expect.objectContaining({ type: "AA", paper_filed: true, description_values: { made_up_date: "2098-03-31" } }));
+    const documentId = set.links.document_metadata.split("/document/")[1];
+    expect(Object.keys(getDocumentMetadata(documentId, "http://localhost").resources)).toEqual(["application/pdf"]);
+  });
+
   test("another known company holds its incorporation, and an unknown one has no history", () => {
-    expect(getFilingHistory("00000003").items.map((item) => item.type)).toEqual(["NEWINC"]);
+    expect(getFilingHistory("06846849").items.map((item) => item.type)).toEqual(["NEWINC"]);
     expect(getFilingHistory("99999999")).toBeNull();
     expect(getFilingHistory("42942942")).toBeNull();
   });

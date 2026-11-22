@@ -143,6 +143,21 @@ public class EdgeStack extends Stack {
     /** The longest CloudFront keeps a public lookup answer, whatever the origin's Cache-Control asks. */
     static final int PUBLIC_DEADLINES_CACHE_MAX_TTL_SECONDS = 600;
 
+    /**
+     * Requests per five minutes from one address to the public company register read. A reader
+     * asks for it once when they choose to generate a package, and each answer that reaches the
+     * origin costs up to five requests on the one Companies House key. Ten requests in five minutes
+     * covers a reader who tries a few companies; it caps one address at fifty of the key's 600.
+     */
+    static final long PUBLIC_REGISTER_RATE_LIMIT_PER_FIVE_MINUTES = 10L;
+
+    /**
+     * The longest CloudFront keeps a public company register answer. The answer changes only when a
+     * set of accounts or an appointment is filed, and it is the dearest public read, so it is kept
+     * an hour, longer than the deadlines answer.
+     */
+    static final int PUBLIC_REGISTER_CACHE_MAX_TTL_SECONDS = 3600;
+
     /** The sites whose pages read the public company deadlines lookup from the browser. */
     static final List<String> PUBLIC_DEADLINES_ALLOWED_ORIGINS = List.of(
             "https://spreadsheets.diyaccounting.co.uk",
@@ -785,6 +800,23 @@ public class EdgeStack extends Stack {
         // (number=... or q=...). The default TTL is 0, so only an answer whose Cache-Control the
         // Lambda sets (a found company) is kept; an error is never cached. No header or cookie is
         // in the key, so every visitor shares one copy.
+        // The public company register read is cached the same way: by its path and its query string
+        // (number=...), no header or cookie in the key, and only an answer whose Cache-Control the
+        // Lambda sets (a found company) is kept.
+        CachePolicy publicRegisterCachePolicy = CachePolicy.Builder.create(
+                        this, props.resourceNamePrefix() + "-PublicRegisterCP")
+                .cachePolicyName(props.resourceNamePrefix() + "-public-register-cp")
+                .comment("Caches public company register answers by path and query string")
+                .minTtl(software.amazon.awscdk.Duration.seconds(0))
+                .defaultTtl(software.amazon.awscdk.Duration.seconds(0))
+                .maxTtl(software.amazon.awscdk.Duration.seconds(PUBLIC_REGISTER_CACHE_MAX_TTL_SECONDS))
+                .queryStringBehavior(software.amazon.awscdk.services.cloudfront.CacheQueryStringBehavior.all())
+                .headerBehavior(software.amazon.awscdk.services.cloudfront.CacheHeaderBehavior.none())
+                .cookieBehavior(software.amazon.awscdk.services.cloudfront.CacheCookieBehavior.none())
+                .enableAcceptEncodingGzip(true)
+                .enableAcceptEncodingBrotli(true)
+                .build();
+
         CachePolicy publicDeadlinesCachePolicy = CachePolicy.Builder.create(
                         this, props.resourceNamePrefix() + "-PublicDeadlinesCP")
                 .cachePolicyName(props.resourceNamePrefix() + "-public-deadlines-cp")
@@ -920,8 +952,18 @@ public class EdgeStack extends Stack {
                         fraudPreventionHeadersPolicy,
                         apiOriginHeaders,
                         publicDeadlinesCachePolicy));
+        // The public company register read takes the deadlines lookup's CORS policy: the same four
+        // origins read it from the browser.
+        orderedBehaviors.put(
+                props.sharedNames().companiesHouse.companiesHousePublicRegisterGetLambdaUrlPath,
+                createCachedPublicBehaviorOptionsForApiGateway(
+                        props.apiGatewayUrl(),
+                        publicDeadlinesResponseHeadersPolicy,
+                        fraudPreventionHeadersPolicy,
+                        apiOriginHeaders,
+                        publicRegisterCachePolicy));
         orderedBehaviors.putAll(additionalBehaviors);
-        infof("Added cached API Gateway behavior for the public company deadlines lookup");
+        infof("Added cached API Gateway behaviors for the public company deadlines lookup and register read");
 
         // CloudFront distribution for the web origin and all the URL Lambdas.
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-WebDist")
@@ -1725,7 +1767,32 @@ public class EdgeStack extends Stack {
                                         .sampledRequestsEnabled(true)
                                         .build())
                                 .build(),
-                        mcpAnonymousRateLimitRule()))
+                        mcpAnonymousRateLimitRule(),
+                        // The public company register read is the dearest public read, so each
+                        // address gets a smaller allowance than the deadlines lookup.
+                        CfnWebACL.RuleProperty.builder()
+                                .name("PublicRegisterRateLimitRule")
+                                .priority(11)
+                                .statement(CfnWebACL.StatementProperty.builder()
+                                        .rateBasedStatement(CfnWebACL.RateBasedStatementProperty.builder()
+                                                .limit(PUBLIC_REGISTER_RATE_LIMIT_PER_FIVE_MINUTES)
+                                                .evaluationWindowSec(300)
+                                                .aggregateKeyType("IP")
+                                                .scopeDownStatement(uriPathStartsWithStatement(props.sharedNames()
+                                                        .companiesHouse
+                                                        .companiesHousePublicRegisterGetLambdaUrlPath))
+                                                .build())
+                                        .build())
+                                .action(CfnWebACL.RuleActionProperty.builder()
+                                        .block(CfnWebACL.BlockActionProperty.builder()
+                                                .build())
+                                        .build())
+                                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                                        .cloudWatchMetricsEnabled(true)
+                                        .metricName("PublicRegisterRateLimitRule")
+                                        .sampledRequestsEnabled(true)
+                                        .build())
+                                .build()))
                 .description(
                         "WAF WebACL for OIDC provider CloudFront distribution - provides rate limiting and protection against common attacks")
                 .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()

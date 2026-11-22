@@ -472,6 +472,104 @@ class EdgeStackTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void publicRegisterPathIsCachedAnHourByQueryStringWithTheDeadlinesCorsPolicyBeforeTheGeneralApiBehaviour() {
+        Template template = Template.fromStack(synthEdgeStack());
+
+        template.hasResourceProperties(
+                "AWS::CloudFront::CachePolicy",
+                Match.objectLike(Map.of(
+                        "CachePolicyConfig",
+                        Match.objectLike(Map.of(
+                                "Name",
+                                Match.stringLikeRegexp("-public-register-cp$"),
+                                "DefaultTTL",
+                                0,
+                                "MaxTTL",
+                                EdgeStack.PUBLIC_REGISTER_CACHE_MAX_TTL_SECONDS,
+                                "ParametersInCacheKeyAndForwardedToOrigin",
+                                Match.objectLike(Map.of(
+                                        "QueryStringsConfig",
+                                        Map.of("QueryStringBehavior", "all"),
+                                        "CookiesConfig",
+                                        Map.of("CookieBehavior", "none"),
+                                        "HeadersConfig",
+                                        Map.of("HeaderBehavior", "none"))))))));
+        assertEquals(3600, EdgeStack.PUBLIC_REGISTER_CACHE_MAX_TTL_SECONDS);
+        template.resourceCountIs("AWS::CloudFront::CachePolicy", 3);
+        template.resourceCountIs("AWS::CloudFront::ResponseHeadersPolicy", 6);
+
+        String deadlinesPolicyId = template.findResources("AWS::CloudFront::ResponseHeadersPolicy").entrySet().stream()
+                .filter(entry -> String.valueOf(((Map<String, Object>)
+                                        ((Map<String, Object>) entry.getValue().get("Properties"))
+                                                .get("ResponseHeadersPolicyConfig"))
+                                .get("Name"))
+                        .endsWith("-public-deadlines-whp"))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElseThrow();
+        String registerCachePolicyId = template.findResources("AWS::CloudFront::CachePolicy").entrySet().stream()
+                .filter(entry -> String.valueOf(((Map<String, Object>)
+                                        ((Map<String, Object>) entry.getValue().get("Properties"))
+                                                .get("CachePolicyConfig"))
+                                .get("Name"))
+                        .endsWith("-public-register-cp"))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElseThrow();
+
+        var distribution = (Map<String, Object>) template.findResources("AWS::CloudFront::Distribution")
+                .values()
+                .iterator()
+                .next();
+        var behaviours = (List<Map<String, Object>>)
+                ((Map<String, Object>) ((Map<String, Object>) distribution.get("Properties")).get("DistributionConfig"))
+                        .get("CacheBehaviors");
+        var patterns =
+                behaviours.stream().map(b -> (String) b.get("PathPattern")).toList();
+        int register = patterns.indexOf("/api/v1/public/company-register");
+        assertTrue(register >= 0, "public register behaviour present");
+        assertTrue(register < patterns.indexOf("/api/v1/*"), "it must come before /api/v1/*");
+        var behaviour = behaviours.get(register);
+        assertEquals(List.of("GET", "HEAD"), behaviour.get("AllowedMethods"));
+        assertEquals(deadlinesPolicyId, ((Map<String, Object>) behaviour.get("ResponseHeadersPolicyId")).get("Ref"));
+        assertEquals(registerCachePolicyId, ((Map<String, Object>) behaviour.get("CachePolicyId")).get("Ref"));
+    }
+
+    @Test
+    void publicRegisterPathHasItsOwnPerAddressRateRuleTighterThanTheDeadlinesRule() {
+        Template template = Template.fromStack(synthEdgeStack());
+        Map<String, Object> rateStatement = Map.of(
+                "Limit",
+                (int) EdgeStack.PUBLIC_REGISTER_RATE_LIMIT_PER_FIVE_MINUTES,
+                "AggregateKeyType",
+                "IP",
+                "EvaluationWindowSec",
+                300,
+                "ScopeDownStatement",
+                Match.objectLike(Map.of(
+                        "ByteMatchStatement",
+                        Match.objectLike(Map.of(
+                                "PositionalConstraint",
+                                "STARTS_WITH",
+                                "SearchString",
+                                "/api/v1/public/company-register")))));
+        Map<String, Object> rule = Map.of(
+                "Name",
+                "PublicRegisterRateLimitRule",
+                "Action",
+                Match.objectLike(Map.of("Block", Match.anyValue())),
+                "Statement",
+                Map.of("RateBasedStatement", Match.objectLike(rateStatement)));
+        template.hasResourceProperties(
+                "AWS::WAFv2::WebACL",
+                Match.objectLike(Map.of("Rules", Match.arrayWith(List.of(Match.objectLike(rule))))));
+        assertEquals(10L, EdgeStack.PUBLIC_REGISTER_RATE_LIMIT_PER_FIVE_MINUTES);
+        assertTrue(EdgeStack.PUBLIC_REGISTER_RATE_LIMIT_PER_FIVE_MINUTES
+                < EdgeStack.PUBLIC_DEADLINES_RATE_LIMIT_PER_FIVE_MINUTES);
+    }
+
+    @Test
     void markdownCopiesAreServedWithNoindexAndTheSecurityHeadersWhileOtherPathsKeepTheirPolicies() {
         Template template = Template.fromStack(synthEdgeStack());
         Map<String, Object> noindex = Map.of("Header", "X-Robots-Tag", "Value", "noindex", "Override", true);
@@ -787,8 +885,8 @@ class EdgeStackTest {
         String reference =
                 "{{resolve:secretsmanager:prod/submit/origin/verify:SecretString:current::11111111-2222-3333-4444-555555555555}}";
 
-        assertEquals(7, templateJson.split(java.util.regex.Pattern.quote(reference), -1).length - 1);
-        assertEquals(7, templateJson.split("HeaderName=x-diya-origin-verify", -1).length - 1);
+        assertEquals(8, templateJson.split(java.util.regex.Pattern.quote(reference), -1).length - 1);
+        assertEquals(8, templateJson.split("HeaderName=x-diya-origin-verify", -1).length - 1);
     }
 
     @Test

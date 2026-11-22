@@ -4494,6 +4494,22 @@
         } ]
       }
     },
+    "/public/company-register" : {
+      "get" : {
+        "summary" : "Read a company's register for a prefilled package",
+        "description" : "Answers a company's profile, its current officers' names, roles and appointment dates, and its last filed accounts as iXBRL text or a mark, with no sign-in",
+        "operationId" : "getPublicCompanyRegister",
+        "parameters" : [ {
+          "name" : "number",
+          "in" : "query",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/session/beacon" : {
       "post" : {
         "summary" : "Session beacon",

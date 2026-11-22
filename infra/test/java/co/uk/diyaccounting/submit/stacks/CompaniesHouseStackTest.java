@@ -197,11 +197,11 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void stackWiresTwentyNineLambdas() {
+    void stackWiresThirtyLambdas() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::Lambda::Function", 29);
+        template.resourceCountIs("AWS::Lambda::Function", 30);
         for (String functionName : List.of(
                 stack.companiesHouseSearchGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseCompanyGetLambdaProps.ingestFunctionName(),
@@ -508,15 +508,16 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void lambdaFunctionPropsExposesAllTwentyNineRoutesForApiStackToConsume() {
+    void lambdaFunctionPropsExposesAllThirtyRoutesForApiStackToConsume() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
 
-        assertEquals(29, stack.lambdaFunctionProps.size());
+        assertEquals(30, stack.lambdaFunctionProps.size());
         assertEquals(
                 List.of(
                         "/api/v1/companies-house/search",
                         "/api/v1/companies-house/company/{companyNumber}",
                         "/api/v1/public/company-deadlines",
+                        "/api/v1/public/company-register",
                         "/api/v1/companies-house/token",
                         "/api/v1/companies-house/grants/{grantId}",
                         "/api/v1/companies-house/transaction",
@@ -613,7 +614,8 @@ class CompaniesHouseStackTest {
 
         // The wildcard suffix Secrets Manager requires, granted to the seven signed-in lookup Lambda
         // roles (search, company, officers, PSCs, filing history, filed accounts and the filed
-        // document) and the public deadlines Lambda, and no others; the registered office address
+        // document), the public deadlines Lambda and the public register Lambda, and no others; the registered office
+        // address
         // read takes the filing key with the filing base URI.
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
@@ -626,7 +628,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         API_KEY_ARN + "-*")))))))),
-                8);
+                9);
     }
 
     @Test
@@ -681,7 +683,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         API_KEY_ARN + "-*")))))))),
-                8);
+                9);
     }
 
     @Test

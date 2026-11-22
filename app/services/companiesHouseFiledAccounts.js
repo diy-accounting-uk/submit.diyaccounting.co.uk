@@ -80,7 +80,26 @@ export async function fetchFiledAccountsDocument(companyNumber, transactionId) {
   if (!itemResponse.ok) return { chResponse: itemResponse };
   const item = itemResponse.data;
   if (!isAccountsFiling(item)) return { problem: "not-accounts" };
+  return documentOfItem(item);
+}
 
+/**
+ * The newest set of accounts on a company's register and its iXBRL document: the filing history
+ * of accounts, then that set's document metadata and content.
+ * @param {string} companyNumber
+ * @returns {Promise<{chResponse?: object, problem?: "no-accounts"|"no-ixbrl"|"too-large", set?: object, document?: string}>}
+ *   chResponse alone when a read failed
+ */
+export async function fetchLastFiledAccounts(companyNumber) {
+  const history = await companiesHouseFilingHistory(companyNumber, { category: "accounts" });
+  if (!history.ok) return { chResponse: history };
+  const item = history.data.items.find(isAccountsFiling);
+  if (!item) return { problem: "no-accounts" };
+  return documentOfItem(item);
+}
+
+// One accounts filing's iXBRL document, or why there is none to give.
+async function documentOfItem(item) {
   const { documentId, metadata, failed } = await metadataOf(item);
   if (failed) return { chResponse: failed };
   const set = filedSet(item, metadata);

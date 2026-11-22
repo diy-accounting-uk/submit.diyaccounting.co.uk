@@ -96,6 +96,7 @@ import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrc
 import { apiEndpoint as companiesHouseSearchGetApiEndpoint } from "../functions/companies-house/companiesHouseSearchGet.js";
 import { apiEndpoint as companiesHouseCompanyGetApiEndpoint } from "../functions/companies-house/companiesHouseCompanyGet.js";
 import { apiEndpoint as companiesHousePublicDeadlinesGetApiEndpoint } from "../functions/companies-house/companiesHousePublicDeadlinesGet.js";
+import { apiEndpoint as companiesHousePublicRegisterGetApiEndpoint } from "../functions/companies-house/companiesHousePublicRegisterGet.js";
 import { apiEndpoint as companiesHouseTokenPostApiEndpoint } from "../functions/companies-house/companiesHouseTokenPost.js";
 import { apiEndpoint as companiesHouseTransactionPostApiEndpoint } from "../functions/companies-house/companiesHouseTransactionPost.js";
 import { apiEndpoint as companiesHouseTransactionGetApiEndpoint } from "../functions/companies-house/companiesHouseTransactionGet.js";
@@ -422,6 +423,7 @@ hmrcReceiptGetApiEndpoint(app);
 companiesHouseSearchGetApiEndpoint(app);
 companiesHouseCompanyGetApiEndpoint(app);
 companiesHousePublicDeadlinesGetApiEndpoint(app);
+companiesHousePublicRegisterGetApiEndpoint(app);
 companiesHouseTokenPostApiEndpoint(app);
 companiesHouseTransactionPostApiEndpoint(app);
 companiesHouseTransactionGetApiEndpoint(app);

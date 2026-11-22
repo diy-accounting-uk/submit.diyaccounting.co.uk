@@ -5,8 +5,9 @@
 // Filing histories and filed documents for the simulator's companies. 00000001 holds two sets of
 // accounts: the latest filed by software, with an iXBRL document built by the micro-entity accounts
 // builder from the company's own profile, and the one before filed on paper, as a PDF only. Its
-// confirmation statement is a PDF. Each other company holds its incorporation alone. A filing
-// history item links its document as the live register does, on the Document API's host.
+// confirmation statement is a PDF. 00000003 holds one set of accounts, filed on paper as a PDF only.
+// Each other company holds its incorporation alone. A filing history item links its document as the
+// live register does, on the Document API's host.
 
 import { buildMicroEntityAccounts } from "../../services/microEntityAccountsIxbrl.js";
 import { getCompany } from "./companies.js";
@@ -17,6 +18,7 @@ const PDF_CONTENT = "%PDF-1.4\n% Simulator filed document\n%%EOF\n";
 const IXBRL_DOCUMENT_ID = "SIMDOC00000001AA2098";
 const PAPER_DOCUMENT_ID = "SIMDOC00000001AA2097";
 const CONFIRMATION_DOCUMENT_ID = "SIMDOC00000001CS2098";
+const PDF_ONLY_DOCUMENT_ID = "SIMDOC00000003AA2098";
 
 function filing({ companyNumber, transactionId, category, type, description, madeUpDate, date, pages, paperFiled, documentId }) {
   return {
@@ -70,6 +72,20 @@ const historyByCompanyNumber = {
       pages: 6,
       paperFiled: true,
       documentId: PAPER_DOCUMENT_ID,
+    }),
+  ],
+  "00000003": [
+    filing({
+      companyNumber: "00000003",
+      transactionId: "SIMTX00000003AA2098",
+      category: "accounts",
+      type: "AA",
+      description: "accounts-with-accounts-type-micro-entity",
+      madeUpDate: "2098-03-31",
+      date: "2098-10-14",
+      pages: 5,
+      paperFiled: true,
+      documentId: PDF_ONLY_DOCUMENT_ID,
     }),
   ],
 };
@@ -162,6 +178,7 @@ const documents = {
     content: { "application/pdf": () => PDF_CONTENT, "application/xhtml+xml": ixbrlAccounts },
   },
   [PAPER_DOCUMENT_ID]: { companyNumber: "00000001", category: "accounts", pages: 6, content: { "application/pdf": () => PDF_CONTENT } },
+  [PDF_ONLY_DOCUMENT_ID]: { companyNumber: "00000003", category: "accounts", pages: 5, content: { "application/pdf": () => PDF_CONTENT } },
   [CONFIRMATION_DOCUMENT_ID]: {
     companyNumber: "00000001",
     category: "confirmation-statement",
