@@ -1202,6 +1202,9 @@ public class CompaniesHouseStack extends Stack {
         grantCodesEntryAccess(this.companiesHouseAccountsPostLambda, mcpSessionsTable, codesSealKeySecret);
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHouseAccountsPostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        // The revision's register read charges the account's counter and reads and sets the shared stop.
+        securityStateTable.grant(
+                this.companiesHouseAccountsPostLambda, "dynamodb:UpdateItem", "dynamodb:GetItem", "dynamodb:PutItem");
         // Read-only: resolves a client-scoped request's client row when enforceBundles checks it.
         practiceClientsTable.grant(this.companiesHouseAccountsPostLambda, "dynamodb:GetItem");
         // Read-only: revised accounts are checked against the receipt of the accounts they revise.
@@ -1607,7 +1610,7 @@ public class CompaniesHouseStack extends Stack {
                 props.sharedNames().companiesHouse.companiesHouseCompanyReportGetIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseCompanyReportGetLambda, bundlesTable, region, account, props, activityBusArn, true);
-        // The cache's reads and writes; invalidating a company's entries is a later route's.
+        // The cache's reads and writes; the polls that record an accepted filing drop a company's entries.
         companiesHouseCacheTable.grant(
                 this.companiesHouseCompanyReportGetLambda, "dynamodb:GetItem", "dynamodb:PutItem");
 
@@ -3187,6 +3190,19 @@ public class CompaniesHouseStack extends Stack {
         infof(
                 "Created Lambda %s for the Companies House presenter poll with an office-hours schedule",
                 this.companiesHouseSubmissionStatusPollLambda.getNode().getId());
+
+        // A poll that records an accepted filing drops the company's cached register answers
+        // (companiesHouseCacheDrop.js): one Query of the company's entries and a delete of each.
+        for (Function recordsAcceptedFiling : List.of(
+                this.companiesHouseAccountsGetLambda,
+                this.companiesHouseConfirmationStatementGetLambda,
+                this.companiesHousePscVerificationStatementGetLambda,
+                this.companiesHouseFormStatusGetLambda,
+                this.companiesHouseSubmissionStatusPollLambda)) {
+            recordsAcceptedFiling.addEnvironment(
+                    "COMPANIES_HOUSE_CACHE_DYNAMODB_TABLE_NAME", companiesHouseCacheTable.getTableName());
+            companiesHouseCacheTable.grant(recordsAcceptedFiling, "dynamodb:Query", "dynamodb:DeleteItem");
+        }
 
         // Each signed-in lookup on the shared Companies House API key charges the account's counter in
         // one update, and reads and writes the stop a Companies House 429 sets; the last accounts

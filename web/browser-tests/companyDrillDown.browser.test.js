@@ -774,6 +774,37 @@ test.describe("Company lookup drill-down change of accounting reference date lin
   });
 });
 
+test.describe("Company lookup drill-down after a filing", () => {
+  test("a page restored from the back-forward cache reads the register again", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    const profileReads = [];
+    page.on("request", (request) => {
+      if (new URL(request.url()).pathname === "/api/v1/companies-house/company/00000001") profileReads.push(request.url());
+    });
+    await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillOverview")).toContainText("1 Example Street", { timeout: 15000 });
+    const readsBefore = profileReads.length;
+    expect(readsBefore).toBeGreaterThan(0);
+
+    await Promise.all([
+      page.waitForEvent("load"),
+      page.evaluate(() => window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }))),
+    ]);
+    await expect(page.locator("#drillOverview")).toContainText("1 Example Street", { timeout: 15000 });
+    expect(profileReads.length).toBeGreaterThan(readsBefore);
+  });
+
+  test("a page shown on its first load is not loaded twice", async ({ page }) => {
+    await serveSite(page, { bundles: ["resident-ltd"] });
+    let loads = 0;
+    page.on("load", () => loads++);
+    await page.goto(`${BASE}/companies-house/company/00000001`, { waitUntil: "networkidle" });
+    await expect(page.locator("#drillOverview")).toContainText("1 Example Street", { timeout: 15000 });
+    await page.waitForTimeout(500);
+    expect(loads).toBe(1);
+  });
+});
+
 test.describe("Company lookup drill-down officer resignation links", () => {
   test("an account holding the officer resignation form gets a link for each current director or secretary, and the authority TM01 and TM02 state", async ({
     page,

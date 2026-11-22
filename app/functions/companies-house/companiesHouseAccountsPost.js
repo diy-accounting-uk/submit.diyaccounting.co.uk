@@ -631,6 +631,8 @@ export async function ingestHandler(event) {
     const { presenterId, presenterCode } = ownPresenter ?? (await resolvePresenterCredentials());
 
     inProgressData = {
+      // The company whose cached register answers accepted accounts drop.
+      companyNumber: accounts.companyNumber,
       filedDocument: ixbrl,
       chargeActivityId,
       ...jointFilingFields(jointFilingId),

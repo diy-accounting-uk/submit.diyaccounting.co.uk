@@ -161,7 +161,14 @@ export async function fileCompaniesHouseForm(event, kind) {
     const formXml = buildFormXml(form);
 
     submissionNumber = await allocateSubmissionNumber();
-    await recordSubmissionInProgress({ userSub, submissionNumber, kind, underOwnPresenter: Boolean(ownPresenter) });
+    // The company number is kept so that an accepted filing drops that company's cached register answers.
+    await recordSubmissionInProgress({
+      userSub,
+      submissionNumber,
+      kind,
+      underOwnPresenter: Boolean(ownPresenter),
+      data: { companyNumber: form.companyNumber },
+    });
 
     const submissionXml = buildFormSubmission({
       presenterId,
@@ -224,7 +231,7 @@ export async function fileCompaniesHouseForm(event, kind) {
     if (envelopeSent && !gatewayRequestNotDelivered(error)) {
       // The envelope left, so Companies House may have it. The filing stays pending, the page
       // polls it by number, and a late ACCEPT still gets its receipt and email.
-      await recordOutcomeUnknown({ userSub, submissionNumber, kind, data: {} });
+      await recordOutcomeUnknown({ userSub, submissionNumber, kind, data: { companyNumber: form.companyNumber } });
       await recordSubmissionFailure({
         kind,
         failure: "gateway-outcome-unknown",

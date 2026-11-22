@@ -227,6 +227,11 @@ async function openWatchList() {
 }
 
 document.getElementById("watchSearchForm").addEventListener("submit", submitSearch);
+// A page the browser restores from its back-forward cache shows the register as it was when the
+// reader left it, before any filing made since: read it again.
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) window.location.reload();
+});
 document.addEventListener("watchlistchange", (event) => {
   renderWatchList(event.detail);
   readProfiles(event.detail);

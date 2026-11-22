@@ -73,6 +73,11 @@ vi.mock("@app/services/companiesHouseXmlGateway.js", async (importOriginal) => {
   };
 });
 
+const mockDropCompanyCache = vi.fn();
+vi.mock("@app/services/companiesHouseCacheDrop.js", () => ({
+  dropCompanyCacheAfterAcceptedFiling: (...args) => mockDropCompanyCache(...args),
+}));
+
 import { pollSubmission, hasStoredFinalStatus, isNeverReceived } from "@app/services/companiesHouseSubmissionStatus.js";
 import { initializeSalt } from "@app/services/subHasher.js";
 
@@ -220,6 +225,68 @@ describe("pollSubmission", () => {
 
     expect(mockEventBridgeSend).toHaveBeenCalled();
   });
+
+  test("drops the cached register answers of the company Companies House names when it accepts a filing", async () => {
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+    });
+    await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "psc-cessation" });
+    expect(mockDropCompanyCache).toHaveBeenCalledTimes(1);
+    expect(mockDropCompanyCache).toHaveBeenCalledWith("06846849");
+  });
+
+  test("drops the cache of the company the filing was sent for when Companies House's status names none", async () => {
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof lib.GetCommand) {
+        return {
+          Item: { requestId: cmd.input.Key.requestId, status: "pending", data: { kind: "officer-resignation", companyNumber: "00000001" } },
+        };
+      }
+      return {};
+    });
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", rejections: [] }],
+    });
+    await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "officer-resignation" });
+    expect(mockDropCompanyCache).toHaveBeenCalledWith("00000001");
+  });
+
+  test("an accepted filing is stored as completed even when the cache drop finds nothing to drop", async () => {
+    mockDropCompanyCache.mockResolvedValue(null);
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+    });
+    const result = await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "accounts" });
+    expect(result.data.statusCode).toBe("ACCEPT");
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const completed = mockSend.mock.calls
+      .map(([cmd]) => cmd)
+      .filter((cmd) => cmd instanceof lib.UpdateCommand)
+      .find((cmd) => cmd.input?.ExpressionAttributeValues?.[":status"] === "completed");
+    expect(completed).toBeDefined();
+  });
+
+  for (const statusCode of ["REJECT", "PENDING", "PARKED"]) {
+    test(`a ${statusCode} drops no cached register answers`, async () => {
+      mockParseGatewayResponse.mockReturnValue({
+        errors: [],
+        statuses: [
+          {
+            statusCode,
+            submissionNumber: "00001A",
+            companyNumber: "06846849",
+            rejections: statusCode === "REJECT" ? [{ rejectCode: "9999", description: "Refused" }] : [],
+          },
+        ],
+      });
+      await pollSubmission({ userSub: "user-1", submissionNumber: "00001A", kind: "confirmation-statement" });
+      expect(mockDropCompanyCache).not.toHaveBeenCalled();
+    });
+  }
 
   test("keeps the filed accounts document with the receipt, and out of the poll answer", async () => {
     const lib = await import("@aws-sdk/lib-dynamodb");

@@ -27,6 +27,7 @@ import { jointFilingFields, amendedFields, revisesReceiptFields, formRequestFiel
 import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
 import { markChargeUsed } from "./activityCharges.js";
 import { COMPANIES_HOUSE_FORMS } from "../../web/public/lib/companies-house-forms.js";
+import { dropCompanyCacheAfterAcceptedFiling } from "./companiesHouseCacheDrop.js";
 
 const ACCOUNTS_RECEIPT_KIND = "companies-house-accounts";
 
@@ -213,8 +214,8 @@ function sentRequestData(persistedRequest) {
 /**
  * Record a submission's status once Companies House has decided it. REJECT stores "failed" with
  * the reject reasons; ACCEPT writes a receipt, asks for the receipt email, marks a paid
- * confirmation statement fee used, charges its token, stores "completed" and publishes the form's
- * accepted event. PENDING and PARKED change nothing. Only the poll that holds the claim records it;
+ * confirmation statement fee used, charges its token, drops the company's cached register answers,
+ * stores "completed" and publishes the form's accepted event. PENDING and PARKED change nothing. Only the poll that holds the claim records it;
  * a record that fails or stops part-way is retried, and the retry finds the receipt of the
  * submission and runs only the steps the receipt does not show as done, so the receipt, its email
  * and the token charge each happen once. The never-received rejection gives its claim back, so a
@@ -321,6 +322,9 @@ async function writeFinalStatus({ userSub, submissionNumber, persistedRequest, s
       }
     }
   }
+  // The register has changed, so the company's cached answers go before the filing is stored as
+  // completed: a record that stops here is retried and drops them again. It never fails the record.
+  await dropCompanyCacheAfterAcceptedFiling(status.companyNumber ?? requestData.companyNumber);
   const data = { ...status, ...jointFiling, receiptId };
   await putAsyncRequest(userSub, submissionNumber, "completed", { ...data, kind }, asyncRequestsTableName, FILING_STATE_RETENTION);
   const { acceptedEvent, acceptedSummary } = COMPANIES_HOUSE_FORMS[kind];

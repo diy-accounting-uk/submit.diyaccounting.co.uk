@@ -250,6 +250,25 @@ describe("the filing route every Companies House form shares", () => {
       expect(everythingKept(response)).not.toContain(COMPANY_AUTH_CODE);
     });
 
+    test("keeps the company number in the pending record, whether the gateway answers or not, so an acceptance drops that company's cache", async () => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const pendingData = () =>
+        mockSend.mock.calls
+          .map(([command]) => command)
+          .filter((command) => command instanceof lib.UpdateCommand || command instanceof lib.PutCommand)
+          .map((command) => command.input?.ExpressionAttributeValues?.[":data"] ?? command.input?.Item?.data)
+          .filter((data) => data?.kind === kind);
+
+      await fileCompaniesHouseForm(buildEvent(kind), kind);
+      expect(pendingData().length).toBeGreaterThan(0);
+      for (const data of pendingData()) expect(data.companyNumber).toBe("06846849");
+
+      vi.clearAllMocks();
+      mockPostToGateway.mockRejectedValue(new Error("socket hang up"));
+      await fileCompaniesHouseForm(buildEvent(kind), kind);
+      expect(pendingData().some((data) => data.outcomeUnknown === true && data.companyNumber === "06846849")).toBe(true);
+    });
+
     test("keeps the code nowhere when the request is refused", async () => {
       const response = await fileCompaniesHouseForm(buildEvent(kind, { companyName: "" }), kind);
 

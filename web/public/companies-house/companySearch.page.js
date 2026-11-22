@@ -1757,6 +1757,11 @@ document.getElementById("companySearchForm").addEventListener("submit", submitCo
 document.getElementById("newSearchBtn").addEventListener("click", showNewSearch);
 document.getElementById("notFoundSearchBtn").addEventListener("click", showNewSearch);
 window.addEventListener("popstate", openFromAddress);
+// A page the browser restores from its back-forward cache shows the register as it was when the
+// reader left it, before any filing made since: read it again.
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) window.location.reload();
+});
 
 // The services load as a module, which runs after this script and before DOMContentLoaded.
 if (document.readyState === "loading") {

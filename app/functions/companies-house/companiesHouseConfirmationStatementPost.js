@@ -370,6 +370,8 @@ export async function ingestHandler(event) {
     // The reader's language choice, so the receipt email of an accepted filing is in it.
     const welsh = getHeader(event.headers, "X-Site-Language") === "cy";
     inProgressData = {
+      // The company whose cached register answers an accepted statement drops.
+      companyNumber: statement.companyNumber,
       ...(welsh ? { language: "cy" } : {}),
       // A statement accepted after its envelope got no answer marks the paid fee used then.
       ...(shouldMarkChargeUsed ? { feeCharge: { activityId: CONFIRMATION_STATEMENT_ACTIVITY_ID, subjectKey } } : {}),

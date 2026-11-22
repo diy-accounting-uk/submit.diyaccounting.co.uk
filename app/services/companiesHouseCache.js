@@ -12,7 +12,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { companiesHouseHttpGet } from "./companiesHouseApi.js";
 import { companiesHouseStopSecondsLeft, stopCompaniesHouseLookups } from "./companiesHouseLookupLimit.js";
-import { getCacheEntry, putCacheEntry, listCacheKeys, deleteCacheEntry } from "../data/dynamoDbCompaniesHouseCacheRepository.js";
+import { getCacheEntry, putCacheEntry } from "../data/dynamoDbCompaniesHouseCacheRepository.js";
 import { emitMetric } from "../lib/emfMetrics.js";
 import { createLogger } from "../lib/logger.js";
 
@@ -342,15 +342,4 @@ export async function cachedCompaniesHouseGetAllPages(companyNumber, endpoint, q
   return { ok: true, data: { items, totalCount, truncated: true }, readAt: oldestReadAt, fromCache };
 }
 
-/**
- * Deletes a company's cached answers, keeping the figures of its filings, which do not change.
- * @param {string} companyNumber
- * @returns {Promise<number>} The entries deleted
- */
-export async function invalidateCompany(companyNumber) {
-  const keys = (await listCacheKeys(companyNumber)).filter((sk) => !sk.startsWith("figures"));
-  for (const sk of keys) {
-    await deleteCacheEntry(companyNumber, sk);
-  }
-  return keys.length;
-}
+export { invalidateCompany } from "./companiesHouseCacheDrop.js";
