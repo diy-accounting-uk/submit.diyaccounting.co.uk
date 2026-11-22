@@ -646,6 +646,30 @@ class CompaniesHouseStackTest {
     }
 
     @Test
+    void theAccountsFilingLambdaCanReadTheRegisterAsALimitedLookup() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack(API_KEY_ARN);
+        Template template = Template.fromStack(stack);
+        String functionName = stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName();
+
+        // The register read for revised accounts and the Welsh accounts check call the Companies
+        // House API with the shared key, under the limits of the signed-in lookups.
+        for (String variable : List.of(
+                "COMPANIES_HOUSE_BASE_URI",
+                "COMPANIES_HOUSE_DOCUMENT_BASE_URI",
+                "COMPANIES_HOUSE_API_KEY_ARN",
+                "SECURITY_STATE_DYNAMODB_TABLE_NAME")) {
+            assertHasEnvironmentVariable(template, functionName, variable);
+        }
+        assertEquals(
+                java.util.Set.of("secretsmanager:GetSecretValue"),
+                actionsOnRoleFor(template, functionName, API_KEY_ARN));
+        // One update charges the account's counter; the stop a Companies House 429 sets is read and written.
+        assertEquals(
+                java.util.Set.of("dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem"),
+                actionsOnRoleFor(template, functionName, "security-state"));
+    }
+
+    @Test
     void theLookupLambdasGetTheApiKeyArnEnvVarAndGrantWhenTheArnIsConfigured() {
         CompaniesHouseStack stack = synthCompaniesHouseStack(API_KEY_ARN);
         Template template = Template.fromStack(stack);
@@ -668,10 +692,9 @@ class CompaniesHouseStackTest {
 
         // The wildcard suffix Secrets Manager requires, granted to the eight signed-in lookup Lambda
         // roles (search, company, officers, PSCs, filing history, filed accounts, the filed
-        // document and the last accounts), the public deadlines Lambda and the public register Lambda, and no others;
-        // the registered office
-        // address
-        // read takes the filing key with the filing base URI.
+        // document and the last accounts), the company reports Lambda, the public deadlines Lambda,
+        // the public register Lambda and the accounts filing Lambda, and no others; the registered
+        // office address read takes the filing key with the filing base URI.
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -683,7 +706,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         API_KEY_ARN + "-*")))))))),
-                11);
+                12);
     }
 
     @Test
@@ -738,7 +761,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         API_KEY_ARN + "-*")))))))),
-                11);
+                12);
     }
 
     @Test
@@ -1515,6 +1538,28 @@ class CompaniesHouseStackTest {
                         .stream().anyMatch(role -> roleLogicalId.equals(String.valueOf(role.get("Ref")))))
                 .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
                 .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .forEach(statement -> {
+                    Object action = statement.get("Action");
+                    if (action instanceof List<?> list) list.forEach(item -> actions.add(String.valueOf(item)));
+                    else actions.add(String.valueOf(action));
+                });
+        return actions;
+    }
+
+    // The IAM actions on the Lambda's own role in the statements whose resource names the fragment.
+    @SuppressWarnings("unchecked")
+    private static java.util.Set<String> actionsOnRoleFor(Template template, String functionName, String fragment) {
+        var roleRef = (Map<String, Object>)
+                propertiesOfFunction(template, functionName).get("Role");
+        var roleLogicalId = String.valueOf(((List<Object>) roleRef.get("Fn::GetAtt")).get(0));
+        var actions = new java.util.TreeSet<String>();
+        template.findResources("AWS::IAM::Policy").values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .filter(properties -> ((List<Map<String, Object>>) properties.get("Roles"))
+                        .stream().anyMatch(role -> roleLogicalId.equals(String.valueOf(role.get("Ref")))))
+                .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .filter(statement -> String.valueOf(statement.get("Resource")).contains(fragment))
                 .forEach(statement -> {
                     Object action = statement.get("Action");
                     if (action instanceof List<?> list) list.forEach(item -> actions.add(String.valueOf(item)));

@@ -555,7 +555,11 @@ function smallDocument({ language = "en", accountantsReport } = {}) {
   );
 }
 
-async function openAmend(page, receipt, { width = 1280, outcome = "ACCEPT", jurisdiction = "england-wales", profileFails = false } = {}) {
+async function openAmend(
+  page,
+  receipt,
+  { width = 1280, outcome = "ACCEPT", jurisdiction = "england-wales", profileFails = false, welsh = false } = {},
+) {
   await page.setViewportSize({ width, height: 900 });
   await page.addInitScript(
     ({ receiptBody, outcomeCode, companyJurisdiction, lookupFails }) => {
@@ -627,13 +631,18 @@ async function openAmend(page, receipt, { width = 1280, outcome = "ACCEPT", juri
   await page.route("**/lib/services/viewer-settings.js", (route) =>
     route.fulfill({ status: 200, contentType: "application/javascript", body: "export const fetchViewer = async () => ({});" }),
   );
+  if (welsh) {
+    await serveFile(page, "**/lib/welsh-text.js", "lib/welsh-text.js");
+    await serveFile(page, "**/widgets/page-chrome.js", "widgets/page-chrome.js");
+  }
+  const pagePath = welsh ? `cy/${PAGE_PATH}` : PAGE_PATH;
   // The site's own failure message, which the page script gets from the shared dom utilities.
   await serveFile(page, "**/lib/utils/dom-utils.js", "lib/utils/dom-utils.js");
   const html = fs
-    .readFileSync(path.join(PUBLIC_DIR, PAGE_PATH), "utf-8")
+    .readFileSync(path.join(PUBLIC_DIR, pagePath), "utf-8")
     .replace("</head>", '<script type="module" src="/lib/utils/dom-utils.js"></script></head>');
-  await page.route(`http://localhost:3000/${PAGE_PATH}**`, (route) => route.fulfill({ status: 200, contentType: "text/html", body: html }));
-  await page.goto(`http://localhost:3000/${PAGE_PATH}?amend=${encodeURIComponent(RECEIPT_NAME)}`, { waitUntil: "domcontentloaded" });
+  await page.route(`http://localhost:3000/${pagePath}**`, (route) => route.fulfill({ status: 200, contentType: "text/html", body: html }));
+  await page.goto(`http://localhost:3000/${pagePath}?amend=${encodeURIComponent(RECEIPT_NAME)}`, { waitUntil: "domcontentloaded" });
 }
 
 async function screenshot(page, name, width) {
@@ -974,28 +983,54 @@ test.describe("File small company accounts page - revising accounts from a recei
     await expect(page.locator(".error-summary")).toHaveCount(0);
   });
 
-  test("says that the register holds no such company when the route refuses the filing for that", async ({ page }) => {
-    await openAmend(page, accountsReceipt(fullCase.xhtml));
-    await serveFile(page, "**/lib/accounts-revision-register.js", "lib/accounts-revision-register.js");
-    await expect(page.locator("#revisionSection")).toBeVisible();
-    await page.fill("#revisionNonCompliance", "The original accounts left out the stocks held at the year end.");
-    await page.fill("#revisionAmendments", "Stocks are now shown, and the profit and loss reserve rises by the same amount.");
-    await page.fill("#directorDateApproved", "2026-11-20");
-    await page.evaluate(() => {
-      window.submitMicroEntityAccounts = async () => {
-        const error = new Error("the route's English sentence");
-        error.status = 400;
-        error.reason = "revision-company-not-on-register";
-        error.body = { reason: error.reason, companyNumber: "09999999", periodEnd: "2026-03-31" };
-        throw error;
-      };
-      document.getElementById("companyAuthCode").value = "ABC123";
-      return handleSubmitFiling();
-    });
-    await expect(page.locator("#statusMessagesContainer .status-error")).toContainText(
+  const registerRefusals = [
+    [
+      "the company",
+      "English",
+      "revision-company-not-on-register",
       "Companies House holds no company with the number 09999999, so there are no accounts to revise.",
-    );
-  });
+    ],
+    [
+      "the company",
+      "Welsh",
+      "revision-company-not-on-register",
+      "Nid oes gan Dŷ’r Cwmnïau gwmni â’r rhif 09999999, felly nid oes cyfrifon i’w diwygio.",
+    ],
+    [
+      "accounts for the period",
+      "English",
+      "revision-period-not-on-register",
+      "Companies House holds no accounts for this company made up to 31 March 2026, so there are no accounts for revised accounts to replace.",
+    ],
+    [
+      "accounts for the period",
+      "Welsh",
+      "revision-period-not-on-register",
+      "Nid oes gan Dŷ’r Cwmnïau gyfrifon ar gyfer y cwmni hwn hyd at 31 Mawrth 2026, felly nid oes cyfrifon i gyfrifon diwygiedig gymryd eu lle.",
+    ],
+  ];
+  for (const [missing, language, reason, sentence] of registerRefusals) {
+    test(`says in ${language} that the register does not hold ${missing} when the route refuses the filing for that`, async ({ page }) => {
+      await openAmend(page, accountsReceipt(fullCase.xhtml), { welsh: language === "Welsh" });
+      await serveFile(page, "**/lib/accounts-revision-register.js", "lib/accounts-revision-register.js");
+      await expect(page.locator("#revisionSection")).toBeVisible();
+      await page.fill("#revisionNonCompliance", "The original accounts left out the stocks held at the year end.");
+      await page.fill("#revisionAmendments", "Stocks are now shown, and the profit and loss reserve rises by the same amount.");
+      await page.fill("#directorDateApproved", "2026-11-20");
+      await page.evaluate((refusalReason) => {
+        window.submitMicroEntityAccounts = async () => {
+          const error = new Error("the route's English sentence");
+          error.status = 400;
+          error.reason = refusalReason;
+          error.body = { reason: error.reason, companyNumber: "09999999", periodEnd: "2026-03-31" };
+          throw error;
+        };
+        document.getElementById("companyAuthCode").value = "ABC123";
+        return handleSubmitFiling();
+      }, reason);
+      await expect(page.locator("#statusMessagesContainer .status-error")).toContainText(sentence);
+    });
+  }
 
   for (const width of [1280, 390]) {
     test(`files the revision and names the revised accounts in the result (${width})`, async ({ page }) => {

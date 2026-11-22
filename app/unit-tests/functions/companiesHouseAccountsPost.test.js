@@ -115,6 +115,17 @@ function accountsHistory(...madeUpDates) {
   return { ok: true, status: 200, data: { items, totalCount: items.length, truncated: false } };
 }
 
+// The security state table behind the lookups' limits: the stop a Companies House 429 sets, and
+// each account's counter, which here never reaches its share.
+const mockStopValue = vi.fn(async () => undefined);
+const mockPutCachedValue = vi.fn(async () => {});
+vi.mock("@app/data/dynamoDbSecurityStateRepository.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  incrementRateCounter: async () => 1,
+  getCachedValue: (...args) => mockStopValue(...args),
+  putCachedValue: (...args) => mockPutCachedValue(...args),
+}));
+
 const mockGetCompanyProfile = vi.fn();
 vi.mock("@app/functions/companies-house/companiesHouseCompanyGet.js", () => ({
   getCompanyProfile: (...args) => mockGetCompanyProfile(...args),
@@ -258,6 +269,7 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       }),
     );
     vi.clearAllMocks();
+    mockStopValue.mockResolvedValue(undefined);
     mockEventBridgeSend.mockResolvedValue({});
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
@@ -641,6 +653,39 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       expect(mockPostToGateway).not.toHaveBeenCalled();
     });
 
+    test("answer a JSON 502 with a reason, and send nothing, when the company's profile cannot be read at all", async () => {
+      mockGetCompanyProfile.mockRejectedValue(new Error("Missing required environment variable COMPANIES_HOUSE_BASE_URI"));
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ documentLanguage: "cy" }) }));
+      expect(response.statusCode).toBe(502);
+      expect(parseResponseBody(response)).toMatchObject({ reason: "welsh-company-not-read" });
+      expect(response.body).not.toContain("COMPANIES_HOUSE_BASE_URI");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("read no profile and answer a JSON 429 during the stop a Companies House 429 set", async () => {
+      mockStopValue.mockResolvedValue({ until: Date.now() + 60_000 });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ documentLanguage: "cy" }) }));
+      expect(response.statusCode).toBe(429);
+      expect(Number(response.headers["Retry-After"])).toBeGreaterThan(0);
+      expect(mockGetCompanyProfile).not.toHaveBeenCalled();
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("answer the failed read and set the stop when Companies House answers the profile read with 429", async () => {
+      mockGetCompanyProfile.mockResolvedValue({ chResponse: { ok: false, status: 429, headers: { "retry-after": "30" } }, profile: null });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ documentLanguage: "cy" }) }));
+      expect(response.statusCode).toBe(429);
+      expect(mockPutCachedValue).toHaveBeenCalledWith("chlookup#stopped", { until: expect.any(Number) }, 30);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("for a company the register does not hold are refused as accounts of no Welsh company", async () => {
+      mockGetCompanyProfile.mockResolvedValue({ chResponse: { ok: false, status: 404 }, profile: null });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ documentLanguage: "cy" }) }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain('jurisdiction as \\"unknown\\"');
+    });
+
     test("English accounts read no profile and send no Language", async () => {
       const response = await companiesHouseAccountsPostHandler(buildEvent());
       expect(response.statusCode).toBe(201);
@@ -872,7 +917,7 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
         expect(response.statusCode).toBe(400);
         expect(parseResponseBody(response)).toMatchObject({
           message:
-            "Companies House holds no accounts for this company made up to 2025-12-31, so there are no accounts for revised accounts to replace.",
+            "Companies House holds no accounts for this company made up to 31 December 2025, so there are no accounts for revised accounts to replace.",
           reason: "revision-period-not-on-register",
           companyNumber: "00000001",
           periodEnd: "2025-12-31",
@@ -1099,6 +1144,7 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
       }),
     );
     vi.clearAllMocks();
+    mockStopValue.mockResolvedValue(undefined);
     mockEventBridgeSend.mockResolvedValue({});
     mockBuildMicroEntityAccounts.mockReturnValue('<?xml version="1.0"?><html>fake ixbrl</html>');
     mockAllocateSubmissionNumber.mockResolvedValue("00001A");

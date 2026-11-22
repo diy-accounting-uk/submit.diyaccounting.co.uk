@@ -15,6 +15,32 @@ function siteText(id, english, values) {
   return english.replace(/\{([a-z]+)\}/g, (whole, name) => (values && name in values ? String(values[name]) : whole));
 }
 
+// Chromium's Intl has no Welsh, so a Welsh date is written from the month names here.
+const WELSH_MONTHS = [
+  "Ionawr",
+  "Chwefror",
+  "Mawrth",
+  "Ebrill",
+  "Mai",
+  "Mehefin",
+  "Gorffennaf",
+  "Awst",
+  "Medi",
+  "Hydref",
+  "Tachwedd",
+  "Rhagfyr",
+];
+
+// A period end as the filing records print a date: 31 March 2026, or 31 Mawrth 2026 where the page
+// reads in Welsh. A value that is not a real day is printed as it came.
+function periodEndText(periodEnd) {
+  const date = new Date(`${periodEnd}T00:00:00Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== periodEnd) return String(periodEnd);
+  if (globalThis.siteLanguage?.chrome() === "cy")
+    return `${date.getUTCDate()} ${WELSH_MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
+
 /**
  * Why the register gives revised accounts nothing to replace, or null when it holds accounts made up
  * to the period's end.
@@ -46,7 +72,7 @@ export function registerRefusalText(reason, { companyNumber, periodEnd }) {
     return siteText(
       "ch.revision.refuse-period-not-on-register",
       "Companies House holds no accounts for this company made up to {end}, so there are no accounts for revised accounts to replace.",
-      { end: periodEnd },
+      { end: periodEndText(periodEnd) },
     );
   }
   return null;

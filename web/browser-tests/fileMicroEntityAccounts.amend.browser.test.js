@@ -611,12 +611,12 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
     [
       "English",
       false,
-      "Companies House holds no accounts for this company made up to 2026-03-31, so there are no accounts for revised accounts to replace.",
+      "Companies House holds no accounts for this company made up to 31 March 2026, so there are no accounts for revised accounts to replace.",
     ],
     [
       "Welsh",
       true,
-      "Nid oes gan Dŷ’r Cwmnïau gyfrifon ar gyfer y cwmni hwn hyd at 2026-03-31, felly nid oes cyfrifon i gyfrifon diwygiedig gymryd eu lle.",
+      "Nid oes gan Dŷ’r Cwmnïau gyfrifon ar gyfer y cwmni hwn hyd at 31 Mawrth 2026, felly nid oes cyfrifon i gyfrifon diwygiedig gymryd eu lle.",
     ],
   ]) {
     test(`says in ${language} that the register holds no accounts to replace when the route refuses the filing for that`, async ({

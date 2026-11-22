@@ -1141,8 +1141,13 @@ public class CompaniesHouseStack extends Stack {
                         companiesHouseAccountsAsyncRequestsTable.getTableName())
                 .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName())
+                .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props))
+                .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
                 .with("COMPANIES_HOUSE_DOCUMENT_BASE_URI", props.companiesHouseDocumentBaseUri())
-                .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName());
+        if (StringUtils.isNotBlank(props.companiesHouseApiKeyArn())) {
+            companiesHouseAccountsPostLambdaEnv.with("COMPANIES_HOUSE_API_KEY_ARN", props.companiesHouseApiKeyArn());
+        }
         withCodesEntryEnv(companiesHouseAccountsPostLambdaEnv, mcpSessionsTable, codesSealKeySecret);
         withPresenterSecretArns(companiesHouseAccountsPostLambdaEnv, props);
         if (xmlGatewayPackageReference(props) != null) {
@@ -1181,8 +1186,15 @@ public class CompaniesHouseStack extends Stack {
                 "Created Lambda %s for Companies House accounts submit with ingestHandler %s",
                 this.companiesHouseAccountsPostLambda.getNode().getId(),
                 props.sharedNames().companiesHouse.companiesHouseAccountsPostIngestLambdaHandler);
+        // The API key: the register read for revised accounts that name no receipt (the company's
+        // filing history and, for an item with no made-up date, its filed document), the profile
+        // read of the Welsh accounts check, and the registered office fill.
         grantCompaniesHouseLambdaAccess(
-                this.companiesHouseAccountsPostLambda, bundlesTable, region, account, props, activityBusArn, false);
+                this.companiesHouseAccountsPostLambda, bundlesTable, region, account, props, activityBusArn, true);
+        // Those reads are lookups on the shared API key: UpdateItem charges the account's counter,
+        // GetItem reads the stop a Companies House 429 sets, PutItem sets it.
+        securityStateTable.grant(
+                this.companiesHouseAccountsPostLambda, "dynamodb:UpdateItem", "dynamodb:GetItem", "dynamodb:PutItem");
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseAccountsPostLambda, props);
         grantCodesEntryAccess(this.companiesHouseAccountsPostLambda, mcpSessionsTable, codesSealKeySecret);
         companiesHouseAccountsAsyncRequestsTable.grant(

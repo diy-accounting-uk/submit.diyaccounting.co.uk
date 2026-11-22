@@ -77,6 +77,7 @@ import { capitalAndReservesMismatch, capitalAndReservesMessage, YEAR_NAMES } fro
 import { isApprovedAfterToday, approvalDateAfterTodayMessage } from "../../../web/public/lib/approval-date-check.js";
 import { refusalOf as revisedReceiptRefusal } from "../../../web/public/lib/accounts-revision.js";
 import { refuseRevisionWithNothingToReplace } from "../../services/revisedAccountsRegister.js";
+import { LOOKUP_CALLS, limitedLookup, lookupFailureResponse } from "../../services/companiesHouseLookupLimit.js";
 import { getReceipt } from "../../data/dynamoDbReceiptRepository.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseAccountsPost.js" });
@@ -451,6 +452,30 @@ async function recordSubmissionFailure({ failure, summary, userSub, detail = {},
   });
 }
 
+// Welsh accounts are a Welsh company's: the register's profile gives the company's jurisdiction.
+// Answers the JSON error of a profile read that was refused, failed or could not be made, and
+// otherwise adds to errorMessages when the company is not a Welsh one.
+async function checkWelshAccountsCompany({ request, responseHeaders, userSub, companyNumber, errorMessages }) {
+  const { answer, failure } = await limitedLookup({
+    request,
+    headers: responseHeaders,
+    userSub,
+    calls: LOOKUP_CALLS.profile,
+    read: () => getCompanyProfile(companyNumber),
+    notRead: {
+      message: "The Companies House register could not be read, so the Welsh accounts were not filed. Try again later.",
+      reason: "welsh-company-not-read",
+    },
+  });
+  if (failure) return failure;
+  // No company is a company with no jurisdiction; any other failed read is its own JSON error.
+  if (!answer.profile && answer.chResponse && answer.chResponse.status !== 404) {
+    return lookupFailureResponse(request, answer.chResponse, responseHeaders);
+  }
+  checkWelshCompany(answer.profile?.jurisdiction, errorMessages);
+  return undefined;
+}
+
 async function refuseClientNotAuthorised({ request, responseHeaders, userSub, clientId }) {
   logger.warn({ message: "Client-scoped request refused: not authorised for Companies House filing", clientId });
   await recordSubmissionFailure({
@@ -532,8 +557,14 @@ export async function ingestHandler(event) {
   }
   await fillRegisteredOffice(accounts, errorMessages);
   if (accounts.documentLanguage === "cy") {
-    const { profile } = await getCompanyProfile(accounts.companyNumber);
-    checkWelshCompany(profile?.jurisdiction, errorMessages);
+    const notRead = await checkWelshAccountsCompany({
+      request,
+      responseHeaders,
+      userSub,
+      companyNumber: accounts.companyNumber,
+      errorMessages,
+    });
+    if (notRead) return notRead;
   }
   // Revised accounts that name the receipt of the accounts they revise are checked against it, under
   // the signed-in user's own receipts, by the rules the page applies.

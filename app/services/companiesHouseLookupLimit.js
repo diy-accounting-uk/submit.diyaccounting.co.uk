@@ -9,7 +9,7 @@
 // answers 429, every lookup, signed in or public, stops for the time its Retry-After names.
 
 import { createLogger } from "../lib/logger.js";
-import { http429TooManyRequestsResponse } from "../lib/httpResponseHelper.js";
+import { http429TooManyRequestsResponse, http502BadGatewayResponse } from "../lib/httpResponseHelper.js";
 import { getCachedValue, incrementRateCounter, putCachedValue } from "../data/dynamoDbSecurityStateRepository.js";
 import { hashSub } from "./subHasher.js";
 import { httpResponseFromCompaniesHouseResponse } from "./companiesHouseApi.js";
@@ -195,4 +195,29 @@ export function lookupLimitResponse(request, headers, retryAfterSeconds) {
 export async function lookupFailureResponse(request, chResponse, headers) {
   if (chResponse.status === 429) await stopCompaniesHouseLookups(chResponse.headers?.["retry-after"]);
   return httpResponseFromCompaniesHouseResponse(request, chResponse, headers);
+}
+
+/**
+ * A register read that a route makes on its way to something else (a filing's checks), kept to the
+ * limits of the signed-in lookups: refused during the stop a Companies House 429 sets and past the
+ * account's share of the key, and charged to that share. A read that cannot be made at all (it
+ * throws) answers a JSON 502 with the reason given, so the route never fails without an answer.
+ * A read that Companies House answers with a failure comes back as the answer: the caller decides
+ * what a 404 means and passes any other failure to lookupFailureResponse.
+ * @param {{request: object, headers: object, userSub: string, calls: number, read: () => Promise<T>,
+ *   notRead: {message: string, reason: string}}} lookup
+ * @returns {Promise<{answer: T}|{failure: object}>} failure is the HTTP response to give
+ * @template T
+ */
+export async function limitedLookup({ request, headers, userSub, calls, read, notRead }) {
+  const refusalSeconds = await lookupRefusalSeconds(userSub, calls);
+  if (refusalSeconds) return { failure: lookupLimitResponse(request, headers, refusalSeconds) };
+  try {
+    return { answer: await read() };
+  } catch (error) {
+    logger.error({ message: "A Companies House register read could not be made", reason: notRead.reason, error: error.message });
+    return {
+      failure: http502BadGatewayResponse({ request, headers: { ...headers }, message: notRead.message, error: { reason: notRead.reason } }),
+    };
+  }
 }

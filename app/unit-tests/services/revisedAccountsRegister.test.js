@@ -26,6 +26,15 @@ vi.mock("@app/data/dynamoDbSecurityStateRepository.js", () => ({
 }));
 vi.mock("@app/services/subHasher.js", () => ({ hashSub: (sub) => `hashed-${sub}` }));
 
+// The filed document of an accounts filing, and the period the reader takes from it.
+const mockDocumentOfItem = vi.fn();
+vi.mock("@app/services/companiesHouseFiledAccounts.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  documentOfItem: (...args) => mockDocumentOfItem(...args),
+}));
+const mockMapLastAccounts = vi.fn();
+vi.mock("@app/services/companiesHouseLastAccounts.js", () => ({ mapLastAccounts: (...args) => mockMapLastAccounts(...args) }));
+
 import { refuseRevisionWithNothingToReplace } from "@app/services/revisedAccountsRegister.js";
 
 const FILING = {
@@ -71,7 +80,7 @@ describe("the register check of revised accounts that name no receipt", () => {
       history([
         { type: "AA01", description_values: { made_up_date: "2025-12-31" } },
         { type: "AA", description_values: { made_up_date: "2024-12-31" } },
-        { type: "AA" },
+        { type: "AA", date: "2025-06-01" },
       ]),
     );
     const response = await refuseRevisionWithNothingToReplace(FILING);
@@ -131,6 +140,81 @@ describe("the register check of revised accounts that name no receipt", () => {
     expect(response.statusCode).toBe(429);
     expect(Number(response.headers["Retry-After"])).toBeGreaterThan(0);
     expect(mockFilingHistory).toHaveBeenCalledTimes(1);
+  });
+
+  describe("an accounts filing for which the register states no made-up date", () => {
+    // Filed after the period's end, so it may be the period's accounts; its description carries no date.
+    const UNDATED = { type: "AA", description: "accounts", date: "2026-06-30", transaction_id: "T1" };
+    const documentMadeUpTo = (end) => {
+      mockDocumentOfItem.mockResolvedValue({ set: {}, document: "<html/>" });
+      mockMapLastAccounts.mockReturnValue({ period: { start: "2025-01-01", end } });
+    };
+
+    test("passes when its filed document is made up to the period's end", async () => {
+      mockFilingHistory.mockResolvedValue(history([{ type: "AA", description_values: { made_up_date: "2024-12-31" } }, UNDATED]));
+      documentMadeUpTo("2025-12-31");
+      expect(await refuseRevisionWithNothingToReplace(FILING)).toBeUndefined();
+      expect(mockDocumentOfItem).toHaveBeenCalledWith(UNDATED);
+    });
+
+    test("is refused when its filed document is made up to another date", async () => {
+      mockFilingHistory.mockResolvedValue(history([UNDATED]));
+      documentMadeUpTo("2025-06-30");
+      const response = await refuseRevisionWithNothingToReplace(FILING);
+      expect(bodyOf(response)).toMatchObject({ reason: "revision-period-not-on-register" });
+    });
+
+    test.each([
+      ["has no iXBRL document", () => mockDocumentOfItem.mockResolvedValue({ problem: "no-ixbrl", set: {} })],
+      ["has a document over the size limit", () => mockDocumentOfItem.mockResolvedValue({ problem: "too-large", set: {} })],
+      [
+        "has a document the register no longer gives",
+        () => mockDocumentOfItem.mockResolvedValue({ chResponse: { ok: false, status: 404 } }),
+      ],
+      [
+        "has a document the reader cannot read",
+        () => {
+          mockDocumentOfItem.mockResolvedValue({ set: {}, document: "<html/>" });
+          mockMapLastAccounts.mockImplementation(() => {
+            throw new Error("The balance sheet does not balance");
+          });
+        },
+      ],
+    ])("is never a reason to refuse when it %s", async (unused, arrange) => {
+      mockFilingHistory.mockResolvedValue(history([UNDATED]));
+      arrange();
+      expect(await refuseRevisionWithNothingToReplace(FILING)).toBeUndefined();
+    });
+
+    test("is not read when it was delivered on or before the period's end, or when a dated filing already matches", async () => {
+      mockFilingHistory.mockResolvedValue(history([{ ...UNDATED, date: "2025-12-31" }]));
+      expect((await refuseRevisionWithNothingToReplace(FILING)).statusCode).toBe(400);
+      mockFilingHistory.mockResolvedValue(history([{ type: "AA", description_values: { made_up_date: "2025-12-31" } }, UNDATED]));
+      expect(await refuseRevisionWithNothingToReplace(FILING)).toBeUndefined();
+      expect(mockDocumentOfItem).not.toHaveBeenCalled();
+    });
+
+    test("answers the failed read, never a pass, when its document cannot be fetched, and a 429 sets the stop", async () => {
+      mockFilingHistory.mockResolvedValue(history([UNDATED]));
+      mockDocumentOfItem.mockResolvedValue({ chResponse: { ok: false, status: 429, data: {}, headers: { "retry-after": "30" } } });
+      expect((await refuseRevisionWithNothingToReplace(FILING)).statusCode).toBe(429);
+      expect(cachedValues.get("chlookup#stopped").until).toBeGreaterThan(Date.now());
+    });
+
+    test("reads no more documents than the five calls charged allow, and does not refuse for the ones it left unread", async () => {
+      const undated = [1, 2, 3].map((n) => ({ ...UNDATED, transaction_id: `T${n}` }));
+      mockFilingHistory.mockResolvedValue(history(undated));
+      documentMadeUpTo("2025-06-30");
+      expect(await refuseRevisionWithNothingToReplace(FILING)).toBeUndefined();
+      expect(mockDocumentOfItem).toHaveBeenCalledTimes(2);
+
+      mockDocumentOfItem.mockClear();
+      const fivePages = Array.from({ length: 450 }, () => ({ type: "AA", description_values: { made_up_date: "2001-12-31" } }));
+      mockFilingHistory.mockResolvedValue(history([...fivePages, UNDATED]));
+      expect(await refuseRevisionWithNothingToReplace(FILING)).toBeUndefined();
+      expect(mockDocumentOfItem).not.toHaveBeenCalled();
+      expect([...counters.entries()].filter(([key]) => key.startsWith("hashed-user-1|"))).toEqual([[expect.any(String), 10]]);
+    });
   });
 
   test("reads nothing and refuses nothing where the envelope goes to the test service", async () => {

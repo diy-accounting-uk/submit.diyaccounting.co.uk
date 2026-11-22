@@ -15,6 +15,7 @@ import {
 describe("revised accounts that name no receipt, against the register", () => {
   afterEach(() => {
     delete globalThis.siteText;
+    delete globalThis.siteLanguage;
   });
 
   test("the register gives no reason to refuse when it holds accounts made up to the period's end", () => {
@@ -36,14 +37,24 @@ describe("revised accounts that name no receipt, against the register", () => {
       "Companies House holds no company with the number 09999999, so there are no accounts to revise.",
     );
     expect(registerRefusalText(PERIOD_NOT_ON_REGISTER, filing)).toBe(
-      "Companies House holds no accounts for this company made up to 2025-12-31, so there are no accounts for revised accounts to replace.",
+      "Companies House holds no accounts for this company made up to 31 December 2025, so there are no accounts for revised accounts to replace.",
     );
+  });
+
+  test("the period's end is printed as the page prints a date, in the page's language, and a value that is no real day as it came", () => {
+    globalThis.siteText = (id, english, values) => values.end;
+    expect(registerRefusalText(PERIOD_NOT_ON_REGISTER, { periodEnd: "2026-03-31" })).toBe("31 March 2026");
+    expect(registerRefusalText(PERIOD_NOT_ON_REGISTER, { periodEnd: "2026-02-30" })).toBe("2026-02-30");
+    expect(registerRefusalText(PERIOD_NOT_ON_REGISTER, { periodEnd: undefined })).toBe("undefined");
+    globalThis.siteLanguage = { chrome: () => "cy" };
+    expect(registerRefusalText(PERIOD_NOT_ON_REGISTER, { periodEnd: "2026-03-31" })).toBe("31 Mawrth 2026");
+    expect(registerRefusalText(PERIOD_NOT_ON_REGISTER, { periodEnd: "2025-12-01" })).toBe("1 Rhagfyr 2025");
   });
 
   test("a failed accounts request with a register reason is worded in the page's language from what the answer names", () => {
     globalThis.siteText = (id, english, values) => `${id}|${JSON.stringify(values)}`;
     const error = { reason: PERIOD_NOT_ON_REGISTER, body: { companyNumber: "00000001", periodEnd: "2025-12-31" } };
-    expect(registerRefusalOfError(error)).toBe('ch.revision.refuse-period-not-on-register|{"end":"2025-12-31"}');
+    expect(registerRefusalOfError(error)).toBe('ch.revision.refuse-period-not-on-register|{"end":"31 December 2025"}');
     expect(registerRefusalOfError({ ...error, reason: COMPANY_NOT_ON_REGISTER })).toBe(
       'ch.revision.refuse-company-not-on-register|{"number":"00000001"}',
     );
