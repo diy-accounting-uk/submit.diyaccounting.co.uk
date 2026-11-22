@@ -46,6 +46,7 @@ import { REGISTERED_OFFICE_FIELDS, readDirectorsAdvances } from "../../services/
 import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
 import { checkWelshCompany, inAccountsLanguage, readDocumentLanguage } from "../../services/accountsLanguage.js";
 import { getCompanyProfile } from "./companiesHouseCompanyGet.js";
+import { isFirstAccountsPeriod } from "../../../web/public/lib/first-accounts.js";
 import { extractAndValidateSmallCompany } from "../../services/smallCompanyAccountsRequest.js";
 import {
   buildAccountsSubmission,
@@ -565,6 +566,15 @@ export async function ingestHandler(event) {
       errorMessages,
     });
     if (notRead) return notRead;
+  }
+  // First accounts leave out the prior year, so the register, never the request, says whether these are the first.
+  if (accounts.dateOfIncorporation) {
+    const { profile } = await getCompanyProfile(accounts.companyNumber);
+    if (!isFirstAccountsPeriod(profile ?? {}, accounts.periodStart)) {
+      errorMessages.push(
+        "smallCompany.dateOfIncorporation marks first accounts, but the Companies House register does not show this period as the company's first: give smallCompany.balanceSheet.priorYear",
+      );
+    }
   }
   // Revised accounts that name the receipt of the accounts they revise are checked against it, under
   // the signed-in user's own receipts, by the rules the page applies.

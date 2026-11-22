@@ -270,6 +270,8 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     );
     vi.clearAllMocks();
     mockStopValue.mockResolvedValue(undefined);
+    // The register shows a company incorporated on the default body's period start, with no accounts filed.
+    mockGetCompanyProfile.mockResolvedValue({ profile: { jurisdiction: "england-wales", dateOfCreation: "2025-01-01" } });
     mockEventBridgeSend.mockResolvedValue({});
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
@@ -635,7 +637,7 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     });
 
     test("a Welsh company's small company accounts are built in Welsh and sent with Language CY", async () => {
-      mockGetCompanyProfile.mockResolvedValue({ profile: { jurisdiction: "wales" } });
+      mockGetCompanyProfile.mockResolvedValue({ profile: { jurisdiction: "wales", dateOfCreation: "2025-01-01" } });
       const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody({ documentLanguage: "cy" }) }));
       expect(response.statusCode).toBe(201);
       const submission = mockBuildAccountsSubmission.mock.calls[0][0];
@@ -1145,6 +1147,8 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
     );
     vi.clearAllMocks();
     mockStopValue.mockResolvedValue(undefined);
+    // The register shows a company incorporated on the default body's period start, with no accounts filed.
+    mockGetCompanyProfile.mockResolvedValue({ profile: { jurisdiction: "england-wales", dateOfCreation: "2025-01-01" } });
     mockEventBridgeSend.mockResolvedValue({});
     mockBuildMicroEntityAccounts.mockReturnValue('<?xml version="1.0"?><html>fake ixbrl</html>');
     mockAllocateSubmissionNumber.mockResolvedValue("00001A");
@@ -1491,6 +1495,24 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
       withPrior.smallCompany.balanceSheet.priorYear = { ...withPrior.smallCompany.balanceSheet.currentYear };
       const priorAnswer = JSON.stringify(parseResponseBody(await companiesHouseAccountsPostHandler(buildEvent({ body: withPrior }))));
       expect(priorAnswer).toContain("which have no preceding year");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses first accounts for a company the register shows has filed accounts before", async () => {
+      mockGetCompanyProfile.mockResolvedValue({
+        profile: { dateOfCreation: "2025-01-01", accountsLastPeriodStart: "2024-01-01", accountsLastPeriodEnd: "2024-12-31" },
+      });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody() }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("the Companies House register does not show this period");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses first accounts whose period does not start on the date of incorporation in the register", async () => {
+      mockGetCompanyProfile.mockResolvedValue({ profile: { dateOfCreation: "2015-03-01" } });
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody() }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("the Companies House register does not show this period");
       expect(mockPostToGateway).not.toHaveBeenCalled();
     });
 
