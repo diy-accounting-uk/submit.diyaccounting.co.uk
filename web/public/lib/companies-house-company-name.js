@@ -33,11 +33,121 @@ export function hasUsualLimitedEnding(name, { registeredInWales }) {
   return endings.some((ending) => new RegExp(`(^|\\s)${ending}\\.?$`, "u").test(String(name).trim()));
 }
 
+// What Companies House disregards at the end of a name when it decides whether two names are the
+// "same as" each other (Incorporation and names, section 6.4), longest first so a long ending goes
+// before a short one inside it.
+const DISREGARDED_ENDINGS = [
+  "COMMUNITY INTEREST PUBLIC LIMITED COMPANY",
+  "CWMNI BUDDIANT CYMUNEDOL CYHOEDDUS CYFYNGEDIG",
+  "COMMUNITY INTEREST COMPANY",
+  "CWMNI CYFYNGEDIG CYHOEDDUS",
+  "CWMNI BUDDIANT CYMUNEDOL CCC",
+  "CWMNI BUDDIANT CYMUNEDOL",
+  "PUBLIC LIMITED COMPANY",
+  "COMMUNITY INTEREST PLC",
+  "LIMITED LIABILITY PARTNERSHIP",
+  "LIMITED PARTNERSHIP",
+  "CWMNI RTM CYFYNGEDIG",
+  "RIGHT TO ENFRANCHISEMENT",
+  "RIGHT TO MANAGE",
+  "ANGHYFYNGEDIG",
+  "CYFYNGEDIG",
+  "UNLIMITED",
+  "LIMITED",
+  "LTD",
+  "PLC",
+  "CIC",
+  "RTE",
+  "RTM",
+  "LLP",
+  "LP",
+  "CYF",
+  "CCC",
+  "CBC",
+];
+// What it disregards after a blank space at the end of a name (section 6.4), with & read as AND.
+const DISREGARDED_AFTER_A_SPACE = [
+  "AND COMPANY",
+  "AND CO",
+  "A’R CWMNI",
+  "AND CWMNI",
+  "COMPANY",
+  "CWMNI",
+  "CO UK",
+  "CO",
+  "COM",
+  "ORG UK",
+  "ORG",
+  "NET",
+  "BIZ",
+  "EU",
+  "UNITED KINGDOM",
+  "UK",
+  "GREAT BRITAIN",
+  "GB",
+  "NORTHERN IRELAND",
+  "NI",
+  "WALES",
+  "CYMRU",
+  "CYM",
+  "Y DEYRNAS UNEDIG",
+  "DU",
+  "PRYDAIN FAWR",
+  "PF",
+];
+// Section 6.5's words and signs read as the same, each as the word this key uses.
+const READ_AS = [
+  [/&/g, " AND "],
+  [/\+/g, " PLUS "],
+  [/@/g, " AT "],
+  [/£/g, " POUND "],
+  [/€/g, " EURO "],
+  [/\$/g, " DOLLAR "],
+  [/¥/g, " YEN "],
+  [/%|\bPER CENT(UM)?\b|\bPERCENT\b/g, " PERCENTUM "],
+];
+// The punctuation, signs and symbols section 6.4 disregards.
+const DISREGARDED_PUNCTUATION = /[‘’'",()[\]{}<>!«»“”?./\\]/g;
+
+/**
+ * A key under which two names that Companies House counts as the "same as" each other are equal:
+ * the first 60 characters, letters without accents, the words and signs read as the same, the start's
+ * THE and WWW, the endings and the words after a blank space that it disregards, a final S, the
+ * listed punctuation and the spaces between characters left out.
+ * @param {string} name
+ * @returns {string}
+ */
+export function sameAsKey(name) {
+  let key = String(name || "")
+    .slice(0, 60)
+    .toUpperCase()
+    .replace(/[ÆǼ]/g, "AE")
+    .replace(/Œ/g, "OE")
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+  for (const [sign, word] of READ_AS) key = key.replace(sign, word);
+  key = key.replace(DISREGARDED_PUNCTUATION, " ").replace(/\s+/g, " ").trim();
+  key = key.replace(/^(THE|WWW) /, "");
+  const ends = [...DISREGARDED_ENDINGS, ...DISREGARDED_AFTER_A_SPACE];
+  let shortened = true;
+  while (shortened) {
+    shortened = false;
+    for (const ending of ends) {
+      if (key.endsWith(` ${ending}`)) {
+        key = key.slice(0, -ending.length - 1).trim();
+        shortened = true;
+        break;
+      }
+    }
+  }
+  return key.replace(/S$/, "").replace(/ /g, "");
+}
+
 /** Whether the register's jurisdiction is Wales, where a company's name may end in the Welsh words. */
 export function isRegisteredInWales(jurisdiction) {
   return jurisdiction === "wales";
 }
 
 if (typeof window !== "undefined") {
-  window.companiesHouseCompanyName = { isValidProposedCompanyName, hasUsualLimitedEnding, isRegisteredInWales };
+  window.companiesHouseCompanyName = { isValidProposedCompanyName, hasUsualLimitedEnding, isRegisteredInWales, sameAsKey };
 }

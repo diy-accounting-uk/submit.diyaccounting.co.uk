@@ -435,6 +435,22 @@ test("a company registered in Wales is told its name may end in CYFYNGEDIG or CY
   await expect(page.locator("#nameEndingWarning")).toBeHidden();
 });
 
+test("a name the same as another company's by Companies House's rules is caught, though the words differ", async ({ page }) => {
+  const filings = [];
+  await serveSite(page, {
+    filings,
+    searchItems: [{ companyNumber: "09999999", title: "THE BRAMWELL & TENNANT TRADING CO CYF", companyStatus: "active" }],
+  });
+  await page.goto(`${SITE}/companies-house/changeCompanyName.html`, { waitUntil: "networkidle" });
+  await lookUpAndFill(page, { lookUp: "Look up the company", proposedName: "Bramwell and Tennant Trading Limited" });
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.locator("#statusMessagesContainer")).toContainText(
+    "Companies House lists THE BRAMWELL & TENNANT TRADING CO CYF (09999999) with this name.",
+  );
+  await expect(page.locator("#letterKind")).toHaveValue("same-as-no-objection");
+  expect(filings).toHaveLength(0);
+});
+
 test("a name another company holds is caught before sending, and asks for that company's letter of no objection", async ({ page }) => {
   const filings = [];
   const searches = [];

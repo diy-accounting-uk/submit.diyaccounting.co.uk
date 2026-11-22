@@ -77,17 +77,6 @@ function optionText(selectId, value) {
   return document.querySelector(`#${selectId} option[value="${value}"]`).textContent.trim().replace(/\s+/g, " ");
 }
 
-// A name compared as Companies House compares a "same as" name here: capitals, single spaces, no
-// full stops or commas, and LTD read as LIMITED.
-function comparableName(name) {
-  return String(name || "")
-    .toUpperCase()
-    .replace(/[.,]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/ LTD$/, " LIMITED");
-}
-
 // The register's search for each proposed name, made once per name: the lookup counts in the
 // account's share of Companies House calls.
 const sameNameLookups = new Map();
@@ -106,7 +95,9 @@ function companyWithSameName(proposedName) {
         .then(
           (answer) =>
             (answer.items || []).find(
-              (item) => item.companyNumber !== company.companyNumber && comparableName(item.title) === comparableName(proposedName),
+              (item) =>
+                item.companyNumber !== company.companyNumber &&
+                window.companiesHouseCompanyName.sameAsKey(item.title) === window.companiesHouseCompanyName.sameAsKey(proposedName),
             ) || null,
         )
         .catch((error) => {
