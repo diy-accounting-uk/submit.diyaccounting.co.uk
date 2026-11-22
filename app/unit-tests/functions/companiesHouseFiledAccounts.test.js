@@ -56,10 +56,10 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
   },
 }));
 
-const mockLookupLimitReached = vi.fn().mockResolvedValue(false);
+const mockLookupRefusalSeconds = vi.fn().mockResolvedValue(0);
 vi.mock("@app/services/companiesHouseLookupLimit.js", async (importOriginal) => {
   const actual = await importOriginal();
-  return { ...actual, lookupLimitReached: (...args) => mockLookupLimitReached(...args) };
+  return { ...actual, lookupRefusalSeconds: (...args) => mockLookupRefusalSeconds(...args) };
 });
 
 import { ingestHandler as filingHistoryHandler } from "@app/functions/companies-house/companiesHouseFilingHistoryGet.js";
@@ -224,12 +224,13 @@ describe("companiesHouseFilingHistoryGet ingestHandler", () => {
   });
 
   test("answers a JSON 429, calling no Companies House route, when the account has used its share of the API key", async () => {
-    mockLookupLimitReached.mockResolvedValueOnce(true);
+    mockLookupRefusalSeconds.mockResolvedValueOnce(120);
     const response = await filingHistoryHandler(event({ companyNumber: "00000001" }));
     expect(response.statusCode).toBe(429);
+    expect(response.headers["Retry-After"]).toBe("120");
     expect(JSON.parse(response.body).message).toBe("Too many Companies House lookups just now. Try again in a few minutes.");
     expect(mockFetch).not.toHaveBeenCalled();
-    expect(mockLookupLimitReached).toHaveBeenLastCalledWith(expect.any(String), 5);
+    expect(mockLookupRefusalSeconds).toHaveBeenLastCalledWith(expect.any(String), 5);
   });
 
   test("answers Companies House's 404 for an unknown company as JSON", async () => {

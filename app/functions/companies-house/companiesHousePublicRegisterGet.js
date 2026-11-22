@@ -22,13 +22,19 @@ import {
   http413PayloadTooLargeResponse,
   http429TooManyRequestsResponse,
   http502BadGatewayResponse,
+  http504GatewayTimeoutResponse,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { emitMetric } from "../../lib/emfMetrics.js";
 import { companiesHouseHttpGet, isValidCompanyNumber } from "../../services/companiesHouseApi.js";
 import { fetchLastFiledAccounts } from "../../services/companiesHouseFiledAccounts.js";
-import { PUBLIC_LOOKUP_CALLS, lookupLimitResponse, publicLookupBudgetSpent } from "../../services/companiesHouseLookupLimit.js";
+import {
+  PUBLIC_LOOKUP_CALLS,
+  lookupLimitResponse,
+  publicLookupRefusal,
+  stopCompaniesHouseLookups,
+} from "../../services/companiesHouseLookupLimit.js";
 import { registeredOfficeFromAddress } from "./companiesHouseCompanyGet.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHousePublicRegisterGet.js" });
@@ -43,6 +49,10 @@ export const PUBLIC_BUDGET_SPENT_METRIC = "PublicCompaniesHouseBudgetSpent";
 // one answer costs up to five Companies House requests on the key the signed-in lookups share.
 export const FOUND_CACHE_SECONDS = 3600;
 const RETRY_AFTER_SECONDS = 300;
+// The reads of one answer end by this time, so the route answers its own JSON 504 before the
+// Lambda's 28-second timeout (AbstractLambdaProps.ingestLambdaTimeout) cuts it off unanswered.
+export const REGISTER_DEADLINE_MS = 25_000;
+const DEADLINE_PASSED = Symbol("deadline passed");
 const NO_STORE = "no-store";
 
 /* v8 ignore start */
@@ -92,12 +102,13 @@ function filedAccountsAnswer({ problem, set, document }) {
   return { status: "ixbrl", ...filed, ixbrl: document };
 }
 
-function failureResponse(request, chResponse) {
+async function failureResponse(request, chResponse) {
   if (chResponse.status === 404) {
     countOriginRequest("not_found");
     return http404NotFoundResponse({ request, headers: jsonHeaders(NO_STORE), message: "No company with that number" });
   }
   if (chResponse.status === 429) {
+    await stopCompaniesHouseLookups(chResponse.headers?.["retry-after"]);
     countOriginRequest("rate_limited");
     emitMetric({ namespace: METRICS_NAMESPACE, metricName: COMPANIES_HOUSE_429_METRIC });
     const retryAfter = Number.parseInt(chResponse.headers?.["retry-after"], 10);
@@ -127,12 +138,34 @@ export async function ingestHandler(event) {
     return http400BadRequestResponse({ request, headers: jsonHeaders(NO_STORE), message: "Invalid company number - must be 8 characters" });
   }
 
-  if (await publicLookupBudgetSpent(PUBLIC_LOOKUP_CALLS.register)) {
-    countOriginRequest("budget_spent");
-    emitMetric({ namespace: METRICS_NAMESPACE, metricName: PUBLIC_BUDGET_SPENT_METRIC });
-    return lookupLimitResponse(request, jsonHeaders(NO_STORE));
+  const refusal = await publicLookupRefusal(PUBLIC_LOOKUP_CALLS.register);
+  if (refusal) {
+    countOriginRequest(refusal.reason);
+    if (refusal.reason === "budget_spent") emitMetric({ namespace: METRICS_NAMESPACE, metricName: PUBLIC_BUDGET_SPENT_METRIC });
+    return lookupLimitResponse(request, jsonHeaders(NO_STORE), refusal.seconds);
   }
 
+  let timer;
+  const deadline = new Promise((resolve) => {
+    timer = setTimeout(() => resolve(DEADLINE_PASSED), REGISTER_DEADLINE_MS);
+  });
+  try {
+    const answer = await Promise.race([readRegister(request, normalised), deadline]);
+    if (answer !== DEADLINE_PASSED) return answer;
+  } finally {
+    clearTimeout(timer);
+  }
+  countOriginRequest("timeout");
+  logger.warn({ message: "The register reads outlasted the deadline", deadlineMs: REGISTER_DEADLINE_MS });
+  return http504GatewayTimeoutResponse({
+    request,
+    headers: jsonHeaders(NO_STORE),
+    message: "Companies House is slow to answer. Try again in a few minutes.",
+  });
+}
+
+// The profile, the officers and the last filed accounts, read and answered as one register.
+async function readRegister(request, normalised) {
   const profileResponse = await companiesHouseHttpGet(`/company/${normalised}`);
   if (!profileResponse.ok) return failureResponse(request, profileResponse);
 

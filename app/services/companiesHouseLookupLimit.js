@@ -5,12 +5,14 @@
 // Limits on the Companies House calls signed-in lookups drive on the shared API key, which allows
 // 600 calls in five minutes for everyone: each account's share, and a budget for all signed-in
 // lookups together. Each lookup route charges the most calls it can make; a lookup past either
-// limit in a five-minute window gets a JSON 429 until the window ends.
+// limit in a five-minute window gets a JSON 429 until the window ends. After Companies House itself
+// answers 429, every lookup, signed in or public, stops for the time its Retry-After names.
 
 import { createLogger } from "../lib/logger.js";
 import { http429TooManyRequestsResponse } from "../lib/httpResponseHelper.js";
-import { incrementRateCounter } from "../data/dynamoDbSecurityStateRepository.js";
+import { getCachedValue, incrementRateCounter, putCachedValue } from "../data/dynamoDbSecurityStateRepository.js";
 import { hashSub } from "./subHasher.js";
+import { httpResponseFromCompaniesHouseResponse } from "./companiesHouseApi.js";
 
 const logger = createLogger({ source: "app/services/companiesHouseLookupLimit.js" });
 
@@ -63,23 +65,71 @@ async function charge(identifier, window, calls) {
   }
 }
 
+// The one stop every lookup reads and sets after Companies House answers 429 on the shared key.
+const STOP_KEY = "chlookup#stopped";
+// Companies House counts its limit in five-minute windows; a 429 with no Retry-After stops for one.
+const STOP_SECONDS_WITHOUT_RETRY_AFTER = WINDOW_SECONDS;
+
+function secondsLeftInWindow() {
+  return Math.max(1, Math.ceil(WINDOW_SECONDS - ((Date.now() / 1000) % WINDOW_SECONDS)));
+}
+
 /**
- * Charges the calls of one lookup to the account's share and then to the budget of all signed-in
- * lookups, and answers whether either is now spent. Each charge is one atomic update of a counter
- * with a five-minute time to live; a lookup refused for the account's share is not charged to the
- * budget of all. Where the security state table is not configured (the simulator and local
- * servers), or a counter cannot be written, that limit does not apply.
+ * The seconds left in the stop that a Companies House 429 set, or 0 when there is none. Where the
+ * security state table is not configured, or the stop cannot be read, no stop applies.
+ * @returns {Promise<number>}
+ */
+export async function companiesHouseStopSecondsLeft() {
+  if (!process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME) return 0;
+  try {
+    const stop = await getCachedValue(STOP_KEY);
+    const secondsLeft = Math.ceil(((stop?.until ?? 0) - Date.now()) / 1000);
+    return secondsLeft > 0 ? secondsLeft : 0;
+  } catch (error) {
+    logger.warn({ message: "Companies House stop could not be read", error: error.message });
+    return 0;
+  }
+}
+
+/**
+ * Stops every lookup on the shared key for the seconds Companies House's Retry-After names, or
+ * five minutes when it names none. Where the security state table is not configured, or the stop
+ * cannot be written, nothing is stored.
+ * @param {string|number|undefined} retryAfter - the 429's Retry-After header
+ */
+export async function stopCompaniesHouseLookups(retryAfter) {
+  if (!process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME) return;
+  const named = Number.parseInt(retryAfter, 10);
+  const seconds = Number.isFinite(named) && named > 0 ? named : STOP_SECONDS_WITHOUT_RETRY_AFTER;
+  try {
+    await putCachedValue(STOP_KEY, { until: Date.now() + seconds * 1000 }, seconds);
+    logger.warn({ message: "Companies House answered 429; lookups on the shared key stop", seconds });
+  } catch (error) {
+    logger.warn({ message: "Companies House stop could not be written", error: error.message });
+  }
+}
+
+/**
+ * Whether a signed-in lookup is refused, as the seconds the caller should wait, or 0 when it may go
+ * ahead. During a Companies House stop it is refused for the seconds left, and charged nothing.
+ * Otherwise it charges the lookup's calls to the account's share and then to the budget of all
+ * signed-in lookups; past either it is refused until the five-minute window ends. Each charge is one
+ * atomic update of a counter with a five-minute time to live; a lookup refused for the account's
+ * share is not charged to the budget of all. Where the security state table is not configured (the
+ * simulator and local servers), or a counter cannot be written, that limit does not apply.
  * @param {string} userSub
  * @param {number} calls - the most Companies House calls the lookup makes
- * @returns {Promise<boolean>} true when the account has passed its share in this window
+ * @returns {Promise<number>} the seconds to wait, or 0
  */
-export async function lookupLimitReached(userSub, calls) {
-  if (!process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME) return false;
+export async function lookupRefusalSeconds(userSub, calls) {
+  if (!process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME) return 0;
+  const stopped = await companiesHouseStopSecondsLeft();
+  if (stopped) return stopped;
   const window = Math.floor(Date.now() / 1000 / WINDOW_SECONDS);
   const accountUsed = await charge(hashSub(userSub), window, calls);
   if (accountUsed !== null && accountUsed > LOOKUP_CALLS_PER_ACCOUNT_PER_WINDOW) {
     logger.warn({ message: "Companies House lookups refused, the account has used its share of the API key", used: accountUsed });
-    return true;
+    return secondsLeftInWindow();
   }
   const allUsed = await charge(ALL_ACCOUNTS, window, calls);
   if (allUsed !== null && allUsed > LOOKUP_CALLS_FOR_ALL_ACCOUNTS_PER_WINDOW) {
@@ -89,39 +139,58 @@ export async function lookupLimitReached(userSub, calls) {
       window,
       used: allUsed,
     });
-    return true;
+    return secondsLeftInWindow();
   }
-  return false;
+  return 0;
 }
 
 /**
- * Charges the calls of one public lookup to the budget of all public lookups, and answers whether
- * it is now spent. Where the security state table is not configured (the simulator and local
- * servers), or the counter cannot be written, the budget does not apply.
+ * Why and for how long a public lookup is refused, or null when it may go ahead. During a Companies
+ * House stop it is refused for the seconds left, with reason stopped, and charged nothing. Otherwise
+ * it charges the lookup's calls to the budget of all public lookups; past it, it is refused until the
+ * five-minute window ends, with reason budget_spent. Where the security state table is not
+ * configured (the simulator and local servers), or the counter cannot be written, the budget does
+ * not apply.
  * @param {number} calls - the most Companies House calls the lookup makes
- * @returns {Promise<boolean>} true when public lookups have passed their budget in this window
+ * @returns {Promise<{seconds: number, reason: "stopped"|"budget_spent"}|null>}
  */
-export async function publicLookupBudgetSpent(calls) {
-  if (!process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME) return false;
+export async function publicLookupRefusal(calls) {
+  if (!process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME) return null;
+  const stopped = await companiesHouseStopSecondsLeft();
+  if (stopped) return { seconds: stopped, reason: "stopped" };
   const window = Math.floor(Date.now() / 1000 / WINDOW_SECONDS);
   const used = await charge(ALL_PUBLIC, window, calls);
   if (used !== null && used > PUBLIC_LOOKUP_CALLS_PER_WINDOW) {
     logger.warn({ message: "Public Companies House lookups refused, they have used their budget of the API key", window, used });
-    return true;
+    return { seconds: secondsLeftInWindow(), reason: "budget_spent" };
   }
-  return false;
+  return null;
 }
 
 /**
- * The JSON 429 a lookup answers once the account's share, the budget of all signed-in lookups or the
- * budget of all public lookups is spent. Retry-After is the seconds left in the five-minute window, when both counters start again.
+ * The JSON 429 a refused lookup answers, with Retry-After the seconds lookupRefusalSeconds or
+ * publicLookupRefusal answered.
+ * @param {object} request
+ * @param {object} headers
+ * @param {number} retryAfterSeconds
  */
-export function lookupLimitResponse(request, headers) {
-  const secondsIntoWindow = (Date.now() / 1000) % WINDOW_SECONDS;
+export function lookupLimitResponse(request, headers, retryAfterSeconds) {
   return http429TooManyRequestsResponse({
     request,
     headers: { ...headers },
     message: "Too many Companies House lookups just now. Try again in a few minutes.",
-    retryAfterSeconds: Math.max(1, Math.ceil(WINDOW_SECONDS - secondsIntoWindow)),
+    retryAfterSeconds,
   });
+}
+
+/**
+ * The JSON answer a lookup gives for a failed Companies House response. A 429 first stops every
+ * lookup on the shared key for the time its Retry-After names.
+ * @param {object} request
+ * @param {{status: number, headers?: object}} chResponse
+ * @param {object} headers
+ */
+export async function lookupFailureResponse(request, chResponse, headers) {
+  if (chResponse.status === 429) await stopCompaniesHouseLookups(chResponse.headers?.["retry-after"]);
+  return httpResponseFromCompaniesHouseResponse(request, chResponse, headers);
 }

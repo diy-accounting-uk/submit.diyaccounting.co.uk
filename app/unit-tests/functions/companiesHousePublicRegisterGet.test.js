@@ -19,13 +19,19 @@ vi.mock("@aws-sdk/lib-dynamodb", () => ({
 }));
 vi.mock("@aws-sdk/client-dynamodb", () => ({ DynamoDBClient: class {} }));
 const mockIncrementRateCounter = vi.fn();
+const mockGetCachedValue = vi.fn();
+const mockPutCachedValue = vi.fn();
 vi.mock("@app/data/dynamoDbSecurityStateRepository.js", () => ({
   incrementRateCounter: (...args) => mockIncrementRateCounter(...args),
+  getCachedValue: (...args) => mockGetCachedValue(...args),
+  putCachedValue: (...args) => mockPutCachedValue(...args),
 }));
 
 import {
   ingestHandler,
   COMPANIES_HOUSE_429_METRIC,
+  ORIGIN_REQUEST_METRIC,
+  REGISTER_DEADLINE_MS,
   PUBLIC_BUDGET_SPENT_METRIC,
   FOUND_CACHE_SECONDS,
 } from "@app/functions/companies-house/companiesHousePublicRegisterGet.js";
@@ -327,6 +333,62 @@ describe("companiesHousePublicRegisterGet ingestHandler", () => {
       expect(mockEmitMetric).toHaveBeenCalledWith(expect.objectContaining({ metricName: PUBLIC_BUDGET_SPENT_METRIC }));
     } finally {
       delete process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
+    }
+  });
+
+  test("stops lookups on the shared key for the Retry-After Companies House names when it answers 429", async () => {
+    process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
+    mockIncrementRateCounter.mockResolvedValue(1);
+    withHistory([]);
+    routes.unshift([
+      (url) => url.startsWith(`${API}/company/00000006/officers`),
+      () => ({ status: 429, json: {}, headers: { "retry-after": "120" } }),
+    ]);
+    try {
+      const response = await get("00000006");
+      expect(response.statusCode).toBe(429);
+      expect(mockPutCachedValue).toHaveBeenCalledWith("chlookup#stopped", { until: expect.any(Number) }, 120);
+    } finally {
+      delete process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
+    }
+  });
+
+  test("answers a JSON 429 with the seconds left in a Companies House stop, before any call", async () => {
+    process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
+    mockGetCachedValue.mockResolvedValue({ until: Date.now() + 75_000 });
+    try {
+      const response = await get("00000006");
+      expect(response.statusCode).toBe(429);
+      expect(response.headers["Retry-After"]).toBe("75");
+      expect(response.headers["Cache-Control"]).toBe("no-store");
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockIncrementRateCounter).not.toHaveBeenCalled();
+      expect(mockEmitMetric).not.toHaveBeenCalledWith(expect.objectContaining({ metricName: PUBLIC_BUDGET_SPENT_METRIC }));
+    } finally {
+      delete process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
+    }
+  });
+
+  test("answers its own JSON 504, not cached, and counts it, when the reads outlast the deadline before the Lambda's time ends", async () => {
+    withHistory([accountsItem({ transactionId: "TXIXBRL", documentId: "DOCIXBRL" })]);
+    const answerAfter = mockFetch.getMockImplementation();
+    // Each read answers inside its own timeout, but the chain of them outlasts the deadline.
+    mockFetch.mockImplementation((url, init) => new Promise((resolve) => setTimeout(() => resolve(answerAfter(url, init)), 9_000)));
+    vi.useFakeTimers();
+    try {
+      const pending = get("00000006");
+      await vi.advanceTimersByTimeAsync(REGISTER_DEADLINE_MS);
+      const response = await pending;
+      expect(response.statusCode).toBe(504);
+      expect(response.headers["Content-Type"]).toBe("application/json");
+      expect(response.headers["Cache-Control"]).toBe("no-store");
+      expect(parseResponseBody(response).message).toMatch(/Try again in a few minutes/);
+      expect(mockEmitMetric).toHaveBeenCalledWith(
+        expect.objectContaining({ metricName: ORIGIN_REQUEST_METRIC, dimensions: { Outcome: "timeout" } }),
+      );
+      expect(REGISTER_DEADLINE_MS).toBeLessThan(28_000);
+    } finally {
+      vi.useRealTimers();
     }
   });
 });

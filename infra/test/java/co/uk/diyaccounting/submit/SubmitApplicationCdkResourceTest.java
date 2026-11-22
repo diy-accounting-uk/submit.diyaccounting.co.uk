@@ -436,6 +436,8 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/public/company-deadlines"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/public/company-register"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "HEAD /api/v1/public/company-deadlines"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "HEAD /api/v1/public/company-register"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/token"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "DELETE /api/v1/companies-house/grants/{grantId}"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/transaction"));

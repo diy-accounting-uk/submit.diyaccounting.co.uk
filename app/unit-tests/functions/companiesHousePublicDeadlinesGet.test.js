@@ -19,8 +19,12 @@ vi.mock("@aws-sdk/lib-dynamodb", () => ({
 }));
 vi.mock("@aws-sdk/client-dynamodb", () => ({ DynamoDBClient: class {} }));
 const mockIncrementRateCounter = vi.fn();
+const mockGetCachedValue = vi.fn();
+const mockPutCachedValue = vi.fn();
 vi.mock("@app/data/dynamoDbSecurityStateRepository.js", () => ({
   incrementRateCounter: (...args) => mockIncrementRateCounter(...args),
+  getCachedValue: (...args) => mockGetCachedValue(...args),
+  putCachedValue: (...args) => mockPutCachedValue(...args),
 }));
 
 import {
@@ -263,6 +267,36 @@ describe("companiesHousePublicDeadlinesGet ingestHandler", () => {
       expect(mockFetch).not.toHaveBeenCalled();
       expect(mockIncrementRateCounter).toHaveBeenCalledWith(expect.objectContaining({ identifier: "all-public-lookups", hits: 1 }));
       expect(mockEmitMetric).toHaveBeenCalledWith(expect.objectContaining({ metricName: PUBLIC_BUDGET_SPENT_METRIC }));
+    } finally {
+      delete process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
+    }
+  });
+
+  test("stops lookups on the shared key for the Retry-After Companies House names when it answers 429", async () => {
+    process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
+    mockIncrementRateCounter.mockResolvedValue(1);
+    upstream(429, {}, { "retry-after": "120" });
+    try {
+      const response = await ingestHandler(get({ number: "00000006" }));
+      expect(response.statusCode).toBe(429);
+      expect(mockPutCachedValue).toHaveBeenCalledWith("chlookup#stopped", { until: expect.any(Number) }, 120);
+    } finally {
+      delete process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
+    }
+  });
+
+  test("answers a JSON 429 with the seconds left in a Companies House stop, before any call", async () => {
+    process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
+    mockGetCachedValue.mockResolvedValue({ until: Date.now() + 75_000 });
+    try {
+      for (const query of [{ number: "00000006" }, { q: "example" }]) {
+        const response = await ingestHandler(get(query));
+        expect(response.statusCode).toBe(429);
+        expect(response.headers["Retry-After"]).toBe("75");
+      }
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(mockIncrementRateCounter).not.toHaveBeenCalled();
+      expect(mockEmitMetric).not.toHaveBeenCalledWith(expect.objectContaining({ metricName: PUBLIC_BUDGET_SPENT_METRIC }));
     } finally {
       delete process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
     }

@@ -16,12 +16,13 @@ import {
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { LOOKUP_CALLS, lookupLimitReached, lookupLimitResponse } from "../../services/companiesHouseLookupLimit.js";
 import {
-  httpResponseFromCompaniesHouseResponse,
-  isValidCompanyNumber,
-  http403ForbiddenFromBundleEnforcement,
-} from "../../services/companiesHouseApi.js";
+  LOOKUP_CALLS,
+  lookupFailureResponse,
+  lookupLimitResponse,
+  lookupRefusalSeconds,
+} from "../../services/companiesHouseLookupLimit.js";
+import { isValidCompanyNumber, http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
 import { fetchFiledAccountsDocument, IXBRL_CONTENT_TYPE, MAX_DOCUMENT_RESPONSE_BYTES } from "../../services/companiesHouseFiledAccounts.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
@@ -81,7 +82,8 @@ export async function ingestHandler(event) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }
 
-  if (await lookupLimitReached(userSub, LOOKUP_CALLS.filedDocument)) return lookupLimitResponse(request, responseHeaders);
+  const refusalSeconds = await lookupRefusalSeconds(userSub, LOOKUP_CALLS.filedDocument);
+  if (refusalSeconds) return lookupLimitResponse(request, responseHeaders, refusalSeconds);
 
   const { chResponse, problem, set, document } = await fetchFiledAccountsDocument(companyNumber, transactionId);
 
@@ -92,7 +94,7 @@ export async function ingestHandler(event) {
       transactionId,
       status: chResponse.status,
     });
-    return httpResponseFromCompaniesHouseResponse(request, chResponse, responseHeaders);
+    return lookupFailureResponse(request, chResponse, responseHeaders);
   }
   if (problem === "not-accounts") {
     return http404NotFoundResponse({

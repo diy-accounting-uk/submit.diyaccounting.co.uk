@@ -22,13 +22,13 @@ import { extractRequest, http200OkResponse, buildValidationError } from "../../l
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { LOOKUP_CALLS, lookupLimitReached, lookupLimitResponse } from "../../services/companiesHouseLookupLimit.js";
 import {
-  companiesHouseHttpGet,
-  httpResponseFromCompaniesHouseResponse,
-  isValidCompanyNumber,
-  http403ForbiddenFromBundleEnforcement,
-} from "../../services/companiesHouseApi.js";
+  LOOKUP_CALLS,
+  lookupFailureResponse,
+  lookupLimitResponse,
+  lookupRefusalSeconds,
+} from "../../services/companiesHouseLookupLimit.js";
+import { companiesHouseHttpGet, isValidCompanyNumber, http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 
@@ -81,12 +81,13 @@ export async function ingestHandler(event) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }
 
-  if (await lookupLimitReached(userSub, LOOKUP_CALLS.registeredOffice)) return lookupLimitResponse(request, responseHeaders);
+  const refusalSeconds = await lookupRefusalSeconds(userSub, LOOKUP_CALLS.registeredOffice);
+  if (refusalSeconds) return lookupLimitResponse(request, responseHeaders, refusalSeconds);
 
   const { chResponse, address } = await getRegisteredOfficeAddress(companyNumber);
 
   if (!chResponse.ok) {
-    return httpResponseFromCompaniesHouseResponse(request, chResponse, responseHeaders);
+    return lookupFailureResponse(request, chResponse, responseHeaders);
   }
 
   await publishActivityEvent({

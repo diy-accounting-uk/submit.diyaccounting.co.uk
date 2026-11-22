@@ -10,10 +10,14 @@ import { extractRequest, http200OkResponse, buildValidationError } from "../../l
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { LOOKUP_CALLS, lookupLimitReached, lookupLimitResponse } from "../../services/companiesHouseLookupLimit.js";
+import {
+  LOOKUP_CALLS,
+  lookupFailureResponse,
+  lookupLimitResponse,
+  lookupRefusalSeconds,
+} from "../../services/companiesHouseLookupLimit.js";
 import {
   companiesHouseFilingHistory,
-  httpResponseFromCompaniesHouseResponse,
   isValidCompanyNumber,
   http403ForbiddenFromBundleEnforcement,
 } from "../../services/companiesHouseApi.js";
@@ -86,13 +90,14 @@ export async function ingestHandler(event) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }
 
-  if (await lookupLimitReached(userSub, LOOKUP_CALLS.filingHistory)) return lookupLimitResponse(request, responseHeaders);
+  const refusalSeconds = await lookupRefusalSeconds(userSub, LOOKUP_CALLS.filingHistory);
+  if (refusalSeconds) return lookupLimitResponse(request, responseHeaders, refusalSeconds);
 
   const chResponse = await companiesHouseFilingHistory(companyNumber);
 
   if (!chResponse.ok) {
     logger.warn({ message: "Companies House filing history lookup failed", companyNumber, status: chResponse.status });
-    return httpResponseFromCompaniesHouseResponse(request, chResponse, responseHeaders);
+    return lookupFailureResponse(request, chResponse, responseHeaders);
   }
 
   await publishActivityEvent({

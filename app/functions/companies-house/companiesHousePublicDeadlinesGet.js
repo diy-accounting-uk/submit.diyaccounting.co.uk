@@ -26,7 +26,12 @@ import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { emitMetric } from "../../lib/emfMetrics.js";
 import { companiesHouseHttpGet, isValidCompanyNumber } from "../../services/companiesHouseApi.js";
-import { PUBLIC_LOOKUP_CALLS, lookupLimitResponse, publicLookupBudgetSpent } from "../../services/companiesHouseLookupLimit.js";
+import {
+  PUBLIC_LOOKUP_CALLS,
+  lookupLimitResponse,
+  publicLookupRefusal,
+  stopCompaniesHouseLookups,
+} from "../../services/companiesHouseLookupLimit.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHousePublicDeadlinesGet.js" });
 
@@ -87,7 +92,7 @@ export function matchesFromSearch(data) {
   }));
 }
 
-function failureResponse(request, kind, chResponse) {
+async function failureResponse(request, kind, chResponse) {
   if (chResponse.status === 404) {
     countOriginRequest(kind, "not_found");
     return http404NotFoundResponse({
@@ -97,6 +102,7 @@ function failureResponse(request, kind, chResponse) {
     });
   }
   if (chResponse.status === 429) {
+    await stopCompaniesHouseLookups(chResponse.headers?.["retry-after"]);
     countOriginRequest(kind, "rate_limited");
     emitMetric({ namespace: METRICS_NAMESPACE, metricName: COMPANIES_HOUSE_429_METRIC });
     const retryAfter = Number.parseInt(chResponse.headers?.["retry-after"], 10);
@@ -116,12 +122,14 @@ function failureResponse(request, kind, chResponse) {
   });
 }
 
-// Charges the lookup to the budget of all public lookups; answers the JSON 429 once it is spent.
+// Charges the lookup to the budget of all public lookups; answers the JSON 429 once it is spent, or
+// while Companies House has stopped lookups on the shared key.
 async function budgetRefusal(request, kind) {
-  if (!(await publicLookupBudgetSpent(PUBLIC_LOOKUP_CALLS.deadlines))) return null;
-  countOriginRequest(kind, "budget_spent");
-  emitMetric({ namespace: METRICS_NAMESPACE, metricName: PUBLIC_BUDGET_SPENT_METRIC });
-  return lookupLimitResponse(request, jsonHeaders(NO_STORE));
+  const refusal = await publicLookupRefusal(PUBLIC_LOOKUP_CALLS.deadlines);
+  if (!refusal) return null;
+  countOriginRequest(kind, refusal.reason);
+  if (refusal.reason === "budget_spent") emitMetric({ namespace: METRICS_NAMESPACE, metricName: PUBLIC_BUDGET_SPENT_METRIC });
+  return lookupLimitResponse(request, jsonHeaders(NO_STORE), refusal.seconds);
 }
 
 function badRequest(request, kind, message) {

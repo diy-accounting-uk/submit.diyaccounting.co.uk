@@ -256,6 +256,29 @@ class CompaniesHouseStackTest {
     }
 
     @Test
+    void everyLookupOnTheSharedKeyCanChargeItsCounterAndReadAndWriteTheStopACompaniesHouse429Sets() {
+        Template template = Template.fromStack(synthCompaniesHouseStack());
+        var names = SubmitSharedNames.forDocs().companiesHouse;
+        for (String functionName : List.of(
+                names.companiesHouseSearchGetIngestLambdaFunctionName,
+                names.companiesHouseCompanyGetIngestLambdaFunctionName,
+                names.companiesHouseRegisteredOfficeAddressGetIngestLambdaFunctionName,
+                names.companiesHouseOfficersGetIngestLambdaFunctionName,
+                names.companiesHousePscGetIngestLambdaFunctionName,
+                names.companiesHouseFilingHistoryGetIngestLambdaFunctionName,
+                names.companiesHouseFiledAccountsGetIngestLambdaFunctionName,
+                names.companiesHouseFiledDocumentGetIngestLambdaFunctionName,
+                names.companiesHouseLastAccountsGetIngestLambdaFunctionName,
+                names.companiesHousePublicDeadlinesGetIngestLambdaFunctionName,
+                names.companiesHousePublicRegisterGetIngestLambdaFunctionName)) {
+            var actions = actionsOnRole(template, functionName);
+            assertTrue(actions.contains("dynamodb:UpdateItem"), functionName + " charges its counter");
+            assertTrue(actions.contains("dynamodb:GetItem"), functionName + " reads the stop");
+            assertTrue(actions.contains("dynamodb:PutItem"), functionName + " writes the stop");
+        }
+    }
+
+    @Test
     void presenterPollReadsAndWritesTheFilingStateByKeyAndNeverScans() {
         CompaniesHouseStack stack = synthCompaniesHouseStack("", "", PRESENTER_ID_ARN, PRESENTER_CODE_ARN);
         Template template = Template.fromStack(stack);

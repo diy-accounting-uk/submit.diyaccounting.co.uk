@@ -2142,7 +2142,8 @@ public class CompaniesHouseStack extends Stack {
                 this.companiesHouseSubmissionStatusPollLambda.getNode().getId());
 
         // Each signed-in lookup on the shared Companies House API key charges the account's counter in
-        // one update; the last accounts Lambda also reads and stores its answer for a filed set.
+        // one update, and reads and writes the stop a Companies House 429 sets; the last accounts
+        // Lambda also reads and stores its answer for a filed set.
         for (Function lookup : List.of(
                 this.companiesHouseSearchGetLambda,
                 this.companiesHouseCompanyGetLambda,
@@ -2152,12 +2153,13 @@ public class CompaniesHouseStack extends Stack {
                 this.companiesHouseFilingHistoryGetLambda,
                 this.companiesHouseFiledAccountsGetLambda,
                 this.companiesHouseFiledDocumentGetLambda)) {
-            securityStateTable.grant(lookup, "dynamodb:UpdateItem");
+            securityStateTable.grant(lookup, "dynamodb:UpdateItem", "dynamodb:GetItem", "dynamodb:PutItem");
         }
-        // Each public lookup charges the counter of all public lookups on the same key in one update.
+        // Each public lookup charges the counter of all public lookups on the same key in one update,
+        // and reads and writes the same stop.
         for (Function publicLookup :
                 List.of(this.companiesHousePublicDeadlinesGetLambda, this.companiesHousePublicRegisterGetLambda)) {
-            securityStateTable.grant(publicLookup, "dynamodb:UpdateItem");
+            securityStateTable.grant(publicLookup, "dynamodb:UpdateItem", "dynamodb:GetItem", "dynamodb:PutItem");
         }
         securityStateTable.grant(
                 this.companiesHouseLastAccountsGetLambda,
