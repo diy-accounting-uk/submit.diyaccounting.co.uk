@@ -4,11 +4,11 @@
 
 // @capability CH-26 Build, validate and file the Companies House forms' test submissions
 // - **Use when:** a Companies House form filed through the shared filing route needs its test submissions validated, or filed on the Companies House test service for the XML team.
-// - **Does:** companies-house-test-submissions.mjs holds the test cases of each form kind. For each case it builds the body with the form's own request check and builder, wraps it in the GovTalk envelope with the test flag and a unique submission number, and validates the body against the form's schema and the whole envelope against the envelope, FormSubmission and form schemas. With --file it files each case through Submit's own filing route and polls the answer through Submit's own poll. It writes one JSON line a case to the path given, which must be outside the repository.
-// - **Run:** `node scripts/companies-house-test-submissions.mjs --out /tmp/test-submissions.jsonl`; `npx dotenv -e .env.ci -- node scripts/companies-house-test-submissions.mjs --file --user-sub <sub> --auth-code <code> --out <path>`
+// - **Does:** companies-house-test-submissions.mjs holds the test cases of each form kind. For each case it builds the body with the form's own request check and builder, wraps it in the GovTalk envelope with the test flag and a unique submission number, and validates the body against the form's schema and the whole envelope against the envelope, FormSubmission and form schemas. With --file it files each case through Submit's own filing route and polls the answer through Submit's own poll; with --measure-lag it then reads the company's filing history through Submit's lookup every 30 seconds and writes the minutes until the filing shows. It writes one JSON line a case to the path given, which must be outside the repository.
+// - **Run:** `node scripts/companies-house-test-submissions.mjs --out /tmp/test-submissions.jsonl`; `npx dotenv -e .env.ci -- node scripts/companies-house-test-submissions.mjs --file --user-sub <sub> --auth-code <code> --out <path> [--measure-lag]`
 // - **Entry:** `scripts/companies-house-test-submissions.mjs:testSubmissionCases`; `scripts/companies-house-test-submissions.mjs:buildTestSubmission`; `scripts/companies-house-test-submissions.mjs:validateTestSubmission`
 // - **Files:** scripts/companies-house-test-submissions.mjs, app/unit-tests/scripts/companiesHouseTestSubmissions.test.js
-// - **Keywords:** companies house, xml gateway, test submission, test flag, GatewayTest, schema validation, form filing
+// - **Keywords:** companies house, xml gateway, test submission, test flag, GatewayTest, schema validation, form filing, register lag
 // - **Related:** CH-12, CH-13
 // @end-capability
 
@@ -20,7 +20,7 @@
  *     validates every case and sends nothing
  *   node scripts/companies-house-test-submissions.mjs --file --user-sub <sub> --auth-code <code> --out <path>
  *       [--form <kind>] [--include-fee-forms] [--company-number <n>] [--company-name <name>]
- *       [--current-period-end <YYYY-MM-DD>]
+ *       [--current-period-end <YYYY-MM-DD>] [--measure-lag]
  *     validates every case, then files each through the shared filing route
  *     (app/services/companiesHouseFormFiling.js) and polls it through the shared poll
  *     (app/services/companiesHouseSubmissionStatus.js) to an answer
@@ -32,6 +32,12 @@
  * A form with a fee (the change of name) is skipped unless --include-fee-forms is given, because
  * Companies House charges a form's fee to the presenter's credit account and no published document
  * says whether a test submission is charged.
+ *
+ * --measure-lag, with --file, reads the company's filing history through Submit's company lookup
+ * (the filing history route) before each case is filed, and after an ACCEPT reads it again every 30
+ * seconds for at most 30 minutes, until a filing that was not there before shows. The case's line
+ * then carries the minutes from the acceptance to that read, so a test filing measures how long
+ * Companies House's public register takes to show an accepted filing.
  *
  * --out names the JSON lines file: one line a case with its submission number, form kind, case name,
  * validation result and, with --file, the gateway's answer. It must resolve outside the repository.
@@ -60,6 +66,9 @@ const VALIDATION_PACKAGE_REFERENCE = "0012";
 
 const POLL_INTERVAL_MS = 10_000;
 const POLL_LIMIT_MS = 10 * 60 * 1000;
+// The filing history reads of --measure-lag.
+export const LAG_READ_INTERVAL_MS = 30_000;
+export const LAG_READ_LIMIT_MS = 30 * 60 * 1000;
 const FINAL_STATUS_CODES = ["ACCEPT", "REJECT"];
 
 const ukDate = (date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(date);
@@ -376,6 +385,7 @@ function parseArgs(argv) {
     else if (flag === "--form") args.form = value();
     else if (flag === "--file") args.file = true;
     else if (flag === "--include-fee-forms") args.includeFeeForms = true;
+    else if (flag === "--measure-lag") args.measureLag = true;
     else if (flag === "--user-sub") args.userSub = value();
     else if (flag === "--auth-code") args.authCode = value();
     else if (flag === "--company-number") args.companyNumber = value();
@@ -384,6 +394,7 @@ function parseArgs(argv) {
     else throw new Error(`unknown argument ${flag}`);
   }
   if (!args.out) throw new Error("--out <path> is required");
+  if (args.measureLag && !args.file) throw new Error("--measure-lag needs --file: it measures the lag after a filing it makes");
   if (args.file && !args.userSub) throw new Error("--file needs --user-sub, the Submit account the filings are made under");
   if (args.file && !args.authCode) throw new Error("--file needs --auth-code, the test company's authentication code");
   if (args.file && process.env.COMPANIES_HOUSE_GATEWAY_TEST !== "true") {
@@ -398,6 +409,59 @@ function parseArgs(argv) {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // The filing route's own Lambda handler code, called with the event API Gateway would give it.
+/**
+ * The first filing in a filing history answer whose transaction id is not among the earlier ones.
+ * @param {Set<string>} earlierIds
+ * @param {Array<{transactionId: string}>} filings
+ * @returns {object|undefined}
+ */
+export function firstNewFiling(earlierIds, filings) {
+  return filings.find((filing) => filing.transactionId && !earlierIds.has(filing.transactionId));
+}
+
+/**
+ * Reads the filing history until a filing not among the earlier ones shows, or the limit passes.
+ * A read that fails (a lookup limit, a Companies House error) is counted and the reads go on.
+ * @param {object} input
+ * @param {() => Promise<{filings?: object[]}|null>} input.readHistory - one read; null when it failed
+ * @param {Set<string>} input.earlierIds - the transaction ids read before the filing was sent
+ * @param {number} input.acceptedAtMs
+ * @param {(ms: number) => Promise<void>} [input.wait]
+ * @param {() => number} [input.now]
+ * @returns {Promise<{shown: boolean, minutes: number, reads: number, failedReads: number, transactionId?: string, type?: string}>}
+ */
+export async function measureLag({ readHistory, earlierIds, acceptedAtMs, wait = sleep, now = Date.now }) {
+  let reads = 0;
+  let failedReads = 0;
+  const minutesSinceAcceptance = () => Math.round((now() - acceptedAtMs) / 6000) / 10;
+  while (now() - acceptedAtMs <= LAG_READ_LIMIT_MS) {
+    const history = await readHistory();
+    reads += 1;
+    if (!history) failedReads += 1;
+    const shown = history ? firstNewFiling(earlierIds, history.filings ?? []) : undefined;
+    if (shown)
+      return { shown: true, minutes: minutesSinceAcceptance(), reads, failedReads, transactionId: shown.transactionId, type: shown.type };
+    await wait(LAG_READ_INTERVAL_MS);
+  }
+  return { shown: false, minutes: minutesSinceAcceptance(), reads, failedReads };
+}
+
+// One read of the company's filing history through Submit's company lookup route; null when it failed.
+async function readFilingHistory(companyNumber, userSub) {
+  const { ingestHandler } = await import("../app/functions/companies-house/companiesHouseFilingHistoryGet.js");
+  const path = `/api/v1/companies-house/company/${companyNumber}/filing-history`;
+  const response = await ingestHandler({
+    requestContext: {
+      requestId: `test-submission-lag-${Date.now()}`,
+      http: { method: "GET", path },
+      authorizer: { lambda: { sub: userSub } },
+    },
+    headers: {},
+    pathParameters: { companyNumber },
+  });
+  return response.statusCode === 200 ? JSON.parse(response.body || "{}") : null;
+}
+
 async function fileThroughSubmit(testCase, userSub) {
   const { fileCompaniesHouseForm } = await import("../app/services/companiesHouseFormFiling.js");
   const { pollSubmission } = await import("../app/services/companiesHouseSubmissionStatus.js");
@@ -469,8 +533,19 @@ async function main() {
     if (args.file && valid) {
       const decision = fileDecision(testCase, args.includeFeeForms);
       if (decision.send) {
+        const { companyNumber } = testCase.body;
+        const earlier = args.measureLag ? await readFilingHistory(companyNumber, args.userSub) : null;
         const filed = await fileThroughSubmit(testCase, args.userSub);
         Object.assign(line, filed, { submissionNumber: filed.submissionNumber ?? null, validatedSubmissionNumber: numbers[index] });
+        if (args.measureLag && filed.answer?.data?.statusCode === "ACCEPT") {
+          line.lag = earlier
+            ? await measureLag({
+                readHistory: () => readFilingHistory(companyNumber, args.userSub),
+                earlierIds: new Set((earlier.filings ?? []).map((filing) => filing.transactionId)),
+                acceptedAtMs: Date.now(),
+              })
+            : { shown: false, reason: "the filing history could not be read before the filing was sent" };
+        }
       } else {
         line.skipped = decision.reason;
       }
@@ -483,6 +558,10 @@ async function main() {
   console.log("| --- | --- | --- | --- |");
   for (const row of rows) {
     console.log(`| ${row.formIdentifier} | ${row.caseName} | ${row.expectedOutcome} | ${row.valid ? "yes" : "no"} |`);
+  }
+  for (const row of rows.filter((candidate) => candidate.lag)) {
+    const where = row.lag.shown ? "on the register" : "not on the register";
+    console.log(`${row.formIdentifier} ${row.caseName}: ${where} ${row.lag.minutes ?? "-"} minutes after the acceptance`);
   }
   for (const row of rows.filter((candidate) => !candidate.valid)) {
     console.log(`${row.formIdentifier} ${row.caseName}: ${[...row.requestErrors, ...row.bodyErrors, ...row.envelopeErrors].join("; ")}`);

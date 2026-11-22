@@ -8,6 +8,10 @@ import {
   validateTestSubmission,
   validationSubmissionNumbers,
   fileDecision,
+  firstNewFiling,
+  measureLag,
+  LAG_READ_INTERVAL_MS,
+  LAG_READ_LIMIT_MS,
   DEFAULT_TEST_COMPANY,
 } from "../../../scripts/companies-house-test-submissions.mjs";
 import { GATEWAY_FORM_BUILDERS } from "../../services/companiesHouseForms.js";
@@ -126,5 +130,42 @@ describe("the schema check of a test submission", () => {
       schema,
     );
     expect(result.envelopeErrors.length).toBeGreaterThan(0);
+  });
+});
+
+describe("the measure of the register's lag after an acceptance", () => {
+  const EARLIER = new Set(["T1", "T2"]);
+  const history = (...ids) => ({ filings: ids.map((transactionId) => ({ transactionId, type: "PSC07" })) });
+
+  // A clock that moves only when the measure waits.
+  function clock() {
+    let ms = 0;
+    return { now: () => ms, wait: async (waitMs) => (ms += waitMs) };
+  }
+
+  test("finds the first filing that was not in the history before", () => {
+    expect(firstNewFiling(EARLIER, history("T3", "T1").filings)).toEqual({ transactionId: "T3", type: "PSC07" });
+    expect(firstNewFiling(EARLIER, history("T1", "T2").filings)).toBeUndefined();
+  });
+
+  test("reads every 30 seconds and gives the minutes until the filing shows", async () => {
+    const { now, wait } = clock();
+    const answers = [history("T1", "T2"), null, history("T1", "T2"), history("T3", "T1", "T2")];
+    const result = await measureLag({ readHistory: async () => answers.shift(), earlierIds: EARLIER, acceptedAtMs: 0, now, wait });
+    expect(LAG_READ_INTERVAL_MS).toBe(30_000);
+    expect(result).toEqual({ shown: true, minutes: 1.5, reads: 4, failedReads: 1, transactionId: "T3", type: "PSC07" });
+  });
+
+  test("a filing already on the register at the first read has no lag", async () => {
+    const { now, wait } = clock();
+    const result = await measureLag({ readHistory: async () => history("T3"), earlierIds: EARLIER, acceptedAtMs: 0, now, wait });
+    expect(result).toMatchObject({ shown: true, minutes: 0, reads: 1 });
+  });
+
+  test("stops after 30 minutes when the filing never shows", async () => {
+    const { now, wait } = clock();
+    const result = await measureLag({ readHistory: async () => history("T1"), earlierIds: EARLIER, acceptedAtMs: 0, now, wait });
+    expect(LAG_READ_LIMIT_MS).toBe(30 * 60 * 1000);
+    expect(result).toEqual({ shown: false, minutes: 30.5, reads: 61, failedReads: 0 });
   });
 });

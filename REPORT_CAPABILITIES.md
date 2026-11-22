@@ -1892,11 +1892,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### CH-26 Build, validate and file the Companies House forms' test submissions
 
 - **Use when:** a Companies House form filed through the shared filing route needs its test submissions validated, or filed on the Companies House test service for the XML team.
-- **Does:** companies-house-test-submissions.mjs holds the test cases of each form kind. For each case it builds the body with the form's own request check and builder, wraps it in the GovTalk envelope with the test flag and a unique submission number, and validates the body against the form's schema and the whole envelope against the envelope, FormSubmission and form schemas. With --file it files each case through Submit's own filing route and polls the answer through Submit's own poll. It writes one JSON line a case to the path given, which must be outside the repository.
-- **Run:** `node scripts/companies-house-test-submissions.mjs --out /tmp/test-submissions.jsonl`; `npx dotenv -e .env.ci -- node scripts/companies-house-test-submissions.mjs --file --user-sub <sub> --auth-code <code> --out <path>`
+- **Does:** companies-house-test-submissions.mjs holds the test cases of each form kind. For each case it builds the body with the form's own request check and builder, wraps it in the GovTalk envelope with the test flag and a unique submission number, and validates the body against the form's schema and the whole envelope against the envelope, FormSubmission and form schemas. With --file it files each case through Submit's own filing route and polls the answer through Submit's own poll; with --measure-lag it then reads the company's filing history through Submit's lookup every 30 seconds and writes the minutes until the filing shows. It writes one JSON line a case to the path given, which must be outside the repository.
+- **Run:** `node scripts/companies-house-test-submissions.mjs --out /tmp/test-submissions.jsonl`; `npx dotenv -e .env.ci -- node scripts/companies-house-test-submissions.mjs --file --user-sub <sub> --auth-code <code> --out <path> [--measure-lag]`
 - **Entry:** `scripts/companies-house-test-submissions.mjs:testSubmissionCases`; `scripts/companies-house-test-submissions.mjs:buildTestSubmission`; `scripts/companies-house-test-submissions.mjs:validateTestSubmission`
 - **Files:** scripts/companies-house-test-submissions.mjs, app/unit-tests/scripts/companiesHouseTestSubmissions.test.js
-- **Keywords:** companies house, xml gateway, test submission, test flag, GatewayTest, schema validation, form filing
+- **Keywords:** companies house, xml gateway, test submission, test flag, GatewayTest, schema validation, form filing, register lag
 - **Related:** CH-12, CH-13
 
 #### CH-16 Check an accounts iXBRL document as a reader sees it
@@ -9339,6 +9339,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - refund: [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
 - refused: [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets)
 - register: [CH-03](#ch-03-search-the-companies-house-register)
+- register lag: [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions)
 - registered email: [CH-06](#ch-06-file-a-change-of-registered-email-address), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - registered office: [CH-05](#ch-05-file-a-change-of-registered-office-address), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - registerlambdaroute: [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes)
