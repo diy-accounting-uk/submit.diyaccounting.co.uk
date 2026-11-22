@@ -183,3 +183,44 @@ describe("Welsh spreadsheets page", () => {
     quotes.forEach(([, attributes]) => expect(attributes).toContain('lang="en"'));
   });
 });
+
+describe("The list of the site's Welsh services", () => {
+  const linkedFiles = (html, from) =>
+    [...html.matchAll(/<a\s[^>]*href="([^"]+)"/g)]
+      .map((match) => match[1])
+      .filter((href) => !/^[a-z][a-z0-9+.-]*:/i.test(href))
+      .map((href) => path.posix.join(path.posix.dirname(from), href));
+  const welshCopies = WELSH_PAGES.map((page) => page.cy);
+  const section = (html, pattern) => (html.match(pattern)?.[1] ?? "").replace(/\s+/g, " ");
+
+  const welshList = section(read("cy/index.html"), /<section class="welsh-offer"[^>]*data-welsh-offer[^>]*>([\s\S]*?)<\/section>/);
+  const englishList = section(read("about.html"), /<section class="about-welsh"[^>]*>([\s\S]*?)<\/section>/);
+
+  it("is on the Welsh home page, in Welsh, and links only Welsh copies", () => {
+    expect(welshList).toContain("Submit yn Gymraeg");
+    const files = linkedFiles(welshList, "cy/index.html");
+    expect(files.length).toBeGreaterThan(20);
+    for (const file of files) expect(welshCopies, file).toContain(file);
+  });
+
+  it("is on the About page in English and links the same Welsh copies, with the home page", () => {
+    const files = linkedFiles(englishList, "about.html");
+    expect(files.sort()).toEqual([...linkedFiles(welshList, "cy/index.html"), "cy/index.html"].sort());
+    for (const [link] of englishList.matchAll(/<a\s[^>]*href="cy\/[^>]*>/g)) expect(link).toContain('hreflang="cy"');
+  });
+
+  it("says in both languages that a message in Welsh gets its reply in English for now", () => {
+    expect(welshList).toContain("Rydym yn ateb yn Saesneg am y tro.");
+    expect(englishList).toContain("We reply in English for");
+    const welshLine = englishList
+      .match(/<span lang="cy"\s*>([\s\S]*?)<\/span\s*>/)?.[1]
+      .replace(/\s+/g, " ")
+      .trim();
+    expect(welshLine).toBe("Gallwch ysgrifennu atom yn Gymraeg. Rydym yn ateb yn Saesneg am y tro.");
+  });
+
+  it("is on no other Welsh page", () => {
+    for (const page of WELSH_PAGES.filter((entry) => entry.id !== "index"))
+      expect(read(page.cy), page.cy).not.toContain("data-welsh-offer");
+  });
+});

@@ -3,7 +3,7 @@
 
 // @capability SITE-30 Build the Welsh pages
 // - **Use when:** a page needs a Welsh copy at /cy/, an English string on a Welsh page changed, or a Welsh string needs a fix.
-// - **Does:** Reads each English page in WELSH_PAGES, replaces every element marked data-i18n (and every attribute marked data-i18n-<attr>) with its Welsh text from i18n/cy.toml, sets lang="cy", the canonical and og:url and the paths of links and assets, adds HMRC's Welsh services block, and writes web/public/cy/<page>. A page with marks: "build" (the generated pages, and long static ones) is marked by the build as it reads it, with ids made from the first words and a hash of the English. It also finds every siteText("<id>", "<English>") call in the site's scripts and writes their Welsh text, and the list of pages with a Welsh copy, to web/public/lib/welsh-text.js, which page-chrome.js loads when the reader's language choice is Welsh. Each catalogue entry holds a hash of its English source; the unit test fails on a missing, stale or unused entry and on a committed Welsh page or text file that differs from the render.
+// - **Does:** Reads each English page in WELSH_PAGES, replaces every element marked data-i18n (and every attribute marked data-i18n-<attr>) with its Welsh text from i18n/cy.toml, sets lang="cy", the canonical and og:url and the paths of links and assets, adds HMRC's Welsh services block (and, on the home page, the list of the site's Welsh services), and writes web/public/cy/<page>. A page with marks: "build" (the generated pages, and long static ones) is marked by the build as it reads it, with ids made from the first words and a hash of the English. It also finds every siteText("<id>", "<English>") call in the site's scripts and writes their Welsh text, and the list of pages with a Welsh copy, to web/public/lib/welsh-text.js, which page-chrome.js loads when the reader's language choice is Welsh. Each catalogue entry holds a hash of its English source; the unit test fails on a missing, stale or unused entry and on a committed Welsh page or text file that differs from the render.
 // - **Run:** `npm run build:welsh`; `npx vitest run web/unit-tests/welsh-pages.test.js`
 // - **Entry:** `scripts/build-welsh-pages.mjs:renderWelshPage`; `scripts/build-welsh-pages.mjs:catalogueProblems`
 // - **Files:** scripts/build-welsh-pages.mjs, i18n/cy.toml, web/public/cy/, web/public/lib/welsh-text.js, web/public/get-started.html, web/public/widgets/page-chrome.js, web/unit-tests/welsh-pages.test.js
@@ -558,6 +558,15 @@ function welshServicesBlock(catalogue, page) {
   return `<aside class="welsh-services" aria-labelledby="welshServicesHeading" data-welsh-services>${block}</aside>`;
 }
 
+// The services the site gives in Welsh, listed on the Welsh home page. Its links name the English
+// files, and the copy's link pass sends each one to its Welsh copy.
+function welshOfferBlock(catalogue, page) {
+  if (page.id !== "index") return "";
+  const entry = catalogue.shared["welsh-offer"];
+  if (!entry || !entry.cy) throw new Error("shared.welsh-offer: no Welsh text in i18n/cy.toml");
+  return `<section class="welsh-offer" aria-labelledby="welshOfferHeading" data-welsh-offer>${entry.cy.trim()}</section>`;
+}
+
 export async function renderWelshPage(page, catalogue = loadCatalogue(), pages = WELSH_PAGES) {
   const english = readEnglishPage(page);
   for (const { hreflang, href } of expectedAlternates(page)) {
@@ -588,7 +597,12 @@ export async function renderWelshPage(page, catalogue = loadCatalogue(), pages =
   );
   html = replaceOnce(html, /(<link rel="canonical" href=")[^"]*(")/, `$1${welshUrl(page)}$2`, `canonical link in ${page.en}`);
   html = html.replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${welshUrl(page)}$2`);
-  html = replaceOnce(html, /<\/main>/, `${welshServicesBlock(catalogue, page)}</main>`, `</main> in ${page.en}`);
+  html = replaceOnce(
+    html,
+    /<\/main>/,
+    `${welshOfferBlock(catalogue, page)}${welshServicesBlock(catalogue, page)}</main>`,
+    `</main> in ${page.en}`,
+  );
   html = html.replace(/<blockquote class="(source-quote[^"]*)">([\s\S]*?)<\/blockquote>/g, (whole, className, inner) => {
     const quotes = inner.replace(/<p>/g, '<p lang="en-GB">');
     return `<blockquote class="${className}">${quotes.replace(SOURCE_FOOTER_PATTERN, (footer, link, day, month, year) => welshSourceFooter(catalogue, link, day, month, year))}</blockquote>`;
