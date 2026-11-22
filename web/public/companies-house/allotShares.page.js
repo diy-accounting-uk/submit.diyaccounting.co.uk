@@ -81,12 +81,22 @@ function rowHolder(container, className, heading, removable) {
     remove.textContent = window.siteText("ch.allot.remove", "Remove");
     remove.addEventListener("click", () => {
       row.remove();
+      offerRemovalWhileAnotherIsLeft(container);
       renderAfter();
     });
     row.appendChild(remove);
   }
   container.appendChild(row);
+  offerRemovalWhileAnotherIsLeft(container);
   return row;
+}
+
+// A row can be removed while another row of its kind is left.
+function offerRemovalWhileAnotherIsLeft(container) {
+  const buttons = container.querySelectorAll(":scope > .form-section > .remove-row");
+  buttons.forEach((button) => {
+    button.hidden = container.children.length < 2;
+  });
 }
 
 let rowNumber = 0;
@@ -122,7 +132,7 @@ function firstTableCurrency() {
 function addAllotmentRow() {
   const container = document.getElementById("allotmentRows");
   const n = ++rowNumber;
-  const row = rowHolder(container, "allotment-row", window.siteText("ch.allot.allotment", "Allotment"), container.children.length > 0);
+  const row = rowHolder(container, "allotment-row", window.siteText("ch.allot.allotment", "Allotment"), true);
   row.dataset.row = String(n);
   row.append(
     field({

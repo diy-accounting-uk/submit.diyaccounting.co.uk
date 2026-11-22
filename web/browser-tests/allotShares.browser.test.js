@@ -740,3 +740,55 @@ test("a changed return after the warning is reviewed afresh, with the warning go
   await expect(page.locator("#capitalWarning")).toBeVisible();
   expect(filings.every((filing) => filing.capitalDifferenceConfirmed !== true)).toBe(true);
 });
+
+test("a class held before or an allotment offers Remove only while another of its kind is left", async ({ page }) => {
+  await serveSite(page, { filingData: 504 });
+  await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+  await lookUp(page);
+  const beforeRemove = page.locator("#beforeTables .capital-classes .remove-row");
+  const allotmentRemove = page.locator("#allotmentRows .remove-row");
+  await expect(beforeRemove).toHaveCount(1);
+  await expect(beforeRemove.first()).toBeHidden();
+  await expect(allotmentRemove.filter({ visible: true })).toHaveCount(0);
+
+  await page.locator("#beforeTables .capital-table > .btn-small:not(.remove-row)").first().click();
+  await expect(beforeRemove.filter({ visible: true })).toHaveCount(2);
+  await beforeRemove.first().click();
+  await expect(beforeRemove).toHaveCount(1);
+  await expect(beforeRemove.first()).toBeHidden();
+
+  await page.locator("#addAllotmentBtn").click();
+  await expect(allotmentRemove.filter({ visible: true })).toHaveCount(2);
+  await allotmentRemove.first().click();
+  await expect(page.locator("#allotmentRows .allotment-row")).toHaveCount(1);
+  await expect(allotmentRemove.filter({ visible: true })).toHaveCount(0);
+});
+
+test("the buttons that add a row keep a gap from the field below them", async ({ page }) => {
+  await serveSite(page, { filingData: 504 });
+  await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+  await lookUp(page);
+  const button = await page.locator("#beforeTables .capital-table > .btn-small:not(.remove-row)").first().boundingBox();
+  const label = await page.locator('label[for^="capital-unpaid-"]').first().boundingBox();
+  expect(label.y - (button.y + button.height)).toBeGreaterThanOrEqual(12);
+});
+
+for (const width of [1280, 390]) {
+  test(`the totals of the statement line up with the classes above them at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await serveSite(page);
+    await page.goto(`${SITE}/companies-house/allotShares.html`, { waitUntil: "networkidle" });
+    await lookUp(page);
+    await page.locator("#startDate").fill("2026-11-02");
+    await fillAllotment(page, { shareClass: "A Preference", number: "25", nominal: "0.1", paid: "0", unpaid: "0.1" });
+    const table = page.locator("#afterTables .after-capital table").first();
+    const totals = table.locator("tr.after-totals");
+    await expect(totals).toBeVisible();
+    const right = (locator) => locator.evaluate((element) => Math.round(element.getBoundingClientRect().right));
+    const classRow = table.locator("tbody tr").first();
+    expect(await right(totals)).toBe(await right(classRow));
+    expect(await right(totals.locator("td").last())).toBe(await right(classRow.locator("td").last()));
+    const rules = await totals.locator("td").evaluateAll((cells) => cells.map((cell) => getComputedStyle(cell).borderTopWidth));
+    expect(new Set(rules).size).toBe(1);
+  });
+}

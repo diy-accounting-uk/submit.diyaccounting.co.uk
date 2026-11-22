@@ -73,3 +73,14 @@ h2 + form > .form-section:first-child {
   margin-top: var(--space-5);
   padding-top: var(--space-5);
 }
+
+/* A row's Remove button and the buttons that add a row keep a gap from the fields next to them. */
+.form-section > .remove-row {
+  margin-bottom: var(--space-3);
+}
+
+#addAllotmentBtn,
+#addCurrencyBtn,
+.capital-table > .btn-small:not(.remove-row) {
+  margin-bottom: var(--space-4);
+}

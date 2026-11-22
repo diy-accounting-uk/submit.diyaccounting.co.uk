@@ -107,10 +107,19 @@ caption {
   min-height: var(--control-height);
 }
 
+/* A totals row is set apart by one rule above all its cells. */
+.results-table tfoot th,
+.results-table tfoot td,
+.results-table tr.after-totals > td {
+  border-top: 2px solid var(--c-rule);
+  border-bottom: none;
+}
+
 /* Under 40rem a row is a block of label and value pairs, so no column sits out of sight. */
 @media (max-width: 40rem) {
   .results-table:not(.review-table),
-  .results-table:not(.review-table) tbody {
+  .results-table:not(.review-table) tbody,
+  .results-table:not(.review-table) tfoot {
     display: block;
     overflow: visible;
     background: none;
@@ -138,6 +147,16 @@ caption {
     border: 0;
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+
+  .results-table:not(.review-table) tfoot th {
+    display: block;
+    padding: var(--space-1) 0;
+    border: 0;
+  }
+
+  .results-table:not(.review-table) tfoot td {
+    border-top: 0;
   }
 
   .results-table:not(.review-table) td[data-label]::before {
