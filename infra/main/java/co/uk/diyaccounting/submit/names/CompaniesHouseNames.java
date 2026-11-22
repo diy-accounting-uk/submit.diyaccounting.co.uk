@@ -629,8 +629,8 @@ public class CompaniesHouseNames {
         root.publishedApiLambdas.add(new PublishedLambda(
                 this.companiesHouseAccountsRenderPostLambdaHttpMethod,
                 this.companiesHouseAccountsRenderPostLambdaUrlPath,
-                "Render a micro-entity accounts filing for review",
-                "Renders the FRS 105 micro-entity iXBRL from the balance sheet without submitting it",
+                "Render a micro-entity, small company or revised accounts filing for review",
+                "Renders the iXBRL of FRS 105 micro-entity or FRS 102 section 1A small company accounts without submitting it; a request with a revision renders revised micro-entity accounts with their revision page",
                 "renderCompaniesHouseAccounts"));
 
         this.companiesHouseAccountsPostLambdaHttpMethod = HttpMethod.POST;
@@ -651,8 +651,8 @@ public class CompaniesHouseNames {
         root.publishedApiLambdas.add(new PublishedLambda(
                 this.companiesHouseAccountsPostLambdaHttpMethod,
                 this.companiesHouseAccountsPostLambdaUrlPath,
-                "Submit a micro-entity accounts filing",
-                "Generates the FRS 105 micro-entity iXBRL and submits it through the Companies House XML Gateway",
+                "Submit a micro-entity, small company or revised accounts filing",
+                "Generates the iXBRL for FRS 105 micro-entity or FRS 102 section 1A small company accounts and submits it through the Companies House XML Gateway; a request with a revision files revised accounts that replace accounts already filed for the period",
                 "postCompaniesHouseAccounts"));
 
         this.companiesHouseAccountsGetLambdaHttpMethod = HttpMethod.GET;
@@ -673,8 +673,8 @@ public class CompaniesHouseNames {
         root.publishedApiLambdas.add(new PublishedLambda(
                 this.companiesHouseAccountsGetLambdaHttpMethod,
                 this.companiesHouseAccountsGetLambdaUrlPath,
-                "Poll a micro-entity accounts filing",
-                "Polls the Companies House XML Gateway for the outcome of a submitted accounts filing",
+                "Poll a micro-entity, small company or revised accounts filing",
+                "Polls the Companies House XML Gateway for the outcome of a submitted micro-entity, small company or revised accounts filing",
                 "getCompaniesHouseAccounts",
                 List.of(new ApiParameter("submissionNumber", "path", true, "The 6-character submission number"))));
 

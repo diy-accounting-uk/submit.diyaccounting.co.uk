@@ -355,22 +355,22 @@
     },
     "/companies-house/accounts" : {
       "post" : {
-        "summary" : "Submit a micro-entity accounts filing",
-        "description" : "Generates the FRS 105 micro-entity iXBRL and submits it through the Companies House XML Gateway",
+        "summary" : "Submit a micro-entity, small company or revised accounts filing",
+        "description" : "Generates the iXBRL for FRS 105 micro-entity or FRS 102 section 1A small company accounts and submits it through the Companies House XML Gateway; a request with a revision files revised accounts that replace accounts already filed for the period",
         "operationId" : "postCompaniesHouseAccounts"
       }
     },
     "/companies-house/accounts/render" : {
       "post" : {
-        "summary" : "Render a micro-entity accounts filing for review",
-        "description" : "Renders the FRS 105 micro-entity iXBRL from the balance sheet without submitting it",
+        "summary" : "Render a micro-entity, small company or revised accounts filing for review",
+        "description" : "Renders the iXBRL of FRS 105 micro-entity or FRS 102 section 1A small company accounts without submitting it; a request with a revision renders revised micro-entity accounts with their revision page",
         "operationId" : "renderCompaniesHouseAccounts"
       }
     },
     "/companies-house/accounts/{submissionNumber}" : {
       "get" : {
-        "summary" : "Poll a micro-entity accounts filing",
-        "description" : "Polls the Companies House XML Gateway for the outcome of a submitted accounts filing",
+        "summary" : "Poll a micro-entity, small company or revised accounts filing",
+        "description" : "Polls the Companies House XML Gateway for the outcome of a submitted micro-entity, small company or revised accounts filing",
         "operationId" : "getCompaniesHouseAccounts",
         "parameters" : [ {
           "name" : "submissionNumber",

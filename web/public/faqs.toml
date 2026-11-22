@@ -503,6 +503,23 @@ keywords = ["companies house", "accounts", "confirmation statement", "micro-enti
 priority = 31
 
 [[faq]]
+id = "revised-accounts"
+activity = "file-revised-accounts"
+category = "submission"
+question = "How do I correct accounts I have filed with Companies House?"
+answer = """
+Open the accepted accounts filing from your [receipts](hmrc/receipt/receipts.html) and choose **Amend**. The form opens filled with the accounts you filed, under the banner "You are revising the accounts filed at Companies House".
+
+Correct what was wrong, and anything that changes because of it. Then say what was wrong with the original accounts and what the revised accounts change. Companies House prints both texts in the revised accounts. The new approval date must be on or after the date of the original approval.
+
+The directors must deliver the revised accounts within 28 days of approving them. Companies House keeps the original accounts on the register.
+
+An accepted revision costs one token, as an accounts filing does. You can revise micro-entity, dormant and small company accounts, each from its own accepted filing.
+"""
+keywords = ["companies house", "revised accounts", "amend accounts", "correct accounts", "mistake", "section 454", "micro-entity", "dormant"]
+priority = 31
+
+[[faq]]
 id = "company-tax-return-ct600"
 activity = "file-company-tax-return"
 category = "submission"

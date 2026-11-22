@@ -123,7 +123,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [CH-06](#ch-06-file-a-change-of-registered-email-address) File a change of registered email address: use when a company needs to register or change its registered email address with Companies House.
   - [Micro-entity accounts filing](#micro-entity-accounts-filing-ch)
     - [CH-07](#ch-07-render-micro-entity-accounts-for-review) Render micro-entity accounts for review: use when a user needs to see the iXBRL accounts document before it reaches the XML Gateway.
-    - [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House: use when a small company must submit its FRS 105 micro-entity accounts to the XML Gateway.
+    - [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House: use when a small company must submit its FRS 105 micro-entity accounts to the XML Gateway, or revised accounts that replace accounts it has filed.
     - [CH-24](#ch-24-file-revised-accounts-to-companies-house) File revised accounts to Companies House: use when a page offers to revise accounts already filed at Companies House, from the receipt of the accepted filing.
     - [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending) Poll Companies House for filings the reader left pending: use when a Companies House filing under our presenter is still pending when the reader leaves the page, and its final accept or reject must reach the filings list and the receipt email.
   - [Company Tax Return filing](#company-tax-return-filing-ch)
@@ -1714,12 +1714,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### CH-08 File micro-entity accounts to Companies House
 
-- **Use when:** a small company must submit its FRS 105 micro-entity accounts to the XML Gateway.
-- **Does:** companiesHouseAccountsPost.js builds the XML submission via buildAccountsSubmissionRequest, submits it via postToGateway, and stores the async request in DynamoDB. companiesHouseAccountsGet.js polls that stored request for the filing's status. A request carrying a smallCompany section files FRS 102 section 1A small company accounts instead (buildSmallCompanyAccounts: profit and loss account, balance sheet sub-lines, fixed asset note, directors' report, optional prior-year comparatives, optional section 444 filleted copy) through the same two Lambdas and the fileSmallCompanyAccounts.html page; derive_small_company_accounts reads its figures from a Company book.
+- **Use when:** a small company must submit its FRS 105 micro-entity accounts to the XML Gateway, or revised accounts that replace accounts it has filed.
+- **Does:** companiesHouseAccountsPost.js builds the XML submission via buildAccountsSubmissionRequest, submits it via postToGateway, and stores the async request in DynamoDB. companiesHouseAccountsGet.js polls that stored request for the filing's status. A request carrying a smallCompany section files FRS 102 section 1A small company accounts instead (buildSmallCompanyAccounts: profit and loss account, balance sheet sub-lines, fixed asset note, directors' report, optional prior-year comparatives, optional section 444 filleted copy) through the same two Lambdas and the fileSmallCompanyAccounts.html page; derive_small_company_accounts reads its figures from a Company book. A request carrying a revision section (read by readRevision in jointFiling.js: the original approval date, what was wrong with the original accounts and what the revised accounts change) files revised accounts under section 454 of the Companies Act 2006, which replace accounts already filed for the period; refuseRevisionWhenNotEnabled refuses it where the file-revised-accounts activity is not listed and the request is not a sandbox preview.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/companies-house/companiesHouseAccountsPost.js:ingestHandler`; `app/functions/companies-house/companiesHouseAccountsGet.js:ingestHandler`
 - **Files:** app/functions/companies-house/companiesHouseAccountsPost.js, app/functions/companies-house/companiesHouseAccountsGet.js, app/unit-tests/functions/companiesHouseAccountsPost.test.js, app/unit-tests/functions/companiesHouseAccountsGet.test.js, app/services/microEntityAccountsIxbrl.js, app/unit-tests/services/microEntityAccountsIxbrl.test.js, app/services/accountsIxbrlCommon.js, app/services/smallCompanyAccountsIxbrl.js, app/services/smallCompanyAccountsRequest.js, app/services/smallCompanyAccounts.js, app/unit-tests/services/smallCompanyAccountsIxbrl.test.js, web/public/companies-house/fileSmallCompanyAccounts.html, app/services/companiesHouseXmlGateway.js, app/unit-tests/services/companiesHouseXmlGateway.test.js, web/public/companies-house/fileMicroEntityAccounts.html, web/public/lib/services/companies-house-filing-service.js, behaviour-tests/companiesHouse/fileMicroEntityAccounts.behaviour.test.js, behaviour-tests/steps/behaviour-companies-house-filing-steps.js, app/unit-tests/http-simulator/routes/companies-house-xmlgw.test.js, app/system-tests/companiesHouseFilingSimulator.system.test.js, app/system-tests/companiesHouseSimulator.system.test.js
-- **Keywords:** companies house, micro-entity accounts, small company accounts, FRS 102, section 1A, filleted accounts, ixbrl, xml gateway, govtalk, async request, dynamodb, filing, presenter credential
+- **Keywords:** companies house, micro-entity accounts, small company accounts, revised accounts, amended accounts, section 454, FRS 102, section 1A, filleted accounts, ixbrl, xml gateway, govtalk, async request, dynamodb, filing, presenter credential
 - **Related:** CH-07, CH-09, CH-11, CH-12, CH-13
 
 #### CH-24 File revised accounts to Companies House
@@ -7227,6 +7227,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - allowlist: [OPS-28](#ops-28-enforce-commit-identity-allowlist)
 - alternate link: [OPS-214](#ops-214-write-llmstxt-llms-fulltxt-and-a-markdown-copy-of-each-page-into-the-deployed-web-root)
 - amend accounts: [CH-24](#ch-24-file-revised-accounts-to-companies-house)
+- amended accounts: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - amount owed: [HMRC-04](#hmrc-04-retrieve-vat-liabilities)
 - analytics event: [SITE-04](#site-04-track-visits-via-session-beacon)
 - analytics lake: [OPS-25](#ops-25-record-dora-and-probe-metrics), [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
@@ -9327,7 +9328,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - review threads: [SS-51](#ss-51-merge-every-pr-that-is-ready)
 - reviewer sign-in: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront), [MCP-26](#mcp-26-seed-the-demo-reviewer-user-and-its-two-sample-books)
 - reviewlimit: [BILL-45](#bill-45-release-a-pass-held-for-review)
-- revised accounts: [CH-24](#ch-24-file-revised-accounts-to-companies-house)
+- revised accounts: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-24](#ch-24-file-revised-accounts-to-companies-house)
 - revision: [CH-24](#ch-24-file-revised-accounts-to-companies-house)
 - revision texts: [CH-24](#ch-24-file-revised-accounts-to-companies-house)
 - revival: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
@@ -9456,7 +9457,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - secrets manager oauth: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
 - secrets manager read: [OPS-167](#ops-167-read-a-secrets-manager-secret-with-a-five-minute-cache-and-a-forced-refresh)
 - section 1a: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
-- section 454: [CH-24](#ch-24-file-revised-accounts-to-companies-house)
+- section 454: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-24](#ch-24-file-revised-accounts-to-companies-house)
 - section 6.6: [OPS-64](#ops-64-runbook-information-security-operations)
 - security baseline: [OPS-121](#ops-121-provision-the-security-baseline-stack)
 - security detection: [OPS-73](#ops-73-detect-404-scan-rate-attacks)
