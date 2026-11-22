@@ -36,8 +36,8 @@ async function mountFilingCopy(container, receipt, receiptName, amendHref) {
 }
 
 // A Company Tax Return that carries the answers it was made from can be amended: the filing page
-// refills the form from them. Accepted micro-entity accounts filed on their own can be revised where
-// revised accounts are offered: the accounts form refills from the document filed.
+// refills the form from them. Accepted micro-entity and small company accounts filed on their own can
+// be revised where revised accounts are offered: the accounts form refills from the document filed.
 async function amendHrefOf(receipt, receiptName) {
   if (receipt.kind === "company-tax-return") {
     const amendable = receipt.statusCode === "ACCEPT" && Boolean(receipt.formRequest);
@@ -47,7 +47,8 @@ async function amendHrefOf(receipt, receiptName) {
   if (revisionModule.refusalOf(receipt) || !(await revisionModule.isRevisionOfferedHere())) return null;
   try {
     const { regime } = revisionModule.revisionSourceOf(receipt, await import("../lib/books-bundle.js"));
-    return regime === "micro" ? `fileMicroEntityAccounts.html?amend=${encodeURIComponent(receiptName)}` : null;
+    const form = { micro: "fileMicroEntityAccounts.html", small: "fileSmallCompanyAccounts.html" }[regime];
+    return form ? `${form}?amend=${encodeURIComponent(receiptName)}` : null;
   } catch (error) {
     console.warn("These accounts cannot be revised here because the filed document could not be read:", error);
     return null;

@@ -76,8 +76,51 @@
           Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).
           <a href="#" id="changeCompanyLink">Change company</a>.
         </p>
+        <div id="revisionBanner" class="outcome" role="note" hidden>
+          <p><strong>You are revising the accounts filed at Companies House</strong></p>
+          <p>The original accounts stay on the public register, and the revised accounts are filed beside them.</p>
+        </div>
         <div id="booksImport"></div>
         <form id="accountsForm" novalidate>
+          <section id="revisionSection" class="form-section" hidden>
+            <h3>The revision</h3>
+            <p>A revision corrects what was wrong with the original accounts, and what has to change because of it, and nothing else.</p>
+            <p>The directors must deliver the revised accounts to Companies House within 28 days of approving them.</p>
+            <div class="form-group">
+              <label for="revisionOriginalDate">Date the original accounts were approved</label>
+              <input type="date" id="revisionOriginalDate" name="revisionOriginalDate" readonly />
+            </div>
+            <p id="revisionTexts-hint" class="hint">Companies House prints both texts on the revised accounts, on the public register.</p>
+            <div class="form-group">
+              <label for="revisionNonCompliance">What was wrong with the original accounts?</label>
+              <textarea
+                id="revisionNonCompliance"
+                name="revisionNonCompliance"
+                rows="4"
+                maxlength="2000"
+                aria-describedby="revisionTexts-hint"
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label for="revisionAmendments">What do the revised accounts change?</label>
+              <textarea
+                id="revisionAmendments"
+                name="revisionAmendments"
+                rows="4"
+                maxlength="2000"
+                aria-describedby="revisionTexts-hint"
+              ></textarea>
+            </div>
+            <p id="revisionLateNote" class="hint" hidden>
+              The date approved below is more than 28 days ago. Deliver the revised accounts now: the law gives the directors 28 days from
+              approving them.
+            </p>
+            <p id="revisionFilletedNote" class="hint" hidden>
+              The accounts filed were a filleted copy, which holds no profit and loss account. Type the profit and loss lines below, or drop
+              the company's book on the card above.
+            </p>
+            <div id="revisionDownloads"></div>
+          </section>
           <section id="documentLanguageSection" class="form-section" hidden>
             <h3>Language of the accounts</h3>
             <p id="documentLanguage-hint" class="hint">

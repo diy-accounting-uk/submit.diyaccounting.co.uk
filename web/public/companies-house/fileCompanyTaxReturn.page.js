@@ -3598,8 +3598,8 @@ async function loadAmendment(receiptName) {
       failure.failure = {
         cause,
         next: {
-          label: siteText("ch.ct.amend-accounts-alone", "Amend these accounts on the accounts form"),
-          href: `fileMicroEntityAccounts.html?amend=${encodeURIComponent(receiptName)}`,
+          label: siteText("ch.ct.amend-accounts-alone", "Open these accounts, then choose Amend"),
+          href: `filings.html?receipt=${encodeURIComponent(receiptName)}`,
         },
       };
       window.showFailure(failure, siteText("ch.ct.refuse-accounts-alone-title", "These accounts cannot be amended here"));

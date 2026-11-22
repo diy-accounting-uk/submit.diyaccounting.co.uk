@@ -483,3 +483,30 @@ export async function verifyRevisedAccountsOnRecord(page, screenshotPath = defau
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-receipts-revised.png`, fullPage: true, readerView: true });
   });
 }
+
+// The small company revision: the texts and the approval date, the answers the filed document does
+// not hold (the accounting policies, and for a filleted copy the profit and loss account), and the statements.
+export async function describeTheSmallCompanyRevision(
+  page,
+  { revision, accounts, filleted = false },
+  screenshotPath = defaultScreenshotPath,
+) {
+  await test.step(`The user corrects the ${filleted ? "filleted" : "full"} small company accounts and states the revision`, async () => {
+    if (filleted) {
+      await expect(page.locator("#revisionFilletedNote")).toBeVisible();
+      for (const field of SMALL_COMPANY_INPUT_FIELDS.profitAndLoss[1]) {
+        await loggedFill(page, `#current${upperFirst(field)}`, String(accounts.currentYear.profitAndLoss[field]), `current ${field}`);
+      }
+    }
+    await loggedFill(page, "#averageEmployees", String(revision.averageEmployees), "Average employees");
+    await loggedFill(page, "#accountingPolicies", accounts.accountingPolicies, "Accounting policies");
+    await loggedFill(page, "#revisionNonCompliance", revision.nonCompliance, "What was wrong with the original accounts");
+    await loggedFill(page, "#revisionAmendments", revision.amendments, "What the revised accounts change");
+    await loggedFill(page, "#directorDateApproved", revision.dateApproved, "Date approved");
+    await page.check("#statementSection477Exemption");
+    await page.check("#statementMembersNotRequiredAudit");
+    await page.check("#statementDirectorsResponsibilities");
+    await page.check("#statementSmallCompaniesRegime");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-small-revision-described.png`, readerView: true });
+  });
+}

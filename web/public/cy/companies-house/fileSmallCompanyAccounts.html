@@ -90,8 +90,68 @@
           Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).
           <a href="#" id="changeCompanyLink">Newid y cwmni</a>.
         </p>
+        <div id="revisionBanner" class="outcome" role="note" hidden>
+          <p data-i18n="ch-small-company.you-are-revising-the-accounts-filed-372107">
+            <strong>Rydych yn diwygio’r cyfrifon a ffeiliwyd yn Nhŷ’r Cwmnïau</strong>
+          </p>
+          <p data-i18n="ch-small-company.the-original-accounts-stay-on-the-0de121">
+            Mae’r cyfrifon gwreiddiol yn aros ar y gofrestr gyhoeddus, ac mae’r cyfrifon diwygiedig yn cael eu ffeilio wrth eu hochr.
+          </p>
+        </div>
         <div id="booksImport"></div>
         <form id="accountsForm" novalidate>
+          <section id="revisionSection" class="form-section" hidden>
+            <h3 data-i18n="ch-small-company.the-revision-cc28da">Y diwygiad</h3>
+            <p data-i18n="ch-small-company.a-revision-corrects-what-was-wrong-59c335">
+              Mae diwygiad yn cywiro’r hyn a oedd yn anghywir yn y cyfrifon gwreiddiol, a’r hyn sy’n gorfod newid o’i herwydd, a dim byd
+              arall.
+            </p>
+            <p data-i18n="ch-small-company.the-directors-must-deliver-the-revised-bf000b">
+              Rhaid i’r cyfarwyddwyr gyflwyno’r cyfrifon diwygiedig i Dŷ’r Cwmnïau o fewn 28 diwrnod i’w cymeradwyo.
+            </p>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.date-the-original-accounts-were-approved-a469b4" for="revisionOriginalDate"
+                >Dyddiad cymeradwyo’r cyfrifon gwreiddiol</label
+              >
+              <input type="date" id="revisionOriginalDate" name="revisionOriginalDate" readonly />
+            </div>
+            <p data-i18n="ch-small-company.companies-house-prints-both-texts-on-fe3e14" id="revisionTexts-hint" class="hint">
+              Mae Tŷ’r Cwmnïau yn argraffu’r ddau destun ar y cyfrifon diwygiedig, ar y gofrestr gyhoeddus.
+            </p>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.what-was-wrong-with-the-original-b6637a" for="revisionNonCompliance"
+                >Beth oedd yn anghywir yn y cyfrifon gwreiddiol?</label
+              >
+              <textarea
+                id="revisionNonCompliance"
+                name="revisionNonCompliance"
+                rows="4"
+                maxlength="2000"
+                aria-describedby="revisionTexts-hint"
+              ></textarea>
+            </div>
+            <div class="form-group">
+              <label data-i18n="ch-small-company.what-do-the-revised-accounts-change-ff3c9b" for="revisionAmendments"
+                >Beth mae’r cyfrifon diwygiedig yn ei newid?</label
+              >
+              <textarea
+                id="revisionAmendments"
+                name="revisionAmendments"
+                rows="4"
+                maxlength="2000"
+                aria-describedby="revisionTexts-hint"
+              ></textarea>
+            </div>
+            <p data-i18n="ch-small-company.the-date-approved-below-is-more-4f3c83" id="revisionLateNote" class="hint" hidden>
+              Mae’r dyddiad cymeradwyo isod fwy na 28 diwrnod yn ôl. Cyflwynwch y cyfrifon diwygiedig nawr: mae’r gyfraith yn rhoi 28
+              diwrnod i’r cyfarwyddwyr o’r adeg y maent yn eu cymeradwyo.
+            </p>
+            <p data-i18n="ch-small-company.the-accounts-filed-were-a-filleted-2cd0d6" id="revisionFilletedNote" class="hint" hidden>
+              Copi wedi’i hidlo oedd y cyfrifon a ffeiliwyd, ac nid oes cyfrif elw a cholled ynddo. Teipiwch linellau’r cyfrif elw a cholled
+              isod, neu ollwng llyfr y cwmni ar y cerdyn uchod.
+            </p>
+            <div id="revisionDownloads"></div>
+          </section>
           <section id="documentLanguageSection" class="form-section" hidden>
             <h3 data-i18n="ch-small-company.language-of-the-accounts-8aae0f">Iaith y cyfrifon</h3>
             <p data-i18n="ch-small-company.the-company-s-registered-office-is-01369a" id="documentLanguage-hint" class="hint">

@@ -7,7 +7,8 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveMoneyInput, servePageScripts } from "./hmrcFieldTableAssets.js";
+import { serveMoneyInput, servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
+import { accountsDocumentCases } from "@app/test-helpers/accountsDocumentCases.js";
 import { readSubmitCss } from "./submitCss.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -372,4 +373,190 @@ test.describe("File small company accounts page", () => {
     );
     expect(JSON.stringify(await page.evaluate(() => buildAccountsPayload()))).not.toContain("onsistent");
   });
+});
+
+const PUBLIC_DIR = path.join(process.cwd(), "web/public");
+const RECEIPT_NAME = "2026-10-24T10:15:00.000Z-00001A.json";
+const SCREENSHOT_DIR = path.join(process.cwd(), "target/browser-test-results/revised-accounts");
+const documentCases = accountsDocumentCases();
+const fullCase = documentCases.find((candidate) => candidate.name === "small-company-accounts");
+const filletedCase = documentCases.find((candidate) => candidate.name === "small-company-accounts-filleted");
+const microCase = documentCases.find((candidate) => candidate.name === "micro-entity-accounts");
+
+function accountsReceipt(document, overrides = {}) {
+  return {
+    kind: "companies-house-accounts",
+    statusCode: "ACCEPT",
+    submissionNumber: "00001A",
+    companyNumber: "04549236",
+    rejections: [],
+    filedDocument: document,
+    ...overrides,
+  };
+}
+
+function serveFile(page, pattern, file) {
+  return page.route(pattern, (route) =>
+    route.fulfill({ status: 200, contentType: "application/javascript", body: fs.readFileSync(path.join(PUBLIC_DIR, file), "utf-8") }),
+  );
+}
+
+async function openAmend(page, receipt, { width = 1280, outcome = "ACCEPT" } = {}) {
+  await page.setViewportSize({ width, height: 900 });
+  await page.addInitScript(
+    ({ receiptBody, outcomeCode }) => {
+      window.__submitReady__ = true;
+      localStorage.setItem("cognitoIdToken", "token");
+      window.sentAccounts = [];
+      window.fetchWithIdToken = async () => ({ ok: true, json: async () => receiptBody });
+      window.showLoading = () => {};
+      window.hideLoading = () => {};
+      window.showStatus = (text, type) => {
+        const message = document.createElement("div");
+        message.className = `status-message status-${type}`;
+        message.textContent = text;
+        document.getElementById("statusMessagesContainer").replaceChildren(message);
+      };
+      window.hideStatus = () => document.getElementById("statusMessagesContainer")?.replaceChildren();
+      window.getCompanyProfile = async (companyNumber) => ({
+        companyNumber,
+        companyName: "EXAMPLE SMALL COMPANY LIMITED",
+        jurisdiction: "england-wales",
+        registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
+      });
+      window.submitMicroEntityAccounts = async (accounts) => {
+        window.sentAccounts.push(accounts);
+        return { submissionNumber: "00002B", gatewayTimestamp: "2026-11-22T10:00:00Z", pollInterval: 0 };
+      };
+      window.pollMicroEntityAccounts = async () => ({
+        statusCode: outcomeCode,
+        submissionNumber: "00002B",
+        receiptId: "2026-11-22T10:00:00.000Z-00002B",
+        rejections: [],
+      });
+    },
+    { receiptBody: receipt, outcomeCode: outcome },
+  );
+  await page.route("**/*.js", async (route) => {
+    if (route.request().resourceType() === "script") await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
+    else await route.continue();
+  });
+  await servePageScripts(page);
+  await serveMoneyInput(page);
+  await serveSiteStyles(page);
+  await serveFile(page, "**/widgets/books-import.js", "widgets/books-import.js");
+  await serveFile(page, "**/lib/books-bundle.js", "lib/books-bundle.js");
+  await serveFile(page, "**/lib/accounts-revision.js", "lib/accounts-revision.js");
+  await page.route("**/lib/companies-house-gateway-poll.js", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: `window.companiesHouseGatewayPoll = {
+        pollGatewayUntilSettled: async ({ poll }) => poll(),
+        isSettled: (outcome) => outcome.statusCode === "ACCEPT" || outcome.statusCode === "REJECT",
+        pendingNote: () => "",
+        mayCheckAgain: () => false,
+      };`,
+    }),
+  );
+  await page.route("**/lib/services/catalog-service.js", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: `export const fetchCatalogText = async () => "";
+        export const fetchCurrentEnvironmentName = async () => "ci";
+        export const parseCatalogueText = () => ({});
+        export const isRevisedAccountsOffered = () => true;`,
+    }),
+  );
+  await page.route("**/lib/services/viewer-settings.js", (route) =>
+    route.fulfill({ status: 200, contentType: "application/javascript", body: "export const fetchViewer = async () => ({});" }),
+  );
+  const html = fs.readFileSync(path.join(PUBLIC_DIR, PAGE_PATH), "utf-8");
+  await page.route(`http://localhost:3000/${PAGE_PATH}**`, (route) => route.fulfill({ status: 200, contentType: "text/html", body: html }));
+  await page.goto(`http://localhost:3000/${PAGE_PATH}?amend=${encodeURIComponent(RECEIPT_NAME)}`, { waitUntil: "domcontentloaded" });
+}
+
+async function screenshot(page, name, width) {
+  fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
+  await page.screenshot({ path: path.join(SCREENSHOT_DIR, `${name}-${width}.png`), fullPage: true });
+}
+
+test.describe("File small company accounts page - revising accounts from a receipt", () => {
+  for (const width of [1280, 390]) {
+    test(`fills full accounts from the document filed and shows the revision section (${width})`, async ({ page }) => {
+      await openAmend(page, accountsReceipt(fullCase.xhtml), { width });
+
+      await expect(page.locator("#formView")).toBeVisible();
+      await expect(page.locator("#revisionBanner")).toContainText("You are revising the accounts filed at Companies House");
+      await expect(page.locator("#revisionSection")).toBeVisible();
+      await expect(page.locator("#revisionOriginalDate")).toHaveValue("2026-09-15");
+      await expect(page.locator("#formCompanyNumber")).toHaveText("04549236");
+      await expect(page.locator("#copyFull")).toBeChecked();
+      await expect(page.locator("#currentTurnover")).not.toHaveValue("");
+      await expect(page.locator("#currentCalledUpShareCapital")).not.toHaveValue("");
+      await expect(page.locator("#revisionFilletedNote")).toBeHidden();
+      await expect(page.locator("#changeCompanyLink")).toBeHidden();
+      await expect(page.locator("#revisionDownloads")).toBeEmpty();
+      await screenshot(page, "small-amend-banner-and-revision-section", width);
+    });
+  }
+
+  test("says a filleted copy holds no profit and loss account and leaves those lines to the customer", async ({ page }) => {
+    await openAmend(page, accountsReceipt(filletedCase.xhtml));
+    await expect(page.locator("#revisionSection")).toBeVisible();
+    await expect(page.locator("#copyFilleted")).toBeChecked();
+    await expect(page.locator("#revisionFilletedNote")).toBeVisible();
+    await expect(page.locator("#revisionFilletedNote")).toContainText("holds no profit and loss account");
+    await expect(page.locator("#currentTurnover")).toHaveValue("");
+    await expect(page.locator("#currentCalledUpShareCapital")).not.toHaveValue("");
+    await screenshot(page, "small-amend-filleted-note", 1280);
+  });
+
+  for (const width of [1280, 390]) {
+    test(`refuses micro-entity accounts, which revise on the micro-entity page (${width})`, async ({ page }) => {
+      await openAmend(page, accountsReceipt(microCase.xhtml, { companyNumber: "06846849" }), { width });
+      await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("micro-entity accounts page");
+      await expect(page.locator("#formView")).toBeHidden();
+      await screenshot(page, "small-amend-refusal-micro-entity", width);
+    });
+  }
+
+  test("refuses accounts filed with a Company Tax Return", async ({ page }) => {
+    await openAmend(page, accountsReceipt(fullCase.xhtml, { jointFilingId: "joint-1" }));
+    await expect(page.locator("#statusMessagesContainer .status-error")).toContainText("revise them on the Company Tax Return page");
+    await expect(page.locator("#revisionBanner")).toBeHidden();
+  });
+
+  test("asks for both revision texts before the preview", async ({ page }) => {
+    await openAmend(page, accountsReceipt(fullCase.xhtml));
+    await expect(page.locator("#revisionSection")).toBeVisible();
+    await page.fill("#directorDateApproved", "2026-11-20");
+    expect(await page.evaluate(() => reportRevisionProblems())).toBe(true);
+    await expect(page.locator(".error-summary")).toContainText("Say what was wrong with the original accounts");
+  });
+
+  for (const width of [1280, 390]) {
+    test(`files the revision and names the revised accounts in the result (${width})`, async ({ page }) => {
+      await openAmend(page, accountsReceipt(fullCase.xhtml), { width });
+      await expect(page.locator("#revisionSection")).toBeVisible();
+      await page.fill("#revisionNonCompliance", "The original accounts left out the stocks held at the year end.");
+      await page.fill("#revisionAmendments", "Stocks are now shown, and the profit and loss reserve rises by the same amount.");
+      await page.fill("#directorDateApproved", "2026-11-20");
+      await page.evaluate(() => {
+        document.getElementById("companyAuthCode").value = "ABC123";
+        return handleSubmitFiling();
+      });
+
+      await expect(page.locator("#filingResult")).toContainText("Companies House accepted the revised accounts.");
+      const [sent] = await page.evaluate(() => window.sentAccounts);
+      expect(sent.revision).toEqual({
+        originalDateOfApproval: "2026-09-15",
+        nonCompliance: "The original accounts left out the stocks held at the year end.",
+        amendments: "Stocks are now shown, and the profit and loss reserve rises by the same amount.",
+      });
+      expect(sent.smallCompany.filleted).toBe(false);
+      await screenshot(page, "small-amend-result-accepted", width);
+    });
+  }
 });

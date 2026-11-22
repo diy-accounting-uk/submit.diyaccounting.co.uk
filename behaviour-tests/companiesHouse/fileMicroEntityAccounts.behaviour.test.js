@@ -53,6 +53,7 @@ import {
   verifyRevisionAccepted,
   verifyRevisionRejected,
   verifyRevisedAccountsOnRecord,
+  describeTheSmallCompanyRevision,
 } from "../steps/behaviour-companies-house-accounts-steps.js";
 import { companiesHouseLookupFixture } from "../steps/behaviour-companies-house-filing-steps.js";
 
@@ -425,6 +426,36 @@ async function signInWithResidentBundle(page, testUrl) {
     await ensureBundlePresent(page, "Resident Ltd", screenshotPath, { testPass: true });
   }
   await goToHomePage(page, screenshotPath);
+}
+
+for (const filleted of [false, true]) {
+  test(`Click through: file ${filleted ? "filleted" : "full"} small company accounts, amend them from the receipt and see the revised accounts accepted`, async ({
+    page,
+  }, testInfo) => {
+    test.skip(filesThroughRealCompaniesHouseGateway(), "the real gateway leaves the original pending, so it has no receipt to revise");
+    addOnPageLogging(page);
+    fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
+    const accounts = buildSmallCompanyAccounts({ withComparatives: !filleted });
+
+    await signInWithResidentBundle(page, baseUrl);
+    await goToFileSmallCompanyAccounts(page, screenshotPath);
+    await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
+    await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
+    await fillInSmallCompanyAccountsForm(page, accounts, { filleted }, screenshotPath);
+    await previewAccounts(page, screenshotPath);
+    await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+    await verifyFilingAccepted(page, screenshotPath);
+    await openFilingCustomerCopy(page, screenshotPath);
+    await amendFiledAccountsFromCopy(page, screenshotPath);
+    await expect(page.locator(filleted ? "#copyFilleted" : "#copyFull")).toBeChecked();
+    await describeTheSmallCompanyRevision(page, { revision: REVISION, accounts, filleted }, screenshotPath);
+    await verifyRevisionPreview(page, screenshotPath);
+    await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+    await verifyRevisionAccepted(page, screenshotPath);
+    await verifyRevisedAccountsOnRecord(page, screenshotPath);
+
+    await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+  });
 }
 
 test("Click through: file small company accounts in full with comparatives and see the filing accepted", async ({ page }, testInfo) => {
