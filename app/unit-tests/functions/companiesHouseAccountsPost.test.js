@@ -657,6 +657,33 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       expect(response.statusCode).toBe(201);
     });
 
+    test("refuses a revision on prod from a preview request with a synthetic HMRC account, while the accounts go to the live gateway", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      process.env.COMPANIES_HOUSE_GATEWAY_TEST = "false";
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({
+          body: buildAccountsBody({ revision: REVISION }),
+          headers: { "x-preview-features": "on", "hmrcAccount": "synthetic" },
+        }),
+      );
+      expect(response.statusCode).toBe(403);
+      expect(parseResponseBody(response)).toMatchObject({ code: "ACTIVITY_ENVIRONMENT_RESTRICTED", activityId: "file-revised-accounts" });
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("files a revision from a preview request where the accounts go to the Companies House test service", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      process.env.COMPANIES_HOUSE_GATEWAY_TEST = "true";
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({
+          body: buildAccountsBody({ revision: REVISION }),
+          headers: { "x-preview-features": "on", "hmrcAccount": "synthetic" },
+        }),
+      );
+      expect(response.statusCode).toBe(201);
+      expect(mockPostToGateway).toHaveBeenCalled();
+    });
+
     test("files a revision on ci", async () => {
       process.env.ENVIRONMENT_NAME = "ci";
       const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ revision: REVISION }) }));
