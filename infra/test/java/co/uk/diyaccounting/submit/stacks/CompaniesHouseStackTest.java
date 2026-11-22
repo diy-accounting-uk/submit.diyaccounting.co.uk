@@ -1163,9 +1163,11 @@ class CompaniesHouseStackTest {
         Template template = Template.fromStack(stack);
 
         for (String functionName : List.of(
+                stack.companiesHouseAccountsRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFilingDataPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseConfirmationStatementRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
                 stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName(),
@@ -1198,15 +1200,13 @@ class CompaniesHouseStackTest {
             assertFalse(environmentVariablesOf(functions).containsKey("COMPANIES_HOUSE_PACKAGE_REFERENCE"));
         }
 
-        // Neither preview reaches the gateway, so both carry neither.
+        // Neither preview reaches the gateway, so neither carries a PackageReference.
         for (String functionName : List.of(
                 stack.companiesHouseAccountsRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementRenderPostLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
-            var previewEnv = environmentVariablesOf(functions);
-            assertFalse(previewEnv.containsKey("COMPANIES_HOUSE_GATEWAY_TEST"));
-            assertFalse(previewEnv.containsKey("COMPANIES_HOUSE_PACKAGE_REFERENCE"));
+            assertFalse(environmentVariablesOf(functions).containsKey("COMPANIES_HOUSE_PACKAGE_REFERENCE"));
         }
     }
 
@@ -1216,9 +1216,11 @@ class CompaniesHouseStackTest {
         Template template = Template.fromStack(stack);
 
         for (String functionName : List.of(
+                stack.companiesHouseAccountsRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFilingDataPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseConfirmationStatementRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
                 stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName(),
