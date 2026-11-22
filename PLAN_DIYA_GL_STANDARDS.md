@@ -5,7 +5,7 @@
 
 A reviewer with an accounting and audit background reads a diya-gl book and finds each construct that keeps a set of accounts whole stated in code they can review: double entry, a typed chart of accounts mapped to the FRS 102 and FRS 105 taxonomy, a trial balance built from the lines, the year-end close and roll forward, control accounts, journals with a reason and an author, corrections by reversal, period locks after a filing, VAT boxes from the lines, and the ties from trial balance to each filed fact. Facts checked 2026-11-22 against `spreadsheets.diyaccounting.co.uk` main at `24547a929` and `submit.diyaccounting.co.uk` main at `60ab98a8f`.
 
-**Status**: first draft (board row GLS1). Tasks GLS2 to GLS20 are in section 6. Nothing is built until the review loop ends and the operator says go.
+**Status**: reviewed in three rounds; decisions answered by the operator on 2026-11-22. Tasks GLS2 to GLS20 are boarded on `NEXT.md`. Briefs are section 6.2.
 
 ## Operator assertions (verbatim)
 
@@ -27,7 +27,7 @@ A reviewer with an accounting and audit background reads a diya-gl book and find
 - **Company books carry double entry.** Companies Act 2006 s386 applies to companies. Basic Sole Trader, Taxi Driver and Self Employed books are cash-basis single-entry records (`app/products/se/checks/index.js:111`). The double-entry rules in this plan apply to books whose `diya-gl:product` is `Company`. A shared rule that also fits a sole trader (currency, posting status, period lock) applies to all products.
 - **The engine matches the workbook.** The Ltd calculator reproduces the workbook's formulas (`app/lib/diya-gl-calculator.js:4-8`). A change that would make a figure part from the workbook follows the spreadsheets repository's reconciliation-bug method (its `CLAUDE.md`): assert the sheet's behaviour as it is and add a warning that carries the true figure, unless the operator decides otherwise (section 7).
 - **Every check is breakable.** A new check or warning has a test that corrupts one input and asserts the exact set of results that flip.
-- **Schema change is v3, read beside v2.** All four schema objects are closed (`additionalProperties: false` on the book root, `accounts`, `documentInfo` and `accountDefinition`), so an older reader rejects any new field. New fields go into new `-v3` schema files. The engine reads v2 and v3. It writes v3 only after Submit's pinned engine reads v3 (GLS10 before GLS11).
+- **Schema change is v3, read beside v2.** Both schemas are closed (`additionalProperties: false` on the book root `book:9`, on `accountDefinition` `book:1094` and on the line `lines:9`), so an older reader rejects any new field. New fields go into new `-v3` schema files. The engine reads v2 and v3. It writes v3 only after Submit's pinned engine reads v3 (GLS10 before GLS11).
 - **Submit pins the engine.** Submit depends on `@diy-accounting-uk/diya-gl` `1.2.94` (`package.json:408`) and builds `web/public/lib/books-bundle.js` with `npm run bundle:books`. A Submit task that uses a new engine export bumps the pin and rebuilds the bundle.
 
 ## 1. Sources
@@ -119,9 +119,9 @@ Add `fast-check` as a dev dependency and a generator of valid Company books, bui
 
 ### 3.2 Posting rules and a trial balance from the lines (GLS3, GLS4)
 
-A table, `app/lib/posting-rules.js`, states for each line kind the balanced postings it stands for: a sales line debits debtors 1300 with the gross and credits its income account with the net and VAT 2200 with the VAT; a bank line debits or credits its bank account and posts the contra to the account its `diya-gl:bankCode` names (DR 1300, CR 2100, RV 2200, RP 2400, RT 2300, RC 2410, DL 2500, W 2150, DV 3200, LDR 1400, LCR 2600, the transfer letters to the other bank); a payroll line posts gross, deductions and net; a journal line posts itself. The rules come from the TrialBalance formulas in the template XML, by the reconciliation-bug method, never from this paragraph. `postingsOf(book, line)` expands one line. `trialBalance(book, lines, { from, to })` in `app/lib/book-queries.js` sums the postings by account, debit and credit columns, for any date range: the year, a month or a VAT quarter.
+A table, `app/lib/posting-rules.js`, states for each line kind the balanced postings it stands for: a sales line debits debtors 1300 with the gross and credits its income account with the net and VAT 2200 with the VAT; a bank line debits or credits its bank account and posts the contra to the account its `diya-gl:bankCode` names (DR 1300, CR 2100, RV 2200, RP 2400, RT 2300, RC 2410, DL 2500, W 2150, DV 3200, LDR 1400, LCR 2600, the transfer letters to a transfer clearing account that feeds TB row 26 and nets to nil when both legs are in the book, `intraTransfers`, `calculators/ltd.js:1749-1760`); a payroll line posts gross, deductions and net; an opening journal line (`OB-`) posts itself. The table also states the year-end postings the calculator takes from the book's registers, not from lines: stock movements, depreciation and disposals from the asset schedule, hire purchase, dividends declared, the share issue, the interest gross-up and the corporation tax charge (`buildTrialBalance` inputs `stock`, `blocks`, `hp`, `dividendDeclared`, `shareIssue`, `calculators/ltd.js:1580-1600`, `:1651-1738`). Each such posting names its register. An in-year journal line (not `OB-`) reaches no calculator row today (A6), so the trial balance lists it apart and does not total it; `book-journal-reaches-no-report` warns on it (GLS5). Without these two rules the tie below fails: precision-code-ltd's JNL-001 repeats the stock register (`examples/precision-code-ltd/book.toml` `[stock]`). The rules come from the TrialBalance formulas in the template XML, by the reconciliation-bug method, never from this paragraph. `postingsOf(book, line)` expands one line. `trialBalance(book, lines, { from, to })` in `app/lib/book-queries.js` sums the postings by account, debit and credit columns, for any date range: the year, a month or a VAT quarter.
 
-Tests: property, for any generated book, the postings of each line balance and the trial balance's debits equal its credits. Tie, for every Ltd example and fixture, each account's closing balance equals the calculator's TrialBalance row it feeds (a stated account-to-row map), to the penny. Breakability: change one bank code and assert the two accounts that move. Saved book: no effect (a query). GLS4 adds the view on the books page and a diya-gl MCP tool.
+Tests: property, for any generated book, the postings of each line balance and the trial balance's debits equal its credits. Tie, for every Ltd example and fixture, the closing balances of the accounts that feed each calculator TrialBalance row sum to that row (a stated account-to-row map; several accounts can feed one row, for example 5800 and 5803 both feed legal and professional, `scenario-extractor.js:46-49`), to the penny. The trial balance stands before the close (A4), so rows 43 and 49 tie together to 3100 (EJ43 + EJ49 = D43, `calculators/ltd.js:924-925`). `results.TrialBalance` holds only the cells in `TRIAL_BALANCE_READS` (`calculators/ltd.js:253-303`, `:1764-1766`), so the tie reads the full `tb` object that `buildTrialBalance` returns, after the tax charge and the close set rows 35, 43, 47 and 49 on it (`:918-926`), exposed without a change to any figure. Breakability: change one bank code and assert the two accounts that move. Saved book: no effect (a query). GLS4 adds the view on the books page and a diya-gl MCP tool.
 
 ### 3.3 Report-only warnings (GLS5)
 
@@ -135,7 +135,9 @@ New warnings in `app/lib/book-checks.js` (shared) and `app/lib/book-checks/ltd.j
 | `book-posting-status-counted` | a line's `postingStatus` is not `posted` (it is still totalled) | A7 |
 | `book-currency-not-gbp` | a line's `amountCurrency` is set and is not GBP (it is added as pounds) | A10 |
 | `book-ltd-vat-code-not-applied` | a VAT-registered Company book has a sales or purchases line whose `taxCode` is not S or whose `taxRate` is set and not 0.2 | A9 |
-| `book-ltd-long-term-debtors-unpublished` | TB row 37 is not nil; the warning carries the figure the published sheet leaves out | A5 |
+| `book-ltd-long-term-debtors-unpublished` | closing long-term debtors (TB row 37) are not nil; the warning carries the figure the published sheet leaves out | A5 |
+| `book-ltd-directors-loan-always-long-term` | the closing directors' loan account is not nil; the published sheet shows it in creditors due after more than one year whatever its terms (`calculators/ltd.js:1868`); the warning carries the figure | A5 |
+| `book-ltd-loan-interest-in-administrative-expenses` | a line is coded 5803 loan interest; the published profit and loss shows it in administrative expenses and not in interest payable (`scenario-extractor.js:49`); the warning carries the total | A2 |
 
 Tests: one per warning, breakable. Saved book: no effect; warnings never block (`book-checks.js:8-9`).
 
@@ -145,7 +147,7 @@ Tests: one per warning, breakable. Saved book: no effect; warnings never block (
 
 ### 3.5 Statement ties and named facts (GLS7, GLS8)
 
-`accountsFacts(results)` returns the FRS 105 and FRS 102 Section 1A lines by concept name, from the published sheets. New checks in `app/products/ltd/checks/`, at a penny's tolerance: each published balance sheet line equals the sum of the GLS3 trial balance accounts of its class and concept; the profit for the year equals income less expense from the GLS3 trial balance; revenue reserve closing = opening + profit after tax − dividends declared, from inputs the engine did not derive from the same cell; the roll forward's 3100 plug equals that closing reserve (a pair added to `rollForwardChecks`). Submit then reads `accountsFacts` in place of PubBalSht cell addresses (GLS8). Saved book: no change to any figure; a new check can show red on a book whose figures were already inconsistent.
+`accountsFacts(results)` returns the FRS 105 and FRS 102 Section 1A lines by concept name, from the published sheets, with Submit's presentation rules moved in so that Submit's figures do not change (GLS8). New checks in `app/products/ltd/checks/`, at a penny's tolerance: each `accountsFacts` asset, liability and share capital line equals the sum of the GLS3 trial balance accounts of its class and concept (the trial balance stands before the close, so the profit and loss reserve is the third check's, and the totals follow from the lines); the profit for the year equals income less expense from the GLS3 trial balance; revenue reserve closing = opening + profit after tax − dividends declared, from inputs the engine did not derive from the same cell; the roll forward's 3100 plug equals that closing reserve (a pair added to `rollForwardChecks`). An account whose balance changes side maps by the presentation rule: an overdrawn set of statement accounts is a creditor (the engine's sheet, `calculators/ltd.js:1857-1867`), and an overdrawn directors' loan is a current asset (Submit's rule today, `submit:app/services/microEntityAccountsFromResults.js:53-54`; the engine's PubBalSht leaves it a negative creditor, `calculators/ltd.js:1868`, so the tie is to `accountsFacts`, not to PubBalSht cells). Submit then reads `accountsFacts` in place of PubBalSht cell addresses (GLS8). Saved book: no change to any figure; a new check can show red on a book whose figures were already inconsistent.
 
 ### 3.6 Schema v3 (GLS9, GLS10, GLS11)
 
@@ -162,23 +164,30 @@ New files `diya-gl-book-v3.schema.json` and `diya-gl-lines-v3.schema.json` (`$id
 | line | `entryType` | GL values used here: standard, adjusting, recurring, reclassifying, other |
 | line | `postingStatus` | posted, proposed, cancelled (GL words); v2's draft reads as proposed, voided as cancelled |
 
-Migration: a v2 book reads as v3 on load. Its classes and concepts come from the GLS6 table, `filings` and `statementBalances` are empty, and `postingStatus` maps as above. `app/lib/share-nominal.js:5-11` is the precedent: a book that predates a format reads with the default. The engine writes v3 only from GLS11, after Submit's pinned engine reads it (GLS10). Tests: every v2 example loads under the v3 reader with unchanged figures; a v3 book written and read back is byte-identical to the canonical form; the standalone validator build (`scripts/build-diya-gl-bundle.mjs`) covers both versions. Saved book: none fails (v2 still accepted); an older engine rejects a v3 book.
+Validation (GLS9): each book is validated against the schema of its own `diya-gl:formatVersion`: a `diya-gl/3` book against v3, and any other book against v2. Older engines wrote `diya-gl/1`, `diya-gl/2` and `diya-gl-books/1` (`app/data/releases.json:6`), and some books carry no marker. GLS9 changes no book in memory, so a v2 book still saves as valid v2. Today the validator, the canonical writer and Submit's bundle each take only the v2 pair (`app/lib/diya-gl-schema.js:36-110`, `app/lib/diya-gl-canonical.js:39-75`, `app/lib/app-resources.js:164-165`, `scripts/build-diya-gl-bundle.mjs:77`, `:145-150`, `:354`, `:389-401`, `scripts/build-runner.mjs:304`, `submit:scripts/build-books-bundle.mjs:34-35`, `:170-178`, `:206-209`, `:252-260`); each takes both pairs. The two bundles' `Ajv2020` stubs return a precompiled validator by schema `$id` and throw on any other, so a page or Submit bundle without the v3 ids fails on the first v3 schema.
+
+Migration (GLS11): from GLS11 a v2 book becomes v3 on load. Its classes and concepts come from the GLS6 table, `filings` and `statementBalances` are empty, and `postingStatus` maps as above. `app/lib/share-nominal.js:5-11` is the precedent: a book that predates a format reads with the default. The engine writes v3 only from GLS11, after Submit's pinned engine reads it (GLS10). Tests: every v2 example loads with unchanged figures; a v3 book written and read back is byte-identical to the canonical form; the standalone validator build (`scripts/build-diya-gl-bundle.mjs`) covers both versions. Saved book: none fails (v2 still accepted); an older engine rejects a v3 book.
 
 ### 3.7 Audit stamps and corrections by reversal (GLS12)
 
-Every edit that adds or changes a line sets `enteredDate` to today and `enteredBy` to the author the caller passes (section 7, D3). A new edit `addJournalEntry` takes balanced lines, a reason and an `entryType`, and refuses an unbalanced entry or one with no reason. A new edit `reverseEntry` adds the mirror lines with `diya-gl:reversesEntry` and a reason. A line dated inside a filed period cannot be changed or removed; the page offers `reverseEntry` and a replacement entry dated in the open period. Tests: property, for any generated book, `reverseEntry` then the trial balance returns each account to its balance before the reversed entry; an edit inside a filed period throws; stamps are set. Saved book: opens as before; edits of lines in a filed period are refused from now on.
+Every edit that adds or changes a line sets `enteredDate` to today and `enteredBy` to the author the caller passes (section 7, D3). A new edit `addJournalEntry` takes balanced lines, a reason and an `entryType`, and refuses an unbalanced entry or one with no reason. A new edit `reverseEntry` adds the mirror lines with `diya-gl:reversesEntry` and a reason. Each mirror line sits in the reversed line's own journal with the opposite sign the engine reads: a credit note for a sales or purchases line (`signedAmount`, `scenario-extractor.js:548-550`), the other D/C code for a bank or journal line. Amounts stay positive (`lines:69-72`). So the reports and the GLS3 trial balance both move back. It throws, naming the line, for an opening (`OB-`) line, for a sales line on 4005 (the engine reads a credit note there as a bad debt, `scenario-extractor.js:552-556`), for a bank line whose code the opposite block does not analyse (only DR and CR move to the other block as refunds; any other code lands unanalysed, `ltdBankPlacement`, `app/lib/ltd-layout.js:147-155`), and for a line kind with no opposite form. An `addJournalEntry` entry dated in the year reaches no report today, as any in-year journal (A6); GLS5's warning names it. Tests: property, for any generated book, `reverseEntry` on any daybook entry it does not refuse returns each account in the trial balance, and each report figure, to its value before the reversed entry; stamps are set. Saved book: opens as before. The lock on filed periods needs the filings register, so it is in GLS13.
 
 ### 3.8 Filings register, period lock and the filed-return tie (GLS13, GLS14, GLS15)
 
-`diya-gl:filings` records each filing. A VAT filing locks the lines whose VAT period it covers; an accounts filing locks the year. A new warning `book-vat-filed-return-changed` re-derives each filed VAT return and warns when a box no longer equals the filed figure: VAT control agrees with the returns filed. The books page records a filing when the customer returns from Submit with the receipt in the URL fragment (GLS14); Submit's receipt pages give that link (GLS15). Saved book: a v2 book has no filings, so nothing locks until the customer records one.
+`diya-gl:filings` records each filing. A VAT filing locks the lines whose VAT period it covers; an accounts filing locks the year. Per D2 (a), a locked line cannot be changed or removed; the page offers `reverseEntry` and a replacement entry dated in the open period. Two new warnings:
+
+- `book-vat-filed-return-changed` re-derives each filed VAT return and warns when a box no longer equals the filed figure.
+- `book-vat-control-differs-from-filed` ties the VAT control account to the returns filed. At the end of the latest filed VAT period, the GLS3 trial balance's 2200 balance must equal the opening 2200 balance, plus box 5 of each filed return, less the net RV bank movements to that date, within one penny per filed return (boxes 3 and 4 round to the penny, `vat-return.js:45-47`, `:191-195`). It runs only when the book's start is the first day of a VAT quarter and filings with box figures cover every quarter from the book's start to that date. A quarter that begins before the book's start holds VAT already in the opening balance, and would show red on a correct book. Today's nearest check compares engine figures with each other (`app/products/ltd/checks/ledgers.js:105`).
+
+The books page records a filing when the customer returns from Submit with the receipt in the URL fragment, and records a filing made elsewhere from a form (GLS14, D4 (c)); Submit's receipt pages give that link (GLS15). Saved book: a v2 book has no filings, so nothing locks until the customer records one.
 
 ### 3.9 VAT boxes from each line's tax code (GLS16)
 
-`deriveVatReturn` takes each line's VAT from its `taxCode` and `taxRate`: S at the book's standard rate, R at the reduced rate, Z, E and OS with no VAT, RC per HMRC's reverse charge rule (read from HMRC first). Box 6 and box 7 keep each line's net. The reconcile against the workbook's Vatinterface stays for books whose lines are all S at the standard rate; for any other book, the derivation states the difference from the workbook in `notes`. Tests: a property that a book of only S lines gives today's boxes exactly; a book with one Z sale and one E purchase gives the hand-computed boxes. Saved book: opens; a book with non-S lines shows different boxes 1, 4 and 6 than today. Section 7, D5.
+`deriveVatReturn` takes each line's VAT from its `taxCode` and `taxRate`: S at the book's standard rate, R at the reduced rate, Z, E and OS with no VAT, RC per HMRC's reverse charge rule (read from HMRC first). Box 6 and box 7 take each line's net, with the exclusions of VAT Notice 700/12 sections 3.7 and 3.8 (box 7 leaves out expenditure outside the scope of VAT because it is not consideration for a supply, and wages, PAYE and rates). The reconcile against the workbook's Vatinterface stays for books whose lines are all S at the standard rate; for any other book, the derivation states the difference from the workbook in `notes`. Tests: a property that a book of only S lines gives today's boxes exactly; a book with one Z sale and one E purchase gives the hand-computed boxes. Saved book: opens; a book with non-S lines shows different boxes 1 and 3 to 7 than today. The precision-code-ltd example is one: it has 22 purchases lines coded OS or E and one sales line coded OS (`examples/precision-code-ltd/lines.jsonl`). Section 7, D5.
 
 ### 3.10 Validation that rejects (GLS17, GLS18)
 
-For books marked `diya-gl/3` only: the validator rejects an unbalanced journal entry, a non-GBP `amountCurrency` and a Company account with no class (GLS17). The engine leaves lines whose `postingStatus` is not `posted` out of every total (GLS18). Saved book: a v2 book still opens; a v3 book the engine wrote cannot fail (GLS2's property); a hand-edited v3 book can fail. GLS18 changes the figures of a book that carries non-posted lines. The engine writes no `postingStatus` today and no example carries one (`grep -c postingStatus examples/*/lines.jsonl` is 0 for each).
+Both tasks follow GLS5's warnings (D8). For books marked `diya-gl/3` only: the validator rejects an unbalanced journal entry in a Company book and a non-GBP `amountCurrency` (GLS17). GLS5 warns on both first. The engine leaves lines whose `postingStatus` is not `posted` out of every total (GLS18). Saved book: a v2 book still opens; a v3 book the engine wrote cannot fail (GLS2's property); a hand-edited v3 book can fail. GLS18 changes the figures of a book that carries non-posted lines. The engine writes no `postingStatus` today and no example carries one (`grep -c postingStatus examples/*/lines.jsonl` is 0 for each).
 
 ### 3.11 Labels (GLS19)
 
@@ -221,21 +230,21 @@ A warning `book-bank-statement-differs` compares each `diya-gl:statementBalances
 | GLS2 | Property-test harness and the first properties | nothing | machine-only | Sonnet | ~4 files |
 | GLS3 | Posting rules and the trial balance from the lines | GLS2 | machine-only | Opus | ~5 files |
 | GLS4 | Trial balance view on the books page and an MCP tool | GLS3 | machine-only | Sonnet | ~6 files |
-| GLS5 | Seven report-only warnings | GLS2 | machine-only | Sonnet | ~5 files |
+| GLS5 | Nine report-only warnings | GLS2 | machine-only | Sonnet | ~5 files |
 | GLS6 | Account classes and the account-to-concept map | GLS3 | machine-only | Opus | ~5 files |
 | GLS7 | Statement ties and `accountsFacts` | GLS3, GLS6 | machine-only | Sonnet | ~5 files |
 | GLS8 | Submit reads `accountsFacts` | GLS7 released to npm | machine-only | Sonnet | ~5 files |
-| GLS9 | v3 schemas, read beside v2 | GLS6, D1 | machine-only | Sonnet | ~9 files |
-| GLS10 | Submit's pinned engine reads v3 | GLS9 released to npm | machine-only | Haiku | ~3 files |
+| GLS9 | v3 schemas, read beside v2 | GLS6 | machine-only | Sonnet | ~9 files |
+| GLS10 | Submit's pinned engine reads v3 | GLS9 released to npm | machine-only | Sonnet | ~4 files |
 | GLS11 | The engine writes v3 | GLS10 | machine-only | Sonnet | ~6 files |
-| GLS12 | Audit stamps, journal entries and reversal | GLS11, D2, D3 | machine-only | Sonnet | ~6 files |
-| GLS13 | Filings register, period lock, filed-return warning | GLS12 | machine-only | Sonnet | ~6 files |
-| GLS14 | Books page records a filing from a link | GLS13, D4 | machine-only | Sonnet | ~4 files |
+| GLS12 | Audit stamps, journal entries and reversal | GLS11 | machine-only | Sonnet | ~6 files |
+| GLS13 | Filings register, period lock, VAT filing warnings | GLS12 | machine-only | Sonnet | ~6 files |
+| GLS14 | Books page records a filing from a link | GLS13 | machine-only | Sonnet | ~4 files |
 | GLS15 | Submit receipt pages link the filing to the book | GLS14 released | machine-only | Sonnet | ~5 files |
-| GLS16 | VAT boxes from each line's tax code | GLS5, D5 | machine-only | Opus | ~4 files |
+| GLS16 | VAT boxes from each line's tax code | GLS5 | machine-only | Opus | ~4 files |
 | GLS17 | v3 validation rejects | GLS5, GLS11, GLS12 | machine-only | Sonnet | ~3 files |
 | GLS18 | Non-posted lines leave the totals | GLS5, GLS11 | machine-only | Sonnet | ~4 files |
-| GLS19 | Concept and account labels, English and Welsh | GLS6, GLS9, D6 | machine-only | Sonnet | ~5 files |
+| GLS19 | Concept and account labels, English and Welsh | GLS6, GLS9 | machine-only | Sonnet | ~5 files |
 | GLS20 | Bank statement balances and their warning | GLS3, GLS11 | machine-only | Sonnet | ~3 files |
 
 GLS4, GLS5 and GLS6 can run in parallel after their waits. GLS5 and GLS7 both add to `app/products/ltd/checks/` and `book-checks/ltd.js`; they land one after the other. GLS8 and GLS10 are one Submit pin bump when GLS7 and GLS9 ship in the same release.
@@ -251,8 +260,8 @@ GLS4, GLS5 and GLS6 can run in parallel after their waits. GLS5 and GLS7 both ad
 #### GLS3. Posting rules and the trial balance from the lines
 
 - **Repository**: spreadsheets. **Saved book**: no effect.
-- **Do**: discover each line kind's postings from `Financialaccounts.xlsx` TrialBalance formulas in the Ltd template XML (JSZip) and `app/lib/calculators/ltd.js:1580-1764`. Write `app/lib/posting-rules.js` (the table and `postingsOf`) and `trialBalance(book, lines, { from, to })` in `app/lib/book-queries.js`; export both from `app/lib/diya-gl-engine.js`. A line kind the table does not know throws, naming the line.
-- **Tests**: property (GLS2 generator): each line's postings balance; the trial balance balances for the year, each month and each VAT quarter. Tie: for precision-code-ltd and brickwork-pro, each account's closing balance equals its TrialBalance row via a stated map, to the penny. Breakability: change one bank code; exactly the two accounts it names move.
+- **Do**: discover each line kind's postings from `Financialaccounts.xlsx` TrialBalance formulas in the Ltd template XML (JSZip) and `app/lib/calculators/ltd.js:1580-1764`. Write `app/lib/posting-rules.js` (the table, `postingsOf` and the register postings of section 3.2; in-year journal lines listed apart, not totalled) and `trialBalance(book, lines, { from, to })` in `app/lib/book-queries.js`; export both from `app/lib/diya-gl-engine.js`. A line kind the table does not know throws, naming the line.
+- **Tests**: property (GLS2 generator): each line's postings balance; the trial balance balances for the year, each month and each VAT quarter. Tie: for precision-code-ltd and brickwork-pro, the accounts that feed each TrialBalance row sum to that row via a stated account-to-row map, to the penny; rows 43 and 49 tie together to 3100. The tie reads the full `tb` object from `buildTrialBalance` after the tax charge and the close (`:918-926`), because `results.TrialBalance` holds only the `TRIAL_BALANCE_READS` cells (`calculators/ltd.js:253-303`); expose it without a change to any figure. Breakability: change one bank code; exactly the two accounts it names move.
 
 #### GLS4. Trial balance view on the books page and an MCP tool
 
@@ -260,10 +269,10 @@ GLS4, GLS5 and GLS6 can run in parallel after their waits. GLS5 and GLS7 both ad
 - **Do**: a Trial balance view on the Company books page (`web/diya-gl.co.uk/public/`), with a period picker (year, month, VAT quarter) and each account's lines on demand; a diya-gl MCP tool `trial_balance` with the same arguments.
 - **Done when**: a browser test shows the view's totals equal; the spreadsheets repository's visual definition of done for a new view.
 
-#### GLS5. Seven report-only warnings
+#### GLS5. Nine report-only warnings
 
 - **Repository**: spreadsheets. **Saved book**: no effect.
-- **Do**: the seven warnings in section 3.3, in `app/lib/book-checks.js` (shared ones) and `app/lib/book-checks/ltd.js`, each with `tier: "warning"`, offenders and a consequence line. `book-ltd-long-term-debtors-unpublished` reads `results.TrialBalance.EJ37`.
+- **Do**: the nine warnings in section 3.3, in `app/lib/book-checks.js` (shared ones) and `app/lib/book-checks/ltd.js`, each with `tier: "warning"`, offenders and a consequence line. `book-ltd-long-term-debtors-unpublished` computes the closing long-term debtors with `longTermDebtorsClosing` (`app/lib/diya-gl-roll-forward.js:379`, exported for this). `results.TrialBalance` carries no EJ37 (`calculators/ltd.js:253-303`). The clean example for `book-ltd-vat-code-not-applied` is `brickwork-pro/ltd-vat` (all S); precision-code-ltd warns as it stands.
 - **Tests**: one test per warning that passes on a clean example and warns on a corrupted copy, with the exact offender set.
 
 #### GLS6. Account classes and the account-to-concept map
@@ -275,7 +284,7 @@ GLS4, GLS5 and GLS6 can run in parallel after their waits. GLS5 and GLS7 both ad
 #### GLS7. Statement ties and `accountsFacts`
 
 - **Repository**: spreadsheets. **Saved book**: no figure changes; a new check can show red on an inconsistent book.
-- **Do**: `accountsFacts(results)` (FRS 105 lines and FRS 102 Section 1A lines by concept name), exported from the engine. The four checks of section 3.5 at a penny's tolerance, in `app/products/ltd/checks/`, and the 3100 pair in `rollForwardChecks`.
+- **Do**: `accountsFacts(results)` (FRS 105 lines and FRS 102 Section 1A lines by concept name), exported from the engine, carrying the presentation rules of `submit:app/services/microEntityAccountsFromResults.js:42-65` and `submit:app/services/smallCompanyAccountsFromResults.js` so GLS8's expected values hold. The four checks of section 3.5 at a penny's tolerance, in `app/products/ltd/checks/`, with the presentation rule for accounts that change side, and the 3100 pair in `rollForwardChecks`.
 - **Tests**: each check passes on every Ltd example and flips alone when one input is corrupted.
 
 #### GLS8. Submit reads `accountsFacts`
@@ -287,19 +296,19 @@ GLS4, GLS5 and GLS6 can run in parallel after their waits. GLS5 and GLS7 both ad
 #### GLS9. v3 schemas, read beside v2
 
 - **Repository**: spreadsheets. **Saved book**: none fails; an older engine rejects a v3 book.
-- **Do**: the two v3 schema files of section 3.6 in both schema folders; `app/lib/diya-gl-schema.js` picks the schema by the book's `diya-gl:formatVersion` and reads a v2 book through the migration of section 3.6; the standalone validator build covers both; `diya-gl-docs.md` describes v3. The writer still writes v2.
-- **Tests**: each v2 example loads with unchanged report figures; a v3 book round-trips through the canonical writer.
+- **Do**: the two v3 schema files of section 3.6 in both schema folders. Validation per section 3.6: each book against the schema of its own `diya-gl:formatVersion`, with no change to the book in memory. `useSchemas`, `loadSchemasFrom` and `generateStandaloneValidatorSource` (`app/lib/diya-gl-schema.js:36-110`), the canonical writer's `useSchemas` and `loadSchemasFrom` (`app/lib/diya-gl-canonical.js:39-75`) and the resource names (`app/lib/app-resources.js:164-165`) take the v2 and the v3 pair. The books page bundle (`scripts/build-diya-gl-bundle.mjs`: the schema copy `:77`, the `Ajv2020` stub `:145-150`, the offline URL list `:354`, the standalone validator `:389-401`) and the offline runner (`scripts/build-runner.mjs:304`) carry both pairs; `diya-gl-docs.md` describes v3. The writer still writes v2.
+- **Tests**: each v2 example loads with unchanged report figures and saves as valid v2; a v3 book round-trips through the canonical writer.
 
 #### GLS10. Submit's pinned engine reads v3
 
 - **Repository**: submit. **Saved book**: no effect.
-- **Do**: bump `@diy-accounting-uk/diya-gl` to the release carrying GLS9 (`package.json:408`); `npm run bundle:books`; run the books-import and MCP book unit tests.
+- **Do**: bump `@diy-accounting-uk/diya-gl` to the release carrying GLS9 (`package.json:408`). Change `scripts/build-books-bundle.mjs` to hand the v2 and the v3 pair to GLS9's loaders: the schema ids (`:34-35`), the `Ajv2020` stub that picks a validator by `$id` (`:170-178`), the bundle entry's `useSchemas` call (`:206-209`) and the standalone validator source (`:252-260`). Run `npm run bundle:books`, then the books-import and MCP book unit tests and a v3 book read through the bundle.
 
 #### GLS11. The engine writes v3
 
 - **Repository**: spreadsheets. **Saved book**: no effect on load; a book saved again is written as v3.
-- **Do**: `provenance-data.js` writes `diya-gl/3`; every writer (`buildNewBook`, `rollForward`, `buildIxbrlSummaryBooks`, the exporter, the canonical writer) states class and concept on each account.
-- **Tests**: GLS2's properties over v3 books; the parity gate passes.
+- **Do**: `scripts/build-provenance-data.mjs` sets `FORMAT_VERSION` to `diya-gl/3` and regenerates `app/lib/provenance-data.js` (generated; not edited by hand); the loader migrates a v2 book to v3 on load per section 3.6; every writer (`buildNewBook`, `rollForward`, `buildIxbrlSummaryBooks`, the exporter, the canonical writer) states class and concept on each account.
+- **Tests**: GLS2's properties over v3 books; every v2 example migrates with unchanged figures; the parity gate passes.
 
 #### GLS12. Audit stamps, journal entries and reversal
 
@@ -307,17 +316,17 @@ GLS4, GLS5 and GLS6 can run in parallel after their waits. GLS5 and GLS7 both ad
 - **Do**: section 3.7 in `app/lib/diya-gl-edits.js` and the page's edit path (`web/diya-gl.co.uk/public/edits.js`). The author comes from the caller per D3.
 - **Tests**: the reversal property; an unbalanced `addJournalEntry` throws; an entry with no reason throws; stamps set on add and change.
 
-#### GLS13. Filings register, period lock, filed-return warning
+#### GLS13. Filings register, period lock, VAT filing warnings
 
 - **Repository**: spreadsheets. **Saved book**: opens; nothing locks until a filing is recorded.
-- **Do**: section 3.8's lock in the edits and the `book-vat-filed-return-changed` warning; an edit `recordFiling`.
-- **Tests**: an edit inside a filed VAT period throws and names the filing; the warning flips when one locked line's amount is corrupted in a copy.
+- **Do**: section 3.8's lock in the edits (per D2), the page's offer of `reverseEntry` for a locked line, the two warnings, and an edit `recordFiling`.
+- **Tests**: an edit inside a filed VAT period throws and names the filing; `book-vat-filed-return-changed` flips when one locked line's amount is corrupted in a copy; `book-vat-control-differs-from-filed` flips when one filed box 5 is changed by £1.
 
 #### GLS14. Books page records a filing from a link
 
 - **Repository**: spreadsheets. **Saved book**: no effect until the customer accepts.
-- **Do**: the books page reads `#filing=<base64url JSON>` (kind, period, filed date, reference, figures), shows it, and calls `recordFiling` when the customer confirms. Mirror the fragment rules of `submit-handoff.js`.
-- **Tests**: a browser test of accept and decline; a fragment whose figures differ from the book's derived figures shows the difference before the customer accepts.
+- **Do**: the books page reads `#filing=<base64url JSON>` (kind, period, filed date, reference, figures), shows it, and calls `recordFiling` when the customer confirms. Mirror the fragment rules of `submit-handoff.js`. A form records a filing made elsewhere (kind, period, filed date, reference and, for a VAT filing, the nine boxes) through the same `recordFiling` (D4 (c)). Both GLS13 warnings read the filed boxes.
+- **Tests**: a browser test of accept and decline; a browser test of the form; a fragment whose figures differ from the book's derived figures shows the difference before the customer accepts.
 
 #### GLS15. Submit receipt pages link the filing to the book
 
@@ -328,13 +337,13 @@ GLS4, GLS5 and GLS6 can run in parallel after their waits. GLS5 and GLS7 both ad
 #### GLS16. VAT boxes from each line's tax code
 
 - **Repository**: spreadsheets. **Saved book**: opens; boxes change for books with non-S lines.
-- **Do**: read HMRC's guidance on reverse charge boxes and on boxes 2, 8 and 9 first and cite it in the commit. Then section 3.9 in `app/lib/derivations/vat-return.js`, rates from the book's tax data.
+- **Do**: read HMRC's guidance on reverse charge boxes, on boxes 2, 8 and 9 and on what boxes 6 and 7 leave out (VAT Notice 700/12 sections 3.7 and 3.8) first and cite it in the commit. Then section 3.9 in `app/lib/derivations/vat-return.js`, rates from the book's tax data.
 - **Tests**: the all-S property returns today's boxes exactly; the hand-computed mixed book; the diya-gl.co.uk handoff and the Submit MCP `derive_vat_return` path read the new notes.
 
 #### GLS17. v3 validation rejects
 
 - **Repository**: spreadsheets. **Saved book**: a v2 book opens; a hand-edited v3 book can fail.
-- **Do**: section 3.10's three rules in `validateLines` and `validateBook`, for `diya-gl/3` books only.
+- **Do**: section 3.10's two rules in `validateLines` and `validateBook`, for `diya-gl/3` books only.
 - **Tests**: each rule rejects a corrupted v3 book with a message naming the line or account; every v2 example still loads.
 
 #### GLS18. Non-posted lines leave the totals
@@ -355,14 +364,17 @@ GLS4, GLS5 and GLS6 can run in parallel after their waits. GLS5 and GLS7 both ad
 - **Do**: section 3.12, with an edit `setStatementBalance`.
 - **Tests**: the warning flips when one statement balance differs by a penny.
 
-## 7. Operator decisions
+## 7. Decisions
 
-| Id | Decision | Alternatives | Recommendation |
-| --- | --- | --- | --- |
-| D1 | How new fields reach the schema | (a) v3 files read beside v2; (b) add optional fields to v2 in place | (a): v2 is closed, so (b) makes every older engine, including Submit's pinned 1.2.94, reject a re-saved book |
-| D2 | When an edit must be a reversal | (a) only for lines in a filed period; (b) for every posted line | (a): normal for an unfiled small-company year; (b) adds a reversal for each typo |
-| D3 | Who `enteredBy` names | (a) the signed-in name where the page has one, else "books page"; (b) a name the customer types once per book; (c) the tool only ("diya-gl books page", "diya-gl MCP") | (a) |
-| D4 | How a filing reaches the book | (a) Submit's receipt links back with the filing in the fragment (GLS14, GLS15); (b) the customer marks a period filed by hand; (c) both | (c): (a) for Submit filings, (b) for filings made elsewhere |
-| D5 | VAT boxes when lines carry other tax codes | (a) follow each line's code and state the difference from the workbook (GLS16); (b) keep 20% on every line and warn only (GLS5) | (a): Notice 700/22 3.3.2 asks for value and rate per supply |
-| D6 | Welsh on diya-gl.co.uk | (a) labels file only, for Submit's Welsh accounts; (b) also translate the books page | (a) now; (b) as its own row if wanted |
-| D7 | Workbook classifications an auditor would query | Long-term debtors on no published line (A5); directors' loan always due after more than one year (A5); loan interest 5803 in legal and professional (A2). For each: (a) change the template and the calculator together; (b) keep the template, warn with the true figure (GLS5 does this for long-term debtors) | (b) for all three, then a workbook row per item if the operator wants the template changed |
+Operator, 2026-11-22.
+
+| Id | Decision | Design |
+| --- | --- | --- |
+| D1 | How new fields reach the schema | v3 schema files read beside v2. v2 is closed, so a field added to it makes every older engine, including Submit's pinned 1.2.94, reject a re-saved book. |
+| D2 | When an edit must be a reversal | Only for lines in a filed period. |
+| D3 | Who `enteredBy` names | The signed-in name where the page has one, else "books page". |
+| D4 | How a filing reaches the book | Both: Submit's receipt links back with the filing in the fragment (GLS14, GLS15), and the customer marks a period filed by hand for filings made elsewhere. |
+| D5 | VAT boxes when lines carry other tax codes | Follow each line's code and state the difference from the workbook (GLS16), per VAT Notice 700/22 3.3.2, which asks for value and rate per supply. |
+| D6 | Welsh on diya-gl.co.uk | The labels file only, for Submit's Welsh accounts (GLS19). |
+| D7 | Workbook classifications an auditor would query | Keep the template for long-term debtors, the directors' loan and loan interest 5803, and warn with the true figure (the last three warnings of section 3.3, in GLS5). |
+| D8 | When report-only rules start to reject or change figures (GLS17, GLS18) | After GLS5's warnings have shipped, reject for v3 books and leave non-posted lines out of totals. |

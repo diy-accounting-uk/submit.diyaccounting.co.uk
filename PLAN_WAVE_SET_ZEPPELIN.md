@@ -36,7 +36,7 @@ for spreadsheets.
   AA11, AA4, WL1, SY2 (the route), AA5, AA6, AA16, CP1, AA7, AA14, CL2, CL5, LANG12, AA17.
 - **spreadsheets**: 5 rows in one pull request: AA27, AA26, SY1 (the page), SY2 (the engine and the
   page), SY3.
-- **Beside**, with no pull request: DUE1, CR1, WDM1, GLS1, LANG13.
+- **Beside**, with no pull request: LANG13.
 - **Left out, because the input needs this set live first**: AA12 (its workflow runs AA10's cases
   from `main`), AA13 (after AA12), AA28 and CL3 (AA27 on the DIYA-GL prod site), AA30 (AA26's npm
   publish), MA1 (the features on prod).
@@ -143,7 +143,6 @@ State: gated 5eec67e93. Seven waves landed; the set branch `claude/zeppelin-set`
 
 | Row | Runs when | What it leaves |
 | --- | --- | --- |
-| DUE1, CR1, WDM1, GLS1 | any time | one plan each, at v4 after three review rounds (`PLAN_DUE_LIST_v4.md`, `PLAN_COMPANY_REPORTS_v4.md`, `PLAN_WATCH_DUE_CAMPAIGN_v4.md`, `PLAN_DIYA_GL_STANDARDS_v4.md`). Each round 3 still changed scope, so the operator accepts each v4 or asks for another round, and answers its decisions; then its tasks are boarded. The four rows are under Machine-ask on `NEXT.md`. |
 | LANG13 | after wave 6, where a criterion judges the Welsh | the listings and awards file, in the private repository |
 
 ## Gates
