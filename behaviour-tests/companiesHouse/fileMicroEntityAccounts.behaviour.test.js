@@ -45,6 +45,14 @@ import {
   fillAccountsFormFromBook,
   completeMicroEntityAnswersTheBookLeaves,
   completeSmallCompanyAnswersTheBookLeaves,
+  fillInDormantAnswers,
+  amendFiledAccountsFromCopy,
+  openAmendFormAgain,
+  describeTheRevision,
+  verifyRevisionPreview,
+  verifyRevisionAccepted,
+  verifyRevisionRejected,
+  verifyRevisedAccountsOnRecord,
 } from "../steps/behaviour-companies-house-accounts-steps.js";
 import { companiesHouseLookupFixture } from "../steps/behaviour-companies-house-filing-steps.js";
 
@@ -306,6 +314,121 @@ test("Click through: file micro-entity accounts shows the reject reason Companie
   await setGovTestScenario(page, "ACCOUNTS_REJECTED", screenshotPath);
   await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
   await verifyFilingRejected(page, "1", screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+// A revision starts from the receipt of accepted accounts. The real gateway answers a filing PENDING
+// while Companies House checks it, so the original has no receipt to revise within a journey.
+const REVISION = {
+  averageEmployees: 3,
+  nonCompliance: "The original accounts gave the average number of employees as 2; it was 3.",
+  amendments: "The average number of employees is now 3. No other figure changes.",
+  dateApproved: "2026-02-10",
+};
+
+// Accounts whose capital and reserves equal the share capital and the profit and loss account in
+// both years, as the reader of a filed document checks.
+function consistentAccounts() {
+  const accounts = buildAccounts();
+  return {
+    ...accounts,
+    balanceSheet: {
+      ...accounts.balanceSheet,
+      priorYear: balancedYear({
+        fixedAssets: 900,
+        currentAssets: 3500,
+        creditorsWithinOneYear: 1500,
+        calledUpShareCapital: 100,
+        profitAndLossAccount: 2800,
+      }),
+    },
+  };
+}
+
+function dormantAccounts() {
+  const dormantYear = balancedYear({
+    fixedAssets: 0,
+    currentAssets: 100,
+    creditorsWithinOneYear: 0,
+    calledUpShareCapital: 100,
+    profitAndLossAccount: 0,
+  });
+  return { ...consistentAccounts(), balanceSheet: { currentYear: dormantYear, priorYear: dormantYear }, averageEmployees: 0 };
+}
+
+async function fileOriginalAccountsAndOpenTheCopy(page, accounts, { dormant = false } = {}) {
+  await goToFileMicroEntityAccounts(page, screenshotPath);
+  await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
+  await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
+  await fillInAccountsForm(page, accounts, screenshotPath);
+  if (dormant)
+    await fillInDormantAnswers(page, { tradingStatus: "neverTraded", shareClass: "ordinaryShares", nominalValue: "1" }, screenshotPath);
+  await previewAccounts(page, screenshotPath);
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyFilingAccepted(page, screenshotPath);
+  await openFilingCustomerCopy(page, screenshotPath);
+}
+
+test("Click through: file micro-entity accounts, amend them from the receipt and see the revised accounts accepted", async ({
+  page,
+}, testInfo) => {
+  test.skip(filesThroughRealCompaniesHouseGateway(), "the real gateway leaves the original pending, so it has no receipt to revise");
+  addOnPageLogging(page);
+  fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
+
+  await signInWithResidentBundle(page, baseUrl);
+  await fileOriginalAccountsAndOpenTheCopy(page, consistentAccounts());
+  await amendFiledAccountsFromCopy(page, screenshotPath);
+  await describeTheRevision(page, REVISION, screenshotPath);
+  await verifyRevisionPreview(page, screenshotPath);
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyRevisionAccepted(page, screenshotPath);
+  await verifyRevisedAccountsOnRecord(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: file dormant accounts, amend them from the receipt and see the revised accounts accepted", async ({
+  page,
+}, testInfo) => {
+  test.skip(filesThroughRealCompaniesHouseGateway(), "the real gateway leaves the original pending, so it has no receipt to revise");
+  addOnPageLogging(page);
+  fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
+
+  await signInWithResidentBundle(page, baseUrl);
+  await fileOriginalAccountsAndOpenTheCopy(page, dormantAccounts(), { dormant: true });
+  await amendFiledAccountsFromCopy(page, screenshotPath);
+  await expect(page.locator("#dormant")).toBeChecked();
+  await describeTheRevision(page, { ...REVISION, averageEmployees: 1 }, screenshotPath);
+  await verifyRevisionPreview(page, screenshotPath);
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyRevisionAccepted(page, screenshotPath);
+  await verifyRevisedAccountsOnRecord(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: Companies House rejects the revised accounts, and the fixed revision is accepted", async ({ page }, testInfo) => {
+  test.skip(filesThroughRealCompaniesHouseGateway(), "the simulator's reject scenario has no counterpart on the real gateway");
+  addOnPageLogging(page);
+  fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
+
+  await signInWithResidentBundle(page, baseUrl);
+  await fileOriginalAccountsAndOpenTheCopy(page, consistentAccounts());
+  const amendHref = await amendFiledAccountsFromCopy(page, screenshotPath);
+  await describeTheRevision(page, REVISION, screenshotPath);
+  await verifyRevisionPreview(page, screenshotPath);
+  await setGovTestScenario(page, "ACCOUNTS_REJECTED", screenshotPath);
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyRevisionRejected(page, "1", screenshotPath);
+
+  await openAmendFormAgain(page, amendHref, screenshotPath);
+  await describeTheRevision(page, REVISION, screenshotPath);
+  await verifyRevisionPreview(page, screenshotPath);
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyRevisionAccepted(page, screenshotPath);
+  await verifyRevisedAccountsOnRecord(page, screenshotPath);
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });

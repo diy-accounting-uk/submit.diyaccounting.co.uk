@@ -322,6 +322,7 @@ window.WELSH_TEXT = {
   "ch.ct.agent-authorised":
     "Mae’r cwmni wedi awdurdodi’r practis hwn i weithredu ar ei ran ar gyfer Treth Gorfforaeth (ffurflen 64-8 neu ar-lein), ac mae wedi cymeradwyo’r Ffurflen hon.",
   "ch.ct.aia-most": "Yr uchafswm ar gyfer {range} yw £{amount}.",
+  "ch.ct.amend-accounts-alone": "Diwygio’r cyfrifon hyn ar y ffurflen gyfrifon",
   "ch.ct.amend-load-failed": "Methwyd â llwytho’r ffeilio i’w ddiwygio.",
   "ch.ct.amended-return": "Ffurflen ddiwygiedig",
   "ch.ct.amount-released": "Y swm a ryddhawyd neu a ddilëwyd",
@@ -553,7 +554,8 @@ window.WELSH_TEXT = {
   "ch.ct.record-utr": "Cyfeirnod Unigryw y Trethdalwr",
   "ch.ct.record-utr-line": "Cyfeirnod Unigryw y Trethdalwr {utr}",
   "ch.ct.refuse-accounts-alone":
-    "Cafodd y cyfrifon hyn eu ffeilio ar eu pen eu hunain. Diwygiwch y Ffurflen Dreth y Cwmni a ffeiliwyd gyda nhw, neu ffeiliwch gyfrifon diwygiedig o’r dechrau.",
+    "Cafodd y cyfrifon hyn eu ffeilio ar eu pennau eu hunain, felly maent yn cael eu diwygio ar y ffurflen gyfrifon, nid gyda Ffurflen Dreth y Cwmni.",
+  "ch.ct.refuse-accounts-alone-title": "Ni ellir diwygio’r cyfrifon hyn yma",
   "ch.ct.refuse-joint":
     "Nid yw ffeilio’r cyfrifon a Ffurflen Dreth y Cwmni gyda’i gilydd ar gael yma, felly ni ellir diwygio’r ffeilio ar y cyd hwn.",
   "ch.ct.refuse-kind":
@@ -1078,6 +1080,7 @@ window.WELSH_TEXT = {
   "ch.record.accounts-receipt-explanation":
     "Rhoddodd Tŷ’r Cwmnïau rif cyflwyno i’r ffeilio hwn. Dyfynnwch ef os byddwch yn ysgrifennu at Dŷ’r Cwmnïau am y cyfrifon hyn. Mae wedi’i dderbyn yn golygu bod y cyfrifon ar y gofrestr.",
   "ch.record.all-receipts": "Eich holl dderbynebau",
+  "ch.record.amend-accounts": "Diwygio’r cyfrifon hyn",
   "ch.record.as-confirmed-on": "Fel y’i cadarnhawyd ar {date}",
   "ch.record.change-as-submitted": "Y newid fel y’i cyflwynwyd",
   "ch.record.change-copy-title": "Eich copi: {title}",
@@ -1119,10 +1122,26 @@ window.WELSH_TEXT = {
   "ch.record.receipt-name": "Derbynneb Tŷ’r Cwmnïau",
   "ch.record.receipt-title": "Derbynneb gan Dŷ’r Cwmnïau",
   "ch.record.rejected": "Gwrthodwyd gan Dŷ’r Cwmnïau",
+  "ch.record.revised-accounts-copy-title": "Eich copi o’r cyfrifon diwygiedig a ffeiliwyd yn Nhŷ’r Cwmnïau",
   "ch.record.status": "Statws",
   "ch.record.submission-number": "Rhif cyflwyno",
   "ch.record.submission-number-line": "Rhif cyflwyno {number}",
   "ch.record.submitted-line": "Cyflwynwyd {date}",
+  "ch.revision.accepted": "Mae Tŷ’r Cwmnïau wedi derbyn y cyfrifon diwygiedig.",
+  "ch.revision.date-before-original":
+    "Rhaid cymeradwyo’r cyfrifon diwygiedig ar {date} neu wedi hynny, pan gymeradwywyd y cyfrifon gwreiddiol",
+  "ch.revision.load-failed": "Ni allem agor y cyfrifon hynny i’w diwygio. Agorwch y ffeilio eto o’ch derbynebau.",
+  "ch.revision.need-amendments": "Dywedwch beth mae’r cyfrifon diwygiedig yn ei newid",
+  "ch.revision.need-non-compliance": "Dywedwch beth oedd yn anghywir yn y cyfrifon gwreiddiol",
+  "ch.revision.not-micro": "Cyfrifon cwmni bach yw’r rheini, felly maent yn cael eu diwygio ar dudalen cyfrifon cwmni bach.",
+  "ch.revision.not-offered": "Ni ellir ffeilio cyfrifon diwygiedig yma eto, felly ni ellir diwygio’r cyfrifon hyn.",
+  "ch.revision.refuse-joint":
+    "Cafodd y cyfrifon hynny eu ffeilio gyda Ffurflen Dreth y Cwmni, felly diwygiwch nhw ar dudalen Ffurflen Dreth y Cwmni.",
+  "ch.revision.refuse-kind": "Nid ffeilio cyfrifon yw’r dderbynneb honno, felly nid oes cyfrifon i’w diwygio.",
+  "ch.revision.refuse-load": "Ni allem lwytho’r dderbynneb honno. Agorwch y ffeilio eto o’ch derbynebau.",
+  "ch.revision.refuse-no-document": "Ni chadwyd y ddogfen a ffeiliwyd gyda’r dderbynneb honno, felly ni ellir ei diwygio yma.",
+  "ch.revision.refuse-not-accepted": "Ni wnaeth Tŷ’r Cwmnïau dderbyn y cyfrifon hynny, felly nid oes dim i’w ddiwygio.",
+  "ch.revision.rejected": "Mae Tŷ’r Cwmnïau wedi gwrthod y cyfrifon diwygiedig.",
   "ch.search.column-address": "Cyfeiriad",
   "ch.search.column-company": "Cwmni",
   "ch.search.column-incorporated": "Corfforwyd",

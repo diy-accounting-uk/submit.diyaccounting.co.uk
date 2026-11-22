@@ -3590,12 +3590,19 @@ async function loadAmendment(receiptName) {
       return;
     }
     if (receipt.kind === "companies-house-accounts" && !receipt.jointFilingId) {
-      refuseAmendment(
-        siteText(
-          "ch.ct.refuse-accounts-alone",
-          "These accounts were filed on their own. Amend the Company Tax Return filed with them, or file revised accounts from the start.",
-        ),
+      const cause = siteText(
+        "ch.ct.refuse-accounts-alone",
+        "These accounts were filed on their own, so they are revised on the accounts form, not with a Company Tax Return.",
       );
+      const failure = new Error(cause);
+      failure.failure = {
+        cause,
+        next: {
+          label: siteText("ch.ct.amend-accounts-alone", "Amend these accounts on the accounts form"),
+          href: `fileMicroEntityAccounts.html?amend=${encodeURIComponent(receiptName)}`,
+        },
+      };
+      window.showFailure(failure, siteText("ch.ct.refuse-accounts-alone-title", "These accounts cannot be amended here"));
       return;
     }
     if (receipt.longPeriod && !(await loadFiledLongReturns(receipt))) return;

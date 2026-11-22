@@ -27,21 +27,37 @@ function fitFrameToDocument(frame) {
   if (frame.contentDocument?.readyState === "complete") fit();
 }
 
-async function mountFilingCopy(container, receipt, receiptName) {
+async function mountFilingCopy(container, receipt, receiptName, amendHref) {
   const { filingCopyHtml } = await import("../lib/filing-record.js");
-  const html = filingCopyHtml(receipt, { receiptName });
+  const html = filingCopyHtml(receipt, { receiptName, ...(amendHref ? { linksTo: { correct: amendHref } } : {}) });
   const parsed = new DOMParser().parseFromString(html, "text/html");
   container.replaceChildren(...parsed.body.childNodes);
   container.querySelectorAll("iframe.filed-document").forEach(fitFrameToDocument);
 }
 
 // A Company Tax Return that carries the answers it was made from can be amended: the filing page
-// refills the form from them.
-function showAmendLink(receipt, receiptName) {
+// refills the form from them. Accepted micro-entity accounts filed on their own can be revised where
+// revised accounts are offered: the accounts form refills from the document filed.
+async function amendHrefOf(receipt, receiptName) {
+  if (receipt.kind === "company-tax-return") {
+    const amendable = receipt.statusCode === "ACCEPT" && Boolean(receipt.formRequest);
+    return amendable ? `fileCompanyTaxReturn.html?amend=${encodeURIComponent(receiptName)}` : null;
+  }
+  const revisionModule = await import("../lib/accounts-revision.js");
+  if (revisionModule.refusalOf(receipt) || !(await revisionModule.isRevisionOfferedHere())) return null;
+  try {
+    const { regime } = revisionModule.revisionSourceOf(receipt, await import("../lib/books-bundle.js"));
+    return regime === "micro" ? `fileMicroEntityAccounts.html?amend=${encodeURIComponent(receiptName)}` : null;
+  } catch (error) {
+    console.warn("These accounts cannot be revised here because the filed document could not be read:", error);
+    return null;
+  }
+}
+
+function showAmendLink(amendHref) {
   const link = element("amendFilingLink");
-  const amendable = receipt.kind === "company-tax-return" && receipt.statusCode === "ACCEPT" && Boolean(receipt.formRequest);
-  link.style.display = amendable ? "inline-block" : "none";
-  if (amendable) link.href = `fileCompanyTaxReturn.html?amend=${encodeURIComponent(receiptName)}`;
+  link.style.display = amendHref ? "inline-block" : "none";
+  if (amendHref) link.href = amendHref;
 }
 
 async function showFiling(receiptName) {
@@ -61,8 +77,9 @@ async function showFiling(receiptName) {
     );
     return;
   }
-  await mountFilingCopy(element("filingContent"), receipt, receiptName);
-  showAmendLink(receipt, receiptName);
+  const amendHref = await amendHrefOf(receipt, receiptName);
+  await mountFilingCopy(element("filingContent"), receipt, receiptName, amendHref);
+  showAmendLink(amendHref);
   element("filingActions").style.display = "flex";
 }
 

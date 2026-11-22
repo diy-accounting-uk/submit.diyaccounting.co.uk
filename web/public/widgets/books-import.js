@@ -546,6 +546,17 @@
 
   async function fillMicroEntityAccountsFromIxbrl({ bundle, source, fileName }) {
     const mapped = await mapIxbrlForPage(bundle, source.ixbrl, "micro");
+    const filled = fillMicroEntityFormFromMapped(mapped);
+    let advice = "Check them, add the date approved and the statements, then preview.";
+    if (mapped.dormant) {
+      advice = `The document is for a dormant company, so the dormant box is ticked: confirm the trading history, share class and nominal value. ${advice}`;
+    }
+    return ixbrlStatus(filled, fileName, mapped, advice, false);
+  }
+
+  // Fills the micro-entity form from mapped iXBRL accounts: the period, both years' balance sheets,
+  // the employees, the director and the dormant facts. Answers how many fields it filled.
+  function fillMicroEntityFormFromMapped(mapped) {
     let filled = 0;
     setField("periodStart", mapped.period.start);
     setField("periodEnd", mapped.period.end);
@@ -562,16 +573,14 @@
       filled += 1;
     }
     setChecked("dormant", mapped.dormant);
-    let advice = "Check them, add the date approved and the statements, then preview.";
     if (mapped.dormant) {
       const status = TRADING_STATUS_OPTION[mapped.tradingStatus];
       const shareClass = SHARE_CLASS_OPTION[mapped.shareNote?.shareClass];
       if (status) setField("dormantTradingStatus", status);
       if (shareClass) setField("shareClass", shareClass);
       if (typeof mapped.shareNote?.nominalValue === "number") setField("nominalValue", figureText(mapped.shareNote.nominalValue));
-      advice = `The document is for a dormant company, so the dormant box is ticked: confirm the trading history, share class and nominal value. ${advice}`;
     }
-    return ixbrlStatus(filled, fileName, mapped, advice, false);
+    return filled;
   }
 
   async function fillMicroEntityAccounts({ bundle, source, fileName }) {
@@ -1280,5 +1289,5 @@
     return undefined;
   }
 
-  window.booksImport = { mount, parseHandoff, applyPendingHandoff, showSavedBooksFor };
+  window.booksImport = { mount, parseHandoff, applyPendingHandoff, showSavedBooksFor, fillMicroEntityFormFromMapped, loadBundle };
 })();

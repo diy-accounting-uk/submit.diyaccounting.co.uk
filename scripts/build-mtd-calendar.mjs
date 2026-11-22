@@ -214,6 +214,12 @@ export const AVAILABILITY = [
     activity: "file-company-tax-return-with-accounts",
     cells: [["preview"], ["preview", "book export file"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
   },
+  {
+    filing: "Companies House revised accounts (micro-entity, small company, dormant)",
+    web: "companies-house/fileMicroEntityAccounts.html",
+    activity: "file-revised-accounts",
+    cells: [["preview", "from an accepted filing"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
+  },
 ];
 
 // The status of an activity in the table's web form column, or undefined when no row shows it.

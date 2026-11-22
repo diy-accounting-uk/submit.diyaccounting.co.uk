@@ -373,3 +373,113 @@ export async function completeSmallCompanyAnswersTheBookLeaves(page, answers, sc
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-accounts-form-completed.png`, readerView: true });
   });
 }
+
+export async function fillInDormantAnswers(page, { tradingStatus, shareClass, nominalValue }, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user says the company was dormant and gives its trading history and shares", async () => {
+    await page.check("#dormant");
+    await expect(page.locator("#dormantFields")).toBeVisible();
+    await page.selectOption("#dormantTradingStatus", tradingStatus);
+    await page.selectOption("#shareClass", shareClass);
+    await loggedFill(page, "#nominalValue", nominalValue, "Nominal value");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-dormant-answers.png`, readerView: true });
+  });
+}
+
+// Opens the amend form from the customer copy of an accepted filing; answers the amend address so a
+// journey can open it again.
+export async function amendFiledAccountsFromCopy(page, screenshotPath = defaultScreenshotPath) {
+  return test.step("The user chooses Amend on the customer copy and sees the form filled from the accounts filed", async () => {
+    const amendLink = page.locator("#amendFilingLink");
+    await expect(amendLink).toBeVisible({ timeout: 30000 });
+    const amendHref = new URL(await amendLink.getAttribute("href"), page.url()).href;
+    await loggedClick(page, "#amendFilingLink", "Amending the accounts", { screenshotPath });
+    await expect(page.locator("#revisionBanner")).toContainText("You are revising the accounts filed at Companies House", {
+      timeout: 30000,
+    });
+    await expect(page.locator("#revisionSection")).toBeVisible();
+    await expect(page.locator("#revisionOriginalDate")).not.toHaveValue("");
+    await expect(page.locator("#periodEnd")).not.toHaveValue("");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-amend-form.png`, readerView: true });
+    return amendHref;
+  });
+}
+
+export async function openAmendFormAgain(page, amendHref, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user opens the amend form for the same accounts again, with no test scenario", async () => {
+    await page.evaluate(() => sessionStorage.removeItem("showDeveloperOptions"));
+    await page.goto(amendHref);
+    await expect(page.locator("#revisionSection")).toBeVisible({ timeout: 30000 });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-amend-form-again.png`, readerView: true });
+  });
+}
+
+export async function describeTheRevision(
+  page,
+  { averageEmployees, nonCompliance, amendments, dateApproved },
+  screenshotPath = defaultScreenshotPath,
+) {
+  await test.step("The user corrects the figure, states what was wrong and what the revision changes, and approves it", async () => {
+    await loggedFill(page, "#averageEmployees", String(averageEmployees), "Average employees");
+    await loggedFill(page, "#revisionNonCompliance", nonCompliance, "What was wrong with the original accounts");
+    await loggedFill(page, "#revisionAmendments", amendments, "What the revised accounts change");
+    await loggedFill(page, "#directorDateApproved", dateApproved, "Date approved");
+    await page.check("#statementSection477Exemption");
+    await page.check("#statementMembersNotRequiredAudit");
+    await page.check("#statementDirectorsResponsibilities");
+    await page.check("#statementMicroEntityProvisions");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-revision-described.png`, readerView: true });
+  });
+}
+
+export async function verifyRevisionPreview(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user previews the revised accounts and sees the revision statement", async () => {
+    await loggedClick(page, "#previewBtn", "Previewing the revised accounts", { screenshotPath });
+    await expect(page.locator("#previewView")).toBeVisible({ timeout: 15000 });
+    await expect(page.frameLocator("#previewRendered").locator("body")).toContainText("These are revised accounts", { timeout: 15000 });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-revision-preview.png`, readerView: true });
+  });
+}
+
+export async function verifyRevisionAccepted(page, screenshotPath = defaultScreenshotPath) {
+  if (filesThroughRealCompaniesHouseGateway()) {
+    await verifyFilingAccepted(page, screenshotPath);
+    return;
+  }
+  await test.step("The user sees the revised accounts accepted", async () => {
+    await expect(page.locator("#filingResult")).toContainText("Companies House accepted the revised accounts.", { timeout: 30000 });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-revision-accepted.png`, readerView: true });
+  });
+}
+
+export async function verifyRevisionRejected(page, expectedRejectCode, screenshotPath = defaultScreenshotPath) {
+  await test.step(`The user sees the revised accounts rejected with reject code ${expectedRejectCode}`, async () => {
+    await expect(page.locator("#filingResult")).toContainText("Companies House rejected the revised accounts.", { timeout: 30000 });
+    await expect(page.locator("#rejections")).toContainText(expectedRejectCode);
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-revision-rejected.png`, readerView: true });
+  });
+}
+
+// The copy of the revised accounts holds the revision statement, and the receipts list names the
+// filing as revised accounts. A real gateway that is still checking the filing has no receipt yet.
+export async function verifyRevisedAccountsOnRecord(page, screenshotPath = defaultScreenshotPath) {
+  if (filesThroughRealCompaniesHouseGateway() && (await page.locator("#checkAgainBtn").isVisible())) {
+    await test.step("The user sees no copy yet for revised accounts Companies House is still checking", async () => {
+      await expect(page.locator("#filingCopyLink")).toBeHidden();
+    });
+    return;
+  }
+  await test.step("The user opens the copy of the revised accounts and finds them listed as revised accounts", async () => {
+    await loggedClick(page, "#filingCopyLink", "Opening the copy of the revised accounts", { screenshotPath });
+    const copy = page.locator(".customer-copy");
+    await expect(copy.locator(".customer-copy-title")).toHaveText("Your copy of the revised accounts filed at Companies House", {
+      timeout: 30000,
+    });
+    await expect(page.frameLocator("iframe.filed-document").locator("body")).toContainText("These are revised accounts", {
+      timeout: 30000,
+    });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-revised-copy.png`, fullPage: true, readerView: true });
+    await page.goto(new URL("../hmrc/receipt/receipts.html", page.url()).href);
+    await expect(page.locator(".receipt-kind", { hasText: "Revised accounts" }).first()).toBeVisible({ timeout: 30000 });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-receipts-revised.png`, fullPage: true, readerView: true });
+  });
+}

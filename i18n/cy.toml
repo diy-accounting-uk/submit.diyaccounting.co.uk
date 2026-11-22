@@ -15390,8 +15390,8 @@ hash = "95fbb7d75c8f"
 cy = '''Nid yw ffeilio’r cyfrifon a Ffurflen Dreth y Cwmni gyda’i gilydd ar gael yma, felly ni ellir diwygio’r ffeilio ar y cyd hwn.'''
 
 [strings."ch.ct.refuse-accounts-alone"]
-hash = "a8b151930227"
-cy = '''Cafodd y cyfrifon hyn eu ffeilio ar eu pen eu hunain. Diwygiwch y Ffurflen Dreth y Cwmni a ffeiliwyd gyda nhw, neu ffeiliwch gyfrifon diwygiedig o’r dechrau.'''
+hash = "63ebb7c26e2b"
+cy = '''Cafodd y cyfrifon hyn eu ffeilio ar eu pennau eu hunain, felly maent yn cael eu diwygio ar y ffurflen gyfrifon, nid gyda Ffurflen Dreth y Cwmni.'''
 
 [strings."ch.ct.amend-load-failed"]
 hash = "eb3d30bc3ebc"
@@ -17386,3 +17386,125 @@ cy = '''Mae’r rhestr wylio yn llawn'''
 [strings."ch.watch.add"]
 hash = "3f56901b71ee"
 cy = '''Ychwanegu at y rhestr wylio'''
+
+# == Revised accounts from a receipt: ids ch.revision.*, the revision section of ch-micro-entity.*, the revised accounts row of mtd-calendar.*, ch.ct.*-accounts-alone*, ch.record.revised-* and ch.record.amend-accounts ==
+
+[strings."mtd-calendar.companies-house-revised-accounts-micro-entity-0eeb31"]
+hash = "0eeb31334b95"
+cy = '''Cyfrifon diwygiedig Tŷ’r Cwmnïau (micro-endid, cwmni bach, segur)'''
+
+[strings."mtd-calendar.preview-from-an-accepted-filing-1a2ad5"]
+hash = "1a2ad5f0a5bf"
+cy = '''rhagolwg (preview) <span class="calendar-date">o ffeilio a dderbyniwyd</span>'''
+
+[strings."mtd-calendar.web-form-guide-3f47b3"]
+hash = "3f47b3c57a90"
+cy = '''<a href="companies-house/fileMicroEntityAccounts.html" data-activity="file-revised-accounts">Ffurflen ar y we</a>, <a href="guide.html">Canllaw</a> (yn Saesneg)'''
+
+[strings."ch-micro-entity.you-are-revising-the-accounts-filed-372107"]
+hash = "372107377421"
+cy = '''<strong>Rydych yn diwygio’r cyfrifon a ffeiliwyd yn Nhŷ’r Cwmnïau</strong>'''
+
+[strings."ch-micro-entity.the-original-accounts-stay-on-the-0de121"]
+hash = "0de12153df89"
+cy = '''Mae’r cyfrifon gwreiddiol yn aros ar y gofrestr gyhoeddus, ac mae’r cyfrifon diwygiedig yn cael eu ffeilio wrth eu hochr.'''
+
+[strings."ch-micro-entity.the-revision-cc28da"]
+hash = "cc28daaf757e"
+cy = '''Y diwygiad'''
+
+[strings."ch-micro-entity.a-revision-corrects-what-was-wrong-59c335"]
+hash = "59c335a6f9da"
+cy = '''Mae diwygiad yn cywiro’r hyn a oedd yn anghywir yn y cyfrifon gwreiddiol, a’r hyn sy’n gorfod newid o’i herwydd, a dim byd arall.'''
+
+[strings."ch-micro-entity.the-directors-must-deliver-the-revised-bf000b"]
+hash = "bf000b2ab79c"
+cy = '''Rhaid i’r cyfarwyddwyr gyflwyno’r cyfrifon diwygiedig i Dŷ’r Cwmnïau o fewn 28 diwrnod i’w cymeradwyo.'''
+
+[strings."ch-micro-entity.date-the-original-accounts-were-approved-a469b4"]
+hash = "a469b4343713"
+cy = '''Dyddiad cymeradwyo’r cyfrifon gwreiddiol'''
+
+[strings."ch-micro-entity.companies-house-prints-both-texts-on-fe3e14"]
+hash = "fe3e146ebe5e"
+cy = '''Mae Tŷ’r Cwmnïau yn argraffu’r ddau destun ar y cyfrifon diwygiedig, ar y gofrestr gyhoeddus.'''
+
+[strings."ch-micro-entity.what-was-wrong-with-the-original-b6637a"]
+hash = "b6637a6b53ee"
+cy = '''Beth oedd yn anghywir yn y cyfrifon gwreiddiol?'''
+
+[strings."ch-micro-entity.what-do-the-revised-accounts-change-ff3c9b"]
+hash = "ff3c9b4ea7bf"
+cy = '''Beth mae’r cyfrifon diwygiedig yn ei newid?'''
+
+[strings."ch-micro-entity.the-date-approved-below-is-more-4f3c83"]
+hash = "4f3c83c09ef8"
+cy = '''Mae’r dyddiad cymeradwyo isod fwy na 28 diwrnod yn ôl. Cyflwynwch y cyfrifon diwygiedig nawr: mae’r gyfraith yn rhoi 28 diwrnod i’r cyfarwyddwyr o’r adeg y maent yn eu cymeradwyo.'''
+
+[strings."ch.ct.amend-accounts-alone"]
+hash = "f5356c074b06"
+cy = '''Diwygio’r cyfrifon hyn ar y ffurflen gyfrifon'''
+
+[strings."ch.ct.refuse-accounts-alone-title"]
+hash = "f06d50a824f1"
+cy = '''Ni ellir diwygio’r cyfrifon hyn yma'''
+
+[strings."ch.revision.accepted"]
+hash = "59e56ccd5690"
+cy = '''Mae Tŷ’r Cwmnïau wedi derbyn y cyfrifon diwygiedig.'''
+
+[strings."ch.revision.rejected"]
+hash = "fc432ff4cc46"
+cy = '''Mae Tŷ’r Cwmnïau wedi gwrthod y cyfrifon diwygiedig.'''
+
+[strings."ch.revision.not-offered"]
+hash = "863ea2ab53c9"
+cy = '''Ni ellir ffeilio cyfrifon diwygiedig yma eto, felly ni ellir diwygio’r cyfrifon hyn.'''
+
+[strings."ch.revision.not-micro"]
+hash = "9948524bb190"
+cy = '''Cyfrifon cwmni bach yw’r rheini, felly maent yn cael eu diwygio ar dudalen cyfrifon cwmni bach.'''
+
+[strings."ch.revision.load-failed"]
+hash = "f86b944d5ccb"
+cy = '''Ni allem agor y cyfrifon hynny i’w diwygio. Agorwch y ffeilio eto o’ch derbynebau.'''
+
+[strings."ch.revision.refuse-kind"]
+hash = "7c761476ef54"
+cy = '''Nid ffeilio cyfrifon yw’r dderbynneb honno, felly nid oes cyfrifon i’w diwygio.'''
+
+[strings."ch.revision.refuse-not-accepted"]
+hash = "ea721130dad0"
+cy = '''Ni wnaeth Tŷ’r Cwmnïau dderbyn y cyfrifon hynny, felly nid oes dim i’w ddiwygio.'''
+
+[strings."ch.revision.refuse-joint"]
+hash = "09e77dca51b6"
+cy = '''Cafodd y cyfrifon hynny eu ffeilio gyda Ffurflen Dreth y Cwmni, felly diwygiwch nhw ar dudalen Ffurflen Dreth y Cwmni.'''
+
+[strings."ch.revision.refuse-no-document"]
+hash = "b10dc4f26bfe"
+cy = '''Ni chadwyd y ddogfen a ffeiliwyd gyda’r dderbynneb honno, felly ni ellir ei diwygio yma.'''
+
+[strings."ch.revision.refuse-load"]
+hash = "63195a6c7c96"
+cy = '''Ni allem lwytho’r dderbynneb honno. Agorwch y ffeilio eto o’ch derbynebau.'''
+
+[strings."ch.revision.need-non-compliance"]
+hash = "1ecfc1154024"
+cy = '''Dywedwch beth oedd yn anghywir yn y cyfrifon gwreiddiol'''
+
+[strings."ch.revision.need-amendments"]
+hash = "bffa02d9d26a"
+cy = '''Dywedwch beth mae’r cyfrifon diwygiedig yn ei newid'''
+
+[strings."ch.revision.date-before-original"]
+hash = "3f54adfd793b"
+cy = '''Rhaid cymeradwyo’r cyfrifon diwygiedig ar {date} neu wedi hynny, pan gymeradwywyd y cyfrifon gwreiddiol'''
+
+[strings."ch.record.revised-accounts-copy-title"]
+hash = "e1a75de791db"
+cy = '''Eich copi o’r cyfrifon diwygiedig a ffeiliwyd yn Nhŷ’r Cwmnïau'''
+
+[strings."ch.record.amend-accounts"]
+hash = "f7c04d3054a8"
+cy = '''Diwygio’r cyfrifon hyn'''

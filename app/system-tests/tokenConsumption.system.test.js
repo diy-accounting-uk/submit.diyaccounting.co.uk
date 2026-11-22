@@ -288,6 +288,19 @@ describe("System: token consumption with dynalite", () => {
       expect(refusal).toBeUndefined();
     });
 
+    it("charges one token of the micro-entity accounts activity for accepted revised accounts, and none for the revision itself", async () => {
+      const userId8 = "token-test-user-8";
+      await store.putBundle(userId8, { bundleId: "resident-ltd", tokensGranted: 2, tokensConsumed: 0 });
+      expect(getActivity("file-revised-accounts").tokenCost).toBe(0);
+
+      const charged = await tokenEnforcement.chargeTokenOnSuccess(userId8, "file-micro-entity-accounts");
+      expect(charged.consumed).toBe(true);
+      expect(await balance(userId8)).toBe(1);
+
+      await tokenEnforcement.chargeTokenOnSuccess(userId8, "file-revised-accounts");
+      expect(await balance(userId8)).toBe(1);
+    });
+
     it("never refuses or counts a filing for an unlimited grant", async () => {
       const userId5 = "token-test-user-5";
       await store.putBundle(userId5, { bundleId: "resident-tax-agent", tokensGranted: "unlimited", tokensConsumed: 0 });

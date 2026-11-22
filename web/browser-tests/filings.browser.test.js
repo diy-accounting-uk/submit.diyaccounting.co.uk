@@ -55,12 +55,19 @@ const CT_RECEIPT = {
   },
 };
 
-const LIBRARIES = ["submission-record.js", "review-links.js", "filing-record.js", "ct600-fields.js", "long-period.js"];
+const LIBRARIES = [
+  "submission-record.js",
+  "review-links.js",
+  "filing-record.js",
+  "ct600-fields.js",
+  "long-period.js",
+  "accounts-revision.js",
+];
 
 test.describe("Filings page - customer copy", () => {
   const html = fs.readFileSync(path.join(PUBLIC_DIR, "companies-house/filings.html"), "utf-8");
 
-  async function openFiling(page, name, receipt, { width = 1280, styled = true } = {}) {
+  async function openFiling(page, name, receipt, { width = 1280, styled = true, revisionOffered = false } = {}) {
     await page.setViewportSize({ width, height: 900 });
     await page.addInitScript((receiptBody) => {
       localStorage.setItem("cognitoIdToken", "token");
@@ -74,6 +81,28 @@ test.describe("Filings page - customer copy", () => {
           contentType: "application/javascript",
           body: fs.readFileSync(path.join(PUBLIC_DIR, "lib", library), "utf-8"),
         }),
+      );
+    }
+    if (revisionOffered) {
+      await page.route("**/lib/books-bundle.js", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/javascript",
+          body: fs.readFileSync(path.join(PUBLIC_DIR, "lib", "books-bundle.js"), "utf-8"),
+        }),
+      );
+      await page.route("**/lib/services/catalog-service.js", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/javascript",
+          body: `export const fetchCatalogText = async () => "";
+            export const fetchCurrentEnvironmentName = async () => "ci";
+            export const parseCatalogueText = () => ({});
+            export const isRevisedAccountsOffered = () => true;`,
+        }),
+      );
+      await page.route("**/lib/services/viewer-settings.js", (route) =>
+        route.fulfill({ status: 200, contentType: "application/javascript", body: "export const fetchViewer = async () => ({});" }),
       );
     }
     await page.route("**/companies-house/filings.page.js", (route) =>
@@ -194,6 +223,51 @@ test.describe("Filings page - customer copy", () => {
       await openFiling(page, ACCOUNTS_RECEIPT_NAME, ACCOUNTS_RECEIPT, { width });
       expect(await pageScrollsSideways(page)).toBe(false);
       await page.screenshot({ path: recordScreenshotPath("filing-accounts", width), fullPage: true });
+    });
+  }
+  test("offers to amend accepted micro-entity accounts where revised accounts are offered", async ({ page }) => {
+    await openFiling(page, ACCOUNTS_RECEIPT_NAME, ACCOUNTS_RECEIPT, { revisionOffered: true });
+
+    const amendHref = `fileMicroEntityAccounts.html?amend=${encodeURIComponent(ACCOUNTS_RECEIPT_NAME)}`;
+    await expect(page.locator("#amendFilingLink")).toBeVisible();
+    await expect(page.locator("#amendFilingLink")).toHaveAttribute("href", amendHref);
+    const links = page.locator("#filingContent .customer-copy-links a");
+    await expect(links.first()).toHaveText("Amend these accounts");
+    await expect(links.first()).toHaveAttribute("href", amendHref);
+  });
+
+  test("offers no amend link for accounts where revised accounts are not offered", async ({ page }) => {
+    await openFiling(page, ACCOUNTS_RECEIPT_NAME, ACCOUNTS_RECEIPT);
+    await expect(page.locator("#amendFilingLink")).toBeHidden();
+  });
+
+  test("offers no amend link here for accounts filed with a Company Tax Return, or for small company accounts", async ({ page }) => {
+    await openFiling(page, ACCOUNTS_RECEIPT_NAME, { ...ACCOUNTS_RECEIPT, jointFilingId: "joint-1" }, { revisionOffered: true });
+    await expect(page.locator("#amendFilingLink")).toBeHidden();
+    await expect(page.locator("#filingContent .customer-copy-links a").first()).toHaveText("File accounts again with corrected figures");
+
+    await openFiling(
+      page,
+      ACCOUNTS_RECEIPT_NAME,
+      { ...ACCOUNTS_RECEIPT, filedDocument: smallCompanyCase.xhtml },
+      { revisionOffered: true },
+    );
+    await expect(page.locator("#amendFilingLink")).toBeHidden();
+  });
+
+  for (const width of [1280, 390]) {
+    test(`titles the copy of revised accounts as revised (${width})`, async ({ page }) => {
+      await openFiling(page, ACCOUNTS_RECEIPT_NAME, { ...ACCOUNTS_RECEIPT, amended: true }, { width, revisionOffered: true });
+
+      await expect(page.locator("#filingContent .customer-copy-title")).toHaveText(
+        "Your copy of the revised accounts filed at Companies House",
+      );
+      await expect(page.locator("#filingContent .customer-copy-links a").first()).toHaveText("Amend these accounts");
+      fs.mkdirSync(path.join(process.cwd(), "target/browser-test-results/revised-accounts"), { recursive: true });
+      await page.screenshot({
+        path: path.join(process.cwd(), "target/browser-test-results/revised-accounts", `receipt-titled-revised-${width}.png`),
+        fullPage: true,
+      });
     });
   }
 });
