@@ -826,7 +826,7 @@ export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, 
     message: "Forbidden - Access token may be invalid, expired, or lack required permissions",
     hmrcAccessTokenData,
     hmrcResponseCode: hmrcResponse.status,
-    responseBody: hmrcResponse.data,
+    hmrcError: loggedHmrcErrorOf(hmrcResponse.data),
   });
 
   const message = errorDetails
@@ -855,6 +855,31 @@ export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, 
 
 // The request of a failed HMRC answer as a log line may print it: the route's pattern, with each path
 // parameter named, and its query's names with no values.
+// A message that holds digits, quotes or an @ can repeat what was submitted (a figure, a reference,
+// an address), so it stays out of a log line; HMRC's fixed messages hold none of them.
+const MAY_REPEAT_A_SUBMITTED_VALUE = /[\d"'@]/;
+
+/**
+ * HMRC's error answer as a log line may hold it: its code, the code and field path of each error
+ * under it, and its message only when the message cannot repeat a submitted value.
+ * @param {object} body - HMRC's answer, for example { code, message, paths, errors: [{ code, message, path }] }
+ * @returns {{code?: string, paths: string[], errors: {code?: string, path?: string}[], message?: string, messageOmitted?: boolean}}
+ */
+export function loggedHmrcErrorOf(body) {
+  if (!body || typeof body !== "object") return { paths: [], errors: [] };
+  const errors = (Array.isArray(body.errors) ? body.errors : []).map((error) => ({
+    ...(typeof error?.code === "string" ? { code: error.code } : {}),
+    ...(typeof error?.path === "string" ? { path: error.path } : {}),
+  }));
+  const paths = [
+    ...(Array.isArray(body.paths) ? body.paths.filter((path) => typeof path === "string") : []),
+    ...errors.map((error) => error.path).filter(Boolean),
+  ];
+  const logged = { ...(typeof body.code === "string" ? { code: body.code } : {}), paths: [...new Set(paths)], errors };
+  if (typeof body.message !== "string") return logged;
+  return MAY_REPEAT_A_SUBMITTED_VALUE.test(body.message) ? { ...logged, messageOmitted: true } : { ...logged, message: body.message };
+}
+
 function loggedRequestOf(request) {
   if (!(request instanceof URL)) return undefined;
   return `${request.origin}${context.get("loggedPath") ?? "{path}"}${loggedQueryOf(request.searchParams)}`;
@@ -865,7 +890,7 @@ export function http404NotFoundFromHmrcResponse(request, hmrcResponse, govClient
     message: "Not found for request",
     request: loggedRequestOf(request),
     hmrcResponseCode: hmrcResponse.status,
-    responseBody: hmrcResponse.data,
+    hmrcError: loggedHmrcErrorOf(hmrcResponse.data),
   });
 
   const message = errorDetails ? errorDetails.userMessage : "Not found for the specified query";
@@ -903,7 +928,7 @@ export function http400BadRequestFromHmrcResponse(request, hmrcResponse, govClie
     message: "Bad request rejected by HMRC",
     request: loggedRequestOf(request),
     hmrcResponseCode: hmrcResponse.status,
-    responseBody: hmrcResponse.data,
+    hmrcError: loggedHmrcErrorOf(hmrcResponse.data),
   });
 
   const message = errorDetails ? errorDetails.userMessage : buildHmrcRejectionMessage(hmrcResponse.data, "HMRC rejected the request");
@@ -930,7 +955,7 @@ export function http500ServerErrorFromHmrcResponse(request, hmrcResponse, govCli
     message: "HMRC request failed for request",
     request: loggedRequestOf(request),
     hmrcResponseCode: hmrcResponse.status,
-    responseBody: hmrcResponse.data,
+    hmrcError: loggedHmrcErrorOf(hmrcResponse.data),
   });
 
   const message = errorDetails ? errorDetails.userMessage : "HMRC request failed";

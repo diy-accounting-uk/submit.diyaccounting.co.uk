@@ -78,6 +78,7 @@ import { apiEndpoint as hmrcItsaStatusGetApiEndpoint } from "../functions/hmrc/h
 import { apiEndpoint as hmrcItsaBsasTriggerPostApiEndpoint } from "../functions/hmrc/hmrcItsaBsasTriggerPost.js";
 import { apiEndpoint as hmrcItsaBsasSelfEmploymentGetApiEndpoint } from "../functions/hmrc/hmrcItsaBsasSelfEmploymentGet.js";
 import { apiEndpoint as hmrcItsaBsasSelfEmploymentAdjustPostApiEndpoint } from "../functions/hmrc/hmrcItsaBsasSelfEmploymentAdjustPost.js";
+import { loggedQueryOf, routePatternOf } from "../lib/loggedPath.js";
 import { apiEndpoint as hmrcItsaBsasUkPropertyGetApiEndpoint } from "../functions/hmrc/hmrcItsaBsasUkPropertyGet.js";
 import { apiEndpoint as hmrcItsaBsasUkPropertyAdjustPostApiEndpoint } from "../functions/hmrc/hmrcItsaBsasUkPropertyAdjustPost.js";
 import { apiEndpoint as hmrcItsaBsasForeignPropertyGetApiEndpoint } from "../functions/hmrc/hmrcItsaBsasForeignPropertyGet.js";
@@ -204,8 +205,16 @@ app.use((req, res, next) => {
     next();
   });
 });
+// Logged when the answer is sent, once Express knows the route: its pattern names each path
+// parameter, and the query gives its names only. A path no route matched logs as {unmatched} under
+// /api, which is where ids sit; a page or a file logs its own path.
 app.use((req, res, next) => {
-  logger.info(`HTTP ${req.method} ${req.url}`);
+  res.on("finish", () => {
+    // A catch-all route's path is a pattern of its own (a RegExp), which names nothing.
+    const routePath = typeof req.route?.path === "string" ? `${req.baseUrl}${routePatternOf(req.route.path)}` : undefined;
+    const path = routePath ?? (req.path.startsWith("/api/") ? "/api/{unmatched}" : req.path);
+    logger.info(`HTTP ${req.method} ${path}${loggedQueryOf(req.query)} ${res.statusCode}`);
+  });
   next();
 });
 

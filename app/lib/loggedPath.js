@@ -15,8 +15,19 @@ function decodedOrRaw(segment) {
 }
 
 /**
- * The route pattern of a request with its path parameters named: API Gateway's routeKey when it has
- * one, else the path with each path parameter's value replaced by {name}.
+ * An Express route path in the route pattern form API Gateway's routeKey holds: /a/:id -> /a/{id}.
+ * @param {string} routePath
+ * @returns {string}
+ */
+export function routePatternOf(routePath) {
+  return String(routePath).replace(/:(\w+)\+?\??/g, "{$1}");
+}
+
+/**
+ * The route pattern of a request with its path parameters named: API Gateway's routeKey, which the
+ * local server sets from the route too. With none, each segment whose position holds a path
+ * parameter's value is named, from the left; a value that appears again later, or that equals a
+ * fixed segment before it, is named only once, where the parameters' order puts it.
  * @param {object} event - An API Gateway HTTP API event, or the one the local server builds
  * @returns {string} The path to log; "" when the event has none
  */
@@ -26,17 +37,28 @@ export function loggedPathOf(event) {
   const path = event?.rawPath || event?.path || event?.requestContext?.http?.path || "";
   const parameters = Object.entries(event?.pathParameters ?? {}).filter(([, value]) => typeof value === "string" && value !== "");
   if (parameters.length === 0) return path;
-  // A greedy parameter ({proxy+}) spans segments, so the longest values are named first.
-  parameters.sort(([, a], [, b]) => b.length - a.length);
-  let segments = path.split("/");
-  for (const [name, value] of parameters) {
-    const valueSegments = value.split("/");
-    for (let start = 0; start + valueSegments.length <= segments.length; start += 1) {
-      const window = segments.slice(start, start + valueSegments.length).map(decodedOrRaw);
-      if (window.every((segment, index) => segment === valueSegments[index])) {
-        segments = [...segments.slice(0, start), `{${name}}`, ...segments.slice(start + valueSegments.length)];
-      }
+  // Express lists a route's parameters in the order they come in the path, so each is looked for
+  // after the one before it; the last value is matched from the right, as it ends the path.
+  const segments = path.split("/");
+  let from = 1;
+  for (const [index, [name, value]] of parameters.entries()) {
+    const width = value.split("/").length;
+    const matches = (start) =>
+      segments
+        .slice(start, start + width)
+        .map(decodedOrRaw)
+        .join("/") === value;
+    let start = -1;
+    if (index === parameters.length - 1) {
+      for (let candidate = segments.length - width; candidate >= from && start < 0; candidate -= 1)
+        if (matches(candidate)) start = candidate;
+    } else {
+      for (let candidate = from; candidate + width <= segments.length && start < 0; candidate += 1)
+        if (matches(candidate)) start = candidate;
     }
+    if (start < 0) continue;
+    segments.splice(start, width, `{${name}}`);
+    from = start + 1;
   }
   return segments.join("/");
 }
@@ -74,10 +96,26 @@ const OUTBOUND_ID_FORMS = [
   ["vrn", /^\d{9}$/],
   ["nino", /^[A-Z]{2}\d{6}[A-D]$/i],
   ["businessId", /^X[A-Z0-9]IS\d{11}$/i],
-  ["id", /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i],
+  ["propertyId", /^P[0-9A-Z]{14}$/],
+  ["uuid", /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i],
   // An Assist report's correlation id: a long hex token, which follows the report id.
   ["correlationId", /^[0-9a-f]{32,}$/i],
 ];
+
+// An HMRC UUID is an Assist report's, or an Income Tax submission's, calculation's or property's: the API's
+// segments before it say which.
+const UUID_NAME_AFTER = [
+  ["acknowledge", "reportId"],
+  ["period", "submissionId"],
+  ["calculations", "calculationId"],
+  ["adjustable-summary", "calculationId"],
+  ["assist", "calculationId"],
+  ["details", "propertyId"],
+];
+
+function nameOfUuid(earlierSegments) {
+  return UUID_NAME_AFTER.find(([segment]) => earlierSegments.includes(segment))?.[1] ?? "id";
+}
 
 /**
  * An outbound URL as a log line may print it: its origin, its path with each id named by the
@@ -107,7 +145,8 @@ export function loggedOutboundPathOf(path) {
   return segments
     .map((segment, index) => {
       if (segment === "") return segment;
-      const name = OUTBOUND_ID_AFTER[segments[index - 1]] ?? OUTBOUND_ID_FORMS.find(([, form]) => form.test(decodedOrRaw(segment)))?.[0];
+      const byForm = OUTBOUND_ID_FORMS.find(([, form]) => form.test(decodedOrRaw(segment)))?.[0];
+      const name = OUTBOUND_ID_AFTER[segments[index - 1]] ?? (byForm === "uuid" ? nameOfUuid(segments.slice(0, index)) : byForm);
       return name ? `{${name}}` : segment;
     })
     .join("/");

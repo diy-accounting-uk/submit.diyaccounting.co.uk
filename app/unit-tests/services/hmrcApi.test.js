@@ -562,3 +562,61 @@ describe("the lines of a failed HMRC answer", () => {
     },
   );
 });
+
+describe("the HMRC error lines", () => {
+  const errorAnswer = {
+    code: "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED",
+    message: "An empty or non-matching body was submitted",
+    paths: ["/periodIncome/turnover"],
+    errors: [
+      { code: "FORMAT_VALUE", message: "The value 12345.678 for turnover is not valid", path: "/periodIncome/turnover" },
+      { code: "FORMAT_NINO", message: "The provided NINO is invalid", path: "/nino" },
+    ],
+  };
+
+  it("hold HMRC's code and the code and field path of each error, and a message only when it cannot repeat a submitted value", async () => {
+    const { loggedHmrcErrorOf } = await import("@app/services/hmrcApi.js");
+
+    expect(loggedHmrcErrorOf(errorAnswer)).toEqual({
+      code: "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED",
+      paths: ["/periodIncome/turnover", "/nino"],
+      errors: [
+        { code: "FORMAT_VALUE", path: "/periodIncome/turnover" },
+        { code: "FORMAT_NINO", path: "/nino" },
+      ],
+      message: "An empty or non-matching body was submitted",
+    });
+    expect(loggedHmrcErrorOf({ code: "INVALID_REQUEST", message: "Reference 'X1234' was not found" })).toEqual({
+      code: "INVALID_REQUEST",
+      paths: [],
+      errors: [],
+      messageOmitted: true,
+    });
+    expect(loggedHmrcErrorOf(undefined)).toEqual({ paths: [], errors: [] });
+  });
+
+  it.each([
+    ["http400BadRequestFromHmrcResponse", 400],
+    ["http404NotFoundFromHmrcResponse", 404],
+    ["http500ServerErrorFromHmrcResponse", 500],
+    ["http403ForbiddenFromHmrcResponse", 403],
+  ])("%s logs the error's codes and paths and none of its values, and answers the caller with HMRC's answer", async (name, status) => {
+    const hmrcApi = await import("@app/services/hmrcApi.js");
+    const answer = { ...errorAnswer, message: "The value 98765 was refused" };
+    const lines = [];
+    const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => lines.push(String(chunk)) > 0);
+    let response;
+    try {
+      const first = name === "http403ForbiddenFromHmrcResponse" ? "token-123" : new URL("https://submit.example/api/v1/hmrc/itsa/period");
+      response = hmrcApi[name](first, { status, data: answer }, {});
+    } finally {
+      write.mockRestore();
+    }
+    const logged = lines.join("");
+
+    expect(logged).toContain("FORMAT_VALUE");
+    expect(logged).toContain("/periodIncome/turnover");
+    for (const value of ["98765", "12345.678"]) expect(logged).not.toContain(value);
+    expect(JSON.stringify(JSON.parse(response.body))).toContain("FORMAT_VALUE");
+  });
+});
