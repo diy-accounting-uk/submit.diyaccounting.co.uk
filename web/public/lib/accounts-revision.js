@@ -3,7 +3,7 @@
 
 // @capability CH-24 File revised accounts to Companies House
 // - **Use when:** a page offers to revise accounts already filed at Companies House, from the receipt of the accepted filing.
-// - **Does:** accounts-revision.js reads an accounts receipt, refuses one that is not accounts, not accepted or part of a joint filing, and maps the filed document with the books bundle's mapIxbrlAccounts for either regime. It answers the regime, the original approval date, the period, the figures, the signer, the dormant facts and the notes the mapping does not read (the accounting policies, the controlling party, the debtors, the advances to directors and the intangible assets note), and keeps the filed document and the mapped accounts; the form opens with each note filled as filed and names any note it cannot carry. It shows the page's revision section and checks it: both revision texts, and a new approval date on or after the original. fileMicroEntityAccounts.html and fileSmallCompanyAccounts.html file the revision with the accounts request's revision field; a filleted copy holds no profit and loss account, so the small company form asks for those lines.
+// - **Does:** accounts-revision.js reads an accounts receipt, refuses one that is not accounts, not accepted or part of a joint filing, and maps the filed document with the books bundle's mapIxbrlAccounts for either regime. It answers the regime, the original approval date, the period, the figures, the signer, the dormant facts, the balance sheet lines and the notes the mapping does not read (the accounting policies, the controlling party, the debtors, the advances to directors and the intangible assets note), and keeps the filed document and the mapped accounts; the form opens with each note filled as filed and names any note it cannot carry. It shows the page's revision section and checks it: both revision texts, and a new approval date on or after the original. fileMicroEntityAccounts.html and fileSmallCompanyAccounts.html file the revision with the accounts request's revision field; a filleted copy holds no profit and loss account, so the small company form asks for those lines.
 // - **Run:** `companies-house/fileMicroEntityAccounts.html?amend=<receipt name>` or `companies-house/fileSmallCompanyAccounts.html?amend=<receipt name>`, opened from "Amend" on companies-house/filings.html
 // - **Entry:** `web/public/lib/accounts-revision.js:readRevisionSource`; `web/public/lib/accounts-revision.js:checkRevision`
 // - **Files:** web/public/lib/accounts-revision.js, web/public/companies-house/fileMicroEntityAccounts.page.js, web/public/companies-house/fileSmallCompanyAccounts.page.js, web/public/companies-house/filings.page.js, web/public/lib/filing-record.js, web/browser-tests/fileMicroEntityAccounts.amend.browser.test.js
@@ -128,6 +128,7 @@ export function revisionSourceOf(receipt, bundle) {
     language: documentLanguageOf(receipt.filedDocument),
     accountantsReport: accountantsReportOf(receipt.filedDocument),
     notes: notesOf(receipt.filedDocument),
+    balanceSheetLines: balanceSheetLinesOf(receipt.filedDocument),
     filedDocument: receipt.filedDocument,
     mapped,
   };
@@ -317,6 +318,58 @@ function intangibleAssetNoteOf(document, periodEnd) {
   return complete ? { intangibleAssetNote: note, unreadable: false } : { intangibleAssetNote: null, unreadable: true };
 }
 
+// The balance sheet lines the books mapping does not give as the forms file them, by the concept and
+// the dimension members of the context each is tagged on: the creditor splits, the provisions, the
+// creditors after one year without the provisions, and the micro-entity headings outside the totals.
+const WITHIN_ONE_YEAR = ["core:MaturitiesOrExpirationPeriodsDimension=core:WithinOneYear"];
+const AFTER_ONE_YEAR = ["core:MaturitiesOrExpirationPeriodsDimension=core:AfterOneYear"];
+export const BALANCE_SHEET_LINE_FACTS = {
+  bankLoansOverdrafts: { name: "core:BankBorrowingsOverdrafts", members: WITHIN_ONE_YEAR },
+  taxationSocialSecurity: { name: "core:TaxationSocialSecurityPayable", members: WITHIN_ONE_YEAR },
+  accruals: {
+    name: "core:AccruedLiabilities",
+    members: ["core:FinancialInstrumentCurrentNon-currentDimension=core:CurrentFinancialInstruments", ...WITHIN_ONE_YEAR],
+  },
+  creditorsAfterOneYear: { name: "core:Creditors", members: AFTER_ONE_YEAR },
+  bankLoansAfterOneYear: { name: "core:BankBorrowingsOverdrafts", members: AFTER_ONE_YEAR },
+  amountsOwedToDirectors: { name: "core:AmountsOwedToDirectors", members: AFTER_ONE_YEAR },
+  amountsOwedToGroupUndertakings: { name: "core:AmountsOwedToGroupUndertakings", members: AFTER_ONE_YEAR },
+  provisionsForLiabilities: { name: "core:ProvisionsForLiabilitiesBalanceSheetSubtotal", members: [] },
+  calledUpShareCapitalNotPaid: { name: "core:CalledUpShareCapitalNotPaidNotExpressedAsCurrentAsset", members: [] },
+  prepaymentsAccruedIncome: { name: "core:PrepaymentsAccruedIncomeNotExpressedWithinCurrentAssetSubtotal", members: [] },
+  accrualsDeferredIncome: { name: "core:AccruedLiabilitiesNotExpressedWithinCreditorsSubtotal", members: [] },
+};
+
+function membersOf(document, contextRef) {
+  const context = new RegExp(`<xbrli:context id="${contextRef}">([\\s\\S]*?)</xbrli:context>`).exec(document)?.[1] ?? "";
+  return Array.from(
+    context.matchAll(/<xbrldi:explicitMember dimension="([^"]+)">([^<]+)<\/xbrldi:explicitMember>/g),
+    ([, dimension, member]) => `${dimension}=${member}`,
+  ).sort();
+}
+
+/**
+ * The balance sheet lines of BALANCE_SHEET_LINE_FACTS a filed document states, per year: the facts at
+ * the balance sheet date and at the date before the period. unreadable is true when one is stated
+ * with a value that is not a whole number of pounds.
+ * @param {string} document - the filed iXBRL
+ * @returns {{current: Record<string, number>, prior: Record<string, number>, unreadable: boolean}}
+ */
+export function balanceSheetLinesOf(document) {
+  const periodEnd = filedPeriodOf(document)?.periodEnd;
+  const lines = { current: {}, prior: {}, unreadable: false };
+  for (const [line, { name, members }] of Object.entries(BALANCE_SHEET_LINE_FACTS)) {
+    const wanted = [...members].sort().join("|");
+    for (const { contextRef, value } of figuresOf(document, name)) {
+      const instant = instantOf(document, contextRef);
+      if (instant === null || membersOf(document, contextRef).join("|") !== wanted) continue;
+      if (Number.isNaN(value)) lines.unreadable = true;
+      else lines[instant === periodEnd ? "current" : "prior"][line] = value;
+    }
+  }
+  return lines;
+}
+
 // The lines of the debtors note per year: the facts at the balance sheet date and at the date before
 // the period.
 function debtorsOf(document, periodEnd) {
@@ -460,6 +513,41 @@ const NOTE_TITLE = {
 
 const box = (id) => document.getElementById(id);
 
+const BALANCE_SHEET_LINE_TITLE = {
+  bankLoansOverdrafts: () => siteText("ch.revision.line-bank-loans-overdrafts", "bank loans and overdrafts"),
+  taxationSocialSecurity: () => siteText("ch.revision.line-taxation-social-security", "taxation and social security"),
+  accruals: () => siteText("ch.revision.line-accruals", "accruals"),
+  creditorsAfterOneYear: () => siteText("ch.revision.line-creditors-after-one-year", "creditors after more than one year"),
+  bankLoansAfterOneYear: () => siteText("ch.revision.line-bank-loans-after-one-year", "bank loans after more than one year"),
+  amountsOwedToDirectors: () => siteText("ch.revision.line-amounts-owed-to-directors", "amounts owed to directors"),
+  amountsOwedToGroupUndertakings: () =>
+    siteText("ch.revision.line-amounts-owed-to-group-undertakings", "amounts owed to group undertakings"),
+  provisionsForLiabilities: () => siteText("ch.revision.line-provisions", "provisions for liabilities"),
+  calledUpShareCapitalNotPaid: () => siteText("ch.revision.line-share-capital-not-paid", "called up share capital not paid"),
+  prepaymentsAccruedIncome: () => siteText("ch.revision.line-prepayments", "prepayments and accrued income"),
+  accrualsDeferredIncome: () => siteText("ch.revision.line-accruals-deferred-income", "accruals and deferred income"),
+};
+
+// Fill each balance sheet line into the form's box for its year, over what the books mapping gave,
+// and answer the titles of the lines the document states and this form has no box for.
+function fillBalanceSheetLines({ current, prior, unreadable }) {
+  const toEnter = new Set();
+  for (const [year, lines] of [
+    ["current", current],
+    ["prior", prior],
+  ]) {
+    for (const [line, value] of Object.entries(lines)) {
+      const lineBox = box(`${year}${line[0].toUpperCase()}${line.slice(1)}`);
+      if (lineBox) lineBox.value = String(value);
+      else if (value !== 0) toEnter.add(line);
+    }
+  }
+  const titles = Object.keys(BALANCE_SHEET_LINE_TITLE)
+    .filter((line) => toEnter.has(line))
+    .map((line) => BALANCE_SHEET_LINE_TITLE[line]());
+  return unreadable ? [...titles, siteText("ch.revision.line-unreadable", "balance sheet lines")] : titles;
+}
+
 // Fill each note into the form's boxes as filed, and answer the titles of the notes this form has no
 // boxes for or the document did not give.
 function fillNotes(notes) {
@@ -519,8 +607,8 @@ function fillNotes(notes) {
  * and the revision section's notes that name what the customer must enter again.
  * @param {{accountantsReport: object|null, language: string, notes: object}} source
  */
-export function fillCarriedOver({ accountantsReport, language, notes }) {
-  const notesToEnter = fillNotes(notes);
+export function fillCarriedOver({ accountantsReport, language, notes, balanceSheetLines }) {
+  const notesToEnter = [...fillBalanceSheetLines(balanceSheetLines), ...fillNotes(notes)];
   const notesNote = document.getElementById("revisionNotesNote");
   notesNote.textContent = notesToEnter.length
     ? siteText("ch.revision.notes-to-enter", "The filed accounts carry these notes, which you must enter again: {notes}.", {

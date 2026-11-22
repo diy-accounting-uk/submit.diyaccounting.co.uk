@@ -51,11 +51,12 @@ const MICRO_TEST_CASE = JSON.parse(
 ).find((testCase) => testCase.name === "micro-entity-accounts");
 const ACCOUNTANTS_REPORT = { accountantsName: "Jones & Partners", statement: "We compiled these accounts from the company's records." };
 
-function microDocument({ language = "en", accountantsReport, directorsAdvances } = {}) {
+function microDocument({ language = "en", accountantsReport, directorsAdvances, balanceSheet } = {}) {
   const input = {
     ...microInputFromTestServiceCase(MICRO_TEST_CASE),
     ...(accountantsReport ? { accountantsReport } : {}),
     ...(directorsAdvances ? { directorsAdvances } : {}),
+    ...(balanceSheet ? { balanceSheet } : {}),
   };
   return inAccountsLanguage(language, () => buildMicroEntityAccounts(input));
 }
@@ -308,6 +309,38 @@ test.describe("File micro-entity accounts page - revising accounts from a receip
       );
     });
   }
+
+  test("opens accounts with creditors after one year and provisions with both filled as filed, and files them with nothing retyped", async ({
+    page,
+  }) => {
+    const filedSheet = microInputFromTestServiceCase(MICRO_TEST_CASE).balanceSheet;
+    const withLines = (year) => ({
+      ...year,
+      creditorsAfterOneYear: 200,
+      provisionsForLiabilities: 100,
+      currentAssets: year.currentAssets + 300,
+    });
+    const balanceSheet = { current: withLines(filedSheet.current), prior: withLines(filedSheet.prior) };
+    await openAmend(page, accountsReceipt(microDocument({ balanceSheet })));
+    await expect(page.locator("#revisionSection")).toBeVisible();
+    for (const year of ["current", "prior"]) {
+      await expect(page.locator(`#${year}CreditorsAfterOneYear`)).toHaveValue("200");
+      await expect(page.locator(`#${year}ProvisionsForLiabilities`)).toHaveValue("100");
+      await expect(page.locator(`#${year}CurrentAssets`)).toHaveValue(String(balanceSheet[year].currentAssets));
+    }
+    await fillRevisionTexts(page);
+    await page.fill("#directorDateApproved", "2026-11-20");
+    await page.evaluate(() => {
+      document.getElementById("companyAuthCode").value = "ABC123";
+      return handleSubmitFiling();
+    });
+    await expect(page.locator("#filingResult")).toContainText("Companies House accepted the revised accounts.");
+    const [sent] = await page.evaluate(() => window.sentAccounts);
+    for (const [year, figures] of Object.entries(balanceSheet)) {
+      for (const [line, value] of Object.entries(figures))
+        expect([year, line, sent.balanceSheet[`${year}Year`][line]]).toEqual([year, line, value]);
+    }
+  });
 
   test("names no note to enter again for accounts whose notes the form carries, dormant or not", async ({ page }) => {
     await openAmend(page, accountsReceipt(microDocument()));

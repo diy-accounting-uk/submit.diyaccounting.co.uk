@@ -12,6 +12,7 @@ import {
   accountsDocumentCases,
   SMALL_COMPANY_CASE_INPUT,
   SMALL_COMPANY_NOTES_CASE_INPUT,
+  SMALL_COMPANY_EVERY_LINE_CASE_INPUT,
 } from "@app/test-helpers/accountsDocumentCases.js";
 import { buildSmallCompanyAccounts, SMALL_COMPANY_POLICY_FIELDS } from "@app/services/smallCompanyAccountsIxbrl.js";
 import { inAccountsLanguage } from "@app/services/accountsLanguage.js";
@@ -644,6 +645,43 @@ test.describe("File small company accounts page - revising accounts from a recei
       expect(sent.smallCompany.intangibleAssetNote).toEqual(notesCase.intangibleAssetNote);
       expect(sent.smallCompany.dividendPolicy).toBe(notesCase.dividendPolicy);
       expect(sent.smallCompany.accountingPolicies).toBe(notesCase.accountingPolicies);
+    });
+  }
+
+  for (const filleted of [false, true]) {
+    const copy = filleted ? "filleted" : "full";
+    test(`opens a ${copy} copy with every balance sheet line of both years filled and files it with nothing retyped`, async ({ page }) => {
+      const input = SMALL_COMPANY_EVERY_LINE_CASE_INPUT;
+      await openAmend(page, accountsReceipt(buildSmallCompanyAccounts({ ...input, filleted })));
+      await expect(page.locator("#revisionSection")).toBeVisible();
+      for (const [year, figures] of Object.entries(input.balanceSheet)) {
+        for (const [line, value] of Object.entries(figures)) {
+          if (line === "capitalAndReserves") continue;
+          await expect(page.locator(`#${year}${line[0].toUpperCase()}${line.slice(1)}`)).toHaveValue(String(value));
+        }
+      }
+      await expect(page.locator("#revisionNotesNote")).toHaveText(
+        "The filed accounts carry these notes, which you must enter again: called up share capital.",
+      );
+      if (filleted) {
+        for (const [line, value] of Object.entries(input.profitAndLoss.current)) {
+          const box = page.locator(`#current${line[0].toUpperCase()}${line.slice(1)}`);
+          if ((await box.count()) && (await box.isEditable())) await box.fill(String(value));
+        }
+      }
+      await page.fill("#revisionNonCompliance", "The original accounts left out the stocks held at the year end.");
+      await page.fill("#revisionAmendments", "Stocks are now shown.");
+      await page.fill("#directorDateApproved", "2026-11-20");
+      await page.evaluate(() => {
+        document.getElementById("companyAuthCode").value = "ABC123";
+        return handleSubmitFiling();
+      });
+      await expect(page.locator("#filingResult")).toContainText("Companies House accepted the revised accounts.");
+      const [sent] = await page.evaluate(() => window.sentAccounts);
+      for (const [year, figures] of Object.entries(input.balanceSheet)) {
+        const sentYear = sent.smallCompany.balanceSheet[`${year}Year`];
+        for (const [line, value] of Object.entries(figures)) expect([year, line, sentYear[line]]).toEqual([year, line, value]);
+      }
     });
   }
 

@@ -17783,3 +17783,53 @@ cy = '''asedau anniriaethol'''
 [strings."ch.revision.note-share-capital"]
 hash = "96ab5e8c8f2c"
 cy = '''cyfalaf cyfranddaliadau wedi’i alw'''
+
+# == Revised accounts that carry over every balance sheet line of the accounts they revise ==
+
+[strings."ch.revision.line-bank-loans-overdrafts"]
+hash = "73bb239d69f3"
+cy = '''benthyciadau banc a gorddrafftiau'''
+
+[strings."ch.revision.line-taxation-social-security"]
+hash = "2fcda1e5353c"
+cy = '''trethiant a nawdd cymdeithasol'''
+
+[strings."ch.revision.line-accruals"]
+hash = "53d4caa0165c"
+cy = '''croniadau'''
+
+[strings."ch.revision.line-creditors-after-one-year"]
+hash = "7b89b909e049"
+cy = '''credydwyr sy’n ddyledus ar ôl mwy na blwyddyn'''
+
+[strings."ch.revision.line-bank-loans-after-one-year"]
+hash = "51b02d70b7e1"
+cy = '''benthyciadau banc sy’n ddyledus ar ôl mwy na blwyddyn'''
+
+[strings."ch.revision.line-amounts-owed-to-directors"]
+hash = "43461a6b1f91"
+cy = '''symiau sy’n ddyledus i gyfarwyddwyr'''
+
+[strings."ch.revision.line-amounts-owed-to-group-undertakings"]
+hash = "2a732cce6922"
+cy = '''symiau sy’n ddyledus i ymgymeriadau grŵp'''
+
+[strings."ch.revision.line-provisions"]
+hash = "9dfb0897d1e8"
+cy = '''darpariaethau ar gyfer rhwymedigaethau'''
+
+[strings."ch.revision.line-share-capital-not-paid"]
+hash = "4d2ff1d0dbf6"
+cy = '''cyfalaf cyfranddaliadau wedi’i alw na thalwyd'''
+
+[strings."ch.revision.line-prepayments"]
+hash = "ac094f613972"
+cy = '''rhagdaliadau ac incwm cronedig'''
+
+[strings."ch.revision.line-accruals-deferred-income"]
+hash = "00d08a3dcdbc"
+cy = '''atebolrwydd cronedig ac incwm gohiriedig'''
+
+[strings."ch.revision.line-unreadable"]
+hash = "d7620a4522b1"
+cy = '''llinellau’r fantolen'''

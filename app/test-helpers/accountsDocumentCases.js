@@ -187,6 +187,62 @@ export const SMALL_COMPANY_NOTES_CASE_INPUT = {
   },
 };
 
+// The notes case with every balance sheet line the small company form files, in both years: the
+// debtors split, the creditor splits within and after one year, and the provisions.
+export const SMALL_COMPANY_EVERY_LINE_CASE_INPUT = {
+  ...SMALL_COMPANY_NOTES_CASE_INPUT,
+  balanceSheet: {
+    current: {
+      fixedAssets: 10000,
+      stocks: 500,
+      debtors: 2500,
+      tradeDebtors: 1000,
+      otherDebtors: 300,
+      amountsOwedByDirectors: 800,
+      prepayments: 400,
+      cashAtBank: 12000,
+      bankLoansOverdrafts: 100,
+      tradeCreditors: 600,
+      corporationTax: 1500,
+      taxationSocialSecurity: 100,
+      accruals: 100,
+      otherCreditors: 600,
+      creditorsAfterOneYear: 1700,
+      bankLoansAfterOneYear: 200,
+      amountsOwedToDirectors: 100,
+      amountsOwedToGroupUndertakings: 100,
+      provisionsForLiabilities: 300,
+      calledUpShareCapital: 100,
+      profitAndLossAccount: 19900,
+      capitalAndReserves: 20000,
+    },
+    prior: {
+      fixedAssets: 9500,
+      stocks: 400,
+      debtors: 2000,
+      tradeDebtors: 1000,
+      otherDebtors: 300,
+      amountsOwedByDirectors: 300,
+      prepayments: 400,
+      cashAtBank: 8000,
+      bankLoansOverdrafts: 100,
+      tradeCreditors: 500,
+      corporationTax: 1000,
+      taxationSocialSecurity: 100,
+      accruals: 100,
+      otherCreditors: 700,
+      creditorsAfterOneYear: 1200,
+      bankLoansAfterOneYear: 200,
+      amountsOwedToDirectors: 100,
+      amountsOwedToGroupUndertakings: 100,
+      provisionsForLiabilities: 300,
+      calledUpShareCapital: 100,
+      profitAndLossAccount: 15800,
+      capitalAndReserves: 15900,
+    },
+  },
+};
+
 export const SMALL_COMPANY_BANK_LINES_CASE_INPUT = {
   ...SMALL_COMPANY_CASE_INPUT,
   balanceSheet: {
