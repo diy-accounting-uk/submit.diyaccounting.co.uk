@@ -202,7 +202,7 @@ Both the due list and the reports are in the `default` bundle (decision D2 of `P
 | WDM7 | The company check landing page | CR14, WDM6 | machine-only | Sonnet | ~7 files |
 | WDM8 | The `campaign` skill learns the company deadline questions | WDM5, WDM4 | machine-only | Sonnet | 1 file |
 | WDM9 | Campaign sessions and posting | WDM8, WDM4 | human-driven | | 0 files |
-| WDM10 | Links from the spreadsheets site | WDM5, the operator's yes | machine-ask | Sonnet | ~3 files |
+| WDM10 | Links from the spreadsheets site | WDM5 (the operator approved the links on 2026-11-22) | machine-only | Sonnet | ~3 files |
 | WDM11 | The listing copy sitting file | MA1, WL1 on prod, DUE14 | machine-only | Sonnet | 1 file |
 | WDM12 | Update the live listings | WDM11 | human-driven | | 0 files |
 | WDM13 | The donor email update paragraph | WL1 on prod, DUE14 | machine-only | Opus | 1 file |
