@@ -440,7 +440,7 @@ function buildAccountsPayload() {
       ...(controllingParty ? { controllingParty } : {}),
       ...(directorsAdvances ? { directorsAdvances } : {}),
     },
-    ...(revision ? { revision: revision.module.revisionPayload(revisionElements()) } : {}),
+    ...(revision ? { revision: revision.module.revisionRequest(revisionElements(), revision.source) } : {}),
   };
 }
 
@@ -515,6 +515,8 @@ async function handleAccountsFormSubmit(event) {
   if (!window.formErrors.requireFormFields(form)) return;
   if (window.formErrors.reportMoneyProblems(form)) return;
   if (revision && reportRevisionProblems()) return;
+  const approvalDateCheck = await import("../lib/approval-date-check.js");
+  if (approvalDateCheck.showApprovalDateAfterToday(document.getElementById("directorDateApproved"), new Date())) return;
   const problem = formProblem();
   if (problem) {
     showStatus(problem, "error");
@@ -756,19 +758,7 @@ function showRevisionLateNote() {
 
 // Shows each problem with the revision beside its field; answers true when there is one.
 function reportRevisionProblems() {
-  const elements = revisionElements();
-  const problems = revision.module.checkRevision({
-    ...revision.module.revisionPayload(elements),
-    dateApproved: document.getElementById("directorDateApproved").value,
-  });
-  if (problems.length === 0) return false;
-  const inputs = {
-    nonCompliance: elements.nonCompliance,
-    amendments: elements.amendments,
-    dateApproved: document.getElementById("directorDateApproved"),
-  };
-  window.formErrors.showFormErrors(problems.map(({ field, message }) => ({ input: inputs[field], message })));
-  return true;
+  return revision.module.showRevisionProblems(revisionElements(), document.getElementById("directorDateApproved"));
 }
 
 async function startRevision(receiptName) {
@@ -803,20 +793,21 @@ async function startRevision(receiptName) {
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     showDocumentLanguageChoice(profile.jurisdiction);
     window.booksImport.fillSmallCompanyFormFromMapped(read.source.mapped);
+    module.fillCarriedOver(read.source);
     toggleSections();
     renderTotals();
-    revision = { module, source: read.source };
+    const restoreStatus = await module.showRevisionStatus(document.querySelector("[data-feature-status]"));
+    revision = { module, source: read.source, restoreStatus };
     module.showRevisionSection(revisionElements(), read.source);
     document.getElementById("revisionFilletedNote").hidden = !read.source.mapped.filleted;
     document.getElementById("revisionBanner").hidden = false;
-    document.getElementById("changeCompanyLink").hidden = true;
+    document.getElementById("changeCompanyLine").hidden = true;
     showRevisionLateNote();
     showView("formView");
   } catch (error) {
     console.error("Failed to open the accounts to revise:", error);
     refuseRevision(
-      error.message ||
-        window.siteText("ch.revision.load-failed", "We could not open those accounts to revise. Open the filing again from your receipts."),
+      window.siteText("ch.revision.load-failed", "We could not open those accounts to revise. Open the filing again from your receipts."),
     );
   } finally {
     hideLoading();
@@ -825,15 +816,14 @@ async function startRevision(receiptName) {
 
 function endRevision() {
   if (!revision) return;
+  revision.module.hideRevisionSection(revisionElements());
+  revision.restoreStatus();
   revision = null;
-  const elements = revisionElements();
-  elements.section.hidden = true;
-  elements.nonCompliance.required = false;
-  elements.amendments.required = false;
   document.getElementById("revisionBanner").hidden = true;
   document.getElementById("revisionLateNote").hidden = true;
   document.getElementById("revisionFilletedNote").hidden = true;
-  document.getElementById("changeCompanyLink").hidden = false;
+  document.getElementById("revisionAccountantsNote").hidden = true;
+  document.getElementById("changeCompanyLine").hidden = false;
 }
 
 document.getElementById("directorDateApproved").addEventListener("input", showRevisionLateNote);

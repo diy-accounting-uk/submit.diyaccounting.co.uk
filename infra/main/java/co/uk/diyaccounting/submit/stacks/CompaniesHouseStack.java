@@ -1089,6 +1089,7 @@ public class CompaniesHouseStack extends Stack {
                         "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
                         companiesHouseAccountsAsyncRequestsTable.getTableName())
                 .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName())
                 .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
         withCodesEntryEnv(companiesHouseAccountsPostLambdaEnv, mcpSessionsTable, codesSealKeySecret);
         withPresenterSecretArns(companiesHouseAccountsPostLambdaEnv, props);
@@ -1136,6 +1137,8 @@ public class CompaniesHouseStack extends Stack {
                 this.companiesHouseAccountsPostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
         // Read-only: resolves a client-scoped request's client row when enforceBundles checks it.
         practiceClientsTable.grant(this.companiesHouseAccountsPostLambda, "dynamodb:GetItem");
+        // Read-only: revised accounts are checked against the receipt of the accounts they revise.
+        receiptsTable.grant(this.companiesHouseAccountsPostLambda, "dynamodb:GetItem");
 
         var companiesHouseAccountsGetLambdaEnv = xmlGatewayFilingLambdaEnv(props)
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName())

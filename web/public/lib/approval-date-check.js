@@ -34,3 +34,19 @@ export function isApprovedAfterToday(dateApproved, now) {
 export function approvalDateAfterTodayMessage(dateApproved, template = APPROVAL_DATE_AFTER_TODAY_MESSAGE) {
   return template.replace("{date}", dateApproved);
 }
+
+/**
+ * On an accounts form: show the problem beside the approval date when it is after today, in the
+ * reader's language. Answers true when it is.
+ * @param {HTMLInputElement} input - the date approved
+ * @param {Date} now
+ */
+export function showApprovalDateAfterToday(input, now) {
+  if (!isApprovedAfterToday(input.value, now)) return false;
+  const template = globalThis.siteText(
+    "ch.micro.approved-after-today",
+    "The date approved, {date}, is after today. Enter the date the directors approved the accounts.",
+  );
+  globalThis.formErrors.showFormErrors([{ input, message: approvalDateAfterTodayMessage(input.value, template) }]);
+  return true;
+}

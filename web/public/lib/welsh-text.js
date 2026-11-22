@@ -1079,6 +1079,7 @@ window.WELSH_TEXT = {
   "ch.email.type-not-covered": "Nid yw’r ffeilio hwn yn cynnwys y math hwn o gwmni.",
   "ch.filing.choose": "Dewiswch ffeilio o’ch derbynebau i weld eich copi ohono.",
   "ch.filing.load-failed": "Nid oeddem yn gallu llwytho’r ffeilio hwn. Ewch yn ôl i’ch derbynebau a rhoi cynnig arall arni.",
+  "ch.filing.no-comparatives": "Cafodd y cyfrifon hyn eu ffeilio heb ffigurau’r flwyddyn flaenorol, felly ni ellir eu diwygio yma eto.",
   "ch.filing.not-a-filing": "Nid yw’r dderbynneb hon yn ffeilio cyfrifon nac yn Ffurflen Dreth y Cwmni. Agorwch hi o’ch derbynebau.",
   "ch.gateway.pending":
     "Nid yw Tŷ’r Cwmnïau wedi gorffen gwirio cyflwyniad {number}. Mae’n gwirio rhai ffeiliadau â llaw, yn ystod oriau swyddfa.",

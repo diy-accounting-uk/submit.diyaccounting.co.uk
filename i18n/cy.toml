@@ -11301,9 +11301,9 @@ cy = '''Chwilio am y cwmni'''
 hash = "77ba8c1168e2"
 cy = '''Cyfrifon cwmni bach'''
 
-[strings."ch-small-company.company-change-company-dd2fd9"]
-hash = "dd2fd92fd208"
-cy = '''Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>). <a href="#" id="changeCompanyLink">Newid y cwmni</a>.'''
+[strings."ch-small-company.company-change-company-466dd4"]
+hash = "466dd4ccb9ed"
+cy = '''Cwmni <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>). <span id="changeCompanyLine"><a href="#" id="changeCompanyLink">Newid y cwmni</a>.</span>'''
 
 [strings."ch-small-company.period-6e795d"]
 hash = "6e795d4d3cc2"
@@ -17901,3 +17901,13 @@ cy = '''hanes ffeilio’r cwmni'''
 [strings."ch.watch.sign-in-to-add"]
 hash = "cae05a1d5bc2"
 cy = '''Mewngofnodwch i’w ychwanegu at eich rhestr wylio'''
+
+# == Revised small company accounts: the small company form's revision checks and status, and why a filing with no comparatives is not revised ==
+
+[strings."ch-small-company.the-accounts-filed-have-an-accountants-01c4ff"]
+hash = "01c4ffbf80ed"
+cy = '''Mae gan y cyfrifon a ffeiliwyd adroddiad cyfrifwyr na allai’r dudalen hon ei ddarllen. Rhowch adroddiad y cyfrifwyr eto isod.'''
+
+[strings."ch.filing.no-comparatives"]
+hash = "46ad6e4354fd"
+cy = '''Cafodd y cyfrifon hyn eu ffeilio heb ffigurau’r flwyddyn flaenorol, felly ni ellir eu diwygio yma eto.'''

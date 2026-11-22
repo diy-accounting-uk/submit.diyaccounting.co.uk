@@ -8,7 +8,9 @@ import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { serveMoneyInput, servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
-import { accountsDocumentCases } from "@app/test-helpers/accountsDocumentCases.js";
+import { accountsDocumentCases, SMALL_COMPANY_CASE_INPUT } from "@app/test-helpers/accountsDocumentCases.js";
+import { buildSmallCompanyAccounts } from "@app/services/smallCompanyAccountsIxbrl.js";
+import { inAccountsLanguage } from "@app/services/accountsLanguage.js";
 import { readSubmitCss } from "./submitCss.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -401,10 +403,18 @@ function serveFile(page, pattern, file) {
   );
 }
 
-async function openAmend(page, receipt, { width = 1280, outcome = "ACCEPT" } = {}) {
+const ACCOUNTANTS_REPORT = { accountantsName: "Jones & Partners", statement: "We compiled these accounts from the company's records." };
+
+function smallDocument({ language = "en", accountantsReport } = {}) {
+  return inAccountsLanguage(language, () =>
+    buildSmallCompanyAccounts({ ...SMALL_COMPANY_CASE_INPUT, ...(accountantsReport ? { accountantsReport } : {}) }),
+  );
+}
+
+async function openAmend(page, receipt, { width = 1280, outcome = "ACCEPT", jurisdiction = "england-wales", profileFails = false } = {}) {
   await page.setViewportSize({ width, height: 900 });
   await page.addInitScript(
-    ({ receiptBody, outcomeCode }) => {
+    ({ receiptBody, outcomeCode, companyJurisdiction, lookupFails }) => {
       window.__submitReady__ = true;
       localStorage.setItem("cognitoIdToken", "token");
       window.sentAccounts = [];
@@ -418,12 +428,15 @@ async function openAmend(page, receipt, { width = 1280, outcome = "ACCEPT" } = {
         document.getElementById("statusMessagesContainer").replaceChildren(message);
       };
       window.hideStatus = () => document.getElementById("statusMessagesContainer")?.replaceChildren();
-      window.getCompanyProfile = async (companyNumber) => ({
-        companyNumber,
-        companyName: "EXAMPLE SMALL COMPANY LIMITED",
-        jurisdiction: "england-wales",
-        registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
-      });
+      window.getCompanyProfile = async (companyNumber) => {
+        if (lookupFails) throw new TypeError("Cannot read properties of undefined (reading 'companyNumber')");
+        return {
+          companyNumber,
+          companyName: "EXAMPLE SMALL COMPANY LIMITED",
+          jurisdiction: companyJurisdiction,
+          registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
+        };
+      };
       window.submitMicroEntityAccounts = async (accounts) => {
         window.sentAccounts.push(accounts);
         return { submissionNumber: "00002B", gatewayTimestamp: "2026-11-22T10:00:00Z", pollInterval: 0 };
@@ -435,7 +448,7 @@ async function openAmend(page, receipt, { width = 1280, outcome = "ACCEPT" } = {
         rejections: [],
       });
     },
-    { receiptBody: receipt, outcomeCode: outcome },
+    { receiptBody: receipt, outcomeCode: outcome, companyJurisdiction: jurisdiction, lookupFails: profileFails },
   );
   await page.route("**/*.js", async (route) => {
     if (route.request().resourceType() === "script") await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
@@ -447,6 +460,7 @@ async function openAmend(page, receipt, { width = 1280, outcome = "ACCEPT" } = {
   await serveFile(page, "**/widgets/books-import.js", "widgets/books-import.js");
   await serveFile(page, "**/lib/books-bundle.js", "lib/books-bundle.js");
   await serveFile(page, "**/lib/accounts-revision.js", "lib/accounts-revision.js");
+  await serveFile(page, "**/lib/approval-date-check.js", "lib/approval-date-check.js");
   await page.route("**/lib/companies-house-gateway-poll.js", (route) =>
     route.fulfill({
       status: 200,
@@ -465,7 +479,8 @@ async function openAmend(page, receipt, { width = 1280, outcome = "ACCEPT" } = {
       contentType: "application/javascript",
       body: `export const fetchCatalogText = async () => "";
         export const fetchCurrentEnvironmentName = async () => "ci";
-        export const parseCatalogueText = () => ({});
+        export const parseCatalogueText = () => ({ activities: [{ id: "file-revised-accounts", name: "File Revised Accounts (Companies House, preview)" }] });
+        export const activityStatus = (activity) => (activity?.id === "file-revised-accounts" ? "preview" : null);
         export const isRevisedAccountsOffered = () => true;`,
     }),
   );
@@ -497,6 +512,12 @@ test.describe("File small company accounts page - revising accounts from a recei
       await expect(page.locator("#currentCalledUpShareCapital")).not.toHaveValue("");
       await expect(page.locator("#revisionFilletedNote")).toBeHidden();
       await expect(page.locator("#changeCompanyLink")).toBeHidden();
+      await expect(page.locator("[data-feature-status]")).toHaveText(
+        "Status: preview. Revised accounts are a preview here: nothing you file reaches the live Companies House register.",
+      );
+      expect((await page.locator("#formCompanyName").locator("..").innerText()).trim()).toBe(
+        "Company EXAMPLE SMALL COMPANY LIMITED (04549236).",
+      );
       await expect(page.locator("#revisionDownloads")).toBeEmpty();
       await screenshot(page, "small-amend-banner-and-revision-section", width);
     });
@@ -521,6 +542,72 @@ test.describe("File small company accounts page - revising accounts from a recei
       await screenshot(page, "small-amend-refusal-micro-entity", width);
     });
   }
+
+  test("asks for the original approval date when the filed accounts do not give it, and restores the field after", async ({ page }) => {
+    const undated = fullCase.xhtml.replace(
+      /<ix:nonNumeric name="core:DateAuthorisationFinancialStatementsForIssue"[^>]*>[^<]*<\/ix:nonNumeric>/,
+      "",
+    );
+    await openAmend(page, accountsReceipt(undated));
+    await expect(page.locator("#revisionSection")).toBeVisible();
+    await expect(page.locator("#revisionOriginalDate")).toHaveJSProperty("readOnly", false);
+    await expect(page.locator("#revisionOriginalDate")).toHaveJSProperty("required", true);
+    await page.fill("#revisionNonCompliance", "The original accounts left out the stocks held at the year end.");
+    await page.fill("#revisionAmendments", "Stocks are now shown.");
+    expect(await page.evaluate(() => reportRevisionProblems())).toBe(true);
+    await expect(page.locator("#revisionOriginalDate-error")).toContainText("Enter the date the original accounts were approved");
+
+    await page.evaluate(() => startAgain());
+    await expect(page.locator("[data-feature-status]")).toHaveAttribute("data-feature-status", "production");
+    await expect(page.locator("[data-feature-status]")).toContainText("Status: production.");
+    await expect(page.locator("#revisionOriginalDate")).toHaveJSProperty("readOnly", true);
+    await expect(page.locator("#revisionOriginalDate")).toHaveJSProperty("required", false);
+  });
+
+  test("refuses a date approved after today, with the date in the sentence", async ({ page }) => {
+    await openAmend(page, accountsReceipt(fullCase.xhtml));
+    await expect(page.locator("#revisionSection")).toBeVisible();
+    await page.fill("#revisionNonCompliance", "The original accounts left out the stocks held at the year end.");
+    await page.fill("#revisionAmendments", "Stocks are now shown.");
+    const tomorrow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    await page.fill("#directorDateApproved", tomorrow);
+    await page.fill("#accountingPolicies", "The accounts are prepared under the historical cost convention.");
+    await page.evaluate(() => document.getElementById("accountsForm").requestSubmit());
+    await expect(page.locator(".error-summary")).toContainText(
+      `The date approved, ${tomorrow}, is after today. Enter the date the directors approved the accounts.`,
+    );
+  });
+
+  test("ticks the accountants' report and fills it as the accounts were filed", async ({ page }) => {
+    await openAmend(page, accountsReceipt(smallDocument({ accountantsReport: ACCOUNTANTS_REPORT })));
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator("#includeAccountantsReport")).toBeChecked();
+    await expect(page.locator("#accountantsName")).toHaveValue(ACCOUNTANTS_REPORT.accountantsName);
+    await expect(page.locator("#accountantsStatement")).toHaveValue(ACCOUNTANTS_REPORT.statement);
+    await expect(page.locator("#revisionAccountantsNote")).toBeHidden();
+  });
+
+  test("asks for the accountants' report again when the filed report cannot be read", async ({ page }) => {
+    const document = smallDocument({ accountantsReport: ACCOUNTANTS_REPORT }).replace(/bus:NameEntityAccountants/g, "bus:SomethingElse");
+    await openAmend(page, accountsReceipt(document));
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator("#revisionAccountantsNote")).toBeVisible();
+    await expect(page.locator("#includeAccountantsReport")).not.toBeChecked();
+  });
+
+  test("sets the language choice to Welsh for accounts filed in Welsh", async ({ page }) => {
+    await openAmend(page, accountsReceipt(smallDocument({ language: "cy" })), { jurisdiction: "wales" });
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator("#documentLanguageCy")).toBeChecked();
+  });
+
+  test("shows its own sentence, and no technical message, when the accounts cannot be opened", async ({ page }) => {
+    await openAmend(page, accountsReceipt(fullCase.xhtml), { profileFails: true });
+    await expect(page.locator("#statusMessagesContainer .status-error")).toHaveText(
+      "We could not open those accounts to revise. Open the filing again from your receipts.",
+    );
+    await expect(page.locator("#formView")).toBeHidden();
+  });
 
   test("refuses accounts filed with a Company Tax Return", async ({ page }) => {
     await openAmend(page, accountsReceipt(fullCase.xhtml, { jointFilingId: "joint-1" }));
@@ -554,6 +641,7 @@ test.describe("File small company accounts page - revising accounts from a recei
         originalDateOfApproval: "2026-09-15",
         nonCompliance: "The original accounts left out the stocks held at the year end.",
         amendments: "Stocks are now shown, and the profit and loss reserve rises by the same amount.",
+        revisesReceipt: RECEIPT_NAME,
       });
       expect(sent.smallCompany.filleted).toBe(false);
       await screenshot(page, "small-amend-result-accepted", width);

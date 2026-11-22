@@ -122,7 +122,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [CH-05](#ch-05-file-a-change-of-registered-office-address) File a change of registered office address: use when a company needs to change its registered office address on the public register.
     - [CH-06](#ch-06-file-a-change-of-registered-email-address) File a change of registered email address: use when a company needs to register or change its registered email address with Companies House.
   - [Micro-entity accounts filing](#micro-entity-accounts-filing-ch)
-    - [CH-07](#ch-07-render-micro-entity-accounts-for-review) Render micro-entity accounts for review: use when a user needs to see the iXBRL accounts document before it reaches the XML Gateway.
+    - [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review) Render micro-entity and small company accounts for review: use when a user needs to see the iXBRL accounts document before it reaches the XML Gateway.
     - [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House: use when a small company must submit its FRS 105 micro-entity accounts to the XML Gateway, or revised accounts that replace accounts it has filed.
     - [CH-24](#ch-24-file-revised-accounts-to-companies-house) File revised accounts to Companies House: use when a page offers to revise accounts already filed at Companies House, from the receipt of the accepted filing.
     - [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts) Fill the accounts forms' prior year from the last filed accounts: use when an accounts form has looked up a company and its prior-year column is to start from the accounts the register already holds.
@@ -1575,7 +1575,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OAuth and identity](#oauth-and-identity-ch): [CH-01](#ch-01-exchange-a-companies-house-oauth-token) Exchange a Companies House OAuth token · [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration) Verify the Companies House OAuth app configuration
 - [Company search and profile](#company-search-and-profile-ch): [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register · [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile · [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in) Look up a company's filing deadlines with no sign-in · [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in) Read a company's register for a prefilled package with no sign-in · [CH-23](#ch-23-keep-a-watch-list-of-companies) Keep a watch list of companies
 - [Registered office and email](#registered-office-and-email-ch): [CH-05](#ch-05-file-a-change-of-registered-office-address) File a change of registered office address · [CH-06](#ch-06-file-a-change-of-registered-email-address) File a change of registered email address
-- [Micro-entity accounts filing](#micro-entity-accounts-filing-ch): [CH-07](#ch-07-render-micro-entity-accounts-for-review) Render micro-entity accounts for review · [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House · [CH-24](#ch-24-file-revised-accounts-to-companies-house) File revised accounts to Companies House · [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts) Fill the accounts forms' prior year from the last filed accounts · [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending) Poll Companies House for filings the reader left pending
+- [Micro-entity accounts filing](#micro-entity-accounts-filing-ch): [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review) Render micro-entity and small company accounts for review · [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House · [CH-24](#ch-24-file-revised-accounts-to-companies-house) File revised accounts to Companies House · [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts) Fill the accounts forms' prior year from the last filed accounts · [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending) Poll Companies House for filings the reader left pending
 - [Company Tax Return filing](#company-tax-return-filing-ch): [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC · [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets) File a Corporation Tax test scenario to TPVS or ETS
 - [Filing infrastructure](#filing-infrastructure-ch): [CH-09](#ch-09-query-and-submit-document-transactions) Query and submit document transactions · [CH-10](#ch-10-fetch-http-with-a-timeout) Fetch HTTP with a timeout · [CH-11](#ch-11-parse-xml-safely) Parse XML safely
 - [Test, validation and provisioning](#test-validation-and-provisioning-ch): [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies · [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts · [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it · [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does · [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would) Judge a Companies House review as the XML team would · [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
@@ -1698,21 +1698,21 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ### Micro-entity accounts filing (CH)
 
 <!-- generated:group micro-entity-accounts-filing-ch -->
-- [CH-07](#ch-07-render-micro-entity-accounts-for-review) Render micro-entity accounts for review
+- [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review) Render micro-entity and small company accounts for review
 - [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House
 - [CH-24](#ch-24-file-revised-accounts-to-companies-house) File revised accounts to Companies House
 - [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts) Fill the accounts forms' prior year from the last filed accounts
 - [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending) Poll Companies House for filings the reader left pending
 <!-- /generated:group micro-entity-accounts-filing-ch -->
 
-#### CH-07 Render micro-entity accounts for review
+#### CH-07 Render micro-entity and small company accounts for review
 
 - **Use when:** a user needs to see the iXBRL accounts document before it reaches the XML Gateway.
-- **Does:** companiesHouseAccountsRenderPost.js renders FRS 105 micro-entity iXBRL from the entered balance sheet, using buildMicroEntityAccounts. It never calls the Companies House XML Gateway.
+- **Does:** companiesHouseAccountsRenderPost.js renders the iXBRL of the entered accounts with buildAccountsIxbrl: FRS 105 micro-entity accounts with buildMicroEntityAccounts, or FRS 102 section 1A small company accounts with buildSmallCompanyAccounts. A request with a revision renders the revised accounts with their revision page. It never calls the Companies House XML Gateway.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/companies-house/companiesHouseAccountsRenderPost.js:ingestHandler`
 - **Files:** app/functions/companies-house/companiesHouseAccountsRenderPost.js, app/unit-tests/functions/companiesHouseAccountsRenderPost.test.js
-- **Keywords:** companies house, micro-entity accounts, FRS 105, ixbrl, render, balance sheet
+- **Keywords:** companies house, micro-entity accounts, small company accounts, revised accounts, FRS 105, FRS 102, ixbrl, render, balance sheet
 - **Related:** CH-08, CH-13
 
 #### CH-08 File micro-entity accounts to Companies House
@@ -7351,7 +7351,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - backup plan: [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans)
 - backup salt: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
 - backup vault: [OPS-48](#ops-48-verify-backup-health-daily), [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account), [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans)
-- balance sheet: [CH-07](#ch-07-render-micro-entity-accounts-for-review), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
+- balance sheet: [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - balance transaction: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
 - balance transactions: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake), [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - bank line: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
@@ -7685,7 +7685,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - community page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
 - compaction: [DATA-70](#data-70-compact-closed-days-of-activity-events)
 - compaction alternative: [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now)
-- companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
+- companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - companies house accounts: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - companies house codes: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - companies house deadline: [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events)
@@ -8252,8 +8252,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - frc taxonomy: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
 - fresh project bootstrap: [DATA-40](#data-40-enable-required-google-cloud-apis)
 - frontend bundle: [BILL-43](#bill-43-build-the-frontend-test-bundle)
-- frs 102: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
-- frs 105: [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
+- frs 102: [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
+- frs 105: [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - full deploy: [OPS-06](#ops-06-run-the-full-deployment-pipeline)
 - full rotation: [OPS-184](#ops-184-run-a-full-key-rotation-with-the-operator)
 - full tax year: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
@@ -8566,7 +8566,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - itsa receipt: [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts)
 - itsa sandbox: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - itsa status: [HMRC-11](#hmrc-11-retrieve-itsa-status)
-- ixbrl: [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
+- ixbrl: [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in), [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - ixbrl style: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - java cdk: [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks)
 - java version: [OPS-144](#ops-144-set-up-node-npm-dependencies-and-optionally-java-for-a-job)
@@ -8781,7 +8781,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mfa claim: [SITE-01](#site-01-sign-customers-in-via-cognito)
 - mfa context: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - micro-entity: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
-- micro-entity accounts: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
+- micro-entity accounts: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages), [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
 - microsoft advertising: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - microsoft advertising skill: [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data)
 - migration: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier)
@@ -9295,7 +9295,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - remove pass: [BILL-56](#bill-56-delete-generated-passes)
 - remove tooling: [DEV-63](#dev-63-find-unused-and-duplicated-workflows-scripts-and-npm-scripts)
 - removeline: [SS-04](#ss-04-apply-book-edits-and-derivations)
-- render: [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check), [CH-07](#ch-07-render-micro-entity-accounts-for-review)
+- render: [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check), [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review)
 - render dashboard: [OPS-191](#ops-191-render-the-operator-dashboard-without-a-browser-session)
 - rendering: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - rental income: [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates)
@@ -9364,7 +9364,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - review threads: [SS-51](#ss-51-merge-every-pr-that-is-ready)
 - reviewer sign-in: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront), [MCP-26](#mcp-26-seed-the-demo-reviewer-user-and-its-two-sample-books)
 - reviewlimit: [BILL-45](#bill-45-release-a-pass-held-for-review)
-- revised accounts: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-24](#ch-24-file-revised-accounts-to-companies-house)
+- revised accounts: [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-24](#ch-24-file-revised-accounts-to-companies-house)
 - revision: [CH-24](#ch-24-file-revised-accounts-to-companies-house)
 - revision texts: [CH-24](#ch-24-file-revised-accounts-to-companies-house)
 - revival: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
@@ -9588,7 +9588,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - skip_libreoffice: [SS-42](#ss-42-route-tests-by-blast-radius)
 - slot pool: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - slow the flow: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch)
-- small company accounts: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
+- small company accounts: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages), [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - small files: [DATA-70](#data-70-compact-closed-days-of-activity-events)
 - smoke test: [OPS-27](#ops-27-run-probe-tests-against-deployed-environments), [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - snapshot review: [OPS-193](#ops-193-review-the-operator-dashboard-each-night), [DEV-55](#dev-55-review-the-operator-dashboard)

@@ -9,7 +9,8 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { accountsDocumentCases, computationsDocumentCase } from "@app/test-helpers/accountsDocumentCases.js";
+import { accountsDocumentCases, computationsDocumentCase, SMALL_COMPANY_CASE_INPUT } from "@app/test-helpers/accountsDocumentCases.js";
+import { buildSmallCompanyAccounts } from "@app/services/smallCompanyAccountsIxbrl.js";
 import { serveSiteStyles } from "./hmrcFieldTableAssets.js";
 import { recordScreenshotPath, pageScrollsSideways } from "./submissionRecordAssets.js";
 
@@ -245,6 +246,31 @@ test.describe("Filings page - customer copy", () => {
     await openFiling(page, ACCOUNTS_RECEIPT_NAME, { ...ACCOUNTS_RECEIPT, jointFilingId: "joint-1" }, { revisionOffered: true });
     await expect(page.locator("#amendFilingLink")).toBeHidden();
     await expect(page.locator("#filingContent .customer-copy-links a").first()).toHaveText("File accounts again with corrected figures");
+  });
+
+  test("says why small company accounts filed without the previous year's figures have no amend link", async ({ page }) => {
+    const singleYear = buildSmallCompanyAccounts({
+      ...SMALL_COMPANY_CASE_INPUT,
+      balanceSheet: { current: SMALL_COMPANY_CASE_INPUT.balanceSheet.current },
+      profitAndLoss: { ...SMALL_COMPANY_CASE_INPUT.profitAndLoss, prior: undefined },
+      fixedAssetNote: undefined,
+    });
+    await openFiling(page, ACCOUNTS_RECEIPT_NAME, { ...ACCOUNTS_RECEIPT, filedDocument: singleYear }, { revisionOffered: true });
+    await expect(page.locator("#amendFilingLink")).toBeHidden();
+    await expect(page.locator("#filingNotice")).toHaveText(
+      "These accounts were filed without the previous year's figures, so they cannot be amended here yet.",
+    );
+  });
+
+  test("says nothing of comparatives when accounts with both years are offered to amend", async ({ page }) => {
+    await openFiling(
+      page,
+      ACCOUNTS_RECEIPT_NAME,
+      { ...ACCOUNTS_RECEIPT, filedDocument: smallCompanyCase.xhtml },
+      { revisionOffered: true },
+    );
+    await expect(page.locator("#amendFilingLink")).toBeVisible();
+    await expect(page.locator("#filingNotice")).toBeHidden();
   });
 
   test("offers to amend accepted small company accounts on the small company form", async ({ page }) => {
