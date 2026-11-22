@@ -3,7 +3,7 @@
 
 # PLAN: keeping the spreadsheet packages current
 
-Status: RF1's ltd half is on spreadsheets main (PR #221, b2df63439, 2026-11-20): the ltd pin is 2028-01-31 and its tests moved with it. RF1's se half was rehearsed on 2026-11-22 (U2): the real se, bst and taxi refresh waits on U3 (the se O69 check, see Updates) and on `main`'s window reaching the Apr28 year end from 2027-01-16. TU1 is on spreadsheets main (PR #215, and the quote-check fix PR #216, 2026-11-20). Repository: `../spreadsheets.diyaccounting.co.uk`. The rollover plan that built the current pipeline is archived at `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SPREADSHEETS_ROLLOVER.md`.
+Status: RF1's ltd half is on spreadsheets main (PR #221, b2df63439, 2026-11-20): the ltd pin is 2028-01-31 and its tests moved with it. RF1's se half was rehearsed on 2026-11-22 (U2): the real se, bst and taxi refresh waits on `main`'s window reaching the Apr28 year end from 2027-01-16. TU1 is on spreadsheets main (PR #215, and the quote-check fix PR #216, 2026-11-20). Repository: `../spreadsheets.diyaccounting.co.uk`. The rollover plan that built the current pipeline is archived at `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SPREADSHEETS_ROLLOVER.md`.
 
 ## Operator assertions (verbatim)
 
@@ -35,23 +35,16 @@ For the first ltd refresh the operator chose (2026-11-15): the exact-value check
 
 | # | Task | Waits on |
 |---|---|---|
-| RF1 | The se, bst and taxi pinned-package refresh carries its test moves: its steps are under U3 (see Updates). The ltd browser test `web/browser-tests/diya-gl-ltd-equivalence.browser.test.js` names the first month's tab of the pinned ltd package (`FIRST_TAB`), so an ltd refresh to another year end moves it. Model: Sonnet. Size: ~6 files. | U3 on `main`, then `main` building the Apr28 packages (from 2027-01-16) |
+| RF1 | The se, bst and taxi pinned-package refresh carries its test moves: its steps are under "The real refresh of se, bst and taxi" (see Updates). The ltd browser test `web/browser-tests/diya-gl-ltd-equivalence.browser.test.js` names the first month's tab of the pinned ltd package (`FIRST_TAB`), so an ltd refresh to another year end moves it. Model: Sonnet. Size: ~6 files. | `main` building the Apr28 packages (from 2027-01-16) |
 | TU1 | An LLM-powered GitHub Action in spreadsheets updates the tax rates each month and commits them itself (operator, 2026-11-15). It does by machine what `.claude/skills/package-updates/SKILL.md` does by hand. (a) **Read.** The job fetches the gov.uk pages that submit's `.claude/skills/tax-sources/sources/*.json` name, plus the pages the `package-updates` skill lists. It asks Bedrock for the rates through the OIDC role the reconciliation judge already uses (`vars.SPREADSHEETS_ACTIONS_ROLE_ARN`, Nova 2 Lite at temperature 0, a tool call with a fixed schema per data file). It checks each answer against the verbatim quote on the page before it uses the figure. (b) **Write.** It updates `app/data/se-YYYY-YYYY.toml` and `app/data/ltd-YYYY.toml`, and creates a new year's pair once gov.uk publishes its rates. Writing is canonical: fixed key order, fixed number format, and no date or run stamp in a data file. So a month with no material change writes identical bytes, and `git diff --quiet` ends the run with no commit. (c) **Commit.** When a value changes, the job commits to `main` and pushes with `GITHUB_TOKEN` and `--no-verify`, as the generate workflows do. A `GITHUB_TOKEN` push starts no workflow, so the job then dispatches `generate-all.yml` (a `workflow_dispatch` sent with `GITHUB_TOKEN` does start it). That run's `changed-packages` scope commits the rebuilt packages. (d) **Schedule.** A monthly cron and a dispatch, with `concurrency` and `cancel-in-progress: false`. Proof: two runs on one commit with no gov.uk change commit nothing. A run against a fixture with one changed rate commits exactly that one line, with the model call stubbed in a unit test. Model: Opus (design), Sonnet (build). Size: ~6 files. | — |
 
 ## Updates
 
-### U3. The se reconcile at the 2028-04-05 year end (O69), then the real refresh
+### The real refresh of se, bst and taxi (RF1)
 
-The rehearsal of the refresh (U2, 2026-11-22) is recorded in `../private.diyaccounting.co.uk/engineering/spreadsheets/APR28_REHEARSAL_2026-11-22.md`, with its test moves in `apr28-rehearsal.patch` beside it. bst and taxi re-pin cleanly at 2028-04-05 with two test files moved (part 3 of the patch). The se re-pin did not run, for the reason below.
+The rehearsal of the refresh (U2, 2026-11-22) is recorded in `../private.diyaccounting.co.uk/engineering/spreadsheets/APR28_REHEARSAL_2026-11-22.md`, with its test moves in `apr28-rehearsal.patch` beside it. bst and taxi re-pin cleanly at 2028-04-05 with two test files moved (part 3 of the patch). The se re-pin was not rehearsed. The se reconcile passes at the 2028-04-05 year end since spreadsheets pull request #222.
 
-U3, the fix that comes first:
-
-- The se Apr28 reconcile fails on one check: `Business Details!O69 election does not exceed the untaxed transition balance (para 73(3))`, scenario `se-scenario-advanced`, expected 0, actual 1000, with `O74` (transition profit carried forward) at -1000. 927 of 933 checks pass. The fixture holds an untaxed transition balance of 6000 (`O59`) and an election of 1000 (`O69`).
-- Theory: the fixture's balance and election belong to the transition years, and at the 2028 year end the balance carried forward goes negative.
-- `generate-se.yml`, its reconcile jobs and `refresh-pinned.yml` for se all run this check, and `scripts/refresh-pinned.mjs` stops on a failed reconcile. So the real refresh meets the same failure from 2027-01-16.
-- The fix (operator, 2026-11-22; board row U3): the fixture carries no balance or election for year ends after the transition years. The O59, O64, O69 and O74 expectations of that scenario then change for those year ends, and its featured values move. The check's rule stays.
-
-The real refresh (RF1), after U3 is on `main`:
+The steps:
 
 1. From 2027-01-16 `yearEndCutoff` (`app/bin/generate.js`) reaches 2028-04-30 by itself, and the first generate run on `main` builds the Apr28 se, bst and taxi packages from `app/data/se-2027-2028.toml`. No window edit and no window test move is needed.
 2. Dispatch `refresh-pinned.yml` with `product=se` on `main`; it pushes `refresh-pinned/se-<run id>`. Dispatch it with `product=bst` on that branch, then with `product=taxi` on the bst branch. The taxi branch holds the three pins with no merge.
