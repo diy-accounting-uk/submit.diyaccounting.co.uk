@@ -12,6 +12,7 @@ import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { z } from "zod";
 import {
   listVatObligations,
   submitVatReturn,
@@ -19,10 +20,12 @@ import {
   requestHmrcAuthorisation,
   requestCompaniesHouseCodes,
   submitMicroEntityAccounts,
+  submitSmallCompanyAccounts,
   pollSubmission,
   listAccountsReceipts,
 } from "../../lib/submit-tools.js";
 import { createSession } from "../../lib/book-tools.js";
+import { TOOLS } from "../../lib/server.js";
 
 const REPOSITORY_ROOT = resolve(import.meta.dirname, "../../..");
 const SIMULATOR_VRN = "111222333";
@@ -32,6 +35,7 @@ const SIMULATOR_COMPANY_AUTH_CODE = "AB12CD";
 const ACCOUNTS_CASES = JSON.parse(readFileSync(join(REPOSITORY_ROOT, "scripts/fixtures/companies-house-test-service-cases.json"), "utf8"));
 const ORIGINAL_ACCOUNTS_CASE = ACCOUNTS_CASES.find((testCase) => testCase.name === "micro-entity-accounts");
 const REVISED_ACCOUNTS_CASE = ACCOUNTS_CASES.find((testCase) => testCase.name === "micro-entity-accounts-revised");
+const SMALL_ACCOUNTS_CASE = ACCOUNTS_CASES.find((testCase) => testCase.name === "small-company-accounts-full");
 const POLL_BUDGET = 10;
 
 // The accounts fields of a test-service case, filed for the simulator's company.
@@ -177,6 +181,32 @@ describe("Submit-facing tools against the simulator lane", () => {
         // already gone
       }
     }
+  });
+
+  it("files small company accounts whose director owes the company money, and the filed document carries the advance", async () => {
+    const director = SMALL_ACCOUNTS_CASE.smallCompany.directors[1];
+    const currentYear = { ...SMALL_ACCOUNTS_CASE.smallCompany.balanceSheet.currentYear, tradeDebtors: 500, amountsOwedByDirectors: 300 };
+    const args = z.object(TOOLS.submit_small_company_accounts_sandbox.inputSchema).parse({
+      ...accountsFiling(SMALL_ACCOUNTS_CASE),
+      smallCompany: {
+        ...SMALL_ACCOUNTS_CASE.smallCompany,
+        balanceSheet: { ...SMALL_ACCOUNTS_CASE.smallCompany.balanceSheet, currentYear },
+        directorsAdvances: [
+          { name: director, terms: "Interest free, repayable on demand", balanceAtStart: 0, advanced: 300, repaid: 0, balanceAtEnd: 300 },
+        ],
+      },
+      codesEntryId: await enteredCodes(SIMULATOR_COMPANY_NUMBER),
+    });
+    const filed = await submitSmallCompanyAccounts(session, args);
+    expect((await pollUntilSettled(filed.submissionNumber)).statusCode).toBe("ACCEPT");
+
+    const listed = await listAccountsReceipts(session, {});
+    const receipt = listed.receipts.find((row) => row.accountsType === "small company");
+    const stored = await fetch(`${baseUrl}/api/v1/hmrc/receipt/${encodeURIComponent(receipt.name)}`, {
+      headers: { Authorization: `Bearer ${await session.credentials.accessToken()}` },
+    }).then((response) => response.json());
+    expect(stored.filedDocument).toContain('name="direp:AdvancesCreditsDirectors"');
+    expect(stored.filedDocument).toContain(director);
   });
 
   it("files accounts, finds their receipt with list_accounts_receipts, and files the revision that names it, refused for another period", async () => {

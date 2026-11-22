@@ -213,6 +213,24 @@ const smallCompanyBalanceSheetYearSchema = z.object({
     .describe("Whole pounds of PAYE, National Insurance and VAT owed within one year; 0 when left out"),
   accruals: z.number().optional().describe("Whole pounds of accruals and deferred income due within one year; 0 when left out"),
   bankLoansAfterOneYear: z.number().optional().describe("The part of creditorsAfterOneYear owed to a bank; 0 when left out"),
+  tradeDebtors: z
+    .number()
+    .optional()
+    .describe("Part of debtors; with otherDebtors, amountsOwedByDirectors and prepayments it adds up to debtors"),
+  otherDebtors: z.number().optional().describe("Part of debtors"),
+  amountsOwedByDirectors: z
+    .number()
+    .optional()
+    .describe(
+      "Part of debtors owed by directors; smallCompany.directorsAdvances then states each director's advance, closing at this total",
+    ),
+  prepayments: z.number().optional().describe("Part of debtors"),
+  provisionsForLiabilities: z.number().optional().describe("Whole pounds of provisions; 0 when left out"),
+  amountsOwedToDirectors: z.number().optional().describe("The part of creditorsAfterOneYear owed to directors; 0 when left out"),
+  amountsOwedToGroupUndertakings: z
+    .number()
+    .optional()
+    .describe("The part of creditorsAfterOneYear owed to group undertakings; 0 when left out"),
   calledUpShareCapital: z.number(),
   profitAndLossAccount: z.number(),
   capitalAndReserves: z.number(),
@@ -243,7 +261,6 @@ const smallCompanyFilingInputSchema = {
   registeredOffice: registeredOfficeSchema,
   accountantsReport: accountantsReportSchema,
   revision: revisionSchema,
-  directorsAdvances: directorsAdvancesSchema,
   documentLanguage: documentLanguageSchema,
   companyNumber: z.string().describe("The 8-character Companies House company number"),
   companyName: z.string().describe("The registered company name"),
@@ -279,6 +296,9 @@ const smallCompanyFilingInputSchema = {
         .optional()
         .describe("Without a name, states that the company has no ultimate controlling party"),
       directors: z.array(z.string()).describe("Every director's name, at least one"),
+      directorsAdvances: directorsAdvancesSchema.describe(
+        "Inside smallCompany: one row per director who owed the company money in the period, each named as in directors; Companies House prints them in the note on advances and credits to directors (section 413)",
+      ),
       balanceSheet: z.object({
         currentYear: smallCompanyBalanceSheetYearSchema,
         priorYear: smallCompanyBalanceSheetYearSchema.optional(),
@@ -288,11 +308,12 @@ const smallCompanyFilingInputSchema = {
         priorYear: smallCompanyProfitAndLossYearSchema.optional(),
       }),
       fixedAssetNote: z
-        .record(
+        .partialRecord(
           z.enum(["landBuildings", "plantMachinery", "furnitureFittings", "computerEquipment", "motorVehicles"]),
           fixedAssetClassSchema,
         )
-        .optional(),
+        .optional()
+        .describe("The classes the company holds, each by its name; a class it holds none of is left out"),
     })
     .describe("The figures and notes, as derive_small_company_accounts answers them plus principalActivity and accountingPolicies"),
 };

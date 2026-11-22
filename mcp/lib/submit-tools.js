@@ -495,7 +495,8 @@ export async function listAccountsReceipts(session, params = {}) {
 // The fields of dormant micro-entity accounts; the route refuses them with a small company section.
 const DORMANT_FIELDS = ["dormant", "dormantTradingStatus", "shareClass", "nominalValue"];
 
-// The language of the document and the note on advances to directors, which both accounts routes read.
+// The language of the document and the micro-entity note on advances to directors, which the
+// accounts routes read at the top level; a small company's advances travel inside smallCompany.
 function languageAndAdvancesFields(params) {
   return {
     ...(params.documentLanguage ? { documentLanguage: params.documentLanguage } : {}),
@@ -624,7 +625,7 @@ function smallCompanyFilingBody(toolName, params, { allowClientId = false } = {}
     ...(params.registeredOffice ? { registeredOffice: params.registeredOffice } : {}),
     ...(params.accountantsReport ? { accountantsReport: params.accountantsReport } : {}),
     ...(params.revision ? { revision: params.revision } : {}),
-    ...languageAndAdvancesFields(params),
+    ...(params.documentLanguage ? { documentLanguage: params.documentLanguage } : {}),
   };
 }
 

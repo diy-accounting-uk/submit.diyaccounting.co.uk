@@ -10,6 +10,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 
 import {
   listVatObligations,
@@ -1013,7 +1014,7 @@ describe("submit-tools", () => {
     };
     const DORMANT = { dormant: true, dormantTradingStatus: "neverTraded", shareClass: "ordinaryShares", nominalValue: 1 };
     const MICRO_OPTIONAL = { ...OPTIONAL_FIELDS, ...LANGUAGE_AND_ADVANCES, ...DORMANT };
-    const SMALL_OPTIONAL = { ...OPTIONAL_FIELDS, ...LANGUAGE_AND_ADVANCES };
+    const SMALL_OPTIONAL = { ...OPTIONAL_FIELDS, documentLanguage: LANGUAGE_AND_ADVANCES.documentLanguage };
     const SMALL = {
       ...ACCOUNTS_PARAMS,
       balanceSheet: undefined,
@@ -1089,6 +1090,38 @@ describe("submit-tools", () => {
       expect(extractAndValidateAccountsParameters({ body: JSON.stringify(dormant) }, [], RENDER_ROUTE)).toMatchObject(DORMANT);
       expect(extractAndValidateAccountsParameters({ body: JSON.stringify(welsh) }, [], RENDER_ROUTE)).toMatchObject(LANGUAGE_AND_ADVANCES);
     });
+
+    it.each(["render_small_company_accounts_sandbox", "submit_small_company_accounts_sandbox"])(
+      "%s takes a small company's advances inside smallCompany, with the debtors they close at, and sends them there",
+      async (name) => {
+        const smallCompany = {
+          ...SMALL.smallCompany,
+          balanceSheet: {
+            currentYear: {
+              ...Object.fromEntries(
+                Object.keys(TOOLS[name].inputSchema.smallCompany.shape.balanceSheet.shape.currentYear.shape).map((line) => [line, 0]),
+              ),
+              debtors: 300,
+              amountsOwedByDirectors: 300,
+            },
+          },
+          profitAndLoss: {
+            currentYear: Object.fromEntries(
+              Object.keys(TOOLS[name].inputSchema.smallCompany.shape.profitAndLoss.shape.currentYear.shape).map((line) => [line, 0]),
+            ),
+          },
+          directorsAdvances: LANGUAGE_AND_ADVANCES.directorsAdvances,
+        };
+        const parsed = z.object(TOOLS[name].inputSchema).parse({ ...SMALL, ...FILING, smallCompany });
+        expect(parsed.smallCompany.directorsAdvances).toEqual(LANGUAGE_AND_ADVANCES.directorsAdvances);
+        expect(parsed.smallCompany.balanceSheet.currentYear.amountsOwedByDirectors).toBe(300);
+        expect(TOOLS[name].inputSchema).not.toHaveProperty("directorsAdvances");
+        const handler = name.startsWith("render") ? renderSmallCompanyAccounts : submitSmallCompanyAccounts;
+        const body = await bodyOf(handler, parsed);
+        expect(body.smallCompany.directorsAdvances).toEqual(LANGUAGE_AND_ADVANCES.directorsAdvances);
+        expect(body).not.toHaveProperty("directorsAdvances");
+      },
+    );
 
     it.each(CASES)("%s sends no field its schema lacks", async (name, handler, params) => {
       const body = await bodyOf(handler, params);
