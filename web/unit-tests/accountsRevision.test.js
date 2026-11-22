@@ -8,7 +8,8 @@ import { readFileSync } from "node:fs";
 import { refusalOf, documentLanguageOf, accountantsReportOf, checkRevision } from "../public/lib/accounts-revision.js";
 import { buildMicroEntityAccounts } from "../../app/services/microEntityAccountsIxbrl.js";
 import { inAccountsLanguage } from "../../app/services/accountsLanguage.js";
-import { microInputFromTestServiceCase } from "../../app/test-helpers/accountsDocumentCases.js";
+import { microInputFromTestServiceCase, SMALL_COMPANY_CASE_INPUT } from "../../app/test-helpers/accountsDocumentCases.js";
+import { buildSmallCompanyAccounts } from "../../app/services/smallCompanyAccountsIxbrl.js";
 
 const MICRO_CASE = JSON.parse(readFileSync("scripts/fixtures/companies-house-test-service-cases.json", "utf8")).find(
   (testCase) => testCase.name === "micro-entity-accounts",
@@ -82,4 +83,28 @@ describe("the revision the customer describes", () => {
       },
     ]);
   });
+});
+
+describe("what a filed small company document carries over to its revision", () => {
+  for (const filleted of [false, true]) {
+    for (const language of ["en", "cy"]) {
+      const copy = filleted ? "filleted" : "full";
+      const document = (accountantsReport) =>
+        inAccountsLanguage(language, () =>
+          buildSmallCompanyAccounts({ ...SMALL_COMPANY_CASE_INPUT, filleted, ...(accountantsReport ? { accountantsReport } : {}) }),
+        );
+
+      test(`reads the language and the accountants' report of ${copy} accounts filed in ${language}`, () => {
+        const filed = document(REPORT);
+        expect(documentLanguageOf(filed)).toBe(language);
+        expect(accountantsReportOf(filed)).toEqual(REPORT);
+      });
+
+      test(`reads no accountants' report from ${copy} accounts filed in ${language} without one`, () => {
+        const filed = document();
+        expect(documentLanguageOf(filed)).toBe(language);
+        expect(accountantsReportOf(filed)).toBeNull();
+      });
+    }
+  }
 });

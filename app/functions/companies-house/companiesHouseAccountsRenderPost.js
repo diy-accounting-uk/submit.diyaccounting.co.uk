@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// @capability CH-07 Render micro-entity accounts for review
+// @capability CH-07 Render micro-entity and small company accounts for review
 // - **Use when:** a user needs to see the iXBRL accounts document before it reaches the XML Gateway.
-// - **Does:** companiesHouseAccountsRenderPost.js renders FRS 105 micro-entity iXBRL from the entered balance sheet, using buildMicroEntityAccounts. It never calls the Companies House XML Gateway.
+// - **Does:** companiesHouseAccountsRenderPost.js renders the iXBRL of the entered accounts with buildAccountsIxbrl: FRS 105 micro-entity accounts with buildMicroEntityAccounts, or FRS 102 section 1A small company accounts with buildSmallCompanyAccounts. A request with a revision renders the revised accounts with their revision page. It never calls the Companies House XML Gateway.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `app/functions/companies-house/companiesHouseAccountsRenderPost.js:ingestHandler`
 // - **Files:** app/functions/companies-house/companiesHouseAccountsRenderPost.js, app/unit-tests/functions/companiesHouseAccountsRenderPost.test.js
-// - **Keywords:** companies house, micro-entity accounts, FRS 105, ixbrl, render, balance sheet
+// - **Keywords:** companies house, micro-entity accounts, small company accounts, revised accounts, FRS 105, FRS 102, ixbrl, render, balance sheet
 // - **Related:** CH-08, CH-13
 // @end-capability
 
 // app/functions/companies-house/companiesHouseAccountsRenderPost.js
-// Renders the FRS 105 micro-entity iXBRL from the balance sheet the user entered, so the page can
+// Renders the iXBRL of the micro-entity or small company accounts the user entered, so the page can
 // show it before anything reaches the Companies House XML Gateway. Never calls the gateway and
 // never needs the company authentication code.
 
@@ -80,7 +80,7 @@ export async function ingestHandler(event) {
 
   await publishActivityEvent({
     event: "companies-house-accounts-rendered",
-    summary: "Companies House micro-entity accounts rendered",
+    summary: `Companies House ${accounts.revision ? "revised " : ""}${accounts.regime === "small-company" ? "small company" : "micro-entity"} accounts rendered`,
     userSub,
   });
 

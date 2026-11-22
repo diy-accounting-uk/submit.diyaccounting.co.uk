@@ -31,8 +31,12 @@ describe("an approval date after today", () => {
     );
   });
 
-  test("the page shows the route's words", () => {
-    const page = fs.readFileSync("web/public/companies-house/fileMicroEntityAccounts.page.js", "utf8");
-    expect(page).toContain(JSON.stringify(APPROVAL_DATE_AFTER_TODAY_MESSAGE));
+  test("the forms show the route's words", () => {
+    const shared = fs.readFileSync("web/public/lib/approval-date-check.js", "utf8");
+    expect(shared).toContain(`"ch.micro.approved-after-today",\n    ${JSON.stringify(APPROVAL_DATE_AFTER_TODAY_MESSAGE)}`);
+    for (const form of ["fileMicroEntityAccounts", "fileSmallCompanyAccounts"]) {
+      const page = fs.readFileSync(`web/public/companies-house/${form}.page.js`, "utf8");
+      expect(page).toContain("showApprovalDateAfterToday(");
+    }
   });
 });

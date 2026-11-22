@@ -338,6 +338,20 @@ describe("companiesHouseAccountsRenderPost ingestHandler", () => {
       expect(mockBuildMicroEntityAccounts).not.toHaveBeenCalled();
     });
 
+    test("records the render as small company accounts, and as revised small company accounts for a revision", async () => {
+      const revision = { originalDateOfApproval: "2026-01-10", nonCompliance: "A", amendments: "B" };
+      const summaries = [];
+      for (const body of [buildSmallCompanyBody(), buildSmallCompanyBody({ revision })]) {
+        mockEventBridgeSend.mockClear();
+        await companiesHouseAccountsRenderPostHandler(buildEvent({ body }));
+        summaries.push(JSON.parse(mockEventBridgeSend.mock.calls[0][0].input.Entries[0].Detail).summary);
+      }
+      expect(summaries).toEqual([
+        "Companies House small company accounts rendered",
+        "Companies House revised small company accounts rendered",
+      ]);
+    });
+
     test("filleted previews carry the section 444(5A) statement and no profit and loss account", async () => {
       const response = await companiesHouseAccountsRenderPostHandler(buildEvent({ body: buildSmallCompanyBody({}, { filleted: true }) }));
       const ixbrl = parseResponseBody(response).ixbrl;

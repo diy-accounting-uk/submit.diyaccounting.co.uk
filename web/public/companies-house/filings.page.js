@@ -45,13 +45,33 @@ async function amendHrefOf(receipt, receiptName) {
   }
   const revisionModule = await import("../lib/accounts-revision.js");
   if (revisionModule.refusalOf(receipt) || !(await revisionModule.isRevisionOfferedHere())) return null;
+  const bundle = await import("../lib/books-bundle.js");
   try {
-    const { regime } = revisionModule.revisionSourceOf(receipt, await import("../lib/books-bundle.js"));
+    const { regime } = revisionModule.revisionSourceOf(receipt, bundle);
     const form = { micro: "fileMicroEntityAccounts.html", small: "fileSmallCompanyAccounts.html" }[regime];
     return form ? `${form}?amend=${encodeURIComponent(receiptName)}` : null;
   } catch (error) {
     console.warn("These accounts cannot be revised here because the filed document could not be read:", error);
+    if (filedWithoutComparatives(receipt, bundle)) {
+      showNotice(
+        window.siteText(
+          "ch.filing.no-comparatives",
+          "These accounts were filed without the previous year's figures, so they cannot be amended here yet.",
+        ),
+      );
+    }
     return null;
+  }
+}
+
+// The reader asks for both years unless the company is new; accounts that read once the prior year is
+// excused were filed with one year only.
+function filedWithoutComparatives(receipt, bundle) {
+  try {
+    bundle.mapIxbrlAccounts(receipt.filedDocument, { regime: "any", firstAccounts: true });
+    return true;
+  } catch {
+    return false;
   }
 }
 

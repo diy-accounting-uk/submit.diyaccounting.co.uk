@@ -215,6 +215,108 @@ export function showRevisionSection({ section, originalDate, nonCompliance, amen
   section.hidden = false;
 }
 
+/**
+ * Fill the parts of the filed accounts the books mapping does not give: the accountants' report and
+ * the language the accounts were filed in. The accounts forms share the boxes this fills, and the
+ * revision section's note that asks for a report this could not read.
+ * @param {{accountantsReport: object|null, language: string}} source
+ */
+export function fillCarriedOver({ accountantsReport, language }) {
+  if (accountantsReport?.accountantsName) {
+    document.getElementById("includeAccountantsReport").checked = true;
+    document.getElementById("accountantsName").value = accountantsReport.accountantsName;
+    document.getElementById("accountantsStatement").value = accountantsReport.statement;
+    window.accountsFormSections.showAccountantsReportFields();
+  }
+  document.getElementById("revisionAccountantsNote").hidden = !accountantsReport?.unreadable;
+  if (!document.getElementById("documentLanguageSection").hidden) {
+    document.getElementById(language === "cy" ? "documentLanguageCy" : "documentLanguageEn").checked = true;
+  }
+}
+
+/**
+ * Show each problem with the revision beside its field, through the page's form errors; answers true
+ * when there is one.
+ * @param {{originalDate: HTMLInputElement, nonCompliance: HTMLTextAreaElement, amendments: HTMLTextAreaElement}} elements
+ * @param {HTMLInputElement} dateApproved - the approval date of the revised accounts
+ */
+export function showRevisionProblems(elements, dateApproved) {
+  const problems = checkRevision({ ...revisionPayload(elements), dateApproved: dateApproved.value });
+  if (problems.length === 0) return false;
+  const inputs = {
+    originalDateOfApproval: elements.originalDate,
+    nonCompliance: elements.nonCompliance,
+    amendments: elements.amendments,
+    dateApproved,
+  };
+  window.formErrors.showFormErrors(problems.map(({ field, message }) => ({ input: inputs[field], message })));
+  return true;
+}
+
+/**
+ * Hide the revision section and leave its fields as an original filing needs them.
+ * @param {{section: HTMLElement, originalDate: HTMLInputElement, nonCompliance: HTMLTextAreaElement, amendments: HTMLTextAreaElement}} elements
+ */
+export function hideRevisionSection({ section, originalDate, nonCompliance, amendments }) {
+  section.hidden = true;
+  nonCompliance.required = false;
+  amendments.required = false;
+  originalDate.required = false;
+  originalDate.readOnly = true;
+}
+
+/**
+ * The revision field of the accounts request a form sends: what the customer typed, and the name of
+ * the receipt of the accounts it revises.
+ * @param {{originalDate: HTMLInputElement, nonCompliance: HTMLTextAreaElement, amendments: HTMLTextAreaElement}} elements
+ * @param {{receiptName: string}} source
+ */
+export function revisionRequest(elements, source) {
+  return { ...revisionPayload(elements), revisesReceipt: source.receiptName };
+}
+
+// A form's status line names its own filing; while revising, it states the status the catalogue gives
+// revised accounts instead.
+const REVISION_STATUS_TEXT = {
+  production: () => [
+    siteText("ch.revision.status-production-label", "Status: production."),
+    siteText("ch.revision.status-production", "Revised accounts you file here reach the live Companies House register."),
+  ],
+  sandbox: () => [
+    siteText("ch.revision.status-sandbox-label", "Status: sandbox."),
+    siteText("ch.revision.status-sandbox", "Revised accounts you file here go to the Companies House test service and file nothing real."),
+  ],
+  preview: () => [
+    siteText("ch.revision.status-preview-label", "Status: preview."),
+    siteText(
+      "ch.revision.status-preview",
+      "Revised accounts are a preview here: nothing you file reaches the live Companies House register.",
+    ),
+  ],
+};
+
+/**
+ * State the revised accounts activity's status in a form's status line. Answers a function that puts
+ * the form's own line back.
+ * @param {HTMLElement} statusLine - the form's [data-feature-status] line
+ * @returns {Promise<() => void>}
+ */
+export async function showRevisionStatus(statusLine) {
+  const pageLine = statusLine.cloneNode(true);
+  const service = await import("/lib/services/catalog-service.js");
+  const catalog = service.parseCatalogueText(await service.fetchCatalogText());
+  const status = service.activityStatus(catalog.activities?.find((activity) => activity.id === "file-revised-accounts"));
+  const [label, sentence] = REVISION_STATUS_TEXT[status]();
+  const strong = document.createElement("strong");
+  strong.textContent = label;
+  statusLine.dataset.featureStatus = status;
+  statusLine.replaceChildren(strong, ` ${sentence}`);
+  return () => {
+    statusLine.dataset.featureStatus = pageLine.dataset.featureStatus;
+    statusLine.replaceChildren(...pageLine.childNodes);
+  };
+}
+
 /** The revision field of the accounts request. */
 export function revisionPayload({ originalDate, nonCompliance, amendments }) {
   return {

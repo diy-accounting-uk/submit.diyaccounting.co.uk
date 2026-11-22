@@ -630,7 +630,7 @@ public class CompaniesHouseNames {
                 this.companiesHouseAccountsRenderPostLambdaHttpMethod,
                 this.companiesHouseAccountsRenderPostLambdaUrlPath,
                 "Render a micro-entity, small company or revised accounts filing for review",
-                "Renders the iXBRL of FRS 105 micro-entity or FRS 102 section 1A small company accounts without submitting it; a request with a revision renders revised micro-entity accounts with their revision page",
+                "Renders the iXBRL of FRS 105 micro-entity or FRS 102 section 1A small company accounts without submitting it; a request with a revision renders revised micro-entity or small company accounts with their revision page",
                 "renderCompaniesHouseAccounts"));
 
         this.companiesHouseAccountsPostLambdaHttpMethod = HttpMethod.POST;
