@@ -234,6 +234,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- capability CH-12 -->
 <!-- capability CH-13 -->
+<!-- capability CH-26 -->
 <!-- capability CH-16 -->
 <!-- capability CH-17 -->
 <!-- capability CH-18 -->

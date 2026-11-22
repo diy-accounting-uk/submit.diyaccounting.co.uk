@@ -140,6 +140,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
   - [Test, validation and provisioning](#test-validation-and-provisioning-ch)
     - [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies: use when a test needs a real-shaped Companies House test company without a live entity.
     - [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts: use when the FRS 102/105 taxonomy fixture needs refreshing, or a generated iXBRL document needs checking against Companies House's validator.
+    - [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions) Build, validate and file the Companies House forms' test submissions: use when a Companies House form filed through the shared filing route needs its test submissions validated, or filed on the Companies House test service for the XML team.
     - [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it: use when an accounts or CT computations iXBRL builder changes, or a document must be checked before it is filed.
     - [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does: use when accounts test or live submissions are about to go to Companies House, or the operator asks for a walk-through of the review results.
     - [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would) Judge a Companies House review as the XML team would: use when a companies-house-review run has finished, before any accounts submission or retest email cites it, or the operator asks whether the accounts are ready for Companies House.
@@ -1614,7 +1615,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Micro-entity accounts filing](#micro-entity-accounts-filing-ch): [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review) Render micro-entity and small company accounts for review · [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House · [CH-24](#ch-24-file-revised-accounts-to-companies-house) File revised accounts to Companies House · [CH-25](#ch-25-fill-the-accounts-forms-prior-year-from-the-last-filed-accounts) Fill the accounts forms' prior year from the last filed accounts · [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending) Poll Companies House for filings the reader left pending
 - [Company Tax Return filing](#company-tax-return-filing-ch): [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC · [CH-19](#ch-19-file-a-corporation-tax-test-scenario-to-tpvs-or-ets) File a Corporation Tax test scenario to TPVS or ETS
 - [Filing infrastructure](#filing-infrastructure-ch): [CH-09](#ch-09-query-and-submit-document-transactions) Query and submit document transactions · [CH-10](#ch-10-fetch-http-with-a-timeout) Fetch HTTP with a timeout · [CH-11](#ch-11-parse-xml-safely) Parse XML safely
-- [Test, validation and provisioning](#test-validation-and-provisioning-ch): [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies · [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts · [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it · [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does · [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would) Judge a Companies House review as the XML team would · [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
+- [Test, validation and provisioning](#test-validation-and-provisioning-ch): [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies · [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts · [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions) Build, validate and file the Companies House forms' test submissions · [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it · [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does · [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would) Judge a Companies House review as the XML team would · [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
 <!-- /generated:area CH -->
 
 ### OAuth and identity (CH)
@@ -1861,6 +1862,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:group test-validation-and-provisioning-ch -->
 - [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies
 - [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts
+- [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions) Build, validate and file the Companies House forms' test submissions
 - [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it
 - [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does
 - [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would) Judge a Companies House review as the XML team would
@@ -1886,6 +1888,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/generate-frc-taxonomy-concepts.js, scripts/validate-accounts-ixbrl.js
 - **Keywords:** frc taxonomy, frs 102, frs 105, ixbrl, concepts fixture, xbrl validator, companies house, taxonomy schema
 - **Related:** CH-08, CH-07
+
+#### CH-26 Build, validate and file the Companies House forms' test submissions
+
+- **Use when:** a Companies House form filed through the shared filing route needs its test submissions validated, or filed on the Companies House test service for the XML team.
+- **Does:** companies-house-test-submissions.mjs holds the test cases of each form kind. For each case it builds the body with the form's own request check and builder, wraps it in the GovTalk envelope with the test flag and a unique submission number, and validates the body against the form's schema and the whole envelope against the envelope, FormSubmission and form schemas. With --file it files each case through Submit's own filing route and polls the answer through Submit's own poll. It writes one JSON line a case to the path given, which must be outside the repository.
+- **Run:** `node scripts/companies-house-test-submissions.mjs --out /tmp/test-submissions.jsonl`; `npx dotenv -e .env.ci -- node scripts/companies-house-test-submissions.mjs --file --user-sub <sub> --auth-code <code> --out <path>`
+- **Entry:** `scripts/companies-house-test-submissions.mjs:testSubmissionCases`; `scripts/companies-house-test-submissions.mjs:buildTestSubmission`; `scripts/companies-house-test-submissions.mjs:validateTestSubmission`
+- **Files:** scripts/companies-house-test-submissions.mjs, app/unit-tests/scripts/companiesHouseTestSubmissions.test.js
+- **Keywords:** companies house, xml gateway, test submission, test flag, GatewayTest, schema validation, form filing
+- **Related:** CH-12, CH-13
 
 #### CH-16 Check an accounts iXBRL document as a reader sees it
 
@@ -7724,7 +7736,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - community page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
 - compaction: [DATA-70](#data-70-compact-closed-days-of-activity-events)
 - compaction alternative: [DEV-62](#dev-62-say-whether-a-clear-or-a-restart-is-safe-now)
-- companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
+- companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-20](#ch-20-look-up-a-companys-filing-deadlines-with-no-sign-in), [CH-22](#ch-22-read-a-companys-register-for-a-prefilled-package-with-no-sign-in), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-render-micro-entity-and-small-company-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - companies house accounts: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - companies house codes: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - companies house deadline: [OPS-185](#ops-185-open-private-github-issues-from-trusted-aws-and-companies-house-events)
@@ -8284,6 +8296,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - foreign property period: [HMRC-39](#hmrc-39-submit-and-manage-foreign-property-periodic-updates-and-property-details)
 - fork setup: [OPS-215](#ops-215-list-every-github-secret-and-variable-in-the-readme)
 - form bundle number: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
+- form filing: [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions)
 - form layouts: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - format specification: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - forum answers: [DEV-57](#dev-57-run-a-time-boxed-marketing-campaign-session)
@@ -8326,6 +8339,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - gap analysis: [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout)
 - gate fixtures: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
 - gate probes: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
+- gatewaytest: [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions)
 - gclid: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs), [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - gcp billing budget: [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project)
 - gcp iam bindings: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)
@@ -9513,6 +9527,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - schema: [OPS-91](#ops-91-validate-video-scene-scripts-and-timing)
 - schema change: [OPS-16](#ops-16-run-dynamodb-data-migrations)
 - schema tables: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
+- schema validation: [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions)
 - screen reader: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - screenshot: [SITE-29](#site-29-render-the-customer-emails-to-files-for-a-visual-check), [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - screenshot captions: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
@@ -9841,6 +9856,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - test bundle: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - test company: [CH-12](#ch-12-generate-synthetic-test-companies)
 - test discovery: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
+- test flag: [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions)
 - test helpers: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
 - test items: [OPS-217](#ops-217-expire-the-test-items-a-table-already-holds)
 - test mode: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status)
@@ -9851,6 +9867,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - test router: [SS-42](#ss-42-route-tests-by-blast-radius)
 - test shards: [OPS-159](#ops-159-run-the-unit-system-and-browser-test-tiers-in-ci)
 - test step: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
+- test submission: [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions)
 - test suite: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci), [OPS-160](#ops-160-synth-the-cdk-app-for-the-ci-and-prod-environments-in-ci)
 - test support api: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - test user: [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
@@ -10151,7 +10168,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - xlsx export: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
 - xlsx xml: [SS-58](#ss-58-excel-xml-manipulation-reference)
 - xml: [CH-11](#ch-11-parse-xml-safely)
-- xml gateway: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending), [CH-11](#ch-11-parse-xml-safely), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
+- xml gateway: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-21](#ch-21-poll-companies-house-for-filings-the-reader-left-pending), [CH-11](#ch-11-parse-xml-safely), [CH-26](#ch-26-build-validate-and-file-the-companies-house-forms-test-submissions), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - xml submission: [CH-05](#ch-05-file-a-change-of-registered-office-address)
 - xmldom: [CH-11](#ch-11-parse-xml-safely)
 - xxe: [CH-11](#ch-11-parse-xml-safely)
