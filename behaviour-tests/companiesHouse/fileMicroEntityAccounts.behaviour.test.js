@@ -108,7 +108,7 @@ function buildAccounts() {
         currentAssets: 3500,
         creditorsWithinOneYear: 1500,
         calledUpShareCapital: 100,
-        profitAndLossAccount: 1900,
+        profitAndLossAccount: 2800,
       }),
     },
     averageEmployees: 2,
@@ -327,25 +327,6 @@ const REVISION = {
   dateApproved: "2026-02-10",
 };
 
-// Accounts whose capital and reserves equal the share capital and the profit and loss account in
-// both years, as the reader of a filed document checks.
-function consistentAccounts() {
-  const accounts = buildAccounts();
-  return {
-    ...accounts,
-    balanceSheet: {
-      ...accounts.balanceSheet,
-      priorYear: balancedYear({
-        fixedAssets: 900,
-        currentAssets: 3500,
-        creditorsWithinOneYear: 1500,
-        calledUpShareCapital: 100,
-        profitAndLossAccount: 2800,
-      }),
-    },
-  };
-}
-
 function dormantAccounts() {
   const dormantYear = balancedYear({
     fixedAssets: 0,
@@ -354,7 +335,7 @@ function dormantAccounts() {
     calledUpShareCapital: 100,
     profitAndLossAccount: 0,
   });
-  return { ...consistentAccounts(), balanceSheet: { currentYear: dormantYear, priorYear: dormantYear }, averageEmployees: 0 };
+  return { ...buildAccounts(), balanceSheet: { currentYear: dormantYear, priorYear: dormantYear }, averageEmployees: 0 };
 }
 
 async function fileOriginalAccountsAndOpenTheCopy(page, accounts, { dormant = false } = {}) {
@@ -378,7 +359,7 @@ test("Click through: file micro-entity accounts, amend them from the receipt and
   fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
 
   await signInWithResidentBundle(page, baseUrl);
-  await fileOriginalAccountsAndOpenTheCopy(page, consistentAccounts());
+  await fileOriginalAccountsAndOpenTheCopy(page, buildAccounts());
   await amendFiledAccountsFromCopy(page, screenshotPath);
   await describeTheRevision(page, REVISION, screenshotPath);
   await verifyRevisionPreview(page, screenshotPath);
@@ -415,7 +396,7 @@ test("Click through: Companies House rejects the revised accounts, and the fixed
   fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
 
   await signInWithResidentBundle(page, baseUrl);
-  await fileOriginalAccountsAndOpenTheCopy(page, consistentAccounts());
+  await fileOriginalAccountsAndOpenTheCopy(page, buildAccounts());
   const amendHref = await amendFiledAccountsFromCopy(page, screenshotPath);
   await describeTheRevision(page, REVISION, screenshotPath);
   await verifyRevisionPreview(page, screenshotPath);

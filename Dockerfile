@@ -48,6 +48,8 @@ COPY app/lib app/lib
 COPY app/functions app/functions
 COPY app/data app/data
 COPY app/services app/services
+# The accounts route and the accounts form share the balance sheet's arithmetic from here.
+COPY web/public/lib/balance-sheet-check.js web/public/lib/balance-sheet-check.js
 COPY mcp/package.json mcp/package.json
 COPY mcp/lib mcp/lib
 COPY mcp/bin mcp/bin

@@ -30,6 +30,8 @@ const OPTIONAL_BALANCE_SHEET_FIELDS = [
 ];
 
 let company = null;
+// The revision this page is filing, or null for original accounts.
+let revision = null;
 
 function views() {
   return {
@@ -210,6 +212,30 @@ const STATEMENT_MESSAGES = {
   statementMicroEntityProvisions: window.siteText("ch.micro.confirm-provisions", "Confirm the accounts follow the micro-entity provisions"),
 };
 
+// Capital and reserves equal called up share capital plus the profit and loss account in each year,
+// the rule the accounts route also applies.
+async function capitalAndReservesProblem(currentYear, priorYear) {
+  const check = await import("../lib/balance-sheet-check.js");
+  const years = [
+    [window.siteText("ch.micro.the-current-year", "the current year"), currentYear],
+    [window.siteText("ch.micro.the-prior-year", "the prior year"), priorYear],
+  ];
+  for (const [yearName, year] of years) {
+    const mismatch = check.capitalAndReservesMismatch(year);
+    if (mismatch) {
+      return check.capitalAndReservesMessage(
+        mismatch,
+        yearName,
+        window.siteText(
+          "ch.micro.capital-and-reserves-mismatch",
+          "Capital and reserves of {capital} for {year} do not equal called up share capital plus the profit and loss account, which add up to {sum}.",
+        ),
+      );
+    }
+  }
+  return null;
+}
+
 async function handleAccountsFormSubmit(event) {
   event.preventDefault();
   const form = event.currentTarget;
@@ -223,6 +249,11 @@ async function handleAccountsFormSubmit(event) {
       window.siteText("ch.micro.must-equal", "Capital and reserves must equal net assets for both years before previewing."),
       "error",
     );
+    return;
+  }
+  const capitalProblem = await capitalAndReservesProblem(currentYear, priorYear);
+  if (capitalProblem) {
+    showStatus(capitalProblem, "error");
     return;
   }
   if (!window.formErrors.requireChecked(STATEMENT_MESSAGES)) return;
@@ -481,9 +512,8 @@ document.getElementById("changeCompanyLink").addEventListener("click", (event) =
 
 window.booksImport.mount(document.getElementById("booksImport"), { kind: "micro-entity-accounts" });
 
-// A revision of accounts already filed. ?amend=<receipt name> opens the form from the receipt of the
-// accepted filing; the request then carries the revision, and the result names the revised accounts.
-let revision = null;
+// The request, the checks and the result of a revision of accounts already filed. ?amend=<receipt name>
+// opens the form from the receipt of the accepted filing.
 
 function revisionElements() {
   return {

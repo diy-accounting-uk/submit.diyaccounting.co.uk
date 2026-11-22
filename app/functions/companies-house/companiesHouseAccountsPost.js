@@ -75,6 +75,7 @@ import {
 } from "../../services/jointFiling.js";
 import { refuseWhenOutOfTokens } from "../../services/tokenEnforcement.js";
 import { refuseRevisionWhenNotEnabled } from "../../services/ctClientScope.js";
+import { capitalAndReservesMismatch, capitalAndReservesMessage, YEAR_NAMES } from "../../../web/public/lib/balance-sheet-check.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseAccountsPost.js" });
 
@@ -392,6 +393,8 @@ function validateBalanceSheetAddsUp(year, yearLabel, errorMessages) {
   if (netAssets !== year.capitalAndReserves) {
     errorMessages.push(`balanceSheet.${yearLabel}.capitalAndReserves does not equal net assets (${netAssets})`);
   }
+  const mismatch = capitalAndReservesMismatch(year);
+  if (mismatch) errorMessages.push(capitalAndReservesMessage(mismatch, YEAR_NAMES[yearLabel]));
 }
 
 // The envelope left, so Companies House may have it. The filing stays pending with its request

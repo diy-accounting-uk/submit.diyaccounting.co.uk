@@ -338,6 +338,83 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
+  test.each([
+    [
+      "the current year",
+      (body) => {
+        body.balanceSheet.currentYear.profitAndLossAccount = 3800;
+      },
+      "Capital and reserves of 4000 for the current year do not equal called up share capital plus the profit and loss account, which add up to 3900.",
+    ],
+    [
+      "the prior year",
+      (body) => {
+        body.balanceSheet.priorYear.profitAndLossAccount = 1900;
+      },
+      "Capital and reserves of 2900 for the prior year do not equal called up share capital plus the profit and loss account, which add up to 2000.",
+    ],
+  ])(
+    "refuses capital and reserves in %s that differ from share capital plus the profit and loss account, and sends nothing",
+    async (_year, change, message) => {
+      const body = buildAccountsBody();
+      change(body);
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      expect(response.headers["Content-Type"]).toBe("application/json");
+      expect(parseResponseBody(response).message).toContain(message);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    },
+  );
+
+  test("refuses small company capital and reserves that differ from share capital plus the profit and loss account", async () => {
+    const body = buildSmallCompanyBody();
+    body.smallCompany.balanceSheet.currentYear.profitAndLossAccount = 3800;
+    const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+    expect(response.statusCode).toBe(400);
+    expect(parseResponseBody(response).message).toContain(
+      "Capital and reserves of 4000 for the current year do not equal called up share capital plus the profit and loss account, which add up to 3900.",
+    );
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
+  test("files dormant accounts whose capital and reserves are the share capital alone", async () => {
+    const shareCapitalOnly = {
+      fixedAssets: 0,
+      currentAssets: 100,
+      creditorsWithinOneYear: 0,
+      creditorsAfterOneYear: 0,
+      calledUpShareCapital: 100,
+      profitAndLossAccount: 0,
+      capitalAndReserves: 100,
+    };
+    const body = buildAccountsBody({
+      dormant: true,
+      dormantTradingStatus: "neverTraded",
+      shareClass: "ordinaryShares",
+      nominalValue: 1,
+      averageEmployees: 0,
+      balanceSheet: { currentYear: { ...shareCapitalOnly }, priorYear: { ...shareCapitalOnly } },
+    });
+    const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+    expect(response.statusCode).toBe(201);
+    expect(mockPostToGateway).toHaveBeenCalled();
+  });
+
+  test("files a company's first accounts, whose prior year is all zero", async () => {
+    const body = buildAccountsBody();
+    body.balanceSheet.priorYear = {
+      fixedAssets: 0,
+      currentAssets: 0,
+      creditorsWithinOneYear: 0,
+      creditorsAfterOneYear: 0,
+      calledUpShareCapital: 0,
+      profitAndLossAccount: 0,
+      capitalAndReserves: 0,
+    };
+    const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+    expect(response.statusCode).toBe(201);
+  });
+
   test("accepts the optional balance sheet headings when they enter the totals", async () => {
     const body = buildAccountsBody();
     body.balanceSheet.currentYear.prepaymentsAccruedIncome = 300;

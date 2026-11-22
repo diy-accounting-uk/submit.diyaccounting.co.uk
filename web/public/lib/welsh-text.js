@@ -1048,6 +1048,8 @@ window.WELSH_TEXT = {
     "Mae hwn yn rhedeg yn erbyn gwasanaeth prawf Tŷ’r Cwmnïau. Nid oes dim rydych yn ei ffeilio yma yn cyrraedd y gofrestr fyw.",
   "ch.lane.status-production": "Statws: cynhyrchu (production).",
   "ch.lane.status-sandbox": "Statws: prawf (sandbox).",
+  "ch.micro.capital-and-reserves-mismatch":
+    "Nid yw cyfalaf a chronfeydd wrth gefn o {capital} ar gyfer {year} yn hafal i’r cyfalaf cyfranddaliadau a alwyd i fyny ynghyd â’r cyfrif elw a cholled, sy’n dod i {sum}.",
   "ch.micro.confirm-provisions": "Cadarnhewch fod y cyfrifon yn dilyn y darpariaethau micro-endid",
   "ch.micro.matches": "Yn cyfateb i’r cyfalaf a’r cronfeydd wrth gefn.",
   "ch.micro.mismatch": "Nid yw’n cyfateb i’r cyfalaf a’r cronfeydd wrth gefn ar gyfer {years} - cywirwch hyn cyn gweld y rhagolwg.",
@@ -1058,6 +1060,8 @@ window.WELSH_TEXT = {
   "ch.micro.net-assets": "Asedion net: {current} eleni, {prior} y llynedd. {verdict}",
   "ch.micro.section-480":
     "Mae gan y cwmni hawl i eithriad rhag archwiliad o dan adran 480 o Ddeddf Cwmnïau 2006 sy’n ymwneud â chwmnïau segur.",
+  "ch.micro.the-current-year": "y flwyddyn gyfredol",
+  "ch.micro.the-prior-year": "y flwyddyn flaenorol",
   "ch.office.confirm-statement": "Cadarnhewch y datganiad cyfeiriad priodol o dan adran 86(2)",
   "ch.office.read-failed": "Methwyd â darllen y cyfeiriad swyddfa gofrestredig presennol.",
   "ch.office.record-title": "Newid cyfeiriad swyddfa gofrestredig",

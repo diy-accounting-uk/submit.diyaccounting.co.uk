@@ -23,6 +23,7 @@ import {
 } from "./smallCompanyAccountsIxbrl.js";
 import { SHARE_CLASSES, sharesIssuedFor } from "./microEntityAccountsIxbrl.js";
 import { readDirectorsAdvances } from "./accountsIxbrlCommon.js";
+import { capitalAndReservesMismatch, capitalAndReservesMessage, YEAR_NAMES } from "../../web/public/lib/balance-sheet-check.js";
 
 const SMALL_COMPANY_STATEMENT_FIELDS = [
   "section477Exemption",
@@ -85,9 +86,8 @@ function readBalanceSheetYear(values, label, errorMessages) {
     if (netAssets !== figures.capitalAndReserves) {
       errorMessages.push(`${label}.capitalAndReserves does not equal net assets (${netAssets})`);
     }
-    if (figures.calledUpShareCapital + figures.profitAndLossAccount !== figures.capitalAndReserves) {
-      errorMessages.push(`${label}.capitalAndReserves does not equal calledUpShareCapital plus profitAndLossAccount`);
-    }
+    const mismatch = capitalAndReservesMismatch(figures);
+    if (mismatch) errorMessages.push(capitalAndReservesMessage(mismatch, YEAR_NAMES[label.split(".").pop()]));
   }
   return figures;
 }

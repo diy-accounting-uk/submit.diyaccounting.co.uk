@@ -17508,3 +17508,15 @@ cy = '''Eich copi o’r cyfrifon diwygiedig a ffeiliwyd yn Nhŷ’r Cwmnïau'''
 [strings."ch.record.amend-accounts"]
 hash = "f7c04d3054a8"
 cy = '''Diwygio’r cyfrifon hyn'''
+
+[strings."ch.micro.the-current-year"]
+hash = "0a2507db9dba"
+cy = '''y flwyddyn gyfredol'''
+
+[strings."ch.micro.the-prior-year"]
+hash = "0290a3fa9b75"
+cy = '''y flwyddyn flaenorol'''
+
+[strings."ch.micro.capital-and-reserves-mismatch"]
+hash = "b95d3a1bcd14"
+cy = '''Nid yw cyfalaf a chronfeydd wrth gefn o {capital} ar gyfer {year} yn hafal i’r cyfalaf cyfranddaliadau a alwyd i fyny ynghyd â’r cyfrif elw a cholled, sy’n dod i {sum}.'''
