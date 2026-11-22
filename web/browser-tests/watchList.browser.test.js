@@ -309,6 +309,33 @@ test.describe("Company watch list", () => {
     expect(account.profileReads).toEqual(["00000003", "00000001"]);
   });
 
+  test("a watch list restored from the back-forward cache reads each profile again, and keeps its companies", async ({ page }) => {
+    const account = { watchedCompanies: ["00000001", "00000003"] };
+    await serveSite(page, account);
+    await page.goto(`${BASE}/companies-house/watchList.html`, { waitUntil: "networkidle" });
+    const rows = page.locator("#watchListTable tbody tr");
+    await expect(rows.nth(1)).toContainText("Read at", { timeout: 15000 });
+    expect(account.profileReads).toEqual(["00000001", "00000003"]);
+
+    await Promise.all([
+      page.waitForEvent("load"),
+      page.evaluate(() => window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }))),
+    ]);
+    await expect(rows).toHaveCount(2, { timeout: 15000 });
+    await expect(rows.nth(1)).toContainText("Read at", { timeout: 15000 });
+    expect(account.profileReads).toEqual(["00000001", "00000003", "00000001", "00000003"]);
+  });
+
+  test("a watch list shown on its first load is not loaded twice", async ({ page }) => {
+    let loads = 0;
+    page.on("load", () => loads++);
+    await serveSite(page, { watchedCompanies: ["00000001"] });
+    await page.goto(`${BASE}/companies-house/watchList.html`, { waitUntil: "networkidle" });
+    await expect(page.locator("#watchListTable tbody tr")).toContainText("Read at", { timeout: 15000 });
+    await page.waitForTimeout(500);
+    expect(loads).toBe(1);
+  });
+
   test("the Welsh watch list page opens under /cy/ and links to the Welsh drill-down", async ({ page }) => {
     await serveSite(page, { watchedCompanies: ["00000001"] });
     await page.goto(`${BASE}/cy/companies-house/watchList.html`, { waitUntil: "networkidle" });
