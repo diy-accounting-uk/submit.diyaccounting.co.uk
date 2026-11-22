@@ -298,7 +298,7 @@ test.describe("File Company Tax Return entry form", () => {
       mimeType: "application/zip",
       buffer: await zippedPrecisionCodeBook(),
     });
-    await expect(page.locator("#booksImportStatus")).toContainText("precision-code.diya-gl.zip", { timeout: 60_000 });
+    await expect(page.locator("#booksImportStatus")).toContainText("2025-04-01", { timeout: 60_000 });
     await page.locator("#regimeSmall").check();
     await completeTheAnswersTheBookLeaves(page);
     await page.locator("#previewBtn").click();
