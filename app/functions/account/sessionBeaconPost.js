@@ -22,6 +22,14 @@ import { buildRecordableAttributionMap } from "../../lib/acquisition.js";
 
 const logger = createLogger({ source: "app/functions/account/sessionBeaconPost.js" });
 
+// A path of this site: a leading slash, then letters, digits and . _ ~ - /, 200 characters at most.
+// A query, a fragment or any other character makes the value something else, and it is dropped.
+const SITE_PATH = /^\/[A-Za-z0-9._~/-]{0,199}$/;
+
+function sitePathOf(value) {
+  return typeof value === "string" && SITE_PATH.test(value) ? value : undefined;
+}
+
 /* v8 ignore start */
 export function apiEndpoint(app) {
   registerLambdaRoute(app, "post", "/api/v1/session/beacon", ingestHandler);
@@ -73,7 +81,7 @@ export async function ingestHandler(event) {
     return publishConsentAnswer({ request, body, country, visitorType });
   }
 
-  const page = body.page || "/";
+  const page = body.page === undefined || body.page === "" ? "/" : sitePathOf(body.page);
 
   const actorByVisitorType = { "ai-agent": "ai-agent", "synthetic": "synthetic" };
 
@@ -86,7 +94,7 @@ export async function ingestHandler(event) {
       visitorType,
       botClass: classifyBot(userAgent),
       country,
-      page,
+      ...(page ? { page } : {}),
       userAgent: userAgent.substring(0, 100),
       ...buildRecordableAttributionMap(body),
     },

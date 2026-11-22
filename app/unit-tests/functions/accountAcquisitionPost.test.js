@@ -19,9 +19,21 @@ const mockRecordFirstAccountSource = vi.fn(async (sub, source) => {
   if (!firstSourceBySub.has(sub)) firstSourceBySub.set(sub, source);
   return firstSourceBySub.get(sub);
 });
+let recordBeganAt;
+const mockBeginFirstSourceRecord = vi.fn(async (now) => {
+  const begunNow = recordBeganAt === undefined;
+  if (begunNow) recordBeganAt = now;
+  return { beganAt: recordBeganAt, begunNow };
+});
 vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
   getFirstAccountSource: (...args) => mockGetFirstAccountSource(...args),
   recordFirstAccountSource: (...args) => mockRecordFirstAccountSource(...args),
+  beginFirstSourceRecord: (...args) => mockBeginFirstSourceRecord(...args),
+}));
+
+const mockAccountCreatedAt = vi.fn();
+vi.mock("@app/services/cognitoAccountCreation.js", () => ({
+  accountCreatedAt: (...args) => mockAccountCreatedAt(...args),
 }));
 
 const mockSsmSend = vi.fn();
@@ -65,6 +77,10 @@ describe("accountAcquisitionPost ingestHandler", () => {
     mockPublishActivityEvent.mockClear();
     mockPublishActivityEvent.mockResolvedValue({ published: true });
     firstSourceBySub.clear();
+    recordBeganAt = "2026-11-01T00:00:00.000Z";
+    mockBeginFirstSourceRecord.mockClear();
+    mockAccountCreatedAt.mockReset();
+    mockAccountCreatedAt.mockResolvedValue(new Date("2026-11-20T08:55:00.000Z"));
     mockGetFirstAccountSource.mockClear();
     mockRecordFirstAccountSource.mockClear();
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = "test-bundles";
@@ -157,6 +173,46 @@ describe("accountAcquisitionPost ingestHandler", () => {
     expect(response.statusCode).toBe(500);
     expect(response.headers["Content-Type"]).toBe("application/json");
     expect(JSON.stringify(parseResponseBody(response))).not.toContain("table unavailable");
+    expect(mockPublishActivityEvent).not.toHaveBeenCalled();
+  });
+
+  test("stores no landing for an account created before the record began, publishes nothing and answers firstRecord false", async () => {
+    mockAccountCreatedAt.mockResolvedValue(new Date("2025-03-01T12:00:00.000Z"));
+    const response = await ingestHandler(acquisitionEvent(LANDING));
+    expect(response.statusCode).toBe(200);
+    expect(parseResponseBody(response)).toEqual({ ok: true, firstRecord: false });
+    expect(mockPublishActivityEvent).not.toHaveBeenCalled();
+    expect(firstSourceBySub.get("test-sub")).toEqual({ beforeTheRecordBegan: true });
+    expect(mockAccountCreatedAt).toHaveBeenCalledWith("test");
+
+    const again = await ingestHandler(acquisitionEvent(LANDING));
+    expect(parseResponseBody(again)).toEqual({ ok: true, firstRecord: false });
+    expect(mockPublishActivityEvent).not.toHaveBeenCalled();
+    expect(mockAccountCreatedAt).toHaveBeenCalledTimes(1);
+  });
+
+  test("records the account whose post begins the record, however old it is", async () => {
+    recordBeganAt = undefined;
+    mockAccountCreatedAt.mockResolvedValue(new Date("2025-03-01T12:00:00.000Z"));
+    const response = await ingestHandler(acquisitionEvent(LANDING));
+    expect(parseResponseBody(response)).toEqual({ ok: true, firstRecord: true });
+    expect(mockPublishActivityEvent).toHaveBeenCalledTimes(1);
+    expect(recordBeganAt).toEqual(expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/));
+  });
+
+  test("records an account with no creation time to read as a new account", async () => {
+    mockAccountCreatedAt.mockResolvedValue(undefined);
+    const response = await ingestHandler(acquisitionEvent(LANDING));
+    expect(parseResponseBody(response)).toEqual({ ok: true, firstRecord: true });
+    expect(mockPublishActivityEvent).toHaveBeenCalledTimes(1);
+  });
+
+  test("answers 500 in JSON and stores nothing when the creation time cannot be read, so the next post decides", async () => {
+    mockAccountCreatedAt.mockRejectedValueOnce(new Error("TooManyRequestsException"));
+    const response = await ingestHandler(acquisitionEvent(LANDING));
+    expect(response.statusCode).toBe(500);
+    expect(response.headers["Content-Type"]).toBe("application/json");
+    expect(firstSourceBySub.has("test-sub")).toBe(false);
     expect(mockPublishActivityEvent).not.toHaveBeenCalled();
   });
 

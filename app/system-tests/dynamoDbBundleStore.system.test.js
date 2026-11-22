@@ -187,3 +187,18 @@ describe("System: the account's first source on the settings item with local dyn
     expect(await store.getFirstAccountSource(userId)).toEqual(first);
   });
 });
+
+describe("System: the time the record of first sources began with local dynalite", () => {
+  it("keeps the time of the first call, whatever time a later call gives, and shows in no account's bundles or settings", async () => {
+    const calls = await Promise.all(
+      ["2026-11-22T10:00:00.000Z", "2026-11-22T10:00:01.000Z", "2026-11-22T10:00:02.000Z"].map((now) => store.beginFirstSourceRecord(now)),
+    );
+    expect(new Set(calls.map((call) => call.beganAt)).size).toBe(1);
+    expect(calls.filter((call) => call.begunNow)).toHaveLength(1);
+
+    const later = await store.beginFirstSourceRecord("2027-01-01T00:00:00.000Z");
+    expect(later).toEqual({ beganAt: calls[0].beganAt, begunNow: false });
+    expect(await store.getUserBundles("#all-accounts")).toEqual([]);
+    expect(await store.getFirstAccountSource("first-source-user")).not.toHaveProperty("firstSourceRecordBeganAt");
+  });
+});

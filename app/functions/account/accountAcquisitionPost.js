@@ -3,10 +3,10 @@
 
 // @capability SITE-37 Record the source of an account at its sign-in
 // - **Use when:** an account that landed from a tagged link must have its source recorded, whether or not it ever requests a bundle.
-// - **Does:** submit.js posts the stored attribution.landing on the first page after a sign-in, keepalive, until the route answers with success. accountAcquisitionPost.js cleans the fields, drops the click ids, stores the account's first landing on its settings item and publishes one account-acquisition activity event for it. The answer's firstRecord says whether the post is that first record, and submit.js fires the GA4 sign_up event only then.
+// - **Does:** submit.js posts the stored attribution.landing on the first page after a sign-in, keepalive, until the route answers with success. accountAcquisitionPost.js cleans the fields, drops the click ids, stores the account's first landing on its settings item and publishes one account-acquisition activity event for it. The answer's firstRecord says whether the post is that first record, and submit.js fires the GA4 sign_up event only then. An account the user pool created before the record of first sources began stores no landing and is never a first record.
 // - **Run:** `POST /api/v1/account/acquisition`
 // - **Entry:** `app/functions/account/accountAcquisitionPost.js:ingestHandler`; `web/public/submit.js:recordAccountAcquisitionAfterSignIn`
-// - **Files:** app/functions/account/accountAcquisitionPost.js, app/unit-tests/functions/accountAcquisitionPost.test.js, web/public/submit.js, web/public/auth/loginWithCognitoCallback.page.js, web/browser-tests/loginCallbackAcquisition.browser.test.js, app/lib/acquisition.js
+// - **Files:** app/functions/account/accountAcquisitionPost.js, app/unit-tests/functions/accountAcquisitionPost.test.js, web/public/submit.js, web/public/auth/loginWithCognitoCallback.page.js, web/browser-tests/loginCallbackAcquisition.browser.test.js, app/lib/acquisition.js, app/services/cognitoAccountCreation.js, app/unit-tests/services/cognitoAccountCreation.test.js
 // - **Keywords:** acquisition, landing, utm, attribution, sign_up, first sign-in, account source, activity event
 // - **Related:** SITE-04
 // @end-capability
@@ -18,7 +18,9 @@
 // sign-in. The landing fields are cleaned by buildRecordableAttributionMap and published as one
 // account-acquisition activity event, once for an account: the first landing posted is stored on
 // the account's settings item, and a later landing publishes nothing. The answer's firstRecord says
-// whether this post is that first record. Click ids (gclid, msclkid) are left out of the event.
+// whether this post is that first record. An account the user pool created before the record of
+// first sources began publishes nothing and is never a first record. Click ids (gclid, msclkid)
+// are left out of the event.
 
 import { createLogger } from "../../lib/logger.js";
 import {
@@ -36,7 +38,8 @@ import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { buildRecordableAttributionMap } from "../../lib/acquisition.js";
 import { corsOriginHeaders } from "../../lib/corsOrigins.js";
 import { validateEnv } from "../../lib/env.js";
-import { getFirstAccountSource, recordFirstAccountSource } from "../../data/dynamoDbBundleRepository.js";
+import { getFirstAccountSource, recordFirstAccountSource, beginFirstSourceRecord } from "../../data/dynamoDbBundleRepository.js";
+import { accountCreatedAt } from "../../services/cognitoAccountCreation.js";
 
 const logger = createLogger({ source: "app/functions/account/accountAcquisitionPost.js" });
 
@@ -60,6 +63,18 @@ function recordableLanding(body) {
 // landing as the stored one is still the account's first record.
 function isSameLanding(stored, landing) {
   return LANDING_FIELDS.every((field) => stored[field] === landing[field]);
+}
+
+// What is stored as the first source of an account that the user pool created before the record
+// of first sources began: its real first source was never recorded, so no landing is.
+const BEFORE_THE_RECORD_BEGAN = { beforeTheRecordBegan: true };
+
+// The record begins at the first post this route ever takes. The account that makes that post is
+// recorded as any new account is, because nothing dates the record before it.
+async function existedBeforeTheRecordBegan(username) {
+  const createdAt = await accountCreatedAt(username);
+  const { beganAt, begunNow } = await beginFirstSourceRecord(new Date().toISOString());
+  return Boolean(createdAt) && !begunNow && createdAt.toISOString() < beganAt;
 }
 
 export async function ingestHandler(event) {
@@ -90,6 +105,11 @@ export async function ingestHandler(event) {
     const recordedBefore = await getFirstAccountSource(user.sub);
     if (recordedBefore) {
       return http200OkResponse({ request, headers, data: { ok: true, firstRecord: isSameLanding(recordedBefore, acquisition) } });
+    }
+
+    if (await existedBeforeTheRecordBegan(user.username)) {
+      await recordFirstAccountSource(user.sub, BEFORE_THE_RECORD_BEGAN);
+      return http200OkResponse({ request, headers, data: { ok: true, firstRecord: false } });
     }
 
     const appClient = await resolveAppClient(user.appClientId);

@@ -728,10 +728,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### SITE-37 Record the source of an account at its sign-in
 
 - **Use when:** an account that landed from a tagged link must have its source recorded, whether or not it ever requests a bundle.
-- **Does:** submit.js posts the stored attribution.landing on the first page after a sign-in, keepalive, until the route answers with success. accountAcquisitionPost.js cleans the fields, drops the click ids, stores the account's first landing on its settings item and publishes one account-acquisition activity event for it. The answer's firstRecord says whether the post is that first record, and submit.js fires the GA4 sign_up event only then.
+- **Does:** submit.js posts the stored attribution.landing on the first page after a sign-in, keepalive, until the route answers with success. accountAcquisitionPost.js cleans the fields, drops the click ids, stores the account's first landing on its settings item and publishes one account-acquisition activity event for it. The answer's firstRecord says whether the post is that first record, and submit.js fires the GA4 sign_up event only then. An account the user pool created before the record of first sources began stores no landing and is never a first record.
 - **Run:** `POST /api/v1/account/acquisition`
 - **Entry:** `app/functions/account/accountAcquisitionPost.js:ingestHandler`; `web/public/submit.js:recordAccountAcquisitionAfterSignIn`
-- **Files:** app/functions/account/accountAcquisitionPost.js, app/unit-tests/functions/accountAcquisitionPost.test.js, web/public/submit.js, web/public/auth/loginWithCognitoCallback.page.js, web/browser-tests/loginCallbackAcquisition.browser.test.js, app/lib/acquisition.js
+- **Files:** app/functions/account/accountAcquisitionPost.js, app/unit-tests/functions/accountAcquisitionPost.test.js, web/public/submit.js, web/public/auth/loginWithCognitoCallback.page.js, web/browser-tests/loginCallbackAcquisition.browser.test.js, app/lib/acquisition.js, app/services/cognitoAccountCreation.js, app/unit-tests/services/cognitoAccountCreation.test.js
 - **Keywords:** acquisition, landing, utm, attribution, sign_up, first sign-in, account source, activity event
 - **Related:** SITE-04
 

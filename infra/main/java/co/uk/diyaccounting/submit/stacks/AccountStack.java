@@ -1336,6 +1336,7 @@ public class AccountStack extends Stack {
         // ============================================================================
         var accountAcquisitionPostLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("COGNITO_USER_POOL_ID", userPool.getUserPoolId())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var accountAcquisitionPostApiLambda = new ApiLambda(
@@ -1385,6 +1386,14 @@ public class AccountStack extends Stack {
         // when the account has none, and writes the source once.
         bundlesTable.grant(
                 this.accountAcquisitionPostLambda, "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem");
+
+        // The handler reads when the user pool created the account, to tell an account older than
+        // the record of first sources from a new one.
+        this.accountAcquisitionPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("cognito-idp:AdminGetUser"))
+                .resources(List.of(cognitoUserPoolArn))
+                .build());
 
         SubHashSaltHelper.grantSaltAccess(this.accountAcquisitionPostLambda, region, account, props.envName());
 

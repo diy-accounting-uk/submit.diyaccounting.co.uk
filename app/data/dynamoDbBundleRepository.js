@@ -683,6 +683,30 @@ export async function getFirstAccountSource(userId) {
   return undefined;
 }
 
+// One item for every account together, under a partition no hashed sub can equal, with the
+// settings item's id so every reader that leaves settings items out leaves it out too.
+const ALL_ACCOUNTS_PARTITION = "#all-accounts";
+
+/**
+ * The time the record of first sources began: the time of the first call, kept in one item.
+ * @param {string} now - an ISO time, stored when no time is stored yet
+ * @returns {Promise<{beganAt: string, begunNow: boolean}>} begunNow when this call stored the time
+ */
+export async function beginFirstSourceRecord(now) {
+  const response = await executeDynamoDbCommand(
+    (module) =>
+      new module.UpdateCommand({
+        TableName: getResourceName("BUNDLE_DYNAMODB_TABLE_NAME"),
+        Key: { hashedSub: ALL_ACCOUNTS_PARTITION, bundleId: ACCOUNT_SETTINGS_ITEM_ID },
+        UpdateExpression: "SET firstSourceRecordBeganAt = if_not_exists(firstSourceRecordBeganAt, :now)",
+        ExpressionAttributeValues: { ":now": now },
+        ReturnValues: "ALL_NEW",
+      }),
+  );
+  const beganAt = response.Attributes.firstSourceRecordBeganAt;
+  return { beganAt, begunNow: beganAt === now };
+}
+
 // Two attempts: the first write fails when the settings item does not exist yet, the second
 // follows its creation.
 const FIRST_SOURCE_ATTEMPTS = 2;
