@@ -59,7 +59,7 @@ this order across the waves: rule, lookup, watch, passes, fill, welsh.
 | email | PE1 | Sonnet | `customerEmailTemplates.js`, `customerEmailRequest.js`, `passGeneratePost.js`, `passAdminPost.js`, their tests |
 | edge | SY1 (the route) | Sonnet | `companiesHousePublicDeadlinesGet.js`, `EdgeStack.java`, `EdgeStackTest.java` |
 
-State: landed, not gated. Wave branch `claude/zeppelin-w01` from `main` at 82a4b97b8, worktree `.claude/worktrees/zeppelin-w01`, head 7a893b201. A task is `.collab/<worker>.md` on the worker's `collab` branch; its result is `claude/<worker>-<task>` in `submit-cloud-<worker>`. Landed, in order: AA3 09b1643e5, AA8 3762c1e7e (the source rule gains www.legislation.gov.uk, because no gov.uk page states the 28 day rule), PE1 59e60c2ad and its render cases 585fe4c18, SY1 (the route) 89777f7d0, AA3's fix from epoch's review a1e9f0db8, AA1 42a81d641 (the validator answers valid for the four revised samples), AA2 7a893b201. The generators ran on the head and changed no file. One fix is still to land before the gates: epoch `aa3-preview-ch` (the preview rule decides a Companies House path by the Companies House sandbox condition alone). Then the five gate tasks on the head (`gate-unit`, `gate-java`, `gate-browser`, `gate-lint`, `gate-sim` with `companyTaxReturn`, `fileMicroEntityAccounts`, `passRedemption`, `generatePassActivity`, `bundle`, `help`, `companiesHouse`), as workers come free.
+State: landed, not gated. Wave branch `claude/zeppelin-w01` from `main` at 82a4b97b8, worktree `.claude/worktrees/zeppelin-w01`, head dfd173734. A task is `.collab/<worker>.md` on the worker's `collab` branch; its result is `claude/<worker>-<task>` in `submit-cloud-<worker>`. Landed, in order: AA3 09b1643e5, AA8 3762c1e7e (the source rule gains www.legislation.gov.uk, because no gov.uk page states the 28 day rule), PE1 59e60c2ad and its render cases 585fe4c18, SY1 (the route) 89777f7d0, AA3's fix from epoch's review a1e9f0db8, AA1 42a81d641 (the validator answers valid for the four revised samples), AA2 7a893b201, AA3's preview rule dfd173734 (a Companies House path is decided by its own Companies House service). The generators ran on 7a893b201 and changed no file. Not yet run on the head: the five gate tasks (`gate-unit`, `gate-java`, `gate-browser`, `gate-lint`, `gate-sim` with `companyTaxReturn`, `fileMicroEntityAccounts`, `passRedemption`, `generatePassActivity`, `bundle`, `help`, `companiesHouse`). Each worker ran `npm test` and its own suites on its own branch; the gates prove the combination, and go to the workers as they come free.
 
 ### Wave 2
 
@@ -68,7 +68,7 @@ State: landed, not gated. Wave branch `claude/zeppelin-w01` from `main` at 82a4b
 | lookup | CL1 (the routes, then the page) | Sonnet, 2 agents in a chain | the catalogue; the Companies House lookup Lambdas and `companiesHouseApi.js`; `app/bin/server.js`; `CompaniesHouseNames.java` and its stack; the companies simulator; `companySearch.html` and its page script; the page router; the page scripts of the five forms |
 | cases | AA10, then AA11 | Sonnet, then Opus | `scripts/companies-house-test-service-run.js`, the test-service cases fixture, the review scripts; AA11's fixes in the accounts iXBRL services |
 
-State: started early, from wave 1's tip. bugle builds `cl1-routes` (CL1's routes, AA23 and AA29) from 59e60c2ad; anvil builds `aa10` from 7a893b201. Each lands on `claude/zeppelin-w02` after wave 1 is gated. AA23's first step is done: software-filed accounts list `application/pdf` and `application/xhtml+xml`, paper-filed ones `application/pdf` only (`target/aa23-doc-metadata.log`).
+State: building, ahead of wave 1's gates. Wave branch `claude/zeppelin-w02` from wave 1's head, worktree `.claude/worktrees/zeppelin-w02`, head eed3ae48a (a merge of wave 1's later commit dfd173734; a fix on wave 1 reaches this branch by `git merge claude/zeppelin-w01`). Landed: CL1's routes f20b03a9b (three Lambdas, six API Gateway routes; AA23's first step: software-filed accounts list `application/pdf` and `application/xhtml+xml`, paper-filed ones `application/pdf` only), AA10 ede5d3e4f. Running: bugle `cl1-page` (CL1's page, on this branch); anvil `aa11` (the review and the judge of the four revised cases; its review folder comes back under `review-out/` on its branch and is not landed).
 
 ### Wave 3
 
@@ -78,7 +78,7 @@ State: started early, from wave 1's tip. bugle builds `cl1-routes` (CL1's routes
 | watch | WL1 | Sonnet | the catalogue; `watchList.html` and its page script; `companySearch.page.js`; `app/lib/accountSettings.js` |
 | route | SY2 (the route) | Sonnet | the new public Lambda; `companiesHouseApi.js`; `app/bin/server.js`; `CompaniesHouseNames.java`; `EdgeStack.java`; the companies simulator |
 
-State: pending.
+State: pending. Started early: epoch builds `aa4` from wave 2's head eed3ae48a; bugle's `cl1-page` and `aa4` both change `fileMicroEntityAccounts.page.js`, and the coordinator merges them when wave 3 is assembled. SY2's route goes to the next free worker (it needs CL1's routes and SY1's policy, both on wave 2).
 
 ### Wave 4
 
