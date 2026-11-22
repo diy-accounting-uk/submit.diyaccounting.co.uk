@@ -44,10 +44,25 @@ export function apiEndpoint(app) {
 
 const CLICK_ID_FIELDS = ["gclid", "msclkid"];
 
-function landingWithoutClickIds(body) {
+// A tag is a short label and landedAt is the timestamp analytics.js writes. A tag holding markup,
+// a quote, an @ or a control character is dropped, and so is a landedAt in any other form.
+const CHARACTERS_NO_TAG_HOLDS = /[<>"'`@\p{Cc}]/u;
+
+function isTimestampAsAnalyticsWritesIt(value) {
+  const milliseconds = Date.parse(value);
+  return !Number.isNaN(milliseconds) && new Date(milliseconds).toISOString() === value;
+}
+
+function isRecordableValue(field, value) {
+  return field === "landedAt" ? isTimestampAsAnalyticsWritesIt(value) : !CHARACTERS_NO_TAG_HOLDS.test(value);
+}
+
+function recordableLanding(body) {
   const acquisition = buildAcquisitionMap(body);
   if (!acquisition) return undefined;
-  for (const field of CLICK_ID_FIELDS) delete acquisition[field];
+  for (const [field, value] of Object.entries(acquisition)) {
+    if (CLICK_ID_FIELDS.includes(field) || !isRecordableValue(field, value)) delete acquisition[field];
+  }
   return Object.keys(acquisition).length > 0 ? acquisition : undefined;
 }
 
@@ -67,7 +82,7 @@ export async function ingestHandler(event) {
     return http400BadRequestResponse({ request, headers, message: "Invalid JSON in request body" });
   }
 
-  const acquisition = landingWithoutClickIds(body);
+  const acquisition = recordableLanding(body);
   if (!acquisition) {
     return http400BadRequestResponse({ request, headers, message: "No landing fields to record" });
   }

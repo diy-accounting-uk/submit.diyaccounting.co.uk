@@ -33,7 +33,7 @@ const LANDING = {
 
 // Serves web/public, answers the token exchange, and records every acquisition post. The post is
 // held unanswered, so a sign-in that waited for it would never reach the home page.
-async function serveSignIn(page) {
+async function serveSignIn(page, { acquisitionAnswer = "never" } = {}) {
   const posts = [];
   await page.route("**/*", async (route) => {
     const request = route.request();
@@ -57,6 +57,8 @@ async function serveSignIn(page) {
     }
     if (url.pathname === "/api/v1/account/acquisition") {
       posts.push({ body: JSON.parse(request.postData() || "{}"), authorization: request.headers()["authorization"] });
+      if (acquisitionAnswer === "500") await route.fulfill({ status: 500, contentType: "text/html", body: "<html>error</html>" });
+      if (acquisitionAnswer === "fails") await route.abort("failed");
       return;
     }
     if (url.pathname.startsWith("/api/")) {
@@ -116,6 +118,44 @@ test.describe("the account's source posted from the sign-in callback", () => {
     const gtagCalls = JSON.parse(await page.evaluate(() => sessionStorage.getItem("gtag_calls") || "[]"));
     expect(gtagCalls).toContainEqual(["event", "sign_up", { method: "cognito" }]);
     expect(JSON.stringify(gtagCalls)).not.toContain("click");
+  });
+
+  test("a second sign-in with the same landing posts nothing more and sends no second sign_up", async ({ page }) => {
+    const posts = await serveSignIn(page);
+    await signIn(page, LANDING);
+    await page.waitForURL(`${SITE}/`);
+
+    await page.evaluate(() => sessionStorage.removeItem("test_seeded"));
+    await signIn(page, LANDING);
+    await page.waitForURL(`${SITE}/`);
+
+    expect(posts).toHaveLength(1);
+    const gtagCalls = JSON.parse(await page.evaluate(() => sessionStorage.getItem("gtag_calls") || "[]"));
+    expect(gtagCalls.filter((call) => call[1] === "sign_up")).toHaveLength(1);
+    expect(gtagCalls.filter((call) => call[1] === "login")).toHaveLength(2);
+  });
+
+  for (const acquisitionAnswer of ["500", "fails"]) {
+    test(`the sign-in completes when the post ${acquisitionAnswer === "500" ? "answers 500 with a page" : "fails"}`, async ({ page }) => {
+      const pageErrors = [];
+      page.on("pageerror", (error) => pageErrors.push(error.message));
+      const posts = await serveSignIn(page, { acquisitionAnswer });
+      await signIn(page, LANDING);
+
+      await page.waitForURL(`${SITE}/`);
+      expect(posts).toHaveLength(1);
+      expect(await page.evaluate(() => Boolean(localStorage.getItem("cognitoAccessToken")))).toBe(true);
+      expect(pageErrors).toEqual([]);
+    });
+  }
+
+  test("the sign-in completes when the stored landing cannot be read", async ({ page }) => {
+    const posts = await serveSignIn(page);
+    await page.addInitScript(() => localStorage.setItem("attribution.landing", "{not json"));
+    await signIn(page, null);
+
+    await page.waitForURL(`${SITE}/`);
+    expect(posts).toEqual([]);
   });
 
   test("makes no post when no landing is stored", async ({ page }) => {

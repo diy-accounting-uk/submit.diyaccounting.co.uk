@@ -99,6 +99,52 @@ describe("accountAcquisitionPost ingestHandler", () => {
     expect(mockPublishActivityEvent).not.toHaveBeenCalled();
   });
 
+  test("drops a value that holds markup, an email address or a control character, and a landedAt that is not a timestamp", async () => {
+    await ingestHandler(
+      acquisitionEvent({
+        utmSource: "<script>alert(1)</script>",
+        utmMedium: "someone@example.com",
+        utmCampaign: "watch-due",
+        utmContent: 'x" onload="y',
+        utmTerm: "line\nbreak",
+        ref: "partner-1",
+        landedAt: "my name is Someone 1 2020",
+      }),
+    );
+    const { detail, summary } = mockPublishActivityEvent.mock.calls[0][0];
+    expect(detail).toEqual({ utmCampaign: "watch-due", ref: "partner-1" });
+    expect(summary).toBe("Account acquisition: partner-1");
+  });
+
+  test("caps each value at 200 characters", async () => {
+    await ingestHandler(acquisitionEvent({ utmSource: "a".repeat(5000) }));
+    expect(mockPublishActivityEvent.mock.calls[0][0].detail).toEqual({ utmSource: "a".repeat(200) });
+  });
+
+  test.each([
+    ["a nested object in a field", { utmSource: { nested: { deep: "x" } }, ref: ["a"] }],
+    ["an array", [LANDING]],
+    ["a string", "newsletter"],
+    ["null", null],
+  ])("answers 400 in JSON for %s, and publishes nothing", async (_name, body) => {
+    const event = acquisitionEvent(LANDING);
+    event.body = JSON.stringify(body);
+    const response = await ingestHandler(event);
+    expect(response.statusCode).toBe(400);
+    expect(response.headers["Content-Type"]).toBe("application/json");
+    expect(parseResponseBody(response).message).toBe("No landing fields to record");
+    expect(mockPublishActivityEvent).not.toHaveBeenCalled();
+  });
+
+  test("records the caller's own account whatever the body names", async () => {
+    await ingestHandler(
+      acquisitionEvent({ ...LANDING, sub: "other-sub", userSub: "other-sub", hashedSub: "x", actor: "operator" }, { sub: "sub-a" }),
+    );
+    const published = mockPublishActivityEvent.mock.calls[0][0];
+    expect(published.userSub).toBe("sub-a");
+    expect(published.detail).toEqual(LANDING);
+  });
+
   test("answers 400 in JSON for a body that is not JSON", async () => {
     const event = acquisitionEvent(LANDING);
     event.body = "{not json";
