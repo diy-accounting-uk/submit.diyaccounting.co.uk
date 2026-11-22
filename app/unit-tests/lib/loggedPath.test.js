@@ -9,25 +9,32 @@ import { describe, test, expect, vi, afterEach } from "vitest";
 import { loggedPathOf, eventWithLoggedPath, loggedQueryOf } from "@app/lib/loggedPath.js";
 import { extractRequest, http200OkResponse, http404NotFoundResponse } from "@app/lib/httpResponseHelper.js";
 
-function filesUnder(directory) {
+function filesUnder(directory, extension = ".js") {
   return readdirSync(directory).flatMap((name) => {
     const path = join(directory, name);
-    return statSync(path).isDirectory() ? filesUnder(path) : path.endsWith(".js") ? [path] : [];
+    return statSync(path).isDirectory() ? filesUnder(path, extension) : path.endsWith(extension) ? [path] : [];
   });
 }
 
-// Every route of the local server whose path carries a parameter, as its handler registers it.
+// Every route of the local server whose path carries a parameter, as its handler registers it, and
+// every API Gateway route whose path carries one, as the API stack names it.
 const PARAMETER_ROUTES = [
-  ...new Set(
-    filesUnder("app/functions").flatMap((file) =>
+  ...new Set([
+    ...filesUnder("app/functions").flatMap((file) =>
       Array.from(
         readFileSync(file, "utf8").matchAll(
-          /(?:registerLambdaRoute\(app, "|app\.)(get|post|put|delete|head)"?,? ?\(?"(\/api\/[^"]*:[^"]*)"/g,
+          /(?:registerLambdaRoute\(app, "|app\.)(get|post|put|delete|head)"?,? ?\(?["`](\/api\/[^"`]*:[^"`]*)["`]/g,
         ),
         ([, method, path]) => `${method.toUpperCase()} ${path}`,
       ),
     ),
-  ),
+    ...filesUnder("infra/main/java", ".java").flatMap((file) =>
+      Array.from(
+        readFileSync(file, "utf8").matchAll(/"(\/api\/v1\/[^"]*\{[^"]*)"/g),
+        ([, path]) => `GET ${path.replace(/\{([A-Za-z]+)\+?\}/g, ":$1")}`,
+      ),
+    ),
+  ]),
 ].sort();
 
 // A value for a parameter that no other part of the request holds, shaped as the parameter's own ids are.
@@ -94,6 +101,9 @@ describe("the path a log line prints", () => {
         "GET /api/v1/practice/clients/:clientId",
         "GET /api/v1/companies-house/accounts/:submissionNumber",
         "HEAD /api/v1/bundle/:id",
+        "GET /api/v1/hmrc/receipt/:name",
+        "GET /api/v1/mcp/hmrc-grants/:grantId",
+        "GET /api/v1/books/:bookId/versions/:version",
       ]),
     );
   });
