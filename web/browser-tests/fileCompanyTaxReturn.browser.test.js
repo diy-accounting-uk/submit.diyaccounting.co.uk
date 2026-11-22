@@ -507,6 +507,75 @@ test.describe("File Company Tax Return entry form", () => {
     return submission;
   }
 
+  // The page waits at least a second between checks; the tests that run the checks out do not.
+  const waitNoLongerThanFiveMilliseconds = (page) =>
+    page.addInitScript(() => {
+      const setTimeoutAsAsked = window.setTimeout;
+      window.setTimeout = (callback, delay, ...rest) => setTimeoutAsAsked(callback, Math.min(delay ?? 0, 5), ...rest);
+    });
+
+  test("states HMRC's status in words when the checks run out before HMRC settles the return", async ({ page }) => {
+    const submission = {
+      requests: [],
+      status: 200,
+      body: { correlationId: "CORRPEND", irmark: "IRMARK", pollIntervalSeconds: 0 },
+      pollBody: { statusCode: "PENDING", correlationId: "CORRPEND", pollIntervalSeconds: 0 },
+    };
+    await waitNoLongerThanFiveMilliseconds(page);
+    await openForm(page, [], submission);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+
+    const result = page.locator("#returnResult");
+    await expect(result).toHaveText("HMRC has not settled the return yet. Return CORRPEND is still waiting to be checked.", {
+      timeout: 30_000,
+    });
+  });
+
+  for (const [statusCode, word] of [
+    ["PENDING", "waiting to be checked"],
+    ["PARKED", "held for a check by hand"],
+  ]) {
+    test(`states Companies House's status of accounts it has not settled, ${statusCode}, in words`, async ({ page }) => {
+      await waitNoLongerThanFiveMilliseconds(page);
+      await openForm(page, [], { requests: [], status: 200, body: {} });
+      await page.route("**/api/v1/companies-house/accounts", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ submissionNumber: "00001A", pollIntervalSeconds: 0 }),
+        }),
+      );
+      await page.route("**/api/v1/companies-house/accounts/00001A", (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ statusCode, submissionNumber: "00001A", rejections: [] }),
+        }),
+      );
+      await dropBook(page);
+      await completeTheAnswersTheBookLeaves(page);
+      await page.locator("#sendToBoth").check();
+      await page.locator("#previewBtn").click();
+      await expect(page.locator("#previewView")).toBeVisible();
+      await page.locator("#companyAuthCode").fill("ABC123");
+      await page.locator("#gatewayUserId").fill("gateway-user");
+      await page.locator("#gatewayPassword").fill("gateway-password");
+      await page.locator("#submitReturnBtn").click();
+
+      const outcome = page.locator("#companiesHouseOutcome");
+      await expect(outcome).toContainText(`Companies House has not settled the accounts yet. Submission 00001A is ${word}.`, {
+        timeout: 30_000,
+      });
+      await expect(outcome).not.toContainText(statusCode);
+    });
+  }
+
   test("?amend= refills the form from the receipt and sends an amended return under the original jointFilingId", async ({ page }) => {
     const values = await filledFormValues(page);
     expect(Object.keys(values).some((key) => /password|authcode|gatewayuser/i.test(key))).toBe(false);
@@ -780,6 +849,17 @@ test.describe("File Company Tax Return entry form", () => {
     await page.locator("#gatewayPassword").fill("gateway-password");
     await page.locator("#submitReturnBtn").click();
   }
+
+  test("states HMRC's status of return 1 of 2 it has not settled in words, never as its code", async ({ page }) => {
+    const submission = longSubmission();
+    submission.poll = (correlationId) => ({ statusCode: "PENDING", correlationId, pollIntervalSeconds: 1 });
+    await reachLongReview(page, submission);
+    await sendBoth(page);
+
+    const result = page.locator("#returnResult");
+    await expect(result).toContainText("Return 1 of 2 CORR0001 is waiting to be checked. Checking again...", { timeout: 30_000 });
+    await expect(result).not.toContainText("PENDING");
+  });
 
   test("the long period panel shows at 12 months and a day and not at 12 months", async ({ page }) => {
     await openForm(page);

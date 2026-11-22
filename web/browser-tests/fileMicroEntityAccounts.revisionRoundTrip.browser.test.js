@@ -176,6 +176,31 @@ test.describe("Revising micro-entity accounts without a change", () => {
     });
   }
 
+  test("opens accounts that hold two advance rows with the first in the form's one row, and says the second is not filled", async ({
+    page,
+  }) => {
+    const input = withEveryNote(microInput("micro-entity-accounts"));
+    const [first] = input.directorsAdvances;
+    // The builder writes one row for a director, so the second row is the first row's terms stated again.
+    const filed = buildMicroEntityAccounts(input);
+    const [termsOfTheRow] = /<p>[^<]*: <ix:nonNumeric name="direp:Description[^>]*>[^<]*<\/ix:nonNumeric><\/p>/.exec(filed);
+    await openAmend(page, {
+      kind: "companies-house-accounts",
+      statusCode: "ACCEPT",
+      submissionNumber: "00001A",
+      companyNumber: input.companyNumber,
+      companyNameForProfile: input.companyName,
+      jurisdictionForProfile: "england-wales",
+      rejections: [],
+      filedDocument: filed.replace(termsOfTheRow, termsOfTheRow + termsOfTheRow),
+    });
+    await expect(page.locator("#directorsAdvanceTerms")).toHaveValue(first.terms);
+    await expect(page.locator(".directors-advance-row")).toHaveCount(1);
+    await expect(page.locator("#revisionNotesNote")).toHaveText(
+      "The filed accounts hold 2 rows of advances to directors and this form takes 1, so the rows after row 1 are not filled.",
+    );
+  });
+
   test("refiles a dormant company's share note as filed", async ({ page }) => {
     const { original, revised } = await refileUnchanged(page, microInput("micro-entity-accounts-dormant"));
     expect(shareFacts(original).length).toBeGreaterThan(0);

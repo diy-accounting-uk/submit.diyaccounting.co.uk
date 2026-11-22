@@ -16,6 +16,8 @@
 // maps the document filed with it, and checks the revision the customer describes. It holds no page
 // state: a page passes in its fetch, its bundle loader and its elements.
 
+import { MAX_DIRECTORS_ADVANCES } from "./accounts-notes-check.js";
+
 export const ACCOUNTS_RECEIPT_KIND = "companies-house-accounts";
 
 // The law asks the directors to deliver revised accounts within this many days of approving them.
@@ -690,7 +692,8 @@ const oneLine = (text) =>
     .join(" ");
 
 // Fill each note into the form's boxes as filed, and answer the titles of the notes whose facts the
-// document carries and does not give. Each form has the boxes for every note its builder writes.
+// document carries and does not give, with the advance rows the document holds and the form took.
+// Each form has the boxes for every note its builder writes.
 function fillNotes(notes) {
   const policyFields = Object.keys(notes.policies);
   for (const field of policyFields) box(field).value = notes.policies[field];
@@ -709,23 +712,26 @@ function fillNotes(notes) {
     }
   }
 
-  // One advance row per advance: the form adds rows when it can, and a micro-entity row names no
-  // director because its note is for the director approving the accounts.
+  // One advance row per advance, up to the rows the form takes: the note's limit where the form adds
+  // rows, and the one row of the micro-entity form, which names no director because its note is for
+  // the director approving the accounts.
   const advanceRows = () => document.querySelectorAll(".directors-advance-row");
-  while (advanceRows().length < notes.directorsAdvances.length) box("addDirectorsAdvance").click();
-  notes.directorsAdvances.forEach((advance, index) => {
+  const rowsTaken = Math.min(notes.directorsAdvances.length, box("addDirectorsAdvance") ? MAX_DIRECTORS_ADVANCES : advanceRows().length);
+  for (let rows = advanceRows().length; rows < rowsTaken; rows += 1) box("addDirectorsAdvance").click();
+  const advancesFilled = notes.directorsAdvances.slice(0, rowsTaken);
+  advancesFilled.forEach((advance, index) => {
     for (const [field, value] of Object.entries(advance)) {
       const advanceBox = advanceRows()[index].querySelector(`[data-advance-field="${field}"]`);
       if (advanceBox) advanceBox.value = typeof value === "string" ? oneLine(value) : String(value);
     }
   });
   // A filleted copy has no directors' report, so a director an advance names may be missing from the list.
-  if (box("directors") && notes.directorsAdvances.length) {
+  if (box("directors") && advancesFilled.length) {
     const directors = box("directors")
       .value.split("\n")
       .map((line) => line.trim())
       .filter(Boolean);
-    const missing = notes.directorsAdvances.map((advance) => advance.name).filter((name) => !directors.includes(name));
+    const missing = advancesFilled.map((advance) => advance.name).filter((name) => !directors.includes(name));
     if (missing.length) box("directors").value = [...directors, ...new Set(missing)].join("\n");
   }
 
@@ -746,9 +752,12 @@ function fillNotes(notes) {
     box("shareCapitalClass").value = notes.shareCapital.shareClass;
     box("shareCapitalNominalValue").value = String(notes.shareCapital.nominalValue);
   }
-  return Object.keys(NOTE_TITLE)
-    .filter((note) => notes.unreadable.includes(note))
-    .map((note) => NOTE_TITLE[note]());
+  return {
+    toEnter: Object.keys(NOTE_TITLE)
+      .filter((note) => notes.unreadable.includes(note))
+      .map((note) => NOTE_TITLE[note]()),
+    advanceRows: { filed: notes.directorsAdvances.length, taken: rowsTaken },
+  };
 }
 
 /**
@@ -758,14 +767,28 @@ function fillNotes(notes) {
  * @param {{accountantsReport: object|null, language: string, notes: object}} source
  */
 export function fillCarriedOver({ accountantsReport, language, notes, balanceSheetLines }) {
-  const notesToEnter = [...fillBalanceSheetLines(balanceSheetLines), ...fillNotes(notes)];
-  const notesNote = document.getElementById("revisionNotesNote");
-  notesNote.textContent = notesToEnter.length
-    ? siteText("ch.revision.notes-to-enter", "The filed accounts carry these notes, which you must enter again: {notes}.", {
+  const filledNotes = fillNotes(notes);
+  const notesToEnter = [...fillBalanceSheetLines(balanceSheetLines), ...filledNotes.toEnter];
+  const sentences = [];
+  if (notesToEnter.length) {
+    sentences.push(
+      siteText("ch.revision.notes-to-enter", "The filed accounts carry these notes, which you must enter again: {notes}.", {
         notes: notesToEnter.join(", "),
-      })
-    : "";
-  notesNote.hidden = notesToEnter.length === 0;
+      }),
+    );
+  }
+  if (filledNotes.advanceRows.filed > filledNotes.advanceRows.taken) {
+    sentences.push(
+      siteText(
+        "ch.revision.advance-rows-over",
+        "The filed accounts hold {filed} rows of advances to directors and this form takes {taken}, so the rows after row {taken} are not filled.",
+        filledNotes.advanceRows,
+      ),
+    );
+  }
+  const notesNote = document.getElementById("revisionNotesNote");
+  notesNote.textContent = sentences.join(" ");
+  notesNote.hidden = sentences.length === 0;
   if (accountantsReport?.accountantsName) {
     document.getElementById("includeAccountantsReport").checked = true;
     document.getElementById("accountantsName").value = accountantsReport.accountantsName;

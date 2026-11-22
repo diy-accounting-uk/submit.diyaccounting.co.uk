@@ -66,7 +66,7 @@ export function directorsAdvancesFindings(rows, { directorNames, signerName, amo
     if (directorNames && name && !directorNames.includes(name)) findings.push({ rule: "not-a-director", index, name });
     if (signerName !== undefined && name && name !== signerName) findings.push({ rule: "not-the-signer", index, name, signer: signerName });
   });
-  if (Number.isInteger(amountsOwedByDirectors) && rows.length > 0) {
+  if (Number.isInteger(amountsOwedByDirectors) && (rows.length > 0 || amountsOwedByDirectors > 0)) {
     const total = rows.reduce((sum, row) => sum + (Number.isInteger(row?.balanceAtEnd) ? row.balanceAtEnd : 0), 0);
     if (total !== amountsOwedByDirectors) findings.push({ rule: "sum", total, owed: amountsOwedByDirectors });
   }

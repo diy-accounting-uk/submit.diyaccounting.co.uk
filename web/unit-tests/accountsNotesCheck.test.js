@@ -35,6 +35,8 @@ describe("the rules of the advances to directors note", () => {
     expect(rules(directorsAdvancesFindings([ROW, ROW]))).toEqual(["same-director"]);
     expect(rules(directorsAdvancesFindings([ROW], { directorNames: ["Alan James Morgan"] }))).toEqual(["not-a-director"]);
     expect(directorsAdvancesFindings([ROW], { amountsOwedByDirectors: 800 })).toEqual([{ rule: "sum", total: 500, owed: 800 }]);
+    expect(directorsAdvancesFindings([], { amountsOwedByDirectors: 800 })).toEqual([{ rule: "sum", total: 0, owed: 800 }]);
+    expect(directorsAdvancesFindings([], { amountsOwedByDirectors: 0 })).toEqual([]);
     expect(directorsAdvancesFindings([ROW], { directorNames: ["Alex Jones"], amountsOwedByDirectors: 500 })).toEqual([]);
   });
 

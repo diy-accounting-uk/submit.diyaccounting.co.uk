@@ -1630,6 +1630,8 @@ window.WELSH_TEXT = {
   "ch.reports.terms-heading": "Beth mae’r geiriau hyn yn ei olygu",
   "ch.reports.too-large": "Mae cofnod y cwmni hwn yn rhy fawr i Submit ei ddangos yn yr adroddiad hwn.",
   "ch.revision.accepted": "Mae Tŷ’r Cwmnïau wedi derbyn y cyfrifon diwygiedig.",
+  "ch.revision.advance-rows-over":
+    "Mae’r cyfrifon a ffeiliwyd yn cynnwys {filed} rhes o flaensymiau i gyfarwyddwyr ac mae’r ffurflen hon yn cymryd {taken}, felly nid yw’r rhesi ar ôl rhes {taken} wedi’u llenwi.",
   "ch.revision.date-before-original":
     "Rhaid cymeradwyo’r cyfrifon diwygiedig ar {date} neu wedi hynny, pan gymeradwywyd y cyfrifon gwreiddiol",
   "ch.revision.line-accruals": "croniadau",

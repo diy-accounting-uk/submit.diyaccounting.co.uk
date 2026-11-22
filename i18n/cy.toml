@@ -26473,3 +26473,9 @@ cy = '''Mae mantolen y flwyddyn flaenorol wedi’i llenwi o falansau agoriadol y
 [strings."widget.books-small-prior-type"]
 hash = "95010e95ea16"
 cy = '''Nid oes gan y llyfr ffigur ar gyfer y rhain, felly teipiwch nhw: {fields}.'''
+
+# == A revision of accounts that hold more advance rows than the form takes ==
+
+[strings."ch.revision.advance-rows-over"]
+hash = "a967d75e25a4"
+cy = '''Mae’r cyfrifon a ffeiliwyd yn cynnwys {filed} rhes o flaensymiau i gyfarwyddwyr ac mae’r ffurflen hon yn cymryd {taken}, felly nid yw’r rhesi ar ôl rhes {taken} wedi’u llenwi.'''

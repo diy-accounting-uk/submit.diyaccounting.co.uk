@@ -66,6 +66,7 @@ const LIBRARIES = [
   "long-period.js",
   "accounts-revision.js",
   "first-accounts.js",
+  "accounts-notes-check.js",
 ];
 
 test.describe("Filings page - customer copy", () => {

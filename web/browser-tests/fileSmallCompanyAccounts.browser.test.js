@@ -427,6 +427,15 @@ test.describe("File small company accounts page", () => {
     );
   });
 
+  test("amounts owed by directors on the balance sheet with no advance row are refused on the page, in a sentence", async ({ page }) => {
+    await openFormView(page);
+    await fillCurrentYear(page);
+    await page.fill("#currentAmountsOwedByDirectors", "500");
+    expect(await page.evaluate(() => notesProblem())).toBe(
+      "The amounts owed at the end of the advances add up to £0, but the balance sheet shows £500 owed by directors.",
+    );
+  });
+
   test("an advance to someone who is not among the directors is refused on the page, in a sentence", async ({ page }) => {
     await openFormView(page);
     await fillCurrentYear(page);
