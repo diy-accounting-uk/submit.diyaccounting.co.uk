@@ -1160,6 +1160,12 @@
             <tr><td><code>registeredOffice</code></td><td>object</td><td>no</td><td>The registered office as address parts; taken from the company's Companies House record when left out</td></tr>
             <tr><td><code>accountantsReport</code></td><td>object</td><td>no</td><td>Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report</td></tr>
             <tr><td><code>revision</code></td><td>object</td><td>no</td><td>Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision</td></tr>
+            <tr><td><code>directorsAdvances</code></td><td>object[]</td><td>no</td><td>One row per director who owed the company money in the period; Companies House prints them in the note on advances and credits to directors (section 413)</td></tr>
+            <tr><td><code>documentLanguage</code></td><td>&quot;en&quot; | &quot;cy&quot;</td><td>no</td><td>cy files the accounts in Welsh, which only a company registered in Wales may do: Companies House prints every statement, heading and label in Welsh. en, the default, files them in English</td></tr>
+            <tr><td><code>dormant</code></td><td>boolean</td><td>no</td><td>True for a company dormant throughout the period: Companies House prints the section 480 statement in place of the section 477 one, and the trading status and share note below</td></tr>
+            <tr><td><code>dormantTradingStatus</code></td><td>&quot;neverTraded&quot; | &quot;noLongerTrading&quot;</td><td>no</td><td>Required when dormant. neverTraded prints that the company has not traded during the year or the preceding period and presents no profit and loss account</td></tr>
+            <tr><td><code>shareClass</code></td><td>&quot;ordinaryShares&quot; | &quot;preferenceShares&quot; | &quot;deferredShares&quot; | &quot;otherShares&quot;</td><td>no</td><td>Required when dormant: the class of the allotted shares, printed in the share capital note</td></tr>
+            <tr><td><code>nominalValue</code></td><td>number</td><td>no</td><td>Required when dormant: pounds per share. Companies House prints the number of shares called up share capital represents, of this nominal value each</td></tr>
             <tr><td><code>companyNumber</code></td><td>string</td><td>yes</td><td>The 8-character Companies House company number</td></tr>
             <tr><td><code>companyName</code></td><td>string</td><td>yes</td><td>The registered company name</td></tr>
             <tr><td><code>periodStart</code></td><td>string</td><td>yes</td><td>The accounting period's start date, YYYY-MM-DD</td></tr>
@@ -1249,6 +1255,81 @@
         &quot;nonCompliance&quot;,
         &quot;amendments&quot;
       ]
+    },
+    &quot;directorsAdvances&quot;: {
+      &quot;description&quot;: &quot;One row per director who owed the company money in the period; Companies House prints them in the note on advances and credits to directors (section 413)&quot;,
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;items&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {
+          &quot;name&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;description&quot;: &quot;The director, one of the directors the accounts name&quot;
+          },
+          &quot;terms&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;description&quot;: &quot;The interest rate and the main conditions of the advance or credit&quot;
+          },
+          &quot;balanceAtStart&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds the director owed at the start of the period&quot;
+          },
+          &quot;advanced&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds advanced to the director in the period&quot;
+          },
+          &quot;repaid&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds the director repaid in the period&quot;
+          },
+          &quot;balanceAtEnd&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds owed at the end: balanceAtStart plus advanced less repaid&quot;
+          }
+        },
+        &quot;required&quot;: [
+          &quot;name&quot;,
+          &quot;terms&quot;,
+          &quot;balanceAtStart&quot;,
+          &quot;advanced&quot;,
+          &quot;repaid&quot;,
+          &quot;balanceAtEnd&quot;
+        ]
+      }
+    },
+    &quot;documentLanguage&quot;: {
+      &quot;description&quot;: &quot;cy files the accounts in Welsh, which only a company registered in Wales may do: Companies House prints every statement, heading and label in Welsh. en, the default, files them in English&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;en&quot;,
+        &quot;cy&quot;
+      ]
+    },
+    &quot;dormant&quot;: {
+      &quot;description&quot;: &quot;True for a company dormant throughout the period: Companies House prints the section 480 statement in place of the section 477 one, and the trading status and share note below&quot;,
+      &quot;type&quot;: &quot;boolean&quot;
+    },
+    &quot;dormantTradingStatus&quot;: {
+      &quot;description&quot;: &quot;Required when dormant. neverTraded prints that the company has not traded during the year or the preceding period and presents no profit and loss account&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;neverTraded&quot;,
+        &quot;noLongerTrading&quot;
+      ]
+    },
+    &quot;shareClass&quot;: {
+      &quot;description&quot;: &quot;Required when dormant: the class of the allotted shares, printed in the share capital note&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;ordinaryShares&quot;,
+        &quot;preferenceShares&quot;,
+        &quot;deferredShares&quot;,
+        &quot;otherShares&quot;
+      ]
+    },
+    &quot;nominalValue&quot;: {
+      &quot;description&quot;: &quot;Required when dormant: pounds per share. Companies House prints the number of shares called up share capital represents, of this nominal value each&quot;,
+      &quot;type&quot;: &quot;number&quot;
     },
     &quot;companyNumber&quot;: {
       &quot;type&quot;: &quot;string&quot;,
@@ -1415,6 +1496,8 @@
             <tr><td><code>registeredOffice</code></td><td>object</td><td>no</td><td>The registered office as address parts; taken from the company's Companies House record when left out</td></tr>
             <tr><td><code>accountantsReport</code></td><td>object</td><td>no</td><td>Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report</td></tr>
             <tr><td><code>revision</code></td><td>object</td><td>no</td><td>Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision</td></tr>
+            <tr><td><code>directorsAdvances</code></td><td>object[]</td><td>no</td><td>One row per director who owed the company money in the period; Companies House prints them in the note on advances and credits to directors (section 413)</td></tr>
+            <tr><td><code>documentLanguage</code></td><td>&quot;en&quot; | &quot;cy&quot;</td><td>no</td><td>cy files the accounts in Welsh, which only a company registered in Wales may do: Companies House prints every statement, heading and label in Welsh. en, the default, files them in English</td></tr>
             <tr><td><code>companyNumber</code></td><td>string</td><td>yes</td><td>The 8-character Companies House company number</td></tr>
             <tr><td><code>companyName</code></td><td>string</td><td>yes</td><td>The registered company name</td></tr>
             <tr><td><code>periodStart</code></td><td>string</td><td>yes</td><td>The accounting period's start date, YYYY-MM-DD</td></tr>
@@ -1503,6 +1586,55 @@
         &quot;originalDateOfApproval&quot;,
         &quot;nonCompliance&quot;,
         &quot;amendments&quot;
+      ]
+    },
+    &quot;directorsAdvances&quot;: {
+      &quot;description&quot;: &quot;One row per director who owed the company money in the period; Companies House prints them in the note on advances and credits to directors (section 413)&quot;,
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;items&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {
+          &quot;name&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;description&quot;: &quot;The director, one of the directors the accounts name&quot;
+          },
+          &quot;terms&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;description&quot;: &quot;The interest rate and the main conditions of the advance or credit&quot;
+          },
+          &quot;balanceAtStart&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds the director owed at the start of the period&quot;
+          },
+          &quot;advanced&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds advanced to the director in the period&quot;
+          },
+          &quot;repaid&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds the director repaid in the period&quot;
+          },
+          &quot;balanceAtEnd&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds owed at the end: balanceAtStart plus advanced less repaid&quot;
+          }
+        },
+        &quot;required&quot;: [
+          &quot;name&quot;,
+          &quot;terms&quot;,
+          &quot;balanceAtStart&quot;,
+          &quot;advanced&quot;,
+          &quot;repaid&quot;,
+          &quot;balanceAtEnd&quot;
+        ]
+      }
+    },
+    &quot;documentLanguage&quot;: {
+      &quot;description&quot;: &quot;cy files the accounts in Welsh, which only a company registered in Wales may do: Companies House prints every statement, heading and label in Welsh. en, the default, files them in English&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;en&quot;,
+        &quot;cy&quot;
       ]
     },
     &quot;companyNumber&quot;: {
@@ -2588,6 +2720,12 @@
             <tr><td><code>registeredOffice</code></td><td>object</td><td>no</td><td>The registered office as address parts; taken from the company's Companies House record when left out</td></tr>
             <tr><td><code>accountantsReport</code></td><td>object</td><td>no</td><td>Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report</td></tr>
             <tr><td><code>revision</code></td><td>object</td><td>no</td><td>Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision</td></tr>
+            <tr><td><code>directorsAdvances</code></td><td>object[]</td><td>no</td><td>One row per director who owed the company money in the period; Companies House prints them in the note on advances and credits to directors (section 413)</td></tr>
+            <tr><td><code>documentLanguage</code></td><td>&quot;en&quot; | &quot;cy&quot;</td><td>no</td><td>cy files the accounts in Welsh, which only a company registered in Wales may do: Companies House prints every statement, heading and label in Welsh. en, the default, files them in English</td></tr>
+            <tr><td><code>dormant</code></td><td>boolean</td><td>no</td><td>True for a company dormant throughout the period: Companies House prints the section 480 statement in place of the section 477 one, and the trading status and share note below</td></tr>
+            <tr><td><code>dormantTradingStatus</code></td><td>&quot;neverTraded&quot; | &quot;noLongerTrading&quot;</td><td>no</td><td>Required when dormant. neverTraded prints that the company has not traded during the year or the preceding period and presents no profit and loss account</td></tr>
+            <tr><td><code>shareClass</code></td><td>&quot;ordinaryShares&quot; | &quot;preferenceShares&quot; | &quot;deferredShares&quot; | &quot;otherShares&quot;</td><td>no</td><td>Required when dormant: the class of the allotted shares, printed in the share capital note</td></tr>
+            <tr><td><code>nominalValue</code></td><td>number</td><td>no</td><td>Required when dormant: pounds per share. Companies House prints the number of shares called up share capital represents, of this nominal value each</td></tr>
             <tr><td><code>companyNumber</code></td><td>string</td><td>no</td><td>Required unless clientId is given</td></tr>
             <tr><td><code>companyName</code></td><td>string</td><td>yes</td><td>The registered company name</td></tr>
             <tr><td><code>periodStart</code></td><td>string</td><td>yes</td><td>The accounting period's start date, YYYY-MM-DD</td></tr>
@@ -2679,6 +2817,81 @@
         &quot;nonCompliance&quot;,
         &quot;amendments&quot;
       ]
+    },
+    &quot;directorsAdvances&quot;: {
+      &quot;description&quot;: &quot;One row per director who owed the company money in the period; Companies House prints them in the note on advances and credits to directors (section 413)&quot;,
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;items&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {
+          &quot;name&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;description&quot;: &quot;The director, one of the directors the accounts name&quot;
+          },
+          &quot;terms&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;description&quot;: &quot;The interest rate and the main conditions of the advance or credit&quot;
+          },
+          &quot;balanceAtStart&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds the director owed at the start of the period&quot;
+          },
+          &quot;advanced&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds advanced to the director in the period&quot;
+          },
+          &quot;repaid&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds the director repaid in the period&quot;
+          },
+          &quot;balanceAtEnd&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds owed at the end: balanceAtStart plus advanced less repaid&quot;
+          }
+        },
+        &quot;required&quot;: [
+          &quot;name&quot;,
+          &quot;terms&quot;,
+          &quot;balanceAtStart&quot;,
+          &quot;advanced&quot;,
+          &quot;repaid&quot;,
+          &quot;balanceAtEnd&quot;
+        ]
+      }
+    },
+    &quot;documentLanguage&quot;: {
+      &quot;description&quot;: &quot;cy files the accounts in Welsh, which only a company registered in Wales may do: Companies House prints every statement, heading and label in Welsh. en, the default, files them in English&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;en&quot;,
+        &quot;cy&quot;
+      ]
+    },
+    &quot;dormant&quot;: {
+      &quot;description&quot;: &quot;True for a company dormant throughout the period: Companies House prints the section 480 statement in place of the section 477 one, and the trading status and share note below&quot;,
+      &quot;type&quot;: &quot;boolean&quot;
+    },
+    &quot;dormantTradingStatus&quot;: {
+      &quot;description&quot;: &quot;Required when dormant. neverTraded prints that the company has not traded during the year or the preceding period and presents no profit and loss account&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;neverTraded&quot;,
+        &quot;noLongerTrading&quot;
+      ]
+    },
+    &quot;shareClass&quot;: {
+      &quot;description&quot;: &quot;Required when dormant: the class of the allotted shares, printed in the share capital note&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;ordinaryShares&quot;,
+        &quot;preferenceShares&quot;,
+        &quot;deferredShares&quot;,
+        &quot;otherShares&quot;
+      ]
+    },
+    &quot;nominalValue&quot;: {
+      &quot;description&quot;: &quot;Required when dormant: pounds per share. Companies House prints the number of shares called up share capital represents, of this nominal value each&quot;,
+      &quot;type&quot;: &quot;number&quot;
     },
     &quot;companyNumber&quot;: {
       &quot;description&quot;: &quot;Required unless clientId is given&quot;,
@@ -2853,6 +3066,8 @@
             <tr><td><code>registeredOffice</code></td><td>object</td><td>no</td><td>The registered office as address parts; taken from the company's Companies House record when left out</td></tr>
             <tr><td><code>accountantsReport</code></td><td>object</td><td>no</td><td>Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report</td></tr>
             <tr><td><code>revision</code></td><td>object</td><td>no</td><td>Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision</td></tr>
+            <tr><td><code>directorsAdvances</code></td><td>object[]</td><td>no</td><td>One row per director who owed the company money in the period; Companies House prints them in the note on advances and credits to directors (section 413)</td></tr>
+            <tr><td><code>documentLanguage</code></td><td>&quot;en&quot; | &quot;cy&quot;</td><td>no</td><td>cy files the accounts in Welsh, which only a company registered in Wales may do: Companies House prints every statement, heading and label in Welsh. en, the default, files them in English</td></tr>
             <tr><td><code>companyNumber</code></td><td>string</td><td>no</td><td>Required unless clientId is given</td></tr>
             <tr><td><code>companyName</code></td><td>string</td><td>yes</td><td>The registered company name</td></tr>
             <tr><td><code>periodStart</code></td><td>string</td><td>yes</td><td>The accounting period's start date, YYYY-MM-DD</td></tr>
@@ -2943,6 +3158,55 @@
         &quot;originalDateOfApproval&quot;,
         &quot;nonCompliance&quot;,
         &quot;amendments&quot;
+      ]
+    },
+    &quot;directorsAdvances&quot;: {
+      &quot;description&quot;: &quot;One row per director who owed the company money in the period; Companies House prints them in the note on advances and credits to directors (section 413)&quot;,
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;items&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {
+          &quot;name&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;description&quot;: &quot;The director, one of the directors the accounts name&quot;
+          },
+          &quot;terms&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;description&quot;: &quot;The interest rate and the main conditions of the advance or credit&quot;
+          },
+          &quot;balanceAtStart&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds the director owed at the start of the period&quot;
+          },
+          &quot;advanced&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds advanced to the director in the period&quot;
+          },
+          &quot;repaid&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds the director repaid in the period&quot;
+          },
+          &quot;balanceAtEnd&quot;: {
+            &quot;type&quot;: &quot;number&quot;,
+            &quot;description&quot;: &quot;Whole pounds owed at the end: balanceAtStart plus advanced less repaid&quot;
+          }
+        },
+        &quot;required&quot;: [
+          &quot;name&quot;,
+          &quot;terms&quot;,
+          &quot;balanceAtStart&quot;,
+          &quot;advanced&quot;,
+          &quot;repaid&quot;,
+          &quot;balanceAtEnd&quot;
+        ]
+      }
+    },
+    &quot;documentLanguage&quot;: {
+      &quot;description&quot;: &quot;cy files the accounts in Welsh, which only a company registered in Wales may do: Companies House prints every statement, heading and label in Welsh. en, the default, files them in English&quot;,
+      &quot;type&quot;: &quot;string&quot;,
+      &quot;enum&quot;: [
+        &quot;en&quot;,
+        &quot;cy&quot;
       ]
     },
     &quot;companyNumber&quot;: {

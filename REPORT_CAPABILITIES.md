@@ -5538,11 +5538,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### MCP-07 File VAT returns and accounts via API
 
 - **Use when:** confirmed VAT or accounts figures must be filed, fetched or polled against the deployed API.
-- **Does:** callSubmitApi in mcp/lib/submit-tools.js is the shared HTTP layer behind list_vat_obligations, submit_vat_return, get_vat_receipt, render_micro_entity_accounts_sandbox, submit_micro_entity_accounts, render_small_company_accounts_sandbox, submit_small_company_accounts_sandbox and poll_submission. The small-company tools post to the same companies-house/accounts routes with a smallCompany section, so poll_submission kind accounts polls both. The four accounts tools take an optional revision, which files revised accounts that replace accounts already filed. It carries the session bearer token, the HMRC and custom-authoriser headers, and polls a 202 response to a terminal status. list_vat_obligations and submit_vat_return take no HMRC token argument: hmrcGrantFor names the session's HMRC grant (MCP-21) to Submit in the x-mcp-hmrc-grant header on each call, so the token stays inside Submit, and fails with a message naming request_hmrc_authorisation when the session holds none.
+- **Does:** callSubmitApi in mcp/lib/submit-tools.js is the shared HTTP layer behind list_vat_obligations, submit_vat_return, get_vat_receipt, render_micro_entity_accounts_sandbox, submit_micro_entity_accounts, render_small_company_accounts_sandbox, submit_small_company_accounts_sandbox and poll_submission. The small-company tools post to the same companies-house/accounts routes with a smallCompany section, so poll_submission kind accounts polls both. The four accounts tools take an optional revision, which files revised accounts that replace accounts already filed, and list_accounts_receipts answers the receipt name a revision names. They also send documentLanguage (Welsh accounts) and directorsAdvances, and the micro-entity tools the dormant fields. It carries the session bearer token, the HMRC and custom-authoriser headers, and polls a 202 response to a terminal status. list_vat_obligations and submit_vat_return take no HMRC token argument: hmrcGrantFor names the session's HMRC grant (MCP-21) to Submit in the x-mcp-hmrc-grant header on each call, so the token stays inside Submit, and fails with a message naming request_hmrc_authorisation when the session holds none.
 - **Run:** no command; see Does and Entry
 - **Entry:** `mcp/lib/submit-tools.js:callSubmitApi`; `mcp/lib/submit-tools.js:hmrcGrantFor`; `mcp/lib/submit-tools.js:submitVatReturn`; `mcp/lib/submit-tools.js:submitMicroEntityAccounts`
 - **Files:** mcp/lib/submit-tools.js, mcp/test/submit-tools.test.js
-- **Keywords:** submit_vat_return, list_vat_obligations, get_vat_receipt, companies house accounts, callSubmitApi, 202 poll, hmrc access token, hmrc grant
+- **Keywords:** submit_vat_return, list_vat_obligations, get_vat_receipt, list_accounts_receipts, companies house accounts, callSubmitApi, 202 poll, hmrc access token, hmrc grant, dormant accounts, welsh accounts, directors advances
 - **Related:** MCP-05, MCP-04, MCP-08, MCP-21
 
 #### MCP-08 Manage practice clients and HMRC agent authorisation
@@ -7984,6 +7984,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - device id: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [MCP-22](#mcp-22-read-the-machine-for-hmrc-fraud-prevention-headers)
 - digital pass: [BILL-06](#bill-06-generate-a-token-charged-pass)
 - direct api gateway: [SITE-26](#site-26-check-that-an-api-request-came-through-cloudfront)
+- directors advances: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - directory listing: [SITE-25](#site-25-build-the-marketing-site-data-social-images-brand-shots-and-listing-packs), [OPS-212](#ops-212-check-the-listing-register-against-the-bundle-catalogue-monthly)
 - directory reviewer: [MCP-26](#mcp-26-seed-the-demo-reviewer-user-and-its-two-sample-books)
 - disaster recovery: [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account)
@@ -8050,7 +8051,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dora-row action: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
 - dora_runs: [DATA-11](#data-11-run-glue-data-quality-checks)
 - dormant: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
-- dormant accounts: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages)
+- dormant accounts: [SITE-32](#site-32-write-a-landing-page-for-each-filing-that-is-production-on-prod-and-the-article-pages), [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - double rule: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - download page: [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads)
 - downloads by product: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
@@ -8674,6 +8675,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - list passes: [BILL-09](#bill-09-list-a-users-issued-passes)
 - list vat obligations demo: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - list-imports: [OPS-146](#ops-146-delete-a-deployments-app-stacks-in-parallel-waves)
+- list_accounts_receipts: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - list_clients: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - list_vat_obligations: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - listing packs: [SITE-25](#site-25-build-the-marketing-site-data-social-images-brand-shots-and-listing-packs)
@@ -10068,6 +10070,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - weekly verification: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly)
 - well-known: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - welsh: [SITE-30](#site-30-build-the-welsh-pages), [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
+- welsh accounts: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - welsh proof: [SITE-35](#site-35-prove-the-welsh-pages-read-in-welsh-on-a-running-site)
 - what does the repo do: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - whole-site design pass: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)

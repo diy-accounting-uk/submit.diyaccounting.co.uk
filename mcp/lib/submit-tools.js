@@ -3,11 +3,11 @@
 
 // @capability MCP-07 File VAT returns and accounts via API
 // - **Use when:** confirmed VAT or accounts figures must be filed, fetched or polled against the deployed API.
-// - **Does:** callSubmitApi in mcp/lib/submit-tools.js is the shared HTTP layer behind list_vat_obligations, submit_vat_return, get_vat_receipt, render_micro_entity_accounts_sandbox, submit_micro_entity_accounts, render_small_company_accounts_sandbox, submit_small_company_accounts_sandbox and poll_submission. The small-company tools post to the same companies-house/accounts routes with a smallCompany section, so poll_submission kind accounts polls both. The four accounts tools take an optional revision, which files revised accounts that replace accounts already filed. It carries the session bearer token, the HMRC and custom-authoriser headers, and polls a 202 response to a terminal status. list_vat_obligations and submit_vat_return take no HMRC token argument: hmrcGrantFor names the session's HMRC grant (MCP-21) to Submit in the x-mcp-hmrc-grant header on each call, so the token stays inside Submit, and fails with a message naming request_hmrc_authorisation when the session holds none.
+// - **Does:** callSubmitApi in mcp/lib/submit-tools.js is the shared HTTP layer behind list_vat_obligations, submit_vat_return, get_vat_receipt, render_micro_entity_accounts_sandbox, submit_micro_entity_accounts, render_small_company_accounts_sandbox, submit_small_company_accounts_sandbox and poll_submission. The small-company tools post to the same companies-house/accounts routes with a smallCompany section, so poll_submission kind accounts polls both. The four accounts tools take an optional revision, which files revised accounts that replace accounts already filed, and list_accounts_receipts answers the receipt name a revision names. They also send documentLanguage (Welsh accounts) and directorsAdvances, and the micro-entity tools the dormant fields. It carries the session bearer token, the HMRC and custom-authoriser headers, and polls a 202 response to a terminal status. list_vat_obligations and submit_vat_return take no HMRC token argument: hmrcGrantFor names the session's HMRC grant (MCP-21) to Submit in the x-mcp-hmrc-grant header on each call, so the token stays inside Submit, and fails with a message naming request_hmrc_authorisation when the session holds none.
 // - **Run:** no command; see Does and Entry
 // - **Entry:** `mcp/lib/submit-tools.js:callSubmitApi`; `mcp/lib/submit-tools.js:hmrcGrantFor`; `mcp/lib/submit-tools.js:submitVatReturn`; `mcp/lib/submit-tools.js:submitMicroEntityAccounts`
 // - **Files:** mcp/lib/submit-tools.js, mcp/test/submit-tools.test.js
-// - **Keywords:** submit_vat_return, list_vat_obligations, get_vat_receipt, companies house accounts, callSubmitApi, 202 poll, hmrc access token, hmrc grant
+// - **Keywords:** submit_vat_return, list_vat_obligations, get_vat_receipt, list_accounts_receipts, companies house accounts, callSubmitApi, 202 poll, hmrc access token, hmrc grant, dormant accounts, welsh accounts, directors advances
 // - **Related:** MCP-05, MCP-04, MCP-08, MCP-21
 // @end-capability
 
@@ -435,6 +435,17 @@ export async function listAccountsReceipts(session, params = {}) {
   return { receipts: accepted, rejectedFilings: rejected };
 }
 
+// The fields of dormant micro-entity accounts; the route refuses them with a small company section.
+const DORMANT_FIELDS = ["dormant", "dormantTradingStatus", "shareClass", "nominalValue"];
+
+// The language of the document and the note on advances to directors, which both accounts routes read.
+function languageAndAdvancesFields(params) {
+  return {
+    ...(params.documentLanguage ? { documentLanguage: params.documentLanguage } : {}),
+    ...(params.directorsAdvances ? { directorsAdvances: params.directorsAdvances } : {}),
+  };
+}
+
 const ACCOUNTS_STATEMENT_FIELDS = ["section477Exemption", "membersNotRequiredAudit", "directorsResponsibilities", "microEntityProvisions"];
 
 /**
@@ -474,6 +485,8 @@ function accountsFilingBody(toolName, params, { allowClientId = false } = {}) {
     ...(params.registeredOffice ? { registeredOffice: params.registeredOffice } : {}),
     ...(params.accountantsReport ? { accountantsReport: params.accountantsReport } : {}),
     ...(params.revision ? { revision: params.revision } : {}),
+    ...languageAndAdvancesFields(params),
+    ...Object.fromEntries(DORMANT_FIELDS.filter((field) => params[field] !== undefined).map((field) => [field, params[field]])),
   };
 }
 
@@ -554,6 +567,7 @@ function smallCompanyFilingBody(toolName, params, { allowClientId = false } = {}
     ...(params.registeredOffice ? { registeredOffice: params.registeredOffice } : {}),
     ...(params.accountantsReport ? { accountantsReport: params.accountantsReport } : {}),
     ...(params.revision ? { revision: params.revision } : {}),
+    ...languageAndAdvancesFields(params),
   };
 }
 

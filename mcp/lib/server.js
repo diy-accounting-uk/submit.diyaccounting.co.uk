@@ -125,10 +125,57 @@ const revisionSchema = z
     "Makes these revised accounts that replace the accounts already filed for the same period; director.dateApproved is then the date the directors approved the revision",
   );
 
+const directorsAdvancesSchema = z
+  .array(
+    z.object({
+      name: z.string().describe("The director, one of the directors the accounts name"),
+      terms: z.string().describe("The interest rate and the main conditions of the advance or credit"),
+      balanceAtStart: z.number().describe("Whole pounds the director owed at the start of the period"),
+      advanced: z.number().describe("Whole pounds advanced to the director in the period"),
+      repaid: z.number().describe("Whole pounds the director repaid in the period"),
+      balanceAtEnd: z.number().describe("Whole pounds owed at the end: balanceAtStart plus advanced less repaid"),
+    }),
+  )
+  .optional()
+  .describe(
+    "One row per director who owed the company money in the period; Companies House prints them in the note on advances and credits to directors (section 413)",
+  );
+
+const documentLanguageSchema = z
+  .enum(["en", "cy"])
+  .optional()
+  .describe(
+    "cy files the accounts in Welsh, which only a company registered in Wales may do: Companies House prints every statement, heading and label in Welsh. en, the default, files them in English",
+  );
+
 const accountsFilingInputSchema = {
   registeredOffice: registeredOfficeSchema,
   accountantsReport: accountantsReportSchema,
   revision: revisionSchema,
+  directorsAdvances: directorsAdvancesSchema,
+  documentLanguage: documentLanguageSchema,
+  dormant: z
+    .boolean()
+    .optional()
+    .describe(
+      "True for a company dormant throughout the period: Companies House prints the section 480 statement in place of the section 477 one, and the trading status and share note below",
+    ),
+  dormantTradingStatus: z
+    .enum(["neverTraded", "noLongerTrading"])
+    .optional()
+    .describe(
+      "Required when dormant. neverTraded prints that the company has not traded during the year or the preceding period and presents no profit and loss account",
+    ),
+  shareClass: z
+    .enum(["ordinaryShares", "preferenceShares", "deferredShares", "otherShares"])
+    .optional()
+    .describe("Required when dormant: the class of the allotted shares, printed in the share capital note"),
+  nominalValue: z
+    .number()
+    .optional()
+    .describe(
+      "Required when dormant: pounds per share. Companies House prints the number of shares called up share capital represents, of this nominal value each",
+    ),
   companyNumber: z.string().describe("The 8-character Companies House company number"),
   companyName: z.string().describe("The registered company name"),
   periodStart: z.string().describe("The accounting period's start date, YYYY-MM-DD"),
@@ -196,6 +243,8 @@ const smallCompanyFilingInputSchema = {
   registeredOffice: registeredOfficeSchema,
   accountantsReport: accountantsReportSchema,
   revision: revisionSchema,
+  directorsAdvances: directorsAdvancesSchema,
+  documentLanguage: documentLanguageSchema,
   companyNumber: z.string().describe("The 8-character Companies House company number"),
   companyName: z.string().describe("The registered company name"),
   periodStart: z.string().describe("The accounting period's start date, YYYY-MM-DD"),

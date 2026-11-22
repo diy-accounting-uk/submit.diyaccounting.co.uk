@@ -745,7 +745,7 @@ describe("submit-tools", () => {
 
       await listAccountsReceipts(session, { clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV" });
 
-      expect(fetchMock.mock.calls.length).toBe(5);
+      expect(fetchMock.mock.calls).toHaveLength(5);
       for (const [url] of fetchMock.mock.calls) expect(url).toMatch(/\?clientId=01ARZ3NDEKTSV4RRFFQ69G5FAV$/);
     });
 
@@ -924,6 +924,22 @@ describe("submit-tools", () => {
       amendments: "Creditors falling due within one year rise by £240.",
     };
     const OPTIONAL_FIELDS = { registeredOffice: REGISTERED_OFFICE, accountantsReport: ACCOUNTANTS_REPORT, revision: REVISION };
+    const LANGUAGE_AND_ADVANCES = {
+      documentLanguage: "cy",
+      directorsAdvances: [
+        {
+          name: "A Director",
+          terms: "Interest free, repayable on demand",
+          balanceAtStart: 0,
+          advanced: 500,
+          repaid: 200,
+          balanceAtEnd: 300,
+        },
+      ],
+    };
+    const DORMANT = { dormant: true, dormantTradingStatus: "neverTraded", shareClass: "ordinaryShares", nominalValue: 1 };
+    const MICRO_OPTIONAL = { ...OPTIONAL_FIELDS, ...LANGUAGE_AND_ADVANCES, ...DORMANT };
+    const SMALL_OPTIONAL = { ...OPTIONAL_FIELDS, ...LANGUAGE_AND_ADVANCES };
     const SMALL = {
       ...ACCOUNTS_PARAMS,
       balanceSheet: undefined,
@@ -943,10 +959,10 @@ describe("submit-tools", () => {
     };
     const FILING = { clientId: "client-1", codesEntryId: "entry-1" };
     const CASES = [
-      ["render_micro_entity_accounts_sandbox", renderMicroEntityAccounts, { ...ACCOUNTS_PARAMS, ...OPTIONAL_FIELDS }],
-      ["submit_micro_entity_accounts_sandbox", submitMicroEntityAccounts, { ...ACCOUNTS_PARAMS, ...OPTIONAL_FIELDS, ...FILING }],
-      ["render_small_company_accounts_sandbox", renderSmallCompanyAccounts, { ...SMALL, ...OPTIONAL_FIELDS }],
-      ["submit_small_company_accounts_sandbox", submitSmallCompanyAccounts, { ...SMALL, ...OPTIONAL_FIELDS, ...FILING }],
+      ["render_micro_entity_accounts_sandbox", renderMicroEntityAccounts, { ...ACCOUNTS_PARAMS, ...MICRO_OPTIONAL }],
+      ["submit_micro_entity_accounts_sandbox", submitMicroEntityAccounts, { ...ACCOUNTS_PARAMS, ...MICRO_OPTIONAL, ...FILING }],
+      ["render_small_company_accounts_sandbox", renderSmallCompanyAccounts, { ...SMALL, ...SMALL_OPTIONAL }],
+      ["submit_small_company_accounts_sandbox", submitSmallCompanyAccounts, { ...SMALL, ...SMALL_OPTIONAL, ...FILING }],
     ];
 
     async function bodyOf(handler, params) {
@@ -963,6 +979,41 @@ describe("submit-tools", () => {
         expect(body, field).toHaveProperty(field);
         expect(body[field], field).toEqual(params[field]);
       }
+    });
+
+    it("sends dormant accounts and Welsh accounts with advances in a body the accounts render route accepts", async () => {
+      const { extractAndValidateAccountsParameters } = await import("../../app/functions/companies-house/companiesHouseAccountsPost.js");
+      // The render route validates without the authentication code, which the filing route takes from the codes entry.
+      const RENDER_ROUTE = { requireCompanyAuthCode: false };
+      const dormantYear = {
+        fixedAssets: 0,
+        currentAssets: 100,
+        creditorsWithinOneYear: 0,
+        creditorsAfterOneYear: 0,
+        calledUpShareCapital: 100,
+        profitAndLossAccount: 0,
+        capitalAndReserves: 100,
+      };
+      const dormant = await bodyOf(renderMicroEntityAccounts, {
+        ...ACCOUNTS_PARAMS,
+        ...DORMANT,
+        balanceSheet: { currentYear: dormantYear, priorYear: dormantYear },
+        averageEmployees: 0,
+      });
+      const welsh = await bodyOf(renderMicroEntityAccounts, {
+        ...ACCOUNTS_PARAMS,
+        ...LANGUAGE_AND_ADVANCES,
+        director: { ...ACCOUNTS_PARAMS.director, name: "A Director" },
+      });
+
+      for (const body of [dormant, welsh]) {
+        const errors = [];
+        const accounts = extractAndValidateAccountsParameters({ body: JSON.stringify(body) }, errors, RENDER_ROUTE);
+        expect(errors).toEqual([]);
+        expect(accounts.companyNumber).toBe(ACCOUNTS_PARAMS.companyNumber);
+      }
+      expect(extractAndValidateAccountsParameters({ body: JSON.stringify(dormant) }, [], RENDER_ROUTE)).toMatchObject(DORMANT);
+      expect(extractAndValidateAccountsParameters({ body: JSON.stringify(welsh) }, [], RENDER_ROUTE)).toMatchObject(LANGUAGE_AND_ADVANCES);
     });
 
     it.each(CASES)("%s sends no field its schema lacks", async (name, handler, params) => {
