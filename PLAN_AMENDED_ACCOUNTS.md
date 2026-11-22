@@ -308,7 +308,7 @@ A revision that changes regime (micro-entity to small company, or the reverse) i
 | MCP package readme | `mcp/README.md` | The four tool rows | AA7 |
 | API description | `infra/main/java/co/uk/diyaccounting/submit/names/CompaniesHouseNames.java`, `web/public/docs/api/openapi.json` | The summary names small company and revised accounts | AA16 |
 | Catalogue | `web/public/submit.catalogue.toml` | The activity `file-revised-accounts`; its name at launch | AA3, AA18 |
-| Capability index | `REPORT_CAPABILITIES.md`, `_developers/capabilities/skeleton.md` | CH-08's text; a new entry CH-20 | AA4, AA16 |
+| Capability index | `REPORT_CAPABILITIES.md`, `_developers/capabilities/skeleton.md` | CH-08's text; a new entry CH-24 | AA4, AA16 |
 | Terms | `web/public/terms.html` | Two sentences name revised accounts | AA18 |
 | Customer copy and receipts | `web/public/lib/filing-record.js`, `web/public/hmrc/receipt/receipts.page.js` | The title and the amend link | AA4 |
 | Filing landing pages | `scripts/build-filing-pages.mjs` | A section on each accounts page | AA21 |
