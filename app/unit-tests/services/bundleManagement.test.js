@@ -553,6 +553,32 @@ describe("bundleEnforcement.js", () => {
       expect(result.client.clientId).toBe("c1");
     });
 
+    test("logs the refusal with the route pattern in place of the client id in the path", async () => {
+      getUserBundles.mockResolvedValue([{ bundleId: "day-guest" }]);
+      const event = {
+        ...buildClientScopedEvent(),
+        routeKey: "GET /api/v1/practice/clients/{clientId}",
+        rawPath: "/api/v1/practice/clients/client-7q2m",
+        pathParameters: { clientId: "client-7q2m" },
+      };
+      event.requestContext = {
+        ...event.requestContext,
+        http: { ...event.requestContext.http, path: "/api/v1/practice/clients/client-7q2m" },
+      };
+      const lines = [];
+      const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => lines.push(String(chunk)) > 0);
+
+      try {
+        await expect(enforceBundles(event, { clientId: "c1" })).rejects.toMatchObject({
+          details: { code: "CLIENT_SCOPE_FORBIDDEN", path: "/api/v1/practice/clients/{clientId}" },
+        });
+      } finally {
+        write.mockRestore();
+      }
+      expect(lines.join("")).toContain("/api/v1/practice/clients/{clientId}");
+      expect(lines.join("")).not.toContain("client-7q2m");
+    });
+
     test("refuses a client-scoped request when the practice holds no resident-tax-agent subscription", async () => {
       getUserBundles.mockResolvedValue([{ bundleId: "day-guest" }]);
 
