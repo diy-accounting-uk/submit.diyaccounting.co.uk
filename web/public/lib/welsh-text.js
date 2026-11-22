@@ -1582,7 +1582,7 @@ window.WELSH_TEXT = {
   "itsa.current-total-retrieved": "Mae’r cyfanswm presennol wedi’i adalw.",
   "itsa.current-total-token-expired": "Mae’r tocyn mynediad wedi dod i ben. Rhowch gynnig arall ar lwytho’r cyfanswm.",
   "itsa.declaration-wording":
-    "Rwy’n cadarnhau bod yr wybodaeth hon yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth. Rwy’n deall y gallai fod yn rhaid i mi dalu cosbau ariannol ac wynebu erlyniad os byddaf yn rhoi gwybodaeth anwir.",
+    "Rwy’n datgan bod yr wybodaeth a’r Ffurflen Dreth a gyflwynwyd gennyf (o’u hystyried gyda’i gilydd) yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth. Rwy’n deall y gallai fod yn rhaid i mi dalu cosbau ariannol ac wynebu erlyniad os byddaf yn rhoi gwybodaeth anwir.",
   "itsa.definition-annual-payments-relief-claimed": "Gwerth y taliadau blynyddol a wnaed.",
   "itsa.definition-annual-payments-tax-rate": "Y gyfradd dreth a ddefnyddiwyd yn y cyfrifiad.",
   "itsa.definition-blind-person-s-allowance": "Mae Lwfans Person Dall yn swm ychwanegol o lwfans di-dreth.",

@@ -5262,8 +5262,9 @@ cy = '''Cyflwr OAuth annilys. Rhowch gynnig arall arni.'''
 #   tax calculation                     cyfrifiad treth; Income Tax calculation: cyfrifiad Treth Incwm
 #   final declaration                   datganiad terfynol
 #   Declaration                         Datganiad
-#   The legal declaration (HMRC's Welsh, used word for word; it is not a translation of our English):
-#     Rwy’n datgan bod yr wybodaeth a’r Hunanasesiad a gyflwynwyd gennyf (o’u hystyried gyda’i gilydd) yn gywir ac yn
+#   The legal declaration, the Welsh of HMRC's English in the Income Tax end-to-end service guide
+#   (make-updates-at-tax-year-end.html#agreeing-to-the-declaration); Ffurflen Dreth is HMRC's Welsh for tax return:
+#     Rwy’n datgan bod yr wybodaeth a’r Ffurflen Dreth a gyflwynwyd gennyf (o’u hystyried gyda’i gilydd) yn gywir ac yn
 #     gyflawn hyd eithaf fy ngwybodaeth. Rwy’n deall y gallai fod yn rhaid i mi dalu cosbau ariannol ac wynebu
 #     erlyniad os byddaf yn rhoi gwybodaeth anwir.
 #   forecast, estimate                  rhagolwg, amcangyfrif
@@ -5784,8 +5785,8 @@ hash = "1f55356223d3"
 cy = '''Ni roddwyd gan CThEF'''
 
 [strings."itsa.declaration-wording"]
-hash = "e2acba9fc0dd"
-cy = '''Rwy’n cadarnhau bod yr wybodaeth hon yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth. Rwy’n deall y gallai fod yn rhaid i mi dalu cosbau ariannol ac wynebu erlyniad os byddaf yn rhoi gwybodaeth anwir.'''
+hash = "d185edde28a0"
+cy = '''Rwy’n datgan bod yr wybodaeth a’r Ffurflen Dreth a gyflwynwyd gennyf (o’u hystyried gyda’i gilydd) yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth. Rwy’n deall y gallai fod yn rhaid i mi dalu cosbau ariannol ac wynebu erlyniad os byddaf yn rhoi gwybodaeth anwir.'''
 
 [strings."itsa.record-declared-on"]
 hash = "f079025aecc0"
@@ -10515,9 +10516,9 @@ cy = '''Busnesau yn y Ffurflen Dreth hon'''
 hash = "5b018b3212f9"
 cy = '''Pob busnes a gyfrifodd CThEF yn y cyfrifiad hwn, fel bod busnes sydd gennych ond na chafodd ei gyfrif gan CThEF yn fwlch y gallwch ei gywiro cyn i chi wneud y datganiad.'''
 
-[strings."itsa-final.i-confirm-this-information-is-correct-e2acba"]
-hash = "e2acba9fc0dd"
-cy = '''Rwy’n cadarnhau bod yr wybodaeth hon yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth. Rwy’n deall y gallai fod yn rhaid i mi dalu cosbau ariannol ac wynebu erlyniad os byddaf yn rhoi gwybodaeth anwir.'''
+[strings."itsa-final.i-declare-that-the-information-and-d185ed"]
+hash = "d185edde28a0"
+cy = '''Rwy’n datgan bod yr wybodaeth a’r Ffurflen Dreth a gyflwynwyd gennyf (o’u hystyried gyda’i gilydd) yn gywir ac yn gyflawn hyd eithaf fy ngwybodaeth. Rwy’n deall y gallai fod yn rhaid i mi dalu cosbau ariannol ac wynebu erlyniad os byddaf yn rhoi gwybodaeth anwir.'''
 
 [strings."itsa-final.hmrc-assist-feedback-was-shown-for-efb24c"]
 hash = "efb24cfbf48d"

@@ -318,7 +318,9 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
       await expect(copy.locator(".customer-copy-submission")).toContainText("24 October 2026 at 14:20");
       await expect(copy.locator(".customer-copy-submission")).toContainText("calc-done");
       await expect(copy.locator("#declaredTotalDue")).toHaveText("7,654.32");
-      await expect(copy).toContainText("I confirm this information is correct and complete");
+      await expect(copy).toContainText(
+        "I declare that the information and tax return I have submitted are (taken together) correct and complete",
+      );
       expectCleanFigures(expect, await copy.innerText());
       const pageOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(pageOverflow).toBeLessThanOrEqual(0);

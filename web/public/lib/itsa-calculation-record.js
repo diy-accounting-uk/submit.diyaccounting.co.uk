@@ -339,12 +339,12 @@ export function calculationCopyHtml({ calculation, nino, taxYear, calculationTyp
   });
 }
 
-// The declaration as the reader made it, in the words of the page's tick box; a Welsh reader made
-// it in HMRC's own Welsh wording.
+// The declaration as the reader made it, in the words of the page's tick box, which are HMRC's own;
+// a Welsh reader made it in the Welsh of those words.
 function declarationWording() {
   return siteText(
     "itsa.declaration-wording",
-    "I confirm this information is correct and complete to the best of my knowledge. I understand I may face financial penalties and prosecution if I give false information.",
+    "I declare that the information and tax return I have submitted are (taken together) correct and complete to the best of my knowledge. I understand that I may have to pay financial penalties and face prosecution if I give false information.",
   );
 }
 
